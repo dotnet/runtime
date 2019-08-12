@@ -377,12 +377,12 @@ namespace System.ComponentModel.Composition.Primitives
 
             sb.Append(string.Format("\n\tContractName\t{0}", ContractName));
             sb.Append(string.Format("\n\tRequiredTypeIdentity\t{0}", RequiredTypeIdentity));
-            if(_requiredCreationPolicy != CreationPolicy.Any)
+            if (_requiredCreationPolicy != CreationPolicy.Any)
             {
                 sb.Append(string.Format("\n\tRequiredCreationPolicy\t{0}", RequiredCreationPolicy));
             }
 
-            if(_requiredMetadata.Count() > 0)
+            if (_requiredMetadata.Count() > 0)
             {
                 sb.Append("\n\tRequiredMetadata");
                 foreach (KeyValuePair<string, Type> metadataItem in _requiredMetadata)

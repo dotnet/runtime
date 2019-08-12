@@ -5315,7 +5315,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.basic.unsfe
     //try{
     //float* z = stackalloc float[y];
     //}
-    //catch(System.Exception ex){
+    //catch (System.Exception ex){
     //System.Console.WriteLine(ex);
     //return 1;
     //}
@@ -5327,7 +5327,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.basic.unsfe
     //if (*z != 34)
     //return 1;
     //}
-    //catch(System.Exception ex){
+    //catch (System.Exception ex){
     //System.Console.WriteLine(ex);
     //return 1;
     //}
@@ -5336,7 +5336,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.basic.unsfe
     //try{
     //decimal* z = stackalloc decimal[b.GetFloatValue()];
     //}
-    //catch(Microsoft.CSharp.RuntimeBinder.RuntimeBinderException e){
+    //catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException e){
     //if (!ErrorVerifier.Verify(ErrorMessageId.NoImplicitConvCast, e.Message, "float", "int"))
     //return 1;
     //}

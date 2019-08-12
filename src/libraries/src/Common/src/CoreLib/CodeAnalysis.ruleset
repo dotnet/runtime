@@ -75,7 +75,6 @@
   <Rules AnalyzerId="StyleCop.Analyzers" RuleNamespace="StyleCop.Analyzers">
     <Rule Id="AD0001" Action="None" /> <!-- Analyzer threw an exception -->
     <Rule Id="SA0001" Action="None" /> <!-- XML comments -->
-    <Rule Id="SA1000" Action="None" /> <!-- The keyword 'if' should be followed by a space -->
     <Rule Id="SA1001" Action="None" /> <!-- Commas should be followed by whitespace -->
     <Rule Id="SA1002" Action="None" /> <!-- Semicolons should not be preceded by a space -->
     <Rule Id="SA1003" Action="None" /> <!-- Operator should not appear at the end of a line -->
@@ -92,7 +91,6 @@
     <Rule Id="SA1023" Action="None" /> <!-- Dereference symbol '*' should not be preceded by a space." -->
     <Rule Id="SA1024" Action="None" /> <!-- Colon should be followed by a space -->
     <Rule Id="SA1025" Action="None" /> <!-- Code should not contain multiple whitespace characters in a row -->
-    <Rule Id="SA1026" Action="None" /> <!-- The keyword 'new' should not be followed by a space or a blank line -->
     <Rule Id="SA1100" Action="None" /> <!-- Do not prefix calls with base unless local implementation exists -->
     <Rule Id="SA1101" Action="None" /> <!-- Prefix local calls with this -->
     <Rule Id="SA1106" Action="None" /> <!-- Code should not contain empty statements -->
@@ -127,7 +125,6 @@
     <Rule Id="SA1202" Action="None" /> <!-- Elements should be ordered by access -->
     <Rule Id="SA1203" Action="None" /> <!-- Constants should appear before fields -->
     <Rule Id="SA1204" Action="None" /> <!-- Static elements should appear before instance elements -->
-    <Rule Id="SA1205" Action="None" /> <!-- Partial elements should declare an access modifier -->
     <Rule Id="SA1208" Action="None" /> <!-- Using directive ordering -->
     <Rule Id="SA1209" Action="None" /> <!-- Using alias directives should be placed after all using namespace directives -->
     <Rule Id="SA1210" Action="None" /> <!-- Using directives should be ordered alphabetically by the namespaces -->
@@ -153,7 +150,6 @@
     <Rule Id="SA1405" Action="None" /> <!-- Debug.Assert should provide message text -->
     <Rule Id="SA1407" Action="None" /> <!-- Arithmetic expressions should declare precedence -->
     <Rule Id="SA1408" Action="None" /> <!-- Conditional expressions should declare precedence -->
-    <Rule Id="SA1411" Action="None" /> <!-- Attribute constructor should not use unnecessary parenthesis -->
     <Rule Id="SA1413" Action="None" /> <!-- Use trailing comma in multi-line initializers -->
     <Rule Id="SA1500" Action="None" /> <!-- Braces for multi-line statements should not share line -->
     <Rule Id="SA1501" Action="None" /> <!-- Statement should not be on a single line -->

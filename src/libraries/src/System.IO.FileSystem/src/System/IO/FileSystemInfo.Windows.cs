@@ -16,7 +16,7 @@ using System.IO.Enumeration;
 namespace System.IO
 #endif
 {
-    partial class FileSystemInfo
+    public partial class FileSystemInfo
     {
         // Cache the file/directory information
         private Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA _data;

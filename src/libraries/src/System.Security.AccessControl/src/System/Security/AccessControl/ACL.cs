@@ -2622,7 +2622,7 @@ nameof(flags));
                     }
                 }
             }
-            catch( OverflowException )
+            catch ( OverflowException )
             {
                 //
                 // Oops, overflow means that the ACL became too big.

@@ -48,7 +48,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         internal ComposablePartCatalog CreateCatalog(string location, string pattern)
         {
-            if(_reflectionContext != null)
+            if (_reflectionContext != null)
             {
                 return (_definitionOrigin != null)
                     ? new DirectoryCatalog(location, pattern, _reflectionContext, _definitionOrigin)
@@ -66,14 +66,14 @@ namespace System.ComponentModel.Composition.Hosting
         {
             get
             {
-                if(_innerCatalog == null)
+                if (_innerCatalog == null)
                 {
-                    lock(_thisLock)
+                    lock (_thisLock)
                     {
-                        if(_innerCatalog == null)
+                        if (_innerCatalog == null)
                         {
                             var location = AppDomain.CurrentDomain.BaseDirectory;
-                            if(location == null)
+                            if (location == null)
                             {
                                 throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                             }
@@ -83,13 +83,13 @@ namespace System.ComponentModel.Composition.Hosting
                             catalogs.Add(CreateCatalog(location, "*.dll"));
 
                             string relativeSearchPath = AppDomain.CurrentDomain.RelativeSearchPath;
-                            if(!string.IsNullOrEmpty(relativeSearchPath))
+                            if (!string.IsNullOrEmpty(relativeSearchPath))
                             {
                                 string[] probingPaths = relativeSearchPath.Split(new char[] {';'}, StringSplitOptions.RemoveEmptyEntries);
-                                foreach(var probingPath in probingPaths)
+                                foreach (var probingPath in probingPaths)
                                 {
                                     var path = Path.Combine(location, probingPath);
-                                    if(Directory.Exists(path))
+                                    if (Directory.Exists(path))
                                     {
                                         catalogs.Add(CreateCatalog(path, "*.dll"));
                                     }
@@ -118,7 +118,7 @@ namespace System.ComponentModel.Composition.Hosting
                         _innerCatalog = null;
                         _isDisposed = true;
                     }
-                    if(innerCatalog != null)
+                    if (innerCatalog != null)
                     {
                         innerCatalog.Dispose();
                     }

@@ -26,7 +26,7 @@ namespace System.ComponentModel.Composition
 
         internal static bool IsDefaultMetadataViewType(Type metadataViewType)
         {
-            if(metadataViewType == null)
+            if (metadataViewType == null)
             {
                 throw new ArgumentNullException(nameof(metadataViewType));
             }
@@ -39,7 +39,7 @@ namespace System.ComponentModel.Composition
 
         internal static bool IsDictionaryConstructorViewType(Type metadataViewType)
         {
-            if(metadataViewType == null)
+            if (metadataViewType == null)
             {
                 throw new ArgumentNullException(nameof(metadataViewType));
             }
@@ -63,7 +63,7 @@ namespace System.ComponentModel.Composition
                 genericMethod = _createStronglyTypedLazyOfT.MakeGenericMethod(exportType ?? ExportServices.DefaultExportedValueType);
             }
 
-            if(genericMethod == null)
+            if (genericMethod == null)
             {
                 throw new ArgumentNullException(nameof(genericMethod));
             }
@@ -76,7 +76,7 @@ namespace System.ComponentModel.Composition
             MethodInfo genericMethod = _createSemiStronglyTypedLazy.MakeGenericMethod(
                 exportType ?? ExportServices.DefaultExportedValueType,
                 metadataViewType ?? ExportServices.DefaultMetadataViewType);
-            if(genericMethod == null)
+            if (genericMethod == null)
             {
                 throw new ArgumentNullException(nameof(genericMethod));
             }
@@ -190,7 +190,7 @@ namespace System.ComponentModel.Composition
                     break;
 
                 default:
-                    if(actualCardinality != EnumerableCardinality.One)
+                    if (actualCardinality != EnumerableCardinality.One)
                     {
                         throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                     }

@@ -43,7 +43,7 @@ namespace System.IO.Tests
             string fileName = GetTestFilePath();
             using (FileStream fs = new FileStream(fileName, FileMode.Create))
             {
-                foreach(byte b in TestBuffer)
+                foreach (byte b in TestBuffer)
                 {
                     fs.WriteByte(b);
                 }

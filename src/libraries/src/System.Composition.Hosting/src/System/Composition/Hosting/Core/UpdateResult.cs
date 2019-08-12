@@ -45,7 +45,7 @@ namespace System.Composition.Hosting.Core
         {
             if (_results == null)
             {
-                if(_remainingProviders.Count != 0)
+                if (_remainingProviders.Count != 0)
                 {
                     throw new Exception(SR.Providers_Remain_To_Be_Queried);
                 }

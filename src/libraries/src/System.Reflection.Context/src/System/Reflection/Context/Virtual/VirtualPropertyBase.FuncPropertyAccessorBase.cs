@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.Reflection.Context.Virtual
 {
-    partial class VirtualPropertyBase
+    internal abstract partial class VirtualPropertyBase
     {
         protected abstract class FuncPropertyAccessorBase : VirtualMethodBase
         {

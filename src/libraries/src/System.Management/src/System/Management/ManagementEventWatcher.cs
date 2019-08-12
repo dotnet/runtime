@@ -395,7 +395,7 @@ namespace System.Management
             Initialize ();
 
 #pragma warning disable CA2002
-            lock(this)
+            lock (this)
 #pragma warning restore CA2002
             {
                 SecurityHandler securityHandler = Scope.GetSecurityHandler();
@@ -627,13 +627,13 @@ namespace System.Management
             this.isLocal = false;
 
             // determine if the server is local, and if so don't create a real stub using unsecap
-            if((0==string.Compare(eventWatcher.Scope.Path.Server, ".", StringComparison.OrdinalIgnoreCase)) ||
+            if ((0==string.Compare(eventWatcher.Scope.Path.Server, ".", StringComparison.OrdinalIgnoreCase)) ||
                 (0==string.Compare(eventWatcher.Scope.Path.Server, System.Environment.MachineName, StringComparison.OrdinalIgnoreCase)))
             {
                 this.isLocal = true;
             }
 
-            if(MTAHelper.IsNoContextMTA())
+            if (MTAHelper.IsNoContextMTA())
                 HackToCreateStubInMTA(this);
             else
             {
@@ -722,7 +722,7 @@ namespace System.Management
             if (null != stub)
             {
 #pragma warning disable CA2002
-                lock(this)
+                lock (this)
 #pragma warning restore CA2002
                 {
                     if (null != stub)
@@ -750,7 +750,7 @@ namespace System.Management
             if (null != stub)
             {
 #pragma warning disable CA2002
-                lock(this)
+                lock (this)
 #pragma warning restore CA2002
                 {
                     /*

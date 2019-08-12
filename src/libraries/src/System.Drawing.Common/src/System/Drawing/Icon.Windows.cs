@@ -878,7 +878,7 @@ namespace System.Drawing
         [DllImport(ExternDll.Oleaut32, PreserveSig = false)]
         internal static extern IPicture OleCreatePictureIndirect(PICTDESC pictdesc, [In]ref Guid refiid, bool fOwn);
 
-        [ComImport()]
+        [ComImport]
         [Guid("7BF80980-BF32-101A-8BBB-00AA00300CAB")]
         [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
         internal interface IPicture

@@ -392,10 +392,10 @@ namespace System.Runtime.Serialization
 
         private static readonly Dictionary<string, string[]> s_knownSerializableTypeInfos = new Dictionary<string, string[]> {
             { "System.Collections.Generic.KeyValuePair`2", Array.Empty<string>() },
-            { "System.Collections.Generic.Queue`1", new [] { "_syncRoot" } },
-            { "System.Collections.Generic.Stack`1", new [] {"_syncRoot" } },
-            { "System.Collections.ObjectModel.ReadOnlyCollection`1", new [] {"_syncRoot" } },
-            { "System.Collections.ObjectModel.ReadOnlyDictionary`2", new [] {"_syncRoot", "_keys","_values" } },
+            { "System.Collections.Generic.Queue`1", new[] { "_syncRoot" } },
+            { "System.Collections.Generic.Stack`1", new[] {"_syncRoot" } },
+            { "System.Collections.ObjectModel.ReadOnlyCollection`1", new[] {"_syncRoot" } },
+            { "System.Collections.ObjectModel.ReadOnlyDictionary`2", new[] {"_syncRoot", "_keys","_values" } },
             { "System.Tuple`1", Array.Empty<string>() },
             { "System.Tuple`2", Array.Empty<string>() },
             { "System.Tuple`3", Array.Empty<string>() },
@@ -404,8 +404,8 @@ namespace System.Runtime.Serialization
             { "System.Tuple`6", Array.Empty<string>() },
             { "System.Tuple`7", Array.Empty<string>() },
             { "System.Tuple`8", Array.Empty<string>() },
-            { "System.Collections.Queue", new [] {"_syncRoot" } },
-            { "System.Collections.Stack", new [] {"_syncRoot" } },
+            { "System.Collections.Queue", new[] {"_syncRoot" } },
+            { "System.Collections.Stack", new[] {"_syncRoot" } },
             { "System.Globalization.CultureInfo", Array.Empty<string>() },
             { "System.Version", Array.Empty<string>() },
         };

@@ -101,7 +101,7 @@ public static class XmlDictionaryWriterTest
                 actual = sr.ReadToEnd();
             }
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             var sb = new StringBuilder();
             sb.AppendLine($"An error occurred: {e.Message}");

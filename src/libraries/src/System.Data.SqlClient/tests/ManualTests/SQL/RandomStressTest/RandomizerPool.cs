@@ -17,7 +17,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
     ///
     /// try
     /// {
-    ///     for(outer test loop counter)
+    ///     for (outer test loop counter)
     ///     {
     ///         using (Scope rootScope = pool.RootScope())
     ///         {
@@ -42,7 +42,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
     ///         }
     ///     }
     /// }
-    /// catch(Exception)
+    /// catch (Exception)
     /// {
     ///     string tempFile = Path.GetRandomFileName() + ".repro"; // or any other place to place repro files
     ///     // dumps the latest scope created on the current thread to the file

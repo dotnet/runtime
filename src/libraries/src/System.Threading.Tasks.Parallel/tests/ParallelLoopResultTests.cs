@@ -118,7 +118,7 @@ Parallel.For(1L, 0L, delegate (long i, ParallelLoopState ps)
             plr =
             Parallel.ForEach(dict, delegate (KeyValuePair<string, string> kvp, ParallelLoopState ps)
             {
-                //if(kvp.Value.Equals("Purple")) ps.Stop();
+                //if (kvp.Value.Equals("Purple")) ps.Stop();
             });
             PLRcheck(plr, "ForEach-Complete", true, null);
         }

@@ -7,7 +7,7 @@ namespace System.IO
     /// <devdoc>
     ///    Changes that may occur to a file or directory.
     /// </devdoc>
-    [Flags()]
+    [Flags]
     public enum WatcherChangeTypes
     {
         /// <devdoc>

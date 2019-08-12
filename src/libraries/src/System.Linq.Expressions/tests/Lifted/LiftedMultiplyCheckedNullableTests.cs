@@ -263,7 +263,7 @@ namespace System.Linq.Expressions.Tests
             {
                 expected = checked((byte?)(a * b));
             }
-            catch(OverflowException)
+            catch (OverflowException)
             {
                 Assert.Throws<OverflowException>(() => f());
                 return;

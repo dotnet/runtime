@@ -44,7 +44,7 @@ namespace System.ComponentModel.Composition
 
         internal static string GetTypeIdentity(Type type, bool formatGenericName)
         {
-            if(type == null)
+            if (type == null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -72,7 +72,7 @@ namespace System.ComponentModel.Composition
                     typeIdentity = typeIdentityStringBuilder.ToString();
                 }
 
-                if(string.IsNullOrEmpty(typeIdentity))
+                if (string.IsNullOrEmpty(typeIdentity))
                 {
                     throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                 }
@@ -133,7 +133,7 @@ namespace System.ComponentModel.Composition
                 //
                 Queue<Type> genericTypeArguments = new Queue<Type>(type.GetGenericArguments());
                 WriteGenericType(typeName, type, type.IsGenericTypeDefinition, genericTypeArguments, formatGenericName);
-                if(genericTypeArguments.Count != 0)
+                if (genericTypeArguments.Count != 0)
                 {
                     throw new Exception(SR.Expecting_Empty_Queue);
                 }
@@ -249,7 +249,7 @@ namespace System.ComponentModel.Composition
             //
             // Writes generic type name, e.g. generic name and generic arguments
             //
-            if(!type.IsGenericType)
+            if (!type.IsGenericType)
             {
                 throw new Exception(SR.Expecting_Generic_Type);
             }
@@ -271,7 +271,7 @@ namespace System.ComponentModel.Composition
             typeName.Append(ContractNameGenericOpeningBracket);
             for (int i = 0; i < argumentsCount; i++)
             {
-                if(genericTypeArguments.Count == 0)
+                if (genericTypeArguments.Count == 0)
                 {
                     throw new Exception(SR.Expecting_AtleastOne_Type);
                 }
@@ -308,7 +308,7 @@ namespace System.ComponentModel.Composition
             typeName.Append(customKeyword);
             Queue<Type> typeArguments = new Queue<Type>(types);
             WriteTypeArgumentsString(typeName, types.Length, false, typeArguments, formatGenericName);
-            if(typeArguments.Count != 0)
+            if (typeArguments.Count != 0)
             {
                 throw new Exception(SR.Expecting_Empty_Queue);
             }
@@ -352,7 +352,7 @@ namespace System.ComponentModel.Composition
             int delclaringTypeGenericArguments = type.DeclaringType.GetGenericArguments().Length;
             int typeGenericArguments = type.GetGenericArguments().Length;
 
-            if(typeGenericArguments < delclaringTypeGenericArguments)
+            if (typeGenericArguments < delclaringTypeGenericArguments)
             {
                 throw new Exception(SR.Diagnostic_InternalExceptionMessage);
             }

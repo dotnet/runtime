@@ -467,7 +467,7 @@ namespace System.Management
                 cc.Members.Add(GenerateSystemPropertiesClass());
             }
 
-            if(bHasEmbeddedProperties)
+            if (bHasEmbeddedProperties)
             {
                 AddCommentsForEmbeddedProperties();
             }
@@ -580,9 +580,9 @@ namespace System.Management
             {
                 classobj.Get();
             }
-            catch(ManagementException)
+            catch (ManagementException)
             {
-                throw ;
+                throw;
             }
             //By default all classes are non-singleton(???)
             bSingletonClass = false;
@@ -684,7 +684,7 @@ namespace System.Management
         {
             if (classobj.Properties != null)
             {
-                foreach(PropertyData prop in classobj.Properties)
+                foreach (PropertyData prop in classobj.Properties)
                 {
                     PublicProperties.Add(prop.Name,prop.Name);
                 }
@@ -692,7 +692,7 @@ namespace System.Management
 
             if (classobj.Methods != null)
             {
-                foreach(MethodData meth in classobj.Methods)
+                foreach (MethodData meth in classobj.Methods)
                 {
                     PublicMethods.Add(meth.Name,meth.Name);
                 }
@@ -702,7 +702,7 @@ namespace System.Management
 
             //Process the collisions here
             //We will check each public names with the property names here.
-            foreach(string s in PublicNamesUsed.Values)
+            foreach (string s in PublicNamesUsed.Values)
             {
                 nIndex = IsContainedIn(s,ref PublicProperties);
                 if ( nIndex != -1)
@@ -726,7 +726,7 @@ namespace System.Management
             }
 
             //Now we will check for collision against private variables
-            foreach(string s in PublicProperties.Values)
+            foreach (string s in PublicProperties.Values)
             {
                 nIndex = IsContainedIn(s,ref PrivateNamesUsed);
                 if (nIndex != -1)
@@ -738,7 +738,7 @@ namespace System.Management
                 }
             }
 
-            foreach(string s in PublicMethods.Values)
+            foreach (string s in PublicMethods.Values)
             {
                 nIndex = IsContainedIn(s,ref PrivateNamesUsed);
                 if (nIndex != -1)
@@ -751,7 +751,7 @@ namespace System.Management
             }
 
             //Now we will check for collision against Methods and Public Properties
-            foreach(string s in PublicProperties.Values)
+            foreach (string s in PublicProperties.Values)
             {
                 nIndex = IsContainedIn(s,ref PublicMethods);
                 if (nIndex != -1)
@@ -794,7 +794,7 @@ namespace System.Management
                 strTemp = strTemp + strToAdd +k.ToString((IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(int)));
             }
 
-            while(bCollision == true)
+            while (bCollision == true)
             {
                 if (IsContainedIn(strTemp,ref PublicProperties) == -1)
                 {
@@ -815,7 +815,7 @@ namespace System.Management
                 {
                     k++;
                 }
-                catch(OverflowException)
+                catch (OverflowException)
                 {
                     strToAdd = strToAdd + "_";
                     k = 0;
@@ -823,7 +823,7 @@ namespace System.Management
                 strTemp = inString + strToAdd +k.ToString((IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(int)));
             }
 
-            if(strTemp.Length > 0)
+            if (strTemp.Length > 0)
             {
                 string strFirstChar = strTemp.Substring(0,1).ToUpper(CultureInfo.InvariantCulture);
                 strTemp = strFirstChar + strTemp.Substring(1,strTemp.Length -1);
@@ -871,7 +871,7 @@ namespace System.Management
             }
 
             // Check if the name of the class starts with a charachter. If not add "C" to the begining of the name
-            if(char.IsLetter(strClass[0]) == false)
+            if (char.IsLetter(strClass[0]) == false)
             {
                 strClass = "C" + strClass;
             }
@@ -880,7 +880,7 @@ namespace System.Management
 
             // Try to get a type from any of the namespace which are used in the generated code and see if
             // it collides with any of the standard classes.
-            if(Type.GetType("System." + strClass) !=  null ||
+            if (Type.GetType("System." + strClass) !=  null ||
                 Type.GetType("System.ComponentModel." + strClass) !=  null ||
                 Type.GetType("System.Management." + strClass) !=  null ||
                 Type.GetType("System.Collections." + strClass) !=  null ||
@@ -906,7 +906,7 @@ namespace System.Management
             cn.Imports.Add(new CodeNamespaceImport("System.Collections"));
             cn.Imports.Add(new CodeNamespaceImport("System.Globalization"));
 
-            if(lang == CodeLanguage.VB)
+            if (lang == CodeLanguage.VB)
             {
                 cn.Imports.Add(new CodeNamespaceImport("Microsoft.VisualBasic"));
             }
@@ -958,7 +958,7 @@ namespace System.Management
                 cmp.GetStatements.Add (new CodeMethodReturnStatement (new CodePrimitiveExpression(propValue)));
             }
             cc.Members.Add (cmp);
-            if(Comment != null && Comment.Length != 0 )
+            if (Comment != null && Comment.Length != 0 )
             {
                 cmp.Comments.Add(new CodeCommentStatement(Comment));
             }
@@ -971,7 +971,7 @@ namespace System.Management
             cmp.Attributes = MemberAttributes.Public | MemberAttributes.Final;
             cmp.Type = new CodeTypeReference(propType);
 
-            if(isStatic)
+            if (isStatic)
             {
                 cmp.Attributes = cmp.Attributes | MemberAttributes.Static;
             }
@@ -1002,7 +1002,7 @@ namespace System.Management
                 new CodeSnippetExpression("value")));
             cc.Members.Add(cmp);
 
-            if(Comment != null && Comment.Length != 0)
+            if (Comment != null && Comment.Length != 0)
             {
                 cmp.Comments.Add(new CodeCommentStatement(Comment));
             }
@@ -1124,7 +1124,7 @@ namespace System.Management
 
                 //Now we will have to find the occurrence of the first character and trim all the characters before that
                 strPropTemp = prop.Name.ToCharArray();
-                for(i=0;i < strPropTemp.Length;i++)
+                for (i=0;i < strPropTemp.Length;i++)
                 {
                     if (char.IsLetterOrDigit(strPropTemp[i]) == true)
                     {
@@ -1136,7 +1136,7 @@ namespace System.Management
                     i = 0;
                 }
                 strPropName = new char[strPropTemp.Length - i];
-                for(int j=i;j < strPropTemp.Length;j++)
+                for (int j=i;j < strPropTemp.Length;j++)
                 {
                     strPropName[j - i] = strPropTemp[j];
                 }
@@ -1179,7 +1179,7 @@ namespace System.Management
             string IsValidPropName = string.Empty;
             bool bDateIsTimeInterval = false;
 
-            for(int i=0;i< PublicProperties.Count;i++)
+            for (int i=0;i< PublicProperties.Count;i++)
             {
                 bDateIsTimeInterval = false;
                 PropertyData prop = classobj.Properties[PublicProperties.GetKey(i).ToString()];
@@ -1192,7 +1192,7 @@ namespace System.Management
                 cmp.Attributes = MemberAttributes.Public | MemberAttributes.Final;
                 cmp.Type = ConvertCIMType(prop.Type,prop.IsArray);
 
-                if(prop.Type == CimType.DateTime)
+                if (prop.Type == CimType.DateTime)
                 {
                     CodeTypeReference dateType = cmp.Type;
                     // Check if it is Time interval and if so change the type to Time Interval
@@ -1203,7 +1203,7 @@ namespace System.Management
                 // Check if the property is a of type ManagementBaseObject
                 // or array of ManagementBaseObject. If so then the property
                 // is of type embedded object
-                if((cmp.Type.ArrayRank == 0 && cmp.Type.BaseType == new CodeTypeReference(PublicNamesUsed["BaseObjClass"].ToString()).BaseType) ||
+                if ((cmp.Type.ArrayRank == 0 && cmp.Type.BaseType == new CodeTypeReference(PublicNamesUsed["BaseObjClass"].ToString()).BaseType) ||
                     cmp.Type.ArrayRank > 0 && cmp.Type.ArrayElementType.BaseType == new CodeTypeReference(PublicNamesUsed["BaseObjClass"].ToString()).BaseType)
                 {
                     bHasEmbeddedProperties = true;
@@ -1277,7 +1277,7 @@ namespace System.Management
 
                 if (bRead == true)
                 {
-                    if(IsPropertyValueType(prop.Type)  && prop.IsArray == false)
+                    if (IsPropertyValueType(prop.Type)  && prop.IsArray == false)
                     {
 
                         /*
@@ -1315,7 +1315,7 @@ namespace System.Management
 
                         // Since functions handling Datetime, TimeSpan returns MinValue, there is no need to check for null in the property
                         // accessor for Datetime
-                        if(prop.Type != CimType.DateTime)
+                        if (prop.Type != CimType.DateTime)
                         {
                             cis = new CodeConditionStatement();
                             cis.Condition = new CodeBinaryOperatorExpression(cie,
@@ -1324,7 +1324,7 @@ namespace System.Management
 
                             if (isPropertyEnum)
                             {
-                                if(prop.IsArray)
+                                if (prop.IsArray)
                                 {
                                     cis.TrueStatements.Add(new CodeMethodReturnStatement (new CodePrimitiveExpression(null)));
                                 }
@@ -1353,7 +1353,7 @@ namespace System.Management
                                 cmie.Parameters.Add(new CodePrimitiveExpression(prop.NullEnumValue));
                                 cmie.Method.MethodName = GetConversionFunction(prop.Type);
                                 cmie.Method.TargetObject = new CodeTypeReferenceExpression("System.Convert");
-                                if(prop.IsArray)
+                                if (prop.IsArray)
                                 {
                                     CodeExpression [] cInit = {cmie };
                                     cis.TrueStatements.Add(new CodeMethodReturnStatement(
@@ -1372,7 +1372,7 @@ namespace System.Management
                         /*
                             private bool ShouldSerialize<propertyName>()
                             {
-                                if(Is<PropertyName>Null == true)
+                                if (Is<PropertyName>Null == true)
                                     return false;
 
                                 return true;
@@ -1411,7 +1411,7 @@ namespace System.Management
                         //Call this function to add code for PropertyGet for properties like
                         // DateTime ,TimeSpan and Reference( ie. properties which require some object
                         // to be created before returning)
-                        if(bDateIsTimeInterval)
+                        if (bDateIsTimeInterval)
                         {
                             GenerateCodeForRefAndDateTimeTypes(cie,prop.IsArray,cmp.GetStatements,"System.TimeSpan",null,false);
                         }
@@ -1424,7 +1424,7 @@ namespace System.Management
                     {
                         if (isPropertyEnum)
                         {
-                            if(prop.IsArray)
+                            if (prop.IsArray)
                             {
                                 AddGetStatementsForEnumArray(cie,cmp);
                             }
@@ -1448,7 +1448,7 @@ namespace System.Management
 
                 if (bWrite == true)
                 {
-                    if(bNullable)
+                    if (bNullable)
                     {
                         cmm2 = new CodeMemberMethod ();
                         cmm2.Name = "Reset" + PublicProperties[prop.Name].ToString();
@@ -1471,7 +1471,7 @@ namespace System.Management
                         //Call this function to add code for PropertySet for properties like
                         // DateTime ,TimeSpan and Reference( ie. properties which require some object
                         // to be created before returning)
-                        if(bDateIsTimeInterval)
+                        if (bDateIsTimeInterval)
                         {
                             AddPropertySet(cie,prop.IsArray,cmp.SetStatements,"System.TimeSpan",null);
                         }
@@ -1547,14 +1547,14 @@ namespace System.Management
                     cis.TrueStatements.Add(new CodeExpressionStatement(cmie));
 
                     cmp.SetStatements.Add(cis);
-                    if(bNullable)
+                    if (bNullable)
                     {
                         cmm2.Statements.Add(cis);
                     }
 
                 }
                 cc.Members.Add(cmp);
-                if(bNullable & bWrite)
+                if (bNullable & bWrite)
                 {
                     cc.Members.Add(cmm2);
                 }
@@ -1645,13 +1645,13 @@ namespace System.Management
                             if (q.Value != null)
                             {
                                 string [] strArray = (string [])q.Value;
-                                for(int i=0;i < strArray.Length ;i++)
+                                for (int i=0;i < strArray.Length ;i++)
                                 {
                                     try
                                     {
                                         arrConvFuncName = ConvertToNumericValueAndAddToArray(prop.Type,strArray[i],ValueMap,out enumType);
                                     }
-                                    catch(OverflowException)
+                                    catch (OverflowException)
                                     {
                                     }
                                 }
@@ -1659,12 +1659,12 @@ namespace System.Management
                         }
                     }
                         // if the value is not a numerical, then we cannot construct a enum
-                    catch(System.FormatException)
+                    catch (System.FormatException)
                     {
                         bMapsFailed = true;
                         ValueMap.Clear();
                     }
-                    catch(System.InvalidCastException )
+                    catch (System.InvalidCastException )
                     {
                         // This exception may occur if the qualifier value is not an array as expected
                         ValueMap.Clear();
@@ -1681,9 +1681,9 @@ namespace System.Management
                             {
                                 ArrayList arTemp = new ArrayList(5);
                                 string [] strArray = (string[])q.Value;
-                                for(int i=0;i < strArray.Length;i++)
+                                for (int i=0;i < strArray.Length;i++)
                                 {
-                                    if(strArray[i].Length == 0)
+                                    if (strArray[i].Length == 0)
                                     {
                                         Values.Clear();
                                         bMapsFailed = true;
@@ -1696,7 +1696,7 @@ namespace System.Management
                             }
                         }
                     }
-                    catch(System.InvalidCastException )
+                    catch (System.InvalidCastException )
                     {
                         // This exception may occur if the qualifier value is not an array as expected
                         Values.Clear();
@@ -1713,7 +1713,7 @@ namespace System.Management
                             if (q.Value != null)
                             {
                                 string [] strArray = (string [])q.Value;
-                                for(int i=0;i < strArray.Length;i++)
+                                for (int i=0;i < strArray.Length;i++)
                                 {
                                     BitMap.Add(ConvertBitMapValueToInt32(strArray[i]));
                                 }
@@ -1721,12 +1721,12 @@ namespace System.Management
                         }
                     }
                         // if the value is not a numerical, then we cannot construct a enum
-                    catch(System.FormatException)
+                    catch (System.FormatException)
                     {
                         BitMap.Clear();
                         bMapsFailed = true;
                     }
-                    catch(System.InvalidCastException )
+                    catch (System.InvalidCastException )
                     {
                         // This exception may occur if the qualifier value is not an array as expected
                         BitMap.Clear();
@@ -1743,9 +1743,9 @@ namespace System.Management
                             {
                                 ArrayList arTemp = new ArrayList(5);
                                 string [] strArray = (string [])q.Value;
-                                for(int i=0;i < strArray.Length;i++)
+                                for (int i=0;i < strArray.Length;i++)
                                 {
-                                    if(strArray[i].Length == 0)
+                                    if (strArray[i].Length == 0)
                                     {
                                         BitValues.Clear();
                                         bMapsFailed = true;
@@ -1758,7 +1758,7 @@ namespace System.Management
                             }
                         }
                     }
-                    catch(System.InvalidCastException )
+                    catch (System.InvalidCastException )
                     {
                         // This exception may occur if the qualifier value is not an array as expected
                         BitValues.Clear();
@@ -1909,7 +1909,7 @@ namespace System.Management
 
             if (BitValues.Count > 0 && (BitMap.Count == 0 || BitMap.Count == BitValues.Count))
             {
-                if(BitMap.Count == 0)
+                if (BitMap.Count == 0)
                 {
                     bZeroFieldInEnum = true;
                 }
@@ -1955,9 +1955,9 @@ namespace System.Management
                         bitValue = bitValue << 1;
                     }
 
-                    if(bZeroFieldInEnum == false)
+                    if (bZeroFieldInEnum == false)
                     {
-                        if( (System.Convert.ToInt64(BitMap[i],(IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(ulong))) == 0) )
+                        if ( (System.Convert.ToInt64(BitMap[i],(IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(ulong))) == 0) )
                         {
                             bZeroFieldInEnum = true;
                         }
@@ -2039,7 +2039,7 @@ namespace System.Management
             cmm.Attributes = MemberAttributes.Private | MemberAttributes.Static | MemberAttributes.Final;
             cmm.ReturnType = new CodeTypeReference("System.String");
 
-            for(int i=0; i < arrKeys.Count;i++)
+            for (int i=0; i < arrKeys.Count;i++)
             {
                 strType = ((CodeTypeReference)arrKeyType[i]).BaseType;
                 cmm.Parameters.Add(new CodeParameterDeclarationExpression(strType,
@@ -2059,7 +2059,7 @@ namespace System.Management
                 cmm.Statements.Add(new CodeVariableDeclarationStatement("System.String",strPathObject,new CodePrimitiveExpression(strPath)));
                 CodeMethodInvokeExpression cmietoAdd;
 
-                for(int i=0; i < arrKeys.Count;i++)
+                for (int i=0; i < arrKeys.Count;i++)
                 {
                     if (((CodeTypeReference)arrKeyType[i]).BaseType == "System.String")
                     {
@@ -2147,7 +2147,7 @@ namespace System.Management
                 cmieInit.Method.MethodName = PrivateNamesUsed["InitialObjectFunc"].ToString();
                 cmieInit.Method.TargetObject = new CodeThisReferenceExpression();
 
-                for(int i=0; i < arrKeys.Count;i++)
+                for (int i=0; i < arrKeys.Count;i++)
                 {
                     cpde = new CodeParameterDeclarationExpression();
                     cpde.Type = new CodeTypeReference(((CodeTypeReference)arrKeyType[i]).BaseType);
@@ -2157,7 +2157,7 @@ namespace System.Management
 
                 // if the key of the class maps to "System.Management.ManagementPath" type then add a dummy param
                 // to avoid duplicate constructors
-                if(cctor.Parameters.Count == 1 && cctor.Parameters[0].Type.BaseType == new CodeTypeReference(PublicNamesUsed["PathClass"].ToString()).BaseType)
+                if (cctor.Parameters.Count == 1 && cctor.Parameters[0].Type.BaseType == new CodeTypeReference(PublicNamesUsed["PathClass"].ToString()).BaseType)
                 {
                     cpde = new CodeParameterDeclarationExpression();
                     cpde.Type = new CodeTypeReference("System.Object");
@@ -2172,7 +2172,7 @@ namespace System.Management
                 cmie.Method.TargetObject = new CodeTypeReferenceExpression(PrivateNamesUsed["GeneratedClassName"].ToString());
                 cmie.Method.MethodName = PublicNamesUsed["ConstructPathFunction"].ToString();
 
-                for(int i=0; i < arrKeys.Count;i++)
+                for (int i=0; i < arrKeys.Count;i++)
                 {
                     cmie.Parameters.Add(new CodeVariableReferenceExpression("key"+arrKeys[i]));
                 }
@@ -2206,7 +2206,7 @@ namespace System.Management
 
             if (arrKeyType.Count > 0)
             {
-                for(int i=0; i < arrKeys.Count;i++)
+                for (int i=0; i < arrKeys.Count;i++)
                 {
                     cpde = new CodeParameterDeclarationExpression();
                     cpde.Type = new CodeTypeReference(((CodeTypeReference)arrKeyType[i]).BaseType);
@@ -2216,7 +2216,7 @@ namespace System.Management
 
                 // if the key of the class maps to "System.Management.ManagementPath" type then add a dummy param
                 // to avoid duplicate constructors
-                if(cctor.Parameters.Count == 2 && cctor.Parameters[1].Type.BaseType == new CodeTypeReference(PublicNamesUsed["PathClass"].ToString()).BaseType)
+                if (cctor.Parameters.Count == 2 && cctor.Parameters[1].Type.BaseType == new CodeTypeReference(PublicNamesUsed["PathClass"].ToString()).BaseType)
                 {
                     cpde = new CodeParameterDeclarationExpression();
                     cpde.Type = new CodeTypeReference("System.Object");
@@ -2233,7 +2233,7 @@ namespace System.Management
                 cmie.Method.TargetObject = new CodeTypeReferenceExpression(PrivateNamesUsed["GeneratedClassName"].ToString());
                 cmie.Method.MethodName = PublicNamesUsed["ConstructPathFunction"].ToString();
 
-                for(int i=0; i < arrKeys.Count;i++)
+                for (int i=0; i < arrKeys.Count;i++)
                 {
                     cmie.Parameters.Add(new CodeVariableReferenceExpression("key"+arrKeys[i]));
                 }
@@ -2467,7 +2467,7 @@ namespace System.Management
                         {
                             classobj.Qualifiers["priveleges"].ToString();
                         }
-                        catch(ManagementException e)
+                        catch (ManagementException e)
                         {
                             if (e.ErrorCode == ManagementStatus.NotFound)
                             {
@@ -2652,7 +2652,7 @@ namespace System.Management
             {
                 classobj.Qualifiers["priveleges"].ToString();
             }
-            catch(ManagementException e)
+            catch (ManagementException e)
             {
                 if (e.ErrorCode == ManagementStatus.NotFound)
                 {
@@ -2789,7 +2789,7 @@ namespace System.Management
             ArrayList outParamsName = new ArrayList(5);
             ArrayList inoutParams = new ArrayList(5);
             ArrayList inoutParamsType = new ArrayList(5);
-            for(int k=0;k< PublicMethods.Count;k++)
+            for (int k=0;k< PublicMethods.Count;k++)
             {
 
                 bStatic = false;
@@ -2797,7 +2797,7 @@ namespace System.Management
                 string strTemp = PrivateNamesUsed["LateBoundObject"].ToString();
                 if (meth.OutParameters != null)
                 {
-                    if(meth.OutParameters.Properties != null)
+                    if (meth.OutParameters.Properties != null)
                     {
                         //First Populate the out Params name so that we can find in/out parameters
                         foreach (PropertyData prop in meth.OutParameters.Properties)
@@ -2832,7 +2832,7 @@ namespace System.Management
                 cis = new CodeConditionStatement();
                 cboe = new CodeBinaryOperatorExpression();
 
-                if(bStatic)
+                if (bStatic)
                 {
                     cmm.Statements.Add(new CodeVariableDeclarationStatement("System.Boolean","IsMethodStatic",new CodePrimitiveExpression(bStatic)));
                     cboe.Left = new CodeVariableReferenceExpression("IsMethodStatic");
@@ -2920,7 +2920,7 @@ namespace System.Management
                             cpde.Direction = FieldDirection.In;
 
 
-                            if( prop.Type == CimType.DateTime)
+                            if ( prop.Type == CimType.DateTime)
                             {
                                 CodeTypeReference dateType = cpde.Type;
                                 // Check if it is Time interval and if so change the type to Time Interval
@@ -2929,7 +2929,7 @@ namespace System.Management
                             }
 
                             //Find out whether it is a in/out Parameter
-                            for(int i=0; i < outParamsName.Count;i++)
+                            for (int i=0; i < outParamsName.Count;i++)
                             {
                                 if (string.Equals(prop.Name,outParamsName[i].ToString(),StringComparison.OrdinalIgnoreCase))
                                 {
@@ -2959,7 +2959,7 @@ namespace System.Management
                             {
                                 //Call this function to add code for converting the DateTime,TimeSpan to string
                                 // and assigning it to the parameter
-                                if(bIsCimDateTimeInterval)
+                                if (bIsCimDateTimeInterval)
                                 {
                                     AddPropertySet(cie,prop.IsArray,cis.TrueStatements,"System.TimeSpan",new CodeVariableReferenceExpression(cpde.Name));
                                 }
@@ -2970,7 +2970,7 @@ namespace System.Management
                             }
                             else
                             {
-                                if(cpde.Type.ArrayRank == 0)
+                                if (cpde.Type.ArrayRank == 0)
                                 {
                                     // Work around
                                     cis.TrueStatements.Add(new CodeAssignStatement(cie,new CodeCastExpression(new CodeTypeReference(cpde.Type.BaseType + " "),
@@ -3017,7 +3017,7 @@ namespace System.Management
                             }
 
                             bInOut = false;
-                            for(int i=0; i < inoutParams.Count;i++)
+                            for (int i=0; i < inoutParams.Count;i++)
                             {
                                 if (string.Equals(prop.Name,inoutParams[i].ToString(),StringComparison.OrdinalIgnoreCase))
                                 {
@@ -3033,7 +3033,7 @@ namespace System.Management
                                 bRetVal = true;
                                 cimRetType = prop.Type;
 
-                                if( prop.Type == CimType.DateTime)
+                                if ( prop.Type == CimType.DateTime)
                                 {
                                     CodeTypeReference dateType = cmm.ReturnType;
                                     // Check if it is Time interval and if so change the type to Time Interval
@@ -3051,7 +3051,7 @@ namespace System.Management
                                 cpde.Direction = FieldDirection.Out;
                                 cmm.Parameters.Add(cpde);
 
-                                if( prop.Type == CimType.DateTime)
+                                if ( prop.Type == CimType.DateTime)
                                 {
                                     CodeTypeReference dateType = cpde.Type;
                                     // Check if it is Time interval and if so change the type to Time Interval
@@ -3075,7 +3075,7 @@ namespace System.Management
                                 {
                                     //Call this function to add code for converting datetime,TimeSpan in DMTF formate
                                     // to System.DateTime
-                                    if(bIsCimDateTimeInterval)
+                                    if (bIsCimDateTimeInterval)
                                     {
                                         GenerateCodeForRefAndDateTimeTypes(cie,prop.IsArray,cis.TrueStatements,"System.TimeSpan",new CodeVariableReferenceExpression(prop.Name),true);
                                     }
@@ -3086,7 +3086,7 @@ namespace System.Management
                                 }
                                 else
                                 {
-                                    if(prop.IsArray || prop.Type == CimType.Object)
+                                    if (prop.IsArray || prop.Type == CimType.Object)
                                     {
                                         cis.TrueStatements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression(prop.Name),
                                             new CodeCastExpression(ConvertCIMType(prop.Type,prop.IsArray),
@@ -3106,9 +3106,9 @@ namespace System.Management
 
 
                                 //Now for each out params generate the statement if it is an embedded instance
-                                if(prop.Type == CimType.DateTime && prop.IsArray == false)
+                                if (prop.Type == CimType.DateTime && prop.IsArray == false)
                                 {
-                                    if(bIsCimDateTimeInterval)
+                                    if (bIsCimDateTimeInterval)
                                     {
                                         coce = new CodeObjectCreateExpression();
                                         coce.CreateType = new CodeTypeReference("System.TimeSpan");
@@ -3129,7 +3129,7 @@ namespace System.Management
 
                                 }
                                 else
-                                    if(IsPropertyValueType(prop.Type) && prop.IsArray == false)
+                                    if (IsPropertyValueType(prop.Type) && prop.IsArray == false)
                                 {
                                     cmie2 = new CodeMethodInvokeExpression();
                                     cmie2.Parameters.Add(new CodePrimitiveExpression(0));
@@ -3167,7 +3167,7 @@ namespace System.Management
 
                 //Now for each in/out params generate the statement
                 //    <inoutParam> = outParams.Properties["<inoutParam>"];
-                for(int i=0;i < inoutParams.Count;i++)
+                for (int i=0;i < inoutParams.Count;i++)
                 {
                     cpre = new CodePropertyReferenceExpression(new CodeVariableReferenceExpression(strOutParams),"Properties");
                     cie = new CodeIndexerExpression(cpre,new CodePrimitiveExpression(inoutParams[i].ToString()));
@@ -3234,7 +3234,7 @@ namespace System.Management
                     }
                     else
                         // if the return value is not array and not of type CimType.Object
-                        if(retRefType.ArrayRank == 0 && retRefType.BaseType != new CodeTypeReference(PublicNamesUsed["BaseObjClass"].ToString()).BaseType)
+                        if (retRefType.ArrayRank == 0 && retRefType.BaseType != new CodeTypeReference(PublicNamesUsed["BaseObjClass"].ToString()).BaseType)
                     {
                         cmie = new CodeMethodInvokeExpression();
                         cmie.Parameters.Add(new CodePropertyReferenceExpression(cie,"Value"));
@@ -3700,7 +3700,7 @@ namespace System.Management
             cf = new CodeMemberField();
             cf.Name = memberName;
             cf.Attributes = MemberAttributes.Private | MemberAttributes.Final ;
-            if(isStatic == true)
+            if (isStatic == true)
             {
                 cf.Attributes = cf.Attributes | MemberAttributes.Static;
             }
@@ -3711,7 +3711,7 @@ namespace System.Management
             }
             cc.Members.Add(cf);
 
-            if(Comment != null && Comment.Length != 0)
+            if (Comment != null && Comment.Length != 0)
             {
                 cf.Comments.Add(new CodeCommentStatement(Comment));
             }
@@ -4322,7 +4322,7 @@ namespace System.Management
             //public void CopyTo (Array array, Int32 index)
             //{
             //    objCollection.CopyTo(array,index);
-            //    for(int iCtr=0;iCtr < array.Length ;iCtr++)
+            //    for (int iCtr=0;iCtr < array.Length ;iCtr++)
             //    {
             //        array.SetValue(new Service((ManagementObject)array.GetValue(iCtr)),iCtr);
             //    }
@@ -4541,7 +4541,7 @@ namespace System.Management
         private CodeTypeReference ConvertCIMType(CimType cType,bool isArray)
         {
             string strType;
-            switch(cType)
+            switch (cType)
             {
                 case CimType.SInt8:
                 {
@@ -4662,7 +4662,7 @@ namespace System.Management
         private static bool isTypeInt(CimType cType)
         {
             bool retVal;
-            switch(cType)
+            switch (cType)
             {
                 case CimType.UInt8:
                 case CimType.UInt16:
@@ -4738,7 +4738,7 @@ namespace System.Management
                 strToAdd = "l";
             }
 
-            for(int i=0;i < str.Length;i++)
+            for (int i=0;i < str.Length;i++)
             {
                 bAdd = true;
                 if (char.IsLetterOrDigit(arrString[i]) == false)
@@ -4778,7 +4778,7 @@ namespace System.Management
             string strToAdd = string.Empty;
             IFormatProvider formatProv = (IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(int));
 
-            for( int i = 0 ; i < arrIn.Count ; i++)
+            for ( int i = 0 ; i < arrIn.Count ; i++)
             {
                 strToAdd = arrIn[i].ToString();
                 strToAdd = ResolveCollision(strToAdd,true);
@@ -4786,7 +4786,7 @@ namespace System.Management
                 {
                     nCurIndex = 0;
                     strToAdd = arrIn[i].ToString() + nCurIndex.ToString(formatProv);
-                    while(true == IsContainedInArray(strToAdd,arrayOut))
+                    while (true == IsContainedInArray(strToAdd,arrayOut))
                     {
                         nCurIndex++;
                         strToAdd = arrIn[i].ToString() + nCurIndex.ToString(formatProv);
@@ -4828,7 +4828,7 @@ namespace System.Management
 
             try
             {
-                switch(lang)
+                switch (lang)
                 {
                     case CodeLanguage.VB:
                         strProvider = "Visual Basic.";
@@ -4857,10 +4857,10 @@ namespace System.Management
                         assemblyName.Version = curAssemblyName.Version;
                         asm = Assembly.Load(assemblyName);
                         //asm = Assembly.LoadWithPartialName("VJSharpCodeProvider");
-                        if(asm != null)
+                        if (asm != null)
                         {
                             codeProvType = asm.GetType("Microsoft.VJSharp.VJSharpCodeProvider");
-                            if( codeProvType != null)
+                            if ( codeProvType != null)
                             {
                                 cp = (System.CodeDom.Compiler.CodeDomProvider)Activator.CreateInstance(codeProvType);
                                 bSucceeded = true;
@@ -4879,10 +4879,10 @@ namespace System.Management
                         assemblyName.Version = new Version(VSVERSION);
                         asm = Assembly.Load(assemblyName);
 
-                        if(asm != null)
+                        if (asm != null)
                         {
                             codeProvType = asm.GetType("Microsoft.VisualC.CppCodeProvider");
-                            if( codeProvType != null)
+                            if ( codeProvType != null)
                             {
                                 cp = (System.CodeDom.Compiler.CodeDomProvider)Activator.CreateInstance(codeProvType);
                                 bSucceeded = true;
@@ -4896,7 +4896,7 @@ namespace System.Management
                 throw new ArgumentOutOfRangeException(SR.Format(SR.UnableToCreateCodeGeneratorException , strProvider ));
             }
 
-            if(bSucceeded == true)
+            if (bSucceeded == true)
             {
                 GetUnsignedSupport(lang);
             }
@@ -4913,7 +4913,7 @@ namespace System.Management
         /// <param name="Language">Language</param>
         private void GetUnsignedSupport(CodeLanguage Language)
         {
-            switch(Language)
+            switch (Language)
             {
                 case CodeLanguage.CSharp:
                     bUnsignedSupported = true;
@@ -5033,7 +5033,7 @@ namespace System.Management
         {
             string retFunctionName = string.Empty;
 
-            switch(cimType)
+            switch (cimType)
             {
                 case CimType.UInt8:
                     retFunctionName = "ToByte";
@@ -5143,7 +5143,7 @@ namespace System.Management
         private static bool IsPropertyValueType(CimType cType)
         {
             bool ret = true;
-            switch(cType)
+            switch (cType)
             {
                 case CimType.String:
                 case CimType.Reference:
@@ -5166,7 +5166,7 @@ namespace System.Management
             {
                 ret = System.Convert.ToBoolean(classobj.Qualifiers["dynamic"].Value,(IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(bool)));
             }
-            catch(ManagementException)
+            catch (ManagementException)
             {
                 // do nothing. This may be due to dynamic qualifer not present which is equivalent
                 // dynamic qualifier absent
@@ -5183,7 +5183,7 @@ namespace System.Management
             string retFunctionName = string.Empty;
             enumType = string.Empty;
 
-            switch(cimType)
+            switch (cimType)
             {
                 case CimType.UInt8:
                 case CimType.SInt8:
@@ -5594,7 +5594,7 @@ namespace System.Management
         private void GenerateCodeForRefAndDateTimeTypes(CodeIndexerExpression prop,bool bArray,CodeStatementCollection statColl,string strType,CodeVariableReferenceExpression varToAssign,bool bIsValueProprequired)
         {
 
-            if(bArray == false)
+            if (bArray == false)
             {
 
                 CodeConditionStatement cis1 = new CodeConditionStatement();
@@ -5606,7 +5606,7 @@ namespace System.Management
 
                 // if the type is string then check for null is to be done
                 // otherwise, the DateTime Conversion function will do for DateTime types
-                if(string.Equals(strType,PublicNamesUsed["PathClass"].ToString(),StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(strType,PublicNamesUsed["PathClass"].ToString(),StringComparison.OrdinalIgnoreCase))
                 {
                     CodeMethodReferenceExpression cmre = new CodeMethodReferenceExpression();
                     cmre.MethodName = "ToString";
@@ -5615,7 +5615,7 @@ namespace System.Management
                     cmie = new CodeMethodInvokeExpression();
                     cmie.Method = cmre;
 
-                    if(varToAssign == null)
+                    if (varToAssign == null)
                     {
                         cis1.TrueStatements.Add (new CodeMethodReturnStatement(CreateObjectForProperty(strType,cmie)));
                         statColl.Add(cis1);
@@ -5634,7 +5634,7 @@ namespace System.Management
 
                     statColl.Add(cis1);
                     CodeExpression ce = null;
-                    if(bIsValueProprequired)
+                    if (bIsValueProprequired)
                     {
                         ce = new CodeCastExpression(new CodeTypeReference("System.String"),new CodePropertyReferenceExpression(prop,"Value"));
                     }
@@ -5643,7 +5643,7 @@ namespace System.Management
                         ce = new CodeCastExpression(new CodeTypeReference("System.String"),prop);
                     }
 
-                    if(varToAssign == null)
+                    if (varToAssign == null)
                     {
                         cis1.TrueStatements.Add(new CodeMethodReturnStatement(CreateObjectForProperty(strType,ce)));
                         cis1.FalseStatements.Add(new CodeMethodReturnStatement(CreateObjectForProperty(strType,null)));
@@ -5671,7 +5671,7 @@ namespace System.Management
 
                 CodePropertyReferenceExpression LenProp = null;
 
-                if(bIsValueProprequired == true)
+                if (bIsValueProprequired == true)
                 {
                     LenProp = new CodePropertyReferenceExpression(
                         new CodeCastExpression(
@@ -5740,7 +5740,7 @@ namespace System.Management
 
                 CodeMethodInvokeExpression cmie1 = new CodeMethodInvokeExpression();
                 cmie1.Method.MethodName = "GetValue";
-                if(bIsValueProprequired == true)
+                if (bIsValueProprequired == true)
                 {
                     cmie1.Method.TargetObject = new CodeCastExpression(new CodeTypeReference("System.Array"),new CodePropertyReferenceExpression(prop,"Value"));
                 }
@@ -5758,7 +5758,7 @@ namespace System.Management
                     new CodeVariableReferenceExpression(strnCtr)),CreateObjectForProperty(strType,cmie2)));
 
                 cis1.TrueStatements.Add(cfls);
-                if(varToAssign == null)
+                if (varToAssign == null)
                 {
                     cis1.TrueStatements.Add(new CodeMethodReturnStatement(new CodeVariableReferenceExpression(strArray)));
                     statColl.Add (cis1);
@@ -5781,12 +5781,12 @@ namespace System.Management
         /// </summary>
         private void AddPropertySet(CodeIndexerExpression prop,bool bArray,CodeStatementCollection statColl,string strType,CodeVariableReferenceExpression varValue)
         {
-            if(varValue == null)
+            if (varValue == null)
             {
                 varValue = new CodeVariableReferenceExpression("value");
             }
 
-            if(bArray == false)
+            if (bArray == false)
             {
                 statColl.Add(new CodeAssignStatement(prop,
                     ConvertPropertyToString(strType, varValue)));
@@ -5882,10 +5882,10 @@ namespace System.Management
         /// </summary>
         private CodeExpression CreateObjectForProperty(string strType, CodeExpression param)
         {
-            switch(strType)
+            switch (strType)
             {
                 case "System.DateTime" :
-                    if(param == null)
+                    if (param == null)
                     {
                         return new CodeFieldReferenceExpression(new CodeTypeReferenceExpression("System.DateTime"),"MinValue");
                     }
@@ -5898,7 +5898,7 @@ namespace System.Management
                     }
 
                 case "System.TimeSpan" :
-                    if(param == null)
+                    if (param == null)
                     {
                         coce = new CodeObjectCreateExpression();
                         coce.CreateType = new CodeTypeReference("System.TimeSpan");
@@ -5934,7 +5934,7 @@ namespace System.Management
         /// </summary>
         private CodeExpression ConvertPropertyToString(string strType,CodeExpression beginingExpression)
         {
-            switch(strType)
+            switch (strType)
             {
                 case "System.DateTime" :
 
@@ -6123,7 +6123,7 @@ namespace System.Management
         {
             bool isTimeInterval = false;
             codeType = null;
-            if(prop.IsArray)
+            if (prop.IsArray)
             {
                 codeType = new CodeTypeReference("System.DateTime",1);
             }
@@ -6134,10 +6134,10 @@ namespace System.Management
 
             try
             {
-                if(string.Equals(prop.Qualifiers["SubType"].Value.ToString() ,"interval",StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(prop.Qualifiers["SubType"].Value.ToString() ,"interval",StringComparison.OrdinalIgnoreCase))
                 {
                     isTimeInterval = true;
-                    if(prop.IsArray)
+                    if (prop.IsArray)
                     {
                         codeType = new CodeTypeReference("System.TimeSpan",1);
                     }
@@ -6148,14 +6148,14 @@ namespace System.Management
                 }
 
             }
-            catch(ManagementException)
+            catch (ManagementException)
             {
                 // Qualifier may not be present then ignore it
             }
 
-            if(isTimeInterval)
+            if (isTimeInterval)
             {
-                if(bTimeSpanConversionFunctionsAdded == false)
+                if (bTimeSpanConversionFunctionsAdded == false)
                 {
                     cc.Comments.Add(new CodeCommentStatement(SR.CommentTimeSpanConvertionFunction));
                     bTimeSpanConversionFunctionsAdded = true;
@@ -6165,7 +6165,7 @@ namespace System.Management
             }
             else
             {
-                if(bDateConversionFunctionsAdded == false)
+                if (bDateConversionFunctionsAdded == false)
                 {
                     cc.Comments.Add(new CodeCommentStatement(SR.CommentDateConversionFunction));
                     bDateConversionFunctionsAdded = true;
@@ -6476,7 +6476,7 @@ namespace System.Management
             tryblock.TryStatements.Add(cis);
 
             /*
-                if( year < 0 || month < 0 || day < 0 || hour < 0 || minute < 0 || second < 0 || ticks < 0)
+                if ( year < 0 || month < 0 || day < 0 || hour < 0 || minute < 0 || second < 0 || ticks < 0)
                 {
                     throw new System.ArgumentOutOfRangeException();
                 }
@@ -6984,7 +6984,7 @@ namespace System.Management
             cmmts.Statements.Add(new CodeVariableDeclarationStatement(new CodeTypeReference("System.String"),strmicrosec,cmie));
 
             /*
-                if(strMicrosec.Length > 6)
+                if (strMicrosec.Length > 6)
                 {
                     strMicrosec = strMicrosec.Substring(0,6);
                 }
@@ -7089,7 +7089,7 @@ namespace System.Management
                 )
                 );
             /*
-                if(Math.Abs(OffsetMins) > MAXSIZE_UTC_DMTF)
+                if (Math.Abs(OffsetMins) > MAXSIZE_UTC_DMTF)
                 {
                     date = date.ToUniversalTime();
                     UtcString = "+000";
@@ -7280,7 +7280,7 @@ namespace System.Management
             cmmdt.Statements.Add(new CodeVariableDeclarationStatement(new CodeTypeReference("System.String"),strmicrosec,cmie1));
 
             /*
-                if(strMicrosec.Length > 6)
+                if (strMicrosec.Length > 6)
                 {
                     strMicrosec = strMicrosec.Substring(0,6);
                 }
@@ -7442,7 +7442,7 @@ namespace System.Management
             cmmts.Statements.Add(cis);
 
             /*
-                if(dmtfTimespan.Substring(21,4) != ":000")
+                if (dmtfTimespan.Substring(21,4) != ":000")
                 {
                     throw new System.ArgumentOutOfRangeException();
                 }
@@ -7533,7 +7533,7 @@ namespace System.Management
                 );
 
             /*
-                if( days < 0 || hours < 0 || minutes < 0 || seconds < 0 || ticks < 0)
+                if ( days < 0 || hours < 0 || minutes < 0 || seconds < 0 || ticks < 0)
                 {
                     throw new System.ArgumentOutOfRangeException();
                 }

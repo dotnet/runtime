@@ -142,7 +142,7 @@ namespace HttpStress
                         .Select(h => (h.Key, new StringValues(h.Value.SelectMany(v => v.Split(',')).Select(x => x.Trim()).ToArray())))
                         .ToArray();
 
-                foreach((string name, StringValues values) in headersToEcho)
+                foreach ((string name, StringValues values) in headersToEcho)
                 {
                     context.Response.Headers.Add(name, values);
                 }

@@ -4882,11 +4882,11 @@ namespace System.Threading.Tasks
         // A ManualResetEventSlim that will get Set after Invoke is called count times.
         // This allows us to replace this logic:
         //      var mres = new ManualResetEventSlim(tasks.Count);
-        //      Action<Task> completionAction = delegate { if(Interlocked.Decrement(ref count) == 0) mres.Set(); };
-        //      foreach(var task in tasks) task.AddCompletionAction(completionAction);
+        //      Action<Task> completionAction = delegate { if (Interlocked.Decrement(ref count) == 0) mres.Set(); };
+        //      foreach (var task in tasks) task.AddCompletionAction(completionAction);
         // with this logic:
         //      var mres = new SetOnCountdownMres(tasks.Count);
-        //      foreach(var task in tasks) task.AddCompletionAction(mres);
+        //      foreach (var task in tasks) task.AddCompletionAction(mres);
         // which saves a couple of allocations.
         //
         // Used in WaitAllBlockingCore (above).

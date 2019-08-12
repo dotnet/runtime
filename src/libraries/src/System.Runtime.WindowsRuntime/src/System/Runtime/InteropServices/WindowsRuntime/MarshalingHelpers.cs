@@ -190,7 +190,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (managedArgs == null)
                 return IntPtr.Zero;
 
-            if(s_pPCEventArgsFactory == null)
+            if (s_pPCEventArgsFactory == null)
             {
                 object factory = null;
                 Guid guid = typeof(IPropertyChangedEventArgsFactory).GUID;

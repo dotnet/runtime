@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Drawing
 {
-    partial class Region
+    public partial class Region
     {
         public void ReleaseHrgn(IntPtr regionHandle)
         {

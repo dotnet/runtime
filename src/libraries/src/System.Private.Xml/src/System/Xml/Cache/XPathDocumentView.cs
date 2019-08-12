@@ -298,7 +298,7 @@ namespace System.Xml.XPath.DataBinding
         // ITypedList Implementation
 
         public string GetListName(PropertyDescriptor[] listAccessors) {
-            if( listAccessors == null ) {
+            if ( listAccessors == null ) {
                 return this.rowShape.Name;
             }
             else {
@@ -308,7 +308,7 @@ namespace System.Xml.XPath.DataBinding
 
         public PropertyDescriptorCollection GetItemProperties(PropertyDescriptor[] listAccessors) {
             Shape shape = null;
-            if( listAccessors == null ) {
+            if ( listAccessors == null ) {
                 shape = this.rowShape;
             }
             else {

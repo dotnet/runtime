@@ -131,7 +131,7 @@ namespace System.IO.Ports.Tests
 
             newReadBufferSize &= 0xFFFFFFFE; //Make sure the new buffer size is even by clearing the lowest order bit
 
-            //        if(!VerifyReadBufferSize((int)newReadBufferSize)){
+            //        if (!VerifyReadBufferSize((int)newReadBufferSize)){
             VerifyReadBufferSize(11620);
         }
 

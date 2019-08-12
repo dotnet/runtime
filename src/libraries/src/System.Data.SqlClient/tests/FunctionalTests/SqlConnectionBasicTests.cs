@@ -96,7 +96,7 @@ namespace System.Data.SqlClient.Tests
         {
             string connectionString = $"Workstation Id={workstation}";
             SqlConnection conn = new SqlConnection(connectionString);
-            if(withDispose)
+            if (withDispose)
             {
                 conn.Dispose();
             }

@@ -33,7 +33,7 @@ namespace System.Management
     ///
     ///         // List names and types of input parameters
     ///         ManagementBaseObject inParams = m.InParameters;
-    ///         foreach(PropertyData pdata in inParams.Properties) {
+    ///         foreach (PropertyData pdata in inParams.Properties) {
     ///             Console.WriteLine();
     ///             Console.WriteLine("InParam_Name: " + pdata.Name);
     ///             Console.WriteLine("InParam_Type: " + pdata.Type);
@@ -41,7 +41,7 @@ namespace System.Management
     ///
     ///         // List names and types of output parameters
     ///         ManagementBaseObject outParams = m.OutParameters;
-    ///         foreach(PropertyData pdata in outParams.Properties) {
+    ///         foreach (PropertyData pdata in outParams.Properties) {
     ///             Console.WriteLine();
     ///             Console.WriteLine("OutParam_Name: " + pdata.Name);
     ///             Console.WriteLine("OutParam_Type: " + pdata.Type);

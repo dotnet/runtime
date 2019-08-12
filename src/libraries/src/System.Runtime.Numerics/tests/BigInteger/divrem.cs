@@ -190,7 +190,7 @@ namespace System.Numerics.Tests
                     sc.VerifyOutParameter();
                 }
             }
-            catch(Exception e) when (!(e is DivideByZeroException))
+            catch (Exception e) when (!(e is DivideByZeroException))
             {
                 // Log the original parameters, so we can reproduce any failure given the log
                 throw new Exception($"VerifyDivRemString failed: {opstring} {e.ToString()}", e);

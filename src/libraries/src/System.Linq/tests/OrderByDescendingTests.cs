@@ -145,9 +145,9 @@ namespace System.Linq.Tests
         {
             public int Compare(int x, int y)
             {
-                if(x == y)
+                if (x == y)
                     return 0;
-                if(x < y)
+                if (x < y)
                     return int.MinValue;
                 return int.MaxValue;
             }

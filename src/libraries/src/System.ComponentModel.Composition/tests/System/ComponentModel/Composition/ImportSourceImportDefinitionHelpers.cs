@@ -19,7 +19,7 @@ namespace System.ComponentModel.Composition.Hosting
         public static ImportDefinition RemoveImportSource(this ImportDefinition definition)
         {
             var contractBasedDefinition = definition as ContractBasedImportDefinition;
-            if(contractBasedDefinition == null)
+            if (contractBasedDefinition == null)
             {
                 return definition;
             }
@@ -51,7 +51,7 @@ namespace System.ComponentModel.Composition.Hosting
                 get
                 {
                     var reply = this._metadata;
-                    if(reply == null)
+                    if (reply == null)
                     {
                         reply = new Dictionary<string, object> (this._sourceDefinition.Metadata);
                         reply.Remove(CompositionConstants.ImportSourceMetadataName);

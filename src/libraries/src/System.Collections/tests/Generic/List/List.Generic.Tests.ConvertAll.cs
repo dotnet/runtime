@@ -20,7 +20,7 @@ namespace System.Collections.Tests
             Assert.Equal(before.Count, list.Count);
             Assert.Equal(before.Count, after.Count);
 
-            for(int i=0; i<list.Count; i++) {
+            for (int i=0; i<list.Count; i++) {
                 Assert.Equal(before[i], list[i]);
                 Assert.Equal(before[i] * 10, after[i]);
             }

@@ -120,7 +120,7 @@ namespace System.Resources.Extensions
             ReadOnlySpan<char> typeName = ReadTypeName(typeSpan);
 
             int hashCode =  0;
-            for(int i = 0; i < typeName.Length; i++)
+            for (int i = 0; i < typeName.Length; i++)
             {
                 hashCode = HashHelpers.Combine(hashCode, typeName[i].GetHashCode());
             }

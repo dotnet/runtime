@@ -4,7 +4,7 @@
 
 namespace System.Reflection.Context.Virtual
 {
-    partial class VirtualPropertyBase
+    internal abstract partial class VirtualPropertyBase
     {
         protected abstract class PropertyGetterBase : FuncPropertyAccessorBase
         {

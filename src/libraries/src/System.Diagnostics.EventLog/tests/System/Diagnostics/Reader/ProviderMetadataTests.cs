@@ -114,7 +114,7 @@ namespace System.Diagnostics.Tests
                             foreach (var eventMetadata in providerMetadata.Events)
                             {
                                 EventLogLink logLink = eventMetadata.LogLink;
-                                if(logLink != null)
+                                if (logLink != null)
                                 {
                                     if (logLink.DisplayName != null && logLink.DisplayName.Equals("System"))
                                     {
@@ -123,7 +123,7 @@ namespace System.Diagnostics.Tests
                                     }
                                 }
                                 EventLevel eventLevel = eventMetadata.Level;
-                                if(eventLevel != null)
+                                if (eventLevel != null)
                                 {
                                     if (eventLevel.Name != null)
                                     {
@@ -136,7 +136,7 @@ namespace System.Diagnostics.Tests
                                     }
                                 }
                                 EventOpcode opcode = eventMetadata.Opcode;
-                                if(opcode != null)
+                                if (opcode != null)
                                 {
                                     if (opcode.Name != null && opcode.DisplayName != null && opcode.DisplayName.ToLower().Equals("apprun"))
                                     {
@@ -144,7 +144,7 @@ namespace System.Diagnostics.Tests
                                     }
                                 }
                                 EventTask task = eventMetadata.Task;
-                                if(task != null)
+                                if (task != null)
                                 {
                                     Assert.NotEqual(task, eventMetadata.Task);
                                     Assert.Equal(task.DisplayName, eventMetadata.Task.DisplayName);
@@ -152,9 +152,9 @@ namespace System.Diagnostics.Tests
                                     Assert.Equal(task.Value, eventMetadata.Task.Value);
                                 }
                                 IEnumerable<EventKeyword> keywords = eventMetadata.Keywords;
-                                if(eventMetadata.Keywords != null)
+                                if (eventMetadata.Keywords != null)
                                 {
-                                    foreach(var keyword in eventMetadata.Keywords)
+                                    foreach (var keyword in eventMetadata.Keywords)
                                     {
                                         if (keyword.Name != null && keyword.Name.StartsWith(Prefix))
                                         {

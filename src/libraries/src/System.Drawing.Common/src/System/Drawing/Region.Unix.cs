@@ -9,7 +9,7 @@ using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing
 {
-    partial class Region
+    public partial class Region
     {
         public void ReleaseHrgn(IntPtr regionHandle)
         {

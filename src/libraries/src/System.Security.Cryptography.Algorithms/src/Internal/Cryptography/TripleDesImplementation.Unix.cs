@@ -7,7 +7,7 @@ using System.Security.Cryptography;
 
 namespace Internal.Cryptography
 {
-    partial class TripleDesImplementation
+    internal partial class TripleDesImplementation
     {
         private static ICryptoTransform CreateTransformCore(
             CipherMode cipherMode,

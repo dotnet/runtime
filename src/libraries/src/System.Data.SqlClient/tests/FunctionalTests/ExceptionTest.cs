@@ -176,7 +176,7 @@ namespace System.Data.SqlClient.Tests
             TException ex = Assert.Throws<TException>(connectAction);
 
             // Some exception messages are different between Framework and Core
-            if(!PlatformDetection.IsFullFramework)
+            if (!PlatformDetection.IsFullFramework)
             {
                 Assert.Contains(expectedExceptionMessage, ex.Message);
             }

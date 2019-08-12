@@ -28,7 +28,7 @@ namespace System.ComponentModel.Composition.Hosting
             _notifyCatalog = composablePartCatalog as INotifyComposablePartCatalogChanged;
             try
             {
-                if(_notifyCatalog != null)
+                if (_notifyCatalog != null)
                 {
                     _notifyCatalog.Changing += OnCatalogChanging;
                 }
@@ -40,7 +40,7 @@ namespace System.ComponentModel.Composition.Hosting
             }
             catch
             {
-                if(_notifyCatalog != null)
+                if (_notifyCatalog != null)
                 {
                     _notifyCatalog.Changing -= OnCatalogChanging;
                 }
@@ -51,7 +51,7 @@ namespace System.ComponentModel.Composition.Hosting
         public void SatisfyImportsOnce(ComposablePart part)
         {
             Requires.NotNull(part, nameof(part));
-            if(_compositionContainer == null)
+            if (_compositionContainer == null)
             {
                 throw new Exception(SR.Diagnostic_InternalExceptionMessage);
             }

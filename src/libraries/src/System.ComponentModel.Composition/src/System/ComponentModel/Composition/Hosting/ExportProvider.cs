@@ -100,7 +100,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             IEnumerable<Export> exports;
             ExportCardinalityCheckResult result = TryGetExportsCore(definition, atomicComposition, out exports);
-            switch(result)
+            switch (result)
             {
                 case ExportCardinalityCheckResult.Match:
                     Debug.Assert(exports != null);

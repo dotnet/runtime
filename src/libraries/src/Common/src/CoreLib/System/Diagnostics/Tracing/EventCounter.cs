@@ -116,7 +116,7 @@ namespace System.Diagnostics.Tracing
 
         internal void ResetStatistics()
         {
-            lock(this)
+            lock (this)
             {
                 _count = 0;
                 _sum = 0;

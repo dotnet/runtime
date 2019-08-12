@@ -40,7 +40,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             /*Console.WriteLine("Running method: {0}", arg0);
             var dv = new InstructionArray.DebugView(_interpreter.Instructions);
-            foreach(var view in dv.A0) {
+            foreach (var view in dv.A0) {
                 Console.WriteLine("{0} {1} {2}", view.GetValue(), view.GetName(), view.GetDisplayType());
             }*/
 

@@ -205,7 +205,7 @@ namespace System.IO
                     case Interop.Error.ENOENT:
                         // In order to match Windows behavior
                         string directoryName = Path.GetDirectoryName(fullPath);
-                        if(directoryName.Length > 0 && !Directory.Exists(directoryName))
+                        if (directoryName.Length > 0 && !Directory.Exists(directoryName))
                         {
                             throw Interop.GetExceptionForIoErrno(errorInfo, fullPath, true);
                         }

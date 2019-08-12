@@ -11,7 +11,7 @@ using System.Diagnostics;
 
 namespace System.Net.Sockets
 {
-    partial class SafeSocketHandle
+    public partial class SafeSocketHandle
     {
         private int _receiveTimeout = -1;
         private int _sendTimeout = -1;

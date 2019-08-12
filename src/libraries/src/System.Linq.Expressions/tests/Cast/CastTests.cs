@@ -1426,7 +1426,7 @@ namespace System.Linq.Expressions.Tests
                 {
                     expected = (E)value;
                 }
-                catch(InvalidCastException)
+                catch (InvalidCastException)
                 {
                     Assert.Throws<InvalidCastException>(() => f());
                     return;
@@ -2172,7 +2172,7 @@ namespace System.Linq.Expressions.Tests
                 {
                     expected = (int)value;
                 }
-                catch(InvalidCastException)
+                catch (InvalidCastException)
                 {
                     Assert.Throws<InvalidCastException>(() => f());
                     return;
@@ -2351,7 +2351,7 @@ namespace System.Linq.Expressions.Tests
                 {
                     expected = (Ts)value;
                 }
-                catch(InvalidCastException)
+                catch (InvalidCastException)
                 {
                     Assert.Throws<InvalidCastException>(() => f());
                     return;

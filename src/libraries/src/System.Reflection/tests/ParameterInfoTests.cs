@@ -226,7 +226,7 @@ namespace System.Reflection.Tests
             ParameterInfo p = GetParameterInfo(typeof(ParameterInfoMetadata), "MethodWithCustomAttribute", 0);
             foreach (CustomAttributeData cad in p.GetCustomAttributesData())
             {
-                if(cad.AttributeType == typeof(MyAttribute))
+                if (cad.AttributeType == typeof(MyAttribute))
                 {
                     ConstructorInfo c = cad.Constructor;
                     Assert.False(c.IsStatic);

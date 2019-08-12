@@ -213,7 +213,7 @@ namespace System.ComponentModel.Composition.Hosting
             }
 
 //Insert Composition Service
-            if(compositionOptions.HasFlag(CompositionOptions.ExportCompositionService))
+            if (compositionOptions.HasFlag(CompositionOptions.ExportCompositionService))
             {
                 this.ComposeExportedValue<ICompositionService>(new CompositionServiceShim(this));
             }
@@ -315,7 +315,7 @@ namespace System.ComponentModel.Composition.Hosting
                     CatalogExportProvider catalogExportProvider = null;
                     ImportEngine importEngine = null;
 
-                    lock(_lock)
+                    lock (_lock)
                     {
                         if (!_isDisposed)
                         {
@@ -548,7 +548,7 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 ImportEngine importEngine = new ImportEngine(this, _compositionOptions);
 
-                lock(_lock)
+                lock (_lock)
                 {
                     if (_importEngine == null)
                     {
@@ -557,7 +557,7 @@ namespace System.ComponentModel.Composition.Hosting
                         importEngine = null;
                     }
                 }
-                if(importEngine != null)
+                if (importEngine != null)
                 {
                     importEngine.Dispose();
                 }
@@ -601,12 +601,12 @@ namespace System.ComponentModel.Composition.Hosting
             IEnumerable<Export> exports = null;
 
             object source;
-            if(!definition.Metadata.TryGetValue(CompositionConstants.ImportSourceMetadataName, out source))
+            if (!definition.Metadata.TryGetValue(CompositionConstants.ImportSourceMetadataName, out source))
             {
                 source = ImportSource.Any;
             }
 
-            switch((ImportSource)source)
+            switch ((ImportSource)source)
             {
                 case ImportSource.Any:
                     if (_rootProvider == null)
@@ -623,7 +623,7 @@ namespace System.ComponentModel.Composition.Hosting
                     _localExportProvider.TryGetExports(definition.RemoveImportSource(), atomicComposition, out exports);
                     break;
                 case ImportSource.NonLocal:
-                    if(_ancestorExportProvider != null)
+                    if (_ancestorExportProvider != null)
                     {
                         _ancestorExportProvider.TryGetExports(definition.RemoveImportSource(), atomicComposition, out exports);
                     }

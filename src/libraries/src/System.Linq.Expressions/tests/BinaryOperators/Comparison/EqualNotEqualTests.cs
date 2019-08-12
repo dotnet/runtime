@@ -260,8 +260,8 @@ namespace System.Linq.Expressions.Tests
             var y = Expression.Parameter(typeof(DBNull));
             var lambda = Expression.Lambda<Func<DBNull, DBNull, bool>>(Expression.Equal(x, y), x, y);
             var func = lambda.Compile(useInterpreter);
-            foreach(var xVal in new[] { DBNull.Value, null})
-                foreach(var yVal in new[] { DBNull.Value, null})
+            foreach (var xVal in new[] { DBNull.Value, null})
+                foreach (var yVal in new[] { DBNull.Value, null})
                     Assert.Equal(xVal == yVal, func(xVal, yVal));
         }
 
@@ -272,8 +272,8 @@ namespace System.Linq.Expressions.Tests
             var y = Expression.Parameter(typeof(DBNull));
             var lambda = Expression.Lambda<Func<DBNull, DBNull, bool>>(Expression.NotEqual(x, y), x, y);
             var func = lambda.Compile(useInterpreter);
-            foreach(var xVal in new[] { DBNull.Value, null})
-                foreach(var yVal in new[] { DBNull.Value, null})
+            foreach (var xVal in new[] { DBNull.Value, null})
+                foreach (var yVal in new[] { DBNull.Value, null})
                     Assert.Equal(xVal != yVal, func(xVal, yVal));
         }
 

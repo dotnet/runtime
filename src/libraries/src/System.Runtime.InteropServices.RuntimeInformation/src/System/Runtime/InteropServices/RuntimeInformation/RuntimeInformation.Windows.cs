@@ -82,7 +82,7 @@ namespace System.Runtime.InteropServices
                         Interop.Kernel32.SYSTEM_INFO sysInfo;
                         Interop.Kernel32.GetSystemInfo(out sysInfo);
 
-                        switch((Interop.Kernel32.ProcessorArchitecture)sysInfo.wProcessorArchitecture)
+                        switch ((Interop.Kernel32.ProcessorArchitecture)sysInfo.wProcessorArchitecture)
                         {
                             case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_ARM64:
                                 s_processArch = Architecture.Arm64;

@@ -10,7 +10,7 @@ namespace System.Data.Odbc.Tests
     {
         public CheckConnStrSetupFactAttribute()
         {
-            if(!DataTestUtility.AreConnStringsSetup())
+            if (!DataTestUtility.AreConnStringsSetup())
             {
                 Skip = "Connection Strings Not Setup";
             }

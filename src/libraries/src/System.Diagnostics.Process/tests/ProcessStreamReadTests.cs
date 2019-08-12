@@ -224,7 +224,7 @@ namespace System.Diagnostics.Tests
                                 }
                             }
                         }
-                        catch(OperationCanceledException)
+                        catch (OperationCanceledException)
                         {
                             Assert.False(cts.IsCancellationRequested, "Values 1,2,3 not arrived");
                         }
@@ -256,7 +256,7 @@ namespace System.Diagnostics.Tests
                                 }
                             }
                         }
-                        catch(OperationCanceledException)
+                        catch (OperationCanceledException)
                         {
                             Assert.False(cts.IsCancellationRequested, "Values 7,8,9 not arrived");
                         }

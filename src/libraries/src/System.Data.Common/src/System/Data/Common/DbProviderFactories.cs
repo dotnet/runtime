@@ -87,7 +87,7 @@ namespace System.Data.Common
             DataTable toReturn = new DataTable(ProviderGroupColumnName) { Locale = CultureInfo.InvariantCulture };
             toReturn.Columns.AddRange(new[] { nameColumn, descriptionColumn, invariantNameColumn, assemblyQualifiedNameColumn });
             toReturn.PrimaryKey = new[] { invariantNameColumn };
-            foreach(var kvp in _registeredFactories)
+            foreach (var kvp in _registeredFactories)
             {
                 DataRow newRow = toReturn.NewRow();
                 newRow[InvariantNameColumnName] = kvp.Key;

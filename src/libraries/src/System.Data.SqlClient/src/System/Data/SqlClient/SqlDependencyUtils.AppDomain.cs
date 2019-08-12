@@ -7,7 +7,7 @@ namespace System.Data.SqlClient
     // these members were moved to a separate file in order
     // to be able to skip them on platforms where AppDomain members are not supported
     // for example, some mobile profiles on mono
-    partial class SqlDependencyPerAppDomainDispatcher
+    internal partial class SqlDependencyPerAppDomainDispatcher
     {
         private void SubscribeToAppDomainUnload()
         {

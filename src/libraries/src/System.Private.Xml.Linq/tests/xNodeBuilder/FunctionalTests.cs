@@ -591,7 +591,7 @@ namespace CoreXml.Test.XLinq
                 public override void AddChildren()
                 {
                     this.AddChild(new TestVariation(lookupPrefix_1) { Attribute = new VariationAttribute("LookupPrefix with null") { Id = 1, Priority = 2 } });
-                    this.AddChild(new TestVariation(lookupPrefix_2) { Attribute = new VariationAttribute("LookupPrefix with String.Empty should if(!String.Empty") { Id = 2, Priority = 1 } });
+                    this.AddChild(new TestVariation(lookupPrefix_2) { Attribute = new VariationAttribute("LookupPrefix with String.Empty should if (!String.Empty") { Id = 2, Priority = 1 } });
                     this.AddChild(new TestVariation(lookupPrefix_3) { Attribute = new VariationAttribute("LookupPrefix with generated namespace used for attributes") { Id = 3, Priority = 1 } });
                     this.AddChild(new TestVariation(lookupPrefix_4) { Attribute = new VariationAttribute("LookupPrefix for namespace used with element") { Id = 4, Priority = 0 } });
                     this.AddChild(new TestVariation(lookupPrefix_5) { Attribute = new VariationAttribute("LookupPrefix for namespace used with attribute") { Id = 5, Priority = 0 } });

@@ -56,7 +56,7 @@ namespace System.ComponentModel.Composition
 
         private static Expression CreateContractConstraintBody(string contractName, ParameterExpression parameter)
         {
-            if(parameter == null)
+            if (parameter == null)
             {
                 throw new ArgumentNullException(nameof(parameter));
             }
@@ -94,12 +94,12 @@ namespace System.ComponentModel.Composition
 
         private static Expression CreateCreationPolicyContraint(CreationPolicy policy, ParameterExpression parameter)
         {
-            if(policy == CreationPolicy.Any)
+            if (policy == CreationPolicy.Any)
             {
                 throw new Exception(SR.Diagnostic_InternalExceptionMessage);
             }
 
-            if(parameter == null)
+            if (parameter == null)
             {
                 throw new ArgumentNullException(nameof(parameter));
             }
@@ -117,12 +117,12 @@ namespace System.ComponentModel.Composition
 
         private static Expression CreateTypeIdentityContraint(string requiredTypeIdentity, ParameterExpression parameter)
         {
-            if(requiredTypeIdentity == null)
+            if (requiredTypeIdentity == null)
             {
                 throw new ArgumentNullException(requiredTypeIdentity);
             }
 
-            if(parameter == null)
+            if (parameter == null)
             {
                 throw new ArgumentException(nameof(parameter));
             }
@@ -156,7 +156,7 @@ namespace System.ComponentModel.Composition
 
         private static Expression CreateMetadataOfTypeExpression(ParameterExpression parameter, string constantKey, Type constantType)
         {
-            if(parameter == null)
+            if (parameter == null)
             {
                 throw new ArgumentException(nameof(parameter));
             }

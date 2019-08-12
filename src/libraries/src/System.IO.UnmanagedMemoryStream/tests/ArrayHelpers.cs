@@ -62,7 +62,7 @@ namespace System.IO.Tests
                 }
                 for (int i = 0; i < x.Length; i++)
                 {
-                    if(!EqualityComparer<T>.Default.Equals(x[i], y[i]))
+                    if (!EqualityComparer<T>.Default.Equals(x[i], y[i]))
                     {
                         return false;
                     }

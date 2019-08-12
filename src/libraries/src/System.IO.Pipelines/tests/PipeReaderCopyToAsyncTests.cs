@@ -127,7 +127,7 @@ namespace System.IO.Pipelines.Tests
                     await pipe.Reader.CopyToAsync(stream);
                     Assert.True(false, $"CopyToAsync should have failed, wrote {stream.Writes} times.");
                 }
-                catch(InvalidOperationException)
+                catch (InvalidOperationException)
                 {
 
                 }

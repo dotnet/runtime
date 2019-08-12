@@ -369,7 +369,7 @@ internal static partial class Interop
                 info.WorkingSet = kinfo->ki_rssize;
                 info.SessionId = kinfo->ki_sid;
 
-                for(int i = 0; i < process.Length; i++)
+                for (int i = 0; i < process.Length; i++)
                 {
                     var ti = new ThreadInfo()
                     {
@@ -419,7 +419,7 @@ internal static partial class Interop
                     else
                     {
                         var list = new ReadOnlySpan<kinfo_proc>(info, count);
-                        for(int i = 0; i < list.Length; i++)
+                        for (int i = 0; i < list.Length; i++)
                         {
                             if (list[i].ki_tid == tid)
                             {

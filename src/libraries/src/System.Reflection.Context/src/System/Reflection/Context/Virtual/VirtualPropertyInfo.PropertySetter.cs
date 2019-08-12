@@ -9,7 +9,7 @@ using System.Reflection.Context.Custom;
 
 namespace System.Reflection.Context.Virtual
 {
-    partial class VirtualPropertyInfo
+    internal partial class VirtualPropertyInfo
     {
         private class PropertySetter : PropertySetterBase
         {

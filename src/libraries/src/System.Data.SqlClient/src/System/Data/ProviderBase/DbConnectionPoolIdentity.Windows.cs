@@ -7,7 +7,7 @@ using System.Security.Principal;
 
 namespace System.Data.ProviderBase
 {
-    partial class DbConnectionPoolIdentity
+    internal partial class DbConnectionPoolIdentity
     {
         private static DbConnectionPoolIdentity s_lastIdentity = null;
 
