@@ -3964,7 +3964,7 @@ void Compiler::lvaMarkLocalVars(BasicBlock* block, bool isRecompute)
     for (GenTreeStmt* stmt = block->FirstNonPhiDef(); stmt != nullptr; stmt = stmt->getNextStmt())
     {
         MarkLocalVarsVisitor visitor(this, block, stmt, isRecompute);
-        DISPTREE(stmt);
+        DISPTREE(stmt->gtStmtExpr);
         visitor.WalkTree(&stmt->gtStmtExpr, nullptr);
     }
 }

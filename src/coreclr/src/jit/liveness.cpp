@@ -2273,7 +2273,7 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
 
         if (asgNode->gtNext == nullptr)
         {
-            // This is a "NORMAL" statement with the assignment node hanging from the GT_STMT node.
+            // This is a "NORMAL" statement with the assignment node hanging from the statement.
 
             noway_assert(compCurStmt->gtStmtExpr == asgNode);
             JITDUMP("top level assign\n");
@@ -2291,7 +2291,6 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
 #endif // DEBUG
 
                 // Replace the assignment statement with the list of side effects
-                noway_assert(sideEffList->gtOper != GT_STMT);
 
                 *pTree = compCurStmt->gtStmtExpr = sideEffList;
 #ifdef DEBUG
@@ -2315,7 +2314,7 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
             {
                 JITDUMP("removing stmt with no side effects\n");
 
-                // No side effects - remove the whole statement from the block->bbTreeList
+                // No side effects - remove the whole statement from the block->bbStmtList.
                 fgRemoveStmt(compCurBB, compCurStmt);
 
                 // Since we removed it do not process the rest (i.e. RHS) of the statement

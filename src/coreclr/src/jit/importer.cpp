@@ -430,7 +430,7 @@ inline void Compiler::impEndTreeList(BasicBlock* block, GenTreeStmt* firstStmt, 
 
     /* Store the tree list in the basic block */
 
-    block->bbTreeList = firstStmt;
+    block->bbStmtList = firstStmt;
 
     /* The block should not already be marked as imported */
     assert((block->bbFlags & BBF_IMPORTED) == 0);
@@ -535,7 +535,7 @@ inline void Compiler::impAppendStmtCheck(GenTreeStmt* stmt, unsigned chkLevel)
 
 /*****************************************************************************
  *
- *  Append the given GT_STMT node to the current block's tree list.
+ *  Append the given statement to the current block's tree list.
  *  [0..chkLevel) is the portion of the stack which we will check for
  *    interference with stmt and spill if needed.
  */
@@ -638,7 +638,7 @@ inline void Compiler::impAppendStmt(GenTreeStmt* stmt, unsigned chkLevel)
     if (verbose)
     {
         printf("\n\n");
-        gtDispTree(stmt);
+        gtDispTree(stmt->gtStmtExpr);
     }
 #endif
 }
@@ -688,7 +688,7 @@ GenTreeStmt* Compiler::impExtractLastStmt()
 }
 
 //-------------------------------------------------------------------------
-// impInsertStmtBefore: Insert the given GT_STMT "stmt" before GT_STMT "stmtBefore".
+// impInsertStmtBefore: Insert the given "stmt" before "stmtBefore".
 //
 // Arguments:
 //    stmt       - a statement to insert;
@@ -736,7 +736,7 @@ GenTreeStmt* Compiler::impAppendTree(GenTree* tree, unsigned chkLevel, IL_OFFSET
 
 /*****************************************************************************
  *
- *  Insert the given exression tree before GT_STMT "stmtBefore"
+ *  Insert the given expression tree before "stmtBefore"
  */
 
 void Compiler::impInsertTreeBefore(GenTree* tree, IL_OFFSETX offset, GenTreeStmt* stmtBefore)
@@ -2609,24 +2609,29 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
         /* Account for the new link we are about to create */
         hndBlk->bbRefs++;
 
-        /* Spill into a temp */
+        // Spill into a temp.
         unsigned tempNum         = lvaGrabTemp(false DEBUGARG("SpillCatchArg"));
         lvaTable[tempNum].lvType = TYP_REF;
-        arg                      = gtNewTempAssign(tempNum, arg);
+        GenTree* argAsg          = gtNewTempAssign(tempNum, arg);
+        arg                      = gtNewLclvNode(tempNum, TYP_REF);
 
         hndBlk->bbStkTempsIn = tempNum;
 
-        /* Report the debug info. impImportBlockCode won't treat
-         * the actual handler as exception block and thus won't do it for us. */
+        GenTreeStmt* argStmt;
+
         if (info.compStmtOffsetsImplicit & ICorDebugInfo::CALL_SITE_BOUNDARIES)
         {
+            // Report the debug info. impImportBlockCode won't treat the actual handler as exception block and thus
+            // won't do it for us.
             impCurStmtOffs = newBlk->bbCodeOffs | IL_OFFSETX_STKBIT;
-            arg            = gtNewStmt(arg, impCurStmtOffs);
+            argStmt        = gtNewStmt(argAsg, impCurStmtOffs);
+        }
+        else
+        {
+            argStmt = gtNewStmt(argAsg);
         }
 
-        fgInsertStmtAtEnd(newBlk, arg);
-
-        arg = gtNewLclvNode(tempNum, TYP_REF);
+        fgInsertStmtAtEnd(newBlk, argStmt);
     }
 
     impPushOnStack(arg, typeInfo(TI_REF, clsHnd));

@@ -647,6 +647,8 @@ struct BasicBlock : private LIR::Range
     // trees *except* PHI definitions.
     bool isEmpty();
 
+    bool isValid();
+
     // Returns "true" iff "this" is the first block of a BBJ_CALLFINALLY/BBJ_ALWAYS pair --
     // a block corresponding to an exit from the try of a try/finally.  In the flow graph,
     // this becomes a block that calls the finally, and a second, immediately
@@ -742,6 +744,8 @@ struct BasicBlock : private LIR::Range
     }
 
     __declspec(property(get = getBBTreeList, put = setBBTreeList)) GenTree* bbTreeList; // the body of the block.
+
+    GenTreeStmt* bbStmtList;
 
     GenTree* getBBTreeList() const
     {
@@ -1078,7 +1082,7 @@ struct BasicBlock : private LIR::Range
     GenTreeStmt* FirstNonPhiDef();
     GenTreeStmt* FirstNonPhiDefOrCatchArgAsg();
 
-    BasicBlock() : bbLiveIn(VarSetOps::UninitVal()), bbLiveOut(VarSetOps::UninitVal())
+    BasicBlock() : bbStmtList(nullptr), bbLiveIn(VarSetOps::UninitVal()), bbLiveOut(VarSetOps::UninitVal())
     {
     }
 
@@ -1173,6 +1177,7 @@ struct BasicBlock : private LIR::Range
 #ifdef DEBUG
     bool Contains(const GenTree* node)
     {
+        assert(IsLIR());
         for (Iterator iter = begin(); iter != end(); ++iter)
         {
             if (*iter == node)

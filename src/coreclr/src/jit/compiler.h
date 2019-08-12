@@ -2825,7 +2825,7 @@ public:
     int gtGetLclVarName(unsigned lclNum, char* buf, unsigned buf_remaining);
     char* gtGetLclVarName(unsigned lclNum);
     void gtDispLclVar(unsigned varNum, bool padForBiggestDisp = true);
-    void gtDispTreeList(GenTree* tree, IndentStack* indentStack = nullptr);
+    void gtDispStmtList(GenTreeStmt* stmts, IndentStack* indentStack = nullptr);
     void gtGetArgMsg(GenTreeCall* call, GenTree* arg, unsigned argNum, int listCount, char* bufp, unsigned bufLength);
     void gtGetLateArgMsg(GenTreeCall* call, GenTree* arg, int argNum, int listCount, char* bufp, unsigned bufLength);
     void gtDispArgList(GenTreeCall* call, IndentStack* indentStack);
@@ -5238,13 +5238,16 @@ public:
 #endif
 
 public:
-    GenTreeStmt* fgInsertStmtAtEnd(BasicBlock* block, GenTree* node);
-
-public: // Used by linear scan register allocation
-    GenTreeStmt* fgInsertStmtNearEnd(BasicBlock* block, GenTree* node);
+    GenTreeStmt* fgInsertStmtAtEnd(BasicBlock* block, GenTreeStmt* stmt);
+    GenTreeStmt* fgNewStmtAtEnd(BasicBlock* block, GenTree* tree);
 
 private:
-    GenTreeStmt* fgInsertStmtAtBeg(BasicBlock* block, GenTree* node);
+    GenTreeStmt* fgInsertStmtNearEnd(BasicBlock* block, GenTreeStmt* stmt);
+    GenTreeStmt* fgNewStmtNearEnd(BasicBlock* block, GenTree* tree);
+
+    GenTreeStmt* fgInsertStmtAtBeg(BasicBlock* block, GenTreeStmt* stmt);
+    GenTreeStmt* fgNewStmtAtBeg(BasicBlock* block, GenTree* tree);
+
     GenTreeStmt* fgInsertStmtAfter(BasicBlock* block, GenTreeStmt* insertionPoint, GenTreeStmt* stmt);
 
 public: // Used by linear scan register allocation
