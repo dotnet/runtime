@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace System.Threading
@@ -21,9 +22,11 @@ namespace System.Threading
                 // in sleep/hibernate mode.
                 if (Environment.IsWindows8OrAbove)
                 {
-                    if (!Interop.Kernel32.QueryUnbiasedInterruptTime(out ulong time100ns))
-                        Marshal.ThrowExceptionForHR(Marshal.GetLastWin32Error());
-
+                    // Based on its documentation the QueryUnbiasedInterruptTime() function validates
+                    // the argument is non-null. In this case we are always supplying an argument,
+                    // so will skip return value validation.
+                    bool success = Interop.Kernel32.QueryUnbiasedInterruptTime(out ulong time100ns);
+                    Debug.Assert(success);
                     return (long)(time100ns / 10_000); // convert from 100ns to milliseconds
                 }
                 else
