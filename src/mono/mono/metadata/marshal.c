@@ -5285,12 +5285,20 @@ ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf (MonoReflectionTypeHan
 		return 0;
 	}
 	if (MONO_HANDLE_IS_NULL (field_name)) {
+#ifdef ENABLE_NETCORE
+		mono_error_set_argument_null (error, NULL, "");
+#else
 		mono_error_set_argument_null (error, "fieldName", "");
+#endif
 		return 0;
 	}
 
 	if (!m_class_is_runtime_type (MONO_HANDLE_GET_CLASS (ref_type))) {
+#ifdef ENABLE_NETCORE
+		mono_error_set_argument (error, "fieldName", "");
+#else
 		mono_error_set_argument (error, "type", "");
+#endif
 		return 0;
 	}
 
@@ -5951,9 +5959,19 @@ mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, guint32 *align,
 		klass = mono_class_from_mono_type_internal (type);
 		if (klass == mono_defaults.object_class &&
 			(mspec && mspec->native == MONO_NATIVE_STRUCT)) {
-		*align = 16;
-		return 16;
+			*align = 16;
+			return 16;
+		} 
+#ifdef ENABLE_NETCORE
+		else if (strcmp (m_class_get_name_space (klass), "System") == 0 && 
+			strcmp (m_class_get_name (klass), "Decimal") == 0) {
+			
+			// Special case: Managed Decimal consists of 4 int32 fields, the alignment should be 8 on x64 to follow 
+			// https://github.com/dotnet/coreclr/blob/4450e5ca663b9e66c20e6f9751c941efa3716fde/src/vm/methodtablebuilder.cpp#L9753
+			*align = MONO_ABI_ALIGNOF (gpointer);
+			return mono_class_native_size (klass, NULL);
 		}
+#endif
 		padded_size = mono_class_native_size (klass, align);
 		if (padded_size == 0)
 			padded_size = 1;

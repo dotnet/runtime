@@ -441,18 +441,6 @@
 -nomethod System.Runtime.InteropServices.Tests.OffsetOfTests.OffsetOf_NotMarshallable_ThrowsArgumentException
 -nomethod System.Runtime.InteropServices.Tests.SizeOfTests.SizeOf_InvalidType_ThrowsArgumentException
 
-# Check that the name in the argument exception is null or different
-# https://github.com/mono/mono/issues/15090
--nomethod System.Runtime.InteropServices.Tests.OffsetOfTests.OffsetOf_NullFieldName_ThrowsArgumentNullException
-
-# Returns type instead of expected fieldName 
-# https://github.com/mono/mono/issues/15091
--nomethod System.Runtime.InteropServices.Tests.OffsetOfTests.OffsetOf_NonRuntimeField_ThrowsArgumentException
-
-# Hardcodes offsets
-# https://github.com/mono/mono/issues/15092
--nomethod System.Runtime.InteropServices.Tests.OffsetOfTests.OffsetOf_Decimal_ReturnsExpected
-
 # Wants exception messages to be non-empty
 # https://github.com/mono/mono/issues/15093
 -nomethod System.Runtime.InteropServices.Tests.GetExceptionForHRTests.GetExceptionForHR_ErrorInfo_ReturnsValidException
