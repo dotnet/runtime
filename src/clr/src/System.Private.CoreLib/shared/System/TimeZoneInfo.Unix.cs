@@ -436,7 +436,7 @@ namespace System
 
                 fixed (byte* dirBufferPtr = dirBuffer)
                 {
-                    for(;;)
+                    for (;;)
                     {
                         IntPtr dirHandle = Interop.Sys.OpenDir(currentPath);
                         if (dirHandle == IntPtr.Zero)
