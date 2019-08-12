@@ -11,12 +11,10 @@
 #include <functional>
 #include "pal.h"
 #include "deps_entry.h"
-#include "cpprest/json.h"
+#include "json_parser.h"
 
 class deps_json_t
 {
-    typedef web::json::value json_value;
-    typedef web::json::object json_object;
     typedef std::vector<deps_asset_t> vec_asset_t;
     typedef std::array<vec_asset_t, deps_entry_t::asset_types::count> assets_t;
     struct deps_assets_t { std::unordered_map<pal::string_t, assets_t> libs; };
@@ -87,20 +85,20 @@ public:
     }
 
 private:
-    bool load_self_contained(const pal::string_t& deps_path, const json_value& json, const pal::string_t& target_name);
-    bool load_framework_dependent(const pal::string_t& deps_path, const json_value& json, const pal::string_t& target_name, const rid_fallback_graph_t& rid_fallback_graph);
+    bool load_self_contained(const pal::string_t& deps_path, const json_parser_t::value_t& json, const pal::string_t& target_name);
+    bool load_framework_dependent(const pal::string_t& deps_path, const json_parser_t::value_t& json, const pal::string_t& target_name, const rid_fallback_graph_t& rid_fallback_graph);
     bool load(bool is_framework_dependent, const pal::string_t& deps_path, const rid_fallback_graph_t& rid_fallback_graph);
-    bool process_runtime_targets(const json_value& json, const pal::string_t& target_name, const rid_fallback_graph_t& rid_fallback_graph, rid_specific_assets_t* p_assets);
-    bool process_targets(const json_value& json, const pal::string_t& target_name, deps_assets_t* p_assets);
+    bool process_runtime_targets(const json_parser_t::value_t& json, const pal::string_t& target_name, const rid_fallback_graph_t& rid_fallback_graph, rid_specific_assets_t* p_assets);
+    bool process_targets(const json_parser_t::value_t& json, const pal::string_t& target_name, deps_assets_t* p_assets);
 
     void reconcile_libraries_with_targets(
         const pal::string_t& deps_path,
-        const json_value& json,
+        const json_parser_t::value_t& json,
         const std::function<bool(const pal::string_t&)>& library_exists_fn,
         const std::function<const vec_asset_t&(const pal::string_t&, int, bool*)>& get_assets_fn);
 
-    pal::string_t get_optional_property(const json_object& properties, const pal::string_t& key) const;
-    pal::string_t get_optional_path(const json_object& properties, const pal::string_t& key) const;
+    pal::string_t get_optional_property(const json_parser_t::value_t& properties, const pal::string_t& key) const;
+    pal::string_t get_optional_path(const json_parser_t::value_t& properties, const pal::string_t& key) const;
 
     pal::string_t get_current_rid(const rid_fallback_graph_t& rid_fallback_graph);
     bool perform_rid_fallback(rid_specific_assets_t* portable_assets, const rid_fallback_graph_t& rid_fallback_graph);

@@ -4,13 +4,10 @@
 
 #include "sdk_resolver.h"
 
-#include "cpprest/json.h"
 #include "trace.h"
 #include "utils.h"
 #include "sdk_info.h"
-
-typedef web::json::value json_value;
-typedef web::json::object json_object;
+#include "json_parser.h"
 
 using namespace std;
 
@@ -185,6 +182,7 @@ pal::string_t sdk_resolver::find_nearest_global_file(const pal::string_t& cwd)
                 trace::verbose(_X("Found global.json [%s]"), file.c_str());
                 return file;
             }
+
             parent_dir = get_directory(cur_dir);
             if (parent_dir.empty() || parent_dir.size() == cur_dir.size())
             {
@@ -207,70 +205,46 @@ bool sdk_resolver::parse_global_file(pal::string_t global_file_path)
 
     trace::verbose(_X("--- Resolving SDK information from global.json [%s]"), global_file_path.c_str());
 
-    pal::ifstream_t file{ global_file_path };
-    if (!file.good())
+    // After we're done parsing `global_file_path`, none of its contents will be referenced
+    // from the data private to json_parser_t; it's safe to declare it on the stack.
+    json_parser_t json;
+    if (!json.parse_file(global_file_path))
     {
-        trace::warning(_X("[%s] could not be opened"), global_file_path.c_str());
         return false;
     }
 
-    skip_utf8_bom(&file);
-
-    json_value doc;
-    try
-    {
-        doc = json_value::parse(file);
-    }
-    catch (const exception& ex)
-    {
-        pal::string_t msg;
-        (void)pal::utf8_palstring(ex.what(), &msg);
-        trace::error(_X("A JSON parsing exception occurred in [%s]: %s"), global_file_path.c_str(), msg.c_str());
-        return false;
-    }
-
-    if (!doc.is_object())
-    {
-        trace::warning(_X("Expected a JSON object in [%s]"), global_file_path.c_str());
-        return false;
-    }
-
-    const auto& doc_obj = doc.as_object();
-
-    const auto sdk = doc_obj.find(_X("sdk"));
-    if (sdk == doc_obj.end() || sdk->second.is_null())
+    const auto& sdk = json.document().FindMember(_X("sdk"));
+    if (sdk == json.document().MemberEnd() || sdk->value.IsNull())
     {
         // Missing SDK is treated as success (use default resolver)
         trace::verbose(_X("Value 'sdk' is missing or null in [%s]"), global_file_path.c_str());
         return true;
     }
 
-    if (!sdk->second.is_object())
+    if (!sdk->value.IsObject())
     {
         trace::warning(_X("Expected a JSON object for the 'sdk' value in [%s]"), global_file_path.c_str());
         return false;
     }
 
-    const auto& sdk_obj = sdk->second.as_object();
-
-    const auto version_value = sdk_obj.find(_X("version"));
-    if (version_value == sdk_obj.end() || version_value->second.is_null())
+    const auto& version_value = sdk->value.FindMember(_X("version"));
+    if (version_value == sdk->value.MemberEnd() || version_value->value.IsNull())
     {
         trace::verbose(_X("Value 'sdk/version' is missing or null in [%s]"), global_file_path.c_str());
     }
     else
     {
-        if (!version_value->second.is_string())
+        if (!version_value->value.IsString())
         {
             trace::warning(_X("Expected a string for the 'sdk/version' value in [%s]"), global_file_path.c_str());
             return false;
         }
 
-        if (!fx_ver_t::parse(version_value->second.as_string(), &version, false))
+        if (!fx_ver_t::parse(version_value->value.GetString(), &version, false))
         {
             trace::warning(
                 _X("Version '%s' is not valid for the 'sdk/version' value in [%s]"),
-                version_value->second.as_string().c_str(),
+                version_value->value.GetString(),
                 global_file_path.c_str()
             );
             return false;
@@ -280,25 +254,25 @@ bool sdk_resolver::parse_global_file(pal::string_t global_file_path)
         roll_forward = sdk_roll_forward_policy::patch;
     }
 
-    const auto roll_forward_value = sdk_obj.find(_X("rollForward"));
-    if (roll_forward_value == sdk_obj.end() || roll_forward_value->second.is_null())
+    const auto& roll_forward_value = sdk->value.FindMember(_X("rollForward"));
+    if (roll_forward_value == sdk->value.MemberEnd() || roll_forward_value->value.IsNull())
     {
         trace::verbose(_X("Value 'sdk/rollForward' is missing or null in [%s]"), global_file_path.c_str());
     }
     else
     {
-        if (!roll_forward_value->second.is_string())
+        if (!roll_forward_value->value.IsString())
         {
             trace::warning(_X("Expected a string for the 'sdk/rollForward' value in [%s]"), global_file_path.c_str());
             return false;
         }
 
-        roll_forward = to_policy(roll_forward_value->second.as_string());
+        roll_forward = to_policy(roll_forward_value->value.GetString());
         if (roll_forward == sdk_roll_forward_policy::unsupported)
         {
             trace::warning(
                 _X("The roll-forward policy '%s' is not supported for the 'sdk/rollForward' value in [%s]"),
-                roll_forward_value->second.as_string().c_str(),
+                roll_forward_value->value.GetString(),
                 global_file_path.c_str()
             );
             return false;
@@ -309,27 +283,27 @@ bool sdk_resolver::parse_global_file(pal::string_t global_file_path)
         {
             trace::warning(
                 _X("The roll-forward policy '%s' requires a 'sdk/version' value in [%s]"),
-                roll_forward_value->second.as_string().c_str(),
+                roll_forward_value->value.GetString(),
                 global_file_path.c_str()
             );
             return false;
         }
     }
 
-    const auto allow_prerelease_value = sdk_obj.find(_X("allowPrerelease"));
-    if (allow_prerelease_value == sdk_obj.end() || allow_prerelease_value->second.is_null())
+    const auto& allow_prerelease_value = sdk->value.FindMember(_X("allowPrerelease"));
+    if (allow_prerelease_value == sdk->value.MemberEnd() || allow_prerelease_value->value.IsNull())
     {
         trace::verbose(_X("Value 'sdk/allowPrerelease' is missing or null in [%s]"), global_file_path.c_str());
     }
     else
     {
-        if (!allow_prerelease_value->second.is_boolean())
+        if (!allow_prerelease_value->value.IsBool())
         {
             trace::warning(_X("Expected a boolean for the 'sdk/allowPrerelease' value in [%s]"), global_file_path.c_str());
             return false;
         }
 
-        allow_prerelease = allow_prerelease_value->second.as_bool();
+        allow_prerelease = allow_prerelease_value->value.GetBool();
 
         if (!allow_prerelease && version.is_prerelease())
         {

@@ -170,7 +170,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 .Should().Fail()
                 .And.HaveStdOutContaining($"corehost_resolve_component_dependencies:Fail[0x{Constants.ErrorCode.ResolverInitFailure.ToString("x")}]")
                 .And.HaveStdOutContaining("corehost reported errors:")
-                .And.HaveStdOutContaining($"A JSON parsing exception occurred in [{component.DepsJson}]: * Line 1, Column 2 Syntax error: Malformed token")
+                .And.HaveStdOutContaining($"A JSON parsing exception occurred in [{component.DepsJson}], offset 0 (line 1, column 1): Invalid value.")
                 .And.HaveStdOutContaining($"Error initializing the dependency resolver: An error occurred while parsing: {component.DepsJson}");
         }
 
@@ -258,7 +258,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 .Should().Fail()
                 .And.HaveStdOutContaining($"ComponentA: corehost_resolve_component_dependencies:Fail[0x{Constants.ErrorCode.ResolverInitFailure.ToString("x")}]")
                 .And.HaveStdOutContaining($"ComponentA: corehost reported errors:")
-                .And.HaveStdOutContaining($"ComponentA: A JSON parsing exception occurred in [{componentWithNoDependencies.DepsJson}]: * Line 1, Column 2 Syntax error: Malformed token")
+                .And.HaveStdOutContaining($"ComponentA: A JSON parsing exception occurred in [{componentWithNoDependencies.DepsJson}], offset 0 (line 1, column 1): Invalid value.")
                 .And.HaveStdOutContaining($"ComponentA: Error initializing the dependency resolver: An error occurred while parsing: {componentWithNoDependencies.DepsJson}")
                 .And.HaveStdOutContaining($"ComponentB: corehost_resolve_component_dependencies:Fail[0x{Constants.ErrorCode.LibHostInvalidArgs.ToString("x")}]")
                 .And.HaveStdOutContaining($"ComponentB: corehost reported errors:")
