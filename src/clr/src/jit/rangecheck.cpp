@@ -508,7 +508,7 @@ void RangeCheck::SetDef(UINT64 hash, Location* loc)
     if (m_pDefTable->Lookup(hash, &loc2))
     {
         JITDUMP("Already have " FMT_BB ", [%06d], [%06d] for hash => %0I64X", loc2->block->bbNum,
-                Compiler::dspTreeID(loc2->stmt), Compiler::dspTreeID(loc2->tree), hash);
+                Compiler::dspTreeID(loc2->stmt->gtStmtExpr), Compiler::dspTreeID(loc2->tree), hash);
         assert(false);
     }
 #endif

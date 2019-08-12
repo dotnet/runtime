@@ -325,7 +325,7 @@ void Compiler::fgInstrumentMethod()
             GenTree* lhsNode = gtNewIndOfIconHandleNode(TYP_INT, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
             GenTree* asgNode = gtNewAssignNode(lhsNode, rhsNode);
 
-            fgInsertStmtAtBeg(block, asgNode);
+            fgNewStmtAtBeg(block, asgNode);
 
             // Advance to the next BlockCounts tuple [ILOffset, ExecutionCount]
             currentBlockCounts++;
@@ -520,7 +520,7 @@ bool Compiler::fgBlockContainsStatementBounded(BasicBlock*  block,
         return answerOnBoundExceeded;
     }
 
-    GenTree* curr = block->firstStmt();
+    GenTreeStmt* curr = block->firstStmt();
     do
     {
         (*numTraversed)++;
@@ -529,7 +529,7 @@ bool Compiler::fgBlockContainsStatementBounded(BasicBlock*  block,
             break;
         }
         curr = curr->gtNext;
-    } while (curr);
+    } while (curr != nullptr);
     return curr != nullptr;
 }
 #endif // DEBUG
@@ -542,7 +542,7 @@ bool Compiler::fgBlockContainsStatementBounded(BasicBlock*  block,
 //    node      - The node to be inserted.
 //
 // Return Value:
-//    Returns the new (potentially) GT_STMT node.
+//    Returns the new (potentially) statement.
 //
 // Notes:
 //    If 'stmt' is not already a statement, a new statement is created from it.
@@ -550,19 +550,9 @@ bool Compiler::fgBlockContainsStatementBounded(BasicBlock*  block,
 //    In other cases, if there are any phi assignments and/or an assignment of
 //    the GT_CATCH_ARG, we insert after those.
 
-GenTreeStmt* Compiler::fgInsertStmtAtBeg(BasicBlock* block, GenTree* node)
+GenTreeStmt* Compiler::fgInsertStmtAtBeg(BasicBlock* block, GenTreeStmt* stmt)
 {
-    GenTreeStmt* stmt;
-    if (node->gtOper == GT_STMT)
-    {
-        stmt = node->AsStmt();
-    }
-    else
-    {
-        stmt = gtNewStmt(node);
-    }
-
-    GenTree* list = block->firstStmt();
+    GenTreeStmt* firstStmt = block->firstStmt();
 
     if (!stmt->IsPhiDefnStmt())
     {
@@ -571,186 +561,167 @@ GenTreeStmt* Compiler::fgInsertStmtAtBeg(BasicBlock* block, GenTree* node)
         {
             return fgInsertStmtBefore(block, insertBeforeStmt, stmt);
         }
-        else if (list != nullptr)
+        else if (firstStmt != nullptr)
         {
             return fgInsertStmtAtEnd(block, stmt);
         }
         // Otherwise, we will simply insert at the beginning, below.
     }
 
-    /* The new tree will now be the first one of the block */
+    // The new tree will now be the first one of the block.
+    block->bbStmtList = stmt;
+    stmt->gtNext      = firstStmt;
 
-    block->bbTreeList = stmt;
-    stmt->gtNext      = list;
-
-    /* Are there any statements in the block? */
-
-    if (list)
+    // Are there any statements in the block?
+    if (firstStmt != nullptr)
     {
-        GenTree* last;
+        // There is at least one statement already.
+        GenTreeStmt* lastStmt = firstStmt->getPrevStmt();
+        noway_assert(lastStmt != nullptr && lastStmt->gtNext == nullptr);
 
-        /* There is at least one statement already */
-
-        last = list->gtPrev;
-        noway_assert(last && last->gtNext == nullptr);
-
-        /* Insert the statement in front of the first one */
-
-        list->gtPrev = stmt;
-        stmt->gtPrev = last;
+        // Insert the statement in front of the first one.
+        firstStmt->gtPrev = stmt;
+        stmt->gtPrev      = lastStmt;
     }
     else
     {
-        /* The block was completely empty */
-
+        // The block was completely empty.
         stmt->gtPrev = stmt;
     }
 
     return stmt;
 }
 
+GenTreeStmt* Compiler::fgNewStmtAtBeg(BasicBlock* block, GenTree* tree)
+{
+    GenTreeStmt* stmt = gtNewStmt(tree);
+    return fgInsertStmtAtBeg(block, stmt);
+}
+
 /*****************************************************************************
  *
  *  Insert the given tree or statement at the end of the given basic block.
- *  Returns the (potentially) new GT_STMT node.
+ *  Returns the (potentially) new statement.
  *  If the block can be a conditional block, use fgInsertStmtNearEnd.
  */
 
-GenTreeStmt* Compiler::fgInsertStmtAtEnd(BasicBlock* block, GenTree* node)
+GenTreeStmt* Compiler::fgInsertStmtAtEnd(BasicBlock* block, GenTreeStmt* stmt)
 {
-    GenTree*     list = block->firstStmt();
-    GenTreeStmt* stmt;
-
-    if (node->gtOper != GT_STMT)
-    {
-        stmt = gtNewStmt(node);
-    }
-    else
-    {
-        stmt = node->AsStmt();
-    }
 
     assert(stmt->gtNext == nullptr); // We don't set it, and it needs to be this after the insert
 
-    if (list)
+    GenTreeStmt* firstStmt = block->firstStmt();
+    if (firstStmt != nullptr)
     {
-        GenTree* last;
+        // There is at least one statement already.
+        GenTreeStmt* lastStmt = firstStmt->getPrevStmt();
+        noway_assert(lastStmt != nullptr && lastStmt->getNextStmt() == nullptr);
 
-        /* There is at least one statement already */
-
-        last = list->gtPrev;
-        noway_assert(last && last->gtNext == nullptr);
-
-        /* Append the statement after the last one */
-
-        last->gtNext = stmt;
-        stmt->gtPrev = last;
-        list->gtPrev = stmt;
+        // Append the statement after the last one.
+        lastStmt->gtNext  = stmt;
+        stmt->gtPrev      = lastStmt;
+        firstStmt->gtPrev = stmt;
     }
     else
     {
-        /* The block is completely empty */
-
-        block->bbTreeList = stmt;
+        // The block is completely empty.
+        block->bbStmtList = stmt;
         stmt->gtPrev      = stmt;
     }
 
     return stmt;
 }
 
+GenTreeStmt* Compiler::fgNewStmtAtEnd(BasicBlock* block, GenTree* tree)
+{
+    GenTreeStmt* stmt = gtNewStmt(tree);
+    return fgInsertStmtAtEnd(block, stmt);
+}
+
 /*****************************************************************************
  *
  *  Insert the given tree or statement at the end of the given basic block, but before
  *  the GT_JTRUE, if present.
- *  Returns the (potentially) new GT_STMT node.
+ *  Returns the (potentially) new statement.
  */
 
-GenTreeStmt* Compiler::fgInsertStmtNearEnd(BasicBlock* block, GenTree* node)
+GenTreeStmt* Compiler::fgInsertStmtNearEnd(BasicBlock* block, GenTreeStmt* stmt)
 {
-    GenTreeStmt* stmt;
-
     // This routine can only be used when in tree order.
     assert(fgOrder == FGOrderTree);
 
     if ((block->bbJumpKind == BBJ_COND) || (block->bbJumpKind == BBJ_SWITCH) || (block->bbJumpKind == BBJ_RETURN))
     {
-        if (node->gtOper != GT_STMT)
-        {
-            stmt = gtNewStmt(node);
-        }
-        else
-        {
-            stmt = node->AsStmt();
-        }
-
-        GenTreeStmt* first = block->firstStmt();
-        noway_assert(first);
-        GenTreeStmt* last = block->lastStmt();
-        noway_assert(last && last->gtNext == nullptr);
-        GenTree* after = last->gtPrev;
+        GenTreeStmt* firstStmt = block->firstStmt();
+        noway_assert(firstStmt != nullptr);
+        GenTreeStmt* lastStmt = block->lastStmt();
+        noway_assert(lastStmt != nullptr && lastStmt->gtNext == nullptr);
+        GenTreeStmt* insertionPoint = lastStmt->gtPrev;
 
 #if DEBUG
         if (block->bbJumpKind == BBJ_COND)
         {
-            noway_assert(last->gtStmtExpr->gtOper == GT_JTRUE);
+            assert(lastStmt->gtStmtExpr->gtOper == GT_JTRUE);
         }
         else if (block->bbJumpKind == BBJ_RETURN)
         {
-            noway_assert((last->gtStmtExpr->gtOper == GT_RETURN) || (last->gtStmtExpr->gtOper == GT_JMP) ||
-                         // BBJ_RETURN blocks in functions returning void do not get a GT_RETURN node if they
-                         // have a .tail prefix (even if canTailCall returns false for these calls)
-                         // code:Compiler::impImportBlockCode (search for the RET: label)
-                         // Ditto for real tail calls (all code after them has been removed)
-                         ((last->gtStmtExpr->gtOper == GT_CALL) &&
-                          ((info.compRetType == TYP_VOID) || last->gtStmtExpr->AsCall()->IsTailCall())));
+            assert((lastStmt->gtStmtExpr->gtOper == GT_RETURN) || (lastStmt->gtStmtExpr->gtOper == GT_JMP) ||
+                   // BBJ_RETURN blocks in functions returning void do not get a GT_RETURN node if they
+                   // have a .tail prefix (even if canTailCall returns false for these calls)
+                   // code:Compiler::impImportBlockCode (search for the RET: label)
+                   // Ditto for real tail calls (all code after them has been removed)
+                   ((lastStmt->gtStmtExpr->gtOper == GT_CALL) &&
+                    ((info.compRetType == TYP_VOID) || lastStmt->gtStmtExpr->AsCall()->IsTailCall())));
         }
         else
         {
-            noway_assert(block->bbJumpKind == BBJ_SWITCH);
-            noway_assert(last->gtStmtExpr->gtOper == GT_SWITCH);
+            assert(block->bbJumpKind == BBJ_SWITCH);
+            assert(lastStmt->gtStmtExpr->gtOper == GT_SWITCH);
         }
 #endif // DEBUG
 
-        /* Append 'stmt' before 'last' */
+        // Append 'stmt' before 'lastStmt'.
+        stmt->gtNext     = lastStmt;
+        lastStmt->gtPrev = stmt;
 
-        stmt->gtNext = last;
-        last->gtPrev = stmt;
-
-        if (first == last)
+        if (firstStmt == lastStmt)
         {
-            /* There is only one stmt in the block */
-
-            block->bbTreeList = stmt;
-            stmt->gtPrev      = last;
+            // There is only one stmt in the block.
+            block->bbStmtList = stmt;
+            stmt->gtPrev      = lastStmt;
         }
         else
         {
-            noway_assert(after && (after->gtNext == last));
-
-            /* Append 'stmt' after 'after' */
-
-            after->gtNext = stmt;
-            stmt->gtPrev  = after;
+            // Append 'stmt' after 'insertionPoint'.
+            noway_assert(insertionPoint != nullptr && (insertionPoint->gtNext == lastStmt));
+            insertionPoint->gtNext = stmt;
+            stmt->gtPrev           = insertionPoint;
         }
 
         return stmt;
     }
     else
     {
-        return fgInsertStmtAtEnd(block, node);
+        return fgInsertStmtAtEnd(block, stmt);
     }
+}
+
+GenTreeStmt* Compiler::fgNewStmtNearEnd(BasicBlock* block, GenTree* tree)
+{
+    GenTreeStmt* stmt = gtNewStmt(tree);
+    return fgInsertStmtNearEnd(block, stmt);
 }
 
 /*****************************************************************************
  *
- *  Insert the given statement "stmt" after GT_STMT node "insertionPoint".
- *  Returns the newly inserted GT_STMT node.
+ *  Insert the given statement "stmt" after "insertionPoint" statement.
+ *  Returns the newly inserted statement.
  *  Note that the gtPrev list of statement nodes is circular, but the gtNext list is not.
  */
 
 GenTreeStmt* Compiler::fgInsertStmtAfter(BasicBlock* block, GenTreeStmt* insertionPoint, GenTreeStmt* stmt)
 {
-    assert(block->bbTreeList != nullptr);
+    assert(block->bbStmtList != nullptr);
     assert(fgBlockContainsStatementBounded(block, insertionPoint));
     assert(!fgBlockContainsStatementBounded(block, stmt, false));
 
@@ -764,8 +735,8 @@ GenTreeStmt* Compiler::fgInsertStmtAfter(BasicBlock* block, GenTreeStmt* inserti
 
         // Update the backward link of the first statement of the block
         // to point to the new last statement.
-        assert(block->bbTreeList->gtPrev == insertionPoint);
-        block->bbTreeList->gtPrev = stmt;
+        assert(block->bbStmtList->gtPrev == insertionPoint);
+        block->bbStmtList->gtPrev = stmt;
     }
     else
     {
@@ -779,16 +750,16 @@ GenTreeStmt* Compiler::fgInsertStmtAfter(BasicBlock* block, GenTreeStmt* inserti
     return stmt;
 }
 
-//  Insert the given tree or statement before GT_STMT node "insertionPoint".
-//  Returns the newly inserted GT_STMT node.
+//  Insert the given tree or statement before "insertionPoint" statement.
+//  Returns the newly inserted statement.
 
 GenTreeStmt* Compiler::fgInsertStmtBefore(BasicBlock* block, GenTreeStmt* insertionPoint, GenTreeStmt* stmt)
 {
-    assert(block->bbTreeList != nullptr);
+    assert(block->bbStmtList != nullptr);
     assert(fgBlockContainsStatementBounded(block, insertionPoint));
     assert(!fgBlockContainsStatementBounded(block, stmt, false));
 
-    if (insertionPoint == block->bbTreeList)
+    if (insertionPoint == block->bbStmtList)
     {
         // We're inserting before the first statement in the block.
         GenTreeStmt* first = block->firstStmt();
@@ -797,7 +768,7 @@ GenTreeStmt* Compiler::fgInsertStmtBefore(BasicBlock* block, GenTreeStmt* insert
         stmt->gtNext = first;
         stmt->gtPrev = last;
 
-        block->bbTreeList = stmt;
+        block->bbStmtList = stmt;
         first->gtPrev     = stmt;
     }
     else
@@ -837,7 +808,7 @@ GenTreeStmt* Compiler::fgInsertStmtListAfter(BasicBlock*  block,     // the bloc
     {
         stmtAfter->gtNext         = stmtList;
         stmtList->gtPrev          = stmtAfter;
-        block->bbTreeList->gtPrev = stmtLast;
+        block->bbStmtList->gtPrev = stmtLast;
         goto _Done;
     }
 
@@ -849,7 +820,7 @@ GenTreeStmt* Compiler::fgInsertStmtListAfter(BasicBlock*  block,     // the bloc
 
 _Done:
 
-    noway_assert(block->bbTreeList == nullptr || block->bbTreeList->gtPrev->gtNext == nullptr);
+    noway_assert(block->bbStmtList == nullptr || block->bbStmtList->gtPrev->gtNext == nullptr);
 
     return stmtLast;
 }
@@ -3872,11 +3843,11 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         // for BBJ_ALWAYS I don't need to insert it before the condition.  Just append it.
         if (block->bbJumpKind == BBJ_ALWAYS)
         {
-            fgInsertStmtAtEnd(block, call);
+            fgNewStmtAtEnd(block, call);
         }
         else
         {
-            GenTreeStmt* newStmt = fgInsertStmtNearEnd(block, call);
+            GenTreeStmt* newStmt = fgNewStmtNearEnd(block, call);
             // For DDB156656, we need to associate the GC Poll with the IL offset (and therefore sequence
             // point) of the tree before which we inserted the poll.  One example of when this is a
             // problem:
@@ -3909,7 +3880,7 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         if (verbose)
         {
             printf("*** creating GC Poll in block " FMT_BB "\n", block->bbNum);
-            gtDispTreeList(block->bbTreeList);
+            gtDispStmtList(block->bbStmtList);
         }
 #endif // DEBUG
     }
@@ -3946,7 +3917,7 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 
         //  2) Add a GC_CALL node to Poll.
         GenTreeCall* call = gtNewHelperCallNode(CORINFO_HELP_POLL_GC, TYP_VOID);
-        fgInsertStmtAtEnd(poll, call);
+        fgNewStmtAtEnd(poll, call);
 
         //  3) Remove the last statement from Top and add it to Bottom.
         if (oldJumpKind != BBJ_ALWAYS)
@@ -3998,7 +3969,7 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 
         trapRelop->gtFlags |= GTF_RELOP_JMP_USED | GTF_DONT_CSE;
         GenTree* trapCheck = gtNewOperNode(GT_JTRUE, TYP_VOID, trapRelop);
-        fgInsertStmtAtEnd(top, trapCheck);
+        fgNewStmtAtEnd(top, trapCheck);
         top->bbJumpDest = bottom;
         top->bbJumpKind = BBJ_COND;
         bottom->bbFlags |= BBF_JMP_TARGET;
@@ -4046,11 +4017,11 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         if (verbose)
         {
             printf("*** creating inlined GC Poll in top block " FMT_BB "\n", top->bbNum);
-            gtDispTreeList(top->bbTreeList);
+            gtDispStmtList(top->bbStmtList);
             printf(" poll block is " FMT_BB "\n", poll->bbNum);
-            gtDispTreeList(poll->bbTreeList);
+            gtDispStmtList(poll->bbStmtList);
             printf(" bottom block is " FMT_BB "\n", bottom->bbNum);
-            gtDispTreeList(bottom->bbTreeList);
+            gtDispStmtList(bottom->bbStmtList);
         }
 #endif // DEBUG
     }
@@ -8118,7 +8089,7 @@ void Compiler::fgAddSyncMethodEnterExit()
         GenTree* varNode  = gtNewLclvNode(lvaMonAcquired, typeMonAcquired);
         GenTree* initNode = gtNewAssignNode(varNode, zero);
 
-        fgInsertStmtAtEnd(fgFirstBB, initNode);
+        fgNewStmtAtEnd(fgFirstBB, initNode);
 
 #ifdef DEBUG
         if (verbose)
@@ -8143,7 +8114,7 @@ void Compiler::fgAddSyncMethodEnterExit()
         GenTree* copyNode = gtNewLclvNode(lvaCopyThis, TYP_REF);
         GenTree* initNode = gtNewAssignNode(copyNode, thisNode);
 
-        fgInsertStmtAtEnd(tryBegBB, initNode);
+        fgNewStmtAtEnd(tryBegBB, initNode);
     }
 
     fgCreateMonitorTree(lvaMonAcquired, info.compThisArg, tryBegBB, true /*enter*/);
@@ -8235,12 +8206,12 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
         else
         {
             // Insert this immediately before the GT_RETURN
-            fgInsertStmtNearEnd(block, tree);
+            fgNewStmtNearEnd(block, tree);
         }
     }
     else
     {
-        fgInsertStmtAtEnd(block, tree);
+        fgNewStmtAtEnd(block, tree);
     }
 
     return tree;
@@ -8319,7 +8290,7 @@ void Compiler::fgAddReversePInvokeEnterExit()
 
     fgEnsureFirstBBisScratch();
 
-    fgInsertStmtAtBeg(fgFirstBB, tree);
+    fgNewStmtAtBeg(fgFirstBB, tree);
 
 #ifdef DEBUG
     if (verbose)
@@ -8339,7 +8310,7 @@ void Compiler::fgAddReversePInvokeEnterExit()
 
     assert(genReturnBB != nullptr);
 
-    fgInsertStmtNearEnd(genReturnBB, tree);
+    fgNewStmtNearEnd(genReturnBB, tree);
 
 #ifdef DEBUG
     if (verbose)
@@ -8641,7 +8612,7 @@ private:
         }
 
         // Add 'return' expression to the return block
-        comp->fgInsertStmtAtEnd(newReturnBB, returnExpr);
+        comp->fgNewStmtAtEnd(newReturnBB, returnExpr);
         // Flag that this 'return' was generated by return merging so that subsequent
         // return block morhping will know to leave it alone.
         returnExpr->gtFlags |= GTF_RET_MERGED;
@@ -8940,7 +8911,7 @@ void Compiler::fgAddInternal()
 
             fgEnsureFirstBBisScratch();
 
-            fgInsertStmtAtEnd(fgFirstBB, tree);
+            fgNewStmtAtEnd(fgFirstBB, tree);
 
 #ifdef DEBUG
             if (verbose)
@@ -9095,7 +9066,7 @@ void Compiler::fgAddInternal()
         // Stick the conditional call at the start of the method
 
         fgEnsureFirstBBisScratch();
-        fgInsertStmtAtEnd(fgFirstBB, gtNewQmarkNode(TYP_VOID, guardCheckCond, callback));
+        fgNewStmtAtEnd(fgFirstBB, gtNewQmarkNode(TYP_VOID, guardCheckCond, callback));
     }
 
     /* Do we need to call out for security ? */
@@ -9120,7 +9091,7 @@ void Compiler::fgAddInternal()
 
         fgEnsureFirstBBisScratch();
 
-        fgInsertStmtAtEnd(fgFirstBB, tree);
+        fgNewStmtAtEnd(fgFirstBB, tree);
 
 #ifdef DEBUG
         if (verbose)
@@ -9164,7 +9135,7 @@ void Compiler::fgAddInternal()
 
         fgEnsureFirstBBisScratch();
 
-        fgInsertStmtAtEnd(fgFirstBB, tree);
+        fgNewStmtAtEnd(fgFirstBB, tree);
 
 #ifdef DEBUG
         if (verbose)
@@ -9195,7 +9166,7 @@ void Compiler::fgAddInternal()
             tree = gtNewHelperCallNode(CORINFO_HELP_MON_EXIT, TYP_VOID, gtNewArgList(tree));
         }
 
-        fgInsertStmtNearEnd(genReturnBB, tree);
+        fgNewStmtNearEnd(genReturnBB, tree);
 
 #ifdef DEBUG
         if (verbose)
@@ -9229,7 +9200,7 @@ void Compiler::fgAddInternal()
 
         fgEnsureFirstBBisScratch();
 
-        fgInsertStmtAtEnd(fgFirstBB, tree);
+        fgNewStmtAtEnd(fgFirstBB, tree);
 
 #ifdef DEBUG
         if (verbose)
@@ -9425,12 +9396,12 @@ BasicBlock* Compiler::fgSplitBlockAfterStatement(BasicBlock* curr, GenTreeStmt* 
 
     if (stmt != nullptr)
     {
-        newBlock->bbTreeList = stmt->gtNext;
-        if (newBlock->bbTreeList != nullptr)
+        newBlock->bbStmtList = stmt->gtNextStmt;
+        if (newBlock->bbStmtList != nullptr)
         {
-            newBlock->bbTreeList->gtPrev = curr->bbTreeList->gtPrev;
+            newBlock->bbStmtList->gtPrev = curr->bbStmtList->gtPrev;
         }
-        curr->bbTreeList->gtPrev = stmt;
+        curr->bbStmtList->gtPrev = stmt;
         stmt->gtNext             = nullptr;
 
         // Update the IL offsets of the blocks to match the split.
@@ -9448,7 +9419,7 @@ BasicBlock* Compiler::fgSplitBlockAfterStatement(BasicBlock* curr, GenTreeStmt* 
     }
     else
     {
-        assert(curr->bbTreeList == nullptr); // if no tree was given then it better be an empty block
+        assert(curr->bbStmtList == nullptr); // if no tree was given then it better be an empty block
     }
 
     return newBlock;
@@ -9509,7 +9480,7 @@ BasicBlock* Compiler::fgSplitBlockAfterNode(BasicBlock* curr, GenTree* node)
     }
     else
     {
-        assert(curr->bbTreeList == nullptr); // if no node was given then it better be an empty block
+        assert(curr->bbStmtList == nullptr); // if no node was given then it better be an empty block
     }
 
     return newBlock;
@@ -9525,8 +9496,16 @@ BasicBlock* Compiler::fgSplitBlockAtBeginning(BasicBlock* curr)
 {
     BasicBlock* newBlock = fgSplitBlockAtEnd(curr);
 
-    newBlock->bbTreeList = curr->bbTreeList;
-    curr->bbTreeList     = nullptr;
+    if (curr->IsLIR())
+    {
+        newBlock->bbTreeList = curr->bbTreeList;
+        curr->bbTreeList     = nullptr;
+    }
+    else
+    {
+        newBlock->bbStmtList = curr->bbStmtList;
+        curr->bbStmtList     = nullptr;
+    }
 
     // The new block now has all the code, and the old block has none. Update the
     // IL offsets for the block to reflect this.
@@ -10003,9 +9982,8 @@ void Compiler::fgRemoveStmt(BasicBlock* block, GenTreeStmt* stmt)
         stmt->gtStmtExpr->gtOper != GT_NOP) // Don't print if it is a GT_NOP. Too much noise from the inliner.
     {
         printf("\nRemoving statement ");
-        printTreeID(stmt);
+        gtDispTree(stmt->gtStmtExpr);
         printf(" in " FMT_BB " as useless:\n", block->bbNum);
-        gtDispTree(stmt);
     }
 #endif // DEBUG
 
@@ -10023,18 +10001,18 @@ void Compiler::fgRemoveStmt(BasicBlock* block, GenTreeStmt* stmt)
             assert(firstStmt == block->lastStmt());
 
             /* this is the only statement - basic block becomes empty */
-            block->bbTreeList = nullptr;
+            block->bbStmtList = nullptr;
         }
         else
         {
-            block->bbTreeList         = firstStmt->gtNext;
-            block->bbTreeList->gtPrev = firstStmt->gtPrev;
+            block->bbStmtList         = firstStmt->gtNextStmt;
+            block->bbStmtList->gtPrev = firstStmt->gtPrev;
         }
     }
     else if (stmt == block->lastStmt()) // Is it the last statement in the list?
     {
         stmt->gtPrev->gtNext      = nullptr;
-        block->bbTreeList->gtPrev = stmt->gtPrev;
+        block->bbStmtList->gtPrev = stmt->gtPrev;
     }
     else // The statement is in the middle.
     {
@@ -10053,7 +10031,7 @@ void Compiler::fgRemoveStmt(BasicBlock* block, GenTreeStmt* stmt)
 #ifdef DEBUG
     if (verbose)
     {
-        if (block->bbTreeList == nullptr)
+        if (block->bbStmtList == nullptr)
         {
             printf("\n" FMT_BB " becomes empty", block->bbNum);
         }
@@ -10092,7 +10070,7 @@ inline bool OperIsControlFlow(genTreeOps oper)
 }
 
 /******************************************************************************
- *  Tries to throw away a stmt. The statement can be anywhere in block->bbTreeList.
+ *  Tries to throw away a stmt. The statement can be anywhere in block->bbStmtList.
  *  Returns true if it did remove the statement.
  */
 
@@ -10349,8 +10327,8 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
                     blkFirst->gtPrev = bNextLastPhi;
                 }
 
-                // Now update the bbTreeList of "bNext".
-                bNext->bbTreeList = bNextNonPhi1;
+                // Now update the bbStmtList of "bNext".
+                bNext->bbStmtList = bNextNonPhi1;
                 if (bNextNonPhi1 != nullptr)
                 {
                     bNextNonPhi1->gtPrev = bNextLast;
@@ -10362,7 +10340,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
                 {
                     // First, bNextPhis at start of block.
                     GenTreeStmt* blkLast = blkFirst->gtPrevStmt;
-                    block->bbTreeList    = bNextFirst;
+                    block->bbStmtList    = bNextFirst;
                     // Now, rest of "block" (if it exists) after last phi of "bNext".
                     GenTreeStmt* bNextLastPhi = nullptr;
                     if (bNextNonPhi1 != nullptr)
@@ -10378,8 +10356,8 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
                     bNextFirst->gtPrev   = blkLast;
                     bNextLastPhi->gtNext = blkFirst;
                     blkFirst->gtPrev     = bNextLastPhi;
-                    // Now update the bbTreeList of "bNext"
-                    bNext->bbTreeList = bNextNonPhi1;
+                    // Now update the bbStmtList of "bNext"
+                    bNext->bbStmtList = bNextNonPhi1;
                     if (bNextNonPhi1 != nullptr)
                     {
                         bNextNonPhi1->gtPrev = bNextLast;
@@ -10398,7 +10376,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         {
             GenTreeStmt* stmtLast1 = block->lastStmt();
 
-            /* The second block may be a GOTO statement or something with an empty bbTreeList */
+            /* The second block may be a GOTO statement or something with an empty bbStmtList */
             if (stmtList2 != nullptr)
             {
                 GenTreeStmt* stmtLast2 = bNext->lastStmt();
@@ -10413,7 +10391,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         else
         {
             /* block was formerly empty and now has bNext's statements */
-            block->bbTreeList = stmtList2;
+            block->bbStmtList = stmtList2;
         }
     }
 
@@ -10722,20 +10700,20 @@ void Compiler::fgUnreachableBlock(BasicBlock* block)
         // Anyway, remove any phis.
 
         GenTreeStmt* firstNonPhi = block->FirstNonPhiDef();
-        if (block->bbTreeList != firstNonPhi)
+        if (block->bbStmtList != firstNonPhi)
         {
             if (firstNonPhi != nullptr)
             {
                 firstNonPhi->gtPrev = block->lastStmt();
             }
-            block->bbTreeList = firstNonPhi;
+            block->bbStmtList = firstNonPhi;
         }
 
         for (GenTreeStmt* stmt = block->firstStmt(); stmt != nullptr; stmt = stmt->gtNextStmt)
         {
             fgRemoveStmt(block, stmt);
         }
-        noway_assert(block->bbTreeList == nullptr);
+        noway_assert(block->bbStmtList == nullptr);
     }
 
     /* Next update the loop table and bbWeights */
@@ -14033,7 +14011,7 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
                         }
                         else
                         {
-                            GenTreeStmt* nopStmt = fgInsertStmtAtEnd(block, nop);
+                            GenTreeStmt* nopStmt = fgNewStmtAtEnd(block, nop);
                             fgSetStmtSeq(nopStmt);
                             gtSetStmtInfo(nopStmt);
                         }
@@ -14291,7 +14269,6 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
 #endif // DEBUG
 
                 /* Replace the conditional statement with the list of side effects */
-                noway_assert(sideEffList->gtOper != GT_STMT);
                 noway_assert(sideEffList->gtOper != GT_SWITCH);
 
                 switchStmt->gtStmtExpr = sideEffList;
@@ -14632,7 +14609,7 @@ bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, Basi
     {
         /* remove the conditional statement at the end of block */
         noway_assert(block->bbJumpKind == BBJ_COND);
-        noway_assert(block->bbTreeList != nullptr);
+        noway_assert(block->isValid());
 
 #ifdef DEBUG
         if (verbose)
@@ -14672,21 +14649,22 @@ bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, Basi
         }
         else
         {
-            GenTreeStmt* cond = block->lastStmt();
-            noway_assert(cond->gtStmtExpr->gtOper == GT_JTRUE);
+            GenTreeStmt* condStmt = block->lastStmt();
+            GenTree*     cond     = condStmt->gtStmtExpr;
+            noway_assert(cond->gtOper == GT_JTRUE);
 
             /* check for SIDE_EFFECTS */
-            if (cond->gtStmtExpr->gtFlags & GTF_SIDE_EFFECT)
+            if (cond->gtFlags & GTF_SIDE_EFFECT)
             {
                 /* Extract the side effects from the conditional */
                 GenTree* sideEffList = nullptr;
 
-                gtExtractSideEffList(cond->gtStmtExpr, &sideEffList);
+                gtExtractSideEffList(cond, &sideEffList);
 
                 if (sideEffList == nullptr)
                 {
                     compCurBB = block;
-                    fgRemoveStmt(block, cond);
+                    fgRemoveStmt(block, condStmt);
                 }
                 else
                 {
@@ -14703,20 +14681,19 @@ bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, Basi
 #endif // DEBUG
 
                     /* Replace the conditional statement with the list of side effects */
-                    noway_assert(sideEffList->gtOper != GT_STMT);
                     noway_assert(sideEffList->gtOper != GT_JTRUE);
 
-                    cond->gtStmtExpr = sideEffList;
+                    condStmt->gtStmtExpr = sideEffList;
 
                     if (fgStmtListThreaded)
                     {
                         compCurBB = block;
 
                         /* Update ordering, costs, FP levels, etc. */
-                        gtSetStmtInfo(cond);
+                        gtSetStmtInfo(condStmt);
 
                         /* Re-link the nodes for this statement */
-                        fgSetStmtSeq(cond);
+                        fgSetStmtSeq(condStmt);
                     }
                 }
             }
@@ -14724,7 +14701,7 @@ bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, Basi
             {
                 compCurBB = block;
                 /* conditional has NO side effect - remove it */
-                fgRemoveStmt(block, cond);
+                fgRemoveStmt(block, condStmt);
             }
         }
 
@@ -14975,7 +14952,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     }
     else
     {
-        bJump->bbTreeList   = newStmtList;
+        bJump->bbStmtList   = newStmtList;
         newStmtList->gtPrev = newLastStmt;
     }
 
@@ -15048,7 +15025,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
         printf("\nfgOptimizeBranch added these statements(s) at the end of " FMT_BB ":\n", bJump->bbNum);
         for (GenTreeStmt* stmt = newStmtList; stmt != nullptr; stmt = stmt->getNextStmt())
         {
-            gtDispTree(stmt);
+            gtDispTree(stmt->gtStmtExpr);
         }
         printf("\nfgOptimizeBranch changed block " FMT_BB " from BBJ_ALWAYS to BBJ_COND.\n", bJump->bbNum);
 
@@ -16962,7 +16939,7 @@ void Compiler::fgDebugCheckUpdate()
 
     /* We check for these conditions:
      * no unreachable blocks  -> no blocks have countOfInEdges() = 0
-     * no empty blocks        -> no blocks have bbTreeList = 0
+     * no empty blocks        -> !block->isEmpty(), unless non-removable or multiple in-edges
      * no un-imported blocks  -> no blocks have BBF_IMPORTED not set (this is
      *                           kind of redundand with the above, but to make sure)
      * no un-compacted blocks -> BBJ_NONE followed by block with no jumps to it (countOfInEdges() = 1)
@@ -18519,7 +18496,7 @@ BasicBlock* Compiler::fgRngChkTarget(BasicBlock* block, SpecialCodeKind kind)
         printf("*** Computing fgRngChkTarget for block " FMT_BB "\n", block->bbNum);
         if (!block->IsLIR())
         {
-            gtDispTree(compCurStmt);
+            gtDispTree(compCurStmt->gtStmtExpr);
         }
     }
 #endif // DEBUG
@@ -18568,7 +18545,6 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
 
     noway_assert(tree);
     assert(!IsUninitialized(tree));
-    noway_assert(tree->gtOper != GT_STMT);
 
     /* Figure out what kind of a node we have */
 
@@ -19160,7 +19136,7 @@ void Compiler::fgSetBlockOrder(BasicBlock* block)
         }
 
 #ifdef DEBUG
-        if (block->bbTreeList == stmt)
+        if (block->bbStmtList == stmt)
         {
             /* first statement in the list */
             assert(stmt->gtPrev->gtNext == nullptr);
@@ -19207,7 +19183,7 @@ GenTree* Compiler::fgGetFirstNode(GenTree* tree)
     return child;
 }
 
-// Examine the bbTreeList and return the estimated code size for this block
+// Examine the bbStmtList and return the estimated code size for this block
 unsigned Compiler::fgGetCodeEstimate(BasicBlock* block)
 {
     unsigned costSz = 0; // estimate of blocks code size cost
@@ -19246,15 +19222,16 @@ unsigned Compiler::fgGetCodeEstimate(BasicBlock* block)
 
     for (GenTreeStmt* stmt = block->FirstNonPhiDef(); stmt != nullptr; stmt = stmt->getNextStmt())
     {
-        if (stmt->gtCostSz < MAX_COST)
+        unsigned char cost = stmt->GetCostSz();
+        if (cost < MAX_COST)
         {
-            costSz += stmt->gtCostSz;
+            costSz += cost;
         }
         else
         {
             // We could walk the tree to find out the real gtCostSz,
             // but just using MAX_COST for this trees code size works OK
-            costSz += stmt->gtCostSz;
+            costSz += cost;
         }
     }
 
@@ -20523,7 +20500,7 @@ void Compiler::fgDumpStmtTree(GenTreeStmt* stmt, unsigned bbNum)
 
     if (fgOrder == FGOrderLinear || opts.compDbgInfo)
     {
-        gtDispTree(stmt);
+        gtDispTree(stmt->gtStmtExpr);
     }
     else
     {
@@ -21081,9 +21058,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
     // Make sure the one return BB is not changed.
     if (genReturnBB != nullptr)
     {
-        assert(genReturnBB->bbTreeList != nullptr);
-        assert(genReturnBB->IsLIR() || genReturnBB->bbTreeList->gtOper == GT_STMT);
-        assert(genReturnBB->IsLIR() || genReturnBB->bbTreeList->gtType == TYP_VOID);
+        assert(genReturnBB->bbTreeList != nullptr || genReturnBB->bbStmtList != nullptr);
     }
 
     // The general encoder/decoder (currently) only reports "this" as a generics context as a stack location,
@@ -21130,8 +21105,6 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
 
 void Compiler::fgDebugCheckFlags(GenTree* tree)
 {
-    noway_assert(tree->gtOper != GT_STMT);
-
     const genTreeOps oper      = tree->OperGet();
     const unsigned   kind      = tree->OperKind();
     unsigned         treeFlags = tree->gtFlags & GTF_ALL_EFFECT;
@@ -21636,7 +21609,7 @@ void Compiler::fgDebugCheckNodeLinks(BasicBlock* block, GenTreeStmt* stmt)
 
 /*****************************************************************************
  *
- * A DEBUG routine to check the correctness of the links between GT_STMT nodes
+ * A DEBUG routine to check the correctness of the links between statements
  * and ordinary nodes within a statement.
  *
  ****************************************************************************/
@@ -21655,7 +21628,7 @@ void Compiler::fgDebugCheckLinks(bool morphTrees)
 
     fgDebugCheckBlockLinks();
 
-    /* For each basic block check the bbTreeList links */
+    // For each block check the links between the trees.
     for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
         if (block->IsLIR())
@@ -21688,13 +21661,13 @@ void Compiler::fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees)
 {
     for (GenTreeStmt* stmt = block->firstStmt(); stmt != nullptr; stmt = stmt->gtNextStmt)
     {
-        /* Verify that bbTreeList is threaded correctly */
-        /* Note that for the GT_STMT list, the gtPrev list is circular. The gtNext list is not: gtNext of the
-        * last GT_STMT in a block is nullptr. */
+        /* Verify that bbStmtList is threaded correctly */
+        /* Note that for the statements list, the gtPrev list is circular. The gtNext list is not: gtNext of the
+        * last statement in a block is nullptr. */
 
         noway_assert(stmt->gtPrev);
 
-        if (stmt == block->bbTreeList)
+        if (stmt == block->bbStmtList)
         {
             noway_assert(stmt->gtPrev->gtNext == nullptr);
         }
@@ -21737,8 +21710,7 @@ void Compiler::fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees)
             }
         }
 
-        /* For each GT_STMT node check that the nodes are threaded correcly - gtStmtList */
-
+        // For each statement check that the nodes are threaded correctly - gtStmtList.
         if (fgStmtListThreaded)
         {
             fgDebugCheckNodeLinks(block, stmt);
@@ -22905,9 +22877,9 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     BasicBlock*  iciBlock = pInlineInfo->iciBlock;
     BasicBlock*  block;
 
-    noway_assert(iciBlock->bbTreeList != nullptr);
+    noway_assert(iciBlock->bbStmtList != nullptr);
     noway_assert(iciStmt->gtStmtExpr != nullptr);
-    assert(iciBlock->Contains(iciStmt) && (iciStmt->gtStmtExpr == iciCall));
+    assert(iciStmt->gtStmtExpr == iciCall);
     noway_assert(iciCall->gtOper == GT_CALL);
 
 #ifdef DEBUG
@@ -22960,7 +22932,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         if (InlineeCompiler->fgFirstBB->bbJumpKind == BBJ_RETURN)
         {
             // Inlinee contains just one BB. So just insert its statement list to topBlock.
-            if (InlineeCompiler->fgFirstBB->bbTreeList != nullptr)
+            if (InlineeCompiler->fgFirstBB->bbStmtList != nullptr)
             {
                 stmtAfter = fgInsertStmtListAfter(iciBlock, stmtAfter, InlineeCompiler->fgFirstBB->firstStmt());
 
@@ -22984,7 +22956,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 
                         printf("\n");
 
-                        gtDispTree(currentDumpStmt);
+                        gtDispTree(currentDumpStmt->gtStmtExpr);
                         printf("\n");
 
                     } while (currentDumpStmt != stmtAfter);
@@ -23023,37 +22995,37 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     GenTreeStmt* bottomBlock_Begin;
     bottomBlock_Begin = stmtAfter->gtNextStmt;
 
-    if (topBlock->bbTreeList == nullptr)
+    if (topBlock->bbStmtList == nullptr)
     {
         // topBlock is empty before the split.
         // In this case, both topBlock and bottomBlock should be empty
         noway_assert(bottomBlock_Begin == nullptr);
-        topBlock->bbTreeList    = nullptr;
-        bottomBlock->bbTreeList = nullptr;
+        topBlock->bbStmtList    = nullptr;
+        bottomBlock->bbStmtList = nullptr;
     }
-    else if (topBlock->bbTreeList == bottomBlock_Begin)
+    else if (topBlock->bbStmtList == bottomBlock_Begin)
     {
         noway_assert(bottomBlock_Begin != nullptr);
 
         // topBlock contains at least one statement before the split.
         // And the split is before the first statement.
         // In this case, topBlock should be empty, and everything else should be moved to the bottonBlock.
-        bottomBlock->bbTreeList = topBlock->bbTreeList;
-        topBlock->bbTreeList    = nullptr;
+        bottomBlock->bbStmtList = topBlock->bbStmtList;
+        topBlock->bbStmtList    = nullptr;
     }
     else if (bottomBlock_Begin == nullptr)
     {
-        noway_assert(topBlock->bbTreeList != nullptr);
+        noway_assert(topBlock->bbStmtList != nullptr);
 
         // topBlock contains at least one statement before the split.
         // And the split is at the end of the topBlock.
         // In this case, everything should be kept in the topBlock, and the bottomBlock should be empty
 
-        bottomBlock->bbTreeList = nullptr;
+        bottomBlock->bbStmtList = nullptr;
     }
     else
     {
-        noway_assert(topBlock->bbTreeList != nullptr);
+        noway_assert(topBlock->bbStmtList != nullptr);
         noway_assert(bottomBlock_Begin != nullptr);
 
         // This is the normal case where both blocks should contain at least one statement.
@@ -23068,11 +23040,11 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         topBlock_End->gtNext = nullptr;
 
         // Fix up all the pointers.
-        topBlock->bbTreeList         = topBlock_Begin;
-        topBlock->bbTreeList->gtPrev = topBlock_End;
+        topBlock->bbStmtList         = topBlock_Begin;
+        topBlock->bbStmtList->gtPrev = topBlock_End;
 
-        bottomBlock->bbTreeList         = bottomBlock_Begin;
-        bottomBlock->bbTreeList->gtPrev = bottomBlock_End;
+        bottomBlock->bbStmtList         = bottomBlock_Begin;
+        bottomBlock->bbStmtList->gtPrev = bottomBlock_End;
     }
 
     //
@@ -23371,7 +23343,7 @@ GenTreeStmt* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 #ifdef DEBUG
                     if (verbose)
                     {
-                        gtDispTree(afterStmt);
+                        gtDispTree(afterStmt->gtStmtExpr);
                     }
 #endif // DEBUG
                 }
@@ -23491,7 +23463,7 @@ GenTreeStmt* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 #ifdef DEBUG
                         if (verbose)
                         {
-                            gtDispTree(afterStmt);
+                            gtDispTree(afterStmt->gtStmtExpr);
                         }
 #endif // DEBUG
                     }
@@ -23596,7 +23568,7 @@ GenTreeStmt* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 #ifdef DEBUG
                 if (verbose)
                 {
-                    gtDispTree(afterStmt);
+                    gtDispTree(afterStmt->gtStmtExpr);
                 }
 #endif // DEBUG
             }
@@ -23687,8 +23659,6 @@ void Compiler::fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* bloc
     unsigned             gcRefLclCnt       = inlineInfo->numberOfGcRefLocals;
     const unsigned       argCnt            = inlineInfo->argCnt;
 
-    noway_assert(callStmt->gtOper == GT_STMT);
-
     for (unsigned lclNum = 0; lclNum < lclCnt; lclNum++)
     {
         // Is the local a gc ref type? Need to look at the
@@ -23745,7 +23715,7 @@ void Compiler::fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* bloc
 #ifdef DEBUG
         if (verbose)
         {
-            gtDispTree(nullStmt);
+            gtDispTree(nullStmt->gtStmtExpr);
         }
 #endif // DEBUG
     }

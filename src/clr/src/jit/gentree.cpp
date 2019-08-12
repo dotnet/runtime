@@ -260,7 +260,6 @@ void GenTree::InitNodeSize()
     GenTree::s_gtNodeSizes[GT_RET_EXPR]         = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_OBJ]              = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_FIELD]            = TREE_NODE_SZ_LARGE;
-    GenTree::s_gtNodeSizes[GT_STMT]             = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_CMPXCHG]          = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_QMARK]            = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_LEA]              = TREE_NODE_SZ_LARGE;
@@ -1126,9 +1125,6 @@ AGAIN:
         return true;
     }
 
-    assert(op1->gtOper != GT_STMT);
-    assert(op2->gtOper != GT_STMT);
-
     oper = op1->OperGet();
 
     /* The operators must be equal */
@@ -1533,8 +1529,6 @@ AGAIN:
     oper = tree->OperGet();
     kind = tree->OperKind();
 
-    assert(oper != GT_STMT);
-
     /* Is this a constant node? */
 
     if (kind & GTK_CONST)
@@ -1843,7 +1837,6 @@ unsigned Compiler::gtHashValue(GenTree* tree)
 
 AGAIN:
     assert(tree);
-    assert(tree->gtOper != GT_STMT);
 
     /* Figure out what kind of a node we have */
 
@@ -3063,7 +3056,6 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
 unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 {
     assert(tree);
-    assert(tree->gtOper != GT_STMT);
 
 #ifdef DEBUG
     /* Clear the GTF_DEBUG_NODE_MORPHED flag as well */
@@ -4679,10 +4671,6 @@ GenTree** GenTree::gtGetChildPointer(GenTree* parent) const
             }
         }
         break;
-
-        case GT_STMT:
-            noway_assert(!"Illegal node for gtGetChildPointer()");
-            unreached();
     }
 
     return nullptr;
@@ -4860,14 +4848,6 @@ bool GenTree::TryGetUse(GenTree* def, GenTree*** use)
             if (def == this->AsField()->gtFldObj)
             {
                 *use = &this->AsField()->gtFldObj;
-                return true;
-            }
-            return false;
-
-        case GT_STMT:
-            if (def == this->AsStmt()->gtStmtExpr)
-            {
-                *use = &this->AsStmt()->gtStmtExpr;
                 return true;
             }
             return false;
@@ -7310,10 +7290,6 @@ GenTree* Compiler::gtCloneExpr(
 
     switch (oper)
     {
-        case GT_STMT:
-            NO_WAY("Use gtCloneStmt instead");
-            goto DONE;
-
         case GT_CALL:
 
             // We can't safely clone calls that have GT_RET_EXPRs via gtCloneExpr.
@@ -8131,7 +8107,6 @@ unsigned GenTree::NumChildren()
                 return 2;
 
             case GT_FIELD:
-            case GT_STMT:
                 return 1;
 
             case GT_ARR_ELEM:
@@ -8287,9 +8262,6 @@ GenTree* GenTree::GetChild(unsigned childNum)
 
             case GT_FIELD:
                 return AsField()->gtFldObj;
-
-            case GT_STMT:
-                return AsStmt()->gtStmtExpr;
 
             case GT_ARR_ELEM:
                 if (childNum == 0)
@@ -8566,18 +8538,6 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
             else
             {
                 m_edge    = &m_node->AsField()->gtFldObj;
-                m_advance = &GenTreeUseEdgeIterator::Terminate;
-            }
-            return;
-
-        case GT_STMT:
-            if (m_node->AsStmt()->gtStmtExpr == nullptr)
-            {
-                m_state = -1;
-            }
-            else
-            {
-                m_edge    = &m_node->AsStmt()->gtStmtExpr;
                 m_advance = &GenTreeUseEdgeIterator::Terminate;
             }
             return;
@@ -9314,14 +9274,7 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
     }
     else
     {
-        if (tree->gtOper == GT_STMT)
-        {
-            prev = tree->gtStmt.gtStmtExpr;
-        }
-        else
-        {
-            prev = tree;
-        }
+        prev = tree;
 
         bool     hasSeqNum = true;
         unsigned dotNum    = 0;
@@ -9341,7 +9294,7 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
 
         // If we have an indent stack, don't add additional characters,
         // as it will mess up the alignment.
-        bool displayDotNum = tree->gtOper != GT_STMT && hasSeqNum && (indentStack == nullptr);
+        bool displayDotNum = hasSeqNum && (indentStack == nullptr);
         if (displayDotNum)
         {
             printf("N%03u.%02u ", prev->gtSeqNum, dotNum);
@@ -9732,35 +9685,6 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
                         assert(fgGlobalMorph);
                         printf("(P?!)"); // Promoted struct
                     }
-                }
-            }
-
-            if (tree->gtOper == GT_STMT)
-            {
-                if (opts.compDbgInfo)
-                {
-                    GenTreeStmt* stmt  = tree->AsStmt();
-                    IL_OFFSET    endIL = stmt->gtStmtLastILoffs;
-
-                    printf("(IL ");
-                    if (stmt->gtStmtILoffsx == BAD_IL_OFFSET)
-                    {
-                        printf("  ???");
-                    }
-                    else
-                    {
-                        printf("0x%03X", jitGetILoffs(stmt->gtStmtILoffsx));
-                    }
-                    printf("...");
-                    if (endIL == BAD_IL_OFFSET)
-                    {
-                        printf("  ???");
-                    }
-                    else
-                    {
-                        printf("0x%03X", endIL);
-                    }
-                    printf(")");
                 }
             }
 
@@ -10984,15 +10908,6 @@ void Compiler::gtDispTree(GenTree*     tree,
         }
         break;
 
-        case GT_STMT:
-            printf("\n");
-
-            if (!topOnly)
-            {
-                gtDispChild(tree->gtStmt.gtStmtExpr, indentStack, IIArcBottom);
-            }
-            break;
-
         case GT_ARR_ELEM:
             gtDispCommonEndLine(tree);
 
@@ -11381,11 +11296,11 @@ void Compiler::gtDispArgList(GenTreeCall* call, IndentStack* indentStack)
 // Assumptions:
 //    'tree' must be a GT_LIST node
 
-void Compiler::gtDispTreeList(GenTree* tree, IndentStack* indentStack /* = nullptr */)
+void Compiler::gtDispStmtList(GenTreeStmt* stmts, IndentStack* indentStack /* = nullptr */)
 {
-    for (/*--*/; tree != nullptr; tree = tree->gtNext)
+    for (GenTreeStmt* stmt = stmts; stmt != nullptr; stmt = stmt->getNextStmt())
     {
-        gtDispTree(tree, indentStack);
+        gtDispTree(stmt->gtStmtExpr, indentStack);
         printf("\n");
     }
 }
@@ -12577,7 +12492,7 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
             " [%06u] (assign/newobj [%06u] copy [%06u])\n",
             (options == BR_DONT_REMOVE) ? "checking if it is possible" : "attempting",
             (options == BR_MAKE_LOCAL_COPY) ? "make local unboxed version" : "remove side effects", dspTreeID(op),
-            dspTreeID(asgStmt), dspTreeID(copyStmt));
+            dspTreeID(asgStmt->gtStmtExpr), dspTreeID(copyStmt->gtStmtExpr));
 
     // If we don't recognize the form of the assign, bail.
     GenTree* asg = asgStmt->gtStmtExpr;
@@ -15019,8 +14934,6 @@ void Compiler::gtExtractSideEffList(GenTree*  expr,
         }
     };
 
-    assert(!expr->OperIs(GT_STMT));
-
     SideEffectExtractor extractor(this, flags);
 
     if (ignoreRoot)
@@ -15399,13 +15312,9 @@ bool GenTree::IsPhiDefn()
     return res;
 }
 
-bool GenTree::IsPhiDefnStmt()
+bool GenTreeStmt::IsPhiDefnStmt()
 {
-    if (OperGet() != GT_STMT)
-    {
-        return false;
-    }
-    GenTree* asg = gtStmt.gtStmtExpr;
+    GenTree* asg = gtStmtExpr;
     return asg->IsPhiDefn();
 }
 

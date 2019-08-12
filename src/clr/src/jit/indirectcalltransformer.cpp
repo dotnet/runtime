@@ -177,7 +177,7 @@ private:
 
         void Transform()
         {
-            JITDUMP("*** %s: transforming [%06u]\n", Name(), compiler->dspTreeID(stmt));
+            JITDUMP("*** %s: transforming [%06u]\n", Name(), compiler->dspTreeID(stmt->gtStmtExpr));
             FixupRetExpr();
             ClearFlag();
             CreateRemainder();
@@ -666,8 +666,7 @@ private:
             GenTree*       clonedObj = compiler->gtCloneExpr(origCall->gtCallObjp);
             GenTree*       assign    = compiler->gtNewTempAssign(thisTemp, clonedObj);
             compiler->lvaSetClass(thisTemp, clsHnd, true);
-            GenTreeStmt* assignStmt = compiler->gtNewStmt(assign);
-            compiler->fgInsertStmtAtEnd(thenBlock, assignStmt);
+            compiler->fgNewStmtAtEnd(thenBlock, assign);
 
             // Clone call. Note we must use the special candidate helper.
             GenTreeCall* call = compiler->gtCloneCandidateCall(origCall);
@@ -698,9 +697,8 @@ private:
             inlineInfo->exactContextHnd = context;
             call->gtInlineCandidateInfo = inlineInfo;
 
-            // Add the call
-            GenTreeStmt* callStmt = compiler->gtNewStmt(call);
-            compiler->fgInsertStmtAtEnd(thenBlock, callStmt);
+            // Add the call.
+            compiler->fgNewStmtAtEnd(thenBlock, call);
 
             // If there was a ret expr for this call, we need to create a new one
             // and append it just after the call.
@@ -722,9 +720,7 @@ private:
                     // We should always have a return temp if we return results by value
                     assert(origCall->TypeGet() == TYP_VOID);
                 }
-
-                GenTreeStmt* resultStmt = compiler->gtNewStmt(retExpr);
-                compiler->fgInsertStmtAtEnd(thenBlock, resultStmt);
+                compiler->fgNewStmtAtEnd(thenBlock, retExpr);
             }
         }
 
