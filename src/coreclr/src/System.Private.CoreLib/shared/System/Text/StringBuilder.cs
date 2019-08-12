@@ -565,7 +565,7 @@ namespace System.Text
         /// as chunks (ReadOnlyMemory) of characters.  An example use is:
         ///
         ///      foreach (ReadOnlyMemory&lt;char&gt; chunk in sb.GetChunks())
-        ///         foreach(char c in chunk.Span)
+        ///         foreach (char c in chunk.Span)
         ///             { /* operation on c }
         ///
         /// It is undefined what happens if the StringBuilder is modified while the chunk
@@ -582,7 +582,7 @@ namespace System.Text
         ///    foreach (ReadOnlyMemory&lt;char&gt; chunk in sb.GetChunks())
         ///    {
         ///         var span = chunk.Span;
-        ///         for(int i = 0; i &lt; span.Length; i++)
+        ///         for (int i = 0; i &lt; span.Length; i++)
         ///             { /* operation on span[i] */ }
         ///    }
         /// </summary>

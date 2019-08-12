@@ -1541,12 +1541,12 @@ namespace System.Threading.Tasks
         // it has been invoked N times.  This allows us to replace this logic:
         //      Task<Task[]> promise = new Task<Task[]>(...);
         //      int _count = tasksCopy.Length;
-        //      Action<Task> completionAction = delegate {if(Interlocked.Decrement(ref _count) == 0) promise.TrySetResult(tasksCopy);
-        //      for(int i=0; i<_count; i++)
+        //      Action<Task> completionAction = delegate {if (Interlocked.Decrement(ref _count) == 0) promise.TrySetResult(tasksCopy);
+        //      for (int i=0; i<_count; i++)
         //          tasksCopy[i].AddCompletionAction(completionAction);
         // with this logic:
         //      CompletionOnCountdownPromise promise = new CompletionOnCountdownPromise(tasksCopy);
-        //      for(int i=0; i<tasksCopy.Length; i++) tasksCopy[i].AddCompletionAction(promise);
+        //      for (int i=0; i<tasksCopy.Length; i++) tasksCopy[i].AddCompletionAction(promise);
         // which saves a few allocations.
         //
         // Used in TaskFactory.CommonCWAllLogic(Task[]), below.
@@ -2272,10 +2272,10 @@ namespace System.Threading.Tasks
         // It allows us to replace this logic:
         //      Task<Task> promise = new Task<Task>(...);
         //      Action<Task> completionAction = delegate(Task completingTask) { promise.TrySetResult(completingTask); }
-        //      for(int i=0; i<tasksCopy.Length; i++) tasksCopy[i].AddCompletionAction(completionAction);
+        //      for (int i=0; i<tasksCopy.Length; i++) tasksCopy[i].AddCompletionAction(completionAction);
         // with this logic:
         //      CompletionOnInvokePromise promise = new CompletionOnInvokePromise(tasksCopy);
-        //      for(int i=0; i<tasksCopy.Length; i++) tasksCopy[i].AddCompletionAction(promise);
+        //      for (int i=0; i<tasksCopy.Length; i++) tasksCopy[i].AddCompletionAction(promise);
         // which saves a couple of allocations.
         //
         // Used in TaskFactory.CommonCWAnyLogic(), below.
