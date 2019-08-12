@@ -1,5 +1,13 @@
 trigger: none
 
+schedules:
+- cron: "0 3 * * *"
+  displayName: Outerloop scheduled build
+  branches:
+    include:
+    - master
+    - releases/3.0
+
 resources:
   containers:
   - container: rhel7_container
