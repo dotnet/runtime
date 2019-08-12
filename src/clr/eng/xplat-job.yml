@@ -4,16 +4,17 @@ parameters:
   osGroup: ''
   osIdentifier: ''
   name: ''
-  displayName: ''
   helixType: '(unspecified)'
-  condition: ''
-  dependsOn: ''
   container: ''
-  timeoutInMinutes: ''
   crossrootfsDir: ''
-  enableMicrobuild: ''
 
   # arcade-specific parameters
+  condition: ''
+  continueOnError: false
+  dependsOn: ''
+  displayName: ''
+  timeoutInMinutes: ''
+  enableMicrobuild: ''
   gatherAssetManifests: false
 
   variables: {} ## any extra variables to add to the defaults defined below
@@ -28,6 +29,7 @@ jobs:
     condition: ${{ parameters.condition }}
     dependsOn: ${{ parameters.dependsOn }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+    continueOnError: ${{ parameters.continueOnError }}
 
     # Send telemetry for all builds
     enableTelemetry: true
