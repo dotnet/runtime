@@ -90,7 +90,7 @@ stub_set_resume_state (MonoJitTlsData *jit_tls, MonoException *ex, MonoJitExcept
 static void
 stub_get_resume_state (const MonoJitTlsData *jit_tls, gboolean *has_resume_state, MonoInterpFrameHandle *interp_frame, gpointer *handler_ip)
 {
-	has_resume_state = FALSE;
+	*has_resume_state = FALSE;
 }
 
 static gboolean
