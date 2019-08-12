@@ -198,48 +198,22 @@ process_quote_path (const gchar *path)
 }
 
 /* Only used when UseShellExecute is false */
-static gboolean
-process_complete_path (const gunichar2 *appname, gchar **completed)
+static gchar*
+process_complete_path (const gunichar2 *appname)
 {
 	// FIXME This function should stick to gunichar2.
 
 	char *utf8app;
 	char *utf8appmemory = NULL;
-	char *found = NULL;
-	gboolean result, file_test_result;
+	char *result;
 
 	utf8appmemory = g_utf16_to_utf8 (appname, -1, NULL, NULL, NULL);
 	utf8app = process_unquote_application_name (utf8appmemory);
 
-	if (g_path_is_absolute (utf8app)) {
-		*completed = process_quote_path (utf8app);
-		result = TRUE;
-		goto exit;
-	}
+	result = process_quote_path (utf8app);
 
-	MONO_ENTER_GC_SAFE;
-	file_test_result = g_file_test (utf8app, G_FILE_TEST_IS_EXECUTABLE) && !g_file_test (utf8app, G_FILE_TEST_IS_DIR);
-	MONO_EXIT_GC_SAFE;
-	if (file_test_result) {
-		*completed = process_quote_path (utf8app);
-		result = TRUE;
-		goto exit;
-	}
-	
-	MONO_ENTER_GC_SAFE;
-	found = g_find_program_in_path (utf8app);
-	MONO_EXIT_GC_SAFE;
-	if (found == NULL) {
-		*completed = NULL;
-		result = FALSE;
-		goto exit;
-	}
-
-	*completed = process_quote_path (found);
-	result = TRUE;
-exit:
-	g_free (found);
 	g_free (utf8appmemory);
+
 	return result;
 }
 
@@ -256,20 +230,20 @@ process_get_shell_arguments (MonoCreateProcessCoop *proc_start_info, MonoStringH
 	// We are either returning spath, or spath + " " + cmd.
 	// Just use gunichar2. Maybe move logic to C#.
 
-	if (process_complete_path (proc_start_info->filename, &spath)) {
-		/* Seems like our CreateProcess does not work as the windows one.
-		 * This hack is needed to deal with paths containing spaces */
-		if (!MONO_HANDLE_IS_NULL (*cmd)) {
-			cmd_utf8 = mono_string_handle_to_utf8 (*cmd, error);
-			goto_if_nok (error, error);
-			new_cmd = g_strdup_printf ("%s %s", spath, cmd_utf8);
-			*cmd = mono_string_new_utf8_len (mono_domain_get (), new_cmd, strlen (new_cmd), error);
-			goto_if_nok (error, error);
-		}
-		else {
-			*cmd = mono_string_new_utf8_len (mono_domain_get (), spath, strlen (spath), error);
-			goto_if_nok (error, error);
-		}
+	spath = process_complete_path (proc_start_info->filename);
+
+	/* Seems like our CreateProcess does not work as the windows one.
+	 * This hack is needed to deal with paths containing spaces */
+	if (!MONO_HANDLE_IS_NULL (*cmd)) {
+		cmd_utf8 = mono_string_handle_to_utf8 (*cmd, error);
+		goto_if_nok (error, error);
+		new_cmd = g_strdup_printf ("%s %s", spath, cmd_utf8);
+		*cmd = mono_string_new_utf8_len (mono_domain_get (), new_cmd, strlen (new_cmd), error);
+		goto_if_nok (error, error);
+	}
+	else {
+		*cmd = mono_string_new_utf8_len (mono_domain_get (), spath, strlen (spath), error);
+		goto_if_nok (error, error);
 	}
 
 exit:
