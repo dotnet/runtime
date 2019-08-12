@@ -18,7 +18,7 @@ namespace System.Reflection.Context.Delegation
             Debug.Assert(null != type);
 
             _typeInfo = type.GetTypeInfo();
-            if(_typeInfo == null)
+            if (_typeInfo == null)
             {
                 throw new InvalidOperationException(SR.Format(SR.InvalidOperation_NoTypeInfoForThisType, type.FullName));
             }

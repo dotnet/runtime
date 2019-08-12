@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.Security.Cryptography
 {
-    partial class RandomNumberGeneratorImplementation
+    internal partial class RandomNumberGeneratorImplementation
     {
         private static unsafe void GetBytes(byte* pbBuffer, int count)
         {

@@ -40,7 +40,7 @@ namespace System.Net.Security
                     credential.Policy,
                     sslAuthenticationOptions);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Debug.Write("Exception Caught. - " + ex);
                 Dispose();

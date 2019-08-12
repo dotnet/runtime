@@ -99,7 +99,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
 
                 ats = ats.OuterType;
-            } while(ats != null);
+            } while (ats != null);
 
             TypeArray typeArgs = ((AggregateType)type).TypeArgsAll;
             for (int i = 0; i < typeArgs.Count; i++)

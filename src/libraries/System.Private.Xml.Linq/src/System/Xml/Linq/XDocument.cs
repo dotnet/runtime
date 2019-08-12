@@ -429,7 +429,7 @@ namespace System.Xml.Linq
             XDocument d = InitLoad(reader, options);
             d.ReadContentFrom(reader, options);
 
-            if( !reader.EOF) throw new InvalidOperationException(SR.InvalidOperation_ExpectedEndOfFile);
+            if ( !reader.EOF) throw new InvalidOperationException(SR.InvalidOperation_ExpectedEndOfFile);
             if (d.Root == null) throw new InvalidOperationException(SR.InvalidOperation_MissingRoot);
             return d;
         }

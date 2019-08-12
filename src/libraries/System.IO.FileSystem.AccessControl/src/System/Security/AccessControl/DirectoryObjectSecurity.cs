@@ -497,7 +497,7 @@ nameof(modification),
 
         protected override bool ModifyAccess(AccessControlModification modification, AccessRule rule, out bool modified)
         {
-            ////if(this.AccessRuleType.IsAssignableFrom(rule.GetType().GetTypeInfo()))
+            ////if (this.AccessRuleType.IsAssignableFrom(rule.GetType().GetTypeInfo()))
             ////if (!TypeExtensions.IsAssignableFrom(this.AccessRuleType, rule.GetType()))
             //{
             //    throw new ArgumentException(

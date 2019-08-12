@@ -474,14 +474,14 @@ namespace System.Resources.Extensions.Tests
                 .Concat(TestData.ByteArrayConverterWithoutDrawing)
                 .Concat(TestData.StringConverterWithoutDrawing);
 
-            foreach(KeyValuePair<string, object> pair in objectPairs)
+            foreach (KeyValuePair<string, object> pair in objectPairs)
             {
                 var actualValue = resourceManager.GetObject(pair.Key);
 
                 Assert.Equal(pair.Value, actualValue);
             }
 
-            foreach(KeyValuePair<string, (Type type, Stream stream)> pair in TestData.ActivatorWithoutDrawing)
+            foreach (KeyValuePair<string, (Type type, Stream stream)> pair in TestData.ActivatorWithoutDrawing)
             {
                 pair.Value.stream.Seek(0, SeekOrigin.Begin);
                 var expectedValue = Activator.CreateInstance(pair.Value.type, pair.Value.stream);

@@ -11,7 +11,7 @@ using Microsoft.Internal.Collections;
 
 namespace System.ComponentModel.Composition.Hosting
 {
-    partial class DirectoryCatalog
+    public partial class DirectoryCatalog
     {
         internal class DirectoryCatalogDebuggerProxy
         {

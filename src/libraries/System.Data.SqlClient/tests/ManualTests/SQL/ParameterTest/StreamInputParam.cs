@@ -643,7 +643,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                         }
                         catch (AggregateException ae)
                         {
-                            if(!ae.InnerException.Message.Contains("Operation cancelled by user."))
+                            if (!ae.InnerException.Message.Contains("Operation cancelled by user."))
                             {
                                 Console.WriteLine("Unexpected exception message: " + ae.InnerException.Message);
                             }

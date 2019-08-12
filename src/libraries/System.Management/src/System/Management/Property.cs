@@ -21,9 +21,9 @@ namespace System.Management
     {
         public static object GetSafeObject(object theValue)
         {
-            if(null == theValue)
+            if (null == theValue)
                 return null;
-            else if(theValue.GetType().IsPrimitive)
+            else if (theValue.GetType().IsPrimitive)
                 return ((IConvertible)theValue).ToType(typeof(object), null);
             else
                 return RuntimeHelpers.GetObjectValue(theValue);

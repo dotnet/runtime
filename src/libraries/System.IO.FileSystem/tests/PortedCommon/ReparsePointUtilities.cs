@@ -99,12 +99,12 @@ public static class MountHelper
     {
          try
         {
-            if(args[0]=="-m")
+            if (args[0]=="-m")
                 Mount(args[1], args[2]);
-            if(args[0]=="-u")
+            if (args[0]=="-u")
                 Unmount(args[1]);
          }
-        catch(Exception ex)
+        catch (Exception ex)
         {
              Console.WriteLine(ex);
         }

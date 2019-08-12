@@ -9,7 +9,7 @@ using System.Threading;
 
 namespace System.Net.Sockets
 {
-    partial class SafeSocketHandle
+    public partial class SafeSocketHandle
     {
         private ThreadPoolBoundHandle _iocpBoundHandle;
         private bool _skipCompletionPortOnSuccess;

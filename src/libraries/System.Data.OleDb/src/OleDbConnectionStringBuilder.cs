@@ -584,7 +584,7 @@ namespace System.Data.OleDb
             }
         }
 
-        [Flags()]
+        [Flags]
         internal enum OleDbServiceValues : int
         {
             DisableAll = unchecked((int)0x00000000),

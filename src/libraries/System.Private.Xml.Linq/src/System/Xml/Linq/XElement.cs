@@ -2043,7 +2043,7 @@ namespace System.Xml.Linq
         /// </summary>
         private void ReadElementFromImpl(XmlReader r, LoadOptions o)
         {
-            if(r.ReadState != ReadState.Interactive) throw new InvalidOperationException(SR.InvalidOperation_ExpectedInteractive);
+            if (r.ReadState != ReadState.Interactive) throw new InvalidOperationException(SR.InvalidOperation_ExpectedInteractive);
             name = XNamespace.Get(r.NamespaceURI).GetName(r.LocalName);
             if ((o & LoadOptions.SetBaseUri) != 0)
             {

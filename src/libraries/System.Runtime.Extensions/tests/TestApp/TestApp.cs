@@ -11,7 +11,7 @@ internal static class Program
     public static int Main(string[] args)
     {
         int sum = 5;
-        for(int i = 0; args != null && i < args.Length; i++)
+        for (int i = 0; args != null && i < args.Length; i++)
         {
             sum += int.Parse(args[i]);
         }

@@ -322,7 +322,7 @@ namespace System.Linq.Tests
             Assert.NotNull(values);
             using (var ke = keys.GetEnumerator())
             {
-                foreach(var value in values)
+                foreach (var value in values)
                 {
                     Assert.True(ke.MoveNext());
                     var key = ke.Current;

@@ -383,7 +383,7 @@ namespace System.Net.Http.Functional.Tests
                         {
                             await client.GetAsync(uri, cts.Token);
                         }
-                        catch(OperationCanceledException e)
+                        catch (OperationCanceledException e)
                         {
                             ex = e;
                         }

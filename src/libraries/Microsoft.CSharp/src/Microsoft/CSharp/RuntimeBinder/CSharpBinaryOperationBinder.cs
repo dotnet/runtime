@@ -127,7 +127,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         {
             BinderHelper.ValidateBindArgument(target, nameof(target));
             BinderHelper.ValidateBindArgument(arg, nameof(arg));
-            return BinderHelper.Bind(this, _binder, new [] {target, arg}, _argumentInfo, errorSuggestion);
+            return BinderHelper.Bind(this, _binder, new[] {target, arg}, _argumentInfo, errorSuggestion);
         }
     }
 }

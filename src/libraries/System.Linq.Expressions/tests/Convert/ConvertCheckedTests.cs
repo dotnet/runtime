@@ -8316,7 +8316,7 @@ namespace System.Linq.Expressions.Tests
             {
                 expected = (byte)value;
             }
-            catch(OverflowException)
+            catch (OverflowException)
             {
                 Assert.Throws<OverflowException>(() => f());
                 return;
@@ -11988,7 +11988,7 @@ namespace System.Linq.Expressions.Tests
             {
                 expected = checked((byte)value);
             }
-            catch(OverflowException)
+            catch (OverflowException)
             {
                 Assert.Throws<OverflowException>(() => f());
                 return;
@@ -12587,7 +12587,7 @@ namespace System.Linq.Expressions.Tests
             {
                 expected = checked((byte?)value);
             }
-            catch(OverflowException)
+            catch (OverflowException)
             {
                 Assert.Throws<OverflowException>(() => f());
                 return;

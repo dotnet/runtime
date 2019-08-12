@@ -765,14 +765,14 @@ namespace System.Data.Common
         // whenever we encounter a new instance of the data
 
         // dangerous delegate around IUnknown::QueryInterface (0th vtable entry)
-        [SuppressUnmanagedCodeSecurity()]
+        [SuppressUnmanagedCodeSecurity]
         internal delegate int IUnknownQueryInterface(
                 IntPtr pThis,
                 ref Guid riid,
                 ref IntPtr ppInterface);
 
         // dangerous delegate around IDataInitialize::GetDataSource (4th vtable entry)
-        [SuppressUnmanagedCodeSecurity()]
+        [SuppressUnmanagedCodeSecurity]
         internal delegate System.Data.OleDb.OleDbHResult IDataInitializeGetDataSource(
                 IntPtr pThis, // first parameter is always the 'this' value, must use use result from QI
                 IntPtr pUnkOuter,
@@ -782,12 +782,12 @@ namespace System.Data.Common
                 ref System.Data.OleDb.DataSourceWrapper ppDataSource);
 
         // dangerous wrapper around IDBInitialize::Initialize (4th vtable entry)
-        [SuppressUnmanagedCodeSecurity()]
+        [SuppressUnmanagedCodeSecurity]
         internal delegate System.Data.OleDb.OleDbHResult IDBInitializeInitialize(
                 IntPtr pThis); // first parameter is always the 'this' value, must use use result from QI
 
         // dangerous wrapper around IDBCreateSession::CreateSession (4th vtable entry)
-        [SuppressUnmanagedCodeSecurity()]
+        [SuppressUnmanagedCodeSecurity]
         internal delegate System.Data.OleDb.OleDbHResult IDBCreateSessionCreateSession(
                 IntPtr pThis, // first parameter is always the 'this' value, must use use result from QI
                 IntPtr pUnkOuter,
@@ -795,7 +795,7 @@ namespace System.Data.Common
                 ref System.Data.OleDb.SessionWrapper ppDBSession);
 
         // dangerous wrapper around IDBCreateCommand::CreateCommand (4th vtable entry)
-        [SuppressUnmanagedCodeSecurity()]
+        [SuppressUnmanagedCodeSecurity]
         internal delegate System.Data.OleDb.OleDbHResult IDBCreateCommandCreateCommand(
                 IntPtr pThis, // first parameter is always the 'this' value, must use use result from QI
                 IntPtr pUnkOuter,

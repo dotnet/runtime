@@ -30,7 +30,7 @@ namespace System.Net.Http.Tests
         private static IEnumerable<object[]> GetStatusCodeLines(string template)
         {
             const string reasonPhrase = "Test Phrase";
-            foreach(int code in Enum.GetValues(typeof(HttpStatusCode)))
+            foreach (int code in Enum.GetValues(typeof(HttpStatusCode)))
             {
                 yield return new object[] { string.Format(template, code, reasonPhrase), code, reasonPhrase};
             }
@@ -38,7 +38,7 @@ namespace System.Net.Http.Tests
 
         private static IEnumerable<object[]> GetStatusCodeLinesForMajorVersions(int min, int max)
         {
-            for(int major = min; major < max; major++)
+            for (int major = min; major < max; major++)
             {
                 yield return new object[] { string.Format(StatusCodeMajorVersionOnlyFormat, major), major, 0 };
             }
@@ -46,9 +46,9 @@ namespace System.Net.Http.Tests
 
         private static IEnumerable<object[]> GetStatusCodeLinesForMajorMinorVersions(int min, int max)
         {
-            for(int major = min; major < max; major++)
+            for (int major = min; major < max; major++)
             {
-                for(int minor = min; minor < max; minor++)
+                for (int minor = min; minor < max; minor++)
                 {
                     yield return new object[] {string.Format(StatusCodeVersionFormat, major, minor), major, minor};
                 }
@@ -57,7 +57,7 @@ namespace System.Net.Http.Tests
 
         private static IEnumerable<object[]> GetInvalidHeaderLines()
         {
-            foreach(char c in invalidChars)
+            foreach (char c in invalidChars)
             {
                 yield return new object[] { string.Format(HeaderNameWithInvalidChar, c) };
             }

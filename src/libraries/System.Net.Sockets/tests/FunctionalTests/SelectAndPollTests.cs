@@ -12,8 +12,8 @@ namespace System.Net.Sockets.Tests
 {
     public class SelectAndPollTests
     {
-        const int SelectTimeout = 100;
-        const int SelectSuccessTimeoutMicroseconds = 5*1000*1000; // 5 seconds
+        private const int SelectTimeout = 100;
+        private const int SelectSuccessTimeoutMicroseconds = 5*1000*1000; // 5 seconds
 
         [Fact]
         public void SelectNone_Throws()

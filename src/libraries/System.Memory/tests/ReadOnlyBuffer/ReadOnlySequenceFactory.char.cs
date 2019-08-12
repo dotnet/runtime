@@ -20,7 +20,7 @@ namespace System.Memory.Tests
             {
                 IEnumerable<int> ascii = Enumerable.Range(' ', (char)0x7f - ' ');
                 IEnumerable<int> items = ascii;
-                for(int i = (size + 20) / ascii.Count(); i > 0; i--)
+                for (int i = (size + 20) / ascii.Count(); i > 0; i--)
                     items = items.Concat(ascii);
 
                 var str = new string(items.Select(c => (char)c).ToArray());

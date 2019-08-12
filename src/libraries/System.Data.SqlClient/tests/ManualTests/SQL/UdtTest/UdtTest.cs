@@ -252,7 +252,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                         while (reader.Read())
                         {
                             DataTestUtility.AssertEqualsWithDescription(1, reader.FieldCount, "Unexpected FieldCount.");
-                            if(currentValue < expectedValues.Length)
+                            if (currentValue < expectedValues.Length)
                             {
                                 DataTestUtility.AssertEqualsWithDescription(expectedValues[currentValue], reader.GetValue(0), "Unexpected Value.");
                                 DataTestUtility.AssertEqualsWithDescription(expectedValues[currentValue], reader.GetSqlValue(0), "Unexpected SQL Value.");

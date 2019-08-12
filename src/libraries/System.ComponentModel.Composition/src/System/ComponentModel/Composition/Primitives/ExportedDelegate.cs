@@ -37,7 +37,7 @@ namespace System.ComponentModel.Composition.Primitives
             {
                 return _method.CreateDelegate(delegateType, _instance);
             }
-            catch(ArgumentException)
+            catch (ArgumentException)
             {
                 //Bind failure occurs return null;
                 return null;

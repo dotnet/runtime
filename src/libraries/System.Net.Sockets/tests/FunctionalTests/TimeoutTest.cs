@@ -43,7 +43,7 @@ namespace System.Net.Sockets.Tests
 
         // Use a Timeout large enough so that we can effectively detect when it's not accurate,
         // but also not so large that it takes too long to run.
-        const int Timeout = 2000;
+        private const int Timeout = 2000;
 
         [ActiveIssue(23767, TestPlatforms.AnyUnix)]
         [OuterLoop] // TODO: Issue #11345

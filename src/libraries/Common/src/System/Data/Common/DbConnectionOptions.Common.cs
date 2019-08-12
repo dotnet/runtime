@@ -10,7 +10,7 @@ using System.Text.RegularExpressions;
 
 namespace System.Data.Common
 {
-    partial class DbConnectionOptions
+    internal partial class DbConnectionOptions
     {
 #if DEBUG
         /*private const string ConnectionStringPatternV1 =

@@ -29,7 +29,7 @@ namespace System.Xml.Schema
             set { _language = (string)s_languageType.Datatype.ParseValue(value, (XmlNameTable)null, (IXmlNamespaceResolver)null); }
         }
 
-        [XmlText(), XmlAnyElement]
+        [XmlText, XmlAnyElement]
         public XmlNode[] Markup
         {
             get { return _markup; }

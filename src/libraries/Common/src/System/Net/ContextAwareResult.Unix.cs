@@ -4,7 +4,7 @@
 
 namespace System.Net
 {
-    partial class ContextAwareResult
+    internal partial class ContextAwareResult
     {
         private void SafeCaptureIdentity()
         {

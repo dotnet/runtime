@@ -958,7 +958,7 @@ namespace System.Management
         /// </remarks>
         /// <example>
         ///    <code lang='C#'>ManagementObject o = new ManagementObject("Win32_Service='Alerter'");
-        /// foreach(ManagementBaseObject b in o.GetRelated())
+        /// foreach (ManagementBaseObject b in o.GetRelated())
         ///     Console.WriteLine("Object related to Alerter service : ", b.Path);
         ///    </code>
         ///    <code lang='VB'>Dim o As New ManagementObject("Win32_Service=""Alerter""")
@@ -2479,7 +2479,7 @@ namespace System.Management
 
                 // To ensure that all forms of invoke return the same error codes when
                 // the method does not exist, we will map WBEM_E_NOT_FOUND to WBEM_E_METHOD_NOT_IMPLEMENTED.
-                if(status == (int)tag_WBEMSTATUS.WBEM_E_NOT_FOUND)
+                if (status == (int)tag_WBEMSTATUS.WBEM_E_NOT_FOUND)
                     status = (int)tag_WBEMSTATUS.WBEM_E_METHOD_NOT_IMPLEMENTED;
 
                 if (status >= 0)

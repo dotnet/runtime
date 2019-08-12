@@ -21,7 +21,7 @@ namespace System.Reflection.Internal
                 }
                 catch (IOException)
                 {
-                    // Should be catch(FileLoadException), but it's not available in our current
+                    // Should be catch (FileLoadException), but it's not available in our current
                     // profile. It can still be thrown even when throwOnError is false.
                 }
 

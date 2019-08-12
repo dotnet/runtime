@@ -245,7 +245,7 @@ namespace System.Linq.Expressions.Tests
         [Theory, ClassData(typeof(CompilationTypes))]
         public void CatchFromExternallyThrownString(bool useInterpreter)
         {
-            foreach(bool assemblyWraps in new []{false, true})
+            foreach (bool assemblyWraps in new []{false, true})
             {
                 CustomAttributeBuilder custAtt =
                     new CustomAttributeBuilder(

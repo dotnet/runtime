@@ -43,7 +43,7 @@ namespace System.Text.Encodings.Web
         /// </summary>
         public TextEncoderSettings(params UnicodeRange[] allowedRanges)
         {
-            if(allowedRanges == null)
+            if (allowedRanges == null)
             {
                 throw new ArgumentNullException(nameof(allowedRanges));
             }

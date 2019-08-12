@@ -56,7 +56,7 @@ namespace System.IO.Tests
 
             using (FileStream fs = new FileStream(fileName, FileMode.Open))
             {
-                for(int i = 0; i < TestBuffer.Length; i++)
+                for (int i = 0; i < TestBuffer.Length; i++)
                 {
                     Assert.Equal(TestBuffer[i], fs.ReadByte());
                 }

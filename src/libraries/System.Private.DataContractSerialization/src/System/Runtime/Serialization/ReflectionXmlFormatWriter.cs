@@ -187,7 +187,7 @@ namespace System.Runtime.Serialization
                         ReflectionWriteEndElement(xmlWriter);
                     }
 
-                    if(classContract.HasExtensionData)
+                    if (classContract.HasExtensionData)
                     {
                         context.WriteExtensionData(xmlWriter, ((IExtensibleDataObject)obj).ExtensionData, memberCount);
                     }

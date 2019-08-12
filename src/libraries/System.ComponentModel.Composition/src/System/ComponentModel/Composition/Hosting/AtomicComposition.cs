@@ -167,12 +167,12 @@ namespace System.ComponentModel.Composition.Hosting
                         {
                             action();
                         }
-                        catch(CompositionException)
+                        catch (CompositionException)
                         {
                             // This can only happen after preview is completed, so ... abandon remainder of events is correct
                             throw;
                         }
-                        catch(Exception e)
+                        catch (Exception e)
                         {
                             if (exceptions == null)
                             {
@@ -185,7 +185,7 @@ namespace System.ComponentModel.Composition.Hosting
                         }
                     }
                     _revertActionList = null;
-                    if(exceptions != null)
+                    if (exceptions != null)
                     {
                         throw new InvalidOperationException(SR.InvalidOperation_RevertAndCompleteActionsMustNotThrow, new AggregateException(exceptions));
                     }
@@ -206,12 +206,12 @@ namespace System.ComponentModel.Composition.Hosting
                     {
                         action();
                     }
-                    catch(CompositionException)
+                    catch (CompositionException)
                     {
                         // This can only happen after preview is completed, so ... abandon remainder of events is correct
                         throw;
                     }
-                    catch(Exception e)
+                    catch (Exception e)
                     {
                         if (exceptions == null)
                         {
@@ -223,7 +223,7 @@ namespace System.ComponentModel.Composition.Hosting
                     }
                 }
                 _completeActionList = null;
-                if(exceptions != null)
+                if (exceptions != null)
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_RevertAndCompleteActionsMustNotThrow, new AggregateException(exceptions));
                 }

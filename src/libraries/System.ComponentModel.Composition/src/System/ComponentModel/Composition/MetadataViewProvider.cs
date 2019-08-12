@@ -15,7 +15,7 @@ namespace System.ComponentModel.Composition
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         public static TMetadataView GetMetadataView<TMetadataView>(IDictionary<string, object> metadata)
         {
-            if(metadata == null)
+            if (metadata == null)
             {
                 throw new ArgumentNullException(nameof(metadata));
             }
@@ -34,7 +34,7 @@ namespace System.ComponentModel.Composition
                 MetadataViewGenerator.MetadataViewFactory metadataViewFactory = null;
                 if (metadataViewType.IsInterface)
                 {
-                    if(!metadataViewType.IsAttributeDefined<MetadataViewImplementationAttribute>())
+                    if (!metadataViewType.IsAttributeDefined<MetadataViewImplementationAttribute>())
                     {
                         try
                         {
@@ -49,7 +49,7 @@ namespace System.ComponentModel.Composition
                     {
                         var implementationAttribute = metadataViewType.GetFirstAttribute<MetadataViewImplementationAttribute>();
                         proxyType = implementationAttribute.ImplementationType;
-                        if(proxyType == null)
+                        if (proxyType == null)
                         {
                             throw new CompositionContractMismatchException(SR.Format(
                                 SR.ContractMismatch_MetadataViewImplementationCanNotBeNull,
@@ -58,7 +58,7 @@ namespace System.ComponentModel.Composition
                         }
                         else
                         {
-                            if(!metadataViewType.IsAssignableFrom(proxyType))
+                            if (!metadataViewType.IsAssignableFrom(proxyType))
                             {
                                 throw new CompositionContractMismatchException(SR.Format(
                                     SR.ContractMismatch_MetadataViewImplementationDoesNotImplementViewInterface,
@@ -82,7 +82,7 @@ namespace System.ComponentModel.Composition
                     }
                     else
                     {
-                        if(proxyType == null)
+                        if (proxyType == null)
                         {
                             throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                         }
@@ -99,9 +99,9 @@ namespace System.ComponentModel.Composition
                 catch (TargetInvocationException ex)
                 {
                     //Unwrap known failures that we want to present as CompositionContractMismatchException
-                    if(metadataViewType.IsInterface)
+                    if (metadataViewType.IsInterface)
                     {
-                        if(ex.InnerException.GetType() == typeof(InvalidCastException))
+                        if (ex.InnerException.GetType() == typeof(InvalidCastException))
                         {
                             // Unable to create an Instance of the Metadata view {0} because the exporter exported the metadata for the item {1} with the value {2} as type {3} but the view imports it as type {4}.
                             throw new CompositionContractMismatchException(SR.Format(
@@ -129,7 +129,7 @@ namespace System.ComponentModel.Composition
 
         public static bool IsViewTypeValid(Type metadataViewType)
         {
-            if(metadataViewType == null)
+            if (metadataViewType == null)
             {
                 throw new ArgumentNullException(nameof(metadataViewType));
             }

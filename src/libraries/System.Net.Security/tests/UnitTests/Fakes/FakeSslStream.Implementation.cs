@@ -16,7 +16,7 @@ namespace System.Net.Security
             // Without setting (or using) these members you will get a build exception in the unit test project.
             // The code that normally uses these in the main solution is in the implementation of SslStream.
 
-            if(_nestedWrite == 0)
+            if (_nestedWrite == 0)
             {
 
             }

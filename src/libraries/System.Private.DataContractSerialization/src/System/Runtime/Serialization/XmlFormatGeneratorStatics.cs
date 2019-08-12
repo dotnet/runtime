@@ -194,7 +194,7 @@ namespace System.Runtime.Serialization
         private static ConstructorInfo s_extensionDataObjectCtor;
         internal static ConstructorInfo ExtensionDataObjectCtor => s_extensionDataObjectCtor ??
                                                                    (s_extensionDataObjectCtor =
-                                                                       typeof (ExtensionDataObject).GetConstructor(Globals.ScanAllMembers, null, Array.Empty<Type>(), null));
+                                                                       typeof(ExtensionDataObject).GetConstructor(Globals.ScanAllMembers, null, Array.Empty<Type>(), null));
 
         private static ConstructorInfo s_hashtableCtor;
         internal static ConstructorInfo HashtableCtor

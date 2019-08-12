@@ -133,9 +133,9 @@ namespace System.Runtime.Serialization
 
         private static Setter CreateSetterInternal<DeclaringType, PropertyType>(PropertyInfo propInfo)
         {
-            if(typeof(DeclaringType).IsGenericType && typeof(DeclaringType).GetGenericTypeDefinition() == typeof(KeyValue<,>))
+            if (typeof(DeclaringType).IsGenericType && typeof(DeclaringType).GetGenericTypeDefinition() == typeof(KeyValue<,>))
             {
-                if(propInfo.Name == "Key")
+                if (propInfo.Name == "Key")
                 {
                     return (ref object obj, object val) =>
                     {
@@ -183,7 +183,7 @@ namespace System.Runtime.Serialization
             {
                 return method.CreateDelegate(typeof(T)) as T;
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 throw new InvalidOperationException(SR.Format(SR.FailedToCreateMethodDelegate, method.Name, method.DeclaringType.FullName), e);
             }

@@ -980,12 +980,12 @@ namespace System.IO.Ports.Tests
                 Assert.Equal(0, com1.BytesToRead);
 
                 /*DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG
-            if(!retValue) {
-                for(int i=0; i<xmitCharBuffer.Length; ++i) {
+            if (!retValue) {
+                for (int i=0; i<xmitCharBuffer.Length; ++i) {
                     Debug.WriteLine("(char){0}, ", (int)xmitCharBuffer[i]);
                 }
 
-                for(int i=0; i<xmitCharBuffer.Length; ++i) {
+                for (int i=0; i<xmitCharBuffer.Length; ++i) {
                     Debug.WriteLine("{0}, ", (int)xmitByteBuffer[i]);
                 }
             }*/

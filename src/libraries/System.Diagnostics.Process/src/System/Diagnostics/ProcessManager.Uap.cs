@@ -36,7 +36,7 @@ namespace System.Diagnostics
                 {
                     do
                     {
-                        if(chars != null)
+                        if (chars != null)
                         {
                             ArrayPool<char>.Shared.Return(chars);
                         }

@@ -630,7 +630,7 @@ namespace System.Data.Odbc
             //  still obtains data for fixed length types.
 
             //  So simple code like:
-            //      if(!rReader.IsDBNull(i))
+            //      if (!rReader.IsDBNull(i))
             //          rReader.GetInt32(i)
             //
             //  Would fail, unless we cache on the IsDBNull call, and return the cached

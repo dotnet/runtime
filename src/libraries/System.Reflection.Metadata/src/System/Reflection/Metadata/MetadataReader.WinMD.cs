@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Reflection.Metadata
 {
-    partial class MetadataReader
+    public partial class MetadataReader
     {
         internal const string ClrPrefix = "<CLR>";
 

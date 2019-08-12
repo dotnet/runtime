@@ -25,7 +25,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             public InnerCatalogExportProvider(CatalogExportProvider outerExportProvider)
             {
-                if(outerExportProvider == null)
+                if (outerExportProvider == null)
                 {
                     throw new ArgumentNullException(nameof(outerExportProvider));
                 }

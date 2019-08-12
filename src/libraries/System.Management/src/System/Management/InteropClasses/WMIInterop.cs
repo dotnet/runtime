@@ -40,7 +40,7 @@ namespace System.Management
 
         public static implicit operator IntPtr(IWbemClassObjectFreeThreaded wbemClassObject)
         {
-            if(null == wbemClassObject)
+            if (null == wbemClassObject)
                 return IntPtr.Zero;
             return wbemClassObject.pWbemClassObject;
         }
@@ -62,7 +62,7 @@ namespace System.Management
 
         private void Dispose_ ( bool finalization )
         {
-            if(pWbemClassObject != IntPtr.Zero)
+            if (pWbemClassObject != IntPtr.Zero)
             {
                 Marshal.Release(pWbemClassObject);
                 pWbemClassObject = IntPtr.Zero;
@@ -91,9 +91,9 @@ namespace System.Management
             }
             finally
             {
-                if(stream != null)
+                if (stream != null)
                     Marshal.ReleaseComObject(stream);
-                if(hGlobal != IntPtr.Zero)
+                if (hGlobal != IntPtr.Zero)
                     Marshal.FreeHGlobal(hGlobal);
             }
         }
@@ -118,9 +118,9 @@ namespace System.Management
             }
             finally
             {
-                if(pData != IntPtr.Zero)
+                if (pData != IntPtr.Zero)
                     Interop.Kernel32.GlobalUnlock(pData);
-                if(stream != null)
+                if (stream != null)
                     Marshal.ReleaseComObject(stream);
             }
             GC.KeepAlive(this);
@@ -130,11 +130,11 @@ namespace System.Management
         // Interface methods
         public int GetQualifierSet_(out IWbemQualifierSetFreeThreaded ppQualSet)
         {
-            if(pWbemClassObject == IntPtr.Zero)
+            if (pWbemClassObject == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             IntPtr pQualSet;
             int hResult = WmiNetUtilsHelper.GetQualifierSet_f(3, pWbemClassObject, out pQualSet);
-            if(hResult < 0)
+            if (hResult < 0)
                 ppQualSet = null;
             else
                 ppQualSet = new IWbemQualifierSetFreeThreaded(pQualSet);
@@ -143,16 +143,16 @@ namespace System.Management
         }
         public int Get_(string wszName, int lFlags, ref object pVal, ref int pType, ref int plFlavor)
         {
-            if(pWbemClassObject == IntPtr.Zero)
+            if (pWbemClassObject == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int hr = WmiNetUtilsHelper.Get_f(4, pWbemClassObject, wszName, lFlags, ref pVal, ref pType, ref plFlavor);
             // In certain cases some instances (events and out params from method invocations)
             // do not have a __PATH property.  Unfortunately, GetNames says the object DOES have a __PATH
             // property.  Going under the assumption that __PATH should always exist, we make a slight fixup
             // if we detect a missing __PATH
-            if(hr == (int)ManagementStatus.InvalidObject)
+            if (hr == (int)ManagementStatus.InvalidObject)
             {
-                if(string.Equals(wszName, "__path", StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(wszName, "__path", StringComparison.OrdinalIgnoreCase))
                 {
                     hr = 0;
                     pType = (int)tag_CIMTYPE_ENUMERATION.CIM_STRING;
@@ -165,7 +165,7 @@ namespace System.Management
         }
         public int Put_(string wszName, int lFlags, ref object pVal, int Type)
         {
-            if(pWbemClassObject == IntPtr.Zero)
+            if (pWbemClassObject == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res = WmiNetUtilsHelper.Put_f(5, pWbemClassObject, wszName, lFlags, ref pVal, Type);
             GC.KeepAlive ( this ) ;
@@ -173,7 +173,7 @@ namespace System.Management
         }
         public int Delete_(string wszName)
         {
-            if(pWbemClassObject == IntPtr.Zero)
+            if (pWbemClassObject == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res = WmiNetUtilsHelper.Delete_f(6, pWbemClassObject, wszName);
             GC.KeepAlive ( this ) ;
@@ -181,7 +181,7 @@ namespace System.Management
         }
         public int GetNames_(string wszQualifierName, int lFlags, ref object pQualifierVal, out string[] pNames)
         {
-            if(pWbemClassObject == IntPtr.Zero)
+            if (pWbemClassObject == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res = WmiNetUtilsHelper.GetNames_f(7, pWbemClassObject, wszQualifierName, lFlags, ref pQualifierVal, out pNames);
             GC.KeepAlive ( this ) ;
@@ -190,7 +190,7 @@ namespace System.Management
         }
         public int BeginEnumeration_(int lEnumFlags)
         {
-            if(pWbemClassObject == IntPtr.Zero)
+            if (pWbemClassObject == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res = WmiNetUtilsHelper.BeginEnumeration_f(8, pWbemClassObject, lEnumFlags);
             GC.KeepAlive ( this ) ;
@@ -198,7 +198,7 @@ namespace System.Management
         }
         public int Next_(int lFlags, ref string strName, ref object pVal, ref int pType, ref int plFlavor)
         {
-            if(pWbemClassObject == IntPtr.Zero)
+            if (pWbemClassObject == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             pVal = null;
             strName = null;
@@ -208,7 +208,7 @@ namespace System.Management
         }
         public int EndEnumeration_()
         {
-            if(pWbemClassObject == IntPtr.Zero)
+            if (pWbemClassObject == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res = WmiNetUtilsHelper.EndEnumeration_f(10, pWbemClassObject);
             GC.KeepAlive ( this ) ;
@@ -216,11 +216,11 @@ namespace System.Management
         }
         public int GetPropertyQualifierSet_(string wszProperty, out IWbemQualifierSetFreeThreaded ppQualSet)
         {
-            if(pWbemClassObject == IntPtr.Zero)
+            if (pWbemClassObject == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             IntPtr pQualSet;
             int hResult = WmiNetUtilsHelper.GetPropertyQualifierSet_f(11, pWbemClassObject, wszProperty, out pQualSet);
-            if(hResult < 0)
+            if (hResult < 0)
                 ppQualSet = null;
             else
                 ppQualSet = new IWbemQualifierSetFreeThreaded(pQualSet);
@@ -230,11 +230,11 @@ namespace System.Management
         }
         public int Clone_(out IWbemClassObjectFreeThreaded ppCopy)
         {
-            if(pWbemClassObject == IntPtr.Zero)
+            if (pWbemClassObject == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             IntPtr pWbemClassObjectNew;
             int hResult = WmiNetUtilsHelper.Clone_f(12, pWbemClassObject, out pWbemClassObjectNew);
-            if(hResult < 0)
+            if (hResult < 0)
                 ppCopy = null;
             else
                 ppCopy = new IWbemClassObjectFreeThreaded(pWbemClassObjectNew);
@@ -244,7 +244,7 @@ namespace System.Management
         }
         public int GetObjectText_(int lFlags, out string pstrObjectText)
         {
-            if(pWbemClassObject == IntPtr.Zero)
+            if (pWbemClassObject == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res = WmiNetUtilsHelper.GetObjectText_f(13, pWbemClassObject, lFlags, out pstrObjectText);
             GC.KeepAlive ( this ) ;
@@ -252,11 +252,11 @@ namespace System.Management
         }
         public int SpawnDerivedClass_(int lFlags, out IWbemClassObjectFreeThreaded ppNewClass)
         {
-            if(pWbemClassObject == IntPtr.Zero)
+            if (pWbemClassObject == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             IntPtr pWbemClassObjectNew;
             int hResult = WmiNetUtilsHelper.SpawnDerivedClass_f(14, pWbemClassObject, lFlags, out pWbemClassObjectNew);
-            if(hResult < 0)
+            if (hResult < 0)
                 ppNewClass = null;
             else
                 ppNewClass = new IWbemClassObjectFreeThreaded(pWbemClassObjectNew);
@@ -266,11 +266,11 @@ namespace System.Management
         }
         public int SpawnInstance_(int lFlags, out IWbemClassObjectFreeThreaded ppNewInstance)
         {
-            if(pWbemClassObject == IntPtr.Zero)
+            if (pWbemClassObject == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             IntPtr pWbemClassObjectNew;
             int hResult = WmiNetUtilsHelper.SpawnInstance_f(15, pWbemClassObject, lFlags, out pWbemClassObjectNew);
-            if(hResult < 0)
+            if (hResult < 0)
                 ppNewInstance = null;
             else
                 ppNewInstance = new IWbemClassObjectFreeThreaded(pWbemClassObjectNew);
@@ -280,7 +280,7 @@ namespace System.Management
         }
         public int CompareTo_(int lFlags, IWbemClassObjectFreeThreaded pCompareTo)
         {
-            if(pWbemClassObject == IntPtr.Zero)
+            if (pWbemClassObject == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res = WmiNetUtilsHelper.CompareTo_f(16, pWbemClassObject, lFlags, pCompareTo.pWbemClassObject);
             GC.KeepAlive ( this ) ;
@@ -288,7 +288,7 @@ namespace System.Management
         }
         public int GetPropertyOrigin_(string wszName, out string pstrClassName)
         {
-            if(pWbemClassObject == IntPtr.Zero)
+            if (pWbemClassObject == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res = WmiNetUtilsHelper.GetPropertyOrigin_f(17, pWbemClassObject, wszName, out pstrClassName);
             GC.KeepAlive ( this ) ;
@@ -296,7 +296,7 @@ namespace System.Management
         }
         public int InheritsFrom_(string strAncestor)
         {
-            if(pWbemClassObject == IntPtr.Zero)
+            if (pWbemClassObject == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res = WmiNetUtilsHelper.InheritsFrom_f(18, pWbemClassObject, strAncestor);
             GC.KeepAlive ( this ) ;
@@ -304,19 +304,19 @@ namespace System.Management
         }
         public int GetMethod_(string wszName, int lFlags, out IWbemClassObjectFreeThreaded ppInSignature, out IWbemClassObjectFreeThreaded ppOutSignature)
         {
-            if(pWbemClassObject == IntPtr.Zero)
+            if (pWbemClassObject == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             IntPtr pInSignature;
             IntPtr pOutSignature;
             int hResult = WmiNetUtilsHelper.GetMethod_f(19, pWbemClassObject, wszName, lFlags, out pInSignature, out pOutSignature);
             ppInSignature = null;
             ppOutSignature = null;
-            if(hResult >= 0)
+            if (hResult >= 0)
             {
                 // This can be NULL
-                if(pInSignature != IntPtr.Zero)
+                if (pInSignature != IntPtr.Zero)
                     ppInSignature = new IWbemClassObjectFreeThreaded(pInSignature);
-                if(pOutSignature != IntPtr.Zero)
+                if (pOutSignature != IntPtr.Zero)
                     ppOutSignature = new IWbemClassObjectFreeThreaded(pOutSignature);
             }
 
@@ -325,7 +325,7 @@ namespace System.Management
         }
         public int PutMethod_(string wszName, int lFlags, IWbemClassObjectFreeThreaded pInSignature, IWbemClassObjectFreeThreaded pOutSignature)
         {
-            if(pWbemClassObject == IntPtr.Zero)
+            if (pWbemClassObject == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res = WmiNetUtilsHelper.PutMethod_f(20, pWbemClassObject, wszName, lFlags, pInSignature, pOutSignature);
             GC.KeepAlive ( this ) ;
@@ -333,7 +333,7 @@ namespace System.Management
         }
         public int DeleteMethod_(string wszName)
         {
-            if(pWbemClassObject == IntPtr.Zero)
+            if (pWbemClassObject == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res = WmiNetUtilsHelper.DeleteMethod_f(21, pWbemClassObject, wszName);
             GC.KeepAlive ( this ) ;
@@ -341,7 +341,7 @@ namespace System.Management
         }
         public int BeginMethodEnumeration_(int lEnumFlags)
         {
-            if(pWbemClassObject == IntPtr.Zero)
+            if (pWbemClassObject == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res =  WmiNetUtilsHelper.BeginMethodEnumeration_f(22, pWbemClassObject, lEnumFlags);
             GC.KeepAlive ( this ) ;
@@ -349,7 +349,7 @@ namespace System.Management
         }
         public int NextMethod_(int lFlags, out string pstrName, out IWbemClassObjectFreeThreaded ppInSignature, out IWbemClassObjectFreeThreaded ppOutSignature)
         {
-            if(pWbemClassObject == IntPtr.Zero)
+            if (pWbemClassObject == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
 
             IntPtr pInSignature;
@@ -357,12 +357,12 @@ namespace System.Management
             int hResult = WmiNetUtilsHelper.NextMethod_f(23, pWbemClassObject, lFlags, out pstrName, out pInSignature, out pOutSignature);
             ppInSignature = null;
             ppOutSignature = null;
-            if(hResult >= 0)
+            if (hResult >= 0)
             {
                 // This can be NULL
-                if(pInSignature != IntPtr.Zero)
+                if (pInSignature != IntPtr.Zero)
                     ppInSignature = new IWbemClassObjectFreeThreaded(pInSignature);
-                if(pOutSignature != IntPtr.Zero)
+                if (pOutSignature != IntPtr.Zero)
                     ppOutSignature = new IWbemClassObjectFreeThreaded(pOutSignature);
             }
             GC.KeepAlive ( this ) ;
@@ -370,7 +370,7 @@ namespace System.Management
         }
         public int EndMethodEnumeration_()
         {
-            if(pWbemClassObject == IntPtr.Zero)
+            if (pWbemClassObject == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res = WmiNetUtilsHelper.EndMethodEnumeration_f(24, pWbemClassObject);
             GC.KeepAlive ( this ) ;
@@ -378,11 +378,11 @@ namespace System.Management
         }
         public int GetMethodQualifierSet_(string wszMethod, out IWbemQualifierSetFreeThreaded ppQualSet)
         {
-            if(pWbemClassObject == IntPtr.Zero)
+            if (pWbemClassObject == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             IntPtr pQualSet;
             int hResult = WmiNetUtilsHelper.GetMethodQualifierSet_f(25, pWbemClassObject, wszMethod, out pQualSet);
-            if(hResult < 0)
+            if (hResult < 0)
                 ppQualSet = null;
             else
                 ppQualSet = new IWbemQualifierSetFreeThreaded(pQualSet);
@@ -391,7 +391,7 @@ namespace System.Management
         }
         public int GetMethodOrigin_(string wszMethodName, out string pstrClassName)
         {
-            if(pWbemClassObject == IntPtr.Zero)
+            if (pWbemClassObject == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res = WmiNetUtilsHelper.GetMethodOrigin_f(26, pWbemClassObject, wszMethodName, out pstrClassName);
             GC.KeepAlive ( this ) ;
@@ -440,7 +440,7 @@ namespace System.Management
 
         private void Dispose_( bool finalization )
         {
-            if(pWbemQualifierSet != IntPtr.Zero)
+            if (pWbemQualifierSet != IntPtr.Zero)
             {
                 Marshal.Release(pWbemQualifierSet);
                 pWbemQualifierSet = IntPtr.Zero;
@@ -460,7 +460,7 @@ namespace System.Management
 
         public int Get_(string wszName, int lFlags, ref object pVal, ref int plFlavor)
         {
-            if(pWbemQualifierSet == IntPtr.Zero)
+            if (pWbemQualifierSet == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res = WmiNetUtilsHelper.QualifierGet_f(3, pWbemQualifierSet, wszName, lFlags, ref pVal, ref plFlavor);
             GC.KeepAlive ( this ) ;
@@ -469,7 +469,7 @@ namespace System.Management
         }
         public int Put_(string wszName, ref object pVal, int lFlavor)
         {
-            if(pWbemQualifierSet == IntPtr.Zero)
+            if (pWbemQualifierSet == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res =  WmiNetUtilsHelper.QualifierPut_f(4, pWbemQualifierSet, wszName, ref pVal, lFlavor);
             GC.KeepAlive ( this ) ;
@@ -477,7 +477,7 @@ namespace System.Management
         }
         public int Delete_(string wszName)
         {
-            if(pWbemQualifierSet == IntPtr.Zero)
+            if (pWbemQualifierSet == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res = WmiNetUtilsHelper.QualifierDelete_f(5, pWbemQualifierSet, wszName);
             GC.KeepAlive ( this ) ;
@@ -485,7 +485,7 @@ namespace System.Management
         }
         public int GetNames_(int lFlags, out string[] pNames)
         {
-            if(pWbemQualifierSet == IntPtr.Zero)
+            if (pWbemQualifierSet == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res = WmiNetUtilsHelper.QualifierGetNames_f(6, pWbemQualifierSet, lFlags, out pNames);
             GC.KeepAlive ( this ) ;
@@ -493,7 +493,7 @@ namespace System.Management
         }
         public int BeginEnumeration_(int lFlags)
         {
-            if(pWbemQualifierSet == IntPtr.Zero)
+            if (pWbemQualifierSet == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res = WmiNetUtilsHelper.QualifierBeginEnumeration_f(7, pWbemQualifierSet, lFlags);
             GC.KeepAlive ( this ) ;
@@ -501,7 +501,7 @@ namespace System.Management
         }
         public int Next_(int lFlags, out string pstrName, out object pVal, out int plFlavor)
         {
-            if(pWbemQualifierSet == IntPtr.Zero)
+            if (pWbemQualifierSet == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res = WmiNetUtilsHelper.QualifierNext_f(8, pWbemQualifierSet, lFlags, out pstrName, out pVal, out plFlavor);
             GC.KeepAlive ( this ) ;
@@ -509,7 +509,7 @@ namespace System.Management
         }
         public int EndEnumeration_()
         {
-            if(pWbemQualifierSet == IntPtr.Zero)
+            if (pWbemQualifierSet == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res = WmiNetUtilsHelper.QualifierEndEnumeration_f(9, pWbemQualifierSet);
             GC.KeepAlive ( this ) ;
@@ -1467,7 +1467,7 @@ namespace System.Management
         public static object CreateInMTA(Type type)
         {
             // If we are currently in the MTA, we can directly create the object
-            if(IsNoContextMTA())
+            if (IsNoContextMTA())
                 return Activator.CreateInstance(type);
 
             // We need to create the object in the MTA by using a worker thread
@@ -1476,10 +1476,10 @@ namespace System.Management
             MTARequest myReq = new MTARequest(type);
             int ndx;
 
-            lock(critSec)
+            lock (critSec)
             {
                 // Make sure worker thread is initialized
-                if(workerThreadInitialized == false)
+                if (workerThreadInitialized == false)
                 {
                     InitWorkerThread();
                     workerThreadInitialized = true;
@@ -1487,7 +1487,7 @@ namespace System.Management
 
                 ndx = reqList.Add(myReq);
 
-                if( evtGo.Set() == false )
+                if ( evtGo.Set() == false )
                 {
                     reqList.RemoveAt(ndx);
                     throw new ManagementException(SR.WorkerThreadWakeupFailed);
@@ -1513,7 +1513,7 @@ namespace System.Management
             // always waited on until we complete.  In other words, when the
             // process goes away, we are really assured that we will be in the
             // evtGo.WaitOne() block.
-            while(true)
+            while (true)
             {
                 // Wait for someone who wants us to create an object
                 evtGo.WaitOne();
@@ -1521,7 +1521,7 @@ namespace System.Management
                 // get requests from the request queue. Since two Set within short time on evtGo can wake this thread only once
                 // workerthread should check until we empty all the results. Even if we consume the request that is not set,
                 // workerthread will wake up one more time unnecessarily and do nothing
-                while(true)
+                while (true)
                 {
                     MTARequest reqToProcess = null;
                     lock (critSec)
@@ -1566,13 +1566,13 @@ namespace System.Management
         public static bool IsNoContextMTA()
         {
             // If the runtime says we are not an MTA thread, we'll trust it and return false
-            if(Thread.CurrentThread.GetApartmentState()  != ApartmentState.MTA)
+            if (Thread.CurrentThread.GetApartmentState()  != ApartmentState.MTA)
                 return false;
 
             // We know that 'ApartmentState' says we are MTA
             // If we are not on Win2k or above, we don't have to worry about 'context' or the neutral apartment
             // We know we are safely in the MTA and return true
-            if(!CanCallCoGetObjectContext)
+            if (!CanCallCoGetObjectContext)
                 return true;
 
 
@@ -1584,29 +1584,29 @@ namespace System.Management
             {
                 // If we CANNOT call CoGetObjectContext, assume we are not in the 'no context MTA' for safety
                 // (NOTE: This call is expected to always succeed)
-                if(0 != Interop.Ole32.CoGetObjectContext(IID_IComThreadingInfo, out pComThreadingInfo))
+                if (0 != Interop.Ole32.CoGetObjectContext(IID_IComThreadingInfo, out pComThreadingInfo))
                     return false;
 
                 WmiNetUtilsHelper.APTTYPE aptType;
 
                 // If we CANNOT get the apartment type, assume we are not in the 'no context MTA' for safety
                 // (NOTE: This call is expected to always succeed)
-                if(0 != WmiNetUtilsHelper.GetCurrentApartmentType_f(3, pComThreadingInfo, out aptType))
+                if (0 != WmiNetUtilsHelper.GetCurrentApartmentType_f(3, pComThreadingInfo, out aptType))
                     return false;
 
                 // If we are not in the MTA, return false
-                if(aptType != WmiNetUtilsHelper.APTTYPE.APTTYPE_MTA)
+                if (aptType != WmiNetUtilsHelper.APTTYPE.APTTYPE_MTA)
                     return false;
 
                 // If we CAN get to the IObjectContext interface, we have a 'context'
-                if(0 == Marshal.QueryInterface(pComThreadingInfo, ref IID_IObjectContext, out pObjectContext))
+                if (0 == Marshal.QueryInterface(pComThreadingInfo, ref IID_IObjectContext, out pObjectContext))
                     return false;
             }
             finally
             {
-                if(pComThreadingInfo != IntPtr.Zero)
+                if (pComThreadingInfo != IntPtr.Zero)
                     Marshal.Release(pComThreadingInfo);
-                if(pObjectContext != IntPtr.Zero)
+                if (pObjectContext != IntPtr.Zero)
                     Marshal.Release(pObjectContext);
             }
 
@@ -1619,7 +1619,7 @@ namespace System.Management
             // If we are on Win2k or above, we are OK
             // - Platform == Win32NT and OS version >= 5.0.0.0
             OperatingSystem os = Environment.OSVersion;
-            if(os.Platform==PlatformID.Win32NT && os.Version >= new Version(5, 0))
+            if (os.Platform==PlatformID.Win32NT && os.Version >= new Version(5, 0))
                 return true;
             return false;
         }

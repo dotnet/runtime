@@ -62,12 +62,12 @@ namespace System.ComponentModel.Composition.ReflectionModel
             get
             {
                 var value = _importValues;
-                if(value == null)
+                if (value == null)
                 {
-                    lock(_lock)
+                    lock (_lock)
                     {
                         value = _importValues;
-                        if(value == null)
+                        if (value == null)
                         {
                             value = new Dictionary<ImportDefinition, object>();
                             _importValues = value;
@@ -83,11 +83,11 @@ namespace System.ComponentModel.Composition.ReflectionModel
             get
             {
                 var value = _importsCache;
-                if(value == null)
+                if (value == null)
                 {
-                    lock(_lock)
+                    lock (_lock)
                     {
-                        if(value == null)
+                        if (value == null)
                         {
                             value = new Dictionary<ImportDefinition, ImportingItem>();
                             _importsCache = value;
@@ -403,7 +403,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                     throw new ArgumentException(SR.Argument_ExportsTooMany, nameof(exports));
 
                 default:
-                    if(result != ExportCardinalityCheckResult.Match)
+                    if (result != ExportCardinalityCheckResult.Match)
                     {
                         throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                     }
@@ -568,7 +568,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             }
 
             int exportIndex = reflectionExport.GetIndex();
-            if(_exportsCache == null)
+            if (_exportsCache == null)
             {
                 _exportsCache = new Dictionary<int, ExportingMember>();
             }

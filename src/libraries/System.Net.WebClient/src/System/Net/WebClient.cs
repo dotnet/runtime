@@ -1249,10 +1249,10 @@ namespace System.Net
 
             if (n <= 9)
             {
-                return(char)(n + (int)'0');
+                return (char)(n + (int)'0');
             }
 
-            return(char)(n - 10 + (int)'a');
+            return (char)(n - 10 + (int)'a');
         }
 
         private static bool IsSafe(char ch)

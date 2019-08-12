@@ -31,17 +31,17 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public GenericSpecializationPartCreationInfo(IReflectionPartCreationInfo originalPartCreationInfo, ReflectionComposablePartDefinition originalPart, Type[] specialization)
         {
-            if(originalPartCreationInfo == null)
+            if (originalPartCreationInfo == null)
             {
                 throw new ArgumentNullException(nameof(originalPartCreationInfo));
             }
 
-            if(originalPart == null)
+            if (originalPart == null)
             {
                 throw new ArgumentNullException(nameof(originalPart));
             }
 
-            if(specialization == null)
+            if (specialization == null)
             {
                 throw new ArgumentNullException(nameof(specialization));
             }
@@ -123,7 +123,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         private MemberInfo[] GetAccessors(LazyMemberInfo originalLazyMember)
         {
             BuildTables();
-            if(_membersTable == null)
+            if (_membersTable == null)
             {
                 throw new ArgumentNullException(nameof(_membersTable));
             }

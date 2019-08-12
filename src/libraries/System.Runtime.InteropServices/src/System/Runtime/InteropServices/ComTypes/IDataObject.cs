@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices.ComTypes
     ///     to advisory sinks for handling change notifications.
     /// </summary>
     [CLSCompliant(false)]
-    [ComImport()]
+    [ComImport]
     [Guid("0000010E-0000-0000-C000-000000000046")]
     [InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIUnknown)]
     public interface IDataObject {

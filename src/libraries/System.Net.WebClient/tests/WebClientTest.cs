@@ -642,7 +642,7 @@ namespace System.Net.Tests
             // Server will verify uploaded data. An exception will be thrown if there is a problem.
             AddMD5Header(wc, ExpectedText);
             byte[] ignored = await UploadDataAsync(wc, server.ToString(), Encoding.UTF8.GetBytes(ExpectedText));
-            if(IsAsync)
+            if (IsAsync)
             {
                 await uploadProgressInvoked.Task.TimeoutAfter(TimeoutMilliseconds);
             }

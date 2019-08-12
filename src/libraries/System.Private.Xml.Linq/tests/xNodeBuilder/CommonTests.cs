@@ -5230,7 +5230,7 @@ namespace CoreXml.Test.XLinq
                     throw new TestException(TestResult.Failed, "");
                 }
 
-                //[Variation(Id = 2, Desc = "LookupPrefix with String.Empty should if(!String.Empty", Priority = 1)]
+                //[Variation(Id = 2, Desc = "LookupPrefix with String.Empty should if (!String.Empty", Priority = 1)]
                 public void lookupPrefix_2()
                 {
                     XDocument doc = new XDocument();

@@ -4,7 +4,7 @@
 
 namespace System.Data.ProviderBase
 {
-    partial class DbConnectionPoolIdentity
+    internal partial class DbConnectionPoolIdentity
     {
         internal static DbConnectionPoolIdentity GetCurrent()
         {

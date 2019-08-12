@@ -229,7 +229,7 @@ namespace System.Runtime.Loader.Tests
             {
                 method.Invoke(null, new object[] {assemblyName});
             }
-            catch(TargetInvocationException tie)
+            catch (TargetInvocationException tie)
             {
                 ex = tie.InnerException;
             }

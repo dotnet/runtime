@@ -1737,7 +1737,7 @@ namespace System.Xml.Schema
         private bool IsElementFromGroupBaseHack(XmlSchemaElement derivedElement, XmlSchemaGroupBase baseGroupBase,  bool skipEmptableOnly) {
             bool isMatched = false;
 
-            foreach(XmlSchemaParticle baseParticle in baseGroupBase.Items) {
+            foreach (XmlSchemaParticle baseParticle in baseGroupBase.Items) {
                 if (!isMatched && IsRangeSimple(baseParticle.MinOccurs, baseParticle.MaxOccurs)) {
                     string minOccursElement = baseParticle.MinOccursString;
                     string maxOccursElement = baseParticle.MaxOccursString;

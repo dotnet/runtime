@@ -171,7 +171,7 @@ namespace System.IO.Ports.Tests
         {
             Random rndGen = new Random(-55);
 
-            //        if(!VerifyParityReplaceByte((int)'\0', rndGen.Next(0, numRndByte - 1), new System.Text.UTF7Encoding())){
+            //        if (!VerifyParityReplaceByte((int)'\0', rndGen.Next(0, numRndByte - 1), new System.Text.UTF7Encoding())){
             VerifyParityReplaceByte('\0', rndGen.Next(0, numRndByte - 1), new UTF32Encoding());
         }
 

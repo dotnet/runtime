@@ -37,7 +37,7 @@ namespace System.Text.Json.Serialization.Tests
             {
                 var builder = new StringBuilder();
 
-                for(int i = 0; i < value.Length; i++)
+                for (int i = 0; i < value.Length; i++)
                 {
                     builder.Append(value[i].ToString());
 

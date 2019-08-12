@@ -60,7 +60,7 @@ namespace Microsoft.Internal.Collections
 
         public static ReadOnlyCollection<T> ToReadOnlyCollection<T>(this IEnumerable<T> source)
         {
-            if(source == null)
+            if (source == null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -171,7 +171,7 @@ namespace Microsoft.Internal.Collections
 
         public static EnumerableCardinality GetCardinality<T>(this IEnumerable<T> source)
         {
-            if(source == null)
+            if (source == null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -227,7 +227,7 @@ namespace Microsoft.Internal.Collections
 
         public static Stack<T> Copy<T>(this Stack<T> stack)
         {
-            if(stack == null)
+            if (stack == null)
             {
                 throw new ArgumentNullException(nameof(stack));
             }

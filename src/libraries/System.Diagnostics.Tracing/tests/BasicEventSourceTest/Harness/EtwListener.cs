@@ -89,7 +89,7 @@ namespace BasicEventSourceTests
 
         public override void Dispose()
         {
-            if(_disposed)
+            if (_disposed)
             {
                 return;
             }

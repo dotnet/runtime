@@ -29,7 +29,7 @@ namespace System.Net.Http
             bool foundKeyUsages = false;
             bool isClientAuth = true;
             bool isDigitalSignature = true;
-            foreach(X509Extension extension in cert.Extensions)
+            foreach (X509Extension extension in cert.Extensions)
             {
                 // check if the extension is an enhanced usage ext.
                 // But do this only if needed. No point going over it, if we already have established that our cert has the
@@ -41,7 +41,7 @@ namespace System.Net.Http
                     {
                         foundEku = true;
                         isClientAuth = false;
-                        foreach(Oid oid in enhancedUsageExt.EnhancedKeyUsages)
+                        foreach (Oid oid in enhancedUsageExt.EnhancedKeyUsages)
                         {
                             if (string.Equals(ClientCertificateOid, oid.Value))
                             {
@@ -111,7 +111,7 @@ namespace System.Net.Http
             }
 
             DateTime now = DateTime.Now;
-            foreach(X509Certificate2 cert in certificates)
+            foreach (X509Certificate2 cert in certificates)
             {
                 if (cert.HasPrivateKey && now >= cert.NotBefore && now <= cert.NotAfter)
                 {

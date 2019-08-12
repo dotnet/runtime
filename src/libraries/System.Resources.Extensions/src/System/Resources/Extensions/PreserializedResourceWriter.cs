@@ -12,7 +12,7 @@ namespace System.Resources.Extensions
 {
     internal class UnknownType { }
 
-    partial class PreserializedResourceWriter
+    public partial class PreserializedResourceWriter
     {
         // indicates if the types of resources saved will require the DeserializingResourceReader
         // in order to read them.
