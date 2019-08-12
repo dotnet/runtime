@@ -89,7 +89,7 @@ namespace System.Diagnostics.Tracing
     /// This is the payload that is sent in the with EventSource.Write
     /// </summary>
     [EventData]
-    class IncrementingEventCounterPayloadType
+    internal class IncrementingEventCounterPayloadType
     {
         public IncrementingEventCounterPayloadType(IncrementingCounterPayload payload) { Payload = payload; }
         public IncrementingCounterPayload Payload { get; set; }
