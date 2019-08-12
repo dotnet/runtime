@@ -208,7 +208,7 @@ namespace Microsoft.Reflection
         String = 18,                // Unicode character string
     }
 #endif
-    static class ReflectionExtensions
+    internal static class ReflectionExtensions
     {
 #if (!ES_BUILD_PCL && !ES_BUILD_PN)
 
