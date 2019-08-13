@@ -60,46 +60,53 @@ namespace System.Text.Json.Serialization.Tests
                 MyDictionaryList = new List<Dictionary<string, string>> { new Dictionary<string, string>() { ["key"] = null } },
                 MyStringDictionary = new Dictionary<string, string>() { ["key"] = null },
                 MyObjectDictionary = new Dictionary<string, object>() { ["key"] = null },
-                MyStringDictionaryDictionary = new Dictionary<string, Dictionary<string, string>>() { ["key"] = null },
-                MyListDictionary = new Dictionary<string, List<object>>() { ["key"] = null },
-                MyObjectDictionaryDictionary = new Dictionary<string, Dictionary<string, object>>() { ["key"] = null }
+                MyStringDictionaryDictionary = new Dictionary<string, Dictionary<string, string>>() { ["key"] = new Dictionary<string, string>() { ["key"] = null } },
+                MyListDictionary = new Dictionary<string, List<object>>() { ["key"] = new List<object> { null } },
+                MyObjectDictionaryDictionary = new Dictionary<string, Dictionary<string, object>>() { ["key"] = new Dictionary<string, object>() { ["key"] = null } }
             };
 
-            string expectedJson =
-                    @"{" +
-                        @"""MyObjectList"":[null]," +
-                        @"""MyListList"":[[null]]," +
-                        @"""MyDictionaryList"":[" +
-                            @"{" +
-                                @"""key"":null" +
-                            @"}" +
-                        @"]," +
-                        @"""MyStringDictionary"":{" +
-                            @"""key"":null" +
-                        @"}," +
-                        @"""MyObjectDictionary"":{" +
-                            @"""key"":null" +
-                        @"}," +
-                        @"""MyStringDictionaryDictionary"":{" +
-                            @"""key"":null" +
-                        @"}," +
-                        @"""MyListDictionary"":{" +
-                            @"""key"":null" +
-                        @"}," +
-                        @"""MyObjectDictionaryDictionary"":{" +
-                            @"""key"":null" +
-                        @"}" +
-                    @"}";
+            string json = JsonSerializer.Serialize(obj, options);
 
-            Assert.Equal(expectedJson, JsonSerializer.Serialize(obj, options));
+            // Roundtrip to verify serialize is accurate.
+            TestClassWithInitializedProperties newObj = JsonSerializer.Deserialize<TestClassWithInitializedProperties>(json);
+            Assert.Equal("Hello", newObj.MyString);
+            Assert.Equal(1, newObj.MyInt);
+            Assert.Equal(1, newObj.MyIntArray[0]);
+            Assert.Equal(1, newObj.MyIntList[0]);
+
+            Assert.Null(newObj.MyObjectList[0]);
+            Assert.Null(newObj.MyObjectList[0]);
+            Assert.Null(newObj.MyListList[0][0]);
+            Assert.Null(newObj.MyDictionaryList[0]["key"]);
+            Assert.Null(newObj.MyStringDictionary["key"]);
+            Assert.Null(newObj.MyObjectDictionary["key"]);
+            Assert.Null(newObj.MyStringDictionaryDictionary["key"]["key"]);
+            Assert.Null(newObj.MyListDictionary["key"][0]);
+            Assert.Null(newObj.MyObjectDictionaryDictionary["key"]["key"]);
 
             var parentObj = new WrapperForTestClassWithInitializedProperties
             {
                 MyClass = obj
             };
+            json = JsonSerializer.Serialize(parentObj, options);
 
-            expectedJson = @"{""MyClass"":" + expectedJson + "}";
-            Assert.Equal(expectedJson, JsonSerializer.Serialize(parentObj, options));
+            // Roundtrip to ensure serialize is accurate.
+            WrapperForTestClassWithInitializedProperties newParentObj = JsonSerializer.Deserialize<WrapperForTestClassWithInitializedProperties>(json);
+            TestClassWithInitializedProperties nestedObj = newParentObj.MyClass;
+            Assert.Equal("Hello", nestedObj.MyString);
+            Assert.Equal(1, nestedObj.MyInt);
+            Assert.Equal(1, nestedObj.MyIntArray[0]);
+            Assert.Equal(1, nestedObj.MyIntList[0]);
+
+            Assert.Null(nestedObj.MyObjectList[0]);
+            Assert.Null(nestedObj.MyObjectList[0]);
+            Assert.Null(nestedObj.MyListList[0][0]);
+            Assert.Null(nestedObj.MyDictionaryList[0]["key"]);
+            Assert.Null(nestedObj.MyStringDictionary["key"]);
+            Assert.Null(nestedObj.MyObjectDictionary["key"]);
+            Assert.Null(nestedObj.MyStringDictionaryDictionary["key"]["key"]);
+            Assert.Null(nestedObj.MyListDictionary["key"][0]);
+            Assert.Null(nestedObj.MyObjectDictionaryDictionary["key"]["key"]);
         }
 
         [Fact]
