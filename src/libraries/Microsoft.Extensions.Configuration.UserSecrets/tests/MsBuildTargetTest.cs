@@ -94,7 +94,7 @@ let main argv =
                     break;
             }
 
-            foreach (var file in new[] { Path.Join(_tempDir, "Directory.Build.props"), Path.Join(_tempDir, "Directory.Build.targets") })
+            foreach (var file in new[] { Path.Combine(_tempDir, "Directory.Build.props"), Path.Combine(_tempDir, "Directory.Build.targets") })
             {
                 if (!File.Exists(file))
                 {
