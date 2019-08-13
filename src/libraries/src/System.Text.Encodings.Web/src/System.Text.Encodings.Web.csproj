@@ -30,6 +30,7 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Memory" />
+    <Reference Include="System.Resources.ResourceManager" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true' OR '$(TargetsUap)' == 'true'">
     <Reference Include="System.Diagnostics.Debug" />
