@@ -166,8 +166,8 @@ void InvokeUtil::CopyArg(TypeHandle th, OBJECTREF *pObjUNSAFE, ArgDestination *a
     case ELEMENT_TYPE_I4:
     case ELEMENT_TYPE_U4:
     case ELEMENT_TYPE_R4:
-    IN_WIN32(case ELEMENT_TYPE_I:)
-    IN_WIN32(case ELEMENT_TYPE_U:)
+    IN_TARGET_32BIT(case ELEMENT_TYPE_I:)
+    IN_TARGET_32BIT(case ELEMENT_TYPE_U:)
     {
         // If we got the univeral zero...Then assign it and exit.
         if (rObj == 0)
@@ -185,8 +185,8 @@ void InvokeUtil::CopyArg(TypeHandle th, OBJECTREF *pObjUNSAFE, ArgDestination *a
     case ELEMENT_TYPE_I8:
     case ELEMENT_TYPE_U8:
     case ELEMENT_TYPE_R8:
-    IN_WIN64(case ELEMENT_TYPE_I:)
-    IN_WIN64(case ELEMENT_TYPE_U:)
+    IN_TARGET_64BIT(case ELEMENT_TYPE_I:)
+    IN_TARGET_64BIT(case ELEMENT_TYPE_U:)
     {
         // If we got the univeral zero...Then assign it and exit.
         if (rObj == 0)
@@ -369,11 +369,11 @@ void InvokeUtil::CreatePrimitiveValue(CorElementType dstType,CorElementType srcT
     case ELEMENT_TYPE_I2:
         data = *(INT16*)pSrc;
         break;
-    IN_WIN32(case ELEMENT_TYPE_I:)
+    IN_TARGET_32BIT(case ELEMENT_TYPE_I:)
     case ELEMENT_TYPE_I4:
         data = *(INT32 *)pSrc;
         break;
-    IN_WIN64(case ELEMENT_TYPE_I:)
+    IN_TARGET_64BIT(case ELEMENT_TYPE_I:)
     case ELEMENT_TYPE_I8:
         data = *(INT64 *)pSrc;
         break;
@@ -456,22 +456,22 @@ void InvokeUtil::CreatePrimitiveValue(CorElementType dstType,CorElementType srcT
         case ELEMENT_TYPE_I1:
         case ELEMENT_TYPE_I2:
         case ELEMENT_TYPE_I4:
-        IN_WIN32(case ELEMENT_TYPE_I:)
+        IN_TARGET_32BIT(case ELEMENT_TYPE_I:)
             r8 = (R8)((INT32)data);
             break;
         case ELEMENT_TYPE_U1:
         case ELEMENT_TYPE_CHAR:
         case ELEMENT_TYPE_U2:
         case ELEMENT_TYPE_U4:
-        IN_WIN32(case ELEMENT_TYPE_U:)
+        IN_TARGET_32BIT(case ELEMENT_TYPE_U:)
             r8 = (R8)((UINT32)data);
             break;
         case ELEMENT_TYPE_U8:
-        IN_WIN64(case ELEMENT_TYPE_U:)
+        IN_TARGET_64BIT(case ELEMENT_TYPE_U:)
             r8 = (R8)((UINT64)data);
             break;
         case ELEMENT_TYPE_I8:
-        IN_WIN64(case ELEMENT_TYPE_I:)
+        IN_TARGET_64BIT(case ELEMENT_TYPE_I:)
             r8 = (R8)((INT64)data);
             break;
         case ELEMENT_TYPE_R4:

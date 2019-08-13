@@ -289,7 +289,7 @@ namespace
                     break;
                 }
 
-#if !defined(_WIN64) && BIGENDIAN
+#if !defined(BIT64) && BIGENDIAN
                 if (fEndianessFixup)
                     ret <<= 32;
 #endif

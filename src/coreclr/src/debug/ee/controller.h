@@ -961,7 +961,7 @@ inline bool IsInUsedAction(DPOSS_ACTION action)
 inline void VerifyExecutableAddress(const BYTE* address)
 {
 // TODO: : when can we apply this to x86?
-#if defined(_WIN64)   
+#if defined(BIT64)   
 #if defined(_DEBUG) 
 #ifndef FEATURE_PAL    
     MEMORY_BASIC_INFORMATION mbi;
@@ -983,7 +983,7 @@ inline void VerifyExecutableAddress(const BYTE* address)
     }
 #endif // !FEATURE_PAL    
 #endif // _DEBUG   
-#endif // _WIN64
+#endif // BIT64
 }
 
 #endif // !DACCESS_COMPILE

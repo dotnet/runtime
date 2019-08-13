@@ -11514,7 +11514,7 @@ void CEEJitInfo::recordRelocation(void * location,
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-#ifdef _WIN64
+#ifdef BIT64
     JIT_TO_EE_TRANSITION();
 
     INT64 delta;
@@ -11692,13 +11692,13 @@ void CEEJitInfo::recordRelocation(void * location,
     }
 
     EE_TO_JIT_TRANSITION();
-#else // _WIN64
+#else // BIT64
     JIT_TO_EE_TRANSITION_LEAF();
 
     // Nothing to do on 32-bit
 
     EE_TO_JIT_TRANSITION_LEAF();
-#endif // _WIN64
+#endif // BIT64
 }
 
 WORD CEEJitInfo::getRelocTypeHint(void * target)
@@ -12181,12 +12181,12 @@ void * CEEJitInfo::allocGCInfo (size_t size)
     _ASSERTE(m_CodeHeader != 0);
     _ASSERTE(m_CodeHeader->GetGCInfo() == 0);
 
-#ifdef _WIN64
+#ifdef BIT64
     if (size & 0xFFFFFFFF80000000LL)
     {
         COMPlusThrowHR(CORJIT_OUTOFMEM);
     }
-#endif // _WIN64
+#endif // BIT64
 
     block = m_jitManager->allocGCInfo(m_CodeHeader,(DWORD)size, &m_GCinfo_len);
     if (!block)
@@ -14237,7 +14237,7 @@ TADDR EECodeInfo::GetSavedMethodCode()
         HOST_NOCALLS;
         SUPPORTS_DAC;
     } CONTRACTL_END;
-#ifndef _WIN64
+#ifndef BIT64
 #if defined(HAVE_GCCOVER)
     _ASSERTE (!m_pMD->m_GcCover || GCStress<cfg_instr>::IsEnabled());
     if (GCStress<cfg_instr>::IsEnabled()

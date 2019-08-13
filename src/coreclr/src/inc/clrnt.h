@@ -587,7 +587,7 @@ typedef struct _TEB {
     PVOID SystemReserved1[54];      // Used by FP emulator
     NTSTATUS ExceptionCode;         // for RaiseUserException
     ACTIVATION_CONTEXT_STACK ActivationContextStack;   // Fusion activation stack
-    // sizeof(PVOID) is a way to express processor-dependence, more generally than #ifdef _WIN64
+    // sizeof(PVOID) is a way to express processor-dependence, more generally than #ifdef BIT64
     UCHAR SpareBytes1[48 - sizeof(PVOID) - sizeof(ACTIVATION_CONTEXT_STACK)];
     GDI_TEB_BATCH GdiTebBatch;      // Gdi batching
     CLIENT_ID RealClientId;

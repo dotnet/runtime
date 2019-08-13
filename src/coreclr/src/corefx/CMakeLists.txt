@@ -9,8 +9,6 @@
 # assemblies) or System.Diagnostics.Process.Native (a native interop library for
 # System.Diagnostics.Process.dll).
 
-remove_definitions(-D_WIN64)
-
 if(CLR_CMAKE_PLATFORM_UNIX)
   add_subdirectory(System.Globalization.Native)
 endif(CLR_CMAKE_PLATFORM_UNIX)

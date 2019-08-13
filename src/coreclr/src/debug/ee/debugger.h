@@ -1597,7 +1597,7 @@ public:
 #if defined(WIN64EXCEPTIONS)
     void   MapSpecialToNative(int funcletIndex, DWORD* pPrologEndOffset, DWORD* pEpilogStartOffset);
     SIZE_T MapILOffsetToNativeForSetIP(SIZE_T offsetILTo, int funcletIndexFrom, EHRangeTree* pEHRT, BOOL* pExact);
-#endif // _WIN64
+#endif // WIN64EXCEPTIONS
 
     // MapNativeOffsetToIL Takes a given nativeOffset, and maps it back
     //      to the corresponding IL offset, which it returns.  If mapping indicates

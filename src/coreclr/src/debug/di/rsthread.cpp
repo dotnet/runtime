@@ -1410,13 +1410,13 @@ HRESULT CordbThread::FindFrame(ICorDebugFrame ** ppFrame, FramePointer fp)
         ICorDebugFrame * pIFrame = pSSW->GetFrame(i);
         CordbFrame * pCFrame = CordbFrame::GetCordbFrameFromInterface(pIFrame);
 
-#if defined(_WIN64)
+#if defined(BIT64)
         // On 64-bit we can simply compare the FramePointer.
         if (pCFrame->GetFramePointer() == fp)
-#else  // !_WIN64
+#else  // !BIT64
         // On other platforms, we need to do a more elaborate check.
         if (pCFrame->IsContainedInFrame(fp))
-#endif // _WIN64
+#endif // BIT64
         {
             *ppFrame = pIFrame;
             (*ppFrame)->AddRef();
@@ -6844,7 +6844,7 @@ HRESULT CordbNativeFrame::GetLocalRegisterValue(CorDebugRegister reg,
     VALIDATE_POINTER_TO_OBJECT(ppValue, ICorDebugValue **);
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
 
-#if defined(DBG_TARGET_X86) || defined(DBG_TARGET_WIN64)
+#if defined(DBG_TARGET_X86) || defined(DBG_TARGET_64BIT)
 #if defined(DBG_TARGET_X86)
     if ((reg >= REGISTER_X86_FPSTACK_0) && (reg <= REGISTER_X86_FPSTACK_7))
 #elif defined(DBG_TARGET_AMD64)
@@ -7133,7 +7133,7 @@ HRESULT CordbNativeFrame::GetLocalFloatingPointValue(DWORD index,
     EX_CATCH_HRESULT(hr);
     if (SUCCEEDED(hr))
     {
-#if !defined(DBG_TARGET_WIN64)
+#if !defined(DBG_TARGET_64BIT)
         // This is needed on x86 because we are dealing with a stack.
         index = pThread->m_floatStackTop - index;
 #endif
@@ -8135,7 +8135,7 @@ HRESULT CordbJITILFrame::FabricateNativeInfo(DWORD dwIndex,
 
 #if defined(DBG_TARGET_X86) || defined(DBG_TARGET_ARM)
             cbArchitectureMin = 4;
-#elif defined(DBG_TARGET_WIN64)
+#elif defined(DBG_TARGET_64BIT)
             cbArchitectureMin = 8;
 #else
             cbArchitectureMin = 8; //REVISIT_TODO not sure if this is correct
@@ -8382,7 +8382,7 @@ HRESULT CordbJITILFrame::GetNativeVariable(CordbType *type,
         }
         break;
 
-#if defined(DBG_TARGET_WIN64) || defined(DBG_TARGET_ARM)
+#if defined(DBG_TARGET_64BIT) || defined(DBG_TARGET_ARM)
     case ICorDebugInfo::VLT_REG_FP:
 #if defined(DBG_TARGET_ARM) // @ARMTODO
         hr = E_NOTIMPL;
@@ -8396,7 +8396,7 @@ HRESULT CordbJITILFrame::GetNativeVariable(CordbType *type,
 #error Platform not implemented
 #endif  // DBG_TARGET_ARM @ARMTODO
         break;
-#endif // DBG_TARGET_WIN64 || DBG_TARGET_ARM
+#endif // DBG_TARGET_64BIT || DBG_TARGET_ARM
 
     case ICorDebugInfo::VLT_STK_BYREF:
         {

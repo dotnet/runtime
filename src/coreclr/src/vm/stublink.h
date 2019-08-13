@@ -108,7 +108,7 @@ struct StubUnwindInfoHeapSegment
     StubUnwindInfoHeader *pUnwindHeaderList;
     StubUnwindInfoHeapSegment *pNext;
 
-#ifdef _WIN64
+#ifdef BIT64
     class UnwindInfoTable* pUnwindInfoTable;       // Used to publish unwind info to ETW stack crawler
 #endif
 };
@@ -813,11 +813,11 @@ class Stub
 
         UINT32  m_signature;
 #else 
-#ifdef _WIN64
+#ifdef BIT64
         //README ALIGNEMENT: in retail mode UINT m_numCodeBytes does not align to 16byte for the code
         //                   after the Stub struct. This is to pad properly
         UINT    m_pad_code_bytes; 
-#endif // _WIN64
+#endif // BIT64
 #endif // _DEBUG
         
 #ifdef _DEBUG

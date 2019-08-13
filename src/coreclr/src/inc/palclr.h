@@ -589,7 +589,7 @@
 #define SET_UNALIGNED_VAL64(_pObject, _Value) SET_UNALIGNED_64(_pObject, VAL64((UINT64)_Value))
 #endif
 
-#ifdef _WIN64
+#ifdef BIT64
 #define VALPTR(x) VAL64(x)
 #define GET_UNALIGNED_PTR(x) GET_UNALIGNED_64(x)
 #define GET_UNALIGNED_VALPTR(x) GET_UNALIGNED_VAL64(x)

@@ -186,7 +186,7 @@ class StubLinkerCPU : public StubLinker
         VOID X86EmitPushImm32(UINT value);
         VOID X86EmitPushImm32(CodeLabel &pTarget);
         VOID X86EmitPushImm8(BYTE value);
-        VOID X86EmitPushImmPtr(LPVOID value WIN64_ARG(X86Reg tmpReg = kR10));
+        VOID X86EmitPushImmPtr(LPVOID value BIT64_ARG(X86Reg tmpReg = kR10));
 
         VOID X86EmitCmpRegImm32(X86Reg reg, INT32 imm32); // cmp reg, imm32
         VOID X86EmitCmpRegIndexImm32(X86Reg reg, INT32 offs, INT32 imm32); // cmp [reg+offs], imm32
@@ -468,7 +468,7 @@ BOOL rel32SetInterlocked(/*PINT32*/ PVOID pRel32, TADDR target, TADDR expected, 
 
 EXTERN_C VOID STDCALL PrecodeFixupThunk();
 
-#ifdef _WIN64
+#ifdef BIT64
 
 #define OFFSETOF_PRECODE_TYPE              0
 #define OFFSETOF_PRECODE_TYPE_CALL_OR_JMP  5
@@ -486,7 +486,7 @@ EXTERN_C VOID STDCALL PrecodeRemotingThunk();
 
 #define SIZEOF_PRECODE_BASE                8
 
-#endif // _WIN64
+#endif // BIT64
 
 
 #include <pshpack1.h>
@@ -501,7 +501,7 @@ struct InvalidPrecode {
 // Regular precode
 struct StubPrecode {
 
-#ifdef _WIN64
+#ifdef BIT64
     static const BYTE Type = 0x40;
     // mov r10,pMethodDesc
     // inc eax
@@ -511,12 +511,12 @@ struct StubPrecode {
     // mov eax,pMethodDesc
     // mov ebp,ebp
     // jmp Stub
-#endif // _WIN64
+#endif // BIT64
 
-    IN_WIN64(USHORT m_movR10;)
-    IN_WIN32(BYTE   m_movEAX;)
+    IN_TARGET_64BIT(USHORT m_movR10;)
+    IN_TARGET_32BIT(BYTE   m_movEAX;)
     TADDR           m_pMethodDesc;
-    IN_WIN32(BYTE   m_mov_rm_r;)
+    IN_TARGET_32BIT(BYTE   m_mov_rm_r;)
     BYTE            m_type;
     BYTE            m_jmp;
     INT32           m_rel32;
@@ -563,10 +563,10 @@ struct StubPrecode {
         return rel32SetInterlocked(&m_rel32, target, expected, (MethodDesc*)GetMethodDesc());
     }
 };
-IN_WIN64(static_assert_no_msg(offsetof(StubPrecode, m_movR10) == OFFSETOF_PRECODE_TYPE);)
-IN_WIN64(static_assert_no_msg(offsetof(StubPrecode, m_type) == OFFSETOF_PRECODE_TYPE_MOV_R10);)
-IN_WIN32(static_assert_no_msg(offsetof(StubPrecode, m_mov_rm_r) == OFFSETOF_PRECODE_TYPE);)
-IN_WIN32(static_assert_no_msg(offsetof(StubPrecode, m_type) == OFFSETOF_PRECODE_TYPE_MOV_RM_R);)
+IN_TARGET_64BIT(static_assert_no_msg(offsetof(StubPrecode, m_movR10) == OFFSETOF_PRECODE_TYPE);)
+IN_TARGET_64BIT(static_assert_no_msg(offsetof(StubPrecode, m_type) == OFFSETOF_PRECODE_TYPE_MOV_R10);)
+IN_TARGET_32BIT(static_assert_no_msg(offsetof(StubPrecode, m_mov_rm_r) == OFFSETOF_PRECODE_TYPE);)
+IN_TARGET_32BIT(static_assert_no_msg(offsetof(StubPrecode, m_type) == OFFSETOF_PRECODE_TYPE_MOV_RM_R);)
 typedef DPTR(StubPrecode) PTR_StubPrecode;
 
 
@@ -576,7 +576,7 @@ typedef DPTR(StubPrecode) PTR_StubPrecode;
 // (This is fake precode. VTable slot does not point to it.)
 struct NDirectImportPrecode : StubPrecode {
 
-#ifdef _WIN64
+#ifdef BIT64
     static const int Type = 0x48;
     // mov r10,pMethodDesc
     // dec eax
@@ -586,7 +586,7 @@ struct NDirectImportPrecode : StubPrecode {
     // mov eax,pMethodDesc
     // mov eax,eax
     // jmp NDirectImportThunk
-#endif // _WIN64
+#endif // BIT64
 
     void Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator);
 
@@ -688,9 +688,9 @@ struct FixupPrecode {
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
 };
-IN_WIN32(static_assert_no_msg(offsetof(FixupPrecode, m_type) == OFFSETOF_PRECODE_TYPE));
-IN_WIN64(static_assert_no_msg(offsetof(FixupPrecode, m_op)   == OFFSETOF_PRECODE_TYPE);)
-IN_WIN64(static_assert_no_msg(offsetof(FixupPrecode, m_type) == OFFSETOF_PRECODE_TYPE_CALL_OR_JMP);)
+IN_TARGET_32BIT(static_assert_no_msg(offsetof(FixupPrecode, m_type) == OFFSETOF_PRECODE_TYPE));
+IN_TARGET_64BIT(static_assert_no_msg(offsetof(FixupPrecode, m_op)   == OFFSETOF_PRECODE_TYPE);)
+IN_TARGET_64BIT(static_assert_no_msg(offsetof(FixupPrecode, m_type) == OFFSETOF_PRECODE_TYPE_CALL_OR_JMP);)
 
 typedef DPTR(FixupPrecode) PTR_FixupPrecode;
 
@@ -701,11 +701,11 @@ typedef DPTR(FixupPrecode) PTR_FixupPrecode;
 // Precode to stuffle this and retbuf for closed delegates over static methods with return buffer
 struct ThisPtrRetBufPrecode {
 
-#ifdef _WIN64
+#ifdef BIT64
     static const int Type = 0x90;
 #else
     static const int Type = 0xC2;
-#endif // _WIN64
+#endif // BIT64
 
     // mov regScratch,regArg0
     // mov regArg0,regArg1
@@ -714,12 +714,12 @@ struct ThisPtrRetBufPrecode {
     // jmp EntryPoint
     // dw pMethodDesc
 
-    IN_WIN64(BYTE   m_nop1;)
-    IN_WIN64(BYTE   m_prefix1;)
+    IN_TARGET_64BIT(BYTE   m_nop1;)
+    IN_TARGET_64BIT(BYTE   m_prefix1;)
     WORD            m_movScratchArg0;
-    IN_WIN64(BYTE   m_prefix2;)
+    IN_TARGET_64BIT(BYTE   m_prefix2;)
     WORD            m_movArg0Arg1;
-    IN_WIN64(BYTE   m_prefix3;)
+    IN_TARGET_64BIT(BYTE   m_prefix3;)
     WORD            m_movArg1Scratch;
     BYTE            m_nop2;
     BYTE            m_jmp;
@@ -740,7 +740,7 @@ struct ThisPtrRetBufPrecode {
 
     BOOL SetTargetInterlocked(TADDR target, TADDR expected);
 };
-IN_WIN32(static_assert_no_msg(offsetof(ThisPtrRetBufPrecode, m_movArg1Scratch) + 1 == OFFSETOF_PRECODE_TYPE);)
+IN_TARGET_32BIT(static_assert_no_msg(offsetof(ThisPtrRetBufPrecode, m_movArg1Scratch) + 1 == OFFSETOF_PRECODE_TYPE);)
 typedef DPTR(ThisPtrRetBufPrecode) PTR_ThisPtrRetBufPrecode;
 
 #endif // HAS_THISPTR_RETBUF_PRECODE

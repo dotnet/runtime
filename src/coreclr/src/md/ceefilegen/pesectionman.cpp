@@ -308,7 +308,7 @@ HRESULT PESection::addBaseReloc(unsigned offset, CeeSectionRelocType reloc,
 
     switch (reloc)
     {
-#ifdef _WIN64
+#ifdef BIT64
     case srRelocDir64Ptr:
 #endif
     case srRelocAbsolutePtr:
