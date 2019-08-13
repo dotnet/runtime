@@ -29,7 +29,7 @@ stages:
         displayName: Publish
         inputs:
           filePath: eng\common\sdk-task.ps1
-          arguments: -task PublishToSymbolServers -restore -msbuildEngine dotnet
+          arguments: -task PublishToSymbolServers -restore -msbuildEngine dotnet -warnAsError:$false
             /p:DotNetSymbolServerTokenMsdl=$(microsoft-symbol-server-pat) 
             /p:DotNetSymbolServerTokenSymWeb=$(symweb-symbol-server-pat) 
             /p:PDBArtifactsDirectory='$(Build.ArtifactStagingDirectory)/PDBArtifacts/'

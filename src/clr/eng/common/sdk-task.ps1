@@ -4,6 +4,7 @@ Param(
   [string] $task,
   [string] $verbosity = "minimal",
   [string] $msbuildEngine = $null,
+  [switch] $warnAsError = $true,
   [switch] $restore,
   [switch] $prepareMachine,
   [switch] $help,
@@ -12,7 +13,6 @@ Param(
 
 $ci = $true
 $binaryLog = $true
-$warnAsError = $true
 
 . $PSScriptRoot\tools.ps1
 
