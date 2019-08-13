@@ -69,8 +69,15 @@ mono_threads_suspend_policy_is_multiphase_stw_enabled (MonoThreadsSuspendPolicy 
 gboolean
 mono_threads_suspend_policy_is_blocking_transition_enabled (MonoThreadsSuspendPolicy p);
 
-MonoThreadsSuspendPolicy
-mono_threads_suspend_policy (void) MONO_LLVM_INTERNAL;
+extern char mono_threads_suspend_policy_hidden_dont_modify MONO_LLVM_INTERNAL;
+
+static inline MonoThreadsSuspendPolicy
+mono_threads_suspend_policy (void) {
+	return (MonoThreadsSuspendPolicy)mono_threads_suspend_policy_hidden_dont_modify;
+}
+
+void
+mono_threads_suspend_policy_init (void);
 
 const char*
 mono_threads_suspend_policy_name (MonoThreadsSuspendPolicy p);

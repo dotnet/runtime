@@ -652,13 +652,13 @@ threads_suspend_policy_getenv (void)
 	return policy;
 }
 
-static char threads_suspend_policy;
+char mono_threads_suspend_policy_hidden_dont_modify;
 
-MonoThreadsSuspendPolicy
-mono_threads_suspend_policy (void)
+void
+mono_threads_suspend_policy_init (void)
 {
-	int policy = threads_suspend_policy;
-	if (G_UNLIKELY (policy == 0)) {
+	int policy = 0;
+	{
 		// thread suspend policy:
 		// if the MONO_THREADS_SUSPEND env is set, use it.
 		// otherwise if there's a compiled-in default, use it.
@@ -675,9 +675,8 @@ mono_threads_suspend_policy (void)
 		W32_RESTORE_LAST_ERROR_FROM_RESTORE_POINT;
 
 		g_assert (policy);
-		threads_suspend_policy = (char)policy;
+		mono_threads_suspend_policy_hidden_dont_modify = (char)policy;
 	}
-	return (MonoThreadsSuspendPolicy)policy;
 }
 
 static MonoThreadsSuspendPolicy
@@ -703,7 +702,7 @@ mono_threads_suspend_validate_policy (MonoThreadsSuspendPolicy policy)
 void
 mono_threads_suspend_override_policy (MonoThreadsSuspendPolicy new_policy)
 {
-	threads_suspend_policy = (char)mono_threads_suspend_validate_policy (new_policy);
+	mono_threads_suspend_policy_hidden_dont_modify = (char)mono_threads_suspend_validate_policy (new_policy);
 	g_warning ("Overriding suspend policy.  Using %s suspend.", mono_threads_suspend_policy_name (mono_threads_suspend_policy ()));
 }
 

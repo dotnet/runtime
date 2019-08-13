@@ -900,6 +900,9 @@ mono_thread_info_init (size_t info_size)
 	gboolean res;
 	thread_info_size = info_size;
 	char *sleepLimit;
+
+	mono_threads_suspend_policy_init ();
+
 #ifdef HOST_WIN32
 	res = mono_native_tls_alloc (&thread_info_key, NULL);
 	res = mono_native_tls_alloc (&thread_exited_key, NULL);
