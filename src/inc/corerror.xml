@@ -845,13 +845,13 @@
 
 <HRESULT NumericValue="0x8013131e">
 	<SymbolicName>CORDBG_E_CANT_SET_IP_OUT_OF_FINALLY_ON_WIN64</SymbolicName>
-	<Message>"SetIP is not possible because it would move EIP from within a finally clause to a point outside of one on WIN64 platforms."</Message>
+	<Message>"SetIP is not possible because it would move EIP from within a finally clause to a point outside of one on this platforms."</Message>
 	<Comment> SetIP isn't possible because it would move </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x8013131f">
 	<SymbolicName>CORDBG_E_CANT_SET_IP_OUT_OF_CATCH_ON_WIN64</SymbolicName>
-	<Message>"SetIP is not possible because it would move EIP from within a catch clause to a point outside of one on WIN64 platforms."</Message>
+	<Message>"SetIP is not possible because it would move EIP from within a catch clause to a point outside of one on this platforms."</Message>
 	<Comment> SetIP isn't possible because it would move </Comment>
 </HRESULT>
 

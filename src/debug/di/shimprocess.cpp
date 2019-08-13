@@ -676,7 +676,7 @@ bool ShimProcess::RemoveDuplicateCreationEventIfPresent(void * pKey)
 //   It can be passed into ICorDebugProcess4::Filter.
 CorDebugRecordFormat GetHostExceptionRecordFormat()
 {
-#if defined(_WIN64)
+#if defined(BIT64)
     return FORMAT_WINDOWS_EXCEPTIONRECORD64;
 #else
     return FORMAT_WINDOWS_EXCEPTIONRECORD32;

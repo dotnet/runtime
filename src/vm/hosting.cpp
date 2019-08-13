@@ -51,8 +51,8 @@ LPVOID EEVirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, D
 
         if (lpAddress == NULL && (flAllocationType & MEM_RESERVE) != 0 && PEDecoder::GetForceRelocs())
         {
-#ifdef _WIN64
-            // Try to allocate memory all over the place when we are stressing relocations on _WIN64.
+#ifdef BIT64
+            // Try to allocate memory all over the place when we are stressing relocations on BIT64.
             // This will make sure that we generate jump stubs correctly among other things.
             static BYTE* ptr = (BYTE*)0x234560000;
             ptr += 0x123450000;
@@ -67,7 +67,7 @@ LPVOID EEVirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, D
 #else
             // Allocate memory top to bottom to stress ngen fixups with LARGEADDRESSAWARE support.
             p = ::VirtualAlloc(lpAddress, dwSize, flAllocationType | MEM_TOP_DOWN, flProtect);
-#endif // _WIN64
+#endif // BIT64
         }
         }
 #endif // _DEBUG

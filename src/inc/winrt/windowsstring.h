@@ -677,7 +677,7 @@ HRESULT StringCchLength(
     return StringCchLengthW(wz == nullptr ? L"" : wz, size_t(STRSAFE_MAX_CCH), pcch);
 }
 
-#ifdef _WIN64
+#ifdef BIT64
     // A UINT32-specific overload with built-in overflow check.
     inline
     HRESULT StringCchLength(
@@ -694,7 +694,7 @@ HRESULT StringCchLength(
     
         return SizeTToUInt32(cch, pcch);
     }
-#endif // _WIN64
+#endif // BIT64
 
 #ifndef DACCESS_COMPILE
     //=====================================================================================================================

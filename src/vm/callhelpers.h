@@ -57,7 +57,7 @@ struct CallDescrData
 
 extern "C" void STDCALL CallDescrWorkerInternal(CallDescrData * pCallDescrData);
 
-#if !defined(_WIN64) && defined(_DEBUG)
+#if !defined(BIT64) && defined(_DEBUG)
 void CallDescrWorker(CallDescrData * pCallDescrData);
 #else
 #define CallDescrWorker(pCallDescrData) CallDescrWorkerInternal(pCallDescrData)

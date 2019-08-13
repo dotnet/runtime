@@ -11246,7 +11246,7 @@ const EXCEPTION_RECORD * CordbProcess::ValidateExceptionRecord(
     //
 
     // @dbgtodo - , cross-plat: Once we do cross-plat, these should be based off target-architecture not host's.
-#if defined(_WIN64)
+#if defined(BIT64)
     if (format != FORMAT_WINDOWS_EXCEPTIONRECORD64)
     {
         ThrowHR(E_INVALIDARG);

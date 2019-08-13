@@ -1701,11 +1701,11 @@ public:
         //
         
         return (ELEMENT_TYPE == 
-#ifdef _WIN64        
+#ifdef BIT64        
                     ELEMENT_TYPE_I8
-#else // _WIN64
+#else // BIT64
                     ELEMENT_TYPE_I4
-#endif // _WIN64
+#endif // BIT64
                     ) && (NULL != m_pargs->m_pMT);
     }
     

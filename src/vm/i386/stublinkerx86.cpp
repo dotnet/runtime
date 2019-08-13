@@ -990,7 +990,7 @@ VOID StubLinkerCPU::X86EmitPushImm8(BYTE value)
 // Emits:
 //    PUSH <ptr>
 //---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitPushImmPtr(LPVOID value WIN64_ARG(X86Reg tmpReg /*=kR10*/))
+VOID StubLinkerCPU::X86EmitPushImmPtr(LPVOID value BIT64_ARG(X86Reg tmpReg /*=kR10*/))
 {
     STANDARD_VM_CONTRACT;
 
@@ -5738,7 +5738,7 @@ void TailCallFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
 
                 offset &= 0x7FFFFFFC;
                 
-#ifdef _WIN64
+#ifdef BIT64
                 offset <<= 1;
 #endif
                 offset += sizeof(void*);
@@ -5798,7 +5798,7 @@ static void EncodeOneGCOffset(CPUSTUBLINKER *pSl, ULONG delta, BOOL maybeInterio
     // we use the 1 bit to denote a range
     _ASSERTE((delta % sizeof(void*)) == 0);
 
-#if defined(_WIN64)
+#if defined(BIT64)
     // For 64-bit, we have 3 bits of alignment, so we allow larger frames
     // by shifting and gaining a free high-bit.
     ULONG encodedDelta = delta >> 1;
@@ -6512,10 +6512,10 @@ void StubPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator /* = N
 {
     WRAPPER_NO_CONTRACT;
 
-    IN_WIN64(m_movR10 = X86_INSTR_MOV_R10_IMM64);   // mov r10, pMethodDesc
-    IN_WIN32(m_movEAX = X86_INSTR_MOV_EAX_IMM32);   // mov eax, pMethodDesc
+    IN_TARGET_64BIT(m_movR10 = X86_INSTR_MOV_R10_IMM64);   // mov r10, pMethodDesc
+    IN_TARGET_32BIT(m_movEAX = X86_INSTR_MOV_EAX_IMM32);   // mov eax, pMethodDesc
     m_pMethodDesc = (TADDR)pMD;
-    IN_WIN32(m_mov_rm_r = X86_INSTR_MOV_RM_R);      // mov reg,reg
+    IN_TARGET_32BIT(m_mov_rm_r = X86_INSTR_MOV_RM_R);      // mov reg,reg
     m_type = type;
     m_jmp = X86_INSTR_JMP_REL32;        // jmp rel32
 
@@ -6731,7 +6731,7 @@ void ThisPtrRetBufPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocat
 {
     WRAPPER_NO_CONTRACT;
 
-    IN_WIN64(m_nop1 = X86_INSTR_NOP;)   // nop
+    IN_TARGET_64BIT(m_nop1 = X86_INSTR_NOP;)   // nop
 #ifdef UNIX_AMD64_ABI
     m_prefix1 = 0x48;
     m_movScratchArg0 = 0xC78B;          // mov rax,rdi
@@ -6740,11 +6740,11 @@ void ThisPtrRetBufPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocat
     m_prefix3 = 0x48;
     m_movArg1Scratch = 0xF08B;          // mov rsi,rax
 #else
-    IN_WIN64(m_prefix1 = 0x48;)
+    IN_TARGET_64BIT(m_prefix1 = 0x48;)
     m_movScratchArg0 = 0xC889;          // mov r/eax,r/ecx
-    IN_WIN64(m_prefix2 = 0x48;)
+    IN_TARGET_64BIT(m_prefix2 = 0x48;)
     m_movArg0Arg1 = 0xD189;             // mov r/ecx,r/edx
-    IN_WIN64(m_prefix3 = 0x48;)
+    IN_TARGET_64BIT(m_prefix3 = 0x48;)
     m_movArg1Scratch = 0xC289;          // mov r/edx,r/eax
 #endif
     m_nop2 = X86_INSTR_NOP;             // nop

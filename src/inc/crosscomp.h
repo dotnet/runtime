@@ -8,7 +8,7 @@
 
 #pragma once
 
-#if (!defined(_WIN64) && defined(_TARGET_64BIT_)) || (defined(_WIN64) && !defined(_TARGET_64BIT_))
+#if (!defined(BIT64) && defined(_TARGET_64BIT_)) || (defined(BIT64) && !defined(_TARGET_64BIT_))
 #define CROSSBITNESS_COMPILE
 #endif
 

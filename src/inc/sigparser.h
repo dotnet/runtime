@@ -423,7 +423,7 @@ class SigParser
             case ELEMENT_TYPE_I8:
             case ELEMENT_TYPE_U8:
             case ELEMENT_TYPE_R8:
-        #ifdef _WIN64
+        #ifdef BIT64
             case ELEMENT_TYPE_I:
             case ELEMENT_TYPE_U:
         #endif // WIN64
@@ -434,10 +434,10 @@ class SigParser
             case ELEMENT_TYPE_I4:
             case ELEMENT_TYPE_U4:
             case ELEMENT_TYPE_R4:
-        #ifndef _WIN64
+        #ifndef BIT64
             case ELEMENT_TYPE_I:
             case ELEMENT_TYPE_U:
-        #endif // _WIN64
+        #endif // BIT64
 
                 *pSize = 4;
                 break;
@@ -968,7 +968,7 @@ inline void* StackElemEndianessFixup(void* pStackElem, UINT cbSize) {
     case 2:
         pRetVal += sizeof(void*)-2;
         break;
-#ifdef _WIN64
+#ifdef BIT64
     case 4:
         pRetVal += sizeof(void*)-4;
         break;

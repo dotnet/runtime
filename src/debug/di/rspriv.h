@@ -3969,8 +3969,8 @@ public:
     // This has m_cPatch elements.
     PRD_TYPE             *m_rgUncommitedOpcode;
 
-    // CORDB_ADDRESS's are UINT_PTR's (64 bit under _WIN64, 32 bit otherwise)
-#if defined(DBG_TARGET_WIN64)
+    // CORDB_ADDRESS's are UINT_PTR's (64 bit under BIT64, 32 bit otherwise)
+#if defined(DBG_TARGET_64BIT)
 #define MAX_ADDRESS     (_UI64_MAX)
 #else
 #define MAX_ADDRESS     (ULONG_MAX)

@@ -549,7 +549,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     else if (parentDomain->IsSharedDomain())
     {
         indcell_heap_commit_size     = 16;        indcell_heap_reserve_size      =  100;
-#ifdef _WIN64 
+#ifdef BIT64 
                                                   indcell_heap_reserve_size      = 2000;
 #endif
         cache_entry_heap_commit_size = 16;        cache_entry_heap_reserve_size  =  500;
@@ -570,7 +570,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
         vtable_heap_commit_size      = 8;         vtable_heap_reserve_size       = 8;
     }
 
-#ifdef _WIN64
+#ifdef BIT64
     // If we're on 64-bit, there's a ton of address space, so reserve more space to
     // try to avoid getting into the situation where the resolve heap is more than
     // a rel32 jump away from the dispatch heap, since this will cause us to produce
@@ -3872,11 +3872,11 @@ void DispatchCache::LogStats()
    2. For every bit we try to have half one bits and half zero bits
    3. Adjacent entries when xor-ed should have 5,6 or 7 bits that are different
 */
-#ifdef _WIN64 
+#ifdef BIT64 
 static const UINT16 tokenHashBits[64] =
-#else // !_WIN64
+#else // !BIT64
 static const UINT16 tokenHashBits[32] =
-#endif // !_WIN64
+#endif // !BIT64
 {
     0xcd5, 0x8b9, 0x875, 0x439,
     0xbf0, 0x38d, 0xa5b, 0x6a7,
@@ -3887,7 +3887,7 @@ static const UINT16 tokenHashBits[32] =
     0xf05, 0x994, 0x472, 0x626,
     0x15c, 0x3a8, 0x56e, 0xe2d,
 
-#ifdef _WIN64 
+#ifdef BIT64 
     0xe3c, 0xbe2, 0x58e, 0x0f3,
     0x54d, 0x70f, 0xf88, 0xe2b,
     0x353, 0x153, 0x4a5, 0x943,
@@ -3896,7 +3896,7 @@ static const UINT16 tokenHashBits[32] =
     0x0f7, 0x49a, 0xdd0, 0x366,
     0xd84, 0xba5, 0x4c5, 0x6bc,
     0x8ec, 0x0b9, 0x617, 0x85c,
-#endif // _WIN64
+#endif // BIT64
 };
 
 /*static*/ UINT16 DispatchCache::HashToken(size_t token)

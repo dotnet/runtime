@@ -3351,7 +3351,7 @@ SIZE_T NativeImageDumper::TranslateFixupCallback(IXCLRDisassemblySupport *dis,
     case sizeof(void*):
         targetOffset = *PTR_SIZE_T(taddr);
         break;
-#ifdef _WIN64
+#ifdef BIT64
     case sizeof(INT32):
         targetOffset = *PTR_INT32(taddr);
         break;
@@ -7758,7 +7758,7 @@ void NativeImageDumper::DumpMethodDesc( PTR_MethodDesc md, PTR_Module module )
         CoverageRead(TO_TADDR(ssmd->GetSigRVA()), ssmd->m_cSig);
         DisplayWriteFieldInt( m_cSig, ssmd->m_cSig,
                               StoredSigMethodDesc, METHODDESCS );
-#ifdef _WIN64
+#ifdef BIT64
         DisplayWriteFieldEnumerated( m_dwExtendedFlags,
                                      ssmd->m_dwExtendedFlags,
                                      StoredSigMethodDesc,
@@ -7778,7 +7778,7 @@ void NativeImageDumper::DumpMethodDesc( PTR_MethodDesc md, PTR_Module module )
         DisplayWriteFieldPointer( m_pResolver,
                                   DPtrToPreferredAddr(dmd->m_pResolver),
                                   DynamicMethodDesc, METHODDESCS );
-#ifndef _WIN64
+#ifndef BIT64
         DisplayWriteFieldEnumerated( m_dwExtendedFlags,
                                      dmd->m_dwExtendedFlags,
                                      DynamicMethodDesc,

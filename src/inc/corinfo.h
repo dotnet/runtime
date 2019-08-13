@@ -1882,9 +1882,9 @@ struct CORINFO_String : public CORINFO_Object
 struct CORINFO_Array : public CORINFO_Object
 {
     unsigned                length;
-#ifdef _WIN64
+#ifdef BIT64
     unsigned                alignpad;
-#endif // _WIN64
+#endif // BIT64
 
 #if 0
     /* Multi-dimensional arrays have the lengths and bounds here */
@@ -1908,9 +1908,9 @@ struct CORINFO_Array : public CORINFO_Object
 struct CORINFO_Array8 : public CORINFO_Object
 {
     unsigned                length;
-#ifdef _WIN64
+#ifdef BIT64
     unsigned                alignpad;
-#endif // _WIN64
+#endif // BIT64
 
     union
     {
@@ -1925,9 +1925,9 @@ struct CORINFO_Array8 : public CORINFO_Object
 struct CORINFO_RefArray : public CORINFO_Object
 {
     unsigned                length;
-#ifdef _WIN64
+#ifdef BIT64
     unsigned                alignpad;
-#endif // _WIN64
+#endif // BIT64
 
 #if 0
     /* Multi-dimensional arrays have the lengths and bounds here */

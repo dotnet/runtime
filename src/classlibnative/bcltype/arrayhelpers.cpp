@@ -81,16 +81,16 @@ FCIMPL5(FC_BOOL_RET, ArrayHelper::TrySZIndexOf, ArrayBase * array, UINT32 index,
     case ELEMENT_TYPE_I4:
     case ELEMENT_TYPE_U4:
     case ELEMENT_TYPE_R4:
-    IN_WIN32(case ELEMENT_TYPE_I:)
-    IN_WIN32(case ELEMENT_TYPE_U:)
+    IN_TARGET_32BIT(case ELEMENT_TYPE_I:)
+    IN_TARGET_32BIT(case ELEMENT_TYPE_U:)
         *retVal = ArrayHelpers<U4>::IndexOf((U4*) array->GetDataPtr(), index, count, *(U4*)value->UnBox());
         break;
 
     case ELEMENT_TYPE_I8:
     case ELEMENT_TYPE_U8:
     case ELEMENT_TYPE_R8:
-    IN_WIN64(case ELEMENT_TYPE_I:)
-    IN_WIN64(case ELEMENT_TYPE_U:)
+    IN_TARGET_64BIT(case ELEMENT_TYPE_I:)
+    IN_TARGET_64BIT(case ELEMENT_TYPE_U:)
         *retVal = ArrayHelpers<U8>::IndexOf((U8*) array->GetDataPtr(), index, count, *(U8*)value->UnBox());
         break;
 
@@ -155,16 +155,16 @@ FCIMPL5(FC_BOOL_RET, ArrayHelper::TrySZLastIndexOf, ArrayBase * array, UINT32 in
     case ELEMENT_TYPE_I4:
     case ELEMENT_TYPE_U4:
     case ELEMENT_TYPE_R4:
-    IN_WIN32(case ELEMENT_TYPE_I:)
-    IN_WIN32(case ELEMENT_TYPE_U:)
+    IN_TARGET_32BIT(case ELEMENT_TYPE_I:)
+    IN_TARGET_32BIT(case ELEMENT_TYPE_U:)
         *retVal = ArrayHelpers<U4>::LastIndexOf((U4*) array->GetDataPtr(), index, count, *(U4*)value->UnBox());
         break;
 
     case ELEMENT_TYPE_I8:
     case ELEMENT_TYPE_U8:
     case ELEMENT_TYPE_R8:
-    IN_WIN64(case ELEMENT_TYPE_I:)
-    IN_WIN64(case ELEMENT_TYPE_U:)
+    IN_TARGET_64BIT(case ELEMENT_TYPE_I:)
+    IN_TARGET_64BIT(case ELEMENT_TYPE_U:)
         *retVal = ArrayHelpers<U8>::LastIndexOf((U8*) array->GetDataPtr(), index, count, *(U8*)value->UnBox());
         break;
 
@@ -405,16 +405,16 @@ FCIMPL3(FC_BOOL_RET, ArrayHelper::TrySZReverse, ArrayBase * array, UINT32 index,
     case ELEMENT_TYPE_I4:
     case ELEMENT_TYPE_U4:
     case ELEMENT_TYPE_R4:
-    IN_WIN32(case ELEMENT_TYPE_I:)
-    IN_WIN32(case ELEMENT_TYPE_U:)
+    IN_TARGET_32BIT(case ELEMENT_TYPE_I:)
+    IN_TARGET_32BIT(case ELEMENT_TYPE_U:)
         ArrayHelpers<U4>::Reverse((U4*) array->GetDataPtr(), index, count);
         break;
 
     case ELEMENT_TYPE_I8:
     case ELEMENT_TYPE_U8:
     case ELEMENT_TYPE_R8:
-    IN_WIN64(case ELEMENT_TYPE_I:)
-    IN_WIN64(case ELEMENT_TYPE_U:)
+    IN_TARGET_64BIT(case ELEMENT_TYPE_I:)
+    IN_TARGET_64BIT(case ELEMENT_TYPE_U:)
         ArrayHelpers<U8>::Reverse((U8*) array->GetDataPtr(), index, count);
         break;
 

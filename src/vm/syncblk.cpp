@@ -1903,13 +1903,13 @@ DEBUG_NOINLINE void ObjHeader::EnterSpinLock()
     while (TRUE)
     {
 #ifdef _DEBUG
-#ifdef _WIN64
+#ifdef BIT64
         // Give 64bit more time because there isn't a remoting fast path now, and we've hit this assert
         // needlessly in CLRSTRESS. 
         if (i++ > 30000)
 #else            
         if (i++ > 10000)
-#endif // _WIN64            
+#endif // BIT64            
             _ASSERTE(!"ObjHeader::EnterLock timed out");
 #endif
         // get the value so that it doesn't get changed under us.
@@ -2983,7 +2983,7 @@ void SyncBlock::SetEnCInfo(EnCSyncBlockInfo *pEnCInfo)
 #endif // EnC_SUPPORTED
 #endif // !DACCESS_COMPILE
 
-#if defined(_WIN64) && defined(_DEBUG)
+#if defined(BIT64) && defined(_DEBUG)
 void ObjHeader::IllegalAlignPad()
 {
     WRAPPER_NO_CONTRACT;
@@ -2994,6 +2994,6 @@ void ObjHeader::IllegalAlignPad()
 #endif
     _ASSERTE(m_alignpad == 0);
 }
-#endif // _WIN64 && _DEBUG
+#endif // BIT64 && _DEBUG
 
 

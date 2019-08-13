@@ -84,7 +84,7 @@ STDAPI_(BSTR) SysAllocStringLen(const OLECHAR *psz, UINT len)
 
     if(bstr != NULL){
 
-#if defined(_WIN64)
+#if defined(BIT64)
       // NOTE: There are some apps which peek back 4 bytes to look at the size of the BSTR. So, in case of 64-bit code,
       // we need to ensure that the BSTR length can be found by looking one DWORD before the BSTR pointer. 
       *(DWORD_PTR *)bstr = (DWORD_PTR) 0;
@@ -136,7 +136,7 @@ SysAllocStringByteLen(const char FAR* psz, unsigned int len)
     bstr = (OLECHAR *)HeapAlloc(GetProcessHeap(), 0, cbTotal);
 
     if (bstr != NULL) {
-#if defined(_WIN64)
+#if defined(BIT64)
       *(DWORD FAR*)((char *)bstr + sizeof (DWORD)) = (DWORD)len;
 #else
       *(DWORD FAR*)bstr = (DWORD)len;

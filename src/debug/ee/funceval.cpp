@@ -189,20 +189,20 @@ inline static void GetAndSetLiteralValue(LPVOID pDst, CorElementType dstType, LP
     case ELEMENT_TYPE_CHAR:
         *(UINT16*)pDst = (UINT16)srcValue;
         break;
-#if !defined(_WIN64)
+#if !defined(BIT64)
     case ELEMENT_TYPE_I:
 #endif
     case ELEMENT_TYPE_I4:
         *(int*)pDst = (int)srcValue;
         break;
-#if !defined(_WIN64)
+#if !defined(BIT64)
     case ELEMENT_TYPE_U:
 #endif
     case ELEMENT_TYPE_U4:
     case ELEMENT_TYPE_R4:
         *(unsigned*)pDst = (unsigned)srcValue;
         break;
-#if defined(_WIN64)
+#if defined(BIT64)
     case ELEMENT_TYPE_I:
 #endif
     case ELEMENT_TYPE_I8:
@@ -210,7 +210,7 @@ inline static void GetAndSetLiteralValue(LPVOID pDst, CorElementType dstType, LP
         *(INT64*)pDst = (INT64)srcValue;
         break;
 
-#if defined(_WIN64)
+#if defined(BIT64)
     case ELEMENT_TYPE_U:
 #endif
     case ELEMENT_TYPE_U8:
@@ -714,15 +714,15 @@ static PVOID GetRegisterValueAndReturnAddress(DebuggerEval *pDE,
 
     PVOID pAddr;
 
-#if !defined(_WIN64)
+#if !defined(BIT64)
     pAddr = pInt64Buf;
     DWORD *pLow = (DWORD*)(pInt64Buf);
     DWORD *pHigh  = pLow + 1;
-#endif // _WIN64
+#endif // BIT64
 
     switch (pFEAD->argHome.kind)
     {
-#if !defined(_WIN64)
+#if !defined(BIT64)
     case RAK_REGREG:
         *pLow = GetRegisterValue(pDE, pFEAD->argHome.u.reg2, pFEAD->argHome.u.reg2Addr, pFEAD->argHome.u.reg2Value);
         *pHigh = GetRegisterValue(pDE, pFEAD->argHome.reg1, pFEAD->argHome.reg1Addr, pFEAD->argHome.reg1Value);
@@ -737,7 +737,7 @@ static PVOID GetRegisterValueAndReturnAddress(DebuggerEval *pDE,
         *pLow = *((DWORD*)CORDB_ADDRESS_TO_PTR(pFEAD->argHome.addr));
         *pHigh = GetRegisterValue(pDE, pFEAD->argHome.reg1, pFEAD->argHome.reg1Addr, pFEAD->argHome.reg1Value);
         break;
-#endif // _WIN64
+#endif // BIT64
 
     case RAK_REG:
         // Simply grab the value out of the proper register.
@@ -850,15 +850,15 @@ static void GetFuncEvalArgValue(DebuggerEval *pDE,
         {
             INT64 *pSource;
 
-#if defined(_WIN64)
+#if defined(BIT64)
             _ASSERTE(dataLocation & DL_MaybeInteriorPtrArray);
 
             pSource = (INT64 *)pMaybeInteriorPtrArg;
-#else  // !_WIN64
+#else  // !BIT64
             _ASSERTE(dataLocation & DL_BufferForArgsArray);
 
             pSource = pBufferArg;
-#endif // !_WIN64
+#endif // !BIT64
 
             if (!isByRef)
             {
@@ -1216,13 +1216,13 @@ static void GetFuncEvalArgValue(DebuggerEval *pDE,
 static CorDebugRegister GetArgAddrFromReg( DebuggerIPCE_FuncEvalArgData *pFEAD)
 {
     CorDebugRegister retval = REGISTER_INSTRUCTION_POINTER; // good as default as any
-#if defined(_WIN64)
+#if defined(BIT64)
     retval = (pFEAD->argHome.kind == RAK_REG ?
               pFEAD->argHome.reg1 :
               (CorDebugRegister)((int)REGISTER_IA64_F0 + pFEAD->argHome.floatIndex));
-#else  // !_WIN64
+#else  // !BIT64
     retval = pFEAD->argHome.reg1;
-#endif // !_WIN64
+#endif // !BIT64
     return retval;
 }
 
@@ -1254,11 +1254,11 @@ static void SetFuncEvalByRefArgValue(DebuggerEval *pDE,
         {
             INT64 source;
 
-#if defined(_WIN64)
+#if defined(BIT64)
             source = (INT64)maybeInteriorPtrArg;
-#else  // !_WIN64
+#else  // !BIT64
             source = bufferByRefArg;
-#endif // !_WIN64
+#endif // !BIT64
 
             if (pFEAD->argIsLiteral)
             {
@@ -1272,7 +1272,7 @@ static void SetFuncEvalByRefArgValue(DebuggerEval *pDE,
             }
             else
             {
-#if !defined(_WIN64)
+#if !defined(BIT64)
                 // RAK_REG is the only 4 byte type, all others are 8 byte types.
                 _ASSERTE(pFEAD->argHome.kind != RAK_REG);
 
@@ -1299,12 +1299,12 @@ static void SetFuncEvalByRefArgValue(DebuggerEval *pDE,
                 default:
                     break;
                 }
-#else // _WIN64
+#else // BIT64
                 // The only types we use are RAK_REG and RAK_FLOAT, and both of them can be 4 or 8 bytes.
                 _ASSERTE((pFEAD->argHome.kind == RAK_REG) || (pFEAD->argHome.kind == RAK_FLOAT));
 
                 SetRegisterValue(pDE, pFEAD->argHome.reg1, pFEAD->argHome.reg1Addr, source);
-#endif // _WIN64
+#endif // BIT64
             }
         }
         break;
@@ -1354,7 +1354,7 @@ static void SetFuncEvalByRefArgValue(DebuggerEval *pDE,
                 // RAK_REG is the only valid 4 byte type on WIN32.  On WIN64, both RAK_REG and RAK_FLOAT can be
                 // 4 bytes or 8 bytes.
                 _ASSERTE((pFEAD->argHome.kind == RAK_REG)
-                         WIN64_ONLY(|| (pFEAD->argHome.kind == RAK_FLOAT)));
+                         BIT64_ONLY(|| (pFEAD->argHome.kind == RAK_FLOAT)));
 
                 CorDebugRegister regNum = GetArgAddrFromReg(pFEAD);
 
@@ -1457,7 +1457,7 @@ static void GCProtectAllPassedArgs(DebuggerEval *pDE,
         case ELEMENT_TYPE_R8:
             // 64bit values
 
-#if defined(_WIN64)
+#if defined(BIT64)
             //
             // Only need to worry about protecting if a pointer is a 64 bit quantity.
             //
@@ -1506,7 +1506,7 @@ static void GCProtectAllPassedArgs(DebuggerEval *pDE,
                 }
 #endif
             }
-#endif // _WIN64
+#endif // BIT64
             break;
 
         case ELEMENT_TYPE_VALUETYPE:
@@ -2362,7 +2362,7 @@ void CopyArgsToBuffer(DebuggerEval *pDE,
             else
             {
 
-#if !defined(_WIN64)
+#if !defined(BIT64)
                 // RAK_REG is the only 4 byte type, all others are 8 byte types.
                 _ASSERTE(pFEAD->argHome.kind != RAK_REG);
                 
@@ -2379,13 +2379,13 @@ void CopyArgsToBuffer(DebuggerEval *pDE,
 
                 *pDest = *pAddr;
 
-#else  // _WIN64
+#else  // BIT64
                 // Both RAK_REG and RAK_FLOAT can be either 4 bytes or 8 bytes.
                 _ASSERTE((pFEAD->argHome.kind == RAK_REG) || (pFEAD->argHome.kind == RAK_FLOAT));
 
                 CorDebugRegister regNum = GetArgAddrFromReg(pFEAD);
                 *pDest = GetRegisterValue(pDE, regNum, pFEAD->argHome.reg1Addr, pFEAD->argHome.reg1Value);
-#endif // _WIN64
+#endif // BIT64
 
 
 
@@ -2484,7 +2484,7 @@ void CopyArgsToBuffer(DebuggerEval *pDE,
                 // RAK_REG is the only valid 4 byte type on WIN32.  On WIN64, RAK_REG and RAK_FLOAT
                 // can both be either 4 bytes or 8 bytes;
                 _ASSERTE((pFEAD->argHome.kind == RAK_REG)
-                         WIN64_ONLY(|| (pFEAD->argHome.kind == RAK_FLOAT)));
+                         BIT64_ONLY(|| (pFEAD->argHome.kind == RAK_FLOAT)));
 
                 CorDebugRegister regNum = GetArgAddrFromReg(pFEAD);
 
@@ -2585,7 +2585,7 @@ void CopyArgsToBuffer(DebuggerEval *pDE,
                 // RAK_REG is the only valid 4 byte type on WIN32.  On WIN64, RAK_REG and RAK_FLOAT
                 // can both be either 4 bytes or 8 bytes;
                 _ASSERTE((pFEAD->argHome.kind == RAK_REG)
-                         WIN64_ONLY(|| (pFEAD->argHome.kind == RAK_FLOAT)));
+                         BIT64_ONLY(|| (pFEAD->argHome.kind == RAK_FLOAT)));
 
                 CorDebugRegister regNum = GetArgAddrFromReg(pFEAD);
 
@@ -4050,8 +4050,8 @@ void * STDCALL FuncEvalHijackWorker(DebuggerEval *pDE)
 
 EXTERN_C EXCEPTION_DISPOSITION
 FuncEvalHijackPersonalityRoutine(IN     PEXCEPTION_RECORD   pExceptionRecord
-                       WIN64_ARG(IN     ULONG64             MemoryStackFp)
-                   NOT_WIN64_ARG(IN     ULONG32             MemoryStackFp),
+                       BIT64_ARG(IN     ULONG64             MemoryStackFp)
+                   NOT_BIT64_ARG(IN     ULONG32             MemoryStackFp),
                                  IN OUT PCONTEXT            pContextRecord,
                                  IN OUT PDISPATCHER_CONTEXT pDispatcherContext
                                 )

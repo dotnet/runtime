@@ -2259,7 +2259,7 @@ bool DebuggerController::ModuleHasPatches( Module* pModule )
 //
 static bool _AddrIsJITHelper(PCODE addr)
 {
-#if !defined(_WIN64) && !defined(FEATURE_PAL)
+#if !defined(BIT64) && !defined(FEATURE_PAL)
     // Is the address in the runtime dll (clr.dll or coreclr.dll) at all? (All helpers are in
     // that dll)
     if (g_runtimeLoadedBaseAddress <= addr && 
@@ -2291,9 +2291,9 @@ static bool _AddrIsJITHelper(PCODE addr)
              "_ANIM: address within runtime dll, but not a helper function "
              "0x%08x\n", addr));
     }
-#else // !defined(_WIN64) && !defined(FEATURE_PAL)
+#else // !defined(BIT64) && !defined(FEATURE_PAL)
     // TODO: Figure out what we want to do here
-#endif // !defined(_WIN64) && !defined(FEATURE_PAL)
+#endif // !defined(BIT64) && !defined(FEATURE_PAL)
 
     return false;
 }
