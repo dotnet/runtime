@@ -2883,7 +2883,7 @@ static int opcode_counts[512];
 #define INIT_VTABLE(vtable) do { \
 		if (G_UNLIKELY (!(vtable)->initialized)) { \
 			mono_runtime_class_init_full ((vtable), error); \
-			if (!mono_error_ok (error)) \
+			if (!is_ok (error)) \
 				THROW_EX (mono_error_convert_to_exception (error), ip); \
 		} \
 	} while (0);
@@ -4381,7 +4381,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 
 			sp -= param_count;
 			sp->data.o = ves_array_create (imethod->domain, newobj_class, param_count, sp, error);
-			if (!mono_error_ok (error))
+			if (!is_ok (error))
 				THROW_EX (mono_error_convert_to_exception (error), ip);
 
 			++sp;
@@ -4512,7 +4512,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			} else {
 				if (newobj_class != mono_defaults.string_class) {
 					MonoVTable *vtable = mono_class_vtable_checked (imethod->domain, newobj_class, error);
-					if (!mono_error_ok (error) || !mono_runtime_class_init_full (vtable, error))
+					if (!is_ok (error) || !mono_runtime_class_init_full (vtable, error))
 						THROW_EX (mono_error_convert_to_exception (error), ip);
 					frame_objref (frame) = mono_object_new_checked (imethod->domain, newobj_class, error);
 					mono_error_cleanup (error); /* FIXME: don't swallow the error */
@@ -5191,7 +5191,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 		MINT_IN_CASE(MINT_NEWARR) {
 			MonoVTable *vtable = (MonoVTable*)imethod->data_items[*(guint16 *)(ip + 1)];
 			sp [-1].data.o = (MonoObject*) mono_array_new_specific_checked (vtable, sp [-1].data.i, error);
-			if (!mono_error_ok (error)) {
+			if (!is_ok (error)) {
 				THROW_EX (mono_error_convert_to_exception (error), ip);
 			}
 			mono_error_cleanup (error); /* FIXME: don't swallow the error */
