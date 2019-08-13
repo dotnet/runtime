@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace System
 {
-    partial struct Guid
+    public partial struct Guid
     {
         // This will create a new random guid based on the https://www.ietf.org/rfc/rfc4122.txt
         public static unsafe Guid NewGuid()

@@ -4302,7 +4302,7 @@ namespace System
                     // Wrap each of the elements of the array.
                     for (int currElem = 0; currElem < numElems; currElem++)
                     {
-                        if(isString)
+                        if (isString)
                         {
                             newArray[currElem] = wrapperCons.Invoke(new object?[] {(string?)oldArray.GetValue(currElem)});
                         }
