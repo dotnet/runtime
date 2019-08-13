@@ -45,7 +45,7 @@ namespace System
             if (utf16.Length == 0)
                 goto DoneExit;
 
-            ref sbyte decodingMap = ref s_decodingMap[0];
+            ref sbyte decodingMap = ref MemoryMarshal.GetReference(DecodingMap);
 
             // Last bytes could have padding characters, so process them separately and treat them as valid.
             const int skipLastChunk = 4;
@@ -193,7 +193,8 @@ namespace System
         }
 
         // Pre-computing this table using a custom string(s_characters) and GenerateDecodingMapAndVerify (found in tests)
-        private static readonly sbyte[] s_decodingMap = {
+        private static ReadOnlySpan<sbyte> DecodingMap => new sbyte[] // rely on C# compiler optimization to reference static data
+        {
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 62, -1, -1, -1, 63,         //62 is placed at index 43 (for +), 63 at index 47 (for /)

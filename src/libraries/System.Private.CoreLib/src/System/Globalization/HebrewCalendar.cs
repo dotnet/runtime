@@ -119,7 +119,7 @@ namespace System.Globalization
         private const int MinHebrewYear = HebrewYearOf1AD + FirstGregorianTableYear;   // == 5343
         private const int MaxHebrewYear = HebrewYearOf1AD + LastGregorianTableYear;    // == 5999
 
-        private static readonly byte[] s_hebrewTable =
+        private static ReadOnlySpan<byte> HebrewTable => new byte[] // rely on C# compiler optimization to reference static data
         {
             7,3,17,3,         // 1583-1584  (Hebrew year: 5343 - 5344)
             0,4,11,2,21,6,1,3,13,2,             // 1585-1589
@@ -260,7 +260,7 @@ namespace System.Globalization
 
         //  The lunar calendar has 6 different variations of month lengths
         //  within a year.
-        private static readonly byte[] s_lunarMonthLen =
+        private static ReadOnlySpan<byte> LunarMonthLen => new byte[] // rely on C# compiler optimization to reference static data
         {
             0,00,00,00,00,00,00,00,00,00,00,00,00,0,
             0,30,29,29,29,30,29,30,29,30,29,30,29,0,     // 3 common year variations
@@ -396,10 +396,10 @@ namespace System.Globalization
             }
 
             index *= 2;
-            lunarDate.day = s_hebrewTable[index];
+            lunarDate.day = HebrewTable[index];
 
             // Get the type of the year. The value is from 1 to 6
-            int lunarYearType = s_hebrewTable[index + 1];
+            int lunarYearType = HebrewTable[index + 1];
 
             //  Get the Lunar Month.
             switch (lunarDate.day)
@@ -480,7 +480,7 @@ namespace System.Globalization
 
             // If the requested date is within the current lunar month, then
             // we're done.
-            if ((numDays + (long)lunarDate.day) <= (long)(s_lunarMonthLen[hebrewYearType * MaxMonthPlusOne + lunarDate.month]))
+            if ((numDays + (long)lunarDate.day) <= (long)(LunarMonthLen[hebrewYearType * MaxMonthPlusOne + lunarDate.month]))
             {
                 result.day += (int)numDays;
                 return GetResult(result, part);
@@ -494,7 +494,7 @@ namespace System.Globalization
             // of days between 1/1 and the requested date.
             // Assumes Jan 1 can never translate to the last Lunar month, which
             // is true.
-            numDays -= (long)(s_lunarMonthLen[hebrewYearType * MaxMonthPlusOne + lunarDate.month] - lunarDate.day);
+            numDays -= (long)(LunarMonthLen[hebrewYearType * MaxMonthPlusOne + lunarDate.month] - lunarDate.day);
             Debug.Assert(numDays >= 1, "NumDays >= 1");
 
             // If NumDays is 1, then we are done.  Otherwise, find the correct Hebrew month
@@ -502,18 +502,18 @@ namespace System.Globalization
             if (numDays > 1)
             {
                 // See if we're on the correct Lunar month.
-                while (numDays > (long)(s_lunarMonthLen[hebrewYearType * MaxMonthPlusOne + result.month]))
+                while (numDays > (long)(LunarMonthLen[hebrewYearType * MaxMonthPlusOne + result.month]))
                 {
                     // Adjust the number of days and move to the next month.
-                    numDays -= (long)(s_lunarMonthLen[hebrewYearType * MaxMonthPlusOne + result.month++]);
+                    numDays -= (long)(LunarMonthLen[hebrewYearType * MaxMonthPlusOne + result.month++]);
 
                     // See if we need to adjust the Year.
                     // Must handle both 12 and 13 month years.
-                    if ((result.month > 13) || (s_lunarMonthLen[hebrewYearType * MaxMonthPlusOne + result.month] == 0))
+                    if ((result.month > 13) || (LunarMonthLen[hebrewYearType * MaxMonthPlusOne + result.month] == 0))
                     {
                         // Adjust the Year.
                         result.year++;
-                        hebrewYearType = s_hebrewTable[(gregorianYear + 1 - FirstGregorianTableYear) * 2 + 1];
+                        hebrewYearType = HebrewTable[(gregorianYear + 1 - FirstGregorianTableYear) * 2 + 1];
 
                         // Adjust the Month.
                         result.month = 1;
@@ -623,7 +623,7 @@ namespace System.Globalization
             CheckHebrewYearValue(year, era, nameof(year));
             // The HebrewTable is indexed by Gregorian year and starts from FirstGregorianYear.
             // So we need to convert year (Hebrew year value) to Gregorian Year below.
-            return s_hebrewTable[(year - HebrewYearOf1AD - FirstGregorianTableYear) * 2 + 1];
+            return HebrewTable[(year - HebrewYearOf1AD - FirstGregorianTableYear) * 2 + 1];
         }
 
         public override int GetDayOfYear(DateTime time)
@@ -663,7 +663,7 @@ namespace System.Globalization
 
             Debug.Assert(hebrewYearType >= 1 && hebrewYearType <= 6,
                 "hebrewYearType should be from  1 to 6, but now hebrewYearType = " + hebrewYearType + " for hebrew year " + year);
-            int monthDays = s_lunarMonthLen[hebrewYearType * MaxMonthPlusOne + month];
+            int monthDays = LunarMonthLen[hebrewYearType * MaxMonthPlusOne + month];
             if (monthDays == 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(month), month, SR.ArgumentOutOfRange_Month);
@@ -780,7 +780,7 @@ namespace System.Globalization
             }
 
             // Get the number of days from (month1,day1) to (month1, end of month1)
-            int days = s_lunarMonthLen[lunarYearType * MaxMonthPlusOne + month1] - day1;
+            int days = LunarMonthLen[lunarYearType * MaxMonthPlusOne + month1] - day1;
 
             // Move to next month.
             month1++;
@@ -788,7 +788,7 @@ namespace System.Globalization
             // Add up the days.
             while (month1 < month2)
             {
-                days += s_lunarMonthLen[lunarYearType * MaxMonthPlusOne + month1++];
+                days += LunarMonthLen[lunarYearType * MaxMonthPlusOne + month1++];
             }
             days += day2;
 
