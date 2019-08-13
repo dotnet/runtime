@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Reflection
 {
-    [Flags()]
+    [Flags]
     internal enum MdSigCallingConvention : byte
     {
         CallConvMask = 0x0f,  // Calling convention is bottom 4 bits
@@ -33,7 +33,7 @@ namespace System.Reflection
     }
 
 
-    [Flags()]
+    [Flags]
     internal enum PInvokeAttributes
     {
         NoMangle = 0x0001,
@@ -69,7 +69,7 @@ namespace System.Reflection
     }
 
 
-    [Flags()]
+    [Flags]
     internal enum MethodSemanticsAttributes
     {
         Setter = 0x0001,

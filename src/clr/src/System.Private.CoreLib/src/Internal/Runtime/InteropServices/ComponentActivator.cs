@@ -86,7 +86,7 @@ namespace Internal.Runtime.InteropServices
 
                 IntPtr functionPtr = Marshal.GetFunctionPointerForDelegate(d);
 
-                lock(s_delegates)
+                lock (s_delegates)
                 {
                     // Keep a reference to the delegate to prevent it from being garbage collected
                     s_delegates[functionPtr] = d;
