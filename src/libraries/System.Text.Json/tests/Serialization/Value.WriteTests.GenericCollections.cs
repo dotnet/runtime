@@ -838,9 +838,26 @@ namespace System.Text.Json.Serialization.Tests
                 KvpWClassKvpVal = new KeyValuePair<string, KeyValuePair<string, SimpleClassWithKeyValuePairs>>("key", new KeyValuePair<string, SimpleClassWithKeyValuePairs>("key", null)),
             };
 
-            string expectedJson = @"{""KvpWStrVal"":{""Key"":""key"",""Value"":null},""KvpWObjVal"":{""Key"":""key"",""Value"":null},""KvpWClassVal"":{""Key"":""key"",""Value"":null},""KvpWStrKvpVal"":{""Key"":""key"",""Value"":{""Key"":""key"",""Value"":null}},""KvpWObjKvpVal"":{""Key"":""key"",""Value"":{""Key"":""key"",""Value"":null}},""KvpWClassKvpVal"":{""Key"":""key"",""Value"":{""Key"":""key"",""Value"":null}}}";
             string result = JsonSerializer.Serialize(value);
-            Assert.Equal(expectedJson, result);
+
+            // Roundtrip to ensure serialize was correct.
+            value = JsonSerializer.Deserialize<SimpleClassWithKeyValuePairs>(result);
+            Assert.Equal("key", value.KvpWStrVal.Key);
+            Assert.Equal("key", value.KvpWObjVal.Key);
+            Assert.Equal("key", value.KvpWClassVal.Key);
+            Assert.Equal("key", value.KvpWStrKvpVal.Key);
+            Assert.Equal("key", value.KvpWObjKvpVal.Key);
+            Assert.Equal("key", value.KvpWClassKvpVal.Key);
+            Assert.Equal("key", value.KvpWStrKvpVal.Value.Key);
+            Assert.Equal("key", value.KvpWObjKvpVal.Value.Key);
+            Assert.Equal("key", value.KvpWClassKvpVal.Value.Key);
+
+            Assert.Null(value.KvpWStrVal.Value);
+            Assert.Null(value.KvpWObjVal.Value);
+            Assert.Null(value.KvpWClassVal.Value);
+            Assert.Null(value.KvpWStrKvpVal.Value.Value);
+            Assert.Null(value.KvpWObjKvpVal.Value.Value);
+            Assert.Null(value.KvpWClassKvpVal.Value.Value);
         }
 
         [Fact]
