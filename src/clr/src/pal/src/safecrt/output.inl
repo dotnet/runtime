@@ -184,7 +184,7 @@ int __cdecl _swoutput_s(wchar_t *_Dst, size_t _Size, const wchar_t *_Format, va_
 
 #define SHORT_IS_INT     0      /* 1 means short is same size as int */
 #define LONGLONG_IS_INT64 1     /* 1 means long long is same as int64 */
-#if defined (_WIN64)
+#if defined (BIT64)
     #define PTR_IS_INT       0      /* 1 means ptr is same size as int */
     CASSERT(sizeof(void *) != sizeof(int));
     #if __LP64__
@@ -196,14 +196,14 @@ int __cdecl _swoutput_s(wchar_t *_Dst, size_t _Size, const wchar_t *_Format, va_
     #endif
     #define PTR_IS_INT64     1      /* 1 means ptr is same size as int64 */
     CASSERT(sizeof(void *) == sizeof(int64_t));
-#else  /* defined (_WIN64) */
+#else  /* defined (BIT64) */
     #define PTR_IS_INT       1      /* 1 means ptr is same size as int */
     CASSERT(sizeof(void *) == sizeof(int));
     #define PTR_IS_LONG      1      /* 1 means ptr is same size as long */
     CASSERT(sizeof(void *) == sizeof(long));
     #define PTR_IS_INT64     0      /* 1 means ptr is same size as int64 */
     CASSERT(sizeof(void *) != sizeof(int64_t));
-#endif  /* defined (_WIN64) */
+#endif  /* defined (BIT64) */
 
 /* CONSTANTS */
 

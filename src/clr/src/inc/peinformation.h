@@ -43,7 +43,7 @@ inline bool IsPEMSIL(PEKIND x)
     return ( (x == peMSIL) );
 }
 
-#ifdef _WIN64
+#ifdef BIT64
 inline bool IsProcess32() { return false; }
 #else
 inline bool IsProcess32() { return true; }

@@ -265,19 +265,19 @@ int COMVariant::GetEnumFlags(TypeHandle th)
         case ELEMENT_TYPE_U2:
             return (CV_ENUM | EnumU2);
             
-        IN_WIN32(case ELEMENT_TYPE_I:)
+        IN_TARGET_32BIT(case ELEMENT_TYPE_I:)
         case ELEMENT_TYPE_I4:
             return (CV_ENUM | EnumI4);
             
-        IN_WIN32(case ELEMENT_TYPE_U:)
+        IN_TARGET_32BIT(case ELEMENT_TYPE_U:)
         case ELEMENT_TYPE_U4:
             return (CV_ENUM | EnumU4);
             
-        IN_WIN64(case ELEMENT_TYPE_I:)
+        IN_TARGET_64BIT(case ELEMENT_TYPE_I:)
         case ELEMENT_TYPE_I8:
             return (CV_ENUM | EnumI8);
             
-        IN_WIN64(case ELEMENT_TYPE_U:)
+        IN_TARGET_64BIT(case ELEMENT_TYPE_U:)
         case ELEMENT_TYPE_U8:
             return (CV_ENUM | EnumU8);
             

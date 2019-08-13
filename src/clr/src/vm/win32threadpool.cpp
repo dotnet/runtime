@@ -2557,7 +2557,7 @@ DWORD ThreadpoolMgr::MinimumRemainingWait(LIST_ENTRY* waitInfo, unsigned int num
 }
 
 #ifdef _MSC_VER
-#ifdef _WIN64
+#ifdef BIT64
 #pragma warning (disable : 4716)
 #else
 #pragma warning (disable : 4715)
@@ -2764,7 +2764,7 @@ DWORD WINAPI ThreadpoolMgr::WaitThreadStart(LPVOID lpArgs)
 #endif
 
 #ifdef _MSC_VER
-#ifdef _WIN64
+#ifdef BIT64
 #pragma warning (default : 4716)
 #else
 #pragma warning (default : 4715)
@@ -3920,7 +3920,7 @@ BOOL ThreadpoolMgr::IsIoPending()
 
 #ifndef FEATURE_PAL
 
-#ifdef _WIN64
+#ifdef BIT64
 #pragma warning (disable : 4716)
 #else
 #pragma warning (disable : 4715)
@@ -4407,7 +4407,7 @@ BOOL ThreadpoolMgr::SufficientDelaySinceLastDequeue()
 
 
 #ifdef _MSC_VER
-#ifdef _WIN64
+#ifdef BIT64
 #pragma warning (default : 4716)
 #else
 #pragma warning (default : 4715)
@@ -4515,7 +4515,7 @@ BOOL ThreadpoolMgr::CreateTimerQueueTimer(PHANDLE phNewTimer,
 }
 
 #ifdef _MSC_VER
-#ifdef _WIN64
+#ifdef BIT64
 #pragma warning (disable : 4716)
 #else
 #pragma warning (disable : 4715)
@@ -4622,7 +4622,7 @@ void ThreadpoolMgr::TimerThreadFire()
 }
 
 #ifdef _MSC_VER
-#ifdef _WIN64
+#ifdef BIT64
 #pragma warning (default : 4716)
 #else
 #pragma warning (default : 4715)

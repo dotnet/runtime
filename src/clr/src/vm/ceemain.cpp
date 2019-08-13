@@ -533,7 +533,7 @@ void InitGSCookie()
 
 #ifdef _DEBUG
     // In _DEBUG, always use the same value to make it easier to search for the cookie
-    val = (GSCookie) WIN64_ONLY(0x9ABCDEF012345678) NOT_WIN64(0x12345678);
+    val = (GSCookie) BIT64_ONLY(0x9ABCDEF012345678) NOT_BIT64(0x12345678);
 #endif
 
     // To test if it is initialized. Also for ICorMethodInfo::getGSCookie()

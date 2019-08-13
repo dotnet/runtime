@@ -4627,11 +4627,11 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
 
         if (pCf->IsFrameless())
         {
-#ifndef _WIN64
+#ifndef BIT64
             exceptionEIP = (PVOID)pCf->GetRegisterSet()->ControlPC;
 #else
             exceptionEIP = (PVOID)GetIP(pCf->GetRegisterSet()->pContext);
-#endif //!_WIN64
+#endif //!BIT64
         }
         else
         {

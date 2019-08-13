@@ -180,7 +180,7 @@ inline void *__cdecl operator new(size_t, void *_P)
 #define ARGUMENT_PRESENT(ArgumentPointer)    (\
     (CHAR *)(ArgumentPointer) != (CHAR *)(NULL) )
 
-#if defined(_WIN64)
+#if defined(BIT64)
 #define MAX_NATURAL_ALIGNMENT sizeof(ULONGLONG)
 #else
 #define MAX_NATURAL_ALIGNMENT sizeof(ULONG)
@@ -629,7 +629,7 @@ STDAPI_(HRESULT) VariantClear(VARIANT * pvarg);
 #define V_UINTREF(X)     V_UNION(X, puintVal)
 #define V_ARRAY(X)       V_UNION(X, parray)
 
-#ifdef _WIN64
+#ifdef BIT64
 #define V_INT_PTR(X)        V_UNION(X, llVal)
 #define V_UINT_PTR(X)       V_UNION(X, ullVal)
 #define V_INT_PTRREF(X)     V_UNION(X, pllVal)

@@ -922,7 +922,7 @@ public:
         {
             // Field access stubs are not shared and do not use the secret parameter.
         }
-#ifndef _WIN64
+#ifndef BIT64
         else if (SF_IsForwardDelegateStub(m_dwStubFlags) ||
                 (SF_IsForwardCOMStub(m_dwStubFlags) && SF_IsWinRTDelegateStub(m_dwStubFlags)))
         {
@@ -930,7 +930,7 @@ public:
             // don't use the secret parameter. Except for AMD64 where we use the secret
             // argument to pass the real target to the stub-for-host.
         }
-#endif // !_WIN64
+#endif // !BIT64
         else
         {
             // All other IL stubs will need to use the secret parameter.
@@ -2283,7 +2283,7 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
                 // for managed-to-unmanaged CALLI that requires marshaling, the target is passed
                 // as the secret argument to the stub by GenericPInvokeCalliHelper (asmhelpers.asm)
                 EmitLoadStubContext(pcsEmit, dwStubFlags);
-#ifdef _WIN64
+#ifdef BIT64
                 // the secret arg has been shifted to left and ORed with 1 (see code:GenericPInvokeCalliHelper)
                 pcsEmit->EmitLDC(1);
                 pcsEmit->EmitSHR_UN();

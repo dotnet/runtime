@@ -1087,7 +1087,7 @@ FCIMPL2(void*, StubHelpers::GetDelegateTarget, DelegateObject *pThisUNSAFE, UINT
     }
 #endif // _TARGET_X86_
 
-#if defined(_WIN64)
+#if defined(BIT64)
     UINT_PTR target = (UINT_PTR)orefThis->GetMethodPtrAux();
 
     // See code:GenericPInvokeCalliHelper
@@ -1100,7 +1100,7 @@ FCIMPL2(void*, StubHelpers::GetDelegateTarget, DelegateObject *pThisUNSAFE, UINT
 
 #elif defined(_TARGET_ARM_)
     // @ARMTODO: Nothing to do for ARM yet since we don't support the hosted path.
-#endif // _WIN64, _TARGET_ARM_
+#endif // BIT64, _TARGET_ARM_
 
     if (pEntryPoint == NULL)
     {

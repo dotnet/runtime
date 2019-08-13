@@ -1159,12 +1159,12 @@ void * ZapInfo::allocGCInfo(size_t size)
 {
     _ASSERTE(m_pGCInfo == NULL);
 
-#ifdef _WIN64
+#ifdef BIT64
     if (size & 0xFFFFFFFF80000000LL)
     {
         IfFailThrow(CORJIT_OUTOFMEM);
     }
-#endif // _WIN64
+#endif // BIT64
 
     m_pGCInfo = new BYTE[size];
     m_cbGCInfo = size;

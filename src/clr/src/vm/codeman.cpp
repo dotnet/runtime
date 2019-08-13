@@ -33,10 +33,10 @@
 
 #include "configuration.h"
 
-#ifdef _WIN64
+#ifdef BIT64
 #define CHECK_DUPLICATED_STRUCT_LAYOUTS
 #include "../debug/daccess/fntableaccess.h"
-#endif // _WIN64
+#endif // BIT64
 
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"
@@ -1485,7 +1485,7 @@ void EEJitManager::SetCpuInfo()
     }
 #if defined(FEATURE_PAL)
     PAL_GetJitCpuCapabilityFlags(&CPUCompileFlags);
-#elif defined(_WIN64)
+#elif defined(BIT64)
     // FP and SIMD support are enabled by default
     CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_SIMD);
     CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_FP);
@@ -1501,7 +1501,7 @@ void EEJitManager::SetCpuInfo()
     {
         CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_CRC32);
     }
-#endif // _WIN64
+#endif // BIT64
 #endif // _TARGET_ARM64_
 
     m_CPUCompileFlags = CPUCompileFlags;
@@ -2277,7 +2277,7 @@ void CodeHeapRequestInfo::Init()
 
 #ifdef WIN64EXCEPTIONS
 
-#ifdef _WIN64
+#ifdef BIT64
 extern "C" PT_RUNTIME_FUNCTION GetRuntimeFunctionCallback(IN ULONG64   ControlPc,
                                                         IN PVOID     Context)
 #else
@@ -2331,7 +2331,7 @@ HeapList* EEJitManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHeapLi
     size_t initialRequestSize = pInfo->getRequestSize();
     size_t minReserveSize = VIRTUAL_ALLOC_RESERVE_GRANULARITY; //     ( 64 KB)
 
-#ifdef _WIN64
+#ifdef BIT64
     if (pInfo->m_hiAddr == 0)
     {
         if (pADHeapList->m_CodeHeapList.Count() > CODE_HEAP_SIZE_INCREASE_THRESHOLD)

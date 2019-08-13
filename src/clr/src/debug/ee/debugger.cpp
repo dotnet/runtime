@@ -4394,19 +4394,19 @@ SIZE_T GetSetFrameHelper::GetSizeOfElement(CorElementType cet)
         {
         case ELEMENT_TYPE_I8:
         case ELEMENT_TYPE_U8:
-#if defined(_WIN64)
+#if defined(BIT64)
         case ELEMENT_TYPE_I:
         case ELEMENT_TYPE_U:
-#endif // _WIN64
+#endif // BIT64
         case ELEMENT_TYPE_R8:
                return 8;
 
         case ELEMENT_TYPE_I4:
         case ELEMENT_TYPE_U4:
-#if !defined(_WIN64)
+#if !defined(BIT64)
         case ELEMENT_TYPE_I:
         case ELEMENT_TYPE_U:
-#endif // !_WIN64
+#endif // !BIT64
         case ELEMENT_TYPE_R4:
             return 4;
 
@@ -4666,7 +4666,7 @@ HRESULT Debugger::GetVariablesFromOffset(MethodDesc  *pMD,
                                        pCtx,
                                        rgVal1 + rgValIndex,
                                        rgVal2 + rgValIndex
-                                       WIN64_ARG(cbClass));
+                                       BIT64_ARG(cbClass));
 
             LOG((LF_CORDB|LF_ENC,LL_INFO10000,
                  "D::GVFO [%2d] varnum %d, nonVC type %x, addr %8.8x: %8.8x;%8.8x\n",
@@ -4812,7 +4812,7 @@ HRESULT Debugger::SetVariablesAtOffset(MethodDesc  *pMD,
                                        pCtx,
                                        rgVal1[rgValIndex],
                                        rgVal2[rgValIndex]
-                                       WIN64_ARG(cbClass));
+                                       BIT64_ARG(cbClass));
 
             LOG((LF_CORDB|LF_ENC,LL_INFO10000,
                  "D::SVAO [%2d] varnum %d, nonVC type %x, addr %8.8x: %8.8x;%8.8x\n",
@@ -13545,8 +13545,8 @@ EXCEPTION_DISPOSITION EmptyPersonalityRoutine(IN     PEXCEPTION_RECORD   pExcept
 
 EXTERN_C EXCEPTION_DISPOSITION
 ExceptionHijackPersonalityRoutine(IN     PEXCEPTION_RECORD   pExceptionRecord
-                        WIN64_ARG(IN     ULONG64             MemoryStackFp)
-                    NOT_WIN64_ARG(IN     ULONG32             MemoryStackFp),
+                        BIT64_ARG(IN     ULONG64             MemoryStackFp)
+                    NOT_BIT64_ARG(IN     ULONG32             MemoryStackFp),
                                   IN OUT PCONTEXT            pContextRecord,
                                   IN OUT PDISPATCHER_CONTEXT pDispatcherContext
                                  )

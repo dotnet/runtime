@@ -25,7 +25,7 @@
 
 #ifdef FEATURE_LAZY_COW_PAGES
 
-#ifdef _WIN64 // due to the way we track pages, we cannot currently support 64-bit.
+#ifdef BIT64 // due to the way we track pages, we cannot currently support 64-bit.
 #error FEATURE_LAZY_COW_PAGES is only supported on 32-bit platforms.
 #endif
 

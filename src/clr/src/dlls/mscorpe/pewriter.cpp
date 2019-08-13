@@ -954,7 +954,7 @@ HRESULT PEWriter::Init(PESectionMan *pFrom, DWORD createFlags, LPCWSTR seedFileN
         m_hSeedFileMap = hMapFile;
         m_pSeedFileDecoder = pPEDecoder;
 
-#ifdef  _WIN64       
+#ifdef BIT64
         m_pSeedFileNTHeaders = pPEDecoder->GetNTHeaders64();
 #else
         m_pSeedFileNTHeaders = pPEDecoder->GetNTHeaders32();
@@ -1914,9 +1914,9 @@ HRESULT PEWriter::fixup(CeeGenTokenMapper *pMapper)
             switch((int)rcur->type)
             {
                 case 0x7FFA: // Ptr to symbol name
-#ifdef _WIN64
+#ifdef BIT64
                     _ASSERTE(!"this is probably broken!!");
-#endif // _WIN64
+#endif // BIT64
                     szSymbolName = (char*)(UINT_PTR)(rcur->offset);
                     break;
 
@@ -1934,16 +1934,16 @@ HRESULT PEWriter::fixup(CeeGenTokenMapper *pMapper)
                     else return E_OUTOFMEMORY;
                     TokInSymbolTable[NumberOfSymbols++] = 0;
                     memset(&is,0,sizeof(IMAGE_SYMBOL));
-#ifdef _WIN64
+#ifdef BIT64
                     _ASSERTE(!"this is probably broken!!");
-#endif // _WIN64
+#endif // BIT64
                     strcpy_s((char*)&is,sizeof(is),(char*)(UINT_PTR)(rcur->offset));
                     if((pch = reloc->getBlock(sizeof(IMAGE_SYMBOL))))
                         memcpy(pch,&is,sizeof(IMAGE_SYMBOL));
                     else return E_OUTOFMEMORY;
-#ifdef _WIN64
+#ifdef BIT64
                     _ASSERTE(!"this is probably broken!!");
-#endif // _WIN64
+#endif // BIT64
                     delete (char*)(UINT_PTR)(rcur->offset);
                     ToRelocTable = FALSE;
                     tk = 0;

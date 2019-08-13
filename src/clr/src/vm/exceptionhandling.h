@@ -23,8 +23,8 @@
 
 EXTERN_C EXCEPTION_DISPOSITION
 ProcessCLRException(IN     PEXCEPTION_RECORD     pExceptionRecord
-          WIN64_ARG(IN     ULONG64               MemoryStackFp)
-      NOT_WIN64_ARG(IN     ULONG                 MemoryStackFp),
+          BIT64_ARG(IN     ULONG64               MemoryStackFp)
+      NOT_BIT64_ARG(IN     ULONG                 MemoryStackFp),
                     IN OUT PT_CONTEXT            pContextRecord,
                     IN OUT PT_DISPATCHER_CONTEXT pDispatcherContext);
 

@@ -116,7 +116,7 @@ typedef unsigned short WCHAR;
 /* size_t */
 #if defined (SAFECRT_INCLUDE_REDEFINES)
 #if !defined(_SIZE_T_DEFINED)
-#if defined(_WIN64)
+#if defined(BIT64)
 typedef unsigned __int64    size_t;
 #else
 typedef _W64 unsigned int   size_t;
@@ -127,7 +127,7 @@ typedef _W64 unsigned int   size_t;
 
 /* uintptr_t */
 #if !defined(_UINTPTR_T_DEFINED)
-#if defined(_WIN64)
+#if defined(BIT64)
 typedef unsigned __int64    uintptr_t;
 #else
 typedef _W64 unsigned int   uintptr_t;

@@ -1294,7 +1294,7 @@ inline void PEDecoder::GetPEKindAndMachine(DWORD * pdwPEKind, DWORD *pdwMachine)
                 if (dwCorFlags & VAL32(COMIMAGE_FLAGS_ILONLY))
                 {
                     dwKind |= (DWORD)peILonly;
-#ifdef _WIN64
+#ifdef BIT64
                     // compensate for shim promotion of PE32/ILONLY headers to PE32+ on WIN64
                     if (fIsPE32Plus && (GetMachine() == IMAGE_FILE_MACHINE_I386))
                         dwKind &= ~((DWORD)pe32Plus);

@@ -23,7 +23,7 @@
 #include "staticcontract.h"
 #include "static_assert.h"
 
-#if _WIN64
+#if BIT64
     #define POINTER_BITS 64
 #else
     #define POINTER_BITS 32

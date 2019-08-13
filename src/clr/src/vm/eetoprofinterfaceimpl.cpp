@@ -979,7 +979,7 @@ EEToProfInterfaceImpl::~EEToProfInterfaceImpl()
 
     if (m_pSavedAllocDataBlock)
     {
-#ifdef _WIN64
+#ifdef BIT64
         _ASSERTE((UINT_PTR)m_pSavedAllocDataBlock != 0xFFFFFFFFFFFFFFFF);
 #else
         _ASSERTE((UINT_PTR)m_pSavedAllocDataBlock != 0xFFFFFFFF);
@@ -5753,7 +5753,7 @@ HRESULT EEToProfInterfaceImpl::MovedReferences(GCReferencesData *pData)
                 return hr;
         }
 
-#ifdef _WIN64
+#ifdef BIT64
         // Recompute sizes as ULONGs for legacy callback
         for (ULONG i = 0; i < pData->curIdx; i++)
             pData->arrULONG[i] = (pData->arrMemBlockSize[i] > ULONG_MAX) ? ULONG_MAX : (ULONG)pData->arrMemBlockSize[i];
@@ -5783,7 +5783,7 @@ HRESULT EEToProfInterfaceImpl::MovedReferences(GCReferencesData *pData)
                 return hr;
         }
 
-#ifdef _WIN64
+#ifdef BIT64
         // Recompute sizes as ULONGs for legacy callback
         for (ULONG i = 0; i < pData->curIdx; i++)
             pData->arrULONG[i] = (pData->arrMemBlockSize[i] > ULONG_MAX) ? ULONG_MAX : (ULONG)pData->arrMemBlockSize[i];

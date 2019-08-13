@@ -765,7 +765,7 @@ private:
 #ifdef _DEBUG
     friend LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo);
 #endif
-#ifdef _WIN64
+#ifdef BIT64
     friend Thread * __stdcall JIT_InitPInvokeFrame(InlinedCallFrame *pFrame, PTR_VOID StubSecretArg);
 #endif
 #ifdef WIN64EXCEPTIONS
@@ -2923,12 +2923,12 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-#ifdef _WIN64
+#ifdef BIT64
         // See code:GenericPInvokeCalliHelper
         return ((m_Datum != NULL) && !(dac_cast<TADDR>(m_Datum) & 0x1));
-#else // _WIN64
+#else // BIT64
         return ((dac_cast<TADDR>(m_Datum) & ~0xffff) != 0);
-#endif // _WIN64
+#endif // BIT64
     }
 
     // Retrieves the return address into the code that called out
@@ -2972,7 +2972,7 @@ public:
         // Extract the actual MethodDesc to report from the InlinedCallFrame.
         TADDR addr = dac_cast<TADDR>(this) + sizeof(InlinedCallFrame);
         return PTR_MethodDesc(*PTR_TADDR(addr));
-#elif defined(_WIN64)
+#elif defined(BIT64)
         // On 64bit, the actual interop MethodDesc is saved off in a field off the InlinedCrawlFrame
         // which is populated by the JIT. Refer to JIT_InitPInvokeFrame for details.
         return PTR_MethodDesc(m_StubSecretArg);
@@ -2990,12 +2990,12 @@ public:
     // See code:HasFunction.
     PTR_NDirectMethodDesc   m_Datum;
 
-#ifdef _WIN64
+#ifdef BIT64
     // IL stubs fill this field with the incoming secret argument when they erect
     // InlinedCallFrame so we know which interop method was invoked even if the frame
     // is not active at the moment.
     PTR_VOID                m_StubSecretArg;
-#endif // _WIN64
+#endif // BIT64
 
     // X86: ESP after pushing the outgoing arguments, and just before calling
     // out to unmanaged code.

@@ -19,7 +19,7 @@
 //
 //========================================================================
 
-#if defined(_WIN64)
+#if defined(BIT64)
     static const int card_byte_shift        = 11;
     static const int card_bundle_byte_shift = 21;
 #else

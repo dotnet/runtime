@@ -596,7 +596,7 @@ void ThrowOutOfMemoryDimensionsExceeded()
         THROWS;
     } CONTRACTL_END;
 
-#ifdef _WIN64
+#ifdef BIT64
     EX_THROW(EEMessageException, (kOutOfMemoryException, IDS_EE_ARRAY_DIMENSIONS_EXCEEDED));
 #else
     ThrowOutOfMemory();

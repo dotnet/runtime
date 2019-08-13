@@ -229,7 +229,7 @@ typedef unsigned __int8 uint8_t;
 
 #ifndef _MSC_VER
 
-#if _WIN64
+#if BIT64
 typedef long double LONG_DOUBLE;
 #endif
 
