@@ -107,7 +107,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDebian10))] // [ActiveIssue(40175)]
+        [ConditionalTheory]
         [MemberData(nameof(GetAsync_AllowedSSLVersion_Succeeds_MemberData))]
         public async Task GetAsync_AllowedSSLVersion_Succeeds(SslProtocols acceptedProtocol, bool requestOnlyThisProtocol)
         {
@@ -133,6 +133,15 @@ namespace System.Net.Http.Functional.Tests
                 {
                     handler.SslProtocols = acceptedProtocol;
                 }
+                else
+                {
+                    // Explicitly setting protocols clears implementation default
+                    // restrictions on minimum TLS/SSL version
+                    // We currently know that some platforms like Debian 10 OpenSSL
+                    // will by default block < TLS 1.2
+                    handler.SslProtocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;
+                }
+
                 var options = new LoopbackServer.Options { UseSsl = true, SslProtocols = acceptedProtocol };
                 await LoopbackServer.CreateServerAsync(async (server, url) =>
                 {
