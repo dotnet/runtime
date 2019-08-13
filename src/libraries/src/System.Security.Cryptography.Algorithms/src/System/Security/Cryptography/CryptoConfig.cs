@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
@@ -32,18 +33,15 @@ namespace System.Security.Cryptography
 
         private const string ECDsaIdentifier = "ECDsa";
 
-        private static volatile Dictionary<string, string> s_defaultOidHT = null;
-        private static volatile Dictionary<string, object> s_defaultNameHT = null;
-        private static volatile Dictionary<string, Type> appNameHT = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
-        private static volatile Dictionary<string, string> appOidHT = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private static volatile Dictionary<string, string> s_defaultOidHT;
+        private static volatile Dictionary<string, object> s_defaultNameHT;
+        private static readonly ConcurrentDictionary<string, Type> appNameHT = new ConcurrentDictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
+        private static readonly ConcurrentDictionary<string, string> appOidHT = new ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         private static readonly char[] SepArray = { '.' }; // valid ASN.1 separators
 
         // CoreFx does not support AllowOnlyFipsAlgorithms
         public static bool AllowOnlyFipsAlgorithms => false;
-
-        // Private object for locking instead of locking on a public type for SQL reliability work.
-        private static object s_InternalSyncObject = new object();
 
         private static Dictionary<string, string> DefaultOidHT
         {
@@ -54,7 +52,8 @@ namespace System.Security.Cryptography
                     return s_defaultOidHT;
                 }
 
-                Dictionary<string, string> ht = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                int capacity = 37;
+                Dictionary<string, string> ht = new Dictionary<string, string>(capacity, StringComparer.OrdinalIgnoreCase);
 
                 ht.Add("SHA", OID_OIWSEC_SHA1);
                 ht.Add("SHA1", OID_OIWSEC_SHA1);
@@ -101,6 +100,7 @@ namespace System.Security.Cryptography
                 ht.Add("TripleDES", OID_RSA_DES_EDE3_CBC);
                 ht.Add("System.Security.Cryptography.TripleDESCryptoServiceProvider", OID_RSA_DES_EDE3_CBC);
 
+                Debug.Assert(ht.Count <= capacity); // if more entries are added in the future, increase initial capacity.
                 s_defaultOidHT = ht;
                 return s_defaultOidHT;
             }
@@ -115,7 +115,9 @@ namespace System.Security.Cryptography
                     return s_defaultNameHT;
                 }
 
-                Dictionary<string, object> ht = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+                const int capacity = 89;
+
+                Dictionary<string, object> ht = new Dictionary<string, object>(capacity: capacity, comparer: StringComparer.OrdinalIgnoreCase);
 
                 Type HMACMD5Type = typeof(System.Security.Cryptography.HMACMD5);
                 Type HMACSHA1Type = typeof(System.Security.Cryptography.HMACSHA1);
@@ -268,6 +270,8 @@ namespace System.Security.Cryptography
                 ht.Add("1.3.6.1.4.1.311.88.2.1", "System.Security.Cryptography.Pkcs.Pkcs9DocumentName, " + AssemblyName_Pkcs);
                 ht.Add("1.3.6.1.4.1.311.88.2.2", "System.Security.Cryptography.Pkcs.Pkcs9DocumentDescription, " + AssemblyName_Pkcs);
 
+                Debug.Assert(ht.Count <= capacity); // // if more entries are added in the future, increase initial capacity.
+
                 s_defaultNameHT = ht;
                 return s_defaultNameHT;
 
@@ -315,13 +319,10 @@ namespace System.Security.Cryptography
                 }
             }
 
-            // Everything looks valid, so we're safe to take the table lock and add the name mappings.
-            lock (s_InternalSyncObject)
+            // Everything looks valid, so we're safe to add the name mappings.
+            foreach (string name in algorithmNames)
             {
-                foreach (string name in algorithmNames)
-                {
-                    appNameHT[name] = algorithm;
-                }
+                appNameHT[name] = algorithm;
             }
         }
 
@@ -330,38 +331,36 @@ namespace System.Security.Cryptography
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
 
-            Type retvalType = null;
-
             // Check to see if we have an application defined mapping
-            lock (s_InternalSyncObject)
-            {
-                if (!appNameHT.TryGetValue(name, out retvalType))
-                {
-                    retvalType = null;
-                }
-            }
+            appNameHT.TryGetValue(name, out Type retvalType);
 
             // We allow the default table to Types and Strings
             // Types get used for types in .Algorithms assembly.
             // strings get used for delay-loaded stuff in other assemblies such as .Csp.
-            object retvalObj;
-            if (retvalType == null && DefaultNameHT.TryGetValue(name, out retvalObj))
+            if (retvalType == null && DefaultNameHT.TryGetValue(name, out object retvalObj))
             {
-                if (retvalObj is Type)
+                retvalType = retvalObj as Type;
+
+                if (retvalType == null)
                 {
-                    retvalType = (Type)retvalObj;
-                }
-                else if (retvalObj is string)
-                {
-                    retvalType = Type.GetType((string)retvalObj, false, false);
-                    if (retvalType != null && !retvalType.IsVisible)
+                    if (retvalObj is string retvalString)
                     {
-                        retvalType = null;
+                        retvalType = Type.GetType(retvalString, false, false);
+                        if (retvalType != null && !retvalType.IsVisible)
+                        {
+                            retvalType = null;
+                        }
+
+                        if (retvalType != null)
+                        {
+                            // Add entry to the appNameHT, which makes subsequent calls much faster.
+                            appNameHT[name] = retvalType;
+                        }
                     }
-                }
-                else
-                {
-                    Debug.Fail("Unsupported Dictionary value:" + retvalObj.ToString());
+                    else
+                    {
+                        Debug.Fail("Unsupported Dictionary value:" + retvalObj.ToString());
+                    }
                 }
             }
 
@@ -420,7 +419,6 @@ namespace System.Security.Cryptography
             cons = candidates.ToArray();
 
             // Bind to matching ctor.
-            object state;
             ConstructorInfo rci = Type.DefaultBinder.BindToMethod(
                 ConstructorDefault,
                 cons,
@@ -428,7 +426,7 @@ namespace System.Security.Cryptography
                 null,
                 null,
                 null,
-                out state) as ConstructorInfo;
+                out object state) as ConstructorInfo;
 
             // Check for ctor we don't like (non-existent, delegate or decorated with declarative linktime demand).
             if (rci == null || typeof(Delegate).IsAssignableFrom(rci.DeclaringType))
@@ -474,12 +472,9 @@ namespace System.Security.Cryptography
             }
 
             // Everything is valid, so we're good to lock the hash table and add the application mappings
-            lock (s_InternalSyncObject)
+            foreach (string name in oidNames)
             {
-                foreach (string name in oidNames)
-                {
-                    appOidHT[name] = oid;
-                }
+                appOidHT[name] = oid;
             }
         }
 
@@ -488,16 +483,7 @@ namespace System.Security.Cryptography
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
 
-            string oidName;
-
-            // Check to see if we have an application defined mapping
-            lock (s_InternalSyncObject)
-            {
-                if (!appOidHT.TryGetValue(name, out oidName))
-                {
-                    oidName = null;
-                }
-            }
+            appOidHT.TryGetValue(name, out string oidName);
 
             if (string.IsNullOrEmpty(oidName) && !DefaultOidHT.TryGetValue(name, out oidName))
             {
