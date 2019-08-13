@@ -74,7 +74,7 @@ namespace System.Net.Http
             /// </summary>
             private bool _hasWaiter;
 
-            private CancellationTokenSource _requestBodyCancellationSource;
+            private readonly CancellationTokenSource _requestBodyCancellationSource;
 
             // This is a linked token combining the above source and the user-supplied token to SendRequestBodyAsync
             private CancellationToken _requestBodyCancellationToken;
@@ -114,6 +114,12 @@ namespace System.Net.Http
                 else
                 {
                     // Create this here because it can be canceled before SendRequestBodyAsync is even called.
+                    // To avoid race conditions that can result in this being disposed in response to a server reset
+                    // and then used to issue cancellation, we simply avoid disposing it; that's fine as long as we don't
+                    // construct this via CreateLinkedTokenSource, in which case disposal is necessary to avoid a potential
+                    // leak.  If how this is constructed ever changes, we need to revisit disposing it, such as by
+                    // using synchronization (e.g. using an Interlocked.Exchange to "consume" the _requestBodyCancellationSource
+                    // for either disposal or issuing cancellation).
                     _requestBodyCancellationSource = new CancellationTokenSource();
 
                     if (_request.HasHeaders && _request.Headers.ExpectContinue == true)
@@ -317,7 +323,6 @@ namespace System.Net.Http
                 _connection.RemoveStream(this);
 
                 _streamWindow.Dispose();
-                _requestBodyCancellationSource?.Dispose();
             }
 
             private void Cancel()
