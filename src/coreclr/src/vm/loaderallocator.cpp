@@ -1120,7 +1120,7 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
 
     dwTotalReserveMemSize = (DWORD) ALIGN_UP(dwTotalReserveMemSize, VIRTUAL_ALLOC_RESERVE_GRANULARITY);
 
-#if !defined(_WIN64)
+#if !defined(BIT64)
     // Make sure that we reserve as little as possible on 32-bit to save address space
     _ASSERTE(dwTotalReserveMemSize <= VIRTUAL_ALLOC_RESERVE_GRANULARITY);
 #endif

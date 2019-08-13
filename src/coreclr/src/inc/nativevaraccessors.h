@@ -38,11 +38,11 @@ bool    GetNativeVarVal(const ICorDebugInfo::VarLoc &   varLoc,
                         PT_CONTEXT                      pCtx,
                         SIZE_T                      *   pVal1, 
                         SIZE_T                      *   pVal2
-                        WIN64_ARG(SIZE_T                cbSize));
+                        BIT64_ARG(SIZE_T                cbSize));
                         
 bool    SetNativeVarVal(const ICorDebugInfo::VarLoc &   varLoc, 
                         PT_CONTEXT                      pCtx,
                         SIZE_T                          val1, 
                         SIZE_T                          val2
-                        WIN64_ARG(SIZE_T                cbSize));                        
+                        BIT64_ARG(SIZE_T                cbSize));                        
 #endif // #ifndef _NATIVE_VAR_ACCESSORS_H_

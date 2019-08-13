@@ -214,7 +214,7 @@ static void ValidatePEFileMachineType(PEFile *peFile)
         // Or to put it another way, this #ifdef makes the (4.5 only) ValidatePEFileMachineType() a NOP for x64, hence preserving 4.0 compatibility.
         if (actualMachineType == IMAGE_FILE_MACHINE_I386 || actualMachineType == IMAGE_FILE_MACHINE_IA64)
             return;
-#endif // _WIN64_
+#endif // BIT64_
 
         // Image has required machine that doesn't match the CLR.
         StackSString name;

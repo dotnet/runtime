@@ -323,8 +323,8 @@ RangeList::RangeListBlock::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         return;
     }
 
-    WIN64_ONLY( BADFOOD = 0xbaadf00dbaadf00d; );
-    NOT_WIN64(  BADFOOD = 0xbaadf00d;         );
+    BIT64_ONLY( BADFOOD = 0xbaadf00dbaadf00d; );
+    NOT_BIT64(  BADFOOD = 0xbaadf00d;         );
 
     for (i=0; i<RANGE_COUNT; i++)
     {

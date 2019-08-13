@@ -1127,26 +1127,26 @@ void GenerateArrayOpScript(ArrayMethodDesc *pMD, ArrayOpScript *paos)
             break;
 
         case ELEMENT_TYPE_I4:
-        IN_WIN32(case ELEMENT_TYPE_I:)
+        IN_TARGET_32BIT(case ELEMENT_TYPE_I:)
             paos->m_elemsize = 4;
             paos->m_signed = TRUE;
             break;
 
         case ELEMENT_TYPE_U4:
-        IN_WIN32(case ELEMENT_TYPE_U:)
-        IN_WIN32(case ELEMENT_TYPE_PTR:)
+        IN_TARGET_32BIT(case ELEMENT_TYPE_U:)
+        IN_TARGET_32BIT(case ELEMENT_TYPE_PTR:)
             paos->m_elemsize = 4;
             break;
 
         case ELEMENT_TYPE_I8:
-        IN_WIN64(case ELEMENT_TYPE_I:)
+        IN_TARGET_64BIT(case ELEMENT_TYPE_I:)
             paos->m_elemsize = 8;
             paos->m_signed = TRUE;
             break;
 
         case ELEMENT_TYPE_U8:
-        IN_WIN64(case ELEMENT_TYPE_U:)
-        IN_WIN64(case ELEMENT_TYPE_PTR:)
+        IN_TARGET_64BIT(case ELEMENT_TYPE_U:)
+        IN_TARGET_64BIT(case ELEMENT_TYPE_PTR:)
             paos->m_elemsize = 8;
             break;
 

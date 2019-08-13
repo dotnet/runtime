@@ -442,7 +442,7 @@ void DispParamDelegateMarshaler::MarshalNativeToManaged(VARIANT *pSrcVar, OBJECT
     
     switch(V_VT(pSrcVar))
     {
-#ifdef _WIN64
+#ifdef BIT64
         case VT_I8:
             pDelegate = reinterpret_cast<void*>(static_cast<INT_PTR>(V_I8(pSrcVar)));
             break;
@@ -485,7 +485,7 @@ void DispParamDelegateMarshaler::MarshalManagedToNative(OBJECTREF *pSrcObj, VARI
     SafeVariantClear(pDestVar);
     
     // Convert to VARIANT
-#ifdef _WIN64
+#ifdef BIT64
     V_VT(pDestVar) = VT_I8;
 #else
     V_VT(pDestVar) = VT_I4;
@@ -494,7 +494,7 @@ void DispParamDelegateMarshaler::MarshalManagedToNative(OBJECTREF *pSrcObj, VARI
     // ConvertToCallback automatically takes care of the pSrcObj == NULL case
     void *pDelegate = (void*) COMDelegate::ConvertToCallback(*pSrcObj);
 
-#ifdef _WIN64
+#ifdef BIT64
     V_I8(pDestVar) = static_cast<INT64>(reinterpret_cast<INT_PTR>(pDelegate));
 #else
     V_I4(pDestVar) = static_cast<INT32>(reinterpret_cast<INT_PTR>(pDelegate));

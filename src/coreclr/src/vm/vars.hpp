@@ -20,7 +20,7 @@ typedef LPVOID  DictionaryEntry;
 /* Define the implementation dependent size types */
 
 #ifndef _INTPTR_T_DEFINED
-#ifdef  _WIN64
+#ifdef  BIT64
 typedef __int64             intptr_t;
 #else
 typedef int                 intptr_t;
@@ -29,7 +29,7 @@ typedef int                 intptr_t;
 #endif
 
 #ifndef _UINTPTR_T_DEFINED
-#ifdef  _WIN64
+#ifdef  BIT64
 typedef unsigned __int64    uintptr_t;
 #else
 typedef unsigned int        uintptr_t;
@@ -38,7 +38,7 @@ typedef unsigned int        uintptr_t;
 #endif
 
 #ifndef _PTRDIFF_T_DEFINED
-#ifdef  _WIN64
+#ifdef  BIT64
 typedef __int64             ptrdiff_t;
 #else
 typedef int                 ptrdiff_t;
@@ -48,7 +48,7 @@ typedef int                 ptrdiff_t;
 
 
 #ifndef _SIZE_T_DEFINED
-#ifdef  _WIN64
+#ifdef  BIT64
 typedef unsigned __int64 size_t;
 #else
 typedef unsigned int     size_t;

@@ -22,7 +22,7 @@ HINSTANCE LoadDbgHelp();
 #define cfrMaxAssertStackLevels 20
 #define cchMaxAssertExprLen 257
 
-#ifdef _WIN64
+#ifdef BIT64
 
 #define cchMaxAssertStackLevelStringLen \
     ((3 * 8) + cchMaxAssertModuleLen + cchMaxAssertSymbolLen + 13)

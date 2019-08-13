@@ -179,7 +179,7 @@ struct MSLAYOUT DebuggerIPCRuntimeOffsets
 // aren't any embedded buffers in the DebuggerIPCControlBlock).
 
 #if defined(DBG_TARGET_X86) || defined(DBG_TARGET_ARM)
-#ifdef _WIN64
+#ifdef BIT64
 #define CorDBIPC_BUFFER_SIZE 2104
 #else
 #define CorDBIPC_BUFFER_SIZE 2092
@@ -220,11 +220,11 @@ struct MSLAYOUT DebuggerIPCControlBlock
     HRESULT                    m_errorHR;
     unsigned int               m_errorCode;
 
-#if defined(DBG_TARGET_WIN64)
+#if defined(DBG_TARGET_64BIT)
     // 64-bit needs this padding to make the handles after this aligned.
     // But x86 can't have this padding b/c it breaks binary compatibility between v1.1 and v2.0.
     ULONG padding4;
-#endif // DBG_TARGET_WIN64
+#endif // DBG_TARGET_64BIT
 
 
     RemoteHANDLE               m_rightSideEventAvailable;
@@ -320,11 +320,11 @@ struct MSLAYOUT DebuggerIPCControlBlockTransport
     HRESULT                    m_errorHR;
     unsigned int               m_errorCode;
 
-#if defined(DBG_TARGET_WIN64)
+#if defined(DBG_TARGET_64BIT)
     // 64-bit needs this padding to make the handles after this aligned.
     // But x86 can't have this padding b/c it breaks binary compatibility between v1.1 and v2.0.
     ULONG padding4;
-#endif // DBG_TARGET_WIN64
+#endif // DBG_TARGET_64BIT
 
     // This is set immediately when the helper thread is created.
     // This will be set even if there's a temporary helper thread or if the real helper

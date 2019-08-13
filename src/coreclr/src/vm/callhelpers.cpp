@@ -73,7 +73,7 @@ void CallDescrWorkerWithHandler(
 }
 
 
-#if !defined(_WIN64) && defined(_DEBUG) 
+#if !defined(BIT64) && defined(_DEBUG) 
 
 //*******************************************************************************
 // assembly code, in i386/asmhelpers.asm
@@ -132,7 +132,7 @@ void CallDescrWorker(CallDescrData * pCallDescrData)
 
     ENABLESTRESSHEAP();
 }
-#endif // !defined(_WIN64) && defined(_DEBUG)
+#endif // !defined(BIT64) && defined(_DEBUG)
 
 void DispatchCallDebuggerWrapper(
     CallDescrData *   pCallDescrData,
@@ -610,7 +610,7 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
         _ASSERTE((DWORD)cbReturnValue <= sizeof(callDescrData.returnValue));
         memcpyNoGCRefs(pReturnValue, &callDescrData.returnValue, cbReturnValue);
 
-#if !defined(_WIN64) && BIGENDIAN
+#if !defined(BIT64) && BIGENDIAN
         {
             GCX_FORBID();
 
@@ -619,7 +619,7 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
                 pReturnValue[0] >>= 32;
             }
         }
-#endif // !defined(_WIN64) && BIGENDIAN
+#endif // !defined(BIT64) && BIGENDIAN
     }
 }
 

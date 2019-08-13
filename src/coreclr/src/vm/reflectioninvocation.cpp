@@ -2777,19 +2777,19 @@ void QCALLTYPE ReflectionEnum::GetEnumValuesAndNames(QCall::TypeHandle pEnumType
                 break;
 
             case ELEMENT_TYPE_I4:
-            IN_WIN32(case ELEMENT_TYPE_I:)
+            IN_TARGET_32BIT(case ELEMENT_TYPE_I:)
                 value = *((INT32 *)pValue);
                 break;
 
             case ELEMENT_TYPE_U4:
-            IN_WIN32(case ELEMENT_TYPE_U:)
+            IN_TARGET_32BIT(case ELEMENT_TYPE_U:)
                 value = *((UINT32 *)pValue);
                 break;
 
             case ELEMENT_TYPE_I8:
             case ELEMENT_TYPE_U8:
-            IN_WIN64(case ELEMENT_TYPE_I:)
-            IN_WIN64(case ELEMENT_TYPE_U:)
+            IN_TARGET_64BIT(case ELEMENT_TYPE_I:)
+            IN_TARGET_64BIT(case ELEMENT_TYPE_U:)
                 value = *((INT64 *)pValue);
                 break;
 
@@ -3031,7 +3031,7 @@ FCIMPL2(int, ReflectionEnum::InternalCompareTo, Object *pRefThis, Object* pRefTa
 
         
     case ELEMENT_TYPE_I4:
-    IN_WIN32(case ELEMENT_TYPE_I:)
+    IN_TARGET_32BIT(case ELEMENT_TYPE_I:)
         {
             INT32 i1 = *(INT32*)pThis;
             INT32 i2 = *(INT32*)pTarget;
@@ -3042,7 +3042,7 @@ FCIMPL2(int, ReflectionEnum::InternalCompareTo, Object *pRefThis, Object* pRefTa
      
 
     case ELEMENT_TYPE_I8:
-    IN_WIN64(case ELEMENT_TYPE_I:)
+    IN_TARGET_64BIT(case ELEMENT_TYPE_I:)
         {
             INT64 i1 = *(INT64*)pThis;
             INT64 i2 = *(INT64*)pTarget;
@@ -3080,7 +3080,7 @@ FCIMPL2(int, ReflectionEnum::InternalCompareTo, Object *pRefThis, Object* pRefTa
         break;
 
     case ELEMENT_TYPE_U4:
-    IN_WIN32(case ELEMENT_TYPE_U:)
+    IN_TARGET_32BIT(case ELEMENT_TYPE_U:)
         {
             UINT32 u1 = *(UINT32 *)pThis;
             UINT32 u2 = *(UINT32 *)pTarget;
@@ -3090,7 +3090,7 @@ FCIMPL2(int, ReflectionEnum::InternalCompareTo, Object *pRefThis, Object* pRefTa
         break;
 
     case ELEMENT_TYPE_U8:
-    IN_WIN64(case ELEMENT_TYPE_U:)
+    IN_TARGET_64BIT(case ELEMENT_TYPE_U:)
         {
             UINT64 u1 = *(UINT64*)pThis;
             UINT64 u2 = *(UINT64*)pTarget;

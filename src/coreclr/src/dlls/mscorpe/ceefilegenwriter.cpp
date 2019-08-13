@@ -1608,7 +1608,7 @@ HRESULT CeeFileGenWriter::addFixup(CeeSection& sectionSource, unsigned offset, C
       TESTANDRETURN(pfixup != NULL, E_OUTOFMEMORY);
 
       // Initialize the IMAGE_DEBUG_TYPE_FIXUP entry relocations
-#ifdef _WIN64
+#ifdef BIT64
       _ASSERTE(!"Base relocs are not yet implemented for 64-bit");
       m_pDebugDir->AddressOfRawData = 0; // @ToDo: srRelocAbsolutePtr can't take a 64-bit address
 #else

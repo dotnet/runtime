@@ -72,17 +72,17 @@
 #define NOT_X86_ARG(x)      , x
 #endif
 
-#ifdef _WIN64
-#define WIN64_ARG(x)  , x 
-#define WIN64_ONLY(x) x 
-#define NOT_WIN64(x)
-#define NOT_WIN64_ARG(x)
+#ifdef BIT64
+#define BIT64_ARG(x)  , x 
+#define BIT64_ONLY(x) x 
+#define NOT_BIT64(x)
+#define NOT_BIT64_ARG(x)
 #else
-#define WIN64_ARG(x)
-#define WIN64_ONLY(x) 
-#define NOT_WIN64(x)    x
-#define NOT_WIN64_ARG(x)    , x
-#endif // _WIN64
+#define BIT64_ARG(x)
+#define BIT64_ONLY(x) 
+#define NOT_BIT64(x)    x
+#define NOT_BIT64_ARG(x)    , x
+#endif // BIT64
 
 #ifdef _TARGET_ARM_
 #define ARM_FIRST_ARG(x)  x ,
@@ -118,19 +118,19 @@
 #define LOG2_PTRSIZE 2
 #endif
 
-#ifdef _WIN64
+#ifdef BIT64
     #define INVALID_POINTER_CC 0xcccccccccccccccc
     #define INVALID_POINTER_CD 0xcdcdcdcdcdcdcdcd
     #define FMT_ADDR           " %08x`%08x "
     #define LFMT_ADDR          W(" %08x`%08x ")
     #define DBG_ADDR(ptr)      (((UINT_PTR) (ptr)) >> 32), (((UINT_PTR) (ptr)) & 0xffffffff)
-#else // _WIN64
+#else // BIT64
     #define INVALID_POINTER_CC 0xcccccccc
     #define INVALID_POINTER_CD 0xcdcdcdcd
     #define FMT_ADDR           " %08x "
     #define LFMT_ADDR          W(" %08x ")
     #define DBG_ADDR(ptr)      ((UINT_PTR)(ptr))
-#endif // _WIN64
+#endif // BIT64
 
 #ifdef _TARGET_ARM_
     #define ALIGN_ACCESS        ((1<<LOG2_PTRSIZE)-1)

@@ -59,7 +59,7 @@ extern CRITICAL_SECTION g_dacCritSec;
 inline TADDR CLRDATA_ADDRESS_TO_TADDR(CLRDATA_ADDRESS cdAddr)
 {
     SUPPORTS_DAC;
-#ifndef _WIN64
+#ifndef BIT64
     static_assert_no_msg(sizeof(TADDR)==sizeof(UINT));
     INT64 iSignedAddr = (INT64)cdAddr;
     if (iSignedAddr > INT_MAX || iSignedAddr < INT_MIN)
@@ -76,7 +76,7 @@ inline TADDR CLRDATA_ADDRESS_TO_TADDR(CLRDATA_ADDRESS cdAddr)
 inline HRESULT TRY_CLRDATA_ADDRESS_TO_TADDR(CLRDATA_ADDRESS cdAddr, TADDR* pOutTaddr)
 {
     SUPPORTS_DAC;
-#ifndef _WIN64
+#ifndef BIT64
     static_assert_no_msg(sizeof(TADDR)==sizeof(UINT));
     INT64 iSignedAddr = (INT64)cdAddr;
     if (iSignedAddr > INT_MAX || iSignedAddr < INT_MIN)
@@ -93,7 +93,7 @@ inline HRESULT TRY_CLRDATA_ADDRESS_TO_TADDR(CLRDATA_ADDRESS cdAddr, TADDR* pOutT
 inline TADDR CORDB_ADDRESS_TO_TADDR(CORDB_ADDRESS cdbAddr)
 {
     SUPPORTS_DAC;
-#ifndef _WIN64
+#ifndef BIT64
     static_assert_no_msg(sizeof(TADDR)==sizeof(UINT));
     if (cdbAddr > UINT_MAX)
     {
@@ -635,7 +635,7 @@ struct DAC_INSTANCE
     // a method descriptor
     ULONG32 MDEnumed:1;
 
-#ifdef _WIN64
+#ifdef BIT64
     // Keep DAC_INSTANCE a multiple of DAC_INSTANCE_ALIGN
     // bytes in size.
     ULONG32 pad[2];

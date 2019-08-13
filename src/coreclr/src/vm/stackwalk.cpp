@@ -261,7 +261,7 @@ PTR_VOID CrawlFrame::GetParamTypeArg()
             return NULL;
         }
 
-#ifdef _WIN64
+#ifdef BIT64
         if (!pFunc->IsSharedByGenericInstantiations() ||
             !(pFunc->RequiresInstMethodTableArg() || pFunc->RequiresInstMethodDescArg()))
         {
@@ -269,7 +269,7 @@ PTR_VOID CrawlFrame::GetParamTypeArg()
             // and actually has a param type arg
             return NULL;
         }
-#endif // _WIN64
+#endif // BIT64
 
         _ASSERTE(pFrame);
         _ASSERTE(pFunc);
@@ -2773,7 +2773,7 @@ void StackFrameIterator::UpdateRegDisp(void)
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    WIN64_ONLY(SyncRegDisplayToCurrentContext(m_crawl.pRD));
+    BIT64_ONLY(SyncRegDisplayToCurrentContext(m_crawl.pRD));
 } // StackFrameIterator::UpdateRegDisp()
 
 //---------------------------------------------------------------------------------------

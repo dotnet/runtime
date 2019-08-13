@@ -1511,7 +1511,7 @@ CHECK PEDecoder::CheckILOnlyImportDlls() const
 
     // The only allowed DLL Imports are MscorEE.dll:_CorExeMain,_CorDllMain
 
-#ifdef _WIN64
+#ifdef BIT64
     // On win64, when the image is LoadLibrary'd, we whack the import and IAT directories. We have to relax
     // the verification for mapped images. Ideally, we would only do it for a post-LoadLibrary image.
     if (IsMapped() && !HasDirectoryEntry(IMAGE_DIRECTORY_ENTRY_IMPORT))

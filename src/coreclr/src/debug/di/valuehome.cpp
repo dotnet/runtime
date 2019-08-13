@@ -204,10 +204,10 @@ void RegValueHome::SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pCont
                      extendedVal = (SSIZE_T) *(short*)newValue.StartAddress();          break;
             case 4:  _ASSERTE(sizeof(DWORD) == 4); 
                      extendedVal = (SSIZE_T) *(int*)newValue.StartAddress();            break;
-#if defined(DBG_TARGET_WIN64)
+#if defined(DBG_TARGET_64BIT)
             case 8:  _ASSERTE(sizeof(ULONGLONG) == 8); 
                      extendedVal = (SSIZE_T) *(ULONGLONG*)newValue.StartAddress();      break;
-#endif // DBG_TARGET_WIN64
+#endif // DBG_TARGET_64BIT
             default: _ASSERTE(!"bad size");
         }
     }
@@ -222,10 +222,10 @@ void RegValueHome::SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pCont
                      extendedVal = *( WORD*)newValue.StartAddress();     break;
             case 4:  _ASSERTE(sizeof(DWORD) == 4);
                      extendedVal = *(DWORD*)newValue.StartAddress();     break;
-#if defined(DBG_TARGET_WIN64)
+#if defined(DBG_TARGET_64BIT)
             case 8:  _ASSERTE(sizeof(ULONGLONG) == 8); 
                      extendedVal = *(ULONGLONG*)newValue.StartAddress(); break;
-#endif // DBG_TARGET_WIN64
+#endif // DBG_TARGET_64BIT
             default: _ASSERTE(!"bad size");
         }
     }

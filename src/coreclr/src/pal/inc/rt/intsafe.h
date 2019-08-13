@@ -72,7 +72,7 @@
 #define ULONGLONG_ERROR (0xffffffffffffffffULL)
 #define HIDWORD_MASK (0xffffffff00000000ULL)
 #endif // _MSC_VER
-#ifdef _WIN64
+#ifdef BIT64
 #define SIZET_ERROR     ULONGLONG_ERROR
 #else
 #define SIZET_ERROR     ULONG_ERROR
@@ -625,7 +625,7 @@ ULongLongToULong(
 // UINT_PTR -> ULONG conversion
 // ULONG_PTR -> ULONG conversion
 //
-#ifdef _WIN64
+#ifdef BIT64
 
 #define UIntPtrToULong  ULongLongToULong
 #define ULongPtrToULong ULongLongToULong
@@ -679,7 +679,7 @@ ULongLongToUInt(
 // UINT_PTR -> UINT conversion
 // ULONG_PTR -> UINT conversion
 //
-#ifdef _WIN64
+#ifdef BIT64
 
 #define UIntPtrToUInt  ULongLongToUInt
 #define ULongPtrToUInt ULongLongToUInt
@@ -780,7 +780,7 @@ ULongPtrToUInt(
 //
 // * -> UINT_PTR conversion (UINT_PTR is UINT on Win32, ULONGLONG on Win64)
 //
-#ifdef _WIN64
+#ifdef BIT64
 #define CharToUIntPtr           CharToULongLong
 #define SignedCharToUIntPtr     SignedCharToULongLong
 #define ShortToUIntPtr          ShortToULongLong
@@ -816,7 +816,7 @@ ULongLongToUIntPtr(
     IN ULONGLONG ullOperand,
     OUT UINT_PTR* puResult)
 {
-#ifdef _WIN64
+#ifdef BIT64
 	*puResult = ullOperand;
 	return S_OK;
 #else
@@ -828,7 +828,7 @@ ULongLongToUIntPtr(
 //
 // UINT_PTR -> * conversion (UINT_PTR is UINT on Win32, ULONGLONG on Win64)
 //
-#ifdef _WIN64
+#ifdef BIT64
 #define UIntPtrToUShort         ULongLongToUShort
 #define UIntPtrToInt            ULongLongToInt
 #define UIntPtrToLong           ULongLongToLong
@@ -873,7 +873,7 @@ UIntPtrToLong(
 //
 // * -> ULONG_PTR conversion (ULONG_PTR is ULONG on Win32, ULONGLONG on Win64)
 //
-#ifdef _WIN64
+#ifdef BIT64
 #define CharToULongPtr          CharToULongLong
 #define SignedCharToULongPtr    SignedCharToULongLong
 #define ShortToULongPtr         ShortToULongLong
@@ -909,7 +909,7 @@ ULongLongToULongPtr(
     IN ULONGLONG ullOperand,
     OUT ULONG_PTR* pulResult)
 {
-#ifdef _WIN64
+#ifdef BIT64
 	*pulResult = ullOperand;
 	return S_OK;
 #else
@@ -921,7 +921,7 @@ ULongLongToULongPtr(
 //
 // ULONG_PTR -> * conversion (ULONG_PTR is ULONG on Win32, ULONGLONG on Win64)
 //
-#ifdef _WIN64
+#ifdef BIT64
 #define ULongPtrToUShort        ULongLongToUShort
 #define ULongPtrToInt           ULongLongToInt
 #define ULongPtrToLong          ULongLongToLong
@@ -1119,7 +1119,7 @@ ULongAdd(
 //
 // ULONG_PTR addition
 //
-#ifdef _WIN64
+#ifdef BIT64
 #define ULongPtrAdd     ULongLongAdd
 #else
 __inline
@@ -1131,7 +1131,7 @@ ULongPtrAdd(
 {
 	return ULongAdd((ULONG)ulAugend, (ULONG)ulAddend, (ULONG*)pulResult);
 }
-#endif // _WIN64
+#endif // BIT64
 
 //
 // DWORD addition
@@ -1272,7 +1272,7 @@ ULongSub(
 //
 // ULONG_PTR subtraction
 //
-#ifdef _WIN64
+#ifdef BIT64
 #define ULongPtrSub ULongLongSub
 #else
 __inline
@@ -1284,7 +1284,7 @@ ULongPtrSub(
 {
 	return ULongSub((ULONG)ulMinuend, (ULONG)ulSubtrahend, (ULONG*)pulResult);
 }
-#endif // _WIN64
+#endif // BIT64
 
 
 //

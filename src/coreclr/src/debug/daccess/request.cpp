@@ -789,7 +789,7 @@ ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThreadData *
 #else
     threadData->firstNestedException = PTR_HOST_TO_TADDR(
         thread->m_ExceptionState.m_currentExInfo.m_pPrevNestedInfo);
-#endif // _WIN64
+#endif // WIN64EXCEPTIONS
 
     SOSDacLeave();
     return hr;
@@ -3181,7 +3181,7 @@ ClrDataAccess::GetNestedExceptionData(CLRDATA_ADDRESS exception, CLRDATA_ADDRESS
     ExceptionTracker *pExData = PTR_ExceptionTracker(TO_TADDR(exception));
 #else
     ExInfo *pExData = PTR_ExInfo(TO_TADDR(exception));
-#endif // _WIN64
+#endif // WIN64EXCEPTIONS
 
     if (!pExData)
     {
@@ -3699,7 +3699,7 @@ ClrDataAccess::GetJumpThunkTarget(T_CONTEXT *ctx, CLRDATA_ADDRESS *targetIP, CLR
     return hr;
 #else
     return E_FAIL;
-#endif // _WIN64
+#endif // _TARGET_AMD64_
 }
 
 

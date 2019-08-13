@@ -41,7 +41,7 @@ class ArrayListBase
     {
         SPTR(ArrayListBlock)    m_next;
         DWORD                   m_blockSize;
-#ifdef _WIN64
+#ifdef BIT64
         DWORD                   m_padding;
 #endif
         PTR_VOID                m_array[0];
@@ -61,7 +61,7 @@ class ArrayListBase
     {
         PTR_ArrayListBlock      m_next;
         DWORD                   m_blockSize;
-#ifdef _WIN64
+#ifdef BIT64
         DWORD                   m_padding;
 #endif
         void *                  m_array[ARRAY_BLOCK_SIZE_START];
@@ -231,7 +231,7 @@ class ArrayListBase
         {
             if (m_remaining < m_block->m_blockSize)
                 ZeroMemory(&(m_block->m_array[m_remaining]), (m_block->m_blockSize - m_remaining) * sizeof(void*));
-#ifdef _WIN64
+#ifdef BIT64
             m_block->m_padding = 0;
 #endif
         }

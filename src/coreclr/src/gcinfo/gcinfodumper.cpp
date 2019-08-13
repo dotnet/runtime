@@ -11,7 +11,7 @@
 #define GC_CALL_PINNED              0x2
 
 
-#ifdef _WIN64
+#ifdef BIT64
 // All stack offsets are INT32's, so this guarantees a disjoint range of
 // addresses for each register.
 #define ADDRESS_SPACING UI64(0x100000000)
@@ -521,7 +521,7 @@ GcInfoDumper::EnumerateStateChangesResults GcInfoDumper::EnumerateStateChanges (
 
     UINT iReg;
 
-#ifdef _WIN64
+#ifdef BIT64
     ULONG64 UniqueAddress = ADDRESS_SPACING*2;
     ULONG64 *pReg;
 #else
