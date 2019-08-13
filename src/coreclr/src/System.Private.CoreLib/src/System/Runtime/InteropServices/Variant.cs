@@ -91,7 +91,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public static bool IsPrimitiveType(VarEnum varEnum)
         {
-            switch(varEnum)
+            switch (varEnum)
             {
                 case VarEnum.VT_I1:
                 case VarEnum.VT_I2:

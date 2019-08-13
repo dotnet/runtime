@@ -66,7 +66,7 @@ namespace System
         /// </summary>
         internal LazyHelper(LazyThreadSafetyMode mode, Exception exception)
         {
-            switch(mode)
+            switch (mode)
             {
                 case LazyThreadSafetyMode.ExecutionAndPublication:
                     State = LazyState.ExecutionAndPublicationException;

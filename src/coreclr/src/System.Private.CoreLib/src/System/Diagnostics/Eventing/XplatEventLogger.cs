@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Collections.ObjectModel;
@@ -14,7 +15,7 @@ using System.Runtime.Versioning;
 
 namespace System.Diagnostics.Tracing
 {
-    internal  class XplatEventLogger : EventListener
+    internal class XplatEventLogger : EventListener
     {
         private static Lazy<string?> eventSourceNameFilter = new Lazy<string?>(() => CompatibilitySwitch.GetValueInternal("EventSourceFilter"));
         private static Lazy<string?> eventSourceEventFilter = new Lazy<string?>(() => CompatibilitySwitch.GetValueInternal("EventNameFilter"));
@@ -25,14 +26,15 @@ namespace System.Diagnostics.Tracing
 
         public static EventListener? InitializePersistentListener()
         {
-            try{
+            try
+            {
                 if (!initializedPersistentListener && XplatEventLogger.IsEventSourceLoggingEnabled())
                 {
                     initializedPersistentListener = true;
                     return new XplatEventLogger();
                 }
             }
-            catch(Exception){}
+            catch (Exception) { }
 
             return null;
         }
@@ -43,8 +45,8 @@ namespace System.Diagnostics.Tracing
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void LogEventSource(int eventID, string? eventName, string eventSourceName, string payload);
 
-        private static List<char> escape_seq = new List<char> { '\b', '\f', '\n', '\r', '\t', '\"', '\\' };
-        private static Dictionary<char, string> seq_mapping = new Dictionary<char, string>()
+        private static readonly List<char> escape_seq = new List<char> { '\b', '\f', '\n', '\r', '\t', '\"', '\\' };
+        private static readonly Dictionary<char, string> seq_mapping = new Dictionary<char, string>()
         {
             {'\b', "b"},
             {'\f', "f"},
@@ -57,7 +59,7 @@ namespace System.Diagnostics.Tracing
 
         private static void minimalJsonserializer(string payload, StringBuilder sb)
         {
-            foreach(var elem in payload)
+            foreach (var elem in payload)
             {
                 if (escape_seq.Contains(elem))
                 {
@@ -81,7 +83,7 @@ namespace System.Diagnostics.Tracing
 
             int eventDataCount = payloadName.Count;
 
-            if(payloadName.Count != payload.Count)
+            if (payloadName.Count != payload.Count)
             {
                eventDataCount = Math.Min(payloadName.Count, payload.Count);
             }
@@ -112,7 +114,7 @@ namespace System.Diagnostics.Tracing
                 sb.Append("\\\"");
                 sb.Append(':');
 
-                switch(payload[i])
+                switch (payload[i])
                 {
                     case string str:
                     {
@@ -130,7 +132,7 @@ namespace System.Diagnostics.Tracing
                     }
                     default:
                     {
-                        if(payload[i] != null)
+                        if (payload[i] != null)
                         {
                             sb.Append(payload[i]!.ToString()); // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
                         }
@@ -149,7 +151,7 @@ namespace System.Diagnostics.Tracing
 
             ReadOnlySpan<char> hexFormat = "X2";
             Span<char> hex = stackalloc char[2];
-            for(int i=0; i<byteArray.Length; i++)
+            for (int i=0; i<byteArray.Length; i++)
             {
                 byteArray[i].TryFormat(hex, out int charsWritten, hexFormat);
                 Debug.Assert(charsWritten == 2);

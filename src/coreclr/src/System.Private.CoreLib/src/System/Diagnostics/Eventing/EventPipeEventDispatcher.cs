@@ -154,7 +154,7 @@ namespace System.Diagnostics.Tracing
         {
             Debug.Assert(Monitor.IsEntered(m_dispatchControlLock));
 
-            if(m_dispatchTask != null)
+            if (m_dispatchTask != null)
             {
                 m_stopDispatchTask = true;
                 Debug.Assert(!m_dispatchTaskWaitHandle.SafeWaitHandle.IsInvalid);
@@ -214,7 +214,7 @@ namespace System.Diagnostics.Tracing
 
             Debug.Assert((m_syncTimeUtc.Ticks != 0) && (m_syncTimeQPC != 0) && (m_timeQPCFrequency != 0));
             long inTicks = (long)((timeStamp - m_syncTimeQPC) * 10000000.0 / m_timeQPCFrequency) + m_syncTimeUtc.Ticks;
-            if((inTicks < 0)|| (DateTime.MaxTicks < inTicks))
+            if ((inTicks < 0)|| (DateTime.MaxTicks < inTicks))
             {
                 inTicks = DateTime.MaxTicks;
             }
