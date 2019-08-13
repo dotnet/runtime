@@ -20,6 +20,11 @@ schedules:
     - master
   always: true
 
+# Remove this variable when fixed: https://github.com/dotnet/arcade/issues/3661
+variables:
+- name: _DotNetArtifactsCategory
+  value: .NETCore
+
 stages:
   - stage: build
     jobs:
