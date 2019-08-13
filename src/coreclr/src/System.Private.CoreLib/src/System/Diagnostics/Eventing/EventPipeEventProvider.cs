@@ -18,7 +18,7 @@ namespace System.Diagnostics.Tracing
         {
             uint returnStatus = 0;
             m_provHandle = EventPipeInternal.CreateProvider(eventSource.Name, enableCallback);
-            if(m_provHandle != IntPtr.Zero)
+            if (m_provHandle != IntPtr.Zero)
             {
                 // Fixed registration handle because a new EventPipeEventProvider
                 // will be created for each new EventSource.
@@ -51,7 +51,7 @@ namespace System.Diagnostics.Tracing
             EventProvider.EventData* userData)
         {
             uint eventID = (uint)eventDescriptor.EventId;
-            if(eventID != 0 && eventHandle != IntPtr.Zero)
+            if (eventID != 0 && eventHandle != IntPtr.Zero)
             {
                 if (userDataCount == 0)
                 {

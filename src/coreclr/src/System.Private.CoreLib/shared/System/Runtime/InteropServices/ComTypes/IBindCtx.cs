@@ -21,7 +21,7 @@ namespace System.Runtime.InteropServices.ComTypes
         void RegisterObjectBound([MarshalAs(UnmanagedType.Interface)] object punk);
         void RevokeObjectBound([MarshalAs(UnmanagedType.Interface)] object punk);
         void ReleaseBoundObjects();
-        void SetBindOptions([In()] ref BIND_OPTS pbindopts);
+        void SetBindOptions([In] ref BIND_OPTS pbindopts);
         void GetBindOptions(ref BIND_OPTS pbindopts);
         void GetRunningObjectTable(out IRunningObjectTable? pprot);
         void RegisterObjectParam([MarshalAs(UnmanagedType.LPWStr)] string pszKey, [MarshalAs(UnmanagedType.Interface)] object punk);
