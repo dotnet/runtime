@@ -20,10 +20,10 @@ schedules:
     - master
   always: true
 
-# Remove this variable when fixed: https://github.com/dotnet/arcade/issues/3661
+# See mappings in https://github.com/dotnet/arcade/blob/055bb2951c3107189551ab912b4e5550928b5afb/src/Microsoft.DotNet.Arcade.Sdk/tools/SdkTasks/PublishToPackageFeed.proj#L33-L48
 variables:
 - name: _DotNetArtifactsCategory
-  value: .NETCore
+  value: CORECLR
 
 stages:
   - stage: build
