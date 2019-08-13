@@ -2,7 +2,8 @@
 
   <PropertyGroup>
     <Description>EventSource/EventListener logger provider implementation for Microsoft.Extensions.Logging.</Description>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFrameworks>netstandard2.0;netcoreapp5.0</TargetFrameworks>
+    <TargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true'">netcoreapp5.0</TargetFrameworks>
     <PackageTags>$(PackageTags);EventSource;ETW</PackageTags>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>true</IsPackable>
@@ -14,6 +15,9 @@
     <Compile Include="../../shared/*.cs" />
 
     <Reference Include="Microsoft.Extensions.Logging" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <Reference Include="System.Text.Json" />
     <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
