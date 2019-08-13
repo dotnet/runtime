@@ -23,7 +23,7 @@ namespace System.Numerics
         // C# no-alloc optimization that directly wraps the data section of the dll (similar to string constants)
         // https://github.com/dotnet/roslyn/pull/24621
 
-        private static ReadOnlySpan<byte> s_TrailingZeroCountDeBruijn => new byte[32]
+        private static ReadOnlySpan<byte> TrailingZeroCountDeBruijn => new byte[32]
         {
             00, 01, 28, 02, 29, 14, 24, 03,
             30, 22, 20, 15, 25, 17, 04, 08,
@@ -31,7 +31,7 @@ namespace System.Numerics
             26, 12, 18, 06, 11, 05, 10, 09
         };
 
-        private static ReadOnlySpan<byte> s_Log2DeBruijn => new byte[32]
+        private static ReadOnlySpan<byte> Log2DeBruijn => new byte[32]
         {
             00, 09, 01, 10, 13, 21, 02, 29,
             11, 14, 16, 18, 22, 25, 03, 30,
@@ -172,7 +172,7 @@ namespace System.Numerics
             // uint.MaxValue >> 27 is always in range [0 - 31] so we use Unsafe.AddByteOffset to avoid bounds check
             return Unsafe.AddByteOffset(
                 // Using deBruijn sequence, k=2, n=5 (2^5=32) : 0b_0000_0111_1100_0100_1010_1100_1101_1101u
-                ref MemoryMarshal.GetReference(s_Log2DeBruijn),
+                ref MemoryMarshal.GetReference(Log2DeBruijn),
                 // uint|long -> IntPtr cast on 32-bit platforms does expensive overflow checks not needed here
                 (IntPtr)(int)((value * 0x07C4ACDDu) >> 27));
         }
@@ -277,7 +277,7 @@ namespace System.Numerics
             // uint.MaxValue >> 27 is always in range [0 - 31] so we use Unsafe.AddByteOffset to avoid bounds check
             return Unsafe.AddByteOffset(
                 // Using deBruijn sequence, k=2, n=5 (2^5=32) : 0b_0000_0111_0111_1100_1011_0101_0011_0001u
-                ref MemoryMarshal.GetReference(s_TrailingZeroCountDeBruijn),
+                ref MemoryMarshal.GetReference(TrailingZeroCountDeBruijn),
                 // uint|long -> IntPtr cast on 32-bit platforms does expensive overflow checks not needed here
                 (IntPtr)(int)(((value & (uint)-(int)value) * 0x077CB531u) >> 27)); // Multi-cast mitigates redundant conv.u8
         }
