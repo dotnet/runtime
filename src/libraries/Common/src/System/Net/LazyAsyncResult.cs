@@ -44,8 +44,8 @@ namespace System.Net
         private bool _protectState;                 // Used by ContextAwareResult to prevent some calls.
 #endif
 
-        private object _asyncObject;               // Caller's async object.
-        private object _asyncState;                // Caller's state object.
+        private readonly object _asyncObject;               // Caller's async object.
+        private readonly object _asyncState;                // Caller's state object.
         private AsyncCallback _asyncCallback;      // Caller's callback method.
         private object _result;                    // Final IO result to be returned byt the End*() method.
         private int _errorCode;                    // Win32 error code for Win32 IO async calls (that want to throw).

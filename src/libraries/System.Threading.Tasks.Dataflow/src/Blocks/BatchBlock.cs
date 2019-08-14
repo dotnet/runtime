@@ -198,7 +198,7 @@ namespace System.Threading.Tasks.Dataflow
         private sealed class DebugView
         {
             /// <summary>The batch block being viewed.</summary>
-            private BatchBlock<T> _batchBlock;
+            private readonly BatchBlock<T> _batchBlock;
             /// <summary>The target half being viewed.</summary>
             private readonly BatchBlockTargetCore.DebuggingInformation _targetDebuggingInformation;
             /// <summary>The source half of the block being viewed.</summary>
@@ -1179,7 +1179,7 @@ namespace System.Threading.Tasks.Dataflow
             internal sealed class DebuggingInformation
             {
                 /// <summary>The target being viewed.</summary>
-                private BatchBlockTargetCore _target;
+                private readonly BatchBlockTargetCore _target;
 
                 /// <summary>Initializes the debugging helper.</summary>
                 /// <param name="target">The target being viewed.</param>

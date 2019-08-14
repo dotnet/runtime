@@ -83,7 +83,7 @@ namespace System.Linq.Parallel
 
         private class NullableDecimalAverageAggregationOperatorEnumerator<TKey> : InlinedAggregationOperatorEnumerator<Pair<decimal, long>>
         {
-            private QueryOperatorEnumerator<decimal?, TKey> _source; // The source data.
+            private readonly QueryOperatorEnumerator<decimal?, TKey> _source; // The source data.
 
             //---------------------------------------------------------------------------------------
             // Instantiates a new aggregation operator.

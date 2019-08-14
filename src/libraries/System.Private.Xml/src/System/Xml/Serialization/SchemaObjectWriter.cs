@@ -56,7 +56,7 @@ namespace System.Xml.Serialization
 
     internal class XmlSchemaObjectComparer : IComparer
     {
-        private QNameComparer _comparer = new QNameComparer();
+        private readonly QNameComparer _comparer = new QNameComparer();
         public int Compare(object o1, object o2)
         {
             return _comparer.Compare(NameOf((XmlSchemaObject)o1), NameOf((XmlSchemaObject)o2));
@@ -152,7 +152,7 @@ namespace System.Xml.Serialization
 
     internal class SchemaObjectWriter
     {
-        private StringBuilder _w = new StringBuilder();
+        private readonly StringBuilder _w = new StringBuilder();
         private int _indentLevel = -1;
 
         private void WriteIndent()

@@ -46,7 +46,7 @@ namespace System.Text.Encodings.Web
 
     internal sealed class DefaultUrlEncoder : UrlEncoder
     {
-        private AllowedCharactersBitmap _allowedCharacters;
+        private readonly AllowedCharactersBitmap _allowedCharacters;
 
         internal static readonly DefaultUrlEncoder Singleton = new DefaultUrlEncoder(new TextEncoderSettings(UnicodeRanges.BasicLatin));
 

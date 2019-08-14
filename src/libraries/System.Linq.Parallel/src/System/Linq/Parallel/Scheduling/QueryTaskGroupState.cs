@@ -24,8 +24,8 @@ namespace System.Linq.Parallel
     {
         private Task _rootTask; // The task under which all query tasks root.
         private int _alreadyEnded; // Whether the tasks have been waited on already.
-        private CancellationState _cancellationState; // The cancellation state.
-        private int _queryId; // Id of this query execution.
+        private readonly CancellationState _cancellationState; // The cancellation state.
+        private readonly int _queryId; // Id of this query execution.
 
 
         //-----------------------------------------------------------------------------------

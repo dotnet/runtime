@@ -18,7 +18,7 @@ namespace System.Xml
 {
     internal class XmlBufferReader
     {
-        private XmlDictionaryReader _reader;
+        private readonly XmlDictionaryReader _reader;
         private Stream _stream;
         private byte[] _streamBuffer;
         private byte[] _buffer;
@@ -33,7 +33,7 @@ namespace System.Xml
         private int _windowOffset;
         private int _windowOffsetMax;
         private ValueHandle _listValue;
-        private static XmlBufferReader s_empty = new XmlBufferReader(Array.Empty<byte>());
+        private static readonly XmlBufferReader s_empty = new XmlBufferReader(Array.Empty<byte>());
 
         public XmlBufferReader(XmlDictionaryReader reader)
         {

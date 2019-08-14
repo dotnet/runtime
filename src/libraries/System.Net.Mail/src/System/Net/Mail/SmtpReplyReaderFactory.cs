@@ -26,7 +26,7 @@ namespace System.Net.Mail
             Done
         }
 
-        private BufferedReadStream _bufferedStream;
+        private readonly BufferedReadStream _bufferedStream;
         private byte[] _byteBuffer;
         private SmtpReplyReader _currentReader;
         private const int DefaultBufferSize = 256;
@@ -372,11 +372,11 @@ namespace System.Net.Mail
         {
             private StringBuilder _builder;
             private ArrayList _lines;
-            private SmtpReplyReaderFactory _parent;
-            private static AsyncCallback s_readCallback = new AsyncCallback(ReadCallback);
+            private readonly SmtpReplyReaderFactory _parent;
+            private static readonly AsyncCallback s_readCallback = new AsyncCallback(ReadCallback);
             private int _read;
             private int _statusRead;
-            private bool _oneLine;
+            private readonly bool _oneLine;
 
             internal ReadLinesAsyncResult(SmtpReplyReaderFactory parent, AsyncCallback callback, object state) : base(null, state, callback)
             {

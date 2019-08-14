@@ -25,7 +25,7 @@ namespace System.Data.SqlClient
         // Dependency ID -> Dependency hashtable.  1 -> 1 mapping.
         // 1) Used for ASP.NET to map from ID to dependency.
         // 2) Used to enumerate dependencies to invalidate based on server.
-        private Dictionary<string, SqlDependency> _dependencyIdToDependencyHash;
+        private readonly Dictionary<string, SqlDependency> _dependencyIdToDependencyHash;
 
         // holds dependencies list per notification and the command hash from which this notification was generated
         // command hash is needed to remove its entry from _commandHashToNotificationId when the notification is removed
@@ -45,12 +45,12 @@ namespace System.Data.SqlClient
         // resource effect on SQL Server.  The Guid identifier is sent to the server during notification enlistment,
         // and returned during the notification event.  Dependencies look up existing Guids, if one exists, to ensure
         // they are re-using notification ids.
-        private Dictionary<string, DependencyList> _notificationIdToDependenciesHash;
+        private readonly Dictionary<string, DependencyList> _notificationIdToDependenciesHash;
 
         // CommandHash value -> notificationId associated with it:  1->1 mapping. This map is used to quickly find if we need to create
         // new notification or hookup into existing one.
         // CommandHash is built from connection string, command text and parameters
-        private Dictionary<string, string> _commandHashToNotificationId;
+        private readonly Dictionary<string, string> _commandHashToNotificationId;
 
         // TIMEOUT LOGIC DESCRIPTION
         //
@@ -72,7 +72,7 @@ namespace System.Data.SqlClient
         private DateTime _nextTimeout;
         // Timer to periodically check the dependencies in the table and see if anyone needs
         // a timeout.  We'll enable this only on demand.
-        private Timer _timeoutTimer;
+        private readonly Timer _timeoutTimer;
 
         private SqlDependencyPerAppDomainDispatcher()
         {

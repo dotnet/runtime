@@ -29,8 +29,8 @@ namespace System.DirectoryServices.AccountManagement
                                     userDN);
         }
 
-        private string _principalDN;
-        private ADStoreCtx _storeCtx;
+        private readonly string _principalDN;
+        private readonly ADStoreCtx _storeCtx;
 
         private bool _atBeginning = true;
         private DirectoryEntry _current = null; // current member of the group (or current group of the user)
@@ -40,7 +40,7 @@ namespace System.DirectoryServices.AccountManagement
         private SecurityIdentifier _currentSID;
         private bool _disposed = false;
 
-        private string _attributeToQuery;
+        private readonly string _attributeToQuery;
 
         // Return the principal we're positioned at as a Principal object.
         // Need to use our StoreCtx's GetAsPrincipal to convert the native object to a Principal

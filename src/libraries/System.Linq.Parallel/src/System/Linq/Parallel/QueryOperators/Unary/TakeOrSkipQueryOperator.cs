@@ -325,8 +325,8 @@ namespace System.Linq.Parallel
 
         private class TakeOrSkipQueryOperatorResults : UnaryQueryOperatorResults
         {
-            private TakeOrSkipQueryOperator<TResult> _takeOrSkipOp; // The operator that generated the results
-            private int _childCount; // The number of elements in child results
+            private readonly TakeOrSkipQueryOperator<TResult> _takeOrSkipOp; // The operator that generated the results
+            private readonly int _childCount; // The number of elements in child results
 
             public static QueryResults<TResult> NewResults(
                 QueryResults<TResult> childQueryResults, TakeOrSkipQueryOperator<TResult> op,

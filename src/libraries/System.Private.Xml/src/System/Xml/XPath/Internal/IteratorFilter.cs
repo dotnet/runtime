@@ -8,8 +8,8 @@ namespace MS.Internal.Xml.XPath
 {
     internal class IteratorFilter : XPathNodeIterator
     {
-        private XPathNodeIterator _innerIterator;
-        private string _name;
+        private readonly XPathNodeIterator _innerIterator;
+        private readonly string _name;
         private int _position = 0;
 
         internal IteratorFilter(XPathNodeIterator innerIterator, string name)

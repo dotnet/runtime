@@ -18,7 +18,7 @@ namespace System.Xml.Xsl.XsltOld
             ConditionOtherwise
         }
 
-        private ConditionType _type;
+        private readonly ConditionType _type;
         private int _testKey = Compiler.InvalidQueryKey;
 
         internal IfAction(ConditionType type)

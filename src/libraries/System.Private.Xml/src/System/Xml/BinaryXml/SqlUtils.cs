@@ -285,7 +285,7 @@ namespace System.Xml
 
     internal struct BinXmlSqlMoney
     {
-        private long _data;
+        private readonly long _data;
 
         public BinXmlSqlMoney(int v) { _data = v; }
         public BinXmlSqlMoney(long v) { _data = v; }

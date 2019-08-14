@@ -1,7 +1,8 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#pragma warning disable SA1028 // ignore whitespace warnings for generated code
 using System;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -14,16 +15,16 @@ namespace System.Security.Cryptography.Pkcs.Asn1
     {
         internal string CertId;
         internal ReadOnlyMemory<byte> CertValue;
-
+      
         internal void Encode(AsnWriter writer)
         {
             Encode(writer, Asn1Tag.Sequence);
         }
-
+    
         internal void Encode(AsnWriter writer, Asn1Tag tag)
         {
             writer.PushSequence(tag);
-
+            
             writer.WriteObjectIdentifier(CertId);
             writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
             writer.WriteEncodedValue(CertValue.Span);
@@ -35,11 +36,11 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         {
             return Decode(Asn1Tag.Sequence, encoded, ruleSet);
         }
-
+        
         internal static CertBagAsn Decode(Asn1Tag expectedTag, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
             AsnReader reader = new AsnReader(encoded, ruleSet);
-
+            
             Decode(reader, expectedTag, out CertBagAsn decoded);
             reader.ThrowIfNotEmpty();
             return decoded;
@@ -61,7 +62,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             decoded = default;
             AsnReader sequenceReader = reader.ReadSequence(expectedTag);
             AsnReader explicitReader;
-
+            
             decoded.CertId = sequenceReader.ReadObjectIdentifierAsString();
 
             explicitReader = sequenceReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 0));

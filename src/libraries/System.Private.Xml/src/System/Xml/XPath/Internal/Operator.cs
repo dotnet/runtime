@@ -33,7 +33,7 @@ namespace MS.Internal.Xml.XPath
             UNION,
         };
 
-        private static Op[] s_invertOp = {
+        private static readonly Op[] s_invertOp = {
             /*INVALID*/ Op.INVALID,
             /*OR     */ Op.INVALID,
             /*END    */ Op.INVALID,
@@ -51,9 +51,9 @@ namespace MS.Internal.Xml.XPath
             return s_invertOp[(int)op];
         }
 
-        private Op _opType;
-        private AstNode _opnd1;
-        private AstNode _opnd2;
+        private readonly Op _opType;
+        private readonly AstNode _opnd1;
+        private readonly AstNode _opnd2;
 
         public Operator(Op op, AstNode opnd1, AstNode opnd2)
         {

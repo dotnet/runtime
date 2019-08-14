@@ -68,12 +68,12 @@ namespace System.Data
         private readonly System.Comparison<DataRow> _comparison;
 
         private readonly DataViewRowState _recordStates;
-        private WeakReference _rowFilter;
+        private readonly WeakReference _rowFilter;
         private IndexTree _records;
         private int _recordCount;
         private int _refCount;
 
-        private Listeners<DataViewListener> _listeners;
+        private readonly Listeners<DataViewListener> _listeners;
 
         private bool _suspendEvents;
 

@@ -17,7 +17,7 @@ namespace System.Data.OleDb
     internal sealed class OleDbConnectionInternal : DbConnectionInternal, IDisposable
     {
         private static volatile OleDbServicesWrapper idataInitialize;
-        private static object dataInitializeLock = new object();
+        private static readonly object dataInitializeLock = new object();
 
         internal readonly OleDbConnectionString ConnectionString; // parsed connection string attributes
 

@@ -53,8 +53,8 @@ namespace System.Diagnostics
         private static volatile string s_symbolFilePath;
 
         private PerformanceMonitor _performanceMonitor;
-        private string _machineName;
-        private string _perfLcid;
+        private readonly string _machineName;
+        private readonly string _perfLcid;
 
 
         private static volatile Hashtable s_libraryTable;
@@ -1267,7 +1267,7 @@ namespace System.Diagnostics
     internal class PerformanceMonitor
     {
         private PerformanceDataRegistryKey perfDataKey = null;
-        private string machineName;
+        private readonly string machineName;
 
         internal PerformanceMonitor(string machineName)
         {
@@ -1403,10 +1403,10 @@ namespace System.Diagnostics
         internal Hashtable _counterTable;
         internal Hashtable _instanceNameTable;
         internal bool _isMultiInstance;
-        private CategoryEntry _entry;
-        private PerformanceCounterLib _library;
+        private readonly CategoryEntry _entry;
+        private readonly PerformanceCounterLib _library;
         private bool _disposed;
-        private byte[] _data;
+        private readonly byte[] _data;
 
         internal CategorySample(byte[] rawData, CategoryEntry entry, PerformanceCounterLib library)
         {
@@ -1683,8 +1683,8 @@ namespace System.Diagnostics
 
         private readonly int _size;
         private readonly int _offset;
-        private long[] _instanceValues;
-        private CategorySample _categorySample;
+        private readonly long[] _instanceValues;
+        private readonly CategorySample _categorySample;
 
         internal CounterDefinitionSample(in PERF_COUNTER_DEFINITION perfCounter, CategorySample categorySample, int instanceNumber)
         {

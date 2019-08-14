@@ -17,7 +17,7 @@ namespace System.Xml.Serialization
 {
     internal class ReflectionXmlSerializationWriter : XmlSerializationWriter
     {
-        private XmlMapping _mapping;
+        private readonly XmlMapping _mapping;
 
         internal static TypeDesc StringTypeDesc { get; private set; } = (new TypeScope()).GetTypeDesc(typeof(string));
         internal static TypeDesc QnameTypeDesc { get; private set; } = (new TypeScope()).GetTypeDesc(typeof(XmlQualifiedName));

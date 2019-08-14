@@ -10,12 +10,12 @@ namespace System.Xml.Schema
 
     internal class BaseProcessor
     {
-        private XmlNameTable _nameTable;
+        private readonly XmlNameTable _nameTable;
         private SchemaNames _schemaNames;
-        private ValidationEventHandler _eventHandler;
-        private XmlSchemaCompilationSettings _compilationSettings;
+        private readonly ValidationEventHandler _eventHandler;
+        private readonly XmlSchemaCompilationSettings _compilationSettings;
         private int _errorCount = 0;
-        private string _nsXml;
+        private readonly string _nsXml;
 
         public BaseProcessor(XmlNameTable nameTable, SchemaNames schemaNames, ValidationEventHandler eventHandler)
             : this(nameTable, schemaNames, eventHandler, new XmlSchemaCompilationSettings())

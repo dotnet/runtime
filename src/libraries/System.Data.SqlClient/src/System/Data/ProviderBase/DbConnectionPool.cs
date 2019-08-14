@@ -30,7 +30,7 @@ namespace System.Data.ProviderBase
         // copy as part of the value.
         private sealed class TransactedConnectionList : List<DbConnectionInternal>
         {
-            private Transaction _transaction;
+            private readonly Transaction _transaction;
             internal TransactedConnectionList(int initialAllocation, Transaction tx) : base(initialAllocation)
             {
                 _transaction = tx;
@@ -61,9 +61,9 @@ namespace System.Data.ProviderBase
 
         private sealed class TransactedConnectionPool
         {
-            private Dictionary<Transaction, TransactedConnectionList> _transactedCxns;
+            private readonly Dictionary<Transaction, TransactedConnectionList> _transactedCxns;
 
-            private DbConnectionPool _pool;
+            private readonly DbConnectionPool _pool;
 
             private static int _objectTypeCount; // Bid counter
             internal readonly int _objectID = System.Threading.Interlocked.Increment(ref _objectTypeCount);
@@ -350,7 +350,7 @@ namespace System.Data.ProviderBase
         private readonly DbConnectionFactory _connectionFactory;
         private readonly DbConnectionPoolGroup _connectionPoolGroup;
         private readonly DbConnectionPoolGroupOptions _connectionPoolGroupOptions;
-        private DbConnectionPoolProviderInfo _connectionPoolProviderInfo;
+        private readonly DbConnectionPoolProviderInfo _connectionPoolProviderInfo;
 
         private State _state;
 

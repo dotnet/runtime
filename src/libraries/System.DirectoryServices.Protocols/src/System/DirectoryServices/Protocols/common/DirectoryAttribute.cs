@@ -14,9 +14,9 @@ namespace System.DirectoryServices.Protocols
         private string _attributeName = "";
         internal bool _isSearchResult = false;
         // Does not request Unicode byte order mark prefix be emitted, but turn on error detection.
-        private static UTF8Encoding s_utf8EncoderWithErrorDetection = new UTF8Encoding(false, true);
+        private static readonly UTF8Encoding s_utf8EncoderWithErrorDetection = new UTF8Encoding(false, true);
         // No Error detection.
-        private static UTF8Encoding s_encoder = new UTF8Encoding();
+        private static readonly UTF8Encoding s_encoder = new UTF8Encoding();
 
         public DirectoryAttribute()
         {

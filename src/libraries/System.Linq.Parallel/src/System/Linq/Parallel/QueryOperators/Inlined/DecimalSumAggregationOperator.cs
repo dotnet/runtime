@@ -71,7 +71,7 @@ namespace System.Linq.Parallel
 
         private class DecimalSumAggregationOperatorEnumerator<TKey> : InlinedAggregationOperatorEnumerator<decimal>
         {
-            private QueryOperatorEnumerator<decimal, TKey> _source; // The source data.
+            private readonly QueryOperatorEnumerator<decimal, TKey> _source; // The source data.
 
             //---------------------------------------------------------------------------------------
             // Instantiates a new aggregation operator.

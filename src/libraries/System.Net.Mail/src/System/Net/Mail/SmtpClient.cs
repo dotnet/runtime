@@ -50,7 +50,7 @@ namespace System.Net.Mail
         private Timer _timer;
         private ContextAwareResult _operationCompletedResult = null;
         private AsyncOperation _asyncOp = null;
-        private static AsyncCallback s_contextSafeCompleteCallback = new AsyncCallback(ContextSafeCompleteCallback);
+        private static readonly AsyncCallback s_contextSafeCompleteCallback = new AsyncCallback(ContextSafeCompleteCallback);
         private const int DefaultPort = 25;
         internal string clientDomain = null;
         private bool _disposed = false;

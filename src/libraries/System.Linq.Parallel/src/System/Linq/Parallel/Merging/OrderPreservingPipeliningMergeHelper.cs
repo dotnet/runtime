@@ -82,7 +82,7 @@ namespace System.Linq.Parallel
         /// <summary>
         /// A comparer used by the producer heap.
         /// </summary>
-        private IComparer<Producer<TKey>> _producerComparer;
+        private readonly IComparer<Producer<TKey>> _producerComparer;
 
         /// <summary>
         /// The initial capacity of the buffer queue. The value was chosen experimentally.
@@ -186,7 +186,7 @@ namespace System.Linq.Parallel
         /// </summary>
         private class ProducerComparer : IComparer<Producer<TKey>>
         {
-            private IComparer<TKey> _keyComparer;
+            private readonly IComparer<TKey> _keyComparer;
 
             internal ProducerComparer(IComparer<TKey> keyComparer)
             {
@@ -208,7 +208,7 @@ namespace System.Linq.Parallel
             /// <summary>
             /// Merge helper associated with this enumerator
             /// </summary>
-            private OrderPreservingPipeliningMergeHelper<TOutput, TKey> _mergeHelper;
+            private readonly OrderPreservingPipeliningMergeHelper<TOutput, TKey> _mergeHelper;
 
             /// <summary>
             /// Heap used to efficiently locate the producer whose result should be consumed next.

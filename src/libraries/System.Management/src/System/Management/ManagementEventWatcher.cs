@@ -122,7 +122,7 @@ namespace System.Management
         private uint                    cachedCount; //says how many objects are in the cache (when using BlockSize option)
         private uint                    cacheIndex; //used to walk the cache
         private SinkForEventQuery       sink; // the sink implementation for event queries
-        private WmiDelegateInvoker      delegateInvoker;
+        private readonly WmiDelegateInvoker      delegateInvoker;
 
         //Called when IdentifierChanged() event fires
         private void HandleIdentifierChange(object sender,
@@ -607,12 +607,12 @@ namespace System.Management
 
     internal class SinkForEventQuery : IWmiEventSource
     {
-        private ManagementEventWatcher          eventWatcher;
-        private object                          context;
-        private IWbemServices                   services;
+        private readonly ManagementEventWatcher          eventWatcher;
+        private readonly object                          context;
+        private readonly IWbemServices                   services;
         private IWbemObjectSink stub;           // The secured IWbemObjectSink
         private int status;
-        private bool isLocal;
+        private readonly bool isLocal;
 
         public int Status {get {return status;} set {status=value;}}
 

@@ -27,7 +27,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         private Dictionary<LazyMemberInfo, MemberInfo[]> _membersTable;
         private Dictionary<Lazy<ParameterInfo>, ParameterInfo> _parametersTable;
         private ConstructorInfo _constructor;
-        private object _lock = new object();
+        private readonly object _lock = new object();
 
         public GenericSpecializationPartCreationInfo(IReflectionPartCreationInfo originalPartCreationInfo, ReflectionComposablePartDefinition originalPart, Type[] specialization)
         {

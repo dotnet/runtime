@@ -10,7 +10,7 @@ namespace System.Net.Http
     {
         // This partial implementation contains members common to Windows and Unix running on .NET Core.
 
-        private volatile bool _operationStarted = false;
+        private bool _operationStarted = false;
         private volatile bool _disposed = false;
 
         public long MaxRequestContentBufferSize

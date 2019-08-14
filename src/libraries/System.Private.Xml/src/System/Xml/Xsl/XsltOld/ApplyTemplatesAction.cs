@@ -26,7 +26,7 @@ namespace System.Xml.Xsl.XsltOld
         //  </xsl:template>
         //
 
-        private static ApplyTemplatesAction s_BuiltInRule = new ApplyTemplatesAction();
+        private static readonly ApplyTemplatesAction s_BuiltInRule = new ApplyTemplatesAction();
 
         internal static ApplyTemplatesAction BuiltInRule()
         {

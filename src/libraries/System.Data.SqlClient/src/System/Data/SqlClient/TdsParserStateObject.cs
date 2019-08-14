@@ -94,8 +94,8 @@ namespace System.Data.SqlClient
 
         // secure password information to be stored
         //  At maximum number of secure string that need to be stored is two; one for login password and the other for new change password
-        private SecureString[] _securePasswords = new SecureString[2] { null, null };
-        private int[] _securePasswordOffsetsInBuffer = new int[2];
+        private readonly SecureString[] _securePasswords = new SecureString[2] { null, null };
+        private readonly int[] _securePasswordOffsetsInBuffer = new int[2];
 
         // This variable is used to track whether another thread has requested a cancel.  The
         // synchronization points are
@@ -111,7 +111,7 @@ namespace System.Data.SqlClient
         // 3) post session close - no attention is allowed
         private bool _cancelled;
         private const int _waitForCancellationLockPollTimeout = 100;
-        private WeakReference _cancellationOwner = new WeakReference(null);
+        private readonly WeakReference _cancellationOwner = new WeakReference(null);
 
         internal bool _hasOpenResult = false;
         // Cache the transaction for which this command was executed so upon completion we can
@@ -131,7 +131,7 @@ namespace System.Data.SqlClient
         //
         // DO NOT USE THIS BUFFER FOR OTHER THINGS.
         // ProcessHeader can be called ANYTIME while doing network reads.
-        private byte[] _partialHeaderBuffer = new byte[TdsEnums.HEADER_LEN];   // Scratch buffer for ProcessHeader
+        private readonly byte[] _partialHeaderBuffer = new byte[TdsEnums.HEADER_LEN];   // Scratch buffer for ProcessHeader
         internal int _partialHeaderBytesRead = 0;
 
         internal _SqlMetaDataSet _cleanupMetaData = null;
@@ -3825,7 +3825,7 @@ namespace System.Data.SqlClient
 
         private class StateSnapshot
         {
-            private List<PacketData> _snapshotInBuffs;
+            private readonly List<PacketData> _snapshotInBuffs;
             private int _snapshotInBuffCurrent = 0;
             private int _snapshotInBytesUsed = 0;
             private int _snapshotInBytesPacket = 0;

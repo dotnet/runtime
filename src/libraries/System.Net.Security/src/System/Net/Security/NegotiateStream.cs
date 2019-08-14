@@ -27,8 +27,8 @@ namespace System.Net.Security
     */
     public partial class NegotiateStream : AuthenticatedStream
     {
-        private NegoState _negoState;
-        private string _package;
+        private readonly NegoState _negoState;
+        private readonly string _package;
         private IIdentity _remoteIdentity;
 
         public NegotiateStream(Stream innerStream) : this(innerStream, false)

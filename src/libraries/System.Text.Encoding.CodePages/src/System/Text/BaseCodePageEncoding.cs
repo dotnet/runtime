@@ -144,7 +144,7 @@ namespace System.Text
         private const int CODEPAGE_HEADER_SIZE = 48;
 
         // Initialize our global stuff
-        private static byte[] s_codePagesDataHeader = new byte[CODEPAGE_DATA_FILE_HEADER_SIZE];
+        private static readonly byte[] s_codePagesDataHeader = new byte[CODEPAGE_DATA_FILE_HEADER_SIZE];
         protected static Stream s_codePagesEncodingDataStream = GetEncodingDataStream(CODE_PAGE_DATA_FILE_NAME);
         protected static readonly object s_streamLock = new object(); // this lock used when reading from s_codePagesEncodingDataStream
 

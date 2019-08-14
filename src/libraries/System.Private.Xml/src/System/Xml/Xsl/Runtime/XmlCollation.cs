@@ -31,9 +31,9 @@ namespace System.Xml.Xsl.Runtime
         private const string kaGEmode = "ka-GE_modern";
 
         // Invariant: compops == (options & Options.mask)
-        private CultureInfo _cultInfo;
+        private readonly CultureInfo _cultInfo;
         private Options _options;
-        private CompareOptions _compops;
+        private readonly CompareOptions _compops;
 
 
         /// <summary>
@@ -135,7 +135,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Singleton collation that sorts according to Unicode code points.
         /// </summary>
-        private static XmlCollation s_cp = new XmlCollation(CultureInfo.InvariantCulture, new Options((int)CompareOptions.Ordinal));
+        private static readonly XmlCollation s_cp = new XmlCollation(CultureInfo.InvariantCulture, new Options((int)CompareOptions.Ordinal));
 
         internal static XmlCollation CodePointCollation
         {

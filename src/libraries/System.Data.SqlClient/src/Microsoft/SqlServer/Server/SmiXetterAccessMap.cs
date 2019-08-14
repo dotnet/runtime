@@ -19,7 +19,7 @@ namespace Microsoft.SqlServer.Server
         private const bool _ = false;
 
 
-        private static bool[,] s_isSetterAccessValid = {
+        private static readonly bool[,] s_isSetterAccessValid = {
             // Setters as columns (abbreviated from XetterTypeCode names)
             // SqlDbTypes as rows
             //      Current difference between setters and getters is that character setters do

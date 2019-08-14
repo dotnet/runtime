@@ -13,7 +13,7 @@ namespace System.Xml.Xsl.XsltOld
         private const int EndEvent = 4;
         private const int Advance = 5;
 
-        private static CopyNamespacesAction s_Action = new CopyNamespacesAction();
+        private static readonly CopyNamespacesAction s_Action = new CopyNamespacesAction();
 
         internal static CopyNamespacesAction GetAction()
         {

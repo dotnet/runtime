@@ -64,7 +64,7 @@ namespace System.Xml.Xsl.Xslt
         public Dictionary<QilName, AttributeSet> AttributeSets = new Dictionary<QilName, AttributeSet>();
         public Dictionary<string, NsAlias> NsAliases = new Dictionary<string, NsAlias>();
 
-        private Dictionary<string, int> _moduleOrder = new Dictionary<string, int>();
+        private readonly Dictionary<string, int> _moduleOrder = new Dictionary<string, int>();
 
         public Compiler(XsltSettings settings, bool debug, string scriptAssemblyPath)
         {
@@ -365,7 +365,7 @@ namespace System.Xml.Xsl.Xslt
 
         private class CompilerErrorComparer : IComparer<CompilerError>
         {
-            private Dictionary<string, int> _moduleOrder;
+            private readonly Dictionary<string, int> _moduleOrder;
 
             public CompilerErrorComparer(Dictionary<string, int> moduleOrder)
             {

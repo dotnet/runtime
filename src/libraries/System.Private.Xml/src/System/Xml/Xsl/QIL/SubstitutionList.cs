@@ -16,7 +16,7 @@ namespace System.Xml.Xsl.Qil
     internal sealed class SubstitutionList
     {
         // BUGBUG Find an efficient collection internal class to support this
-        private ArrayList _s;
+        private readonly ArrayList _s;
 
         public SubstitutionList()
         {

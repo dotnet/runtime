@@ -16,8 +16,8 @@ namespace System.Runtime.Serialization
 {
     internal sealed class ReflectionXmlClassReader
     {
-        private ClassDataContract _classContract;
-        private ReflectionReader _reflectionReader;
+        private readonly ClassDataContract _classContract;
+        private readonly ReflectionReader _reflectionReader;
 
         public ReflectionXmlClassReader(ClassDataContract classDataContract)
         {
@@ -34,7 +34,7 @@ namespace System.Runtime.Serialization
 
     internal sealed class ReflectionXmlCollectionReader
     {
-        private ReflectionReader _reflectionReader = new ReflectionXmlReader();
+        private readonly ReflectionReader _reflectionReader = new ReflectionXmlReader();
 
         public object ReflectionReadCollection(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString itemName, XmlDictionaryString itemNamespace, CollectionDataContract collectionContract)
         {

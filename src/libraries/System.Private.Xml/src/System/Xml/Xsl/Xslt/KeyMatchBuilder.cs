@@ -17,7 +17,7 @@ namespace System.Xml.Xsl.Xslt
     internal class KeyMatchBuilder : XPathBuilder, XPathPatternParser.IPatternBuilder
     {
         private int _depth = 0;
-        private PathConvertor _convertor;
+        private readonly PathConvertor _convertor;
 
         public KeyMatchBuilder(IXPathEnvironment env) : base(env)
         {
@@ -63,7 +63,7 @@ namespace System.Xml.Xsl.Xslt
         // It works only on pathes.
         internal class PathConvertor : QilReplaceVisitor
         {
-            private new XPathQilFactory f;
+            private new readonly XPathQilFactory f;
             private QilNode _fixup;
             public PathConvertor(XPathQilFactory f) : base(f.BaseFactory)
             {

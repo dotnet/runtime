@@ -24,9 +24,9 @@ namespace System.DirectoryServices.AccountManagement
         protected DirectoryEntry ctxBase;
         private const int mappingIndex = 0;
 
-        private object _ctxBaseLock = new object(); // when mutating ctxBase
+        private readonly object _ctxBaseLock = new object(); // when mutating ctxBase
 
-        private bool _ownCtxBase;    // if true, we "own" ctxBase and must Dispose of it when we're done
+        private readonly bool _ownCtxBase;    // if true, we "own" ctxBase and must Dispose of it when we're done
 
         private bool _disposed = false;
 

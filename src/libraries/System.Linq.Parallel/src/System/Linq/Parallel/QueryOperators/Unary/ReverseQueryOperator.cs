@@ -169,7 +169,7 @@ namespace System.Linq.Parallel
 
         private class ReverseQueryOperatorResults : UnaryQueryOperatorResults
         {
-            private int _count; // The number of elements in child results
+            private readonly int _count; // The number of elements in child results
 
             public static QueryResults<TSource> NewResults(
                 QueryResults<TSource> childQueryResults, ReverseQueryOperator<TSource> op,

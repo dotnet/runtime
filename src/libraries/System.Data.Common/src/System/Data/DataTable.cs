@@ -105,12 +105,12 @@ namespace System.Data
         private bool _savedEnforceConstraints = false;
         private bool _inDataLoad = false;
         private bool _initialLoad;
-        private bool _schemaLoading = false;
+        private readonly bool _schemaLoading = false;
         private bool _enforceConstraints = true;
         internal bool _suspendEnforceConstraints = false;
 
         protected internal bool fInitInProgress = false;
-        private bool _inLoad = false;
+        private readonly bool _inLoad = false;
         internal bool _fInLoadDiffgram = false;
 
         private byte _isTypedDataTable; // 0 == unknown, 1 = yes, 2 = No

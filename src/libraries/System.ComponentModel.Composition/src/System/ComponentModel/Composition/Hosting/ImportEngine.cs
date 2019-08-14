@@ -22,7 +22,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         private volatile bool _isDisposed;
         private ExportProvider _sourceProvider;
-        private Stack<PartManager> _recursionStateStack = new Stack<PartManager>();
+        private readonly Stack<PartManager> _recursionStateStack = new Stack<PartManager>();
         private ConditionalWeakTable<ComposablePart, PartManager> _partManagers = new ConditionalWeakTable<ComposablePart, PartManager>();
         private RecompositionManager _recompositionManager = new RecompositionManager();
         private readonly CompositionLock _lock = null;

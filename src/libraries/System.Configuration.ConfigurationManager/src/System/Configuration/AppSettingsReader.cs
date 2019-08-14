@@ -13,9 +13,9 @@ namespace System.Configuration
     /// </summary>
     public class AppSettingsReader
     {
-        private NameValueCollection _map;
-        private static Type s_stringType = typeof(string);
-        private static string NullString = "None";
+        private readonly NameValueCollection _map;
+        private static readonly Type s_stringType = typeof(string);
+        private const string NullString = "None";
 
         public AppSettingsReader()
         {

@@ -61,8 +61,8 @@ namespace System.IO.Packaging
 
         #region Private Members
 
-        private InternalRelationshipCollection _relationships;
-        private string _filter;
+        private readonly InternalRelationshipCollection _relationships;
+        private readonly string _filter;
 
         #endregion
 
@@ -181,8 +181,8 @@ namespace System.IO.Packaging
 
             #region Private Members
 
-            private IEnumerator<PackageRelationship> _enumerator;
-            private string _filter;
+            private readonly IEnumerator<PackageRelationship> _enumerator;
+            private readonly string _filter;
 
             #endregion Private Members
         }

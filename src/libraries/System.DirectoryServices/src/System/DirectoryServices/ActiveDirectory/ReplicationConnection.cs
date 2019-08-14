@@ -27,7 +27,7 @@ namespace System.DirectoryServices.ActiveDirectory
         internal readonly DirectoryEntry cachedDirectoryEntry = null;
         internal bool existingConnection = false;
         private bool _disposed = false;
-        private bool _checkADAM = false;
+        private readonly bool _checkADAM = false;
         private bool _isADAMServer = false;
         private int _options = 0;
 

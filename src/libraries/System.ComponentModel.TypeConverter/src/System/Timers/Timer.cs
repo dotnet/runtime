@@ -23,7 +23,7 @@ namespace System.Timers
         private ISynchronizeInvoke _synchronizingObject;
         private bool _disposed;
         private Threading.Timer _timer;
-        private TimerCallback _callback;
+        private readonly TimerCallback _callback;
         private object _cookie;
 
         /// <summary>

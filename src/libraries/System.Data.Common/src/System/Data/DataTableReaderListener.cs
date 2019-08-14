@@ -10,7 +10,7 @@ namespace System.Data
     {
         private DataTable _currentDataTable = null;
         private bool _isSubscribed = false;
-        private WeakReference _readerWeak;
+        private readonly WeakReference _readerWeak;
 
         internal DataTableReaderListener(DataTableReader reader)
         {

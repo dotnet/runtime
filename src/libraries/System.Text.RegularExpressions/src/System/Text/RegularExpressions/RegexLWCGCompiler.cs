@@ -12,7 +12,7 @@ namespace System.Text.RegularExpressions
     internal sealed class RegexLWCGCompiler : RegexCompiler
     {
         private static int s_regexCount = 0;
-        private static Type[] s_paramTypes = new Type[] { typeof(RegexRunner) };
+        private static readonly Type[] s_paramTypes = new Type[] { typeof(RegexRunner) };
 
         /*
          * The top-level driver. Initializes everything then calls the Generate* methods.

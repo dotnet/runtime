@@ -124,19 +124,19 @@ namespace System.Threading
         private bool _disposed;
 
         // Odd phases event
-        private ManualResetEventSlim _oddEvent;
+        private readonly ManualResetEventSlim _oddEvent;
 
         // Even phases event
-        private ManualResetEventSlim _evenEvent;
+        private readonly ManualResetEventSlim _evenEvent;
 
         // The execution context of the creator thread
-        private ExecutionContext? _ownerThreadContext;
+        private readonly ExecutionContext? _ownerThreadContext;
 
         // The EC callback that invokes the post phase action
         private static ContextCallback? s_invokePostPhaseAction;
 
         // Post phase action after each phase
-        private Action<Barrier>? _postPhaseAction;
+        private readonly Action<Barrier>? _postPhaseAction;
 
         // In case the post phase action throws an exception, wraps it in BarrierPostPhaseException
         private Exception? _exception;

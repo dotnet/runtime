@@ -6,7 +6,7 @@ namespace System.DirectoryServices.Protocols
 {
     public abstract class DirectoryResponse : DirectoryOperation
     {
-        private DirectoryControl[] _directoryControls;
+        private readonly DirectoryControl[] _directoryControls;
         internal Uri[] _directoryReferral;
 
         internal DirectoryResponse(string dn, DirectoryControl[] controls, ResultCode result, string message, Uri[] referral)

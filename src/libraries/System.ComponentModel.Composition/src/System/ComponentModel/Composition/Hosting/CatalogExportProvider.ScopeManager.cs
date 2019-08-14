@@ -11,8 +11,8 @@ namespace System.ComponentModel.Composition.Hosting
     {
         internal class ScopeManager : ExportProvider
         {
-            private CompositionScopeDefinition _scopeDefinition;
-            private CatalogExportProvider _catalogExportProvider;
+            private readonly CompositionScopeDefinition _scopeDefinition;
+            private readonly CatalogExportProvider _catalogExportProvider;
 
             public ScopeManager(CatalogExportProvider catalogExportProvider, CompositionScopeDefinition scopeDefinition)
             {

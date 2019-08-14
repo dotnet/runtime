@@ -46,11 +46,11 @@ namespace System.Management
     /// </summary>
     internal class ManagementClassGenerator
     {
-        private string VSVERSION = "8.0.0.0";
+        private readonly string VSVERSION = "8.0.0.0";
         private string OriginalServer = string.Empty;
         private string OriginalNamespace = string.Empty;
         private string OriginalClassName = string.Empty;
-        private string OriginalPath = string.Empty;
+        private readonly string OriginalPath = string.Empty;
         private bool bSingletonClass = false;
         private bool bUnsignedSupported = true;
         private string NETNamespace = string.Empty;
@@ -66,7 +66,7 @@ namespace System.Management
         private ManagementClass classobj;
         private CodeDomProvider cp;
         private TextWriter tw = null;
-        private string genFileName = string.Empty;
+        private readonly string genFileName = string.Empty;
         private CodeTypeDeclaration cc;
         private CodeTypeDeclaration ccc;
         private CodeTypeDeclaration ecc;
@@ -90,11 +90,11 @@ namespace System.Management
         private CodeAttributeDeclaration cad;
 
 
-        private ArrayList arrKeyType    = new ArrayList(5);
-        private ArrayList arrKeys        = new ArrayList(5);
-        private ArrayList BitMap        = new ArrayList(5);
+        private readonly ArrayList arrKeyType    = new ArrayList(5);
+        private readonly ArrayList arrKeys        = new ArrayList(5);
+        private readonly ArrayList BitMap        = new ArrayList(5);
         private ArrayList BitValues        = new ArrayList(5);
-        private ArrayList ValueMap        = new ArrayList(5);
+        private readonly ArrayList ValueMap        = new ArrayList(5);
         private ArrayList Values        = new ArrayList(5);
 
         private SortedList PublicProperties = new SortedList(StringComparer.OrdinalIgnoreCase);

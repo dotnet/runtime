@@ -10,7 +10,7 @@ namespace System.ServiceModel.Syndication
     // NOTE: This class implements Clone so if you add any members, please update the copy ctor
     public class TextSyndicationContent : SyndicationContent
     {
-        private TextSyndicationContentKind _textKind;
+        private readonly TextSyndicationContentKind _textKind;
 
         public TextSyndicationContent(string text) : this(text, TextSyndicationContentKind.Plaintext)
         {

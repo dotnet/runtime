@@ -34,7 +34,7 @@ namespace Windows.UI.Xaml
     [StructLayout(LayoutKind.Sequential)]
     public struct Duration
     {
-        private TimeSpan _timeSpan;
+        private readonly TimeSpan _timeSpan;
         private DurationType _durationType;
 
         public Duration(TimeSpan timeSpan)

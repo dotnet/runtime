@@ -22,7 +22,7 @@ namespace System.Linq.Parallel
     /// <typeparam name="T"></typeparam>
     internal sealed class SynchronousChannelMergeEnumerator<T> : MergeEnumerator<T>
     {
-        private SynchronousChannel<T>[] _channels; // The channel array we will enumerate, from left-to-right.
+        private readonly SynchronousChannel<T>[] _channels; // The channel array we will enumerate, from left-to-right.
         private int _channelIndex; // The current channel index. This moves through the array as we enumerate.
         private T _currentElement; // The last element remembered during enumeration.
 

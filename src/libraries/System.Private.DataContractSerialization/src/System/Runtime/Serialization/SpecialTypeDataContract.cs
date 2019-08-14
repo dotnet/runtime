@@ -8,7 +8,7 @@ namespace System.Runtime.Serialization
 {
     internal sealed class SpecialTypeDataContract : DataContract
     {
-        private SpecialTypeDataContractCriticalHelper _helper;
+        private readonly SpecialTypeDataContractCriticalHelper _helper;
 
         public SpecialTypeDataContract(Type type, XmlDictionaryString name, XmlDictionaryString ns) : base(new SpecialTypeDataContractCriticalHelper(type, name, ns))
         {

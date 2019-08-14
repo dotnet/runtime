@@ -33,7 +33,7 @@ namespace System.DirectoryServices.AccountManagement
             get { return _debugLogFile; }
         }
 
-        private DebugLevel _debugLevel = GlobalConfig.DefaultDebugLevel;
-        private string _debugLogFile = null;
+        private readonly DebugLevel _debugLevel = GlobalConfig.DefaultDebugLevel;
+        private readonly string _debugLogFile = null;
     }
 }

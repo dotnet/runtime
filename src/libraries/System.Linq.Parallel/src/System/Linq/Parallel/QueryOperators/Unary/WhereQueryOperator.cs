@@ -22,7 +22,7 @@ namespace System.Linq.Parallel
     internal sealed class WhereQueryOperator<TInputOutput> : UnaryQueryOperator<TInputOutput, TInputOutput>
     {
         // Predicate function. Used to filter out non-matching elements during execution.
-        private Func<TInputOutput, bool> _predicate;
+        private readonly Func<TInputOutput, bool> _predicate;
 
         //---------------------------------------------------------------------------------------
         // Initializes a new where operator.
@@ -103,7 +103,7 @@ namespace System.Linq.Parallel
         {
             private readonly QueryOperatorEnumerator<TInputOutput, TKey> _source; // The data source to enumerate.
             private readonly Func<TInputOutput, bool> _predicate; // The predicate used for filtering.
-            private CancellationToken _cancellationToken;
+            private readonly CancellationToken _cancellationToken;
             private Shared<int> _outputLoopCount;
 
             //-----------------------------------------------------------------------------------

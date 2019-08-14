@@ -33,11 +33,11 @@ namespace System.Xml
         private State _state;
 
         // settings
-        private bool _checkCharacters;
-        private bool _ignoreWhitespace;
-        private bool _ignoreComments;
-        private bool _ignorePis;
-        private DtdProcessing _dtdProcessing; // -1 means do nothing
+        private readonly bool _checkCharacters;
+        private readonly bool _ignoreWhitespace;
+        private readonly bool _ignoreComments;
+        private readonly bool _ignorePis;
+        private readonly DtdProcessing _dtdProcessing; // -1 means do nothing
 
         private XmlNodeType _lastNodeType;
         private XmlCharType _xmlCharType;

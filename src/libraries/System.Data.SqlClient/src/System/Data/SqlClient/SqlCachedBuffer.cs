@@ -22,7 +22,7 @@ namespace System.Data.SqlClient
         public static readonly SqlCachedBuffer Null = new SqlCachedBuffer();
         private const int _maxChunkSize = 2048; // Arbitrary value for chunk size. Revisit this later for better perf
 
-        private List<byte[]> _cachedBytes;
+        private readonly List<byte[]> _cachedBytes;
 
         private SqlCachedBuffer()
         {

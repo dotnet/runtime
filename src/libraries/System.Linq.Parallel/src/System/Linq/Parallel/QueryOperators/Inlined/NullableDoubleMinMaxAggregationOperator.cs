@@ -108,8 +108,8 @@ namespace System.Linq.Parallel
 
         private class NullableDoubleMinMaxAggregationOperatorEnumerator<TKey> : InlinedAggregationOperatorEnumerator<double?>
         {
-            private QueryOperatorEnumerator<double?, TKey> _source; // The source data.
-            private int _sign; // The sign for comparisons (-1 means min, 1 means max).
+            private readonly QueryOperatorEnumerator<double?, TKey> _source; // The source data.
+            private readonly int _sign; // The sign for comparisons (-1 means min, 1 means max).
 
             //---------------------------------------------------------------------------------------
             // Instantiates a new aggregation operator.

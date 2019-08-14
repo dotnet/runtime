@@ -642,12 +642,12 @@ namespace System.IO.Packaging
         #endregion Private Properties
 
         #region Private Members
-        private List<PackageRelationship> _relationships;
+        private readonly List<PackageRelationship> _relationships;
         private bool _dirty;    // true if we have uncommitted changes to _relationships
-        private Package _package;     // our package - in case _sourcePart is null
-        private PackagePart _sourcePart;      // owning part - null if package is the owner
+        private readonly Package _package;     // our package - in case _sourcePart is null
+        private readonly PackagePart _sourcePart;      // owning part - null if package is the owner
         private PackagePart _relationshipPart;  // where our relationships are persisted
-        private Uri _uri;           // the URI of our relationship part
+        private readonly Uri _uri;           // the URI of our relationship part
 
         //------------------------------------------------------
         //

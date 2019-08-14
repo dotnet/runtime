@@ -1560,14 +1560,14 @@ namespace System.IO.Packaging
         /// </summary>
         private class CompatibilityScope
         {
-            private CompatibilityScope _previous;
-            private int _depth;
+            private readonly CompatibilityScope _previous;
+            private readonly int _depth;
             private bool _fallbackSeen;
             private bool _inAlternateContent;
             private bool _inProcessContent;
             private bool _choiceTaken;
             private bool _choiceSeen;
-            private XmlCompatibilityReader _reader;
+            private readonly XmlCompatibilityReader _reader;
             private Dictionary<string, object> _ignorables;
             private Dictionary<string, ProcessContentSet> _processContents;
             private Dictionary<string, PreserveItemSet> _preserveElements;
@@ -1837,8 +1837,8 @@ namespace System.IO.Packaging
         private class ProcessContentSet
         {
             private bool _all;
-            private string _namespaceName;
-            private XmlCompatibilityReader _reader;
+            private readonly string _namespaceName;
+            private readonly XmlCompatibilityReader _reader;
             private Dictionary<string, object> _names;
 
             public ProcessContentSet(string namespaceName, XmlCompatibilityReader reader)
@@ -1892,8 +1892,8 @@ namespace System.IO.Packaging
         private class PreserveItemSet
         {
             private bool _all;
-            private string _namespaceName;
-            private XmlCompatibilityReader _reader;
+            private readonly string _namespaceName;
+            private readonly XmlCompatibilityReader _reader;
             private Dictionary<string, string> _names;
 
             public PreserveItemSet(string namespaceName, XmlCompatibilityReader reader)
@@ -1948,12 +1948,12 @@ namespace System.IO.Packaging
         #region Private Fields
         private bool _inAttribute; // for Save/Restore ReaderPosition
         private string _currentName; // for Save/Restore ReaderPosition
-        private IsXmlNamespaceSupportedCallback _namespaceCallback;
+        private readonly IsXmlNamespaceSupportedCallback _namespaceCallback;
         private Dictionary<string, object> _knownNamespaces;
-        private Dictionary<string, string> _namespaceMap = new Dictionary<string, string>();
+        private readonly Dictionary<string, string> _namespaceMap = new Dictionary<string, string>();
         private Dictionary<string, object> _subsumingNamespaces;
-        private Dictionary<string, HandleElementCallback> _elementHandler = new Dictionary<string, HandleElementCallback>();
-        private Dictionary<string, HandleAttributeCallback> _attributeHandler = new Dictionary<string, HandleAttributeCallback>();
+        private readonly Dictionary<string, HandleElementCallback> _elementHandler = new Dictionary<string, HandleElementCallback>();
+        private readonly Dictionary<string, HandleAttributeCallback> _attributeHandler = new Dictionary<string, HandleAttributeCallback>();
         private int _depthOffset; // offset for Depth method, to account for elements that should be ignored by client
         private int _ignoredAttributeCount;
         private int _attributePosition; // used for ScanForCompatibility / HandleIgnorable
@@ -1975,7 +1975,7 @@ namespace System.IO.Packaging
         private const string XmlnsDeclaration = "xmlns";
         private const string MarkupCompatibilityURI = "http://schemas.openxmlformats.org/markup-compatibility/2006";
 
-        private static string[] s_predefinedNamespaces = new string[4] {
+        private static readonly string[] s_predefinedNamespaces = new string[4] {
             "http://www.w3.org/2000/xmlns/",
             "http://www.w3.org/XML/1998/namespace",
             "http://www.w3.org/2001/XMLSchema-instance",

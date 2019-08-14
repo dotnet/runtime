@@ -227,7 +227,7 @@ namespace System.ComponentModel
         /// </summary>
         private class CultureComparer : IComparer
         {
-            private CultureInfoConverter _converter;
+            private readonly CultureInfoConverter _converter;
 
             public CultureComparer(CultureInfoConverter cultureConverter)
             {

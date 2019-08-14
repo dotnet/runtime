@@ -11,6 +11,6 @@ namespace Internal.Cryptography
 {
     internal abstract partial class PkcsPal
     {
-        private static PkcsPal s_instance = new PkcsPalWindows();
+        private static readonly PkcsPal s_instance = new PkcsPalWindows();
     }
 }

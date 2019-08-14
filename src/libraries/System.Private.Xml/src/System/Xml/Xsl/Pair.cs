@@ -9,8 +9,8 @@ namespace System.Xml.Xsl
 {
     internal struct Int32Pair
     {
-        private int _left;
-        private int _right;
+        private readonly int _left;
+        private readonly int _right;
 
         public Int32Pair(int left, int right)
         {
@@ -40,8 +40,8 @@ namespace System.Xml.Xsl
 
     internal struct StringPair
     {
-        private string _left;
-        private string _right;
+        private readonly string _left;
+        private readonly string _right;
 
         public StringPair(string left, string right)
         {

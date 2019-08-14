@@ -8,8 +8,8 @@ namespace System.Xml.Xsl.XsltOld
 {
     internal sealed class TextOnlyOutput : IRecordOutput
     {
-        private Processor _processor;
-        private TextWriter _writer;
+        private readonly Processor _processor;
+        private readonly TextWriter _writer;
 
         internal XsltOutput Output
         {

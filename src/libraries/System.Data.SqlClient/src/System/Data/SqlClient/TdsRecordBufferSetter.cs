@@ -17,10 +17,10 @@ namespace System.Data.SqlClient
     {
         #region Fields (private)
 
-        private TdsValueSetter[] _fieldSetters;      // setters for individual fields
+        private readonly TdsValueSetter[] _fieldSetters;      // setters for individual fields
 
-        private TdsParserStateObject _stateObj;          // target to write to
-        private SmiMetaData _metaData;          // metadata describing value
+        private readonly TdsParserStateObject _stateObj;          // target to write to
+        private readonly SmiMetaData _metaData;          // metadata describing value
 #if DEBUG
         private const int ReadyForToken = -1;         // must call new/end element next
         private const int EndElementsCalled = -2;     // already called EndElements, can only call Close

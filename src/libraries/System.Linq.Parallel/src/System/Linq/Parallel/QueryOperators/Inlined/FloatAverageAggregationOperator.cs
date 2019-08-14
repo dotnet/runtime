@@ -85,7 +85,7 @@ namespace System.Linq.Parallel
 
         private class FloatAverageAggregationOperatorEnumerator<TKey> : InlinedAggregationOperatorEnumerator<Pair<double, long>>
         {
-            private QueryOperatorEnumerator<float, TKey> _source; // The source data.
+            private readonly QueryOperatorEnumerator<float, TKey> _source; // The source data.
 
             //---------------------------------------------------------------------------------------
             // Instantiates a new aggregation operator.

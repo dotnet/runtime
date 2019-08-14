@@ -12,7 +12,7 @@ namespace MS.Internal.Xml.XPath
 {
     internal class XPathParser
     {
-        private XPathScanner _scanner;
+        private readonly XPathScanner _scanner;
 
         private XPathParser(XPathScanner scanner)
         {
@@ -800,10 +800,10 @@ namespace MS.Internal.Xml.XPath
 
         private class ParamInfo
         {
-            private Function.FunctionType _ftype;
-            private int _minargs;
-            private int _maxargs;
-            private XPathResultType[] _argTypes;
+            private readonly Function.FunctionType _ftype;
+            private readonly int _minargs;
+            private readonly int _maxargs;
+            private readonly XPathResultType[] _argTypes;
 
             public Function.FunctionType FType { get { return _ftype; } }
             public int Minargs { get { return _minargs; } }
@@ -819,7 +819,7 @@ namespace MS.Internal.Xml.XPath
             }
         } //ParamInfo
 
-        private static Dictionary<string, ParamInfo> s_functionTable = CreateFunctionTable();
+        private static readonly Dictionary<string, ParamInfo> s_functionTable = CreateFunctionTable();
         private static Dictionary<string, ParamInfo> CreateFunctionTable()
         {
             Dictionary<string, ParamInfo> table = new Dictionary<string, ParamInfo>(36);
@@ -853,7 +853,7 @@ namespace MS.Internal.Xml.XPath
             return table;
         }
 
-        private static Dictionary<string, Axis.AxisType> s_AxesTable = CreateAxesTable();
+        private static readonly Dictionary<string, Axis.AxisType> s_AxesTable = CreateAxesTable();
         private static Dictionary<string, Axis.AxisType> CreateAxesTable()
         {
             Dictionary<string, Axis.AxisType> table = new Dictionary<string, Axis.AxisType>(13);

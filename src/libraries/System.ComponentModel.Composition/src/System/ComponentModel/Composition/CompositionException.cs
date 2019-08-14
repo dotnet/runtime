@@ -22,7 +22,7 @@ namespace System.ComponentModel.Composition
     [DebuggerDisplay("{Message}")]
     public class CompositionException : Exception
     {
-        private ReadOnlyCollection<CompositionError> _errors;
+        private readonly ReadOnlyCollection<CompositionError> _errors;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="CompositionException"/> class.

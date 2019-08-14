@@ -14,7 +14,7 @@ namespace System.Xml
 {
     internal sealed class DocumentXPathNavigator : XPathNavigator, IHasXmlNode
     {
-        private XmlDocument _document; // owner document
+        private readonly XmlDocument _document; // owner document
         private XmlNode _source; // navigator position
         private int _attributeIndex; // index in attribute collection for attribute
         private XmlElement _namespaceParent; // parent for namespace
@@ -2186,7 +2186,7 @@ namespace System.Xml
     // An iterator that matches no nodes
     internal sealed class DocumentXPathNodeIterator_Empty : XPathNodeIterator
     {
-        private XPathNavigator _nav;
+        private readonly XPathNavigator _nav;
 
         internal DocumentXPathNodeIterator_Empty(DocumentXPathNavigator nav) { _nav = nav.Clone(); }
         internal DocumentXPathNodeIterator_Empty(DocumentXPathNodeIterator_Empty other) { _nav = other._nav.Clone(); }
@@ -2200,7 +2200,7 @@ namespace System.Xml
     // An iterator that can match any child elements that match the Match condition (overridden in the derived class)
     internal abstract class DocumentXPathNodeIterator_ElemDescendants : XPathNodeIterator
     {
-        private DocumentXPathNavigator _nav;
+        private readonly DocumentXPathNavigator _nav;
         private int _level;
         private int _position;
 
@@ -2326,7 +2326,7 @@ namespace System.Xml
     // Iterate over all element children that have a given namespace but irrespective of the localName
     internal class DocumentXPathNodeIterator_ElemChildren_NoLocalName : DocumentXPathNodeIterator_ElemDescendants
     {
-        private string _nsAtom;
+        private readonly string _nsAtom;
 
         internal DocumentXPathNodeIterator_ElemChildren_NoLocalName(DocumentXPathNavigator nav, string nsAtom) : base(nav)
         {

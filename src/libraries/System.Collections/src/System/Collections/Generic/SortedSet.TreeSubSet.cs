@@ -15,8 +15,8 @@ namespace System.Collections.Generic
         /// </summary>
         internal sealed class TreeSubSet : SortedSet<T>, ISerializable, IDeserializationCallback
         {
-            private SortedSet<T> _underlying;
-            private T _min, _max;
+            private readonly SortedSet<T> _underlying;
+            private readonly T _min, _max;
             // keeps track of whether the count variable is up to date
             // up to date -> _countVersion = _underlying.version
             // not up to date -> _countVersion < _underlying.version
@@ -25,7 +25,7 @@ namespace System.Collections.Generic
             // for instance, you could allow this subset to be defined for i > 10. The set will throw if
             // anything <= 10 is added, but there is no upper bound. These features Head(), Tail(), were punted
             // in the spec, and are not available, but the framework is there to make them available at some point.
-            private bool _lBoundActive, _uBoundActive;
+            private readonly bool _lBoundActive, _uBoundActive;
             // used to see if the count is out of date
 
 #if DEBUG

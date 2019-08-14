@@ -6,8 +6,8 @@ namespace System.Data
 {
     public sealed class StateChangeEventArgs : EventArgs
     {
-        private ConnectionState _originalState;
-        private ConnectionState _currentState;
+        private readonly ConnectionState _originalState;
+        private readonly ConnectionState _currentState;
 
         public StateChangeEventArgs(ConnectionState originalState, ConnectionState currentState)
         {

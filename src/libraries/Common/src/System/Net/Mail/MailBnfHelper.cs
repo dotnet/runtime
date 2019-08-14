@@ -277,7 +277,7 @@ namespace System.Net.Mime
             return data.Substring(start, offset - start);
         }
 
-        private static string[] s_months = new string[] { null, "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+        private static readonly string[] s_months = new string[] { null, "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
 
         internal static string GetDateTimeString(DateTime value, StringBuilder builder)
         {

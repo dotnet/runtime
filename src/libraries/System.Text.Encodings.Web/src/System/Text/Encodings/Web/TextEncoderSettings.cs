@@ -13,7 +13,7 @@ namespace System.Text.Encodings.Web
     /// </summary>
     public class TextEncoderSettings
     {
-        private AllowedCharactersBitmap _allowedCharactersBitmap;
+        private readonly AllowedCharactersBitmap _allowedCharactersBitmap;
 
         /// <summary>
         /// Instantiates an empty filter (allows no code points through by default).

@@ -13,8 +13,8 @@ namespace System.IO.Packaging
     internal static class PackageXmlStringTable
     {
         // Fields
-        private static NameTable s_nameTable = new NameTable();
-        private static XmlStringTableStruct[] s_xmlstringtable = new XmlStringTableStruct[0x1b];
+        private static readonly NameTable s_nameTable = new NameTable();
+        private static readonly XmlStringTableStruct[] s_xmlstringtable = new XmlStringTableStruct[0x1b];
 
         // Methods
         static PackageXmlStringTable()
@@ -130,9 +130,9 @@ namespace System.IO.Packaging
         [StructLayout(LayoutKind.Sequential)]
         private struct XmlStringTableStruct
         {
-            private object _nameString;
-            private PackageXmlEnum _namespace;
-            private string _valueType;
+            private readonly object _nameString;
+            private readonly PackageXmlEnum _namespace;
+            private readonly string _valueType;
             internal XmlStringTableStruct(object nameString, PackageXmlEnum ns, string valueType)
             {
                 _nameString = nameString;

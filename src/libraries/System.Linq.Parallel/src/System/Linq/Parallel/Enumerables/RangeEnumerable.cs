@@ -18,8 +18,8 @@ namespace System.Linq.Parallel
     /// </summary>
     internal class RangeEnumerable : ParallelQuery<int>, IParallelPartitionable<int>
     {
-        private int _from; // Lowest index to include.
-        private int _count; // Number of indices to include.
+        private readonly int _from; // Lowest index to include.
+        private readonly int _count; // Number of indices to include.
 
         //-----------------------------------------------------------------------------------
         // Constructs a new range enumerable object for the specified range.

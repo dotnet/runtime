@@ -10,7 +10,7 @@ namespace System.Xml.XPath
     {
         private class XDocumentNavigable : IXPathNavigable
         {
-            private XNode _node;
+            private readonly XNode _node;
             public XDocumentNavigable(XNode n)
             {
                 _node = n;

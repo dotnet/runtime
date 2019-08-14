@@ -6,7 +6,7 @@ namespace System.Transactions
 {
     public class TransactionInformation
     {
-        private InternalTransaction _internalTransaction;
+        private readonly InternalTransaction _internalTransaction;
 
         internal TransactionInformation(InternalTransaction internalTransaction)
         {

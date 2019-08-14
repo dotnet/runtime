@@ -14,8 +14,8 @@ namespace System.Xml.Schema
 {
     internal class XNodeValidator
     {
-        private XmlSchemaSet schemas;
-        private ValidationEventHandler validationEventHandler;
+        private readonly XmlSchemaSet schemas;
+        private readonly ValidationEventHandler validationEventHandler;
 
         private XObject source;
         private bool addSchemaInfo;
@@ -24,8 +24,8 @@ namespace System.Xml.Schema
 
         private Dictionary<XmlSchemaInfo, XmlSchemaInfo> schemaInfos;
         private ArrayList defaultAttributes;
-        private XName xsiTypeName;
-        private XName xsiNilName;
+        private readonly XName xsiTypeName;
+        private readonly XName xsiNilName;
 
         public XNodeValidator(XmlSchemaSet schemas, ValidationEventHandler validationEventHandler)
         {

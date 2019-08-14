@@ -24,7 +24,7 @@ namespace Microsoft.XmlSerializer.Generator
         }
 
         private static string s_references = string.Empty;
-        private static Dictionary<string, string> s_referencedic = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private static readonly Dictionary<string, string> s_referencedic = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         private int Run(string[] args)
         {

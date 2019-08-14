@@ -10,7 +10,7 @@ namespace System.Drawing.Internal
 {
     internal sealed class GPStream : Interop.Ole32.IStream
     {
-        private Stream _dataStream;
+        private readonly Stream _dataStream;
 
         // to support seeking ahead of the stream length...
         private long _virtualPosition = -1;

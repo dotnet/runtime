@@ -101,8 +101,8 @@ namespace System.Linq.Parallel
 
         private class DecimalMinMaxAggregationOperatorEnumerator<TKey> : InlinedAggregationOperatorEnumerator<decimal>
         {
-            private QueryOperatorEnumerator<decimal, TKey> _source; // The source data.
-            private int _sign; // The sign for comparisons (-1 means min, 1 means max).
+            private readonly QueryOperatorEnumerator<decimal, TKey> _source; // The source data.
+            private readonly int _sign; // The sign for comparisons (-1 means min, 1 means max).
 
             //---------------------------------------------------------------------------------------
             // Instantiates a new aggregation operator.

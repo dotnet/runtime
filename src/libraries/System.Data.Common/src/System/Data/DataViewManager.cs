@@ -14,11 +14,11 @@ namespace System.Data
     {
         private DataViewSettingCollection _dataViewSettingsCollection;
         private DataSet _dataSet;
-        private DataViewManagerListItemTypeDescriptor _item;
-        private bool _locked;
+        private readonly DataViewManagerListItemTypeDescriptor _item;
+        private readonly bool _locked;
         internal int _nViews = 0;
 
-        private static NotSupportedException s_notSupported = new NotSupportedException();
+        private static readonly NotSupportedException s_notSupported = new NotSupportedException();
 
         public DataViewManager() : this(null, false) { }
 

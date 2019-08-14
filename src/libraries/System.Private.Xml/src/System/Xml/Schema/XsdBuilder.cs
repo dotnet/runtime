@@ -119,8 +119,8 @@ namespace System.Xml.Schema
         //required for Parsing QName
         private class BuilderNamespaceManager : XmlNamespaceManager
         {
-            private XmlNamespaceManager _nsMgr;
-            private XmlReader _reader;
+            private readonly XmlNamespaceManager _nsMgr;
+            private readonly XmlReader _reader;
 
             public BuilderNamespaceManager(XmlNamespaceManager nsMgr, XmlReader reader)
             {
@@ -628,19 +628,19 @@ namespace System.Xml.Schema
         private static readonly string[] s_useStringValues = { "optional", "prohibited", "required" };
         private static readonly string[] s_processContentsStringValues = { "skip", "lax", "strict" };
 
-        private XmlReader _reader;
-        private PositionInfo _positionInfo;
+        private readonly XmlReader _reader;
+        private readonly PositionInfo _positionInfo;
         private XsdEntry _currentEntry;
         private XsdEntry _nextEntry;
         private bool _hasChild;
-        private HWStack _stateHistory = new HWStack(STACK_INCREMENT);
-        private Stack _containerStack = new Stack();
-        private XmlNameTable _nameTable;
-        private SchemaNames _schemaNames;
-        private XmlNamespaceManager _namespaceManager;
+        private readonly HWStack _stateHistory = new HWStack(STACK_INCREMENT);
+        private readonly Stack _containerStack = new Stack();
+        private readonly XmlNameTable _nameTable;
+        private readonly SchemaNames _schemaNames;
+        private readonly XmlNamespaceManager _namespaceManager;
         private bool _canIncludeImport;
 
-        private XmlSchema _schema;
+        private readonly XmlSchema _schema;
         private XmlSchemaObject _xso;
         private XmlSchemaElement _element;
         private XmlSchemaAny _anyElement;
@@ -677,8 +677,8 @@ namespace System.Xml.Schema
         private XmlNode[] _markup;
         private XmlSchemaRedefine _redefine;
 
-        private ValidationEventHandler _validationEventHandler;
-        private ArrayList _unhandledAttributes = new ArrayList();
+        private readonly ValidationEventHandler _validationEventHandler;
+        private readonly ArrayList _unhandledAttributes = new ArrayList();
         private Dictionary<string, string> _namespaces;
 
         internal XsdBuilder(

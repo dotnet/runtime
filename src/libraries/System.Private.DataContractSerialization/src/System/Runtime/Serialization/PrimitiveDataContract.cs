@@ -15,7 +15,7 @@ namespace System.Runtime.Serialization
     {
         internal static readonly PrimitiveDataContract NullContract = new NullPrimitiveDataContract();
 
-        private PrimitiveDataContractCriticalHelper _helper;
+        private readonly PrimitiveDataContractCriticalHelper _helper;
 
         protected PrimitiveDataContract(Type type, XmlDictionaryString name, XmlDictionaryString ns) : base(new PrimitiveDataContractCriticalHelper(type, name, ns))
         {

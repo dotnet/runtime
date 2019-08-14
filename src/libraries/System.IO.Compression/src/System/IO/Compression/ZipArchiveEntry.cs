@@ -42,8 +42,8 @@ namespace System.IO.Compression
         // only apply to update mode
         private List<ZipGenericExtraField> _cdUnknownExtraFields;
         private List<ZipGenericExtraField> _lhUnknownExtraFields;
-        private byte[] _fileComment;
-        private CompressionLevel? _compressionLevel;
+        private readonly byte[] _fileComment;
+        private readonly CompressionLevel? _compressionLevel;
 
         // Initializes, attaches it to archive
         internal ZipArchiveEntry(ZipArchive archive, ZipCentralDirectoryFileHeader cd)
@@ -1119,10 +1119,10 @@ namespace System.IO.Compression
         private sealed partial class DirectToArchiveWriterStream : Stream
         {
             private long _position;
-            private CheckSumAndSizeWriteStream _crcSizeStream;
+            private readonly CheckSumAndSizeWriteStream _crcSizeStream;
             private bool _everWritten;
             private bool _isDisposed;
-            private ZipArchiveEntry _entry;
+            private readonly ZipArchiveEntry _entry;
             private bool _usedZip64inLH;
             private bool _canWrite;
 

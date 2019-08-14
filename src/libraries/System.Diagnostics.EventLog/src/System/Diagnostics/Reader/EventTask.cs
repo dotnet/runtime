@@ -16,8 +16,8 @@ namespace System.Diagnostics.Eventing.Reader
         private string _displayName;
         private Guid _guid;
         private bool _dataReady;
-        private ProviderMetadata _pmReference;
-        private object _syncObject;
+        private readonly ProviderMetadata _pmReference;
+        private readonly object _syncObject;
 
         internal EventTask(int value, ProviderMetadata pmReference)
         {

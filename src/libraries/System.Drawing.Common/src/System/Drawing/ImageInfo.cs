@@ -20,13 +20,13 @@ namespace System.Drawing
         {
             private const int PropertyTagFrameDelay = 0x5100;
 
-            private Image _image;
+            private readonly Image _image;
             private int _frame;
-            private int _frameCount;
+            private readonly int _frameCount;
             private bool _frameDirty;
-            private bool _animated;
+            private readonly bool _animated;
             private EventHandler _onFrameChangedHandler;
-            private int[] _frameDelay;
+            private readonly int[] _frameDelay;
             private int _frameTimer;
 
             public ImageInfo(Image image)

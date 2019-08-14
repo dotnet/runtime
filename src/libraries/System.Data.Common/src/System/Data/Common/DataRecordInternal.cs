@@ -10,10 +10,10 @@ namespace System.Data.Common
 {
     internal sealed class DataRecordInternal : DbDataRecord, ICustomTypeDescriptor
     {
-        private SchemaInfo[] _schemaInfo;
-        private object[] _values;
+        private readonly SchemaInfo[] _schemaInfo;
+        private readonly object[] _values;
         private PropertyDescriptorCollection _propertyDescriptors;
-        private FieldNameLookup _fieldNameLookup;
+        private readonly FieldNameLookup _fieldNameLookup;
 
         // copy all runtime data information
         internal DataRecordInternal(SchemaInfo[] schemaInfo, object[] values, PropertyDescriptorCollection descriptors, FieldNameLookup fieldNameLookup)

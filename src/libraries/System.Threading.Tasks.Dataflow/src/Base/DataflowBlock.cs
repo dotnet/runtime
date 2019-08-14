@@ -1616,9 +1616,9 @@ namespace System.Threading.Tasks.Dataflow
         private sealed class EncapsulatingPropagator<TInput, TOutput> : IPropagatorBlock<TInput, TOutput>, IReceivableSourceBlock<TOutput>, IDebuggerDisplay
         {
             /// <summary>The target half.</summary>
-            private ITargetBlock<TInput> _target;
+            private readonly ITargetBlock<TInput> _target;
             /// <summary>The source half.</summary>
-            private ISourceBlock<TOutput> _source;
+            private readonly ISourceBlock<TOutput> _source;
 
             public EncapsulatingPropagator(ITargetBlock<TInput> target, ISourceBlock<TOutput> source)
             {
@@ -2186,7 +2186,7 @@ namespace System.Threading.Tasks.Dataflow
             /// A wrapper for the task that represents the completed branch of this choice.
             /// The wrapper is also the sync object used to protect all choice branch's access to shared state.
             /// </summary>
-            private StrongBox<Task> _completed;
+            private readonly StrongBox<Task> _completed;
 
             /// <summary>Initializes the target.</summary>
             /// <param name="completed">The completed wrapper shared between all choice branches.</param>

@@ -13,8 +13,8 @@ namespace System.Runtime.Caching
 {
     internal sealed class FileChangeNotificationSystem : IFileChangeNotificationSystem
     {
-        private Hashtable _dirMonitors;
-        private object _lock;
+        private readonly Hashtable _dirMonitors;
+        private readonly object _lock;
 
         internal class DirectoryMonitor
         {
@@ -23,11 +23,11 @@ namespace System.Runtime.Caching
 
         internal class FileChangeEventTarget
         {
-            private string _fileName;
-            private OnChangedCallback _onChangedCallback;
-            private FileSystemEventHandler _changedHandler;
-            private ErrorEventHandler _errorHandler;
-            private RenamedEventHandler _renamedHandler;
+            private readonly string _fileName;
+            private readonly OnChangedCallback _onChangedCallback;
+            private readonly FileSystemEventHandler _changedHandler;
+            private readonly ErrorEventHandler _errorHandler;
+            private readonly RenamedEventHandler _renamedHandler;
 
             private static bool EqualsIgnoreCase(string s1, string s2)
             {

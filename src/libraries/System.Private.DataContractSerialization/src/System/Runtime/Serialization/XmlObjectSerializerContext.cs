@@ -25,10 +25,10 @@ namespace System.Runtime.Serialization
         private bool _isSerializerKnownDataContractsSetExplicit;
         protected IList<Type> serializerKnownTypeList;
         private int _itemCount;
-        private int _maxItemsInObjectGraph;
-        private StreamingContext _streamingContext;
-        private bool _ignoreExtensionDataObject;
-        private DataContractResolver _dataContractResolver;
+        private readonly int _maxItemsInObjectGraph;
+        private readonly StreamingContext _streamingContext;
+        private readonly bool _ignoreExtensionDataObject;
+        private readonly DataContractResolver _dataContractResolver;
         private KnownTypeDataContractResolver _knownTypeResolver;
 
         internal XmlObjectSerializerContext(XmlObjectSerializer serializer, int maxItemsInObjectGraph, StreamingContext streamingContext, bool ignoreExtensionDataObject,

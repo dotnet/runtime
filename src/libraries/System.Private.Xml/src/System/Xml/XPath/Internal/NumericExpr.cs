@@ -11,9 +11,9 @@ namespace MS.Internal.Xml.XPath
 {
     internal sealed class NumericExpr : ValueQuery
     {
-        private Operator.Op _op;
-        private Query _opnd1;
-        private Query _opnd2;
+        private readonly Operator.Op _op;
+        private readonly Query _opnd1;
+        private readonly Query _opnd2;
 
         public NumericExpr(Operator.Op op, Query opnd1, Query opnd2)
         {

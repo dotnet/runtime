@@ -34,10 +34,10 @@ namespace System.Net.Http.Headers
     //   - Property TransferEncodingChunked: is set to "true".
     public sealed class HttpHeaderValueCollection<T> : ICollection<T> where T : class
     {
-        private HeaderDescriptor _descriptor;
-        private HttpHeaders _store;
-        private T _specialValue;
-        private Action<HttpHeaderValueCollection<T>, T> _validator;
+        private readonly HeaderDescriptor _descriptor;
+        private readonly HttpHeaders _store;
+        private readonly T _specialValue;
+        private readonly Action<HttpHeaderValueCollection<T>, T> _validator;
 
         public int Count
         {

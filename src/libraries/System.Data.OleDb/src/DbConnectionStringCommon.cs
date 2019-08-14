@@ -12,7 +12,7 @@ namespace System.Data.Common
 {
     internal sealed class ReadOnlyCollection<T> : System.Collections.ICollection, ICollection<T>
     {
-        private T[] _items;
+        private readonly T[] _items;
 
         internal ReadOnlyCollection(T[] items)
         {
@@ -87,7 +87,7 @@ namespace System.Data.Common
 
         internal struct Enumerator<K> : IEnumerator<K>, System.Collections.IEnumerator
         { // based on List<T>.Enumerator
-            private K[] _items;
+            private readonly K[] _items;
             private int _index;
 
             internal Enumerator(K[] items)

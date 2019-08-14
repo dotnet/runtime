@@ -26,7 +26,7 @@ namespace System.IO.Compression
 
             internal IntPtr msg;     //char     *msg;      /* last error message, NULL if no error */
 
-            private IntPtr internalState;    //internal state that is not visible to managed code
+            private readonly IntPtr internalState;    //internal state that is not visible to managed code
 
             internal uint availIn;   //uInt     avail_in;  /* number of bytes available at next_in */
             internal uint availOut;  //uInt     avail_out; /* remaining free space at next_out */

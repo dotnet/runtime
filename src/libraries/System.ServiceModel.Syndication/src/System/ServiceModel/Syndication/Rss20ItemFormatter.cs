@@ -12,7 +12,7 @@ namespace System.ServiceModel.Syndication
     [XmlRoot(ElementName = Rss20Constants.ItemTag, Namespace = Rss20Constants.Rss20Namespace)]
     public class Rss20ItemFormatter : SyndicationItemFormatter, IXmlSerializable
     {
-        private Rss20FeedFormatter _feedSerializer;
+        private readonly Rss20FeedFormatter _feedSerializer;
         private bool _preserveAttributeExtensions = true;
         private bool _preserveElementExtensions = true;
         private bool _serializeExtensionsAsAtom;

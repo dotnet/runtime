@@ -13,7 +13,7 @@ namespace System.Runtime.Serialization
     internal sealed class KnownTypeDataContractResolver : DataContractResolver
 #endif
     {
-        private XmlObjectSerializerContext _context;
+        private readonly XmlObjectSerializerContext _context;
 
         internal KnownTypeDataContractResolver(XmlObjectSerializerContext context)
         {

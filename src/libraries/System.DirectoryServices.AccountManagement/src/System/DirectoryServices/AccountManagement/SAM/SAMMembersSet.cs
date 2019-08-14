@@ -572,12 +572,12 @@ namespace System.DirectoryServices.AccountManagement
         // Private fields
         //
 
-        private bool _recursive;
+        private readonly bool _recursive;
 
         private bool _disposed = false;
 
-        private SAMStoreCtx _storeCtx;
-        private DirectoryEntry _ctxBase;
+        private readonly SAMStoreCtx _storeCtx;
+        private readonly DirectoryEntry _ctxBase;
 
         private bool _atBeginning = true;
 
@@ -592,7 +592,7 @@ namespace System.DirectoryServices.AccountManagement
         private Principal _currentFakePrincipal = null;  // current member of the group (if enumerating local group and found a fake pricipal)
 
         private UnsafeNativeMethods.IADsGroup _group;            // the group whose membership we're currently enumerating over
-        private UnsafeNativeMethods.IADsGroup _originalGroup;    // the group whose membership we started off with (before recursing)
+        private readonly UnsafeNativeMethods.IADsGroup _originalGroup;    // the group whose membership we started off with (before recursing)
 
         private IEnumerator _membersEnumerator;         // the current group's membership enumerator
 

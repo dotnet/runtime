@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.Xml
         private string _signatureValueId;
         private KeyInfo _keyInfo;
         private IList _embeddedObjects;
-        private CanonicalXmlNodeList _referencedItems;
+        private readonly CanonicalXmlNodeList _referencedItems;
         private SignedXml _signedXml = null;
 
         internal SignedXml SignedXml

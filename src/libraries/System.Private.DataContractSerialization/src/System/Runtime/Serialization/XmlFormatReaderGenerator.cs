@@ -29,7 +29,7 @@ namespace System.Runtime.Serialization
     internal sealed class XmlFormatReaderGenerator
 #endif
     {
-        private CriticalHelper _helper;
+        private readonly CriticalHelper _helper;
 
         public XmlFormatReaderGenerator()
         {

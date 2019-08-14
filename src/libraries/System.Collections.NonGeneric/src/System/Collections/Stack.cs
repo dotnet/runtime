@@ -219,8 +219,8 @@ namespace System.Collections
 
         private class SyncStack : Stack
         {
-            private Stack _s;
-            private object _root;
+            private readonly Stack _s;
+            private readonly object _root;
 
             internal SyncStack(Stack stack)
             {
@@ -327,9 +327,9 @@ namespace System.Collections
 
         private class StackEnumerator : IEnumerator, ICloneable
         {
-            private Stack _stack;
+            private readonly Stack _stack;
             private int _index;
-            private int _version;
+            private readonly int _version;
             private object _currentElement;
 
             internal StackEnumerator(Stack stack)
@@ -387,7 +387,7 @@ namespace System.Collections
 
         internal class StackDebugView
         {
-            private Stack _stack;
+            private readonly Stack _stack;
 
             public StackDebugView(Stack stack)
             {

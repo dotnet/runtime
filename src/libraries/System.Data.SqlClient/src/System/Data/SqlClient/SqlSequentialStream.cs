@@ -12,10 +12,10 @@ namespace System.Data.SqlClient
     internal sealed class SqlSequentialStream : System.IO.Stream
     {
         private SqlDataReader _reader;  // The SqlDataReader that we are reading data from
-        private int _columnIndex;       // The index of out column in the table
+        private readonly int _columnIndex;       // The index of out column in the table
         private Task _currentTask;      // Holds the current task being processed
         private int _readTimeout;       // Read timeout for this stream in ms (for Stream.ReadTimeout)
-        private CancellationTokenSource _disposalTokenSource;    // Used to indicate that a cancellation is requested due to disposal
+        private readonly CancellationTokenSource _disposalTokenSource;    // Used to indicate that a cancellation is requested due to disposal
 
         internal SqlSequentialStream(SqlDataReader reader, int columnIndex)
         {

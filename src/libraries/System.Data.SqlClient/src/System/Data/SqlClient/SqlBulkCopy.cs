@@ -29,7 +29,7 @@ namespace System.Data.SqlClient
 
     internal sealed class Row
     {
-        private object[] _dataFields;
+        private readonly object[] _dataFields;
 
         internal Row(int rowCount)
         {
@@ -174,8 +174,8 @@ namespace System.Data.SqlClient
 
         private bool _enableStreaming = false;
         private int _batchSize;
-        private bool _ownConnection;
-        private SqlBulkCopyOptions _copyOptions;
+        private readonly bool _ownConnection;
+        private readonly SqlBulkCopyOptions _copyOptions;
         private int _timeout = DefaultCommandTimeout;
         private string _destinationTableName;
         private int _rowsCopied;
@@ -193,7 +193,7 @@ namespace System.Data.SqlClient
 
         private SqlConnection _connection;
         private SqlTransaction _internalTransaction;
-        private SqlTransaction _externalTransaction;
+        private readonly SqlTransaction _externalTransaction;
 
         private ValueSourceType _rowSourceType = ValueSourceType.Unspecified;
         private DataRow _currentRow;

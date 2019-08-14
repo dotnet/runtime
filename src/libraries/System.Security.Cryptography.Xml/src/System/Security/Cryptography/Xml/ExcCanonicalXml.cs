@@ -13,8 +13,8 @@ namespace System.Security.Cryptography.Xml
 {
     internal class ExcCanonicalXml
     {
-        private CanonicalXmlDocument _c14nDoc;
-        private ExcAncestralNamespaceContextManager _ancMgr;
+        private readonly CanonicalXmlDocument _c14nDoc;
+        private readonly ExcAncestralNamespaceContextManager _ancMgr;
 
         internal ExcCanonicalXml(Stream inputStream, bool includeComments, string inclusiveNamespacesPrefixList, XmlResolver resolver, string strBaseUri)
         {

@@ -16,7 +16,7 @@ namespace Internal.Cryptography.Pal.AnyOS
     {
         internal sealed class ManagedDecryptorPal : DecryptorPal
         {
-            private byte[] _dataCopy;
+            private readonly byte[] _dataCopy;
             private EnvelopedDataAsn _envelopedData;
 
             public ManagedDecryptorPal(

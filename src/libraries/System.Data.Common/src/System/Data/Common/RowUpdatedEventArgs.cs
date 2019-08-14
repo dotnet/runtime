@@ -10,9 +10,9 @@ namespace System.Data.Common
 
     public class RowUpdatedEventArgs : EventArgs
     {
-        private IDbCommand _command;
+        private readonly IDbCommand _command;
         private StatementType _statementType;
-        private DataTableMapping _tableMapping;
+        private readonly DataTableMapping _tableMapping;
         private Exception _errors;
 
         private DataRow _dataRow;

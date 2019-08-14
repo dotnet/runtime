@@ -9,7 +9,7 @@ namespace MS.Internal.Xml.XPath
 {
     internal class XPathSingletonIterator : ResetableIterator
     {
-        private XPathNavigator _nav;
+        private readonly XPathNavigator _nav;
         private int _position;
 
         public XPathSingletonIterator(XPathNavigator nav)

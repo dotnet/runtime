@@ -17,7 +17,7 @@ namespace System.Xml
     // Iterates over non-attribute nodes
     internal sealed class RegionIterator : BaseRegionIterator
     {
-        private XmlBoundElement _rowElement;
+        private readonly XmlBoundElement _rowElement;
         private XmlNode _currentNode;
 
         internal RegionIterator(XmlBoundElement rowElement) : base(((XmlDataDocument)(rowElement.OwnerDocument)).Mapper)

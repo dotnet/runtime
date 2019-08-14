@@ -19,7 +19,7 @@ namespace System.Collections.Generic
         [NonSerialized]
         private ValueCollection? _values;
 
-        private TreeSet<KeyValuePair<TKey, TValue>> _set; // Do not rename (binary serialization)
+        private readonly TreeSet<KeyValuePair<TKey, TValue>> _set; // Do not rename (binary serialization)
 
         public SortedDictionary() : this((IComparer<TKey>?)null)
         {
@@ -445,7 +445,7 @@ namespace System.Collections.Generic
         public struct Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>, IDictionaryEnumerator
         {
             private TreeSet<KeyValuePair<TKey, TValue>>.Enumerator _treeEnum;
-            private int _getEnumeratorRetType;  // What should Enumerator.Current return?
+            private readonly int _getEnumeratorRetType;  // What should Enumerator.Current return?
 
             internal const int KeyValuePair = 1;
             internal const int DictEntry = 2;
@@ -557,7 +557,7 @@ namespace System.Collections.Generic
         [DebuggerDisplay("Count = {Count}")]
         public sealed class KeyCollection : ICollection<TKey>, ICollection, IReadOnlyCollection<TKey>
         {
-            private SortedDictionary<TKey, TValue> _dictionary;
+            private readonly SortedDictionary<TKey, TValue> _dictionary;
 
             public KeyCollection(SortedDictionary<TKey, TValue> dictionary)
             {
@@ -741,7 +741,7 @@ namespace System.Collections.Generic
         [DebuggerDisplay("Count = {Count}")]
         public sealed class ValueCollection : ICollection<TValue>, ICollection, IReadOnlyCollection<TValue>
         {
-            private SortedDictionary<TKey, TValue> _dictionary;
+            private readonly SortedDictionary<TKey, TValue> _dictionary;
 
             public ValueCollection(SortedDictionary<TKey, TValue> dictionary)
             {

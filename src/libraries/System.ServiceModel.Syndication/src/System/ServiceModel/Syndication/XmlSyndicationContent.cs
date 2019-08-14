@@ -13,7 +13,7 @@ namespace System.ServiceModel.Syndication
     public class XmlSyndicationContent : SyndicationContent
     {
         private XmlBuffer _contentBuffer;
-        private string _type;
+        private readonly string _type;
 
         // Saves the element in the reader to the buffer (attributes preserved)
         // Type is populated from type attribute on reader

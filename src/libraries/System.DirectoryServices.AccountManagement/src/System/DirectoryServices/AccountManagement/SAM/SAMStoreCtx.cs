@@ -17,20 +17,20 @@ namespace System.DirectoryServices.AccountManagement
 {
     internal partial class SAMStoreCtx : StoreCtx
     {
-        private DirectoryEntry _ctxBase;
-        private object _ctxBaseLock = new object(); // when mutating ctxBase
+        private readonly DirectoryEntry _ctxBase;
+        private readonly object _ctxBaseLock = new object(); // when mutating ctxBase
 
-        private bool _ownCtxBase;    // if true, we "own" ctxBase and must Dispose of it when we're done
+        private readonly bool _ownCtxBase;    // if true, we "own" ctxBase and must Dispose of it when we're done
 
         private bool _disposed = false;
 
         internal NetCred Credentials { get { return _credentials; } }
-        private NetCred _credentials = null;
+        private readonly NetCred _credentials = null;
 
         internal AuthenticationTypes AuthTypes { get { return _authTypes; } }
-        private AuthenticationTypes _authTypes;
+        private readonly AuthenticationTypes _authTypes;
 
-        private ContextOptions _contextOptions;
+        private readonly ContextOptions _contextOptions;
 
         static SAMStoreCtx()
         {
@@ -1007,7 +1007,7 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        private object _computerInfoLock = new object();
+        private readonly object _computerInfoLock = new object();
         private Nullable<bool> _isLSAM = null;
         private string _machineUserSuppliedName = null;
         private string _machineFlatName = null;

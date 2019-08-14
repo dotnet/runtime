@@ -18,7 +18,7 @@ namespace System.Xml.Xsl.XsltOld
         private const int Subtree = 6;
         private const int EndEvent = 7;
 
-        private static CopyNodeSetAction s_Action = new CopyNodeSetAction();
+        private static readonly CopyNodeSetAction s_Action = new CopyNodeSetAction();
 
         internal static CopyNodeSetAction GetAction()
         {

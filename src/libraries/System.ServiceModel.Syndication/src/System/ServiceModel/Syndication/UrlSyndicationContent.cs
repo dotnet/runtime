@@ -10,7 +10,7 @@ namespace System.ServiceModel.Syndication
     // NOTE: This class implements Clone so if you add any members, please update the copy ctor
     public class UrlSyndicationContent : SyndicationContent
     {
-        private string _mediaType;
+        private readonly string _mediaType;
 
         public UrlSyndicationContent(Uri url, string mediaType) : base()
         {

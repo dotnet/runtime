@@ -42,15 +42,15 @@ namespace System.DirectoryServices.AccountManagement
             get { return _matchType; }
         }
 
-        private object[] _value;
-        private bool _filterOnly;
-        private Type _type;
-        private MatchType _matchType;
+        private readonly object[] _value;
+        private readonly bool _filterOnly;
+        private readonly Type _type;
+        private readonly MatchType _matchType;
     }
 
     internal class ExtensionCache
     {
-        private Dictionary<string, ExtensionCacheValue> _cache = new Dictionary<string, ExtensionCacheValue>();
+        private readonly Dictionary<string, ExtensionCacheValue> _cache = new Dictionary<string, ExtensionCacheValue>();
 
         internal ExtensionCache() { }
 

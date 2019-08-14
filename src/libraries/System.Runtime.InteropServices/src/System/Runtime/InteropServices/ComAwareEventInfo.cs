@@ -13,7 +13,7 @@ namespace System.Runtime.InteropServices
 {
     public class ComAwareEventInfo : EventInfo
     {
-        private EventInfo _innerEventInfo;
+        private readonly EventInfo _innerEventInfo;
 
         public ComAwareEventInfo(Type type, string eventName)
         {

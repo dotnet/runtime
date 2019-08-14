@@ -589,8 +589,8 @@ namespace System.Management
     [Serializable]
     public class ManagementException : SystemException
     {
-        private ManagementBaseObject errorObject = null;
-        private ManagementStatus     errorCode = 0;
+        private readonly ManagementBaseObject errorObject = null;
+        private readonly ManagementStatus     errorCode = 0;
 
         internal static void ThrowWithExtendedInfo(ManagementStatus errorCode)
         {

@@ -8,7 +8,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 {
     internal class ReflectionType : ReflectionMember
     {
-        private Type _type;
+        private readonly Type _type;
 
         public ReflectionType(Type type)
         {

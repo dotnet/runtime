@@ -11,7 +11,7 @@ namespace System.Xml
     {
         private byte[] _leftOverBytes;
         private int _leftOverBytesCount;
-        private char[] _charsLine;
+        private readonly char[] _charsLine;
 
         internal const int Base64LineSize = 1024;
         internal const int LineSizeInBytes = Base64LineSize / 4 * 3;
@@ -108,7 +108,7 @@ namespace System.Xml
 
     internal partial class XmlRawWriterBase64Encoder : Base64Encoder
     {
-        private XmlRawWriter _rawWriter;
+        private readonly XmlRawWriter _rawWriter;
 
         internal XmlRawWriterBase64Encoder(XmlRawWriter rawWriter)
         {
@@ -123,7 +123,7 @@ namespace System.Xml
 
     internal partial class XmlTextWriterBase64Encoder : Base64Encoder
     {
-        private XmlTextEncoder _xmlTextEncoder;
+        private readonly XmlTextEncoder _xmlTextEncoder;
 
         internal XmlTextWriterBase64Encoder(XmlTextEncoder xmlTextEncoder)
         {

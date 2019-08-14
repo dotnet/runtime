@@ -13,13 +13,13 @@ namespace System.Data.SqlClient
     internal sealed class SqlSequentialTextReader : System.IO.TextReader
     {
         private SqlDataReader _reader;  // The SqlDataReader that we are reading data from
-        private int _columnIndex;       // The index of out column in the table
-        private Encoding _encoding;     // Encoding for this character stream
-        private Decoder _decoder;       // Decoder based on the encoding (NOTE: Decoders are stateful as they are designed to process streams of data)
+        private readonly int _columnIndex;       // The index of out column in the table
+        private readonly Encoding _encoding;     // Encoding for this character stream
+        private readonly Decoder _decoder;       // Decoder based on the encoding (NOTE: Decoders are stateful as they are designed to process streams of data)
         private byte[] _leftOverBytes;  // Bytes leftover from the last Read() operation - this can be null if there were no bytes leftover (Possible optimization: re-use the same array?)
         private int _peekedChar;        // The last character that we peeked at (or -1 if we haven't peeked at anything)
         private Task _currentTask;      // The current async task
-        private CancellationTokenSource _disposalTokenSource;    // Used to indicate that a cancellation is requested due to disposal
+        private readonly CancellationTokenSource _disposalTokenSource;    // Used to indicate that a cancellation is requested due to disposal
 
         internal SqlSequentialTextReader(SqlDataReader reader, int columnIndex, Encoding encoding)
         {
@@ -478,7 +478,7 @@ namespace System.Data.SqlClient
 
     internal sealed class SqlUnicodeEncoding : UnicodeEncoding
     {
-        private static SqlUnicodeEncoding s_singletonEncoding = new SqlUnicodeEncoding();
+        private static readonly SqlUnicodeEncoding s_singletonEncoding = new SqlUnicodeEncoding();
 
         private SqlUnicodeEncoding() : base(bigEndian: false, byteOrderMark: false, throwOnInvalidBytes: false)
         { }

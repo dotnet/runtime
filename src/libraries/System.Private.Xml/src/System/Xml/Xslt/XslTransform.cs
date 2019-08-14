@@ -36,7 +36,7 @@ namespace System.Xml.Xsl
         private List<TheQuery> _QueryStore;
         private RootAction _RootAction;
 
-        private IXsltDebugger _debugger;
+        private readonly IXsltDebugger _debugger;
 
         public XslTransform() { }
 

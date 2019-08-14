@@ -31,12 +31,12 @@ namespace System.Runtime.Caching
         private DateTime _lastTrimTime;
         private int _pollingInterval;
         private GCHandleRef<Timer> _timerHandleRef;
-        private object _timerLock;
+        private readonly object _timerLock;
         private long _totalCountBeforeTrim;
 
         private CacheMemoryMonitor _cacheMemoryMonitor;
-        private MemoryCache _memoryCache;
-        private PhysicalMemoryMonitor _physicalMemoryMonitor;
+        private readonly MemoryCache _memoryCache;
+        private readonly PhysicalMemoryMonitor _physicalMemoryMonitor;
 
         // private
 

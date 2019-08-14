@@ -15,7 +15,7 @@ namespace System.Xml.Xsl.Runtime
     [EditorBrowsable(EditorBrowsableState.Never)]
     public sealed class XmlILIndex
     {
-        private Dictionary<string, XmlQueryNodeSequence> _table;
+        private readonly Dictionary<string, XmlQueryNodeSequence> _table;
 
         /// <summary>
         /// This constructor is internal so that external users cannot construct it (and therefore we do not have to test it separately).

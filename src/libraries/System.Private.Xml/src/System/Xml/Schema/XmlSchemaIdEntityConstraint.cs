@@ -12,7 +12,7 @@ namespace System.Xml.Schema
     {
         private string _name;
         private XmlSchemaXPath _selector;
-        private XmlSchemaObjectCollection _fields = new XmlSchemaObjectCollection();
+        private readonly XmlSchemaObjectCollection _fields = new XmlSchemaObjectCollection();
         private XmlQualifiedName _qualifiedName = XmlQualifiedName.Empty;
         private CompiledIdentityConstraint _compiledConstraint = null;
 

@@ -12,7 +12,7 @@ namespace System.Net
 {
     internal class ServiceNameStore
     {
-        private List<string> _serviceNames;
+        private readonly List<string> _serviceNames;
         private ServiceNameCollection _serviceNameCollection;
 
         public ServiceNameCollection ServiceNames

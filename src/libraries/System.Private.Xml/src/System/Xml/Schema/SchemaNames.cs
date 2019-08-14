@@ -9,7 +9,7 @@ namespace System.Xml.Schema
 
     internal sealed class SchemaNames
     {
-        private XmlNameTable _nameTable;
+        private readonly XmlNameTable _nameTable;
 
         public string NsDataType;
         public string NsDataTypeAlias;

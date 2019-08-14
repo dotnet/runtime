@@ -10,7 +10,7 @@ namespace System.Net.Mail
     //streams are read only; return of 0 means end of server's reply
     internal class SmtpReplyReader
     {
-        private SmtpReplyReaderFactory _reader;
+        private readonly SmtpReplyReaderFactory _reader;
 
         internal SmtpReplyReader(SmtpReplyReaderFactory reader)
         {

@@ -43,10 +43,10 @@ namespace Microsoft.Win32
 
         private volatile SafeRegistryHandle _hkey;
         private volatile string _keyName;
-        private volatile bool _remoteKey;
+        private readonly bool _remoteKey;
         private volatile StateFlags _state;
         private volatile RegistryKeyPermissionCheck _checkMode;
-        private volatile RegistryView _regView = RegistryView.Default;
+        private readonly RegistryView _regView = RegistryView.Default;
 
         /// <summary>
         /// Creates a RegistryKey. This key is bound to hkey, if writable is <b>false</b> then no write operations will be allowed.

@@ -2842,7 +2842,7 @@ namespace System.Data
 
     internal sealed class XmlIgnoreNamespaceReader : XmlNodeReader
     {
-        private List<string> _namespacesToIgnore;
+        private readonly List<string> _namespacesToIgnore;
         //
         // Constructor
         //

@@ -25,14 +25,14 @@ namespace System.Xml.Xsl.Xslt
 
     internal class Stylesheet : StylesheetLevel
     {
-        private Compiler _compiler;
+        private readonly Compiler _compiler;
         public List<Uri> ImportHrefs = new List<Uri>();
         public List<XslNode> GlobalVarPars = new List<XslNode>();
 
         // xsl:attribute-set/@name -> AttributeSet
         public Dictionary<QilName, AttributeSet> AttributeSets = new Dictionary<QilName, AttributeSet>();
 
-        private int _importPrecedence;
+        private readonly int _importPrecedence;
         private int _orderNumber = 0;
 
         /*

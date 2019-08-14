@@ -26,13 +26,13 @@ namespace System.Xml
     {
         private const int MaxTextChunk = 2048;
 
-        private PrefixHandle _prefix;
-        private StringHandle _localName;
+        private readonly PrefixHandle _prefix;
+        private readonly StringHandle _localName;
         private int[] _rowOffsets;
         private OnXmlDictionaryReaderClose _onClose;
         private bool _buffered;
         private int _maxBytesPerRead;
-        private static byte[] s_charType = new byte[256]
+        private static readonly byte[] s_charType = new byte[256]
             {
                 /*  0 (.) */
                          CharType.None,

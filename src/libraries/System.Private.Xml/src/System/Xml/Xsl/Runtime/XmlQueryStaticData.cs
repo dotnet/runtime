@@ -25,15 +25,15 @@ namespace System.Xml.Xsl.Runtime
         // Format version marker to support versioning: (major << 8) | minor
         private const int CurrentFormatVersion = (0 << 8) | 0;
 
-        private XmlWriterSettings _defaultWriterSettings;
-        private IList<WhitespaceRule> _whitespaceRules;
-        private string[] _names;
-        private StringPair[][] _prefixMappingsList;
-        private Int32Pair[] _filters;
-        private XmlQueryType[] _types;
-        private XmlCollation[] _collations;
-        private string[] _globalNames;
-        private EarlyBoundInfo[] _earlyBound;
+        private readonly XmlWriterSettings _defaultWriterSettings;
+        private readonly IList<WhitespaceRule> _whitespaceRules;
+        private readonly string[] _names;
+        private readonly StringPair[][] _prefixMappingsList;
+        private readonly Int32Pair[] _filters;
+        private readonly XmlQueryType[] _types;
+        private readonly XmlCollation[] _collations;
+        private readonly string[] _globalNames;
+        private readonly EarlyBoundInfo[] _earlyBound;
 
 #if FEATURE_COMPILED_XSL
         /// <summary>

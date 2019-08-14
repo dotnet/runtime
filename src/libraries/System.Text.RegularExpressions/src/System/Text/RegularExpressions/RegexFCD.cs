@@ -523,7 +523,7 @@ namespace System.Text.RegularExpressions
 
     internal sealed class RegexFC
     {
-        private RegexCharClass _cc;
+        private readonly RegexCharClass _cc;
         public bool _nullable;
 
         public RegexFC(bool nullable)

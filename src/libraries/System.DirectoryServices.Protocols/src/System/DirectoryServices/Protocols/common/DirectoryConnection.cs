@@ -11,7 +11,7 @@ namespace System.DirectoryServices.Protocols
     public abstract class DirectoryConnection
     {
         internal NetworkCredential _directoryCredential;
-        private X509CertificateCollection _certificatesCollection;
+        private readonly X509CertificateCollection _certificatesCollection;
         internal TimeSpan _connectionTimeOut = new TimeSpan(0, 0, 30);
         internal DirectoryIdentifier _directoryIdentifier;
 

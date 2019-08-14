@@ -492,18 +492,18 @@ namespace System.Diagnostics
             internal Interop.UNICODE_STRING ImageName;
             internal int BasePriority;
             internal IntPtr UniqueProcessId;
-            private UIntPtr Reserved2;
+            private readonly UIntPtr Reserved2;
             internal uint HandleCount;
             internal uint SessionId;
-            private UIntPtr Reserved3;
+            private readonly UIntPtr Reserved3;
             internal UIntPtr PeakVirtualSize;  // SIZE_T
             internal UIntPtr VirtualSize;
-            private uint Reserved4;
+            private readonly uint Reserved4;
             internal UIntPtr PeakWorkingSetSize;  // SIZE_T
             internal UIntPtr WorkingSetSize;  // SIZE_T
-            private UIntPtr Reserved5;
+            private readonly UIntPtr Reserved5;
             internal UIntPtr QuotaPagedPoolUsage;  // SIZE_T
-            private UIntPtr Reserved6;
+            private readonly UIntPtr Reserved6;
             internal UIntPtr QuotaNonPagedPoolUsage;  // SIZE_T
             internal UIntPtr PagefileUsage;  // SIZE_T
             internal UIntPtr PeakPagefileUsage;  // SIZE_T
@@ -515,12 +515,12 @@ namespace System.Diagnostics
         internal unsafe struct SystemThreadInformation
         {
             private fixed long Reserved1[3];
-            private uint Reserved2;
+            private readonly uint Reserved2;
             internal IntPtr StartAddress;
             internal CLIENT_ID ClientId;
             internal int Priority;
             internal int BasePriority;
-            private uint Reserved3;
+            private readonly uint Reserved3;
             internal uint ThreadState;
             internal uint WaitReason;
         }

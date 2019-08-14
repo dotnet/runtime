@@ -11,7 +11,7 @@ namespace System.DirectoryServices.AccountManagement
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = true)]
     public sealed class DirectoryPropertyAttribute : Attribute
     {
-        private string _schemaAttributeName;
+        private readonly string _schemaAttributeName;
         private Nullable<ContextType> _context;
         public DirectoryPropertyAttribute(string schemaAttributeName)
         {
@@ -41,8 +41,8 @@ namespace System.DirectoryServices.AccountManagement
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
     public sealed class DirectoryRdnPrefixAttribute : Attribute
     {
-        private string _rdnPrefix;
-        private Nullable<ContextType> _context;
+        private readonly string _rdnPrefix;
+        private readonly Nullable<ContextType> _context;
 
         public DirectoryRdnPrefixAttribute(string rdnPrefix)
         {
@@ -68,8 +68,8 @@ namespace System.DirectoryServices.AccountManagement
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
     public sealed class DirectoryObjectClassAttribute : Attribute
     {
-        private string _objectClass;
-        private Nullable<ContextType> _context;
+        private readonly string _objectClass;
+        private readonly Nullable<ContextType> _context;
 
         public DirectoryObjectClassAttribute(string objectClass)
         {

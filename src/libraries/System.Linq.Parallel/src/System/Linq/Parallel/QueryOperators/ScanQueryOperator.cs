@@ -119,7 +119,7 @@ namespace System.Linq.Parallel
 
         private class ScanEnumerableQueryOperatorResults : QueryResults<TElement>
         {
-            private IEnumerable<TElement> _data; // The data source for the query
+            private readonly IEnumerable<TElement> _data; // The data source for the query
 
             private QuerySettings _settings; // Settings collected from the query
 

@@ -15,8 +15,8 @@ namespace System.Xml
 {
     public class XmlBinaryWriterSession
     {
-        private PriorityDictionary<string, int> _strings;
-        private PriorityDictionary<IXmlDictionary, IntArray> _maps;
+        private readonly PriorityDictionary<string, int> _strings;
+        private readonly PriorityDictionary<IXmlDictionary, IntArray> _maps;
         private int _nextKey;
 
         public XmlBinaryWriterSession()
@@ -105,7 +105,7 @@ namespace System.Xml
         private class PriorityDictionary<K, V> where K : class
         {
             private Dictionary<K, V> _dictionary;
-            private Entry[] _list;
+            private readonly Entry[] _list;
             private int _listCount;
             private int _now;
 

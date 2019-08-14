@@ -11,7 +11,7 @@ namespace System.ComponentModel.Design
     /// </summary>
     public class DesignerCollection : ICollection
     {
-        private IList _designers;
+        private readonly IList _designers;
 
         /// <summary>
         /// Initializes a new instance of the <see cref='System.ComponentModel.Design.DesignerCollection'/> class

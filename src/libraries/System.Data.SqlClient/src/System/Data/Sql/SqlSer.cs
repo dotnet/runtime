@@ -139,9 +139,9 @@ namespace Microsoft.SqlServer.Server
 
     internal sealed class NormalizedSerializer : Serializer
     {
-        private BinaryOrderedUdtNormalizer _normalizer;
-        private bool _isFixedSize;
-        private int _maxSize;
+        private readonly BinaryOrderedUdtNormalizer _normalizer;
+        private readonly bool _isFixedSize;
+        private readonly int _maxSize;
 
         internal NormalizedSerializer(Type t) : base(t)
         {

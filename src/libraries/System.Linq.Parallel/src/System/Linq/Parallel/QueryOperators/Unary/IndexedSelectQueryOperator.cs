@@ -189,8 +189,8 @@ namespace System.Linq.Parallel
 
         private class IndexedSelectQueryOperatorResults : UnaryQueryOperatorResults
         {
-            private IndexedSelectQueryOperator<TInput, TOutput> _selectOp;  // Operator that generated the results
-            private int _childCount; // The number of elements in child results
+            private readonly IndexedSelectQueryOperator<TInput, TOutput> _selectOp;  // Operator that generated the results
+            private readonly int _childCount; // The number of elements in child results
 
             public static QueryResults<TOutput> NewResults(
                 QueryResults<TInput> childQueryResults, IndexedSelectQueryOperator<TInput, TOutput> op,

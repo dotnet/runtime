@@ -18,12 +18,12 @@ namespace System.Xml
 
     internal class StringHandle : IEquatable<StringHandle>
     {
-        private XmlBufferReader _bufferReader;
+        private readonly XmlBufferReader _bufferReader;
         private StringHandleType _type;
         private int _key;
         private int _offset;
         private int _length;
-        private static string[] s_constStrings = {
+        private static readonly string[] s_constStrings = {
                                             "type",
                                             "root",
                                             "item"

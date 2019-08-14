@@ -11,9 +11,9 @@ namespace MS.Internal.Xml.XPath
 {
     internal sealed class BooleanExpr : ValueQuery
     {
-        private Query _opnd1;
-        private Query _opnd2;
-        private bool _isOr;
+        private readonly Query _opnd1;
+        private readonly Query _opnd2;
+        private readonly bool _isOr;
 
         public BooleanExpr(Operator.Op op, Query opnd1, Query opnd2)
         {

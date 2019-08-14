@@ -14,7 +14,7 @@ namespace System.Xml.Xsl.Qil
     /// </remarks>
     internal sealed class QilFactory
     {
-        private QilTypeChecker _typeCheck;
+        private readonly QilTypeChecker _typeCheck;
 
         public QilFactory()
         {

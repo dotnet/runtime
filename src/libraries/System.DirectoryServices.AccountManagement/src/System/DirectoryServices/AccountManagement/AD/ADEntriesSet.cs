@@ -12,16 +12,16 @@ namespace System.DirectoryServices.AccountManagement
 {
     internal class ADEntriesSet : ResultSet
     {
-        private SearchResultCollection _searchResults;
-        private ADStoreCtx _storeCtx;
+        private readonly SearchResultCollection _searchResults;
+        private readonly ADStoreCtx _storeCtx;
 
-        private IEnumerator _enumerator;
+        private readonly IEnumerator _enumerator;
         private SearchResult _current = null;
         private bool _endReached = false;
 
         private bool _disposed = false;
 
-        private object _discriminant = null;
+        private readonly object _discriminant = null;
 
         internal ADEntriesSet(SearchResultCollection src, ADStoreCtx storeCtx)
         {

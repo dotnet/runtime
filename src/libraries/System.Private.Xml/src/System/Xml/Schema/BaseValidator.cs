@@ -14,11 +14,11 @@ namespace System.Xml.Schema
 
     internal class BaseValidator
     {
-        private XmlSchemaCollection _schemaCollection;
-        private IValidationEventHandling _eventHandling;
-        private XmlNameTable _nameTable;
+        private readonly XmlSchemaCollection _schemaCollection;
+        private readonly IValidationEventHandling _eventHandling;
+        private readonly XmlNameTable _nameTable;
         private SchemaNames _schemaNames;
-        private PositionInfo _positionInfo;
+        private readonly PositionInfo _positionInfo;
         private XmlResolver _xmlResolver;
         private Uri _baseUri;
 

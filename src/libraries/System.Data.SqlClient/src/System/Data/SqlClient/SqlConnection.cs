@@ -37,7 +37,7 @@ namespace System.Data.SqlClient
         private string _accessToken; // Access Token to be used for token based authententication
 
         // connection resiliency
-        private object _reconnectLock = new object();
+        private readonly object _reconnectLock = new object();
         internal Task _currentReconnectionTask;
         private Task _asyncWaitingForReconnection; // current async task waiting for reconnection in non-MARS connections
         private Guid _originalConnectionId = Guid.Empty;
@@ -1084,10 +1084,10 @@ namespace System.Data.SqlClient
 
         private class OpenAsyncRetry
         {
-            private SqlConnection _parent;
-            private TaskCompletionSource<DbConnectionInternal> _retry;
-            private TaskCompletionSource<object> _result;
-            private CancellationTokenRegistration _registration;
+            private readonly SqlConnection _parent;
+            private readonly TaskCompletionSource<DbConnectionInternal> _retry;
+            private readonly TaskCompletionSource<object> _result;
+            private readonly CancellationTokenRegistration _registration;
 
             public OpenAsyncRetry(SqlConnection parent, TaskCompletionSource<DbConnectionInternal> retry, TaskCompletionSource<object> result, CancellationTokenRegistration registration)
             {

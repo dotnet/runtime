@@ -10,8 +10,8 @@ namespace System.Xml.Schema
     /// </summary>
     public class ValidationEventArgs : EventArgs
     {
-        private XmlSchemaException _ex;
-        private XmlSeverityType _severity;
+        private readonly XmlSchemaException _ex;
+        private readonly XmlSeverityType _severity;
 
         internal ValidationEventArgs(XmlSchemaException ex) : base()
         {

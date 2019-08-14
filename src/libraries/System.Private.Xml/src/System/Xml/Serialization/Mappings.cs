@@ -1065,7 +1065,7 @@ namespace System.Xml.Serialization
         private bool _needSchema = true;
 
         // new implementation of the IXmlSerializable
-        private MethodInfo _getSchemaMethod;
+        private readonly MethodInfo _getSchemaMethod;
         private XmlQualifiedName _xsiType;
         private XmlSchemaType _xsdType;
         private XmlSchemaSet _schemas;

@@ -176,7 +176,7 @@ namespace System.DirectoryServices.AccountManagement
         //
         // Note that S.DS (based on code review and testing) and Sys.Storage (based on code review)
         // both seem fine with the "one enumerator per result set" model.
-        private ResultSet _resultSet;
+        private readonly ResultSet _resultSet;
 
         // if true, we're before the start of the ResultSet
         private bool _beforeStart = true;

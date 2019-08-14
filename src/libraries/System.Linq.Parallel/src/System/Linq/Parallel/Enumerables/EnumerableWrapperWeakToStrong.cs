@@ -49,7 +49,7 @@ namespace System.Linq.Parallel
 
         private class WrapperEnumeratorWeakToStrong : IEnumerator<object>
         {
-            private IEnumerator _wrappedEnumerator; // The weakly typed enumerator we've wrapped.
+            private readonly IEnumerator _wrappedEnumerator; // The weakly typed enumerator we've wrapped.
 
             //-----------------------------------------------------------------------------------
             // Wrap the specified enumerator in a new weak-to-strong converter.

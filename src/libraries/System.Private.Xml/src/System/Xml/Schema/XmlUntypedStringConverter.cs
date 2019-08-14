@@ -17,8 +17,8 @@ namespace System.Xml.Schema
     internal class XmlUntypedStringConverter
     {
         // Fields
-        private bool _listsAllowed;
-        private XmlUntypedStringConverter _listItemConverter;
+        private readonly bool _listsAllowed;
+        private readonly XmlUntypedStringConverter _listItemConverter;
 
         // Cached types
         private static readonly Type s_decimalType = typeof(decimal);

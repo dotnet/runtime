@@ -13,8 +13,8 @@ namespace System.Xml.Schema
     internal sealed class SchemaCollectionCompiler : BaseProcessor
     {
         private bool _compileContentModel;
-        private XmlSchemaObjectTable _examplars = new XmlSchemaObjectTable();
-        private Stack _complexTypeStack = new Stack();
+        private readonly XmlSchemaObjectTable _examplars = new XmlSchemaObjectTable();
+        private readonly Stack _complexTypeStack = new Stack();
         private XmlSchema _schema;
 
         public SchemaCollectionCompiler(XmlNameTable nameTable, ValidationEventHandler eventHandler)

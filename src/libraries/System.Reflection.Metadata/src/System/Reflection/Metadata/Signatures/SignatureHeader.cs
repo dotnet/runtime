@@ -15,7 +15,7 @@ namespace System.Reflection.Metadata
     /// </remarks>
     public struct SignatureHeader : IEquatable<SignatureHeader>
     {
-        private byte _rawValue;
+        private readonly byte _rawValue;
         public const byte CallingConventionOrKindMask = 0x0F;
         private const byte maxCallingConvention = (byte)SignatureCallingConvention.VarArgs;
 

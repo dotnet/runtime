@@ -14,7 +14,7 @@ namespace System.Data.OleDb
 {
     public sealed class OleDbException : System.Data.Common.DbException
     {
-        private OleDbErrorCollection oledbErrors;
+        private readonly OleDbErrorCollection oledbErrors;
 
         internal OleDbException(string message, OleDbHResult errorCode, Exception inner) : base(message, inner)
         {

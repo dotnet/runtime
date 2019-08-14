@@ -99,10 +99,10 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         #region Fields
 
-        private byte[] _data = null;
-        private int _dataStartOffs = 0;
+        private readonly byte[] _data = null;
+        private readonly int _dataStartOffs = 0;
         private int _usefulDataLength = 0;
-        private int _maxDataCapacity = 0;
+        private readonly int _maxDataCapacity = 0;
         private GCHandle _pinHandle;
 
         // Pointer to data[dataStartOffs] when data is pinned:

@@ -12,7 +12,7 @@ namespace System.Text
     {
         private readonly Encoding _encoding;
         private readonly byte[] _leadByteRanges = new byte[10]; // Max 5 ranges
-        private int _rangesCount;
+        private readonly int _rangesCount;
         private byte _leftOverLeadByte;
 
         internal DecoderDBCS(Encoding encoding)

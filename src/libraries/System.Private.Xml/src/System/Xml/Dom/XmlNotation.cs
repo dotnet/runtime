@@ -10,9 +10,9 @@ namespace System.Xml
     // Contains a notation declared in the DTD or schema.
     public class XmlNotation : XmlNode
     {
-        private string _publicId;
-        private string _systemId;
-        private string _name;
+        private readonly string _publicId;
+        private readonly string _systemId;
+        private readonly string _name;
 
         internal XmlNotation(string name, string publicId, string systemId, XmlDocument doc) : base(doc)
         {

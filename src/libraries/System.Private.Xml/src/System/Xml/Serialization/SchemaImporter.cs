@@ -20,7 +20,7 @@ namespace System.Xml.Serialization
     {
         private XmlSchemas _schemas;
         private StructMapping _root;
-        private CodeGenerationOptions _options;
+        private readonly CodeGenerationOptions _options;
         private TypeScope _scope;
         private ImportContext _context;
         private bool _rootImported;

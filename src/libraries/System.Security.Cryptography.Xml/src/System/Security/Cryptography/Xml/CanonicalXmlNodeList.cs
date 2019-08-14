@@ -12,7 +12,7 @@ namespace System.Security.Cryptography.Xml
 {
     internal class CanonicalXmlNodeList : XmlNodeList, IList
     {
-        private ArrayList _nodeArray;
+        private readonly ArrayList _nodeArray;
 
         internal CanonicalXmlNodeList()
         {

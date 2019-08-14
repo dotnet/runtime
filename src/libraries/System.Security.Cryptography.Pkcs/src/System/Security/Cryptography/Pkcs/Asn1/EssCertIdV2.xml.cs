@@ -1,7 +1,8 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#pragma warning disable SA1028 // ignore whitespace warnings for generated code
 using System;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -12,12 +13,12 @@ namespace System.Security.Cryptography.Pkcs.Asn1
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct EssCertIdV2
     {
-        private static byte[] s_defaultHashAlgorithm = { 0x30, 0x0B, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01 };
-
+        private static readonly byte[] s_defaultHashAlgorithm = { 0x30, 0x0B, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01 };
+  
         internal System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn HashAlgorithm;
         internal ReadOnlyMemory<byte> Hash;
         internal System.Security.Cryptography.Pkcs.Asn1.CadesIssuerSerial? IssuerSerial;
-
+      
 #if DEBUG
         static EssCertIdV2()
         {
@@ -29,17 +30,17 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             reader.ThrowIfNotEmpty();
         }
 #endif
-
+ 
         internal void Encode(AsnWriter writer)
         {
             Encode(writer, Asn1Tag.Sequence);
         }
-
+    
         internal void Encode(AsnWriter writer, Asn1Tag tag)
         {
             writer.PushSequence(tag);
-
-
+            
+        
             // DEFAULT value handler for HashAlgorithm.
             {
                 using (AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER))
@@ -68,11 +69,11 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         {
             return Decode(Asn1Tag.Sequence, encoded, ruleSet);
         }
-
+        
         internal static EssCertIdV2 Decode(Asn1Tag expectedTag, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
             AsnReader reader = new AsnReader(encoded, ruleSet);
-
+            
             Decode(reader, expectedTag, out EssCertIdV2 decoded);
             reader.ThrowIfNotEmpty();
             return decoded;
@@ -94,7 +95,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             decoded = default;
             AsnReader sequenceReader = reader.ReadSequence(expectedTag);
             AsnReader defaultReader;
-
+            
 
             if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(Asn1Tag.Sequence))
             {

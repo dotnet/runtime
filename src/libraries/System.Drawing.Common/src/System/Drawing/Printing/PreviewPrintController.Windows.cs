@@ -17,7 +17,7 @@ namespace System.Drawing.Printing
     /// </summary>
     public class PreviewPrintController : PrintController
     {
-        private IList _list = new ArrayList(); // list of PreviewPageInfo
+        private readonly IList _list = new ArrayList(); // list of PreviewPageInfo
         private System.Drawing.Graphics _graphics;
         private DeviceContext _dc;
         private bool _antiAlias;

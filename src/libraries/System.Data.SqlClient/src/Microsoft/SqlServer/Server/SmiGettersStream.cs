@@ -16,11 +16,11 @@ namespace Microsoft.SqlServer.Server
 {
     internal class SmiGettersStream : Stream
     {
-        private SmiEventSink_Default _sink;
-        private ITypedGettersV3 _getters;
-        private int _ordinal;
+        private readonly SmiEventSink_Default _sink;
+        private readonly ITypedGettersV3 _getters;
+        private readonly int _ordinal;
         private long _readPosition;
-        private SmiMetaData _metaData;
+        private readonly SmiMetaData _metaData;
 
         internal SmiGettersStream(SmiEventSink_Default sink, ITypedGettersV3 getters, int ordinal, SmiMetaData metaData)
         {

@@ -274,7 +274,7 @@ namespace System.IO.Compression
         private uint _checksum;
 
         private readonly bool _leaveOpenOnClose;
-        private bool _canWrite;
+        private readonly bool _canWrite;
         private bool _isDisposed;
 
         private bool _everWritten;

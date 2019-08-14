@@ -18,7 +18,7 @@ namespace System.Runtime.Serialization
 {
     internal sealed class EnumDataContract : DataContract
     {
-        private EnumDataContractCriticalHelper _helper;
+        private readonly EnumDataContractCriticalHelper _helper;
 
         public EnumDataContract() : base(new EnumDataContractCriticalHelper())
         {
@@ -80,7 +80,7 @@ namespace System.Runtime.Serialization
             private List<long> _values;
             private bool _isULong;
             private bool _isFlags;
-            private bool _hasDataContract;
+            private readonly bool _hasDataContract;
             private XmlDictionaryString[] _childElementNames;
 
             static EnumDataContractCriticalHelper()

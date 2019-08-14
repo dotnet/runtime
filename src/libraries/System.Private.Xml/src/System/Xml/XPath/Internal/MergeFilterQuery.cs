@@ -10,7 +10,7 @@ namespace MS.Internal.Xml.XPath
 {
     internal sealed class MergeFilterQuery : CacheOutputQuery
     {
-        private Query _child;
+        private readonly Query _child;
 
         public MergeFilterQuery(Query input, Query child) : base(input)
         {

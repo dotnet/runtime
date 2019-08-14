@@ -3302,7 +3302,7 @@ namespace System.Xml
 
         private ParseTextState _lastParseTextState;
 
-        private Task<ValueTuple<int, int, int, bool>> _parseText_dummyTask = Task.FromResult(new ValueTuple<int, int, int, bool>(0, 0, 0, false));
+        private readonly Task<ValueTuple<int, int, int, bool>> _parseText_dummyTask = Task.FromResult(new ValueTuple<int, int, int, bool>(0, 0, 0, false));
 
         //To avoid stackoverflow like ParseText->ParseEntity->ParText->..., use a loop and parsing function to implement such call.
         private ValueTask<ValueTuple<int, int, int, bool>> ParseTextAsync(int outOrChars)

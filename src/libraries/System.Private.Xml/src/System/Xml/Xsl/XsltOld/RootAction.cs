@@ -17,9 +17,9 @@ namespace System.Xml.Xsl.XsltOld
 
     internal class Key
     {
-        private XmlQualifiedName _name;
-        private int _matchKey;
-        private int _useKey;
+        private readonly XmlQualifiedName _name;
+        private readonly int _matchKey;
+        private readonly int _useKey;
         private ArrayList _keyNodes;
 
         public Key(XmlQualifiedName name, int matchkey, int usekey)
@@ -66,8 +66,8 @@ namespace System.Xml.Xsl.XsltOld
 
     internal struct DocumentKeyList
     {
-        private XPathNavigator _rootNav;
-        private Hashtable _keyTable;
+        private readonly XPathNavigator _rootNav;
+        private readonly Hashtable _keyTable;
 
         public DocumentKeyList(XPathNavigator rootNav, Hashtable keyTable)
         {
@@ -84,8 +84,8 @@ namespace System.Xml.Xsl.XsltOld
         private const int QueryInitialized = 2;
         private const int RootProcessed = 3;
 
-        private Hashtable _attributeSetTable = new Hashtable();
-        private Hashtable _decimalFormatTable = new Hashtable();
+        private readonly Hashtable _attributeSetTable = new Hashtable();
+        private readonly Hashtable _decimalFormatTable = new Hashtable();
         private List<Key> _keyList;
         private XsltOutput _output;
         public Stylesheet builtInSheet;

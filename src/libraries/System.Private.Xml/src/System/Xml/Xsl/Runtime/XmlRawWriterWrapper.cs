@@ -15,7 +15,7 @@ namespace System.Xml.Xsl.Runtime
     /// </summary>
     internal sealed class XmlRawWriterWrapper : XmlRawWriter
     {
-        private XmlWriter _wrapped;
+        private readonly XmlWriter _wrapped;
 
         public XmlRawWriterWrapper(XmlWriter writer)
         {

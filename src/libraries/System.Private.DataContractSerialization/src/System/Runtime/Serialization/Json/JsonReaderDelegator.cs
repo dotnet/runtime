@@ -10,7 +10,7 @@ namespace System.Runtime.Serialization.Json
 {
     internal class JsonReaderDelegator : XmlReaderDelegator
     {
-        private DateTimeFormat _dateTimeFormat;
+        private readonly DateTimeFormat _dateTimeFormat;
         private DateTimeArrayJsonHelperWithString _dateTimeArrayHelper;
 
         public JsonReaderDelegator(XmlReader reader)
@@ -265,7 +265,7 @@ namespace System.Runtime.Serialization.Json
 
         private class DateTimeArrayJsonHelperWithString : ArrayHelper<string, DateTime>
         {
-            private DateTimeFormat _dateTimeFormat;
+            private readonly DateTimeFormat _dateTimeFormat;
 
             public DateTimeArrayJsonHelperWithString(DateTimeFormat dateTimeFormat)
             {

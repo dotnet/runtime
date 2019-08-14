@@ -9,7 +9,7 @@ namespace System.Runtime.Serialization.Json
 {
     internal class JsonWriterDelegator : XmlWriterDelegator
     {
-        private DateTimeFormat _dateTimeFormat;
+        private readonly DateTimeFormat _dateTimeFormat;
 
         public JsonWriterDelegator(XmlWriter writer)
             : base(writer)

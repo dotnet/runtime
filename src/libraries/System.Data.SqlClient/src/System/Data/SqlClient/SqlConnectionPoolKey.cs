@@ -16,7 +16,7 @@ namespace System.Data.SqlClient
     internal class SqlConnectionPoolKey : DbConnectionPoolKey
     {
         private int _hashValue;
-        private SqlCredential _credential;
+        private readonly SqlCredential _credential;
         private readonly string _accessToken;
 
         internal SqlConnectionPoolKey(string connectionString, SqlCredential credential, string accessToken) : base(connectionString)

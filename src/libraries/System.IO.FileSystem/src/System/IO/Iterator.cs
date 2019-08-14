@@ -12,7 +12,7 @@ namespace System.IO
     // in the future
     internal abstract class Iterator<TSource> : IEnumerable<TSource>, IEnumerator<TSource>
     {
-        private int _threadId;
+        private readonly int _threadId;
         internal int state;
         internal TSource current;
 

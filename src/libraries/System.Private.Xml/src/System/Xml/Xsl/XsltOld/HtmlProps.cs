@@ -41,7 +41,7 @@ namespace System.Xml.Xsl.XsltOld
         public bool NameParent { get { return _nameParent; } }
 
 
-        private static Hashtable s_table = CreatePropsTable();
+        private static readonly Hashtable s_table = CreatePropsTable();
         //        private static HtmlElementProps  s_otherElements = Create(false, false, false, false, false, false, false);
 
         public static HtmlElementProps GetProps(string name)
@@ -152,7 +152,7 @@ namespace System.Xml.Xsl.XsltOld
         public bool Uri { get { return _uri; } }
         public bool Name { get { return _name; } }
 
-        private static Hashtable s_table = CreatePropsTable();
+        private static readonly Hashtable s_table = CreatePropsTable();
         //      private static HtmlElementProps  s_otherAttributes = Create(false, false, false);
 
         public static HtmlAttributeProps GetProps(string name)

@@ -120,9 +120,9 @@ namespace System.Xml
         }
 
         private object[] _stack;
-        private int _growthRate;
+        private readonly int _growthRate;
         private int _used;
         private int _size;
-        private int _limit;
+        private readonly int _limit;
     };
 }

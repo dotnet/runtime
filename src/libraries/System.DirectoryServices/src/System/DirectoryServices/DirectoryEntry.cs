@@ -42,7 +42,7 @@ namespace System.DirectoryServices
         private bool _objectSecurityInitialized = false;
         private bool _objectSecurityModified = false;
         private ActiveDirectorySecurity _objectSecurity = null;
-        private static string s_securityDescriptorProperty = "ntSecurityDescriptor";
+        private const string SecurityDescriptorProperty = "ntSecurityDescriptor";
 
         /// <devdoc>
         /// Initializes a new instance of the <see cref='System.DirectoryServices.DirectoryEntry'/>class.
@@ -1031,7 +1031,7 @@ namespace System.DirectoryServices
                         }
 
                         // if this is "ntSecurityDescriptor" we should refresh the objectSecurity property
-                        if (string.Equals(propertyNames[i], s_securityDescriptorProperty, StringComparison.OrdinalIgnoreCase))
+                        if (string.Equals(propertyNames[i], SecurityDescriptorProperty, StringComparison.OrdinalIgnoreCase))
                         {
                             _objectSecurityInitialized = false;
                             _objectSecurityModified = false;
@@ -1104,7 +1104,7 @@ namespace System.DirectoryServices
                     // while initializing the ObjectSecurity property
                     //
                     securityMasksUsedInRetrieval = this.Options.SecurityMasks;
-                    RefreshCache(new string[] { s_securityDescriptorProperty });
+                    RefreshCache(new string[] { SecurityDescriptorProperty });
 
                     //
                     // Get the IAdsPropertyList interface
@@ -1115,7 +1115,7 @@ namespace System.DirectoryServices
 
                     UnsafeNativeMethods.IAdsPropertyList list = (UnsafeNativeMethods.IAdsPropertyList)NativeObject;
 
-                    UnsafeNativeMethods.IAdsPropertyEntry propertyEntry = (UnsafeNativeMethods.IAdsPropertyEntry)list.GetPropertyItem(s_securityDescriptorProperty, (int)AdsType.ADSTYPE_OCTET_STRING);
+                    UnsafeNativeMethods.IAdsPropertyEntry propertyEntry = (UnsafeNativeMethods.IAdsPropertyEntry)list.GetPropertyItem(SecurityDescriptorProperty, (int)AdsType.ADSTYPE_OCTET_STRING);
                     GC.KeepAlive(this);
 
                     //
@@ -1173,7 +1173,7 @@ namespace System.DirectoryServices
 
                 UnsafeNativeMethods.IAdsPropertyEntry newSDEntry = (UnsafeNativeMethods.IAdsPropertyEntry)new UnsafeNativeMethods.PropertyEntry();
 
-                newSDEntry.Name = s_securityDescriptorProperty;
+                newSDEntry.Name = SecurityDescriptorProperty;
                 newSDEntry.ADsType = (int)AdsType.ADSTYPE_OCTET_STRING;
                 newSDEntry.ControlCode = (int)AdsPropertyOperation.Update;
                 newSDEntry.Values = new object[] { sDValue };

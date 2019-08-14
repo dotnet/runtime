@@ -20,27 +20,27 @@ namespace System.Xml
     internal sealed class DocumentSchemaValidator : IXmlNamespaceResolver
     {
         private XmlSchemaValidator _validator;
-        private XmlSchemaSet _schemas;
+        private readonly XmlSchemaSet _schemas;
 
-        private XmlNamespaceManager _nsManager;
-        private XmlNameTable _nameTable;
+        private readonly XmlNamespaceManager _nsManager;
+        private readonly XmlNameTable _nameTable;
 
         //Attributes
         private ArrayList _defaultAttributes;
-        private XmlValueGetter _nodeValueGetter;
+        private readonly XmlValueGetter _nodeValueGetter;
         private XmlSchemaInfo _attributeSchemaInfo;
 
         //Element PSVI
         private XmlSchemaInfo _schemaInfo;
 
         //Event Handler
-        private ValidationEventHandler _eventHandler;
-        private ValidationEventHandler _internalEventHandler;
+        private readonly ValidationEventHandler _eventHandler;
+        private readonly ValidationEventHandler _internalEventHandler;
 
         //Store nodes
         private XmlNode _startNode;
         private XmlNode _currentNode;
-        private XmlDocument _document;
+        private readonly XmlDocument _document;
 
         //List of nodes for partial validation tree walk
         private XmlNode[] _nodeSequenceToValidate;
@@ -50,10 +50,10 @@ namespace System.Xml
         private bool _isValid;
 
         //To avoid SchemaNames creation
-        private string _nsXmlNs;
-        private string _nsXsi;
-        private string _xsiType;
-        private string _xsiNil;
+        private readonly string _nsXmlNs;
+        private readonly string _nsXsi;
+        private readonly string _xsiType;
+        private readonly string _xsiNil;
 
         public DocumentSchemaValidator(XmlDocument ownerDocument, XmlSchemaSet schemas, ValidationEventHandler eventHandler)
         {

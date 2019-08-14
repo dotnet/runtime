@@ -24,7 +24,7 @@ namespace System.ServiceModel.Syndication
         private const string Rfc822OutputLocalDateTimeFormat = "ddd, dd MMM yyyy HH:mm:ss zzz";
         private const string Rfc822OutputUtcDateTimeFormat = "ddd, dd MMM yyyy HH:mm:ss Z";
 
-        private Atom10FeedFormatter _atomSerializer;
+        private readonly Atom10FeedFormatter _atomSerializer;
         private readonly int _maxExtensionSize;
 
         public Rss20FeedFormatter() : this(typeof(SyndicationFeed))

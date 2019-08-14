@@ -47,11 +47,11 @@ namespace Microsoft.SqlServer.Server
     {
         internal readonly FieldInfoEx[] FieldsToNormalize;
         private int _size;
-        private byte[] _padBuffer;
+        private readonly byte[] _padBuffer;
         internal readonly object NullInstance;
         //a boolean that tells us if a udt is a "top-level" udt,
         //i.e. one that does not require a null byte header.
-        private bool _isTopLevelUdt;
+        private readonly bool _isTopLevelUdt;
 
         private FieldInfo[] GetFields(Type t)
         {

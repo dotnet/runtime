@@ -26,13 +26,13 @@ namespace System.Linq.Parallel
     /// <typeparam name="TIgnoreKey"></typeparam>
     internal class DefaultMergeHelper<TInputOutput, TIgnoreKey> : IMergeHelper<TInputOutput>
     {
-        private QueryTaskGroupState _taskGroupState; // State shared among tasks.
-        private PartitionedStream<TInputOutput, TIgnoreKey> _partitions; // Source partitions.
-        private AsynchronousChannel<TInputOutput>[] _asyncChannels; // Destination channels (async).
-        private SynchronousChannel<TInputOutput>[] _syncChannels; // Destination channels (sync).
-        private IEnumerator<TInputOutput> _channelEnumerator; // Output enumerator.
-        private TaskScheduler _taskScheduler; // The task manager to execute the query.
-        private bool _ignoreOutput; // Whether we're enumerating "for effect".
+        private readonly QueryTaskGroupState _taskGroupState; // State shared among tasks.
+        private readonly PartitionedStream<TInputOutput, TIgnoreKey> _partitions; // Source partitions.
+        private readonly AsynchronousChannel<TInputOutput>[] _asyncChannels; // Destination channels (async).
+        private readonly SynchronousChannel<TInputOutput>[] _syncChannels; // Destination channels (sync).
+        private readonly IEnumerator<TInputOutput> _channelEnumerator; // Output enumerator.
+        private readonly TaskScheduler _taskScheduler; // The task manager to execute the query.
+        private readonly bool _ignoreOutput; // Whether we're enumerating "for effect".
 
         //-----------------------------------------------------------------------------------
         // Instantiates a new merge helper.

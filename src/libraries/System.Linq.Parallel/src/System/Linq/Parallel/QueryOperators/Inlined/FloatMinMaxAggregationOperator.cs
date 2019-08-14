@@ -106,8 +106,8 @@ namespace System.Linq.Parallel
 
         private class FloatMinMaxAggregationOperatorEnumerator<TKey> : InlinedAggregationOperatorEnumerator<float>
         {
-            private QueryOperatorEnumerator<float, TKey> _source; // The source data.
-            private int _sign; // The sign for comparisons (-1 means min, 1 means max).
+            private readonly QueryOperatorEnumerator<float, TKey> _source; // The source data.
+            private readonly int _sign; // The sign for comparisons (-1 means min, 1 means max).
 
             //---------------------------------------------------------------------------------------
             // Instantiates a new aggregation operator.

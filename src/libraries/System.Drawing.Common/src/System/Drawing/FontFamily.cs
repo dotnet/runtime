@@ -18,10 +18,10 @@ namespace System.Drawing
     {
         private const int NeutralLanguage = 0;
         private IntPtr _nativeFamily;
-        private bool _createDefaultOnFail;
+        private readonly bool _createDefaultOnFail;
 
 #if DEBUG
-        private static object s_lockObj = new object();
+        private static readonly object s_lockObj = new object();
         private static int s_idCount = 0;
         private int _id;
 #endif

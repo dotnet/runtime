@@ -31,7 +31,7 @@ namespace System.Linq.Parallel
     /// <typeparam name="TIntermediate"></typeparam>
     internal abstract class InlinedAggregationOperatorEnumerator<TIntermediate> : QueryOperatorEnumerator<TIntermediate, int>
     {
-        private int _partitionIndex; // This partition's unique index.
+        private readonly int _partitionIndex; // This partition's unique index.
         private bool _done = false;
         protected CancellationToken _cancellationToken;
 

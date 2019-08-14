@@ -38,26 +38,23 @@ namespace System.DirectoryServices.ActiveDirectory
 
     internal class TrustHelper
     {
-        private static int s_STATUS_OBJECT_NAME_NOT_FOUND = 2;
-        // disable csharp compiler warning #0414: field assigned unused value
-#pragma warning disable 0414
-        internal static int ERROR_NOT_FOUND = 1168;
-#pragma warning restore 0414
-        internal static int NETLOGON_QUERY_LEVEL = 2;
-        internal static int NETLOGON_CONTROL_REDISCOVER = 5;
-        private static int s_NETLOGON_CONTROL_TC_VERIFY = 10;
-        private static int s_NETLOGON_VERIFY_STATUS_RETURNED = 0x80;
-        private static int s_PASSWORD_LENGTH = 15;
-        private static int s_TRUST_AUTH_TYPE_CLEAR = 2;
-        private static int s_policyDnsDomainInformation = 12;
-        private static int s_TRUSTED_SET_POSIX = 0x00000010;
-        private static int s_TRUSTED_SET_AUTH = 0x00000020;
-        internal static int TRUST_TYPE_DOWNLEVEL = 0x00000001;
-        internal static int TRUST_TYPE_UPLEVEL = 0x00000002;
-        internal static int TRUST_TYPE_MIT = 0x00000003;
-        private static int s_ERROR_ALREADY_EXISTS = 183;
-        private static int s_ERROR_INVALID_LEVEL = 124;
-        private static char[] s_punctuations = "!@#$%^&*()_-+=[{]};:>|./?".ToCharArray();
+        private const int STATUS_OBJECT_NAME_NOT_FOUND = 2;
+        internal const int ERROR_NOT_FOUND = 1168;
+        internal const int NETLOGON_QUERY_LEVEL = 2;
+        internal const int NETLOGON_CONTROL_REDISCOVER = 5;
+        private const int NETLOGON_CONTROL_TC_VERIFY = 10;
+        private const int NETLOGON_VERIFY_STATUS_RETURNED = 0x80;
+        private const int PASSWORD_LENGTH = 15;
+        private const int TRUST_AUTH_TYPE_CLEAR = 2;
+        private const int policyDnsDomainInformation = 12;
+        private const int TRUSTED_SET_POSIX = 0x00000010;
+        private const int TRUSTED_SET_AUTH = 0x00000020;
+        internal const int TRUST_TYPE_DOWNLEVEL = 0x00000001;
+        internal const int TRUST_TYPE_UPLEVEL = 0x00000002;
+        internal const int TRUST_TYPE_MIT = 0x00000003;
+        private const int ERROR_ALREADY_EXISTS = 183;
+        private const int ERROR_INVALID_LEVEL = 124;
+        private static readonly char[] s_punctuations = "!@#$%^&*()_-+=[{]};:>|./?".ToCharArray();
 
         private TrustHelper() { }
 
@@ -92,7 +89,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     {
                         int win32Error = UnsafeNativeMethods.LsaNtStatusToWinError(result);
                         // 2 ERROR_FILE_NOT_FOUND <--> 0xc0000034 STATUS_OBJECT_NAME_NOT_FOUND
-                        if (win32Error == s_STATUS_OBJECT_NAME_NOT_FOUND)
+                        if (win32Error == STATUS_OBJECT_NAME_NOT_FOUND)
                         {
                             if (isForest)
                                 throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.ForestTrustDoesNotExist , sourceName, targetName), typeof(ForestTrustRelationshipInformation), null);
@@ -190,7 +187,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     {
                         int win32Error = UnsafeNativeMethods.LsaNtStatusToWinError(result);
                         // 2 ERROR_FILE_NOT_FOUND <--> 0xc0000034 STATUS_OBJECT_NAME_NOT_FOUND
-                        if (win32Error == s_STATUS_OBJECT_NAME_NOT_FOUND)
+                        if (win32Error == STATUS_OBJECT_NAME_NOT_FOUND)
                         {
                             if (isForest)
                                 throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.ForestTrustDoesNotExist , sourceName, targetName), typeof(ForestTrustRelationshipInformation), null);
@@ -320,7 +317,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     {
                         win32Error = UnsafeNativeMethods.LsaNtStatusToWinError(result);
                         // 2 ERROR_FILE_NOT_FOUND <--> 0xc0000034 STATUS_OBJECT_NAME_NOT_FOUND
-                        if (win32Error == s_STATUS_OBJECT_NAME_NOT_FOUND)
+                        if (win32Error == STATUS_OBJECT_NAME_NOT_FOUND)
                         {
                             if (isForest)
                                 throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.ForestTrustDoesNotExist , sourceName, targetName), typeof(ForestTrustRelationshipInformation), null);
@@ -409,14 +406,14 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     if (!forceSecureChannelReset)
                     {
-                        win32Error = UnsafeNativeMethods.I_NetLogonControl2(policyServerName, s_NETLOGON_CONTROL_TC_VERIFY, NETLOGON_QUERY_LEVEL, ptr, out buffer1);
+                        win32Error = UnsafeNativeMethods.I_NetLogonControl2(policyServerName, NETLOGON_CONTROL_TC_VERIFY, NETLOGON_QUERY_LEVEL, ptr, out buffer1);
 
                         if (win32Error == 0)
                         {
                             NETLOGON_INFO_2 info = new NETLOGON_INFO_2();
                             Marshal.PtrToStructure(buffer1, info);
 
-                            if ((info.netlog2_flags & s_NETLOGON_VERIFY_STATUS_RETURNED) != 0)
+                            if ((info.netlog2_flags & NETLOGON_VERIFY_STATUS_RETURNED) != 0)
                             {
                                 int result = info.netlog2_pdc_connection_status;
                                 if (result == 0)
@@ -438,7 +435,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         }
                         else
                         {
-                            if (win32Error == s_ERROR_INVALID_LEVEL)
+                            if (win32Error == ERROR_INVALID_LEVEL)
                             {
                                 // it is pre-win2k SP3 dc that does not support NETLOGON_CONTROL_TC_VERIFY
                                 throw new NotSupportedException(SR.TrustVerificationNotSupport);
@@ -517,7 +514,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     AuthData.LastUpdateTime.lowPart = tmp.lower;
                     AuthData.LastUpdateTime.highPart = tmp.higher;
 
-                    AuthData.AuthType = s_TRUST_AUTH_TYPE_CLEAR;
+                    AuthData.AuthType = TRUST_AUTH_TYPE_CLEAR;
                     unmanagedPassword = Marshal.StringToHGlobalUni(password);
                     AuthData.AuthInfo = unmanagedPassword;
                     AuthData.AuthInfoLength = password.Length * 2;          // sizeof(WCHAR)
@@ -562,11 +559,11 @@ namespace System.DirectoryServices.ActiveDirectory
                     impersonated = Utils.Impersonate(sourceContext);
                     policyHandle = new PolicySafeHandle(Utils.GetPolicyHandle(serverName));
 
-                    int result = UnsafeNativeMethods.LsaCreateTrustedDomainEx(policyHandle, tdi, AuthInfoEx, s_TRUSTED_SET_POSIX | s_TRUSTED_SET_AUTH, out domainHandle);
+                    int result = UnsafeNativeMethods.LsaCreateTrustedDomainEx(policyHandle, tdi, AuthInfoEx, TRUSTED_SET_POSIX | TRUSTED_SET_AUTH, out domainHandle);
                     if (result != 0)
                     {
                         result = UnsafeNativeMethods.LsaNtStatusToWinError(result);
-                        if (result == s_ERROR_ALREADY_EXISTS)
+                        if (result == ERROR_ALREADY_EXISTS)
                         {
                             if (isForest)
                                 throw new ActiveDirectoryObjectExistsException(SR.Format(SR.AlreadyExistingForestTrust , sourceName, targetName));
@@ -639,7 +636,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     {
                         int win32Error = UnsafeNativeMethods.LsaNtStatusToWinError(result);
                         // 2 ERROR_FILE_NOT_FOUND <--> 0xc0000034 STATUS_OBJECT_NAME_NOT_FOUND
-                        if (win32Error == s_STATUS_OBJECT_NAME_NOT_FOUND)
+                        if (win32Error == STATUS_OBJECT_NAME_NOT_FOUND)
                         {
                             if (isForest)
                                 throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.ForestTrustDoesNotExist , sourceName, targetName), typeof(ForestTrustRelationshipInformation), null);
@@ -672,7 +669,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     AuthData.LastUpdateTime.lowPart = tmp.lower;
                     AuthData.LastUpdateTime.highPart = tmp.higher;
 
-                    AuthData.AuthType = s_TRUST_AUTH_TYPE_CLEAR;
+                    AuthData.AuthType = TRUST_AUTH_TYPE_CLEAR;
                     unmanagedPassword = Marshal.StringToHGlobalUni(password);
                     AuthData.AuthInfo = unmanagedPassword;
                     AuthData.AuthInfoLength = password.Length * 2;
@@ -772,7 +769,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     {
                         int win32Error = UnsafeNativeMethods.LsaNtStatusToWinError(result);
                         // 2 ERROR_FILE_NOT_FOUND <--> 0xc0000034 STATUS_OBJECT_NAME_NOT_FOUND
-                        if (win32Error == s_STATUS_OBJECT_NAME_NOT_FOUND)
+                        if (win32Error == STATUS_OBJECT_NAME_NOT_FOUND)
                         {
                             if (isForest)
                                 throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.ForestTrustDoesNotExist , sourceName, targetName), typeof(ForestTrustRelationshipInformation), null);
@@ -802,7 +799,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     AuthData.LastUpdateTime.lowPart = tmp.lower;
                     AuthData.LastUpdateTime.highPart = tmp.higher;
 
-                    AuthData.AuthType = s_TRUST_AUTH_TYPE_CLEAR;
+                    AuthData.AuthType = TRUST_AUTH_TYPE_CLEAR;
                     unmanagedPassword = Marshal.StringToHGlobalUni(password);
                     AuthData.AuthInfo = unmanagedPassword;
                     AuthData.AuthInfoLength = password.Length * 2;
@@ -890,7 +887,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 int win32Error = UnsafeNativeMethods.LsaNtStatusToWinError(result);
                 // 2 ERROR_FILE_NOT_FOUND <--> 0xc0000034 STATUS_OBJECT_NAME_NOT_FOUND
-                if (win32Error == s_STATUS_OBJECT_NAME_NOT_FOUND)
+                if (win32Error == STATUS_OBJECT_NAME_NOT_FOUND)
                 {
                     if (isForest)
                         throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.ForestTrustDoesNotExist , sourceName, targetName), typeof(ForestTrustRelationshipInformation), null);
@@ -961,16 +958,13 @@ namespace System.DirectoryServices.ActiveDirectory
         internal static string CreateTrustPassword()
         {
             string password = string.Empty;
-            byte[] buf;
-            char[] cBuf;
-
-            buf = new byte[s_PASSWORD_LENGTH];
-            cBuf = new char[s_PASSWORD_LENGTH];
+            byte[] buf = new byte[PASSWORD_LENGTH];
+            char[] cBuf = new char[PASSWORD_LENGTH];
 
             using (RandomNumberGenerator RNG = RandomNumberGenerator.Create())
             {
                 RNG.GetBytes(buf);
-                for (int iter = 0; iter < s_PASSWORD_LENGTH; iter++)
+                for (int iter = 0; iter < PASSWORD_LENGTH; iter++)
                 {
                     int i = (int)(buf[iter] % 87);
                     if (i < 10)
@@ -1031,7 +1025,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         policyHandle = new PolicySafeHandle(Utils.GetPolicyHandle(serverName));
                     }
 
-                    int result = UnsafeNativeMethods.LsaQueryInformationPolicy(policyHandle, s_policyDnsDomainInformation, out buffer);
+                    int result = UnsafeNativeMethods.LsaQueryInformationPolicy(policyHandle, policyDnsDomainInformation, out buffer);
                     if (result != 0)
                     {
                         throw ExceptionHelper.GetExceptionFromErrorCode(UnsafeNativeMethods.LsaNtStatusToWinError(result), serverName);

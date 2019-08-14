@@ -14,8 +14,8 @@ namespace System.Runtime.Serialization
     {
         private Dictionary<XmlQualifiedName, DataContract> _contracts;
         private Dictionary<DataContract, object> _processedContracts;
-        private ICollection<Type> _referencedTypes;
-        private ICollection<Type> _referencedCollectionTypes;
+        private readonly ICollection<Type> _referencedTypes;
+        private readonly ICollection<Type> _referencedCollectionTypes;
 
 #if SUPPORT_SURROGATE
         private IDataContractSurrogate _dataContractSurrogate;

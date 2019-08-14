@@ -51,9 +51,9 @@ namespace System.Management
     //CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC//
     public class QualifierDataCollection : ICollection, IEnumerable
     {
-        private ManagementBaseObject parent;
-        private string propertyOrMethodName;
-        private QualifierType qualifierSetType;
+        private readonly ManagementBaseObject parent;
+        private readonly string propertyOrMethodName;
+        private readonly QualifierType qualifierSetType;
 
         internal QualifierDataCollection(ManagementBaseObject parent) : base()
         {
@@ -305,10 +305,10 @@ namespace System.Management
         /// </example>
         public class QualifierDataEnumerator : IEnumerator
         {
-            private ManagementBaseObject parent;
-            private string propertyOrMethodName;
-            private QualifierType qualifierType;
-            private string[] qualifierNames;
+            private readonly ManagementBaseObject parent;
+            private readonly string propertyOrMethodName;
+            private readonly QualifierType qualifierType;
+            private readonly string[] qualifierNames;
             private int index = -1;
 
             //Internal constructor

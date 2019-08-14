@@ -48,7 +48,7 @@ namespace System.Linq
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private IEnumerable<T> _enumerable;
+        private readonly IEnumerable<T> _enumerable;
     }
 
     internal sealed class SystemCore_EnumerableDebugViewEmptyException : Exception
@@ -89,7 +89,7 @@ namespace System.Linq
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private IEnumerable _enumerable;
+        private readonly IEnumerable _enumerable;
     }
 
     internal sealed class SystemLinq_GroupingDebugView<TKey, TElement>

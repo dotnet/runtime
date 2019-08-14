@@ -10,8 +10,8 @@ namespace System.Net.Http.Headers
 {
     public class RangeItemHeaderValue : ICloneable
     {
-        private long? _from;
-        private long? _to;
+        private readonly long? _from;
+        private readonly long? _to;
 
         public long? From
         {

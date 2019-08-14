@@ -28,7 +28,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         internal class NonImportSourceImportDefinition : ContractBasedImportDefinition
         {
-            private ContractBasedImportDefinition _sourceDefinition;
+            private readonly ContractBasedImportDefinition _sourceDefinition;
             private IDictionary<string, object> _metadata;
 
             public NonImportSourceImportDefinition(ContractBasedImportDefinition sourceDefinition)

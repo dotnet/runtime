@@ -21,7 +21,7 @@ namespace System.ComponentModel.Composition.Hosting
     {
         private class InnerCatalogExportProvider : ExportProvider
         {
-            private CatalogExportProvider _outerExportProvider;
+            private readonly CatalogExportProvider _outerExportProvider;
 
             public InnerCatalogExportProvider(CatalogExportProvider outerExportProvider)
             {
@@ -39,17 +39,17 @@ namespace System.ComponentModel.Composition.Hosting
         }
 
         private readonly CompositionLock _lock;
-        private Dictionary<ComposablePartDefinition, CatalogPart> _activatedParts = new Dictionary<ComposablePartDefinition, CatalogPart>();
-        private HashSet<ComposablePartDefinition> _rejectedParts = new HashSet<ComposablePartDefinition>();
+        private readonly Dictionary<ComposablePartDefinition, CatalogPart> _activatedParts = new Dictionary<ComposablePartDefinition, CatalogPart>();
+        private readonly HashSet<ComposablePartDefinition> _rejectedParts = new HashSet<ComposablePartDefinition>();
         private ConditionalWeakTable<object, List<ComposablePart>> _gcRoots;
-        private HashSet<IDisposable> _partsToDispose = new HashSet<IDisposable>();
+        private readonly HashSet<IDisposable> _partsToDispose = new HashSet<IDisposable>();
         private ComposablePartCatalog _catalog;
         private volatile bool _isDisposed = false;
         private volatile bool _isRunning = false;
-        private bool _disableSilentRejection = false;
+        private readonly bool _disableSilentRejection = false;
         private ExportProvider _sourceProvider;
         private ImportEngine _importEngine;
-        private CompositionOptions _compositionOptions;
+        private readonly CompositionOptions _compositionOptions;
         private ExportProvider _innerExportProvider;
 
         /// <summary>
@@ -1022,8 +1022,8 @@ namespace System.ComponentModel.Composition.Hosting
 
         private class PartEqualsQueryStateNode : PartQueryStateNode
         {
-            private ComposablePartDefinition _part;
-            private int _hashCode;
+            private readonly ComposablePartDefinition _part;
+            private readonly int _hashCode;
             public PartEqualsQueryStateNode(ComposablePartDefinition part, PartQueryStateNode previousNode, AtomicCompositionQueryState state) :
                 base(previousNode, state)
             {
@@ -1043,7 +1043,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         private class PartInHashSetQueryStateNode : PartQueryStateNode
         {
-            private HashSet<ComposablePartDefinition> _parts;
+            private readonly HashSet<ComposablePartDefinition> _parts;
             public PartInHashSetQueryStateNode(HashSet<ComposablePartDefinition> parts, PartQueryStateNode previousNode, AtomicCompositionQueryState state) :
                 base(previousNode, state)
             {

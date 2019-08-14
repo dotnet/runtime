@@ -48,7 +48,7 @@ namespace System.Management
     //CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC//
     public class MethodDataCollection : ICollection, IEnumerable
     {
-        private ManagementObject parent;
+        private readonly ManagementObject parent;
 
         private class enumLock
         {
@@ -238,9 +238,9 @@ namespace System.Management
         /// </example>
         public class MethodDataEnumerator : IEnumerator
         {
-            private ManagementObject parent;
-            private ArrayList methodNames; //can't use simple array because we don't know the size...
-            private IEnumerator en;
+            private readonly ManagementObject parent;
+            private readonly ArrayList methodNames; //can't use simple array because we don't know the size...
+            private readonly IEnumerator en;
 
             //Internal constructor
             //Because WMI doesn't provide a "GetMethodNames" for methods similar to "GetNames" for properties,

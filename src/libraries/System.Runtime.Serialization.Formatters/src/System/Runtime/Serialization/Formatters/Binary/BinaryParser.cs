@@ -28,7 +28,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         internal ParseRecord _prs;
 
         private BinaryAssemblyInfo _systemAssemblyInfo;
-        private BinaryReader _dataReader;
+        private readonly BinaryReader _dataReader;
         private SerStack _opPool;
 
         private BinaryObject _binaryObject;

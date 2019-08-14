@@ -22,7 +22,7 @@ namespace System.Xml.Xsl.Xslt
 
         private XPathScanner _scanner;
         private IPatternBuilder _ptrnBuilder;
-        private XPathParser _predicateParser = new XPathParser();
+        private readonly XPathParser _predicateParser = new XPathParser();
 
         public QilNode Parse(XPathScanner scanner, IPatternBuilder ptrnBuilder)
         {

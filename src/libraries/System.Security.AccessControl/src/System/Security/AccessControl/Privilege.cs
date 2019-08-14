@@ -36,9 +36,9 @@ namespace System.Security.AccessControl
     {
         [ThreadStatic]
         private static TlsContents t_tlsSlotData;
-        private static Dictionary<Luid, string> privileges = new Dictionary<Luid, string>();
-        private static Dictionary<string, Luid> luids = new Dictionary<string, Luid>();
-        private static ReaderWriterLockSlim privilegeLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
+        private static readonly Dictionary<Luid, string> privileges = new Dictionary<Luid, string>();
+        private static readonly Dictionary<string, Luid> luids = new Dictionary<string, Luid>();
+        private static readonly ReaderWriterLockSlim privilegeLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
 
         private bool needToRevert = false;
         private bool initialState = false;
@@ -164,7 +164,7 @@ namespace System.Security.AccessControl
             private bool disposed = false;
             private int referenceCount = 1;
             private SafeTokenHandle threadHandle = new SafeTokenHandle(IntPtr.Zero);
-            private bool isImpersonating = false;
+            private readonly bool isImpersonating = false;
 
             private static volatile SafeTokenHandle processHandle = new SafeTokenHandle(IntPtr.Zero);
             private static readonly object syncRoot = new object();

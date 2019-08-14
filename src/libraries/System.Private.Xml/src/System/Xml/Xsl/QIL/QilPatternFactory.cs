@@ -19,8 +19,8 @@ namespace System.Xml.Xsl.Qil
     /// </remarks>
     internal class QilPatternFactory
     {
-        private bool _debug;
-        private QilFactory _f;
+        private readonly bool _debug;
+        private readonly QilFactory _f;
 
         public QilPatternFactory(QilFactory f, bool debug)
         {

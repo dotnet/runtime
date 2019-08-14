@@ -13,7 +13,7 @@ namespace System.Configuration
 
         // Deliberately not being explicit about the versions to make
         // things simpler for consumers of System.Configuration.
-        private static string[] s_implicitAssemblies =
+        private static readonly string[] s_implicitAssemblies =
         {
             // Historically we would find types in System.dll here.
             // This is because Configuration used to live in System.dll

@@ -17,7 +17,7 @@ namespace System.Data.SqlClient
         //public static bool UseManagedSNI { get; } = AppContext.TryGetSwitch(UseLegacyNetworkingOnWindows, out shouldUseLegacyNetorking) ? !shouldUseLegacyNetorking : true;
 
 #if DEBUG
-        private static Lazy<bool> useManagedSNIOnWindows = new Lazy<bool>(
+        private static readonly Lazy<bool> useManagedSNIOnWindows = new Lazy<bool>(
             () => bool.TrueString.Equals(Environment.GetEnvironmentVariable("System.Data.SqlClient.UseManagedSNIOnWindows"), StringComparison.InvariantCultureIgnoreCase)
         );
         public static bool UseManagedSNI => useManagedSNIOnWindows.Value;

@@ -1863,9 +1863,9 @@ namespace System.Net
         {
             private static readonly IOCompletionCallback s_IOCallback = new IOCompletionCallback(WaitCallback);
 
-            private ulong _connectionId;
-            private HttpListener _httpListener;
-            private NativeOverlapped* _nativeOverlapped;
+            private readonly ulong _connectionId;
+            private readonly HttpListener _httpListener;
+            private readonly NativeOverlapped* _nativeOverlapped;
             private int _ownershipState;   // 0 = normal, 1 = in HandleAuthentication(), 2 = disconnected, 3 = cleaned up
 
             private WindowsPrincipal _authenticatedConnection;

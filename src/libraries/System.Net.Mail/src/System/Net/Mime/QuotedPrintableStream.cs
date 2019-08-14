@@ -20,7 +20,7 @@ namespace System.Net.Mime
     internal class QuotedPrintableStream : DelegatedStream, IEncodableStream
     {
         //should we encode CRLF or not?
-        private bool _encodeCRLF;
+        private readonly bool _encodeCRLF;
 
         //number of bytes needed for a soft CRLF in folding
         private const int SizeOfSoftCRLF = 3;
@@ -57,7 +57,7 @@ namespace System.Net.Mime
 
         private static readonly byte[] s_hexEncodeMap = new byte[] { 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70 };
 
-        private int _lineLength;
+        private readonly int _lineLength;
         private ReadStateInfo _readState;
         private WriteStateInfoBase _writeState;
 

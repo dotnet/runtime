@@ -58,7 +58,7 @@ namespace System.Drawing.Internal
         /// </summary>
 
         private IntPtr _hDC;
-        private DeviceContextType _dcType;
+        private readonly DeviceContextType _dcType;
 
         public event EventHandler Disposing;
 
@@ -66,7 +66,7 @@ namespace System.Drawing.Internal
 
         // We cache the hWnd when creating the dc from one, to provide support forIDeviceContext.GetHdc/ReleaseHdc.
         // This hWnd could be null, in such case it is referring to the screen.
-        private IntPtr _hWnd = (IntPtr)(-1); // Unlikely to be a valid hWnd.
+        private readonly IntPtr _hWnd = (IntPtr)(-1); // Unlikely to be a valid hWnd.
 
         private IntPtr _hInitialPen;
         private IntPtr _hInitialBrush;

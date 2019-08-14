@@ -397,8 +397,8 @@ namespace System.Text.RegularExpressions
             new LowerCaseMapping('\uFF21', '\uFF3A', LowercaseAdd, 32),
         };
 
-        private List<SingleRange> _rangelist;
-        private StringBuilder _categories;
+        private readonly List<SingleRange> _rangelist;
+        private readonly StringBuilder _categories;
         private bool _canonical;
         private bool _negate;
         private RegexCharClass _subtractor;

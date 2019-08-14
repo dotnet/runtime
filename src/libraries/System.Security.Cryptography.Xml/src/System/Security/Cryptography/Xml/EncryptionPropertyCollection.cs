@@ -10,7 +10,7 @@ namespace System.Security.Cryptography.Xml
 {
     public sealed class EncryptionPropertyCollection : IList
     {
-        private ArrayList _props;
+        private readonly ArrayList _props;
 
         public EncryptionPropertyCollection()
         {

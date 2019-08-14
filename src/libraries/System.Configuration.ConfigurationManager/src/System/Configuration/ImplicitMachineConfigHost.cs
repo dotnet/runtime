@@ -66,13 +66,13 @@ namespace System.Configuration
             if (stream == null && streamName == _machineStreamName)
             {
                 // We only want to inject if we aren't able to load
-                stream = new MemoryStream(Encoding.UTF8.GetBytes(s_implicitMachineConfig));
+                stream = new MemoryStream(Encoding.UTF8.GetBytes(ImplicitMachineConfig));
             }
 
             return stream;
         }
 
-        private static string s_implicitMachineConfig =
+        private const string ImplicitMachineConfig =
 @"<configuration>
     <configSections>
         <section name='appSettings' type='System.Configuration.AppSettingsSection, System.Configuration.ConfigurationManager' restartOnExternalChanges='false' requirePermission='false' />

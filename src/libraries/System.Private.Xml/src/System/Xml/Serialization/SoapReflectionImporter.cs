@@ -16,13 +16,13 @@ namespace System.Xml.Serialization
 
     public class SoapReflectionImporter
     {
-        private TypeScope _typeScope;
-        private SoapAttributeOverrides _attributeOverrides;
-        private NameTable _types = new NameTable();      // xmltypename + xmlns -> Mapping
-        private NameTable _nullables = new NameTable();  // xmltypename + xmlns -> NullableMapping
+        private readonly TypeScope _typeScope;
+        private readonly SoapAttributeOverrides _attributeOverrides;
+        private readonly NameTable _types = new NameTable();      // xmltypename + xmlns -> Mapping
+        private readonly NameTable _nullables = new NameTable();  // xmltypename + xmlns -> NullableMapping
         private StructMapping _root;
-        private string _defaultNs;
-        private ModelScope _modelScope;
+        private readonly string _defaultNs;
+        private readonly ModelScope _modelScope;
 
         public SoapReflectionImporter() : this(null, null)
         {

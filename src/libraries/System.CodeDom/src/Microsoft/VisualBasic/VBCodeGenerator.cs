@@ -47,7 +47,7 @@ namespace Microsoft.VisualBasic
                                                          GeneratorSupport.DeclareIndexerProperties;
 
         private int _statementDepth = 0;
-        private IDictionary<string, string> _provOptions;
+        private readonly IDictionary<string, string> _provOptions;
 
         // This is the keyword list. To minimize search time and startup time, this is stored by length
         // and then alphabetically for use by FixedStringLookup.Contains.

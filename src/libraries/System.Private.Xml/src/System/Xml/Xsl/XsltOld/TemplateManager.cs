@@ -12,9 +12,9 @@ namespace System.Xml.Xsl.XsltOld
 
     internal class TemplateManager
     {
-        private XmlQualifiedName _mode;
+        private readonly XmlQualifiedName _mode;
         internal ArrayList templates;
-        private Stylesheet _stylesheet;    // Owning stylesheet
+        private readonly Stylesheet _stylesheet;    // Owning stylesheet
 
         private class TemplateComparer : IComparer
         {
@@ -41,7 +41,7 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        private static TemplateComparer s_TemplateComparer = new TemplateComparer();
+        private static readonly TemplateComparer s_TemplateComparer = new TemplateComparer();
 
         internal XmlQualifiedName Mode
         {

@@ -38,7 +38,7 @@ namespace System.Threading
 
         private ManualResetEventSlim? _readerEvent;
         private AutoResetEvent? _writerEvent;
-        private long _lockID;
+        private readonly long _lockID;
         private volatile int _state;
         private int _writerID = InvalidThreadID;
         private int _writerSeqNum = 1;

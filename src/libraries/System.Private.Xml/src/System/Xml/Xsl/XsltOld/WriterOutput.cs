@@ -10,7 +10,7 @@ namespace System.Xml.Xsl.XsltOld
     internal sealed class WriterOutput : IRecordOutput
     {
         private XmlWriter _writer;
-        private Processor _processor;
+        private readonly Processor _processor;
 
         internal WriterOutput(Processor processor, XmlWriter writer)
         {

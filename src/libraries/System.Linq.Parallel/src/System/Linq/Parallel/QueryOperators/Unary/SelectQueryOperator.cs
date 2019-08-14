@@ -23,7 +23,7 @@ namespace System.Linq.Parallel
     internal sealed class SelectQueryOperator<TInput, TOutput> : UnaryQueryOperator<TInput, TOutput>
     {
         // Selector function. Used to project elements to a transformed view during execution.
-        private Func<TInput, TOutput> _selector;
+        private readonly Func<TInput, TOutput> _selector;
 
         //---------------------------------------------------------------------------------------
         // Initializes a new select operator.
@@ -138,8 +138,8 @@ namespace System.Linq.Parallel
 
         private class SelectQueryOperatorResults : UnaryQueryOperatorResults
         {
-            private Func<TInput, TOutput> _selector; // Selector function
-            private int _childCount; // The number of elements in child results
+            private readonly Func<TInput, TOutput> _selector; // Selector function
+            private readonly int _childCount; // The number of elements in child results
 
             public static QueryResults<TOutput> NewResults(
                 QueryResults<TInput> childQueryResults, SelectQueryOperator<TInput, TOutput> op,

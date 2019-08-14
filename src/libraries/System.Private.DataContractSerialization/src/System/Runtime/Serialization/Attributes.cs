@@ -8,7 +8,7 @@ namespace System.Runtime.Serialization
 {
     internal class Attributes
     {
-        private static XmlDictionaryString[] s_serializationLocalNames = new XmlDictionaryString[]
+        private static readonly XmlDictionaryString[] s_serializationLocalNames = new XmlDictionaryString[]
         {
             DictionaryGlobals.IdLocalName,
             DictionaryGlobals.ArraySizeLocalName,
@@ -18,7 +18,7 @@ namespace System.Runtime.Serialization
             DictionaryGlobals.ISerializableFactoryTypeLocalName
         };
 
-        private static XmlDictionaryString[] s_schemaInstanceLocalNames = new XmlDictionaryString[]
+        private static readonly XmlDictionaryString[] s_schemaInstanceLocalNames = new XmlDictionaryString[]
         {
             DictionaryGlobals.XsiNilLocalName,
             DictionaryGlobals.XsiTypeLocalName

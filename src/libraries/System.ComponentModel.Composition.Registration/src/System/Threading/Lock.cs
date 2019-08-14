@@ -6,7 +6,7 @@ namespace System.Threading
 {
     internal sealed class Lock : IDisposable
     {
-        private ReaderWriterLockSlim _thisLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
+        private readonly ReaderWriterLockSlim _thisLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
         private int _isDisposed = 0;
 
         public void EnterReadLock()

@@ -13,7 +13,7 @@ namespace System.Diagnostics.Eventing.Reader
     /// </summary>
     public class EventLogReader : IDisposable
     {
-        private EventLogQuery _eventQuery;
+        private readonly EventLogQuery _eventQuery;
 
         private int _batchSize;
 
@@ -21,7 +21,7 @@ namespace System.Diagnostics.Eventing.Reader
         // access to the data member reference is safe, while
         // invoking methods on it is marked SecurityCritical as appropriate.
         //
-        private EventLogHandle _handle;
+        private readonly EventLogHandle _handle;
 
         /// <summary>
         /// events buffer holds batched event (handles).
@@ -46,7 +46,7 @@ namespace System.Diagnostics.Eventing.Reader
         /// Maintains cached display / metadata information returned from
         /// EventRecords that were obtained from this reader.
         /// </summary>
-        private ProviderMetadataCachedInformation _cachedMetadataInformation;
+        private readonly ProviderMetadataCachedInformation _cachedMetadataInformation;
 
         public EventLogReader(string path)
             : this(new EventLogQuery(path, PathType.LogName), null)

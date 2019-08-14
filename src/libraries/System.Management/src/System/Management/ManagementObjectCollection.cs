@@ -63,7 +63,7 @@ namespace System.Management
         //fields
         internal ManagementScope scope;
         internal EnumerationOptions options;
-        private IEnumWbemClassObject enumWbem; //holds WMI enumerator for this collection
+        private readonly IEnumWbemClassObject enumWbem; //holds WMI enumerator for this collection
         private bool isDisposed = false;
 
         //Constructor

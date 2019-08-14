@@ -489,13 +489,13 @@ namespace System.IO.Packaging
 
         private const int InitialPartListSize = 50;
 
-        private ZipArchive _zipArchive;
+        private readonly ZipArchive _zipArchive;
         private Stream _containerStream;      // stream we are opened in if Open(Stream) was called
-        private bool _shouldCloseContainerStream;
-        private ContentTypeHelper _contentTypeHelper;    // manages the content types for all the parts in the container
-        private ZipStreamManager _zipStreamManager;      // manages streams for all parts, avoiding opening streams multiple times
-        private FileAccess _packageFileAccess;
-        private FileMode _packageFileMode;
+        private readonly bool _shouldCloseContainerStream;
+        private readonly ContentTypeHelper _contentTypeHelper;    // manages the content types for all the parts in the container
+        private readonly ZipStreamManager _zipStreamManager;      // manages streams for all parts, avoiding opening streams multiple times
+        private readonly FileAccess _packageFileAccess;
+        private readonly FileMode _packageFileMode;
 
         private const string ForwardSlashString = "/"; //Required for creating a part name from a zip item name
 
@@ -978,11 +978,11 @@ namespace System.IO.Packaging
             }
 
             private Dictionary<PackUriHelper.ValidatedPartUri, ContentType> _overrideDictionary;
-            private Dictionary<string, ContentType> _defaultDictionary;
-            private ZipArchive _zipArchive;
-            private FileMode _packageFileMode;
-            private FileAccess _packageFileAccess;
-            private ZipStreamManager _zipStreamManager;
+            private readonly Dictionary<string, ContentType> _defaultDictionary;
+            private readonly ZipArchive _zipArchive;
+            private readonly FileMode _packageFileMode;
+            private readonly FileAccess _packageFileAccess;
+            private readonly ZipStreamManager _zipStreamManager;
             private ZipArchiveEntry _contentTypeZipArchiveEntry;
             private bool _contentTypeStreamExists;
             private bool _dirty;

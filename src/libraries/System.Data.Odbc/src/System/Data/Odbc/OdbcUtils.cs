@@ -353,7 +353,7 @@ namespace System.Data.Odbc
         private readonly string _sqlstatement;
         private readonly char _quote;         // typically the semicolon '"'
         private readonly char _escape;        // typically the same char as the quote
-        private int _len = 0;
+        private readonly int _len = 0;
         private int _idx = 0;
 
         internal CStringTokenizer(string text, char quote, char escape)

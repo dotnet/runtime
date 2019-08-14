@@ -55,7 +55,7 @@ namespace System.Collections.Concurrent
         }
 
         private volatile Tables _tables; // Internal tables of the dictionary
-        private IEqualityComparer<TKey> _comparer; // Key equality comparer
+        private readonly IEqualityComparer<TKey> _comparer; // Key equality comparer
         private readonly bool _growLockArray; // Whether to dynamically increase the size of the striped lock
         private int _budget; // The maximum number of elements per lock before a resize operation is triggered
 
@@ -2041,7 +2041,7 @@ namespace System.Collections.Concurrent
         /// </summary>
         private sealed class DictionaryEnumerator : IDictionaryEnumerator
         {
-            private IEnumerator<KeyValuePair<TKey, TValue>> _enumerator; // Enumerator over the dictionary.
+            private readonly IEnumerator<KeyValuePair<TKey, TValue>> _enumerator; // Enumerator over the dictionary.
 
             internal DictionaryEnumerator(ConcurrentDictionary<TKey, TValue> dictionary)
             {

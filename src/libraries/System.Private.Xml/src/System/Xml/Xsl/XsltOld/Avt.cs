@@ -13,8 +13,8 @@ namespace System.Xml.Xsl.XsltOld
 
     internal sealed class Avt
     {
-        private string _constAvt;
-        private TextEvent[] _events;
+        private readonly string _constAvt;
+        private readonly TextEvent[] _events;
 
         private Avt(string constAvt)
         {

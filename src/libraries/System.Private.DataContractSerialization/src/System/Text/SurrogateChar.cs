@@ -10,8 +10,8 @@ namespace System.Text
 {
     internal struct SurrogateChar
     {
-        private char _lowChar;
-        private char _highChar;
+        private readonly char _lowChar;
+        private readonly char _highChar;
 
         public const int MinValue = 0x10000;
         public const int MaxValue = MinValue + (1 << 20) - 1;

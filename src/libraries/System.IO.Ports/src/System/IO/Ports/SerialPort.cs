@@ -61,14 +61,14 @@ namespace System.IO.Ports
         private byte[] _inBuffer = new byte[DefaultBufferSize];
         private int _readPos = 0;    // position of next byte to read in the read buffer.  readPos <= readLen
         private int _readLen = 0;    // position of first unreadable byte => CachedBytesToRead is the number of readable bytes left.
-        private char[] _oneChar = new char[1];
+        private readonly char[] _oneChar = new char[1];
         private char[] _singleCharBuffer = null;
 
         public event SerialErrorReceivedEventHandler ErrorReceived;
         public event SerialPinChangedEventHandler PinChanged;
 
         // handler for the underlying stream
-        private SerialDataReceivedEventHandler _dataReceivedHandler;
+        private readonly SerialDataReceivedEventHandler _dataReceivedHandler;
 
         private SerialDataReceivedEventHandler _dataReceived;
         public event SerialDataReceivedEventHandler DataReceived

@@ -21,7 +21,7 @@ namespace System.ComponentModel.Composition.Hosting
             private Dictionary<ImportDefinition, List<IDisposable>> _importedDisposableExports;
             private Dictionary<ImportDefinition, Export[]> _importCache;
             private string[] _importedContractNames;
-            private ComposablePart _part;
+            private readonly ComposablePart _part;
             private ImportState _state = ImportState.NoImportsSatisfied;
             private readonly ImportEngine _importEngine;
 

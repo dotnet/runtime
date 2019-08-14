@@ -33,7 +33,7 @@ namespace System.Xml
 
     internal class ReaderPositionInfo : PositionInfo
     {
-        private IXmlLineInfo _lineInfo;
+        private readonly IXmlLineInfo _lineInfo;
 
         public ReaderPositionInfo(IXmlLineInfo lineInfo)
         {

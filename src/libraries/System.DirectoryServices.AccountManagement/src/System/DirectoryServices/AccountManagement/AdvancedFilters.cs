@@ -21,7 +21,7 @@ namespace System.DirectoryServices.AccountManagement
 
         private bool _badPasswordAttemptChanged = false;
         private QbeMatchType _badPasswordAttemptVal = null;
-        private Principal _p;
+        private readonly Principal _p;
 
         public void LastBadPasswordAttempt(DateTime lastAttempt, MatchType match)
         {

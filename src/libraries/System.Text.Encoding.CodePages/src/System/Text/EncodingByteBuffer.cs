@@ -9,14 +9,14 @@ namespace System.Text
     internal class EncodingByteBuffer
     {
         private unsafe byte* _bytes;
-        private unsafe byte* _byteStart;
-        private unsafe byte* _byteEnd;
+        private readonly unsafe byte* _byteStart;
+        private readonly unsafe byte* _byteEnd;
         private unsafe char* _chars;
-        private unsafe char* _charStart;
-        private unsafe char* _charEnd;
+        private readonly unsafe char* _charStart;
+        private readonly unsafe char* _charEnd;
         private int _byteCountResult = 0;
-        private EncodingNLS _enc;
-        private EncoderNLS _encoder;
+        private readonly EncodingNLS _enc;
+        private readonly EncoderNLS _encoder;
         internal EncoderFallbackBuffer fallbackBuffer;
         internal EncoderFallbackBufferHelper fallbackBufferHelper;
 

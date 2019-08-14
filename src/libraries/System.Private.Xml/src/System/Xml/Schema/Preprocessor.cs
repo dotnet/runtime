@@ -51,9 +51,9 @@ namespace System.Xml.Schema
         private Hashtable _schemaLocations;
         private Hashtable _chameleonSchemas;
 
-        private Hashtable _referenceNamespaces;
-        private Hashtable _processedExternals;
-        private SortedList _lockList;
+        private readonly Hashtable _referenceNamespaces;
+        private readonly Hashtable _processedExternals;
+        private readonly SortedList _lockList;
 
         private XmlReaderSettings _readerSettings;
 

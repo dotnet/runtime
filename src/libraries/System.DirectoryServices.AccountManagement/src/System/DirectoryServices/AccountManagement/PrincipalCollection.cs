@@ -649,7 +649,7 @@ namespace System.DirectoryServices.AccountManagement
         //
 
         // The group we're a PrincipalCollection of
-        private GroupPrincipal _owningGroup;
+        private readonly GroupPrincipal _owningGroup;
 
         //
         // SYNCHRONIZATION
@@ -659,16 +659,16 @@ namespace System.DirectoryServices.AccountManagement
         //   Synchronize by locking on resultSet.
 
         // Represents the Principals retrieved from the store for this collection
-        private BookmarkableResultSet _resultSet;
+        private readonly BookmarkableResultSet _resultSet;
 
         // Contains Principals inserted into this collection for which the insertion has not been persisted to the store
-        private List<Principal> _insertedValuesCompleted = new List<Principal>();
-        private List<Principal> _insertedValuesPending = new List<Principal>();
+        private readonly List<Principal> _insertedValuesCompleted = new List<Principal>();
+        private readonly List<Principal> _insertedValuesPending = new List<Principal>();
 
         // Contains Principals removed from this collection for which the removal has not been persisted
         // to the store
-        private List<Principal> _removedValuesCompleted = new List<Principal>();
-        private List<Principal> _removedValuesPending = new List<Principal>();
+        private readonly List<Principal> _removedValuesCompleted = new List<Principal>();
+        private readonly List<Principal> _removedValuesPending = new List<Principal>();
 
         // Has this collection been cleared?
         private bool _clearPending = false;

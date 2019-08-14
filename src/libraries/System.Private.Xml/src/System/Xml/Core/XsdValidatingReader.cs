@@ -57,18 +57,18 @@ namespace System.Xml
         }
         //Validation
         private XmlReader _coreReader;
-        private IXmlNamespaceResolver _coreReaderNSResolver;
-        private IXmlNamespaceResolver _thisNSResolver;
+        private readonly IXmlNamespaceResolver _coreReaderNSResolver;
+        private readonly IXmlNamespaceResolver _thisNSResolver;
         private XmlSchemaValidator _validator;
-        private XmlResolver _xmlResolver;
-        private ValidationEventHandler _validationEvent;
+        private readonly XmlResolver _xmlResolver;
+        private readonly ValidationEventHandler _validationEvent;
         private ValidatingReaderState _validationState;
         private XmlValueGetter _valueGetter;
 
         // namespace management
-        private XmlNamespaceManager _nsManager;
-        private bool _manageNamespaces;
-        private bool _processInlineSchema;
+        private readonly XmlNamespaceManager _nsManager;
+        private readonly bool _manageNamespaces;
+        private readonly bool _processInlineSchema;
         private bool _replayCache;
 
         //Current Node handling
@@ -93,7 +93,7 @@ namespace System.Xml
         private string _originalAtomicValueString;
 
         //cached coreReader information
-        private XmlNameTable _coreReaderNameTable;
+        private readonly XmlNameTable _coreReaderNameTable;
         private XsdCachingReader _cachingReader;
 
         //ReadAttributeValue TextNode

@@ -28,11 +28,11 @@ namespace System.IO.Pipelines
         private BufferSegment _readTail;
         private long _bufferedBytes;
         private bool _examinedEverything;
-        private object _lock = new object();
+        private readonly object _lock = new object();
 
         // Mutable struct! Don't make this readonly
         private BufferSegmentStack _bufferSegmentPool;
-        private bool _leaveOpen;
+        private readonly bool _leaveOpen;
 
         /// <summary>
         /// Creates a new StreamPipeReader.

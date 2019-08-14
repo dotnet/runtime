@@ -10,8 +10,8 @@ namespace System.ComponentModel.DataAnnotations
 {
     internal class MetadataPropertyDescriptorWrapper : PropertyDescriptor
     {
-        private PropertyDescriptor _descriptor;
-        private bool _isReadOnly;
+        private readonly PropertyDescriptor _descriptor;
+        private readonly bool _isReadOnly;
 
         public MetadataPropertyDescriptorWrapper(PropertyDescriptor descriptor, Attribute[] newAttributes)
             : base(descriptor, newAttributes)

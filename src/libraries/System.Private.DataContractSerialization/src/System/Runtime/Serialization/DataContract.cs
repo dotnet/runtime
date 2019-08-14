@@ -28,14 +28,14 @@ namespace System.Runtime.Serialization
         private XmlDictionaryString _ns;
 
         // this the global dictionary for data contracts introduced for multi-file.
-        private static Dictionary<Type, DataContract> s_dataContracts = new Dictionary<Type, DataContract>();
+        private static readonly Dictionary<Type, DataContract> s_dataContracts = new Dictionary<Type, DataContract>();
 
         public static Dictionary<Type, DataContract> GetDataContracts()
         {
             return s_dataContracts;
         }
 
-        private DataContractCriticalHelper _helper;
+        private readonly DataContractCriticalHelper _helper;
 
         internal DataContract(DataContractCriticalHelper helper)
         {
@@ -332,7 +332,7 @@ namespace System.Runtime.Serialization
 
         internal class DataContractCriticalHelper
         {
-            private static Dictionary<TypeHandleRef, IntRef> s_typeToIDCache = new Dictionary<TypeHandleRef, IntRef>(new TypeHandleRefEqualityComparer());
+            private static readonly Dictionary<TypeHandleRef, IntRef> s_typeToIDCache = new Dictionary<TypeHandleRef, IntRef>(new TypeHandleRefEqualityComparer());
             private static DataContract[] s_dataContractCache = new DataContract[32];
             private static int s_dataContractID;
             private static Dictionary<Type, DataContract> s_typeToBuiltInContract;
@@ -340,13 +340,13 @@ namespace System.Runtime.Serialization
             private static Dictionary<string, string> s_namespaces;
             private static Dictionary<string, XmlDictionaryString> s_clrTypeStrings;
             private static XmlDictionary s_clrTypeStringsDictionary;
-            private static TypeHandleRef s_typeHandleRef = new TypeHandleRef();
+            private static readonly TypeHandleRef s_typeHandleRef = new TypeHandleRef();
 
-            private static object s_cacheLock = new object();
-            private static object s_createDataContractLock = new object();
-            private static object s_initBuiltInContractsLock = new object();
-            private static object s_namespacesLock = new object();
-            private static object s_clrTypeStringsLock = new object();
+            private static readonly object s_cacheLock = new object();
+            private static readonly object s_createDataContractLock = new object();
+            private static readonly object s_initBuiltInContractsLock = new object();
+            private static readonly object s_namespacesLock = new object();
+            private static readonly object s_clrTypeStringsLock = new object();
 
             private Type _underlyingType;
             private Type _originalUnderlyingType;
@@ -2206,9 +2206,9 @@ namespace System.Runtime.Serialization
 
     internal class GenericNameProvider : IGenericNameProvider
     {
-        private string _genericTypeName;
-        private object[] _genericParams;//Type or DataContract
-        private IList<int> _nestedParamCounts;
+        private readonly string _genericTypeName;
+        private readonly object[] _genericParams;//Type or DataContract
+        private readonly IList<int> _nestedParamCounts;
         internal GenericNameProvider(Type type)
             : this(DataContract.GetClrTypeFullName(type.GetGenericTypeDefinition()), type.GetGenericArguments())
         {
@@ -2328,7 +2328,7 @@ namespace System.Runtime.Serialization
 
     internal class IntRef
     {
-        private int _value;
+        private readonly int _value;
 
         public IntRef(int value)
         {

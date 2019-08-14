@@ -36,7 +36,7 @@ namespace System.Data.Odbc
         private bool _noMoreRows;
         private bool _skipReadOnce;
         private int _hiddenColumns;                 // number of hidden columns
-        private CommandBehavior _commandBehavior;
+        private readonly CommandBehavior _commandBehavior;
 
         // track current row and column, will be set on the first Fetch call
         private int _row = -1;
@@ -54,7 +54,7 @@ namespace System.Data.Odbc
 
         private MetaData[] _metadata;
         private DataTable _schemaTable; // MDAC 68336
-        private string _cmdText;    // get a copy in case the command text on the command is changed ...
+        private readonly string _cmdText;    // get a copy in case the command text on the command is changed ...
         private CMDWrapper _cmdWrapper;
 
         internal OdbcDataReader(OdbcCommand command, CMDWrapper cmdWrapper, CommandBehavior commandbehavior)
@@ -2815,11 +2815,11 @@ namespace System.Data.Odbc
 
         internal sealed class QualifiedTableName
         {
-            private string _catalogName;
-            private string _schemaName;
+            private readonly string _catalogName;
+            private readonly string _schemaName;
             private string _tableName;
             private string _quotedTableName;
-            private string _quoteChar;
+            private readonly string _quoteChar;
 
             internal string Catalog
             {

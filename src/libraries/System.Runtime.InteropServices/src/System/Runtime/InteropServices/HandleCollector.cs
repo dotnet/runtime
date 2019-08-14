@@ -13,7 +13,7 @@ namespace System.Runtime.InteropServices
         private int _threshold;
         private int _handleCount;
 
-        private int[] _gcCounts = new int[3];
+        private readonly int[] _gcCounts = new int[3];
         private int _gcGeneration = 0;
 
         public HandleCollector(string? name, int initialThreshold) :

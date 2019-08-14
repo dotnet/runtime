@@ -282,7 +282,7 @@ namespace System.Data.SqlTypes
         //      Data members
         // --------------------------------------------------------------
 
-        private Stream _stream;
+        private readonly Stream _stream;
         private long _lPosition;
         private bool _isClosed;
 

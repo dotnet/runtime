@@ -20,7 +20,7 @@ namespace System.Drawing
         {
             private static readonly TraceSwitch s_gdiPlusInitialization = new TraceSwitch("GdiPlusInitialization", "Tracks GDI+ initialization and teardown");
 
-            private static IntPtr s_initToken;
+            private static readonly IntPtr s_initToken;
             private const string ThreadDataSlotName = "system.drawing.threaddata";
 
             static Gdip()

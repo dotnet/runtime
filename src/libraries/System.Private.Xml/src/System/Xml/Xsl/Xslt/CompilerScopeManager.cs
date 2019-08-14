@@ -377,8 +377,8 @@ namespace System.Xml.Xsl.Xslt
 
         internal struct NamespaceEnumerator
         {
-            private CompilerScopeManager<V> _scope;
-            private int _lastRecord;
+            private readonly CompilerScopeManager<V> _scope;
+            private readonly int _lastRecord;
             private int _currentRecord;
 
             public NamespaceEnumerator(CompilerScopeManager<V> scope)

@@ -15,10 +15,10 @@ namespace System.Runtime.Serialization.Json
 {
     internal class XmlObjectSerializerWriteContextComplexJson : XmlObjectSerializerWriteContextComplex
     {
-        private DataContractJsonSerializer _jsonSerializer;
-        private EmitTypeInformation _emitXsiType;
+        private readonly DataContractJsonSerializer _jsonSerializer;
+        private readonly EmitTypeInformation _emitXsiType;
         private bool _perCallXsiTypeAlreadyEmitted;
-        private bool _useSimpleDictionaryFormat;
+        private readonly bool _useSimpleDictionaryFormat;
 
         public XmlObjectSerializerWriteContextComplexJson(DataContractJsonSerializer serializer, DataContract rootTypeDataContract)
             : base(null, int.MaxValue, new StreamingContext(), true)

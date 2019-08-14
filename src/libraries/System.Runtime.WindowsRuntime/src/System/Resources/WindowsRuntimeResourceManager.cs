@@ -52,7 +52,7 @@ namespace System.Resources
         private static volatile CultureInfo s_globalResourceContextBestFitCultureInfo;
         private static volatile global::Windows.ApplicationModel.Resources.Core.ResourceManager s_globalResourceManager;
 
-        private static object s_objectForLock = new object(); // Used by InitializeStatics
+        private static readonly object s_objectForLock = new object(); // Used by InitializeStatics
 
         private static bool InitializeStatics()
         {

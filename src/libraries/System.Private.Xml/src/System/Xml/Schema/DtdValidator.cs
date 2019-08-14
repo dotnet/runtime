@@ -23,14 +23,14 @@ namespace System.Xml.Schema
             public override string LookupNamespace(string prefix) { return prefix; }
         }
 
-        private static NamespaceManager s_namespaceManager = new NamespaceManager();
+        private static readonly NamespaceManager s_namespaceManager = new NamespaceManager();
         private const int STACK_INCREMENT = 10;
         private HWStack _validationStack;  // validaton contexts
         private Hashtable _attPresence;
         private XmlQualifiedName _name = XmlQualifiedName.Empty;
         private Hashtable _IDs;
         private IdRefNode _idRefListHead;
-        private bool _processIdentityConstraints;
+        private readonly bool _processIdentityConstraints;
 
         internal DtdValidator(XmlValidatingReaderImpl reader, IValidationEventHandling eventHandling, bool processIdentityConstraints) : base(reader, null, eventHandling)
         {

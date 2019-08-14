@@ -124,14 +124,14 @@ namespace System.Transactions
     internal class TransactionTable
     {
         // Use a timer to initiate looking for transactions that have timed out.
-        private Timer _timer;
+        private readonly Timer _timer;
 
         // Private storage noting if the timer is enabled.
         private bool _timerEnabled;
 
         // Store the timer interval
         private const int timerInternalExponent = 9;
-        private int _timerInterval;
+        private readonly int _timerInterval;
 
         // Store the number of ticks.  A tick is a mark of 1 timer interval.  By counting ticks
         // we can avoid expensive calls to get the current time for every transaction creation.
@@ -139,10 +139,10 @@ namespace System.Transactions
         private long _lastTimerTime;
 
         // Sets of arrays of transactions.
-        private BucketSet _headBucketSet;
+        private readonly BucketSet _headBucketSet;
 
         // Synchronize adding transactions with shutting off the timer and started events.
-        private CheapUnfairReaderWriterLock _rwLock;
+        private readonly CheapUnfairReaderWriterLock _rwLock;
 
         internal TransactionTable()
         {
@@ -542,9 +542,9 @@ namespace System.Transactions
         internal object nextSetWeak;
         internal BucketSet prevSet;
 
-        private TransactionTable _table;
+        private readonly TransactionTable _table;
 
-        private long _absoluteTimeout;
+        private readonly long _absoluteTimeout;
 
         internal Bucket headBucket;
 
@@ -598,12 +598,12 @@ namespace System.Transactions
     {
         private bool _timedOut;
         private int _index;
-        private int _size;
-        private InternalTransaction[] _transactions;
+        private readonly int _size;
+        private readonly InternalTransaction[] _transactions;
         internal WeakReference nextBucketWeak;
         private Bucket _previous;
 
-        private BucketSet _owningSet;
+        private readonly BucketSet _owningSet;
 
         internal Bucket(BucketSet owningSet)
         {

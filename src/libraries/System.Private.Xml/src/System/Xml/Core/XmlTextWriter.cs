@@ -131,16 +131,16 @@ namespace System.Xml
         // Fields
         //
         // output
-        private TextWriter _textWriter;
-        private XmlTextEncoder _xmlEncoder;
-        private Encoding _encoding;
+        private readonly TextWriter _textWriter;
+        private readonly XmlTextEncoder _xmlEncoder;
+        private readonly Encoding _encoding;
 
         // formatting
         private Formatting _formatting;
         private bool _indented; // perf - faster to check a boolean.
         private int _indentation;
         private char[] _indentChars;
-        private static char[] s_defaultIndentChars = CreateDefaultIndentChars();
+        private static readonly char[] s_defaultIndentChars = CreateDefaultIndentChars();
 
         // This method is needed as the native code compiler fails when this initialization is inline
         private static char[] CreateDefaultIndentChars()
@@ -189,7 +189,7 @@ namespace System.Xml
         private const int MaxNamespacesWalkCount = 16;
 #endif
 
-        private static string[] s_stateName = {
+        private static readonly string[] s_stateName = {
             "Start",
             "Prolog",
             "PostDTD",
@@ -202,7 +202,7 @@ namespace System.Xml
             "Closed",
         };
 
-        private static string[] s_tokenName = {
+        private static readonly string[] s_tokenName = {
             "PI",
             "Doctype",
             "Comment",

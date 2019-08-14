@@ -20,8 +20,8 @@ namespace System.Diagnostics
         private static string s_computerName;
 
         private PerformanceMonitor _performanceMonitor;
-        private string _machineName;
-        private string _perfLcid;
+        private readonly string _machineName;
+        private readonly string _perfLcid;
 
         private static ConcurrentDictionary<(string machineName, string lcidString), PerformanceCounterLib> s_libraryTable;
         private Dictionary<int, string> _nameTable;
@@ -194,7 +194,7 @@ namespace System.Diagnostics
 #if FEATURE_REGISTRY
             private RegistryKey _perfDataKey = null;
 #endif
-            private string _machineName;
+            private readonly string _machineName;
 
             internal PerformanceMonitor(string machineName)
             {

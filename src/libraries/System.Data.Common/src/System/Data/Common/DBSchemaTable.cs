@@ -56,9 +56,9 @@ namespace System.Data.Common
         };
 
         internal DataTable _dataTable;
-        private DataColumnCollection _columns;
-        private DataColumn[] _columnCache = new DataColumn[s_DBCOLUMN_NAME.Length];
-        private bool _returnProviderSpecificTypes;
+        private readonly DataColumnCollection _columns;
+        private readonly DataColumn[] _columnCache = new DataColumn[s_DBCOLUMN_NAME.Length];
+        private readonly bool _returnProviderSpecificTypes;
 
         internal DbSchemaTable(DataTable dataTable, bool returnProviderSpecificTypes)
         {

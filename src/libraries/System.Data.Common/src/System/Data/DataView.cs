@@ -85,7 +85,7 @@ namespace System.Data
             public int GetHashCode(DataRow obj) => obj._objectID;
         }
 
-        private DataViewListener _dvListener = null;
+        private readonly DataViewListener _dvListener = null;
 
         private static int s_objectTypeCount; // Bid counter
         private readonly int _objectID = System.Threading.Interlocked.Increment(ref s_objectTypeCount);

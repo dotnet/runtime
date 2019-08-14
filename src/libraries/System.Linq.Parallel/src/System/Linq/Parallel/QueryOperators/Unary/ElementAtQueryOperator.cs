@@ -167,10 +167,10 @@ namespace System.Linq.Parallel
 
         private class ElementAtQueryOperatorEnumerator : QueryOperatorEnumerator<TSource, int>
         {
-            private QueryOperatorEnumerator<TSource, int> _source; // The source data.
-            private int _index; // The index of the element to seek.
-            private Shared<bool> _resultFoundFlag; // Whether to cancel the operation.
-            private CancellationToken _cancellationToken;
+            private readonly QueryOperatorEnumerator<TSource, int> _source; // The source data.
+            private readonly int _index; // The index of the element to seek.
+            private readonly Shared<bool> _resultFoundFlag; // Whether to cancel the operation.
+            private readonly CancellationToken _cancellationToken;
 
             //---------------------------------------------------------------------------------------
             // Instantiates a new any/all search operator.

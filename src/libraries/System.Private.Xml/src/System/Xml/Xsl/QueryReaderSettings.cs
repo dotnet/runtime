@@ -12,15 +12,15 @@ namespace System.Xml.Xsl
 {
     internal class QueryReaderSettings
     {
-        private bool _validatingReader;
-        private XmlReaderSettings _xmlReaderSettings;
-        private XmlNameTable _xmlNameTable;
-        private EntityHandling _entityHandling;
-        private bool _namespaces;
-        private bool _normalization;
-        private bool _prohibitDtd;
-        private WhitespaceHandling _whitespaceHandling;
-        private XmlResolver _xmlResolver;
+        private readonly bool _validatingReader;
+        private readonly XmlReaderSettings _xmlReaderSettings;
+        private readonly XmlNameTable _xmlNameTable;
+        private readonly EntityHandling _entityHandling;
+        private readonly bool _namespaces;
+        private readonly bool _normalization;
+        private readonly bool _prohibitDtd;
+        private readonly WhitespaceHandling _whitespaceHandling;
+        private readonly XmlResolver _xmlResolver;
 
         public QueryReaderSettings(XmlNameTable xmlNameTable)
         {

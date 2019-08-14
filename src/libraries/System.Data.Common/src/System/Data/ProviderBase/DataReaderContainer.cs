@@ -73,7 +73,7 @@ namespace System.Data.ProviderBase
 
         private sealed class ProviderSpecificDataReader : DataReaderContainer
         {
-            private DbDataReader _providerSpecificDataReader;
+            private readonly DbDataReader _providerSpecificDataReader;
 
             internal ProviderSpecificDataReader(IDataReader dataReader, DbDataReader dbDataReader) : base(dataReader)
             {

@@ -43,11 +43,11 @@ namespace System.DirectoryServices.Protocols
         private bool _needRebind = false;
         internal static Hashtable s_handleTable = null;
         internal static object s_objectLock = null;
-        private GetLdapResponseCallback _fd = null;
-        private static Hashtable s_asyncResultTable = null;
-        private static LdapPartialResultsProcessor s_partialResultsProcessor = null;
-        private static ManualResetEvent s_waitHandle = null;
-        private static PartialResultsRetriever s_retriever = null;
+        private readonly GetLdapResponseCallback _fd = null;
+        private static readonly Hashtable s_asyncResultTable = null;
+        private static readonly LdapPartialResultsProcessor s_partialResultsProcessor = null;
+        private static readonly ManualResetEvent s_waitHandle = null;
+        private static readonly PartialResultsRetriever s_retriever = null;
         private bool _setFQDNDone = false;
         internal bool _needDispose = true;
         private bool _connected = false;

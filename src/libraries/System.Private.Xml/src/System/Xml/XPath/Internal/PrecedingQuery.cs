@@ -22,7 +22,7 @@ namespace MS.Internal.Xml.XPath
     internal sealed class PrecedingQuery : BaseAxisQuery
     {
         private XPathNodeIterator _workIterator;
-        private StackNav _ancestorStk;
+        private readonly StackNav _ancestorStk;
 
         public PrecedingQuery(Query qyInput, string name, string prefix, XPathNodeType typeTest) : base(qyInput, name, prefix, typeTest)
         {

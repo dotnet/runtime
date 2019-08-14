@@ -282,7 +282,7 @@ namespace System.DirectoryServices.AccountManagement
         //
         // Private implementation
         //
-        private AuthenticablePrincipal _owningPrincipal;
+        private readonly AuthenticablePrincipal _owningPrincipal;
 
         //
         // Load/Store

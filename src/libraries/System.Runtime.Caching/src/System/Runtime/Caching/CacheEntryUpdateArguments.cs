@@ -8,10 +8,10 @@ namespace System.Runtime.Caching
 {
     public class CacheEntryUpdateArguments
     {
-        private string _key;
-        private CacheEntryRemovedReason _reason;
-        private string _regionName;
-        private ObjectCache _source;
+        private readonly string _key;
+        private readonly CacheEntryRemovedReason _reason;
+        private readonly string _regionName;
+        private readonly ObjectCache _source;
         private CacheItem _updatedCacheItem;
         private CacheItemPolicy _updatedCacheItemPolicy;
 

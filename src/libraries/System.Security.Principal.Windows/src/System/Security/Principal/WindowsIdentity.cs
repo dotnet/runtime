@@ -41,14 +41,14 @@ namespace System.Security.Principal
         private IdentityReferenceCollection _groups = null;
 
         private SafeAccessTokenHandle _safeTokenHandle = SafeAccessTokenHandle.InvalidHandle;
-        private string _authType = null;
+        private readonly string _authType = null;
         private int _isAuthenticated = -1;
         private volatile TokenImpersonationLevel _impersonationLevel;
         private volatile bool _impersonationLevelInitialized;
 
         public new const string DefaultIssuer = @"AD AUTHORITY";
-        private string _issuerName = DefaultIssuer;
-        private object _claimsIntiailizedLock = new object();
+        private readonly string _issuerName = DefaultIssuer;
+        private readonly object _claimsIntiailizedLock = new object();
         private volatile bool _claimsInitialized;
         private List<Claim> _deviceClaims;
         private List<Claim> _userClaims;
@@ -707,7 +707,7 @@ namespace System.Security.Principal
         // internal.
         //
 
-        private static AsyncLocal<SafeAccessTokenHandle> s_currentImpersonatedToken = new AsyncLocal<SafeAccessTokenHandle>(CurrentImpersonatedTokenChanged);
+        private static readonly AsyncLocal<SafeAccessTokenHandle> s_currentImpersonatedToken = new AsyncLocal<SafeAccessTokenHandle>(CurrentImpersonatedTokenChanged);
 
         private static void RunImpersonatedInternal(SafeAccessTokenHandle token, Action action)
         {

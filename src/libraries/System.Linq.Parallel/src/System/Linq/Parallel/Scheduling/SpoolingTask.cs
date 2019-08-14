@@ -179,11 +179,11 @@ namespace System.Linq.Parallel
     internal class StopAndGoSpoolingTask<TInputOutput, TIgnoreKey> : SpoolingTaskBase
     {
         // The data source from which to pull data.
-        private QueryOperatorEnumerator<TInputOutput, TIgnoreKey> _source;
+        private readonly QueryOperatorEnumerator<TInputOutput, TIgnoreKey> _source;
 
         // The destination channel into which data is placed. This can be null if we are
         // enumerating "for effect", e.g. forall loop.
-        private SynchronousChannel<TInputOutput> _destination;
+        private readonly SynchronousChannel<TInputOutput> _destination;
 
         //-----------------------------------------------------------------------------------
         // Creates, but does not execute, a new spooling task.
@@ -268,11 +268,11 @@ namespace System.Linq.Parallel
     internal class PipelineSpoolingTask<TInputOutput, TIgnoreKey> : SpoolingTaskBase
     {
         // The data source from which to pull data.
-        private QueryOperatorEnumerator<TInputOutput, TIgnoreKey> _source;
+        private readonly QueryOperatorEnumerator<TInputOutput, TIgnoreKey> _source;
 
         // The destination channel into which data is placed. This can be null if we are
         // enumerating "for effect", e.g. forall loop.
-        private AsynchronousChannel<TInputOutput> _destination;
+        private readonly AsynchronousChannel<TInputOutput> _destination;
 
         //-----------------------------------------------------------------------------------
         // Creates, but does not execute, a new spooling task.
@@ -359,7 +359,7 @@ namespace System.Linq.Parallel
     internal class ForAllSpoolingTask<TInputOutput, TIgnoreKey> : SpoolingTaskBase
     {
         // The data source from which to pull data.
-        private QueryOperatorEnumerator<TInputOutput, TIgnoreKey> _source;
+        private readonly QueryOperatorEnumerator<TInputOutput, TIgnoreKey> _source;
 
         //-----------------------------------------------------------------------------------
         // Creates, but does not execute, a new spooling task.

@@ -11,7 +11,7 @@ namespace System.Data.Odbc
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed class OdbcException : System.Data.Common.DbException
     {
-        private OdbcErrorCollection _odbcErrors = new OdbcErrorCollection();
+        private readonly OdbcErrorCollection _odbcErrors = new OdbcErrorCollection();
 
         internal static OdbcException CreateException(OdbcErrorCollection errors, ODBC32.RetCode retcode)
         {

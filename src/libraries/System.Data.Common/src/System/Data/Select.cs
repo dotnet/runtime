@@ -12,9 +12,9 @@ namespace System.Data
     {
         private readonly DataTable _table;
         private readonly IndexField[] _indexFields;
-        private DataViewRowState _recordStates;
-        private DataExpression _rowFilter;
-        private ExpressionNode _expression;
+        private readonly DataViewRowState _recordStates;
+        private readonly DataExpression _rowFilter;
+        private readonly ExpressionNode _expression;
 
         private Index _index;
 
