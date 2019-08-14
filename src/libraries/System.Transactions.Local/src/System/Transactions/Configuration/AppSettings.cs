@@ -6,8 +6,8 @@ namespace System.Transactions.Configuration
 {
     internal static class AppSettings
     {
-        private static volatile bool s_settingsInitalized = false;
-        private static object s_appSettingsLock = new object();
+        private static bool s_settingsInitalized = false;
+        private static readonly object s_appSettingsLock = new object();
         private static bool s_includeDistributedTxIdInExceptionMessage;
 
         private static void EnsureSettingsLoaded()

@@ -12,7 +12,7 @@ namespace System.Data.Odbc
 {
     internal abstract class OdbcHandle : SafeHandle
     {
-        private ODBC32.SQL_HANDLE _handleType;
+        private readonly ODBC32.SQL_HANDLE _handleType;
         private OdbcHandle _parentHandle;
 
         protected OdbcHandle(ODBC32.SQL_HANDLE handleType, OdbcHandle parentHandle) : base(IntPtr.Zero, true)

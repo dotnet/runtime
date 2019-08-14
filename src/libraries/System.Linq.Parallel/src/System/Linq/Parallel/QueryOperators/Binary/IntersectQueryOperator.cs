@@ -125,11 +125,11 @@ namespace System.Linq.Parallel
 
         private class IntersectQueryOperatorEnumerator<TLeftKey> : QueryOperatorEnumerator<TInputOutput, int>
         {
-            private QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TLeftKey> _leftSource; // Left data source.
-            private QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, int> _rightSource; // Right data source.
-            private IEqualityComparer<TInputOutput> _comparer; // Comparer to use for equality/hash-coding.
+            private readonly QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TLeftKey> _leftSource; // Left data source.
+            private readonly QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, int> _rightSource; // Right data source.
+            private readonly IEqualityComparer<TInputOutput> _comparer; // Comparer to use for equality/hash-coding.
             private Set<TInputOutput> _hashLookup; // The hash lookup, used to produce the intersection.
-            private CancellationToken _cancellationToken;
+            private readonly CancellationToken _cancellationToken;
             private Shared<int> _outputLoopCount;
 
             //---------------------------------------------------------------------------------------
@@ -226,12 +226,12 @@ namespace System.Linq.Parallel
 
         private class OrderedIntersectQueryOperatorEnumerator<TLeftKey> : QueryOperatorEnumerator<TInputOutput, TLeftKey>
         {
-            private QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TLeftKey> _leftSource; // Left data source.
-            private QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, int> _rightSource; // Right data source.
-            private IEqualityComparer<Wrapper<TInputOutput>> _comparer; // Comparer to use for equality/hash-coding.
-            private IComparer<TLeftKey> _leftKeyComparer; // Comparer to use to determine ordering of order keys.
+            private readonly QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TLeftKey> _leftSource; // Left data source.
+            private readonly QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, int> _rightSource; // Right data source.
+            private readonly IEqualityComparer<Wrapper<TInputOutput>> _comparer; // Comparer to use for equality/hash-coding.
+            private readonly IComparer<TLeftKey> _leftKeyComparer; // Comparer to use to determine ordering of order keys.
             private Dictionary<Wrapper<TInputOutput>, Pair<TInputOutput, TLeftKey>> _hashLookup; // The hash lookup, used to produce the intersection.
-            private CancellationToken _cancellationToken;
+            private readonly CancellationToken _cancellationToken;
 
             //---------------------------------------------------------------------------------------
             // Instantiates a new intersection operator.

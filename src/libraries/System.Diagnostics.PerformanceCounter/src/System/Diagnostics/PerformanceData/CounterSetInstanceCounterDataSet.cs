@@ -15,7 +15,7 @@ namespace System.Diagnostics.PerformanceData
     /// </summary>
     public sealed class CounterData
     {
-        private unsafe long* _offset;
+        private readonly unsafe long* _offset;
 
         /// <summary>
         /// CounterData constructor
@@ -103,7 +103,7 @@ namespace System.Diagnostics.PerformanceData
     public sealed class CounterSetInstanceCounterDataSet : IDisposable
     {
         internal CounterSetInstance _instance;
-        private Dictionary<int, CounterData> _counters;
+        private readonly Dictionary<int, CounterData> _counters;
         private int _disposed;
         internal unsafe byte* _dataBlock;
 

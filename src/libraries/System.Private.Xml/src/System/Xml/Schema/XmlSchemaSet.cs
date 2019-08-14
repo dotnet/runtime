@@ -21,29 +21,29 @@ namespace System.Xml.Schema
     /// </summary>
     public class XmlSchemaSet
     {
-        private XmlNameTable _nameTable;
+        private readonly XmlNameTable _nameTable;
         private SchemaNames _schemaNames;
-        private SortedList _schemas;              // List of source schemas
+        private readonly SortedList _schemas;              // List of source schemas
 
         //Event handling
-        private ValidationEventHandler _internalEventHandler;
+        private readonly ValidationEventHandler _internalEventHandler;
         private ValidationEventHandler _eventHandler;
 
         private bool _isCompiled = false;
 
         //Dictionary<Uri, XmlSchema> schemaLocations;
         //Dictionary<ChameleonKey, XmlSchema> chameleonSchemas;
-        private Hashtable _schemaLocations;
-        private Hashtable _chameleonSchemas;
+        private readonly Hashtable _schemaLocations;
+        private readonly Hashtable _chameleonSchemas;
 
-        private Hashtable _targetNamespaces;
+        private readonly Hashtable _targetNamespaces;
         private bool _compileAll;
 
         //Cached Compiled Info
         private SchemaInfo _cachedCompiledInfo;
 
         //Reader settings to parse schema
-        private XmlReaderSettings _readerSettings;
+        private readonly XmlReaderSettings _readerSettings;
         private XmlSchema _schemaForSchema;  //Only one schema for schema per set
 
         //Schema compilation settings

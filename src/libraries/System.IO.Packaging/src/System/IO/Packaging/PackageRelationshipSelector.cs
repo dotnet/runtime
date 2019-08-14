@@ -168,9 +168,9 @@ namespace System.IO.Packaging
 
         #region Private Members
 
-        private Uri _sourceUri;
-        private string _selectionCriteria;
-        private PackageRelationshipSelectorType _selectorType;
+        private readonly Uri _sourceUri;
+        private readonly string _selectionCriteria;
+        private readonly PackageRelationshipSelectorType _selectorType;
 
         #endregion Private Members
     }

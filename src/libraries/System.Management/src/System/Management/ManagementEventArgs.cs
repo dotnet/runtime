@@ -12,7 +12,7 @@ internal class IdentifierChangedEventArgs : EventArgs
 
 internal class InternalObjectPutEventArgs : EventArgs
 {
-    private ManagementPath path;
+    private readonly ManagementPath path;
 
     internal InternalObjectPutEventArgs (ManagementPath path)
     {
@@ -30,7 +30,7 @@ internal class InternalObjectPutEventArgs : EventArgs
     /// </summary>
 public abstract class ManagementEventArgs : EventArgs
 {
-    private object context;
+    private readonly object context;
 
     /// <summary>
     /// Constructor. This is not callable directly by applications.
@@ -58,7 +58,7 @@ public abstract class ManagementEventArgs : EventArgs
 /// </summary>
 public class ObjectReadyEventArgs : ManagementEventArgs
 {
-    private ManagementBaseObject wmiObject;
+    private readonly ManagementBaseObject wmiObject;
 
     /// <summary>
     /// Constructor.
@@ -150,7 +150,7 @@ public class CompletedEventArgs : ManagementEventArgs
 /// </summary>
 public class ObjectPutEventArgs : ManagementEventArgs
 {
-    private ManagementPath wmiPath;
+    private readonly ManagementPath wmiPath;
 
     /// <summary>
     /// Constructor
@@ -188,9 +188,9 @@ public class ObjectPutEventArgs : ManagementEventArgs
 /// </summary>
 public class ProgressEventArgs : ManagementEventArgs
 {
-    private int    upperBound;
-    private int    current;
-    private string message;
+    private readonly int    upperBound;
+    private readonly int    current;
+    private readonly string message;
 
     /// <summary>
     /// Constructor
@@ -266,7 +266,7 @@ public class ProgressEventArgs : ManagementEventArgs
 /// </summary>
 public class EventArrivedEventArgs : ManagementEventArgs
 {
-    private ManagementBaseObject eventObject;
+    private readonly ManagementBaseObject eventObject;
 
     internal EventArrivedEventArgs (
                 object context,
@@ -292,7 +292,7 @@ public class EventArrivedEventArgs : ManagementEventArgs
 /// </summary>
 public class StoppedEventArgs : ManagementEventArgs
 {
-    private int status;
+    private readonly int status;
 
     internal StoppedEventArgs (
                 object context,

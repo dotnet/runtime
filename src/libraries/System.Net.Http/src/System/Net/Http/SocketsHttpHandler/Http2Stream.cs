@@ -79,7 +79,7 @@ namespace System.Net.Http
             // This is a linked token combining the above source and the user-supplied token to SendRequestBodyAsync
             private CancellationToken _requestBodyCancellationToken;
 
-            private TaskCompletionSource<bool> _expect100ContinueWaiter;
+            private readonly TaskCompletionSource<bool> _expect100ContinueWaiter;
 
             private int _headerBudgetRemaining;
 

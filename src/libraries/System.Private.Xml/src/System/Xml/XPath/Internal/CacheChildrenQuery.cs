@@ -18,8 +18,8 @@ namespace MS.Internal.Xml.XPath
     internal sealed class CacheChildrenQuery : ChildrenQuery
     {
         private XPathNavigator _nextInput = null;
-        private StackNav _elementStk;
-        private StackInt _positionStk;
+        private readonly StackNav _elementStk;
+        private readonly StackInt _positionStk;
         private bool _needInput;
 #if DEBUG
         private XPathNavigator _lastNode = null;

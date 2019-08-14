@@ -223,9 +223,9 @@ namespace System.Xml.Schema
 
     internal abstract class XmlBaseConverter : XmlValueConverter
     {
-        private XmlSchemaType _schemaType;
-        private XmlTypeCode _typeCode;
-        private Type _clrTypeDefault;
+        private readonly XmlSchemaType _schemaType;
+        private readonly XmlTypeCode _typeCode;
+        private readonly Type _clrTypeDefault;
 
         protected XmlBaseConverter(XmlSchemaType schemaType)
         {
@@ -1986,7 +1986,7 @@ namespace System.Xml.Schema
 
     internal class XmlUntypedConverter : XmlListConverter
     {
-        private bool _allowListToList;
+        private readonly bool _allowListToList;
 
         protected XmlUntypedConverter() : base(DatatypeImplementation.UntypedAtomicType)
         {
@@ -3117,8 +3117,8 @@ namespace System.Xml.Schema
 
     internal class XmlUnionConverter : XmlBaseConverter
     {
-        private XmlValueConverter[] _converters;
-        private bool _hasAtomicMember, _hasListMember;
+        private readonly XmlValueConverter[] _converters;
+        private readonly bool _hasAtomicMember, _hasListMember;
 
         protected XmlUnionConverter(XmlSchemaType schemaType) : base(schemaType)
         {

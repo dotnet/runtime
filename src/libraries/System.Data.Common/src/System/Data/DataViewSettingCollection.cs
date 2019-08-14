@@ -155,8 +155,8 @@ namespace System.Data
 
         private sealed class DataViewSettingsEnumerator : IEnumerator
         {
-            private DataViewSettingCollection _dataViewSettings;
-            private IEnumerator _tableEnumerator;
+            private readonly DataViewSettingCollection _dataViewSettings;
+            private readonly IEnumerator _tableEnumerator;
             public DataViewSettingsEnumerator(DataViewManager dvm)
             {
                 DataSet ds = dvm.DataSet;

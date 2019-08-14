@@ -28,9 +28,9 @@ namespace System.Linq.Parallel
     /// <typeparam name="T"></typeparam>
     internal sealed class AsynchronousChannelMergeEnumerator<T> : MergeEnumerator<T>
     {
-        private AsynchronousChannel<T>[] _channels; // The channels being enumerated.
+        private readonly AsynchronousChannel<T>[] _channels; // The channels being enumerated.
         private IntValueEvent _consumerEvent; // The consumer event.
-        private bool[] _done;       // Tracks which channels are done.
+        private readonly bool[] _done;       // Tracks which channels are done.
         private int _channelIndex;  // The next channel from which we'll dequeue.
         private T _currentElement;  // The remembered element from the previous MoveNext.
 

@@ -19,12 +19,12 @@ namespace System.Xml.Xsl.IlGen
         // Enable all patterns for Release code
         private static readonly QilPatterns s_patternsOpt = new QilPatterns((int)XmlILOptimization.Last_, allSet: true);
 
-        private QilExpression _qil;
-        private XmlILElementAnalyzer _elemAnalyzer;
-        private XmlILStateAnalyzer _contentAnalyzer;
-        private XmlILNamespaceAnalyzer _nmspAnalyzer;
-        private NodeCounter _nodeCounter = new NodeCounter();
-        private SubstitutionList _subs = new SubstitutionList();
+        private readonly QilExpression _qil;
+        private readonly XmlILElementAnalyzer _elemAnalyzer;
+        private readonly XmlILStateAnalyzer _contentAnalyzer;
+        private readonly XmlILNamespaceAnalyzer _nmspAnalyzer;
+        private readonly NodeCounter _nodeCounter = new NodeCounter();
+        private readonly SubstitutionList _subs = new SubstitutionList();
 
         private static QilPatterns CreatePatternsNoOpt()
         {

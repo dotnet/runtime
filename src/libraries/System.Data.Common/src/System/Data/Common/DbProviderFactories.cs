@@ -31,7 +31,7 @@ namespace System.Data.Common
             internal DbProviderFactory FactoryInstance { get; }
         }
 
-        private static ConcurrentDictionary<string, ProviderRegistration> _registeredFactories = new ConcurrentDictionary<string, ProviderRegistration>();
+        private static readonly ConcurrentDictionary<string, ProviderRegistration> _registeredFactories = new ConcurrentDictionary<string, ProviderRegistration>();
         private const string AssemblyQualifiedNameColumnName = "AssemblyQualifiedName";
         private const string InvariantNameColumnName = "InvariantName";
         private const string NameColumnName = "Name";

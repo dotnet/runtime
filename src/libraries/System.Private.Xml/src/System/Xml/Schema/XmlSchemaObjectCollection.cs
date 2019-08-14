@@ -10,7 +10,7 @@ namespace System.Xml.Schema
 
     public class XmlSchemaObjectCollection : CollectionBase
     {
-        private XmlSchemaObject _parent;
+        private readonly XmlSchemaObject _parent;
 
         public XmlSchemaObjectCollection()
         {
@@ -110,7 +110,7 @@ namespace System.Xml.Schema
 
     public class XmlSchemaObjectEnumerator : IEnumerator
     {
-        private IEnumerator _enumerator;
+        private readonly IEnumerator _enumerator;
 
         internal XmlSchemaObjectEnumerator(IEnumerator enumerator)
         {

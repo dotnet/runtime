@@ -12,7 +12,7 @@ namespace System.Xml.Schema
         internal const int SYSTEM = 0;
         internal const int PUBLIC = 1;
 
-        private XmlQualifiedName _name;
+        private readonly XmlQualifiedName _name;
         private string _systemLiteral;   // System literal
         private string _pubid;    // pubid literal
 

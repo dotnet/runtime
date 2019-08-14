@@ -66,7 +66,7 @@ namespace System.Data.SqlClient
 
         internal Encoding _defaultEncoding = null;                  // for sql character data
 
-        private static EncryptionOptions s_sniSupportedEncryptionOption = TdsParserStateObjectFactory.Singleton.EncryptionOptions;
+        private static readonly EncryptionOptions s_sniSupportedEncryptionOption = TdsParserStateObjectFactory.Singleton.EncryptionOptions;
 
         private EncryptionOptions _encryptionOption = s_sniSupportedEncryptionOption;
 
@@ -8925,8 +8925,8 @@ namespace System.Data.SqlClient
 
         private sealed class TdsOutputStream : Stream
         {
-            private TdsParser _parser;
-            private TdsParserStateObject _stateObj;
+            private readonly TdsParser _parser;
+            private readonly TdsParserStateObject _stateObj;
             private byte[] _preambleToStrip;
 
             public TdsOutputStream(TdsParser parser, TdsParserStateObject stateObj, byte[] preambleToStrip)
@@ -9069,8 +9069,8 @@ namespace System.Data.SqlClient
 
         private sealed class ConstrainedTextWriter : TextWriter
         {
-            private TextWriter _next;
-            private int _size;
+            private readonly TextWriter _next;
+            private readonly int _size;
             private int _written;
 
             public ConstrainedTextWriter(TextWriter next, int size)

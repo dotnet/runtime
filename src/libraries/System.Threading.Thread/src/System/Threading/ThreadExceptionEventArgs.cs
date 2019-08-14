@@ -6,7 +6,7 @@ namespace System.Threading
 {
     public class ThreadExceptionEventArgs : EventArgs
     {
-        private Exception m_exception;
+        private readonly Exception m_exception;
 
         public ThreadExceptionEventArgs(Exception t)
         {

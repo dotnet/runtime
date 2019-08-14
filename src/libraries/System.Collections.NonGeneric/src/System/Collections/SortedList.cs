@@ -592,8 +592,8 @@ namespace System.Collections
         [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
         private class SyncSortedList : SortedList
         {
-            private SortedList _list; // Do not rename (binary serialization)
-            private object _root; // Do not rename (binary serialization)
+            private readonly SortedList _list; // Do not rename (binary serialization)
+            private readonly object _root; // Do not rename (binary serialization)
 
             internal SyncSortedList(SortedList list)
             {
@@ -805,15 +805,15 @@ namespace System.Collections
 
         private class SortedListEnumerator : IDictionaryEnumerator, ICloneable
         {
-            private SortedList _sortedList;
+            private readonly SortedList _sortedList;
             private object _key;
             private object _value;
             private int _index;
-            private int _startIndex;        // Store for Reset.
-            private int _endIndex;
-            private int _version;
+            private readonly int _startIndex;        // Store for Reset.
+            private readonly int _endIndex;
+            private readonly int _version;
             private bool _current;       // Is the current element valid?
-            private int _getObjectRetType;  // What should GetObject return?
+            private readonly int _getObjectRetType;  // What should GetObject return?
 
             internal const int Keys = 1;
             internal const int Values = 2;
@@ -909,7 +909,7 @@ namespace System.Collections
         [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
         private class KeyList : IList
         {
-            private SortedList sortedList; // Do not rename (binary serialization)
+            private readonly SortedList sortedList; // Do not rename (binary serialization)
 
             internal KeyList(SortedList sortedList)
             {
@@ -1014,7 +1014,7 @@ namespace System.Collections
         [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
         private class ValueList : IList
         {
-            private SortedList sortedList; // Do not rename (binary serialization)
+            private readonly SortedList sortedList; // Do not rename (binary serialization)
 
             internal ValueList(SortedList sortedList)
             {
@@ -1111,7 +1111,7 @@ namespace System.Collections
         // internal debug view class for sorted list
         internal class SortedListDebugView
         {
-            private SortedList _sortedList;
+            private readonly SortedList _sortedList;
 
             public SortedListDebugView(SortedList sortedList)
             {

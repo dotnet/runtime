@@ -6,7 +6,7 @@ namespace System.ComponentModel.Composition
 {
     public class ExportFactory<T>
     {
-        private Func<Tuple<T, Action>> _exportLifetimeContextCreator;
+        private readonly Func<Tuple<T, Action>> _exportLifetimeContextCreator;
 
         public ExportFactory(Func<Tuple<T, Action>> exportLifetimeContextCreator)
         {

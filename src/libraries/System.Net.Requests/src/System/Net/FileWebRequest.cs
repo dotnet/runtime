@@ -17,7 +17,7 @@ namespace System.Net
         private ManualResetEventSlim _blockReaderUntilRequestStreamDisposed;
         private WebResponse _response;
         private WebFileStream _stream;
-        private Uri _uri;
+        private readonly Uri _uri;
         private long _contentLength;
         private int _timeout = DefaultTimeoutMilliseconds;
         private bool _readPending;

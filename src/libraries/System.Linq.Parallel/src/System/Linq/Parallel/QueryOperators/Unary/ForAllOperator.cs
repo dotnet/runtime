@@ -126,7 +126,7 @@ namespace System.Linq.Parallel
         {
             private readonly QueryOperatorEnumerator<TInput, TKey> _source; // The data source.
             private readonly Action<TInput> _elementAction; // Forall operator being executed.
-            private CancellationToken _cancellationToken; // Token used to cancel this operator.
+            private readonly CancellationToken _cancellationToken; // Token used to cancel this operator.
 
             //---------------------------------------------------------------------------------------
             // Constructs a new forall enumerator object.

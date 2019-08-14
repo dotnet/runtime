@@ -35,7 +35,7 @@ namespace System.Data.SqlClient
         internal const long NullTransactionId = 0;
 
         private TransactionState _transactionState;
-        private TransactionType _transactionType;
+        private readonly TransactionType _transactionType;
         private long _transactionId;             // passed in the MARS headers
         private int _openResultCount;           // passed in the MARS headers
         private SqlInternalConnection _innerConnection;

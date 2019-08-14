@@ -11,7 +11,7 @@ namespace System.Xml.Xsl.XsltOld
 
     internal class EndEvent : Event
     {
-        private XPathNodeType _nodeType;
+        private readonly XPathNodeType _nodeType;
 
         internal EndEvent(XPathNodeType nodeType)
         {

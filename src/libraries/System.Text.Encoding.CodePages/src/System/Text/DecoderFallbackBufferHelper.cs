@@ -11,7 +11,7 @@ namespace System.Text
         // Internal items to help us figure out what we're doing as far as error messages, etc.
         // These help us with our performance and messages internally
         internal unsafe byte* byteStart;
-        internal unsafe char* charEnd; private DecoderFallbackBuffer _fallbackBuffer;
+        internal unsafe char* charEnd; private readonly DecoderFallbackBuffer _fallbackBuffer;
 
         public DecoderFallbackBufferHelper(DecoderFallbackBuffer fallbackBuffer)
         {

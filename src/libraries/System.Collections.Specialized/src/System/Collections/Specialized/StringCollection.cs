@@ -237,8 +237,8 @@ namespace System.Collections.Specialized
 
     public class StringEnumerator
     {
-        private System.Collections.IEnumerator _baseEnumerator;
-        private System.Collections.IEnumerable _temp;
+        private readonly System.Collections.IEnumerator _baseEnumerator;
+        private readonly System.Collections.IEnumerable _temp;
 
         internal StringEnumerator(StringCollection mappings)
         {

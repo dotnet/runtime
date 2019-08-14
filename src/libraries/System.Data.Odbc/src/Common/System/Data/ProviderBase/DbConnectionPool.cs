@@ -103,7 +103,7 @@ namespace System.Data.ProviderBase
         private readonly DbConnectionFactory _connectionFactory;
         private readonly DbConnectionPoolGroup _connectionPoolGroup;
         private readonly DbConnectionPoolGroupOptions _connectionPoolGroupOptions;
-        private DbConnectionPoolProviderInfo _connectionPoolProviderInfo;
+        private readonly DbConnectionPoolProviderInfo _connectionPoolProviderInfo;
 
         private State _state;
 

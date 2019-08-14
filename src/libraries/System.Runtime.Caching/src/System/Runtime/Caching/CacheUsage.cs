@@ -21,7 +21,7 @@ namespace System.Runtime.Caching
         private const uint ENTRY_MASK = 0x000000ffu;
         private const int PAGE_SHIFT = 8;
 
-        private uint _ref;
+        private readonly uint _ref;
 
         internal UsageEntryRef(int pageIndex, int entryIndex)
         {
@@ -158,8 +158,8 @@ namespace System.Runtime.Caching
         private const int MAX_PAGES_INCREMENT = 340;
         private const double MIN_LOAD_FACTOR = 0.5;
 
-        private CacheUsage _cacheUsage;
-        private byte _bucket;
+        private readonly CacheUsage _cacheUsage;
+        private readonly byte _bucket;
 
         private UsagePage[] _pages;
         private int _cEntriesInUse;

@@ -13,16 +13,16 @@ namespace System.Runtime.Serialization.Formatters.Binary
         private ObjectIDGenerator _idGenerator;
         private int _currentId;
 
-        private ISurrogateSelector _surrogates;
-        private StreamingContext _context;
+        private readonly ISurrogateSelector _surrogates;
+        private readonly StreamingContext _context;
         private BinaryFormatterWriter _serWriter;
-        private SerializationObjectManager _objectManager;
+        private readonly SerializationObjectManager _objectManager;
 
         private long _topId;
-        private string _topName = null;
+        private readonly string _topName = null;
 
-        private InternalFE _formatterEnums;
-        private SerializationBinder _binder;
+        private readonly InternalFE _formatterEnums;
+        private readonly SerializationBinder _binder;
 
         private SerObjectInfoInit _serObjectInfoInit;
 
@@ -1014,7 +1014,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         private Type GetType(object obj) => obj.GetType();
 
-        private SerStack _niPool = new SerStack("NameInfo Pool");
+        private readonly SerStack _niPool = new SerStack("NameInfo Pool");
 
         private NameInfo GetNameInfo()
         {

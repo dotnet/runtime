@@ -12,14 +12,14 @@ namespace System.Net
     public class FtpWebResponse : WebResponse, IDisposable
     {
         internal Stream _responseStream;
-        private long _contentLength;
-        private Uri _responseUri;
+        private readonly long _contentLength;
+        private readonly Uri _responseUri;
         private FtpStatusCode _statusCode;
         private string _statusLine;
         private WebHeaderCollection _ftpRequestHeaders;
-        private DateTime _lastModified;
-        private string _bannerMessage;
-        private string _welcomeMessage;
+        private readonly DateTime _lastModified;
+        private readonly string _bannerMessage;
+        private readonly string _welcomeMessage;
         private string _exitMessage;
 
         internal FtpWebResponse(Stream responseStream, long contentLength, Uri responseUri, FtpStatusCode statusCode, string statusLine, DateTime lastModified, string bannerMessage, string welcomeMessage, string exitMessage)

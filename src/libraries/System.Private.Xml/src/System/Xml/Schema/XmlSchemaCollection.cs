@@ -23,11 +23,11 @@ namespace System.Xml.Schema
     [Obsolete("Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation. https://go.microsoft.com/fwlink/?linkid=14202")]
     public sealed class XmlSchemaCollection : ICollection
     {
-        private Hashtable _collection;
-        private XmlNameTable _nameTable;
+        private readonly Hashtable _collection;
+        private readonly XmlNameTable _nameTable;
         private SchemaNames _schemaNames;
-        private object _wLock;
-        private bool _isThreadSafe = true;
+        private readonly object _wLock;
+        private readonly bool _isThreadSafe = true;
         private ValidationEventHandler _validationEventHandler = null;
         private XmlResolver _xmlResolver = null;
 
@@ -417,7 +417,7 @@ namespace System.Xml.Schema
 
     public sealed class XmlSchemaCollectionEnumerator : IEnumerator
     {
-        private IDictionaryEnumerator _enumerator;
+        private readonly IDictionaryEnumerator _enumerator;
 
         internal XmlSchemaCollectionEnumerator(Hashtable collection)
         {

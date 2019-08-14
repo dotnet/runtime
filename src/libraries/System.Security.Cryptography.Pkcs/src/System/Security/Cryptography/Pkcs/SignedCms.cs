@@ -17,7 +17,7 @@ namespace System.Security.Cryptography.Pkcs
     {
         private SignedDataAsn _signedData;
         private bool _hasData;
-        private SubjectIdentifierType _signerIdentifierType;
+        private readonly SubjectIdentifierType _signerIdentifierType;
 
         // A defensive copy of the relevant portions of the data to Decode
         private Memory<byte> _heldData;

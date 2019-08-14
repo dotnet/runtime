@@ -26,7 +26,7 @@ namespace System.Text
         internal bool bFallingBack;
         internal int iRecursionCount;
         private const int iMaxRecursion = 250;
-        private EncoderFallbackBuffer _fallbackBuffer;
+        private readonly EncoderFallbackBuffer _fallbackBuffer;
 
         // Internal Reset
         // For example, what if someone fails a conversion and wants to reset one of our fallback buffers?

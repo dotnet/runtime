@@ -14,8 +14,8 @@ namespace System.Runtime.Caching
 {
     internal class MemoryCacheEntry : MemoryCacheKey
     {
-        private object _value;
-        private DateTime _utcCreated;
+        private readonly object _value;
+        private readonly DateTime _utcCreated;
         private int _state;
         // expiration
         private DateTime _utcAbsExp;
@@ -23,11 +23,11 @@ namespace System.Runtime.Caching
         private ExpiresEntryRef _expiresEntryRef;
         private byte _expiresBucket; // index of the expiration list (bucket)
         // usage
-        private byte _usageBucket;  // index of the usage list (== priority-1)
+        private readonly byte _usageBucket;  // index of the usage list (== priority-1)
         private UsageEntryRef _usageEntryRef;   // ref into the usage list
         private DateTime _utcLastUpdateUsage;   // time we last updated usage
 
-        private CacheEntryRemovedCallback _callback;
+        private readonly CacheEntryRemovedCallback _callback;
         private SeldomUsedFields _fields; // optimization to reduce workingset when the entry hasn't any dependencies
 
         private class SeldomUsedFields

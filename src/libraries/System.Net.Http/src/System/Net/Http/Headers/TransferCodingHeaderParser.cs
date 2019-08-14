@@ -8,7 +8,7 @@ namespace System.Net.Http.Headers
 {
     internal class TransferCodingHeaderParser : BaseHeaderParser
     {
-        private Func<TransferCodingHeaderValue> _transferCodingCreator;
+        private readonly Func<TransferCodingHeaderValue> _transferCodingCreator;
 
         internal static readonly TransferCodingHeaderParser SingleValueParser =
             new TransferCodingHeaderParser(false, CreateTransferCoding);

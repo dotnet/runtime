@@ -12,12 +12,12 @@ namespace System.Diagnostics.Eventing.Reader
     /// </summary>
     public sealed class EventMetadata
     {
-        private byte _channelId;
-        private byte _level;
-        private short _opcode;
-        private int _task;
-        private long _keywords;
-        private ProviderMetadata _pmReference;
+        private readonly byte _channelId;
+        private readonly byte _level;
+        private readonly short _opcode;
+        private readonly int _task;
+        private readonly long _keywords;
+        private readonly ProviderMetadata _pmReference;
 
         internal EventMetadata(uint id, byte version, byte channelId,
                  byte level, byte opcode, short task, long keywords,

@@ -18,7 +18,7 @@ namespace System.ComponentModel
     {
         private const int LicenseHResult = unchecked((int)0x80131901);
 
-        private object _instance;
+        private readonly object _instance;
 
         /// <summary>
         /// Initializes a new instance of the <see cref='System.ComponentModel.LicenseException'/> class for the

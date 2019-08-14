@@ -39,10 +39,10 @@ namespace System.Data.Odbc
     {
         //Data
 
-        private bool[] _isBadValue;
+        private readonly bool[] _isBadValue;
         private DbSchemaInfo[] _schema;
-        private object[] _values;
-        private OdbcDataReader _record;
+        private readonly object[] _values;
+        private readonly OdbcDataReader _record;
         internal int _count;
         internal bool _randomaccess = true;
 

@@ -13,7 +13,7 @@ namespace System.Data
     {
         internal string _originalExpression = null;  // original, unoptimized string
 
-        private bool _parsed = false;
+        private readonly bool _parsed = false;
         private bool _bound = false;
         private ExpressionNode _expr = null;
         private DataTable _table = null;

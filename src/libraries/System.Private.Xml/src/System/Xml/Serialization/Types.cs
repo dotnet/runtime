@@ -65,19 +65,19 @@ namespace System.Xml.Serialization
 
     internal class TypeDesc
     {
-        private string _name;
-        private string _fullName;
+        private readonly string _name;
+        private readonly string _fullName;
         private string _cSharpName;
         private TypeDesc _arrayElementTypeDesc;
         private TypeDesc _arrayTypeDesc;
         private TypeDesc _nullableTypeDesc;
-        private TypeKind _kind;
-        private XmlSchemaType _dataType;
+        private readonly TypeKind _kind;
+        private readonly XmlSchemaType _dataType;
         private Type _type;
         private TypeDesc _baseTypeDesc;
         private TypeFlags _flags;
-        private string _formatterName;
-        private bool _isXsdType;
+        private readonly string _formatterName;
+        private readonly bool _isXsdType;
         private bool _isMixed;
         private int _weight;
         private Exception _exception;
@@ -459,15 +459,15 @@ namespace System.Xml.Serialization
 
     internal class TypeScope
     {
-        private Hashtable _typeDescs = new Hashtable();
-        private Hashtable _arrayTypeDescs = new Hashtable();
-        private ArrayList _typeMappings = new ArrayList();
+        private readonly Hashtable _typeDescs = new Hashtable();
+        private readonly Hashtable _arrayTypeDescs = new Hashtable();
+        private readonly ArrayList _typeMappings = new ArrayList();
 
-        private static Hashtable s_primitiveTypes = new Hashtable();
-        private static Hashtable s_primitiveDataTypes = new Hashtable();
-        private static NameTable s_primitiveNames = new NameTable();
+        private static readonly Hashtable s_primitiveTypes = new Hashtable();
+        private static readonly Hashtable s_primitiveDataTypes = new Hashtable();
+        private static readonly NameTable s_primitiveNames = new NameTable();
 
-        private static string[] s_unsupportedTypes = new string[] {
+        private static readonly string[] s_unsupportedTypes = new string[] {
             "anyURI",
             "duration",
             "ENTITY",

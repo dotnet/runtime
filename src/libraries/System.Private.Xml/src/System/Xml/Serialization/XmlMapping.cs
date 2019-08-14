@@ -25,13 +25,13 @@ namespace System.Xml.Serialization
     /// </devdoc>
     public abstract class XmlMapping
     {
-        private TypeScope _scope;
+        private readonly TypeScope _scope;
         private bool _generateSerializer = false;
         private bool _isSoap;
-        private ElementAccessor _accessor;
+        private readonly ElementAccessor _accessor;
         private string _key;
-        private bool _shallow = false;
-        private XmlMappingAccess _access;
+        private readonly bool _shallow = false;
+        private readonly XmlMappingAccess _access;
 
         internal XmlMapping(TypeScope scope, ElementAccessor accessor) : this(scope, accessor, XmlMappingAccess.Read | XmlMappingAccess.Write)
         {

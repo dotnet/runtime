@@ -641,7 +641,7 @@ namespace System.DirectoryServices.AccountManagement
         // We only list properties we map in this table.  At run-time, if we detect they set a
         // property that's not listed here, or is listed here but not for the correct principal type,
         // when writing to SAM, we throw an exception.
-        private static object[,] s_propertyMappingTableRaw =
+        private static readonly object[,] s_propertyMappingTableRaw =
         {
             // PropertyName                          Principal Type     SAM property            Converter(WinNT->PAPI)                                    Converter(PAPI->WinNT)
             {PropertyNames.PrincipalDisplayName,     typeof(UserPrincipal),      "FullName",             new FromWinNTConverterDelegate(StringFromWinNTConverter),  new ToWinNTConverterDelegate(StringToWinNTConverter)},
@@ -723,17 +723,17 @@ namespace System.DirectoryServices.AccountManagement
             {PropertyNames.PwdInfoAllowReversiblePasswordEncryption, typeof(ComputerPrincipal),       null,   null,   new ToWinNTConverterDelegate(ExceptionToWinNTConverter)}
         };
 
-        private static Hashtable s_userPropertyMappingTableByProperty = null;
-        private static Hashtable s_userPropertyMappingTableByWinNT = null;
+        private static readonly Hashtable s_userPropertyMappingTableByProperty = null;
+        private static readonly Hashtable s_userPropertyMappingTableByWinNT = null;
 
-        private static Hashtable s_groupPropertyMappingTableByProperty = null;
-        private static Hashtable s_groupPropertyMappingTableByWinNT = null;
+        private static readonly Hashtable s_groupPropertyMappingTableByProperty = null;
+        private static readonly Hashtable s_groupPropertyMappingTableByWinNT = null;
 
-        private static Hashtable s_computerPropertyMappingTableByProperty = null;
-        private static Hashtable s_computerPropertyMappingTableByWinNT = null;
+        private static readonly Hashtable s_computerPropertyMappingTableByProperty = null;
+        private static readonly Hashtable s_computerPropertyMappingTableByWinNT = null;
 
-        private static Dictionary<string, ObjectMask> s_validPropertyMap = null;
-        private static Dictionary<Type, ObjectMask> s_maskMap = null;
+        private static readonly Dictionary<string, ObjectMask> s_validPropertyMap = null;
+        private static readonly Dictionary<Type, ObjectMask> s_maskMap = null;
 
         [Flags]
         private enum ObjectMask

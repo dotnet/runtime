@@ -11,9 +11,9 @@ namespace System.Runtime.Serialization
 {
     internal class BitFlagsGenerator
     {
-        private int _bitCount;
-        private CodeGenerator _ilg;
-        private LocalBuilder[] _locals;
+        private readonly int _bitCount;
+        private readonly CodeGenerator _ilg;
+        private readonly LocalBuilder[] _locals;
 
         public BitFlagsGenerator(int bitCount, CodeGenerator ilg, string localName)
         {

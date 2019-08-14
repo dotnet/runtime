@@ -40,8 +40,8 @@ namespace System.Security.Cryptography
         /// </summary>
         public static RSAEncryptionPadding OaepSHA512 { get { return s_oaepSHA512; } }
 
-        private RSAEncryptionPaddingMode _mode;
-        private HashAlgorithmName _oaepHashAlgorithm;
+        private readonly RSAEncryptionPaddingMode _mode;
+        private readonly HashAlgorithmName _oaepHashAlgorithm;
 
         private RSAEncryptionPadding(RSAEncryptionPaddingMode mode, HashAlgorithmName oaepHashAlgorithm)
         {

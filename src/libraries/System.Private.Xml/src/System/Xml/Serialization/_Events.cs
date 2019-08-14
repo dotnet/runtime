@@ -14,11 +14,11 @@ namespace System.Xml.Serialization
 
     public class XmlAttributeEventArgs : EventArgs
     {
-        private object _o;
-        private XmlAttribute _attr;
-        private string _qnames;
-        private int _lineNumber;
-        private int _linePosition;
+        private readonly object _o;
+        private readonly XmlAttribute _attr;
+        private readonly string _qnames;
+        private readonly int _lineNumber;
+        private readonly int _linePosition;
 
 
         internal XmlAttributeEventArgs(XmlAttribute attr, int lineNumber, int linePosition, object o, string qnames)
@@ -69,11 +69,11 @@ namespace System.Xml.Serialization
 
     public class XmlElementEventArgs : EventArgs
     {
-        private object _o;
-        private XmlElement _elem;
-        private string _qnames;
-        private int _lineNumber;
-        private int _linePosition;
+        private readonly object _o;
+        private readonly XmlElement _elem;
+        private readonly string _qnames;
+        private readonly int _lineNumber;
+        private readonly int _linePosition;
 
         internal XmlElementEventArgs(XmlElement elem, int lineNumber, int linePosition, object o, string qnames)
         {
@@ -118,10 +118,10 @@ namespace System.Xml.Serialization
 
     public class XmlNodeEventArgs : EventArgs
     {
-        private object _o;
-        private XmlNode _xmlNode;
-        private int _lineNumber;
-        private int _linePosition;
+        private readonly object _o;
+        private readonly XmlNode _xmlNode;
+        private readonly int _lineNumber;
+        private readonly int _linePosition;
 
 
         internal XmlNodeEventArgs(XmlNode xmlNode, int lineNumber, int linePosition, object o)
@@ -183,8 +183,8 @@ namespace System.Xml.Serialization
 
     public class UnreferencedObjectEventArgs : EventArgs
     {
-        private object _o;
-        private string _id;
+        private readonly object _o;
+        private readonly string _id;
 
         public UnreferencedObjectEventArgs(object o, string id)
         {

@@ -330,7 +330,7 @@ internal class ReflectionPartCreationInfo : IReflectionPartCreationInfo
         private readonly Lazy<IDictionary<string, object>> _metadata;
         private readonly ICompositionElement _origin;
         private ConstructorInfo _constructor;
-        private bool _isDisposalRequired;
+        private readonly bool _isDisposalRequired;
 
         public ReflectionPartCreationInfo(
             Lazy<Type> partType,

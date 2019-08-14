@@ -9,7 +9,7 @@ namespace System.Configuration
     public sealed class SettingValueElement : ConfigurationElement
     {
         private static volatile ConfigurationPropertyCollection _properties;
-        private static XmlDocument _document = new XmlDocument();
+        private static readonly XmlDocument _document = new XmlDocument();
 
         private XmlNode _valueXml;
         private bool _isModified = false;

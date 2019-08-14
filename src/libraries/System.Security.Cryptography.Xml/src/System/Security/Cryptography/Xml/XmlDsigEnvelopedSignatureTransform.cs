@@ -16,10 +16,10 @@ namespace System.Security.Cryptography.Xml
 {
     public class XmlDsigEnvelopedSignatureTransform : Transform
     {
-        private Type[] _inputTypes = { typeof(Stream), typeof(XmlNodeList), typeof(XmlDocument) };
-        private Type[] _outputTypes = { typeof(XmlNodeList), typeof(XmlDocument) };
+        private readonly Type[] _inputTypes = { typeof(Stream), typeof(XmlNodeList), typeof(XmlDocument) };
+        private readonly Type[] _outputTypes = { typeof(XmlNodeList), typeof(XmlDocument) };
         private XmlNodeList _inputNodeList;
-        private bool _includeComments = false;
+        private readonly bool _includeComments = false;
         private XmlNamespaceManager _nsm = null;
         private XmlDocument _containingDocument = null;
         private int _signaturePosition = 0;

@@ -100,7 +100,7 @@ namespace System.Xml.Xsl.Runtime
     /// </summary>
     internal class XmlEmptySortKey : XmlSortKey
     {
-        private bool _isEmptyGreatest;
+        private readonly bool _isEmptyGreatest;
 
         public XmlEmptySortKey(XmlCollation collation)
         {
@@ -138,7 +138,7 @@ namespace System.Xml.Xsl.Runtime
     /// </summary>
     internal class XmlDecimalSortKey : XmlSortKey
     {
-        private decimal _decVal;
+        private readonly decimal _decVal;
 
         public XmlDecimalSortKey(decimal value, XmlCollation collation)
         {
@@ -168,7 +168,7 @@ namespace System.Xml.Xsl.Runtime
     /// </summary>
     internal class XmlIntegerSortKey : XmlSortKey
     {
-        private long _longVal;
+        private readonly long _longVal;
 
         public XmlIntegerSortKey(long value, XmlCollation collation)
         {
@@ -196,7 +196,7 @@ namespace System.Xml.Xsl.Runtime
     /// </summary>
     internal class XmlIntSortKey : XmlSortKey
     {
-        private int _intVal;
+        private readonly int _intVal;
 
         public XmlIntSortKey(int value, XmlCollation collation)
         {
@@ -296,8 +296,8 @@ namespace System.Xml.Xsl.Runtime
     /// </summary>
     internal class XmlDoubleSortKey : XmlSortKey
     {
-        private double _dblVal;
-        private bool _isNaN;
+        private readonly double _dblVal;
+        private readonly bool _isNaN;
 
         public XmlDoubleSortKey(double value, XmlCollation collation)
         {

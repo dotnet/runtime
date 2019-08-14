@@ -146,9 +146,9 @@ namespace System.DirectoryServices.AccountManagement
         private bool _disposed = false;
 
         //  The name of our outer class. Used when throwing an ObjectDisposedException.
-        private string _outerClassName;
+        private readonly string _outerClassName;
 
-        private List<TrackedCollection<T>.ValueEl> _combinedValues = null;
+        private readonly List<TrackedCollection<T>.ValueEl> _combinedValues = null;
 
         // The value we're currently positioned at
         private T _current;
@@ -160,8 +160,8 @@ namespace System.DirectoryServices.AccountManagement
         private bool _endReached = false;
 
         // When this enumerator was constructed, to detect changes made to the TrackedCollection after it was constructed
-        private DateTime _creationTime = DateTime.UtcNow;
-        private TrackedCollection<T> _trackedCollection = null;
+        private readonly DateTime _creationTime = DateTime.UtcNow;
+        private readonly TrackedCollection<T> _trackedCollection = null;
 
         private void CheckDisposed()
         {

@@ -16,10 +16,10 @@ namespace System.Diagnostics.Eventing.Reader
     /// </summary>
     internal class ProviderMetadataCachedInformation
     {
-        private Dictionary<ProviderMetadataId, CacheItem> _cache;
-        private int _maximumCacheSize;
-        private EventLogSession _session;
-        private string _logfile;
+        private readonly Dictionary<ProviderMetadataId, CacheItem> _cache;
+        private readonly int _maximumCacheSize;
+        private readonly EventLogSession _session;
+        private readonly string _logfile;
 
         private class ProviderMetadataId
         {

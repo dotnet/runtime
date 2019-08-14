@@ -9,7 +9,7 @@ namespace System.Data.Odbc
     internal sealed class OdbcEnvironment
     {
         private static object s_globalEnvironmentHandle;
-        private static object s_globalEnvironmentHandleLock = new object();
+        private static readonly object s_globalEnvironmentHandleLock = new object();
 
         private OdbcEnvironment() { }  // default const.
 

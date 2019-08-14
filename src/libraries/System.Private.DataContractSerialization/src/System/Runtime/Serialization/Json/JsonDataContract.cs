@@ -12,7 +12,7 @@ namespace System.Runtime.Serialization.Json
 {
     internal class JsonDataContract
     {
-        private JsonDataContractCriticalHelper _helper;
+        private readonly JsonDataContractCriticalHelper _helper;
 
         protected JsonDataContract(DataContract traditionalDataContract)
         {
@@ -127,17 +127,17 @@ namespace System.Runtime.Serialization.Json
 
         internal class JsonDataContractCriticalHelper
         {
-            private static object s_cacheLock = new object();
-            private static object s_createDataContractLock = new object();
+            private static readonly object s_cacheLock = new object();
+            private static readonly object s_createDataContractLock = new object();
 
             private static JsonDataContract[] s_dataContractCache = new JsonDataContract[32];
             private static int s_dataContractID = 0;
 
-            private static TypeHandleRef s_typeHandleRef = new TypeHandleRef();
-            private static Dictionary<TypeHandleRef, IntRef> s_typeToIDCache = new Dictionary<TypeHandleRef, IntRef>(new TypeHandleRefEqualityComparer());
+            private static readonly TypeHandleRef s_typeHandleRef = new TypeHandleRef();
+            private static readonly Dictionary<TypeHandleRef, IntRef> s_typeToIDCache = new Dictionary<TypeHandleRef, IntRef>(new TypeHandleRefEqualityComparer());
             private Dictionary<XmlQualifiedName, DataContract> _knownDataContracts;
-            private DataContract _traditionalDataContract;
-            private string _typeName;
+            private readonly DataContract _traditionalDataContract;
+            private readonly string _typeName;
 
             internal JsonDataContractCriticalHelper(DataContract traditionalDataContract)
             {
@@ -306,7 +306,7 @@ namespace System.Runtime.Serialization.Json
     internal class JsonReadWriteDelegates
     {
         // this is the global dictionary for JSON delegates introduced for multi-file
-        private static Dictionary<DataContract, JsonReadWriteDelegates> s_jsonDelegates = new Dictionary<DataContract, JsonReadWriteDelegates>();
+        private static readonly Dictionary<DataContract, JsonReadWriteDelegates> s_jsonDelegates = new Dictionary<DataContract, JsonReadWriteDelegates>();
 
         public static Dictionary<DataContract, JsonReadWriteDelegates> GetJsonDelegates()
         {

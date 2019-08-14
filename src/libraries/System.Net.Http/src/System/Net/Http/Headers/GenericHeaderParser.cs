@@ -40,8 +40,8 @@ namespace System.Net.Http.Headers
 
         #endregion
 
-        private GetParsedValueLengthDelegate _getParsedValueLength;
-        private IEqualityComparer _comparer;
+        private readonly GetParsedValueLengthDelegate _getParsedValueLength;
+        private readonly IEqualityComparer _comparer;
 
         public override IEqualityComparer Comparer
         {

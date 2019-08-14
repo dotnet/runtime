@@ -45,7 +45,7 @@ namespace System.DirectoryServices.Protocols
 
     internal class UtilityHandle
     {
-        private static ConnectionHandle s_handle = new ConnectionHandle();
+        private static readonly ConnectionHandle s_handle = new ConnectionHandle();
 
         public static ConnectionHandle GetHandle() => s_handle;
     }
@@ -509,7 +509,7 @@ namespace System.DirectoryServices.Protocols
 
     public class DirSyncResponseControl : DirectoryControl
     {
-        private byte[] _dirsyncCookie;
+        private readonly byte[] _dirsyncCookie;
 
         internal DirSyncResponseControl(byte[] cookie, bool moreData, int resultSize, bool criticality, byte[] controlValue) : base("1.2.840.113556.1.4.841", controlValue, criticality, true)
         {
@@ -603,7 +603,7 @@ namespace System.DirectoryServices.Protocols
 
     public class PageResultResponseControl : DirectoryControl
     {
-        private byte[] _pageCookie;
+        private readonly byte[] _pageCookie;
 
         internal PageResultResponseControl(int count, byte[] cookie, bool criticality, byte[] controlValue) : base("1.2.840.113556.1.4.319", controlValue, criticality, true)
         {
@@ -986,7 +986,7 @@ namespace System.DirectoryServices.Protocols
 
     public class VlvResponseControl : DirectoryControl
     {
-        private byte[] _context;
+        private readonly byte[] _context;
 
         internal VlvResponseControl(int targetPosition, int count, byte[] context, ResultCode result, bool criticality, byte[] value) : base("2.16.840.1.113730.3.4.10", value, criticality, true)
         {

@@ -22,8 +22,8 @@ namespace System.Xml
         private int _logAttrIndex;
 
         //presave these 2 variables since they shouldn't change.
-        private XmlNameTable _nameTable;
-        private XmlDocument _doc;
+        private readonly XmlNameTable _nameTable;
+        private readonly XmlDocument _doc;
 
         private int _nAttrInd; //used to identify virtual attributes of DocumentType node and XmlDeclaration node
 
@@ -42,7 +42,7 @@ namespace System.Xml
         private int _nLogLevel;
         private int _nLogAttrInd;
         private bool _bLogOnAttrVal;
-        private bool _bCreatedOnAttribute;
+        private readonly bool _bCreatedOnAttribute;
 
         internal struct VirtualAttribute
         {
@@ -1115,7 +1115,7 @@ namespace System.Xml
     // to XML data in an XmlDocument or a specific XmlNode within an XmlDocument.
     public class XmlNodeReader : XmlReader, IXmlNamespaceResolver
     {
-        private XmlNodeReaderNavigator _readerNav;
+        private readonly XmlNodeReaderNavigator _readerNav;
 
         private XmlNodeType _nodeType;   // nodeType of the node that the reader is currently positioned on
         private int _curDepth;   // depth of attrNav ( also functions as reader's depth )

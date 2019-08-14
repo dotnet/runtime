@@ -11,7 +11,7 @@ namespace System.Runtime.Serialization.Json
 {
     internal class JsonCollectionDataContract : JsonDataContract
     {
-        private JsonCollectionDataContractCriticalHelper _helper;
+        private readonly JsonCollectionDataContractCriticalHelper _helper;
 
         public JsonCollectionDataContract(CollectionDataContract traditionalDataContract)
             : base(new JsonCollectionDataContractCriticalHelper(traditionalDataContract))
@@ -160,7 +160,7 @@ namespace System.Runtime.Serialization.Json
             private JsonFormatCollectionReaderDelegate _jsonFormatReaderDelegate;
             private JsonFormatGetOnlyCollectionReaderDelegate _jsonFormatGetOnlyReaderDelegate;
             private JsonFormatCollectionWriterDelegate _jsonFormatWriterDelegate;
-            private CollectionDataContract _traditionalCollectionDataContract;
+            private readonly CollectionDataContract _traditionalCollectionDataContract;
 
             public JsonCollectionDataContractCriticalHelper(CollectionDataContract traditionalDataContract)
                 : base(traditionalDataContract)

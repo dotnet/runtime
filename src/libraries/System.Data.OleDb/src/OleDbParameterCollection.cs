@@ -11,7 +11,7 @@ namespace System.Data.OleDb
     {
         private int _changeID;
 
-        private static Type s_itemType = typeof(OleDbParameter);
+        private static readonly Type s_itemType = typeof(OleDbParameter);
 
         internal OleDbParameterCollection() : base()
         {

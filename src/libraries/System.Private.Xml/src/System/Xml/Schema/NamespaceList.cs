@@ -19,7 +19,7 @@ namespace System.Xml.Schema
 
         private ListType _type = ListType.Any;
         private Hashtable _set = null;
-        private string _targetNamespace;
+        private readonly string _targetNamespace;
 
         public NamespaceList()
         {

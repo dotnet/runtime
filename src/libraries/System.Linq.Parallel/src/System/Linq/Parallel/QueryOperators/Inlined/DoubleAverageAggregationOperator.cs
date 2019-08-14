@@ -85,7 +85,7 @@ namespace System.Linq.Parallel
 
         private class DoubleAverageAggregationOperatorEnumerator<TKey> : InlinedAggregationOperatorEnumerator<Pair<double, long>>
         {
-            private QueryOperatorEnumerator<double, TKey> _source; // The source data.
+            private readonly QueryOperatorEnumerator<double, TKey> _source; // The source data.
 
             //---------------------------------------------------------------------------------------
             // Instantiates a new aggregation operator.

@@ -12,7 +12,7 @@ namespace System.Data.Common
         // reused as both key and value nodes
         // key nodes link to value nodes
         // value nodes link to key nodes
-        private string _value;
+        private readonly string _value;
 
         // value node with (null != _restrictions) are allowed to match connection strings
         private DBConnectionString _entry;

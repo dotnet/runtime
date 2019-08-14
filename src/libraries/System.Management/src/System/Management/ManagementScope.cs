@@ -1045,8 +1045,8 @@ namespace System.Management
 
     internal class SecuredIEnumWbemClassObjectHandler
     {
-        private IEnumWbemClassObject pEnumWbemClassObjectsecurityHelper;
-        private ManagementScope scope;
+        private readonly IEnumWbemClassObject pEnumWbemClassObjectsecurityHelper;
+        private readonly ManagementScope scope;
         internal SecuredIEnumWbemClassObjectHandler  (ManagementScope theScope, IEnumWbemClassObject pEnumWbemClassObject)
         {
             this.scope = theScope;
@@ -1099,7 +1099,7 @@ namespace System.Management
 
     internal class SecuredConnectHandler
     {
-        private ManagementScope scope;
+        private readonly ManagementScope scope;
 
         internal SecuredConnectHandler (ManagementScope theScope)
         {
@@ -1149,8 +1149,8 @@ namespace System.Management
 
     internal class SecuredIWbemServicesHandler
     {
-        private IWbemServices pWbemServiecsSecurityHelper;
-        private ManagementScope scope;
+        private readonly IWbemServices pWbemServiecsSecurityHelper;
+        private readonly ManagementScope scope;
         internal SecuredIWbemServicesHandler (ManagementScope theScope, IWbemServices pWbemServiecs)
         {
             this.scope = theScope;
@@ -1401,8 +1401,8 @@ namespace System.Management
     internal class SecurityHandler
     {
         private bool needToReset = false;
-        private IntPtr handle;
-        private ManagementScope scope;
+        private readonly IntPtr handle;
+        private readonly ManagementScope scope;
 
         internal SecurityHandler (ManagementScope theScope)
         {

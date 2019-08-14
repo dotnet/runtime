@@ -11,8 +11,8 @@ namespace System.Xml.Serialization
 
     internal class NameKey
     {
-        private string _ns;
-        private string _name;
+        private readonly string _ns;
+        private readonly string _name;
 
         internal NameKey(string name, string ns)
         {

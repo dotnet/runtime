@@ -14,7 +14,7 @@ namespace System.Net.Mime
     /// </summary>
     internal class HeaderCollection : NameValueCollection
     {
-        private MimeBasePart _part = null;
+        private readonly MimeBasePart _part = null;
 
         // default constructor
         // intentionally override the default comparer in the derived base class

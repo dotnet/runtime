@@ -18,8 +18,8 @@ namespace System.ComponentModel.Composition.Hosting
         private bool _isDisposed = false;
         private volatile AggregateCatalog _innerCatalog = null;
         private readonly object _thisLock = new object();
-        private ICompositionElement _definitionOrigin = null;
-        private ReflectionContext _reflectionContext = null;
+        private readonly ICompositionElement _definitionOrigin = null;
+        private readonly ReflectionContext _reflectionContext = null;
 
         public ApplicationCatalog() {}
 

@@ -14,9 +14,9 @@ namespace System.DirectoryServices.AccountManagement
         private System.Guid _objectGuid;
 
         // For ADStoreKeys corresponding to well-known SIDs
-        private bool _wellKnownSid;
-        private string _domainName;
-        private byte[] _sid;
+        private readonly bool _wellKnownSid;
+        private readonly string _domainName;
+        private readonly byte[] _sid;
 
         public ADStoreKey(Guid guid)
         {

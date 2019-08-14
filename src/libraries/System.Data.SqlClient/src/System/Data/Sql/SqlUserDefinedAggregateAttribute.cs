@@ -15,7 +15,7 @@ namespace Microsoft.SqlServer.Server
         private bool _isInvariantToNulls;
         private bool _isInvariantToOrder = true;
         private bool _isNullIfEmpty;
-        private Format _format;
+        private readonly Format _format;
         private string _name;
 
         // The maximum value for the maxbytesize field, in bytes.

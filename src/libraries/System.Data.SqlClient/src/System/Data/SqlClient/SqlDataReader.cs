@@ -52,8 +52,8 @@ namespace System.Data.SqlClient
         private bool _hasRows;
         private ALTROWSTATUS _altRowStatus;
         private int _recordsAffected = -1;
-        private long _defaultTimeoutMilliseconds;
-        private SqlConnectionString.TypeSystem _typeSystem;
+        private readonly long _defaultTimeoutMilliseconds;
+        private readonly SqlConnectionString.TypeSystem _typeSystem;
 
         // SQLStatistics support
         private SqlStatistics _statistics;
@@ -82,8 +82,8 @@ namespace System.Data.SqlClient
 
         private Task _currentTask;
         private Snapshot _snapshot;
-        private CancellationTokenSource _cancelAsyncOnCloseTokenSource;
-        private CancellationToken _cancelAsyncOnCloseToken;
+        private readonly CancellationTokenSource _cancelAsyncOnCloseTokenSource;
+        private readonly CancellationToken _cancelAsyncOnCloseToken;
 
         // Used for checking if the Type parameter provided to GetValue<T> is an INullable
         internal static readonly Type _typeofINullable = typeof(INullable);

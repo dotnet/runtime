@@ -174,7 +174,7 @@ namespace System.Reflection
 
             internal static readonly Type[] PackedTypes = new Type[] { typeof(object), typeof(Type), typeof(int), typeof(object[]), typeof(Type[]), typeof(object) };
 
-            private object[] _args;
+            private readonly object[] _args;
             internal PackedArgs() : this(new object[PackedTypes.Length]) { }
             internal PackedArgs(object[] args) { _args = args; }
 
@@ -188,15 +188,15 @@ namespace System.Reflection
 
         private class ProxyAssembly
         {
-            private AssemblyBuilder _ab;
-            private ModuleBuilder _mb;
+            private readonly AssemblyBuilder _ab;
+            private readonly ModuleBuilder _mb;
             private int _typeId = 0;
 
             // Maintain a MethodBase-->int, int-->MethodBase mapping to permit generated code
             // to pass methods by token
-            private Dictionary<MethodBase, int> _methodToToken = new Dictionary<MethodBase, int>();
-            private List<MethodBase> _methodsByToken = new List<MethodBase>();
-            private HashSet<string> _ignoresAccessAssemblyNames = new HashSet<string>();
+            private readonly Dictionary<MethodBase, int> _methodToToken = new Dictionary<MethodBase, int>();
+            private readonly List<MethodBase> _methodsByToken = new List<MethodBase>();
+            private readonly HashSet<string> _ignoresAccessAssemblyNames = new HashSet<string>();
             private ConstructorInfo _ignoresAccessChecksToAttributeConstructor;
 
             public ProxyAssembly()
@@ -280,10 +280,10 @@ namespace System.Reflection
         {
             private static readonly MethodInfo s_delegateInvoke = typeof(Action<object[]>).GetTypeInfo().GetDeclaredMethod("Invoke");
 
-            private ProxyAssembly _assembly;
-            private TypeBuilder _tb;
-            private Type _proxyBaseType;
-            private List<FieldBuilder> _fields;
+            private readonly ProxyAssembly _assembly;
+            private readonly TypeBuilder _tb;
+            private readonly Type _proxyBaseType;
+            private readonly List<FieldBuilder> _fields;
 
             internal ProxyBuilder(ProxyAssembly assembly, TypeBuilder tb, Type proxyBaseType)
             {
@@ -612,7 +612,7 @@ namespace System.Reflection
                 return 1;   // TypeCode.Object;
             }
 
-            private static OpCode[] s_convOpCodes = new OpCode[] {
+            private static readonly OpCode[] s_convOpCodes = new OpCode[] {
                 OpCodes.Nop,//Empty = 0,
                 OpCodes.Nop,//Object = 1,
                 OpCodes.Nop,//DBNull = 2,
@@ -634,7 +634,7 @@ namespace System.Reflection
                 OpCodes.Nop,//String = 18,
             };
 
-            private static OpCode[] s_ldindOpCodes = new OpCode[] {
+            private static readonly OpCode[] s_ldindOpCodes = new OpCode[] {
                 OpCodes.Nop,//Empty = 0,
                 OpCodes.Nop,//Object = 1,
                 OpCodes.Nop,//DBNull = 2,
@@ -656,7 +656,7 @@ namespace System.Reflection
                 OpCodes.Ldind_Ref,//String = 18,
             };
 
-            private static OpCode[] s_stindOpCodes = new OpCode[] {
+            private static readonly OpCode[] s_stindOpCodes = new OpCode[] {
                 OpCodes.Nop,//Empty = 0,
                 OpCodes.Nop,//Object = 1,
                 OpCodes.Nop,//DBNull = 2,
@@ -762,8 +762,8 @@ namespace System.Reflection
 
             private class ParametersArray
             {
-                private ILGenerator _il;
-                private Type[] _paramTypes;
+                private readonly ILGenerator _il;
+                private readonly Type[] _paramTypes;
                 internal ParametersArray(ILGenerator il, Type[] paramTypes)
                 {
                     _il = il;
@@ -791,8 +791,8 @@ namespace System.Reflection
 
             private class GenericArray<T>
             {
-                private ILGenerator _il;
-                private LocalBuilder _lb;
+                private readonly ILGenerator _il;
+                private readonly LocalBuilder _lb;
                 internal GenericArray(ILGenerator il, int len)
                 {
                     _il = il;

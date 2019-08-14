@@ -14,7 +14,7 @@ namespace System.Net
         private byte[] _storedBuffer;
         private int _storedLength;
         private int _storedOffset;
-        private bool _readMore;
+        private readonly bool _readMore;
 
         internal BufferedReadStream(Stream stream) : this(stream, false)
         {
@@ -160,9 +160,9 @@ namespace System.Net
 
         private class ReadAsyncResult : LazyAsyncResult
         {
-            private BufferedReadStream _parent;
+            private readonly BufferedReadStream _parent;
             private int _read;
-            private static AsyncCallback s_onRead = new AsyncCallback(OnRead);
+            private static readonly AsyncCallback s_onRead = new AsyncCallback(OnRead);
 
             internal ReadAsyncResult(BufferedReadStream parent, AsyncCallback callback, object state) : base(null, state, callback)
             {

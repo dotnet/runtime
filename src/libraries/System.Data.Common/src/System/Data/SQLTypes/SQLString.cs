@@ -38,8 +38,8 @@ namespace System.Data.SqlTypes
     {
         private string m_value; // Do not rename (binary serialization)
         private CompareInfo m_cmpInfo; // Do not rename (binary serialization)
-        private int m_lcid; // Locale Id. Do not rename (binary serialization)
-        private SqlCompareOptions m_flag; // Compare flags. Do not rename (binary serialization)
+        private readonly int m_lcid; // Locale Id. Do not rename (binary serialization)
+        private readonly SqlCompareOptions m_flag; // Compare flags. Do not rename (binary serialization)
         private bool m_fNotNull; // false if null. Do not rename (binary serialization)
 
         /// <summary>

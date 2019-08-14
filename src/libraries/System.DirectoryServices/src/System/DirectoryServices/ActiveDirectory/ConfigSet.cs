@@ -28,7 +28,7 @@ namespace System.DirectoryServices.ActiveDirectory
         private ReplicationSecurityLevel _cachedSecurityLevel = (ReplicationSecurityLevel)(-1);
 
         // 4 minutes timeout for locating an ADAM instance in the configset
-        private static TimeSpan s_locationTimeout = new TimeSpan(0, 4, 0);
+        private static readonly TimeSpan s_locationTimeout = new TimeSpan(0, 4, 0);
 
         #region constructors
         internal ConfigurationSet(DirectoryContext context, string configSetName, DirectoryEntryManager directoryEntryMgr)

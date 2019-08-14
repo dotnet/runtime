@@ -9,8 +9,8 @@ namespace System.Runtime.InteropServices
     public static partial class RuntimeInformation
     {
         private static string s_osDescription = null;
-        private static object s_osLock = new object();
-        private static object s_processLock = new object();
+        private static readonly object s_osLock = new object();
+        private static readonly object s_processLock = new object();
         private static Architecture? s_osArch = null;
         private static Architecture? s_processArch = null;
 

@@ -529,9 +529,9 @@ namespace System.Collections.Generic
         [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "not an expected scenario")]
         public struct Enumerator : IEnumerator<T>, IEnumerator, ISerializable, IDeserializationCallback
         {
-            private LinkedList<T> _list;
+            private readonly LinkedList<T> _list;
             private LinkedListNode<T>? _node;
-            private int _version;
+            private readonly int _version;
             [AllowNull] private T _current;
             private int _index;
 

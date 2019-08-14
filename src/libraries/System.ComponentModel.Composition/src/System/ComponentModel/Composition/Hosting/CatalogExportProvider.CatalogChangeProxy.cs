@@ -13,9 +13,9 @@ namespace System.ComponentModel.Composition.Hosting
     {
         private class CatalogChangeProxy : ComposablePartCatalog
         {
-            private ComposablePartCatalog _originalCatalog;
-            private List<ComposablePartDefinition> _addedParts;
-            private HashSet<ComposablePartDefinition> _removedParts;
+            private readonly ComposablePartCatalog _originalCatalog;
+            private readonly List<ComposablePartDefinition> _addedParts;
+            private readonly HashSet<ComposablePartDefinition> _removedParts;
 
             public CatalogChangeProxy(ComposablePartCatalog originalCatalog,
                 IEnumerable<ComposablePartDefinition> addedParts,

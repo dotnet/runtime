@@ -30,7 +30,7 @@ namespace System.Security.Cryptography.Xml
 
     public class TransformChain
     {
-        private ArrayList _transforms;
+        private readonly ArrayList _transforms;
 
         public TransformChain()
         {

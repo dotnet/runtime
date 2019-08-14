@@ -15,7 +15,7 @@ namespace System.Runtime.Serialization.Json
     {
         private const int MaxTextChunk = 2048;
 
-        private static byte[] s_charType = new byte[256]
+        private static readonly byte[] s_charType = new byte[256]
             {
                 CharType.None, //   0 (.)
                 CharType.None, //   1 (.)

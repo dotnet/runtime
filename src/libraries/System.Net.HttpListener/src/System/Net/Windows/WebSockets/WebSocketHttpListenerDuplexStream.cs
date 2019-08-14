@@ -22,7 +22,7 @@ namespace System.Net.WebSockets
         private static readonly Action<object> s_OnCancel = new Action<object>(OnCancel);
         private readonly HttpRequestStream _inputStream;
         private readonly HttpResponseStream _outputStream;
-        private HttpListenerContext _context;
+        private readonly HttpListenerContext _context;
         private bool _inOpaqueMode;
         private WebSocketBase _webSocket;
         private HttpListenerAsyncEventArgs _writeEventArgs;

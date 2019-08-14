@@ -15,7 +15,7 @@ namespace System.Collections
     // Useful base class for typed read/write collections where items derive from object
     public abstract class CollectionBase : IList
     {
-        private ArrayList _list;
+        private readonly ArrayList _list;
 
         protected CollectionBase()
         {

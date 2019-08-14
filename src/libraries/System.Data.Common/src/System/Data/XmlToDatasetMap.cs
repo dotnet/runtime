@@ -40,7 +40,7 @@ namespace System.Data
         // Unfortunetely XmlNode doesn't export single identety object.
         internal sealed class XmlNodeIdHashtable : Hashtable
         {
-            private XmlNodeIdentety _id = new XmlNodeIdentety(string.Empty, string.Empty);
+            private readonly XmlNodeIdentety _id = new XmlNodeIdentety(string.Empty, string.Empty);
             public XmlNodeIdHashtable(int capacity)
                 : base(capacity)
             { }

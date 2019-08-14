@@ -127,7 +127,7 @@ namespace System.Linq.Parallel
     internal class SortQueryOperatorResults<TInputOutput, TSortKey> : QueryResults<TInputOutput>
     {
         protected QueryResults<TInputOutput> _childQueryResults; // Results of the child query
-        private SortQueryOperator<TInputOutput, TSortKey> _op; // Operator that generated these results
+        private readonly SortQueryOperator<TInputOutput, TSortKey> _op; // Operator that generated these results
         private QuerySettings _settings; // Settings collected from the query
 
         internal SortQueryOperatorResults(
@@ -151,8 +151,8 @@ namespace System.Linq.Parallel
 
         private class ChildResultsRecipient : IPartitionedStreamRecipient<TInputOutput>
         {
-            private IPartitionedStreamRecipient<TInputOutput> _outputRecipient;
-            private SortQueryOperator<TInputOutput, TSortKey> _op;
+            private readonly IPartitionedStreamRecipient<TInputOutput> _outputRecipient;
+            private readonly SortQueryOperator<TInputOutput, TSortKey> _op;
             private QuerySettings _settings;
 
             internal ChildResultsRecipient(IPartitionedStreamRecipient<TInputOutput> outputRecipient, SortQueryOperator<TInputOutput, TSortKey> op, QuerySettings settings)

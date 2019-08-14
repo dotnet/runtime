@@ -54,7 +54,7 @@ namespace System.Xml.Xsl
 #endif
 
         // Options of compilation
-        private bool _enableDebug = false;
+        private readonly bool _enableDebug = false;
 
         // Results of compilation
         private CompilerErrorCollection _compilerErrorColl = null;

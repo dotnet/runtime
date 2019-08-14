@@ -19,8 +19,8 @@ namespace System.Xml.Xsl
     /// </summary>
     internal class XmlILCommand
     {
-        private ExecuteDelegate _delExec;
-        private XmlQueryStaticData _staticData;
+        private readonly ExecuteDelegate _delExec;
+        private readonly XmlQueryStaticData _staticData;
 
         /// <summary>
         /// Constructor.

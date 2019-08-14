@@ -15,9 +15,9 @@ namespace System.Net.Mime
     /// </summary>
     internal class MimeWriter : BaseWriter
     {
-        private static byte[] s_DASHDASH = new byte[] { (byte)'-', (byte)'-' };
+        private static readonly byte[] s_DASHDASH = new byte[] { (byte)'-', (byte)'-' };
 
-        private byte[] _boundaryBytes;
+        private readonly byte[] _boundaryBytes;
         private bool _writeBoundary = true;
 
         internal MimeWriter(Stream stream, string boundary)

@@ -35,7 +35,7 @@ namespace System.Data.SqlClient
     // DEVNOTE: Class to capture the duration spent in each SqlConnectionTimeoutErrorPhase.
     internal class SqlConnectionTimeoutPhaseDuration
     {
-        private Stopwatch _swDuration = new Stopwatch();
+        private readonly Stopwatch _swDuration = new Stopwatch();
 
         internal void StartCapture()
         {

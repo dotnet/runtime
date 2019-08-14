@@ -11,7 +11,7 @@ namespace System.Xml.Xsl.XsltOld
 
     internal class TextEvent : Event
     {
-        private string _text;
+        private readonly string _text;
 
         protected TextEvent() { }
 

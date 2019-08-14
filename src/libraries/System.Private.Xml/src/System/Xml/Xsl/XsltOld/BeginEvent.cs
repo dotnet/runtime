@@ -11,12 +11,12 @@ namespace System.Xml.Xsl.XsltOld
 
     internal class BeginEvent : Event
     {
-        private XPathNodeType _nodeType;
+        private readonly XPathNodeType _nodeType;
         private string _namespaceUri;
-        private string _name;
+        private readonly string _name;
         private string _prefix;
-        private bool _empty;
-        private object _htmlProps;
+        private readonly bool _empty;
+        private readonly object _htmlProps;
 #if DEBUG
         private bool _replaceNSAliasesDone;
 #endif

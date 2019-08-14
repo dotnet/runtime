@@ -1328,7 +1328,7 @@ namespace System.Xml
 
         private class XmlWrappedReader : XmlDictionaryReader, IXmlLineInfo
         {
-            private XmlReader _reader;
+            private readonly XmlReader _reader;
             private XmlNamespaceManager _nsMgr;
 
             public XmlWrappedReader(XmlReader reader, XmlNamespaceManager nsMgr)

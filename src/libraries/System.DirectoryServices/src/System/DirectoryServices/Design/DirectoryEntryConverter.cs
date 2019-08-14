@@ -11,7 +11,7 @@ namespace System.DirectoryServices.Design
     internal class DirectoryEntryConverter : TypeConverter
     {
         private static StandardValuesCollection s_values;
-        private static Hashtable s_componentsCreated = new Hashtable(StringComparer.OrdinalIgnoreCase);
+        private static readonly Hashtable s_componentsCreated = new Hashtable(StringComparer.OrdinalIgnoreCase);
 
         public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
         {

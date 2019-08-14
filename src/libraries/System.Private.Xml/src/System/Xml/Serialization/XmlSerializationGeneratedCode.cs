@@ -27,18 +27,18 @@ namespace System.Xml.Serialization
     }
     internal class XmlSerializationCodeGen
     {
-        private IndentedWriter _writer;
+        private readonly IndentedWriter _writer;
         private int _nextMethodNumber = 0;
-        private Hashtable _methodNames = new Hashtable();
-        private ReflectionAwareCodeGen _raCodeGen;
-        private TypeScope[] _scopes;
-        private TypeDesc _stringTypeDesc = null;
-        private TypeDesc _qnameTypeDesc = null;
-        private string _access;
-        private string _className;
+        private readonly Hashtable _methodNames = new Hashtable();
+        private readonly ReflectionAwareCodeGen _raCodeGen;
+        private readonly TypeScope[] _scopes;
+        private readonly TypeDesc _stringTypeDesc = null;
+        private readonly TypeDesc _qnameTypeDesc = null;
+        private readonly string _access;
+        private readonly string _className;
         private TypeMapping[] _referencedMethods;
         private int _references = 0;
-        private Hashtable _generatedMethods = new Hashtable();
+        private readonly Hashtable _generatedMethods = new Hashtable();
 
         internal XmlSerializationCodeGen(IndentedWriter writer, TypeScope[] scopes, string access, string className)
         {

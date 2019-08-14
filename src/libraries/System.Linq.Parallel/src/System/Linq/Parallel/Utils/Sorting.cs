@@ -35,18 +35,18 @@ namespace System.Linq.Parallel
 
     internal class SortHelper<TInputOutput, TKey> : SortHelper<TInputOutput>, IDisposable
     {
-        private QueryOperatorEnumerator<TInputOutput, TKey> _source; // The data source from which to pull data.
-        private int _partitionCount; // The partition count.
-        private int _partitionIndex; // This helper's index.
+        private readonly QueryOperatorEnumerator<TInputOutput, TKey> _source; // The data source from which to pull data.
+        private readonly int _partitionCount; // The partition count.
+        private readonly int _partitionIndex; // This helper's index.
 
         // This data is shared among all partitions.
-        private QueryTaskGroupState _groupState; // To communicate status, e.g. cancellation.
-        private int[][] _sharedIndices; // Shared set of indices used during sorting.
-        private GrowingArray<TKey>[] _sharedKeys; // Shared keys with which to compare elements.
-        private TInputOutput[][] _sharedValues; // The actual values used for comparisons.
-        private Barrier[][] _sharedBarriers; // A matrix of barriers used for synchronizing during merges.
-        private OrdinalIndexState _indexState; // State of the order index
-        private IComparer<TKey> _keyComparer; // Comparer for the order keys
+        private readonly QueryTaskGroupState _groupState; // To communicate status, e.g. cancellation.
+        private readonly int[][] _sharedIndices; // Shared set of indices used during sorting.
+        private readonly GrowingArray<TKey>[] _sharedKeys; // Shared keys with which to compare elements.
+        private readonly TInputOutput[][] _sharedValues; // The actual values used for comparisons.
+        private readonly Barrier[][] _sharedBarriers; // A matrix of barriers used for synchronizing during merges.
+        private readonly OrdinalIndexState _indexState; // State of the order index
+        private readonly IComparer<TKey> _keyComparer; // Comparer for the order keys
 
         //---------------------------------------------------------------------------------------
         // Creates a single sort helper object.  This is marked private to ensure the only

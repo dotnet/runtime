@@ -33,10 +33,10 @@ namespace System.Data.SqlClient
         //  may be initiated here AFTER the connection lock is released, but should NOT fall under this class's locking strategy.
 
         private SqlInternalConnection _connection;            // the internal connection that is the root of the transaction
-        private IsolationLevel _isolationLevel;        // the IsolationLevel of the transaction we delegated to the server
+        private readonly IsolationLevel _isolationLevel;        // the IsolationLevel of the transaction we delegated to the server
         private SqlInternalTransaction _internalTransaction;   // the SQL Server transaction we're delegating to
 
-        private Transaction _atomicTransaction;
+        private readonly Transaction _atomicTransaction;
 
         private bool _active;                // Is the transaction active?
 

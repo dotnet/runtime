@@ -18,8 +18,8 @@ namespace System.Xml.Xsl.XPath
 
     internal class XPathBuilder : IXPathBuilder<QilNode>, IXPathEnvironment
     {
-        private XPathQilFactory _f;
-        private IXPathEnvironment _environment;
+        private readonly XPathQilFactory _f;
+        private readonly IXPathEnvironment _environment;
         private bool _inTheBuild;
 
         // Singleton nodes used as fixup markers
@@ -27,7 +27,7 @@ namespace System.Xml.Xsl.XPath
 
         // Number of unresolved fixup nodes
         protected int numFixupCurrent, numFixupPosition, numFixupLast;
-        private FixupVisitor _fixupVisitor;
+        private readonly FixupVisitor _fixupVisitor;
 
         /*  ----------------------------------------------------------------------------
             IXPathEnvironment interface
@@ -371,7 +371,7 @@ namespace System.Xml.Xsl.XPath
         }
 
         // XmlNodeKindFlags from XPathNodeType
-        private static XmlNodeKindFlags[] s_XPathNodeType2QilXmlNodeKind = {
+        private static readonly XmlNodeKindFlags[] s_XPathNodeType2QilXmlNodeKind = {
                 /*Root                 */ XmlNodeKindFlags.Document,
                 /*Element              */ XmlNodeKindFlags.Element,
                 /*Attribute            */ XmlNodeKindFlags.Attribute,
@@ -683,7 +683,7 @@ namespace System.Xml.Xsl.XPath
             Union,
         }
 
-        private static XPathOperatorGroup[] s_operatorGroup = {
+        private static readonly XPathOperatorGroup[] s_operatorGroup = {
             /*Unknown   */ XPathOperatorGroup.Unknown   ,
             /*Or        */ XPathOperatorGroup.Logical   ,
             /*And       */ XPathOperatorGroup.Logical   ,
@@ -702,7 +702,7 @@ namespace System.Xml.Xsl.XPath
             /*Union     */ XPathOperatorGroup.Union     ,
         };
 
-        private static QilNodeType[] s_qilOperator = {
+        private static readonly QilNodeType[] s_qilOperator = {
             /*Unknown    */ QilNodeType.Unknown ,
             /*Or         */ QilNodeType.Or      ,
             /*And        */ QilNodeType.And     ,
@@ -722,7 +722,7 @@ namespace System.Xml.Xsl.XPath
         };
 
         // XmlNodeType(s) of nodes by XPathAxis
-        private static XmlNodeKindFlags[] s_XPathAxisMask = {
+        private static readonly XmlNodeKindFlags[] s_XPathAxisMask = {
             /*Unknown         */ XmlNodeKindFlags.None,
             /*Ancestor        */ XmlNodeKindFlags.Element | XmlNodeKindFlags.Document,
             /*AncestorOrSelf  */ XmlNodeKindFlags.Any,
@@ -826,8 +826,8 @@ namespace System.Xml.Xsl.XPath
 
         internal class FixupVisitor : QilReplaceVisitor
         {
-            private new QilPatternFactory f;
-            private QilNode _fixupCurrent, _fixupPosition, _fixupLast; // fixup nodes we are replacing
+            private new readonly QilPatternFactory f;
+            private readonly QilNode _fixupCurrent, _fixupPosition, _fixupLast; // fixup nodes we are replacing
             private QilIterator _current;
             private QilNode _last;               // expressions we are using to replace fixupNodes
             private bool _justCount;          // Don't change tree, just count

@@ -47,14 +47,14 @@ namespace System.Xml.Xsl.XsltOld
 
         private const string s_EndOfLine = "\r\n";
 
-        private static char[] s_TextValueFind = new char[] { s_Ampersand, s_GreaterThan, s_LessThan };
-        private static string[] s_TextValueReplace = new string[] { s_EnAmpersand, s_EnGreaterThan, s_EnLessThan };
+        private static readonly char[] s_TextValueFind = new char[] { s_Ampersand, s_GreaterThan, s_LessThan };
+        private static readonly string[] s_TextValueReplace = new string[] { s_EnAmpersand, s_EnGreaterThan, s_EnLessThan };
 
-        private static char[] s_XmlAttributeValueFind = new char[] { s_Ampersand, s_GreaterThan, s_LessThan, s_Quote, s_NewLine, s_Return };
-        private static string[] s_XmlAttributeValueReplace = new string[] { s_EnAmpersand, s_EnGreaterThan, s_EnLessThan, s_EnQuote, s_EnNewLine, s_EnReturn };
+        private static readonly char[] s_XmlAttributeValueFind = new char[] { s_Ampersand, s_GreaterThan, s_LessThan, s_Quote, s_NewLine, s_Return };
+        private static readonly string[] s_XmlAttributeValueReplace = new string[] { s_EnAmpersand, s_EnGreaterThan, s_EnLessThan, s_EnQuote, s_EnNewLine, s_EnReturn };
 
         // Instance members
-        private Processor _processor;
+        private readonly Processor _processor;
         protected Encoding encoding;
         private ArrayList _outputCache;
         private bool _firstLine = true;

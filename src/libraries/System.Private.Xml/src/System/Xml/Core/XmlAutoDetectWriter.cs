@@ -20,10 +20,10 @@ namespace System.Xml
     {
         private XmlRawWriter _wrapped;
         private OnRemoveWriter _onRemove;
-        private XmlWriterSettings _writerSettings;
-        private XmlEventCache _eventCache;           // Cache up events until first StartElement is encountered
-        private TextWriter _textWriter;
-        private Stream _strm;
+        private readonly XmlWriterSettings _writerSettings;
+        private readonly XmlEventCache _eventCache;           // Cache up events until first StartElement is encountered
+        private readonly TextWriter _textWriter;
+        private readonly Stream _strm;
 
         //-----------------------------------------------
         // Constructors

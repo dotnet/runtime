@@ -11,16 +11,16 @@ namespace System.Data.SqlClient
 {
     public sealed class SqlError
     {
-        private string _source = TdsEnums.SQL_PROVIDER_NAME;
-        private int _number;
-        private byte _state;
-        private byte _errorClass;
-        private string _server;
-        private string _message;
-        private string _procedure;
-        private int _lineNumber;
-        private int _win32ErrorCode;
-        private Exception _exception;
+        private readonly string _source = TdsEnums.SQL_PROVIDER_NAME;
+        private readonly int _number;
+        private readonly byte _state;
+        private readonly byte _errorClass;
+        private readonly string _server;
+        private readonly string _message;
+        private readonly string _procedure;
+        private readonly int _lineNumber;
+        private readonly int _win32ErrorCode;
+        private readonly Exception _exception;
 
         internal SqlError(int infoNumber, byte errorState, byte errorClass, string server, string errorMessage, string procedure, int lineNumber, uint win32ErrorCode, Exception exception = null)
             : this(infoNumber, errorState, errorClass, server, errorMessage, procedure, lineNumber, exception)

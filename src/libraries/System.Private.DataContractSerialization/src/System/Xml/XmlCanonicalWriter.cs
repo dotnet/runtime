@@ -944,7 +944,7 @@ namespace System.Xml
 
         private class AttributeSorter : IComparer
         {
-            private XmlCanonicalWriter _writer;
+            private readonly XmlCanonicalWriter _writer;
 
             public AttributeSorter(XmlCanonicalWriter writer)
             {

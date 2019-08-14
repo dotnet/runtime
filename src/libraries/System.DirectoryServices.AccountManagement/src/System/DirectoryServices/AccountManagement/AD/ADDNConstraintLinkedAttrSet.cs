@@ -70,8 +70,8 @@ namespace System.DirectoryServices.AccountManagement
             _constraintData = constraintData;
         }
 
-        private ConstraintType _constraint;
-        private object _constraintData;
+        private readonly ConstraintType _constraint;
+        private readonly object _constraintData;
 
         internal override bool MoveNext()
         {

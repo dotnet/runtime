@@ -47,7 +47,7 @@ namespace System.Text.Encodings.Web
 
     internal sealed class DefaultHtmlEncoder : HtmlEncoder
     {
-        private AllowedCharactersBitmap _allowedCharacters;
+        private readonly AllowedCharactersBitmap _allowedCharacters;
         internal static readonly DefaultHtmlEncoder Singleton = new DefaultHtmlEncoder(new TextEncoderSettings(UnicodeRanges.BasicLatin));
 
         public DefaultHtmlEncoder(TextEncoderSettings settings)

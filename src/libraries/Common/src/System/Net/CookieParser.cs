@@ -43,13 +43,13 @@ namespace System.Net
     {
         private bool _eofCookie;
         private int _index;
-        private int _length;
+        private readonly int _length;
         private string _name;
         private bool _quoted;
         private int _start;
         private CookieToken _token;
         private int _tokenLength;
-        private string _tokenStream;
+        private readonly string _tokenStream;
         private string _value;
         private int _cookieStartIndex;
         private int _cookieLength;
@@ -431,8 +431,8 @@ namespace System.Net
 
         private struct RecognizedAttribute
         {
-            private string _name;
-            private CookieToken _token;
+            private readonly string _name;
+            private readonly CookieToken _token;
 
             internal RecognizedAttribute(string name, CookieToken token)
             {
@@ -508,7 +508,7 @@ namespace System.Net
     // Takes a cookie header, makes cookies.
     internal class CookieParser
     {
-        private CookieTokenizer _tokenizer;
+        private readonly CookieTokenizer _tokenizer;
         private Cookie _savedCookie;
 
         internal CookieParser(string cookieString)

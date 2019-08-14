@@ -25,9 +25,9 @@ namespace System.Xml.Xsl.Xslt
 {
     internal class Scripts
     {
-        private Compiler _compiler;
-        private Dictionary<string, Type> _nsToType = new Dictionary<string, Type>();
-        private XmlExtensionFunctionTable _extFuncs = new XmlExtensionFunctionTable();
+        private readonly Compiler _compiler;
+        private readonly Dictionary<string, Type> _nsToType = new Dictionary<string, Type>();
+        private readonly XmlExtensionFunctionTable _extFuncs = new XmlExtensionFunctionTable();
 
         public Scripts(Compiler compiler)
         {

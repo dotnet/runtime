@@ -23,7 +23,7 @@ namespace System.Net.Mime
         protected readonly Stream _stream;
         private readonly EventHandler _onCloseHandler;
         private readonly bool _shouldEncodeLeadingDots;
-        private int _lineLength;
+        private readonly int _lineLength;
         protected Stream _contentStream;
         protected bool _isInContent;
 

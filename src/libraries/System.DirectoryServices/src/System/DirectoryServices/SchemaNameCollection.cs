@@ -221,7 +221,7 @@ namespace System.DirectoryServices
         // classes wrap an object and supply properties as methods.
         internal class FilterDelegateWrapper
         {
-            private UnsafeNativeMethods.IAdsContainer _obj;
+            private readonly UnsafeNativeMethods.IAdsContainer _obj;
             internal FilterDelegateWrapper(UnsafeNativeMethods.IAdsContainer wrapped)
             {
                 _obj = wrapped;

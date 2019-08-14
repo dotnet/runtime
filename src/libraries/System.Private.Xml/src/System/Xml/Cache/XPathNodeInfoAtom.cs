@@ -16,9 +16,9 @@ namespace MS.Internal.Xml.Cache
     /// </summary>
     internal sealed class XPathNodePageInfo
     {
-        private int _pageNum;
+        private readonly int _pageNum;
         private int _nodeCount;
-        private XPathNode[] _pagePrev;
+        private readonly XPathNode[] _pagePrev;
         private XPathNode[] _pageNext;
 
         /// <summary>

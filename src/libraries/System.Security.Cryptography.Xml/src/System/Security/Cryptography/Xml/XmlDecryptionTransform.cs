@@ -19,8 +19,8 @@ namespace System.Security.Cryptography.Xml
 
     public class XmlDecryptionTransform : Transform
     {
-        private Type[] _inputTypes = { typeof(Stream), typeof(XmlDocument) };
-        private Type[] _outputTypes = { typeof(XmlDocument) };
+        private readonly Type[] _inputTypes = { typeof(Stream), typeof(XmlDocument) };
+        private readonly Type[] _outputTypes = { typeof(XmlDocument) };
         private XmlNodeList _encryptedDataList = null;
         private ArrayList _arrayListUri = null; // this ArrayList object represents the Uri's to be excluded
         private EncryptedXml _exml = null; // defines the XML encryption processing rules

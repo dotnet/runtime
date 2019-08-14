@@ -9,9 +9,9 @@ namespace System.Xml.Xsl.XsltOld
 {
     internal sealed class NavigatorOutput : IRecordOutput
     {
-        private XPathDocument _doc;
+        private readonly XPathDocument _doc;
         private int _documentIndex;
-        private XmlRawWriter _wr;
+        private readonly XmlRawWriter _wr;
 
         internal XPathNavigator Navigator
         {

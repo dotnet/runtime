@@ -157,7 +157,7 @@ namespace System.Diagnostics
 
         internal unsafe class ShellExecuteHelper
         {
-            private Interop.Shell32.SHELLEXECUTEINFO* _executeInfo;
+            private readonly Interop.Shell32.SHELLEXECUTEINFO* _executeInfo;
             private bool _succeeded;
             private bool _notpresent;
 

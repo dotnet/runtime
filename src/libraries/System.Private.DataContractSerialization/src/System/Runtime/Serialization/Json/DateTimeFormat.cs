@@ -13,8 +13,8 @@ namespace System.Runtime.Serialization
     /// </summary>
     public class DateTimeFormat
     {
-        private string _formatString;
-        private IFormatProvider _formatProvider;
+        private readonly string _formatString;
+        private readonly IFormatProvider _formatProvider;
         private DateTimeStyles _dateTimeStyles;
 
         /// <summary>

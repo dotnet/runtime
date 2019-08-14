@@ -533,8 +533,8 @@ namespace System.Configuration
 
         private class XmlEscaper
         {
-            private XmlDocument document;
-            private XmlElement tempElement;
+            private readonly XmlDocument document;
+            private readonly XmlElement tempElement;
 
             internal XmlEscaper()
             {

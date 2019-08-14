@@ -23,9 +23,9 @@ namespace System.Xml
         // Fields
         //
         // underlying writer
-        private XmlWriter _writer;
-        private XmlRawWriter _rawWriter;  // writer as XmlRawWriter
-        private IXmlNamespaceResolver _predefinedNamespaces; // writer as IXmlNamespaceResolver
+        private readonly XmlWriter _writer;
+        private readonly XmlRawWriter _rawWriter;  // writer as XmlRawWriter
+        private readonly IXmlNamespaceResolver _predefinedNamespaces; // writer as IXmlNamespaceResolver
 
         // namespace management
         private Namespace[] _nsStack;
@@ -52,9 +52,9 @@ namespace System.Xml
         private State _currentState;
 
         // settings
-        private bool _checkCharacters;
-        private bool _omitDuplNamespaces;
-        private bool _writeEndDocumentOnClose;
+        private readonly bool _checkCharacters;
+        private readonly bool _omitDuplNamespaces;
+        private readonly bool _writeEndDocumentOnClose;
 
         // actual conformance level
         private ConformanceLevel _conformanceLevel;
@@ -67,7 +67,7 @@ namespace System.Xml
         private XmlCharType _xmlCharType = XmlCharType.Instance;
 
         // hash randomizer
-        private SecureStringHasher _hasher;
+        private readonly SecureStringHasher _hasher;
 
 
         //
@@ -182,7 +182,7 @@ namespace System.Xml
             "Whitespace",               // Token.Whitespace
         };
 
-        private static WriteState[] s_state2WriteState = {
+        private static readonly WriteState[] s_state2WriteState = {
             WriteState.Start,       // State.Start
             WriteState.Prolog,      // State.TopLevel
             WriteState.Prolog,      // State.Document

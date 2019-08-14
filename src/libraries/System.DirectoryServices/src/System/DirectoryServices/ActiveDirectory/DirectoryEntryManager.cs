@@ -84,10 +84,10 @@ namespace System.DirectoryServices.ActiveDirectory
     /// </summary>
     internal class DirectoryEntryManager
     {
-        private Hashtable _directoryEntries = new Hashtable();
+        private readonly Hashtable _directoryEntries = new Hashtable();
         private string _bindingPrefix = null;
-        private DirectoryContext _context = null;
-        private NativeComInterfaces.IAdsPathname _pathCracker = null;
+        private readonly DirectoryContext _context = null;
+        private readonly NativeComInterfaces.IAdsPathname _pathCracker = null;
 
         internal DirectoryEntryManager(DirectoryContext context)
         {

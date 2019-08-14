@@ -1608,7 +1608,7 @@ namespace System.Text.RegularExpressions
         /*
          * Some simple debugging stuff
          */
-        private static MethodInfo s_debugWriteLine = typeof(Debug).GetMethod("WriteLine", new Type[] {typeof(string)});
+        private static readonly MethodInfo s_debugWriteLine = typeof(Debug).GetMethod("WriteLine", new Type[] {typeof(string)});
 
         /*
          * Debug only: emit code to print out a message

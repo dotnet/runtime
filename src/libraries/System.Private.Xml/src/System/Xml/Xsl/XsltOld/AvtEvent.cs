@@ -12,7 +12,7 @@ namespace System.Xml.Xsl.XsltOld
 
     internal sealed class AvtEvent : TextEvent
     {
-        private int _key;
+        private readonly int _key;
 
         public AvtEvent(int key)
         {

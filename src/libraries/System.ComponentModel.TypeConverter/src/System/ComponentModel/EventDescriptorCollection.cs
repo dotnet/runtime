@@ -17,7 +17,7 @@ namespace System.ComponentModel
     public class EventDescriptorCollection : ICollection, IList
     {
         private EventDescriptor[] _events;
-        private string[] _namedSort;
+        private readonly string[] _namedSort;
         private readonly IComparer _comparer;
         private bool _eventsOwned;
         private bool _needSort;

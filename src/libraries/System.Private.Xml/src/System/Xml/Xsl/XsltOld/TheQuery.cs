@@ -12,7 +12,7 @@ namespace System.Xml.Xsl.XsltOld
     internal sealed class TheQuery
     {
         internal InputScopeManager _ScopeManager;
-        private CompiledXpathExpr _CompiledQuery;
+        private readonly CompiledXpathExpr _CompiledQuery;
 
         internal CompiledXpathExpr CompiledQuery { get { return _CompiledQuery; } }
 

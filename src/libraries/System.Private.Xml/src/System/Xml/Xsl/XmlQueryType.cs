@@ -875,7 +875,7 @@ namespace System.Xml.Xsl
         /// </summary>
         private sealed class BitMatrix
         {
-            private ulong[] _bits;
+            private readonly ulong[] _bits;
 
             /// <summary>
             /// Create NxN bit matrix, where N = count.

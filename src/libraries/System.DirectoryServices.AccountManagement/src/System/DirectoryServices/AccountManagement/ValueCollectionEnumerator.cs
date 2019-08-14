@@ -78,6 +78,6 @@ namespace System.DirectoryServices.AccountManagement
         // Private implementation
         //
 
-        private TrackedCollectionEnumerator<T> _inner;
+        private readonly TrackedCollectionEnumerator<T> _inner;
     }
 }

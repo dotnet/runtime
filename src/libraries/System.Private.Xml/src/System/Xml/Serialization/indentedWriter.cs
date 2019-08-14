@@ -11,10 +11,10 @@ namespace System.Xml.Serialization
     /// </summary>
     internal class IndentedWriter
     {
-        private TextWriter _writer;
+        private readonly TextWriter _writer;
         private bool _needIndent;
         private int _indentLevel;
-        private bool _compact;
+        private readonly bool _compact;
 
         internal IndentedWriter(TextWriter writer, bool compact)
         {

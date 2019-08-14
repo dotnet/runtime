@@ -12,8 +12,8 @@ namespace MS.Internal.Xml.XPath
 {
     internal sealed class NumberFunctions : ValueQuery
     {
-        private Query _arg = null;
-        private FT _ftype;
+        private readonly Query _arg = null;
+        private readonly FT _ftype;
 
         public NumberFunctions(FT ftype, Query arg)
         {

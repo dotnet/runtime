@@ -30,8 +30,8 @@ namespace System.Xml.Xsl.XsltOld
             public FormatInfo() { }
         }
 
-        private static FormatInfo s_defaultFormat = new FormatInfo(false, "0");
-        private static FormatInfo s_defaultSeparator = new FormatInfo(true, ".");
+        private static readonly FormatInfo s_defaultFormat = new FormatInfo(false, "0");
+        private static readonly FormatInfo s_defaultSeparator = new FormatInfo(true, ".");
 
         private class NumberingFormat : NumberFormatterBase
         {

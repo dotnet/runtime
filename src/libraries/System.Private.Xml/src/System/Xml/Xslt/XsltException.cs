@@ -13,15 +13,15 @@ namespace System.Xml.Xsl
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class XsltException : SystemException
     {
-        private string _res;
-        private string[] _args;
-        private string _sourceUri;
-        private int _lineNumber;
-        private int _linePosition;
+        private readonly string _res;
+        private readonly string[] _args;
+        private readonly string _sourceUri;
+        private readonly int _lineNumber;
+        private readonly int _linePosition;
 
         // message != null for V1 & V2 exceptions deserialized in Whidbey
         // message == null for created V2 exceptions; the exception message is stored in Exception._message
-        private string _message;
+        private readonly string _message;
 
         protected XsltException(SerializationInfo info, StreamingContext context) : base(info, context)
         {

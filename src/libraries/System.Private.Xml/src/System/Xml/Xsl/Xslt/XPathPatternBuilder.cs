@@ -17,12 +17,12 @@ namespace System.Xml.Xsl.Xslt
 
     internal class XPathPatternBuilder : XPathPatternParser.IPatternBuilder
     {
-        private XPathPredicateEnvironment _predicateEnvironment;
-        private XPathBuilder _predicateBuilder;
+        private readonly XPathPredicateEnvironment _predicateEnvironment;
+        private readonly XPathBuilder _predicateBuilder;
         private bool _inTheBuild;
-        private XPathQilFactory _f;
-        private QilNode _fixupNode;
-        private IXPathEnvironment _environment;
+        private readonly XPathQilFactory _f;
+        private readonly QilNode _fixupNode;
+        private readonly IXPathEnvironment _environment;
 
         public XPathPatternBuilder(IXPathEnvironment environment)
         {
@@ -425,7 +425,7 @@ namespace System.Xml.Xsl.Xslt
 
         private class XsltFunctionFocus : IFocus
         {
-            private QilIterator _current;
+            private readonly QilIterator _current;
 
             public XsltFunctionFocus(QilIterator current)
             {

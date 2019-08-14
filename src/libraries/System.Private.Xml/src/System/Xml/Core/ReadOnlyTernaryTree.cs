@@ -30,7 +30,7 @@ namespace System.Xml
      */
     internal class TernaryTreeReadOnly
     {
-        private byte[] _nodeBuffer;
+        private readonly byte[] _nodeBuffer;
 
         //define the array positions
 

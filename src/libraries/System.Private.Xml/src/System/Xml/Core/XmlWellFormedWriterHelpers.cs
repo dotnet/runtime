@@ -16,7 +16,7 @@ namespace System.Xml
         //
         private class NamespaceResolverProxy : IXmlNamespaceResolver
         {
-            private XmlWellFormedWriter _wfWriter;
+            private readonly XmlWellFormedWriter _wfWriter;
 
             internal NamespaceResolverProxy(XmlWellFormedWriter wfWriter)
             {

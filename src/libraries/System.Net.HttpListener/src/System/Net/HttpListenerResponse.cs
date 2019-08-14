@@ -12,7 +12,7 @@ namespace System.Net
     {
         private BoundaryType _boundaryType = BoundaryType.None;
         private CookieCollection _cookies;
-        private HttpListenerContext _httpContext;
+        private readonly HttpListenerContext _httpContext;
         private bool _keepAlive = true;
         private HttpResponseStream _responseStream;
         private string _statusDescription;

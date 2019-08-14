@@ -10,8 +10,8 @@ namespace MS.Internal.Xml.XPath
 {
     internal sealed class FollSiblingQuery : BaseAxisQuery
     {
-        private StackNav _elementStk;
-        private List<XPathNavigator> _parentStk;
+        private readonly StackNav _elementStk;
+        private readonly List<XPathNavigator> _parentStk;
         private XPathNavigator _nextInput;
 
         public FollSiblingQuery(Query qyInput, string name, string prefix, XPathNodeType type) : base(qyInput, name, prefix, type)

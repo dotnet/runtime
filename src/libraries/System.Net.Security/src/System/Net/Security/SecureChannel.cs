@@ -35,7 +35,7 @@ namespace System.Net.Security
 
         private bool _refreshCredentialNeeded;
 
-        private SslAuthenticationOptions _sslAuthenticationOptions;
+        private readonly SslAuthenticationOptions _sslAuthenticationOptions;
         private SslApplicationProtocol _negotiatedApplicationProtocol;
 
         private static readonly Oid s_serverAuthOid = new Oid("1.3.6.1.5.5.7.3.1", "1.3.6.1.5.5.7.3.1");

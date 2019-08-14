@@ -8,10 +8,10 @@ namespace System.Xml.Schema
 
     public class XmlSchemaRedefine : XmlSchemaExternal
     {
-        private XmlSchemaObjectCollection _items = new XmlSchemaObjectCollection();
-        private XmlSchemaObjectTable _attributeGroups = new XmlSchemaObjectTable();
-        private XmlSchemaObjectTable _types = new XmlSchemaObjectTable();
-        private XmlSchemaObjectTable _groups = new XmlSchemaObjectTable();
+        private readonly XmlSchemaObjectCollection _items = new XmlSchemaObjectCollection();
+        private readonly XmlSchemaObjectTable _attributeGroups = new XmlSchemaObjectTable();
+        private readonly XmlSchemaObjectTable _types = new XmlSchemaObjectTable();
+        private readonly XmlSchemaObjectTable _groups = new XmlSchemaObjectTable();
 
         public XmlSchemaRedefine()
         {

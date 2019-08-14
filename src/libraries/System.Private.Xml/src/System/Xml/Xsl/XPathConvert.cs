@@ -2323,7 +2323,7 @@ namespace System.Xml.Xsl
             private int _exponent;             // Base-10 scaling factor (0 means decimal point immediately precedes first digit)
             private int _sign;                 // Sign is -1 or 1, depending on sign of number
             private int _mantissaSize;         // Size of mantissa
-            private byte[] _mantissa = new byte[MaxDigits];    // Array of base-10 digits
+            private readonly byte[] _mantissa = new byte[MaxDigits];    // Array of base-10 digits
 
             public int Exponent { get { return _exponent; } set { _exponent = value; } }
             public int Sign { get { return _sign; } set { _sign = value; } }

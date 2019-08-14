@@ -20,7 +20,7 @@ namespace System.Xml.Schema
         internal ArrayList axisFields;                     // Add tableDim * LocatedActiveAxis in a loop
         internal Hashtable qualifiedTable;                 // Checking confliction
         internal Hashtable keyrefTable;                    // several keyref tables having connections to this one is possible
-        private int _tableDim;                               // dimension of table = numbers of fields;
+        private readonly int _tableDim;                               // dimension of table = numbers of fields;
 
         internal int TableDim
         {
@@ -43,7 +43,7 @@ namespace System.Xml.Schema
     // ActiveAxis plus the location plus the state of matching in the constraint table : only for field
     internal class LocatedActiveAxis : ActiveAxis
     {
-        private int _column;                     // the column in the table (the field sequence)
+        private readonly int _column;                     // the column in the table (the field sequence)
         internal bool isMatched;                  // if it's matched, then fill value in the validator later
         internal KeySequence Ks;                        // associated with a keysequence it will fills in
 
@@ -78,8 +78,8 @@ namespace System.Xml.Schema
     // 8. still need centralized locatedactiveaxis for movetoattribute purpose
     internal class SelectorActiveAxis : ActiveAxis
     {
-        private ConstraintStruct _cs;            // pointer of constraintstruct, to enable 6
-        private ArrayList _KSs;                  // stack of KSStruct, will not become less
+        private readonly ConstraintStruct _cs;            // pointer of constraintstruct, to enable 6
+        private readonly ArrayList _KSs;                  // stack of KSStruct, will not become less
         private int _KSpointer = 0;              // indicate current stack top (next available element);
 
         public int lastDepth
@@ -163,7 +163,7 @@ namespace System.Xml.Schema
         private class DecimalStruct
         {
             private bool _isDecimal = false;         // rare case it will be used...
-            private decimal[] _dvalue;               // to accelerate equals operation.  array <-> list
+            private readonly decimal[] _dvalue;               // to accelerate equals operation.  array <-> list
 
             public bool IsDecimal
             {
@@ -189,10 +189,10 @@ namespace System.Xml.Schema
 
         private DecimalStruct _dstruct = null;
         private object _ovalue;
-        private string _svalue;      // only for output
+        private readonly string _svalue;      // only for output
         private XmlSchemaDatatype _xsdtype;
-        private int _dim = 1;
-        private bool _isList = false;
+        private readonly int _dim = 1;
+        private readonly bool _isList = false;
 
         public int Dim
         {
@@ -386,10 +386,10 @@ namespace System.Xml.Schema
 
     internal class KeySequence
     {
-        private TypedObject[] _ks;
-        private int _dim;
+        private readonly TypedObject[] _ks;
+        private readonly int _dim;
         private int _hashcode = -1;
-        private int _posline, _poscol;            // for error reporting
+        private readonly int _posline, _poscol;            // for error reporting
 
         internal KeySequence(int dim, int line, int col)
         {

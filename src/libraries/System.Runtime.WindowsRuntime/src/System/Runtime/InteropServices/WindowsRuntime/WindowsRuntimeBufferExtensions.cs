@@ -462,7 +462,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             // we must keep around a reference to the IBuffer from which we got the memory pointer. Otherwise the ref count
             // of the underlying COM object may drop to zero and the memory may get freed.
 
-            private IBuffer _sourceBuffer;
+            private readonly IBuffer _sourceBuffer;
 
             internal unsafe WindowsRuntimeBufferUnmanagedMemoryStream(IBuffer sourceBuffer, byte* dataPtr)
 

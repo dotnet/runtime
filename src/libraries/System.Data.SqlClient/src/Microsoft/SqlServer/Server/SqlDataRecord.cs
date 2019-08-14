@@ -20,12 +20,12 @@ namespace Microsoft.SqlServer.Server
 {
     public class SqlDataRecord : IDataRecord
     {
-        private SmiRecordBuffer _recordBuffer;
-        private SmiExtendedMetaData[] _columnSmiMetaData;
-        private SmiEventSink_Default _eventSink;
-        private SqlMetaData[] _columnMetaData;
+        private readonly SmiRecordBuffer _recordBuffer;
+        private readonly SmiExtendedMetaData[] _columnSmiMetaData;
+        private readonly SmiEventSink_Default _eventSink;
+        private readonly SqlMetaData[] _columnMetaData;
         private FieldNameLookup _fieldNameLookup;
-        private bool _usesStringStorageForXml;
+        private readonly bool _usesStringStorageForXml;
 
         private static readonly SmiMetaData s_maxNVarCharForXml = new SmiMetaData(SqlDbType.NVarChar, SmiMetaData.UnlimitedMaxLengthIndicator,
                                         SmiMetaData.DefaultNVarChar_NoCollation.Precision,

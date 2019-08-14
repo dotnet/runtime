@@ -205,7 +205,7 @@ namespace System.Xml.Xsl
     /// </summary>
     internal struct IListEnumerator<T> : IEnumerator<T>, System.Collections.IEnumerator
     {
-        private IList<T> _sequence;
+        private readonly IList<T> _sequence;
         private int _index;
         private T _current;
 

@@ -9,7 +9,7 @@ namespace System.Configuration
     /// </summary>
     public class SettingsLoadedEventArgs : EventArgs
     {
-        private SettingsProvider _provider;
+        private readonly SettingsProvider _provider;
 
         public SettingsLoadedEventArgs(SettingsProvider provider)
         {

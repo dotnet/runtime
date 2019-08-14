@@ -765,7 +765,7 @@ namespace System.Net
         // Internal struct to facilitate URL decoding -- keeps char buffer and byte buffer, allows appending of either chars or bytes
         private struct UrlDecoder
         {
-            private int _bufferSize;
+            private readonly int _bufferSize;
 
             // Accumulate characters in a special array
             private int _numChars;
@@ -776,7 +776,7 @@ namespace System.Net
             private byte[]? _byteBuffer;
 
             // Encoding to convert chars to bytes
-            private Encoding _encoding;
+            private readonly Encoding _encoding;
 
             private void FlushBytes()
             {

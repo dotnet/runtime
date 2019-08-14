@@ -18,7 +18,7 @@ namespace System.Xml.Xsl.Runtime
     /// </summary>
     internal class XmlExtensionFunctionTable
     {
-        private Dictionary<XmlExtensionFunction, XmlExtensionFunction> _table;
+        private readonly Dictionary<XmlExtensionFunction, XmlExtensionFunction> _table;
         private XmlExtensionFunction _funcCached;
 
         public XmlExtensionFunctionTable()

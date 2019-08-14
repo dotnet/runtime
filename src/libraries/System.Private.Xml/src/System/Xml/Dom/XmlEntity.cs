@@ -7,10 +7,10 @@ namespace System.Xml
     // Represents a parsed or unparsed entity in the XML document.
     public class XmlEntity : XmlNode
     {
-        private string _publicId;
-        private string _systemId;
-        private string _notationName;
-        private string _name;
+        private readonly string _publicId;
+        private readonly string _systemId;
+        private readonly string _notationName;
+        private readonly string _name;
         private string _baseURI;
         private XmlLinkedNode _lastChild;
         private bool _childrenFoliating;

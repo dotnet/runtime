@@ -13,7 +13,7 @@ namespace System.Diagnostics
     /// </devdoc>
     public class TraceListenerCollection : IList
     {
-        private List<TraceListener> _list;
+        private readonly List<TraceListener> _list;
 
         internal TraceListenerCollection()
         {

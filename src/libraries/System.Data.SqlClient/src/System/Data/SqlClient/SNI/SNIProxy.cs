@@ -543,8 +543,8 @@ namespace System.Data.SqlClient.SNI
         /// </summary>
         public string PipeHostName { get; internal set; }
 
-        private string _workingDataSource;
-        private string _dataSourceAfterTrimmingProtocol;
+        private readonly string _workingDataSource;
+        private readonly string _dataSourceAfterTrimmingProtocol;
         internal bool IsBadDataSource { get; private set; } = false;
 
         internal bool IsSsrpRequired { get; private set; } = false;

@@ -16,11 +16,11 @@ namespace System.Xml
         internal const int MinKey = 0;
         internal const int MaxKey = int.MaxValue / 4;
 
-        private IXmlDictionary _dictionary;
-        private string _value;
-        private int _key;
+        private readonly IXmlDictionary _dictionary;
+        private readonly string _value;
+        private readonly int _key;
         private byte[] _buffer;
-        private static EmptyStringDictionary s_emptyStringDictionary = new EmptyStringDictionary();
+        private static readonly EmptyStringDictionary s_emptyStringDictionary = new EmptyStringDictionary();
 
         public XmlDictionaryString(IXmlDictionary dictionary, string value, int key)
         {
@@ -88,7 +88,7 @@ namespace System.Xml
 
         private class EmptyStringDictionary : IXmlDictionary
         {
-            private XmlDictionaryString _empty;
+            private readonly XmlDictionaryString _empty;
 
             public EmptyStringDictionary()
             {

@@ -27,7 +27,7 @@ namespace System.Data.OleDb
 
     internal sealed class PropertyInfoSet : SafeHandle
     {
-        private int setCount;
+        private readonly int setCount;
         private IntPtr descBuffer;
 
         internal PropertyInfoSet(UnsafeNativeMethods.IDBProperties idbProperties, PropertyIDSet propIDSet) : base(IntPtr.Zero, true)

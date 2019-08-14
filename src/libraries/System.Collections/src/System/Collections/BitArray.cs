@@ -773,7 +773,7 @@ namespace System.Collections
 
         private class BitArrayEnumeratorSimple : IEnumerator, ICloneable
         {
-            private BitArray _bitarray;
+            private readonly BitArray _bitarray;
             private int _index;
             private readonly int _version;
             private bool _currentElement;

@@ -8,7 +8,7 @@ namespace System.Data
 {
     internal sealed class DataViewManagerListItemTypeDescriptor : ICustomTypeDescriptor
     {
-        private DataViewManager _dataViewManager;
+        private readonly DataViewManager _dataViewManager;
         private PropertyDescriptorCollection _propsCollection;
 
         internal DataViewManagerListItemTypeDescriptor(DataViewManager dataViewManager)

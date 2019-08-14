@@ -739,7 +739,7 @@ namespace System.DirectoryServices.AccountManagement
         public sealed class LSA_TRUST_INFORMATION
         {
             public LSA_UNICODE_STRING name = new LSA_UNICODE_STRING();
-            private IntPtr _pSid = IntPtr.Zero;
+            private readonly IntPtr _pSid = IntPtr.Zero;
         }
 
         [DllImport("advapi32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "OpenThreadToken", CharSet = CharSet.Unicode)]

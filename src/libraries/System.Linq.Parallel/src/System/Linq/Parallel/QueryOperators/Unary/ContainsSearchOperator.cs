@@ -140,7 +140,7 @@ namespace System.Linq.Parallel
             private readonly IEqualityComparer<TInput> _comparer; // The comparer to use for equality tests.
             private readonly int _partitionIndex; // This partition's unique index.
             private readonly Shared<bool> _resultFoundFlag; // Whether to cancel the operation.
-            private CancellationToken _cancellationToken;
+            private readonly CancellationToken _cancellationToken;
 
             //---------------------------------------------------------------------------------------
             // Instantiates a new any/all search operator.

@@ -247,7 +247,7 @@ namespace System.DirectoryServices.AccountManagement
 
         // Certificates property
         private X509Certificate2Collection _certificates = new X509Certificate2Collection();
-        private List<string> _certificateOriginalThumbprints = new List<string>();
+        private readonly List<string> _certificateOriginalThumbprints = new List<string>();
         private LoadState _X509Certificate2CollectionLoaded = LoadState.NotSet;
 
         public X509Certificate2Collection Certificates

@@ -39,9 +39,9 @@ namespace System.Xml.Schema
         private XmlSchemaObjectTable _attributeGroups = new XmlSchemaObjectTable();
         private XmlSchemaObjectTable _elements = new XmlSchemaObjectTable();
         private XmlSchemaObjectTable _types = new XmlSchemaObjectTable();
-        private XmlSchemaObjectTable _groups = new XmlSchemaObjectTable();
-        private XmlSchemaObjectTable _notations = new XmlSchemaObjectTable();
-        private XmlSchemaObjectTable _identityConstraints = new XmlSchemaObjectTable();
+        private readonly XmlSchemaObjectTable _groups = new XmlSchemaObjectTable();
+        private readonly XmlSchemaObjectTable _notations = new XmlSchemaObjectTable();
+        private readonly XmlSchemaObjectTable _identityConstraints = new XmlSchemaObjectTable();
 
         private static int s_globalIdCounter = -1;
         private ArrayList _importedSchemas;
@@ -50,7 +50,7 @@ namespace System.Xml.Schema
         private int _schemaId = -1; //Not added to a set
         private Uri _baseUri;
         private bool _isChameleon;
-        private Hashtable _ids = new Hashtable();
+        private readonly Hashtable _ids = new Hashtable();
         private XmlDocument _document;
         private XmlNameTable _nameTable;
 

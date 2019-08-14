@@ -25,10 +25,10 @@ namespace System.Diagnostics
         private volatile bool _initialized = false;
         private bool _initializing = false;
         private volatile string _switchValueString = string.Empty;
-        private string _defaultValue;
+        private readonly string _defaultValue;
         private object _initializedLock;
 
-        private static List<WeakReference> s_switches = new List<WeakReference>();
+        private static readonly List<WeakReference> s_switches = new List<WeakReference>();
         private static int s_LastCollectionCount;
         private StringDictionary _attributes;
 

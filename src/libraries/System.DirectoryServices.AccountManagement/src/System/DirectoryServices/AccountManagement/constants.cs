@@ -105,8 +105,8 @@ namespace System.DirectoryServices.AccountManagement
     {
         private PropertyNamesExternal() { }
 
-        private static int s_acctInfoPrefixLength = PropertyNames.AcctInfoPrefix.Length;
-        private static int s_pwdInfoPrefixLength = PropertyNames.PwdInfoPrefix.Length;
+        private static readonly int s_acctInfoPrefixLength = PropertyNames.AcctInfoPrefix.Length;
+        private static readonly int s_pwdInfoPrefixLength = PropertyNames.PwdInfoPrefix.Length;
 
         internal static string GetExternalForm(string propertyName)
         {

@@ -11,8 +11,8 @@ namespace System.Data.Common
     {
         private sealed class DataRowDbColumn : DbColumn
         {
-            private DataColumnCollection _schemaColumns;
-            private DataRow _schemaRow;
+            private readonly DataColumnCollection _schemaColumns;
+            private readonly DataRow _schemaRow;
 
             public DataRowDbColumn(DataRow readerSchemaRow, DataColumnCollection readerSchemaColumns)
             {

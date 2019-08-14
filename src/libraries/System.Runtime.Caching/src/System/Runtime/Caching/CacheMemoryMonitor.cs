@@ -25,9 +25,9 @@ namespace System.Runtime.Caching
         private static long s_autoPrivateBytesLimit = -1;
         private static long s_effectiveProcessMemoryLimit = -1;
 
-        private MemoryCache _memoryCache;
-        private long[] _cacheSizeSamples;
-        private DateTime[] _cacheSizeSampleTimes;
+        private readonly MemoryCache _memoryCache;
+        private readonly long[] _cacheSizeSamples;
+        private readonly DateTime[] _cacheSizeSampleTimes;
         private int _idx;
         private SRefMultiple _sizedRefMultiple;
         private int _gen2Count;

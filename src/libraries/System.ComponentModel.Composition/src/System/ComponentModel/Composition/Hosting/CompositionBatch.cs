@@ -12,7 +12,7 @@ namespace System.ComponentModel.Composition.Hosting
 {
     public partial class CompositionBatch
     {
-        private object _lock = new object();
+        private readonly object _lock = new object();
         private bool _copyNeededForAdd;
         private bool _copyNeededForRemove;
         private List<ComposablePart> _partsToAdd;

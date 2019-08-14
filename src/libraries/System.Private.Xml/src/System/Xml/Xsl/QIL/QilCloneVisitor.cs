@@ -13,8 +13,8 @@ namespace System.Xml.Xsl.Qil
     // Create an exact replica of a QIL graph
     internal class QilCloneVisitor : QilScopedVisitor
     {
-        private QilFactory _fac;
-        private SubstitutionList _subs;
+        private readonly QilFactory _fac;
+        private readonly SubstitutionList _subs;
 
 
         //-----------------------------------------------

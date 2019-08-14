@@ -597,12 +597,12 @@ namespace System.Globalization
             // better unify it with the code above.
             //
 
-            private static string[] s_posCurrencyFormats =
+            private static readonly string[] s_posCurrencyFormats =
             {
                 "$#", "#$", "$ #", "# $"
             };
 
-            private static string[] s_negCurrencyFormats =
+            private static readonly string[] s_negCurrencyFormats =
             {
                 "($#)", "-$#", "$-#", "$#-",
                 "(#$)", "-#$", "#-$", "#$-",
@@ -610,12 +610,12 @@ namespace System.Globalization
                 "$ -#", "#- $", "($ #)", "(# $)"
             };
 
-            private static string[] s_posPercentFormats =
+            private static readonly string[] s_posPercentFormats =
             {
                 "# %", "#%", "%#", "% #"
             };
 
-            private static string[] s_negPercentFormats =
+            private static readonly string[] s_negPercentFormats =
             {
                 "-# %", "-#%", "-%#",
                 "%-#", "%#-",
@@ -624,12 +624,12 @@ namespace System.Globalization
                 "% -#", "#- %"
             };
 
-            private static string[] s_negNumberFormats =
+            private static readonly string[] s_negNumberFormats =
             {
                 "(#)", "-#", "- #", "#-", "# -",
             };
 
-            private static string s_posNumberFormat = "#";
+            private const string PosNumberFormat = "#";
 
             internal static unsafe void Int32ToDecChars(char* buffer, ref int index, uint value, int digits)
             {
@@ -1025,7 +1025,7 @@ namespace System.Globalization
             {
                 string fmt = number.sign ?
                     s_negNumberFormats[info.NumberNegativePattern] :
-                    s_posNumberFormat;
+                    PosNumberFormat;
 
                 foreach (char ch in fmt)
                 {

@@ -13,7 +13,7 @@ namespace System.Xml.Serialization
 
     public class SoapAttributeOverrides
     {
-        private Hashtable _types = new Hashtable();
+        private readonly Hashtable _types = new Hashtable();
 
         public void Add(Type type, SoapAttributes attributes)
         {

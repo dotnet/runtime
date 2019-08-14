@@ -176,12 +176,12 @@ namespace System.IO.Packaging
 
         #region Private Members
 
-        private Package _package;
-        private PackagePart _source;
-        private Uri _targetUri;
-        private string _relationshipType;
-        private TargetMode _targetMode;
-        private string _id;
+        private readonly Package _package;
+        private readonly PackagePart _source;
+        private readonly Uri _targetUri;
+        private readonly string _relationshipType;
+        private readonly TargetMode _targetMode;
+        private readonly string _id;
 
         private static readonly Uri s_containerRelationshipPartName = PackUriHelper.CreatePartUri(new Uri("/_rels/.rels", UriKind.Relative));
 

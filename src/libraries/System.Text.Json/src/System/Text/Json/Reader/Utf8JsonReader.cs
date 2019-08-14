@@ -24,8 +24,8 @@ namespace System.Text.Json
     {
         private ReadOnlySpan<byte> _buffer;
 
-        private bool _isFinalBlock;
-        private bool _isInputSequence;
+        private readonly bool _isFinalBlock;
+        private readonly bool _isInputSequence;
 
         private long _lineNumber;
         private long _bytePositionInLine;
@@ -48,7 +48,7 @@ namespace System.Text.Json
 
         private SequencePosition _nextPosition;
         private SequencePosition _currentPosition;
-        private ReadOnlySequence<byte> _sequence;
+        private readonly ReadOnlySequence<byte> _sequence;
 
         private bool IsLastSpan => _isFinalBlock && (!_isMultiSegment || _isLastSegment);
 

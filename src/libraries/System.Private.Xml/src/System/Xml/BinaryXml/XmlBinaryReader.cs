@@ -20,7 +20,7 @@ namespace System.Xml
 
         private static volatile Type[] s_tokenTypeMap = null;
 
-        private static byte[] s_xsdKatmaiTimeScaleToValueLengthMap = new byte[8] {
+        private static readonly byte[] s_xsdKatmaiTimeScaleToValueLengthMap = new byte[8] {
         // length scale
             3, // 0
             3, // 1
@@ -45,7 +45,7 @@ namespace System.Xml
             Closed = 8
         }
 
-        private static ReadState[] s_scanState2ReadState = {
+        private static readonly ReadState[] s_scanState2ReadState = {
             ReadState.Interactive,
             ReadState.Interactive,
             ReadState.Interactive,
@@ -279,14 +279,14 @@ namespace System.Xml
         // symbol and qname tables
         private SymbolTables _symbolTables;
 
-        private XmlNameTable _xnt;
-        private bool _xntFromSettings;
-        private string _xml;
-        private string _xmlns;
-        private string _nsxmlns;
+        private readonly XmlNameTable _xnt;
+        private readonly bool _xntFromSettings;
+        private readonly string _xml;
+        private readonly string _xmlns;
+        private readonly string _nsxmlns;
 
         // base uri...
-        private string _baseUri;
+        private readonly string _baseUri;
 
         // current parse state
         private ScanState _state;
@@ -317,24 +317,24 @@ namespace System.Xml
         // if it is a simple string value, we cache it
         private string _stringValue;
         // hashtable of current namespaces
-        private Dictionary<string, NamespaceDecl> _namespaces;
+        private readonly Dictionary<string, NamespaceDecl> _namespaces;
         //Hashtable namespaces;
         // linked list of pushed nametables (to support nested binary-xml documents)
         private NestedBinXml _prevNameInfo;
         // XmlTextReader to handle embeded text blocks
         private XmlReader _textXmlReader;
         // close input flag
-        private bool _closeInput;
+        private readonly bool _closeInput;
 
-        private bool _checkCharacters;
-        private bool _ignoreWhitespace;
-        private bool _ignorePIs;
-        private bool _ignoreComments;
-        private DtdProcessing _dtdProcessing;
+        private readonly bool _checkCharacters;
+        private readonly bool _ignoreWhitespace;
+        private readonly bool _ignorePIs;
+        private readonly bool _ignoreComments;
+        private readonly DtdProcessing _dtdProcessing;
 
-        private SecureStringHasher _hasher;
+        private readonly SecureStringHasher _hasher;
         private XmlCharType _xmlCharType;
-        private Encoding _unicode;
+        private readonly Encoding _unicode;
 
         // current version of the protocol
         private byte _version;

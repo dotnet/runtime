@@ -121,7 +121,7 @@ namespace System.Data
         /// </summary>
         private DataRowComparer() { }
 
-        private static DataRowComparer<TRow> s_instance = new DataRowComparer<TRow>();
+        private static readonly DataRowComparer<TRow> s_instance = new DataRowComparer<TRow>();
 
         /// <summary>
         /// Gets the singleton instance of the data row comparer.

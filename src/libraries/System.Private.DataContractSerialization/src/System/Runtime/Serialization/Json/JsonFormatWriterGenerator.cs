@@ -19,7 +19,7 @@ namespace System.Runtime.Serialization.Json
 
     internal class JsonFormatWriterGenerator
     {
-        private CriticalHelper _helper;
+        private readonly CriticalHelper _helper;
 
         public JsonFormatWriterGenerator()
         {

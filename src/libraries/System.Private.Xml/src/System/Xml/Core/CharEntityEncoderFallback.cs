@@ -79,7 +79,7 @@ namespace System.Xml
     //
     internal class CharEntityEncoderFallbackBuffer : EncoderFallbackBuffer
     {
-        private CharEntityEncoderFallback _parent;
+        private readonly CharEntityEncoderFallback _parent;
 
         private string _charEntity = string.Empty;
         private int _charEntityIndex = -1;

@@ -61,7 +61,7 @@ namespace System.Text
         {
         }
 
-        private static int[] s_tableBaseCodePages =
+        private static readonly int[] s_tableBaseCodePages =
         {
             932,    // 50220  ISO-2022-JP, No halfwidth Katakana, convert to full width
             932,    // 50221  ISO-2022-JP, Use escape sequence for half width Katakana
@@ -1857,7 +1857,7 @@ namespace System.Text
             }
         }
 
-        private static ushort[] s_HalfToFullWidthKanaTable =
+        private static readonly ushort[] s_HalfToFullWidthKanaTable =
         {
             0xa1a3, // 0x8ea1 : Halfwidth Ideographic Period
             0xa1d6, // 0x8ea2 : Halfwidth Opening Corner Bracket

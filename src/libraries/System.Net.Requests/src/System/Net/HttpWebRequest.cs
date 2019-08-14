@@ -26,7 +26,7 @@ namespace System.Net
 
         private WebHeaderCollection _webHeaderCollection = new WebHeaderCollection();
 
-        private Uri _requestUri;
+        private readonly Uri _requestUri;
         private string _originVerb = HttpMethod.Get.Method;
 
         // We allow getting and setting this (to preserve app-compat). But we don't do anything with it

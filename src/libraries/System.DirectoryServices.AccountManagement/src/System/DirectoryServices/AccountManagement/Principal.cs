@@ -614,7 +614,7 @@ namespace System.DirectoryServices.AccountManagement
         //------------------------------------------------
 
         // Stores all  values from derived classes for use at attributes or search filter.
-        private ExtensionCache _extensionCache = new ExtensionCache();
+        private readonly ExtensionCache _extensionCache = new ExtensionCache();
         private LoadState _extensionCacheChanged = LoadState.NotSet;
 
         protected object[] ExtensionGet(string attribute)

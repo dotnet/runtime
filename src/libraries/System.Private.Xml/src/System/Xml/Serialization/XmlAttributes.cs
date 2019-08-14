@@ -33,9 +33,9 @@ namespace System.Xml.Serialization
     /// </devdoc>
     public class XmlAttributes
     {
-        private XmlElementAttributes _xmlElements = new XmlElementAttributes();
-        private XmlArrayItemAttributes _xmlArrayItems = new XmlArrayItemAttributes();
-        private XmlAnyElementAttributes _xmlAnyElements = new XmlAnyElementAttributes();
+        private readonly XmlElementAttributes _xmlElements = new XmlElementAttributes();
+        private readonly XmlArrayItemAttributes _xmlArrayItems = new XmlArrayItemAttributes();
+        private readonly XmlAnyElementAttributes _xmlAnyElements = new XmlAnyElementAttributes();
         private XmlArrayAttribute _xmlArray;
         private XmlAttributeAttribute _xmlAttribute;
         private XmlTextAttribute _xmlText;
@@ -46,7 +46,7 @@ namespace System.Xml.Serialization
         private XmlRootAttribute _xmlRoot;
         private XmlTypeAttribute _xmlType;
         private XmlAnyAttributeAttribute _xmlAnyAttribute;
-        private XmlChoiceIdentifierAttribute _xmlChoiceIdentifier;
+        private readonly XmlChoiceIdentifierAttribute _xmlChoiceIdentifier;
         private static volatile Type s_ignoreAttributeType;
 
 

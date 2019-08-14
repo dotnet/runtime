@@ -25,23 +25,23 @@ namespace System.Xml
 
     internal abstract class XmlBaseReader : XmlDictionaryReader
     {
-        private XmlBufferReader _bufferReader;
+        private readonly XmlBufferReader _bufferReader;
         private XmlNode _node;
-        private NamespaceManager _nsMgr;
+        private readonly NamespaceManager _nsMgr;
         private XmlElementNode[] _elementNodes;
         private XmlAttributeNode[] _attributeNodes;
-        private XmlAtomicTextNode _atomicTextNode;
+        private readonly XmlAtomicTextNode _atomicTextNode;
         private int _depth;
         private int _attributeCount;
         private int _attributeStart;    // Starting index for searching
-        private XmlDictionaryReaderQuotas _quotas;
+        private readonly XmlDictionaryReaderQuotas _quotas;
         private XmlNameTable _nameTable;
         private XmlDeclarationNode _declarationNode;
         private XmlComplexTextNode _complexTextNode;
         private XmlWhitespaceTextNode _whitespaceTextNode;
         private XmlCDataNode _cdataNode;
         private XmlCommentNode _commentNode;
-        private XmlElementNode _rootElementNode;
+        private readonly XmlElementNode _rootElementNode;
         private int _attributeIndex;    // Index for iteration
         private char[] _chars;
         private string _prefix;
@@ -55,9 +55,9 @@ namespace System.Xml
         private bool _rootElement;
         private bool _readingElement;
         private AttributeSorter _attributeSorter;
-        private static XmlInitialNode s_initialNode = new XmlInitialNode(XmlBufferReader.Empty);
-        private static XmlEndOfFileNode s_endOfFileNode = new XmlEndOfFileNode(XmlBufferReader.Empty);
-        private static XmlClosedNode s_closedNode = new XmlClosedNode(XmlBufferReader.Empty);
+        private static readonly XmlInitialNode s_initialNode = new XmlInitialNode(XmlBufferReader.Empty);
+        private static readonly XmlEndOfFileNode s_endOfFileNode = new XmlEndOfFileNode(XmlBufferReader.Empty);
+        private static readonly XmlClosedNode s_closedNode = new XmlClosedNode(XmlBufferReader.Empty);
         private static Base64Encoding s_base64Encoding;
         private static BinHexEncoding s_binHexEncoding;
         private const string xmlns = "xmlns";
@@ -2061,21 +2061,21 @@ namespace System.Xml
         protected class XmlNode
         {
             private XmlNodeType _nodeType;
-            private PrefixHandle _prefix;
-            private StringHandle _localName;
-            private ValueHandle _value;
+            private readonly PrefixHandle _prefix;
+            private readonly StringHandle _localName;
+            private readonly ValueHandle _value;
             private Namespace _ns;
-            private bool _hasValue;
-            private bool _canGetAttribute;
-            private bool _canMoveToElement;
-            private ReadState _readState;
-            private XmlAttributeTextNode _attributeTextNode;
+            private readonly bool _hasValue;
+            private readonly bool _canGetAttribute;
+            private readonly bool _canMoveToElement;
+            private readonly ReadState _readState;
+            private readonly XmlAttributeTextNode _attributeTextNode;
             private bool _exitScope;
-            private int _depthDelta;
+            private readonly int _depthDelta;
             private bool _isAtomicValue;
-            private bool _skipValue;
+            private readonly bool _skipValue;
             private QNameType _qnameType;
-            private bool _hasContent;
+            private readonly bool _hasContent;
             private bool _isEmptyElement;
             private char _quoteChar;
 
@@ -2373,7 +2373,7 @@ namespace System.Xml
 
         protected class XmlElementNode : XmlNode
         {
-            private XmlEndElementNode _endElementNode;
+            private readonly XmlEndElementNode _endElementNode;
             private int _bufferOffset;
 
             public XmlElementNode(XmlBufferReader bufferReader)
@@ -2720,12 +2720,12 @@ namespace System.Xml
 
         private class NamespaceManager
         {
-            private XmlBufferReader _bufferReader;
+            private readonly XmlBufferReader _bufferReader;
             private Namespace[] _namespaces;
             private int _nsCount;
             private int _depth;
-            private Namespace[] _shortPrefixUri;
-            private static Namespace s_emptyNamespace = new Namespace(XmlBufferReader.Empty);
+            private readonly Namespace[] _shortPrefixUri;
+            private static readonly Namespace s_emptyNamespace = new Namespace(XmlBufferReader.Empty);
             private static Namespace s_xmlNamespace;
             private XmlAttribute[] _attributes;
             private int _attributeCount;
@@ -3059,8 +3059,8 @@ namespace System.Xml
         }
         protected class Namespace
         {
-            private PrefixHandle _prefix;
-            private StringHandle _uri;
+            private readonly PrefixHandle _prefix;
+            private readonly StringHandle _uri;
             private int _depth;
             private Namespace _outerUri;
             private string _uriString;

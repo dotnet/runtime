@@ -59,7 +59,7 @@ namespace System.Collections.Generic
         private TValue[] values; // Do not rename (binary serialization)
         private int _size; // Do not rename (binary serialization)
         private int version; // Do not rename (binary serialization)
-        private IComparer<TKey> comparer; // Do not rename (binary serialization)
+        private readonly IComparer<TKey> comparer; // Do not rename (binary serialization)
         private KeyList? keyList; // Do not rename (binary serialization)
         private ValueList? valueList; // Do not rename (binary serialization)
 
@@ -762,12 +762,12 @@ namespace System.Collections.Generic
 
         private struct Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>, IDictionaryEnumerator
         {
-            private SortedList<TKey, TValue> _sortedList;
+            private readonly SortedList<TKey, TValue> _sortedList;
             [AllowNull] private TKey _key;
             [AllowNull] private TValue _value;
             private int _index;
-            private int _version;
-            private int _getEnumeratorRetType;  // What should Enumerator.Current return?
+            private readonly int _version;
+            private readonly int _getEnumeratorRetType;  // What should Enumerator.Current return?
 
             internal const int KeyValuePair = 1;
             internal const int DictEntry = 2;
@@ -889,9 +889,9 @@ namespace System.Collections.Generic
 
         private sealed class SortedListKeyEnumerator : IEnumerator<TKey>, IEnumerator
         {
-            private SortedList<TKey, TValue> _sortedList;
+            private readonly SortedList<TKey, TValue> _sortedList;
             private int _index;
-            private int _version;
+            private readonly int _version;
             [AllowNull] private TKey _currentKey = default!;
 
             internal SortedListKeyEnumerator(SortedList<TKey, TValue> sortedList)
@@ -959,9 +959,9 @@ namespace System.Collections.Generic
 
         private sealed class SortedListValueEnumerator : IEnumerator<TValue>, IEnumerator
         {
-            private SortedList<TKey, TValue> _sortedList;
+            private readonly SortedList<TKey, TValue> _sortedList;
             private int _index;
-            private int _version;
+            private readonly int _version;
             [AllowNull] private TValue _currentValue = default!;
 
             internal SortedListValueEnumerator(SortedList<TKey, TValue> sortedList)
@@ -1032,7 +1032,7 @@ namespace System.Collections.Generic
         [Serializable]
         public sealed class KeyList : IList<TKey>, ICollection
         {
-            private SortedList<TKey, TValue> _dict; // Do not rename (binary serialization)
+            private readonly SortedList<TKey, TValue> _dict; // Do not rename (binary serialization)
 
             internal KeyList(SortedList<TKey, TValue> dictionary)
             {
@@ -1151,7 +1151,7 @@ namespace System.Collections.Generic
         [Serializable]
         public sealed class ValueList : IList<TValue>, ICollection
         {
-            private SortedList<TKey, TValue> _dict; // Do not rename (binary serialization)
+            private readonly SortedList<TKey, TValue> _dict; // Do not rename (binary serialization)
 
             internal ValueList(SortedList<TKey, TValue> dictionary)
             {

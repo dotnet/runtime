@@ -24,7 +24,7 @@ namespace System.Xml.Xsl.Xslt
         private Compiler _compiler;
 #if DEBUG
         // List of all variables and parameters
-        private List<VarPar> _allVarPars = new List<VarPar>();
+        private readonly List<VarPar> _allVarPars = new List<VarPar>();
 #endif
         private int _forEachDepth = 0;
         private XPathAnalyzer _xpathAnalyzer;
@@ -45,7 +45,7 @@ namespace System.Xml.Xsl.Xslt
         private Graph<VarPar> _dataFlow = new Graph<VarPar>();
 
         // Mapping (mode, param name) -> helper vertex in data flow graph
-        private Dictionary<ModeName, VarPar> _applyTemplatesParams = new Dictionary<ModeName, VarPar>();
+        private readonly Dictionary<ModeName, VarPar> _applyTemplatesParams = new Dictionary<ModeName, VarPar>();
 
         // ---------------------------------- Graph<V> ----------------------------------
         /// <summary>
@@ -55,7 +55,7 @@ namespace System.Xml.Xsl.Xslt
         internal class Graph<V> : Dictionary<V, List<V>>
             where V : XslNode
         {
-            private static IList<V> s_empty = (new List<V>()).AsReadOnly();
+            private static readonly IList<V> s_empty = (new List<V>()).AsReadOnly();
 
             public IEnumerable<V> GetAdjList(V v)
             {
@@ -946,9 +946,9 @@ namespace System.Xml.Xsl.Xslt
 
         internal class XPathAnalyzer : IXPathBuilder<XslFlags>
         {
-            private XPathParser<XslFlags> _xpathParser = new XPathParser<XslFlags>();
-            private CompilerScopeManager<VarPar> _scope;
-            private Compiler _compiler;
+            private readonly XPathParser<XslFlags> _xpathParser = new XPathParser<XslFlags>();
+            private readonly CompilerScopeManager<VarPar> _scope;
+            private readonly Compiler _compiler;
 
             // True if the expression needs XSLT's current() node
             private bool _xsltCurrentNeeded;
@@ -1083,7 +1083,7 @@ namespace System.Xml.Xsl.Xslt
                 return XslFlags.Number;
             }
 
-            private static XslFlags[] s_operatorType = {
+            private static readonly XslFlags[] s_operatorType = {
                 /*Unknown   */ XslFlags.AnyType,
                 /*Or        */ XslFlags.Boolean,
                 /*And       */ XslFlags.Boolean,
@@ -1274,7 +1274,7 @@ namespace System.Xml.Xsl.Xslt
             }
 
             #region XPath Function Flags
-            private static XslFlags[] s_XPathFunctionFlags = {
+            private static readonly XslFlags[] s_XPathFunctionFlags = {
             /*Last              */ XslFlags.Number | XslFlags.Last,
             /*Position          */ XslFlags.Number | XslFlags.Position,
             /*Count             */ XslFlags.Number,
@@ -1306,7 +1306,7 @@ namespace System.Xml.Xsl.Xslt
             #endregion
 
             #region Xslt Function Flags
-            private static XslFlags[] s_xsltFunctionFlags = {
+            private static readonly XslFlags[] s_xsltFunctionFlags = {
             /*Current           */ XslFlags.Node,   // xsltCurrentNeeded = true
             /*Document          */ XslFlags.Nodeset,
             /*Key               */ XslFlags.Nodeset | XslFlags.Current,

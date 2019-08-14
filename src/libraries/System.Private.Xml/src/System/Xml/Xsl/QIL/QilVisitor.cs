@@ -436,7 +436,7 @@ namespace System.Xml.Xsl.Qil
     internal class QilDepthChecker
     {
         private const int MAX_QIL_DEPTH = 800;
-        private Dictionary<QilNode, bool> _visitedRef = new Dictionary<QilNode, bool>();
+        private readonly Dictionary<QilNode, bool> _visitedRef = new Dictionary<QilNode, bool>();
 
         public static void Check(QilNode input)
         {

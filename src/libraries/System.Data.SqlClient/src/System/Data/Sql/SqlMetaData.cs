@@ -32,7 +32,7 @@ namespace Microsoft.SqlServer.Server
         private string _xmlSchemaCollectionOwningSchema;
         private string _xmlSchemaCollectionName;
         private string _serverTypeName;
-        private bool _bPartialLength;
+        private readonly bool _bPartialLength;
         private Type _udtType;
         private bool _useServerDefault;
         private bool _isUniqueKey;
@@ -598,12 +598,12 @@ namespace Microsoft.SqlServer.Server
         }
 
 
-        private static byte[] s_maxLenFromPrecision = new byte[] {5,5,5,5,5,5,5,5,5,9,9,9,9,9,
+        private static readonly byte[] s_maxLenFromPrecision = new byte[] {5,5,5,5,5,5,5,5,5,9,9,9,9,9,
         9,9,9,9,9,13,13,13,13,13,13,13,13,13,17,17,17,17,17,17,17,17,17,17};
 
         private const byte MaxTimeScale = 7;
 
-        private static byte[] s_maxVarTimeLenOffsetFromScale = new byte[] { 2, 2, 2, 1, 1, 0, 0, 0 };
+        private static readonly byte[] s_maxVarTimeLenOffsetFromScale = new byte[] { 2, 2, 2, 1, 1, 0, 0, 0 };
 
         // Construction for Decimal type and new Katmai Date/Time types
         private void Construct(string name, SqlDbType dbType, byte precision, byte scale, bool useServerDefault,
@@ -1606,7 +1606,7 @@ namespace Microsoft.SqlServer.Server
             return MaxTimeScale;
         }
 
-        private static DbType[] sxm_rgSqlDbTypeToDbType = {
+        private static readonly DbType[] sxm_rgSqlDbTypeToDbType = {
             DbType.Int64,           // SqlDbType.BigInt
             DbType.Binary,          // SqlDbType.Binary
             DbType.Boolean,         // SqlDbType.Bit

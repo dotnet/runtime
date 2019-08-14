@@ -17,21 +17,21 @@ namespace System.Xml.Serialization
         private int _nextMethodNumber = 0;
         private readonly Dictionary<TypeMapping, string> _methodNames = new Dictionary<TypeMapping, string>();
         // Lookup name->created Method
-        private Dictionary<string, MethodBuilderInfo> _methodBuilders = new Dictionary<string, MethodBuilderInfo>();
+        private readonly Dictionary<string, MethodBuilderInfo> _methodBuilders = new Dictionary<string, MethodBuilderInfo>();
         // Lookup name->created Type
         internal Dictionary<string, Type> CreatedTypes = new Dictionary<string, Type>();
         // Lookup name->class Member
         internal Dictionary<string, MemberInfo> memberInfos = new Dictionary<string, MemberInfo>();
-        private ReflectionAwareILGen _raCodeGen;
-        private TypeScope[] _scopes;
-        private TypeDesc _stringTypeDesc = null;
-        private TypeDesc _qnameTypeDesc = null;
-        private string _className;
+        private readonly ReflectionAwareILGen _raCodeGen;
+        private readonly TypeScope[] _scopes;
+        private readonly TypeDesc _stringTypeDesc = null;
+        private readonly TypeDesc _qnameTypeDesc = null;
+        private readonly string _className;
         private TypeMapping[] _referencedMethods;
         private int _references = 0;
         private readonly HashSet<TypeMapping> _generatedMethods = new HashSet<TypeMapping>();
         private ModuleBuilder _moduleBuilder;
-        private TypeAttributes _typeAttributes;
+        private readonly TypeAttributes _typeAttributes;
         protected TypeBuilder typeBuilder;
         protected CodeGenerator ilg;
 
@@ -65,7 +65,7 @@ namespace System.Xml.Serialization
         }
         internal TypeAttributes TypeAttributes { get { return _typeAttributes; } }
 
-        private static Dictionary<string, Regex> s_regexs = new Dictionary<string, Regex>();
+        private static readonly Dictionary<string, Regex> s_regexs = new Dictionary<string, Regex>();
         internal static Regex NewRegex(string pattern)
         {
             Regex regex;

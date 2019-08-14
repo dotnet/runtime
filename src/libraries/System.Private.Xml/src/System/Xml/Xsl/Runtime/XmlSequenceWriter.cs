@@ -56,7 +56,7 @@ namespace System.Xml.Xsl.Runtime
     /// </summary>
     internal class XmlCachedSequenceWriter : XmlSequenceWriter
     {
-        private XmlQueryItemSequence _seqTyped;
+        private readonly XmlQueryItemSequence _seqTyped;
         private XPathDocument _doc;
         private XmlRawWriter _writer;
 
@@ -121,7 +121,7 @@ namespace System.Xml.Xsl.Runtime
     /// </summary>
     internal class XmlMergeSequenceWriter : XmlSequenceWriter
     {
-        private XmlRawWriter _xwrt;
+        private readonly XmlRawWriter _xwrt;
         private bool _lastItemWasAtomic;
 
         /// <summary>

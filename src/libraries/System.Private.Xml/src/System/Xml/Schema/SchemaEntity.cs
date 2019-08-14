@@ -9,14 +9,14 @@ namespace System.Xml.Schema
 
     internal sealed class SchemaEntity : IDtdEntityInfo
     {
-        private XmlQualifiedName _qname;      // Name of entity
+        private readonly XmlQualifiedName _qname;      // Name of entity
         private string _url;                  // Url for external entity (system id)
         private string _pubid;                // Pubid for external entity
         private string _text;                 // Text for internal entity
         private XmlQualifiedName _ndata = XmlQualifiedName.Empty; // NDATA identifier
         private int _lineNumber;           // line number
         private int _linePosition;         // character position
-        private bool _isParameter;          // parameter entity flag
+        private readonly bool _isParameter;          // parameter entity flag
         private bool _isExternal;           // external entity flag
         private bool _parsingInProgress;      // whether entity is being parsed (DtdParser infinite recursion check)
         private bool _isDeclaredInExternal; // declared in external markup or not

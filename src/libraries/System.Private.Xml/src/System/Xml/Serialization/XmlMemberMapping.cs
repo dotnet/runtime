@@ -11,7 +11,7 @@ namespace System.Xml.Serialization
     /// <internalonly/>
     public class XmlMemberMapping
     {
-        private MemberMapping _mapping;
+        private readonly MemberMapping _mapping;
 
         internal XmlMemberMapping(MemberMapping mapping)
         {

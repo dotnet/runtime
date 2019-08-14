@@ -475,8 +475,8 @@ namespace MS.Internal.Xml.Cache
     /// </summary>
     internal struct XPathNodeRef
     {
-        private XPathNode[] _page;
-        private int _idx;
+        private readonly XPathNode[] _page;
+        private readonly int _idx;
 
         public XPathNodeRef(XPathNode[] page, int idx)
         {

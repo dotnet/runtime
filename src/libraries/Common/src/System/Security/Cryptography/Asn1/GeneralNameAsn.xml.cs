@@ -1,7 +1,8 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#pragma warning disable SA1028 // ignore whitespace warnings for generated code
 using System;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -35,7 +36,7 @@ namespace System.Security.Cryptography.Asn1
 
                 usedTags.Add(tag, fieldName);
             };
-
+            
             ensureUniqueTag(new Asn1Tag(TagClass.ContextSpecific, 0), "OtherName");
             ensureUniqueTag(new Asn1Tag(TagClass.ContextSpecific, 1), "Rfc822Name");
             ensureUniqueTag(new Asn1Tag(TagClass.ContextSpecific, 2), "DnsName");
@@ -50,13 +51,13 @@ namespace System.Security.Cryptography.Asn1
 
         internal void Encode(AsnWriter writer)
         {
-            bool wroteValue = false;
-
+            bool wroteValue = false; 
+            
             if (OtherName.HasValue)
             {
                 if (wroteValue)
                     throw new CryptographicException();
-
+                
                 OtherName.Value.Encode(writer, new Asn1Tag(TagClass.ContextSpecific, 0));
                 wroteValue = true;
             }
@@ -65,7 +66,7 @@ namespace System.Security.Cryptography.Asn1
             {
                 if (wroteValue)
                     throw new CryptographicException();
-
+                
                 writer.WriteCharacterString(new Asn1Tag(TagClass.ContextSpecific, 1), UniversalTagNumber.IA5String, Rfc822Name);
                 wroteValue = true;
             }
@@ -74,7 +75,7 @@ namespace System.Security.Cryptography.Asn1
             {
                 if (wroteValue)
                     throw new CryptographicException();
-
+                
                 writer.WriteCharacterString(new Asn1Tag(TagClass.ContextSpecific, 2), UniversalTagNumber.IA5String, DnsName);
                 wroteValue = true;
             }
@@ -83,7 +84,7 @@ namespace System.Security.Cryptography.Asn1
             {
                 if (wroteValue)
                     throw new CryptographicException();
-
+                
                 // Validator for tag constraint for X400Address
                 {
                     if (!Asn1Tag.TryDecode(X400Address.Value.Span, out Asn1Tag validateTag, out _) ||
@@ -101,7 +102,7 @@ namespace System.Security.Cryptography.Asn1
             {
                 if (wroteValue)
                     throw new CryptographicException();
-
+                
                 writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 4));
                 writer.WriteEncodedValue(DirectoryName.Value.Span);
                 writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 4));
@@ -112,7 +113,7 @@ namespace System.Security.Cryptography.Asn1
             {
                 if (wroteValue)
                     throw new CryptographicException();
-
+                
                 EdiPartyName.Value.Encode(writer, new Asn1Tag(TagClass.ContextSpecific, 5));
                 wroteValue = true;
             }
@@ -121,7 +122,7 @@ namespace System.Security.Cryptography.Asn1
             {
                 if (wroteValue)
                     throw new CryptographicException();
-
+                
                 writer.WriteCharacterString(new Asn1Tag(TagClass.ContextSpecific, 6), UniversalTagNumber.IA5String, Uri);
                 wroteValue = true;
             }
@@ -130,7 +131,7 @@ namespace System.Security.Cryptography.Asn1
             {
                 if (wroteValue)
                     throw new CryptographicException();
-
+                
                 writer.WriteOctetString(new Asn1Tag(TagClass.ContextSpecific, 7), IPAddress.Value.Span);
                 wroteValue = true;
             }
@@ -139,7 +140,7 @@ namespace System.Security.Cryptography.Asn1
             {
                 if (wroteValue)
                     throw new CryptographicException();
-
+                
                 writer.WriteObjectIdentifier(new Asn1Tag(TagClass.ContextSpecific, 8), RegisteredId);
                 wroteValue = true;
             }
@@ -153,7 +154,7 @@ namespace System.Security.Cryptography.Asn1
         internal static GeneralNameAsn Decode(ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
             AsnReader reader = new AsnReader(encoded, ruleSet);
-
+            
             Decode(reader, out GeneralNameAsn decoded);
             reader.ThrowIfNotEmpty();
             return decoded;
@@ -167,7 +168,7 @@ namespace System.Security.Cryptography.Asn1
             decoded = default;
             Asn1Tag tag = reader.PeekTag();
             AsnReader explicitReader;
-
+            
             if (tag.HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 0)))
             {
                 System.Security.Cryptography.Asn1.OtherNameAsn tmpOtherName;

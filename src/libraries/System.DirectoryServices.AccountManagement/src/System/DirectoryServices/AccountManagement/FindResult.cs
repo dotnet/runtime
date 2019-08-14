@@ -74,7 +74,7 @@ namespace System.DirectoryServices.AccountManagement
         //   Synchronize by locking on resultSet (if resultSet is non-null).
 
         // The ResultSet returned by the query.
-        private ResultSet _resultSet;
+        private readonly ResultSet _resultSet;
 
         private bool _disposed = false;
 

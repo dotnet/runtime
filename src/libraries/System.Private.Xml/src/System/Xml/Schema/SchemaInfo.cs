@@ -25,8 +25,8 @@ namespace System.Xml.Schema
 
     internal class SchemaInfo : IDtdInfo
     {
-        private Dictionary<XmlQualifiedName, SchemaElementDecl> _elementDecls = new Dictionary<XmlQualifiedName, SchemaElementDecl>();
-        private Dictionary<XmlQualifiedName, SchemaElementDecl> _undeclaredElementDecls = new Dictionary<XmlQualifiedName, SchemaElementDecl>();
+        private readonly Dictionary<XmlQualifiedName, SchemaElementDecl> _elementDecls = new Dictionary<XmlQualifiedName, SchemaElementDecl>();
+        private readonly Dictionary<XmlQualifiedName, SchemaElementDecl> _undeclaredElementDecls = new Dictionary<XmlQualifiedName, SchemaElementDecl>();
 
         private Dictionary<XmlQualifiedName, SchemaEntity> _generalEntities;
         private Dictionary<XmlQualifiedName, SchemaEntity> _parameterEntities;
@@ -36,11 +36,11 @@ namespace System.Xml.Schema
         private bool _hasNonCDataAttributes = false;
         private bool _hasDefaultAttributes = false;
 
-        private Dictionary<string, bool> _targetNamespaces = new Dictionary<string, bool>();
-        private Dictionary<XmlQualifiedName, SchemaAttDef> _attributeDecls = new Dictionary<XmlQualifiedName, SchemaAttDef>();
+        private readonly Dictionary<string, bool> _targetNamespaces = new Dictionary<string, bool>();
+        private readonly Dictionary<XmlQualifiedName, SchemaAttDef> _attributeDecls = new Dictionary<XmlQualifiedName, SchemaAttDef>();
         private int _errorCount;
         private SchemaType _schemaType;
-        private Dictionary<XmlQualifiedName, SchemaElementDecl> _elementDeclsByType = new Dictionary<XmlQualifiedName, SchemaElementDecl>();
+        private readonly Dictionary<XmlQualifiedName, SchemaElementDecl> _elementDeclsByType = new Dictionary<XmlQualifiedName, SchemaElementDecl>();
         private Dictionary<string, SchemaNotation> _notations;
 
 

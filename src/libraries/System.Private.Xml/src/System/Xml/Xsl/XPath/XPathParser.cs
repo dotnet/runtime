@@ -13,7 +13,7 @@ namespace System.Xml.Xsl.XPath
     {
         private XPathScanner _scanner;
         private IXPathBuilder<Node> _builder;
-        private Stack<int> _posInfo = new Stack<int>();
+        private readonly Stack<int> _posInfo = new Stack<int>();
 
         // Six possible causes of exceptions in the builder:
         // 1. Undefined prefix in a node test.
@@ -388,7 +388,7 @@ namespace System.Xml.Xsl.XPath
             return opnd;
         }
 
-        private static int[] s_XPathOperatorPrecedence = {
+        private static readonly int[] s_XPathOperatorPrecedence = {
             /*Unknown    */ 0,
             /*Or         */ 1,
             /*And        */ 2,

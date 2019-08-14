@@ -17,7 +17,7 @@ namespace System.ComponentModel
     public class ReferenceConverter : TypeConverter
     {
         private static readonly string s_none = SR.toStringNone;
-        private Type _type;
+        private readonly Type _type;
 
         /// <summary>
         /// Initializes a new instance of the <see cref='System.ComponentModel.ReferenceConverter'/> class.
@@ -198,7 +198,7 @@ namespace System.ComponentModel
         /// </summary>
         private class ReferenceComparer : IComparer
         {
-            private ReferenceConverter _converter;
+            private readonly ReferenceConverter _converter;
 
             public ReferenceComparer(ReferenceConverter converter)
             {

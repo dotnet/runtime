@@ -38,17 +38,17 @@ namespace System.Xml
 
         private SupportedEncoding _encodingCode;
         private Encoding _encoding;
-        private Encoder _enc;
-        private Decoder _dec;
-        private bool _isReading;
+        private readonly Encoder _enc;
+        private readonly Decoder _dec;
+        private readonly bool _isReading;
 
-        private Stream _stream;
+        private readonly Stream _stream;
         private char[] _chars;
         private byte[] _bytes;
         private int _byteOffset;
         private int _byteCount;
 
-        private byte[] _byteBuffer = new byte[1];
+        private readonly byte[] _byteBuffer = new byte[1];
 
         // Reading constructor
         public EncodingStreamWrapper(Stream stream, Encoding encoding)

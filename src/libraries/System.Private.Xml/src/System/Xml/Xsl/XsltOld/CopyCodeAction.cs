@@ -15,7 +15,7 @@ namespace System.Xml.Xsl.XsltOld
         // Execution states:
         private const int Outputting = 2;
 
-        private ArrayList _copyEvents;   // Copy code action events
+        private readonly ArrayList _copyEvents;   // Copy code action events
 
         internal CopyCodeAction()
         {

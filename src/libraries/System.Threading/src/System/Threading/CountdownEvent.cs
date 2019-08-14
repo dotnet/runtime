@@ -34,7 +34,7 @@ namespace System.Threading
 
         private int _initialCount; // The original # of signals the latch was instantiated with.
         private volatile int _currentCount;  // The # of outstanding signals before the latch transitions to a signaled state.
-        private ManualResetEventSlim _event;   // An event used to manage blocking and signaling.
+        private readonly ManualResetEventSlim _event;   // An event used to manage blocking and signaling.
         private volatile bool _disposed; // Whether the latch has been disposed.
 
         /// <summary>

@@ -20,15 +20,15 @@ namespace System.Diagnostics.Eventing.Reader
         // access to the data member reference is safe, while
         // invoking methods on it is marked SecurityCritical as appropriate.
         //
-        private EventLogHandle _handle = EventLogHandle.Zero;
+        private readonly EventLogHandle _handle = EventLogHandle.Zero;
 
         private EventLogHandle _defaultProviderHandle = EventLogHandle.Zero;
 
-        private EventLogSession _session = null;
+        private readonly EventLogSession _session = null;
 
-        private string _providerName;
-        private CultureInfo _cultureInfo;
-        private string _logFilePath;
+        private readonly string _providerName;
+        private readonly CultureInfo _cultureInfo;
+        private readonly string _logFilePath;
 
         // caching of the IEnumerable<EventLevel>, <EventTask>, <EventKeyword>, <EventOpcode> on the ProviderMetadata
         // they do not change with every call.
@@ -42,7 +42,7 @@ namespace System.Diagnostics.Eventing.Reader
         private IList<EventKeyword> _standardKeywords = null;
         private IList<EventLogLink> _channelReferences = null;
 
-        private object _syncObject;
+        private readonly object _syncObject;
 
         public ProviderMetadata(string providerName)
             : this(providerName, null, null, null)

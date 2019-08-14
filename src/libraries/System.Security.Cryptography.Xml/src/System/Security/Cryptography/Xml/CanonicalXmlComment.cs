@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.Xml
     internal class CanonicalXmlComment : XmlComment, ICanonicalizableNode
     {
         private bool _isInNodeSet;
-        private bool _includeComments;
+        private readonly bool _includeComments;
 
         public CanonicalXmlComment(string comment, XmlDocument doc, bool defaultNodeSetInclusionState, bool includeComments)
             : base(comment, doc)

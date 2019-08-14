@@ -19,9 +19,9 @@ namespace System.Linq.Parallel
     /// <typeparam name="TElement"></typeparam>
     internal class FixedMaxHeap<TElement>
     {
-        private TElement[] _elements; // Element array.
+        private readonly TElement[] _elements; // Element array.
         private int _count; // Current count.
-        private IComparer<TElement> _comparer; // Element comparison routine.
+        private readonly IComparer<TElement> _comparer; // Element comparison routine.
 
         //-----------------------------------------------------------------------------------
         // Create a new heap with the specified maximum size.

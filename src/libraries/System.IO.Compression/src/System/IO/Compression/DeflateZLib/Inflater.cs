@@ -18,7 +18,7 @@ namespace System.IO.Compression
 
         private bool _finished;                             // Whether the end of the stream has been reached
         private bool _isDisposed;                           // Prevents multiple disposals
-        private int _windowBits;                            // The WindowBits parameter passed to Inflater construction
+        private readonly int _windowBits;                            // The WindowBits parameter passed to Inflater construction
         private ZLibNative.ZLibStreamHandle _zlibStream;    // The handle to the primary underlying zlib stream
         private GCHandle _inputBufferHandle;                // The handle to the buffer that provides input to _zlibStream
         private readonly long _uncompressedSize;

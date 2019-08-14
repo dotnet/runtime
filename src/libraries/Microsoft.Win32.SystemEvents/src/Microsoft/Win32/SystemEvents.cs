@@ -1323,8 +1323,8 @@ namespace Microsoft.Win32
         // A class that helps fire events on the right thread.
         private class SystemEventInvokeInfo
         {
-            private SynchronizationContext _syncContext; // the context that we'll use to fire against.
-            private Delegate _delegate;     // the delegate we'll fire.  This is a weak ref so we don't hold object in memory.
+            private readonly SynchronizationContext _syncContext; // the context that we'll use to fire against.
+            private readonly Delegate _delegate;     // the delegate we'll fire.  This is a weak ref so we don't hold object in memory.
             public SystemEventInvokeInfo(Delegate d)
             {
                 _delegate = d;

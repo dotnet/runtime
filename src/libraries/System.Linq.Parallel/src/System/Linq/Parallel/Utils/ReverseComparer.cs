@@ -19,7 +19,7 @@ namespace System.Linq.Parallel
     /// <typeparam name="T"></typeparam>
     internal class ReverseComparer<T> : IComparer<T>
     {
-        private IComparer<T> _comparer;
+        private readonly IComparer<T> _comparer;
 
         internal ReverseComparer(IComparer<T> comparer)
         {

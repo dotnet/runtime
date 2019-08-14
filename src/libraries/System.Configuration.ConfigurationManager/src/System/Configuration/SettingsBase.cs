@@ -10,7 +10,7 @@ namespace System.Configuration
     {
         private SettingsPropertyCollection _properties = null;
         private SettingsProviderCollection _providers = null;
-        private SettingsPropertyValueCollection _propertyValues = null;
+        private readonly SettingsPropertyValueCollection _propertyValues = null;
         private SettingsContext _context = null;
         private bool _isSynchronized = false;
 

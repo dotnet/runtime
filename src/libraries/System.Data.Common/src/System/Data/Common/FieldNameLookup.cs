@@ -16,12 +16,12 @@ namespace System.Data.ProviderBase
         private Hashtable _fieldNameLookup;
 
         // original names for linear searches when exact matches fail
-        private string[] _fieldNames;
+        private readonly string[] _fieldNames;
 
         // if _defaultLocaleID is -1 then _compareInfo is initialized with InvariantCulture CompareInfo
         // otherwise it is specified by the server? for the correct compare info
         private CompareInfo _compareInfo;
-        private int _defaultLocaleID;
+        private readonly int _defaultLocaleID;
 
         public FieldNameLookup(IDataRecord reader, int defaultLocaleID)
         {

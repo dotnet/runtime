@@ -27,16 +27,16 @@ namespace System.Runtime.Caching
                                                               | DefaultCacheCapabilities.CacheEntryUpdateCallback
                                                               | DefaultCacheCapabilities.CacheEntryRemovedCallback;
         private static readonly TimeSpan s_oneYear = new TimeSpan(365, 0, 0, 0);
-        private static object s_initLock = new object();
+        private static readonly object s_initLock = new object();
         private static MemoryCache s_defaultCache;
-        private static CacheEntryRemovedCallback s_sentinelRemovedCallback = new CacheEntryRemovedCallback(SentinelEntry.OnCacheEntryRemovedCallback);
+        private static readonly CacheEntryRemovedCallback s_sentinelRemovedCallback = new CacheEntryRemovedCallback(SentinelEntry.OnCacheEntryRemovedCallback);
         private GCHandleRef<MemoryCacheStore>[] _storeRefs;
         private int _storeCount;
         private int _disposed;
         private MemoryCacheStatistics _stats;
-        private string _name;
+        private readonly string _name;
         private PerfCounters _perfCounters;
-        private bool _configLess;
+        private readonly bool _configLess;
         private bool _useMemoryCacheManager = true;
         private EventHandler _onAppDomainUnload;
         private UnhandledExceptionEventHandler _onUnhandledException;
@@ -46,9 +46,9 @@ namespace System.Runtime.Caching
 
         private class SentinelEntry
         {
-            private string _key;
-            private ChangeMonitor _expensiveObjectDependency;
-            private CacheEntryUpdateCallback _updateCallback;
+            private readonly string _key;
+            private readonly ChangeMonitor _expensiveObjectDependency;
+            private readonly CacheEntryUpdateCallback _updateCallback;
 
             internal SentinelEntry(string key, ChangeMonitor expensiveObjectDependency, CacheEntryUpdateCallback callback)
             {

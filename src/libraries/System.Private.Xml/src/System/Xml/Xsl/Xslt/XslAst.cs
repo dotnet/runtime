@@ -584,7 +584,7 @@ namespace System.Xml.Xsl.Xslt
             return VarPar(XslNodeType.WithParam, name, /*select*/null, XslVersion.Current);
         }
 
-        private static QilFactory s_f = new QilFactory();
+        private static readonly QilFactory s_f = new QilFactory();
 
         public static QilName QName(string local, string uri, string prefix)
         {

@@ -18,7 +18,7 @@ namespace System.Data.OleDb
 
         // since we only have one DataLinks object, caching the delegate here is valid as long we
         // maintain an AddRef which is also the lifetime of this class instance
-        private UnsafeNativeMethods.IDataInitializeGetDataSource DangerousIDataInitializeGetDataSource;
+        private readonly UnsafeNativeMethods.IDataInitializeGetDataSource DangerousIDataInitializeGetDataSource;
 
         // DataLinks (the unknown parameter) is created via Activator.CreateInstance outside of the SafeHandle
         internal OleDbServicesWrapper(object unknown) : base()

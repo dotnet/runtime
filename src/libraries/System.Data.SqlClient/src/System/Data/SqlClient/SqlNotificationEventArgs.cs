@@ -6,9 +6,9 @@ namespace System.Data.SqlClient
 {
     public class SqlNotificationEventArgs : EventArgs
     {
-        private SqlNotificationType _type;
-        private SqlNotificationInfo _info;
-        private SqlNotificationSource _source;
+        private readonly SqlNotificationType _type;
+        private readonly SqlNotificationInfo _info;
+        private readonly SqlNotificationSource _source;
 
         public SqlNotificationEventArgs(SqlNotificationType type, SqlNotificationInfo info, SqlNotificationSource source)
         {

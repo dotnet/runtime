@@ -36,7 +36,7 @@ namespace System.DirectoryServices.Interop
         {
             private static readonly object s_noMoreValues = new object();
             private object _currentValue = s_noMoreValues;
-            private IEnumVariant _enumerator;
+            private readonly IEnumVariant _enumerator;
 
             public EnumVariant(IEnumVariant en)
             {

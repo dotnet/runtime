@@ -491,7 +491,7 @@ namespace System.Collections.Concurrent
         /// <typeparam name="TSource">Type of elements in the source data</typeparam>
         private class DynamicPartitionerForIEnumerable<TSource> : OrderablePartitioner<TSource>
         {
-            private IEnumerable<TSource> _source;
+            private readonly IEnumerable<TSource> _source;
             private readonly bool _useSingleChunking;
 
             //constructor
@@ -553,7 +553,7 @@ namespace System.Collections.Concurrent
             {
                 //reader through which we access the source data
                 private readonly IEnumerator<TSource> _sharedReader;
-                private SharedLong _sharedIndex;//initial value -1
+                private readonly SharedLong _sharedIndex;//initial value -1
 
                 private volatile KeyValuePair<long, TSource>[]? _fillBuffer;  // intermediate buffer to reduce locking
                 private volatile int _fillBufferSize;               // actual number of elements in _FillBuffer. Will start
@@ -562,17 +562,17 @@ namespace System.Collections.Concurrent
                 private volatile int _activeCopiers;               //number of active copiers
 
                 //fields shared by all partitions that this Enumerable owns, their allocation is deferred
-                private SharedBool _hasNoElementsLeft; // no elements left at all.
-                private SharedBool _sourceDepleted;    // no elements left in the enumerator, but there may be elements in the Fill Buffer
+                private readonly SharedBool _hasNoElementsLeft; // no elements left at all.
+                private readonly SharedBool _sourceDepleted;    // no elements left in the enumerator, but there may be elements in the Fill Buffer
 
                 //shared synchronization lock, created by this Enumerable
-                private object _sharedLock;//deferring allocation by enumerator
+                private readonly object _sharedLock;//deferring allocation by enumerator
 
                 private bool _disposed;
 
                 // If dynamic partitioning, then _activePartitionCount == null
                 // If static partitioning, then it keeps track of active partition count
-                private SharedInt? _activePartitionCount;
+                private readonly SharedInt? _activePartitionCount;
 
                 // records whether or not the user has requested single-chunking behavior
                 private readonly bool _useSingleChunking;
@@ -893,7 +893,7 @@ namespace System.Collections.Concurrent
                 // outside(already initialized) by the constructor,
                 private readonly SharedBool _hasNoElementsLeft;
                 private readonly SharedInt? _activePartitionCount;
-                private InternalPartitionEnumerable _enumerable;
+                private readonly InternalPartitionEnumerable _enumerable;
 
                 //constructor
                 internal InternalPartitionEnumerator(
@@ -1003,7 +1003,7 @@ namespace System.Collections.Concurrent
         {
             // TCollection can be: IList<TSource>, TSource[] and IEnumerable<TSource>
             // Derived classes specify TCollection, and implement the abstract method GetOrderableDynamicPartitions_Factory accordingly
-            private TCollection _data;
+            private readonly TCollection _data;
 
             /// <summary>
             /// Constructs a new orderable partitioner
@@ -1194,7 +1194,7 @@ namespace System.Collections.Concurrent
             {
                 //reader through which we access the source data
                 private readonly IList<TSource> _sharedReader;
-                private SharedLong _sharedIndex;
+                private readonly SharedLong _sharedIndex;
 
                 internal InternalPartitionEnumerable(IList<TSource> sharedReader)
                 {
@@ -1279,7 +1279,7 @@ namespace System.Collections.Concurrent
             {
                 //reader through which we access the source data
                 private readonly TSource[] _sharedReader;
-                private SharedLong _sharedIndex;
+                private readonly SharedLong _sharedIndex;
 
                 internal InternalPartitionEnumerable(TSource[] sharedReader)
                 {
@@ -1510,7 +1510,7 @@ namespace System.Collections.Concurrent
         /// <typeparam name="TSource"></typeparam>
         private class StaticIndexRangePartitionerForIList<TSource> : StaticIndexRangePartitioner<TSource, IList<TSource>>
         {
-            private IList<TSource> _list;
+            private readonly IList<TSource> _list;
             internal StaticIndexRangePartitionerForIList(IList<TSource> list)
                 : base()
             {
@@ -1535,7 +1535,7 @@ namespace System.Collections.Concurrent
         private class StaticIndexRangePartitionForIList<TSource> : StaticIndexRangePartition<TSource>
         {
             //the source collection shared by all partitions
-            private volatile IList<TSource> _list;
+            private readonly IList<TSource> _list;
 
             internal StaticIndexRangePartitionForIList(IList<TSource> list, int startIndex, int endIndex)
                 : base(startIndex, endIndex)
@@ -1568,7 +1568,7 @@ namespace System.Collections.Concurrent
         /// </summary>
         private class StaticIndexRangePartitionerForArray<TSource> : StaticIndexRangePartitioner<TSource, TSource[]>
         {
-            private TSource[] _array;
+            private readonly TSource[] _array;
             internal StaticIndexRangePartitionerForArray(TSource[] array)
                 : base()
             {
@@ -1592,7 +1592,7 @@ namespace System.Collections.Concurrent
         private class StaticIndexRangePartitionForArray<TSource> : StaticIndexRangePartition<TSource>
         {
             //the source collection shared by all partitions
-            private volatile TSource[] _array;
+            private readonly TSource[] _array;
 
             internal StaticIndexRangePartitionForArray(TSource[] array, int startIndex, int endIndex)
                 : base(startIndex, endIndex)

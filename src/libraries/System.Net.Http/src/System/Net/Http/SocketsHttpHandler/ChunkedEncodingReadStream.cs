@@ -28,7 +28,7 @@ namespace System.Net.Http
             private ulong _chunkBytesRemaining;
             /// <summary>The current state of the parsing state machine for the chunked response.</summary>
             private ParsingState _state = ParsingState.ExpectChunkHeader;
-            private HttpResponseMessage _response;
+            private readonly HttpResponseMessage _response;
 
             public ChunkedEncodingReadStream(HttpConnection connection, HttpResponseMessage response) : base(connection)
             {

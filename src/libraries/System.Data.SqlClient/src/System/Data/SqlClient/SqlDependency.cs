@@ -20,8 +20,8 @@ namespace System.Data.SqlClient
         // Private class encapsulating the user/identity information - either SQL Auth username or Windows identity.
         internal class IdentityUserNamePair
         {
-            private DbConnectionPoolIdentity _identity;
-            private string _userName;
+            private readonly DbConnectionPoolIdentity _identity;
+            private readonly string _userName;
 
             internal IdentityUserNamePair(DbConnectionPoolIdentity identity, string userName)
             {
@@ -87,8 +87,8 @@ namespace System.Data.SqlClient
         // Private class encapsulating the database, service info and hash logic.
         private class DatabaseServicePair
         {
-            private string _database;
-            private string _service; // Store the value, but don't use for equality or hashcode!
+            private readonly string _database;
+            private readonly string _service; // Store the value, but don't use for equality or hashcode!
 
             internal DatabaseServicePair(string database, string service)
             {
@@ -132,12 +132,12 @@ namespace System.Data.SqlClient
         // Private class encapsulating the event and it's registered execution context.
         internal class EventContextPair
         {
-            private OnChangeEventHandler _eventHandler;
-            private ExecutionContext _context;
-            private SqlDependency _dependency;
+            private readonly OnChangeEventHandler _eventHandler;
+            private readonly ExecutionContext _context;
+            private readonly SqlDependency _dependency;
             private SqlNotificationEventArgs _args;
 
-            private static ContextCallback s_contextCallback = new ContextCallback(InvokeCallback);
+            private static readonly ContextCallback s_contextCallback = new ContextCallback(InvokeCallback);
 
             internal EventContextPair(OnChangeEventHandler eventHandler, SqlDependency dependency)
             {
@@ -196,30 +196,30 @@ namespace System.Data.SqlClient
 
         // Only used for SqlDependency.Id.
         private readonly string _id = Guid.NewGuid().ToString() + ";" + s_appDomainKey;
-        private string _options; // Concat of service & db, in the form "service=x;local database=y".
-        private int _timeout;
+        private readonly string _options; // Concat of service & db, in the form "service=x;local database=y".
+        private readonly int _timeout;
 
         // Various SqlDependency required members
         private bool _dependencyFired = false;
         // We are required to implement our own event collection to preserve ExecutionContext on callback.
         private List<EventContextPair> _eventList = new List<EventContextPair>();
-        private object _eventHandlerLock = new object(); // Lock for event serialization.
+        private readonly object _eventHandlerLock = new object(); // Lock for event serialization.
         // Track the time that this dependency should time out. If the server didn't send a change
         // notification or a time-out before this point then the client will perform a client-side
         // timeout.
         private DateTime _expirationTime = DateTime.MaxValue;
         // Used for invalidation of dependencies based on which servers they rely upon.
         // It's possible we will over invalidate if unexpected server failure occurs (but not server down).
-        private List<string> _serverList = new List<string>();
+        private readonly List<string> _serverList = new List<string>();
 
         // Static members
 
-        private static object s_startStopLock = new object();
+        private static readonly object s_startStopLock = new object();
         private static readonly string s_appDomainKey = Guid.NewGuid().ToString();
         // Hashtable containing all information to match from a server, user, database triple to the service started for that
         // triple.  For each server, there can be N users.  For each user, there can be N databases.  For each server, user,
         // database, there can only be one service.
-        private static Dictionary<string, Dictionary<IdentityUserNamePair, List<DatabaseServicePair>>> s_serverUserHash =
+        private static readonly Dictionary<string, Dictionary<IdentityUserNamePair, List<DatabaseServicePair>>> s_serverUserHash =
                    new Dictionary<string, Dictionary<IdentityUserNamePair, List<DatabaseServicePair>>>(StringComparer.OrdinalIgnoreCase);
         private static SqlDependencyProcessDispatcher s_processDispatcher = null;
 

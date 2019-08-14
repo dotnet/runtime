@@ -9,8 +9,8 @@ namespace System.Security.Cryptography
     /// </summary>
     public sealed partial class ECDiffieHellmanCngPublicKey : ECDiffieHellmanPublicKey
     {
-        private CngKeyBlobFormat _format;
-        private string _curveName;
+        private readonly CngKeyBlobFormat _format;
+        private readonly string _curveName;
         private bool _disposed;
 
         /// <summary>

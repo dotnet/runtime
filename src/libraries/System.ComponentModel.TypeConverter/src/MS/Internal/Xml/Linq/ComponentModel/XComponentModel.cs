@@ -494,7 +494,7 @@ namespace MS.Internal.Xml.Linq.ComponentModel
 
     internal class XDeferredAxis<T> : IEnumerable<T>, IEnumerable where T : XObject
     {
-        private Func<XElement, XName, IEnumerable<T>> _func;
+        private readonly Func<XElement, XName, IEnumerable<T>> _func;
         internal XElement element;
         internal XName name;
 
@@ -540,7 +540,7 @@ namespace MS.Internal.Xml.Linq.ComponentModel
 
     internal class XDeferredSingleton<T> where T : XObject
     {
-        private Func<XElement, XName, T> _func;
+        private readonly Func<XElement, XName, T> _func;
         internal XElement element;
         internal XName name;
 

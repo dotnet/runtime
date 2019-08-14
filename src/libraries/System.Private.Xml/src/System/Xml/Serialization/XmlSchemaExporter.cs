@@ -17,11 +17,11 @@ namespace System.Xml.Serialization
         internal const XmlSchemaForm elementFormDefault = XmlSchemaForm.Qualified;
         internal const XmlSchemaForm attributeFormDefault = XmlSchemaForm.Unqualified;
 
-        private XmlSchemas _schemas;
-        private Hashtable _elements = new Hashtable();   // ElementAccessor -> XmlSchemaElement
-        private Hashtable _attributes = new Hashtable();   // AttributeAccessor -> XmlSchemaElement
-        private Hashtable _types = new Hashtable();      // StructMapping/EnumMapping -> XmlSchemaComplexType/XmlSchemaSimpleType
-        private Hashtable _references = new Hashtable();   // TypeMappings to keep track of circular references via anonymous types
+        private readonly XmlSchemas _schemas;
+        private readonly Hashtable _elements = new Hashtable();   // ElementAccessor -> XmlSchemaElement
+        private readonly Hashtable _attributes = new Hashtable();   // AttributeAccessor -> XmlSchemaElement
+        private readonly Hashtable _types = new Hashtable();      // StructMapping/EnumMapping -> XmlSchemaComplexType/XmlSchemaSimpleType
+        private readonly Hashtable _references = new Hashtable();   // TypeMappings to keep track of circular references via anonymous types
         private bool _needToExportRoot;
         private TypeScope _scope;
 

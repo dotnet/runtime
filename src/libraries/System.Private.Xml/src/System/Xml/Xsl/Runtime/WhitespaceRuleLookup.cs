@@ -18,9 +18,9 @@ namespace System.Xml.Xsl.Runtime
     /// </summary>
     internal class WhitespaceRuleLookup
     {
-        private Hashtable _qnames;
-        private ArrayList _wildcards;
-        private InternalWhitespaceRule _ruleTemp;
+        private readonly Hashtable _qnames;
+        private readonly ArrayList _wildcards;
+        private readonly InternalWhitespaceRule _ruleTemp;
         private XmlNameTable _nameTable;
 
         public WhitespaceRuleLookup()

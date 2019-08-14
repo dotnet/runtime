@@ -13,7 +13,7 @@ namespace System.Xml.Serialization
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface | AttributeTargets.Struct)]
     public sealed class XmlSchemaProviderAttribute : System.Attribute
     {
-        private string _methodName;
+        private readonly string _methodName;
         private bool _any;
 
         /// <devdoc>

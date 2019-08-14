@@ -17,8 +17,8 @@ namespace System.Security.Cryptography.Xml
     // A class representing conversion from Base64 using CryptoStream
     public class XmlDsigBase64Transform : Transform
     {
-        private Type[] _inputTypes = { typeof(Stream), typeof(XmlNodeList), typeof(XmlDocument) };
-        private Type[] _outputTypes = { typeof(Stream) };
+        private readonly Type[] _inputTypes = { typeof(Stream), typeof(XmlNodeList), typeof(XmlDocument) };
+        private readonly Type[] _outputTypes = { typeof(Stream) };
         private CryptoStream _cs = null;
 
         public XmlDsigBase64Transform()

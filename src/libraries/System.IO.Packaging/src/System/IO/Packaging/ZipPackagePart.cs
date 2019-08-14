@@ -91,10 +91,10 @@ namespace System.IO.Packaging
 
         #region Private Variables
 
-        private ZipPackage _zipPackage;
-        private ZipArchiveEntry _zipArchiveEntry;
-        private ZipArchive _zipArchive;
-        private ZipStreamManager _zipStreamManager;
+        private readonly ZipPackage _zipPackage;
+        private readonly ZipArchiveEntry _zipArchiveEntry;
+        private readonly ZipArchive _zipArchive;
+        private readonly ZipStreamManager _zipStreamManager;
 
         #endregion Private Variables
     }

@@ -11,14 +11,14 @@ namespace System.Diagnostics.Eventing.Reader
     public class EventLogRecord : EventRecord
     {
         private const int SYSTEM_PROPERTY_COUNT = 18;
-        private EventLogSession _session;
+        private readonly EventLogSession _session;
 
-        private NativeWrapper.SystemProperties _systemProperties;
+        private readonly NativeWrapper.SystemProperties _systemProperties;
         private string _containerChannel;
         private int[] _matchedQueryIds;
 
         // A dummy object which is used only for the locking.
-        private object _syncObject;
+        private readonly object _syncObject;
 
         // Cached DisplayNames for each instance
         private string _levelName = null;
@@ -31,7 +31,7 @@ namespace System.Diagnostics.Eventing.Reader
         private bool _taskNameReady;
         private bool _opcodeNameReady;
 
-        private ProviderMetadataCachedInformation _cachedMetadataInformation;
+        private readonly ProviderMetadataCachedInformation _cachedMetadataInformation;
 
         internal EventLogRecord(EventLogHandle handle, EventLogSession session, ProviderMetadataCachedInformation cachedMetadataInfo)
         {

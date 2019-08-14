@@ -226,8 +226,8 @@ namespace System.Drawing
             /// </summary>
             internal class WeakRefObject
             {
-                private int _hash;
-                private WeakReference _weakHolder;
+                private readonly int _hash;
+                private readonly WeakReference _weakHolder;
 
                 internal WeakRefObject(object obj)
                 {

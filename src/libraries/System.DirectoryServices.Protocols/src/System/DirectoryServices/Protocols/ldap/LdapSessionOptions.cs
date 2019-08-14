@@ -70,13 +70,13 @@ namespace System.DirectoryServices.Protocols
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     public class SecurityPackageContextConnectionInformation
     {
-        private SecurityProtocol _securityProtocol;
-        private CipherAlgorithmType _identifier;
-        private int _strength;
-        private HashAlgorithmType _hashAlgorithm;
-        private int _hashStrength;
-        private int _keyExchangeAlgorithm;
-        private int _exchangeStrength;
+        private readonly SecurityProtocol _securityProtocol;
+        private readonly CipherAlgorithmType _identifier;
+        private readonly int _strength;
+        private readonly HashAlgorithmType _hashAlgorithm;
+        private readonly int _hashStrength;
+        private readonly int _keyExchangeAlgorithm;
+        private readonly int _exchangeStrength;
 
         internal SecurityPackageContextConnectionInformation()
         {
@@ -118,15 +118,15 @@ namespace System.DirectoryServices.Protocols
 
     public class LdapSessionOptions
     {
-        private LdapConnection _connection = null;
+        private readonly LdapConnection _connection = null;
         private ReferralCallback _callbackRoutine = new ReferralCallback();
         internal QueryClientCertificateCallback _clientCertificateDelegate = null;
         private VerifyServerCertificateCallback _serverCertificateDelegate = null;
 
-        private QUERYFORCONNECTIONInternal _queryDelegate = null;
-        private NOTIFYOFNEWCONNECTIONInternal _notifiyDelegate = null;
-        private DEREFERENCECONNECTIONInternal _dereferenceDelegate = null;
-        private VERIFYSERVERCERT _serverCertificateRoutine = null;
+        private readonly QUERYFORCONNECTIONInternal _queryDelegate = null;
+        private readonly NOTIFYOFNEWCONNECTIONInternal _notifiyDelegate = null;
+        private readonly DEREFERENCECONNECTIONInternal _dereferenceDelegate = null;
+        private readonly VERIFYSERVERCERT _serverCertificateRoutine = null;
 
         internal LdapSessionOptions(LdapConnection connection)
         {

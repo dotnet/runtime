@@ -17,8 +17,8 @@ namespace System.Xml.Xsl.IlGen
     /// </summary>
     internal class UniqueList<T>
     {
-        private Dictionary<T, int> _lookup = new Dictionary<T, int>();
-        private List<T> _list = new List<T>();
+        private readonly Dictionary<T, int> _lookup = new Dictionary<T, int>();
+        private readonly List<T> _list = new List<T>();
 
         /// <summary>
         /// If "value" is already in the list, do not add it.  Return the unique ID of the value in the list.

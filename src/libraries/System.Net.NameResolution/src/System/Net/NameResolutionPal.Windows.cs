@@ -427,7 +427,7 @@ namespace System.Net
 
         private sealed class GetAddrInfoExState
         {
-            private DnsResolveAsyncResult _asyncResult;
+            private readonly DnsResolveAsyncResult _asyncResult;
             private object _result;
 
             public string HostName => _asyncResult.HostName;

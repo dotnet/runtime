@@ -12,7 +12,7 @@ namespace MS.Internal.Xml.XPath
 {
     internal sealed class FunctionQuery : ExtensionQuery
     {
-        private IList<Query> _args;
+        private readonly IList<Query> _args;
         private IXsltContextFunction _function;
 
         public FunctionQuery(string prefix, string name, List<Query> args) : base(prefix, name)

@@ -63,10 +63,10 @@ namespace System.Xml.Schema
     public sealed class XmlSchemaValidator
     {
         //Schema Set
-        private XmlSchemaSet _schemaSet;
+        private readonly XmlSchemaSet _schemaSet;
 
         //Validation Settings
-        private XmlSchemaValidationFlags _validationFlags;
+        private readonly XmlSchemaValidationFlags _validationFlags;
 
         //Validation
         private int _startIDConstraint = -1;
@@ -80,7 +80,7 @@ namespace System.Xml.Schema
 
         private SchemaInfo _compiledSchemaInfo;
         private IDtdInfo _dtdSchemaInfo;
-        private Hashtable _validatedNamespaces;
+        private readonly Hashtable _validatedNamespaces;
 
         private HWStack _validationStack;  // validaton contexts
         private ValidationState _context;          // current context
@@ -111,14 +111,14 @@ namespace System.Xml.Schema
         //Other state
         private ValidationEventHandler _eventHandler;
         private object _validationEventSender;
-        private XmlNameTable _nameTable;
+        private readonly XmlNameTable _nameTable;
         private IXmlLineInfo _positionInfo;
         private IXmlLineInfo _dummyPositionInfo;
 
         private XmlResolver _xmlResolver;
         private Uri _sourceUri;
         private string _sourceUriString;
-        private IXmlNamespaceResolver _nsResolver;
+        private readonly IXmlNamespaceResolver _nsResolver;
 
         private XmlSchemaContentProcessing _processContents = XmlSchemaContentProcessing.Strict;
 
@@ -142,8 +142,8 @@ namespace System.Xml.Schema
         private const string Quote = "'";
 
         //Empty arrays
-        private static XmlSchemaParticle[] s_emptyParticleArray = Array.Empty<XmlSchemaParticle>();
-        private static XmlSchemaAttribute[] s_emptyAttributeArray = Array.Empty<XmlSchemaAttribute>();
+        private static readonly XmlSchemaParticle[] s_emptyParticleArray = Array.Empty<XmlSchemaParticle>();
+        private static readonly XmlSchemaAttribute[] s_emptyAttributeArray = Array.Empty<XmlSchemaAttribute>();
 
         //Whitespace check for text nodes
         private XmlCharType _xmlCharType = XmlCharType.Instance;
@@ -164,7 +164,7 @@ namespace System.Xml.Schema
         /*ValidatorState.Finish*/           {  false,                       true,                     false,                                 false,                           false,                          false,                          false,                              false,                      false,                      false,                          false,                                      false},
         };
 
-        private static string[] s_methodNames = new string[12] { "None", "Initialize", "top-level ValidateAttribute", "top-level ValidateText or ValidateWhitespace", "ValidateElement", "ValidateAttribute", "ValidateEndOfAttributes", "ValidateText", "ValidateWhitespace", "ValidateEndElement", "SkipToEndElement", "EndValidation" };
+        private static readonly string[] s_methodNames = new string[12] { "None", "Initialize", "top-level ValidateAttribute", "top-level ValidateText or ValidateWhitespace", "ValidateElement", "ValidateAttribute", "ValidateEndOfAttributes", "ValidateText", "ValidateWhitespace", "ValidateEndElement", "SkipToEndElement", "EndValidation" };
 
         public XmlSchemaValidator(XmlNameTable nameTable, XmlSchemaSet schemas, IXmlNamespaceResolver namespaceResolver, XmlSchemaValidationFlags validationFlags)
         {

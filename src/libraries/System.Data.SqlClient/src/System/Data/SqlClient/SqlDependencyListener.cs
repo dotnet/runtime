@@ -24,21 +24,21 @@ internal class SqlDependencyProcessDispatcher : MarshalByRefObject
     // Class to contain/store all relevant information about a connection that waits on the SSB queue.
     private class SqlConnectionContainer
     {
-        private SqlConnection _con;
-        private SqlCommand _com;
-        private SqlParameter _conversationGuidParam;
-        private SqlParameter _timeoutParam;
-        private SqlConnectionContainerHashHelper _hashHelper;
-        private string _queue;
-        private string _receiveQuery;
+        private readonly SqlConnection _con;
+        private readonly SqlCommand _com;
+        private readonly SqlParameter _conversationGuidParam;
+        private readonly SqlParameter _timeoutParam;
+        private readonly SqlConnectionContainerHashHelper _hashHelper;
+        private readonly string _queue;
+        private readonly string _receiveQuery;
         private string _beginConversationQuery;
         private string _endConversationQuery;
         private string _concatQuery;
         private readonly int _defaultWaitforTimeout = 60000; // Waitfor(Receive) timeout (milleseconds)
-        private string _escapedQueueName;
-        private string _sprocName;
+        private readonly string _escapedQueueName;
+        private readonly string _sprocName;
         private string _dialogHandle;
-        private string _cachedServer;
+        private readonly string _cachedServer;
         private string _cachedDatabase;
         private volatile bool _errorState = false;
         private volatile bool _stop = false; // Can probably simplify this slightly - one bool instead of two.
@@ -47,7 +47,7 @@ internal class SqlDependencyProcessDispatcher : MarshalByRefObject
         private int _startCount = 0;     // Each container class is called once per Start() - we refCount
                                          // to track when we can dispose.
         private Timer _retryTimer = null;
-        private Dictionary<string, int> _appDomainKeyHash = null;  // AppDomainKey->Open RefCount
+        private readonly Dictionary<string, int> _appDomainKeyHash = null;  // AppDomainKey->Open RefCount
 
         // Constructor
 
@@ -1055,10 +1055,10 @@ internal class SqlDependencyProcessDispatcher : MarshalByRefObject
 
         // As a result, we will not use _connectionStringBuilder as part of Equals or GetHashCode.
 
-        private DbConnectionPoolIdentity _identity;
-        private string _connectionString;
-        private string _queue;
-        private SqlConnectionStringBuilder _connectionStringBuilder; // Not to be used for comparison!
+        private readonly DbConnectionPoolIdentity _identity;
+        private readonly string _connectionString;
+        private readonly string _queue;
+        private readonly SqlConnectionStringBuilder _connectionStringBuilder; // Not to be used for comparison!
 
         internal SqlConnectionContainerHashHelper(DbConnectionPoolIdentity identity, string connectionString,
                                                   string queue, SqlConnectionStringBuilder connectionStringBuilder)
@@ -1153,11 +1153,11 @@ internal class SqlDependencyProcessDispatcher : MarshalByRefObject
 
     // SqlDependencyProcessDispatcher static members
 
-    private static SqlDependencyProcessDispatcher s_staticInstance = new SqlDependencyProcessDispatcher(null);
+    private static readonly SqlDependencyProcessDispatcher s_staticInstance = new SqlDependencyProcessDispatcher(null);
 
     // Dictionaries used as maps.
-    private Dictionary<SqlConnectionContainerHashHelper, SqlConnectionContainer> _connectionContainers;                 // NT_ID+ConStr+Service->Container
-    private Dictionary<string, SqlDependencyPerAppDomainDispatcher> _sqlDependencyPerAppDomainDispatchers; // AppDomainKey->Callback
+    private readonly Dictionary<SqlConnectionContainerHashHelper, SqlConnectionContainer> _connectionContainers;                 // NT_ID+ConStr+Service->Container
+    private readonly Dictionary<string, SqlDependencyPerAppDomainDispatcher> _sqlDependencyPerAppDomainDispatchers; // AppDomainKey->Callback
 
     // Constructors
 

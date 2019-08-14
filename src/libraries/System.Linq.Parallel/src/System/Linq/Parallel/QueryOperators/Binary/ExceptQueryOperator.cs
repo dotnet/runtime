@@ -136,11 +136,11 @@ namespace System.Linq.Parallel
 
         private class ExceptQueryOperatorEnumerator<TLeftKey> : QueryOperatorEnumerator<TInputOutput, int>
         {
-            private QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TLeftKey> _leftSource; // Left data source.
-            private QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, int> _rightSource; // Right data source.
-            private IEqualityComparer<TInputOutput> _comparer; // A comparer used for equality checks/hash-coding.
+            private readonly QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TLeftKey> _leftSource; // Left data source.
+            private readonly QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, int> _rightSource; // Right data source.
+            private readonly IEqualityComparer<TInputOutput> _comparer; // A comparer used for equality checks/hash-coding.
             private Set<TInputOutput> _hashLookup; // The hash lookup, used to produce the distinct set.
-            private CancellationToken _cancellationToken;
+            private readonly CancellationToken _cancellationToken;
             private Shared<int> _outputLoopCount;
 
             //---------------------------------------------------------------------------------------
@@ -225,12 +225,12 @@ namespace System.Linq.Parallel
 
         private class OrderedExceptQueryOperatorEnumerator<TLeftKey> : QueryOperatorEnumerator<TInputOutput, TLeftKey>
         {
-            private QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TLeftKey> _leftSource; // Left data source.
-            private QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, int> _rightSource; // Right data source.
-            private IEqualityComparer<TInputOutput> _comparer; // A comparer used for equality checks/hash-coding.
-            private IComparer<TLeftKey> _leftKeyComparer; // A comparer for order keys.
+            private readonly QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TLeftKey> _leftSource; // Left data source.
+            private readonly QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, int> _rightSource; // Right data source.
+            private readonly IEqualityComparer<TInputOutput> _comparer; // A comparer used for equality checks/hash-coding.
+            private readonly IComparer<TLeftKey> _leftKeyComparer; // A comparer for order keys.
             private IEnumerator<KeyValuePair<Wrapper<TInputOutput>, Pair<TInputOutput, TLeftKey>>> _outputEnumerator; // The enumerator output elements + order keys.
-            private CancellationToken _cancellationToken;
+            private readonly CancellationToken _cancellationToken;
 
             //---------------------------------------------------------------------------------------
             // Instantiates a new except query operator enumerator.

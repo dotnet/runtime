@@ -14,10 +14,10 @@ namespace System.ComponentModel.Composition.Hosting
 {
     public partial class FilteredCatalog : ComposablePartCatalog, INotifyComposablePartCatalogChanged
     {
-        private Func<ComposablePartDefinition, bool> _filter;
+        private readonly Func<ComposablePartDefinition, bool> _filter;
         private ComposablePartCatalog _innerCatalog;
         private FilteredCatalog _complement;
-        private object _lock = new object();
+        private readonly object _lock = new object();
         private volatile bool _isDisposed = false;
 
         /// <summary>

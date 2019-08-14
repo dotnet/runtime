@@ -123,14 +123,14 @@ namespace System.Xml.Serialization
 #pragma warning disable 0414
         private bool _typedSerializer;
 #pragma warning restore 0414
-        private Type _primitiveType;
+        private readonly Type _primitiveType;
         private XmlMapping _mapping;
         private XmlDeserializationEvents _events = new XmlDeserializationEvents();
         internal string DefaultNamespace = null;
         private Type _rootType;
         private bool _isReflectionBasedSerializer = false;
 
-        private static TempAssemblyCache s_cache = new TempAssemblyCache();
+        private static readonly TempAssemblyCache s_cache = new TempAssemblyCache();
         private static volatile XmlSerializerNamespaces s_defaultNamespaces;
         private static XmlSerializerNamespaces DefaultNamespaces
         {

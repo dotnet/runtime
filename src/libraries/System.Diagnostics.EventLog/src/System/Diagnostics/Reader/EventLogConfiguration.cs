@@ -44,9 +44,9 @@ namespace System.Diagnostics.Eventing.Reader
     /// </summary>
     public class EventLogConfiguration : IDisposable
     {
-        private EventLogHandle _handle = EventLogHandle.Zero;
+        private readonly EventLogHandle _handle = EventLogHandle.Zero;
 
-        private EventLogSession _session = null;
+        private readonly EventLogSession _session = null;
 
         public EventLogConfiguration(string logName) : this(logName, null) { }
 

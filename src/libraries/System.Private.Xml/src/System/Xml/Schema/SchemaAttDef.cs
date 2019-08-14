@@ -30,7 +30,7 @@ namespace System.Xml.Schema
 
         private Reserve _reserved = Reserve.None; // indicate the attribute type, such as xml:lang or xml:space
 
-        private bool _defaultValueChecked;
+        private readonly bool _defaultValueChecked;
         private XmlSchemaAttribute _schemaAttribute;
 
         public static readonly SchemaAttDef Empty = new SchemaAttDef();

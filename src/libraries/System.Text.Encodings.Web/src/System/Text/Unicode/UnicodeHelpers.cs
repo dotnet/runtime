@@ -27,7 +27,7 @@ namespace System.Text.Unicode
 
         // This field is only used on big-endian architectures. We don't
         // bother computing it on little-endian architectures.
-        private static uint[] _definedCharacterBitmapBigEndian = (BitConverter.IsLittleEndian) ? null : CreateDefinedCharacterBitmapMachineEndian();
+        private static readonly uint[] _definedCharacterBitmapBigEndian = (BitConverter.IsLittleEndian) ? null : CreateDefinedCharacterBitmapMachineEndian();
 
         private static uint[] CreateDefinedCharacterBitmapMachineEndian()
         {

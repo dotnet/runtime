@@ -273,7 +273,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // An instance field typed as EventRegistrationTokenTable is injected into managed classed by the compiler when compiling for /t:winmdobj.
         // Since here the class can be an arbitrary implementation of INotifyCollectionChanged, we have to keep the EventRegistrationTokenTable's
         // separately, associated with the implementations using ConditionalWeakTable.
-        private static ConditionalWeakTable<INotifyCollectionChanged, EventRegistrationTokenTable<NotifyCollectionChangedEventHandler>> s_weakTable =
+        private static readonly ConditionalWeakTable<INotifyCollectionChanged, EventRegistrationTokenTable<NotifyCollectionChangedEventHandler>> s_weakTable =
             new ConditionalWeakTable<INotifyCollectionChanged, EventRegistrationTokenTable<NotifyCollectionChangedEventHandler>>();
 
         // EventRegistrationToken CollectionChanged.add(NotifyCollectionChangedEventHandler value)
@@ -354,7 +354,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // An instance field typed as EventRegistrationTokenTable is injected into managed classed by the compiler when compiling for /t:winmdobj.
         // Since here the class can be an arbitrary implementation of INotifyCollectionChanged, we have to keep the EventRegistrationTokenTable's
         // separately, associated with the implementations using ConditionalWeakTable.
-        private static ConditionalWeakTable<INotifyPropertyChanged, EventRegistrationTokenTable<PropertyChangedEventHandler>> s_weakTable =
+        private static readonly ConditionalWeakTable<INotifyPropertyChanged, EventRegistrationTokenTable<PropertyChangedEventHandler>> s_weakTable =
             new ConditionalWeakTable<INotifyPropertyChanged, EventRegistrationTokenTable<PropertyChangedEventHandler>>();
 
         // EventRegistrationToken PropertyChanged.add(PropertyChangedEventHandler value)
@@ -388,7 +388,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     // Instances of this are really RCWs of ICommand_WinRT (not ICommandToManagedAdapter or any ICommand).
     internal sealed class ICommandToManagedAdapter /*: System.Windows.Input.ICommand*/
     {
-        private static ConditionalWeakTable<EventHandler, EventHandler<object>> s_weakTable =
+        private static readonly ConditionalWeakTable<EventHandler, EventHandler<object>> s_weakTable =
             new ConditionalWeakTable<EventHandler, EventHandler<object>>();
 
         private ICommandToManagedAdapter()
@@ -460,7 +460,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // An instance field typed as EventRegistrationTokenTable is injected into managed classed by the compiler when compiling for /t:winmdobj.
         // Since here the class can be an arbitrary implementation of ICommand, we have to keep the EventRegistrationTokenTable's
         // separately, associated with the implementations using ConditionalWeakTable.
-        private static ConditionalWeakTable<ICommand, EventRegistrationTokenTable<EventHandler>> s_weakTable =
+        private static readonly ConditionalWeakTable<ICommand, EventRegistrationTokenTable<EventHandler>> s_weakTable =
             new ConditionalWeakTable<ICommand, EventRegistrationTokenTable<EventHandler>>();
 
         // EventRegistrationToken PropertyChanged.add(EventHandler<object> value)

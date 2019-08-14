@@ -122,12 +122,12 @@ namespace System.Security.Cryptography
             return x;
         }
 
-        private static KeySizes[] s_legalBlockSizes =
+        private static readonly KeySizes[] s_legalBlockSizes =
         {
             new KeySizes(minSize: 64, maxSize: 64, skipSize: 0)
         };
 
-        private static KeySizes[] s_legalKeySizes =
+        private static readonly KeySizes[] s_legalKeySizes =
         {
             new KeySizes(minSize: 64, maxSize: 64, skipSize: 0)
         };

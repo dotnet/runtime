@@ -55,7 +55,7 @@ namespace MS.Internal.Xml.Cache
     /// </summary>
     internal class XPathDocumentElementChildIterator : XPathDocumentBaseIterator
     {
-        private string _localName, _namespaceUri;
+        private readonly string _localName, _namespaceUri;
 
         /// <summary>
         /// Create an iterator that ranges over all element children of "parent" having the specified QName.
@@ -112,7 +112,7 @@ namespace MS.Internal.Xml.Cache
     /// </summary>
     internal class XPathDocumentKindChildIterator : XPathDocumentBaseIterator
     {
-        private XPathNodeType _typ;
+        private readonly XPathNodeType _typ;
 
         /// <summary>
         /// Create an iterator that ranges over all content children of "parent" having the specified XPathNodeType.
@@ -165,8 +165,8 @@ namespace MS.Internal.Xml.Cache
     /// </summary>
     internal class XPathDocumentElementDescendantIterator : XPathDocumentBaseIterator
     {
-        private XPathDocumentNavigator _end;
-        private string _localName, _namespaceUri;
+        private readonly XPathDocumentNavigator _end;
+        private readonly string _localName, _namespaceUri;
         private bool _matchSelf;
 
         /// <summary>
@@ -237,8 +237,8 @@ namespace MS.Internal.Xml.Cache
     /// </summary>
     internal class XPathDocumentKindDescendantIterator : XPathDocumentBaseIterator
     {
-        private XPathDocumentNavigator _end;
-        private XPathNodeType _typ;
+        private readonly XPathDocumentNavigator _end;
+        private readonly XPathNodeType _typ;
         private bool _matchSelf;
 
         /// <summary>

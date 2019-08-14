@@ -11,7 +11,7 @@ namespace System.Xml.Linq
     /// </summary>
     public class XObjectChangeEventArgs : EventArgs
     {
-        private XObjectChange _objectChange;
+        private readonly XObjectChange _objectChange;
 
         /// <summary>
         /// Event argument for a <see cref="XObjectChange.Add"/> change event.

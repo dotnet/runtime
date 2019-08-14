@@ -12,8 +12,8 @@ namespace System.Net
     //
     public class HttpListenerTimeoutManager
     {
-        private HttpListener _listener;
-        private int[] _timeouts;
+        private readonly HttpListener _listener;
+        private readonly int[] _timeouts;
         private uint _minSendBytesPerSecond;
 
         internal HttpListenerTimeoutManager(HttpListener context)

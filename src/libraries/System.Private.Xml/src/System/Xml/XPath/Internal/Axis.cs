@@ -9,11 +9,11 @@ namespace MS.Internal.Xml.XPath
 {
     internal class Axis : AstNode
     {
-        private AxisType _axisType;
+        private readonly AxisType _axisType;
         private AstNode _input;
-        private string _prefix;
-        private string _name;
-        private XPathNodeType _nodeType;
+        private readonly string _prefix;
+        private readonly string _name;
+        private readonly XPathNodeType _nodeType;
         protected bool abbrAxis;
 
         public enum AxisType

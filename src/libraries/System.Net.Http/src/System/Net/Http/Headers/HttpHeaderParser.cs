@@ -11,8 +11,8 @@ namespace System.Net.Http.Headers
     {
         internal const string DefaultSeparator = ", ";
 
-        private bool _supportsMultipleValues;
-        private string _separator;
+        private readonly bool _supportsMultipleValues;
+        private readonly string _separator;
 
         public bool SupportsMultipleValues
         {

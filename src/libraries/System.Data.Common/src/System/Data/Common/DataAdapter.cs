@@ -32,7 +32,7 @@ namespace System.Data.Common
 #if DEBUG
         // if true, we are asserting that the caller has provided a select command
         // which should not return an empty result set
-        private bool _debugHookNonEmptySelectCommand = false;
+        private readonly bool _debugHookNonEmptySelectCommand = false;
 #endif
 
         [Conditional("DEBUG")]

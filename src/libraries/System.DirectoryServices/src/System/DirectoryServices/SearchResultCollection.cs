@@ -24,9 +24,9 @@ namespace System.DirectoryServices
         private bool _disposed;
         private readonly DirectoryEntry _rootEntry;       // clone of parent entry object
         private const string ADS_DIRSYNC_COOKIE = "fc8cb04d-311d-406c-8cb9-1ae8b843b418";
-        private IntPtr _adsDirsynCookieName = Marshal.StringToCoTaskMemUni(ADS_DIRSYNC_COOKIE);
+        private readonly IntPtr _adsDirsynCookieName = Marshal.StringToCoTaskMemUni(ADS_DIRSYNC_COOKIE);
         private const string ADS_VLV_RESPONSE = "fc8cb04d-311d-406c-8cb9-1ae8b843b419";
-        private IntPtr _adsVLVResponseName = Marshal.StringToCoTaskMemUni(ADS_VLV_RESPONSE);
+        private readonly IntPtr _adsVLVResponseName = Marshal.StringToCoTaskMemUni(ADS_VLV_RESPONSE);
         internal DirectorySearcher srch = null;
 
         internal SearchResultCollection(DirectoryEntry root, IntPtr searchHandle, string[] propertiesLoaded, DirectorySearcher srch)
@@ -229,13 +229,13 @@ namespace System.DirectoryServices
         /// </devdoc>
         private class ResultsEnumerator : IEnumerator
         {
-            private NetworkCredential _parentCredentials;
-            private AuthenticationTypes _parentAuthenticationType;
-            private SearchResultCollection _results;
+            private readonly NetworkCredential _parentCredentials;
+            private readonly AuthenticationTypes _parentAuthenticationType;
+            private readonly SearchResultCollection _results;
             private bool _initialized;
             private SearchResult _currentResult;
             private bool _eof;
-            private bool _waitForResult = false;
+            private readonly bool _waitForResult = false;
 
             internal ResultsEnumerator(SearchResultCollection results, string parentUserName, string parentPassword, AuthenticationTypes parentAuthenticationType)
             {

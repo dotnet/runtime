@@ -107,8 +107,8 @@ namespace System.DirectoryServices.AccountManagement
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.DirectoryServices.AccountManagement, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class PrincipalServerDownException : PrincipalException
     {
-        private int _errorCode = 0;
-        private string _serverName = null;
+        private readonly int _errorCode = 0;
+        private readonly string _serverName = null;
 
         public PrincipalServerDownException() : base() { }
 
@@ -151,7 +151,7 @@ namespace System.DirectoryServices.AccountManagement
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.DirectoryServices.AccountManagement, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class PrincipalOperationException : PrincipalException
     {
-        private int _errorCode = 0;
+        private readonly int _errorCode = 0;
 
         public PrincipalOperationException() : base() { }
 
@@ -191,30 +191,27 @@ namespace System.DirectoryServices.AccountManagement
         }
     }
 
-    internal class ExceptionHelper
+    internal static class ExceptionHelper
     {
-        // Put a private constructor because this class should only be used as static methods
-        private ExceptionHelper() { }
+        private const int ERROR_NOT_ENOUGH_MEMORY = 8; // map to outofmemory exception
+        private const int ERROR_OUTOFMEMORY = 14; // map to outofmemory exception
+        private const int ERROR_DS_DRA_OUT_OF_MEM = 8446;    // map to outofmemory exception
+        private const int ERROR_NO_SUCH_DOMAIN = 1355; // map to ActiveDirectoryServerDownException
+        private const int ERROR_ACCESS_DENIED = 5; // map to UnauthorizedAccessException
+        private const int ERROR_NO_LOGON_SERVERS = 1311; // map to ActiveDirectoryServerDownException
+        private const int ERROR_DS_DRA_ACCESS_DENIED = 8453; // map to UnauthorizedAccessException
+        private const int RPC_S_OUT_OF_RESOURCES = 1721; // map to outofmemory exception
+        internal const int RPC_S_SERVER_UNAVAILABLE = 1722; // map to ActiveDirectoryServerDownException
+        internal const int RPC_S_CALL_FAILED = 1726; // map to ActiveDirectoryServerDownException
+        // internal const int ERROR_DS_DRA_BAD_DN = 8439; //fix error CS0414: Warning as Error: is assigned but its value is never used
+        // internal const int ERROR_DS_NAME_UNPARSEABLE = 8350; //fix error CS0414: Warning as Error: is assigned but its value is never used
+        // internal const int ERROR_DS_UNKNOWN_ERROR = 8431; //fix error CS0414: Warning as Error: is assigned but its value is never used
 
-        private static int s_ERROR_NOT_ENOUGH_MEMORY = 8; // map to outofmemory exception
-        private static int s_ERROR_OUTOFMEMORY = 14; // map to outofmemory exception
-        private static int s_ERROR_DS_DRA_OUT_OF_MEM = 8446;    // map to outofmemory exception
-        private static int s_ERROR_NO_SUCH_DOMAIN = 1355; // map to ActiveDirectoryServerDownException
-        private static int s_ERROR_ACCESS_DENIED = 5; // map to UnauthorizedAccessException
-        private static int s_ERROR_NO_LOGON_SERVERS = 1311; // map to ActiveDirectoryServerDownException
-        private static int s_ERROR_DS_DRA_ACCESS_DENIED = 8453; // map to UnauthorizedAccessException
-        private static int s_RPC_S_OUT_OF_RESOURCES = 1721; // map to outofmemory exception
-        internal static int RPC_S_SERVER_UNAVAILABLE = 1722; // map to ActiveDirectoryServerDownException
-        internal static int RPC_S_CALL_FAILED = 1726; // map to ActiveDirectoryServerDownException
-        // internal static int ERROR_DS_DRA_BAD_DN = 8439; //fix error CS0414: Warning as Error: is assigned but its value is never used
-        // internal static int ERROR_DS_NAME_UNPARSEABLE = 8350; //fix error CS0414: Warning as Error: is assigned but its value is never used
-        // internal static int ERROR_DS_UNKNOWN_ERROR = 8431; //fix error CS0414: Warning as Error: is assigned but its value is never used
-
-        // public static uint ERROR_HRESULT_ACCESS_DENIED = 0x80070005; //fix error CS0414: Warning as Error: is assigned but its value is never used
-        public static uint ERROR_HRESULT_LOGON_FAILURE = 0x8007052E;
-        public static uint ERROR_HRESULT_CONSTRAINT_VIOLATION = 0x8007202f;
-        public static uint ERROR_LOGON_FAILURE = 0x31;
-        // public static uint ERROR_LDAP_INVALID_CREDENTIALS = 49; //fix error CS0414: Warning as Error: is assigned but its value is never used
+        // public const uint ERROR_HRESULT_ACCESS_DENIED = 0x80070005; //fix error CS0414: Warning as Error: is assigned but its value is never used
+        public const uint ERROR_HRESULT_LOGON_FAILURE = 0x8007052E;
+        public const uint ERROR_HRESULT_CONSTRAINT_VIOLATION = 0x8007202f;
+        public const uint ERROR_LOGON_FAILURE = 0x31;
+        // public const uint ERROR_LDAP_INVALID_CREDENTIALS = 49; //fix error CS0414: Warning as Error: is assigned but its value is never used
         //
         // This method maps some common COM Hresults to
         // existing clr exceptions
@@ -302,15 +299,15 @@ namespace System.DirectoryServices.AccountManagement
         {
             string errorMsg = GetErrorMessage(errorCode, false);
 
-            if ((errorCode == s_ERROR_ACCESS_DENIED) || (errorCode == s_ERROR_DS_DRA_ACCESS_DENIED))
+            if ((errorCode == ERROR_ACCESS_DENIED) || (errorCode == ERROR_DS_DRA_ACCESS_DENIED))
 
                 return new UnauthorizedAccessException(errorMsg);
 
-            else if ((errorCode == s_ERROR_NOT_ENOUGH_MEMORY) || (errorCode == s_ERROR_OUTOFMEMORY) || (errorCode == s_ERROR_DS_DRA_OUT_OF_MEM) || (errorCode == s_RPC_S_OUT_OF_RESOURCES))
+            else if ((errorCode == ERROR_NOT_ENOUGH_MEMORY) || (errorCode == ERROR_OUTOFMEMORY) || (errorCode == ERROR_DS_DRA_OUT_OF_MEM) || (errorCode == RPC_S_OUT_OF_RESOURCES))
 
                 return new OutOfMemoryException();
 
-            else if ((errorCode == s_ERROR_NO_LOGON_SERVERS) || (errorCode == s_ERROR_NO_SUCH_DOMAIN) || (errorCode == RPC_S_SERVER_UNAVAILABLE) || (errorCode == RPC_S_CALL_FAILED))
+            else if ((errorCode == ERROR_NO_LOGON_SERVERS) || (errorCode == ERROR_NO_SUCH_DOMAIN) || (errorCode == RPC_S_SERVER_UNAVAILABLE) || (errorCode == RPC_S_CALL_FAILED))
             {
                 return new PrincipalServerDownException(errorMsg, errorCode);
             }

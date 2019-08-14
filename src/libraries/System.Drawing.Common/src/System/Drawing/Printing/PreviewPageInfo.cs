@@ -9,7 +9,7 @@ namespace System.Drawing.Printing
     /// </summary>
     public sealed class PreviewPageInfo
     {
-        private Image _image;
+        private readonly Image _image;
 
         // Physical measures in hundredths of an inch
         private Size _physicalSize = Size.Empty;

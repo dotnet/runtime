@@ -162,7 +162,7 @@ namespace System.DirectoryServices.ActiveDirectory
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.DirectoryServices, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public class SyncFromAllServersOperationException : ActiveDirectoryOperationException, ISerializable
     {
-        private SyncFromAllServersErrorInformation[] _errors = null;
+        private readonly SyncFromAllServersErrorInformation[] _errors = null;
 
         public SyncFromAllServersOperationException(string message, Exception inner, SyncFromAllServersErrorInformation[] errors) : base(message, inner)
         {
@@ -229,20 +229,20 @@ namespace System.DirectoryServices.ActiveDirectory
 
     internal class ExceptionHelper
     {
-        private static int s_ERROR_NOT_ENOUGH_MEMORY = 8; // map to outofmemory exception
-        private static int s_ERROR_OUTOFMEMORY = 14; // map to outofmemory exception
-        private static int s_ERROR_DS_DRA_OUT_OF_MEM = 8446;    // map to outofmemory exception
-        private static int s_ERROR_NO_SUCH_DOMAIN = 1355; // map to ActiveDirectoryServerDownException
-        private static int s_ERROR_ACCESS_DENIED = 5; // map to UnauthorizedAccessException
-        private static int s_ERROR_NO_LOGON_SERVERS = 1311; // map to ActiveDirectoryServerDownException
-        private static int s_ERROR_DS_DRA_ACCESS_DENIED = 8453; // map to UnauthorizedAccessException
-        private static int s_RPC_S_OUT_OF_RESOURCES = 1721; // map to outofmemory exception
-        internal static int RPC_S_SERVER_UNAVAILABLE = 1722; // map to ActiveDirectoryServerDownException
-        internal static int RPC_S_CALL_FAILED = 1726; // map to ActiveDirectoryServerDownException
-        private static int s_ERROR_CANCELLED = 1223;
-        internal static int ERROR_DS_DRA_BAD_DN = 8439;
-        internal static int ERROR_DS_NAME_UNPARSEABLE = 8350;
-        internal static int ERROR_DS_UNKNOWN_ERROR = 8431;
+        private const int ERROR_NOT_ENOUGH_MEMORY = 8; // map to outofmemory exception
+        private const int ERROR_OUTOFMEMORY = 14; // map to outofmemory exception
+        private const int ERROR_DS_DRA_OUT_OF_MEM = 8446;    // map to outofmemory exception
+        private const int ERROR_NO_SUCH_DOMAIN = 1355; // map to ActiveDirectoryServerDownException
+        private const int ERROR_ACCESS_DENIED = 5; // map to UnauthorizedAccessException
+        private const int ERROR_NO_LOGON_SERVERS = 1311; // map to ActiveDirectoryServerDownException
+        private const int ERROR_DS_DRA_ACCESS_DENIED = 8453; // map to UnauthorizedAccessException
+        private const int RPC_S_OUT_OF_RESOURCES = 1721; // map to outofmemory exception
+        internal const int RPC_S_SERVER_UNAVAILABLE = 1722; // map to ActiveDirectoryServerDownException
+        internal const int RPC_S_CALL_FAILED = 1726; // map to ActiveDirectoryServerDownException
+        private const int ERROR_CANCELLED = 1223;
+        internal const int ERROR_DS_DRA_BAD_DN = 8439;
+        internal const int ERROR_DS_NAME_UNPARSEABLE = 8350;
+        internal const int ERROR_DS_UNKNOWN_ERROR = 8431;
 
         //
         // This method maps some common COM Hresults to
@@ -341,15 +341,15 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             string errorMsg = GetErrorMessage(errorCode, false);
 
-            if ((errorCode == s_ERROR_ACCESS_DENIED) || (errorCode == s_ERROR_DS_DRA_ACCESS_DENIED))
+            if ((errorCode == ERROR_ACCESS_DENIED) || (errorCode == ERROR_DS_DRA_ACCESS_DENIED))
 
                 return new UnauthorizedAccessException(errorMsg);
 
-            else if ((errorCode == s_ERROR_NOT_ENOUGH_MEMORY) || (errorCode == s_ERROR_OUTOFMEMORY) || (errorCode == s_ERROR_DS_DRA_OUT_OF_MEM) || (errorCode == s_RPC_S_OUT_OF_RESOURCES))
+            else if ((errorCode == ERROR_NOT_ENOUGH_MEMORY) || (errorCode == ERROR_OUTOFMEMORY) || (errorCode == ERROR_DS_DRA_OUT_OF_MEM) || (errorCode == RPC_S_OUT_OF_RESOURCES))
 
                 return new OutOfMemoryException();
 
-            else if ((errorCode == s_ERROR_NO_LOGON_SERVERS) || (errorCode == s_ERROR_NO_SUCH_DOMAIN) || (errorCode == RPC_S_SERVER_UNAVAILABLE) || (errorCode == RPC_S_CALL_FAILED))
+            else if ((errorCode == ERROR_NO_LOGON_SERVERS) || (errorCode == ERROR_NO_SUCH_DOMAIN) || (errorCode == RPC_S_SERVER_UNAVAILABLE) || (errorCode == RPC_S_CALL_FAILED))
 
                 return new ActiveDirectoryServerDownException(errorMsg, errorCode, targetName);
 
@@ -383,7 +383,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 string source = Marshal.PtrToStringUni(error.pszSrcId);
                 string target = Marshal.PtrToStringUni(error.pszSvrId);
 
-                if (error.dwWin32Err == s_ERROR_CANCELLED)
+                if (error.dwWin32Err == ERROR_CANCELLED)
                 {
                     // this is a special case. the failure is because user specifies SyncAllOptions.CheckServerAlivenessOnly, ignore it here
                     return null;
@@ -405,7 +405,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     DS_REPSYNCALL_ERRINFO error = new DS_REPSYNCALL_ERRINFO();
                     Marshal.PtrToStructure(tempPtr, error);
                     // this is a special case. the failure is because user specifies SyncAllOptions.CheckServerAlivenessOnly, ignore it here
-                    if (error.dwWin32Err != s_ERROR_CANCELLED)
+                    if (error.dwWin32Err != ERROR_CANCELLED)
                     {
                         string message = GetErrorMessage(error.dwWin32Err, false);
                         string source = Marshal.PtrToStringUni(error.pszSrcId);

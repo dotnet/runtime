@@ -452,9 +452,10 @@ namespace System.Xml.Xsl.IlGen
         private MethodBase _methInfo;
         private ILGenerator _ilgen;
         private LocalBuilder _locXOut;
-        private XmlILModule _module;
-        private bool _isDebug, _initWriters;
-        private StaticDataManager _staticData;
+        private readonly XmlILModule _module;
+        private readonly bool _isDebug;
+        private bool _initWriters;
+        private readonly StaticDataManager _staticData;
         private ISourceLineInfo _lastSourceInfo;
         private MethodInfo _methSyncToNav;
 

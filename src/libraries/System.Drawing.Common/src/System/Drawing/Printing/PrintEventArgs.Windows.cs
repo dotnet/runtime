@@ -11,7 +11,7 @@ namespace System.Drawing.Printing
     /// </summary>
     public class PrintEventArgs : CancelEventArgs
     {
-        private PrintAction _printAction;
+        private readonly PrintAction _printAction;
 
         /// <summary>
         /// Initializes a new instance of the <see cref='PrintEventArgs'/> class.

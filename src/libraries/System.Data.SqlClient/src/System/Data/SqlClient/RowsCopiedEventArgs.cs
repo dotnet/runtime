@@ -11,7 +11,7 @@ namespace System.Data.SqlClient
     public class SqlRowsCopiedEventArgs : System.EventArgs
     {
         private bool _abort;
-        private long _rowsCopied;
+        private readonly long _rowsCopied;
 
         public SqlRowsCopiedEventArgs(long rowsCopied)
         {

@@ -11,7 +11,7 @@ namespace System.Net.Http.Headers
     // which will remove leading and trailing whitespace.
     internal class UriHeaderParser : HttpHeaderParser
     {
-        private UriKind _uriKind;
+        private readonly UriKind _uriKind;
 
         internal static readonly UriHeaderParser RelativeOrAbsoluteUriParser =
             new UriHeaderParser(UriKind.RelativeOrAbsolute);

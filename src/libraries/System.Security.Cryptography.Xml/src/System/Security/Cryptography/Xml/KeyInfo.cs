@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.Xml
     public class KeyInfo : IEnumerable
     {
         private string _id = null;
-        private ArrayList _keyInfoClauses;
+        private readonly ArrayList _keyInfoClauses;
 
         //
         // public constructors

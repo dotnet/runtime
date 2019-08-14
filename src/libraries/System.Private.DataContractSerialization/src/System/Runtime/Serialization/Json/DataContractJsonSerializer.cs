@@ -30,15 +30,15 @@ namespace System.Runtime.Serialization.Json
 
         internal IList<Type> knownTypeList;
         internal DataContractDictionary knownDataContracts;
-        private EmitTypeInformation _emitTypeInformation;
+        private readonly EmitTypeInformation _emitTypeInformation;
         private ReadOnlyCollection<Type> _knownTypeCollection;
-        private int _maxItemsInObjectGraph;
-        private bool _serializeReadOnlyTypes;
-        private DateTimeFormat _dateTimeFormat;
-        private bool _useSimpleDictionaryFormat;
+        private readonly int _maxItemsInObjectGraph;
+        private readonly bool _serializeReadOnlyTypes;
+        private readonly DateTimeFormat _dateTimeFormat;
+        private readonly bool _useSimpleDictionaryFormat;
 
-        private DataContractJsonSerializerImpl _serializer;
-        private bool _ignoreExtensionDataObject;
+        private readonly DataContractJsonSerializerImpl _serializer;
+        private readonly bool _ignoreExtensionDataObject;
 
         public DataContractJsonSerializer(Type type)
         {

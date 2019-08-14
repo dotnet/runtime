@@ -15,8 +15,8 @@ namespace System.Diagnostics.Eventing.Reader
         private string _name;
         private string _displayName;
         private bool _dataReady;
-        private ProviderMetadata _pmReference;
-        private object _syncObject;
+        private readonly ProviderMetadata _pmReference;
+        private readonly object _syncObject;
 
         internal EventKeyword(long value, ProviderMetadata pmReference)
         {

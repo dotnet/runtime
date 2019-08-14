@@ -12,8 +12,8 @@ namespace System.ComponentModel.Composition.Primitives
     [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
     public class ExportedDelegate
     {
-        private object _instance;
-        private MethodInfo _method;
+        private readonly object _instance;
+        private readonly MethodInfo _method;
 
         protected ExportedDelegate() { }
 

@@ -18,7 +18,7 @@ namespace System.Xml
         //
         // Member fields
         //
-        private XmlTextReaderImpl _impl;
+        private readonly XmlTextReaderImpl _impl;
         //
         //
         // Constructors

@@ -84,7 +84,7 @@ namespace System.Linq.Parallel
 
         private class NullableLongAverageAggregationOperatorEnumerator<TKey> : InlinedAggregationOperatorEnumerator<Pair<long, long>>
         {
-            private QueryOperatorEnumerator<long?, TKey> _source; // The source data.
+            private readonly QueryOperatorEnumerator<long?, TKey> _source; // The source data.
 
             //---------------------------------------------------------------------------------------
             // Instantiates a new aggregation operator.

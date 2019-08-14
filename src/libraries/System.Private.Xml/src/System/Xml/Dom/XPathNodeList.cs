@@ -11,8 +11,8 @@ namespace System.Xml
 
     internal class XPathNodeList : XmlNodeList
     {
-        private List<XmlNode> _list;
-        private XPathNodeIterator _nodeIterator;
+        private readonly List<XmlNode> _list;
+        private readonly XPathNodeIterator _nodeIterator;
         private bool _done;
 
         public XPathNodeList(XPathNodeIterator nodeIterator)
@@ -84,7 +84,7 @@ namespace System.Xml
 
     internal class XmlNodeListEnumerator : IEnumerator
     {
-        private XPathNodeList _list;
+        private readonly XPathNodeList _list;
         private int _index;
         private bool _valid;
 

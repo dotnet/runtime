@@ -35,7 +35,7 @@ namespace System.Xml.Serialization
         internal static MethodAttributes ProtectedOverrideMethodAttributes = MethodAttributes.Family | MethodAttributes.Virtual | MethodAttributes.HideBySig;
         internal static MethodAttributes PrivateMethodAttributes = MethodAttributes.Private | MethodAttributes.HideBySig;
 
-        private TypeBuilder _typeBuilder;
+        private readonly TypeBuilder _typeBuilder;
         private MethodBuilder _methodBuilder;
         private ILGenerator _ilGen;
         private Dictionary<string, ArgBuilder> _argList;
@@ -158,7 +158,7 @@ namespace System.Xml.Serialization
             get { return retLabel; }
         }
 
-        private Dictionary<Type, LocalBuilder> _tmpLocals = new Dictionary<Type, LocalBuilder>();
+        private readonly Dictionary<Type, LocalBuilder> _tmpLocals = new Dictionary<Type, LocalBuilder>();
         internal LocalBuilder GetTempLocal(Type type)
         {
             LocalBuilder localTmp;
@@ -333,7 +333,7 @@ namespace System.Xml.Serialization
             InternalIf(true);
         }
 
-        private static OpCode[] s_branchCodes = new OpCode[] {
+        private static readonly OpCode[] s_branchCodes = new OpCode[] {
             OpCodes.Bge,
             OpCodes.Bne_Un,
             OpCodes.Bgt,
@@ -381,7 +381,7 @@ namespace System.Xml.Serialization
             MarkLabel(ifState.EndIf);
         }
 
-        private Stack _leaveLabels = new Stack();
+        private readonly Stack _leaveLabels = new Stack();
         internal void BeginExceptionBlock()
         {
             _leaveLabels.Push(DefineLabel());
@@ -687,7 +687,7 @@ namespace System.Xml.Serialization
             _ilGen.Emit(OpCodes.Unbox, type);
         }
 
-        private static OpCode[] s_ldindOpCodes = new OpCode[] {
+        private static readonly OpCode[] s_ldindOpCodes = new OpCode[] {
             OpCodes.Nop,//Empty = 0,
             OpCodes.Nop,//Object = 1,
             OpCodes.Nop,//DBNull = 2,
@@ -1045,7 +1045,7 @@ namespace System.Xml.Serialization
             _ilGen.Emit(OpCodes.Conv_I4);
         }
 
-        private static OpCode[] s_ldelemOpCodes = new OpCode[] {
+        private static readonly OpCode[] s_ldelemOpCodes = new OpCode[] {
             OpCodes.Nop,//Empty = 0,
             OpCodes.Ldelem_Ref,//Object = 1,
             OpCodes.Ldelem_Ref,//DBNull = 2,
@@ -1093,7 +1093,7 @@ namespace System.Xml.Serialization
             _ilGen.Emit(opCode, arrayElementType);
         }
 
-        private static OpCode[] s_stelemOpCodes = new OpCode[] {
+        private static readonly OpCode[] s_stelemOpCodes = new OpCode[] {
             OpCodes.Nop,//Empty = 0,
             OpCodes.Stelem_Ref,//Object = 1,
             OpCodes.Stelem_Ref,//DBNull = 2,
@@ -1205,7 +1205,7 @@ namespace System.Xml.Serialization
             _blockStack.Push(ifState);
         }
 
-        private static OpCode[] s_convOpCodes = new OpCode[] {
+        private static readonly OpCode[] s_convOpCodes = new OpCode[] {
             OpCodes.Nop,//Empty = 0,
             OpCodes.Nop,//Object = 1,
             OpCodes.Nop,//DBNull = 2,
@@ -1468,10 +1468,10 @@ namespace System.Xml.Serialization
 
     internal class ForState
     {
-        private LocalBuilder _indexVar;
-        private Label _beginLabel;
-        private Label _testLabel;
-        private object _end;
+        private readonly LocalBuilder _indexVar;
+        private readonly Label _beginLabel;
+        private readonly Label _testLabel;
+        private readonly object _end;
 
         internal ForState(LocalBuilder indexVar, Label beginLabel, Label testLabel, object end)
         {
@@ -1654,10 +1654,10 @@ namespace System.Xml.Serialization
 
     internal class CodeGeneratorConversionException : Exception
     {
-        private Type _sourceType;
-        private Type _targetType;
-        private bool _isAddress;
-        private string _reason;
+        private readonly Type _sourceType;
+        private readonly Type _targetType;
+        private readonly bool _isAddress;
+        private readonly string _reason;
 
         public CodeGeneratorConversionException(Type sourceType, Type targetType, bool isAddress, string reason)
             : base()

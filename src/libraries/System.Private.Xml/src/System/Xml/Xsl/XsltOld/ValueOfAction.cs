@@ -16,7 +16,7 @@ namespace System.Xml.Xsl.XsltOld
         private int _selectKey = Compiler.InvalidQueryKey;
         private bool _disableOutputEscaping;
 
-        private static Action s_BuiltInRule = new BuiltInRuleTextAction();
+        private static readonly Action s_BuiltInRule = new BuiltInRuleTextAction();
 
         internal static Action BuiltInRule()
         {

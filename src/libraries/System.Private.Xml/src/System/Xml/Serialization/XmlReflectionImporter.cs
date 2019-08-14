@@ -23,19 +23,19 @@ namespace System.Xml.Serialization
     /// </devdoc>
     public class XmlReflectionImporter
     {
-        private TypeScope _typeScope;
-        private XmlAttributeOverrides _attributeOverrides;
-        private XmlAttributes _defaultAttributes = new XmlAttributes();
-        private NameTable _types = new NameTable();      // xmltypename + xmlns -> Mapping
-        private NameTable _nullables = new NameTable();  // xmltypename + xmlns -> NullableMapping
-        private NameTable _elements = new NameTable();   // xmlelementname + xmlns -> ElementAccessor
+        private readonly TypeScope _typeScope;
+        private readonly XmlAttributeOverrides _attributeOverrides;
+        private readonly XmlAttributes _defaultAttributes = new XmlAttributes();
+        private readonly NameTable _types = new NameTable();      // xmltypename + xmlns -> Mapping
+        private readonly NameTable _nullables = new NameTable();  // xmltypename + xmlns -> NullableMapping
+        private readonly NameTable _elements = new NameTable();   // xmlelementname + xmlns -> ElementAccessor
         private NameTable _xsdAttributes;   // xmlattributetname + xmlns -> AttributeAccessor
         private Hashtable _specials;   // type -> SpecialMapping
-        private Hashtable _anonymous = new Hashtable();   // type -> AnonymousMapping
+        private readonly Hashtable _anonymous = new Hashtable();   // type -> AnonymousMapping
         private NameTable _serializables;  // type name --> new SerializableMapping
         private StructMapping _root;
-        private string _defaultNs;
-        private ModelScope _modelScope;
+        private readonly string _defaultNs;
+        private readonly ModelScope _modelScope;
         private int _arrayNestingLevel;
         private XmlArrayItemAttributes _savedArrayItemAttributes;
         private string _savedArrayNamespace;
@@ -2253,8 +2253,8 @@ namespace System.Xml.Serialization
     }
     internal class ImportStructWorkItem
     {
-        private StructModel _model;
-        private StructMapping _mapping;
+        private readonly StructModel _model;
+        private readonly StructMapping _mapping;
 
         internal ImportStructWorkItem(StructModel model, StructMapping mapping)
         {
@@ -2268,7 +2268,7 @@ namespace System.Xml.Serialization
 
     internal class WorkItems
     {
-        private ArrayList _list = new ArrayList();
+        private readonly ArrayList _list = new ArrayList();
 
         internal ImportStructWorkItem this[int index]
         {
@@ -2318,7 +2318,7 @@ namespace System.Xml.Serialization
 
     internal class RecursionLimiter
     {
-        private int _maxDepth;
+        private readonly int _maxDepth;
         private int _depth;
         private WorkItems _deferredWorkItems;
 

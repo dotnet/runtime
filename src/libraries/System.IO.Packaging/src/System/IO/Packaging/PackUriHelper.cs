@@ -875,11 +875,11 @@ namespace System.IO.Packaging
             //------------------------------------------------------
 
             private ValidatedPartUri _normalizedPartUri;
-            private string _partUriString;
+            private readonly string _partUriString;
             private string _normalizedPartUriString;
             private string _partUriExtension;
-            private bool _isNormalized;
-            private bool _isRelationshipPartUri;
+            private readonly bool _isNormalized;
+            private readonly bool _isRelationshipPartUri;
 
             //String Uppercase variants
 

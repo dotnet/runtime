@@ -26,8 +26,8 @@ namespace System.Security.AccessControl
         #region Private Members
 
         private readonly ResourceType _resourceType;
-        private ExceptionFromErrorCode _exceptionFromErrorCode = null;
-        private object _exceptionContext = null;
+        private readonly ExceptionFromErrorCode _exceptionFromErrorCode = null;
+        private readonly object _exceptionContext = null;
         private readonly uint ProtectedDiscretionaryAcl = 0x80000000;
         private readonly uint ProtectedSystemAcl = 0x40000000;
         private readonly uint UnprotectedDiscretionaryAcl = 0x20000000;

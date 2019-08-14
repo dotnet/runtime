@@ -26,15 +26,15 @@ namespace System.Data.Common
             private string _originalPrefix;
             private string _isNullPrefix;
 
-            private Regex _parameterNameParser;
-            private DbCommandBuilder _dbCommandBuilder;
-            private string[] _baseParameterNames;
-            private string[] _originalParameterNames;
-            private string[] _nullParameterNames;
-            private bool[] _isMutatedName;
-            private int _count;
+            private readonly Regex _parameterNameParser;
+            private readonly DbCommandBuilder _dbCommandBuilder;
+            private readonly string[] _baseParameterNames;
+            private readonly string[] _originalParameterNames;
+            private readonly string[] _nullParameterNames;
+            private readonly bool[] _isMutatedName;
+            private readonly int _count;
             private int _genericParameterCount;
-            private int _adjustedParameterNameMaxLength;
+            private readonly int _adjustedParameterNameMaxLength;
 
             internal ParameterNames(DbCommandBuilder dbCommandBuilder, DbSchemaRow[] schemaRows)
             {

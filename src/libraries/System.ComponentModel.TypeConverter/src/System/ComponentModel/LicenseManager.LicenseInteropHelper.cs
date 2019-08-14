@@ -65,7 +65,7 @@ namespace System.ComponentModel
         // Used from IClassFactory2 when retrieving LicInfo
         private class LicInfoHelperLicenseContext : LicenseContext
         {
-            private Hashtable _savedLicenseKeys = new Hashtable();
+            private readonly Hashtable _savedLicenseKeys = new Hashtable();
 
             public bool Contains(string assemblyName) => _savedLicenseKeys.Contains(assemblyName);
 

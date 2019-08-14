@@ -37,7 +37,7 @@ namespace System.Security.Cryptography.X509Certificates
             _current = -1;
         }
 
-        private X509ExtensionCollection _extensions;
+        private readonly X509ExtensionCollection _extensions;
         private int _current;
     }
 }

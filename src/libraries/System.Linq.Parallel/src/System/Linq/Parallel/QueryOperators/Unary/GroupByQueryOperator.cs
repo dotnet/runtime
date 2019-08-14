@@ -678,7 +678,7 @@ namespace System.Linq.Parallel
 
     internal class GroupByGrouping<TGroupKey, TElement> : IGrouping<TGroupKey, TElement>
     {
-        private KeyValuePair<Wrapper<TGroupKey>, ListChunk<TElement>> _keyValues; // A key value pair.
+        private readonly KeyValuePair<Wrapper<TGroupKey>, ListChunk<TElement>> _keyValues; // A key value pair.
 
         //---------------------------------------------------------------------------------------
         // Constructs a new grouping out of the key value pair.
@@ -726,10 +726,10 @@ namespace System.Linq.Parallel
     {
         private const int INITIAL_CHUNK_SIZE = 2;
 
-        private TGroupKey _groupKey; // The group key for this grouping
+        private readonly TGroupKey _groupKey; // The group key for this grouping
         private ListChunk<Pair<TOrderKey, TElement>> _values; // Values in this group
         private TElement[] _sortedValues; // Sorted values (allocated in DoneAdding)
-        private IComparer<TOrderKey> _orderComparer; // Comparer for order keys
+        private readonly IComparer<TOrderKey> _orderComparer; // Comparer for order keys
 
         /// <summary>
         /// Constructs a new grouping

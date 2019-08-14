@@ -21,7 +21,7 @@ namespace System.Linq
     /// </summary>
     public class OrderedParallelQuery<TSource> : ParallelQuery<TSource>
     {
-        private QueryOperator<TSource> _sortOp;
+        private readonly QueryOperator<TSource> _sortOp;
 
         internal OrderedParallelQuery(QueryOperator<TSource> sortOp)
             : base(sortOp.SpecifiedQuerySettings)

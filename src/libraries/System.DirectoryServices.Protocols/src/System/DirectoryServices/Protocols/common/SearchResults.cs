@@ -8,8 +8,8 @@ namespace System.DirectoryServices.Protocols
 {
     public class SearchResultReference
     {
-        private Uri[] _resultReferences;
-        private DirectoryControl[] _resultControls;
+        private readonly Uri[] _resultReferences;
+        private readonly DirectoryControl[] _resultControls;
 
         internal SearchResultReference(Uri[] uris) => _resultReferences = uris;
 
@@ -70,7 +70,7 @@ namespace System.DirectoryServices.Protocols
 
     public class SearchResultEntry
     {
-        private DirectoryControl[] _resultControls = null;
+        private readonly DirectoryControl[] _resultControls = null;
 
         internal SearchResultEntry(string dn) : this(dn, new SearchResultAttributeCollection()) {}
 

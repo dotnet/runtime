@@ -74,7 +74,7 @@ namespace System.Linq.Parallel
 
         private class NullableIntSumAggregationOperatorEnumerator<TKey> : InlinedAggregationOperatorEnumerator<int?>
         {
-            private QueryOperatorEnumerator<int?, TKey> _source; // The source data.
+            private readonly QueryOperatorEnumerator<int?, TKey> _source; // The source data.
 
             //---------------------------------------------------------------------------------------
             // Instantiates a new aggregation operator.

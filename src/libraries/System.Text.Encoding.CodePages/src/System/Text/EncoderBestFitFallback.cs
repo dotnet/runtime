@@ -60,7 +60,7 @@ namespace System.Text
     {
         // Our variables
         private char _cBestFit = '\0';
-        private InternalEncoderBestFitFallback _oFallback;
+        private readonly InternalEncoderBestFitFallback _oFallback;
         private int _iCount = -1;
         private int _iSize;
 

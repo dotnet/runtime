@@ -118,9 +118,9 @@ namespace System.Linq.Parallel
 
         private class DistinctQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TInputOutput, int>
         {
-            private QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TKey> _source; // The data source.
-            private Set<TInputOutput> _hashLookup; // The hash lookup, used to produce the distinct set.
-            private CancellationToken _cancellationToken;
+            private readonly QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TKey> _source; // The data source.
+            private readonly Set<TInputOutput> _hashLookup; // The hash lookup, used to produce the distinct set.
+            private readonly CancellationToken _cancellationToken;
             private Shared<int> _outputLoopCount; // Allocated in MoveNext to avoid false sharing.
 
             //---------------------------------------------------------------------------------------
@@ -191,11 +191,11 @@ namespace System.Linq.Parallel
 
         private class OrderedDistinctQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TInputOutput, TKey>
         {
-            private QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TKey> _source; // The data source.
-            private Dictionary<Wrapper<TInputOutput>, TKey> _hashLookup; // The hash lookup, used to produce the distinct set.
-            private IComparer<TKey> _keyComparer; // Comparer to decide the key order.
+            private readonly QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TKey> _source; // The data source.
+            private readonly Dictionary<Wrapper<TInputOutput>, TKey> _hashLookup; // The hash lookup, used to produce the distinct set.
+            private readonly IComparer<TKey> _keyComparer; // Comparer to decide the key order.
             private IEnumerator<KeyValuePair<Wrapper<TInputOutput>, TKey>> _hashLookupEnumerator; // Enumerates over _hashLookup.
-            private CancellationToken _cancellationToken;
+            private readonly CancellationToken _cancellationToken;
 
             //---------------------------------------------------------------------------------------
             // Instantiates a new distinction operator.

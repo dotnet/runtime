@@ -697,7 +697,7 @@ namespace System.DirectoryServices.AccountManagement
         // When updating this table, be sure to also update LoadDirectoryEntryAttributes() to load
         // in any newly-added attributes.
 
-        private static object[,] s_propertyMappingTableRaw =
+        private static readonly object[,] s_propertyMappingTableRaw =
         {
             // PropertyName                          AD property             Converter(LDAP->PAPI)                                    Converter(PAPI->LDAP)
             {PropertyNames.PrincipalDisplayName,     "displayname",          new FromLdapConverterDelegate(StringFromLdapConverter),  new ToLdapConverterDelegate(StringToLdapConverter)},

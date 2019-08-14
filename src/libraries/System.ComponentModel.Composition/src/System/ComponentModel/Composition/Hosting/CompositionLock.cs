@@ -25,10 +25,10 @@ namespace System.ComponentModel.Composition.Hosting
         // narrow lock
         private readonly Lock _stateLock = null;
         // wide lock
-        private static object _compositionLock = new object();
+        private static readonly object _compositionLock = new object();
 
         private int _isDisposed = 0;
-        private bool _isThreadSafe = false;
+        private readonly bool _isThreadSafe = false;
 
         private static readonly EmptyLockHolder _EmptyLockHolder = new EmptyLockHolder();
 
@@ -117,7 +117,7 @@ namespace System.ComponentModel.Composition.Hosting
         // NOTE : this should NOT be changed to a struct as ImportEngine relies on it
         public sealed class CompositionLockHolder : IDisposable
         {
-            private CompositionLock _lock;
+            private readonly CompositionLock _lock;
             private int _isDisposed;
 
             public CompositionLockHolder(CompositionLock @lock)

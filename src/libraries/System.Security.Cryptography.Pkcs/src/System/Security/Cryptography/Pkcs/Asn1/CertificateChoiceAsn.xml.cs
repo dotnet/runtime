@@ -1,7 +1,8 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#pragma warning disable SA1028 // ignore whitespace warnings for generated code
 using System;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -27,20 +28,20 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
                 usedTags.Add(tag, fieldName);
             };
-
+            
             ensureUniqueTag(new Asn1Tag((UniversalTagNumber)16), "Certificate");
         }
 #endif
 
         internal void Encode(AsnWriter writer)
         {
-            bool wroteValue = false;
-
+            bool wroteValue = false; 
+            
             if (Certificate.HasValue)
             {
                 if (wroteValue)
                     throw new CryptographicException();
-
+                
                 // Validator for tag constraint for Certificate
                 {
                     if (!Asn1Tag.TryDecode(Certificate.Value.Span, out Asn1Tag validateTag, out _) ||
@@ -63,7 +64,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         internal static CertificateChoiceAsn Decode(ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
             AsnReader reader = new AsnReader(encoded, ruleSet);
-
+            
             Decode(reader, out CertificateChoiceAsn decoded);
             reader.ThrowIfNotEmpty();
             return decoded;
@@ -76,7 +77,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
             decoded = default;
             Asn1Tag tag = reader.PeekTag();
-
+            
             if (tag.HasSameClassAndValue(new Asn1Tag((UniversalTagNumber)16)))
             {
                 decoded.Certificate = reader.ReadEncodedValue();

@@ -22,7 +22,7 @@ namespace System.Text.Encodings.Web
     public abstract class TextEncoder
     {
         // Fast cache for Ascii
-        private byte[][] _asciiEscape = new byte[0x80][];
+        private readonly byte[][] _asciiEscape = new byte[0x80][];
 
         // Keep a reference to Array.Empty<byte> as this is used as a singleton for comparisons
         // and there is no guarantee that Array.Empty<byte>() will always be the same instance.
