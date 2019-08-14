@@ -352,14 +352,14 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        ///   Attempts to represent the current JSON string as bytes assuming it is base 64 encoded.
+        ///   Attempts to represent the current JSON string as bytes assuming it is Base64 encoded.
         /// </summary>
         /// <param name="value">Receives the value.</param>
         /// <remarks>
         ///  This method does not create a byte[] representation of values other than bsae 64 encoded JSON strings.
         /// </remarks>
         /// <returns>
-        ///   <see langword="true"/> if the entire token value is encoded as valid base 64 text and can be successfully decoded to bytes.
+        ///   <see langword="true"/> if the entire token value is encoded as valid Base64 text and can be successfully decoded to bytes.
         ///   <see langword="false"/> otherwise.
         /// </returns>
         /// <exception cref="InvalidOperationException">
@@ -379,14 +379,14 @@ namespace System.Text.Json
         ///   Gets the value of the element as bytes.
         /// </summary>
         /// <remarks>
-        ///   This method does not create a byte[] representation of values other than base 64 encoded JSON strings.
+        ///   This method does not create a byte[] representation of values other than Base64 encoded JSON strings.
         /// </remarks>
         /// <returns>The value decode to bytes.</returns>
         /// <exception cref="InvalidOperationException">
         ///   This value's <see cref="ValueKind"/> is not <see cref="JsonValueKind.String"/>.
         /// </exception>
         /// <exception cref="FormatException">
-        ///   The value is not encoded as base 64 text and hence cannot be decoded to bytes.
+        ///   The value is not encoded as Base64 text and hence cannot be decoded to bytes.
         /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   The parent <see cref="JsonDocument"/> has been disposed.
