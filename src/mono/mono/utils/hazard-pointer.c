@@ -401,7 +401,7 @@ mono_thread_smr_init (void)
 {
 	int i;
 
-	mono_os_mutex_init_recursive(&small_id_mutex);
+	mono_os_mutex_init (&small_id_mutex);
 	mono_counters_register ("Hazardous pointers", MONO_COUNTER_JIT | MONO_COUNTER_INT, &hazardous_pointer_count);
 
 	for (i = 0; i < HAZARD_TABLE_OVERFLOW; ++i) {
