@@ -87,7 +87,7 @@ namespace System.Drawing.Imaging
                 throw Gdip.StatusException(Gdip.InvalidParameter);
             }
 
-            int count = Marshal.ReadIntPtr(memory).ToInt32();
+            int count = Marshal.ReadInt32(memory);
 
             EncoderParameters p = new EncoderParameters(count);
             int size = Marshal.SizeOf(typeof(EncoderParameter));
