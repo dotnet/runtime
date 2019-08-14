@@ -584,7 +584,7 @@ alloc_method_table (MonoVTable *vtable, int offset)
 	return table;
 }
 
-static InterpMethod*
+static MONO_NEVER_INLINE InterpMethod* // Inlining causes additional stack use in caller.
 get_virtual_method_fast (InterpMethod *imethod, MonoVTable *vtable, int offset)
 {
 	gpointer *table;
