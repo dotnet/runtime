@@ -215,14 +215,8 @@ namespace System.Drawing
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipLoadImageFromStream(Interop.Ole32.IStream stream, out IntPtr image);
 
-            [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
-            internal static extern int GdipLoadImageFromFile(string filename, out IntPtr image);
-
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipLoadImageFromStreamICM(Interop.Ole32.IStream stream, out IntPtr image);
-
-            [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
-            internal static extern int GdipLoadImageFromFileICM(string filename, out IntPtr image);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipCloneImage(HandleRef image, out IntPtr cloneimage);
@@ -247,12 +241,6 @@ namespace System.Drawing
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipGetImageThumbnail(HandleRef image, int thumbWidth, int thumbHeight, out IntPtr thumbImage, Image.GetThumbnailImageAbort callback, IntPtr callbackdata);
-
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetEncoderParameterListSize(HandleRef image, ref Guid clsid, out int size);
-
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetEncoderParameterList(HandleRef image, ref Guid clsid, int size, IntPtr buffer);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipGetImagePalette(HandleRef image, IntPtr palette, int size);

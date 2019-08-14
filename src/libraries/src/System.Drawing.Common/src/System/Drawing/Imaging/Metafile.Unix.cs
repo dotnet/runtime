@@ -45,11 +45,6 @@ namespace System.Drawing.Imaging
 #endif
     public sealed partial class Metafile : Image
     {
-
-        // constructors
-
-        internal Metafile(IntPtr ptr) => SetNativeImage(ptr);
-
         // Usually called when cloning images that need to have
         // not only the handle saved, but also the underlying stream
         // (when using MS GDI+ and IStream we must ensure the stream stays alive for all the life of the Image)
