@@ -3712,6 +3712,40 @@ namespace System.Text.Json.Tests
 #endif
                     ));
         }
+
+        [Fact]
+        public static void VerifyMultiThreadedDispose()
+        {
+            Action<object> disposeAction = (object document) => ((JsonDocument)document).Dispose();
+
+            // Create a bunch of parallel tasks that call Dispose several times on the same object.
+            Task[] tasks = new Task[100];
+            int count = 0;
+            for (int j = 0; j < 10; j++)
+            {
+                JsonDocument document = JsonDocument.Parse("123" + j);
+                for (int i = 0; i < 10; i++)
+                {
+                    tasks[count] = new Task(disposeAction, document);
+                    tasks[count].Start();
+
+                    count++;
+                }
+            }
+
+            Task.WaitAll(tasks);
+
+            // When ArrayPool gets corrupted, the Rent method might return an already rented array, which is incorrect.
+            // So we will rent as many arrays as calls to JsonElement.Dispose and check they are unique.
+            // The minimum length that we ask for is a mirror of the size of the string passed to JsonDocument.Parse.
+            HashSet<byte[]> uniqueAddresses = new HashSet<byte[]>();
+            while (count > 0)
+            {
+                byte[] arr = ArrayPool<byte>.Shared.Rent(4);
+                Assert.True(uniqueAddresses.Add(arr));
+                count--;
+            }
+        }
     }
 
     public class ThrowOnReadStream : MemoryStream
