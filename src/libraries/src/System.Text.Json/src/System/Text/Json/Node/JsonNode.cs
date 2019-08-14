@@ -5,7 +5,7 @@
 namespace System.Text.Json
 {
     /// <summary>
-    ///   The base class that represents a single node within a JSON document.
+    ///   The base class that represents a single node within a mutable JSON document.
     /// </summary>
     public abstract class JsonNode
     {

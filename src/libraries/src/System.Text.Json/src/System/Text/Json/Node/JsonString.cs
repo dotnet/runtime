@@ -5,7 +5,7 @@
 namespace System.Text.Json
 {
     /// <summary>
-    ///   Represents a text JSON value.
+    ///   Represents a mutable text JSON value.
     /// </summary>
     public sealed class JsonString : JsonNode, IEquatable<JsonString>
     {
@@ -32,6 +32,24 @@ namespace System.Text.Json
         public JsonString(ReadOnlySpan<char> value) => Value = value.ToString();
 
         /// <summary>
+        ///  Initializes a new instance of the <see cref="JsonString"/> with a string representation of the <see cref="Guid"/> structure.
+        /// </summary>
+        /// <param name="value">The value to represent as a JSON string.</param>
+        public JsonString(Guid value) => Value = value.ToString();
+
+        /// <summary>
+        ///  Initializes a new instance of the <see cref="JsonString"/> with a string representation of the <see cref="DateTime"/> structure.
+        /// </summary>
+        /// <param name="value">The value to represent as a JSON string.</param>
+        public JsonString(DateTime value) => Value = value.ToString();
+
+        /// <summary>
+        ///  Initializes a new instance of the <see cref="JsonString"/> with a string representation of the <see cref="DateTimeOffset"/> structure.
+        /// </summary>
+        /// <param name="value">The value to represent as a JSON string.</param>
+        public JsonString(DateTimeOffset value) => Value = value.ToString();
+
+        /// <summary>
         ///   Gets or sets the text value represented by the instance.
         /// </summary>
         /// <exception cref="ArgumentNullException">
@@ -40,7 +58,7 @@ namespace System.Text.Json
         public string Value
         {
             get => _value;
-            set => _value = value ?? throw new ArgumentNullException();
+            set => _value = value ?? throw new ArgumentNullException(nameof(value));
         }
 
         /// <summary>

@@ -5,7 +5,7 @@
 namespace System.Text.Json
 {
     /// <summary>
-    ///   Represents a boolean JSON value.
+    ///   Represents a mutable boolean JSON value.
     /// </summary>
     public sealed class JsonBoolean : JsonNode, IEquatable<JsonBoolean>
     {
