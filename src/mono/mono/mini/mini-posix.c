@@ -862,9 +862,9 @@ mono_runtime_setup_stat_profiler (void)
 
 	mono_atomic_store_i32 (&sampling_thread_running, 1);
 
-	MonoError error;
-	MonoInternalThread *thread = mono_thread_create_internal (mono_get_root_domain (), (gpointer)sampling_thread_func, NULL, MONO_THREAD_CREATE_FLAGS_NONE, &error);
-	mono_error_assert_ok (&error);
+	ERROR_DECL (error);
+	MonoInternalThread *thread = mono_thread_create_internal (mono_get_root_domain (), (gpointer)sampling_thread_func, NULL, MONO_THREAD_CREATE_FLAGS_NONE, error);
+	mono_error_assert_ok (error);
 
 	sampling_thread = MONO_UINT_TO_NATIVE_THREAD_ID (thread->tid);
 }
