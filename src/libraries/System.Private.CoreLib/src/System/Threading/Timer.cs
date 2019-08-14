@@ -79,14 +79,6 @@ namespace System.Threading
                     return true; //the timer will fire earlier than this request
             }
 
-            // If Pause is underway then do not schedule the timers
-            // A later update during resume will re-schedule
-            if (_pauseTicks != 0)
-            {
-                Debug.Assert(!_isTimerScheduled);
-                return true;
-            }
-
             if (SetTimer(actualDuration))
             {
                 _isTimerScheduled = true;
@@ -122,9 +114,6 @@ namespace System.Threading
         // every time the timer fires, but also the more likely it is that when it does we won't
         // need to look at the long list because the current time will be <= _currentAbsoluteThreshold.
         private const int ShortTimersThresholdMilliseconds = 333;
-
-        // Time when Pause was called
-        private readonly int _pauseTicks = 0;
 
         // Fire any timers that have expired, and update the native timer to schedule the rest of them.
         // We're in a thread pool work item here, and if there are multiple timers to be fired, we want
