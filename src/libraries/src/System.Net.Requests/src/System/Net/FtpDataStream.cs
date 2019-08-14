@@ -15,8 +15,8 @@ namespace System.Net
     /// </summary>
     internal class FtpDataStream : Stream, ICloseEx
     {
-        private FtpWebRequest _request;
-        private NetworkStream _networkStream;
+        private readonly FtpWebRequest _request;
+        private readonly NetworkStream _networkStream;
         private bool _writeable;
         private bool _readable;
         private bool _isFullyRead = false;

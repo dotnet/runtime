@@ -59,7 +59,7 @@ namespace System.Xml.Xsl.XPath
 
     internal sealed class XPathScanner
     {
-        private string _xpathExpr;
+        private readonly string _xpathExpr;
         private int _curIndex;
         private char _curChar;
         private LexKind _kind;

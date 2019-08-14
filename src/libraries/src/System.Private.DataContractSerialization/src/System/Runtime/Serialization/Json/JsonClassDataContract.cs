@@ -12,7 +12,7 @@ namespace System.Runtime.Serialization.Json
 {
     internal class JsonClassDataContract : JsonDataContract
     {
-        private JsonClassDataContractCriticalHelper _helper;
+        private readonly JsonClassDataContractCriticalHelper _helper;
 
         public JsonClassDataContract(ClassDataContract traditionalDataContract)
             : base(new JsonClassDataContractCriticalHelper(traditionalDataContract))
@@ -113,8 +113,8 @@ namespace System.Runtime.Serialization.Json
             private JsonFormatClassReaderDelegate _jsonFormatReaderDelegate;
             private JsonFormatClassWriterDelegate _jsonFormatWriterDelegate;
             private XmlDictionaryString[] _memberNames;
-            private ClassDataContract _traditionalClassDataContract;
-            private string _typeName;
+            private readonly ClassDataContract _traditionalClassDataContract;
+            private readonly string _typeName;
 
             public JsonClassDataContractCriticalHelper(ClassDataContract traditionalDataContract)
                 : base(traditionalDataContract)

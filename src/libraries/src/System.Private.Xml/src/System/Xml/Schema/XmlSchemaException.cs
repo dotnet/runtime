@@ -16,8 +16,8 @@ namespace System.Xml.Schema
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class XmlSchemaException : SystemException
     {
-        private string _res;
-        private string[] _args;
+        private readonly string _res;
+        private readonly string[] _args;
         private string _sourceUri;
         private int _lineNumber;
         private int _linePosition;
@@ -26,7 +26,7 @@ namespace System.Xml.Schema
 
         // message != null for V1 exceptions deserialized in Whidbey
         // message == null for V2 or higher exceptions; the exception message is stored on the base class (Exception._message)
-        private string _message;
+        private readonly string _message;
 
         protected XmlSchemaException(SerializationInfo info, StreamingContext context) : base(info, context)
         {

@@ -826,7 +826,7 @@ namespace System.Runtime.Serialization
 
         #endregion
 
-        private static Type s_typeOfScriptObject;
+        private static readonly Type s_typeOfScriptObject;
 
         internal static ClassDataContract CreateScriptObjectClassDataContract()
         {

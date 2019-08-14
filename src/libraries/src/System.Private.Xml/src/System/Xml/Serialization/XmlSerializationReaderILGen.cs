@@ -22,7 +22,7 @@ namespace System.Xml.Serialization
     {
         private readonly Dictionary<string, string> _idNames = new Dictionary<string, string>();
         // Mapping name->id_XXXNN field
-        private Dictionary<string, FieldBuilder> _idNameFields = new Dictionary<string, FieldBuilder>();
+        private readonly Dictionary<string, FieldBuilder> _idNameFields = new Dictionary<string, FieldBuilder>();
         private Dictionary<string, EnumMapping> _enums;
         private int _nextIdNumber = 0;
 
@@ -40,15 +40,15 @@ namespace System.Xml.Serialization
 
         private class Member
         {
-            private string _source;
-            private string _arrayName;
-            private string _arraySource;
-            private string _choiceArrayName;
-            private string _choiceSource;
-            private string _choiceArraySource;
-            private MemberMapping _mapping;
-            private bool _isArray;
-            private bool _isList;
+            private readonly string _source;
+            private readonly string _arrayName;
+            private readonly string _arraySource;
+            private readonly string _choiceArrayName;
+            private readonly string _choiceSource;
+            private readonly string _choiceArraySource;
+            private readonly MemberMapping _mapping;
+            private readonly bool _isArray;
+            private readonly bool _isList;
             private bool _isNullable;
             private int _fixupIndex = -1;
             private string _paramsReadSource;

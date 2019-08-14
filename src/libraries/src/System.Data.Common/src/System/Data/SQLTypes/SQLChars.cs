@@ -580,7 +580,7 @@ namespace System.Data.SqlTypes
         //      Data members
         // --------------------------------------------------------------
 
-        private SqlChars _sqlchars;        // the SqlChars object
+        private readonly SqlChars _sqlchars;        // the SqlChars object
         private long _lPosition;
 
         // --------------------------------------------------------------

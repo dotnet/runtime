@@ -11,10 +11,10 @@ namespace System.Configuration
     /// </summary>
     public class SettingChangingEventArgs : CancelEventArgs
     {
-        private string _settingClass;
-        private string _settingName;
-        private string _settingKey;
-        private object _newValue;
+        private readonly string _settingClass;
+        private readonly string _settingName;
+        private readonly string _settingKey;
+        private readonly object _newValue;
 
         public SettingChangingEventArgs(string settingName, string settingClass, string settingKey, object newValue, bool cancel) : base(cancel)
         {

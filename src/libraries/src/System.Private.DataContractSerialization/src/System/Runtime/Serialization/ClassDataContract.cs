@@ -697,7 +697,7 @@ namespace System.Runtime.Serialization
             /// </SecurityNote>
             private bool _hasDataContract;
             private bool _hasExtensionData;
-            private bool _isScriptObject;
+            private readonly bool _isScriptObject;
 
             private XmlDictionaryString[] _childElementNamespaces;
             private XmlFormatClassReaderDelegate _xmlFormatReaderDelegate;

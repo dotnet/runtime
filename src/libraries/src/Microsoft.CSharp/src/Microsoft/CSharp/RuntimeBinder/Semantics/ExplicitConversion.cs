@@ -16,7 +16,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private sealed class ExplicitConversion
         {
             private readonly ExpressionBinder _binder;
-            private Expr _exprSrc;
+            private readonly Expr _exprSrc;
             private readonly CType _typeSrc;
             private readonly CType _typeDest;
 

@@ -43,7 +43,7 @@ namespace System.Xml.XPath
         /// </summary>
         private class Enumerator : IEnumerator
         {
-            private XPathNodeIterator _original;     // Keep original XPathNodeIterator in case Reset() is called
+            private readonly XPathNodeIterator _original;     // Keep original XPathNodeIterator in case Reset() is called
             private XPathNodeIterator _current;
             private bool _iterationStarted;
 

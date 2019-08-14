@@ -19,7 +19,7 @@ namespace System.Data.SqlClient
     {
         #region Private fields
 
-        private TdsRecordBufferSetter _target;
+        private readonly TdsRecordBufferSetter _target;
 
         #endregion
 

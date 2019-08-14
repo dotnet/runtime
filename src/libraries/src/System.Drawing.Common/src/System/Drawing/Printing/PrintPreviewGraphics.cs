@@ -13,8 +13,8 @@ namespace System.Drawing
     /// </summary>
     internal class PrintPreviewGraphics
     {
-        private PrintPageEventArgs _printPageEventArgs;
-        private PrintDocument _printDocument;
+        private readonly PrintPageEventArgs _printPageEventArgs;
+        private readonly PrintDocument _printDocument;
 
         public PrintPreviewGraphics(PrintDocument document, PrintPageEventArgs e)
         {

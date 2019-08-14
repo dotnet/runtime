@@ -40,7 +40,7 @@ namespace System.Reflection.Metadata.Ecma335
         private readonly int _userStringHeapStartOffset;
 
         // #String heap
-        private Dictionary<string, StringHandle> _strings = new Dictionary<string, StringHandle>(256);
+        private readonly Dictionary<string, StringHandle> _strings = new Dictionary<string, StringHandle>(256);
         private readonly int _stringHeapStartOffset;
         private int _stringHeapCapacity = 4 * 1024;
 

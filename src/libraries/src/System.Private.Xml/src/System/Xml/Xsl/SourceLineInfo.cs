@@ -9,7 +9,7 @@ namespace System.Xml.Xsl
     [DebuggerDisplay("({Line},{Pos})")]
     internal struct Location
     {
-        private ulong _value;
+        private readonly ulong _value;
 
         public int Line { get { return (int)(_value >> 32); } }
         public int Pos { get { return unchecked((int)(_value)); } }

@@ -12,19 +12,19 @@ namespace System.Net
 {
     internal class StreamFramer
     {
-        private Stream _transport;
+        private readonly Stream _transport;
 
         private bool _eof;
 
-        private FrameHeader _writeHeader = new FrameHeader();
-        private FrameHeader _curReadHeader = new FrameHeader();
-        private FrameHeader _readVerifier = new FrameHeader(
+        private readonly FrameHeader _writeHeader = new FrameHeader();
+        private readonly FrameHeader _curReadHeader = new FrameHeader();
+        private readonly FrameHeader _readVerifier = new FrameHeader(
                                                     FrameHeader.IgnoreValue,
                                                     FrameHeader.IgnoreValue,
                                                     FrameHeader.IgnoreValue);
 
-        private byte[] _readHeaderBuffer;
-        private byte[] _writeHeaderBuffer;
+        private readonly byte[] _readHeaderBuffer;
+        private readonly byte[] _writeHeaderBuffer;
 
         private readonly AsyncCallback _readFrameCallback;
         private readonly AsyncCallback _beginWriteCallback;

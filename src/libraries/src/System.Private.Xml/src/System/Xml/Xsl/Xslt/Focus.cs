@@ -33,7 +33,7 @@ namespace System.Xml.Xsl.Xslt
 
     internal struct SingletonFocus : IFocus
     {
-        private XPathQilFactory _f;
+        private readonly XPathQilFactory _f;
         private SingletonFocusType _focusType;
         private QilIterator _current;
 
@@ -154,7 +154,7 @@ namespace System.Xml.Xsl.Xslt
 
     internal struct LoopFocus : IFocus
     {
-        private XPathQilFactory _f;
+        private readonly XPathQilFactory _f;
         private QilIterator _current, _cached, _last;
 
         public LoopFocus(XPathQilFactory f)

@@ -14,8 +14,8 @@ namespace System.Net.Security
     //
     public partial class NegotiateStream : AuthenticatedStream
     {
-        private static AsyncCallback s_writeCallback = new AsyncCallback(WriteCallback);
-        private static AsyncProtocolCallback s_readCallback = new AsyncProtocolCallback(ReadCallback);
+        private static readonly AsyncCallback s_writeCallback = new AsyncCallback(WriteCallback);
+        private static readonly AsyncProtocolCallback s_readCallback = new AsyncProtocolCallback(ReadCallback);
 
         private int _NestedWrite;
         private int _NestedRead;

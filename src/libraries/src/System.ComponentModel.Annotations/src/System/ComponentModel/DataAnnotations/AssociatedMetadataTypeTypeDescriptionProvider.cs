@@ -10,7 +10,7 @@ namespace System.ComponentModel.DataAnnotations
     /// </summary>
     public class AssociatedMetadataTypeTypeDescriptionProvider : TypeDescriptionProvider
     {
-        private Type _associatedMetadataType;
+        private readonly Type _associatedMetadataType;
 
         /// <summary>
         /// Initializes a new instance of the System.ComponentModel.DataAnnotations.AssociatedMetadataTypeTypeDescriptionProvider

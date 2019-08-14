@@ -16,8 +16,8 @@ namespace System.Net
     {
         private const WebExceptionStatus DefaultStatus = WebExceptionStatus.UnknownError;
 
-        private WebExceptionStatus _status = DefaultStatus;
-        private WebResponse _response = null;
+        private readonly WebExceptionStatus _status = DefaultStatus;
+        private readonly WebResponse _response = null;
 
         public WebException()
         {

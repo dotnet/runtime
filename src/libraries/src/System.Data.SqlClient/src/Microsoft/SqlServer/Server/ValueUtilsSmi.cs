@@ -1164,7 +1164,7 @@ namespace Microsoft.SqlServer.Server
         }
 
         // null return values for SqlClient 1.1-compatible GetSqlValue()
-        private static object[] s_typeSpecificNullForSqlValue = {
+        private static readonly object[] s_typeSpecificNullForSqlValue = {
             SqlInt64.Null,      // SqlDbType.BigInt
             SqlBinary.Null,     // SqlDbType.Binary
             SqlBoolean.Null,    // SqlDbType.Bit
@@ -2805,7 +2805,7 @@ namespace Microsoft.SqlServer.Server
         private const bool X = true;
         private const bool _ = false;
 
-        private static bool[,] s_canAccessGetterDirectly = {
+        private static readonly bool[,] s_canAccessGetterDirectly = {
             // SqlDbTypes as columns (abbreviated, but in order)
             //  ExtendedClrTypeCodes as rows
 
@@ -2903,7 +2903,7 @@ namespace Microsoft.SqlServer.Server
                                                                                                                                                                             //     BI, Bin, Bit, Ch, DT, Dec, Fl, Im, Int, Mny, NCh, NTx, NVC, Rl, UI, SDT, SI, SMn, Txt, TS, TI, VBn, VCh, Var, 24, Xml, 26, 27, 28, Udt, St, Dat, Tm, DT2, DTO
         };
 
-        private static bool[,] s_canAccessSetterDirectly = {
+        private static readonly bool[,] s_canAccessSetterDirectly = {
             // Setters as columns (labels are abbreviated from ExtendedClrTypeCode names)
             // SqlDbTypes as rows
             //     BI, Bin, Bit, Ch, DT, Dec, Fl, Im, Int, Mny, NCh, NTx, NVC, Rl, UI, SDT, SI, SMn, Txt, TS, TI, VBn, VCh, Var, 24, Xml, 26, 27, 28, Udt, St, Dat, Tm, DT2, DTO

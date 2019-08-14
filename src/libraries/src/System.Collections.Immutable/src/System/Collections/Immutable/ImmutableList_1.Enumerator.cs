@@ -63,7 +63,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// A value indicating whether this enumerator walks in reverse order.
             /// </summary>
-            private bool _reversed;
+            private readonly bool _reversed;
 
             /// <summary>
             /// The set being enumerated.

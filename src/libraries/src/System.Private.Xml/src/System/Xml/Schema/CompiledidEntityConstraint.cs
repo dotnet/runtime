@@ -13,9 +13,9 @@ namespace System.Xml.Schema
     internal class CompiledIdentityConstraint
     {
         internal XmlQualifiedName name = XmlQualifiedName.Empty;
-        private ConstraintRole _role;
-        private Asttree _selector;
-        private Asttree[] _fields;
+        private readonly ConstraintRole _role;
+        private readonly Asttree _selector;
+        private readonly Asttree[] _fields;
         internal XmlQualifiedName refer = XmlQualifiedName.Empty;
 
         public enum ConstraintRole

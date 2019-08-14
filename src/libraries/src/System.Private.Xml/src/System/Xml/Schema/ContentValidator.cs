@@ -18,8 +18,8 @@ namespace System.Xml.Schema
     /// </summary>
     internal class UpaException : Exception
     {
-        private object _particle1;
-        private object _particle2;
+        private readonly object _particle1;
+        private readonly object _particle2;
         public UpaException(object particle1, object particle2)
         {
             _particle1 = particle1;
@@ -39,9 +39,9 @@ namespace System.Xml.Schema
     internal class SymbolsDictionary
     {
         private int _last = 0;
-        private Hashtable _names;
+        private readonly Hashtable _names;
         private Hashtable _wildcards = null;
-        private ArrayList _particles;
+        private readonly ArrayList _particles;
         private object _particleLast = null;
         private bool _isUpaEnforced = true;
 
@@ -245,7 +245,7 @@ namespace System.Xml.Schema
 
     internal class Positions
     {
-        private ArrayList _positions = new ArrayList();
+        private readonly ArrayList _positions = new ArrayList();
 
         public int Add(int symbol, object particle)
         {
@@ -903,7 +903,7 @@ namespace System.Xml.Schema
     internal sealed class LeafRangeNode : LeafNode
     {
         private decimal _min;
-        private decimal _max;
+        private readonly decimal _max;
         private BitSet _nextIteration;
 
         public LeafRangeNode(decimal min, decimal max) : this(-1, min, max) { }
@@ -964,9 +964,9 @@ namespace System.Xml.Schema
     /// </summary>
     internal class ContentValidator
     {
-        private XmlSchemaContentType _contentType;
+        private readonly XmlSchemaContentType _contentType;
         private bool _isOpen;  //For XDR Content Models or ANY
-        private bool _isEmptiable;
+        private readonly bool _isEmptiable;
 
         public static readonly ContentValidator Empty = new ContentValidator(XmlSchemaContentType.Empty);
         public static readonly ContentValidator TextOnly = new ContentValidator(XmlSchemaContentType.TextOnly, false, false);
@@ -1084,7 +1084,7 @@ namespace System.Xml.Schema
         private SyntaxTreeNode _contentNode;         // content model points to syntax tree
         private bool _isPartial;                     // whether the closure applies to partial or the whole node that is on top of the stack
         private int _minMaxNodesCount;
-        private bool _enableUpaCheck;
+        private readonly bool _enableUpaCheck;
 
         public ParticleContentValidator(XmlSchemaContentType contentType) : this(contentType, true)
         {
@@ -1630,8 +1630,8 @@ namespace System.Xml.Schema
     /// </summary>
     internal sealed class DfaContentValidator : ContentValidator
     {
-        private int[][] _transitionTable;
-        private SymbolsDictionary _symbols;
+        private readonly int[][] _transitionTable;
+        private readonly SymbolsDictionary _symbols;
 
         /// <summary>
         /// Algorithm 3.5 Construction of a DFA from a regular expression
@@ -1750,11 +1750,11 @@ namespace System.Xml.Schema
     /// </summary>
     internal sealed class NfaContentValidator : ContentValidator
     {
-        private BitSet _firstpos;
-        private BitSet[] _followpos;
-        private SymbolsDictionary _symbols;
-        private Positions _positions;
-        private int _endMarkerPos;
+        private readonly BitSet _firstpos;
+        private readonly BitSet[] _followpos;
+        private readonly SymbolsDictionary _symbols;
+        private readonly Positions _positions;
+        private readonly int _endMarkerPos;
 
         internal NfaContentValidator(
             BitSet firstpos, BitSet[] followpos, SymbolsDictionary symbols, Positions positions, int endMarkerPos,
@@ -1897,13 +1897,13 @@ namespace System.Xml.Schema
 
     internal sealed class RangeContentValidator : ContentValidator
     {
-        private BitSet _firstpos;
-        private BitSet[] _followpos;
-        private BitSet _positionsWithRangeTerminals;
-        private SymbolsDictionary _symbols;
-        private Positions _positions;
-        private int _minMaxNodesCount;
-        private int _endMarkerPos;
+        private readonly BitSet _firstpos;
+        private readonly BitSet[] _followpos;
+        private readonly BitSet _positionsWithRangeTerminals;
+        private readonly SymbolsDictionary _symbols;
+        private readonly Positions _positions;
+        private readonly int _minMaxNodesCount;
+        private readonly int _endMarkerPos;
 
         internal RangeContentValidator(
             BitSet firstpos, BitSet[] followpos, SymbolsDictionary symbols, Positions positions, int endMarkerPos, XmlSchemaContentType contentType, bool isEmptiable, BitSet positionsWithRangeTerminals, int minmaxNodesCount) : base(contentType, false, isEmptiable)
@@ -2218,9 +2218,9 @@ namespace System.Xml.Schema
 
     internal sealed class AllElementsContentValidator : ContentValidator
     {
-        private Hashtable _elements;     // unique terminal names to positions in Bitset mapping
-        private object[] _particles;
-        private BitSet _isRequired;      // required flags
+        private readonly Hashtable _elements;     // unique terminal names to positions in Bitset mapping
+        private readonly object[] _particles;
+        private readonly BitSet _isRequired;      // required flags
         private int _countRequired = 0;
 
         public AllElementsContentValidator(XmlSchemaContentType contentType, int size, bool isEmptiable) : base(contentType, false, isEmptiable)

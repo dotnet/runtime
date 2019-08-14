@@ -269,7 +269,7 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        private List<SidListEntry> _entries = new List<SidListEntry>();
+        private readonly List<SidListEntry> _entries = new List<SidListEntry>();
 
         public SidListEntry this[int index]
         {

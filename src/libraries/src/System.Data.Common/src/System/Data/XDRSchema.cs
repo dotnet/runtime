@@ -226,7 +226,7 @@ namespace System.Data
         };
 
         // XDR spec: http://www.ltg.ed.ac.uk/~ht/XMLData-Reduced.htm
-        private static NameType[] s_mapNameTypeXdr = {
+        private static readonly NameType[] s_mapNameTypeXdr = {
             new NameType("bin.base64"          , typeof(byte[])  ), /* XDR */
             new NameType("bin.hex"             , typeof(byte[])  ), /* XDR */
             new NameType("boolean"             , typeof(bool)    ), /* XDR */
@@ -289,7 +289,7 @@ namespace System.Data
             return s_mapNameTypeXdr[index];
         }
 
-        private static NameType s_enumerationNameType = FindNameType("enumeration");
+        private static readonly NameType s_enumerationNameType = FindNameType("enumeration");
 
         private Type ParseDataType(string dt, string dtValues)
         {

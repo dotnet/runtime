@@ -669,8 +669,8 @@ namespace System.Net.Mail
 
     internal struct LineInfo
     {
-        private string _line;
-        private SmtpStatusCode _statusCode;
+        private readonly string _line;
+        private readonly SmtpStatusCode _statusCode;
 
         internal LineInfo(SmtpStatusCode statusCode, string line)
         {

@@ -74,11 +74,11 @@ namespace Microsoft.SqlServer.Server
         private static readonly IList<SmiExtendedMetaData> s_emptyFieldList = new List<SmiExtendedMetaData>().AsReadOnly();
 
         // Precision to max length lookup table
-        private static byte[] s_maxLenFromPrecision = new byte[] {5,5,5,5,5,5,5,5,5,9,9,9,9,9,
+        private static readonly byte[] s_maxLenFromPrecision = new byte[] {5,5,5,5,5,5,5,5,5,9,9,9,9,9,
             9,9,9,9,9,13,13,13,13,13,13,13,13,13,17,17,17,17,17,17,17,17,17,17};
 
         // Scale offset to max length lookup table
-        private static byte[] s_maxVarTimeLenOffsetFromScale = new byte[] { 2, 2, 2, 1, 1, 0, 0, 0 };
+        private static readonly byte[] s_maxVarTimeLenOffsetFromScale = new byte[] { 2, 2, 2, 1, 1, 0, 0, 0 };
 
         // Defaults
         internal static readonly SmiMetaData DefaultBigInt = new SmiMetaData(SqlDbType.BigInt, 8, 19, 0, SqlCompareOptions.None);     // SqlDbType.BigInt
@@ -578,7 +578,7 @@ namespace Microsoft.SqlServer.Server
         // static array of default-valued metadata ordered by corresponding SqlDbType.
         // NOTE: INDEXED BY SqlDbType ENUM!  MUST UPDATE THIS ARRAY WHEN UPDATING SqlDbType!
         //   ONLY ACCESS THIS GLOBAL FROM GetDefaultForType!
-        private static SmiMetaData[] s_defaultValues =
+        private static readonly SmiMetaData[] s_defaultValues =
             {
                 DefaultBigInt,                 // SqlDbType.BigInt
                 DefaultBinary,                 // SqlDbType.Binary
@@ -620,7 +620,7 @@ namespace Microsoft.SqlServer.Server
         // static array of type names ordered by corresponding SqlDbType.
         // NOTE: INDEXED BY SqlDbType ENUM!  MUST UPDATE THIS ARRAY WHEN UPDATING SqlDbType!
         //   ONLY ACCESS THIS GLOBAL FROM get_TypeName!
-        private static string[] s_typeNameByDatabaseType =
+        private static readonly string[] s_typeNameByDatabaseType =
             {
                 "bigint",               // SqlDbType.BigInt
                 "binary",               // SqlDbType.Binary
@@ -682,12 +682,12 @@ namespace Microsoft.SqlServer.Server
     //
     internal class SmiExtendedMetaData : SmiMetaData
     {
-        private string _name;           // context-dependent identifier, i.e. parameter name for parameters, column name for columns, etc.
+        private readonly string _name;           // context-dependent identifier, i.e. parameter name for parameters, column name for columns, etc.
 
         // three-part name for typed xml schema and for udt names
-        private string _typeSpecificNamePart1;
-        private string _typeSpecificNamePart2;
-        private string _typeSpecificNamePart3;
+        private readonly string _typeSpecificNamePart1;
+        private readonly string _typeSpecificNamePart2;
+        private readonly string _typeSpecificNamePart3;
 
         internal SmiExtendedMetaData(
             SqlDbType dbType,
@@ -807,7 +807,7 @@ namespace Microsoft.SqlServer.Server
     //  Sealed because we don't need to derive from it yet.
     internal sealed class SmiParameterMetaData : SmiExtendedMetaData
     {
-        private ParameterDirection _direction;
+        private readonly ParameterDirection _direction;
 
         // SMI V200 ctor.
         internal SmiParameterMetaData(
@@ -903,15 +903,15 @@ namespace Microsoft.SqlServer.Server
     internal class SmiStorageMetaData : SmiExtendedMetaData
     {
         // AllowsDBNull is the only value required to be specified.
-        private bool _allowsDBNull;  // could the column return nulls? equivalent to TDS's IsNullable bit
-        private string _serverName;  // underlying column's server
-        private string _catalogName; // underlying column's database
-        private string _schemaName;  // underlying column's schema
-        private string _tableName;   // underlying column's table
-        private string _columnName;  // underlying column's name
+        private readonly bool _allowsDBNull;  // could the column return nulls? equivalent to TDS's IsNullable bit
+        private readonly string _serverName;  // underlying column's server
+        private readonly string _catalogName; // underlying column's database
+        private readonly string _schemaName;  // underlying column's schema
+        private readonly string _tableName;   // underlying column's table
+        private readonly string _columnName;  // underlying column's name
         private SqlBoolean _isKey;   // Is this one of a set of key columns that uniquely identify an underlying table?
-        private bool _isIdentity;    // Is this from an identity column
-        private bool _isColumnSet;   // Is this column the XML representation of a columnset?
+        private readonly bool _isIdentity;    // Is this from an identity column
+        private readonly bool _isColumnSet;   // Is this column the XML representation of a columnset?
 
         internal SmiStorageMetaData(
             SqlDbType dbType,
@@ -1091,7 +1091,7 @@ namespace Microsoft.SqlServer.Server
     //  Maps to full COLMETADATA + COLINFO + TABNAME tokens on TDS.
     internal class SmiQueryMetaData : SmiStorageMetaData
     {
-        private bool _isReadOnly;
+        private readonly bool _isReadOnly;
         private SqlBoolean _isExpression;
         private SqlBoolean _isAliased;
         private SqlBoolean _isHidden;

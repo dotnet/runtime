@@ -23,7 +23,7 @@ namespace System.Xml.Serialization
 
     internal class Compiler
     {
-        private StringWriter _writer = new StringWriter(CultureInfo.InvariantCulture);
+        private readonly StringWriter _writer = new StringWriter(CultureInfo.InvariantCulture);
 
         // SxS: This method does not take any resource name and does not expose any resources to the caller.
         // It's OK to suppress the SxS warning.

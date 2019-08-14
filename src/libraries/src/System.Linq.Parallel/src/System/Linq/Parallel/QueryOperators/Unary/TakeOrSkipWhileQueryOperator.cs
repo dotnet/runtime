@@ -42,8 +42,8 @@ namespace System.Linq.Parallel
     {
         // Predicate function used to decide when to stop yielding elements. One pair is used for
         // index-based evaluation (i.e. it is passed the index as well as the element's value).
-        private Func<TResult, bool> _predicate;
-        private Func<TResult, int, bool> _indexedPredicate;
+        private readonly Func<TResult, bool> _predicate;
+        private readonly Func<TResult, int, bool> _indexedPredicate;
 
         private readonly bool _take; // Whether to take (true) or skip (false).
         private bool _prematureMerge = false; // Whether to prematurely merge the input of this operator.

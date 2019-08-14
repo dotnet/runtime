@@ -10,7 +10,7 @@ namespace System.Xml
 
     public partial class XmlSecureResolver : XmlResolver
     {
-        private XmlResolver _resolver;
+        private readonly XmlResolver _resolver;
 
         public XmlSecureResolver(XmlResolver resolver, string securityUrl)
         {

@@ -37,9 +37,9 @@ namespace System.Text.RegularExpressions
         private int _autocap;
         private int _capcount;
         private int _captop;
-        private int _capsize;
+        private readonly int _capsize;
 
-        private Hashtable _caps;
+        private readonly Hashtable _caps;
         private Hashtable _capnames;
 
         private int[] _capnumlist;

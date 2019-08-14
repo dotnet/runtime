@@ -10,8 +10,8 @@ namespace System.Xml.Xsl.Runtime
     /// </summary>
     internal class WhitespaceRuleReader : XmlWrappingReader
     {
-        private WhitespaceRuleLookup _wsRules;
-        private BitStack _stkStrip;
+        private readonly WhitespaceRuleLookup _wsRules;
+        private readonly BitStack _stkStrip;
         private bool _shouldStrip, _preserveAdjacent;
         private string _val;
 

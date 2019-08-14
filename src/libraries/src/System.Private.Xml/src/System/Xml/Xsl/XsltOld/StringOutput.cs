@@ -10,7 +10,7 @@ namespace System.Xml.Xsl.XsltOld
 
     internal class StringOutput : SequentialOutput
     {
-        private StringBuilder _builder;
+        private readonly StringBuilder _builder;
         private string _result;
 
         internal string Result

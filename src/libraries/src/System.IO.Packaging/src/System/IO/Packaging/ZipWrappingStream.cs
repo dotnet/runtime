@@ -13,12 +13,12 @@ namespace System.IO.Packaging
 {
     internal class ZipWrappingStream : Stream
     {
-        private Stream _baseStream;
-        private ZipArchiveEntry _zipArchiveEntry;
-        private FileMode _packageFileMode;
-        private FileAccess _packageFileAccess;
-        private bool _canRead;
-        private bool _canWrite;
+        private readonly Stream _baseStream;
+        private readonly ZipArchiveEntry _zipArchiveEntry;
+        private readonly FileMode _packageFileMode;
+        private readonly FileAccess _packageFileAccess;
+        private readonly bool _canRead;
+        private readonly bool _canWrite;
 
         public ZipWrappingStream(ZipArchiveEntry zipArchiveEntry, Stream stream, FileMode packageFileMode, FileAccess packageFileAccess, bool canRead, bool canWrite)
         {

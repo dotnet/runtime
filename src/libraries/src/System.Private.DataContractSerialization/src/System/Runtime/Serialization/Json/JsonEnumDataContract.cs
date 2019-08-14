@@ -6,7 +6,7 @@ namespace System.Runtime.Serialization.Json
 {
     internal class JsonEnumDataContract : JsonDataContract
     {
-        private JsonEnumDataContractCriticalHelper _helper;
+        private readonly JsonEnumDataContractCriticalHelper _helper;
 
         public JsonEnumDataContract(EnumDataContract traditionalDataContract)
             : base(new JsonEnumDataContractCriticalHelper(traditionalDataContract))

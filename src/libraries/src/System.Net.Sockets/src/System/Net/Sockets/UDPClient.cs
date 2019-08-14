@@ -15,7 +15,7 @@ namespace System.Net.Sockets
 
         private Socket _clientSocket;
         private bool _active;
-        private byte[] _buffer = new byte[MaxUDPSize];
+        private readonly byte[] _buffer = new byte[MaxUDPSize];
         private AddressFamily _family = AddressFamily.InterNetwork;
 
         // Initializes a new instance of the System.Net.Sockets.UdpClientclass.

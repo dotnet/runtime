@@ -9,7 +9,7 @@ namespace System.Xml.Schema
 
     internal class XmlSchemaSubstitutionGroup : XmlSchemaObject
     {
-        private ArrayList _membersList = new ArrayList();
+        private readonly ArrayList _membersList = new ArrayList();
         private XmlQualifiedName _examplar = XmlQualifiedName.Empty;
 
         [XmlIgnore]
@@ -28,7 +28,7 @@ namespace System.Xml.Schema
 
     internal class XmlSchemaSubstitutionGroupV1Compat : XmlSchemaSubstitutionGroup
     {
-        private XmlSchemaChoice _choice = new XmlSchemaChoice();
+        private readonly XmlSchemaChoice _choice = new XmlSchemaChoice();
 
         [XmlIgnore]
         internal XmlSchemaChoice Choice

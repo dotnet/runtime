@@ -40,7 +40,7 @@ namespace System.IO.Compression
         private HuffmanTree _distanceTree;
 
         private InflaterState _state;
-        private bool _hasFormatReader;
+        private readonly bool _hasFormatReader;
         private int _bfinal;
         private BlockType _blockType;
 
@@ -67,7 +67,7 @@ namespace System.IO.Compression
         private readonly long _uncompressedSize;
         private long _currentInflatedCount;
 
-        private IFileFormatReader _formatReader; // class to decode header and footer (e.g. gzip)
+        private readonly IFileFormatReader _formatReader; // class to decode header and footer (e.g. gzip)
 
         internal InflaterManaged(IFileFormatReader reader, bool deflate64, long uncompressedSize)
         {

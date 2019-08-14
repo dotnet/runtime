@@ -486,8 +486,8 @@ namespace System.Collections.Specialized
         internal class NameObjectKeysEnumerator : IEnumerator
         {
             private int _pos;
-            private NameObjectCollectionBase _coll;
-            private int _version;
+            private readonly NameObjectCollectionBase _coll;
+            private readonly int _version;
 
             internal NameObjectKeysEnumerator(NameObjectCollectionBase coll)
             {
@@ -545,7 +545,7 @@ namespace System.Collections.Specialized
         /// </devdoc>
         public class KeysCollection : ICollection
         {
-            private NameObjectCollectionBase _coll;
+            private readonly NameObjectCollectionBase _coll;
 
             internal KeysCollection(NameObjectCollectionBase coll)
             {

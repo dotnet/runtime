@@ -13,7 +13,7 @@ namespace System.Xml
         private XmlCanonicalWriter _signingWriter;
         private byte[] _chars;
         private byte[] _base64Chars;
-        private bool _text;
+        private readonly bool _text;
 
         public XmlSigningNodeWriter(bool text)
         {

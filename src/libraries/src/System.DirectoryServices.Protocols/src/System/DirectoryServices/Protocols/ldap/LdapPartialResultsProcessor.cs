@@ -11,8 +11,8 @@ namespace System.DirectoryServices.Protocols
 {
     internal class LdapPartialResultsProcessor
     {
-        private ArrayList _resultList = new ArrayList();
-        private ManualResetEvent _workThreadWaitHandle = null;
+        private readonly ArrayList _resultList = new ArrayList();
+        private readonly ManualResetEvent _workThreadWaitHandle = null;
         private bool _workToDo = false;
         private int _currentIndex = 0;
 
@@ -332,8 +332,8 @@ namespace System.DirectoryServices.Protocols
 
     internal class PartialResultsRetriever
     {
-        private ManualResetEvent _workThreadWaitHandle = null;
-        private LdapPartialResultsProcessor _processor = null;
+        private readonly ManualResetEvent _workThreadWaitHandle = null;
+        private readonly LdapPartialResultsProcessor _processor = null;
 
         internal PartialResultsRetriever(ManualResetEvent eventHandle, LdapPartialResultsProcessor processor)
         {

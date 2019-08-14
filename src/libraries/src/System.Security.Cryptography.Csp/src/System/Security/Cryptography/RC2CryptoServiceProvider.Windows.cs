@@ -14,7 +14,7 @@ namespace System.Security.Cryptography
         private bool _use40bitSalt = false;
         private const int BitsPerByte = 8;
 
-        private static KeySizes[] s_legalKeySizes =
+        private static readonly KeySizes[] s_legalKeySizes =
         {
             new KeySizes(40, 128, 8)  // csp implementation only goes up to 128
         };

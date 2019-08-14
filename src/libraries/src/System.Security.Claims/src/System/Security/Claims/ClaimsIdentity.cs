@@ -33,7 +33,7 @@ namespace System.Security.Claims
         private object _bootstrapContext;
         private List<List<Claim>> _externalClaims;
         private string _label;
-        private List<Claim> _instanceClaims = new List<Claim>();
+        private readonly List<Claim> _instanceClaims = new List<Claim>();
         private string _nameClaimType = DefaultNameClaimType;
         private string _roleClaimType = DefaultRoleClaimType;
 

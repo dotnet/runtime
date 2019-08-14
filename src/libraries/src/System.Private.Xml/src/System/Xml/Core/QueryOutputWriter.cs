@@ -22,13 +22,16 @@ namespace System.Xml
     /// </summary>
     internal class QueryOutputWriter : XmlRawWriter
     {
-        private XmlRawWriter _wrapped;
+        private readonly XmlRawWriter _wrapped;
         private bool _inCDataSection;
-        private Dictionary<XmlQualifiedName, int> _lookupCDataElems;
-        private BitStack _bitsCData;
-        private XmlQualifiedName _qnameCData;
-        private bool _outputDocType, _checkWellFormedDoc, _hasDocElem, _inAttr;
-        private string _systemId, _publicId;
+        private readonly Dictionary<XmlQualifiedName, int> _lookupCDataElems;
+        private readonly BitStack _bitsCData;
+        private readonly XmlQualifiedName _qnameCData;
+        private bool _outputDocType;
+        private readonly bool _checkWellFormedDoc;
+        private bool _hasDocElem;
+        private bool _inAttr;
+        private readonly string _systemId, _publicId;
         private int _depth;
 
         public QueryOutputWriter(XmlRawWriter writer, XmlWriterSettings settings)

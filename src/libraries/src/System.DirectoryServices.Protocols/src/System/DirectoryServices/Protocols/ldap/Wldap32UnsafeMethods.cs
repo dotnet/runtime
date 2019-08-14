@@ -10,8 +10,8 @@ namespace System.DirectoryServices.Protocols
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     internal class Luid
     {
-        private int _lowPart;
-        private int _highPart;
+        private readonly int _lowPart;
+        private readonly int _highPart;
 
         public int LowPart => _lowPart;
         public int HighPart => _highPart;

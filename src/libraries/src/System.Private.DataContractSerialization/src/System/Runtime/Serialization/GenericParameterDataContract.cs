@@ -9,7 +9,7 @@ namespace System.Runtime.Serialization
 {
     internal sealed class GenericParameterDataContract : DataContract
     {
-        private GenericParameterDataContractCriticalHelper _helper;
+        private readonly GenericParameterDataContractCriticalHelper _helper;
 
         internal GenericParameterDataContract(Type type)
             : base(new GenericParameterDataContractCriticalHelper(type))
@@ -33,7 +33,7 @@ namespace System.Runtime.Serialization
 
         private class GenericParameterDataContractCriticalHelper : DataContract.DataContractCriticalHelper
         {
-            private int _parameterPosition;
+            private readonly int _parameterPosition;
 
             internal GenericParameterDataContractCriticalHelper(Type type)
                 : base(type)

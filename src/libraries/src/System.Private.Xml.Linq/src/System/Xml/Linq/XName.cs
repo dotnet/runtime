@@ -13,9 +13,9 @@ namespace System.Xml.Linq
     [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Serialization", "CA2229", Justification = "Serialized with custom proxy")]
     public sealed class XName : IEquatable<XName>, ISerializable
     {
-        private XNamespace _ns;
-        private string _localName;
-        private int _hashCode;
+        private readonly XNamespace _ns;
+        private readonly string _localName;
+        private readonly int _hashCode;
 
         /// <summary>
         /// Constructor, internal so that external users must go through the Get() method to create an XName.

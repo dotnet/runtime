@@ -8,7 +8,7 @@ namespace System.DirectoryServices.ActiveDirectory
 {
     public class ReplicationCursor
     {
-        private string _serverDN = null;
+        private readonly string _serverDN = null;
         private readonly DateTime _syncTime;
         private readonly bool _advanced = false;
         private string _sourceServer = null;

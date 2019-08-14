@@ -17,8 +17,8 @@ namespace System.Diagnostics.Eventing.Reader
         private bool _isImported;
         private string _displayName;
         private bool _dataReady;
-        private ProviderMetadata _pmReference;
-        private object _syncObject;
+        private readonly ProviderMetadata _pmReference;
+        private readonly object _syncObject;
 
         internal EventLogLink(uint channelId, ProviderMetadata pmReference)
         {

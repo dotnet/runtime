@@ -60,13 +60,13 @@ namespace System.Security.Cryptography.Xml
         // private members
         //
 
-        private XmlDocument _document;
+        private readonly XmlDocument _document;
         private Evidence _evidence;
         private XmlResolver _xmlResolver;
         // hash table defining the key name mapping
         private const int _capacity = 4; // 4 is a reasonable capacity for
                                           // the key name mapping hash table
-        private Hashtable _keyNameMapping;
+        private readonly Hashtable _keyNameMapping;
         private PaddingMode _padding;
         private CipherMode _mode;
         private Encoding _encoding;

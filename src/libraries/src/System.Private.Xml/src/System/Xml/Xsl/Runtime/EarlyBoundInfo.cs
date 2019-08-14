@@ -12,8 +12,8 @@ namespace System.Xml.Xsl.Runtime
     /// </summary>
     internal sealed class EarlyBoundInfo
     {
-        private string _namespaceUri;            // Namespace Uri mapped to these early bound functions
-        private ConstructorInfo _constrInfo;     // Constructor for the early bound function object
+        private readonly string _namespaceUri;            // Namespace Uri mapped to these early bound functions
+        private readonly ConstructorInfo _constrInfo;     // Constructor for the early bound function object
 
         public EarlyBoundInfo(string namespaceUri, Type ebType)
         {

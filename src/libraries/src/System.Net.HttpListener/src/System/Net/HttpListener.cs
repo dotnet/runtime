@@ -18,8 +18,8 @@ namespace System.Net
         private readonly HttpListenerPrefixCollection _prefixes;
         internal Hashtable _uriPrefixes = new Hashtable();
         private bool _ignoreWriteExceptions;
-        private ServiceNameStore _defaultServiceNames;
-        private HttpListenerTimeoutManager _timeoutManager;
+        private readonly ServiceNameStore _defaultServiceNames;
+        private readonly HttpListenerTimeoutManager _timeoutManager;
         private ExtendedProtectionPolicy _extendedProtectionPolicy;
         private AuthenticationSchemeSelector _authenticationDelegate;
         private AuthenticationSchemes _authenticationScheme = AuthenticationSchemes.Anonymous;

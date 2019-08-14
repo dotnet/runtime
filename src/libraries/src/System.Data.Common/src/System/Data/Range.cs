@@ -6,9 +6,9 @@ namespace System.Data
 {
     internal struct Range
     {
-        private int _min;
-        private int _max;
-        private bool _isNotNull; // zero bit pattern represents null
+        private readonly int _min;
+        private readonly int _max;
+        private readonly bool _isNotNull; // zero bit pattern represents null
 
         public Range(int min, int max)
         {

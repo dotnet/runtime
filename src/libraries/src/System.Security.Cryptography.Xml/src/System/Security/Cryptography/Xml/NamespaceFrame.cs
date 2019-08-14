@@ -15,8 +15,8 @@ namespace System.Security.Cryptography.Xml
     // the XmlElement as the owner, but are not rendered.
     internal class NamespaceFrame
     {
-        private Hashtable _rendered = new Hashtable();
-        private Hashtable _unrendered = new Hashtable();
+        private readonly Hashtable _rendered = new Hashtable();
+        private readonly Hashtable _unrendered = new Hashtable();
 
         internal NamespaceFrame() { }
 

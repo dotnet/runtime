@@ -105,7 +105,7 @@ namespace System.Data.SqlClient
         private readonly SqlConnectionPoolGroupProviderInfo _poolGroupProviderInfo; // will only be null when called for ChangePassword, or creating SSE User Instance
         private TdsParser _parser;
         private SqlLoginAck _loginAck;
-        private SqlCredential _credential;
+        private readonly SqlCredential _credential;
         private FederatedAuthenticationFeatureExtensionData? _fedAuthFeatureExtensionData;
 
         // Connection Resiliency
@@ -170,7 +170,7 @@ namespace System.Data.SqlClient
         private bool _fConnectionOpen = false;
 
         // FOR CONNECTION RESET MANAGEMENT
-        private bool _fResetConnection;
+        private readonly bool _fResetConnection;
         private string _originalDatabase;
         private string _currentFailoverPartner;                     // only set by ENV change from server
         private string _originalLanguage;
@@ -182,7 +182,7 @@ namespace System.Data.SqlClient
         private string _instanceName = string.Empty;
 
         // FOR NOTIFICATIONS
-        private DbConnectionPoolIdentity _identity; // Used to lookup info for notification matching Start().
+        private readonly DbConnectionPoolIdentity _identity; // Used to lookup info for notification matching Start().
 
         // FOR SYNCHRONIZATION IN TdsParser
         // How to use these locks:
@@ -197,7 +197,7 @@ namespace System.Data.SqlClient
         // 6. Reading ThreadHasParserLockForClose is thread-safe
         internal class SyncAsyncLock
         {
-            private SemaphoreSlim _semaphore = new SemaphoreSlim(1);
+            private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1);
 
             internal void Wait(bool canReleaseFromAnyThread)
             {
@@ -288,7 +288,7 @@ namespace System.Data.SqlClient
         internal SyncAsyncLock _parserLock = new SyncAsyncLock();
         private int _threadIdOwningParserLock = -1;
 
-        private SqlConnectionTimeoutErrorInternal _timeoutErrorInternal;
+        private readonly SqlConnectionTimeoutErrorInternal _timeoutErrorInternal;
 
         internal SqlConnectionTimeoutErrorInternal TimeoutErrorInternal
         {

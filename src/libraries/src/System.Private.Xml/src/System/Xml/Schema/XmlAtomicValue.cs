@@ -17,11 +17,11 @@ namespace System.Xml.Schema
     /// </summary>
     public sealed class XmlAtomicValue : XPathItem, ICloneable
     {
-        private XmlSchemaType _xmlType;
-        private object _objVal;
-        private TypeCode _clrType;
+        private readonly XmlSchemaType _xmlType;
+        private readonly object _objVal;
+        private readonly TypeCode _clrType;
         private Union _unionVal;
-        private NamespacePrefixForQName _nsPrefix;
+        private readonly NamespacePrefixForQName _nsPrefix;
 
         [StructLayout(LayoutKind.Explicit, Size = 8)]
         private struct Union

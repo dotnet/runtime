@@ -83,8 +83,8 @@ namespace System.Runtime.Serialization.Json
         // If it's necessary to check the WriteState outside WriteState, use the WriteState property.
         private WriteState _writeState;
         private bool _wroteServerTypeAttribute;
-        private bool _indent;
-        private string _indentChars;
+        private readonly bool _indent;
+        private readonly string _indentChars;
         private int _indentLevel;
 
         public XmlJsonWriter() : this(false, null) { }

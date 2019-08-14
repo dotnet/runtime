@@ -8,7 +8,7 @@ namespace MS.Internal.Xml.XPath
 {
     internal class Group : AstNode
     {
-        private AstNode _groupNode;
+        private readonly AstNode _groupNode;
 
         public Group(AstNode groupNode)
         {

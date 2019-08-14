@@ -48,10 +48,10 @@ namespace System.DirectoryServices.ActiveDirectory
         internal bool existing = false;
         private bool _subnetRetrieved = false;
         private bool _isADAMServer = false;
-        private bool _checkADAM = false;
+        private readonly bool _checkADAM = false;
         private bool _topologyTouched = false;
         private bool _adjacentSitesRetrieved = false;
-        private string _siteDN = null;
+        private readonly string _siteDN = null;
         private bool _domainsRetrieved = false;
         private bool _serversRetrieved = false;
         private bool _belongLinksRetrieved = false;
@@ -59,7 +59,7 @@ namespace System.DirectoryServices.ActiveDirectory
         private bool _SMTPBridgeRetrieved = false;
         private bool _RPCBridgeRetrieved = false;
 
-        private static int s_ERROR_NO_SITENAME = 1919;
+        private const int ERROR_NO_SITENAME = 1919;
 
         public static ActiveDirectorySite FindByName(DirectoryContext context, string siteName)
         {
@@ -202,7 +202,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (result != 0)
             {
                 // computer is not in a site
-                if (result == s_ERROR_NO_SITENAME)
+                if (result == ERROR_NO_SITENAME)
                     throw new ActiveDirectoryObjectNotFoundException(SR.NoCurrentSite, typeof(ActiveDirectorySite), null);
                 else
                     throw ExceptionHelper.GetExceptionFromErrorCode(result);

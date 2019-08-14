@@ -16,7 +16,7 @@ namespace System.Xml
     internal class ByteStack
     {
         private byte[] _stack;
-        private int _growthRate;
+        private readonly int _growthRate;
         private int _top;
         private int _size;
 

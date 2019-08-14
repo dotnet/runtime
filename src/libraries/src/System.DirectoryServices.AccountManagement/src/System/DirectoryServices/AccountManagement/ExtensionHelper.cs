@@ -15,7 +15,7 @@ namespace System.DirectoryServices.AccountManagement
             _p = p;
         }
 
-        private Principal _p;
+        private readonly Principal _p;
 
         internal string RdnPrefix
         {

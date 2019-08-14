@@ -9,7 +9,7 @@ namespace MS.Internal.Xml.XPath
 {
     internal sealed class XPathAncestorQuery : CacheAxisQuery
     {
-        private bool _matchSelf;
+        private readonly bool _matchSelf;
 
         public XPathAncestorQuery(Query qyInput, string name, string prefix, XPathNodeType typeTest, bool matchSelf) : base(qyInput, name, prefix, typeTest)
         {

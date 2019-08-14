@@ -851,7 +851,7 @@ nameof(binaryForm));
 
         #region Private Members
 
-        private RawAcl _acl;
+        private readonly RawAcl _acl;
         private bool _isDirty = false;
         private readonly bool _isCanonical;
         private readonly bool _isContainer;
@@ -3080,7 +3080,7 @@ nameof(flags));
     public sealed class DiscretionaryAcl : CommonAcl
     {
         #region
-        private static SecurityIdentifier _sidEveryone = new SecurityIdentifier( WellKnownSidType.WorldSid, null );
+        private static readonly SecurityIdentifier _sidEveryone = new SecurityIdentifier( WellKnownSidType.WorldSid, null );
         private bool everyOneFullAccessForNullDacl = false;
         #endregion
 

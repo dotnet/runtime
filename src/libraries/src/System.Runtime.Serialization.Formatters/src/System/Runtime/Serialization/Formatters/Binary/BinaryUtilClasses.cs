@@ -492,18 +492,18 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
     internal sealed class PrimitiveArray
     {
-        private InternalPrimitiveTypeE _code;
-        private bool[] _booleanA = null;
-        private char[] _charA = null;
-        private double[] _doubleA = null;
-        private short[] _int16A = null;
-        private int[] _int32A = null;
-        private long[] _int64A = null;
-        private sbyte[] _sbyteA = null;
-        private float[] _singleA = null;
-        private ushort[] _uint16A = null;
-        private uint[] _uint32A = null;
-        private ulong[] _uint64A = null;
+        private readonly InternalPrimitiveTypeE _code;
+        private readonly bool[] _booleanA = null;
+        private readonly char[] _charA = null;
+        private readonly double[] _doubleA = null;
+        private readonly short[] _int16A = null;
+        private readonly int[] _int32A = null;
+        private readonly long[] _int64A = null;
+        private readonly sbyte[] _sbyteA = null;
+        private readonly float[] _singleA = null;
+        private readonly ushort[] _uint16A = null;
+        private readonly uint[] _uint32A = null;
+        private readonly ulong[] _uint64A = null;
 
         internal PrimitiveArray(InternalPrimitiveTypeE code, Array array)
         {

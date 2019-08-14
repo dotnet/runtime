@@ -16,12 +16,12 @@ namespace System.Xml.XPath
     public class XPathException : SystemException
     {
         // we need to keep this members for V1 serialization compatibility
-        private string _res;
-        private string[] _args;
+        private readonly string _res;
+        private readonly string[] _args;
 
         // message != null for V1 & V2 exceptions deserialized in Whidbey
         // message == null for created V2 exceptions; the exception message is stored in Exception._message
-        private string _message;
+        private readonly string _message;
 
         protected XPathException(SerializationInfo info, StreamingContext context) : base(info, context)
         {

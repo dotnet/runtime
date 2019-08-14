@@ -13,8 +13,8 @@ namespace System.Xml.Xsl.Xslt
 {
     internal class QilStrConcatenator
     {
-        private XPathQilFactory _f;
-        private StringBuilder _builder;
+        private readonly XPathQilFactory _f;
+        private readonly StringBuilder _builder;
         private QilList _concat;
         private bool _inUse = false;
 

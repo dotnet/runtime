@@ -98,8 +98,8 @@ namespace System.Management
     //CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC//
     public class MethodData
     {
-        private ManagementObject parent; //needed to be able to get method qualifiers
-        private string methodName;
+        private readonly ManagementObject parent; //needed to be able to get method qualifiers
+        private readonly string methodName;
         private IWbemClassObjectFreeThreaded wmiInParams;
         private IWbemClassObjectFreeThreaded wmiOutParams;
         private QualifierDataCollection qualifiers;

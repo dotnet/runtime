@@ -18,7 +18,7 @@ namespace System.Security.Cryptography
         private byte[] _salt;
         private uint _iterations;
         private HMAC _hmac;
-        private int _blockSize;
+        private readonly int _blockSize;
 
         private byte[] _buffer;
         private uint _block;

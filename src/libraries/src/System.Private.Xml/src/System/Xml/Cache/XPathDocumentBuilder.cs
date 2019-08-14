@@ -38,7 +38,7 @@ namespace MS.Internal.Xml.Cache
         private NodePageFactory _nmspPageFact;   // Creates namespace node pages
         private TextBlockBuilder _textBldr;      // Concatenates adjacent text blocks
 
-        private Stack<XPathNodeRef> _stkNmsp;    // In-scope namespaces
+        private readonly Stack<XPathNodeRef> _stkNmsp;    // In-scope namespaces
         private XPathNodeInfoTable _infoTable;   // Atomization table for shared node information
         private XPathDocument _doc;              // Currently building document
         private IXmlLineInfo _lineInfo;          // Line information provider

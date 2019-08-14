@@ -10,8 +10,8 @@ namespace System.Xml.Schema
 
     public class XmlSchemaObjectTable
     {
-        private Dictionary<XmlQualifiedName, XmlSchemaObject> _table = new Dictionary<XmlQualifiedName, XmlSchemaObject>();
-        private List<XmlSchemaObjectEntry> _entries = new List<XmlSchemaObjectEntry>();
+        private readonly Dictionary<XmlQualifiedName, XmlSchemaObject> _table = new Dictionary<XmlQualifiedName, XmlSchemaObject>();
+        private readonly List<XmlSchemaObjectEntry> _entries = new List<XmlSchemaObjectEntry>();
 
         internal XmlSchemaObjectTable()
         {
@@ -157,8 +157,8 @@ namespace System.Xml.Schema
 
         internal class NamesCollection : ICollection
         {
-            private List<XmlSchemaObjectEntry> _entries;
-            private int _size;
+            private readonly List<XmlSchemaObjectEntry> _entries;
+            private readonly int _size;
 
             internal NamesCollection(List<XmlSchemaObjectEntry> entries, int size)
             {
@@ -212,8 +212,8 @@ namespace System.Xml.Schema
         //ICollection for Values
         internal class ValuesCollection : ICollection
         {
-            private List<XmlSchemaObjectEntry> _entries;
-            private int _size;
+            private readonly List<XmlSchemaObjectEntry> _entries;
+            private readonly int _size;
 
             internal ValuesCollection(List<XmlSchemaObjectEntry> entries, int size)
             {
@@ -266,8 +266,8 @@ namespace System.Xml.Schema
 
         internal class XSOEnumerator : IEnumerator
         {
-            private List<XmlSchemaObjectEntry> _entries;
-            private EnumeratorType _enumType;
+            private readonly List<XmlSchemaObjectEntry> _entries;
+            private readonly EnumeratorType _enumType;
 
             protected int currentIndex;
             protected int size;

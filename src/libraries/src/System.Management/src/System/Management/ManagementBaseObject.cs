@@ -185,7 +185,7 @@ namespace System.Management
 
 #pragma warning disable CA1823
 #pragma warning disable CS0169 // Kept for possible reflection, comment above for history
-        private static WbemContext lockOnFastProx; // RemovedDuringPort System.Management.Instrumentation.WMICapabilities.IsWindowsXPOrHigher()?null:new WbemContext();
+        private static readonly WbemContext lockOnFastProx; // RemovedDuringPort System.Management.Instrumentation.WMICapabilities.IsWindowsXPOrHigher()?null:new WbemContext();
 #pragma warning restore CS0169
 #pragma warning restore CA1823
 

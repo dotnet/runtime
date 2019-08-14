@@ -13,7 +13,7 @@ namespace System.Text.Json.Serialization
     internal sealed class ConverterList : IList<JsonConverter>
     {
         private readonly List<JsonConverter> _list = new List<JsonConverter>();
-        private JsonSerializerOptions _options;
+        private readonly JsonSerializerOptions _options;
 
         public ConverterList(JsonSerializerOptions options)
         {

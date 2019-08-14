@@ -10,7 +10,7 @@ namespace System.Data.Odbc
 
     public sealed class OdbcInfoMessageEventArgs : System.EventArgs
     {
-        private OdbcErrorCollection _errors;
+        private readonly OdbcErrorCollection _errors;
 
         internal OdbcInfoMessageEventArgs(OdbcErrorCollection errors)
         {

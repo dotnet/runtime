@@ -8,7 +8,7 @@ namespace System.Configuration
     {
         internal const bool EnabledDefaultValue = false;
 
-        private ConfigurationPropertyCollection _properties = new ConfigurationPropertyCollection();
+        private readonly ConfigurationPropertyCollection _properties = new ConfigurationPropertyCollection();
 
         private readonly ConfigurationProperty _enabled =
             new ConfigurationProperty(CommonConfigurationStrings.Enabled, typeof(bool), EnabledDefaultValue,

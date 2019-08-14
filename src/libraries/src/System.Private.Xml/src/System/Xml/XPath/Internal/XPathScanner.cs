@@ -12,7 +12,7 @@ namespace MS.Internal.Xml.XPath
 {
     internal sealed class XPathScanner
     {
-        private string _xpathExpr;
+        private readonly string _xpathExpr;
         private int _xpathExprIndex;
         private LexKind _kind;
         private char _currentChar;

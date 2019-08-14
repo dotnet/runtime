@@ -88,7 +88,7 @@ namespace System.Text.Json
             internal int Length { get; private set; }
             private byte[] _data;
 #if DEBUG
-            private bool _isLocked;
+            private readonly bool _isLocked;
 #endif
 
             internal MetadataDb(byte[] completeDb)

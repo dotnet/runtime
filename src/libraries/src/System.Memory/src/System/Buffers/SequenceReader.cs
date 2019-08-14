@@ -14,7 +14,7 @@ namespace System.Buffers
         private SequencePosition _currentPosition;
         private SequencePosition _nextPosition;
         private bool _moreData;
-        private long _length;
+        private readonly long _length;
 
         /// <summary>
         /// Create a <see cref="SequenceReader{T}"/> over the given <see cref="ReadOnlySequence{T}"/>.

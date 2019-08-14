@@ -19,7 +19,7 @@ namespace System.Runtime.Serialization
     internal delegate IXmlSerializable CreateXmlSerializableDelegate();
     internal sealed class XmlDataContract : DataContract
     {
-        private XmlDataContractCriticalHelper _helper;
+        private readonly XmlDataContractCriticalHelper _helper;
 
         public XmlDataContract() : base(new XmlDataContractCriticalHelper())
         {

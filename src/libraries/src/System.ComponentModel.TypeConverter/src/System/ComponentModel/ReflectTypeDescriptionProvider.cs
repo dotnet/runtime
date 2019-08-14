@@ -34,7 +34,7 @@ namespace System.ComponentModel
         // there is one enum converter that can work with all enums, but it needs to know
         // the type of enum it is dealing with.
         //
-        private static Type[] s_typeConstructor = new Type[] { typeof(Type) };
+        private static readonly Type[] s_typeConstructor = new Type[] { typeof(Type) };
 
         // This is where we store the various converters, etc for the intrinsic types.
         //
@@ -44,12 +44,12 @@ namespace System.ComponentModel
         // For converters, etc that are bound to class attribute data, rather than a class
         // type, we have special key sentinel values that we put into the hash table.
         //
-        private static object s_intrinsicReferenceKey = new object();
-        private static object s_intrinsicNullableKey = new object();
+        private static readonly object s_intrinsicReferenceKey = new object();
+        private static readonly object s_intrinsicNullableKey = new object();
 
         // The key we put into IDictionaryService to store our cache dictionary.
         //
-        private static object s_dictionaryKey = new object();
+        private static readonly object s_dictionaryKey = new object();
 
         // This is a cache on top of core reflection. The cache
         // builds itself recursively, so if you ask for the properties

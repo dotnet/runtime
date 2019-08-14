@@ -10,7 +10,7 @@ namespace System.Reflection.Metadata
 {
     public struct NamespaceDefinition
     {
-        private NamespaceData _data;
+        private readonly NamespaceData _data;
 
         internal NamespaceDefinition(NamespaceData data)
         {

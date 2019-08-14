@@ -464,11 +464,11 @@ namespace System.DirectoryServices.ActiveDirectory
     internal sealed class LSA_OBJECT_ATTRIBUTES
     {
         internal int Length;
-        private IntPtr _rootDirectory;
-        private IntPtr _objectName;
+        private readonly IntPtr _rootDirectory;
+        private readonly IntPtr _objectName;
         internal int Attributes;
-        private IntPtr _securityDescriptor;
-        private IntPtr _securityQualityOfService;
+        private readonly IntPtr _securityDescriptor;
+        private readonly IntPtr _securityQualityOfService;
 
         public LSA_OBJECT_ATTRIBUTES()
         {

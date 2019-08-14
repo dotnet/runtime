@@ -645,7 +645,7 @@ namespace System.Xml
 
         private class XmlWrappedWriter : XmlDictionaryWriter
         {
-            private XmlWriter _writer;
+            private readonly XmlWriter _writer;
             private int _depth;
             private int _prefix;
 

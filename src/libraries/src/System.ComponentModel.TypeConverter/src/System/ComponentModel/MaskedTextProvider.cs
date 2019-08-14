@@ -114,16 +114,16 @@ namespace System.ComponentModel
         private const bool BACKWARD = false;
 
         // Bit masks for bool properties.
-        private static int s_ASCII_ONLY = BitVector32.CreateMask();
-        private static int s_ALLOW_PROMPT_AS_INPUT = BitVector32.CreateMask(s_ASCII_ONLY);
-        private static int s_INCLUDE_PROMPT = BitVector32.CreateMask(s_ALLOW_PROMPT_AS_INPUT);
-        private static int s_INCLUDE_LITERALS = BitVector32.CreateMask(s_INCLUDE_PROMPT);
-        private static int s_RESET_ON_PROMPT = BitVector32.CreateMask(s_INCLUDE_LITERALS);
-        private static int s_RESET_ON_LITERALS = BitVector32.CreateMask(s_RESET_ON_PROMPT);
-        private static int s_SKIP_SPACE = BitVector32.CreateMask(s_RESET_ON_LITERALS);
+        private static readonly int s_ASCII_ONLY = BitVector32.CreateMask();
+        private static readonly int s_ALLOW_PROMPT_AS_INPUT = BitVector32.CreateMask(s_ASCII_ONLY);
+        private static readonly int s_INCLUDE_PROMPT = BitVector32.CreateMask(s_ALLOW_PROMPT_AS_INPUT);
+        private static readonly int s_INCLUDE_LITERALS = BitVector32.CreateMask(s_INCLUDE_PROMPT);
+        private static readonly int s_RESET_ON_PROMPT = BitVector32.CreateMask(s_INCLUDE_LITERALS);
+        private static readonly int s_RESET_ON_LITERALS = BitVector32.CreateMask(s_RESET_ON_PROMPT);
+        private static readonly int s_SKIP_SPACE = BitVector32.CreateMask(s_RESET_ON_LITERALS);
 
         // Type cached to speed up cloning of this object.
-        private static Type s_maskTextProviderType = typeof(MaskedTextProvider);
+        private static readonly Type s_maskTextProviderType = typeof(MaskedTextProvider);
 
         //// Instance data.
 

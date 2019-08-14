@@ -410,7 +410,7 @@ namespace System.ComponentModel
         /// </summary>
         public class StandardValuesCollection : ICollection
         {
-            private ICollection _values;
+            private readonly ICollection _values;
             private Array _valueArray;
 
             /// <summary>

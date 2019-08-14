@@ -46,7 +46,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The equality comparer to use when balancing the tree of hash buckets.
             /// </summary>
-            private IEqualityComparer<HashBucket> _hashBucketEqualityComparer;
+            private readonly IEqualityComparer<HashBucket> _hashBucketEqualityComparer;
 
             /// <summary>
             /// The number of elements in this collection.

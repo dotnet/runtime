@@ -22,7 +22,7 @@ namespace System.Runtime.Serialization.Json
         private static readonly UTF8Encoding s_validatingUTF8 = new UTF8Encoding(false, true);
         private const int BufferLength = 128;
 
-        private byte[] _byteBuffer = new byte[1];
+        private readonly byte[] _byteBuffer = new byte[1];
         private int _byteCount;
         private int _byteOffset;
         private byte[] _bytes;
@@ -32,7 +32,7 @@ namespace System.Runtime.Serialization.Json
         private Encoding _encoding;
 
         private SupportedEncoding _encodingCode;
-        private bool _isReading;
+        private readonly bool _isReading;
 
         private Stream _stream;
 

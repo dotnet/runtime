@@ -37,8 +37,8 @@ namespace System.Linq.Parallel
     /// <typeparam name="TElement"></typeparam>
     internal class Lookup<TKey, TElement> : ILookup<TKey, TElement>
     {
-        private IDictionary<TKey, IGrouping<TKey, TElement>> _dict;
-        private IEqualityComparer<TKey> _comparer;
+        private readonly IDictionary<TKey, IGrouping<TKey, TElement>> _dict;
+        private readonly IEqualityComparer<TKey> _comparer;
         private IGrouping<TKey, TElement> _defaultKeyGrouping = null;
 
         internal Lookup(IEqualityComparer<TKey> comparer)

@@ -4962,7 +4962,7 @@ namespace System.Net.Sockets
 
         private sealed class ConnectAsyncResult : ContextAwareResult
         {
-            private EndPoint _endPoint;
+            private readonly EndPoint _endPoint;
 
             internal ConnectAsyncResult(object myObject, EndPoint endPoint, object myState, AsyncCallback myCallBack) :
                 base(myObject, myState, myCallBack)

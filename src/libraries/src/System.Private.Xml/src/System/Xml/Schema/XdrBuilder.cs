@@ -357,35 +357,35 @@ namespace System.Xml.Schema
                           true)
         };
 
-        private SchemaInfo _SchemaInfo;
+        private readonly SchemaInfo _SchemaInfo;
         private string _TargetNamespace;
-        private XmlReader _reader;
-        private PositionInfo _positionInfo;
+        private readonly XmlReader _reader;
+        private readonly PositionInfo _positionInfo;
         private ParticleContentValidator _contentValidator;
 
         private XdrEntry _CurState;
         private XdrEntry _NextState;
 
-        private HWStack _StateHistory;
-        private HWStack _GroupStack;
+        private readonly HWStack _StateHistory;
+        private readonly HWStack _GroupStack;
         private string _XdrName;
         private string _XdrPrefix;
 
-        private ElementContent _ElementDef;
+        private readonly ElementContent _ElementDef;
         private GroupContent _GroupDef;
-        private AttributeContent _AttributeDef;
+        private readonly AttributeContent _AttributeDef;
 
         private DeclBaseInfo _UndefinedAttributeTypes;
         private DeclBaseInfo _BaseDecl;
 
-        private XmlNameTable _NameTable;
-        private SchemaNames _SchemaNames;
+        private readonly XmlNameTable _NameTable;
+        private readonly SchemaNames _SchemaNames;
 
-        private XmlNamespaceManager _CurNsMgr;
+        private readonly XmlNamespaceManager _CurNsMgr;
         private string _Text;
 
-        private ValidationEventHandler _validationEventHandler;
-        private Hashtable _UndeclaredElements = new Hashtable();
+        private readonly ValidationEventHandler _validationEventHandler;
+        private readonly Hashtable _UndeclaredElements = new Hashtable();
 
         private const string x_schema = "x-schema:";
 

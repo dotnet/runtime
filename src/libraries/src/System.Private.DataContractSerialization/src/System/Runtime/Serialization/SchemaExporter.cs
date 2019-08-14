@@ -18,7 +18,7 @@ namespace System.Runtime.Serialization
 {
     internal class SchemaExporter
     {
-        private XmlSchemaSet _schemas;
+        private readonly XmlSchemaSet _schemas;
         private XmlDocument _xmlDoc;
         private DataContractSet _dataContractSet;
 

@@ -64,7 +64,7 @@ namespace System.Linq.Parallel
         //   1 consumer thread to access this thing concurrently. It's been carefully designed
         //   to avoid locking, but only because of this restriction...
 
-        private T[][] _buffer;              // The buffer of chunks.
+        private readonly T[][] _buffer;              // The buffer of chunks.
         private readonly int _index;            // Index of this channel
         private volatile int _producerBufferIndex;   // Producer's current index, i.e. where to put the next chunk.
         private volatile int _consumerBufferIndex;   // Consumer's current index, i.e. where to get the next chunk.
@@ -76,7 +76,7 @@ namespace System.Linq.Parallel
         private T[] _consumerChunk;         // The temporary chunk being enumerated by the consumer.
         private int _consumerChunkIndex;    // A consumer's index into its temporary chunk.
 
-        private int _chunkSize;             // The number of elements that comprise a chunk.
+        private readonly int _chunkSize;             // The number of elements that comprise a chunk.
 
         // These events are used to signal a waiting producer when the consumer dequeues, and to signal a
         // waiting consumer when the producer enqueues.
@@ -87,7 +87,7 @@ namespace System.Linq.Parallel
         // volatile because they are used in synchronization critical regions of code (see usage below).
         private volatile int _producerIsWaiting;
         private volatile int _consumerIsWaiting;
-        private CancellationToken _cancellationToken;
+        private readonly CancellationToken _cancellationToken;
 
         //-----------------------------------------------------------------------------------
         // Initializes a new channel with the specific capacity and chunk size.

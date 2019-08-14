@@ -1,7 +1,8 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#pragma warning disable SA1028 // ignore whitespace warnings for generated code
 using System;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -28,7 +29,7 @@ namespace System.Security.Cryptography.Asn1
 
                 usedTags.Add(tag, fieldName);
             };
-
+            
             ensureUniqueTag(Asn1Tag.Sequence, "Specified");
             ensureUniqueTag(Asn1Tag.ObjectIdentifier, "Named");
         }
@@ -36,13 +37,13 @@ namespace System.Security.Cryptography.Asn1
 
         internal void Encode(AsnWriter writer)
         {
-            bool wroteValue = false;
-
+            bool wroteValue = false; 
+            
             if (Specified.HasValue)
             {
                 if (wroteValue)
                     throw new CryptographicException();
-
+                
                 Specified.Value.Encode(writer);
                 wroteValue = true;
             }
@@ -51,7 +52,7 @@ namespace System.Security.Cryptography.Asn1
             {
                 if (wroteValue)
                     throw new CryptographicException();
-
+                
                 writer.WriteObjectIdentifier(Named);
                 wroteValue = true;
             }
@@ -65,7 +66,7 @@ namespace System.Security.Cryptography.Asn1
         internal static ECDomainParameters Decode(ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
             AsnReader reader = new AsnReader(encoded, ruleSet);
-
+            
             Decode(reader, out ECDomainParameters decoded);
             reader.ThrowIfNotEmpty();
             return decoded;
@@ -78,7 +79,7 @@ namespace System.Security.Cryptography.Asn1
 
             decoded = default;
             Asn1Tag tag = reader.PeekTag();
-
+            
             if (tag.HasSameClassAndValue(Asn1Tag.Sequence))
             {
                 System.Security.Cryptography.Asn1.SpecifiedECDomain tmpSpecified;

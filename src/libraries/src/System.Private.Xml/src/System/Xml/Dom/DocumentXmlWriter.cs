@@ -55,14 +55,14 @@ namespace System.Xml
             WriteString,
         }
 
-        private DocumentXmlWriterType _type; // writer type
-        private XmlNode _start; // context node
-        private XmlDocument _document; // context document
+        private readonly DocumentXmlWriterType _type; // writer type
+        private readonly XmlNode _start; // context node
+        private readonly XmlDocument _document; // context document
         private XmlNamespaceManager _namespaceManager; // context namespace manager
         private State _state; // current state
         private XmlNode _write; // current node
-        private List<XmlNode> _fragment; // top level node cache
-        private XmlWriterSettings _settings; // wrapping writer settings
+        private readonly List<XmlNode> _fragment; // top level node cache
+        private readonly XmlWriterSettings _settings; // wrapping writer settings
         private DocumentXPathNavigator _navigator; // context for replace
         private XmlNode _end; // context for replace
 
@@ -558,7 +558,7 @@ namespace System.Xml
             return State.Content;
         }
 
-        private static State[] s_changeState = {
+        private static readonly State[] s_changeState = {
 //          State.Error,    State.Attribute,State.Prolog,   State.Fragment, State.Content,
 
 // Method.XmlDeclaration:

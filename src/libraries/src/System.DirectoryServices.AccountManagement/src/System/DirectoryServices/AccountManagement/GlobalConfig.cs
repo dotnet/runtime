@@ -43,6 +43,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        private static ConfigSettings s_configSettings;
+        private static readonly ConfigSettings s_configSettings;
     }
 }

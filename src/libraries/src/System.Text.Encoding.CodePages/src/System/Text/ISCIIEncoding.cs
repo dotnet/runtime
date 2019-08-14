@@ -50,7 +50,7 @@ namespace System.Text
         private const char ZWJ = (char)0x200d;
 
         // Code Page
-        private int _defaultCodePage;
+        private readonly int _defaultCodePage;
 
         public ISCIIEncoding(int codePage) : base(codePage)
         {
@@ -792,7 +792,7 @@ namespace System.Text
         //
         ////////////////////////////////////////////////////////////////////////////
 
-        private static int[] s_UnicodeToIndicChar =
+        private static readonly int[] s_UnicodeToIndicChar =
         {
             0x02a1,  // U+0901 : Devanagari Sign Candrabindu
             0x02a2,  // U+0902 : Devanagari Sign Anusvara
@@ -1937,7 +1937,7 @@ namespace System.Text
         // This is used if the UnicodeToIndic table 4 high bits are set, this is
         // the value of the second Indic byte when applicable.
         ////////////////////////////////////////////////////////////////////////////
-        private static byte[] s_SecondIndicByte =
+        private static readonly byte[] s_SecondIndicByte =
         {
             0x00,
             0xe9,
@@ -1952,7 +1952,7 @@ namespace System.Text
         // There are 0x60 characters in each table.  The tables are in pairs of 2
         // (1st char, 2nd char) and there are 10 tables (1 for each code page "font")
         ////////////////////////////////////////////////////////////////////////////
-        private static int[] s_IndicMappingIndex =
+        private static readonly int[] s_IndicMappingIndex =
         {
             -1,       //  0 DEF 0X40 Default        // Not a real code page
             -1,       //  1 RMN 0X41 Roman          // Transliteration not supported
@@ -1987,7 +1987,7 @@ namespace System.Text
         //
         ////////////////////////////////////////////////////////////////////////////
         // char[codePageMapIndex][byte][character]
-        private static char[,,] s_IndicMapping =
+        private static readonly char[,,] s_IndicMapping =
         {
             {
                 ////////////////////////////////////////////////////////////////////////////

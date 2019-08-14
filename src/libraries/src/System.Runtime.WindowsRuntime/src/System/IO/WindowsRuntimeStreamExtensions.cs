@@ -25,10 +25,10 @@ namespace System.IO
 
         private const int DefaultBufferSize = 16384;  // = 0x4000 = 16 KBytes.
 
-        private static ConditionalWeakTable<object, Stream> s_winRtToNetFxAdapterMap
+        private static readonly ConditionalWeakTable<object, Stream> s_winRtToNetFxAdapterMap
                  = new ConditionalWeakTable<object, Stream>();
 
-        private static ConditionalWeakTable<Stream, NetFxToWinRtStreamAdapter> s_netFxToWinRtAdapterMap
+        private static readonly ConditionalWeakTable<Stream, NetFxToWinRtStreamAdapter> s_netFxToWinRtAdapterMap
                  = new ConditionalWeakTable<Stream, NetFxToWinRtStreamAdapter>();
 
         #endregion Constants and static Fields

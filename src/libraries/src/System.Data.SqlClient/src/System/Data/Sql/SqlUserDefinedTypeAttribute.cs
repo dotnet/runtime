@@ -24,7 +24,7 @@ namespace Microsoft.SqlServer.Server
         private int _maxByteSize;
         private bool _isFixedLength;
         private bool _isByteOrdered;
-        private Format _format;
+        private readonly Format _format;
         private string _name;
 
         // The maximum value for the maxbytesize field, in bytes.

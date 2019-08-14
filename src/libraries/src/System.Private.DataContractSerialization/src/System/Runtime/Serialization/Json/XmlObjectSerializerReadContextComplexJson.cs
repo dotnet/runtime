@@ -17,9 +17,9 @@ namespace System.Runtime.Serialization.Json
     internal class XmlObjectSerializerReadContextComplexJson : XmlObjectSerializerReadContextComplex
     {
         private string _extensionDataValueType;
-        private DataContractJsonSerializer _jsonSerializer;
-        private DateTimeFormat _dateTimeFormat;
-        private bool _useSimpleDictionaryFormat;
+        private readonly DataContractJsonSerializer _jsonSerializer;
+        private readonly DateTimeFormat _dateTimeFormat;
+        private readonly bool _useSimpleDictionaryFormat;
 
         public XmlObjectSerializerReadContextComplexJson(DataContractJsonSerializer serializer, DataContract rootTypeDataContract)
             : base(null, int.MaxValue, new StreamingContext(), true)

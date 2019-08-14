@@ -13,7 +13,7 @@ namespace System.Net.Sockets
     {
         private ThreadPoolBoundHandle _iocpBoundHandle;
         private bool _skipCompletionPortOnSuccess;
-        private object _iocpBindingLock = new object();
+        private readonly object _iocpBindingLock = new object();
 
         internal void SetExposed() { /* nop */ }
 

@@ -88,13 +88,13 @@ namespace System.Data
          * CONSIDER: should we read the user (or system) local settings?
          * CONSIDER: make this configurable by the user, and system locale for the string compare
          */
-        private char _escape = '\\';
-        private char _decimalSeparator = '.';
+        private readonly char _escape = '\\';
+        private readonly char _decimalSeparator = '.';
         //not used: private char ThousandSeparator = ',';
-        private char _listSeparator = ',';
+        private readonly char _listSeparator = ',';
         //not used: private char DateSeparator = '/';
-        private char _exponentL = 'e';
-        private char _exponentU = 'E';
+        private readonly char _exponentL = 'e';
+        private readonly char _exponentU = 'E';
 
         internal char[] _text;
         internal int _pos = 0;

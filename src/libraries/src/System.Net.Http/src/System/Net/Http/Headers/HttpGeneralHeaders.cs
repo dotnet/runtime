@@ -18,7 +18,7 @@ namespace System.Net.Http.Headers
         private HttpHeaderValueCollection<ViaHeaderValue> _via;
         private HttpHeaderValueCollection<WarningHeaderValue> _warning;
         private HttpHeaderValueCollection<NameValueHeaderValue> _pragma;
-        private HttpHeaders _parent;
+        private readonly HttpHeaders _parent;
         private bool _transferEncodingChunkedSet;
         private bool _connectionCloseSet;
 

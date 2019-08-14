@@ -15,12 +15,12 @@ namespace System.Diagnostics.Eventing.Reader
     {
         public event EventHandler<EventRecordWrittenEventArgs> EventRecordWritten;
 
-        private EventLogQuery _eventQuery;
-        private EventBookmark _bookmark;
-        private bool _readExistingEvents;
+        private readonly EventLogQuery _eventQuery;
+        private readonly EventBookmark _bookmark;
+        private readonly bool _readExistingEvents;
 
         private EventLogHandle _handle;
-        private IntPtr[] _eventsBuffer;
+        private readonly IntPtr[] _eventsBuffer;
         private int _numEventsInBuffer;
         private bool _isSubscribing;
         private int _callbackThreadId;
@@ -32,7 +32,7 @@ namespace System.Diagnostics.Eventing.Reader
         /// Maintains cached display / metadata information returned from
         /// EventRecords that were obtained from this reader.
         /// </summary>
-        private ProviderMetadataCachedInformation cachedMetadataInformation;
+        private readonly ProviderMetadataCachedInformation cachedMetadataInformation;
         private EventLogException asyncException;
 
         public EventLogWatcher(string path)

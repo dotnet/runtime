@@ -19,7 +19,7 @@ namespace System.Diagnostics
     {
         internal byte[] dataBuf;
         internal int bufOffset;
-        private EventLogInternal owner;
+        private readonly EventLogInternal owner;
         private string category;
         private string message;
 

@@ -44,6 +44,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#pragma warning disable SA1028 // ignore whitespace warnings for generated code
 using System;<xsl:if test="asn:SequenceOf | asn:SetOf">
 using System.Collections.Generic;</xsl:if>
 using System.Runtime.InteropServices;
@@ -56,7 +57,7 @@ namespace <xsl:value-of select="@namespace" />
     internal partial struct <xsl:value-of select="@name" />
     {<xsl:apply-templates mode="Validate" /><xsl:apply-templates mode="DefaultFieldDef" /><xsl:apply-templates mode="FieldDef" />
       <xsl:if test="*[@defaultDerInit]">
-#if DEBUG  
+#if DEBUG
         static <xsl:value-of select="@name" />()
         {
             <xsl:value-of select="@name" /> decoded = default;
@@ -121,6 +122,7 @@ namespace <xsl:value-of select="@namespace" />
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#pragma warning disable SA1028 // ignore whitespace warnings for generated code
 using System;<xsl:if test="asn:SequenceOf | asn:SetOf">
 using System.Collections.Generic;</xsl:if>
 using System.Runtime.InteropServices;
@@ -205,7 +207,7 @@ namespace <xsl:value-of select="@namespace" />
   </xsl:template>
 
   <xsl:template match="*[@defaultDerInit]" mode="DefaultFieldDef">
-        private static byte[] <xsl:call-template name="DefaultValueField"/> = { <xsl:value-of select="@defaultDerInit"/> };
+        private static readonly byte[] <xsl:call-template name="DefaultValueField"/> = { <xsl:value-of select="@defaultDerInit"/> };
   </xsl:template>
 
   <xsl:template match="*[@defaultDerInit]" mode="DefaultFieldVerify">

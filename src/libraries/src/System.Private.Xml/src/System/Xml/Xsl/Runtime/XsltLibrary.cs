@@ -87,7 +87,7 @@ namespace System.Xml.Xsl.Runtime
     [EditorBrowsable(EditorBrowsableState.Never)]
     public sealed class XsltLibrary
     {
-        private XmlQueryRuntime _runtime;
+        private readonly XmlQueryRuntime _runtime;
         private HybridDictionary _functionsAvail;
         private Dictionary<XmlQualifiedName, DecimalFormat> _decimalFormats;
         private List<DecimalFormatter> _decimalFormatters;

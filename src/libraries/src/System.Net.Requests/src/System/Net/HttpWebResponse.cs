@@ -22,11 +22,11 @@ namespace System.Net
     public class HttpWebResponse : WebResponse, ISerializable
     {
         private HttpResponseMessage _httpResponseMessage;
-        private Uri _requestUri;
+        private readonly Uri _requestUri;
         private CookieCollection _cookies;
         private WebHeaderCollection _webHeaderCollection = null;
         private string _characterSet = null;
-        private bool _isVersionHttp11 = true;
+        private readonly bool _isVersionHttp11 = true;
 
         public HttpWebResponse() { }
 

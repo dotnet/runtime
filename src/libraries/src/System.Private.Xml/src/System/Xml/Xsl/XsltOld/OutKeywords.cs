@@ -11,7 +11,7 @@ namespace System.Xml.Xsl.XsltOld
     internal class OutKeywords
     {
 #if DEBUG
-        private XmlNameTable _NameTable;
+        private readonly XmlNameTable _NameTable;
 #endif
         internal OutKeywords(XmlNameTable nameTable)
         {
@@ -37,13 +37,13 @@ namespace System.Xml.Xsl.XsltOld
             CheckKeyword(_AtomXmlnsNamespace);
         }
 
-        private string _AtomEmpty;
-        private string _AtomLang;
-        private string _AtomSpace;
-        private string _AtomXmlns;
-        private string _AtomXml;
-        private string _AtomXmlNamespace;
-        private string _AtomXmlnsNamespace;
+        private readonly string _AtomEmpty;
+        private readonly string _AtomLang;
+        private readonly string _AtomSpace;
+        private readonly string _AtomXmlns;
+        private readonly string _AtomXml;
+        private readonly string _AtomXmlNamespace;
+        private readonly string _AtomXmlnsNamespace;
 
         internal string Empty
         {

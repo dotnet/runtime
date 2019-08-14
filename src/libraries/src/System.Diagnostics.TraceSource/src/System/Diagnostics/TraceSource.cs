@@ -12,13 +12,13 @@ namespace System.Diagnostics
 {
     public class TraceSource
     {
-        private static List<WeakReference> s_tracesources = new List<WeakReference>();
+        private static readonly List<WeakReference> s_tracesources = new List<WeakReference>();
         private static int s_LastCollectionCount;
 
         private volatile SourceSwitch _internalSwitch;
         private volatile TraceListenerCollection _listeners;
-        private SourceLevels _switchLevel;
-        private volatile string _sourceName;
+        private readonly SourceLevels _switchLevel;
+        private readonly string _sourceName;
         internal volatile bool _initCalled = false;   // Whether we've called Initialize already.
         private StringDictionary _attributes;
 

@@ -90,11 +90,11 @@ namespace System.Xml.Xsl.Xslt
     {
         public static readonly TemplateMatchComparer Comparer = new TemplateMatchComparer();
 
-        private Template _template;
-        private double _priority;
+        private readonly Template _template;
+        private readonly double _priority;
         private XmlNodeKindFlags _nodeKind;
         private QilName _qname;
-        private QilIterator _iterator;
+        private readonly QilIterator _iterator;
         private QilNode _condition;    // null means f.True()
 
         public XmlNodeKindFlags NodeKind
@@ -294,9 +294,9 @@ namespace System.Xml.Xsl.Xslt
 
     internal class MatcherBuilder
     {
-        private XPathQilFactory _f;
-        private ReferenceReplacer _refReplacer;
-        private InvokeGenerator _invkGen;
+        private readonly XPathQilFactory _f;
+        private readonly ReferenceReplacer _refReplacer;
+        private readonly InvokeGenerator _invkGen;
 
         private const int NoMatch = -1;
 
@@ -309,15 +309,15 @@ namespace System.Xml.Xsl.Xslt
 
         private int _priority = -1;
 
-        private PatternBag _elementPatterns = new PatternBag();
-        private PatternBag _attributePatterns = new PatternBag();
-        private List<Pattern> _textPatterns = new List<Pattern>();
-        private List<Pattern> _documentPatterns = new List<Pattern>();
-        private List<Pattern> _commentPatterns = new List<Pattern>();
-        private PatternBag _piPatterns = new PatternBag();
-        private List<Pattern> _heterogenousPatterns = new List<Pattern>();
+        private readonly PatternBag _elementPatterns = new PatternBag();
+        private readonly PatternBag _attributePatterns = new PatternBag();
+        private readonly List<Pattern> _textPatterns = new List<Pattern>();
+        private readonly List<Pattern> _documentPatterns = new List<Pattern>();
+        private readonly List<Pattern> _commentPatterns = new List<Pattern>();
+        private readonly PatternBag _piPatterns = new PatternBag();
+        private readonly List<Pattern> _heterogenousPatterns = new List<Pattern>();
 
-        private List<List<TemplateMatch>> _allMatches = new List<List<TemplateMatch>>();
+        private readonly List<List<TemplateMatch>> _allMatches = new List<List<TemplateMatch>>();
 
         private void Clear()
         {

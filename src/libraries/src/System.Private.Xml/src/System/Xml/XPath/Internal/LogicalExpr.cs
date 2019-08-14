@@ -11,9 +11,9 @@ namespace MS.Internal.Xml.XPath
 {
     internal sealed class LogicalExpr : ValueQuery
     {
-        private Operator.Op _op;
-        private Query _opnd1;
-        private Query _opnd2;
+        private readonly Operator.Op _op;
+        private readonly Query _opnd1;
+        private readonly Query _opnd2;
 
         public LogicalExpr(Operator.Op op, Query opnd1, Query opnd2)
         {
@@ -406,7 +406,7 @@ namespace MS.Internal.Xml.XPath
 
         private struct NodeSet
         {
-            private Query _opnd;
+            private readonly Query _opnd;
             private XPathNavigator _current;
 
             public NodeSet(object opnd)

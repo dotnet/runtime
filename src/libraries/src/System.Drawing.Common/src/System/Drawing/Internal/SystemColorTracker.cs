@@ -15,16 +15,16 @@ namespace System.Drawing.Internal
     internal static class SystemColorTracker
     {
         // when I tried the self host, it went over 500 but never over 1000.
-        private static int INITIAL_SIZE = 200;
+        private const int INITIAL_SIZE = 200;
         // If it gets this big, I seriously miscalculated the performance of this object.
-        private static int WARNING_SIZE = 100000;
-        private static float EXPAND_THRESHOLD = 0.75f;
-        private static int EXPAND_FACTOR = 2;
+        private const int WARNING_SIZE = 100000;
+        private const float EXPAND_THRESHOLD = 0.75f;
+        private const int EXPAND_FACTOR = 2;
 
         private static WeakReference[] list = new WeakReference[INITIAL_SIZE];
         private static int count = 0;
         private static bool addedTracker;
-        private static object lockObject = new object();
+        private static readonly object lockObject = new object();
 
         internal static void Add(ISystemColorTracker obj)
         {

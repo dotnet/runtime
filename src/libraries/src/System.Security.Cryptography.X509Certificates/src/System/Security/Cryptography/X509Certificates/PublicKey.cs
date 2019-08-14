@@ -9,7 +9,7 @@ namespace System.Security.Cryptography.X509Certificates
 {
     public sealed class PublicKey
     {
-        private Oid _oid;
+        private readonly Oid _oid;
         private AsymmetricAlgorithm _key = null;
 
         public PublicKey(Oid oid, AsnEncodedData parameters, AsnEncodedData keyValue)

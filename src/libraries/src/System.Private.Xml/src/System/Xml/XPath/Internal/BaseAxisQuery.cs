@@ -12,11 +12,11 @@ namespace MS.Internal.Xml.XPath
     internal abstract class BaseAxisQuery : Query
     {
         internal Query qyInput;
-        private bool _nameTest;
-        private string _name;
-        private string _prefix;
+        private readonly bool _nameTest;
+        private readonly string _name;
+        private readonly string _prefix;
         private string _nsUri;
-        private XPathNodeType _typeTest;
+        private readonly XPathNodeType _typeTest;
 
         // these two things are the state of this class
         // that need to be reset whenever the context changes.

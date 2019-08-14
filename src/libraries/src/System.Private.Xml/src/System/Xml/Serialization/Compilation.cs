@@ -17,7 +17,7 @@ namespace System.Xml.Serialization
     internal class TempAssembly
     {
         internal const string GeneratedAssemblyNamespace = "Microsoft.Xml.Serialization.GeneratedAssembly";
-        private Assembly _assembly = null;
+        private readonly Assembly _assembly = null;
         private XmlSerializerImplementation _contract = null;
         private IDictionary _writerMethods;
         private IDictionary _readerMethods;
@@ -635,8 +635,8 @@ namespace System.Xml.Serialization
 
     internal class TempAssemblyCacheKey
     {
-        private string _ns;
-        private object _type;
+        private readonly string _ns;
+        private readonly object _type;
 
         internal TempAssemblyCacheKey(string ns, object type)
         {

@@ -17,11 +17,11 @@ namespace System.ComponentModel.Composition.Hosting
         private List<ComposablePart> _parts = new List<ComposablePart>();
         private volatile bool _isDisposed = false;
         private volatile bool _isRunning = false;
-        private CompositionLock _lock = null;
+        private readonly CompositionLock _lock = null;
         private ExportProvider _sourceProvider;
         private ImportEngine _importEngine;
         private volatile bool _currentlyComposing;
-        private CompositionOptions _compositionOptions;
+        private readonly CompositionOptions _compositionOptions;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ComposablePartExportProvider"/> class.

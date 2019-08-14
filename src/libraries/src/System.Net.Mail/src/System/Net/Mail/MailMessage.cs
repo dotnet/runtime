@@ -26,7 +26,7 @@ namespace System.Net.Mail
         private TransferEncoding _bodyTransferEncoding = TransferEncoding.Unknown;
         private bool _isBodyHtml = false;
         private bool _disposed = false;
-        private Message _message;
+        private readonly Message _message;
         private DeliveryNotificationOptions _deliveryStatusNotification = DeliveryNotificationOptions.None;
 
         public MailMessage()

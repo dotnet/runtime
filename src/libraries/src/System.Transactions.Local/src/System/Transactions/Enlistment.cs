@@ -58,13 +58,13 @@ namespace System.Transactions
         protected InternalTransaction _transaction;
 
         // Reference to the lightweight transaction.
-        private Transaction _atomicTransaction;
+        private readonly Transaction _atomicTransaction;
 
         // The EnlistmentTraceIdentifier for this enlistment.
         private EnlistmentTraceIdentifier _traceIdentifier;
 
         // Unique value amongst all enlistments for a given internal transaction.
-        private int _enlistmentId;
+        private readonly int _enlistmentId;
 
         internal Guid DistributedTxId
         {
@@ -81,7 +81,7 @@ namespace System.Transactions
         }
 
         // Parent Enlistment Object
-        private Enlistment _enlistment;
+        private readonly Enlistment _enlistment;
         private PreparingEnlistment _preparingEnlistment;
         private SinglePhaseEnlistment _singlePhaseEnlistment;
 
@@ -350,7 +350,7 @@ namespace System.Transactions
     //
     internal class RecoveringInternalEnlistment : DurableInternalEnlistment
     {
-        private object _syncRoot;
+        private readonly object _syncRoot;
 
         internal RecoveringInternalEnlistment(Enlistment enlistment, IEnlistmentNotification twoPhaseNotifications, object syncRoot) :
             base(enlistment, twoPhaseNotifications)
@@ -365,7 +365,7 @@ namespace System.Transactions
     {
         // This class acts as the durable single phase enlistment for a
         // promotable single phase enlistment.
-        private IPromotableSinglePhaseNotification _promotableNotificationInterface;
+        private readonly IPromotableSinglePhaseNotification _promotableNotificationInterface;
 
         internal PromotableInternalEnlistment(
             Enlistment enlistment,

@@ -286,7 +286,7 @@ namespace System.Net
 
         private sealed unsafe class HttpRequestStreamAsyncResult : LazyAsyncResult
         {
-            private ThreadPoolBoundHandle _boundHandle;
+            private readonly ThreadPoolBoundHandle _boundHandle;
             internal NativeOverlapped* _pOverlapped;
             internal void* _pPinnedBuffer;
             internal uint _dataAlreadyRead = 0;

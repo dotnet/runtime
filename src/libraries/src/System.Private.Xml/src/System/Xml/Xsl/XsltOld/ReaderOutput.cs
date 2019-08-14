@@ -13,7 +13,7 @@ namespace System.Xml.Xsl.XsltOld
     internal sealed class ReaderOutput : XmlReader, IRecordOutput
     {
         private Processor _processor;
-        private XmlNameTable _nameTable;
+        private readonly XmlNameTable _nameTable;
 
         // Main node + Fields Collection
         private RecordBuilder _builder;
@@ -34,9 +34,9 @@ namespace System.Xml.Xsl.XsltOld
         private bool _haveRecord;
 
         // Static default record
-        private static BuilderInfo s_DefaultInfo = new BuilderInfo();
+        private static readonly BuilderInfo s_DefaultInfo = new BuilderInfo();
 
-        private XmlEncoder _encoder = new XmlEncoder();
+        private readonly XmlEncoder _encoder = new XmlEncoder();
         private XmlCharType _xmlCharType = XmlCharType.Instance;
 
         internal ReaderOutput(Processor processor)

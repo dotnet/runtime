@@ -241,7 +241,7 @@ namespace System.Data.SqlClient
     internal sealed class WritePacketCache : IDisposable
     {
         private bool _disposed;
-        private Stack<SNIPacket> _packets;
+        private readonly Stack<SNIPacket> _packets;
 
         public WritePacketCache()
         {

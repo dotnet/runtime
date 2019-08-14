@@ -25,8 +25,8 @@ namespace System.Linq.Parallel
     /// <typeparam name="TKey"></typeparam>
     internal class OrderPreservingSpoolingTask<TInputOutput, TKey> : SpoolingTaskBase
     {
-        private Shared<TInputOutput[]> _results; // The destination array cell into which data is placed.
-        private SortHelper<TInputOutput> _sortHelper; // A helper that performs the sorting.
+        private readonly Shared<TInputOutput[]> _results; // The destination array cell into which data is placed.
+        private readonly SortHelper<TInputOutput> _sortHelper; // A helper that performs the sorting.
 
         //-----------------------------------------------------------------------------------
         // Creates, but does not execute, a new spooling task.

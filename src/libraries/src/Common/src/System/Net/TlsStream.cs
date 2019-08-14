@@ -12,9 +12,9 @@ namespace System.Net
 {
     internal class TlsStream : NetworkStream
     {
-        private SslStream _sslStream;
-        private string _host;
-        private X509CertificateCollection _clientCertificates;
+        private readonly SslStream _sslStream;
+        private readonly string _host;
+        private readonly X509CertificateCollection _clientCertificates;
 
         public TlsStream(NetworkStream stream, Socket socket, string host, X509CertificateCollection clientCertificates) : base(socket)
         {

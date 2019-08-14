@@ -85,6 +85,6 @@ namespace System.DirectoryServices.AccountManagement
                             category);
         }
 
-        private static DebugLevel s_debugLevel;
+        private static readonly DebugLevel s_debugLevel;
     }
 }

@@ -558,9 +558,9 @@ namespace System.IO.Packaging
         private string _contentType = null;
         private string _type = string.Empty;
         private string _subType = string.Empty;
-        private string _originalString;
+        private readonly string _originalString;
         private Dictionary<string, string> _parameterDictionary = null;
-        private bool _isInitialized = false;
+        private readonly bool _isInitialized = false;
 
         private const string Quote = "\"";
         private const char SemicolonSeparator = ';';

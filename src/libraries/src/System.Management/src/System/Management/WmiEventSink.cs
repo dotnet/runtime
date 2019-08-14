@@ -10,17 +10,17 @@ namespace System.Management
 internal class WmiEventSink : IWmiEventSource
 {
     private static int                      s_hash = 0;
-    private int                             hash;
-    private ManagementOperationObserver     watcher;
-    private object                          context;
-    private ManagementScope                 scope;
+    private readonly int                             hash;
+    private readonly ManagementOperationObserver     watcher;
+    private readonly object                          context;
+    private readonly ManagementScope                 scope;
     private object                          stub;           // The secured IWbemObjectSink
 
     // Used for Put's only
     internal event InternalObjectPutEventHandler  InternalObjectPut;
-    private ManagementPath                  path;
-    private string                          className;
-    private bool                            isLocal;
+    private readonly ManagementPath                  path;
+    private readonly string                          className;
+    private readonly bool                            isLocal;
 
 
     private static ManagementOperationObserver watcherParameter;
@@ -220,7 +220,7 @@ internal class WmiEventSink : IWmiEventSource
 // Doesn't issue ObjectReady events
 internal class WmiGetEventSink : WmiEventSink
 {
-    private ManagementObject    managementObject;
+    private readonly ManagementObject    managementObject;
 
     private static ManagementOperationObserver watcherParameter;
     private static object contextParameter;

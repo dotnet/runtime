@@ -1119,8 +1119,8 @@ namespace System.Xml.XPath
         private class CheckValidityHelper
         {
             private bool _isValid;
-            private ValidationEventHandler _nextEventHandler;
-            private XPathNavigatorReader _reader;
+            private readonly ValidationEventHandler _nextEventHandler;
+            private readonly XPathNavigatorReader _reader;
 
             internal CheckValidityHelper(ValidationEventHandler nextEventHandler, XPathNavigatorReader reader)
             {
@@ -2216,7 +2216,7 @@ namespace System.Xml.XPath
         [DebuggerDisplay("{ToString()}")]
         internal struct DebuggerDisplayProxy
         {
-            private XPathNavigator _nav;
+            private readonly XPathNavigator _nav;
             public DebuggerDisplayProxy(XPathNavigator nav)
             {
                 _nav = nav;

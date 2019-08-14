@@ -19,12 +19,12 @@ namespace System.Net
 {
     public sealed unsafe partial class HttpListenerRequest
     {
-        private ulong _requestId;
+        private readonly ulong _requestId;
         internal ulong _connectionId;
-        private SslStatus _sslStatus;
-        private string _cookedUrlHost;
-        private string _cookedUrlPath;
-        private string _cookedUrlQuery;
+        private readonly SslStatus _sslStatus;
+        private readonly string _cookedUrlHost;
+        private readonly string _cookedUrlPath;
+        private readonly string _cookedUrlQuery;
         private long _contentLength;
         private Stream _requestStream;
         private string _httpMethod;
@@ -34,7 +34,7 @@ namespace System.Net
         private BoundaryType _boundaryType;
         private int _clientCertificateError;
         private RequestContextBase _memoryBlob;
-        private HttpListenerContext _httpContext;
+        private readonly HttpListenerContext _httpContext;
         private bool _isDisposed = false;
         internal const uint CertBoblSize = 1500;
         private string _serviceName;

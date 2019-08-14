@@ -60,7 +60,7 @@ namespace System.Linq.Parallel
             return Comparer<TKey>.Default;
         }
 
-        private static FastIntComparer s_fastIntComparer = new FastIntComparer();
+        private static readonly FastIntComparer s_fastIntComparer = new FastIntComparer();
 
         private class FastIntComparer : Comparer<int>
         {
@@ -70,7 +70,7 @@ namespace System.Linq.Parallel
             }
         }
 
-        private static FastLongComparer s_fastLongComparer = new FastLongComparer();
+        private static readonly FastLongComparer s_fastLongComparer = new FastLongComparer();
 
         private class FastLongComparer : Comparer<long>
         {
@@ -80,7 +80,7 @@ namespace System.Linq.Parallel
             }
         }
 
-        private static FastFloatComparer s_fastFloatComparer = new FastFloatComparer();
+        private static readonly FastFloatComparer s_fastFloatComparer = new FastFloatComparer();
 
         private class FastFloatComparer : Comparer<float>
         {
@@ -90,7 +90,7 @@ namespace System.Linq.Parallel
             }
         }
 
-        private static FastDoubleComparer s_fastDoubleComparer = new FastDoubleComparer();
+        private static readonly FastDoubleComparer s_fastDoubleComparer = new FastDoubleComparer();
 
         private class FastDoubleComparer : Comparer<double>
         {
@@ -100,7 +100,7 @@ namespace System.Linq.Parallel
             }
         }
 
-        private static FastDateTimeComparer s_fastDateTimeComparer = new FastDateTimeComparer();
+        private static readonly FastDateTimeComparer s_fastDateTimeComparer = new FastDateTimeComparer();
 
         private class FastDateTimeComparer : Comparer<DateTime>
         {

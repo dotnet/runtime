@@ -80,7 +80,7 @@ namespace System.Reflection
         /// the corresponding elements will be null.
         /// </summary>
         internal CoreTypes GetAllFoundCoreTypes() => _coreTypes;
-        private CoreTypes _coreTypes;
+        private readonly CoreTypes _coreTypes;
 
         //
         // Seriously, ugh - the default binder for Reflection has a dependency on checking types for equality with System.Object - for that

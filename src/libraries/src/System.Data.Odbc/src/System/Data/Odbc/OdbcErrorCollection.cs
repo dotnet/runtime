@@ -10,7 +10,7 @@ namespace System.Data.Odbc
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed class OdbcErrorCollection : ICollection
     {
-        private ArrayList _items = new ArrayList(); // Do not rename (binary serialization)
+        private readonly ArrayList _items = new ArrayList(); // Do not rename (binary serialization)
 
         internal OdbcErrorCollection()
         {

@@ -38,7 +38,7 @@ namespace System.Net.Http
 
         // Define alphanumeric characters for cnonce
         // 48='0', 65='A', 97='a'
-        private static int[] s_alphaNumChooser = new int[] { 48, 65, 97 };
+        private static readonly int[] s_alphaNumChooser = new int[] { 48, 65, 97 };
 
         public static async Task<string> GetDigestTokenForCredential(NetworkCredential credential, HttpRequestMessage request, DigestResponse digestResponse)
         {

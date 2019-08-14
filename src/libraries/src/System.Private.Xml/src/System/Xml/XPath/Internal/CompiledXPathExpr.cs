@@ -15,7 +15,7 @@ namespace MS.Internal.Xml.XPath
     internal class CompiledXpathExpr : XPathExpression
     {
         private Query _query;
-        private string _expr;
+        private readonly string _expr;
         private bool _needContext;
 
         internal CompiledXpathExpr(Query query, string expression, bool needContext)
@@ -112,7 +112,7 @@ namespace MS.Internal.Xml.XPath
 
         private class UndefinedXsltContext : XsltContext
         {
-            private IXmlNamespaceResolver _nsResolver;
+            private readonly IXmlNamespaceResolver _nsResolver;
 
             public UndefinedXsltContext(IXmlNamespaceResolver nsResolver) : base(/*dummy*/false)
             {
@@ -157,10 +157,10 @@ namespace MS.Internal.Xml.XPath
 
     internal sealed class XPathComparerHelper : IComparer
     {
-        private XmlSortOrder _order;
-        private XmlCaseOrder _caseOrder;
-        private CultureInfo _cinfo;
-        private XmlDataType _dataType;
+        private readonly XmlSortOrder _order;
+        private readonly XmlCaseOrder _caseOrder;
+        private readonly CultureInfo _cinfo;
+        private readonly XmlDataType _dataType;
 
         public XPathComparerHelper(XmlSortOrder order, XmlCaseOrder caseOrder, string lang, XmlDataType dataType)
         {

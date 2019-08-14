@@ -16,9 +16,9 @@ namespace System.Security.Cryptography.Xml
 {
     public class XmlDsigExcC14NTransform : Transform
     {
-        private Type[] _inputTypes = { typeof(Stream), typeof(XmlDocument), typeof(XmlNodeList) };
-        private Type[] _outputTypes = { typeof(Stream) };
-        private bool _includeComments = false;
+        private readonly Type[] _inputTypes = { typeof(Stream), typeof(XmlDocument), typeof(XmlNodeList) };
+        private readonly Type[] _outputTypes = { typeof(Stream) };
+        private readonly bool _includeComments = false;
         private string _inclusiveNamespacesPrefixList;
         private ExcCanonicalXml _excCanonicalXml;
 

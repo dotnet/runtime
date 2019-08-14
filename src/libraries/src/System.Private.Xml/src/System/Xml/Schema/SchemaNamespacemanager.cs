@@ -11,7 +11,7 @@ namespace System.Xml.Schema
 
     internal class SchemaNamespaceManager : XmlNamespaceManager
     {
-        private XmlSchemaObject _node;
+        private readonly XmlSchemaObject _node;
 
         public SchemaNamespaceManager(XmlSchemaObject node)
         {

@@ -12,7 +12,7 @@ namespace System.ComponentModel.DataAnnotations
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
     public sealed class MetadataTypeAttribute : Attribute
     {
-        private Type _metadataClassType;
+        private readonly Type _metadataClassType;
 
         /// <summary>
         /// Initializes a new instance of the System.ComponentModel.DataAnnotations.MetadataTypeAttribute

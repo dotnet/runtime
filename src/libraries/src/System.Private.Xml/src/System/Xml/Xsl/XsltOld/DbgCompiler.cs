@@ -24,7 +24,7 @@ namespace System.Xml.Xsl.XsltOld
         internal void ReplaceVariables(VariableAction[] vars) { _variables = vars; }
 
         // static Empty:
-        private static DbgData s_nullDbgData = new DbgData();
+        private static readonly DbgData s_nullDbgData = new DbgData();
         private DbgData()
         {
             StyleSheet = null;
@@ -35,7 +35,7 @@ namespace System.Xml.Xsl.XsltOld
 
     internal class DbgCompiler : Compiler
     {
-        private IXsltDebugger _debugger;
+        private readonly IXsltDebugger _debugger;
 
         public DbgCompiler(IXsltDebugger debugger)
         {
@@ -51,8 +51,8 @@ namespace System.Xml.Xsl.XsltOld
         //          Duplicated globals from different stilesheets are replaced (by import presidence)
         // Locals:  Visible only in scope and after it was defined.
         //          No duplicates posible.
-        private ArrayList _globalVars = new ArrayList();
-        private ArrayList _localVars = new ArrayList();
+        private readonly ArrayList _globalVars = new ArrayList();
+        private readonly ArrayList _localVars = new ArrayList();
         private VariableAction[] _globalVarsCache, _localVarsCache;
 
         public virtual VariableAction[] GlobalVariables
@@ -752,7 +752,7 @@ namespace System.Xml.Xsl.XsltOld
 
         private class BeginEventDbg : BeginEvent
         {
-            private DbgData _dbgData;
+            private readonly DbgData _dbgData;
             internal override DbgData DbgData { get { return _dbgData; } }
 
             public BeginEventDbg(Compiler compiler) : base(compiler)
@@ -768,7 +768,7 @@ namespace System.Xml.Xsl.XsltOld
 
         private class TextEventDbg : TextEvent
         {
-            private DbgData _dbgData;
+            private readonly DbgData _dbgData;
             internal override DbgData DbgData { get { return _dbgData; } }
 
             public TextEventDbg(Compiler compiler) : base(compiler)

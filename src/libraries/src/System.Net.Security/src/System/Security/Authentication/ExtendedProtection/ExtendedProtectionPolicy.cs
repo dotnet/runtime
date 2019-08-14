@@ -15,10 +15,10 @@ namespace System.Security.Authentication.ExtendedProtection
     /// </summary>
     public class ExtendedProtectionPolicy : ISerializable
     {
-        private ServiceNameCollection _customServiceNames;
-        private PolicyEnforcement _policyEnforcement;
-        private ProtectionScenario _protectionScenario;
-        private ChannelBinding _customChannelBinding;
+        private readonly ServiceNameCollection _customServiceNames;
+        private readonly PolicyEnforcement _policyEnforcement;
+        private readonly ProtectionScenario _protectionScenario;
+        private readonly ChannelBinding _customChannelBinding;
 
         public ExtendedProtectionPolicy(PolicyEnforcement policyEnforcement,
                                         ProtectionScenario protectionScenario,

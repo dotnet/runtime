@@ -41,7 +41,7 @@ namespace System.Data.SqlTypes
         private string _m_path;
         private byte[] _m_txn;
         private bool _m_disposed;
-        private static byte[] s_eaNameString = new byte[]
+        private static readonly byte[] s_eaNameString = new byte[]
         {
             (byte)'F', (byte)'i', (byte)'l', (byte)'e', (byte)'s', (byte)'t', (byte)'r', (byte)'e', (byte)'a', (byte)'m', (byte)'_',
             (byte)'T', (byte)'r', (byte)'a', (byte)'n', (byte)'s', (byte)'a', (byte)'c', (byte)'t', (byte)'i', (byte)'o', (byte)'n', (byte)'_',

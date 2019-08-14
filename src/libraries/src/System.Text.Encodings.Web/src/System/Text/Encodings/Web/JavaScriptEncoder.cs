@@ -70,7 +70,7 @@ namespace System.Text.Encodings.Web
 
     internal sealed class DefaultJavaScriptEncoder : JavaScriptEncoder
     {
-        private AllowedCharactersBitmap _allowedCharacters;
+        private readonly AllowedCharactersBitmap _allowedCharacters;
 
         internal static readonly DefaultJavaScriptEncoder Singleton = new DefaultJavaScriptEncoder(new TextEncoderSettings(UnicodeRanges.BasicLatin));
 

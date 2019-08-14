@@ -15,16 +15,16 @@ namespace System.Data.OleDb
         private readonly tagDBCOLUMNACCESS[] _dbcolumns;
 
         private OleDbParameter[] _parameters;
-        private int _collectionChangeID;
+        private readonly int _collectionChangeID;
 
         private OleDbDataReader _dataReader;
         private ColumnBinding[] _columnBindings;
         private RowBinding _rowBinding;
 
         private int _index;
-        private int _count;
+        private readonly int _count;
         private int _dataBufferSize;
-        private bool _ifIRowsetElseIRow;
+        private readonly bool _ifIRowsetElseIRow;
         private bool _forceRebind;
         private bool _needToReset;
 

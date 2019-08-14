@@ -45,8 +45,8 @@ namespace System.Xml
     internal class XmlUTF8NodeWriter : XmlStreamNodeWriter
     {
         private byte[] _entityChars;
-        private bool[] _isEscapedAttributeChar;
-        private bool[] _isEscapedElementChar;
+        private readonly bool[] _isEscapedAttributeChar;
+        private readonly bool[] _isEscapedElementChar;
         private bool _inAttribute;
         private const int bufferLength = 512;
         private const int maxEntityLength = 32;

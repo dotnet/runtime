@@ -1296,7 +1296,7 @@ namespace System.DirectoryServices.AccountManagement
         //
 
         private UnsafeNativeMethods.IADsPathname _pathCracker = null;
-        private object _pathLock = new object();
+        private readonly object _pathLock = new object();
         private Dictionary<string, bool> _usersVisited = new Dictionary<string, bool>();
 
         // The 0th entry in this list is always the DN of the original group/user whose membership we're querying
@@ -1307,18 +1307,18 @@ namespace System.DirectoryServices.AccountManagement
         protected object current = null; // current member of the group (or current group of the user)
 
         private bool _returnedPrimaryGroup = false;
-        private string _primaryGroupDN;                      // the DN of the user's PrimaryGroup (not included in this.members/originalMembers)
+        private readonly string _primaryGroupDN;                      // the DN of the user's PrimaryGroup (not included in this.members/originalMembers)
 
-        private bool _recursive;
+        private readonly bool _recursive;
 
-        private Queue<IEnumerable> _membersQueue = new Queue<IEnumerable>();
+        private readonly Queue<IEnumerable> _membersQueue = new Queue<IEnumerable>();
         private IEnumerable _members;            // the membership we're currently enumerating over
-        private Queue<IEnumerable> _originalMembers = new Queue<IEnumerable>();    // the membership we started off with (before recursing)
+        private readonly Queue<IEnumerable> _originalMembers = new Queue<IEnumerable>();    // the membership we started off with (before recursing)
 
         private IEnumerator _membersEnum = null;
 
         private ADStoreCtx _storeCtx;
-        private ADStoreCtx _originalStoreCtx;
+        private readonly ADStoreCtx _originalStoreCtx;
 
         private bool _atBeginning = true;
 
@@ -1339,20 +1339,20 @@ namespace System.DirectoryServices.AccountManagement
         private List<GroupPrincipal> _foreignGroups = new List<GroupPrincipal>();
 
         // members based on a query (used for users who are group members by virtue of their primaryGroupId pointing to the group)
-        private DirectorySearcher _primaryGroupMembersSearcher;
+        private readonly DirectorySearcher _primaryGroupMembersSearcher;
         private SearchResultCollection _queryMembersResults = null;
         private IEnumerator _queryMembersResultEnumerator = null;
 
         private DirectorySearcher _currentMembersSearcher = null;
 
-        private Queue<DirectorySearcher> _memberSearchersQueue = new Queue<DirectorySearcher>();
-        private Queue<DirectorySearcher> _memberSearchersQueueOriginal = new Queue<DirectorySearcher>();
+        private readonly Queue<DirectorySearcher> _memberSearchersQueue = new Queue<DirectorySearcher>();
+        private readonly Queue<DirectorySearcher> _memberSearchersQueueOriginal = new Queue<DirectorySearcher>();
 
         private SearchResultCollection _memberSearchResults = null;
         private IEnumerator _memberSearchResultsEnumerator = null;
 
         private ExpansionMode _expansionMode;
-        private ExpansionMode _originalExpansionMode;
+        private readonly ExpansionMode _originalExpansionMode;
 
         private string BuildPathFromDN(string dn)
         {

@@ -104,7 +104,7 @@ namespace System.DirectoryServices
         /// </devdoc>
         private class ChildEnumerator : IEnumerator
         {
-            private DirectoryEntry _container;
+            private readonly DirectoryEntry _container;
             private SafeNativeMethods.EnumVariant _enumVariant;
             private DirectoryEntry _currentEntry;
 

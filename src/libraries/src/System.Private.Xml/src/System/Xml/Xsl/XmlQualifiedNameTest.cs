@@ -24,9 +24,9 @@ namespace System.Xml.Xsl
     /// </summary>
     internal class XmlQualifiedNameTest : XmlQualifiedName
     {
-        private bool _exclude;
+        private readonly bool _exclude;
         private const string wildcard = "*";
-        private static XmlQualifiedNameTest s_wc = XmlQualifiedNameTest.New(wildcard, wildcard);
+        private static readonly XmlQualifiedNameTest s_wc = XmlQualifiedNameTest.New(wildcard, wildcard);
 
         /// <summary>
         /// Full wildcard

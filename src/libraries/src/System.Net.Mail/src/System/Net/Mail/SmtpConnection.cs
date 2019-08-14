@@ -22,23 +22,23 @@ namespace System.Net.Mail
     {
         private static readonly ContextCallback s_AuthenticateCallback = new ContextCallback(AuthenticateCallback);
 
-        private BufferBuilder _bufferBuilder = new BufferBuilder();
+        private readonly BufferBuilder _bufferBuilder = new BufferBuilder();
         private bool _isConnected;
         private bool _isClosed;
         private bool _isStreamOpen;
-        private EventHandler _onCloseHandler;
+        private readonly EventHandler _onCloseHandler;
         internal SmtpTransport _parent;
-        private SmtpClient _client;
+        private readonly SmtpClient _client;
         private NetworkStream _networkStream;
         internal TcpClient _tcpClient;
         internal string _host = null;
         internal int _port = 0;
         private SmtpReplyReaderFactory _responseReader;
 
-        private ICredentialsByHost _credentials;
+        private readonly ICredentialsByHost _credentials;
         private int _timeout = 100000;
         private string[] _extensions;
-        private ChannelBinding _channelBindingToken = null;
+        private readonly ChannelBinding _channelBindingToken = null;
         private bool _enableSsl;
         private X509CertificateCollection _clientCertificates;
 
@@ -390,15 +390,15 @@ namespace System.Net.Mail
         private class ConnectAndHandshakeAsyncResult : LazyAsyncResult
         {
             private string _authResponse;
-            private SmtpConnection _connection;
+            private readonly SmtpConnection _connection;
             private int _currentModule = -1;
-            private int _port;
-            private static AsyncCallback s_handshakeCallback = new AsyncCallback(HandshakeCallback);
-            private static AsyncCallback s_sendEHelloCallback = new AsyncCallback(SendEHelloCallback);
-            private static AsyncCallback s_sendHelloCallback = new AsyncCallback(SendHelloCallback);
-            private static AsyncCallback s_authenticateCallback = new AsyncCallback(AuthenticateCallback);
-            private static AsyncCallback s_authenticateContinueCallback = new AsyncCallback(AuthenticateContinueCallback);
-            private string _host;
+            private readonly int _port;
+            private static readonly AsyncCallback s_handshakeCallback = new AsyncCallback(HandshakeCallback);
+            private static readonly AsyncCallback s_sendEHelloCallback = new AsyncCallback(SendEHelloCallback);
+            private static readonly AsyncCallback s_sendHelloCallback = new AsyncCallback(SendHelloCallback);
+            private static readonly AsyncCallback s_authenticateCallback = new AsyncCallback(AuthenticateCallback);
+            private static readonly AsyncCallback s_authenticateContinueCallback = new AsyncCallback(AuthenticateContinueCallback);
+            private readonly string _host;
 
             private readonly ContextAwareResult _outerResult;
 

@@ -111,13 +111,13 @@ namespace System.Xml.Xsl.Runtime
 
     internal class NumberFormatter : NumberFormatterBase
     {
-        private string _formatString;
-        private int _lang;
-        private string _letterValue;
-        private string _groupingSeparator;
-        private int _groupingSize;
+        private readonly string _formatString;
+        private readonly int _lang;
+        private readonly string _letterValue;
+        private readonly string _groupingSeparator;
+        private readonly int _groupingSize;
 
-        private List<TokenInfo> _tokens;
+        private readonly List<TokenInfo> _tokens;
 
         public const char DefaultStartChar = '1';
         private static readonly TokenInfo s_defaultFormat = TokenInfo.CreateFormat("0", 0, 1);

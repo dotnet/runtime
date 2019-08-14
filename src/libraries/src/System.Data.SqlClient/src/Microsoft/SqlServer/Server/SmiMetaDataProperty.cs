@@ -32,7 +32,7 @@ namespace Microsoft.SqlServer.Server
     {
         private const int SelectorCount = 3;  // number of elements in SmiPropertySelector
 
-        private SmiMetaDataProperty[] _properties;
+        private readonly SmiMetaDataProperty[] _properties;
         private bool _isReadOnly;
 
         // Singleton empty instances to ensure each property is always non-null
@@ -107,7 +107,7 @@ namespace Microsoft.SqlServer.Server
     // Property defining a list of column ordinals that define a unique key
     internal class SmiUniqueKeyProperty : SmiMetaDataProperty
     {
-        private IList<bool> _columns;
+        private readonly IList<bool> _columns;
 
         internal SmiUniqueKeyProperty(IList<bool> columnIsKey)
         {
@@ -148,7 +148,7 @@ namespace Microsoft.SqlServer.Server
             internal SortOrder Order;
         }
 
-        private IList<SmiColumnOrder> _columns;
+        private readonly IList<SmiColumnOrder> _columns;
 
         internal SmiOrderProperty(IList<SmiColumnOrder> columnOrders)
         {
@@ -190,7 +190,7 @@ namespace Microsoft.SqlServer.Server
     {
         #region private fields
 
-        private IList<bool> _defaults;
+        private readonly IList<bool> _defaults;
 
         #endregion
 

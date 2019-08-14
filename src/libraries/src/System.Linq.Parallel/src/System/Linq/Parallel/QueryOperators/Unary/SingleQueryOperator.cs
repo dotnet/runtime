@@ -96,13 +96,13 @@ namespace System.Linq.Parallel
 
         private class SingleQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TSource, int>
         {
-            private QueryOperatorEnumerator<TSource, TKey> _source; // The data source to enumerate.
-            private Func<TSource, bool> _predicate; // The optional predicate used during the search.
+            private readonly QueryOperatorEnumerator<TSource, TKey> _source; // The data source to enumerate.
+            private readonly Func<TSource, bool> _predicate; // The optional predicate used during the search.
             private bool _alreadySearched; // Whether we have searched our input already.
             private bool _yieldExtra; // Whether we found more than one element.
 
             // Data shared among partitions.
-            private Shared<int> _totalElementCount; // The total count of elements found.
+            private readonly Shared<int> _totalElementCount; // The total count of elements found.
 
             //---------------------------------------------------------------------------------------
             // Instantiates a new enumerator.

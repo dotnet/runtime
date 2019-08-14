@@ -17,7 +17,7 @@ namespace System.IO.Ports
         private const int MinDataBits = 5;
 
         // members supporting properties exposed to SerialPort
-        private string _portName;
+        private readonly string _portName;
         private bool _inBreak = false;
         private Handshake _handshake;
 

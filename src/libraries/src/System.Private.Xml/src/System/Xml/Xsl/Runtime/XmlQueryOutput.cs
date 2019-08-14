@@ -39,11 +39,11 @@ namespace System.Xml.Xsl.Runtime
         private XmlRawWriter _xwrt;                  // Output to XmlRawWriter--get and set this using the Writer property
 
         // It is OK to set these properties directly
-        private XmlQueryRuntime _runtime;            // The XmlQueryRuntime instance that keeps global state
+        private readonly XmlQueryRuntime _runtime;            // The XmlQueryRuntime instance that keeps global state
         private XmlAttributeCache _attrCache;        // Cache used to detect duplicate attributes
         private int _depth;                          // Depth of the currently constructing tree
         private XmlState _xstate;                    // Current XML state
-        private XmlSequenceWriter _seqwrt;           // Current XmlSequenceWriter
+        private readonly XmlSequenceWriter _seqwrt;           // Current XmlSequenceWriter
         private XmlNamespaceManager _nsmgr;          // Output namespace manager
         private int _cntNmsp;                        // Number of pending namespaces
         private Dictionary<string, string> _conflictPrefixes;         // Remembers prefixes that were auto-generated previously in case they can be reused
@@ -53,7 +53,7 @@ namespace System.Xml.Xsl.Runtime
         private Stack<string> _stkNames;             // Keep stack of name parts computed during StartElement
         private XPathNodeType _rootType;             // NodeType of the root of the tree
 
-        private Dictionary<string, string> _usedPrefixes = new Dictionary<string, string>(); //The prefies that used in the current scope
+        private readonly Dictionary<string, string> _usedPrefixes = new Dictionary<string, string>(); //The prefies that used in the current scope
 
         /// <summary>
         /// This constructor is internal so that external users cannot construct it (and therefore we do not have to test it separately).

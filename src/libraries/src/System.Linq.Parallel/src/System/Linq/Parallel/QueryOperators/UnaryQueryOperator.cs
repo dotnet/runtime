@@ -94,9 +94,9 @@ namespace System.Linq.Parallel
         internal class UnaryQueryOperatorResults : QueryResults<TOutput>
         {
             protected QueryResults<TInput> _childQueryResults; // Results of the child query
-            private UnaryQueryOperator<TInput, TOutput> _op; // Operator that generated these results
+            private readonly UnaryQueryOperator<TInput, TOutput> _op; // Operator that generated these results
             private QuerySettings _settings; // Settings collected from the query
-            private bool _preferStriping; // If the results are indexable, should we use striping when partitioning them
+            private readonly bool _preferStriping; // If the results are indexable, should we use striping when partitioning them
 
             internal UnaryQueryOperatorResults(QueryResults<TInput> childQueryResults, UnaryQueryOperator<TInput, TOutput> op, QuerySettings settings, bool preferStriping)
             {
@@ -140,9 +140,9 @@ namespace System.Linq.Parallel
 
             private class ChildResultsRecipient : IPartitionedStreamRecipient<TInput>
             {
-                private IPartitionedStreamRecipient<TOutput> _outputRecipient;
-                private UnaryQueryOperator<TInput, TOutput> _op;
-                private bool _preferStriping;
+                private readonly IPartitionedStreamRecipient<TOutput> _outputRecipient;
+                private readonly UnaryQueryOperator<TInput, TOutput> _op;
+                private readonly bool _preferStriping;
                 private QuerySettings _settings;
 
                 internal ChildResultsRecipient(

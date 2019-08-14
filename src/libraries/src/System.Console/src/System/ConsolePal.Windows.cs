@@ -1267,7 +1267,7 @@ namespace System
         internal sealed class ControlCHandlerRegistrar
         {
             private bool _handlerRegistered;
-            private Interop.Kernel32.ConsoleCtrlHandlerRoutine _handler;
+            private readonly Interop.Kernel32.ConsoleCtrlHandlerRoutine _handler;
 
             internal ControlCHandlerRegistrar()
             {

@@ -8,8 +8,8 @@ namespace MS.Internal.Xml.XPath
 {
     internal class Variable : AstNode
     {
-        private string _localname;
-        private string _prefix;
+        private readonly string _localname;
+        private readonly string _prefix;
 
         public Variable(string name, string prefix)
         {

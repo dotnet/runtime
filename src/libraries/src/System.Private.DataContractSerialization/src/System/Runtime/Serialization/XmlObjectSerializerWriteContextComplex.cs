@@ -22,8 +22,8 @@ namespace System.Runtime.Serialization
     internal class XmlObjectSerializerWriteContextComplex : XmlObjectSerializerWriteContext
 #endif
     {
-        private ISerializationSurrogateProvider _serializationSurrogateProvider;
-        private SerializationMode _mode;
+        private readonly ISerializationSurrogateProvider _serializationSurrogateProvider;
+        private readonly SerializationMode _mode;
 
         internal XmlObjectSerializerWriteContextComplex(DataContractSerializer serializer, DataContract rootTypeDataContract, DataContractResolver dataContractResolver)
             : base(serializer, rootTypeDataContract, dataContractResolver)

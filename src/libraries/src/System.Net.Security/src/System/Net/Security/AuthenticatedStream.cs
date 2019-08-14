@@ -10,8 +10,8 @@ namespace System.Net.Security
     // A public contract for a base abstract authenticated stream.
     public abstract class AuthenticatedStream : Stream
     {
-        private Stream _innerStream;
-        private bool _leaveStreamOpen;
+        private readonly Stream _innerStream;
+        private readonly bool _leaveStreamOpen;
 
         protected AuthenticatedStream(Stream innerStream, bool leaveInnerStreamOpen)
         {

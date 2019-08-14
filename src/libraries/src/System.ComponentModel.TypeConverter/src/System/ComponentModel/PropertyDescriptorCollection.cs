@@ -595,7 +595,7 @@ namespace System.ComponentModel
 
         private class PropertyDescriptorEnumerator : IDictionaryEnumerator
         {
-            private PropertyDescriptorCollection _owner;
+            private readonly PropertyDescriptorCollection _owner;
             private int _index = -1;
 
             public PropertyDescriptorEnumerator(PropertyDescriptorCollection owner)

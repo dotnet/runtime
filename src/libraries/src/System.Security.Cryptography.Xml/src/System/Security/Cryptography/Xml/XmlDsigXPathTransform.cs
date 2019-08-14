@@ -18,8 +18,8 @@ namespace System.Security.Cryptography.Xml
 
     public class XmlDsigXPathTransform : Transform
     {
-        private Type[] _inputTypes = { typeof(Stream), typeof(XmlNodeList), typeof(XmlDocument) };
-        private Type[] _outputTypes = { typeof(XmlNodeList) };
+        private readonly Type[] _inputTypes = { typeof(Stream), typeof(XmlNodeList), typeof(XmlDocument) };
+        private readonly Type[] _outputTypes = { typeof(XmlNodeList) };
         private string _xpathexpr;
         private XmlDocument _document;
         private XmlNamespaceManager _nsm;

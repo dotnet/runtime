@@ -50,8 +50,8 @@ namespace System.Management
     //CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC//
     public class PropertyDataCollection : ICollection, IEnumerable
     {
-        private ManagementBaseObject parent;
-        private bool isSystem;
+        private readonly ManagementBaseObject parent;
+        private readonly bool isSystem;
 
         internal PropertyDataCollection(ManagementBaseObject parent, bool isSystem) : base()
         {
@@ -240,8 +240,8 @@ namespace System.Management
         /// </example>
         public class PropertyDataEnumerator : IEnumerator
         {
-            private ManagementBaseObject parent;
-            private string[] propertyNames;
+            private readonly ManagementBaseObject parent;
+            private readonly string[] propertyNames;
             private int index;
 
             internal PropertyDataEnumerator(ManagementBaseObject parent, bool isSystem)

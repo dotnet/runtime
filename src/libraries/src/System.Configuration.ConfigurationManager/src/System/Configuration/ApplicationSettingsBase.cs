@@ -16,7 +16,7 @@ namespace System.Configuration
     {
         private bool _explicitSerializeOnClass = false;
         private object[] _classAttributes;
-        private IComponent _owner;
+        private readonly IComponent _owner;
         private PropertyChangedEventHandler _onPropertyChanged;
         private SettingsContext _context;
         private SettingsProperty _init;

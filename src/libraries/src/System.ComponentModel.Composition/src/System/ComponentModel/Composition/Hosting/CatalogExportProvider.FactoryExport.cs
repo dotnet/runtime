@@ -15,7 +15,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
             private readonly ComposablePartDefinition _partDefinition;
             private readonly ExportDefinition _exportDefinition;
-            private ExportDefinition _factoryExportDefinition;
+            private readonly ExportDefinition _factoryExportDefinition;
             private FactoryExportPartDefinition _factoryExportPartDefinition;
 
             public FactoryExport(ComposablePartDefinition partDefinition, ExportDefinition exportDefinition)

@@ -28,7 +28,7 @@ namespace System.Xml.Xsl.Qil
     internal class QilValidationVisitor : QilScopedVisitor
     {
 #if DEBUG
-        private QilTypeChecker _typeCheck = new QilTypeChecker();
+        private readonly QilTypeChecker _typeCheck = new QilTypeChecker();
 #endif
 
         //-----------------------------------------------

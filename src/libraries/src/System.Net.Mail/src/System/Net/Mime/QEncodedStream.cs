@@ -44,7 +44,7 @@ namespace System.Net.Mime
         private static readonly byte[] s_hexEncodeMap = new byte[] { 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70 };
 
         private ReadStateInfo _readState;
-        private WriteStateInfoBase _writeState;
+        private readonly WriteStateInfoBase _writeState;
 
         internal QEncodedStream(WriteStateInfoBase wsi) : base(new MemoryStream())
         {

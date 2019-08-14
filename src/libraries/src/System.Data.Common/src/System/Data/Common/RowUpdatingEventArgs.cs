@@ -7,11 +7,11 @@ namespace System.Data.Common
     public class RowUpdatingEventArgs : EventArgs
     {
         private IDbCommand _command;
-        private StatementType _statementType;
-        private DataTableMapping _tableMapping;
+        private readonly StatementType _statementType;
+        private readonly DataTableMapping _tableMapping;
         private Exception _errors;
 
-        private DataRow _dataRow;
+        private readonly DataRow _dataRow;
         private UpdateStatus _status;
 
         public RowUpdatingEventArgs(DataRow dataRow, IDbCommand command, StatementType statementType, DataTableMapping tableMapping)

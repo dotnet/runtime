@@ -27,8 +27,8 @@ namespace System.Net.Security
         private static readonly AsyncCallback s_readCallback = new AsyncCallback(ReadCallback);
         private static readonly AsyncCallback s_writeCallback = new AsyncCallback(WriteCallback);
 
-        private Stream _innerStream;
-        private bool _leaveStreamOpen;
+        private readonly Stream _innerStream;
+        private readonly bool _leaveStreamOpen;
 
         private Exception _exception;
 

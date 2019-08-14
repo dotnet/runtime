@@ -28,14 +28,14 @@ namespace System.Xml.Xsl.Runtime
     [EditorBrowsable(EditorBrowsableState.Never)]
     public sealed class XmlQueryContext
     {
-        private XmlQueryRuntime _runtime;
-        private XPathNavigator _defaultDataSource;
-        private XmlResolver _dataSources;
-        private Hashtable _dataSourceCache;
-        private XsltArgumentList _argList;
+        private readonly XmlQueryRuntime _runtime;
+        private readonly XPathNavigator _defaultDataSource;
+        private readonly XmlResolver _dataSources;
+        private readonly Hashtable _dataSourceCache;
+        private readonly XsltArgumentList _argList;
         private XmlExtensionFunctionTable _extFuncsLate;
-        private WhitespaceRuleLookup _wsRules;
-        private QueryReaderSettings _readerSettings; // If we create reader out of stream we will use these settings
+        private readonly WhitespaceRuleLookup _wsRules;
+        private readonly QueryReaderSettings _readerSettings; // If we create reader out of stream we will use these settings
 
         /// <summary>
         /// This constructor is internal so that external users cannot construct it (and therefore we do not have to test it separately).
@@ -337,7 +337,7 @@ namespace System.Xml.Xsl.Runtime
     /// </summary>
     internal class XmlILQueryEventArgs : XsltMessageEncounteredEventArgs
     {
-        private string _message;
+        private readonly string _message;
 
         public XmlILQueryEventArgs(string message)
         {

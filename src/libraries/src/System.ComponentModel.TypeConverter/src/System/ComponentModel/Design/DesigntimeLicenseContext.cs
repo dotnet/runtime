@@ -43,7 +43,7 @@ namespace System.ComponentModel.Design
 
     internal class RuntimeLicenseContext : LicenseContext
     {
-        private static TraceSwitch s_runtimeLicenseContextSwitch = new TraceSwitch("RuntimeLicenseContextTrace", "RuntimeLicenseContext tracing");
+        private static readonly TraceSwitch s_runtimeLicenseContextSwitch = new TraceSwitch("RuntimeLicenseContextTrace", "RuntimeLicenseContext tracing");
 
         internal Hashtable _savedLicenseKeys;
 

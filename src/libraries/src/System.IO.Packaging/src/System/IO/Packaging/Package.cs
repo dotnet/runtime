@@ -1197,7 +1197,7 @@ namespace System.IO.Packaging
         private const FileMode s_defaultStreamMode = FileMode.Open;
         private const FileAccess s_defaultStreamAccess = FileAccess.Read;
 
-        private FileAccess _openFileAccess;
+        private readonly FileAccess _openFileAccess;
         private FileMode _openFileMode;
         private bool _disposed;
         private SortedList<PackUriHelper.ValidatedPartUri, PackagePart> _partList;

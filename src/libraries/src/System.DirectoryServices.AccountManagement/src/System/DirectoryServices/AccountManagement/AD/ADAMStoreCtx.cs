@@ -21,7 +21,7 @@ namespace System.DirectoryServices.AccountManagement
         private const int mappingIndex = 1;
         private List<string> _cachedBindableObjectList = null;
         private string _cachedBindableObjectFilter = null;
-        private object _objectListLock = new object();
+        private readonly object _objectListLock = new object();
 
         public ADAMStoreCtx(DirectoryEntry ctxBase, bool ownCtxBase, string username, string password, string serverName, ContextOptions options) : base(ctxBase, ownCtxBase, username, password, options)
         {
@@ -376,7 +376,7 @@ namespace System.DirectoryServices.AccountManagement
         // indicates the state shown in the table.  When searching for these properties
         // If the state desired matches that default state then we also must search for
         // non-existence of the attribute.
-        private static object[,] s_presenceStateTable =
+        private static readonly object[,] s_presenceStateTable =
         {
                 {"ms-DS-UserPasswordNotRequired", "FALSE" },
                 {"msDS-UserDontExpirePassword", "FALSE" },
@@ -388,7 +388,7 @@ namespace System.DirectoryServices.AccountManagement
         //
         // When updating this table, be sure to also update LoadDirectoryEntryAttributes() to load
         // in any newly-added attributes.
-        private static object[,] s_propertyMappingTableRaw =
+        private static readonly object[,] s_propertyMappingTableRaw =
         {
             // PropertyName                          AD property             Converter(LDAP->PAPI)                                    Converter(PAPI->LDAP)
             {PropertyNames.PrincipalDescription,     "description",          new FromLdapConverterDelegate(StringFromLdapConverter),  new ToLdapConverterDelegate(StringToLdapConverter)},
@@ -444,7 +444,7 @@ namespace System.DirectoryServices.AccountManagement
 
         // We only list properties we support filtering on in this table.  At run-time, if we detect they set a
         // property that's not listed here, we throw an exception.
-        private static object[,] s_filterPropertiesTableRaw =
+        private static readonly object[,] s_filterPropertiesTableRaw =
         {
             // QbeType                                          AD property             Converter
             {typeof(DescriptionFilter),                         "description",          new FilterConverterDelegate(StringConverter)},

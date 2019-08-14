@@ -180,7 +180,7 @@ namespace System.Xml
         private XmlResolver _xmlResolver;
 
         // this is only for constructors that takes url
-        private string _url = string.Empty;
+        private readonly string _url = string.Empty;
 
         // settings
         private bool _normalize;
@@ -188,18 +188,18 @@ namespace System.Xml
         private WhitespaceHandling _whitespaceHandling;
         private DtdProcessing _dtdProcessing = DtdProcessing.Parse;
         private EntityHandling _entityHandling;
-        private bool _ignorePIs;
-        private bool _ignoreComments;
-        private bool _checkCharacters;
-        private int _lineNumberOffset;
-        private int _linePositionOffset;
-        private bool _closeInput;
-        private long _maxCharactersInDocument;
-        private long _maxCharactersFromEntities;
+        private readonly bool _ignorePIs;
+        private readonly bool _ignoreComments;
+        private readonly bool _checkCharacters;
+        private readonly int _lineNumberOffset;
+        private readonly int _linePositionOffset;
+        private readonly bool _closeInput;
+        private readonly long _maxCharactersInDocument;
+        private readonly long _maxCharactersFromEntities;
 
         // this flag enables XmlTextReader backwards compatibility;
         // when false, the reader has been created via XmlReader.Create
-        private bool _v1Compat;
+        private readonly bool _v1Compat;
 
         // namespace handling
         private XmlNamespaceManager _namespaceManager;
@@ -247,7 +247,7 @@ namespace System.Xml
 
         // misc
         private bool _addDefaultAttributesAndNormalize;
-        private StringBuilder _stringBuilder;
+        private readonly StringBuilder _stringBuilder;
         private bool _rootElementParsed;
         private bool _standalone;
         private int _nextEntityId = 1;
@@ -279,8 +279,8 @@ namespace System.Xml
         //
         // Atomized string constants
         //
-        private string _xml;
-        private string _xmlNs;
+        private readonly string _xml;
+        private readonly string _xmlNs;
 
         //
         // Constants

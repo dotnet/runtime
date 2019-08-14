@@ -15,8 +15,8 @@ namespace MS.Internal.Xml.XPath
 {
     internal sealed class StringFunctions : ValueQuery
     {
-        private Function.FunctionType _funcType;
-        private IList<Query> _argList;
+        private readonly Function.FunctionType _funcType;
+        private readonly IList<Query> _argList;
 
         public StringFunctions(Function.FunctionType funcType, IList<Query> argList)
         {

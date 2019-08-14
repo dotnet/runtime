@@ -8,7 +8,7 @@ namespace System.ComponentModel
 {
     public class ListSortDescriptionCollection : IList
     {
-        private ArrayList _sorts = new ArrayList();
+        private readonly ArrayList _sorts = new ArrayList();
 
         public ListSortDescriptionCollection()
         {

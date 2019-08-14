@@ -206,7 +206,7 @@ namespace System
         //
         internal static bool IriParsingStatic(UriParser? syntax)
         {
-            return (s_IriParsing && (((syntax != null) && syntax.InFact(UriSyntaxFlags.AllowIriParsing)) ||
+            return (IriParsing && (((syntax != null) && syntax.InFact(UriSyntaxFlags.AllowIriParsing)) ||
                    (syntax == null)));
         }
 
@@ -218,7 +218,7 @@ namespace System
             get
             {
                 return ((_syntax != null) && ((_syntax.Flags & UriSyntaxFlags.AllowIdn) != 0) &&
-                          ((s_IdnScope == UriIdnScope.All) || ((s_IdnScope == UriIdnScope.AllExceptIntranet)
+                          ((IdnScope == UriIdnScope.All) || ((IdnScope == UriIdnScope.AllExceptIntranet)
                                                                               && NotAny(Flags.IntranetUri))));
             }
         }
@@ -229,7 +229,7 @@ namespace System
         private bool AllowIdnStatic(UriParser syntax, Flags flags)
         {
             return ((syntax != null) && ((syntax.Flags & UriSyntaxFlags.AllowIdn) != 0) &&
-                   ((s_IdnScope == UriIdnScope.All) || ((s_IdnScope == UriIdnScope.AllExceptIntranet)
+                   ((IdnScope == UriIdnScope.All) || ((IdnScope == UriIdnScope.AllExceptIntranet)
                                                                             && StaticNotAny(flags, Flags.IntranetUri))));
         }
 
@@ -918,11 +918,13 @@ namespace System
 
         // Value from config Uri section
         // The use of this IDN mechanic is discouraged on Win8+ due to native platform improvements.
-        private static volatile UriIdnScope s_IdnScope = UriIdnScope.None;   // IDN is disabled in .NET Native and CoreCLR.
+#pragma warning disable CA1802 // TODO: https://github.com/dotnet/corefx/issues/40297
+        private static readonly UriIdnScope IdnScope = UriIdnScope.None;   // IDN is disabled in .NET Native and CoreCLR.
+#pragma warning restore CA1802
 
         // Value from config Uri section
         // On by default in .NET 4.5+ and cannot be disabled by config.
-        private static volatile bool s_IriParsing = true; // IRI Parsing is always enabled in .NET Native and CoreCLR
+        private const bool IriParsing = true; // IRI Parsing is always enabled in .NET Native and CoreCLR
 
         private string GetLocalPath()
         {
@@ -2217,7 +2219,7 @@ namespace System
                 // is not created/canonicalized at this point.
             }
 
-            if ((s_IdnScope != UriIdnScope.None) || _iriParsing)
+            if ((IdnScope != UriIdnScope.None) || _iriParsing)
                 PrivateParseMinimalIri(newHost, idx);
 
             return ParsingError.None;
@@ -4053,7 +4055,7 @@ namespace System
             ushort start = idx;
             newHost = null;
             bool justNormalized = false;
-            bool iriParsing = (s_IriParsing && IriParsingStatic(syntax)); // perf
+            bool iriParsing = (IriParsing && IriParsingStatic(syntax)); // perf
             bool hasUnicode = ((flags & Flags.HasUnicode) != 0); // perf
             bool hostNotUnicodeNormalized = ((flags & Flags.HostUnicodeNormalized) == 0); // perf
             UriSyntaxFlags syntaxFlags = syntax.Flags;
@@ -4104,7 +4106,7 @@ namespace System
                         flags |= Flags.HasUserInfo;
 
                         // Iri'ze userinfo
-                        if (iriParsing || (s_IdnScope != UriIdnScope.None))
+                        if (iriParsing || (IdnScope != UriIdnScope.None))
                         {
                             if (iriParsing && hasUnicode && hostNotUnicodeNormalized)
                             {
@@ -4139,7 +4141,7 @@ namespace System
             {
                 flags |= Flags.IPv6HostType;
 
-                _iriParsing = (s_IriParsing && IriParsingStatic(syntax));
+                _iriParsing = (IriParsing && IriParsingStatic(syntax));
 
                 if (hasUnicode && iriParsing && hostNotUnicodeNormalized)
                 {
@@ -4171,11 +4173,11 @@ namespace System
                     flags |= Flags.CanonicalDnsHost;
                 }
 
-                if ((s_IdnScope != UriIdnScope.None))
+                if ((IdnScope != UriIdnScope.None))
                 {
                     // check if intranet
                     //
-                    if ((s_IdnScope == UriIdnScope.AllExceptIntranet) && IsIntranet(new string(pString, 0, end)))
+                    if ((IdnScope == UriIdnScope.AllExceptIntranet) && IsIntranet(new string(pString, 0, end)))
                     {
                         flags |= Flags.IntranetUri;
                     }
@@ -4400,7 +4402,7 @@ namespace System
 
             // check if intranet
             //
-            if ((s_IdnScope == UriIdnScope.AllExceptIntranet) && IsIntranet(new string(pString, 0, end)))
+            if ((IdnScope == UriIdnScope.AllExceptIntranet) && IsIntranet(new string(pString, 0, end)))
             {
                 flags |= Flags.IntranetUri;
             }

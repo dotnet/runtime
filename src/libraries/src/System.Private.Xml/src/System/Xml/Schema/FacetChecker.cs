@@ -20,17 +20,17 @@ namespace System.Xml.Schema
     {
         private struct FacetsCompiler
         {
-            private DatatypeImplementation _datatype;
-            private RestrictionFacets _derivedRestriction;
+            private readonly DatatypeImplementation _datatype;
+            private readonly RestrictionFacets _derivedRestriction;
 
-            private RestrictionFlags _baseFlags;
-            private RestrictionFlags _baseFixedFlags;
-            private RestrictionFlags _validRestrictionFlags;
+            private readonly RestrictionFlags _baseFlags;
+            private readonly RestrictionFlags _baseFixedFlags;
+            private readonly RestrictionFlags _validRestrictionFlags;
 
             //Helpers
-            private XmlSchemaDatatype _nonNegativeInt;
-            private XmlSchemaDatatype _builtInType;
-            private XmlTypeCode _builtInEnum;
+            private readonly XmlSchemaDatatype _nonNegativeInt;
+            private readonly XmlSchemaDatatype _builtInType;
+            private readonly XmlTypeCode _builtInEnum;
 
             private bool _firstPattern;
             private StringBuilder _regStr;
@@ -988,8 +988,8 @@ namespace System.Xml.Schema
 
     internal class Numeric10FacetsChecker : FacetsChecker
     {
-        private decimal _maxValue;
-        private decimal _minValue;
+        private readonly decimal _maxValue;
+        private readonly decimal _minValue;
 
         internal Numeric10FacetsChecker(decimal minVal, decimal maxVal)
         {

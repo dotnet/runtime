@@ -112,6 +112,6 @@ namespace System.Security.Cryptography
 
         private string _value = null;
         private string _friendlyName = null;
-        private OidGroup _group = OidGroup.All;
+        private readonly OidGroup _group = OidGroup.All;
     }
 }

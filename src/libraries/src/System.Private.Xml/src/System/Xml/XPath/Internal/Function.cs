@@ -41,11 +41,11 @@ namespace MS.Internal.Xml.XPath
             FuncUserDefined,
         };
 
-        private FunctionType _functionType;
-        private List<AstNode> _argumentList;
+        private readonly FunctionType _functionType;
+        private readonly List<AstNode> _argumentList;
 
-        private string _name = null;
-        private string _prefix = null;
+        private readonly string _name = null;
+        private readonly string _prefix = null;
 
         public Function(FunctionType ftype, List<AstNode> argumentList)
         {

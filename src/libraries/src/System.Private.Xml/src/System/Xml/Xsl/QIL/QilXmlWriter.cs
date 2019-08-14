@@ -39,7 +39,7 @@ namespace System.Xml.Xsl.Qil
     {
         protected XmlWriter writer;
         protected Options options;
-        private NameGenerator _ngen;
+        private readonly NameGenerator _ngen;
 
         [Flags]
         public enum Options
@@ -322,8 +322,8 @@ namespace System.Xml.Xsl.Qil
         /// </summary>
         internal class ForwardRefFinder : QilVisitor
         {
-            private List<QilNode> _fwdrefs = new List<QilNode>();
-            private List<QilNode> _backrefs = new List<QilNode>();
+            private readonly List<QilNode> _fwdrefs = new List<QilNode>();
+            private readonly List<QilNode> _backrefs = new List<QilNode>();
 
             public IList<QilNode> Find(QilExpression qil)
             {
@@ -358,11 +358,11 @@ namespace System.Xml.Xsl.Qil
 
         private sealed class NameGenerator
         {
-            private StringBuilder _name;
+            private readonly StringBuilder _name;
             private int _len;
-            private int _zero;
-            private char _start;
-            private char _end;
+            private readonly int _zero;
+            private readonly char _start;
+            private readonly char _end;
 
             /// <summary>
             /// Construct a new name generator with prefix "$" and alphabetical mode.

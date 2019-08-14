@@ -375,7 +375,7 @@ internal static Type GetContractTypeFromImport(this IAttributedImport import, Im
             private bool _containsNulls = false;
             private static readonly Type ObjectType = typeof(object);
             private static readonly Type TypeType = typeof(Type);
-            private Collection<object> _innerList = new Collection<object>();
+            private readonly Collection<object> _innerList = new Collection<object>();
 
             public void Add(object item, Type itemType)
             {

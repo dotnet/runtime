@@ -15,7 +15,7 @@ namespace System.IO
     {
         private static volatile UnicodeEncoding? s_encoding = null;
 
-        private StringBuilder _sb;
+        private readonly StringBuilder _sb;
         private bool _isOpen;
 
         // Constructs a new StringWriter. A new StringBuilder is automatically

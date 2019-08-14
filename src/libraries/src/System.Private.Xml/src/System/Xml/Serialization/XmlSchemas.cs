@@ -824,8 +824,9 @@ namespace System.Xml.Serialization
 
     public class XmlSchemaEnumerator : IEnumerator<XmlSchema>, System.Collections.IEnumerator
     {
-        private XmlSchemas _list;
-        private int _idx, _end;
+        private readonly XmlSchemas _list;
+        private int _idx;
+        private readonly int _end;
 
         public XmlSchemaEnumerator(XmlSchemas list)
         {

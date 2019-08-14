@@ -70,7 +70,7 @@ namespace System.Diagnostics
 
         private class EntriesEnumerator : IEnumerator
         {
-            private EventLogEntryCollection entries;
+            private readonly EventLogEntryCollection entries;
             private int num = -1;
             private EventLogEntry cachedEntry = null;
 

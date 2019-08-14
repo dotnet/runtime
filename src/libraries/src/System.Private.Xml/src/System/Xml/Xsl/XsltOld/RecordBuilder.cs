@@ -14,22 +14,22 @@ namespace System.Xml.Xsl.XsltOld
         private int _outputState;
         private RecordBuilder _next;
 
-        private IRecordOutput _output;
+        private readonly IRecordOutput _output;
 
         // Atomization:
-        private XmlNameTable _nameTable;
-        private OutKeywords _atoms;
+        private readonly XmlNameTable _nameTable;
+        private readonly OutKeywords _atoms;
 
         // Namespace manager for output
-        private OutputScopeManager _scopeManager;
+        private readonly OutputScopeManager _scopeManager;
 
         // Main node + Fields Collection
-        private BuilderInfo _mainNode = new BuilderInfo();
-        private ArrayList _attributeList = new ArrayList();
+        private readonly BuilderInfo _mainNode = new BuilderInfo();
+        private readonly ArrayList _attributeList = new ArrayList();
         private int _attributeCount;
-        private ArrayList _namespaceList = new ArrayList();
+        private readonly ArrayList _namespaceList = new ArrayList();
         private int _namespaceCount;
-        private BuilderInfo _dummy = new BuilderInfo();
+        private readonly BuilderInfo _dummy = new BuilderInfo();
 
         // Current position in the list
         private BuilderInfo _currentInfo;

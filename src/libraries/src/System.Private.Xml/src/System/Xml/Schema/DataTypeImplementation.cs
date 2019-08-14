@@ -25,8 +25,8 @@ namespace System.Xml.Schema
 
     internal class XsdSimpleValue
     { //Wrapper to store XmlType and TypedValue together
-        private XmlSchemaSimpleType _xmlType;
-        private object _typedValue;
+        private readonly XmlSchemaSimpleType _xmlType;
+        private readonly object _typedValue;
 
         public XsdSimpleValue(XmlSchemaSimpleType st, object value)
         {
@@ -102,8 +102,8 @@ namespace System.Xml.Schema
         private XmlValueConverter _valueConverter;
         private XmlSchemaType _parentSchemaType;
 
-        private static Hashtable s_builtinTypes = new Hashtable();
-        private static XmlSchemaSimpleType[] s_enumToTypeCode = new XmlSchemaSimpleType[(int)XmlTypeCode.DayTimeDuration + 1];
+        private static readonly Hashtable s_builtinTypes = new Hashtable();
+        private static readonly XmlSchemaSimpleType[] s_enumToTypeCode = new XmlSchemaSimpleType[(int)XmlTypeCode.DayTimeDuration + 1];
         private static XmlSchemaSimpleType s__anySimpleType;
         private static XmlSchemaSimpleType s__anyAtomicType;
         private static XmlSchemaSimpleType s__untypedAtomicType;
@@ -707,9 +707,9 @@ namespace System.Xml.Schema
 
         private class SchemaDatatypeMap : IComparable
         {
-            private string _name;
-            private DatatypeImplementation _type;
-            private int _parentIndex;
+            private readonly string _name;
+            private readonly DatatypeImplementation _type;
+            private readonly int _parentIndex;
 
             internal SchemaDatatypeMap(string name, DatatypeImplementation type)
             {
@@ -910,8 +910,8 @@ namespace System.Xml.Schema
     //List type
     internal class Datatype_List : Datatype_anySimpleType
     {
-        private DatatypeImplementation _itemType;
-        private int _minListSize;
+        private readonly DatatypeImplementation _itemType;
+        private readonly int _minListSize;
 
         internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
         {
@@ -1167,7 +1167,7 @@ namespace System.Xml.Schema
     {
         private static readonly Type s_atomicValueType = typeof(object);
         private static readonly Type s_listValueType = typeof(object[]);
-        private XmlSchemaSimpleType[] _types;
+        private readonly XmlSchemaSimpleType[] _types;
 
         internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
         {
@@ -2006,7 +2006,7 @@ namespace System.Xml.Schema
     {
         private static readonly Type s_atomicValueType = typeof(DateTime);
         private static readonly Type s_listValueType = typeof(DateTime[]);
-        private XsdDateTimeFlags _dateTimeFlags;
+        private readonly XsdDateTimeFlags _dateTimeFlags;
 
         internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
         {

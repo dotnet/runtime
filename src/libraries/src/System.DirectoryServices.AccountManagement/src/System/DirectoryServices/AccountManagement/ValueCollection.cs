@@ -357,7 +357,7 @@ namespace System.DirectoryServices.AccountManagement
         //
         // Private implementation
         //
-        private TrackedCollection<T> _inner = new TrackedCollection<T>();
+        private readonly TrackedCollection<T> _inner = new TrackedCollection<T>();
 
         //
         // Internal constructor

@@ -6,9 +6,9 @@ namespace System.Runtime.Caching
 {
     public class CacheEntryRemovedArguments
     {
-        private CacheItem _cacheItem;
-        private ObjectCache _source;
-        private CacheEntryRemovedReason _reason;
+        private readonly CacheItem _cacheItem;
+        private readonly ObjectCache _source;
+        private readonly CacheEntryRemovedReason _reason;
 
         public CacheItem CacheItem
         {

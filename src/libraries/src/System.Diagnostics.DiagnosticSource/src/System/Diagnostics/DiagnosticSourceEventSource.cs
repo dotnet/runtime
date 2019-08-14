@@ -730,11 +730,11 @@ namespace System.Diagnostics
 
             private IDisposable _diagnosticsListenersSubscription; // This is our subscription that listens for new Diagnostic source to appear.
             private Subscriptions _liveSubscriptions;              // These are the subscriptions that we are currently forwarding to the EventSource.
-            private bool _noImplicitTransforms;                    // Listener can say they don't want implicit transforms.
+            private readonly bool _noImplicitTransforms;                    // Listener can say they don't want implicit transforms.
             private ImplicitTransformEntry _firstImplicitTransformsEntry; // The transform for _firstImplicitFieldsType
             private ConcurrentDictionary<Type, TransformSpec> _implicitTransformsTable; // If there is more than one object type for an implicit transform, they go here.
-            private TransformSpec _explicitTransforms;             // payload to include because the user explicitly indicated how to fetch the field.
-            private DiagnosticSourceEventSource _eventSource;      // Where the data is written to.
+            private readonly TransformSpec _explicitTransforms;             // payload to include because the user explicitly indicated how to fetch the field.
+            private readonly DiagnosticSourceEventSource _eventSource;      // Where the data is written to.
             #endregion
         }
 
@@ -902,13 +902,13 @@ namespace System.Diagnostics
                     #endregion
                 }
 
-                private string _propertyName;
+                private readonly string _propertyName;
                 private volatile PropertyFetch _fetchForExpectedType;
                 #endregion
             }
 
-            private string _outputName;
-            private PropertySpec _fetches;
+            private readonly string _outputName;
+            private readonly PropertySpec _fetches;
             #endregion
         }
 
@@ -927,7 +927,7 @@ namespace System.Diagnostics
             public void OnError(Exception error) { }
             public void OnNext(T value) { _callback(value); }
 
-            private Action<T> _callback;
+            private readonly Action<T> _callback;
             #endregion
         }
 

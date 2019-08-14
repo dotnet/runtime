@@ -11,7 +11,7 @@ namespace System.Data.SqlClient
 {
     public sealed class SqlInfoMessageEventArgs : System.EventArgs
     {
-        private SqlException _exception;
+        private readonly SqlException _exception;
 
         internal SqlInfoMessageEventArgs(SqlException exception)
         {

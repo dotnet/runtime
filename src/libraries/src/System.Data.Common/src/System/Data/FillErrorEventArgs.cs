@@ -7,9 +7,9 @@ namespace System.Data
     public class FillErrorEventArgs : EventArgs
     {
         private bool _continueFlag;
-        private DataTable _dataTable;
+        private readonly DataTable _dataTable;
         private Exception _errors;
-        private object[] _values;
+        private readonly object[] _values;
 
         public FillErrorEventArgs(DataTable dataTable, object[] values)
         {

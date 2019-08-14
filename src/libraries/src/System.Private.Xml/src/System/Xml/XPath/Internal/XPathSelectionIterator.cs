@@ -12,7 +12,7 @@ namespace MS.Internal.Xml.XPath
     internal class XPathSelectionIterator : ResetableIterator
     {
         private XPathNavigator _nav;
-        private Query _query;
+        private readonly Query _query;
         private int _position;
 
         internal XPathSelectionIterator(XPathNavigator nav, Query query)

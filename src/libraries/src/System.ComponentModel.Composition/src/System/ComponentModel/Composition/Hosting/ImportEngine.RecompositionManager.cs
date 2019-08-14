@@ -18,9 +18,9 @@ namespace System.ComponentModel.Composition.Hosting
         /// </summary>
         private class RecompositionManager
         {
-            private WeakReferenceCollection<PartManager> _partsToIndex = new WeakReferenceCollection<PartManager>();
-            private WeakReferenceCollection<PartManager> _partsToUnindex = new WeakReferenceCollection<PartManager>();
-            private Dictionary<string, WeakReferenceCollection<PartManager>> _partManagerIndex = new Dictionary<string, WeakReferenceCollection<PartManager>>();
+            private readonly WeakReferenceCollection<PartManager> _partsToIndex = new WeakReferenceCollection<PartManager>();
+            private readonly WeakReferenceCollection<PartManager> _partsToUnindex = new WeakReferenceCollection<PartManager>();
+            private readonly Dictionary<string, WeakReferenceCollection<PartManager>> _partManagerIndex = new Dictionary<string, WeakReferenceCollection<PartManager>>();
 
             public void AddPartToIndex(PartManager partManager)
             {

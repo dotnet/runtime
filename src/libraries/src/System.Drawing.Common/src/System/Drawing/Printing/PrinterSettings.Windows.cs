@@ -39,7 +39,7 @@ namespace System.Drawing.Printing
         private short _copies = -1;
         private Duplex _duplex = System.Drawing.Printing.Duplex.Default;
         private TriState _collate = TriState.Default;
-        private PageSettings _defaultPageSettings;
+        private readonly PageSettings _defaultPageSettings;
         private int _fromPage;
         private int _toPage;
         private int _maxPage = 9999;
@@ -1666,11 +1666,11 @@ namespace System.Drawing.Printing
 
         private class ArrayEnumerator : IEnumerator
         {
-            private object[] _array;
+            private readonly object[] _array;
             private object _item;
             private int _index;
-            private int _startIndex;
-            private int _endIndex;
+            private readonly int _startIndex;
+            private readonly int _endIndex;
 
             public ArrayEnumerator(object[] array, int startIndex, int count)
             {

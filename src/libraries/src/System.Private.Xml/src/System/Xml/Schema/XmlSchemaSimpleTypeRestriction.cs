@@ -11,7 +11,7 @@ namespace System.Xml.Schema
     {
         private XmlQualifiedName _baseTypeName = XmlQualifiedName.Empty;
         private XmlSchemaSimpleType _baseType;
-        private XmlSchemaObjectCollection _facets = new XmlSchemaObjectCollection();
+        private readonly XmlSchemaObjectCollection _facets = new XmlSchemaObjectCollection();
 
         [XmlAttribute("base")]
         public XmlQualifiedName BaseTypeName

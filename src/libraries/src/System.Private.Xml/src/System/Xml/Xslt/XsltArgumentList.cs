@@ -15,8 +15,8 @@ namespace System.Xml.Xsl
 
     public class XsltArgumentList
     {
-        private Hashtable _parameters = new Hashtable();
-        private Hashtable _extensions = new Hashtable();
+        private readonly Hashtable _parameters = new Hashtable();
+        private readonly Hashtable _extensions = new Hashtable();
 
         // Used for reporting xsl:message's during execution
         internal XsltMessageEncounteredEventHandler xsltMessageEncountered = null;

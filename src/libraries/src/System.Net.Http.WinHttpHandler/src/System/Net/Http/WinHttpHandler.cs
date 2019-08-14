@@ -60,7 +60,7 @@ namespace System.Net.Http
         [ThreadStatic]
         private static StringBuilder t_requestHeadersBuilder;
 
-        private object _lockObject = new object();
+        private readonly object _lockObject = new object();
         private bool _doManualDecompressionCheck = false;
         private WinInetProxyHelper _proxyHelper = null;
         private bool _automaticRedirection = HttpHandlerDefaults.DefaultAutomaticRedirection;
@@ -94,7 +94,7 @@ namespace System.Net.Http
         private volatile bool _operationStarted;
         private volatile bool _disposed;
         private SafeWinHttpHandle _sessionHandle;
-        private WinHttpAuthHelper _authHelper = new WinHttpAuthHelper();
+        private readonly WinHttpAuthHelper _authHelper = new WinHttpAuthHelper();
 
         public WinHttpHandler()
         {

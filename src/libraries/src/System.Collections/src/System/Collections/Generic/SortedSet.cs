@@ -1902,13 +1902,13 @@ namespace System.Collections.Generic
         [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "not an expected scenario")]
         public struct Enumerator : IEnumerator<T>, IEnumerator, ISerializable, IDeserializationCallback
         {
-            private SortedSet<T> _tree;
-            private int _version;
+            private readonly SortedSet<T> _tree;
+            private readonly int _version;
 
-            private Stack<Node> _stack;
+            private readonly Stack<Node> _stack;
             private Node? _current;
 
-            private bool _reverse;
+            private readonly bool _reverse;
 
             internal Enumerator(SortedSet<T> set)
                 : this(set, reverse: false)

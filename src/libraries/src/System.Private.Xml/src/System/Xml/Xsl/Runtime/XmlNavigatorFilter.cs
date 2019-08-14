@@ -60,8 +60,8 @@ namespace System.Xml.Xsl.Runtime
     /// </summary>
     internal class XmlNavNameFilter : XmlNavigatorFilter
     {
-        private string _localName;
-        private string _namespaceUri;
+        private readonly string _localName;
+        private readonly string _namespaceUri;
 
         /// <summary>
         /// Return an XmlNavigatorFilter that skips over nodes that do not match the specified name.
@@ -136,8 +136,8 @@ namespace System.Xml.Xsl.Runtime
     internal class XmlNavTypeFilter : XmlNavigatorFilter
     {
         private static readonly XmlNavigatorFilter[] s_typeFilters = CreateTypeFilters();
-        private XPathNodeType _nodeType;
-        private int _mask;
+        private readonly XPathNodeType _nodeType;
+        private readonly int _mask;
 
         /// <summary>
         /// There are a limited number of types, so create all possible XmlNavTypeFilter objects just once.
@@ -226,7 +226,7 @@ namespace System.Xml.Xsl.Runtime
     /// </summary>
     internal class XmlNavAttrFilter : XmlNavigatorFilter
     {
-        private static XmlNavigatorFilter s_singleton = new XmlNavAttrFilter();
+        private static readonly XmlNavigatorFilter s_singleton = new XmlNavAttrFilter();
 
         /// <summary>
         /// Return a singleton XmlNavigatorFilter that filters all attribute nodes.
@@ -298,7 +298,7 @@ namespace System.Xml.Xsl.Runtime
     /// </summary>
     internal class XmlNavNeverFilter : XmlNavigatorFilter
     {
-        private static XmlNavigatorFilter s_singleton = new XmlNavNeverFilter();
+        private static readonly XmlNavigatorFilter s_singleton = new XmlNavNeverFilter();
 
         /// <summary>
         /// Return a singleton XmlNavigatorFilter that never filters any nodes.

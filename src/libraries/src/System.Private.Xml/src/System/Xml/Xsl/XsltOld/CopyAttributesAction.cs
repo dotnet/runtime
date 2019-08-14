@@ -16,7 +16,7 @@ namespace System.Xml.Xsl.XsltOld
         private const int EndEvent = 4;
         private const int Advance = 5;
 
-        private static CopyAttributesAction s_Action = new CopyAttributesAction();
+        private static readonly CopyAttributesAction s_Action = new CopyAttributesAction();
 
         internal static CopyAttributesAction GetAction()
         {

@@ -116,10 +116,10 @@ namespace System.Runtime.Serialization
         private Stack<object> _blockStack;
         private Label _methodEndLabel;
 
-        private Dictionary<LocalBuilder, string> _localNames = new Dictionary<LocalBuilder, string>();
+        private readonly Dictionary<LocalBuilder, string> _localNames = new Dictionary<LocalBuilder, string>();
 
         private enum CodeGenTrace { None, Save, Tron };
-        private CodeGenTrace _codeGenTrace;
+        private readonly CodeGenTrace _codeGenTrace;
         private LocalBuilder _stringFormatArray;
 
         internal CodeGenerator()
@@ -1591,7 +1591,7 @@ namespace System.Runtime.Serialization
             MarkLabel(switchState.EndOfSwitchLabel);
         }
 
-        private static MethodInfo s_stringLength = typeof(string).GetProperty("Length").GetMethod;
+        private static readonly MethodInfo s_stringLength = typeof(string).GetProperty("Length").GetMethod;
         internal void ElseIfIsEmptyString(LocalBuilder strLocal)
         {
             IfState ifState = (IfState)_blockStack.Pop();
@@ -1675,12 +1675,12 @@ namespace System.Runtime.Serialization
 
     internal class ForState
     {
-        private LocalBuilder _indexVar;
-        private Label _beginLabel;
-        private Label _testLabel;
+        private readonly LocalBuilder _indexVar;
+        private readonly Label _beginLabel;
+        private readonly Label _testLabel;
         private Label _endLabel;
         private bool _requiresEndLabel;
-        private object _end;
+        private readonly object _end;
 
         internal ForState(LocalBuilder indexVar, Label beginLabel, Label testLabel, object end)
         {
@@ -1790,8 +1790,8 @@ namespace System.Runtime.Serialization
 
     internal class SwitchState
     {
-        private Label _defaultLabel;
-        private Label _endOfSwitchLabel;
+        private readonly Label _defaultLabel;
+        private readonly Label _endOfSwitchLabel;
         private bool _defaultDefined;
         internal SwitchState(Label defaultLabel, Label endOfSwitchLabel)
         {

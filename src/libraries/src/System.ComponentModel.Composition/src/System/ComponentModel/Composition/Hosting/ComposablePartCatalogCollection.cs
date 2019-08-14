@@ -21,8 +21,8 @@ namespace System.ComponentModel.Composition.Hosting
     internal class ComposablePartCatalogCollection : ICollection<ComposablePartCatalog>, INotifyComposablePartCatalogChanged, IDisposable
     {
         private readonly Lock _lock = new Lock();
-        private Action<ComposablePartCatalogChangeEventArgs> _onChanged;
-        private Action<ComposablePartCatalogChangeEventArgs> _onChanging;
+        private readonly Action<ComposablePartCatalogChangeEventArgs> _onChanged;
+        private readonly Action<ComposablePartCatalogChangeEventArgs> _onChanging;
         private List<ComposablePartCatalog> _catalogs = new List<ComposablePartCatalog>();
         private volatile bool _isCopyNeeded = false;
         private volatile bool _isDisposed = false;

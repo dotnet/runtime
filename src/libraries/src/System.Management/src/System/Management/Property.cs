@@ -79,9 +79,9 @@ namespace System.Management
     //CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC//
     public class PropertyData
     {
-        private ManagementBaseObject parent;  //need access to IWbemClassObject pointer to be able to refresh property info
+        private readonly ManagementBaseObject parent;  //need access to IWbemClassObject pointer to be able to refresh property info
                                     //and get property qualifiers
-        private string propertyName;
+        private readonly string propertyName;
 
         private object propertyValue;
         private long propertyNullEnumValue = 0;

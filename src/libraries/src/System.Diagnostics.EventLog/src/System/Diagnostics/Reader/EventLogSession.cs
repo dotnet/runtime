@@ -46,12 +46,12 @@ namespace System.Diagnostics.Eventing.Reader
         internal EventLogHandle renderContextHandleUser = EventLogHandle.Zero;
 
         // The dummy sync object for the two contexts.
-        private object _syncObject = null;
+        private readonly object _syncObject = null;
 
-        private string _server;
-        private string _user;
-        private string _domain;
-        private SessionAuthentication _logOnType;
+        private readonly string _server;
+        private readonly string _user;
+        private readonly string _domain;
+        private readonly SessionAuthentication _logOnType;
 
         // Setup the System Context, once for all the EventRecords.
         internal void SetupSystemContext()
@@ -158,7 +158,7 @@ namespace System.Diagnostics.Eventing.Reader
             NativeWrapper.EvtCancel(Handle);
         }
 
-        private static EventLogSession s_globalSession = new EventLogSession();
+        private static readonly EventLogSession s_globalSession = new EventLogSession();
         public static EventLogSession GlobalSession
         {
             get { return s_globalSession; }

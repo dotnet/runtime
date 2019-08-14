@@ -28,7 +28,7 @@ namespace System.ComponentModel
 
         private bool _localized;
 
-        private object _locker = new object();
+        private readonly object _locker = new object();
 
         /// <summary>
         /// Provides the actual category name.

@@ -13,10 +13,10 @@ namespace System.Xml.Xsl.XsltOld
     {
         private const int STACK_INCREMENT = 10;
 
-        private HWStack _elementScopesStack;
+        private readonly HWStack _elementScopesStack;
         private string _defaultNS;
-        private OutKeywords _atoms;
-        private XmlNameTable _nameTable;
+        private readonly OutKeywords _atoms;
+        private readonly XmlNameTable _nameTable;
         private int _prefixIndex;
 
         internal string DefaultNamespace

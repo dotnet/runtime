@@ -32,10 +32,10 @@ namespace System.Diagnostics.PerformanceData
         // Internal global PERFLIB V2 provider collection that contains a collection of PerfProvider objects.
         // Use mutex to serialize collection initialization/update.
         private static object s_hiddenInternalSyncObject;
-        private static List<PerfProvider> s_providerList = new List<PerfProvider>();
-        private static Dictionary<object, int> s_counterSetList = new Dictionary<object, int>();
-        private static CounterType[] s_counterTypes = (CounterType[])Enum.GetValues(typeof(CounterType));
-        private static CounterSetInstanceType[] s_counterSetInstanceTypes = (CounterSetInstanceType[])Enum.GetValues(typeof(CounterSetInstanceType));
+        private static readonly List<PerfProvider> s_providerList = new List<PerfProvider>();
+        private static readonly Dictionary<object, int> s_counterSetList = new Dictionary<object, int>();
+        private static readonly CounterType[] s_counterTypes = (CounterType[])Enum.GetValues(typeof(CounterType));
+        private static readonly CounterSetInstanceType[] s_counterSetInstanceTypes = (CounterSetInstanceType[])Enum.GetValues(typeof(CounterSetInstanceType));
 
         private static object s_lockObject
         {

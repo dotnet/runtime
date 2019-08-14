@@ -28,7 +28,6 @@ namespace System.Windows.Forms
 
         private static double s_logicalToDeviceUnitsScalingFactorX = 0.0;
         private static double s_logicalToDeviceUnitsScalingFactorY = 0.0;
-        private static bool s_enableHighDpi = true;
         private static InterpolationMode s_interpolationMode = InterpolationMode.Invalid;
 
         private static void Initialize()
@@ -38,19 +37,13 @@ namespace System.Windows.Forms
                 return;
             }
 
-            // NOTE: In the .NET Framework, this value can be controlled via ConfigurationManager.
-            // In .NET Core, the value always defaults to the value "true".
-
-            if (s_enableHighDpi)
+            IntPtr hDC = UnsafeNativeMethods.GetDC(NativeMethods.NullHandleRef);
+            if (hDC != IntPtr.Zero)
             {
-                IntPtr hDC = UnsafeNativeMethods.GetDC(NativeMethods.NullHandleRef);
-                if (hDC != IntPtr.Zero)
-                {
-                    s_deviceDpiX = UnsafeNativeMethods.GetDeviceCaps(new HandleRef(null, hDC), SafeNativeMethods.LOGPIXELSX);
-                    s_deviceDpiY = UnsafeNativeMethods.GetDeviceCaps(new HandleRef(null, hDC), SafeNativeMethods.LOGPIXELSY);
+                s_deviceDpiX = UnsafeNativeMethods.GetDeviceCaps(new HandleRef(null, hDC), SafeNativeMethods.LOGPIXELSX);
+                s_deviceDpiY = UnsafeNativeMethods.GetDeviceCaps(new HandleRef(null, hDC), SafeNativeMethods.LOGPIXELSY);
 
-                    UnsafeNativeMethods.ReleaseDC(NativeMethods.NullHandleRef, new HandleRef(null, hDC));
-                }
+                UnsafeNativeMethods.ReleaseDC(NativeMethods.NullHandleRef, new HandleRef(null, hDC));
             }
 
             s_isInitialized = true;

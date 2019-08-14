@@ -13,8 +13,8 @@ namespace MS.Internal.Xml.XPath
 {
     internal sealed class BooleanFunctions : ValueQuery
     {
-        private Query _arg;
-        private FT _funcType;
+        private readonly Query _arg;
+        private readonly FT _funcType;
 
         public BooleanFunctions(FT funcType, Query arg)
         {

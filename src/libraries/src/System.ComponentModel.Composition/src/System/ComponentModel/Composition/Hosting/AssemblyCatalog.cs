@@ -29,7 +29,7 @@ namespace System.ComponentModel.Composition.Hosting
         private volatile ComposablePartCatalog _innerCatalog = null;
         private int _isDisposed = 0;
 
-        private ReflectionContext _reflectionContext = default(ReflectionContext);
+        private readonly ReflectionContext _reflectionContext = default(ReflectionContext);
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="AssemblyCatalog"/> class

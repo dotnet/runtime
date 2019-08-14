@@ -19,10 +19,10 @@ namespace System.Xml
         //
         // Fields
         //
-        private bool _checkValues;
-        private bool _checkNames;
-        private bool _replaceNewLines;
-        private string _newLineChars;
+        private readonly bool _checkValues;
+        private readonly bool _checkNames;
+        private readonly bool _replaceNewLines;
+        private readonly string _newLineChars;
 
         private XmlCharType _xmlCharType;
         //

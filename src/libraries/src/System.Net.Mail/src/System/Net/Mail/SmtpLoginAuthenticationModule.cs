@@ -9,7 +9,7 @@ namespace System.Net.Mail
 {
     internal sealed class SmtpLoginAuthenticationModule : ISmtpAuthenticationModule
     {
-        private Dictionary<object, NetworkCredential> _sessions = new Dictionary<object, NetworkCredential>();
+        private readonly Dictionary<object, NetworkCredential> _sessions = new Dictionary<object, NetworkCredential>();
 
         internal SmtpLoginAuthenticationModule()
         {

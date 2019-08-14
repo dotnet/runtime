@@ -40,7 +40,7 @@ namespace System.IO.Ports
 
         // members supporting properties exposed to SerialPort
         private byte _parityReplace = (byte)'?';
-        private bool _isAsync = true;
+        private readonly bool _isAsync = true;
         private bool _rtsEnable = false;
 
         // The internal C# representations of Win32 structures necessary for communication
@@ -50,11 +50,11 @@ namespace System.IO.Ports
         private Interop.Kernel32.COMSTAT _comStat;
         private Interop.Kernel32.COMMPROP _commProp;
 
-        private ThreadPoolBoundHandle _threadPoolBinding = null;
-        private EventLoopRunner _eventRunner;
-        private Task _waitForComEventTask = null;
+        private readonly ThreadPoolBoundHandle _threadPoolBinding = null;
+        private readonly EventLoopRunner _eventRunner;
+        private readonly Task _waitForComEventTask = null;
 
-        private byte[] _tempBuf;                 // used to avoid multiple array allocations in ReadByte()
+        private readonly byte[] _tempBuf;                 // used to avoid multiple array allocations in ReadByte()
 
         // called whenever any async i/o operation completes.
         private static readonly unsafe IOCompletionCallback s_IOCallback = new IOCompletionCallback(AsyncFSCallback);
@@ -1536,18 +1536,18 @@ namespace System.IO.Ports
 
         internal sealed class EventLoopRunner
         {
-            private WeakReference streamWeakReference;
+            private readonly WeakReference streamWeakReference;
             internal ManualResetEvent waitCommEventWaitHandle = new ManualResetEvent(false);
-            private SafeFileHandle handle = null;
-            private ThreadPoolBoundHandle threadPoolBinding = null;
-            private bool isAsync;
+            private readonly SafeFileHandle handle = null;
+            private readonly ThreadPoolBoundHandle threadPoolBinding = null;
+            private readonly bool isAsync;
             internal bool endEventLoop;
-            private int eventsOccurred;
+            private readonly int eventsOccurred;
 
-            private WaitCallback callErrorEvents;
-            private WaitCallback callReceiveEvents;
-            private WaitCallback callPinEvents;
-            private IOCompletionCallback freeNativeOverlappedCallback;
+            private readonly WaitCallback callErrorEvents;
+            private readonly WaitCallback callReceiveEvents;
+            private readonly WaitCallback callPinEvents;
+            private readonly IOCompletionCallback freeNativeOverlappedCallback;
 
 #if DEBUG
             private readonly string portName;

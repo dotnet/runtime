@@ -14,7 +14,7 @@ namespace Microsoft.VisualBasic
 {
     public class VBCodeProvider : CodeDomProvider
     {
-        private VBCodeGenerator _generator;
+        private readonly VBCodeGenerator _generator;
 
         public VBCodeProvider()
         {

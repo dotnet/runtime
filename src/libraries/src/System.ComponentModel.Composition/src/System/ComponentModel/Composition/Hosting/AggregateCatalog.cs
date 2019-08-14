@@ -19,7 +19,7 @@ namespace System.ComponentModel.Composition.Hosting
     /// </remarks>
     public class AggregateCatalog : ComposablePartCatalog, INotifyComposablePartCatalogChanged
     {
-        private ComposablePartCatalogCollection _catalogs = null;
+        private readonly ComposablePartCatalogCollection _catalogs = null;
         private volatile int _isDisposed = 0;
 
         /// <summary>

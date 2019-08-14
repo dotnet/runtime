@@ -62,7 +62,7 @@ namespace System.Diagnostics.Eventing.Reader
             }
         }
 
-        private int _errorCode;
+        private readonly int _errorCode;
 
         protected EventLogException(SerializationInfo serializationInfo, StreamingContext streamingContext)
             : base(serializationInfo, streamingContext)

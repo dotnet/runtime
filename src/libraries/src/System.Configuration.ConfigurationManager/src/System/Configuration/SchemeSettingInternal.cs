@@ -8,8 +8,8 @@ namespace System.Configuration
 {
     internal sealed class SchemeSettingInternal
     {
-        private string name;
-        private GenericUriParserOptions options;
+        private readonly string name;
+        private readonly GenericUriParserOptions options;
 
         public SchemeSettingInternal(string name, GenericUriParserOptions options)
         {

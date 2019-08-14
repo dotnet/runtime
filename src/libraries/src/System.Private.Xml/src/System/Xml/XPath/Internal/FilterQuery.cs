@@ -11,8 +11,8 @@ namespace MS.Internal.Xml.XPath
 {
     internal sealed class FilterQuery : BaseAxisQuery
     {
-        private Query _cond;
-        private bool _noPosition;
+        private readonly Query _cond;
+        private readonly bool _noPosition;
 
         public FilterQuery(Query qyParent, Query cond, bool noPosition) : base(qyParent)
         {

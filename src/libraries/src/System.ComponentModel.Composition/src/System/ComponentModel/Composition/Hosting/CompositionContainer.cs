@@ -14,7 +14,7 @@ namespace System.ComponentModel.Composition.Hosting
 {
     public partial class CompositionContainer : ExportProvider, ICompositionService, IDisposable
     {
-        private CompositionOptions _compositionOptions;
+        private readonly CompositionOptions _compositionOptions;
         private ImportEngine _importEngine;
         private ComposablePartExportProvider _partExportProvider;
         private ExportProvider _rootProvider;
@@ -27,8 +27,8 @@ namespace System.ComponentModel.Composition.Hosting
 
         private readonly ReadOnlyCollection<ExportProvider> _providers;
         private volatile bool _isDisposed = false;
-        private object _lock = new object();
-        private static ReadOnlyCollection<ExportProvider> EmptyProviders = new ReadOnlyCollection<ExportProvider>(Array.Empty<ExportProvider>());
+        private readonly object _lock = new object();
+        private static readonly ReadOnlyCollection<ExportProvider> EmptyProviders = new ReadOnlyCollection<ExportProvider>(Array.Empty<ExportProvider>());
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="CompositionContainer"/> class.

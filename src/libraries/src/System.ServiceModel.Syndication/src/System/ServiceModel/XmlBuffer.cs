@@ -10,7 +10,7 @@ namespace System.ServiceModel
 {
     internal class XmlBuffer
     {
-        private List<Section> _sections;
+        private readonly List<Section> _sections;
         private byte[] _buffer;
         private int _offset;
         private BufferedStream _stream;

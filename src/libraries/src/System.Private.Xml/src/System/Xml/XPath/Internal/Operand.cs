@@ -8,8 +8,8 @@ namespace MS.Internal.Xml.XPath
 {
     internal class Operand : AstNode
     {
-        private XPathResultType _type;
-        private object _val;
+        private readonly XPathResultType _type;
+        private readonly object _val;
 
         public Operand(string val)
         {

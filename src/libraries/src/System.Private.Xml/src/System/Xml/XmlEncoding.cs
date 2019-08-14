@@ -9,7 +9,7 @@ namespace System.Xml
 {
     internal class UTF16Decoder : System.Text.Decoder
     {
-        private bool _bigEndian;
+        private readonly bool _bigEndian;
         private int _lastByte;
         private const int CharSize = 2;
 

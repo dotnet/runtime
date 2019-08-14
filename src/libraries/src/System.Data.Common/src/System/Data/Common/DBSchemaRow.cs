@@ -10,8 +10,8 @@ namespace System.Data.Common
     internal sealed class DbSchemaRow
     {
         internal const string SchemaMappingUnsortedIndex = "SchemaMapping Unsorted Index";
-        private DbSchemaTable _schemaTable;
-        private DataRow _dataRow;
+        private readonly DbSchemaTable _schemaTable;
+        private readonly DataRow _dataRow;
 
         internal static DbSchemaRow[] GetSortedSchemaRows(DataTable dataTable, bool returnProviderSpecificTypes)
         {

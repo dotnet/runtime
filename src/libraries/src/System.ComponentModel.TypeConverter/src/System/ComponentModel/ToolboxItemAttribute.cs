@@ -15,7 +15,7 @@ namespace System.ComponentModel
     public class ToolboxItemAttribute : Attribute
     {
         private Type _toolboxItemType;
-        private string _toolboxItemTypeName;
+        private readonly string _toolboxItemTypeName;
 
         /// <summary>
         /// Initializes a new instance of ToolboxItemAttribute and sets the type to

@@ -92,9 +92,9 @@ namespace System.DirectoryServices.AccountManagement
         // Private fields
         //
 
-        private IEnumerator _groupsEnumerator;
-        private SAMStoreCtx _storeCtx;
-        private DirectoryEntry _ctxBase;
+        private readonly IEnumerator _groupsEnumerator;
+        private readonly SAMStoreCtx _storeCtx;
+        private readonly DirectoryEntry _ctxBase;
 
         private bool _atBeginning = true;
 

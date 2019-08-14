@@ -8,8 +8,8 @@ namespace MS.Internal.Xml.XPath
 {
     internal class Filter : AstNode
     {
-        private AstNode _input;
-        private AstNode _condition;
+        private readonly AstNode _input;
+        private readonly AstNode _condition;
 
         public Filter(AstNode input, AstNode condition)
         {

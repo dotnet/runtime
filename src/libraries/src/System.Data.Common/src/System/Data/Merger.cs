@@ -10,11 +10,11 @@ namespace System.Data
 {
     internal sealed class Merger
     {
-        private DataSet _dataSet = null;
-        private DataTable _dataTable = null;
-        private bool _preserveChanges;
-        private MissingSchemaAction _missingSchemaAction;
-        private bool _isStandAlonetable = false;
+        private readonly DataSet _dataSet = null;
+        private readonly DataTable _dataTable = null;
+        private readonly bool _preserveChanges;
+        private readonly MissingSchemaAction _missingSchemaAction;
+        private readonly bool _isStandAlonetable = false;
         private bool _IgnoreNSforTableLookup = false; // Everett Behavior : SQL BU DT 370850
 
         internal Merger(DataSet dataSet, bool preserveChanges, MissingSchemaAction missingSchemaAction)

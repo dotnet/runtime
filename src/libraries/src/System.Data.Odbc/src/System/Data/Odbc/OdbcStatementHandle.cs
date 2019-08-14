@@ -9,7 +9,7 @@ namespace System.Data.Odbc
 {
     internal struct SQLLEN
     {
-        private IntPtr _value;
+        private readonly IntPtr _value;
 
         internal SQLLEN(int value)
         {

@@ -16,11 +16,11 @@ namespace Microsoft.SqlServer.Server
 {
     internal class SmiSettersStream : Stream
     {
-        private SmiEventSink_Default _sink;
-        private ITypedSettersV3 _setters;
-        private int _ordinal;
+        private readonly SmiEventSink_Default _sink;
+        private readonly ITypedSettersV3 _setters;
+        private readonly int _ordinal;
         private long _lengthWritten;
-        private SmiMetaData _metaData;
+        private readonly SmiMetaData _metaData;
 
         internal SmiSettersStream(SmiEventSink_Default sink, ITypedSettersV3 setters, int ordinal, SmiMetaData metaData)
         {

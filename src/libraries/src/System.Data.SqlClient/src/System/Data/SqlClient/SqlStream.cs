@@ -19,12 +19,12 @@ namespace System.Data.SqlClient
     internal sealed class SqlStream : Stream
     {
         private SqlDataReader _reader; // reader we will stream off
-        private int _columnOrdinal;
+        private readonly int _columnOrdinal;
         private long _bytesCol;
         private int _bom;
         private byte[] _bufferedData;
-        private bool _processAllRows;
-        private bool _advanceReader;
+        private readonly bool _processAllRows;
+        private readonly bool _advanceReader;
         private bool _readFirstRow = false;
         private bool _endOfColumn = false;
 
@@ -550,7 +550,7 @@ namespace System.Data.SqlClient
 
     internal sealed class SqlStreamingXml
     {
-        private int _columnOrdinal;
+        private readonly int _columnOrdinal;
         private SqlDataReader _reader;
         private XmlReader _xmlReader;
         private XmlWriter _xmlWriter;

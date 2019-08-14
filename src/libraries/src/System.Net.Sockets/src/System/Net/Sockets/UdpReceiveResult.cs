@@ -9,8 +9,8 @@ namespace System.Net.Sockets
     /// </summary>
     public struct UdpReceiveResult : IEquatable<UdpReceiveResult>
     {
-        private byte[] _buffer;
-        private IPEndPoint _remoteEndPoint;
+        private readonly byte[] _buffer;
+        private readonly IPEndPoint _remoteEndPoint;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UdpReceiveResult"/> class

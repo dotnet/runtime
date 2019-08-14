@@ -17,7 +17,7 @@ namespace System.Xml.Serialization
 
     internal class ModelScope
     {
-        private TypeScope _typeScope;
+        private readonly TypeScope _typeScope;
         private readonly Dictionary<Type, TypeModel> _models = new Dictionary<Type, TypeModel>();
         private readonly Dictionary<Type, TypeModel> _arrayModels = new Dictionary<Type, TypeModel>();
 
@@ -90,9 +90,9 @@ namespace System.Xml.Serialization
 
     internal abstract class TypeModel
     {
-        private TypeDesc _typeDesc;
-        private Type _type;
-        private ModelScope _scope;
+        private readonly TypeDesc _typeDesc;
+        private readonly Type _type;
+        private readonly ModelScope _scope;
 
         protected TypeModel(Type type, TypeDesc typeDesc, ModelScope scope)
         {
@@ -250,16 +250,16 @@ namespace System.Xml.Serialization
 
     internal class FieldModel
     {
-        private SpecifiedAccessor _checkSpecified = SpecifiedAccessor.None;
-        private MemberInfo _memberInfo;
-        private MemberInfo _checkSpecifiedMemberInfo;
-        private MethodInfo _checkShouldPersistMethodInfo;
-        private bool _checkShouldPersist;
-        private bool _readOnly = false;
-        private bool _isProperty = false;
-        private Type _fieldType;
-        private string _name;
-        private TypeDesc _fieldTypeDesc;
+        private readonly SpecifiedAccessor _checkSpecified = SpecifiedAccessor.None;
+        private readonly MemberInfo _memberInfo;
+        private readonly MemberInfo _checkSpecifiedMemberInfo;
+        private readonly MethodInfo _checkShouldPersistMethodInfo;
+        private readonly bool _checkShouldPersist;
+        private readonly bool _readOnly = false;
+        private readonly bool _isProperty = false;
+        private readonly Type _fieldType;
+        private readonly string _name;
+        private readonly TypeDesc _fieldTypeDesc;
 
         internal FieldModel(string name, Type fieldType, TypeDesc fieldTypeDesc, bool checkSpecified, bool checkShouldPersist) :
             this(name, fieldType, fieldTypeDesc, checkSpecified, checkShouldPersist, false)
@@ -372,8 +372,8 @@ namespace System.Xml.Serialization
 
     internal class ConstantModel
     {
-        private FieldInfo _fieldInfo;
-        private long _value;
+        private readonly FieldInfo _fieldInfo;
+        private readonly long _value;
 
         internal ConstantModel(FieldInfo fieldInfo, long value)
         {

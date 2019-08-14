@@ -31,7 +31,7 @@ namespace System.Net.Sockets
 
         private State _state;
 
-        private object _lockObject = new object();
+        private readonly object _lockObject = new object();
 
         // Called by Socket to kick off the ConnectAsync process.  We'll complete the user's SAEA
         // when it's done.  Returns true if the operation will be asynchronous, false if it has failed synchronously
@@ -409,8 +409,8 @@ namespace System.Net.Sockets
     // AddressFamily
     internal sealed class SingleSocketMultipleConnectAsync : MultipleConnectAsync
     {
-        private Socket _socket;
-        private bool _userSocket;
+        private readonly Socket _socket;
+        private readonly bool _userSocket;
 
         public SingleSocketMultipleConnectAsync(Socket socket, bool userSocket)
         {
@@ -458,8 +458,8 @@ namespace System.Net.Sockets
     // ahead of time, so we create both IPv4 and IPv6 sockets.
     internal sealed class DualSocketMultipleConnectAsync : MultipleConnectAsync
     {
-        private Socket _socket4;
-        private Socket _socket6;
+        private readonly Socket _socket4;
+        private readonly Socket _socket6;
 
         public DualSocketMultipleConnectAsync(SocketType socketType, ProtocolType protocolType)
         {

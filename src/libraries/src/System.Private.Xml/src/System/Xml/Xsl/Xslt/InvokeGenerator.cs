@@ -23,14 +23,14 @@ namespace System.Xml.Xsl.Xslt
 
     internal class InvokeGenerator : QilCloneVisitor
     {
-        private bool _debug;
-        private Stack<QilIterator> _iterStack;
+        private readonly bool _debug;
+        private readonly Stack<QilIterator> _iterStack;
 
         private QilList _formalArgs;
         private QilList _invokeArgs;
         private int _curArg;     // this.Clone() depends on this value
 
-        private XsltQilFactory _fac;
+        private readonly XsltQilFactory _fac;
 
         public InvokeGenerator(XsltQilFactory f, bool debug) : base(f.BaseFactory)
         {

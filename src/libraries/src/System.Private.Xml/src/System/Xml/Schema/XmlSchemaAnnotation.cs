@@ -10,7 +10,7 @@ namespace System.Xml.Schema
     public class XmlSchemaAnnotation : XmlSchemaObject
     {
         private string _id;
-        private XmlSchemaObjectCollection _items = new XmlSchemaObjectCollection();
+        private readonly XmlSchemaObjectCollection _items = new XmlSchemaObjectCollection();
         private XmlAttribute[] _moreAttributes;
 
         [XmlAttribute("id", DataType = "ID")]

@@ -24,11 +24,11 @@ namespace System.Xml.Xsl.IlGen
     internal class XmlILModule
     {
         private static long s_assemblyId;                                     // Unique identifier used to ensure that assembly names are unique within AppDomain
-        private static ModuleBuilder s_LREModule = CreateLREModule();         // Module used to emit dynamic lightweight-reflection-emit (LRE) methods
+        private static readonly ModuleBuilder s_LREModule = CreateLREModule();         // Module used to emit dynamic lightweight-reflection-emit (LRE) methods
 
         private TypeBuilder _typeBldr;
         private Hashtable _methods;
-        private bool _useLRE, _emitSymbols;
+        private readonly bool _useLRE, _emitSymbols;
 
         private const string RuntimeName = "{" + XmlReservedNs.NsXslDebug + "}" + "runtime";
 

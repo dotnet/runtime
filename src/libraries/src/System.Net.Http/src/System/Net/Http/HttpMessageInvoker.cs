@@ -12,8 +12,8 @@ namespace System.Net.Http
     public class HttpMessageInvoker : IDisposable
     {
         private volatile bool _disposed;
-        private bool _disposeHandler;
-        private HttpMessageHandler _handler;
+        private readonly bool _disposeHandler;
+        private readonly HttpMessageHandler _handler;
 
         public HttpMessageInvoker(HttpMessageHandler handler)
             : this(handler, true)

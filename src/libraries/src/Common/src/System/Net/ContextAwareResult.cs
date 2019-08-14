@@ -20,8 +20,8 @@ namespace System.Net
     // to have several pending IOs differentiated by their state object.  We don't want that pattern to break the cache.
     internal class CallbackClosure
     {
-        private AsyncCallback _savedCallback;
-        private ExecutionContext _savedContext;
+        private readonly AsyncCallback _savedCallback;
+        private readonly ExecutionContext _savedContext;
 
         internal CallbackClosure(ExecutionContext context, AsyncCallback callback)
         {

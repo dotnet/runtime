@@ -13,7 +13,7 @@ namespace System.Xml.Xsl
     /// </summary>
     internal struct XmlQueryCardinality
     {
-        private int _value;
+        private readonly int _value;
 
         #region ctor
         /// <summary>

@@ -12,9 +12,9 @@ namespace System.DirectoryServices.Protocols
         private LdapAsyncWaitHandle _asyncWaitHandle = null;
         internal AsyncCallback _callback = null;
         internal bool _completed = false;
-        private bool _completedSynchronously = false;
+        private readonly bool _completedSynchronously = false;
         internal ManualResetEvent _manualResetEvent = null;
-        private object _stateObject = null;
+        private readonly object _stateObject = null;
         internal LdapRequestState _resultObject = null;
         internal bool _partialResults = false;
 

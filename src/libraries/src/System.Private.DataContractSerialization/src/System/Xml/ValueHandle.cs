@@ -68,12 +68,12 @@ namespace System.Xml
 
     internal class ValueHandle
     {
-        private XmlBufferReader _bufferReader;
+        private readonly XmlBufferReader _bufferReader;
         private ValueHandleType _type;
         private int _offset;
         private int _length;
         private static Base64Encoding s_base64Encoding;
-        private static string[] s_constStrings = {
+        private static readonly string[] s_constStrings = {
                                         "string",
                                         "number",
                                         "array",

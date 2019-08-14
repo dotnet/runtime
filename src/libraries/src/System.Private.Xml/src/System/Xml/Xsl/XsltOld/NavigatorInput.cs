@@ -14,10 +14,10 @@ namespace System.Xml.Xsl.XsltOld
     {
         private XPathNavigator _Navigator;
         private PositionInfo _PositionInfo;
-        private InputScopeManager _Manager;
+        private readonly InputScopeManager _Manager;
         private NavigatorInput _Next;
-        private string _Href;
-        private KeywordsTable _Atoms;
+        private readonly string _Href;
+        private readonly KeywordsTable _Atoms;
 
         internal NavigatorInput Next
         {

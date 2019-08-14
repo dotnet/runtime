@@ -11,7 +11,7 @@ namespace System.Configuration
     {
         internal const UriIdnScope EnabledDefaultValue = UriIdnScope.None;
 
-        private ConfigurationPropertyCollection _properties = new ConfigurationPropertyCollection();
+        private readonly ConfigurationPropertyCollection _properties = new ConfigurationPropertyCollection();
 
         private readonly ConfigurationProperty _enabled =
             new ConfigurationProperty(CommonConfigurationStrings.Enabled, typeof(UriIdnScope),

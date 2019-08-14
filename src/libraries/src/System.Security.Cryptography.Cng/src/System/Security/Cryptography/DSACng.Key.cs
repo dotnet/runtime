@@ -53,6 +53,6 @@ namespace System.Security.Cryptography
         }
 
         private const string BCRYPT_DSA_ALGORITHM = "DSA";
-        private CngAlgorithm _dsnCng = new CngAlgorithm(BCRYPT_DSA_ALGORITHM);
+        private readonly CngAlgorithm _dsnCng = new CngAlgorithm(BCRYPT_DSA_ALGORITHM);
     }
 }

@@ -2684,7 +2684,7 @@ namespace System.ComponentModel
         /// </summary>
         private sealed class AttributeProvider : TypeDescriptionProvider
         {
-            private Attribute[] _attrs;
+            private readonly Attribute[] _attrs;
 
             /// <summary>
             /// Creates a new attribute provider.
@@ -2707,7 +2707,7 @@ namespace System.ComponentModel
             /// </summary>
             private class AttributeTypeDescriptor : CustomTypeDescriptor
             {
-                private Attribute[] _attributeArray;
+                private readonly Attribute[] _attributeArray;
 
                 /// <summary>
                 /// Creates a new custom type descriptor that can merge

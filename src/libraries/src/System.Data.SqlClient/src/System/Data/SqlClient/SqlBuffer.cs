@@ -401,7 +401,7 @@ namespace System.Data.SqlClient
         }
 
         // use static list of format strings indexed by scale for perf
-        private static string[] s_katmaiDateTimeOffsetFormatByScale = new string[] {
+        private static readonly string[] s_katmaiDateTimeOffsetFormatByScale = new string[] {
                 "yyyy-MM-dd HH:mm:ss zzz",
                 "yyyy-MM-dd HH:mm:ss.f zzz",
                 "yyyy-MM-dd HH:mm:ss.ff zzz",
@@ -412,7 +412,7 @@ namespace System.Data.SqlClient
                 "yyyy-MM-dd HH:mm:ss.fffffff zzz",
         };
 
-        private static string[] s_katmaiDateTime2FormatByScale = new string[] {
+        private static readonly string[] s_katmaiDateTime2FormatByScale = new string[] {
                 "yyyy-MM-dd HH:mm:ss",
                 "yyyy-MM-dd HH:mm:ss.f",
                 "yyyy-MM-dd HH:mm:ss.ff",
@@ -423,7 +423,7 @@ namespace System.Data.SqlClient
                 "yyyy-MM-dd HH:mm:ss.fffffff",
         };
 
-        private static string[] s_katmaiTimeFormatByScale = new string[] {
+        private static readonly string[] s_katmaiTimeFormatByScale = new string[] {
                 "HH:mm:ss",
                 "HH:mm:ss.f",
                 "HH:mm:ss.ff",

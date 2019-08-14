@@ -24,7 +24,7 @@ namespace System.Security.Principal
 
     public class WindowsPrincipal : ClaimsPrincipal
     {
-        private WindowsIdentity _identity = null;
+        private readonly WindowsIdentity _identity = null;
 
         //
         // Constructors.

@@ -12,8 +12,8 @@ namespace System.ComponentModel.Composition.Hosting
     {
         internal class DependenciesTraversal : IComposablePartCatalogTraversal
         {
-            private IEnumerable<ComposablePartDefinition> _parts;
-            private Func<ImportDefinition, bool> _importFilter;
+            private readonly IEnumerable<ComposablePartDefinition> _parts;
+            private readonly Func<ImportDefinition, bool> _importFilter;
             private Dictionary<string, List<ComposablePartDefinition>> _exportersIndex;
 
             public DependenciesTraversal(FilteredCatalog catalog, Func<ImportDefinition, bool> importFilter)

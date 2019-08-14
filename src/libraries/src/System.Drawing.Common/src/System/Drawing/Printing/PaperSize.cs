@@ -17,7 +17,7 @@ namespace System.Drawing.Printing
         // standard hundredths of an inch units
         private int _width;
         private int _height;
-        private bool _createdByDefaultConstructor;
+        private readonly bool _createdByDefaultConstructor;
 
         /// <summary>
         /// Initializes a new instance of the <see cref='PaperSize'/> class with default properties.

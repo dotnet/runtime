@@ -74,7 +74,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         private IList<KeyValuePair<string, object>> results = null;
 
         [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Never)]
-        private object obj;
+        private readonly object obj;
 
         [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.RootHidden)]
         internal DynamicProperty[] Items

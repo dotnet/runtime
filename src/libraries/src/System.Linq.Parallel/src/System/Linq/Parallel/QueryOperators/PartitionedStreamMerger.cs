@@ -18,14 +18,14 @@ namespace System.Linq.Parallel
     /// </summary>
     internal class PartitionedStreamMerger<TOutput> : IPartitionedStreamRecipient<TOutput>
     {
-        private bool _forEffectMerge;
-        private ParallelMergeOptions _mergeOptions;
-        private bool _isOrdered;
+        private readonly bool _forEffectMerge;
+        private readonly ParallelMergeOptions _mergeOptions;
+        private readonly bool _isOrdered;
         private MergeExecutor<TOutput> _mergeExecutor = null;
-        private TaskScheduler _taskScheduler;
-        private int _queryId; // ID of the current query execution
+        private readonly TaskScheduler _taskScheduler;
+        private readonly int _queryId; // ID of the current query execution
 
-        private CancellationState _cancellationState;
+        private readonly CancellationState _cancellationState;
 
 #if DEBUG
         private bool _received = false;

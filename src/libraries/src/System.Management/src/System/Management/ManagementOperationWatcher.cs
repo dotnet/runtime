@@ -125,8 +125,8 @@ namespace System.Management
     /// </example>
     public class ManagementOperationObserver
     {
-        private Hashtable m_sinkCollection;
-        private WmiDelegateInvoker delegateInvoker;
+        private readonly Hashtable m_sinkCollection;
+        private readonly WmiDelegateInvoker delegateInvoker;
 
         /// <summary>
         ///    <para> Occurs when a new object is available.</para>
@@ -367,9 +367,9 @@ namespace System.Management
 
     internal class WmiEventState
     {
-        private Delegate d;
-        private ManagementEventArgs args;
-        private AutoResetEvent h;
+        private readonly Delegate d;
+        private readonly ManagementEventArgs args;
+        private readonly AutoResetEvent h;
 
         internal WmiEventState (Delegate d, ManagementEventArgs args, AutoResetEvent h)
         {

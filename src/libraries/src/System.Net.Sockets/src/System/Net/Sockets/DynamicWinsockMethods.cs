@@ -13,7 +13,7 @@ namespace System.Net.Sockets
     {
         // In practice there will never be more than four of these, so its not worth a complicated
         // hash table structure.  Store them in a list and search through it.
-        private static List<DynamicWinsockMethods> s_methodTable = new List<DynamicWinsockMethods>();
+        private static readonly List<DynamicWinsockMethods> s_methodTable = new List<DynamicWinsockMethods>();
 
         public static DynamicWinsockMethods GetMethods(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
         {
@@ -36,10 +36,10 @@ namespace System.Net.Sockets
             }
         }
 
-        private AddressFamily _addressFamily;
-        private SocketType _socketType;
-        private ProtocolType _protocolType;
-        private object _lockObject;
+        private readonly AddressFamily _addressFamily;
+        private readonly SocketType _socketType;
+        private readonly ProtocolType _protocolType;
+        private readonly object _lockObject;
 
         private AcceptExDelegate _acceptEx;
         private GetAcceptExSockaddrsDelegate _getAcceptExSockaddrs;

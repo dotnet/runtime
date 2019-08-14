@@ -60,7 +60,7 @@ namespace System.IO.Packaging
 
         #region Private Members
 
-        private SortedList<PackUriHelper.ValidatedPartUri, PackagePart> _partList;
+        private readonly SortedList<PackUriHelper.ValidatedPartUri, PackagePart> _partList;
 
         #endregion Private Members
     }

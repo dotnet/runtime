@@ -1220,7 +1220,7 @@ namespace System.Threading.Tasks.Dataflow
             internal sealed class DebuggingInformation
             {
                 /// <summary>The source being viewed.</summary>
-                private BroadcastingSourceCore<TOutput> _source;
+                private readonly BroadcastingSourceCore<TOutput> _source;
 
                 /// <summary>Initializes the type proxy.</summary>
                 /// <param name="source">The source being viewed.</param>

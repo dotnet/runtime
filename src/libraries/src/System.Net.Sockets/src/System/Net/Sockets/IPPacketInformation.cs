@@ -6,8 +6,8 @@ namespace System.Net.Sockets
 {
     public struct IPPacketInformation
     {
-        private IPAddress _address;
-        private int _networkInterface;
+        private readonly IPAddress _address;
+        private readonly int _networkInterface;
 
         internal IPPacketInformation(IPAddress address, int networkInterface)
         {

@@ -524,7 +524,7 @@ namespace System.Management
             return new MarshalWbemObject(cookie);
         }
 
-        private string cookie;
+        private readonly string cookie;
         private MarshalWbemObject(string cookie)
         {
             this.cookie = cookie;
@@ -1446,10 +1446,10 @@ namespace System.Management
             }
         }
 
-        private static ArrayList reqList = new ArrayList(3);
-        private static object critSec = new object();
+        private static readonly ArrayList reqList = new ArrayList(3);
+        private static readonly object critSec = new object();
 
-        private static AutoResetEvent evtGo = new AutoResetEvent(false); // tells the worker to create an object on our behalf
+        private static readonly AutoResetEvent evtGo = new AutoResetEvent(false); // tells the worker to create an object on our behalf
 
         private static bool workerThreadInitialized = false;
         // Initialize worker thread
@@ -1560,7 +1560,7 @@ namespace System.Management
 
         // A variable that is initialized once to tell us if we are on
         // a Win2k platform or above.
-        private static bool CanCallCoGetObjectContext = IsWindows2000OrHigher();
+        private static readonly bool CanCallCoGetObjectContext = IsWindows2000OrHigher();
 
         // This method will tell us if the calling thread is in the MTA and we are not in a 'context'
         public static bool IsNoContextMTA()

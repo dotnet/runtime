@@ -55,13 +55,13 @@ namespace System.DirectoryServices.AccountManagement
 
         private bool _fastConcurrentSupported = true;
 
-        private Hashtable _connCache = new Hashtable(4);
+        private readonly Hashtable _connCache = new Hashtable(4);
         private LdapDirectoryIdentifier _directoryIdent;
-        private object _cacheLock = new object();
+        private readonly object _cacheLock = new object();
 
         private AuthMethod _lastBindMethod = AuthMethod.Simple;
-        private string _serverName;
-        private ContextType _contextType;
+        private readonly string _serverName;
+        private readonly ContextType _contextType;
         private ServerProperties _serverProperties;
 
         private const ContextOptions defaultContextOptionsNegotiate = ContextOptions.Signing | ContextOptions.Sealing | ContextOptions.Negotiate;
@@ -1022,7 +1022,7 @@ namespace System.DirectoryServices.AccountManagement
 
         // Are we initialized?
         private bool _initialized = false;
-        private object _initializationLock = new object();
+        private readonly object _initializationLock = new object();
 
         // Have we been disposed?
         private bool _disposed = false;
@@ -1031,11 +1031,11 @@ namespace System.DirectoryServices.AccountManagement
         // Our constructor parameters
 
         // encryption nor zeroing out the string when you're done with it.
-        private string _username;
-        private string _password;
+        private readonly string _username;
+        private readonly string _password;
 
         // Cached connections to the server for fast credential validation
-        private CredentialValidator _credValidate;
+        private readonly CredentialValidator _credValidate;
         private ServerProperties _serverProperties;
 
         internal ServerProperties ServerInformation
@@ -1046,10 +1046,10 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        private string _name;
-        private string _container;
-        private ContextOptions _options;
-        private ContextType _contextType;
+        private readonly string _name;
+        private readonly string _container;
+        private readonly ContextOptions _options;
+        private readonly ContextType _contextType;
 
         // The server we're connected to
         private string _connectedServer = null;

@@ -100,9 +100,9 @@ namespace System.Runtime.Serialization
 
         private class ExportContext
         {
-            private XmlNamespaceManager _namespaces;
+            private readonly XmlNamespaceManager _namespaces;
             private int _nextPrefix;
-            private StringBuilder _xPathBuilder;
+            private readonly StringBuilder _xPathBuilder;
 
             public ExportContext(DataContract rootContract)
             {

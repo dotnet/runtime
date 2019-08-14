@@ -80,7 +80,7 @@ namespace System.Security.Cryptography
                 return isAtLeastWindows8;
             }
 
-            private static KeySizes[] s_legalKeySizes = new KeySizes[] { new KeySizes(minSize: 512, maxSize: 3072, skipSize: 64) };
+            private static readonly KeySizes[] s_legalKeySizes = new KeySizes[] { new KeySizes(minSize: 512, maxSize: 3072, skipSize: 64) };
             private static readonly int s_defaultKeySize = Supports2048KeySize() ? 2048 : 1024;
         }
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS

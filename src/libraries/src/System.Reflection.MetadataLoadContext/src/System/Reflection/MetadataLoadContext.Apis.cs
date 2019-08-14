@@ -286,6 +286,6 @@ namespace System.Reflection
             GC.SuppressFinalize(this);
         }
 
-        private MetadataAssemblyResolver resolver;
+        private readonly MetadataAssemblyResolver resolver;
     }
 }

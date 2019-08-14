@@ -11,7 +11,7 @@ namespace System.Net.Sockets
     // host process that listens for connections from TCP clients.
     public class TcpListener
     {
-        private IPEndPoint _serverSocketEP;
+        private readonly IPEndPoint _serverSocketEP;
         private Socket _serverSocket;
         private bool _active;
         private bool _exclusiveAddressUse;

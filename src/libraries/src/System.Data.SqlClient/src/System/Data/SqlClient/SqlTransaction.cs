@@ -18,7 +18,7 @@ namespace System.Data.SqlClient
         internal readonly IsolationLevel _isolationLevel = IsolationLevel.ReadCommitted;
 
         private SqlInternalTransaction _internalTransaction;
-        private SqlConnection _connection;
+        private readonly SqlConnection _connection;
 
         private bool _isFromAPI;
 

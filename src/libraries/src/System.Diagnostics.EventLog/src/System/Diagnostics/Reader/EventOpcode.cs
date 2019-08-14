@@ -14,12 +14,12 @@ namespace System.Diagnostics.Eventing.Reader
     [SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly", MessageId = "Opcode", Justification = "matell: Shipped public in 3.5, breaking change to fix now.")]
     public sealed class EventOpcode
     {
-        private int _value;
+        private readonly int _value;
         private string _name;
         private string _displayName;
         private bool _dataReady;
-        private ProviderMetadata _pmReference;
-        private object _syncObject;
+        private readonly ProviderMetadata _pmReference;
+        private readonly object _syncObject;
 
         internal EventOpcode(int value, ProviderMetadata pmReference)
         {

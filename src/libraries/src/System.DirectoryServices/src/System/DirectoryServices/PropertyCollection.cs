@@ -174,8 +174,8 @@ namespace System.DirectoryServices
 
         private class PropertyEnumerator : IDictionaryEnumerator, IDisposable
         {
-            private DirectoryEntry _entry;               // clone (to be disposed)
-            private DirectoryEntry _parentEntry;         // original entry to pass to PropertyValueCollection
+            private readonly DirectoryEntry _entry;               // clone (to be disposed)
+            private readonly DirectoryEntry _parentEntry;         // original entry to pass to PropertyValueCollection
             private string _currentPropName = null;
 
             public PropertyEnumerator(DirectoryEntry parent, DirectoryEntry clone)

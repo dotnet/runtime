@@ -14,19 +14,19 @@ namespace System.Data
 {
     internal sealed class XmlDataLoader
     {
-        private DataSet _dataSet;
+        private readonly DataSet _dataSet;
         private XmlToDatasetMap _nodeToSchemaMap = null;
-        private Hashtable _nodeToRowMap;
-        private Stack _childRowsStack = null;
-        private Hashtable _htableExcludedNS = null;
-        private bool _fIsXdr = false;
+        private readonly Hashtable _nodeToRowMap;
+        private readonly Stack _childRowsStack = null;
+        private readonly Hashtable _htableExcludedNS = null;
+        private readonly bool _fIsXdr = false;
         internal bool _isDiffgram = false;
 
         private XmlElement _topMostNode = null;
-        private bool _ignoreSchema = false;
+        private readonly bool _ignoreSchema = false;
 
-        private DataTable _dataTable;
-        private bool _isTableLevel = false;
+        private readonly DataTable _dataTable;
+        private readonly bool _isTableLevel = false;
         private bool _fromInference = false;
 
         internal XmlDataLoader(DataSet dataset, bool IsXdr, bool ignoreSchema)

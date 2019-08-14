@@ -13,7 +13,7 @@ namespace System.Xml.Xsl.IlGen
     /// </summary>
     internal class XmlILAnnotation : ListBase<object>
     {
-        private object _annPrev;
+        private readonly object _annPrev;
         private MethodInfo _funcMethod;
         private int _argPos;
         private IteratorDescriptor _iterInfo;

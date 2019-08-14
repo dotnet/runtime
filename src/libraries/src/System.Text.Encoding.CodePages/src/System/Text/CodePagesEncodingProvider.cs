@@ -10,8 +10,8 @@ namespace System.Text
     public sealed partial class CodePagesEncodingProvider : EncodingProvider
     {
         private static readonly EncodingProvider s_singleton = new CodePagesEncodingProvider();
-        private Dictionary<int, Encoding> _encodings = new Dictionary<int, Encoding>();
-        private ReaderWriterLockSlim _cacheLock = new ReaderWriterLockSlim();
+        private readonly Dictionary<int, Encoding> _encodings = new Dictionary<int, Encoding>();
+        private readonly ReaderWriterLockSlim _cacheLock = new ReaderWriterLockSlim();
 
         internal CodePagesEncodingProvider() { }
 

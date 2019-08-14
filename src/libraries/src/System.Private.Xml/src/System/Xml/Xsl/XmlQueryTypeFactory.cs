@@ -329,17 +329,17 @@ namespace System.Xml.Xsl
             public static readonly XmlQueryType UntypedAttribute;
             public static readonly XmlQueryType NodeNotRtf;
 
-            private static XmlQueryType[] s_builtInItemTypes;
-            private static XmlQueryType[] s_builtInItemTypesStrict;
-            private static XmlQueryType[] s_specialBuiltInItemTypes;
+            private static readonly XmlQueryType[] s_builtInItemTypes;
+            private static readonly XmlQueryType[] s_builtInItemTypesStrict;
+            private static readonly XmlQueryType[] s_specialBuiltInItemTypes;
 
-            private XmlTypeCode _code;
-            private XmlQualifiedNameTest _nameTest;
-            private XmlSchemaType _schemaType;
-            private bool _isNillable;
-            private XmlNodeKindFlags _nodeKinds;
-            private bool _isStrict;
-            private bool _isNotRtf;
+            private readonly XmlTypeCode _code;
+            private readonly XmlQualifiedNameTest _nameTest;
+            private readonly XmlSchemaType _schemaType;
+            private readonly bool _isNillable;
+            private readonly XmlNodeKindFlags _nodeKinds;
+            private readonly bool _isStrict;
+            private readonly bool _isNotRtf;
 
 #pragma warning disable CA1810 // explicit static cctor
             /// <summary>
@@ -690,10 +690,10 @@ namespace System.Xml.Xsl
         {
             public static readonly XmlQueryType None = new ChoiceType(new List<XmlQueryType>());
 
-            private XmlTypeCode _code;
-            private XmlSchemaType _schemaType;
-            private XmlNodeKindFlags _nodeKinds;
-            private List<XmlQueryType> _members;
+            private readonly XmlTypeCode _code;
+            private readonly XmlSchemaType _schemaType;
+            private readonly XmlNodeKindFlags _nodeKinds;
+            private readonly List<XmlQueryType> _members;
 
             /// <summary>
             /// Create choice between node kinds.
@@ -951,8 +951,8 @@ namespace System.Xml.Xsl
         {
             public static readonly XmlQueryType Zero = new SequenceType(ChoiceType.None, XmlQueryCardinality.Zero);
 
-            private XmlQueryType _prime;
-            private XmlQueryCardinality _card;
+            private readonly XmlQueryType _prime;
+            private readonly XmlQueryCardinality _card;
 
             /// <summary>
             /// Create sequence type from prime and cardinality.

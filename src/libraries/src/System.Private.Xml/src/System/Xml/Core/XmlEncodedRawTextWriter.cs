@@ -71,7 +71,7 @@ namespace System.Xml
         private int _lastMarkPos;
         private int[] _textContentMarks;   // even indices contain text content start positions
                                            // odd indices contain markup start positions
-        private CharEntityEncoderFallback _charEntityFallback;
+        private readonly CharEntityEncoderFallback _charEntityFallback;
 
         // writer settings
         protected NewLineHandling newLineHandling;

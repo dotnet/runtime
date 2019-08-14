@@ -19,9 +19,9 @@ namespace System.Net.Security
     public partial class SslStream
     {
         private static int s_uniqueNameInteger = 123;
-        private static AsyncProtocolCallback s_partialFrameCallback = new AsyncProtocolCallback(PartialFrameCallback);
-        private static AsyncProtocolCallback s_readFrameCallback = new AsyncProtocolCallback(ReadFrameCallback);
-        private static AsyncCallback s_writeCallback = new AsyncCallback(WriteCallback);
+        private static readonly AsyncProtocolCallback s_partialFrameCallback = new AsyncProtocolCallback(PartialFrameCallback);
+        private static readonly AsyncProtocolCallback s_readFrameCallback = new AsyncProtocolCallback(ReadFrameCallback);
+        private static readonly AsyncCallback s_writeCallback = new AsyncCallback(WriteCallback);
 
         private SslAuthenticationOptions _sslAuthenticationOptions;
 

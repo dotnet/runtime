@@ -1759,9 +1759,9 @@ namespace System.Collections.Generic
 
         public struct Enumerator : IEnumerator<T>, IEnumerator
         {
-            private HashSet<T> _set;
+            private readonly HashSet<T> _set;
             private int _index;
-            private int _version;
+            private readonly int _version;
             [AllowNull] private T _current;
 
             internal Enumerator(HashSet<T> set)

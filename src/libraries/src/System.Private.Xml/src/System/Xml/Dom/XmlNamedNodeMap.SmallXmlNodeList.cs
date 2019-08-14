@@ -141,7 +141,7 @@ namespace System.Xml
 
             private class SingleObjectEnumerator : IEnumerator
             {
-                private object _loneValue;
+                private readonly object _loneValue;
                 private int _position = -1;
 
                 public SingleObjectEnumerator(object value)

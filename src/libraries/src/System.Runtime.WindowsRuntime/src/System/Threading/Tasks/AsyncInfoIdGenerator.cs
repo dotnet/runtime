@@ -22,7 +22,7 @@ namespace System.Threading.Tasks
         /// We want to avoid ending up with the same ID as a Windows-implemented async info.
         /// At the same time we want to be reproducible. So we use a random generator with a fixed seed.
         /// </summary>
-        private static Random s_idGenerator = new Random(19830118);
+        private static readonly Random s_idGenerator = new Random(19830118);
 
 
         /// <summary>

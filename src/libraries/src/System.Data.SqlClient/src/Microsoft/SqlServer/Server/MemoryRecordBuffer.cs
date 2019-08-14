@@ -16,7 +16,7 @@ namespace Microsoft.SqlServer.Server
     // Class for implementing a record object used in out-of-proc scenarios.
     internal sealed class MemoryRecordBuffer : SmiRecordBuffer
     {
-        private SqlRecordBuffer[] _buffer;
+        private readonly SqlRecordBuffer[] _buffer;
 
         internal MemoryRecordBuffer(SmiMetaData[] metaData)
         {

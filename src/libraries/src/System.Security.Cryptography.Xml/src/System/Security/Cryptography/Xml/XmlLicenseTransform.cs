@@ -16,8 +16,8 @@ namespace System.Security.Cryptography.Xml
 {
     public class XmlLicenseTransform : Transform
     {
-        private Type[] _inputTypes = { typeof(XmlDocument) };
-        private Type[] _outputTypes = { typeof(XmlDocument) };
+        private readonly Type[] _inputTypes = { typeof(XmlDocument) };
+        private readonly Type[] _outputTypes = { typeof(XmlDocument) };
         private XmlNamespaceManager _namespaceManager = null;
         private XmlDocument _license = null;
         private IRelDecryptor _relDecryptor = null;

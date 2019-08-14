@@ -22,7 +22,7 @@ namespace System.Numerics.Tensors
     public class CompressedSparseTensor<T> : Tensor<T>
     {
         private Memory<T> values;
-        private Memory<int> compressedCounts;
+        private readonly Memory<int> compressedCounts;
         private Memory<int> indices;
 
         private int nonZeroCount;

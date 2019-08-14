@@ -290,7 +290,7 @@ namespace System.Net
             private TimerState _timerState;
             private Callback _callback;
             private object _context;
-            private object _queueLock;
+            private readonly object _queueLock;
             private TimerNode _next;
             private TimerNode _prev;
 

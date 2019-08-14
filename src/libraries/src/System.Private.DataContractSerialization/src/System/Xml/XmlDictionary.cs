@@ -17,7 +17,7 @@ namespace System.Xml
     public class XmlDictionary : IXmlDictionary
     {
         private static IXmlDictionary s_empty;
-        private Dictionary<string, XmlDictionaryString> _lookup;
+        private readonly Dictionary<string, XmlDictionaryString> _lookup;
         private XmlDictionaryString[] _strings;
         private int _nextId;
 
