@@ -2354,10 +2354,9 @@ do_transform_method (InterpFrame *frame, ThreadContext *context)
 		interp_pop_lmf (&ext);
 }
 
-static MONO_NEVER_INLINE void
-copy_varargs_vtstack (MonoMethodSignature *csig, stackval *sp, unsigned char **vt_sp)
+static MONO_NEVER_INLINE guchar*
+copy_varargs_vtstack (MonoMethodSignature *csig, stackval *sp, guchar *vt_sp)
 {
-	char *vt = *(char**)vt_sp;
 	stackval *first_arg = sp - csig->param_count;
 
 	/*
@@ -2365,21 +2364,19 @@ copy_varargs_vtstack (MonoMethodSignature *csig, stackval *sp, unsigned char **v
 	 * can iterate over them. We pass the signature first and then copy them
 	 * one by one on the vtstack.
 	 */
-	*(gpointer*)vt = csig;
-	vt += sizeof (gpointer);
+	*(gpointer*)vt_sp = csig;
+	vt_sp += sizeof (gpointer);
 
 	for (int i = csig->sentinelpos; i < csig->param_count; i++) {
 		int align, arg_size;
 		arg_size = mono_type_stack_size (csig->params [i], &align);
-		vt = (char*)ALIGN_PTR_TO (vt, align);
+		vt_sp = (guchar*)ALIGN_PTR_TO (vt_sp, align);
 
-		stackval_to_data (csig->params [i], &first_arg [i], vt, FALSE);
-		vt += arg_size;
+		stackval_to_data (csig->params [i], &first_arg [i], vt_sp, FALSE);
+		vt_sp += arg_size;
 	}
 
-	vt = (char*)ALIGN_PTR_TO (vt, MINT_VT_ALIGNMENT);
-
-	*(char**)vt_sp = vt;
+	return (guchar*)ALIGN_PTR_TO (vt_sp, MINT_VT_ALIGNMENT);
 }
 
 /*
@@ -3354,7 +3351,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			/* Push all vararg arguments from normal sp to vt_sp together with the signature */
 			num_varargs = csig->param_count - csig->sentinelpos;
 			child_frame.varargs = (char*) vt_sp;
-			copy_varargs_vtstack (csig, sp, &vt_sp);
+			vt_sp = copy_varargs_vtstack (csig, sp, vt_sp);
 
 			ip += 3;
 			sp->data.p = vt_sp;
