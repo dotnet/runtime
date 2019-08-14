@@ -7,11 +7,6 @@ set "__MsgPrefix=BUILDTEST: "
 
 echo %__MsgPrefix%Starting Build at %TIME%
 
-REM Set variables used when running in an Azure DevOps task
-if defined TF_BUILD (
-    set __ArcadeScriptArgs="-ci"
-    set __ErrMsgPrefix=##vso[task.logissue type=error]
-)
 
 set __ThisScriptDir="%~dp0"
 
@@ -86,6 +81,8 @@ if /i "%1" == "arm64"                 (set __BuildArch=arm64&set processedArgs=!
 if /i "%1" == "debug"                 (set __BuildType=Debug&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "release"               (set __BuildType=Release&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "checked"               (set __BuildType=Checked&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+
+if /i "%1" == "ci"                    (set __ArcadeScriptArgs="-ci"&set __ErrMsgPrefix=##vso[task.logissue type=error]&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 if /i "%1" == "skipmanaged"           (set __SkipManaged=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipnative"            (set __SkipNative=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)

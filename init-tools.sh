@@ -15,11 +15,6 @@ __BUILD_TOOLS_PATH="$__PACKAGES_DIR/microsoft.dotnet.buildtools/$__BUILD_TOOLS_P
 __INIT_TOOLS_RESTORE_PROJECT="$__scriptpath/init-tools.msbuild"
 __BUILD_TOOLS_SEMAPHORE="$__TOOLRUNTIME_DIR/$__BUILD_TOOLS_PACKAGE_VERSION/init-tools.complete"
 
-# Set variables used when running in an Azure DevOps task
-if [[ ! -z $TF_BUILD ]]; then
-  __ErrMsgPrefix="##vso[task.logissue type=error]"
-fi
-
 if [ -e "$__BUILD_TOOLS_SEMAPHORE" ]; then
     echo "Tools are already initialized"
     return #return instead of exit because this script is inlined in other scripts which we don't want to exit

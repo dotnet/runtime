@@ -612,12 +612,6 @@ case $OSName in
         ;;
 esac
 
-# Set variables used when running in an Azure DevOps task
-if [[ ! -z $TF_BUILD ]]; then
-  __ArcadeScriptArgs="--ci"
-  __ErrMsgPrefix="##vso[task.logissue type=error]"
-fi
-
 __BuildType=Debug
 __CodeCoverage=
 __IgnoreWarnings=0
@@ -723,6 +717,11 @@ while :; do
 
         release|-release)
             __BuildType=Release
+            ;;
+
+        ci|-ci)
+            __ArcadeScriptArgs="--ci"
+            __ErrMsgPrefix="##vso[task.logissue type=error]"
             ;;
 
         coverage|-coverage)
