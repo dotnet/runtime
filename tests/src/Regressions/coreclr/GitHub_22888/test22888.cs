@@ -27,7 +27,7 @@ public class Test22888
         alcWeakRef = new WeakReference(alc);
 
         Assembly a = alc.LoadFromAssemblyPath(assemblyPath);
-        Stream resourceStream = a.GetManifestResourceStream("test22888.resources");
+        Stream resourceStream = a.GetManifestResourceStream($"{Path.GetFileNameWithoutExtension(assemblyPath)}.test22888.resources");
         alc.Unload();
 
         return resourceStream;
@@ -67,7 +67,7 @@ public class Test22888
     public static int Main()
     {
         string currentAssemblyDirectory = Path.GetDirectoryName(new Uri(Assembly.GetExecutingAssembly().CodeBase).AbsolutePath);
-        string testAssemblyFullPath = Path.Combine(currentAssemblyDirectory, "test22888resources.exe");
+        string testAssemblyFullPath = Path.Combine(currentAssemblyDirectory, "test22888resources.dll");
 
         WeakReference alcWeakRef;
         bool success = LoadAndUnload(testAssemblyFullPath, out alcWeakRef);

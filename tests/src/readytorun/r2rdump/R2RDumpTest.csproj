@@ -1,14 +1,7 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <AssemblyName>R2RDumpTest</AssemblyName>
-    <SchemaVersion>2.0</SchemaVersion>
     <OutputType>Exe</OutputType>
     <CLSCompliant>false</CLSCompliant>
-    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     <CoreClrDir>..\..\..\..\..\..\</CoreClrDir>
     <R2RDumpCommand>$(CoreClrDir)bin\Product\$(BuildOS).$(BuildArch).$(BuildType)\netcoreapp2.0\R2RDump.dll</R2RDumpCommand>
     <DotnetToolCommand>$(CoreClrDir).dotnet\dotnet</DotnetToolCommand>
@@ -16,23 +9,15 @@
     <BashR2RDumpCommand>$(BashCoreClrDir)bin/Product/$(BuildOS).$(BuildArch).$(BuildType)/netcoreapp2.0/R2RDump.dll</BashR2RDumpCommand>
     <BashDotnetToolCommand>$(CoreClrDir).dotnet/dotnet</BashDotnetToolCommand>
     <CLRTestExecutionArguments>$(CoreClrDir)tests\src\readytorun\r2rdump\files\$(BuildOS).$(BuildArch).$(BuildType)\</CLRTestExecutionArguments>
-  
     <!-- Test unsupported outside of windows -->
     <!-- Test unsupported on arm targets -->
     <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
     <DisableProjectBuild Condition=" '$(Platform)' == 'arm64' or '$(Platform)' == 'arm' or '$(TargetsUnix)' == 'true' ">true</DisableProjectBuild>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-  </PropertyGroup>
-
   <PropertyGroup>
     <!-- Fails with JIT stress modes, issue #19415 -->
     <JitOptimizationSensitive>true</JitOptimizationSensitive>
   </PropertyGroup>
-
   <ItemGroup>
     <Compile Include="BasicTests.cs" />
     <Compile Include="TestHelpers.cs" />
@@ -43,7 +28,6 @@
     <ProjectReference Include="files\GenericFunctions.csproj" />
     <ProjectReference Include="files\GcInfoTransitions.csproj" />
   </ItemGroup>
-
   <PropertyGroup>
     <CLRTestBatchPreCommands><![CDATA[
 $(CLRTestBatchPreCommands)
@@ -56,7 +40,7 @@ $(DotnetToolCommand) $(R2RDumpCommand) --in GcInfoTransitions.ni.dll --out GcInf
 $(DotnetToolCommand) $(R2RDumpCommand) --in GenericFunctions.ni.dll --out GenericFunctions-test.xml -x -v --ignoreSensitive
 $(DotnetToolCommand) $(R2RDumpCommand) --in MultipleRuntimeFunctions.ni.dll --out MultipleRuntimeFunctions-test.xml -x -v --ignoreSensitive
 ]]></CLRTestBatchPreCommands>
-  <BashCLRTestPreCommands><![CDATA[
+    <BashCLRTestPreCommands><![CDATA[
 $(BashCLRTestPreCommands)
 $CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out HelloWorld.ni.dll HelloWorld.dll
 $CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out GcInfoTransitions.ni.dll GcInfoTransitions.dll
@@ -68,6 +52,4 @@ $(BashDotnetToolCommand) $(BashR2RDumpCommand) --in GenericFunctions.ni.dll --ou
 $(BashDotnetToolCommand) $(BashR2RDumpCommand) --in MultipleRuntimeFunctions.ni.dll --out MultipleRuntimeFunctions-test.xml -x -v --ignoreSensitive
 ]]></BashCLRTestPreCommands>
   </PropertyGroup>
-
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

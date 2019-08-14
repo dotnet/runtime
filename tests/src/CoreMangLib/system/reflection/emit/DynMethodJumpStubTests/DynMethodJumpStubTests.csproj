@@ -1,23 +1,12 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
-    <AssemblyName>DynMethodJumpStubTests</AssemblyName>
-    <ProjectGuid>{742D9E05-668D-4B90-97F9-717A7572FE6C}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <CLRTestPriority>1</CLRTestPriority>
-
     <!-- Test unsupported outside of windows -->
     <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
     <DisableProjectBuild Condition="'$(TargetsUnix)' == 'true'">true</DisableProjectBuild>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'"></PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'"></PropertyGroup>
   <ItemGroup>
-    <Compile Include="DynMethodJumpStubTests.cs" />
+    <Compile Include="$(MSBuildProjectName).cs" />
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

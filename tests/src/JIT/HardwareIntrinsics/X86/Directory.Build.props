@@ -1,0 +1,7 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <ItemGroup>
+    <ProjectReference Include="$(SourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+  </ItemGroup>
+</Project>
