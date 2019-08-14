@@ -31,13 +31,6 @@
     <Compile Include="Microsoft\VisualBasic\FileIO\FileSystem.Unix.vb" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Microsoft\VisualBasic\ApplicationServices\ApplicationBase.vb" />
-    <Compile Include="Microsoft\VisualBasic\ApplicationServices\AssemblyInfo.vb" />
-    <Compile Include="Microsoft\VisualBasic\ApplicationServices\ConsoleApplicationBase.vb" />
-    <Compile Include="Microsoft\VisualBasic\ApplicationServices\StartupEventArgs.vb" />
-    <Compile Include="Microsoft\VisualBasic\ApplicationServices\StartupNextInstanceEventArgs.vb" />
-    <Compile Include="Microsoft\VisualBasic\ApplicationServices\UnhandledExceptionEventArgs.vb" />
-    <Compile Include="Microsoft\VisualBasic\ApplicationServices\User.vb" />
     <Compile Include="Microsoft\VisualBasic\Collection.vb" />
     <Compile Include="Microsoft\VisualBasic\ComClassAttribute.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\BooleanType.vb" />
@@ -87,16 +80,6 @@
     <Compile Include="Microsoft\VisualBasic\ControlChars.vb" />
     <Compile Include="Microsoft\VisualBasic\Conversion.vb" />
     <Compile Include="Microsoft\VisualBasic\DateAndTime.vb" />
-    <Compile Include="Microsoft\VisualBasic\Devices\Audio.vb" />
-    <Compile Include="Microsoft\VisualBasic\Devices\Clock.vb" />
-    <Compile Include="Microsoft\VisualBasic\Devices\Computer.vb" />
-    <Compile Include="Microsoft\VisualBasic\Devices\ComputerInfo.vb" />
-    <Compile Include="Microsoft\VisualBasic\Devices\Keyboard.vb" />
-    <Compile Include="Microsoft\VisualBasic\Devices\Mouse.vb" />
-    <Compile Include="Microsoft\VisualBasic\Devices\Network.vb" />
-    <Compile Include="Microsoft\VisualBasic\Devices\NetworkAvailableEventArgs.vb" />
-    <Compile Include="Microsoft\VisualBasic\Devices\Ports.vb" />
-    <Compile Include="Microsoft\VisualBasic\Devices\ServerComputer.vb" />
     <Compile Include="Microsoft\VisualBasic\ErrObject.vb" />
     <Compile Include="Microsoft\VisualBasic\FileIO\FileSystem.vb" />
     <Compile Include="Microsoft\VisualBasic\FileIO\MalformedLineException.vb" />
@@ -110,10 +93,6 @@
     <Compile Include="Microsoft\VisualBasic\Information.vb" />
     <Compile Include="Microsoft\VisualBasic\Interaction.vb" />
     <Compile Include="Microsoft\VisualBasic\MyGroupCollectionAttribute.vb" />
-    <Compile Include="Microsoft\VisualBasic\MyServices\ClipboardProxy.vb" />
-    <Compile Include="Microsoft\VisualBasic\MyServices\FileSystemProxy.vb" />
-    <Compile Include="Microsoft\VisualBasic\MyServices\RegistryProxy.vb" />
-    <Compile Include="Microsoft\VisualBasic\MyServices\SpecialDirectoriesProxy.vb" />
     <Compile Include="Microsoft\VisualBasic\Strings.vb" />
     <Compile Include="Microsoft\VisualBasic\VBFixedArrayAttribute.vb" />
     <Compile Include="Microsoft\VisualBasic\VBFixedStringAttribute.vb" />
