@@ -431,8 +431,8 @@ sgen_compare_bridge_processor_results (SgenBridgeProcessor *a, SgenBridgeProcess
 		b_xrefs [i].dst_scc_index = *scc_index_ptr;
 	}
 
-	qsort (a_xrefs, a->num_xrefs, sizeof (MonoGCBridgeXRef), compare_xrefs);
-	qsort (b_xrefs, a->num_xrefs, sizeof (MonoGCBridgeXRef), compare_xrefs);
+	mono_qsort (a_xrefs, a->num_xrefs, sizeof (MonoGCBridgeXRef), compare_xrefs);
+	mono_qsort (b_xrefs, a->num_xrefs, sizeof (MonoGCBridgeXRef), compare_xrefs);
 
 	for (i = 0; i < a->num_xrefs; ++i) {
 		g_assert (a_xrefs [i].src_scc_index == b_xrefs [i].src_scc_index);

@@ -1002,7 +1002,7 @@ dump_samples (void)
 	UnmanagedSymbol** cachedus = NULL;
 	if (!num_stat_samples)
 		return;
-	qsort (usymbols, usymbols_num, sizeof (UnmanagedSymbol*), compare_usymbol_addr);
+	mono_qsort (usymbols, usymbols_num, sizeof (UnmanagedSymbol*), compare_usymbol_addr);
 	for (i = 0; i < num_stat_samples; ++i) {
 		MethodDesc *m = lookup_method_by_ip (stat_samples [i]);
 		if (m) {
@@ -1038,8 +1038,8 @@ dump_samples (void)
 			unmanaged_hits++;
 		}
 	}
-	qsort (cachedm, count, sizeof (MethodDesc*), compare_method_samples);
-	qsort (cachedus, ucount, sizeof (UnmanagedSymbol*), compare_usymbol_samples);
+	mono_qsort (cachedm, count, sizeof (MethodDesc*), compare_method_samples);
+	mono_qsort (cachedus, ucount, sizeof (UnmanagedSymbol*), compare_usymbol_samples);
 	set_usym_parent (cachedus, ucount);
 	fprintf (outfile, "\nStatistical samples summary\n");
 	fprintf (outfile, "\tSample type: %s\n", sample_type_name (stat_sample_desc [0]));
@@ -1845,7 +1845,7 @@ sort_context_array (TraceDesc* traces)
 			j++;
 		}
 	}
-	qsort (traces->traces, traces->count, sizeof (CallContext), compare_callc);
+	mono_qsort (traces->traces, traces->count, sizeof (CallContext), compare_callc);
 }
 
 static void
@@ -3421,7 +3421,7 @@ dump_monitors (void)
 			mdesc = mdesc->next;
 		}
 	}
-	qsort (monitors, num_monitors, sizeof (void*), compare_monitor);
+	mono_qsort (monitors, num_monitors, sizeof (void*), compare_monitor);
 	fprintf (outfile, "\nMonitor lock summary\n");
 	for (i = 0; i < num_monitors; ++i) {
 		MonitorDesc *mdesc = monitors [i];
@@ -3505,7 +3505,7 @@ dump_allocations (void)
 			cd = cd->next;
 		}
 	}
-	qsort (classes, num_classes, sizeof (void*), compare_class);
+	mono_qsort (classes, num_classes, sizeof (void*), compare_class);
 	for (i = 0; i < num_classes; ++i) {
 		cd = classes [i];
 		if (!cd->allocs)
@@ -3605,7 +3605,7 @@ dump_methods (void)
 			cd = cd->next;
 		}
 	}
-	qsort (methods, num_methods, sizeof (void*), compare_method);
+	mono_qsort (methods, num_methods, sizeof (void*), compare_method);
 	for (i = 0; i < num_methods; ++i) {
 		uint64_t msecs;
 		uint64_t smsecs;
@@ -3699,7 +3699,7 @@ heap_shot_summary (HeapShot *hs, int hs_num, HeapShot *last_hs)
 		sorted [ccount++] = cd;
 	}
 	hs->sorted = sorted;
-	qsort (sorted, ccount, sizeof (void*), compare_heap_class);
+	mono_qsort (sorted, ccount, sizeof (void*), compare_heap_class);
 	fprintf (outfile, "\n\tHeap shot %d at %.3f secs: size: %llu, object count: %llu, class count: %d, roots: %zd\n",
 		hs_num,
 		(hs->timestamp - startup_time)/1000000000.0,
@@ -3737,7 +3737,7 @@ heap_shot_summary (HeapShot *hs, int hs_num, HeapShot *last_hs)
 				rev_sorted [k++] = cd->rev_hash [j];
 		}
 		assert (cd->rev_count == k);
-		qsort (rev_sorted, cd->rev_count, sizeof (HeapClassRevRef), compare_rev_class);
+		mono_qsort (rev_sorted, cd->rev_count, sizeof (HeapClassRevRef), compare_rev_class);
 		if (cd->root_references)
 			fprintf (outfile, "\t\t%zd root references (%zd pinning)\n", cd->root_references, cd->pinned_references);
 		dump_rev_claases (rev_sorted, cd->rev_count);
@@ -3772,7 +3772,7 @@ dump_heap_shots (void)
 	i = 0;
 	for (hs = heap_shots; hs; hs = hs->next)
 		hs_sorted [i++] = hs;
-	qsort (hs_sorted, num_heap_shots, sizeof (void*), compare_heap_shots);
+	mono_qsort (hs_sorted, num_heap_shots, sizeof (void*), compare_heap_shots);
 	for (i = 0; i < num_heap_shots; ++i) {
 		hs = hs_sorted [i];
 		heap_shot_summary (hs, i, last_hs);

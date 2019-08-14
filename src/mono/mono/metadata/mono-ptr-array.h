@@ -60,7 +60,7 @@ typedef struct {
 } while (0)
 
 #define mono_ptr_array_sort(ARRAY, COMPARE_FUNC) do { \
-	qsort ((ARRAY).data, (ARRAY).size, sizeof (gpointer), (COMPARE_FUNC)); \
+	mono_qsort ((ARRAY).data, (ARRAY).size, sizeof (gpointer), (COMPARE_FUNC)); \
 } while (0)
 
 #define mono_ptr_array_set(ARRAY, IDX, VALUE) do { \

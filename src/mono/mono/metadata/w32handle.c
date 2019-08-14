@@ -922,7 +922,7 @@ mono_w32handle_has_duplicates (MonoW32Handle *handles [ ], gsize nhandles)
 
 	MonoW32Handle *sorted [MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS]; // 64
 	memcpy (sorted, handles, nhandles * sizeof (handles[0]));
-	qsort (sorted, nhandles, sizeof (sorted [0]), g_direct_equal);
+	mono_qsort (sorted, nhandles, sizeof (sorted [0]), g_direct_equal);
 	for (gsize i = 1; i < nhandles; ++i) {
 		MonoW32Handle * const h1 = sorted [i - 1];
 		MonoW32Handle * const h2 = sorted [i];

@@ -193,7 +193,7 @@ win32_wait_for_multiple_objects_ex (DWORD count, CONST HANDLE *handles, BOOL wai
 			&& GetLastError () == ERROR_INVALID_PARAMETER) {
 		gpointer handles_sorted [MAXIMUM_WAIT_OBJECTS]; // 64
 		memcpy (handles_sorted, handles, count * sizeof (handles [0]));
-		qsort (handles_sorted, count, sizeof (handles_sorted [0]), g_direct_equal);
+		mono_qsort (handles_sorted, count, sizeof (handles_sorted [0]), g_direct_equal);
 		for (DWORD i = 1; i < count; ++i) {
 			if (handles_sorted [i - 1] == handles_sorted [i]) {
 				mono_error_set_duplicate_wait_object (error);

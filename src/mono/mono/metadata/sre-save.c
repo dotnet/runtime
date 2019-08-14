@@ -1502,7 +1502,7 @@ build_compressed_metadata (MonoDynamicImage *assembly, MonoError *error)
 
 	error_init (error);
 
-	qsort (assembly->gen_params->pdata, assembly->gen_params->len, sizeof (gpointer), compare_genericparam);
+	mono_qsort (assembly->gen_params->pdata, assembly->gen_params->len, sizeof (gpointer), compare_genericparam);
 	for (i = 0; i < assembly->gen_params->len; i++) {
 		GenericParamTableEntry *entry = (GenericParamTableEntry *)g_ptr_array_index (assembly->gen_params, i);
 		if (!write_generic_param_entry (assembly, entry, error))
@@ -1642,26 +1642,26 @@ build_compressed_metadata (MonoDynamicImage *assembly, MonoError *error)
 	/* sort the tables that still need sorting */
 	table = &assembly->tables [MONO_TABLE_CONSTANT];
 	if (table->rows)
-		qsort (table->values + MONO_CONSTANT_SIZE, table->rows, sizeof (guint32) * MONO_CONSTANT_SIZE, compare_constants);
+		mono_qsort (table->values + MONO_CONSTANT_SIZE, table->rows, sizeof (guint32) * MONO_CONSTANT_SIZE, compare_constants);
 	table = &assembly->tables [MONO_TABLE_METHODSEMANTICS];
 	if (table->rows)
-		qsort (table->values + MONO_METHOD_SEMA_SIZE, table->rows, sizeof (guint32) * MONO_METHOD_SEMA_SIZE, compare_semantics);
+		mono_qsort (table->values + MONO_METHOD_SEMA_SIZE, table->rows, sizeof (guint32) * MONO_METHOD_SEMA_SIZE, compare_semantics);
 	table = &assembly->tables [MONO_TABLE_CUSTOMATTRIBUTE];
 	if (table->rows)
-		qsort (table->values + MONO_CUSTOM_ATTR_SIZE, table->rows, sizeof (guint32) * MONO_CUSTOM_ATTR_SIZE, compare_custom_attrs);
+		mono_qsort (table->values + MONO_CUSTOM_ATTR_SIZE, table->rows, sizeof (guint32) * MONO_CUSTOM_ATTR_SIZE, compare_custom_attrs);
 	table = &assembly->tables [MONO_TABLE_FIELDMARSHAL];
 	if (table->rows)
-		qsort (table->values + MONO_FIELD_MARSHAL_SIZE, table->rows, sizeof (guint32) * MONO_FIELD_MARSHAL_SIZE, compare_field_marshal);
+		mono_qsort (table->values + MONO_FIELD_MARSHAL_SIZE, table->rows, sizeof (guint32) * MONO_FIELD_MARSHAL_SIZE, compare_field_marshal);
 	table = &assembly->tables [MONO_TABLE_NESTEDCLASS];
 	if (table->rows)
-		qsort (table->values + MONO_NESTED_CLASS_SIZE, table->rows, sizeof (guint32) * MONO_NESTED_CLASS_SIZE, compare_nested);
+		mono_qsort (table->values + MONO_NESTED_CLASS_SIZE, table->rows, sizeof (guint32) * MONO_NESTED_CLASS_SIZE, compare_nested);
 	/* Section 21.11 DeclSecurity in Partition II doesn't specify this to be sorted by MS implementation requires it */
 	table = &assembly->tables [MONO_TABLE_DECLSECURITY];
 	if (table->rows)
-		qsort (table->values + MONO_DECL_SECURITY_SIZE, table->rows, sizeof (guint32) * MONO_DECL_SECURITY_SIZE, compare_declsecurity_attrs);
+		mono_qsort (table->values + MONO_DECL_SECURITY_SIZE, table->rows, sizeof (guint32) * MONO_DECL_SECURITY_SIZE, compare_declsecurity_attrs);
 	table = &assembly->tables [MONO_TABLE_INTERFACEIMPL];
 	if (table->rows)
-		qsort (table->values + MONO_INTERFACEIMPL_SIZE, table->rows, sizeof (guint32) * MONO_INTERFACEIMPL_SIZE, compare_interface_impl);
+		mono_qsort (table->values + MONO_INTERFACEIMPL_SIZE, table->rows, sizeof (guint32) * MONO_INTERFACEIMPL_SIZE, compare_interface_impl);
 
 	/* compress the tables */
 	for (i = 0; i < MONO_TABLE_NUM; i++){

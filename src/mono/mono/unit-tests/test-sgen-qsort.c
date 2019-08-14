@@ -71,7 +71,7 @@ compare_sorts (void *base, size_t nel, size_t width, int (*compar) (const void*,
 	memcpy (b1, base, len);
 	memcpy (b2, base, len);
 
-	qsort (b1, nel, width, compar);
+	mono_qsort (b1, nel, width, compar);
 	sgen_qsort (b2, nel, width, compar);
 
 	/* We can't assert that qsort and sgen_qsort produce the same results

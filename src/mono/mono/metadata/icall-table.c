@@ -302,7 +302,7 @@ mono_lookup_icall_symbol_internal (gpointer func)
 		// Initialize with identity mapping. One line is easier to step over.
 		for (T i = 0; i < N; ++i) functions_sorted [i] = i;
 
-		qsort (functions_sorted, N, sizeof (T), mono_qsort_icall_function_compare_indirect);
+		mono_qsort (functions_sorted, N, sizeof (T), mono_qsort_icall_function_compare_indirect);
 
 		gpointer old = mono_atomic_cas_ptr ((gpointer*)&static_functions_sorted, functions_sorted, NULL);
 		if (old)

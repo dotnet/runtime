@@ -1453,7 +1453,7 @@ imt_sort_slot_entries (MonoImtBuilderEntry *entries) {
 	for (current_entry = entries, i = 0; current_entry != NULL; current_entry = current_entry->next, i++) {
 		sorted_array [i] = current_entry;
 	}
-	qsort (sorted_array, number_of_entries, sizeof (MonoImtBuilderEntry*), compare_imt_builder_entries);
+	mono_qsort (sorted_array, number_of_entries, sizeof (MonoImtBuilderEntry*), compare_imt_builder_entries);
 
 	/*for (i = 0; i < number_of_entries; i++) {
 		print_imt_entry (" sorted array:", sorted_array [i], i);

@@ -1782,9 +1782,9 @@ sort_filter_elems (void)
 
 	for (item = filter_list; item; item = item->next) {
 		ifilter = (ImageFilter *)item->data;
-		qsort (ifilter->types.elems, ifilter->types.count, sizeof (int), int_cmp);
-		qsort (ifilter->fields.elems, ifilter->fields.count, sizeof (int), int_cmp);
-		qsort (ifilter->methods.elems, ifilter->methods.count, sizeof (int), int_cmp);
+		mono_qsort (ifilter->types.elems, ifilter->types.count, sizeof (int), int_cmp);
+		mono_qsort (ifilter->fields.elems, ifilter->fields.count, sizeof (int), int_cmp);
+		mono_qsort (ifilter->methods.elems, ifilter->methods.count, sizeof (int), int_cmp);
 	}
 }
 

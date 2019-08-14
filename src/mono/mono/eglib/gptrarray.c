@@ -214,7 +214,7 @@ void
 g_ptr_array_sort(GPtrArray *array, GCompareFunc compare)
 {
 	g_return_if_fail(array != NULL);
-	qsort(array->pdata, array->len, sizeof(gpointer), compare);
+	mono_qsort (array->pdata, array->len, sizeof(gpointer), compare);
 }
 
 void
