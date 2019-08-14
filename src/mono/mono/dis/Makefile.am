@@ -57,11 +57,22 @@ libmonodismain_a_SOURCES =	\
 
 monodis_SOURCES =
 
+if HAVE_SYS_ZLIB
+Z_LIBS= -lz
+else
+if HAVE_STATIC_ZLIB
+Z_LIBS=$(STATIC_ZLIB_PATH)
+else
+Z_LIBS=
+endif
+endif
+
 monodis_LDADD = 			\
 	libmonodismain_a-dump.$(OBJEXT)	\
 	libmonodismain_a-main.$(OBJEXT)	\
 	libmonodismain_a-declsec.$(OBJEXT) \
 	libmonodis.a			\
+	$(Z_LIBS)			\
 	$(runtime_lib)			\
 	$(LLVM_LIBS)			\
 	$(LLVM_LDFLAGS)			\

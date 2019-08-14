@@ -243,16 +243,6 @@ else
 LLVMMONOF=$(LLVM_LIBS) $(LLVM_LDFLAGS)
 endif
 
-if !HOST_WIN32
-if HAVE_ZLIB
-Z_LIBS= -lz
-else
-Z_LIBS=
-endif
-else
-Z_LIBS=
-endif
-
 mono_boehm_LDADD = \
 	libmain_a-main.$(OBJEXT) \
 	$(MONO_LIB)		\
