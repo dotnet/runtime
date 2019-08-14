@@ -713,6 +713,10 @@
 # https://github.com/mono/mono/issues/15187
 -nomethod System.Diagnostics.Tests.StackFrameTests.Ctor_SkipFrames_FNeedFileInfo
 
+# JIT should not inline custom throw helpers
+-nomethod System.Diagnostics.Tests.StackTraceTests.Ctor_Exception_SkipFrames
+-nomethod System.Diagnostics.Tests.StackTraceTests.Ctor_Exception_SkipFrames_FNeedFileInfo
+
 ####################################################################
 ##  System.Numerics.Vectors.Tests
 ####################################################################
