@@ -2907,13 +2907,46 @@ static int opcode_counts[512];
 #define frame_objref(frame) o
 #endif
 
+// This function is outlined to help save stack in its caller, on the premise
+// that it is relatively rarely called. This also lets it use alloca.
+static MONO_NEVER_INLINE void
+mono_interp_calli_nat_dynamic_pinvoke (
+	// Parameters are sorted by name.
+	InterpFrame* child_frame,
+	guchar* code,
+	ThreadContext *context,
+	MonoMethodSignature* csignature,
+	MonoError* error,
+	InterpMethod* imethod)
+{
+	g_assert (imethod->method->dynamic && csignature->pinvoke);
+
+	/* Pinvoke call is missing the wrapper. See mono_get_native_calli_wrapper */
+	MonoMarshalSpec** mspecs = g_newa (MonoMarshalSpec*, csignature->param_count + 1);
+	memset (mspecs, 0, sizeof (MonoMarshalSpec*) * (csignature->param_count + 1));
+
+	MonoMethodPInvoke iinfo;
+	memset (&iinfo, 0, sizeof (iinfo));
+
+	MonoMethod* m = mono_marshal_get_native_func_wrapper (m_class_get_image (imethod->method->klass), csignature, &iinfo, mspecs, code);
+
+	for (int i = csignature->param_count; i >= 0; i--)
+		if (mspecs [i])
+			mono_metadata_free_marshal_spec (mspecs [i]);
+
+	child_frame->imethod = mono_interp_get_imethod (imethod->domain, m, error);
+	mono_error_cleanup (error); /* FIXME: don't swallow the error */
+
+	interp_exec_method (child_frame, context, error);
+}
+
 /*
  * If EXIT_AT_FINALLY is not -1, exit after exiting the finally clause with that index.
  * If BASE_FRAME is not NULL, copy arguments/locals from BASE_FRAME.
  * The ERROR argument is used to avoid declaring an error object for every interp frame, its not used
  * to return error information.
  */
-static void 
+static void
 interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClauseArgs *clause_args, MonoError *error)
 {
 	InterpFrame child_frame;
@@ -2937,8 +2970,6 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 #include "mintops.def"
 	0 };
 #endif
-
-	MonoMethodPInvoke* piinfo = NULL;
 
 	frame->ex = NULL;
 	frame->finally_ips = NULL;
@@ -3230,19 +3261,16 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CALLI_NAT) {
-			MonoMethodSignature *csignature;
-			stackval *endsp = sp;
-			unsigned char *code = NULL;
-			gboolean save_last_error = FALSE;
 
+			stackval *endsp = sp;
 			frame->ip = ip;
-			
-			csignature = (MonoMethodSignature*)imethod->data_items [* (guint16 *)(ip + 1)];
-			save_last_error = *(guint16 *)(ip + 2);
+
+			MonoMethodSignature* csignature = (MonoMethodSignature*)imethod->data_items [* (guint16 *)(ip + 1)];
+
 			ip += 3;
 			--sp;
 			--endsp;
-			code = (guchar*)sp->data.p;
+			guchar* const code = (guchar*)sp->data.p;
 			child_frame.imethod = NULL;
 
 			sp->data.p = vt_sp;
@@ -3252,28 +3280,11 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			if (csignature->hasthis)
 				--sp;
 			child_frame.stack_args = sp;
+
 			if (imethod->method->dynamic && csignature->pinvoke) {
-				MonoMarshalSpec **mspecs;
-				MonoMethod *m;
-
-				/* Pinvoke call is missing the wrapper. See mono_get_native_calli_wrapper */
-				mspecs = g_new0 (MonoMarshalSpec*, csignature->param_count + 1);
-
-				piinfo = piinfo ? piinfo : g_newa (MonoMethodPInvoke, 1);
-				memset (piinfo, 0, sizeof (*piinfo));
-
-				m = mono_marshal_get_native_func_wrapper (m_class_get_image (imethod->method->klass), csignature, piinfo, mspecs, code);
-
-				for (int i = csignature->param_count; i >= 0; i--)
-					if (mspecs [i])
-						mono_metadata_free_marshal_spec (mspecs [i]);
-				g_free (mspecs);
-
-				child_frame.imethod = mono_interp_get_imethod (imethod->domain, m, error);
-				mono_error_cleanup (error); /* FIXME: don't swallow the error */
-
-				interp_exec_method (&child_frame, context, error);
+				mono_interp_calli_nat_dynamic_pinvoke (&child_frame, code, context, csignature, error, imethod);
 			} else {
+				const gboolean save_last_error = *(guint16 *)(ip - 3 + 2);
 				ves_pinvoke_method (&child_frame, csignature, (MonoFuncV) code, FALSE, context, save_last_error);
 			}
 
