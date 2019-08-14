@@ -1624,8 +1624,8 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 			NULLIFY_INS (args [0]);
 
-			s = mono_ldstr_utf8 (ji->image, mono_metadata_token_index (ji->token), &cfg->error);
-			return_val_if_nok (&cfg->error, NULL);
+			s = mono_ldstr_utf8 (ji->image, mono_metadata_token_index (ji->token), cfg->error);
+			return_val_if_nok (cfg->error, NULL);
 
 			MONO_INST_NEW (cfg, ins, OP_OBJC_GET_SELECTOR);
 			ins->dreg = mono_alloc_ireg (cfg);
