@@ -77,9 +77,9 @@ if defined RunningJitDisasm (
       Returns="$(IlasmRoundTripBashScript);$(BashIlrtTestLaunchCmds)">
     <PropertyGroup>
       <InputAssemblyName Condition="'$(CLRTestKind)' == 'RunOnly'">$([MSBuild]::MakeRelative($(OutputPath), $(_CLRTestToRunFileFullPath)).Replace("\","/"))</InputAssemblyName>
-      <InputAssemblyName Condition="'$(CLRTestKind)' == 'BuildAndRun'">$(MSBuildProjectName).exe</InputAssemblyName>
+      <InputAssemblyName Condition="'$(CLRTestKind)' == 'BuildAndRun'">$(MSBuildProjectName).dll</InputAssemblyName>
       <DisassemblyName>$(MSBuildProjectName).dasm.il</DisassemblyName>
-      <TargetAssemblyName>$(MSBuildProjectName).asm.exe</TargetAssemblyName>
+      <TargetAssemblyName>$(MSBuildProjectName).asm.dll</TargetAssemblyName>
 
       <IlasmRoundTripBashScript>
         <![CDATA[
@@ -133,9 +133,9 @@ fi
           Returns="$(IlasmRoundTripBatchScript);$(BatchIlrtTestLaunchCmds)">
     <PropertyGroup>
       <InputAssemblyName Condition="'$(CLRTestKind)' == 'RunOnly'">$([MSBuild]::MakeRelative($(OutputPath), $(_CLRTestToRunFileFullPath)))</InputAssemblyName>
-      <InputAssemblyName Condition="'$(CLRTestKind)' == 'BuildAndRun'">$(MSBuildProjectName).exe</InputAssemblyName>
+      <InputAssemblyName Condition="'$(CLRTestKind)' == 'BuildAndRun'">$(MSBuildProjectName).dll</InputAssemblyName>
       <DisassemblyName>$(MSBuildProjectName).dasm.il</DisassemblyName>
-      <TargetAssemblyName>$(MSBuildProjectName).asm.exe</TargetAssemblyName>
+      <TargetAssemblyName>$(MSBuildProjectName).asm.dll</TargetAssemblyName>
 
       <!-- https://github.com/dotnet/coreclr/issues/2481. Delete /raweh to ildasm once it is resolved.-->
       <IlasmRoundTripBatchScript>

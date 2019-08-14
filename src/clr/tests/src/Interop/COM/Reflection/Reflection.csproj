@@ -1,39 +1,16 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <AssemblyName>Reflection</AssemblyName>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{85C57688-DA98-4DE3-AC9B-526E4747434C}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <ProjectTypeGuids>{209912F9-0DA1-4184-9CC1-8D583BAF4A28};{87799F5D-CEBD-499D-BDBA-B2C6105CD766}</ProjectTypeGuids>
-    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     <DefineConstants>$(DefineConstants);STATIC</DefineConstants>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-  </PropertyGroup>
   <ItemGroup>
-    <CodeAnalysisDependentAssemblyPaths Condition=" '$(VS100COMNTOOLS)' != '' " Include="$(VS100COMNTOOLS)..\IDE\PrivateAssemblies">
-      <Visible>False</Visible>
-    </CodeAnalysisDependentAssemblyPaths>
+    <Compile Include="$(MSBuildProjectName).cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Reflection.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj">
-      <Project>{c8c0dc74-fac4-45b1-81fe-70c4808366e0}</Project>
-      <Name>CoreCLRTestLibrary</Name>
-    </ProjectReference>
+    <ProjectReference Include="$(SourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
     <ProjectReference Include="..\NETServer\NETServer.csproj">
       <Project>{C04AB564-CC61-499D-9F4C-AA1A9FDE42C9}</Project>
       <Name>NETServer</Name>
     </ProjectReference>
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

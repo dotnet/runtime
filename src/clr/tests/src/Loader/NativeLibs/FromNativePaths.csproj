@@ -1,24 +1,15 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <AssemblyName>FromNativePaths</AssemblyName>
-    <ProjectGuid>{649A239B-AB4B-4E20-BDCA-3BA736E8B790}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <!-- The test cannot be run twice in the same process since it moves a native dll that it uses for pinvoke later -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'"></PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'"></PropertyGroup>
   <ItemGroup>
     <Compile Include="FromNativePaths.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj" />
+    <ProjectReference Include="$(SourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
     <ProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
@@ -26,13 +17,10 @@
     <CLRTestBatchEnvironmentVariable Include="set CORE_LIBRARIES=$CORE_LIBRARIES%3B%25cd%\\Subdirectory" />
   </ItemGroup>
   <PropertyGroup>
-    <PathEnvSetupCommands>
-    <![CDATA[
+    <PathEnvSetupCommands><![CDATA[
       mkdir Subdirectory
-      ]]>
-    </PathEnvSetupCommands>
+      ]]></PathEnvSetupCommands>
     <BashCLRTestPreCommands>$(BashCLRTestPreCommands);$(PathEnvSetupCommands)</BashCLRTestPreCommands>
     <CLRTestBatchPreCommands>$(BatchCLRTestPreCommands);$(PathEnvSetupCommands)</CLRTestBatchPreCommands>
   </PropertyGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -58,8 +58,8 @@ This file contains the logic for providing Execution Script generation.
   -->
   
   <ItemGroup>
-    <ExecutionScriptKind Include="Batch" Condition="'$(BuildOS)' == 'Windows_NT'"/>
-    <ExecutionScriptKind Include="Bash" />
+    <ExecutionScriptKind Include="Batch" Condition="'$(BuildOS)' == 'Windows_NT'" />
+    <ExecutionScriptKind Include="Bash" Condition="'$(BuildOS)' != 'Windows_NT'" />
   </ItemGroup>
 
   <PropertyGroup>
