@@ -7,7 +7,7 @@ using System.Globalization;
 namespace System.Text.Json
 {
     /// <summary>
-    ///   Represents a numeric JSON value.
+    ///   Represents a mutable numeric JSON value.
     /// </summary>
     public sealed class JsonNumber : JsonNode, IEquatable<JsonNumber>
     {

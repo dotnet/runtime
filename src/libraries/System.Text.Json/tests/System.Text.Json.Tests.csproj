@@ -111,13 +111,13 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="JsonNumberTests.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="JsonBooleanTests.cs" />
+    <Compile Include="JsonNumberTests.cs" />
+    <Compile Include="JsonObjectTests.cs" />
+    <Compile Include="JsonObjectTests.TestData.cs" />
     <Compile Include="JsonStringTests.cs" />
   </ItemGroup>
 </Project>
