@@ -600,6 +600,7 @@ type_to_llvm_type (EmitContext *ctx, MonoType *t)
 	case MONO_TYPE_U:
 		return IntPtrType ();
 	case MONO_TYPE_OBJECT:
+		return ObjRefType ();
 	case MONO_TYPE_PTR: {
 		MonoClass *klass = mono_class_from_mono_type_internal (t);
 		MonoClass *ptr_klass = m_class_get_element_class (klass);
