@@ -600,8 +600,23 @@ type_to_llvm_type (EmitContext *ctx, MonoType *t)
 	case MONO_TYPE_U:
 		return IntPtrType ();
 	case MONO_TYPE_OBJECT:
-	case MONO_TYPE_PTR:
+	case MONO_TYPE_PTR: {
+		MonoClass *klass = mono_class_from_mono_type_internal (t);
+		MonoClass *ptr_klass = m_class_get_element_class (klass);
+		MonoType *ptr_type = m_class_get_byval_arg (ptr_klass);
+		/* Handle primitive pointers  */
+		switch (ptr_type->type) {
+		case MONO_TYPE_I1:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U1:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_U4:
+			return LLVMPointerType (type_to_llvm_type (ctx, ptr_type), 0);
+		}
+		
 		return ObjRefType ();
+	}
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
 		/* Because of generic sharing */
