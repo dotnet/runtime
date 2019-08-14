@@ -6723,6 +6723,7 @@ namespace System.Runtime.CompilerServices
     {
         public DisablePrivateReflectionAttribute() { }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.All)]
     public partial class DiscardableAttribute : System.Attribute
     {
         public DiscardableAttribute() { }
