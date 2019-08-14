@@ -28,8 +28,9 @@ jobs:
     osIdentifier: ${{ parameters.osIdentifier }}
     helixType: 'build/tests/'
 
-    # Test jobs should continue on error
-    continueOnError: true
+    # Test jobs should continue on error for internal builds
+    ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+      continueOnError: true
 
     # Compute job name from template parameters
     ${{ if and(eq(parameters.testGroup, 'innerloop'), eq(parameters.displayNameArgs, '')) }}:
