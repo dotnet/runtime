@@ -46,6 +46,7 @@ resources:
 variables:
   - ${{ if and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}:
     - group: DotNet-Blob-Feed
+    - group: corefx-sdl-validation
     - name: _dotnetFeedUrl
       value: https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json
     - name: _PublishUsingPipelines
@@ -96,3 +97,15 @@ stages:
           - PrePublish
         enableSymbolValidation: false # https://github.com/dotnet/arcade/issues/2871
         enableSourceLinkValidation: false # https://github.com/dotnet/arcade/issues/3603
+        SDLValidationParameters:
+          enable: true
+          params: ' -SourceToolsList @("policheck","credscan")
+          -TsaInstanceURL "https://devdiv.visualstudio.com/"
+          -TsaProjectName "DEVDIV"
+          -TsaNotificationEmail "$(TsaNotificationEmail)"
+          -TsaCodebaseAdmin "$(TsaCodebaseAdmin)"
+          -TsaBugAreaPath "DevDiv\\NET\\NET Core "
+          -TsaIterationPath "DevDiv"
+          -TsaRepositoryName "CoreFX"
+          -TsaCodebaseName "CoreFX"
+          -TsaPublish $True'
