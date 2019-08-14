@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -342,6 +343,59 @@ namespace Microsoft.Extensions.Options.Tests
 
             var sp = services.BuildServiceProvider();
             Assert.Equal("Override", sp.GetRequiredService<IOptions<FakeOptions>>().Value.Message);
+        }
+
+        [Fact]
+        public void Options_CanCreateInstancesWithoutDefaultCtor()
+        {
+            var services = new ServiceCollection();
+            services.Configure<OptionsWithoutDefaultCtor>("Named", options =>
+            {
+                options.Message = "Initial value";
+            });
+
+            services.AddSingleton<IOptionsFactory<OptionsWithoutDefaultCtor>, CustomOptionsFactory>();
+
+            var sp = services.BuildServiceProvider();
+            var optionsWithoutDefaultCtor = sp.GetRequiredService<IOptionsMonitor<OptionsWithoutDefaultCtor>>().Get("Named");
+            Assert.Equal("Initial value", optionsWithoutDefaultCtor.Message);
+            Assert.Equal("Named", optionsWithoutDefaultCtor.Name);
+        }
+
+        [Fact]
+        public void Options_WithoutDefaultCtor_ThrowDuringResolution()
+        {
+            var services = new ServiceCollection();
+            services.Configure<OptionsWithoutDefaultCtor>("Named", options =>
+            {
+                options.Message = "Initial value";
+            });
+
+            var sp = services.BuildServiceProvider();
+            Assert.Throws<MissingMethodException>(() => sp.GetRequiredService<IOptionsMonitor<OptionsWithoutDefaultCtor>>().Get("Named"));
+        }
+
+        private class OptionsWithoutDefaultCtor
+        {
+            public string Name { get; }
+            public string Message { get; set; }
+
+            public OptionsWithoutDefaultCtor(string name)
+            {
+                Name = name;
+            }
+        }
+
+        private class CustomOptionsFactory: OptionsFactory<OptionsWithoutDefaultCtor>
+        {
+            public CustomOptionsFactory(IEnumerable<IConfigureOptions<OptionsWithoutDefaultCtor>> setups, IEnumerable<IPostConfigureOptions<OptionsWithoutDefaultCtor>> postConfigures, IEnumerable<IValidateOptions<OptionsWithoutDefaultCtor>> validations) : base(setups, postConfigures, validations)
+            {
+            }
+
+            protected override OptionsWithoutDefaultCtor CreateInstance(string name)
+            {
+                return new OptionsWithoutDefaultCtor(name);
+            }
         }
     }
 }
