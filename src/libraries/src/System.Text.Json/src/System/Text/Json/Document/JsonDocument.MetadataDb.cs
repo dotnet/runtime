@@ -5,6 +5,7 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace System.Text.Json
 {
@@ -148,7 +149,8 @@ namespace System.Text.Json
 
             public void Dispose()
             {
-                if (_data == null)
+                byte[] data = Interlocked.Exchange(ref _data, null);
+                if (data == null)
                 {
                     return;
                 }
@@ -160,8 +162,7 @@ namespace System.Text.Json
                 // The data in this rented buffer only conveys the positions and
                 // lengths of tokens in a document, but no content; so it does not
                 // need to be cleared.
-                ArrayPool<byte>.Shared.Return(_data);
-                _data = null;
+                ArrayPool<byte>.Shared.Return(data);
                 Length = 0;
             }
 
