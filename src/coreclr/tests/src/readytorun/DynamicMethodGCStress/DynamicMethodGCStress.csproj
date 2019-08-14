@@ -1,37 +1,26 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{8884AF49-72DA-44EC-B3E0-9FC8F9BCC1F9}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Optimize>true</Optimize>
     <!-- This test has a secondary thread with an infinite loop -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-  </PropertyGroup>
   <ItemGroup>
-    <Compile Include="DynamicMethodGCStress.cs" />
+    <Compile Include="$(MSBuildProjectName).cs" />
   </ItemGroup>
   <PropertyGroup>
     <CLRTestBatchPreCommands><![CDATA[
 $(CLRTestBatchPreCommands)
-%CORE_ROOT%\crossgen.exe /readytorun /platform_assemblies_paths %CORE_ROOT%%3B%25CD% /out DynamicMethodGCStress.ni.exe DynamicMethodGCStress.exe
-set ExePath=DynamicMethodGCStress.ni.exe
+%CORE_ROOT%\crossgen.exe /readytorun /platform_assemblies_paths %CORE_ROOT%%3B%25CD% /out DynamicMethodGCStress.ni.dll DynamicMethodGCStress.dll
+set ExePath=DynamicMethodGCStress.ni.dll
 set COMPlus_GCStress=3
 ]]></CLRTestBatchPreCommands>
-  <BashCLRTestPreCommands><![CDATA[
+    <BashCLRTestPreCommands><![CDATA[
 $(BashCLRTestPreCommands)
-$CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out DynamicMethodGCStress.ni.exe DynamicMethodGCStress.exe
-ExePath=DynamicMethodGCStress.ni.exe
+$CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out DynamicMethodGCStress.ni.dll DynamicMethodGCStress.dll
+ExePath=DynamicMethodGCStress.ni.dll
 export COMPlus_GCStress=3
 ]]></BashCLRTestPreCommands>
-  </PropertyGroup>  
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  </PropertyGroup>
 </Project>

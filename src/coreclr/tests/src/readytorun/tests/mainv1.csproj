@@ -1,40 +1,19 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{7DECC55A-B584-4456-83BA-6C42A5B3B3CB}</ProjectGuid>
     <OutputType>exe</OutputType>
-    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
-    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <DefineConstants>$(DefineConstants);STATIC;CORECLR</DefineConstants>
     <CrossGenTest>false</CrossGenTest>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-  </PropertyGroup>
-  <ItemGroup>
-    <CodeAnalysisDependentAssemblyPaths Condition=" '$(VS100COMNTOOLS)' != '' " Include="$(VS100COMNTOOLS)..\IDE\PrivateAssemblies">
-      <Visible>False</Visible>
-    </CodeAnalysisDependentAssemblyPaths>
-  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="fieldgetter.ilproj" />
     <ProjectReference Include="testv1\test.csproj">
-       <Project>{F74F55A1-DFCF-4C7C-B462-E96E1D0BB667}</Project>
+      <Project>{F74F55A1-DFCF-4C7C-B462-E96E1D0BB667}</Project>
     </ProjectReference>
     <ProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="main.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <PropertyGroup>
     <CLRTestBatchPreCommands><![CDATA[
@@ -45,7 +24,7 @@ COPY /Y ..\testv1\test\test.dll test.dll
 %Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out fieldgetter.ni.dll fieldgetter.dll 
 %Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out mainv1.ni.exe mainv1.exe
 ]]></CLRTestBatchPreCommands>
-  <BashCLRTestPreCommands><![CDATA[
+    <BashCLRTestPreCommands><![CDATA[
 $(BashCLRTestPreCommands)
 rm -f test.dll
 cp ../testv1/test/test.dll test.dll
@@ -53,6 +32,5 @@ $CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out
 $CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out fieldgetter.ni.dll fieldgetter.dll
 $CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out mainv1.ni.exe mainv1.exe
 ]]></BashCLRTestPreCommands>
-  </PropertyGroup>  
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  </PropertyGroup>
 </Project>

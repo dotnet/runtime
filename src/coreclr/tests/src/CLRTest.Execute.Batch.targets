@@ -42,7 +42,7 @@ WARNING:   When setting properties based on their current state (for example:
     </PropertyGroup>
     <!-- In order to avoid the overhead of calling MSBuild (as it may result in chains of MSBuild calls) I am assuming the extension in this circumstance. -->
     <PropertyGroup Condition="$(CLRTestProjectToRun) != '' AND $(GenerateRunScript)">
-      <ExecuteCmdFullPath>$(OutputPath)$([System.IO.Path]::GetFilenameWithoutExtension(&quot;$(CLRTestProjectToRun)&quot;)).exe</ExecuteCmdFullPath>
+      <ExecuteCmdFullPath>$(OutputPath)$([System.IO.Path]::GetFilenameWithoutExtension(&quot;$(CLRTestProjectToRun)&quot;)).dll</ExecuteCmdFullPath>
     </PropertyGroup>
     <PropertyGroup Condition="!$(GenerateRunScript)">
         <ExecuteCmdFullPath>$(OutputPath)$(MSBuildProjectName).$(OutputType.ToLower())</ExecuteCmdFullPath>

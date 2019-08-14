@@ -28,15 +28,6 @@
     <DefineConstants>$(DefineConstants);DEBUG;TRACE;XUNIT_PERF</DefineConstants>
   </PropertyGroup>
 
-  <!-- Setup target platform pointer size in bit-->
-  <PropertyGroup>
-    <PointerSize Condition="'$(Platform)'=='x64'">64</PointerSize>
-    <PointerSize Condition="'$(Platform)'=='arm64'">64</PointerSize>
-    <PointerSize Condition="'$(Platform)'=='x86'">32</PointerSize>
-    <PointerSize Condition="'$(Platform)'=='arm'">32</PointerSize>
-    <PointerSize Condition="'$(Platform)'=='armel'">32</PointerSize>
-  </PropertyGroup>
-
   <!-- Setup the default output and intermediate paths -->
   <PropertyGroup>
     <BaseOutputPath>$(ProjectDir)..\bin\tests</BaseOutputPath>
@@ -66,6 +57,10 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <SkipSigning Condition="'$(CrossGen)' == 'true'">true</SkipSigning>
     <AssemblyKey>Test</AssemblyKey>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <GenerateRuntimeConfigurationFiles>false</GenerateRuntimeConfigurationFiles>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <UseAppHost>false</UseAppHost>
   </PropertyGroup>
 
   <!-- Expose the target OS in a more convenient fashion -->
@@ -129,11 +124,6 @@
     <TargetsUnknownUnix Condition="'$(TargetsUnix)' == 'true' AND '$(OSGroup)' != 'FreeBSD' AND '$(OSGroup)' != 'Linux' AND '$(OSGroup)' != 'OSX'">true</TargetsUnknownUnix>
     <Language Condition="'$(Language)' == '' and  '$(MSBuildProjectExtension)' == '.csproj'">C#</Language>
     <Language Condition="'$(Language)' == '' and  '$(MSBuildProjectExtension)' == '.ilproj'">IL</Language>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'">
-    <!-- RAR thinks all EXEs require binding redirects.  That's not the case for CoreCLR -->
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
 
   <!-- Don't reference the mscorlib facade -->

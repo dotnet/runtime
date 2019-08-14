@@ -45,10 +45,10 @@ if [ ! -z ${RunCrossGen+x} ]%3B then
         TakeLock
         if [ ! -f $(MSBuildProjectName).org ]%3B then
           mkdir IL
-          cp $(MSBuildProjectName).exe IL/$(MSBuildProjectName).exe
-          mv $(MSBuildProjectName).exe $(MSBuildProjectName).org
-          echo $_DebuggerFullPath "$CORE_ROOT/crossgen" /Platform_Assemblies_Paths $CORE_ROOT%3A$PWD/IL%3A$PWD /in $(MSBuildProjectName).org /out $(MSBuildProjectName).exe
-          $_DebuggerFullPath "$CORE_ROOT/crossgen" /Platform_Assemblies_Paths $CORE_ROOT%3A$PWD/IL%3A$PWD /in $(MSBuildProjectName).org /out $(MSBuildProjectName).exe
+          cp $(MSBuildProjectName).dll IL/$(MSBuildProjectName).dll
+          mv $(MSBuildProjectName).dll $(MSBuildProjectName).org
+          echo $_DebuggerFullPath "$CORE_ROOT/crossgen" /Platform_Assemblies_Paths $CORE_ROOT%3A$PWD/IL%3A$PWD /in $(MSBuildProjectName).org /out $(MSBuildProjectName).dll
+          $_DebuggerFullPath "$CORE_ROOT/crossgen" /Platform_Assemblies_Paths $CORE_ROOT%3A$PWD/IL%3A$PWD /in $(MSBuildProjectName).org /out $(MSBuildProjectName).dll
           __cgExitCode=$?
           if [ $__cgExitCode -ne 0 ]
           then
@@ -83,10 +83,10 @@ if defined RunCrossGen (
         set CrossGenStatus=0
         if not exist "$(MSBuildProjectName).org" (
             mkdir IL
-            copy $(MSBuildProjectName).exe IL\$(MSBuildProjectName).exe 
-            ren $(MSBuildProjectName).exe $(MSBuildProjectName).org
-            echo "%_DebuggerFullPath% %CORE_ROOT%\crossgen.exe" !OptionalArguments! /Platform_Assemblies_Paths %CORE_ROOT%%3B%25cd%25\IL%3B%25cd%25 /in $(MSBuildProjectName).org /out $(MSBuildProjectName).exe
-            %_DebuggerFullPath% "%CORE_ROOT%\crossgen.exe" !OptionalArguments! /Platform_Assemblies_Paths %CORE_ROOT%%3B%25cd%25\IL%3B%25cd%25 /in $(MSBuildProjectName).org /out $(MSBuildProjectName).exe
+            copy $(MSBuildProjectName).dll IL\$(MSBuildProjectName).dll
+            ren $(MSBuildProjectName).dll $(MSBuildProjectName).org
+            echo "%_DebuggerFullPath% %CORE_ROOT%\crossgen.exe" !OptionalArguments! /Platform_Assemblies_Paths %CORE_ROOT%%3B%25cd%25\IL%3B%25cd%25 /in $(MSBuildProjectName).org /out $(MSBuildProjectName).dll
+            %_DebuggerFullPath% "%CORE_ROOT%\crossgen.exe" !OptionalArguments! /Platform_Assemblies_Paths %CORE_ROOT%%3B%25cd%25\IL%3B%25cd%25 /in $(MSBuildProjectName).org /out $(MSBuildProjectName).dll
             set CrossGenStatus=!ERRORLEVEL!
         )
         call :ReleaseLock
