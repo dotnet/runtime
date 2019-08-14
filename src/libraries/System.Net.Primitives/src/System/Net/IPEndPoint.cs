@@ -2,71 +2,48 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Net.Sockets;
 using System.Globalization;
+using System.Net.Sockets;
 
 namespace System.Net
 {
-    /// <devdoc>
-    ///    <para>
-    ///       Provides an IP address.
-    ///    </para>
-    /// </devdoc>
+    /// <summary>
+    /// Provides an IP address.
+    /// </summary>
     public class IPEndPoint : EndPoint
     {
-        /// <devdoc>
-        ///    <para>
-        ///       Specifies the minimum acceptable value for the <see cref='System.Net.IPEndPoint.Port'/>
-        ///       property.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Specifies the minimum acceptable value for the <see cref='System.Net.IPEndPoint.Port'/> property.
+        /// </summary>
         public const int MinPort = 0x00000000;
 
-        /// <devdoc>
-        ///    <para>
-        ///       Specifies the maximum acceptable value for the <see cref='System.Net.IPEndPoint.Port'/>
-        ///       property.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Specifies the maximum acceptable value for the <see cref='System.Net.IPEndPoint.Port'/> property.
+        /// </summary>
         public const int MaxPort = 0x0000FFFF;
 
         private IPAddress _address;
         private int _port;
 
-        internal const int AnyPort = MinPort;
+        public override AddressFamily AddressFamily => _address.AddressFamily;
 
-        internal static IPEndPoint Any = new IPEndPoint(IPAddress.Any, AnyPort);
-        internal static IPEndPoint IPv6Any = new IPEndPoint(IPAddress.IPv6Any, AnyPort);
-
-        public override AddressFamily AddressFamily
-        {
-            get
-            {
-                // IPv6 Changes: Always delegate this to the address we are wrapping.
-                return _address.AddressFamily;
-            }
-        }
-
-        /// <devdoc>
-        ///    <para>
-        ///       Creates a new instance of the IPEndPoint class with the specified address and port.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Creates a new instance of the IPEndPoint class with the specified address and port.
+        /// </summary>
         public IPEndPoint(long address, int port)
         {
             if (!TcpValidationHelpers.ValidatePortNumber(port))
             {
                 throw new ArgumentOutOfRangeException(nameof(port));
             }
+
             _port = port;
             _address = new IPAddress(address);
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Creates a new instance of the IPEndPoint class with the specified address and port.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Creates a new instance of the IPEndPoint class with the specified address and port.
+        /// </summary>
         public IPEndPoint(IPAddress address, int port)
         {
             if (address == null)
@@ -77,44 +54,33 @@ namespace System.Net
             {
                 throw new ArgumentOutOfRangeException(nameof(port));
             }
+
             _port = port;
             _address = address;
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Gets or sets the IP address.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the IP address.
+        /// </summary>
         public IPAddress Address
         {
-            get
-            {
-                return _address;
-            }
-            set
-            {
-                _address = value;
-            }
+            get => _address;
+            set => _address = value ?? throw new ArgumentNullException(nameof(value));
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Gets or sets the port.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the port.
+        /// </summary>
         public int Port
         {
-            get
-            {
-                return _port;
-            }
+            get => _port;
             set
             {
                 if (!TcpValidationHelpers.ValidatePortNumber(value))
                 {
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }
+
                 _port = value;
             }
         }
@@ -185,22 +151,23 @@ namespace System.Net
             return string.Format(format, _address.ToString(), Port.ToString(NumberFormatInfo.InvariantInfo));
         }
 
-        public override SocketAddress Serialize()
-        {
-            // Let SocketAddress do the bulk of the work
-            return new SocketAddress(Address, Port);
-        }
+        public override SocketAddress Serialize() => new SocketAddress(Address, Port);
 
         public override EndPoint Create(SocketAddress socketAddress)
         {
-            // Validate SocketAddress
-            if (socketAddress.Family != this.AddressFamily)
+            if (socketAddress == null)
             {
-                throw new ArgumentException(SR.Format(SR.net_InvalidAddressFamily, socketAddress.Family.ToString(), this.GetType().FullName, this.AddressFamily.ToString()), nameof(socketAddress));
+                throw new ArgumentNullException(nameof(socketAddress));
             }
-            if (socketAddress.Size < 8)
+            if (socketAddress.Family != AddressFamily)
             {
-                throw new ArgumentException(SR.Format(SR.net_InvalidSocketAddressSize, socketAddress.GetType().FullName, this.GetType().FullName), nameof(socketAddress));
+                throw new ArgumentException(SR.Format(SR.net_InvalidAddressFamily, socketAddress.Family.ToString(), GetType().FullName, AddressFamily.ToString()), nameof(socketAddress));
+            }
+
+            int minSize = AddressFamily == AddressFamily.InterNetworkV6 ? SocketAddress.IPv6AddressSize : SocketAddress.IPv4AddressSize;
+            if (socketAddress.Size < minSize)
+            {
+                throw new ArgumentException(SR.Format(SR.net_InvalidSocketAddressSize, socketAddress.GetType().FullName, GetType().FullName), nameof(socketAddress));
             }
 
             return socketAddress.GetIPEndPoint();
