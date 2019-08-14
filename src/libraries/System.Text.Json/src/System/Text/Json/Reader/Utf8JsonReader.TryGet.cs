@@ -94,14 +94,14 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Parses the current JSON token value from the source and decodes the base 64 encoded JSON string as bytes.
+        /// Parses the current JSON token value from the source and decodes the Base64 encoded JSON string as bytes.
         /// </summary>
         /// <exception cref="InvalidOperationException">
         /// Thrown if trying to get the value of a JSON token that is not a <see cref="JsonTokenType.String"/>.
         /// <seealso cref="TokenType" />
         /// </exception>
         /// <exception cref="FormatException">
-        /// Thrown when the JSON string contains data outside of the expected base 64 range, or if it contains invalid/more than two padding characters,
+        /// Thrown when the JSON string contains data outside of the expected Base64 range, or if it contains invalid/more than two padding characters,
         /// or is incomplete (i.e. the JSON string length is not a multiple of 4).
         /// </exception>
         public byte[] GetBytesFromBase64()
@@ -448,8 +448,8 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Parses the current JSON token value from the source and decodes the base 64 encoded JSON string as bytes.
-        /// Returns <see langword="true"/> if the entire token value is encoded as valid base 64 text and can be successfully
+        /// Parses the current JSON token value from the source and decodes the Base64 encoded JSON string as bytes.
+        /// Returns <see langword="true"/> if the entire token value is encoded as valid Base64 text and can be successfully
         /// decoded to bytes.
         /// Returns <see langword="false"/> otherwise.
         /// </summary>
