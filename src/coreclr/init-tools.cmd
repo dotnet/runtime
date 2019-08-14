@@ -17,11 +17,6 @@ set INIT_TOOLS_RESTORE_PROJECT=%~dp0init-tools.msbuild
 set BUILD_TOOLS_SEMAPHORE_DIR=%TOOLRUNTIME_DIR%\%BUILDTOOLS_VERSION%
 set BUILD_TOOLS_SEMAPHORE=%BUILD_TOOLS_SEMAPHORE_DIR%\init-tools.completed
 
-REM Set variables used when running in an Azure DevOps task
-if defined TF_BUILD (
-    set __ErrMsgPrefix=##vso[task.logissue type=error]
-)
-
 :: if force option is specified then clean the tool runtime and build tools package directory to force it to get recreated
 if [%1]==[force] (
   if exist "%TOOLRUNTIME_DIR%" rmdir /S /Q "%TOOLRUNTIME_DIR%"
