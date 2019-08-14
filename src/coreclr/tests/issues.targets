@@ -229,6 +229,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/tailcall/_il_reltest_implicit/*">
             <Issue>Unix doesn't support slow tail calls #2556, arm32 doesn't support fast tail calls #13828.</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Stress/ABI/**/*">
+            <Issue>26105</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Arm64 All OS -->
