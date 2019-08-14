@@ -89,6 +89,10 @@ run-sample: prepare
 	$(DOTNET) build sample/HelloWorld
 	MONO_ENV_OPTIONS="--debug" COMPlus_DebugWriteToStdErr=1 ./dotnet --fx-version "$(NETCOREAPP_VERSION)" sample/HelloWorld/bin/netcoreapp3.0/HelloWorld.dll
 
+run-sample-dbg: prepare
+	$(DOTNET) build sample/HelloWorld
+	MONO_ENV_OPTIONS="--debug --debugger-agent=transport=dt_socket,address=127.0.0.1:1235,server=y,suspend=y" COMPlus_DebugWriteToStdErr=1 ./dotnet --fx-version "$(NETCOREAPP_VERSION)" sample/HelloWorld/bin/netcoreapp3.0/HelloWorld.dll
+
 run-sample-coreclr:
 	cd sample/HelloWorld && $(DOTNET) run
 
