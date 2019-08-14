@@ -2885,6 +2885,71 @@ static int opcode_counts[512];
 		} \
 	} while (0);
 
+static
+#ifndef DISABLE_REMOTING
+MONO_NEVER_INLINE // To reduce stack.
+#endif
+void
+mono_interp_load_remote_field (
+	InterpMethod* imethod,
+	MonoObject* o,
+	const guint16* ip,
+	stackval* sp,
+	MonoError* error)
+{
+	g_assert (o); // Caller checks and throws exception properly.
+
+	void* addr;
+	MonoClassField* const field = (MonoClassField*)imethod->data_items[* (guint16 *)(ip + 1)];
+
+#ifndef DISABLE_REMOTING
+	gpointer tmp;
+	if (mono_object_is_transparent_proxy (o)) {
+		MonoClass * const klass = ((MonoTransparentProxy*)o)->remote_class->proxy_class;
+		addr = mono_load_remote_field_checked (o, klass, field, &tmp, error);
+		mono_error_cleanup (error); /* FIXME: don't swallow the error */
+		error_init_reuse (error);
+	} else
+#endif
+		addr = (char*)o + field->offset;
+	stackval_from_data (field->type, &sp [-1], addr, FALSE);
+}
+
+static
+#ifndef DISABLE_REMOTING
+MONO_NEVER_INLINE // To reduce stack.
+#endif
+guchar* // Return new vt_sp instead of take-address.
+mono_interp_load_remote_field_vt (
+	InterpMethod* imethod,
+	MonoObject* o,
+	const guint16* ip,
+	stackval* sp,
+	guchar* vt_sp,
+	MonoError* error)
+{
+	g_assert (o); // Caller checks and throws exception properly.
+
+	void* addr;
+	MonoClassField* const field = (MonoClassField*)imethod->data_items[* (guint16 *)(ip + 1)];
+	MonoClass* klass = mono_class_from_mono_type_internal (field->type);
+	int const i32 = mono_class_value_size (klass, NULL);
+
+#ifndef DISABLE_REMOTING
+	gpointer tmp;
+	if (mono_object_is_transparent_proxy (o)) {
+		klass = ((MonoTransparentProxy*)o)->remote_class->proxy_class;
+		addr = mono_load_remote_field_checked (o, klass, field, &tmp, error);
+		mono_error_cleanup (error); /* FIXME: don't swallow the error */
+		error_init_reuse (error);
+	} else
+#endif
+		addr = (char*)o + field->offset;
+	sp [-1].data.p = vt_sp;
+	memcpy (vt_sp, addr, i32);
+	return vt_sp + ALIGN_TO (i32, MINT_VT_ALIGNMENT);
+}
+
 /*
  * GC SAFETY:
  *
@@ -4769,56 +4834,17 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			MINT_IN_BREAK;
 		}
 
-		MINT_IN_CASE(MINT_LDRMFLD) {
-			MonoClassField *field;
-			char *addr;
-
-			o = sp [-1].data.o;
-			NULL_CHECK (o);
-			field = (MonoClassField*)imethod->data_items[* (guint16 *)(ip + 1)];
+		MINT_IN_CASE(MINT_LDRMFLD)
+			NULL_CHECK (sp [-1].data.o);
+			mono_interp_load_remote_field (imethod, sp [-1].data.o, ip, sp, error);
 			ip += 2;
-#ifndef DISABLE_REMOTING
-			gpointer tmp;
-			if (mono_object_is_transparent_proxy (o)) {
-				MonoClass *klass = ((MonoTransparentProxy*)o)->remote_class->proxy_class;
-
-				addr = (char*)mono_load_remote_field_checked (o, klass, field, &tmp, error);
-				mono_error_cleanup (error); /* FIXME: don't swallow the error */
-			} else
-#endif
-				addr = (char*)o + field->offset;
-
-			stackval_from_data (field->type, &sp [-1], addr, FALSE);
 			MINT_IN_BREAK;
-		}
 
-		MINT_IN_CASE(MINT_LDRMFLD_VT) {
-			MonoClassField *field;
-			char *addr;
-
-			o = sp [-1].data.o;
-			NULL_CHECK (o);
-
-			field = (MonoClassField*)imethod->data_items[* (guint16 *)(ip + 1)];
-			MonoClass *klass = mono_class_from_mono_type_internal (field->type);
-			i32 = mono_class_value_size (klass, NULL);
-	
+		MINT_IN_CASE(MINT_LDRMFLD_VT)
+			NULL_CHECK (sp [-1].data.o);
+			vt_sp = mono_interp_load_remote_field_vt (imethod, sp [-1].data.o, ip, sp, vt_sp, error);
 			ip += 2;
-#ifndef DISABLE_REMOTING
-			gpointer tmp;
-			if (mono_object_is_transparent_proxy (o)) {
-				MonoClass *klass = ((MonoTransparentProxy*)o)->remote_class->proxy_class;
-				addr = (char*)mono_load_remote_field_checked (o, klass, field, &tmp, error);
-				mono_error_cleanup (error); /* FIXME: don't swallow the error */
-			} else
-#endif
-				addr = (char*)o + field->offset;
-
-			sp [-1].data.p = vt_sp;
-			vt_sp += ALIGN_TO (i32, MINT_VT_ALIGNMENT);
-			memcpy(sp [-1].data.p, addr, i32);
 			MINT_IN_BREAK;
-		}
 
 #define STFLD_UNALIGNED(datamem, fieldtype, unaligned) \
 	o = sp [-2].data.o; \
