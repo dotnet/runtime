@@ -229,7 +229,7 @@ int mono_interp_traceopt = 0;
 #define MINT_IN_DEFAULT default:
 #endif
 
-static void
+static MONO_NEVER_INLINE void // Inlining this causes caller to use more stack.
 set_resume_state (ThreadContext *context, InterpFrame *frame)
 {
 	/* We have thrown an exception from a finally block. Some of the leave targets were unwinded already */
