@@ -19,38 +19,6 @@ namespace System.Drawing
         private string allocationSite = Graphics.GetAllocationStack();
 #endif
 
-        public static Image FromFile(string filename, bool useEmbeddedColorManagement)
-        {
-            if (!File.Exists(filename))
-            {
-                // Throw a more specific exception for invalid paths that are null or empty,
-                // contain invalid characters or are too long.
-                filename = Path.GetFullPath(filename);
-                throw new FileNotFoundException(filename);
-            }
-
-            // GDI+ will read this file multiple times. Get the fully qualified path
-            // so if our app changes default directory we won't get an error
-            filename = Path.GetFullPath(filename);
-
-            IntPtr image = IntPtr.Zero;
-
-            if (useEmbeddedColorManagement)
-            {
-                Gdip.CheckStatus(Gdip.GdipLoadImageFromFileICM(filename, out image));
-            }
-            else
-            {
-                Gdip.CheckStatus(Gdip.GdipLoadImageFromFile(filename, out image));
-            }
-
-            ValidateImage(image);
-
-            Image img = CreateImageObject(image);
-            EnsureSave(img, filename, null);
-            return img;
-        }
-
         public static Image FromStream(Stream stream, bool useEmbeddedColorManagement, bool validateImageData)
         {
             if (stream == null)
@@ -139,54 +107,6 @@ namespace System.Drawing
             {
                 nativeImage = IntPtr.Zero;
             }
-        }
-
-        internal static Image CreateImageObject(IntPtr nativeImage)
-        {
-            Gdip.CheckStatus(Gdip.GdipGetImageType(nativeImage, out int type));
-            switch ((ImageType)type)
-            {
-                case ImageType.Bitmap:
-                    return new Bitmap(nativeImage);
-                case ImageType.Metafile:
-                    return Metafile.FromGDIplus(nativeImage);
-                default:
-                    throw new ArgumentException(SR.InvalidImage);
-            }
-        }
-
-        /// <summary>
-        /// Returns information about the codecs used for this <see cref='Image'/>.
-        /// </summary>
-        public EncoderParameters GetEncoderParameterList(Guid encoder)
-        {
-            EncoderParameters p;
-
-            Gdip.CheckStatus(Gdip.GdipGetEncoderParameterListSize(
-                new HandleRef(this, nativeImage),
-                ref encoder,
-                out int size));
-
-            if (size <= 0)
-                return null;
-
-            IntPtr buffer = Marshal.AllocHGlobal(size);
-            try
-            {
-                Gdip.CheckStatus(Gdip.GdipGetEncoderParameterList(
-                    new HandleRef(this, nativeImage),
-                    ref encoder,
-                    size,
-                    buffer));
-
-                p = EncoderParameters.ConvertFromMemory(buffer);
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buffer);
-            }
-
-            return p;
         }
 
         /// <summary>
@@ -555,22 +475,6 @@ namespace System.Drawing
                     Marshal.FreeHGlobal(propdata);
                 }
             }
-        }
-
-        /// <summary>
-        /// Returns the size of the specified pixel format.
-        /// </summary>
-        public static int GetPixelFormatSize(PixelFormat pixfmt)
-        {
-            return (unchecked((int)pixfmt) >> 8) & 0xFF;
-        }
-
-        /// <summary>
-        /// Returns a value indicating whether the pixel format contains alpha information.
-        /// </summary>
-        public static bool IsAlphaPixelFormat(PixelFormat pixfmt)
-        {
-            return (pixfmt & PixelFormat.Alpha) != 0;
         }
 
         internal static void ValidateImage(IntPtr image)

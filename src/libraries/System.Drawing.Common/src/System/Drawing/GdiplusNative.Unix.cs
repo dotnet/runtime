@@ -140,14 +140,8 @@ namespace System.Drawing
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipCreateFromHWND(IntPtr hwnd, out IntPtr graphics);
 
-            [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
-            internal static extern int GdipLoadImageFromFile(string filename, out IntPtr image);
-
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipCloneImage(IntPtr image, out IntPtr imageclone);
-
-            [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
-            internal static extern int GdipLoadImageFromFileICM(string filename, out IntPtr image);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipGetImagePaletteSize(IntPtr image, out int size);
@@ -172,12 +166,6 @@ namespace System.Drawing
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipGetImageBounds(IntPtr image, out RectangleF source, ref GraphicsUnit unit);
-
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetEncoderParameterListSize(IntPtr image, ref Guid encoder, out uint size);
-
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetEncoderParameterList(IntPtr image, ref Guid encoder, uint size, IntPtr buffer);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipGetPropertyItemSize(IntPtr image, int propertyID, out int propertySize);

@@ -304,6 +304,11 @@ namespace System.Drawing.Imaging
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="Metafile"/> class from a native metafile handle.
+        /// </summary>
+        internal Metafile(IntPtr ptr) => SetNativeImage(ptr);
+
+        /// <summary>
         /// Plays an EMF+ file.
         /// </summary>
         public void PlayRecord(EmfPlusRecordType recordType, int flags, int dataSize, byte[] data)

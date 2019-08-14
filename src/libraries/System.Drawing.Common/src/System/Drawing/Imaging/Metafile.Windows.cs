@@ -376,19 +376,5 @@ namespace System.Drawing.Imaging
             Gdip.CheckStatus(Gdip.GdipGetHemfFromMetafile(new HandleRef(this, nativeImage), out IntPtr hEmf));
             return hEmf;
         }
-
-        /// <summary>
-        /// Create a new metafile object from a native metafile handle.
-        /// </summary>
-        internal static Metafile FromGDIplus(IntPtr nativeImage)
-        {
-            Metafile metafile = new Metafile();
-            metafile.SetNativeImage(nativeImage);
-            return metafile;
-        }
-
-        private Metafile()
-        {
-        }
     }
 }
