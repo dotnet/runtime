@@ -242,6 +242,7 @@ Mailbox.SendAllEmployeesData(employees.AsJsonElement());
 ## Open questions
 * Do we want to add recursive equals on `JsonArray` and `JsonObject`?
 * Do we want to make `JsonNode` derived types implement `IComparable` (which ones)?
+* Do we want `JsonObject` to implement `IDictionary` and `JsonArray` to implement `IList` (currently JsonArray does, but JsonObject not)? 
 * Would escaped characters be supported for creating `JsonNumber` from string? 
 * Is the API for `JsonNode` and `JsonElement` interactions sufficient? 
 * Do we want to support duplicate and order preservation/control when adding/removing values in `JsonArray`/`JsonObject`?
@@ -260,6 +261,8 @@ Mailbox.SendAllEmployeesData(employees.AsJsonElement());
 * Do we want to support creating `JsonNumber` from `BigInterger` without changing it to string?
 * Should `ToString` on `JsonBoolean` and `JsonString` return the .NET or JSON representation?
 * Do we want to keep implicit cast operators (even though for `JsonNumber` it would mean throwing in some cases, which is against FDG)?
+* Do we want overloads that take a `StringComparison` enum for methods retrieving properties? It would make API easier to use where case is not important.
+* Where do we want to enable user to set handling properties manner?
 
 ## Useful links
 

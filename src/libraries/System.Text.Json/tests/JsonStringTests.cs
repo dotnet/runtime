@@ -61,12 +61,38 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void TestReadonlySpan()
         {
-            var spanValue = new ReadOnlySpan<char>(new char[] { 's', 'p', 'a', 'n'});
+            var spanValue = new ReadOnlySpan<char>(new char[] { 's', 'p', 'a', 'n' });
             Assert.Equal("span", new JsonString(spanValue).Value);
 
             string property = null;
             spanValue = property.AsSpan();
             var jsonString = new JsonString(spanValue);
+            Assert.Equal("", jsonString.Value);
+        }
+
+        [Fact]
+        public static void TestGuid()
+        {
+            var guidString = "ca761232-ed42-11ce-bacd-00aa0057b223";
+            Guid guid = new Guid(guidString);
+            var jsonString = new JsonString(guid);
+            Assert.Equal(guidString, jsonString);
+        }
+
+        [Fact]
+        public static void TestDateTime()
+        {
+            DateTime dateTime = new DateTime(DateTime.MinValue.Ticks);
+            var jsonString = new JsonString(dateTime);
+            Assert.Equal(dateTime.ToString(), jsonString);
+        }
+
+        [Fact]
+        public static void TestDateTimeOffset()
+        {
+            DateTimeOffset dateTimeOffset = new DateTime(DateTime.MinValue.Ticks);
+            var jsonString = new JsonString(dateTimeOffset);
+            Assert.Equal(dateTimeOffset.ToString(), jsonString);
         }
 
         [Fact]
