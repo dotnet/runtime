@@ -2311,7 +2311,7 @@ mono_domain_assembly_preload (MonoAssemblyLoadContext *alc,
 	}
 #endif
 	MonoAssemblyOpenRequest req;
-	mono_assembly_request_prepare (&req.request, sizeof (req), refonly ? MONO_ASMCTX_REFONLY : MONO_ASMCTX_DEFAULT, alc);
+	mono_assembly_request_prepare_open (&req, refonly ? MONO_ASMCTX_REFONLY : MONO_ASMCTX_DEFAULT, alc);
 	req.request.predicate = predicate;
 	req.request.predicate_ud = predicate_ud;
 
@@ -2359,7 +2359,7 @@ mono_assembly_load_from_assemblies_path (gchar **assemblies_path, MonoAssemblyNa
 	}
 #endif
 	MonoAssemblyOpenRequest req;
-	mono_assembly_request_prepare (&req.request, sizeof (req), asmctx, mono_domain_default_alc (mono_domain_get ()));
+	mono_assembly_request_prepare_open (&req, asmctx, mono_domain_default_alc (mono_domain_get ()));
 	req.request.predicate = predicate;
 	req.request.predicate_ud = predicate_ud;
 	MonoAssembly *result = NULL;
@@ -2442,7 +2442,7 @@ ves_icall_System_Reflection_Assembly_InternalLoad (MonoStringHandle name_handle,
 		alc = mono_domain_default_alc (domain);
 	g_assert (alc);
 	asmctx = MONO_ASMCTX_DEFAULT;
-	mono_assembly_request_prepare (&req.request, sizeof (req), asmctx, alc);
+	mono_assembly_request_prepare_byname (&req, asmctx, alc);
 	req.basedir = NULL;
 	req.no_postload_search = TRUE;
 
@@ -2494,7 +2494,7 @@ ves_icall_System_Reflection_Assembly_LoadFrom (MonoStringHandle fname, MonoBoole
 
 	MonoAssembly *ass;
 	MonoAssemblyOpenRequest req;
-	mono_assembly_request_prepare (&req.request, sizeof (req), refOnly ? MONO_ASMCTX_REFONLY : MONO_ASMCTX_LOADFROM, mono_domain_default_alc (domain));
+	mono_assembly_request_prepare_open (&req, refOnly ? MONO_ASMCTX_REFONLY : MONO_ASMCTX_LOADFROM, mono_domain_default_alc (domain));
 	req.requesting_assembly = requesting_assembly;
 	ass = mono_assembly_request_open (filename, &req, &status);
 	
@@ -2536,7 +2536,7 @@ mono_alc_load_file (MonoAssemblyLoadContext *alc, MonoStringHandle fname, MonoAs
 
 	MonoImageOpenStatus status;
 	MonoAssemblyOpenRequest req;
-	mono_assembly_request_prepare (&req.request, sizeof (req), asmctx, alc);
+	mono_assembly_request_prepare_open (&req, asmctx, alc);
 	req.requesting_assembly = executing_assembly;
 	ass = mono_assembly_request_open (filename, &req, &status);
 	if (!ass) {
@@ -2680,7 +2680,7 @@ mono_alc_load_raw_bytes (MonoAssemblyLoadContext *alc, guint8 *assembly_data, gu
 	}
 
 	MonoAssemblyLoadRequest req;
-	mono_assembly_request_prepare (&req, sizeof (req), refonly? MONO_ASMCTX_REFONLY : MONO_ASMCTX_INDIVIDUAL, alc);
+	mono_assembly_request_prepare_load (&req, refonly? MONO_ASMCTX_REFONLY : MONO_ASMCTX_INDIVIDUAL, alc);
 	ass = mono_assembly_request_load_from (image, "", &req, &status);
 
 	if (!ass) {
@@ -2746,7 +2746,7 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomainHandle ad, MonoStringHandl
 
 
 	MonoAssemblyByNameRequest req;
-	mono_assembly_request_prepare (&req.request, sizeof (req), asmctx, mono_domain_default_alc (domain));
+	mono_assembly_request_prepare_byname (&req, asmctx, mono_domain_default_alc (domain));
 	req.basedir = basedir;
 	req.no_postload_search = TRUE;
 	ass = mono_assembly_request_byname (&aname, &req, &status);

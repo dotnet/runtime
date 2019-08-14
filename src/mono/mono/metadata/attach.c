@@ -277,7 +277,7 @@ mono_attach_load_agent (MonoDomain *domain, char *agent, char *args, MonoObject 
 	MonoImageOpenStatus open_status;
 
 	MonoAssemblyOpenRequest req;
-	mono_assembly_request_prepare (&req.request, sizeof (req), MONO_ASMCTX_DEFAULT, mono_domain_default_alc (mono_domain_get ()));
+	mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, mono_domain_default_alc (mono_domain_get ()));
 	agent_assembly = mono_assembly_request_open (agent, &req, &open_status);
 	if (!agent_assembly) {
 		fprintf (stderr, "Cannot open agent assembly '%s': %s.\n", agent, mono_image_strerror (open_status));

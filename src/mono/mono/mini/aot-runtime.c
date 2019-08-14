@@ -2093,7 +2093,7 @@ if (container_assm_name && !container_amodule) {
 	MonoImageOpenStatus status = MONO_IMAGE_OK;
 	MonoAssemblyOpenRequest req;
 	gchar *dll = g_strdup_printf (		"%s.dll", local_ref);
-	mono_assembly_request_prepare (&req.request, sizeof (req), MONO_ASMCTX_DEFAULT, alc);
+	mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, alc);
 	MonoAssembly *assm = mono_assembly_request_open (dll, &req, &status);
 	if (!assm) {
 		gchar *exe = g_strdup_printf ("%s.exe", local_ref);
