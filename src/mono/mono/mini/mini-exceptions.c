@@ -903,7 +903,7 @@ get_method_from_stack_frame (MonoJitInfo *ji, gpointer generic_info)
 	method = jinfo_get_method (ji);
 	method = mono_method_get_declaring_generic_method (method);
 	method = mono_class_inflate_generic_method_checked (method, &context, error);
-	g_assert (mono_error_ok (error)); /* FIXME don't swallow the error */
+	g_assert (is_ok (error)); /* FIXME don't swallow the error */
 
 	return method;
 }
@@ -1054,7 +1054,7 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 	for (i = skip; i < len; i++) {
 		MonoJitInfo *ji;
 		MonoStackFrame *sf = (MonoStackFrame *)mono_object_new_checked (domain, mono_defaults.stack_frame_class, error);
-		if (!mono_error_ok (error)) {
+		if (!is_ok (error)) {
 			mono_error_set_pending_exception (error);
 			return NULL;
 		}
@@ -1097,7 +1097,7 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 		}
 		else {
 			MonoReflectionMethod *rm = mono_method_get_object_checked (domain, method, NULL, error);
-			if (!mono_error_ok (error)) {
+			if (!is_ok (error)) {
 				mono_error_set_pending_exception (error);
 				return NULL;
 			}
@@ -1854,7 +1854,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	}
 
 	MonoReflectionMethod *rm = mono_method_get_object_checked (domain, actual_method, NULL, error);
-	if (!mono_error_ok (error)) {
+	if (!is_ok (error)) {
 		mono_error_set_pending_exception (error);
 		return FALSE;
 	}

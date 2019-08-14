@@ -1004,7 +1004,7 @@ mini_method_verify (MonoCompile *cfg, MonoMethod *method, gboolean fail_compile)
 						mono_error_set_generic_error (&cfg->error, "System", "FieldAccessException", "%s", msg);
 					else if (info->exception_type == MONO_EXCEPTION_UNVERIFIABLE_IL)
 						mono_error_set_generic_error (&cfg->error, "System.Security", "VerificationException", "%s", msg);
-					if (!mono_error_ok (&cfg->error)) {
+					if (!is_ok (&cfg->error)) {
 						mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
 						g_free (msg);
 					} else {
@@ -2302,7 +2302,7 @@ mono_codegen (MonoCompile *cfg)
 				continue;
 
 			target = mono_resolve_patch_target (cfg->method, cfg->domain, cfg->native_code, ji, cfg->run_cctors, &cfg->error);
-			if (!mono_error_ok (&cfg->error)) {
+			if (!is_ok (&cfg->error)) {
 				mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
 				return;
 			}
@@ -4061,7 +4061,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	}
 	case MONO_EXCEPTION_MONO_ERROR:
 		// FIXME: MonoError has no copy ctor
-		g_assert (!mono_error_ok (&cfg->error));
+		g_assert (!is_ok (&cfg->error));
 		ex = mono_error_convert_to_exception (&cfg->error);
 		break;
 	default:
@@ -4132,7 +4132,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 #endif
 	mono_domain_unlock (target_domain);
 
-	if (!mono_error_ok (error))
+	if (!is_ok (error))
 		return NULL;
 
 	vtable = mono_class_vtable_checked (target_domain, method->klass, error);

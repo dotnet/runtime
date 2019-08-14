@@ -163,7 +163,7 @@ is_valid_generic_instantiation (MonoGenericContainer *gc, MonoGenericContext *co
 			MonoType *inflated;
 
 			inflated = mono_class_inflate_generic_type_checked (m_class_get_byval_arg (ctr), context, error);
-			if (!mono_error_ok (error)) {
+			if (!is_ok (error)) {
 				mono_error_cleanup (error);
 				return FALSE;
 			}
@@ -650,7 +650,7 @@ verifier_inflate_type (VerifyContext *ctx, MonoType *type, MonoGenericContext *c
 	MonoType *result;
 
 	result = mono_class_inflate_generic_type_checked (type, context, error);
-	if (!mono_error_ok (error)) {
+	if (!is_ok (error)) {
 		mono_error_cleanup (error);
 		return NULL;
 	}
@@ -2105,7 +2105,7 @@ init_stack_with_value_at_exception_boundary (VerifyContext *ctx, ILCodeDesc *cod
 	ERROR_DECL (error);
 	MonoType *type = mono_class_inflate_generic_type_checked (m_class_get_byval_arg (klass), ctx->generic_context, error);
 
-	if (!mono_error_ok (error)) {
+	if (!is_ok (error)) {
 		char *name = mono_type_get_full_name (klass);
 		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid class %s used for exception", name));
 		g_free (name);
@@ -2208,7 +2208,7 @@ verifier_class_is_assignable_from (MonoClass *target, MonoClass *candidate)
 				int i;
 				while (candidate && candidate != mono_defaults.object_class) {
 					mono_class_setup_interfaces (candidate, error);
-					if (!mono_error_ok (error)) {
+					if (!is_ok (error)) {
 						mono_error_cleanup (error);
 						return FALSE;
 					}
@@ -4743,13 +4743,13 @@ merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, gboolean sta
 			}
 
 			mono_class_setup_interfaces (old_class, error);
-			if (!mono_error_ok (error)) {
+			if (!is_ok (error)) {
 				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot merge stacks due to a TypeLoadException %s at 0x%04x", mono_error_get_message (error), ctx->ip_offset));
 				mono_error_cleanup (error);
 				goto end_verify;
 			}
 			mono_class_setup_interfaces (new_class, error);
-			if (!mono_error_ok (error)) {
+			if (!is_ok (error)) {
 				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot merge stacks due to a TypeLoadException %s at 0x%04x", mono_error_get_message (error), ctx->ip_offset));
 				mono_error_cleanup (error);
 				goto end_verify;
@@ -5027,7 +5027,7 @@ mono_method_verify (MonoMethod *method, int level)
 	for (i = 0; i < ctx.num_locals; ++i) {
 		MonoType *uninflated = ctx.locals [i];
 		ctx.locals [i] = mono_class_inflate_generic_type_checked (ctx.locals [i], ctx.generic_context, error);
-		if (!mono_error_ok (error)) {
+		if (!is_ok (error)) {
 			char *name = mono_type_full_name (ctx.locals [i] ? ctx.locals [i] : uninflated);
 			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid local %d of type %s", i, name));
 			g_free (name);
@@ -5041,7 +5041,7 @@ mono_method_verify (MonoMethod *method, int level)
 	for (i = 0; i < ctx.max_args; ++i) {
 		MonoType *uninflated = ctx.params [i];
 		ctx.params [i] = mono_class_inflate_generic_type_checked (ctx.params [i], ctx.generic_context, error);
-		if (!mono_error_ok (error)) {
+		if (!is_ok (error)) {
 			char *name = mono_type_full_name (ctx.params [i] ? ctx.params [i] : uninflated);
 			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid parameter %d of type %s", i, name));
 			g_free (name);
@@ -5139,7 +5139,7 @@ mono_method_verify (MonoMethod *method, int level)
 		goto cleanup;
 
 	original_bb = bb = mono_basic_block_split (method, error, ctx.header);
-	if (!mono_error_ok (error)) {
+	if (!is_ok (error)) {
 		ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid branch target: %s", mono_error_get_message (error)));
 		mono_error_cleanup (error);
 		goto cleanup;

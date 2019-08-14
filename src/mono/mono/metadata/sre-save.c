@@ -232,7 +232,7 @@ mono_image_add_cattrs (MonoDynamicImage *assembly, guint32 idx, guint32 type, Mo
 				token = mono_image_get_methodref_token (assembly, method, FALSE);
 		} else {
 			token = image_create_token_raw (assembly, (MonoObject*)cattr->ctor, FALSE, FALSE, error); /* FIXME use handles */
-			if (!mono_error_ok (error)) goto fail;
+			if (!is_ok (error)) goto fail;
 		}
 		type = mono_metadata_token_index (token);
 		type <<= MONO_CUSTOM_ATTR_TYPE_BITS;
@@ -1305,7 +1305,7 @@ mono_image_fill_export_table_from_module (MonoDomain *domain, MonoReflectionModu
 	for (i = 0; i < t->rows; ++i) {
 		ERROR_DECL (error);
 		MonoClass *klass = mono_class_get_checked (image, mono_metadata_make_token (MONO_TABLE_TYPEDEF, i + 1), error);
-		g_assert (mono_error_ok (error)); /* FIXME don't swallow the error */
+		g_assert (is_ok (error)); /* FIXME don't swallow the error */
 
 		if (mono_class_is_public (klass))
 			mono_image_fill_export_table_from_class (domain, klass, module_index, 0, assembly);
@@ -2480,7 +2480,7 @@ leave_types:
 	mono_ptr_array_destroy (types);
 leave:
 
-	return mono_error_ok (error);
+	return is_ok (error);
 }
 
 #else /* DISABLE_REFLECTION_EMIT_SAVE */

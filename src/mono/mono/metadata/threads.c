@@ -1242,7 +1242,7 @@ start_wrapper_internal (StartInfo *start_info, gsize *stack_ptr)
 		mono_runtime_delegate_invoke_checked (start_delegate, args, error);
 #endif
 
-		if (!mono_error_ok (error)) {
+		if (!is_ok (error)) {
 			MonoException *ex = mono_error_convert_to_exception (error);
 
 			g_assert (ex != NULL);

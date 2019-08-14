@@ -497,7 +497,7 @@ report_loader_error (MonoAotCompile *acfg, MonoError *error, gboolean fatal, con
 	FILE *output;
 	va_list args;
 
-	if (mono_error_ok (error))
+	if (is_ok (error))
 		return;
 
 	if (acfg->logfile)
@@ -4616,7 +4616,7 @@ add_wrappers (MonoAotCompile *acfg)
 		
 		token = MONO_TOKEN_METHOD_DEF | (i + 1);
 		method = mono_get_method_checked (acfg->image, token, NULL, NULL, error);
-		g_assert (mono_error_ok (error)); /* FIXME don't swallow the error */
+		g_assert (is_ok (error)); /* FIXME don't swallow the error */
 
 		sig = mono_method_signature_internal (method);
 
@@ -4700,7 +4700,7 @@ add_wrappers (MonoAotCompile *acfg)
 			create_gsharedvt_inst (acfg, method, &ctx);
 
 			inst = mono_class_inflate_generic_method_checked (method, &ctx, error);
-			g_assert (mono_error_ok (error)); /* FIXME don't swallow the error */
+			g_assert (is_ok (error)); /* FIXME don't swallow the error */
 
 			m = mono_marshal_get_delegate_invoke (inst, NULL);
 			g_assert (m->is_inflated);
@@ -4716,7 +4716,7 @@ add_wrappers (MonoAotCompile *acfg)
 				create_gsharedvt_inst (acfg, method, &ctx);
 
 				inst = mono_class_inflate_generic_method_checked (method, &ctx, error);
-				g_assert (mono_error_ok (error)); /* FIXME don't swallow the error */
+				g_assert (is_ok (error)); /* FIXME don't swallow the error */
 
 				m = mono_marshal_get_delegate_begin_invoke (inst);
 				g_assert (m->is_inflated);
@@ -4733,7 +4733,7 @@ add_wrappers (MonoAotCompile *acfg)
 				create_gsharedvt_inst (acfg, method, &ctx);
 
 				inst = mono_class_inflate_generic_method_checked (method, &ctx, error);
-				g_assert (mono_error_ok (error)); /* FIXME don't swallow the error */
+				g_assert (is_ok (error)); /* FIXME don't swallow the error */
 
 				m = mono_marshal_get_delegate_end_invoke (inst);
 				g_assert (m->is_inflated);
@@ -4800,7 +4800,7 @@ add_wrappers (MonoAotCompile *acfg)
 				 */
 				create_gsharedvt_inst (acfg, method, &ctx);
 				inst = mono_class_inflate_generic_method_checked (method, &ctx, error);
-				g_assert (mono_error_ok (error)); /* FIXME don't swallow the error */
+				g_assert (is_ok (error)); /* FIXME don't swallow the error */
 				m = mono_marshal_get_synchronized_wrapper (inst);
 				g_assert (m->is_inflated);
 				gshared = mini_get_shared_method_full (m, SHARE_MODE_GSHAREDVT, error);
@@ -5507,7 +5507,7 @@ add_generic_instances (MonoAotCompile *acfg)
 				declaring_method = mono_method_get_declaring_generic_method (method);
 
 			method = mono_class_inflate_generic_method_checked (declaring_method, &shared_context, error);
-			g_assert (mono_error_ok (error)); /* FIXME don't swallow the error */
+			g_assert (is_ok (error)); /* FIXME don't swallow the error */
 		}
 
 		/* 
@@ -5664,7 +5664,7 @@ add_generic_instances (MonoAotCompile *acfg)
 					args [0] = object_type;
 					ctx.method_inst = mono_metadata_get_generic_inst (1, args);
 					add_extra_method (acfg, mono_marshal_get_native_wrapper (mono_class_inflate_generic_method_checked (m, &ctx, error), TRUE, TRUE));
-					g_assert (mono_error_ok (error)); /* FIXME don't swallow the error */
+					g_assert (is_ok (error)); /* FIXME don't swallow the error */
 				}
 			}
 		}
@@ -5704,7 +5704,7 @@ decode_direct_icall_symbol_name_attribute (MonoMethod *method)
 	char *symbol_name = NULL;
 
 	MonoCustomAttrInfo *cattr = mono_custom_attrs_from_method_checked (method, error);
-	if (mono_error_ok(error) && cattr) {
+	if (is_ok(error) && cattr) {
 		for (j = 0; j < cattr->num_attrs; j++)
 			if (cattr->attrs [j].ctor && !strcmp (m_class_get_name (cattr->attrs [j].ctor->klass), "MonoDirectICallSymbolNameAttribute"))
 				break;
@@ -10210,7 +10210,7 @@ mono_aot_get_array_helper_from_wrapper (MonoMethod *method)
 		args [0] = m_class_get_byval_arg (m_class_get_element_class (method->klass));
 		ctx.method_inst = mono_metadata_get_generic_inst (1, args);
 		m = mono_class_inflate_generic_method_checked (m, &ctx, error);
-		g_assert (mono_error_ok (error)); /* FIXME don't swallow the error */
+		g_assert (is_ok (error)); /* FIXME don't swallow the error */
 	}
 
 	return m;

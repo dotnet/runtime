@@ -1120,7 +1120,7 @@ mono_image_create_method_token (MonoDynamicImage *assembly, MonoObjectHandle obj
 	mono_dynamic_image_register_token (assembly, token, obj, MONO_DYN_IMAGE_TOK_NEW);
 	return token;
 fail:
-	g_assert (!mono_error_ok (error));
+	g_assert (!is_ok (error));
 	return 0;
 }
 
@@ -3300,7 +3300,7 @@ fix_partial_generic_class (MonoClass *klass, MonoError *error)
 
 	if (klass->parent != gklass->parent) {
 		MonoType *parent_type = mono_class_inflate_generic_type_checked (m_class_get_byval_arg (m_class_get_parent (gklass)), &mono_class_get_generic_class (klass)->context, error);
-		if (mono_error_ok (error)) {
+		if (is_ok (error)) {
 			MonoClass *parent = mono_class_from_mono_type_internal (parent_type);
 			mono_metadata_free_type (parent_type);
 			if (parent != klass->parent) {
@@ -3728,7 +3728,7 @@ typebuilder_setup_properties (MonoClass *klass, MonoError *error)
 		properties [i].parent = klass;
 		properties [i].attrs = pb->attrs;
 		properties [i].name = string_to_utf8_image_raw (image, pb->name, error); /* FIXME use handles */
-		if (!mono_error_ok (error))
+		if (!is_ok (error))
 			return;
 		if (pb->get_method)
 			properties [i].get = pb->get_method->mhandle;
@@ -3779,7 +3779,7 @@ typebuilder_setup_events (MonoClass *klass, MonoError *error)
 		events [i].parent = klass;
 		events [i].attrs = eb->attrs;
 		events [i].name = string_to_utf8_image_raw (image, eb->name, error); /* FIXME use handles */
-		if (!mono_error_ok (error))
+		if (!is_ok (error))
 			return;
 		if (eb->add_method)
 			events [i].add = eb->add_method->mhandle;

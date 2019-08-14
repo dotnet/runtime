@@ -162,7 +162,7 @@ mono_tailcall_print (const char *format, ...)
 	} while (0)
 
 #define CHECK_CFG_ERROR do {\
-		if (!mono_error_ok (&cfg->error)) { \
+		if (!is_ok (&cfg->error)) { \
 			mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);	\
 			goto mono_error_exit; \
 		} \
@@ -11182,7 +11182,7 @@ mono_error_exit:
 	if (cfg->verbose_level > 3)
 		g_print ("exiting due to error");
 
-	g_assert (!mono_error_ok (&cfg->error));
+	g_assert (!is_ok (&cfg->error));
 	goto cleanup;
  
  exception_exit:

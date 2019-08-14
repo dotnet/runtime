@@ -3550,7 +3550,7 @@ mono_metadata_inflate_generic_inst (MonoGenericInst *ginst, MonoGenericContext *
 
 	for (i = 0; i < ginst->type_argc; i++) {
 		type_argv [i] = mono_class_inflate_generic_type_checked (ginst->type_argv [i], context, error);
-		if (!mono_error_ok (error))
+		if (!is_ok (error))
 			goto cleanup;
 		++count;
 	}

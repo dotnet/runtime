@@ -1376,7 +1376,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 	}
 	case MONO_PATCH_INFO_METHOD_JUMP:
 		target = mono_create_jump_trampoline (domain, patch_info->data.method, FALSE, error);
-		if (!mono_error_ok (error))
+		if (!is_ok (error))
 			return NULL;
 		break;
 	case MONO_PATCH_INFO_METHOD:
@@ -1385,7 +1385,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		} else {
 			/* get the trampoline to the method from the domain */
 			target = mono_create_jit_trampoline (domain, patch_info->data.method, error);
-			if (!mono_error_ok (error))
+			if (!is_ok (error))
 				return NULL;
 		}
 		break;
@@ -1518,13 +1518,13 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 
 		handle = mono_ldtoken_checked (patch_info->data.token->image,
 							   patch_info->data.token->token, &handle_class, patch_info->data.token->has_context ? &patch_info->data.token->context : NULL, error);
-		if (!mono_error_ok (error))
+		if (!is_ok (error))
 			return NULL;
 		mono_class_init_internal (handle_class);
 		mono_class_init_internal (mono_class_from_mono_type_internal ((MonoType *)handle));
 
 		target = mono_type_get_object_checked (domain, (MonoType *)handle, error);
-		if (!mono_error_ok (error))
+		if (!is_ok (error))
 			return NULL;
 		break;
 	}
@@ -2324,7 +2324,7 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, gboolean jit_
 			method = info->d.synchronized_inner.method;
 			if (ctx) {
 				method = mono_class_inflate_generic_method_checked (method, ctx, error);
-				g_assert (mono_error_ok (error)); /* FIXME don't swallow the error */
+				g_assert (is_ok (error)); /* FIXME don't swallow the error */
 			}
 		}
 	}
@@ -2397,7 +2397,7 @@ lookup_start:
 	if (!code) {
 		code = compile_special (method, target_domain, error);
 
-		if (!mono_error_ok (error))
+		if (!is_ok (error))
 			return NULL;
 	}
 
@@ -2408,7 +2408,7 @@ lookup_start:
 		}
 		code = mini_get_interp_callbacks ()->create_method_pointer (method, TRUE, error);
 
-		if (!mono_error_ok (error))
+		if (!is_ok (error))
 			return NULL;
 	}
 
@@ -2433,7 +2433,7 @@ lookup_start:
 		code = mono_jit_compile_method_inner (method, target_domain, opt, error);
 		unregister_method_for_compile (method, target_domain);
 	}
-	if (!mono_error_ok (error))
+	if (!is_ok (error))
 		return NULL;
 
 	if (!code && mono_llvm_only) {
@@ -2756,7 +2756,7 @@ create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer com
 	invoke = mono_marshal_get_runtime_invoke (method, FALSE);
 	(void)invoke;
 	info->vtable = mono_class_vtable_checked (domain, method->klass, error);
-	if (!mono_error_ok (error))
+	if (!is_ok (error))
 		goto exit;
 	g_assert (info->vtable);
 
@@ -2861,7 +2861,7 @@ create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer com
 				g_free (wrapper_sig);
 
 				info->compiled_method = mono_jit_compile_method (wrapper, error);
-				if (!mono_error_ok (error))
+				if (!is_ok (error))
 					goto exit;
 			} else {
 				/* Gsharedvt methods can be invoked the same way */
@@ -2875,7 +2875,7 @@ create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer com
 			}
 		}
 		info->runtime_invoke = mono_jit_compile_method (invoke, error);
-		if (!mono_error_ok (error))
+		if (!is_ok (error))
 			goto exit;
 	}
 
@@ -3042,7 +3042,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		if (callee) {
 			compiled_method = mono_jit_compile_method_jit_only (callee, error);
 			if (!compiled_method) {
-				g_assert (!mono_error_ok (error));
+				g_assert (!is_ok (error));
 
 				if (mono_use_interpreter)
 					use_interp = TRUE;
@@ -3064,7 +3064,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		}
 
 		info = create_runtime_invoke_info (domain, method, compiled_method, callee_gsharedvt, use_interp, error);
-		if (!mono_error_ok (error))
+		if (!is_ok (error))
 			return NULL;
 
 		mono_domain_lock (domain);
@@ -3109,7 +3109,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 			if (!dyn_runtime_invoke && mono_use_interpreter) {
 				info->use_interp = TRUE;
 				info->dyn_call_info = NULL;
-			} else if (!mono_error_ok (error)) {
+			} else if (!is_ok (error)) {
 				mono_domain_unlock (domain);
 				return NULL;
 			}

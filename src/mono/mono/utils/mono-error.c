@@ -189,7 +189,7 @@ mono_error_cleanup (MonoError *oerror)
 gboolean
 mono_error_ok (MonoError *error)
 {
-	return error->error_code == MONO_ERROR_NONE;
+	return is_ok (error);
 }
 
 guint16
@@ -672,7 +672,7 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 
 		if ((error->type_name && error->assembly_name) || error->exn.klass) {
 			type_name = get_type_name_as_mono_string (error, domain, error_out);
-			if (!mono_error_ok (error_out))
+			if (!is_ok (error_out))
 				break;
 
 			if (error->assembly_name) {
@@ -757,7 +757,7 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 		mono_error_set_execution_engine (error_out, "Invalid error-code %d", error->error_code);
 	}
 
-	if (!mono_error_ok (error_out))
+	if (!is_ok (error_out))
 		goto return_null;
 
 	if (MONO_HANDLE_IS_NULL (exception))
@@ -787,17 +787,17 @@ mono_error_convert_to_exception (MonoError *target_error)
 	/* Mempool stored error shouldn't be cleaned up */
 	g_assert (!is_boxed ((MonoErrorInternal*)target_error));
 
-	if (mono_error_ok (target_error))
+	if (is_ok (target_error))
 		return NULL;
 
 	ex = mono_error_prepare_exception (target_error, error);
-	if (!mono_error_ok (error)) {
+	if (!is_ok (error)) {
 		ERROR_DECL (second_chance);
 		/*Try to produce the exception for the second error. FIXME maybe we should log about the original one*/
 		ex = mono_error_prepare_exception (error, second_chance);
 
 		// We cannot reasonably handle double faults, maybe later.
-		g_assert (mono_error_ok (second_chance));
+		g_assert (is_ok (second_chance));
 		mono_error_cleanup (error);
 	}
 	mono_error_cleanup (target_error);

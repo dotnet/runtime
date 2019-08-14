@@ -466,7 +466,7 @@ mono_de_set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req, M
 	g_ptr_array_free (method_domains, TRUE);
 	g_ptr_array_free (method_seq_points, TRUE);
 
-	if (error && !mono_error_ok (error)) {
+	if (error && !is_ok (error)) {
 		mono_de_clear_breakpoint (bp);
 		return NULL;
 	}

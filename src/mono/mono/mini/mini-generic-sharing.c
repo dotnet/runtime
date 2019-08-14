@@ -597,7 +597,7 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 		} else {
 			ERROR_DECL (error);
 			inflated_method = mono_class_inflate_generic_method_checked (method, context, error);
-			g_assert (mono_error_ok (error)); /* FIXME don't swallow the error */
+			g_assert (is_ok (error)); /* FIXME don't swallow the error */
 		}
 		mono_class_init_internal (inflated_method->klass);
 		g_assert (inflated_method->klass == inflated_class);
@@ -663,7 +663,7 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 		} else {
 			ERROR_DECL (error);
 			inflated_method = mono_class_inflate_generic_method_checked (method, context, error);
-			g_assert (mono_error_ok (error)); /* FIXME don't swallow the error */
+			g_assert (is_ok (error)); /* FIXME don't swallow the error */
 		}
 		mono_class_init_internal (inflated_method->klass);
 		g_assert (inflated_method->klass == inflated_class);
@@ -703,7 +703,7 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 		ERROR_DECL (error);
 
 		isig = mono_inflate_generic_signature (sig, context, error);
-		g_assert (mono_error_ok (error));
+		g_assert (is_ok (error));
 		return isig;
 	}
 	case MONO_RGCTX_INFO_VIRT_METHOD_CODE:
@@ -723,7 +723,7 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 		mono_metadata_free_type (t);
 
 		res->method = mono_class_inflate_generic_method_checked (info->method, context, error);
-		g_assert (mono_error_ok (error)); /* FIXME don't swallow the error */
+		g_assert (is_ok (error)); /* FIXME don't swallow the error */
 
 		return res;
 	}
@@ -2486,7 +2486,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 				break;
 			default:
 				res->entries [i] = instantiate_info (domain, template_, context, klass, error);
-				if (!mono_error_ok (error))
+				if (!is_ok (error))
 					return NULL;
 				break;
 			}

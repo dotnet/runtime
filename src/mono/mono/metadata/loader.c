@@ -405,11 +405,11 @@ find_method_in_class (MonoClass *klass, const char *name, const char *qname, con
 				continue;
 
 			method = mono_get_method_checked (klass_image, MONO_TOKEN_METHOD_DEF | (first_idx + i + 1), klass, NULL, error);
-			if (!mono_error_ok (error)) //bail out if we hit a loader error
+			if (!is_ok (error)) //bail out if we hit a loader error
 				return NULL;
 			if (method) {
 				other_sig = mono_method_signature_checked (method, error);
-				if (!mono_error_ok (error)) //bail out if we hit a loader error
+				if (!is_ok (error)) //bail out if we hit a loader error
 					return NULL;				
 				if (other_sig && (sig->call_convention != MONO_CALL_VARARG) && mono_metadata_signature_equal (sig, other_sig))
 					return method;
@@ -445,7 +445,7 @@ find_method_in_class (MonoClass *klass, const char *name, const char *qname, con
 		      (name && !strcmp (m->name, name))))
 			continue;
 		msig = mono_method_signature_checked (m, error);
-		if (!mono_error_ok (error)) //bail out if we hit a loader error 
+		if (!is_ok (error)) //bail out if we hit a loader error 
 			return NULL;
 
 		if (!msig)
@@ -492,7 +492,7 @@ find_method (MonoClass *in_class, MonoClass *ic, const char* name, MonoMethodSig
 	while (in_class) {
 		g_assert (from_class);
 		result = find_method_in_class (in_class, name, qname, fqname, sig, from_class, error);
-		if (result || !mono_error_ok (error))
+		if (result || !is_ok (error))
 			goto out;
 
 		if (name [0] == '.' && (!strcmp (name, ".ctor") || !strcmp (name, ".cctor")))
@@ -528,7 +528,7 @@ find_method (MonoClass *in_class, MonoClass *ic, const char* name, MonoMethodSig
 			g_free (ic_class_name);
 			g_free (ic_fqname);
 			g_free (ic_qname);
-			if (result || !mono_error_ok (error))
+			if (result || !is_ok (error))
 				goto out;
 		}
 
@@ -541,7 +541,7 @@ find_method (MonoClass *in_class, MonoClass *ic, const char* name, MonoMethodSig
 		result = find_method_in_class (mono_defaults.object_class, name, qname, fqname, sig, mono_defaults.object_class, error);
 
 	//we did not find the method
-	if (!result && mono_error_ok (error))
+	if (!result && is_ok (error))
 		mono_error_set_method_missing (error, initial_class, name, sig, NULL);
 		
  out:
@@ -566,12 +566,12 @@ inflate_generic_signature_checked (MonoImage *image, MonoMethodSignature *sig, M
 	res->param_count = sig->param_count;
 	res->sentinelpos = -1;
 	res->ret = mono_class_inflate_generic_type_checked (sig->ret, context, error);
-	if (!mono_error_ok (error))
+	if (!is_ok (error))
 		goto fail;
 	is_open = mono_class_is_open_constructed_type (res->ret);
 	for (i = 0; i < sig->param_count; ++i) {
 		res->params [i] = mono_class_inflate_generic_type_checked (sig->params [i], context, error);
-		if (!mono_error_ok (error))
+		if (!is_ok (error))
 			goto fail;
 
 		if (!is_open)
@@ -609,7 +609,7 @@ mono_inflate_generic_signature (MonoMethodSignature *sig, MonoGenericContext *co
 	MonoMethodSignature *res, *cached;
 
 	res = inflate_generic_signature_checked (NULL, sig, context, error);
-	if (!mono_error_ok (error))
+	if (!is_ok (error))
 		return NULL;
 	cached = mono_metadata_get_inflated_signature (res, context);
 	if (cached != res)
@@ -738,7 +738,7 @@ mono_method_get_signature_checked (MonoMethod *method, MonoImage *image, guint32
 
 		/* This signature is not owned by a MonoMethod, so need to cache */
 		sig = inflate_generic_signature_checked (image, sig, context, error);
-		if (!mono_error_ok (error))
+		if (!is_ok (error))
 			return NULL;
 
 		cached = mono_metadata_get_inflated_signature (sig, context);
@@ -749,7 +749,7 @@ mono_method_get_signature_checked (MonoMethod *method, MonoImage *image, guint32
 		sig = cached;
 	}
 
-	g_assert (mono_error_ok (error));
+	g_assert (is_ok (error));
 	return sig;
 }
 
@@ -893,13 +893,13 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 		goto fail;
 	}
 
-	if (!method && mono_error_ok (error))
+	if (!method && is_ok (error))
 		mono_error_set_method_missing (error, klass, mname, sig, "Failed to load due to unknown reasons");
 
 	return method;
 
 fail:
-	g_assert (!mono_error_ok (error));
+	g_assert (!is_ok (error));
 	return NULL;
 }
 
@@ -936,7 +936,7 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 
 	if (context && inst->is_open) {
 		inst = mono_metadata_inflate_generic_inst (inst, context, error);
-		if (!mono_error_ok (error))
+		if (!is_ok (error))
 			return NULL;
 	}
 
@@ -2696,7 +2696,7 @@ mono_method_signature_checked (MonoMethod *m, MonoError *error)
 		/* the lock is recursive */
 		signature = mono_method_signature_internal (imethod->declaring);
 		signature = inflate_generic_signature_checked (m_class_get_image (imethod->declaring->klass), signature, mono_method_get_context (m), error);
-		if (!mono_error_ok (error))
+		if (!is_ok (error))
 			return NULL;
 
 		mono_atomic_fetch_add_i32 (&inflated_signatures_size, mono_metadata_signature_size (signature));

@@ -85,7 +85,7 @@ mono_error_init_flags (MonoError *error, unsigned short flags);
 MONO_API void
 mono_error_cleanup (MonoError *error);
 
-MONO_API mono_bool
+MONO_API MONO_RT_EXTERNAL_ONLY mono_bool
 mono_error_ok (MonoError *error);
 
 MONO_API unsigned short

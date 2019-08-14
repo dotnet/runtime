@@ -223,7 +223,7 @@ get_typespec (MonoImage *m, guint32 idx, gboolean is_def, MonoGenericContainer *
 	case MONO_TYPE_FNPTR: {
 		ERROR_DECL (error);
 		sig = mono_metadata_parse_method_signature_full (m, container, 0, ptr, &ptr, error);
-		g_assert (mono_error_ok (error)); /*FIXME don't swallow the error message*/
+		g_assert (is_ok (error)); /*FIXME don't swallow the error message*/
 		s = dis_stringify_function_ptr (m, sig);
 		g_string_append (res, "method ");
 		g_string_append (res, s);
@@ -905,12 +905,12 @@ dis_stringify_method_signature_full (MonoImage *m, MonoMethodSignature *method, 
 			container = mono_metadata_load_generic_params (m, MONO_TOKEN_METHOD_DEF | methoddef_row, container, NULL);
 			if (container) {
 				mono_metadata_load_generic_param_constraints_checked (m, MONO_TOKEN_METHOD_DEF | methoddef_row, container, error);
-				g_assert (mono_error_ok (error)); /*FIXME don't swallow the error message*/
+				g_assert (is_ok (error)); /*FIXME don't swallow the error message*/
 			}
 
 			mono_metadata_decode_blob_size (sig, &sig);
 			method = mono_metadata_parse_method_signature_full (m, container, methoddef_row, sig, &sig, error);
-			g_assert (mono_error_ok (error)); /*FIXME don't swallow the error message*/
+			g_assert (is_ok (error)); /*FIXME don't swallow the error message*/
 			free_method = 1;
 		}
 
@@ -3146,7 +3146,7 @@ get_method_override (MonoImage *m, guint32 token, MonoGenericContainer *containe
 				g_free (meth_str);
 				return ret;
 			} else {
-				if (!mono_error_ok (error)) {
+				if (!is_ok (error)) {
 					char *meth_str = get_method_core (m, decl, FALSE, container);
 					char *ret = g_strdup_printf ("Could not decode method override %s due to %s", meth_str, mono_error_get_message (error));
 

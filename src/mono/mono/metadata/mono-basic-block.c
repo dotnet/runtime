@@ -543,11 +543,11 @@ mono_basic_block_split (MonoMethod *method, MonoError *error, MonoMethodHeader *
 
 	root = bb;
 	bb_formation_il_pass (start, end, bb, &root, method, error);
-	if (!mono_error_ok (error))
+	if (!is_ok (error))
 		goto fail;
 	
 	bb_formation_eh_pass (header, bb, &root, method, error);
-	if (!mono_error_ok (error))
+	if (!is_ok (error))
 		goto fail;
 
 	bb_liveness (bb);

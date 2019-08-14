@@ -857,7 +857,7 @@ jit_call_supported (MonoMethod *method, MonoMethodSignature *sig)
 	if (mono_aot_only && m_class_get_image (method->klass)->aot_module && !(method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)) {
 		ERROR_DECL (error);
 		gpointer addr = mono_jit_compile_method_jit_only (method, error);
-		if (addr && mono_error_ok (error))
+		if (addr && is_ok (error))
 			return TRUE;
 	}
 

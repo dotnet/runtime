@@ -717,7 +717,7 @@ describe_object_properties (guint64 objectId, gboolean isAsyncLocalThis)
 			mono_wasm_add_properties_var(p->name); 
 			sig = mono_method_signature_internal (p->get);
 			res = mono_runtime_try_invoke (p->get, obj, NULL, &exc, error);
-			if (!mono_error_ok (error) && exc == NULL)
+			if (!is_ok (error) && exc == NULL)
 				exc = (MonoObject*) mono_error_convert_to_exception (error);
 			if (exc)
 				describe_value (mono_get_object_type (), &exc);

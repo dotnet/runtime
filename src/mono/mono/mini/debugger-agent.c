@@ -6449,7 +6449,7 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 
 	mono_stopwatch_start (&watch);
 	res = mono_runtime_try_invoke (m, m_class_is_valuetype (m->klass) ? (gpointer) this_buf : (gpointer) this_arg, args, &exc, error);
-	if (!mono_error_ok (error) && exc == NULL) {
+	if (!is_ok (error) && exc == NULL) {
 		exc = (MonoObject*) mono_error_convert_to_exception (error);
 	} else {
 		mono_error_cleanup (error); /* FIXME report error */
@@ -7289,7 +7289,7 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			g_assert (method);
 
 			req->info = mono_de_set_breakpoint (method, location, req, error);
-			if (!mono_error_ok (error)) {
+			if (!is_ok (error)) {
 				g_free (req);
 				DEBUG_PRINTF (1, "[dbg] Failed to set breakpoint: %s\n", mono_error_get_message (error));
 				mono_error_cleanup (error);
@@ -7807,7 +7807,7 @@ buffer_add_cattrs (Buffer *buf, MonoDomain *domain, MonoImage *image, MonoClass 
 			ERROR_DECL (error);
 
 			mono_reflection_create_custom_attr_data_args (image, attr->ctor, attr->data, attr->data_size, &typed_args, &named_args, &arginfo, error);
-			if (!mono_error_ok (error)) {
+			if (!is_ok (error)) {
 				DEBUG_PRINTF (2, "[dbg] mono_reflection_create_custom_attr_data_args () failed with: '%s'\n", mono_error_get_message (error));
 				mono_error_cleanup (error);
 				return ERR_LOADER_ERROR;
@@ -7866,7 +7866,7 @@ collect_interfaces (MonoClass *klass, GHashTable *ifaces, MonoError *error)
 	MonoClass *ic;
 
 	mono_class_setup_interfaces (klass, error);
-	if (!mono_error_ok (error))
+	if (!is_ok (error))
 		return;
 
 	int klass_interface_count = m_class_get_interface_count (klass);
@@ -7876,7 +7876,7 @@ collect_interfaces (MonoClass *klass, GHashTable *ifaces, MonoError *error)
 		g_hash_table_insert (ifaces, ic, ic);
 
 		collect_interfaces (ic, ifaces, error);
-		if (!mono_error_ok (error))
+		if (!is_ok (error))
 			return;
 	}
 }
@@ -8208,7 +8208,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 	}
 	case CMD_TYPE_GET_OBJECT: {
 		MonoObject *o = (MonoObject*)mono_type_get_object_checked (domain, m_class_get_byval_arg (klass), error);
-		if (!mono_error_ok (error)) {
+		if (!is_ok (error)) {
 			mono_error_cleanup (error);
 			return ERR_INVALID_OBJECT;
 		}
@@ -8286,10 +8286,10 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 
 		for (parent = tclass; parent; parent = m_class_get_parent (parent)) {
 			mono_class_setup_interfaces (parent, error);
-			if (!mono_error_ok (error))
+			if (!is_ok (error))
 				return ERR_LOADER_ERROR;
 			collect_interfaces (parent, iface_hash, error);
-			if (!mono_error_ok (error))
+			if (!is_ok (error))
 				return ERR_LOADER_ERROR;
 		}
 
@@ -8607,7 +8607,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 						if (mono_class_get_context (klass)) {
 							ERROR_DECL (error);
 							result = mono_class_inflate_generic_method_full_checked (result, klass, mono_class_get_context (klass), error);
-							g_assert (mono_error_ok (error)); /* FIXME don't swallow the error */
+							g_assert (is_ok (error)); /* FIXME don't swallow the error */
 						}
 					}
 				}
@@ -8808,7 +8808,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 		tmp_context.method_inst = ginst;
 
 		inflated = mono_class_inflate_generic_method_checked (method, &tmp_context, error);
-		g_assert (mono_error_ok (error)); /* FIXME don't swallow the error */
+		g_assert (is_ok (error)); /* FIXME don't swallow the error */
 		if (!mono_verifier_is_method_valid_generic_instantiation (inflated))
 			return ERR_INVALID_ARGUMENT;
 		buffer_add_methodid (buf, domain, inflated);
@@ -9339,7 +9339,7 @@ string_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		} else {
 			ERROR_DECL (error);
 			s = mono_string_to_utf8_checked_internal (str, error);
-			if (!mono_error_ok (error)) {
+			if (!is_ok (error)) {
 				if (s)
 					g_free (s);
 

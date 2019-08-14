@@ -1402,7 +1402,7 @@ reflection_resolve_custom_attribute_data (MonoReflectionMethod *ref_method, Mono
 
 leave:
 	g_free (arginfo);
-	return mono_error_ok (error);
+	return is_ok (error);
 }
 
 void

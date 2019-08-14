@@ -756,7 +756,7 @@ mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetupHa
 	goto_if_nok (error, leave);
 
 	data->setup = MONO_HANDLE_RAW (copy_app_domain_setup (data, setup, error));
-	if (!mono_error_ok (error)) {
+	if (!is_ok (error)) {
 		g_free (data->friendly_name);
 		goto leave;
 	}
@@ -768,7 +768,7 @@ mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetupHa
 	/*FIXME, guard this for when the debugger is not running */
 	char *shadow_location;
 	shadow_location = get_shadow_assembly_location_base (data, error);
-	if (!mono_error_ok (error)) {
+	if (!is_ok (error)) {
 		g_free (data->friendly_name);
 		goto leave;
 	}
@@ -1226,7 +1226,7 @@ mono_domain_set_options_from_config (MonoDomain *domain)
 		return;
 
 	config_file_name = mono_string_to_utf8_checked_internal (domain->setup->configuration_file, error);
-	if (!mono_error_ok (error)) {
+	if (!is_ok (error)) {
 		mono_error_cleanup (error);
 		goto free_and_out;
 	}
@@ -1600,7 +1600,7 @@ set_domain_search_path (MonoDomain *domain)
 	
 	if (MONO_HANDLE_GET_BOOL (setup, private_bin_path)) {
 		search_path = mono_string_handle_to_utf8 (MONO_HANDLE_NEW_GET (MonoString, setup, private_bin_path), error);
-		if (!mono_error_ok (error)) { /*FIXME maybe we should bubble up the error.*/
+		if (!is_ok (error)) { /*FIXME maybe we should bubble up the error.*/
 			g_warning ("Could not decode AppDomain search path since it contains invalid characters");
 			goto exit;
 		}
@@ -1642,7 +1642,7 @@ set_domain_search_path (MonoDomain *domain)
 	tmp [npaths] = NULL;
 
 	*tmp = mono_string_handle_to_utf8 (MONO_HANDLE_NEW_GET (MonoString, setup, application_base), error);
-	if (!mono_error_ok (error)) {
+	if (!is_ok (error)) {
 		g_free (tmp);
 		goto exit;
 	}
@@ -1852,7 +1852,7 @@ get_shadow_assembly_location_base (MonoDomain *domain, MonoError *error)
 #endif
 
 		appname = mono_string_to_utf8_checked_internal (setup->application_name, error);
-		if (!mono_error_ok (error)) {
+		if (!is_ok (error)) {
 			g_free (cache_path);
 			return NULL;
 		}
@@ -1886,7 +1886,7 @@ get_shadow_assembly_location (const char *filename, MonoError *error)
 	g_snprintf (name_hash, sizeof (name_hash), "%08x", hash);
 	g_snprintf (path_hash, sizeof (path_hash), "%08x_%08x_%08x", hash ^ hash2, hash2, domain->shadow_serial);
 	tmploc = get_shadow_assembly_location_base (domain, error);
-	if (!mono_error_ok (error)) {
+	if (!is_ok (error)) {
 		g_free (bname);
 		g_free (dirname);
 		return NULL;
@@ -1994,7 +1994,7 @@ mono_is_shadow_copy_enabled (MonoDomain *domain, const gchar *dir_name)
 		goto exit;
 
 	shadow_status_string = mono_string_to_utf8_checked_internal (setup->shadow_copy_files, error);
-	if (!mono_error_ok (error))
+	if (!is_ok (error))
 		goto exit;
 
 	shadow_enabled = !g_ascii_strncasecmp (shadow_status_string, "true", 4);
@@ -2009,7 +2009,7 @@ mono_is_shadow_copy_enabled (MonoDomain *domain, const gchar *dir_name)
 
 	/* Is dir_name a shadow_copy destination already? */
 	base_dir = get_shadow_assembly_location_base (domain, error);
-	if (!mono_error_ok (error))
+	if (!is_ok (error))
 		goto exit;
 
 	found = !!strstr (dir_name, base_dir);
@@ -2017,7 +2017,7 @@ mono_is_shadow_copy_enabled (MonoDomain *domain, const gchar *dir_name)
 		goto exit;
 
 	all_dirs = mono_string_to_utf8_checked_internal (setup->shadow_copy_directories, error);
-	if (!mono_error_ok (error))
+	if (!is_ok (error))
 		goto exit;
 
 	directories = g_strsplit (all_dirs, G_SEARCHPATH_SEPARATOR_S, 1000);
@@ -2068,7 +2068,7 @@ mono_make_shadow_copy (const char *filename, MonoError *oerror)
 
 	/* Is dir_name a shadow_copy destination already? */
 	shadow_dir = get_shadow_assembly_location_base (domain, error);
-	if (!mono_error_ok (error)) {
+	if (!is_ok (error)) {
 		mono_error_cleanup (error);
 		g_free (dir_name);
 		mono_error_set_execution_engine (oerror, "Failed to create shadow copy (invalid characters in shadow directory name).");
@@ -2084,7 +2084,7 @@ mono_make_shadow_copy (const char *filename, MonoError *oerror)
 	g_free (dir_name);
 
 	shadow = get_shadow_assembly_location (filename, error);
-	if (!mono_error_ok (error)) {
+	if (!is_ok (error)) {
 		mono_error_cleanup (error);
 		mono_error_set_execution_engine (oerror, "Failed to create shadow copy (invalid characters in file name).");
 		return NULL;
@@ -3235,7 +3235,7 @@ mono_domain_try_unload (MonoDomain *domain, MonoObject **exc)
 
 	mono_runtime_try_invoke (method, domain->domain, NULL, exc, error);
 
-	if (!mono_error_ok (error)) {
+	if (!is_ok (error)) {
 		if (*exc)
 			mono_error_cleanup (error);
 		else

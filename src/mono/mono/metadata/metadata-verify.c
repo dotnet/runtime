@@ -310,7 +310,7 @@ dword_align (const char *ptr)
 static void
 add_from_mono_error (VerifyContext *ctx, MonoError *error)
 {
-	if (mono_error_ok (error))
+	if (is_ok (error))
 		return;
 
 	ADD_ERROR (ctx, g_strdup (mono_error_get_message (error)));
@@ -1975,7 +1975,7 @@ is_valid_cattr_content (VerifyContext *ctx, MonoMethod *ctor, const char *ptr, g
 		FAIL (ctx, g_strdup ("CustomAttribute: Invalid constructor"));
 
 	sig = mono_method_signature_checked (ctor, error);
-	if (!mono_error_ok (error)) {
+	if (!is_ok (error)) {
 		ADD_ERROR_NO_RETURN (ctx, g_strdup_printf ("CustomAttribute: Invalid constructor signature %s", mono_error_get_message (error)));
 		mono_error_cleanup (error);
 		return FALSE;

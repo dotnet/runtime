@@ -592,7 +592,7 @@ add_method (MonoProfiler *prof, MonoMethod *m)
 	char *s;
 
 	sig = mono_method_signature_checked (m, error);
-	g_assert (mono_error_ok (error));
+	g_assert (is_ok (error));
 
 	int class_id = add_class (prof, m->klass);
 	if (class_id == -1)

@@ -4010,7 +4010,7 @@ emit_delegate_invoke_internal_ilgen (MonoMethodBuilder *mb, MonoMethodSignature 
 	} else {
 		ERROR_DECL (error);
 		mono_mb_emit_op (mb, CEE_CALLVIRT, mono_class_inflate_generic_method_checked (method, &container->context, error));
-		g_assert (mono_error_ok (error)); /* FIXME don't swallow the error */
+		g_assert (is_ok (error)); /* FIXME don't swallow the error */
 	}
 	if (!void_ret)
 		mono_mb_emit_stloc (mb, local_res);
@@ -4105,7 +4105,7 @@ emit_synchronized_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 	if (ctx) {
 		ERROR_DECL (error);
 		mono_mb_emit_managed_call (mb, mono_class_inflate_generic_method_checked (method, &container->context, error), NULL);
-		g_assert (mono_error_ok (error)); /* FIXME don't swallow the error */
+		g_assert (is_ok (error)); /* FIXME don't swallow the error */
 	} else {
 		mono_mb_emit_managed_call (mb, method, NULL);
 	}
@@ -4163,7 +4163,7 @@ emit_array_accessor_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mo
 	if (ctx) {
 		ERROR_DECL (error);
 		mono_mb_emit_managed_call (mb, mono_class_inflate_generic_method_checked (method, &container->context, error), NULL);
-		g_assert (mono_error_ok (error)); /* FIXME don't swallow the error */
+		g_assert (is_ok (error)); /* FIXME don't swallow the error */
 	} else {
 		mono_mb_emit_managed_call (mb, method, NULL);
 	}

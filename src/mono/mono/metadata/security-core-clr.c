@@ -523,7 +523,7 @@ check_field_access (MonoMethod *caller, MonoClassField *field)
 
 		/* this check can occur before the field's type is resolved (and that can fail) */
 		mono_field_get_type_checked (field, error);
-		if (!mono_error_ok (error)) {
+		if (!is_ok (error)) {
 			mono_error_cleanup (error);
 			return FALSE;
 		}

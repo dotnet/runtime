@@ -93,7 +93,7 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 {
 	ERROR_DECL (error);
 	MonoClass *klass = mono_class_from_typeref_checked (image, type_token, error);
-	g_assert (mono_error_ok (error)); /*FIXME proper error handling*/
+	g_assert (is_ok (error)); /*FIXME proper error handling*/
 	return klass;
 }
 
@@ -219,7 +219,7 @@ mono_class_from_typeref_checked (MonoImage *image, guint32 type_token, MonoError
 
 done:
 	/* Generic case, should be avoided for when a better error is possible. */
-	if (!res && mono_error_ok (error)) {
+	if (!res && is_ok (error)) {
 		char *name = mono_class_name_from_token (image, type_token);
 		char *assembly = mono_assembly_name_from_token (image, type_token);
 		mono_error_set_type_load_name (error, name, assembly, "Could not resolve type with token %08x from typeref (expected class '%s' in assembly '%s')", type_token, name, assembly);
@@ -743,7 +743,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 	case MONO_TYPE_SZARRAY: {
 		MonoClass *eclass = type->data.klass;
 		MonoType *nt, *inflated = inflate_generic_type (NULL, m_class_get_byval_arg (eclass), context, error);
-		if ((!inflated && !changed) || !mono_error_ok (error))
+		if ((!inflated && !changed) || !is_ok (error))
 			return NULL;
 		if (!inflated)
 			return type;
@@ -755,7 +755,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 	case MONO_TYPE_ARRAY: {
 		MonoClass *eclass = type->data.array->eklass;
 		MonoType *nt, *inflated = inflate_generic_type (NULL, m_class_get_byval_arg (eclass), context, error);
-		if ((!inflated && !changed) || !mono_error_ok (error))
+		if ((!inflated && !changed) || !is_ok (error))
 			return NULL;
 		if (!inflated)
 			return type;
@@ -827,7 +827,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 	}
 	case MONO_TYPE_PTR: {
 		MonoType *nt, *inflated = inflate_generic_type (image, type->data.type, context, error);
-		if ((!inflated && !changed) || !mono_error_ok (error))
+		if ((!inflated && !changed) || !is_ok (error))
 			return NULL;
 		if (!inflated && changed)
 			return type;
@@ -1053,13 +1053,13 @@ inflate_generic_context (MonoGenericContext *context, MonoGenericContext *inflat
 
 	if (context->class_inst) {
 		class_inst = mono_metadata_inflate_generic_inst (context->class_inst, inflate_with, error);
-		if (!mono_error_ok (error))
+		if (!is_ok (error))
 			goto fail;
 	}
 
 	if (context->method_inst) {
 		method_inst = mono_metadata_inflate_generic_inst (context->method_inst, inflate_with, error);
-		if (!mono_error_ok (error))
+		if (!is_ok (error))
 			goto fail;
 	}
 
@@ -1232,7 +1232,7 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 
 	if (!result->klass) {
 		MonoType *inflated = inflate_generic_type (NULL, m_class_get_byval_arg (method->klass), context, error);
-		if (!mono_error_ok (error)) 
+		if (!is_ok (error)) 
 			goto fail;
 
 		result->klass = inflated ? mono_class_from_mono_type_internal (inflated) : method->klass;
@@ -1416,7 +1416,7 @@ mono_class_find_enum_basetype (MonoClass *klass, MonoError *error)
 		if (mono_class_is_ginst (klass)) {
 			//FIXME do we leak here?
 			ftype = mono_class_inflate_generic_type_checked (ftype, mono_class_get_context (klass), error);
-			if (!mono_error_ok (error))
+			if (!is_ok (error))
 				goto fail;
 			ftype->attrs = cols [MONO_FIELD_FLAGS];
 		}
@@ -1548,7 +1548,7 @@ mono_class_get_method_by_index (MonoClass *klass, int index)
 
 		m = mono_class_inflate_generic_method_full_checked (
 			m_class_get_methods (gklass->container_class) [index], klass, mono_class_get_context (klass), error);
-		g_assert (mono_error_ok (error)); /* FIXME don't swallow the error */
+		g_assert (is_ok (error)); /* FIXME don't swallow the error */
 		/*
 		 * If setup_methods () is called later for this class, no duplicates are created,
 		 * since inflate_generic_method guarantees that only one instance of a method
@@ -1643,7 +1643,7 @@ mono_class_get_vtable_entry (MonoClass *klass, int offset)
 		m = m_class_get_vtable (gklass) [offset];
 
 		m = mono_class_inflate_generic_method_full_checked (m, klass, mono_class_get_context (klass), error);
-		g_assert (mono_error_ok (error)); /* FIXME don't swallow this error */
+		g_assert (is_ok (error)); /* FIXME don't swallow this error */
 	} else {
 		mono_class_setup_vtable (klass);
 		if (mono_class_has_failure (klass))
@@ -1712,7 +1712,7 @@ mono_class_get_implemented_interfaces (MonoClass *klass, MonoError *error)
 	collect_implemented_interfaces_aux (klass, &res, &ifaces, error);
 	if (ifaces)
 		g_hash_table_destroy (ifaces);
-	if (!mono_error_ok (error)) {
+	if (!is_ok (error)) {
 		if (res)
 			g_ptr_array_free (res, TRUE);
 		return NULL;
@@ -2081,7 +2081,7 @@ mono_type_retrieve_from_typespec (MonoImage *image, guint32 type_spec, MonoGener
 	if (context && (context->class_inst || context->method_inst)) {
 		MonoType *inflated = inflate_generic_type (NULL, t, context, error);
 
-		if (!mono_error_ok (error)) {
+		if (!is_ok (error)) {
 			return NULL;
 		}
 
@@ -2724,7 +2724,7 @@ mono_class_get_checked (MonoImage *image, guint32 type_token, MonoError *error)
 
 done:
 	/* Generic case, should be avoided for when a better error is possible. */
-	if (!klass && mono_error_ok (error)) {
+	if (!klass && is_ok (error)) {
 		char *name = mono_class_name_from_token (image, type_token);
 		char *assembly = mono_assembly_name_from_token (image, type_token);
 		mono_error_set_type_load_name (error, name, assembly, "Could not resolve type with token %08x (expected class '%s' in assembly '%s')", type_token, name, assembly);
@@ -3963,7 +3963,7 @@ mono_class_implement_interface_slow (MonoClass *target, MonoClass *candidate)
 			A possible way to fix this would be to move that to setup_interfaces from setup_interface_offsets.
 			*/
 			mono_class_setup_interfaces (candidate, error);
-			if (!mono_error_ok (error)) {
+			if (!is_ok (error)) {
 				mono_error_cleanup (error);
 				return FALSE;
 			}
@@ -4880,7 +4880,7 @@ mono_class_get_interfaces (MonoClass* klass, gpointer *iter)
 			mono_class_init_internal (klass);
 		if (!m_class_is_interfaces_inited (klass)) {
 			mono_class_setup_interfaces (klass, error);
-			if (!mono_error_ok (error)) {
+			if (!is_ok (error)) {
 				mono_error_cleanup (error);
 				return NULL;
 			}
@@ -5032,7 +5032,7 @@ mono_field_get_type_internal (MonoClassField *field)
 
 	ERROR_DECL (error);
 	type = mono_field_get_type_checked (field, error);
-	if (!mono_error_ok (error)) {
+	if (!is_ok (error)) {
 		mono_trace_warning (MONO_TRACE_TYPE, "Could not load field's type due to %s", mono_error_get_message (error));
 		mono_error_cleanup (error);
 	}
@@ -6063,14 +6063,14 @@ mono_field_resolve_type (MonoClassField *field, MonoError *error)
 	if (gtd) {
 		MonoClassField *gfield = &m_class_get_fields (gtd) [field_idx];
 		MonoType *gtype = mono_field_get_type_checked (gfield, error);
-		if (!mono_error_ok (error)) {
+		if (!is_ok (error)) {
 			char *full_name = mono_type_get_full_name (gtd);
 			mono_class_set_type_load_failure (klass, "Could not load generic type of field '%s:%s' (%d) due to: %s", full_name, gfield->name, field_idx, mono_error_get_message (error));
 			g_free (full_name);
 		}
 
 		ftype = mono_class_inflate_generic_type_no_copy (image, gtype, mono_class_get_context (klass), error);
-		if (!mono_error_ok (error)) {
+		if (!is_ok (error)) {
 			char *full_name = mono_type_get_full_name (klass);
 			mono_class_set_type_load_failure (klass, "Could not load instantiated type of field '%s:%s' (%d) due to: %s", full_name, field->name, field_idx, mono_error_get_message (error));
 			g_free (full_name);

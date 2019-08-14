@@ -520,7 +520,7 @@ mono_type_get_object_checked (MonoDomain *domain, MonoType *type, MonoError *err
 	norm_type = mono_type_normalize (type);
 	if (norm_type != type) {
 		res = mono_type_get_object_checked (domain, norm_type, error);
-		if (!mono_error_ok (error)) {
+		if (!is_ok (error)) {
 			mono_domain_unlock (domain);
 			mono_loader_unlock ();
 			return NULL;
@@ -561,7 +561,7 @@ mono_type_get_object_checked (MonoDomain *domain, MonoType *type, MonoError *err
 	}
 	/* This is stored in vtables/JITted code so it has to be pinned */
 	res = (MonoReflectionType *)mono_object_new_pinned (domain, mono_defaults.runtimetype_class, error);
-	if (!mono_error_ok (error)) {
+	if (!is_ok (error)) {
 		mono_domain_unlock (domain);
 		mono_loader_unlock ();
 		return NULL;

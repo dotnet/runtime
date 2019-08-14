@@ -721,7 +721,7 @@ interp_regression_step (MonoImage *image, int verbose, int *total_run, int *tota
 			}
 
 			result_obj = mini_get_interp_callbacks ()->runtime_invoke (method, NULL, NULL, &exc, interp_error);
-			if (!mono_error_ok (interp_error)) {
+			if (!is_ok (interp_error)) {
 				cfailed++;
 				g_print ("Test '%s' execution failed.\n", method->name);
 			} else if (exc != NULL) {
@@ -1203,7 +1203,7 @@ compile_all_methods_thread_main_inner (CompileAllThreadArgs *args)
 		if (mono_use_interpreter) {
 			mini_get_interp_callbacks ()->create_method_pointer (method, TRUE, error);
 			// FIXME There are a few failures due to DllNotFoundException related to System.Native
-			if (verbose && !mono_error_ok (error))
+			if (verbose && !is_ok (error))
 				g_print ("Compilation of %s failed\n", mono_method_full_name (method, TRUE));
 		} else {
 			cfg = mini_method_compile (method, mono_get_optimizations_for_method (method, args->opts), mono_get_root_domain (), (JitFlags)JIT_FLAG_DISCARD_RESULTS, 0, -1);

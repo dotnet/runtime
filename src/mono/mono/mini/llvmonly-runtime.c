@@ -550,7 +550,7 @@ mini_llvmonly_resolve_generic_virtual_call (MonoVTable *vt, int slot, MonoMethod
 	context.method_inst = ((MonoMethodInflated*)generic_virtual)->context.method_inst;
 
 	m = mono_class_inflate_generic_method_checked (declaring, &context, error);
-	g_assert (mono_error_ok (error));
+	g_assert (is_ok (error));
 
 	if (m_class_is_valuetype (vt->klass))
 		need_unbox_tramp = TRUE;

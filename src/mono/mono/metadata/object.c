@@ -547,7 +547,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 		mono_threads_end_abort_protected_block ();
 
 		//exception extracted, error will be set to the right value later
-		if (exc == NULL && !mono_error_ok (error))//invoking failed but exc was not set
+		if (exc == NULL && !is_ok (error))//invoking failed but exc was not set
 			exc = mono_error_convert_to_exception (error);
 		else
 			mono_error_cleanup (error);
@@ -3018,7 +3018,7 @@ do_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **ex
 
 	MONO_PROFILER_RAISE (method_end_invoke, (method));
 
-	if (!mono_error_ok (error))
+	if (!is_ok (error))
 		return NULL;
 
 	return result;
@@ -3064,7 +3064,7 @@ mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **
 	ERROR_DECL (error);
 	if (exc) {
 		res = mono_runtime_try_invoke (method, obj, params, exc, error);
-		if (*exc == NULL && !mono_error_ok(error)) {
+		if (*exc == NULL && !is_ok(error)) {
 			*exc = (MonoObject*) mono_error_convert_to_exception (error);
 		} else
 			mono_error_cleanup (error);
@@ -3907,7 +3907,7 @@ mono_property_set_value (MonoProperty *prop, void *obj, void **params, MonoObjec
 
 	ERROR_DECL (error);
 	do_runtime_invoke (prop->set, obj, params, exc, error);
-	if (exc && *exc == NULL && !mono_error_ok (error)) {
+	if (exc && *exc == NULL && !is_ok (error)) {
 		*exc = (MonoObject*) mono_error_convert_to_exception (error);
 	} else {
 		mono_error_cleanup (error);
@@ -3964,7 +3964,7 @@ mono_property_get_value (MonoProperty *prop, void *obj, void **params, MonoObjec
 
 	ERROR_DECL (error);
 	val = do_runtime_invoke (prop->get, obj, params, exc, error);
-	if (exc && *exc == NULL && !mono_error_ok (error)) {
+	if (exc && *exc == NULL && !is_ok (error)) {
 		*exc = (MonoObject*) mono_error_convert_to_exception (error);
 	} else {
 		mono_error_cleanup (error); /* FIXME don't raise here */
@@ -5152,7 +5152,7 @@ do_try_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 		ERROR_DECL (inner_error);
 		MonoObject *res;
 		res = mono_runtime_try_invoke (method, NULL, pa, exc, inner_error);
-		if (*exc == NULL && !mono_error_ok (inner_error))
+		if (*exc == NULL && !is_ok (inner_error))
 			*exc = (MonoObject*) mono_error_convert_to_exception (inner_error);
 		else
 			mono_error_cleanup (inner_error);
@@ -5166,7 +5166,7 @@ do_try_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 	} else {
 		ERROR_DECL (inner_error);
 		mono_runtime_try_invoke (method, NULL, pa, exc, inner_error);
-		if (*exc == NULL && !mono_error_ok (inner_error))
+		if (*exc == NULL && !is_ok (inner_error))
 			*exc = (MonoObject*) mono_error_convert_to_exception (inner_error);
 		else
 			mono_error_cleanup (inner_error);
@@ -5841,11 +5841,11 @@ mono_object_new_specific_checked (MonoVTable *vtable, MonoError *error)
 		}
 	
 		pa [0] = mono_type_get_object_checked (mono_domain_get (), m_class_get_byval_arg (vtable->klass), error);
-		if (!mono_error_ok (error))
+		if (!is_ok (error))
 			return NULL;
 
 		o = mono_runtime_invoke_checked (im, NULL, pa, error);
-		if (!mono_error_ok (error))
+		if (!is_ok (error))
 			return NULL;
 
 		if (o != NULL)
@@ -7952,7 +7952,7 @@ mono_string_to_utf8_internal (MonoMemPool *mp, MonoImage *image, MonoString *s, 
 	int len;
 
 	r = mono_string_to_utf8_checked_internal (s, error);
-	if (!mono_error_ok (error))
+	if (!is_ok (error))
 		return NULL;
 
 	if (!mp && !image)
@@ -8472,7 +8472,7 @@ mono_object_to_string (MonoObject *obj, MonoObject **exc)
 	MonoMethod *method = prepare_to_string_method (obj, &target);
 	if (exc) {
 		s = (MonoString *) mono_runtime_try_invoke (method, target, NULL, exc, error);
-		if (*exc == NULL && !mono_error_ok (error))
+		if (*exc == NULL && !is_ok (error))
 			*exc = (MonoObject*) mono_error_convert_to_exception (error);
 		else
 			mono_error_cleanup (error);
@@ -8559,7 +8559,7 @@ mono_print_unhandled_exception_internal (MonoObject *exc)
 				free_message = TRUE;
 			} else if (str) {
 				message = mono_string_to_utf8_checked_internal (str, error);
-				if (!mono_error_ok (error)) {
+				if (!is_ok (error)) {
 					mono_error_cleanup (error);
 					message = (char *) "";
 				} else {

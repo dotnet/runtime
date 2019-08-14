@@ -863,7 +863,7 @@ dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 en
 		if (container) {
 			ERROR_DECL (error);
 			mono_metadata_load_generic_param_constraints_checked (m, MONO_TOKEN_METHOD_DEF | (i + 1), container, error);
-			g_assert (mono_error_ok (error)); /*FIXME don't swallow the error message*/
+			g_assert (is_ok (error)); /*FIXME don't swallow the error message*/
 		} else {
 			container = type_container;
 		}
@@ -1206,7 +1206,7 @@ dis_type (MonoImage *m, int n, int is_nested, int forward)
 	if (container) {
 		ERROR_DECL (error);
 		mono_metadata_load_generic_param_constraints_checked (m, MONO_TOKEN_TYPE_DEF | (n + 1), container, error);
-		g_assert (mono_error_ok (error)); /*FIXME don't swallow the error message*/
+		g_assert (is_ok (error)); /*FIXME don't swallow the error message*/
 	}
 
 	esname = get_escaped_name (name);

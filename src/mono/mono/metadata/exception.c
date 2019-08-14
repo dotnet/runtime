@@ -1506,6 +1506,6 @@ mono_error_convert_to_exception_handle (MonoError *error)
 {
 	//FIXMEcoop mono_error_convert_to_exception is raw pointer
 	// The "optimization" here is important to significantly reduce handle usage.
-	return mono_error_ok (error) ? MONO_HANDLE_CAST (MonoException, NULL_HANDLE)
+	return is_ok (error) ? MONO_HANDLE_CAST (MonoException, NULL_HANDLE)
 		: MONO_HANDLE_NEW (MonoException, mono_error_convert_to_exception (error));
 }

@@ -54,7 +54,7 @@ mono_ldftn (MonoMethod *method)
 	}
 
 	addr = mono_create_jump_trampoline (mono_domain_get (), method, FALSE, error);
-	if (!mono_error_ok (error)) {
+	if (!is_ok (error)) {
 		mono_error_set_pending_exception (error);
 		return NULL;
 	}
@@ -85,7 +85,7 @@ ldvirtfn_internal (MonoObject *obj, MonoMethod *method, gboolean gshared)
 		context.method_inst = mono_method_get_context (method)->method_inst;
 
 		res = mono_class_inflate_generic_method_checked (res, &context, error);
-		if (!mono_error_ok (error)) {
+		if (!is_ok (error)) {
 			mono_error_set_pending_exception (error);
 			return NULL;
 		}
@@ -823,7 +823,7 @@ mono_ldtoken_wrapper (MonoImage *image, int token, MonoGenericContext *context)
 	gpointer res;
 
 	res = mono_ldtoken_checked (image, token, &handle_class, context, error);
-	if (!mono_error_ok (error)) {
+	if (!is_ok (error)) {
 		mono_error_set_pending_exception (error);
 		return NULL;
 	}
@@ -1141,13 +1141,13 @@ mono_helper_newobj_mscorlib (guint32 idx)
 	ERROR_DECL (error);
 	MonoClass *klass = mono_class_get_checked (mono_defaults.corlib, MONO_TOKEN_TYPE_DEF | idx, error);
 
-	if (!mono_error_ok (error)) {
+	if (!is_ok (error)) {
 		mono_error_set_pending_exception (error);
 		return NULL;
 	}
 
 	MonoObject *obj = mono_object_new_checked (mono_domain_get (), klass, error);
-	if (!mono_error_ok (error))
+	if (!is_ok (error))
 		mono_error_set_pending_exception (error);
 	return obj;
 }
@@ -1406,7 +1406,7 @@ mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *kl
 	gpointer new_args [16];
 
 	m = constrained_gsharedvt_call_setup (mp, cmethod, klass, &this_arg, error);
-	if (!mono_error_ok (error)) {
+	if (!is_ok (error)) {
 		mono_error_set_pending_exception (error);
 		return NULL;
 	}
@@ -1425,7 +1425,7 @@ mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *kl
 	}
 
 	o = mono_runtime_invoke_checked (m, this_arg, args, error);
-	if (!mono_error_ok (error)) {
+	if (!is_ok (error)) {
 		mono_error_set_pending_exception (error);
 		return NULL;
 	}
@@ -1508,7 +1508,7 @@ mono_fill_class_rgctx (MonoVTable *vtable, int index)
 	gpointer res;
 
 	res = mono_class_fill_runtime_generic_context (vtable, index, error);
-	if (!mono_error_ok (error)) {
+	if (!is_ok (error)) {
 		mono_error_set_pending_exception (error);
 		return NULL;
 	}
@@ -1522,7 +1522,7 @@ mono_fill_method_rgctx (MonoMethodRuntimeGenericContext *mrgctx, int index)
 	gpointer res;
 
 	res = mono_method_fill_runtime_generic_context (mrgctx, index, error);
-	if (!mono_error_ok (error)) {
+	if (!is_ok (error)) {
 		mono_error_set_pending_exception (error);
 		return NULL;
 	}

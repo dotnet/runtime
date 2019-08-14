@@ -1295,7 +1295,7 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			if (!klass)
 				return FALSE;
 			ref->method = mono_marshal_get_managed_wrapper (m, klass, 0, error);
-			if (!mono_error_ok (error))
+			if (!is_ok (error))
 				return FALSE;
 			break;
 		}
@@ -2728,7 +2728,7 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 				ERROR_DECL (error);
 				amodule_unlock (amodule);
 				*klass = mono_class_get_checked (image, token, error);
-				if (!mono_error_ok (error))
+				if (!is_ok (error))
 					mono_error_cleanup (error); /* FIXME don't swallow the error */
 
 				/* Add to cache */
@@ -4583,7 +4583,7 @@ init_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, M
 				if (mono_llvm_only && ji->type == MONO_PATCH_INFO_METHOD && mono_method_check_context_used (ji->data.method)) {
 					g_assert (context);
 					ji->data.method = mono_class_inflate_generic_method_checked (ji->data.method, context, error);
-					if (!mono_error_ok (error)) {
+					if (!is_ok (error)) {
 						g_free (got_slots);
 						mono_mempool_destroy (mp);
 						return FALSE;
@@ -4597,7 +4597,7 @@ init_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, M
 					ji->data.target = jinfo;
 				}
 				addr = mono_resolve_patch_target (method, domain, code, ji, TRUE, error);
-				if (!mono_error_ok (error)) {
+				if (!is_ok (error)) {
 					g_free (got_slots);
 					mono_mempool_destroy (mp);
 					return FALSE;
@@ -5099,14 +5099,14 @@ mono_aot_plt_resolve (gpointer aot_module, guint32 plt_info_offset, guint8 *code
 	if (mono_aot_only && ji.type == MONO_PATCH_INFO_METHOD && !ji.data.method->is_generic && !mono_method_check_context_used (ji.data.method) && !(ji.data.method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) &&
 		!mono_method_needs_static_rgctx_invoke (ji.data.method, FALSE) && !using_gsharedvt) {
 		target = (guint8 *)mono_jit_compile_method (ji.data.method, error);
-		if (!mono_error_ok (error)) {
+		if (!is_ok (error)) {
 			mono_mempool_destroy (mp);
 			return NULL;
 		}
 		no_ftnptr = TRUE;
 	} else {
 		target = (guint8 *)mono_resolve_patch_target (NULL, mono_domain_get (), NULL, &ji, TRUE, error);
-		if (!mono_error_ok (error)) {
+		if (!is_ok (error)) {
 			mono_mempool_destroy (mp);
 			return NULL;
 		}

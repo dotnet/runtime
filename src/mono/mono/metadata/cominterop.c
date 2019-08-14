@@ -594,7 +594,7 @@ cominterop_get_interface_checked (MonoComObjectHandle obj, MonoClass* ic, MonoEr
 	if (hr < 0) {
 		g_assert (!itf);
 		cominterop_set_hr_error (error, hr);
-		g_assert (!mono_error_ok (error));
+		g_assert (!is_ok (error));
 		return NULL;
 	}
 

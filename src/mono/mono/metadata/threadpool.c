@@ -366,7 +366,7 @@ worker_callback (void)
 			MonoObject *exc = NULL, *res;
 
 			res = try_invoke_perform_wait_callback (&exc, error);
-			if (exc || !mono_error_ok(error)) {
+			if (exc || !is_ok(error)) {
 				if (exc == NULL)
 					exc = (MonoObject *) mono_error_convert_to_exception (error);
 				else
