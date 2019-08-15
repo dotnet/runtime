@@ -84,7 +84,7 @@ namespace System.Diagnostics.Tracing
                 }
 
                 // Increase the metadataLength for parameters.
-                foreach (var parameter in parameters)
+                foreach (EventParameterInfo parameter in parameters)
                 {
                     int pMetadataLength = parameter.GetMetadataLength();
                     // The call above may return -1 which means we failed to get the metadata length.
@@ -113,7 +113,7 @@ namespace System.Diagnostics.Tracing
                     WriteToBuffer(pMetadata, metadataLength, ref offset, version);
                     WriteToBuffer(pMetadata, metadataLength, ref offset, level);
                     WriteToBuffer(pMetadata, metadataLength, ref offset, (uint)parameters.Length);
-                    foreach (var parameter in parameters)
+                    foreach (EventParameterInfo parameter in parameters)
                     {
                         if (!parameter.GenerateMetadata(pMetadata, ref offset, metadataLength))
                         {

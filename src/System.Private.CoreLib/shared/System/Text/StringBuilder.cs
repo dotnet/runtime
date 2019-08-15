@@ -1319,7 +1319,7 @@ namespace System.Text
                     return this;
                 }
 
-                var value = en.Current;
+                T value = en.Current;
                 if (value != null)
                 {
                     Append(value.ToString());

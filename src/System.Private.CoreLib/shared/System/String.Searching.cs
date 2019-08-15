@@ -107,7 +107,7 @@ namespace System
             if (anyOf.Length > 0 && anyOf.Length <= 5)
             {
                 // The ReadOnlySpan.IndexOfAny extension is vectorized for values of 1 - 5 in length
-                var result = new ReadOnlySpan<char>(ref Unsafe.Add(ref _firstChar, startIndex), count).IndexOfAny(anyOf);
+                int result = new ReadOnlySpan<char>(ref Unsafe.Add(ref _firstChar, startIndex), count).IndexOfAny(anyOf);
                 return result == -1 ? result : result + startIndex;
             }
             else if (anyOf.Length > 5)
@@ -268,7 +268,7 @@ namespace System
 
             if (comparisonType == StringComparison.Ordinal)
             {
-                var result = SpanHelpers.IndexOf(
+                int result = SpanHelpers.IndexOf(
                     ref Unsafe.Add(ref this._firstChar, startIndex),
                     count,
                     ref value._firstChar,

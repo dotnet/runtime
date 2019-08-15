@@ -29,7 +29,7 @@ namespace System.Buffers.Text
             //
             // return (format.IsDefault) ? defaultSymbol : format.Symbol;
 
-            var symbol = format.Symbol;
+            char symbol = format.Symbol;
             if (symbol == default && format.Precision == default)
             {
                 symbol = defaultSymbol;

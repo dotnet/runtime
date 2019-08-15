@@ -143,7 +143,9 @@ namespace System
 
                 case LazyThreadSafetyMode.ExecutionAndPublication:
                     // we need to create an object for ExecutionAndPublication because we use Monitor-based locking
-                    var state = useDefaultConstructor ? LazyState.ExecutionAndPublicationViaConstructor : LazyState.ExecutionAndPublicationViaFactory;
+                    LazyState state = useDefaultConstructor ?
+                        LazyState.ExecutionAndPublicationViaConstructor :
+                        LazyState.ExecutionAndPublicationViaFactory;
                     return new LazyHelper(state);
 
                 default:

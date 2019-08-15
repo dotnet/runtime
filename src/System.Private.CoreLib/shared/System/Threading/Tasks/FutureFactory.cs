@@ -774,7 +774,7 @@ namespace System.Threading.Tasks
             try
             {
                 //if we don't require synchronization, a faster set result path is taken
-                var asyncResult = beginMethod(iar =>
+                IAsyncResult asyncResult = beginMethod(iar =>
                 {
                     if (!iar.CompletedSynchronously)
                         FromAsyncCoreLogic(iar, endFunction, endAction, promise, requiresSynchronization: true);
@@ -891,7 +891,7 @@ namespace System.Threading.Tasks
             try
             {
                 //if we don't require synchronization, a faster set result path is taken
-                var asyncResult = beginMethod(arg1, iar =>
+                IAsyncResult asyncResult = beginMethod(arg1, iar =>
                 {
                     if (!iar.CompletedSynchronously)
                         FromAsyncCoreLogic(iar, endFunction, endAction, promise, requiresSynchronization: true);
@@ -1016,7 +1016,7 @@ namespace System.Threading.Tasks
             try
             {
                 //if we don't require synchronization, a faster set result path is taken
-                var asyncResult = beginMethod(arg1, arg2, iar =>
+                IAsyncResult asyncResult = beginMethod(arg1, arg2, iar =>
                 {
                     if (!iar.CompletedSynchronously)
                         FromAsyncCoreLogic(iar, endFunction, endAction, promise, requiresSynchronization: true);
@@ -1149,7 +1149,7 @@ namespace System.Threading.Tasks
             try
             {
                 //if we don't require synchronization, a faster set result path is taken
-                var asyncResult = beginMethod(arg1, arg2, arg3, iar =>
+                IAsyncResult asyncResult = beginMethod(arg1, arg2, arg3, iar =>
                 {
                     if (!iar.CompletedSynchronously)
                         FromAsyncCoreLogic(iar, endFunction, endAction, promise, requiresSynchronization: true);
@@ -1204,7 +1204,7 @@ namespace System.Threading.Tasks
             // the task doesn't have AttachedToParent set on it, there's no need to complete it in
             // case of an exception occurring... we can just let it go unresolved.
             var promise = new FromAsyncTrimPromise<TInstance>(thisRef, endMethod);
-            var asyncResult = beginMethod(thisRef, args, FromAsyncTrimPromise<TInstance>.s_completeFromAsyncResult, promise);
+            IAsyncResult asyncResult = beginMethod(thisRef, args, FromAsyncTrimPromise<TInstance>.s_completeFromAsyncResult, promise);
 
             // If the IAsyncResult completed asynchronously, completing the promise will be handled by the callback.
             // If it completed synchronously, we'll handle that here.
@@ -1229,7 +1229,7 @@ namespace System.Threading.Tasks
             internal static readonly AsyncCallback s_completeFromAsyncResult = CompleteFromAsyncResult;
 
             /// <summary>A reference to the object on which the begin/end methods are invoked.</summary>
-            [AllowNull, MaybeNull] private TInstance m_thisRef;
+            private TInstance? m_thisRef;
             /// <summary>The end method.</summary>
             private Func<TInstance, IAsyncResult, TResult>? m_endMethod;
 
@@ -1258,8 +1258,8 @@ namespace System.Threading.Tasks
                 if (promise == null) ThrowHelper.ThrowArgumentException(ExceptionResource.InvalidOperation_WrongAsyncResultOrEndCalledMultiple, ExceptionArgument.asyncResult);
 
                 // Grab the relevant state and then null it out so that the task doesn't hold onto the state unnecessarily
-                var thisRef = promise.m_thisRef;
-                var endMethod = promise.m_endMethod;
+                TInstance? thisRef = promise.m_thisRef;
+                Func<TInstance, IAsyncResult, TResult>? endMethod = promise.m_endMethod;
                 promise.m_thisRef = default;
                 promise.m_endMethod = null;
                 if (endMethod == null) ThrowHelper.ThrowArgumentException(ExceptionResource.InvalidOperation_WrongAsyncResultOrEndCalledMultiple, ExceptionArgument.asyncResult);
@@ -1291,7 +1291,7 @@ namespace System.Threading.Tasks
                 bool successfullySet;
                 try
                 {
-                    var result = endMethod(thisRef, asyncResult);
+                    TResult result = endMethod(thisRef, asyncResult);
                     if (requiresSynchronization)
                     {
                         successfullySet = TrySetResult(result);
@@ -1623,7 +1623,7 @@ namespace System.Threading.Tasks
             }
 
             // Call common ContinueWhenAll() setup logic, extract starter task.
-            var starter = TaskFactory.CommonCWAllLogic(tasksCopy);
+            Task<Task<TAntecedentResult>[]> starter = TaskFactory.CommonCWAllLogic(tasksCopy);
 
             // returned continuation task, off of starter
             if (continuationFunction != null)
@@ -1669,7 +1669,7 @@ namespace System.Threading.Tasks
             }
 
             // Perform common ContinueWhenAll() setup logic, extract starter task
-            var starter = TaskFactory.CommonCWAllLogic(tasksCopy);
+            Task<Task[]> starter = TaskFactory.CommonCWAllLogic(tasksCopy);
 
             // returned continuation task, off of starter
             if (continuationFunction != null)
@@ -2044,7 +2044,7 @@ namespace System.Threading.Tasks
             if (scheduler == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.scheduler);
 
             // Call common ContinueWhenAny setup logic, extract starter
-            var starter = TaskFactory.CommonCWAnyLogic(tasks);
+            Task<Task> starter = TaskFactory.CommonCWAnyLogic(tasks);
 
             // Bail early if cancellation has been requested.
             if (cancellationToken.IsCancellationRequested

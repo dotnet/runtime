@@ -424,7 +424,7 @@ namespace System.Runtime.Loader
         {
             lock (s_allContexts)
             {
-                foreach (var alcAlive in s_allContexts)
+                foreach (KeyValuePair<long, WeakReference<AssemblyLoadContext>> alcAlive in s_allContexts)
                 {
                     if (alcAlive.Value.TryGetTarget(out AssemblyLoadContext? alc))
                     {
