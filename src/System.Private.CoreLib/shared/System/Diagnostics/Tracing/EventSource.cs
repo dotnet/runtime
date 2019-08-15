@@ -5886,16 +5886,9 @@ namespace System.Diagnostics.Tracing
             // Output the localization information.
             sb.Append("<localization>").AppendLine();
 
-            List<CultureInfo>? cultures = null;
-            if (resources != null && (flags & EventManifestOptions.AllCultures) != 0)
-            {
-                cultures = GetSupportedCultures();
-            }
-            else
-            {
-                cultures = new List<CultureInfo>();
-                cultures.Add(CultureInfo.CurrentUICulture);
-            }
+            List<CultureInfo> cultures = (resources != null && (flags & EventManifestOptions.AllCultures) != 0) ?
+                GetSupportedCultures() :
+                new List<CultureInfo>() { CultureInfo.CurrentUICulture };
 
             var sortedStrings = new string[stringTab.Keys.Count];
             stringTab.Keys.CopyTo(sortedStrings, 0);
