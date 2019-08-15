@@ -210,11 +210,30 @@ Icall macros
 	CLEAR_ICALL_FRAME;			\
 	} while (0)
 
-#define HANDLE_LOOP_PREPARE \
+// Do not do this often, but icall state can be manually managed.
+//
+// SETUP_ICALL_FUNCTION
+// loop { // Does not have to be a loop.
+//    SETUP_ICALL_FRAME
+//    ..
+//    CLEAR_ICALL_FRAME
+// }
+//
+// As with HANDLE_FUNCTION_RETURN, you must not
+// skip CLEAR_ICALL_FRAME -- no break, continue, return, or goto (goto label at CLEAR_ICALL_FRAME is idiom).
+//
+#define SETUP_ICALL_FUNCTION \
 	MONO_DISABLE_WARNING(4459) /* declaration of 'identifier' hides global declaration */ \
 	/* There are deliberately locals and a constant NULL global with this same name. */ \
 	MonoThreadInfo *mono_thread_info_current_var = mono_thread_info_current () \
 	MONO_RESTORE_WARNING
+
+// A common use of manual icall frame management is for loop.
+// It can also be used for conditionality, where only some paths
+// through a function allocate handles and frame teardown does
+// coincide with function return. For example: emit_invoke_call.
+//
+#define HANDLE_LOOP_PREPARE SETUP_ICALL_FUNCTION
 
 // Return a non-pointer or non-managed pointer, e.g. gboolean.
 // VAL should be a local variable or at least not use handles in the current frame.
