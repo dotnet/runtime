@@ -307,8 +307,6 @@ namespace System.Drawing
                         colorString = "background";
                         break;
                     case KnownColor.Control:
-                        colorString = "buttonface";
-                        break;
                     case KnownColor.ControlLight:
                         colorString = "buttonface";
                         break;
