@@ -1025,7 +1025,7 @@ namespace System.Reflection.Metadata
         /// The string is UTF16 encoded and prefixed by the its size in bytes.
         ///
         /// This final byte holds the value 1 if and only if any UTF16 character within the string has any bit set in its top byte,
-        /// or its low byte is any of the following: 0x01–0x08, 0x0E–0x1F, 0x27, 0x2D, 0x7F. Otherwise, it holds 0.
+        /// or its low byte is any of the following: 0x01-0x08, 0x0E-0x1F, 0x27, 0x2D, 0x7F. Otherwise, it holds 0.
         /// The 1 signifies Unicode characters that require handling beyond that normally provided for 8-bit encoding sets.
         /// </remarks>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
@@ -1129,7 +1129,7 @@ namespace System.Reflection.Metadata
         /// If the value lies between 0 (0x00) and 127 (0x7F), inclusive,
         /// encode as a one-byte integer (bit 7 is clear, value held in bits 6 through 0).
         ///
-        /// If the value lies between 28 (0x80) and 214 – 1 (0x3FFF), inclusive,
+        /// If the value lies between 28 (0x80) and 214 - 1 (0x3FFF), inclusive,
         /// encode as a 2-byte integer with bit 15 set, bit 14 clear (value held in bits 13 through 0).
         ///
         /// Otherwise, encode as a 4-byte integer, with bit 31 set, bit 30 set, bit 29 clear (value held in bits 28 through 0).

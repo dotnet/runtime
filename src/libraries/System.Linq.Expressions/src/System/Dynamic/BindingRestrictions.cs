@@ -24,9 +24,9 @@ namespace System.Dynamic
         [SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly BindingRestrictions Empty = new CustomRestriction(AstUtils.Constant(true));
 
-        private const int TypeRestrictionHash = 1227133513;      // 00100 1001 0010 0100 1001 0010 0100 1001₂
-        private const int InstanceRestrictionHash = -1840700270; // 01001 0010 0100 1001 0010 0100 1001 0010₂
-        private const int CustomRestrictionHash = 613566756;     // 10010 0100 1001 0010 0100 1001 0010 0100₂
+        private const int TypeRestrictionHash =                    0b_0100_1001_0010_0100_1001_0010_0100_1001;
+        private const int InstanceRestrictionHash = unchecked((int)0b_1001_0010_0100_1001_0010_0100_1001_0010);
+        private const int CustomRestrictionHash =                  0b_0010_0100_1001_0010_0100_1001_0010_0100;
 
         private BindingRestrictions()
         {

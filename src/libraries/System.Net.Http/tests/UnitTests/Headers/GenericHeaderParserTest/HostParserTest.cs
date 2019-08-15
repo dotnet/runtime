@@ -26,7 +26,7 @@ namespace System.Net.Http.Tests
             CheckValidParsedValue("\r\n host\r\n ", 0, "host", 10);
             CheckValidParsedValue("!host", 1, "host", 5);
             CheckValidParsedValue("!host:50", 1, "host:50", 8);
-            CheckValidParsedValue("//host会", 2, "host会", 7);
+            CheckValidParsedValue("//host\u4F1A", 2, "host\u4F1A", 7);
             CheckValidParsedValue("192.168.0.1", 0, "192.168.0.1", 11);
             CheckValidParsedValue(" 192.168.0.1:80 ", 0, "192.168.0.1:80", 16);
             CheckValidParsedValue("[::1]", 0, "[::1]", 5);

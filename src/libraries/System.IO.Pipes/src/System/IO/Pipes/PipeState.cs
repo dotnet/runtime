@@ -16,7 +16,7 @@ namespace System.IO.Pipes
         // both handles are created.
         Connected = 1,
 
-        // It’s detected that the other side has broken the connection. Note that this effect isn’t immediate; we
+        // It's detected that the other side has broken the connection. Note that this effect isn't immediate; we
         // only detect this on the subsequent Win32 call, as indicated by the following error codes:
         // ERROR_BROKEN_PIPE, ERROR_PIPE_NOT_CONNECTED.
         // A side can cause the connection to break in the following ways:

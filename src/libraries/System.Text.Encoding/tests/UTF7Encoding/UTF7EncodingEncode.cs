@@ -14,7 +14,7 @@ namespace System.Text.Tests
             // ASCII
             yield return new object[] { "\t\n\rXYZabc123", 0, 12, new byte[] { 9, 10, 13, 88, 89, 90, 97, 98, 99, 49, 50, 51 } };
             yield return new object[] { "A\t\r\n /z", 0, 7, new byte[] { 0x41, 0x09, 0x0D, 0x0A, 0x20, 0x2F, 0x7A } };
-            yield return new object[] { "", 0, 1, new byte[] { 0x2B, 0x41, 0x41, 0x77, 0x2D } };
+            yield return new object[] { "\u000C", 0, 1, new byte[] { 0x2B, 0x41, 0x41, 0x77, 0x2D } };
 
             string chars2 = "UTF7 Encoding Example";
             yield return new object[] { chars2, 1, 2, new byte[] { 84, 70 } };

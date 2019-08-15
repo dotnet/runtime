@@ -49,7 +49,7 @@ namespace System.Text.Tests
             yield return new object[] { new byte[] { 0x2B, 0x80, 0x81, 0x82, 0x2D }, 0, 5, "\u0080\u0081\u0082-" };
             yield return new object[] { new byte[] { 0x2B, 0x80, 0x81, 0x82, 0x2D }, 0, 4, "\u0080\u0081\u0082" };
             yield return new object[] { new byte[] { 0x80, 0x81 }, 0, 2, "\u0080\u0081" };
-            yield return new object[] { new byte[] { 0x2B, 0x80, 0x21, 0x80, 0x21, 0x1E, 0x2D }, 0, 7, "\u0080!\u0080!-" };
+            yield return new object[] { new byte[] { 0x2B, 0x80, 0x21, 0x80, 0x21, 0x1E, 0x2D }, 0, 7, "\u0080!\u0080!\u001E-" };
 
             // Exclamation mark
             yield return new object[] { new byte[] { 0x2B, 0x41, 0x43, 0x45, 0x41, 0x66, 0x51 }, 0, 7, "!}" };

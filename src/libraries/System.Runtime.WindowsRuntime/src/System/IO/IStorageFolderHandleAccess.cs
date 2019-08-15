@@ -7,8 +7,8 @@ using System.Runtime.InteropServices;
 
 namespace System.IO
 {
-    // Available in 14393 (RS1) and later
-    [ComImport]
+    // Available in 14393 (RS1) and later
+    [ComImport]
     [Guid("DF19938F-5462-48A0-BE65-D2A3271A08D6")]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface IStorageFolderHandleAccess

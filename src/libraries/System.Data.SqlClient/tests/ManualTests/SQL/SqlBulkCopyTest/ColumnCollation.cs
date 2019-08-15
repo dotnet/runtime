@@ -19,8 +19,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 Helpers.TryExecute(dstCmd, "create table " + dstTable + " (name_jp varchar(20) collate Japanese_CI_AS, " +
                     "name_ru varchar(20) collate Cyrillic_General_CI_AS)");
 
-                string s_jp = "江戸糸あやつり人形";
-                string s_ru = "проверка";
+                string s_jp = "\u6C5F\u6238\u7CF8\u3042\u3084\u3064\u308A\u4EBA\u5F62";
+                string s_ru = "\u043F\u0440\u043E\u0432\u0435\u0440\u043A\u0430";
 
                 DataTable table = new DataTable();
                 table.Columns.Add("name_jp", typeof(string));

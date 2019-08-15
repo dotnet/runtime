@@ -106,7 +106,7 @@ namespace System.Data
         }
 
         /// <summary>
-        /// This method sets a new value for the specified column for the DataRow it�s called on.
+        /// This method sets a new value for the specified column for the DataRow it's called on.
         /// </summary>
         /// <param name="row">The input DataRow.</param>
         /// <param name="columnIndex">The input ordinal specifying which row value to set.</param>
@@ -118,7 +118,7 @@ namespace System.Data
         }
 
         /// <summary>
-        /// This method sets a new value for the specified column for the DataRow it�s called on.
+        /// This method sets a new value for the specified column for the DataRow it's called on.
         /// </summary>
         /// <param name="row">The input DataRow.</param>
         /// <param name="columnName">The input column name specifying which row value to retrieve.</param>
@@ -130,7 +130,7 @@ namespace System.Data
         }
 
         /// <summary>
-        /// This method sets a new value for the specified column for the DataRow it�s called on.
+        /// This method sets a new value for the specified column for the DataRow it's called on.
         /// </summary>
         /// <param name="row">The input DataRow.</param>
         /// <param name="column">The input DataColumn specifying which row value to retrieve.</param>

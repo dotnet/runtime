@@ -329,7 +329,7 @@ namespace System.Linq.Expressions.Tests
                 );
 
             // Check that not only has the visitor reduced the foreach into a block
-            // but the using within that block into a try…finally.
+            // but the using within that block into a try...finally.
             Expression reduced = new DefaultVisitor().Visit(foreachExp);
             var block = (BlockExpression)reduced;
             var tryExp = (TryExpression)block.Expressions[1];

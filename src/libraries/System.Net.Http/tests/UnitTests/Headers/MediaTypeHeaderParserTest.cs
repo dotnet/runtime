@@ -108,8 +108,8 @@ namespace System.Net.Http.Tests
             CheckInvalidParsedValue("", 0, false);
             CheckInvalidParsedValue("  ", 0, false);
             CheckInvalidParsedValue(null, 0, false);
-            CheckInvalidParsedValue("text/plain会", 0, true);
-            CheckInvalidParsedValue("text/plain会", 0, false);
+            CheckInvalidParsedValue("text/plain\u4F1A", 0, true);
+            CheckInvalidParsedValue("text/plain\u4F1A", 0, false);
             CheckInvalidParsedValue("text/plain ,", 0, false);
             CheckInvalidParsedValue("text/plain,", 0, false);
             CheckInvalidParsedValue("text/plain; charset=utf-8 ,", 0, false);

@@ -120,13 +120,13 @@ namespace System.Text.Json
             // Parse the calendar date
             // -----------------------
             // ISO 8601-1:2019 5.2.2.1b "Calendar date complete extended format"
-            //  [dateX] = [year][“-”][month][“-”][day]
+            //  [dateX] = [year]["-"][month]["-"][day]
             //  [year]  = [YYYY] [0000 - 9999] (4.3.2)
             //  [month] = [MM] [01 - 12] (4.3.3)
             //  [day]   = [DD] [01 - 28, 29, 30, 31] (4.3.4)
             //
             // Note: 5.2.2.2 "Representations with reduced precision" allows for
-            // just [year][“-”][month] (a) and just [year] (b), but we currently
+            // just [year]["-"][month] (a) and just [year] (b), but we currently
             // don't permit it.
 
             parseData = new DateTimeParseData();
@@ -166,18 +166,18 @@ namespace System.Text.Json
             // ---------------------
             //
             // ISO 8601-1:2019 5.3.1.2b "Local time of day complete extended format"
-            //  [timeX]   = [“T”][hour][“:”][min][“:”][sec]
+            //  [timeX]   = ["T"][hour][":"][min][":"][sec]
             //  [hour]    = [hh] [00 - 23] (4.3.8a)
             //  [minute]  = [mm] [00 - 59] (4.3.9a)
             //  [sec]     = [ss] [00 - 59, 60 with a leap second] (4.3.10a)
             //
             // ISO 8601-1:2019 5.3.3 "UTC of day"
-            //  [timeX][“Z”]
+            //  [timeX]["Z"]
             //
             // ISO 8601-1:2019 5.3.4.2 "Local time of day with the time shift between
             // local time scale and UTC" (Extended format)
             //
-            //  [shiftX] = [“+”|“-”][hour][“:”][min]
+            //  [shiftX] = ["+"|"-"][hour][":"][min]
             //
             // Notes:
             //

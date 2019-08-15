@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -102,7 +102,7 @@ namespace System.Linq.Expressions.Tests
         protected const int ELEMENT_TYPE_VALUETYPE = 0x11; // Followed by TypeDef or TypeRef token
         protected const int ELEMENT_TYPE_CLASS = 0x12; // Followed by TypeDef or TypeRef token
         protected const int ELEMENT_TYPE_VAR = 0x13; // Generic parameter in a generic type definition, represented as number
-        protected const int ELEMENT_TYPE_ARRAY = 0x14; // type rank boundsCount bound1 … loCount lo1 …
+        protected const int ELEMENT_TYPE_ARRAY = 0x14; // type rank boundsCount bound1 ... loCount lo1 ...
         protected const int ELEMENT_TYPE_GENERICINST = 0x15; // Generic type instantiation. Followed by type type-arg-count type-1 ... type-n
         protected const int ELEMENT_TYPE_TYPEDBYREF = 0x16;
         protected const int ELEMENT_TYPE_I = 0x18; // System.IntPtr
@@ -115,7 +115,7 @@ namespace System.Linq.Expressions.Tests
         private const int ELEMENT_TYPE_CMOD_REQD = 0x1f; // Required modifier : followed by a TypeDef or TypeRef token
         private const int ELEMENT_TYPE_CMOD_OPT = 0x20; // Optional modifier : followed by a TypeDef or TypeRef token
         private const int ELEMENT_TYPE_INTERNAL = 0x21; // Implemented within the CLI
-        private const int ELEMENT_TYPE_MODIFIER = 0x40; // Or’d with following element types
+        private const int ELEMENT_TYPE_MODIFIER = 0x40; // Or'd with following element types
         private const int ELEMENT_TYPE_SENTINEL = 0x41; // Sentinel for vararg method signature
         private const int ELEMENT_TYPE_PINNED = 0x45; // Denotes a local variable that points at a pinned object
 

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -4513,7 +4513,7 @@ namespace System.Text.Json.Tests
                 {
                     "A string with {0}valid UTF8 \\t tab",
                     "A string with {0}invalid UTF8 \\xc3\\x28",
-                    "A string with {0}valid UTF16 \\u002e \\u0009 म",
+                    "A string with {0}valid UTF16 \\u002e \\u0009 \u092E",
                     "A string with {0}invalid UTF16 \\uDD1E"
                 };
 

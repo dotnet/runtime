@@ -23,7 +23,7 @@ namespace System.Xml.Tests
         [InlineData("/settings:document- sft6.xsl", "sft6hack.dll", "no", "sft6", "sft6.pdb", "no", "sft6.txt")]
         //[Variation("7", Desc = "Exercise settings with no colon", Pri = 0, Params = new object[] { "/settingsDTD+ sft7.xsl", "sft7.dll", "no", "sft7", "sft7.pdb", "no", "sft7.txt" })]
         [InlineData("/settingsDTD+ sft7.xsl", "sft7.dll", "no", "sft7", "sft7.pdb", "no", "sft7.txt")]
-        //[Variation("14", Desc = "Exercise Turkish I problem", Pri = 0, Params = new object[] { "/SETTİNGS:SCRİPT+ sft14.xsl", "sft14.dll", "no", "sft14", "sft14.pdb", "no", "sft14.txt", "EnglishOnly" })]
+        //[Variation("14", Desc = "Exercise Turkish I problem", Pri = 0, Params = new object[] { "/SETT\u0130NGS:SCR\u0130PT+ sft14.xsl", "sft14.dll", "no", "sft14", "sft14.pdb", "no", "sft14.txt", "EnglishOnly" })]
         [InlineData("/SETT\u0130NGS:SCR\u0130PT+ sft14.xsl", "sft14.dll", "no", "sft14", "sft14.pdb", "no", "sft14.txt"/*, "EnglishOnly"*/)]
         //[Variation("15", Desc = "Exercise conflicting +, - symbols", Pri = 0, Params = new object[] { "/settings:script+- sft15.xsl", "sft15.dll", "no", "sft15", "sft15.pdb", "no", "sft15.txt" })]
         [InlineData("/settings:script+- sft15.xsl", "sft15.dll", "no", "sft15", "sft15.pdb", "no", "sft15.txt")]

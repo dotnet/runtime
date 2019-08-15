@@ -35,7 +35,7 @@ internal static partial class Interop
         internal static extern void CFRunLoopRun();
 
         /// <summary>
-        /// Runs the current thread’s CFRunLoop object in a particular mode.
+        /// Runs the current thread's CFRunLoop object in a particular mode.
         /// </summary>
         [DllImport(Interop.Libraries.CoreFoundationLibrary)]
         internal static extern int CFRunLoopRunInMode(CFStringRef mode, double seconds, int returnAfterSourceHandled);

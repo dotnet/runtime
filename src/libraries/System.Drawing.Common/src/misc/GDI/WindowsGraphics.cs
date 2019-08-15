@@ -125,7 +125,7 @@ namespace System.Drawing.Internal
         public DeviceContext DeviceContext => _dc;
 
         // Okay to suppress.
-        // "WindowsGraphics object does not own the Graphics object.  For instance in a control�s Paint event we pass
+        // "WindowsGraphics object does not own the Graphics object.  For instance in a control's Paint event we pass
         // the GraphicsContainer object to TextRenderer, which uses WindowsGraphics; if the Graphics object is disposed
         // then further painting will be broken."
         public void Dispose()

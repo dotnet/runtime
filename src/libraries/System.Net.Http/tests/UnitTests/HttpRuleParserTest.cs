@@ -159,7 +159,7 @@ namespace System.Net.Http.Tests
         public void GetQuotedPairLength_SetOfInvalidQuotedPairs_AllConsideredInvalid()
         {
             // only ASCII chars allowed in quoted-pair
-            AssertGetQuotedPairLength("\\ü", 0, 0, HttpParseResult.InvalidFormat);
+            AssertGetQuotedPairLength("\\\u00FC", 0, 0, HttpParseResult.InvalidFormat);
 
             // a quoted-pair needs 1 char after '\'
             AssertGetQuotedPairLength("\\", 0, 0, HttpParseResult.InvalidFormat);
@@ -179,8 +179,8 @@ namespace System.Net.Http.Tests
             AssertGetQuotedStringLength("\"\\x\"", 0, 4, HttpParseResult.Parsed); // "\x"
             AssertGetQuotedStringLength("\"\\\"\"", 0, 4, HttpParseResult.Parsed); // "\""
             AssertGetQuotedStringLength("\"before \\\" after\"", 0, 17, HttpParseResult.Parsed); // "before \" after"
-            AssertGetQuotedStringLength("\"\\ü\"", 0, 4, HttpParseResult.Parsed); // "\ü"
-            AssertGetQuotedStringLength("\"a\\ü\\\"b\"", 0, 8, HttpParseResult.Parsed); // "a\ü\"b"
+            AssertGetQuotedStringLength("\"\\\u00FC\"", 0, 4, HttpParseResult.Parsed); // "\\u00FC"
+            AssertGetQuotedStringLength("\"a\\\u00FC\\\"b\"", 0, 8, HttpParseResult.Parsed); // "a\\u00FC\"b"
             AssertGetQuotedStringLength("\"\\\"", 0, 3, HttpParseResult.Parsed); // "\"
             AssertGetQuotedStringLength("\"\\\"\"", 0, 4, HttpParseResult.Parsed); // "\""
             AssertGetQuotedStringLength(" \"\\\"", 1, 3, HttpParseResult.Parsed); // "\"
@@ -191,7 +191,7 @@ namespace System.Net.Http.Tests
             AssertGetQuotedStringLength("\"(x)\"", 0, 5, HttpParseResult.Parsed); // "(x)"
             AssertGetQuotedStringLength(" \" (x) \" ", 1, 7, HttpParseResult.Parsed); // " (x) "
             AssertGetQuotedStringLength("\"text\r\n new line\"", 0, 17, HttpParseResult.Parsed); // "text<crlf> new line"
-            AssertGetQuotedStringLength("\"a\\ü\\\"b\\\"c\\\"\\\"d\\\"\"", 0, 18, HttpParseResult.Parsed); // "a\ü\"b\"c\"\"d\""
+            AssertGetQuotedStringLength("\"a\\\u00FC\\\"b\\\"c\\\"\\\"d\\\"\"", 0, 18, HttpParseResult.Parsed); // "a\\u00FC\"b\"c\"\"d\""
             AssertGetQuotedStringLength("\"\\\" \"", 0, 5, HttpParseResult.Parsed); // "\" "
         }
 
@@ -219,7 +219,7 @@ namespace System.Net.Http.Tests
             AssertGetCommentLength("(\\x)", 0, 4, HttpParseResult.Parsed); // (\x)
             AssertGetCommentLength("(\\))", 0, 4, HttpParseResult.Parsed); // (\))
             AssertGetCommentLength("(\\()", 0, 4, HttpParseResult.Parsed); // (\()
-            AssertGetCommentLength("(\\ü)", 0, 4, HttpParseResult.Parsed); // (\ü)
+            AssertGetCommentLength("(\\\u00FC)", 0, 4, HttpParseResult.Parsed); // (\\u00FC)
             AssertGetCommentLength("(\\)", 0, 3, HttpParseResult.Parsed); // (\)
             AssertGetCommentLength("(s\\x)", 0, 5, HttpParseResult.Parsed); // (s\x)
             AssertGetCommentLength("(\\xx)", 0, 5, HttpParseResult.Parsed); // (\xx)

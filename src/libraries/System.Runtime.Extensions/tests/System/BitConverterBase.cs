@@ -35,7 +35,7 @@ namespace System.Tests
         [InlineData('{', new byte[] { 0x7B, 0x00 })]
         [InlineData('\0', new byte[] { 0x00, 0x00 })]
         [InlineData(' ', new byte[] { 0x20, 0x00 })]
-        [InlineData('\u263a', new byte[] { 0x3A, 0x26 })] // Smiley Face (☺)
+        [InlineData('\u263a', new byte[] { 0x3A, 0x26 })] // Smiley Face
         public abstract void ConvertFromChar(char character, byte[] expected);
 
         [Theory]
@@ -146,11 +146,11 @@ namespace System.Tests
             yield return new object[] { 3, '*', s_toCharByteArray };
             yield return new object[] { 5, 'A', s_toCharByteArray };
             yield return new object[] { 7, '}', s_toCharByteArray };
-            yield return new object[] { 9, '\u00C5', s_toCharByteArray }; // Latin capital letter A with ring above (Å)
-            yield return new object[] { 11, '\u03A8', s_toCharByteArray }; // Greek capital letter Psi (Ψ)
-            yield return new object[] { 13, '\u0429', s_toCharByteArray }; // Cyrillic capital letter Shcha (Щ)
-            yield return new object[] { 15, '\u20AC', s_toCharByteArray }; // Euro sign (€)
-            yield return new object[] { 17, '\u263A', s_toCharByteArray }; // Smiley Face (☺)
+            yield return new object[] { 9, '\u00C5', s_toCharByteArray }; // Latin capital letter A with ring above (\u00C5)
+            yield return new object[] { 11, '\u03A8', s_toCharByteArray }; // Greek capital letter Psi (\u03A8)
+            yield return new object[] { 13, '\u0429', s_toCharByteArray }; // Cyrillic capital letter Shcha (\u0429)
+            yield return new object[] { 15, '\u20AC', s_toCharByteArray }; // Euro sign (\u20AC)
+            yield return new object[] { 17, '\u263A', s_toCharByteArray }; // Smiley Face (\u263A)
         }
 
         [Theory]

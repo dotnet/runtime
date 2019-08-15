@@ -180,7 +180,7 @@ namespace Internal.Cryptography.Pal
         {
             AsnReader reader = new AsnReader(encoded, AsnEncodingRules.BER);
             ReadOnlyMemory<byte> contents;
-            if (!reader.TryReadPrimitiveOctetStringBytes(out contents))
+            if (!reader.TryReadPrimitiveOctetStringBytes(out contents))
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }

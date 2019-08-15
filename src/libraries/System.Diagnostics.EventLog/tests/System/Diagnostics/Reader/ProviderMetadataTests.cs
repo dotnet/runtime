@@ -56,7 +56,7 @@ namespace System.Diagnostics.Tests
                                 }
                                 else if (CultureInfo.CurrentCulture.Name.Split('-')[0] == "es" )
                                 {
-                                    Assert.Equal("Aplicación", logLink.DisplayName);
+                                    Assert.Equal("Aplicaci\u00F3n", logLink.DisplayName);
                                 }
                             }
                             Assert.Contains("EventLogMessages.dll", providerMetadata.MessageFilePath);

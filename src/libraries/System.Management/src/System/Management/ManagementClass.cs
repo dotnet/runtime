@@ -13,7 +13,7 @@ namespace System.Management
     /// <summary>
     ///    <para> Represents a CIM management class from WMI. CIM (Common Information Model) classes
     ///            represent management information including hardware, software, processes, etc.
-    ///            For more information about the CIM classes available in Windows search for �win32 classes�.</para>
+    ///            For more information about the CIM classes available in Windows search for "win32 classes".</para>
     /// </summary>
     /// <example>
     ///    <code lang='C#'>using System;

@@ -805,7 +805,7 @@ namespace System.Data.OleDb
                 ReadOnlySpan<byte> span1 = new ReadOnlySpan<byte>(buf1.ToPointer(), count);
                 ReadOnlySpan<byte> span2 = new ReadOnlySpan<byte>(buf2.ToPointer(), count);
                 return !MemoryExtensions.SequenceEqual(span1, span2);
-                //0​ if all count bytes of lhs and rhs are equal.
+                //0 if all count bytes of lhs and rhs are equal.
                 // TODO: confirm condition with tests
             }
         }

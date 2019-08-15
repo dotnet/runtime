@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -254,12 +254,12 @@ namespace System.Text.Json.Serialization.Tests
                 return new List<object[]>
                 {
                     new object[] { "age", "\\u0061\\u0067\\u0065" },
-                    new object[] { "éééééêêêêê", "éééééêêêêê" },
-                    new object[] { "ééééé\"êêêêê", "ééééé\\u0022êêêêê" },
-                    new object[] { "ééééé\\u0022êêêêê", "ééééé\\\\\\u0075\\u0030\\u0030\\u0032\\u0032êêêêê" },
-                    new object[] { "ééééé>>>>>êêêêê", "ééééé\\u003E\\u003E\\u003E\\u003E\\u003Eêêêêê" },
-                    new object[] { "ééééé\\u003e\\u003eêêêêê", "ééééé\\\\\\u0075\\u0030\\u0030\\u0033\\u0065\\\\\\u0075\\u0030\\u0030\\u0033\\u0065êêêêê" },
-                    new object[] { "ééééé\\u003E\\u003Eêêêêê", "ééééé\\\\\\u0075\\u0030\\u0030\\u0033\\u0045\\\\\\u0075\\u0030\\u0030\\u0033\\u0045êêêêê" },
+                    new object[] { "\u00E9\u00E9\u00E9\u00E9\u00E9\u00EA\u00EA\u00EA\u00EA\u00EA", "\u00E9\u00E9\u00E9\u00E9\u00E9\u00EA\u00EA\u00EA\u00EA\u00EA" },
+                    new object[] { "\u00E9\u00E9\u00E9\u00E9\u00E9\"\u00EA\u00EA\u00EA\u00EA\u00EA", "\u00E9\u00E9\u00E9\u00E9\u00E9\\u0022\u00EA\u00EA\u00EA\u00EA\u00EA" },
+                    new object[] { "\u00E9\u00E9\u00E9\u00E9\u00E9\\u0022\u00EA\u00EA\u00EA\u00EA\u00EA", "\u00E9\u00E9\u00E9\u00E9\u00E9\\\\\\u0075\\u0030\\u0030\\u0032\\u0032\u00EA\u00EA\u00EA\u00EA\u00EA" },
+                    new object[] { "\u00E9\u00E9\u00E9\u00E9\u00E9>>>>>\u00EA\u00EA\u00EA\u00EA\u00EA", "\u00E9\u00E9\u00E9\u00E9\u00E9\\u003E\\u003E\\u003E\\u003E\\u003E\u00EA\u00EA\u00EA\u00EA\u00EA" },
+                    new object[] { "\u00E9\u00E9\u00E9\u00E9\u00E9\\u003e\\u003e\u00EA\u00EA\u00EA\u00EA\u00EA", "\u00E9\u00E9\u00E9\u00E9\u00E9\\\\\\u0075\\u0030\\u0030\\u0033\\u0065\\\\\\u0075\\u0030\\u0030\\u0033\\u0065\u00EA\u00EA\u00EA\u00EA\u00EA" },
+                    new object[] { "\u00E9\u00E9\u00E9\u00E9\u00E9\\u003E\\u003E\u00EA\u00EA\u00EA\u00EA\u00EA", "\u00E9\u00E9\u00E9\u00E9\u00E9\\\\\\u0075\\u0030\\u0030\\u0033\\u0045\\\\\\u0075\\u0030\\u0030\\u0033\\u0045\u00EA\u00EA\u00EA\u00EA\u00EA" },
                 };
             }
         }
@@ -293,8 +293,8 @@ namespace System.Text.Json.Serialization.Tests
             {
                 return new List<object[]>
                 {
-                    new object[] { "éééééêêêêê", "éééééêêêêê" },
-                    new object[] { "aѧѦa", "aѧѦa" }, // U0467, U0466
+                    new object[] { "\u00E9\u00E9\u00E9\u00E9\u00E9\u00EA\u00EA\u00EA\u00EA\u00EA", "\u00E9\u00E9\u00E9\u00E9\u00E9\u00EA\u00EA\u00EA\u00EA\u00EA" },
+                    new object[] { "a\u0467\u0466a", "a\u0467\u0466a" },
                 };
             }
         }

@@ -22,7 +22,7 @@ namespace XPathTests.FunctionalTests.MiscellaneousCases
         public static void RegressionTestsTest552()
         {
             var xml = "dummy.xml";
-            var testExpression = @"translate('+𐌰+', '𐌰', 'x')";
+            var testExpression = "translate('+\uD800\uDF30+', '\uD800\uDF30', 'x')";
             var expected = @"+x+";
 
             Utils.XPathStringTest(xml, testExpression, expected);
@@ -35,7 +35,7 @@ namespace XPathTests.FunctionalTests.MiscellaneousCases
         public static void RegressionTestsTest553()
         {
             var xml = "dummy.xml";
-            var testExpression = @"translate('+𐌰+', '𐌰', 'xy')";
+            var testExpression = "translate('+\uD800\uDF30+', '\uD800\uDF30', 'xy')";
             var expected = @"+xy+";
 
             Utils.XPathStringTest(xml, testExpression, expected);

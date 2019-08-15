@@ -541,8 +541,8 @@ namespace System.PrivateUri.Tests
         }
 
         [Theory]
-        [InlineData(@"c:/path/with/unicode/ö/test.xml")]
-        [InlineData(@"file://c:/path/with/unicode/ö/test.xml")]
+        [InlineData("c:/path/with/unicode/\u00F6/test.xml")]
+        [InlineData("file://c:/path/with/unicode/\u00F6/test.xml")]
         public void Iri_WindowsPathWithUnicode_DoesRemoveScheme(string uriString)
         {
             var uri = new Uri(uriString);

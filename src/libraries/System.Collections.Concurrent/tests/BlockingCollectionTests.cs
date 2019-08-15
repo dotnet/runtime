@@ -508,7 +508,7 @@ namespace System.Collections.Concurrent.Tests
 
         /// <summary>Validates that after CompleteAdding() is called, future calls to Add will throw exceptions, calls
         /// to Take will not block waiting for more input, and calls to MoveNext on the enumerator returned from GetEnumerator
-        /// on the enumerable returned from GetConsumingEnumerable will return false when the collection’s count reaches 0.</summary>
+        /// on the enumerable returned from GetConsumingEnumerable will return false when the collection's count reaches 0.</summary>
         /// <returns>True if test succeeded, false otherwise.</returns>
         [Fact]
         public static void Test7_CompleteAdding()

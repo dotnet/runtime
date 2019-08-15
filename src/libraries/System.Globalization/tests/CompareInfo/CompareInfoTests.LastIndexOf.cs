@@ -82,7 +82,7 @@ namespace System.Globalization.Tests
         {
             bool isWindows = PlatformDetection.IsWindows;
 
-            // Searches for the ligature Æ
+            // Searches for the ligature \u00C6
             string source = "Is AE or ae the same as \u00C6 or \u00E6?";
             yield return new object[] { s_invariantCompare, source, "AE", 25, 18, CompareOptions.None, isWindows ? 24 : -1 };
             yield return new object[] { s_invariantCompare, source, "ae", 25, 18, CompareOptions.None, 9 };

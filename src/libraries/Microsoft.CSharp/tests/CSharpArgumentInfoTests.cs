@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -17,7 +17,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
 
         private static readonly string[] Names =
         {
-            "arg", "ARG", "Arg", "Argument name that isn’t a valid C♯ name 👿🤢",
+            "arg", "ARG", "Arg", "Argument name that isn\u2019t a valid C\u266F name \uD83D\uDC7F\uD83E\uDD22",
             "horrid name with" + (char)0xD800 + "a half surrogate", "new", "break", null
         };
 

@@ -426,7 +426,7 @@ namespace System.Tests
             yield return new object[] { "http://\u1234\u2345\u3456abc@host/", "http", "%E1%88%B4%E2%8D%85%E3%91%96abc", "host", UriHostNameType.Dns, 80, true, false };
             yield return new object[] { "http://userinfo!~+-_*()[]:;&$=123USERINFO@host/", "http", "userinfo!~+-_*()[]:;&$=123USERINFO", "host", UriHostNameType.Dns, 80, true, false };
             yield return new object[] { "http://%68%65%6C%6C%6F@host/", "http", "hello", "host", UriHostNameType.Dns, 80, true, false };
-            yield return new object[] { @"http://£@host/", "http", "%C2%A3", "host", UriHostNameType.Dns, 80, true, false };
+            yield return new object[] { "http://\u00A3@host/", "http", "%C2%A3", "host", UriHostNameType.Dns, 80, true, false };
             yield return new object[] { "http://\u1234@host/", "http", "%E1%88%B4", "host", UriHostNameType.Dns, 80, true, false };
             yield return new object[] { "http://userinfo%%%2F%3F%23%5B%5D%40%3B%26%2B%2C%5C%2g%2G@host", "http", "userinfo%25%25%2F%3F%23%5B%5D%40%3B%26%2B%2C%5C%252g%252G", "host", UriHostNameType.Dns, 80, true, false };
         }
@@ -446,10 +446,10 @@ namespace System.Tests
 
         public static IEnumerable<object[]> Scheme_Authority_IdnHost_TestData()
         {
-            yield return new object[] { "http://привет/", "http", "", "привет", "xn--b1agh1afp", "привет", UriHostNameType.Dns, 80, true, false };
-            yield return new object[] { "http://привет.ascii/", "http", "", "привет.ascii", "xn--b1agh1afp.ascii", "привет.ascii", UriHostNameType.Dns, 80, true, false };
-            yield return new object[] { "http://ascii.привет/", "http", "", "ascii.привет", "ascii.xn--b1agh1afp", "ascii.привет", UriHostNameType.Dns, 80, true, false };
-            yield return new object[] { "http://привет.βέλασμα/", "http", "", "привет.βέλασμα", "xn--b1agh1afp.xn--ixaiab0ch2c", "привет.βέλασμα", UriHostNameType.Dns, 80, true, false };
+            yield return new object[] { "http://\u043F\u0440\u0438\u0432\u0435\u0442/", "http", "", "\u043F\u0440\u0438\u0432\u0435\u0442", "xn--b1agh1afp", "\u043F\u0440\u0438\u0432\u0435\u0442", UriHostNameType.Dns, 80, true, false };
+            yield return new object[] { "http://\u043F\u0440\u0438\u0432\u0435\u0442.ascii/", "http", "", "\u043F\u0440\u0438\u0432\u0435\u0442.ascii", "xn--b1agh1afp.ascii", "\u043F\u0440\u0438\u0432\u0435\u0442.ascii", UriHostNameType.Dns, 80, true, false };
+            yield return new object[] { "http://ascii.\u043F\u0440\u0438\u0432\u0435\u0442/", "http", "", "ascii.\u043F\u0440\u0438\u0432\u0435\u0442", "ascii.xn--b1agh1afp", "ascii.\u043F\u0440\u0438\u0432\u0435\u0442", UriHostNameType.Dns, 80, true, false };
+            yield return new object[] { "http://\u043F\u0440\u0438\u0432\u0435\u0442.\u03B2\u03AD\u03BB\u03B1\u03C3\u03BC\u03B1/", "http", "", "\u043F\u0440\u0438\u0432\u0435\u0442.\u03B2\u03AD\u03BB\u03B1\u03C3\u03BC\u03B1", "xn--b1agh1afp.xn--ixaiab0ch2c", "\u043F\u0440\u0438\u0432\u0435\u0442.\u03B2\u03AD\u03BB\u03B1\u03C3\u03BC\u03B1", UriHostNameType.Dns, 80, true, false };
 
             yield return new object[] { "http://[1111:2222:3333::431%16]:50/", "http", "", "[1111:2222:3333::431]", "1111:2222:3333::431%16", "1111:2222:3333::431%16", UriHostNameType.IPv6, 50, false, false }; // Scope ID
             yield return new object[] { "http://[1111:2222:3333::431%16/20]", "http", "", "[1111:2222:3333::431]", "1111:2222:3333::431%16", "1111:2222:3333::431%16", UriHostNameType.IPv6, 80, true, false }; // Scope ID and prefix
@@ -1189,7 +1189,7 @@ namespace System.Tests
             yield return new object[] { "http://a..a/", UriKind.Absolute };
             yield return new object[] { "unknownscheme://..a/", UriKind.Absolute };
             yield return new object[] { "http://host" + (char)0, UriKind.Absolute };
-            yield return new object[] { "http://привет" + (char)0, UriKind.Absolute };
+            yield return new object[] { "http://\u043F\u0440\u0438\u0432\u0435\u0442" + (char)0, UriKind.Absolute };
             yield return new object[] { "http://%", UriKind.Absolute };
             yield return new object[] { "http://@", UriKind.Absolute };
 

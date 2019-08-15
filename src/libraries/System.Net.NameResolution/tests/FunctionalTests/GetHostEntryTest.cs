@@ -220,7 +220,7 @@ namespace System.Net.NameResolution.Tests
         public void DnsGetHostEntry_UnknownUnicodeHost_HostNotFound()
         {
             // This would succeed if the name was registered in DNS
-            Assert.ThrowsAny<SocketException>(() => Dns.GetHostEntry("Test-新-Unicode"));
+            Assert.ThrowsAny<SocketException>(() => Dns.GetHostEntry("Test-\u65B0-Unicode"));
         }
 
         [Fact]

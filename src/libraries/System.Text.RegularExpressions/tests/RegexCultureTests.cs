@@ -20,7 +20,7 @@ namespace System.Text.RegularExpressions.Tests
             RemoteExecutor.Invoke(() =>
             {
                 var turkish = new CultureInfo("tr-TR");
-                string input = "Iıİi";
+                string input = "I\u0131\u0130i";
 
                 Regex[] cultInvariantRegex = Create(input, CultureInfo.InvariantCulture, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
                 Regex[] turkishRegex = Create(input, turkish, RegexOptions.IgnoreCase);
