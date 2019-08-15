@@ -1897,11 +1897,10 @@ namespace System
 
             if (result == TimeZoneInfoResult.Success)
             {
-                if (cachedData._systemTimeZones == null)
+                cachedData._systemTimeZones ??= new Dictionary<string, TimeZoneInfo>(StringComparer.OrdinalIgnoreCase)
                 {
-                    cachedData._systemTimeZones = new Dictionary<string, TimeZoneInfo>(StringComparer.OrdinalIgnoreCase);
-                    cachedData._systemTimeZones.Add(UtcId, s_utcTimeZone);
-                }
+                    { UtcId, s_utcTimeZone }
+                };
 
                 // Avoid using multiple Utc objects to ensure consistency and correctness as we have some code
                 // uses reference equality with the Utc object.

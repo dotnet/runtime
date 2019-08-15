@@ -4412,14 +4412,8 @@ namespace System.Threading.Tasks
             // Logic for the case where we were previously storing a single continuation
             if ((oldValue != s_taskCompletionSentinel) && (!(oldValue is List<object?>)))
             {
-                // Construct a new TaskContinuation list
-                List<object?> newList = new List<object?>();
-
-                // Add in the old single value
-                newList.Add(oldValue);
-
-                // Now CAS in the new list
-                Interlocked.CompareExchange(ref m_continuationObject, newList, oldValue);
+                // Construct a new TaskContinuation list and CAS it in.
+                Interlocked.CompareExchange(ref m_continuationObject, new List<object?> { oldValue }, oldValue);
 
                 // We might be racing against another thread converting the single into
                 // a list, or we might be racing against task completion, so resample "list"
