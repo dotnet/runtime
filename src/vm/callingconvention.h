@@ -1320,7 +1320,11 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
             cFPRegs = argSize/m_argLocDescForStructInRegs.m_hfaFieldSize;
             m_argLocDescForStructInRegs.m_cFloatReg = cFPRegs;
 
-            m_hasArgLocDescForStructInRegs = true;
+            // Check if we have enough registers available for the HFA passing
+            if ((cFPRegs + m_idxFPReg) <= 8)
+            {
+                m_hasArgLocDescForStructInRegs = true;
+            }
         }
         else 
         {
