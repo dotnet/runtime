@@ -171,9 +171,8 @@ namespace System.Collections
             }
             set
             {
-                if (_keycomparer is CompatibleComparer)
+                if (_keycomparer is CompatibleComparer keyComparer)
                 {
-                    CompatibleComparer keyComparer = (CompatibleComparer)_keycomparer;
                     _keycomparer = new CompatibleComparer(value, keyComparer.Comparer);
                 }
                 else if (_keycomparer == null)
@@ -207,9 +206,8 @@ namespace System.Collections
             }
             set
             {
-                if (_keycomparer is CompatibleComparer)
+                if (_keycomparer is CompatibleComparer keyComparer)
                 {
-                    CompatibleComparer keyComparer = (CompatibleComparer)_keycomparer;
                     _keycomparer = new CompatibleComparer(keyComparer.HashCodeProvider, value);
                 }
                 else if (_keycomparer == null)
