@@ -469,10 +469,10 @@ get_virtual_method (InterpMethod *imethod, MonoVTable *vtable)
 	MonoMethod *m = imethod->method;
 	MonoDomain *domain = imethod->domain;
 	InterpMethod *ret = NULL;
-	ERROR_DECL (error);
 
 #ifndef DISABLE_REMOTING
 	if (mono_class_is_transparent_proxy (vtable->klass)) {
+		ERROR_DECL (error);
 		MonoMethod *remoting_invoke_method = mono_marshal_get_remoting_invoke_with_check (m, error);
 		mono_error_assert_ok (error);
 		ret = mono_interp_get_imethod (domain, remoting_invoke_method, error);
@@ -483,6 +483,7 @@ get_virtual_method (InterpMethod *imethod, MonoVTable *vtable)
 
 	if ((m->flags & METHOD_ATTRIBUTE_FINAL) || !(m->flags & METHOD_ATTRIBUTE_VIRTUAL)) {
 		if (m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) {
+			ERROR_DECL (error);
 			ret = mono_interp_get_imethod (domain, mono_marshal_get_synchronized_wrapper (m), error);
 			mono_error_cleanup (error); /* FIXME: don't swallow the error */
 		} else {
@@ -511,6 +512,7 @@ get_virtual_method (InterpMethod *imethod, MonoVTable *vtable)
 			context.class_inst = mono_class_get_generic_container (virtual_method->klass)->context.class_inst;
 		context.method_inst = mono_method_get_context (m)->method_inst;
 
+		ERROR_DECL (error);
 		virtual_method = mono_class_inflate_generic_method_checked (virtual_method, &context, error);
 		mono_error_cleanup (error); /* FIXME: don't swallow the error */
 	}
@@ -523,6 +525,7 @@ get_virtual_method (InterpMethod *imethod, MonoVTable *vtable)
 		virtual_method = mono_marshal_get_synchronized_wrapper (virtual_method);
 	}
 
+	ERROR_DECL (error);
 	InterpMethod *virtual_imethod = mono_interp_get_imethod (domain, virtual_method, error);
 	mono_error_cleanup (error); /* FIXME: don't swallow the error */
 	return virtual_imethod;
@@ -2894,8 +2897,7 @@ mono_interp_load_remote_field (
 	InterpMethod* imethod,
 	MonoObject* o,
 	const guint16* ip,
-	stackval* sp,
-	MonoError* error)
+	stackval* sp)
 {
 	g_assert (o); // Caller checks and throws exception properly.
 
@@ -2906,9 +2908,9 @@ mono_interp_load_remote_field (
 	gpointer tmp;
 	if (mono_object_is_transparent_proxy (o)) {
 		MonoClass * const klass = ((MonoTransparentProxy*)o)->remote_class->proxy_class;
+		ERROR_DECL (error);
 		addr = mono_load_remote_field_checked (o, klass, field, &tmp, error);
 		mono_error_cleanup (error); /* FIXME: don't swallow the error */
-		error_init_reuse (error);
 	} else
 #endif
 		addr = (char*)o + field->offset;
@@ -2925,8 +2927,7 @@ mono_interp_load_remote_field_vt (
 	MonoObject* o,
 	const guint16* ip,
 	stackval* sp,
-	guchar* vt_sp,
-	MonoError* error)
+	guchar* vt_sp)
 {
 	g_assert (o); // Caller checks and throws exception properly.
 
@@ -2939,9 +2940,9 @@ mono_interp_load_remote_field_vt (
 	gpointer tmp;
 	if (mono_object_is_transparent_proxy (o)) {
 		klass = ((MonoTransparentProxy*)o)->remote_class->proxy_class;
+		ERROR_DECL (error);
 		addr = mono_load_remote_field_checked (o, klass, field, &tmp, error);
 		mono_error_cleanup (error); /* FIXME: don't swallow the error */
-		error_init_reuse (error);
 	} else
 #endif
 		addr = (char*)o + field->offset;
@@ -2996,8 +2997,11 @@ mono_interp_calli_nat_dynamic_pinvoke (
 		if (mspecs [i])
 			mono_metadata_free_marshal_spec (mspecs [i]);
 
-	child_frame->imethod = mono_interp_get_imethod (imethod->domain, m, error);
-	mono_error_cleanup (error); /* FIXME: don't swallow the error */
+	{
+		ERROR_DECL (error);
+		child_frame->imethod = mono_interp_get_imethod (imethod->domain, m, error);
+		mono_error_cleanup (error); /* FIXME: don't swallow the error */
+	}
 
 	interp_exec_method (child_frame, context, error);
 }
@@ -4849,13 +4853,13 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 
 		MINT_IN_CASE(MINT_LDRMFLD)
 			NULL_CHECK (sp [-1].data.o);
-			mono_interp_load_remote_field (imethod, sp [-1].data.o, ip, sp, error);
+			mono_interp_load_remote_field (imethod, sp [-1].data.o, ip, sp);
 			ip += 2;
 			MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_LDRMFLD_VT)
 			NULL_CHECK (sp [-1].data.o);
-			vt_sp = mono_interp_load_remote_field_vt (imethod, sp [-1].data.o, ip, sp, vt_sp, error);
+			vt_sp = mono_interp_load_remote_field_vt (imethod, sp [-1].data.o, ip, sp, vt_sp);
 			ip += 2;
 			MINT_IN_BREAK;
 
