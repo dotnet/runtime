@@ -5480,10 +5480,12 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 				mono_array_set_fast ((MonoArray *)o, double, aindex, sp [2].data.f);
 				break;
 			case MINT_STELEM_REF: {
-				MonoObject *isinst_obj = mono_object_isinst_checked (sp [2].data.o, m_class_get_element_class (mono_object_class (o)), error);
-				mono_error_cleanup (error); /* FIXME: don't swallow the error */
-				if (sp [2].data.p && !isinst_obj)
-					THROW_EX (mono_get_exception_array_type_mismatch (), ip);
+				if (sp [2].data.p) {
+					MonoObject *isinst_obj = mono_object_isinst_checked (sp [2].data.o, m_class_get_element_class (mono_object_class (o)), error);
+					mono_error_cleanup (error); /* FIXME: don't swallow the error */
+					if (!isinst_obj)
+						THROW_EX (mono_get_exception_array_type_mismatch (), ip);
+				}
 				mono_array_setref_fast ((MonoArray *) o, aindex, sp [2].data.p);
 				break;
 			}
