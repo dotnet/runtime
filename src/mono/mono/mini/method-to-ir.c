@@ -3759,6 +3759,15 @@ mono_emit_load_got_addr (MonoCompile *cfg)
 	MONO_ADD_INS (cfg->bb_exit, dummy_use);
 }
 
+static gboolean
+method_does_not_return (MonoMethod *method)
+{
+	// FIXME: Under netcore, these are decorated with the [DoesNotReturn] attribute
+	return m_class_get_image (method->klass) == mono_defaults.corlib &&
+		!strcmp (m_class_get_name (method->klass), "ThrowHelper") &&
+		strstr (method->name, "Throw") == method->name;
+}
+
 static int inline_limit, llvm_jit_inline_limit;
 static gboolean inline_limit_inited;
 
@@ -3908,12 +3917,8 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 	if (mono_profiler_coverage_instrumentation_enabled (method))
 		return FALSE;
 
-#ifdef ENABLE_NETCORE
-	if (m_class_get_image (method->klass) == mono_defaults.corlib && 
-		!strcmp (m_class_get_name (method->klass), "ThrowHelper")) {
+	if (method_does_not_return (method))
 		return FALSE;
-	}
-#endif
 		
 	return TRUE;
 }
@@ -6978,6 +6983,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			gboolean delegate_invoke; delegate_invoke = FALSE;
 			gboolean direct_icall; direct_icall = FALSE;
 			gboolean tailcall_calli; tailcall_calli = FALSE;
+			gboolean noreturn; noreturn = FALSE;
 
 			// Variables shared by CEE_CALLI and CEE_CALL/CEE_CALLVIRT.
 			common_call = FALSE;
@@ -7157,8 +7163,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				virtual_ = FALSE;
 			}
 
-			if (cmethod && m_class_get_image (cmethod->klass) == mono_defaults.corlib && !strcmp (m_class_get_name (cmethod->klass), "ThrowHelper"))
+			if (cmethod && method_does_not_return (cmethod)) {
 				cfg->cbb->out_of_line = TRUE;
+				noreturn = TRUE;
+			}
 
 			cdata.method = method;
 			cdata.inst_tailcall = inst_tailcall;
@@ -7771,6 +7779,10 @@ call_end:
 			if (cmethod)
 				ins = handle_call_res_devirt (cfg, cmethod, ins);
 
+			if (noreturn) {
+				MONO_INST_NEW (cfg, ins, OP_NOT_REACHED);
+				MONO_ADD_INS (cfg->cbb, ins);
+			}
 calli_end:
 			if ((tailcall_remove_ret || (common_call && tailcall)) && !cfg->llvm_only) {
 				link_bblock (cfg, cfg->cbb, end_bblock);
