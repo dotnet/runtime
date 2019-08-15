@@ -394,8 +394,7 @@ namespace ABIStress
                 }
             }
 
-            //object callerResult = caller.Invoke(null, outerArgs);
-            object callerResult = InvokeMethodDynamicallyButWithoutReflection(caller, outerArgs);
+            object callerResult = caller.Invoke(null, outerArgs);
 
             if (Config.Verbose)
             {
@@ -406,30 +405,9 @@ namespace ABIStress
                     DumpObject(innerArgs[j]);
                 }
             }
-            //object calleeResult = callee.Method.Invoke(null, innerArgs);
-            object calleeResult = InvokeMethodDynamicallyButWithoutReflection(callee, innerArgs);
+            object calleeResult = callee.Invoke(null, innerArgs);
 
             return (callerResult, calleeResult);
-        }
-
-        // This function works around a reflection bug on ARM64:
-        // https://github.com/dotnet/coreclr/issues/25993
-        private static object InvokeMethodDynamicallyButWithoutReflection(MethodInfo mi, object[] args)
-        {
-            DynamicMethod dynCaller = new DynamicMethod(
-                $"DynCaller", typeof(object), new Type[0], typeof(Program).Module);
-
-            ILGenerator g = dynCaller.GetILGenerator();
-            foreach (var arg in args)
-                new ConstantValue(new TypeEx(arg.GetType()), arg).Emit(g);
-
-            g.Emit(OpCodes.Call, mi);
-            if (mi.ReturnType.IsValueType)
-                g.Emit(OpCodes.Box, mi.ReturnType);
-            g.Emit(OpCodes.Ret);
-
-            Func<object> f = (Func<object>)dynCaller.CreateDelegate(typeof(Func<object>));
-            return f();
         }
 
         private static void WriteSignature(MethodInfo mi)
