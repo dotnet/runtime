@@ -2050,6 +2050,26 @@ namespace System.Collections.Immutable.Tests
             });
         }
 
+        public static IEnumerable<object[]> IStructuralComparableCompareToDefaultAndNonImmutableArrayInvalidData()
+        {
+            yield return new object[] { new int[0] };
+            yield return new object[] { new int[1] };
+            yield return new object[] { new string[0] };
+            yield return new object[] { new string[1] };
+        }
+
+        [Theory]
+        [MemberData(nameof(IStructuralComparableCompareToDefaultAndNonImmutableArrayInvalidData))]
+        public void IStructuralComparableCompareToDefaultAndNonImmutableArrayInvalid(object other)
+        {
+            var comparers = SharedComparers<int>().OfType<IComparer>().Except(new IComparer[] { null });
+
+            Assert.All(comparers, comparer =>
+            {
+                AssertExtensions.Throws<ArgumentException>("other", () => ((IStructuralComparable)s_emptyDefault).CompareTo(other, comparer));
+            });
+        }
+
         [Theory]
         [MemberData(nameof(IStructuralComparableCompareToNullComparerArgumentInvalidData))]
         public void IStructuralComparableCompareToNullComparerArgumentInvalid(IEnumerable<int> source, object other)
