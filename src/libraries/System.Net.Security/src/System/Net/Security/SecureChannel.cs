@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -22,7 +23,7 @@ namespace System.Net.Security
         internal const int ReadHeaderSize = 5;
 
         private SafeFreeCredentials _credentialsHandle;
-        private SafeDeleteContext _securityContext;
+        private SafeDeleteSslContext _securityContext;
 
         private SslConnectionInfo _connectionInfo;
         private X509Certificate _selectedClientCertificate;
@@ -139,6 +140,7 @@ namespace System.Net.Security
 
         internal bool IsValidContext
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 return !(_securityContext == null || _securityContext.IsInvalid);
@@ -337,7 +339,7 @@ namespace System.Net.Security
             // Acquire possible Client Certificate information and set it on the handle.
             X509Certificate clientCertificate = null;        // This is a candidate that can come from the user callback or be guessed when targeting a session restart.
             List<X509Certificate> filteredCerts = null;      // This is an intermediate client certs collection that try to use if no selectedCert is available yet.
-            string[] issuers = null;                         // This is a list of issuers sent by the server, only valid is we do know what the server cert is.
+            string[] issuers;                                // This is a list of issuers sent by the server, only valid is we do know what the server cert is.
 
             bool sessionRestartAttempt = false; // If true and no cached creds we will use anonymous creds.
 
@@ -351,8 +353,7 @@ namespace System.Net.Security
                 X509Certificate2 remoteCert = null;
                 try
                 {
-                    X509Certificate2Collection dummyCollection;
-                    remoteCert = CertificateValidationPal.GetRemoteCertificate(_securityContext, out dummyCollection);
+                    remoteCert = CertificateValidationPal.GetRemoteCertificate(_securityContext, out X509Certificate2Collection dummyCollection);
                     if (_sslAuthenticationOptions.ClientCertificates == null)
                     {
                         _sslAuthenticationOptions.ClientCertificates = new X509CertificateCollection();
@@ -561,7 +562,7 @@ namespace System.Net.Security
                 //
                 // SECURITY: selectedCert ref if not null is a safe object that does not depend on possible **user** inherited X509Certificate type.
                 //
-                byte[] guessedThumbPrint = selectedCert == null ? null : selectedCert.GetCertHash();
+                byte[] guessedThumbPrint = selectedCert?.GetCertHash();
                 SafeFreeCredentials cachedCredentialHandle = SslSessionsCache.TryCachedCredential(guessedThumbPrint, _sslAuthenticationOptions.EnabledSslProtocols, _sslAuthenticationOptions.IsServer, _sslAuthenticationOptions.EncryptionPolicy);
 
                 // We can probably do some optimization here. If the selectedCert is returned by the delegate
@@ -944,21 +945,19 @@ namespace System.Net.Security
             if (NetEventSource.IsEnabled)
                 NetEventSource.Enter(this, payload, offset, count);
 
-            if (offset < 0 || offset > (payload == null ? 0 : payload.Length))
+            if ((uint)offset > (uint)(payload == null ? 0 : payload.Length))
             {
                 NetEventSource.Fail(this, "Argument 'offset' out of range.");
                 throw new ArgumentOutOfRangeException(nameof(offset));
             }
 
-            if (count < 0 || count > (payload == null ? 0 : payload.Length - offset))
+            if ((uint)count > (uint)(payload == null ? 0 : payload.Length - offset))
             {
                 NetEventSource.Fail(this, "Argument 'count' out of range.");
                 throw new ArgumentOutOfRangeException(nameof(count));
             }
 
-            SecurityStatusPal secStatus = SslStreamPal.DecryptMessage(_securityContext, payload, ref offset, ref count);
-
-            return secStatus;
+            return SslStreamPal.DecryptMessage(_securityContext, payload, ref offset, ref count);
         }
 
         /*++
@@ -1313,7 +1312,7 @@ namespace System.Net.Security
         {
             // If it's not done, then there's got to be an error, even if it's
             // a Handshake message up, and we only have a Warning message.
-            return this.Done ? null : SslStreamPal.GetException(Status);
+            return Done ? null : SslStreamPal.GetException(Status);
         }
 
 #if TRACE_VERBOSE

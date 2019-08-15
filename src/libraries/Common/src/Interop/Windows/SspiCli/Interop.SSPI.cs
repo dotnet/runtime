@@ -4,6 +4,7 @@
 
 using System;
 using System.Net.Security;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -25,7 +26,11 @@ internal static partial class Interop
 
             public bool IsZero
             {
-                get { return dwLower == IntPtr.Zero && dwUpper == IntPtr.Zero; }
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get
+                {
+                    return dwLower == IntPtr.Zero && dwUpper == IntPtr.Zero;
+                }
             }
 
             internal void SetToInvalid()

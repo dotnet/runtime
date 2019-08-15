@@ -27,13 +27,13 @@ namespace System.Net.Security
         {
         }
 
-        public static SecurityStatusPal AcceptSecurityContext(ref SafeFreeCredentials credential, ref SafeDeleteContext context,
+        public static SecurityStatusPal AcceptSecurityContext(ref SafeFreeCredentials credential, ref SafeDeleteSslContext context,
             ArraySegment<byte> inputBuffer, ref byte[] outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
         {
             return HandshakeInternal(credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
         }
 
-        public static SecurityStatusPal InitializeSecurityContext(ref SafeFreeCredentials credential, ref SafeDeleteContext context, string targetName,
+        public static SecurityStatusPal InitializeSecurityContext(ref SafeFreeCredentials credential, ref SafeDeleteSslContext context, string targetName,
             ArraySegment<byte> inputBuffer, ref byte[] outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
         {
             return HandshakeInternal(credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
@@ -99,7 +99,7 @@ namespace System.Net.Security
             return Interop.Ssl.ConvertAlpnProtocolListToByteArray(applicationProtocols);
         }
 
-        private static SecurityStatusPal HandshakeInternal(SafeFreeCredentials credential, ref SafeDeleteContext context,
+        private static SecurityStatusPal HandshakeInternal(SafeFreeCredentials credential, ref SafeDeleteSslContext context,
             ArraySegment<byte> inputBuffer, ref byte[] outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
         {
             Debug.Assert(!credential.IsInvalid);

@@ -28,7 +28,6 @@ namespace System.Net.Security
         private static readonly AsyncCallback s_writeCallback = new AsyncCallback(WriteCallback);
 
         private readonly Stream _innerStream;
-        private readonly bool _leaveStreamOpen;
 
         private Exception _exception;
 
@@ -53,12 +52,11 @@ namespace System.Net.Security
         // This is a state variable used to gracefully handle auth confirmation.
         private bool _remoteOk = false;
 
-        internal NegoState(Stream innerStream, bool leaveStreamOpen)
+        internal NegoState(Stream innerStream)
         {
             Debug.Assert(innerStream != null);
 
             _innerStream = innerStream;
-            _leaveStreamOpen = leaveStreamOpen;
         }
 
         internal static string DefaultPackage
@@ -773,8 +771,7 @@ namespace System.Net.Security
 
         private unsafe byte[] GetOutgoingBlob(byte[] incomingBlob, ref Exception e)
         {
-            SecurityStatusPal statusCode;
-            byte[] message = _context.GetOutgoingBlob(incomingBlob, false, out statusCode);
+            byte[] message = _context.GetOutgoingBlob(incomingBlob, false, out SecurityStatusPal statusCode);
 
             if (IsError(statusCode))
             {
