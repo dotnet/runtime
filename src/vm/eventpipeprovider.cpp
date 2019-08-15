@@ -224,17 +224,33 @@ void EventPipeProvider::AddEvent(EventPipeEvent &event)
         // of pairs of null terminated strings. The first member of the pair is
         // the key and the second is the value.
         // To convert to this format we need to convert all '=' and ';'
-        // characters to '\0'.
+        // characters to '\0', except when in a quoted string.
         SString dstBuffer;
         SString(pFilterData).ConvertToUTF8(dstBuffer);
 
         const COUNT_T BUFFER_SIZE = dstBuffer.GetCount() + 1;
         buffer.AllocThrows(BUFFER_SIZE);
+        BOOL isQuotedValue = false;
+        COUNT_T j = 0;
         for (COUNT_T i = 0; i < BUFFER_SIZE; ++i)
-            buffer[i] = (dstBuffer[i] == '=' || dstBuffer[i] == ';') ? '\0' : dstBuffer[i];
+        {
+            // if a value is a quoted string, leave the quotes out from the destination
+            // and don't replace `=` or `;` characters until leaving the quoted section
+            // e.g., key="a;value=";foo=bar --> { key\0a;value=\0foo\0bar\0 }
+            if (dstBuffer[i] == '"')
+            {
+                isQuotedValue = !isQuotedValue;
+                continue;
+            }
+            buffer[j++] = ((dstBuffer[i] == '=' || dstBuffer[i] == ';') && !isQuotedValue) ? '\0' : dstBuffer[i];
+        }
+
+        // In case we skipped over quotes in the filter string, shrink the buffer size accordingly
+        if (j < dstBuffer.GetCount())
+            buffer.Shrink(j + 1);
 
         eventFilterDescriptor.Ptr = reinterpret_cast<ULONGLONG>(buffer.Ptr());
-        eventFilterDescriptor.Size = static_cast<ULONG>(BUFFER_SIZE);
+        eventFilterDescriptor.Size = static_cast<ULONG>(buffer.Size());
         eventFilterDescriptor.Type = 0; // EventProvider.cs: `internal enum ControllerCommand.Update`
         isEventFilterDescriptorInitialized = true;
     }
