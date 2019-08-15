@@ -478,7 +478,7 @@ namespace System
 
                 if (Unsafe.SizeOf<T>() == sizeof(char))
                 {
-                    ref var valueRef = ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(values));
+                    ref char valueRef = ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(values));
                     if (values.Length == 5)
                     {
                         // Length 5 is a common length for FileSystemName expression (", <, >, *, ?) and in preference to 2 as it has an explicit overload
@@ -647,7 +647,7 @@ namespace System
 
                 if (Unsafe.SizeOf<T>() == sizeof(char))
                 {
-                    ref var valueRef = ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(values));
+                    ref char valueRef = ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(values));
                     if (values.Length == 5)
                     {
                         // Length 5 is a common length for FileSystemName expression (", <, >, *, ?) and in preference to 2 as it has an explicit overload

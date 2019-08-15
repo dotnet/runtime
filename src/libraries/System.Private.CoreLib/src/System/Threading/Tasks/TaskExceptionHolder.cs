@@ -146,7 +146,7 @@ namespace System.Threading.Tasks
             Debug.Assert(exceptionObject != null, "AddFaultException(): Expected a non-null exceptionObject");
 
             // Initialize the exceptions list if necessary.  The list should be non-null iff it contains exceptions.
-            var exceptions = m_faultExceptions;
+            List<ExceptionDispatchInfo>? exceptions = m_faultExceptions;
             if (exceptions == null) m_faultExceptions = exceptions = new List<ExceptionDispatchInfo>(1);
             else Debug.Assert(exceptions.Count > 0, "Expected existing exceptions list to have > 0 exceptions.");
 
@@ -170,7 +170,7 @@ namespace System.Threading.Tasks
 #if DEBUG
                         int numExceptions = 0;
 #endif
-                        foreach (var exc in exColl)
+                        foreach (Exception exc in exColl)
                         {
 #if DEBUG
                             Debug.Assert(exc != null, "No exceptions should be null");
@@ -190,7 +190,7 @@ namespace System.Threading.Tasks
                             exceptions.AddRange(ediColl);
 #if DEBUG
                             Debug.Assert(exceptions.Count > 0, "There should be at least one dispatch info.");
-                            foreach (var tmp in exceptions)
+                            foreach (ExceptionDispatchInfo tmp in exceptions)
                             {
                                 Debug.Assert(tmp != null, "No dispatch infos should be null");
                             }
@@ -254,7 +254,7 @@ namespace System.Threading.Tasks
         /// <returns>The aggregate exception to throw.</returns>
         internal AggregateException CreateExceptionObject(bool calledFromFinalizer, Exception? includeThisException)
         {
-            var exceptions = m_faultExceptions;
+            List<ExceptionDispatchInfo>? exceptions = m_faultExceptions;
             Debug.Assert(exceptions != null, "Expected an initialized list.");
             Debug.Assert(exceptions.Count > 0, "Expected at least one exception.");
 
@@ -300,7 +300,7 @@ namespace System.Threading.Tasks
         /// </returns>
         internal ExceptionDispatchInfo? GetCancellationExceptionDispatchInfo()
         {
-            var edi = m_cancellationException;
+            ExceptionDispatchInfo? edi = m_cancellationException;
             Debug.Assert(edi == null || edi.SourceException is OperationCanceledException,
                 "Expected the EDI to be for an OperationCanceledException");
             return edi;

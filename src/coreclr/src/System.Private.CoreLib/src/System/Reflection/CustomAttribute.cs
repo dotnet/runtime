@@ -965,7 +965,7 @@ namespace System.Reflection
             bool useObjectArray = (caType.IsValueType || caType.ContainsGenericParameters);
             RuntimeType arrayType = useObjectArray ? (RuntimeType)typeof(object) : caType;
 
-            for (var i = 0; i < pcas.Count; i++)
+            for (int i = 0; i < pcas.Count; i++)
                 result.Add(pcas[i]);
 
             while (type != (RuntimeType)typeof(object) && type != null)
@@ -976,7 +976,7 @@ namespace System.Reflection
             }
 
             object[] typedResult = CreateAttributeArrayHelper(arrayType, result.Count);
-            for (var i = 0; i < result.Count; i++)
+            for (int i = 0; i < result.Count; i++)
             {
                 typedResult[i] = result[i];
             }
@@ -1008,7 +1008,7 @@ namespace System.Reflection
             bool useObjectArray = (caType.IsValueType || caType.ContainsGenericParameters);
             RuntimeType arrayType = useObjectArray ? (RuntimeType)typeof(object) : caType;
 
-            for (var i = 0; i < pcas.Count; i++)
+            for (int i = 0; i < pcas.Count; i++)
                 result.Add(pcas[i]);
 
             while (method != null)
@@ -1019,7 +1019,7 @@ namespace System.Reflection
             }
 
             object[] typedResult = CreateAttributeArrayHelper(arrayType, result.Count);
-            for (var i = 0; i < result.Count; i++)
+            for (int i = 0; i < result.Count; i++)
             {
                 typedResult[i] = result[i];
             }
@@ -1156,7 +1156,7 @@ namespace System.Reflection
             RuntimeType arrayType = useObjectArray ? (RuntimeType)typeof(object) : attributeFilterType!;
 
             object[] result = CreateAttributeArrayHelper(arrayType, attributes.Count + pcaCount);
-            for (var i = 0; i < attributes.Count; i++)
+            for (int i = 0; i < attributes.Count; i++)
             {
                 result[i] = attributes[i];
             }

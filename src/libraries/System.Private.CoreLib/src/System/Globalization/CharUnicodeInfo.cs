@@ -124,7 +124,7 @@ namespace System.Globalization
                 // Note that & has the lower precedence than addition, so don't forget the parathesis.
                 index = NumericLevel2Index[(index << 4) + ((ch >> 4) & 0x000f)];
                 index = NumericLevel3Index[(index << 4) + (ch & 0x000f)];
-                ref var value = ref Unsafe.AsRef(in NumericValues[index * 8]);
+                ref byte value = ref Unsafe.AsRef(in NumericValues[index * 8]);
 
                 if (BitConverter.IsLittleEndian)
                 {

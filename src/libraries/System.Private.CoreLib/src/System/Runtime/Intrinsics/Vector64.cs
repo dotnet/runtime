@@ -157,7 +157,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector64{Byte}" /> with all elements initialized to <paramref name="value" />.</returns>
         public static unsafe Vector64<byte> Create(byte value)
         {
-            var pResult = stackalloc byte[8]
+            byte* pResult = stackalloc byte[8]
             {
                 value,
                 value,
@@ -185,7 +185,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector64{Int16}" /> with all elements initialized to <paramref name="value" />.</returns>
         public static unsafe Vector64<short> Create(short value)
         {
-            var pResult = stackalloc short[4]
+            short* pResult = stackalloc short[4]
             {
                 value,
                 value,
@@ -201,7 +201,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector64{Int32}" /> with all elements initialized to <paramref name="value" />.</returns>
         public static unsafe Vector64<int> Create(int value)
         {
-            var pResult = stackalloc int[2]
+            int* pResult = stackalloc int[2]
             {
                 value,
                 value,
@@ -224,7 +224,7 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector64<sbyte> Create(sbyte value)
         {
-            var pResult = stackalloc sbyte[8]
+            sbyte* pResult = stackalloc sbyte[8]
             {
                 value,
                 value,
@@ -244,7 +244,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector64{Single}" /> with all elements initialized to <paramref name="value" />.</returns>
         public static unsafe Vector64<float> Create(float value)
         {
-            var pResult = stackalloc float[2]
+            float* pResult = stackalloc float[2]
             {
                 value,
                 value,
@@ -259,7 +259,7 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector64<ushort> Create(ushort value)
         {
-            var pResult = stackalloc ushort[4]
+            ushort* pResult = stackalloc ushort[4]
             {
                 value,
                 value,
@@ -276,7 +276,7 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector64<uint> Create(uint value)
         {
-            var pResult = stackalloc uint[2]
+            uint* pResult = stackalloc uint[2]
             {
                 value,
                 value,
@@ -306,7 +306,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector64{Byte}" /> with each element initialized to corresponding specified value.</returns>
         public static unsafe Vector64<byte> Create(byte e0, byte e1, byte e2, byte e3, byte e4, byte e5, byte e6, byte e7)
         {
-            var pResult = stackalloc byte[8]
+            byte* pResult = stackalloc byte[8]
             {
                 e0,
                 e1,
@@ -329,7 +329,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector64{Int16}" /> with each element initialized to corresponding specified value.</returns>
         public static unsafe Vector64<short> Create(short e0, short e1, short e2, short e3)
         {
-            var pResult = stackalloc short[4]
+            short* pResult = stackalloc short[4]
             {
                 e0,
                 e1,
@@ -346,7 +346,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector64{Int32}" /> with each element initialized to corresponding specified value.</returns>
         public static unsafe Vector64<int> Create(int e0, int e1)
         {
-            var pResult = stackalloc int[2]
+            int* pResult = stackalloc int[2]
             {
                 e0,
                 e1,
@@ -368,7 +368,7 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector64<sbyte> Create(sbyte e0, sbyte e1, sbyte e2, sbyte e3, sbyte e4, sbyte e5, sbyte e6, sbyte e7)
         {
-            var pResult = stackalloc sbyte[8]
+            sbyte* pResult = stackalloc sbyte[8]
             {
                 e0,
                 e1,
@@ -389,7 +389,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector64{Single}" /> with each element initialized to corresponding specified value.</returns>
         public static unsafe Vector64<float> Create(float e0, float e1)
         {
-            var pResult = stackalloc float[2]
+            float* pResult = stackalloc float[2]
             {
                 e0,
                 e1,
@@ -407,7 +407,7 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector64<ushort> Create(ushort e0, ushort e1, ushort e2, ushort e3)
         {
-            var pResult = stackalloc ushort[4]
+            ushort* pResult = stackalloc ushort[4]
             {
                 e0,
                 e1,
@@ -425,7 +425,7 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector64<uint> Create(uint e0, uint e1)
         {
-            var pResult = stackalloc uint[2]
+            uint* pResult = stackalloc uint[2]
             {
                 e0,
                 e1,
@@ -515,7 +515,7 @@ namespace System.Runtime.Intrinsics
             // This relies on us stripping the "init" flag from the ".locals"
             // declaration to let the upper bits be uninitialized.
 
-            var pResult = stackalloc byte[8];
+            byte* pResult = stackalloc byte[8];
             pResult[0] = value;
             return Unsafe.AsRef<Vector64<byte>>(pResult);
         }
@@ -528,7 +528,7 @@ namespace System.Runtime.Intrinsics
             // This relies on us stripping the "init" flag from the ".locals"
             // declaration to let the upper bits be uninitialized.
 
-            var pResult = stackalloc short[4];
+            short* pResult = stackalloc short[4];
             pResult[0] = value;
             return Unsafe.AsRef<Vector64<short>>(pResult);
         }
@@ -541,7 +541,7 @@ namespace System.Runtime.Intrinsics
             // This relies on us stripping the "init" flag from the ".locals"
             // declaration to let the upper bits be uninitialized.
 
-            var pResult = stackalloc int[2];
+            int* pResult = stackalloc int[2];
             pResult[0] = value;
             return Unsafe.AsRef<Vector64<int>>(pResult);
         }
@@ -555,7 +555,7 @@ namespace System.Runtime.Intrinsics
             // This relies on us stripping the "init" flag from the ".locals"
             // declaration to let the upper bits be uninitialized.
 
-            var pResult = stackalloc sbyte[8];
+            sbyte* pResult = stackalloc sbyte[8];
             pResult[0] = value;
             return Unsafe.AsRef<Vector64<sbyte>>(pResult);
         }
@@ -568,7 +568,7 @@ namespace System.Runtime.Intrinsics
             // This relies on us stripping the "init" flag from the ".locals"
             // declaration to let the upper bits be uninitialized.
 
-            var pResult = stackalloc float[2];
+            float* pResult = stackalloc float[2];
             pResult[0] = value;
             return Unsafe.AsRef<Vector64<float>>(pResult);
         }
@@ -582,7 +582,7 @@ namespace System.Runtime.Intrinsics
             // This relies on us stripping the "init" flag from the ".locals"
             // declaration to let the upper bits be uninitialized.
 
-            var pResult = stackalloc ushort[4];
+            ushort* pResult = stackalloc ushort[4];
             pResult[0] = value;
             return Unsafe.AsRef<Vector64<ushort>>(pResult);
         }
@@ -596,7 +596,7 @@ namespace System.Runtime.Intrinsics
             // This relies on us stripping the "init" flag from the ".locals"
             // declaration to let the upper bits be uninitialized.
 
-            var pResult = stackalloc uint[2];
+            uint* pResult = stackalloc uint[2];
             pResult[0] = value;
             return Unsafe.AsRef<Vector64<uint>>(pResult);
         }
@@ -686,7 +686,7 @@ namespace System.Runtime.Intrinsics
             // This relies on us stripping the "init" flag from the ".locals"
             // declaration to let the upper bits be uninitialized.
 
-            var pResult = stackalloc byte[Vector128.Size];
+            byte* pResult = stackalloc byte[Vector128.Size];
             Unsafe.AsRef<Vector64<T>>(pResult) = vector;
             return Unsafe.AsRef<Vector128<T>>(pResult);
         }

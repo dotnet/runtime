@@ -309,7 +309,7 @@ namespace System.Diagnostics.Tracing
 
         internal byte[] GetMetadata()
         {
-            var size = this.impl.Encode(null);
+            int size = this.impl.Encode(null);
             var metadata = new byte[size];
             this.impl.Encode(metadata);
             return metadata;
@@ -379,7 +379,7 @@ namespace System.Diagnostics.Tracing
             {
                 int size = 0;
 
-                foreach (var field in this.fields)
+                foreach (FieldMetadata field in this.fields)
                 {
                     field.Encode(ref size, metadata);
                 }

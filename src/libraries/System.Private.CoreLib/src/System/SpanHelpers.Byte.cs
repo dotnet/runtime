@@ -69,7 +69,7 @@ namespace System
             int offset = -1;
             for (int i = 0; i < valueLength; i++)
             {
-                var tempIndex = IndexOf(ref searchSpace, Unsafe.Add(ref value, i), searchSpaceLength);
+                int tempIndex = IndexOf(ref searchSpace, Unsafe.Add(ref value, i), searchSpaceLength);
                 if ((uint)tempIndex < (uint)offset)
                 {
                     offset = tempIndex;
@@ -94,7 +94,7 @@ namespace System
             int offset = -1;
             for (int i = 0; i < valueLength; i++)
             {
-                var tempIndex = LastIndexOf(ref searchSpace, Unsafe.Add(ref value, i), searchSpaceLength);
+                int tempIndex = LastIndexOf(ref searchSpace, Unsafe.Add(ref value, i), searchSpaceLength);
                 if (tempIndex > offset)
                     offset = tempIndex;
             }
@@ -1592,7 +1592,7 @@ namespace System
             else
             {
                 // Flag least significant power of two bit
-                var powerOfTwoFlag = match ^ (match - 1);
+                ulong powerOfTwoFlag = match ^ (match - 1);
                 // Shift all powers of two into the high byte and extract
                 return (int)((powerOfTwoFlag * XorPowerOfTwoToHighByte) >> 57);
             }

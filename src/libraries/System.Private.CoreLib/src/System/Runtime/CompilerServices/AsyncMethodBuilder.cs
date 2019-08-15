@@ -482,7 +482,7 @@ namespace System.Runtime.CompilerServices
             // generating this extra code until a better solution is implemented.
             var box = new AsyncStateMachineBox<TStateMachine>();
 #else
-            var box = AsyncMethodBuilderCore.TrackAsyncMethodCompletion ?
+            AsyncStateMachineBox<TStateMachine> box = AsyncMethodBuilderCore.TrackAsyncMethodCompletion ?
                 CreateDebugFinalizableAsyncStateMachineBox<TStateMachine>() :
                 new AsyncStateMachineBox<TStateMachine>();
 #endif

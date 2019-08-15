@@ -301,7 +301,7 @@ namespace System.Collections.ObjectModel
             {
                 if (array is DictionaryEntry[] dictEntryArray)
                 {
-                    foreach (var item in m_dictionary)
+                    foreach (KeyValuePair<TKey, TValue> item in m_dictionary)
                     {
                         dictEntryArray[index++] = new DictionaryEntry(item.Key, item.Value);
                     }
@@ -316,7 +316,7 @@ namespace System.Collections.ObjectModel
 
                     try
                     {
-                        foreach (var item in m_dictionary)
+                        foreach (KeyValuePair<TKey, TValue> item in m_dictionary)
                         {
                             objects[index++] = new KeyValuePair<TKey, TValue>(item.Key, item.Value);
                         }
@@ -705,7 +705,7 @@ namespace System.Collections.ObjectModel
 
                 try
                 {
-                    foreach (var item in collection)
+                    foreach (T item in collection)
                     {
                         objects[index++] = item;
                     }

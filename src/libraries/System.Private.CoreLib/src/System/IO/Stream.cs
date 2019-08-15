@@ -281,7 +281,7 @@ namespace System.IO
             // don't natively support async IO operations when there are multiple
             // async requests outstanding, we will block the application's main
             // thread if it does a second IO request until the first one completes.
-            var semaphore = EnsureAsyncActiveSemaphoreInitialized();
+            SemaphoreSlim semaphore = EnsureAsyncActiveSemaphoreInitialized();
             Task? semaphoreTask = null;
             if (serializeAsynchronously)
             {
@@ -337,7 +337,7 @@ namespace System.IO
             if (asyncResult == null)
                 throw new ArgumentNullException(nameof(asyncResult));
 
-            var readTask = _activeReadWriteTask;
+            ReadWriteTask? readTask = _activeReadWriteTask;
 
             if (readTask == null)
             {
@@ -444,7 +444,7 @@ namespace System.IO
             // don't natively support async IO operations when there are multiple
             // async requests outstanding, we will block the application's main
             // thread if it does a second IO request until the first one completes.
-            var semaphore = EnsureAsyncActiveSemaphoreInitialized();
+            SemaphoreSlim semaphore = EnsureAsyncActiveSemaphoreInitialized();
             Task? semaphoreTask = null;
             if (serializeAsynchronously)
             {
@@ -544,7 +544,7 @@ namespace System.IO
             if (asyncResult == null)
                 throw new ArgumentNullException(nameof(asyncResult));
 
-            var writeTask = _activeReadWriteTask;
+            ReadWriteTask? writeTask = _activeReadWriteTask;
             if (writeTask == null)
             {
                 throw new ArgumentException(SR.InvalidOperation_WrongAsyncResultOrEndWriteCalledMultiple);
@@ -638,7 +638,7 @@ namespace System.IO
             {
                 Debug.Assert(completedTask is ReadWriteTask);
                 var rwc = (ReadWriteTask)completedTask;
-                var callback = rwc._callback;
+                AsyncCallback? callback = rwc._callback;
                 Debug.Assert(callback != null);
                 rwc._callback = null;
                 callback(rwc);
@@ -651,10 +651,10 @@ namespace System.IO
                 // Get the ExecutionContext.  If there is none, just run the callback
                 // directly, passing in the completed task as the IAsyncResult.
                 // If there is one, process it with ExecutionContext.Run.
-                var context = _context;
+                ExecutionContext? context = _context;
                 if (context == null)
                 {
-                    var callback = _callback;
+                    AsyncCallback? callback = _callback;
                     Debug.Assert(callback != null);
                     _callback = null;
                     callback(completingTask);
@@ -663,7 +663,7 @@ namespace System.IO
                 {
                     _context = null;
 
-                    var invokeAsyncCallback = s_invokeAsyncCallback;
+                    ContextCallback? invokeAsyncCallback = s_invokeAsyncCallback;
                     if (invokeAsyncCallback == null) s_invokeAsyncCallback = invokeAsyncCallback = InvokeAsyncCallback; // benign race condition
 
                     ExecutionContext.RunInternal(context, invokeAsyncCallback, this);

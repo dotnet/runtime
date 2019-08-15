@@ -73,7 +73,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe bool IsFinite(double d)
         {
-            var bits = BitConverter.DoubleToInt64Bits(d);
+            long bits = BitConverter.DoubleToInt64Bits(d);
             return (bits & 0x7FFFFFFFFFFFFFFF) < 0x7FF0000000000000;
         }
 
@@ -82,7 +82,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe bool IsInfinity(double d)
         {
-            var bits = BitConverter.DoubleToInt64Bits(d);
+            long bits = BitConverter.DoubleToInt64Bits(d);
             return (bits & 0x7FFFFFFFFFFFFFFF) == 0x7FF0000000000000;
         }
 
@@ -91,7 +91,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe bool IsNaN(double d)
         {
-            var bits = BitConverter.DoubleToInt64Bits(d);
+            long bits = BitConverter.DoubleToInt64Bits(d);
             return (bits & 0x7FFFFFFFFFFFFFFF) > 0x7FF0000000000000;
         }
 
@@ -116,7 +116,7 @@ namespace System
         // This is probably not worth inlining, it has branches and should be rarely called
         public static unsafe bool IsNormal(double d)
         {
-            var bits = BitConverter.DoubleToInt64Bits(d);
+            long bits = BitConverter.DoubleToInt64Bits(d);
             bits &= 0x7FFFFFFFFFFFFFFF;
             return (bits < 0x7FF0000000000000) && (bits != 0) && ((bits & 0x7FF0000000000000) != 0);
         }
@@ -134,7 +134,7 @@ namespace System
         // This is probably not worth inlining, it has branches and should be rarely called
         public static unsafe bool IsSubnormal(double d)
         {
-            var bits = BitConverter.DoubleToInt64Bits(d);
+            long bits = BitConverter.DoubleToInt64Bits(d);
             bits &= 0x7FFFFFFFFFFFFFFF;
             return (bits < 0x7FF0000000000000) && (bits != 0) && ((bits & 0x7FF0000000000000) == 0);
         }
@@ -260,7 +260,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // 64-bit constants make the IL unusually large that makes the inliner to reject the method
         public override int GetHashCode()
         {
-            var bits = Unsafe.As<double, long>(ref Unsafe.AsRef(in m_value));
+            long bits = Unsafe.As<double, long>(ref Unsafe.AsRef(in m_value));
 
             // Optimized check for IsNan() || IsZero()
             if (((bits - 1) & 0x7FFFFFFFFFFFFFFF) >= 0x7FF0000000000000)

@@ -323,8 +323,8 @@ namespace System
 
             public BigInteger(ulong value)
             {
-                var lower = (uint)(value);
-                var upper = (uint)(value >> 32);
+                uint lower = (uint)(value);
+                uint upper = (uint)(value >> 32);
 
                 _blocks[0] = lower;
                 _blocks[1] = upper;
@@ -1139,7 +1139,7 @@ namespace System
 
                 while (index < length)
                 {
-                    var block = (ulong)(_blocks[index]);
+                    ulong block = (ulong)(_blocks[index]);
                     ulong product = (block << 3) + (block << 1) + carry;
                     carry = product >> 32;
                     _blocks[index] = (uint)(product);
@@ -1177,8 +1177,8 @@ namespace System
 
             public void SetUInt64(ulong value)
             {
-                var lower = (uint)(value);
-                var upper = (uint)(value >> 32);
+                uint lower = (uint)(value);
+                uint upper = (uint)(value >> 32);
 
                 _blocks[0] = lower;
                 _blocks[1] = upper;
@@ -1201,7 +1201,7 @@ namespace System
             public void ShiftLeft(uint shift)
             {
                 // Process blocks high to low so that we can safely process in place
-                var length = _length;
+                int length = _length;
 
                 if ((length == 0) || (shift == 0))
                 {
