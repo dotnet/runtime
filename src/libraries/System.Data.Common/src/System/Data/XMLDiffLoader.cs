@@ -303,10 +303,6 @@ namespace System.Data
             int iRowDepth = row.Depth;
             string value = null;
 
-            if (table == null)
-                throw ExceptionBuilder.DiffgramMissingTable(XmlConvert.DecodeName(row.LocalName));
-
-
             value = row.GetAttribute(Keywords.ROWORDER, Keywords.MSDNS);
             if (!string.IsNullOrEmpty(value))
             {

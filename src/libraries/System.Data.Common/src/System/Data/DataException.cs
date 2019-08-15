@@ -673,7 +673,6 @@ namespace System.Data
         public static Exception CircularComplexType(string name) => _Data(SR.Format(SR.Xml_CircularComplexType, name));
         public static Exception CannotInstantiateAbstract(string name) => _Data(SR.Format(SR.Xml_CannotInstantiateAbstract, name));
         public static Exception InvalidKey(string name) => _Data(SR.Format(SR.Xml_InvalidKey, name));
-        public static Exception DiffgramMissingTable(string name) => _Data(SR.Format(SR.Xml_MissingTable, name));
         public static Exception DiffgramMissingSQL() => _Data(SR.Xml_MissingSQL);
         public static Exception DuplicateConstraintRead(string str) => _Data(SR.Format(SR.Xml_DuplicateConstraint, str));
         public static Exception ColumnTypeConflict(string name) => _Data(SR.Format(SR.Xml_ColumnConflict, name));
