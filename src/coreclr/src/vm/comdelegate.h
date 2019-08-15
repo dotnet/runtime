@@ -194,6 +194,7 @@ struct ShuffleEntry
         OFSMASK      = 0x7fff, // Mask to get stack offset
         OFSREGMASK   = 0x1fff, // Mask to get register index
         SENTINEL     = 0xffff, // Indicates end of shuffle array
+        HELPERREG    = 0xcfff, // Use a helper register as source or destination (used to handle cycles in the shuffling)
     };
 
 #if defined(_TARGET_AMD64_) && !defined(UNIX_AMD64_ABI)

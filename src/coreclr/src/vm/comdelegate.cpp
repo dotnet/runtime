@@ -237,6 +237,22 @@ int GetNormalizedArgumentSlotIndex(UINT16 offset)
 
     return index;
 }
+
+// Node of a directed graph where nodes represent registers / stack slots
+// and edges represent moves of data.
+struct ShuffleGraphNode
+{
+    static const UINT16 NoNode = 0xffff;
+    // Previous node (represents source of data for the register / stack of the current node)
+    UINT16 prev;
+    // Offset of the register / stack slot
+    UINT16 ofs;
+    // Set to true for nodes that are source of data for a destination node
+    UINT8 isSource;
+    // Nodes that are marked are either already processed or don't participate in the shuffling
+    UINT8 isMarked;
+};
+
 #endif // UNIX_AMD64_ABI
 
 VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<ShuffleEntry> * pShuffleEntryArray)
@@ -458,6 +474,7 @@ VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
         _ASSERTE(!iteratorDst.HasNextOfs());
     }
 
+
 #if defined(UNIX_AMD64_ABI)
     // The Unix AMD64 ABI can cause a struct to be passed on stack for the source and in registers for the destination.
     // That can cause some arguments that are passed on stack for the destination to be passed in registers in the source.
@@ -465,39 +482,107 @@ VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
     //   void fn(int, int, int, int, int, struct {int, double}, double, double, double, double, double, double, double, double, double, double)
     // For this signature, the shuffle needs to move slots as follows (please note the "forward" movement of xmm registers):
     //   RDI->RSI, RDX->RCX, R8->RDX, R9->R8, stack[0]->R9, xmm0->xmm1, xmm1->xmm2, ... xmm6->xmm7, xmm7->stack[0], stack[1]->xmm0, stack[2]->stack[1], stack[3]->stack[2]
-    // To prevent overwriting of slots before they are moved, we need to sort the move operations.
+    // To prevent overwriting of slots before they are moved, we need to perform the shuffling in correct order
 
-    NewArrayHolder<bool> filledSlots = new bool[argSlots];
+    NewArrayHolder<ShuffleGraphNode> pGraphNodes = new ShuffleGraphNode[argSlots];
 
-    bool reordered;
-    do
+    // Initialize the graph array
+    for (unsigned int i = 0; i < argSlots; i++)
     {
-        reordered = false;
+        pGraphNodes[i].prev = ShuffleGraphNode::NoNode;
+        pGraphNodes[i].isMarked = true;
+        pGraphNodes[i].isSource = false;
+    }
 
-        for (int i = 0; i < argSlots; i++)
-        {
-            filledSlots[i] = false;
-        }
-        for (unsigned int i = 0; i < pShuffleEntryArray->GetCount(); i++)
-        {
-            entry = (*pShuffleEntryArray)[i];
+    // Build the directed graph representing register and stack slot shuffling. 
+    // The links are directed from destination to source.
+    // During the build also set isSource flag for nodes that are sources of data.
+    // The ones that don't have the isSource flag set are beginnings of non-cyclic 
+    // segments of the graph.
+    for (unsigned int i = 0; i < pShuffleEntryArray->GetCount(); i++)
+    {
+        ShuffleEntry entry = (*pShuffleEntryArray)[i];
 
-            // If the slot that we are moving the argument to was filled in already, we need to move this entry in front
-            // of the entry that filled it in.
-            if (filledSlots[GetNormalizedArgumentSlotIndex(entry.srcofs)])
+        int srcIndex = GetNormalizedArgumentSlotIndex(entry.srcofs);
+        int dstIndex = GetNormalizedArgumentSlotIndex(entry.dstofs);
+
+        // Unmark the node to indicate that it was not processed yet
+        pGraphNodes[srcIndex].isMarked = false;
+        // The node contains a register / stack slot that is a source from which we move data to a destination one
+        pGraphNodes[srcIndex].isSource = true; 
+        pGraphNodes[srcIndex].ofs = entry.srcofs;
+
+        // Unmark the node to indicate that it was not processed yet
+        pGraphNodes[dstIndex].isMarked = false;
+        // Link to the previous node in the graph (source of data for the current node)
+        pGraphNodes[dstIndex].prev = srcIndex;
+        pGraphNodes[dstIndex].ofs = entry.dstofs;
+    }
+
+    // Now that we've built the graph, clear the array, we will regenerate it from the graph ensuring a proper order of shuffling
+    pShuffleEntryArray->Clear();
+
+    // Add all non-cyclic subgraphs to the target shuffle array and mark their nodes as visited
+    for (unsigned int startIndex = 0; startIndex < argSlots; startIndex++)
+    {
+        unsigned int index = startIndex;
+
+        if (!pGraphNodes[index].isMarked && !pGraphNodes[index].isSource)
+        {
+            // This node is not a source, that means it is an end of shuffle chain
+            // Generate shuffle array entries for all nodes in the chain in a correct
+            // order.
+            UINT16 dstOfs = ShuffleEntry::SENTINEL;
+
+            do
             {
-                unsigned int j;
-                for (j = i; (*pShuffleEntryArray)[j].dstofs != entry.srcofs; j--)
-                    (*pShuffleEntryArray)[j] = (*pShuffleEntryArray)[j - 1];
+                pGraphNodes[index].isMarked = true;
+                if (dstOfs != ShuffleEntry::SENTINEL)
+                {
+                    entry.srcofs = pGraphNodes[index].ofs;
+                    entry.dstofs = dstOfs;
+                    pShuffleEntryArray->Append(entry);
+                }
 
-                (*pShuffleEntryArray)[j] = entry;
-                reordered = true;
+                dstOfs = pGraphNodes[index].ofs;
+                index = pGraphNodes[index].prev;
             }
-
-            filledSlots[GetNormalizedArgumentSlotIndex(entry.dstofs)] = true;
+            while (index != ShuffleGraphNode::NoNode);
         }
     }
-    while (reordered);
+
+    // Process all cycles in the graph
+    for (unsigned int startIndex = 0; startIndex < argSlots; startIndex++)
+    {
+        unsigned int index = startIndex;
+
+        if (!pGraphNodes[index].isMarked)
+        {
+            // This node is part of a new cycle as all non-cyclic parts of the graphs were already visited
+
+            // Move the first node register / stack slot to a helper reg
+            UINT16 dstOfs = ShuffleEntry::HELPERREG;
+
+            do
+            {
+                pGraphNodes[index].isMarked = true;
+
+                entry.srcofs = pGraphNodes[index].ofs;
+                entry.dstofs = dstOfs;
+                pShuffleEntryArray->Append(entry);
+
+                dstOfs = pGraphNodes[index].ofs;
+                index = pGraphNodes[index].prev;
+            }
+            while (index != startIndex);
+
+            // Move helper reg to the last node register / stack slot
+            entry.srcofs = ShuffleEntry::HELPERREG;
+            entry.dstofs = dstOfs;
+            pShuffleEntryArray->Append(entry);
+        }
+    }
+
 #endif // UNIX_AMD64_ABI
 
     entry.srcofs = ShuffleEntry::SENTINEL;

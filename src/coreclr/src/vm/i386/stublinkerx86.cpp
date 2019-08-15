@@ -1733,6 +1733,49 @@ VOID StubLinkerCPU::X64EmitMovSSToMem(X86Reg Xmmreg, X86Reg baseReg, __int32 ofs
     X64EmitMovXmmWorker(0xF3, 0x11, Xmmreg, baseReg, ofs);
 }
 
+VOID StubLinkerCPU::X64EmitMovqRegXmm(X86Reg reg, X86Reg Xmmreg)
+{
+    STANDARD_VM_CONTRACT;
+    X64EmitMovqWorker(0x7e, Xmmreg, reg);
+}
+
+VOID StubLinkerCPU::X64EmitMovqXmmReg(X86Reg Xmmreg, X86Reg reg)
+{
+    STANDARD_VM_CONTRACT;
+    X64EmitMovqWorker(0x6e, Xmmreg, reg);
+}
+
+//-----------------------------------------------------------------------------
+// Helper method for emitting movq between xmm and general purpose reqister
+//-----------------------------------------------------------------------------
+VOID StubLinkerCPU::X64EmitMovqWorker(BYTE opcode, X86Reg Xmmreg, X86Reg reg)
+{
+    BYTE    codeBuffer[10];
+    unsigned int     nBytes  = 0;
+    codeBuffer[nBytes++] = 0x66;
+    BYTE rex = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
+    if (reg >= kR8)
+    {
+        rex |= REX_MODRM_RM_EXT;
+        reg = X86RegFromAMD64Reg(reg);
+    }
+    if (Xmmreg >= kXMM8)
+    {
+        rex |= REX_MODRM_REG_EXT;
+        Xmmreg = X86RegFromAMD64Reg(Xmmreg);
+    }
+    codeBuffer[nBytes++] = rex;
+    codeBuffer[nBytes++] = 0x0f;
+    codeBuffer[nBytes++] = opcode;
+    BYTE modrm = static_cast<BYTE>((Xmmreg << 3) | reg);
+    codeBuffer[nBytes++] = 0xC0|modrm;
+
+    _ASSERTE(nBytes <= _countof(codeBuffer));
+    
+    // Lastly, emit the encoded bytes
+    EmitBytes(codeBuffer, nBytes);    
+}
+
 //---------------------------------------------------------------
 // Helper method for emitting of XMM from/to memory moves
 //---------------------------------------------------------------
@@ -3794,7 +3837,37 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
 #ifdef UNIX_AMD64_ABI
     for (ShuffleEntry* pEntry = pShuffleEntryArray; pEntry->srcofs != ShuffleEntry::SENTINEL; pEntry++)
     {
-        if (pEntry->srcofs & ShuffleEntry::REGMASK)
+        if (pEntry->srcofs == ShuffleEntry::HELPERREG)
+        {
+            if (pEntry->dstofs & ShuffleEntry::REGMASK)
+            {
+                // movq dstReg, xmm8
+                int dstRegIndex = pEntry->dstofs & ShuffleEntry::OFSREGMASK;
+                X64EmitMovqRegXmm(c_argRegs[dstRegIndex], (X86Reg)kXMM8);
+            }
+            else
+            {
+                // movsd [rax + dst], xmm8
+                int dstOffset = (pEntry->dstofs + 1) * sizeof(void*);
+                X64EmitMovSDToMem((X86Reg)kXMM8, SCRATCH_REGISTER_X86REG, dstOffset);
+            }
+        }
+        else if (pEntry->dstofs == ShuffleEntry::HELPERREG)
+        {
+            if (pEntry->srcofs & ShuffleEntry::REGMASK)
+            {
+                // movq xmm8, srcReg
+                int srcRegIndex = pEntry->srcofs & ShuffleEntry::OFSREGMASK;
+                X64EmitMovqXmmReg((X86Reg)kXMM8, c_argRegs[srcRegIndex]);
+            }
+            else
+            {
+                // movsd xmm8, [rax + src]
+                int srcOffset = (pEntry->srcofs + 1) * sizeof(void*);
+                X64EmitMovSDFromMem((X86Reg)(kXMM8), SCRATCH_REGISTER_X86REG, srcOffset);
+            }
+        }
+        else if (pEntry->srcofs & ShuffleEntry::REGMASK)
         {
             // Source in a general purpose or float register, destination in the same kind of a register or on stack
             int srcRegIndex = pEntry->srcofs & ShuffleEntry::OFSREGMASK;
