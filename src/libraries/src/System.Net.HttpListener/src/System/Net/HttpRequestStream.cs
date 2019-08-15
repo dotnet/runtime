@@ -19,7 +19,7 @@ namespace System.Net
             if (NetEventSource.IsEnabled)
             {
                 NetEventSource.Enter(this);
-                NetEventSource.Info(this, "size:" + size + " offset:" + offset);
+                NetEventSource.Info(this, "buffer.Length:" + buffer?.Length + " size:" + size + " offset:" + offset);
             }
             if (buffer == null)
             {
@@ -48,7 +48,7 @@ namespace System.Net
             if (NetEventSource.IsEnabled)
             {
                 NetEventSource.Enter(this);
-                NetEventSource.Info(this, "buffer.Length:" + buffer.Length + " size:" + size + " offset:" + offset);
+                NetEventSource.Info(this, "buffer.Length:" + buffer?.Length + " size:" + size + " offset:" + offset);
             }
             if (buffer == null)
             {
