@@ -3243,7 +3243,6 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 		}
 		MINT_IN_CASE(MINT_JMP) {
 			InterpMethod *new_method = (InterpMethod*)imethod->data_items [* (guint16 *)(ip + 1)];
-			gboolean realloc_frame = new_method->alloca_size > imethod->alloca_size;
 
 			if (imethod->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_TAIL_CALL)
 				MONO_PROFILER_RAISE (method_tail_call, (imethod->method, new_method->method));
@@ -3258,6 +3257,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 					goto exit_frame;
 			}
 			ip += 2;
+			const gboolean realloc_frame = new_method->alloca_size > imethod->alloca_size;
 			imethod = frame->imethod = new_method;
 			/*
 			 * We allocate the stack frame from scratch and store the arguments in the
@@ -3378,8 +3378,6 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 		MINT_IN_CASE(MINT_CALLVIRT_FAST)
 		MINT_IN_CASE(MINT_VCALLVIRT_FAST) {
 			MonoObject *this_arg;
-			MonoClass *this_class;
-			gboolean is_void = *ip == MINT_VCALLVIRT_FAST;
 			InterpMethod *target_imethod;
 			stackval *endsp = sp;
 			int slot;
@@ -3399,10 +3397,9 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			child_frame.stack_args = sp;
 
 			this_arg = (MonoObject*)sp->data.p;
-			this_class = this_arg->vtable->klass;
 
 			child_frame.imethod = get_virtual_method_fast (target_imethod, this_arg->vtable, slot);
-			if (m_class_is_valuetype (this_class) && m_class_is_valuetype (child_frame.imethod->method->klass)) {
+			if (m_class_is_valuetype (this_arg->vtable->klass) && m_class_is_valuetype (child_frame.imethod->method->klass)) {
 				/* unbox */
 				gpointer unboxed = mono_object_unbox_internal (this_arg);
 				sp [0].data.p = unboxed;
@@ -3412,6 +3409,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 
 			CHECK_RESUME_STATE (context);
 
+			const gboolean is_void = ip [-3] == MINT_VCALLVIRT_FAST;
 			if (!is_void) {
 				/* need to handle typedbyref ... */
 				*sp = *endsp;
@@ -3456,12 +3454,10 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 		MINT_IN_CASE(MINT_VCALL)
 		MINT_IN_CASE(MINT_CALLVIRT)
 		MINT_IN_CASE(MINT_VCALLVIRT) {
-			gboolean is_void = *ip == MINT_VCALL || *ip == MINT_VCALLVIRT;
-			gboolean is_virtual = *ip == MINT_CALLVIRT || *ip == MINT_VCALLVIRT;
 			stackval *endsp = sp;
 
 			frame->ip = ip;
-			
+
 			child_frame.imethod = (InterpMethod*)imethod->data_items [* (guint16 *)(ip + 1)];
 			ip += 2;
 			sp->data.p = vt_sp;
@@ -3471,12 +3467,12 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			sp -= child_frame.imethod->param_count + child_frame.imethod->hasthis;
 			child_frame.stack_args = sp;
 
+			const gboolean is_virtual = ip [-2] == MINT_CALLVIRT || ip [-2] == MINT_VCALLVIRT;
 			if (is_virtual) {
 				MonoObject *this_arg = (MonoObject*)sp->data.p;
-				MonoClass *this_class = this_arg->vtable->klass;
 
 				child_frame.imethod = get_virtual_method (child_frame.imethod, this_arg->vtable);
-				if (m_class_is_valuetype (this_class) && m_class_is_valuetype (child_frame.imethod->method->klass)) {
+				if (m_class_is_valuetype (this_arg->vtable->klass) && m_class_is_valuetype (child_frame.imethod->method->klass)) {
 					/* unbox */
 					gpointer unboxed = mono_object_unbox_internal (this_arg);
 					sp [0].data.p = unboxed;
@@ -3487,6 +3483,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 
 			CHECK_RESUME_STATE (context);
 
+			const gboolean is_void = ip [-2] == MINT_VCALL || ip [-2] == MINT_VCALLVIRT;
 			if (!is_void) {
 				/* need to handle typedbyref ... */
 				*sp = *endsp;
@@ -5191,9 +5188,11 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BOX) {
 			MonoVTable *vtable = (MonoVTable*)imethod->data_items [* (guint16 *)(ip + 1)];
-			guint16 offset = * (guint16 *)(ip + 2);
 
 			frame_objref (frame) = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
+
+			guint16 offset = * (guint16 *)(ip + 2);
+
 			stackval_to_data (m_class_get_byval_arg (vtable->klass), &sp [-1 - offset], mono_object_get_data (frame_objref (frame)), FALSE);
 
 			sp [-1 - offset].data.p = frame_objref (frame);
@@ -5204,11 +5203,13 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 		MINT_IN_CASE(MINT_BOX_VT) {
 			MonoVTable *vtable = (MonoVTable*)imethod->data_items [* (guint16 *)(ip + 1)];
 			c = vtable->klass;
+
+			int size = mono_class_value_size (c, NULL);
+
 			guint16 offset = * (guint16 *)(ip + 2);
 			gboolean pop_vt_sp = !(offset & BOX_NOT_CLEAR_VT_SP);
 			offset &= ~BOX_NOT_CLEAR_VT_SP;
 
-			int size = mono_class_value_size (c, NULL);
 			frame_objref (frame) = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
 			mono_value_copy_internal (mono_object_get_data (frame_objref (frame)), sp [-1 - offset].data.p, c);
 
@@ -5222,11 +5223,12 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 		}
 		MINT_IN_CASE(MINT_BOX_NULLABLE) {
 			c = (MonoClass*)imethod->data_items [* (guint16 *)(ip + 1)];
+
+			int size = mono_class_value_size (c, NULL);
+
 			guint16 offset = * (guint16 *)(ip + 2);
 			gboolean pop_vt_sp = !(offset & BOX_NOT_CLEAR_VT_SP);
 			offset &= ~BOX_NOT_CLEAR_VT_SP;
-
-			int size = mono_class_value_size (c, NULL);
 
 			sp [-1 - offset].data.o = mono_nullable_box (sp [-1 - offset].data.p, c, error);
 			mono_error_cleanup (error); /* FIXME: don't swallow the error */
@@ -5281,20 +5283,22 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_GETITEM_SPAN) {
-			guint8 *span = (guint8 *) sp [-2].data.p;
-			int index = sp [-1].data.i;
-			gsize element_size = (gsize) *(gint16 *) (ip + 1);
-			gsize offset_length = (gsize) *(gint16 *) (ip + 2);
-			gsize offset_pointer = (gsize) *(gint16 *) (ip + 3);
+			guint8 * const span = (guint8 *) sp [-2].data.p;
+			const int index = sp [-1].data.i;
 			sp--;
 
 			NULL_CHECK (span);
 
-			gint32 length = *(gint32 *) (span + offset_length);
+			const gsize offset_length = (gsize) *(gint16 *) (ip + 2);
+
+			const gint32 length = *(gint32 *) (span + offset_length);
 			if (index < 0 || index >= length)
 				THROW_EX (mono_get_exception_index_out_of_range (), ip);
 
-			gpointer pointer = *(gpointer *)(span + offset_pointer);
+			const gsize element_size = (gsize) *(gint16 *) (ip + 1);
+			const gsize offset_pointer = (gsize) *(gint16 *) (ip + 3);
+
+			const gpointer pointer = *(gpointer *)(span + offset_pointer);
 			sp [-1].data.p = (guint8 *) pointer + index * element_size;
 
 			ip += 4;
@@ -5329,15 +5333,16 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 		}
 		MINT_IN_CASE(MINT_LDELEMA)
 		MINT_IN_CASE(MINT_LDELEMA_TC) {
-			gboolean needs_typecheck = *ip == MINT_LDELEMA_TC;
 			
-			MonoClass *klass = (MonoClass*)imethod->data_items [*(guint16 *) (ip + 1)];
 			guint16 numargs = *(guint16 *) (ip + 2);
 			ip += 3;
 			sp -= numargs;
 
 			o = sp [0].data.o;
 			NULL_CHECK (o);
+
+			MonoClass *klass = (MonoClass*)imethod->data_items [*(guint16 *) (ip - 3 + 1)];
+			const gboolean needs_typecheck = ip [-3] == MINT_LDELEMA_TC;
 			sp->data.p = ves_array_element_address (frame, klass, (MonoArray *) o, &sp [1], needs_typecheck);
 			if (frame->ex)
 				THROW_EX (frame->ex, ip);
@@ -5773,8 +5778,10 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ENDFINALLY) {
 			ip ++;
-			int clause_index = *ip;
 			gboolean pending_abort = mono_threads_end_abort_protected_block ();
+
+			// After mono_threads_end_abort_protected_block to conserve stack.
+			const int clause_index = *ip;
 
 			if (clause_args && clause_index == clause_args->exit_clause)
 				goto exit_frame;
