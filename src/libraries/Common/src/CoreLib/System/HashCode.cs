@@ -81,7 +81,7 @@ namespace System
             // over a larger space, so diffusing the bits may help the
             // collection work more efficiently.
 
-            var hc1 = (uint)(value1?.GetHashCode() ?? 0);
+            uint hc1 = (uint)(value1?.GetHashCode() ?? 0);
 
             uint hash = MixEmptyState();
             hash += 4;
@@ -94,8 +94,8 @@ namespace System
 
         public static int Combine<T1, T2>(T1 value1, T2 value2)
         {
-            var hc1 = (uint)(value1?.GetHashCode() ?? 0);
-            var hc2 = (uint)(value2?.GetHashCode() ?? 0);
+            uint hc1 = (uint)(value1?.GetHashCode() ?? 0);
+            uint hc2 = (uint)(value2?.GetHashCode() ?? 0);
 
             uint hash = MixEmptyState();
             hash += 8;
@@ -109,9 +109,9 @@ namespace System
 
         public static int Combine<T1, T2, T3>(T1 value1, T2 value2, T3 value3)
         {
-            var hc1 = (uint)(value1?.GetHashCode() ?? 0);
-            var hc2 = (uint)(value2?.GetHashCode() ?? 0);
-            var hc3 = (uint)(value3?.GetHashCode() ?? 0);
+            uint hc1 = (uint)(value1?.GetHashCode() ?? 0);
+            uint hc2 = (uint)(value2?.GetHashCode() ?? 0);
+            uint hc3 = (uint)(value3?.GetHashCode() ?? 0);
 
             uint hash = MixEmptyState();
             hash += 12;
@@ -126,10 +126,10 @@ namespace System
 
         public static int Combine<T1, T2, T3, T4>(T1 value1, T2 value2, T3 value3, T4 value4)
         {
-            var hc1 = (uint)(value1?.GetHashCode() ?? 0);
-            var hc2 = (uint)(value2?.GetHashCode() ?? 0);
-            var hc3 = (uint)(value3?.GetHashCode() ?? 0);
-            var hc4 = (uint)(value4?.GetHashCode() ?? 0);
+            uint hc1 = (uint)(value1?.GetHashCode() ?? 0);
+            uint hc2 = (uint)(value2?.GetHashCode() ?? 0);
+            uint hc3 = (uint)(value3?.GetHashCode() ?? 0);
+            uint hc4 = (uint)(value4?.GetHashCode() ?? 0);
 
             Initialize(out uint v1, out uint v2, out uint v3, out uint v4);
 
@@ -147,11 +147,11 @@ namespace System
 
         public static int Combine<T1, T2, T3, T4, T5>(T1 value1, T2 value2, T3 value3, T4 value4, T5 value5)
         {
-            var hc1 = (uint)(value1?.GetHashCode() ?? 0);
-            var hc2 = (uint)(value2?.GetHashCode() ?? 0);
-            var hc3 = (uint)(value3?.GetHashCode() ?? 0);
-            var hc4 = (uint)(value4?.GetHashCode() ?? 0);
-            var hc5 = (uint)(value5?.GetHashCode() ?? 0);
+            uint hc1 = (uint)(value1?.GetHashCode() ?? 0);
+            uint hc2 = (uint)(value2?.GetHashCode() ?? 0);
+            uint hc3 = (uint)(value3?.GetHashCode() ?? 0);
+            uint hc4 = (uint)(value4?.GetHashCode() ?? 0);
+            uint hc5 = (uint)(value5?.GetHashCode() ?? 0);
 
             Initialize(out uint v1, out uint v2, out uint v3, out uint v4);
 
@@ -171,12 +171,12 @@ namespace System
 
         public static int Combine<T1, T2, T3, T4, T5, T6>(T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6)
         {
-            var hc1 = (uint)(value1?.GetHashCode() ?? 0);
-            var hc2 = (uint)(value2?.GetHashCode() ?? 0);
-            var hc3 = (uint)(value3?.GetHashCode() ?? 0);
-            var hc4 = (uint)(value4?.GetHashCode() ?? 0);
-            var hc5 = (uint)(value5?.GetHashCode() ?? 0);
-            var hc6 = (uint)(value6?.GetHashCode() ?? 0);
+            uint hc1 = (uint)(value1?.GetHashCode() ?? 0);
+            uint hc2 = (uint)(value2?.GetHashCode() ?? 0);
+            uint hc3 = (uint)(value3?.GetHashCode() ?? 0);
+            uint hc4 = (uint)(value4?.GetHashCode() ?? 0);
+            uint hc5 = (uint)(value5?.GetHashCode() ?? 0);
+            uint hc6 = (uint)(value6?.GetHashCode() ?? 0);
 
             Initialize(out uint v1, out uint v2, out uint v3, out uint v4);
 
@@ -197,13 +197,13 @@ namespace System
 
         public static int Combine<T1, T2, T3, T4, T5, T6, T7>(T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, T7 value7)
         {
-            var hc1 = (uint)(value1?.GetHashCode() ?? 0);
-            var hc2 = (uint)(value2?.GetHashCode() ?? 0);
-            var hc3 = (uint)(value3?.GetHashCode() ?? 0);
-            var hc4 = (uint)(value4?.GetHashCode() ?? 0);
-            var hc5 = (uint)(value5?.GetHashCode() ?? 0);
-            var hc6 = (uint)(value6?.GetHashCode() ?? 0);
-            var hc7 = (uint)(value7?.GetHashCode() ?? 0);
+            uint hc1 = (uint)(value1?.GetHashCode() ?? 0);
+            uint hc2 = (uint)(value2?.GetHashCode() ?? 0);
+            uint hc3 = (uint)(value3?.GetHashCode() ?? 0);
+            uint hc4 = (uint)(value4?.GetHashCode() ?? 0);
+            uint hc5 = (uint)(value5?.GetHashCode() ?? 0);
+            uint hc6 = (uint)(value6?.GetHashCode() ?? 0);
+            uint hc7 = (uint)(value7?.GetHashCode() ?? 0);
 
             Initialize(out uint v1, out uint v2, out uint v3, out uint v4);
 
@@ -225,14 +225,14 @@ namespace System
 
         public static int Combine<T1, T2, T3, T4, T5, T6, T7, T8>(T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, T7 value7, T8 value8)
         {
-            var hc1 = (uint)(value1?.GetHashCode() ?? 0);
-            var hc2 = (uint)(value2?.GetHashCode() ?? 0);
-            var hc3 = (uint)(value3?.GetHashCode() ?? 0);
-            var hc4 = (uint)(value4?.GetHashCode() ?? 0);
-            var hc5 = (uint)(value5?.GetHashCode() ?? 0);
-            var hc6 = (uint)(value6?.GetHashCode() ?? 0);
-            var hc7 = (uint)(value7?.GetHashCode() ?? 0);
-            var hc8 = (uint)(value8?.GetHashCode() ?? 0);
+            uint hc1 = (uint)(value1?.GetHashCode() ?? 0);
+            uint hc2 = (uint)(value2?.GetHashCode() ?? 0);
+            uint hc3 = (uint)(value3?.GetHashCode() ?? 0);
+            uint hc4 = (uint)(value4?.GetHashCode() ?? 0);
+            uint hc5 = (uint)(value5?.GetHashCode() ?? 0);
+            uint hc6 = (uint)(value6?.GetHashCode() ?? 0);
+            uint hc7 = (uint)(value7?.GetHashCode() ?? 0);
+            uint hc8 = (uint)(value8?.GetHashCode() ?? 0);
 
             Initialize(out uint v1, out uint v2, out uint v3, out uint v4);
 
@@ -329,7 +329,7 @@ namespace System
             // To see what's really going on here, have a look at the Combine
             // methods.
 
-            var val = (uint)value;
+            uint val = (uint)value;
 
             // Storing the value of _length locally shaves of quite a few bytes
             // in the resulting machine code.

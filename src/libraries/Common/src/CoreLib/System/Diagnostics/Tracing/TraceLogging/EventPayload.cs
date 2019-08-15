@@ -46,7 +46,7 @@ namespace System.Diagnostics.Tracing
                     throw new System.ArgumentNullException(nameof(key));
 
                 int position = 0;
-                foreach (var name in m_names)
+                foreach (string name in m_names)
                 {
                     if (name == key)
                     {
@@ -88,7 +88,7 @@ namespace System.Diagnostics.Tracing
             if (key == null)
                 throw new System.ArgumentNullException(nameof(key));
 
-            foreach (var item in m_names)
+            foreach (string item in m_names)
             {
                 if (item == key)
                     return true;
@@ -135,7 +135,7 @@ namespace System.Diagnostics.Tracing
                 throw new System.ArgumentNullException(nameof(key));
 
             int position = 0;
-            foreach (var name in m_names)
+            foreach (string name in m_names)
             {
                 if (name == key)
                 {

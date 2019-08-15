@@ -184,7 +184,7 @@ namespace System.Diagnostics.Tracing
         {
             lock (s_counterGroupLock) // Lock the CounterGroup
             {
-                foreach (var counter in _counters)
+                foreach (DiagnosticCounter counter in _counters)
                 {
                     if (counter is IncrementingEventCounter ieCounter)
                     {
@@ -210,7 +210,7 @@ namespace System.Diagnostics.Tracing
                 DateTime now = DateTime.UtcNow;
                 TimeSpan elapsed = now - _timeStampSinceCollectionStarted;
 
-                foreach (var counter in _counters)
+                foreach (DiagnosticCounter counter in _counters)
                 {
                     counter.WritePayload((float)elapsed.TotalSeconds, _pollingIntervalInMilliseconds);
                 }

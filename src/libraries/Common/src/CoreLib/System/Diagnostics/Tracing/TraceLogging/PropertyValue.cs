@@ -189,12 +189,12 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         private static Func<PropertyValue, PropertyValue> GetBoxedValueTypePropertyGetter(PropertyInfo property)
         {
-            var type = property.PropertyType;
+            Type type = property.PropertyType;
 
             if (type.GetTypeInfo().IsEnum)
                 type = Enum.GetUnderlyingType(type);
 
-            var factory = GetFactory(type);
+            Func<object?, PropertyValue> factory = GetFactory(type);
 
             return container => factory(property.GetValue(container.ReferenceValue));
         }
@@ -236,7 +236,7 @@ namespace System.Diagnostics.Tracing
         {
             public override Func<PropertyValue, PropertyValue> GetPropertyGetter(PropertyInfo property)
             {
-                var type = property.PropertyType;
+                Type type = property.PropertyType;
 
                 if (!Statics.IsValueType(type))
                 {

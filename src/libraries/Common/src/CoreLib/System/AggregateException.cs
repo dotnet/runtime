@@ -228,7 +228,7 @@ namespace System
 
             for (int i = 0; i < exceptionsCopy.Length; i++)
             {
-                var edi = innerExceptionInfos[i];
+                ExceptionDispatchInfo edi = innerExceptionInfos[i];
                 if (edi != null) exceptionsCopy[i] = edi.SourceException;
 
                 if (exceptionsCopy[i] == null)
