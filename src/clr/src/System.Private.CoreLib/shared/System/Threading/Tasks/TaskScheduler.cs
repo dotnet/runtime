@@ -513,7 +513,7 @@ namespace System.Threading.Tasks
             }
 
             List<TaskScheduler> schedulers = new List<TaskScheduler>();
-            foreach (var item in s_activeTaskSchedulers)
+            foreach (KeyValuePair<TaskScheduler, object?> item in s_activeTaskSchedulers)
             {
                 schedulers.Add(item.Key);
             }
@@ -525,8 +525,8 @@ namespace System.Threading.Tasks
                 schedulers.Add(s_defaultTaskScheduler);
             }
 
-            var arr = schedulers.ToArray();
-            foreach (var scheduler in arr)
+            TaskScheduler[] arr = schedulers.ToArray();
+            foreach (TaskScheduler scheduler in arr)
             {
                 Debug.Assert(scheduler != null, "Table returned an incorrect Count or CopyTo failed");
                 int tmp = scheduler.Id; // force Ids for debugger

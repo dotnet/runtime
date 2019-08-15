@@ -447,7 +447,7 @@ namespace System.Threading
                     throw new InvalidOperationException(SR.ThreadLocal_ValuesNotAvailable);
                 }
 
-                var list = GetValuesAsList(); // returns null if disposed
+                List<T>? list = GetValuesAsList(); // returns null if disposed
                 if (list == null) throw new ObjectDisposedException(SR.ThreadLocal_Disposed);
                 return list;
             }

@@ -141,7 +141,7 @@ namespace System.Diagnostics.Tracing
 
             // Otherwise, append it, then append the element we moved to, and then
             // iterate through the remainder of the elements, appending each.
-            var sb = new StringBuilder().Append(current.Key).Append(':').Append(current.Value);
+            StringBuilder sb = new StringBuilder().Append(current.Key).Append(':').Append(current.Value);
             do
             {
                 current = enumerator.Current;

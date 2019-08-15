@@ -116,7 +116,7 @@ namespace System.Diagnostics.Tracing
         public static void EncodeTags(int tags, ref int pos, byte[]? metadata)
         {
             // We transmit the low 28 bits of tags, high bits first, 7 bits at a time.
-            var tagsLeft = tags & 0xfffffff;
+            int tagsLeft = tags & 0xfffffff;
             bool more;
             do
             {
@@ -379,7 +379,7 @@ namespace System.Diagnostics.Tracing
 #if (ES_BUILD_PCL || ES_BUILD_PN)
             result = propInfo.IsDefined(attributeType);
 #else
-            var attributes = propInfo.GetCustomAttributes(
+            object[] attributes = propInfo.GetCustomAttributes(
                 attributeType,
                 false);
             result = attributes.Length != 0;
@@ -398,7 +398,7 @@ namespace System.Diagnostics.Tracing
                 break;
             }
 #else
-            var attributes = propInfo.GetCustomAttributes(typeof(AttributeType), false);
+            object[] attributes = propInfo.GetCustomAttributes(typeof(AttributeType), false);
             if (attributes.Length != 0)
             {
                 result = (AttributeType)attributes[0];
@@ -418,7 +418,7 @@ namespace System.Diagnostics.Tracing
                 break;
             }
 #else
-            var attributes = type.GetCustomAttributes(typeof(AttributeType), false);
+            object[] attributes = type.GetCustomAttributes(typeof(AttributeType), false);
             if (attributes.Length != 0)
             {
                 result = (AttributeType)attributes[0];
@@ -443,12 +443,12 @@ namespace System.Diagnostics.Tracing
             else
             {
 #if (ES_BUILD_PCL || ES_BUILD_PN)
-                var ifaceTypes = type.GetTypeInfo().ImplementedInterfaces;
+                IEnumerable<Type> ifaceTypes = type.GetTypeInfo().ImplementedInterfaces;
 #else
-                var ifaceTypes = type.FindInterfaces(IsGenericMatch, typeof(IEnumerable<>));
+                Type[] ifaceTypes = type.FindInterfaces(IsGenericMatch, typeof(IEnumerable<>));
 #endif
 
-                foreach (var ifaceType in ifaceTypes)
+                foreach (Type ifaceType in ifaceTypes)
                 {
 #if (ES_BUILD_PCL || ES_BUILD_PN)
                     if (!IsGenericMatch(ifaceType, typeof(IEnumerable<>)))
@@ -503,7 +503,7 @@ namespace System.Diagnostics.Tracing
 
             recursionCheck.Add(dataType);
 
-            var eventAttrib = Statics.GetCustomAttribute<EventDataAttribute>(dataType);
+            EventDataAttribute? eventAttrib = Statics.GetCustomAttribute<EventDataAttribute>(dataType);
             if (eventAttrib != null ||
                 Statics.GetCustomAttribute<CompilerGeneratedAttribute>(dataType) != null ||
                 IsGenericMatch(dataType, typeof(KeyValuePair<,>)))
@@ -674,7 +674,7 @@ namespace System.Diagnostics.Tracing
                 }
                 else
                 {
-                    var elementType = FindEnumerableElementType(dataType);
+                    Type? elementType = FindEnumerableElementType(dataType);
                     if (elementType != null)
                     {
                         result = new EnumerableTypeInfo(dataType, TraceLoggingTypeInfo.GetInstance(elementType, recursionCheck));

@@ -289,7 +289,7 @@ namespace System.Diagnostics.Tracing
                     if (sessionsChanged.Count == 0)
                         sessionsChanged.Add(new Tuple<SessionInfo, bool>(new SessionInfo(0, 0), true));
 
-                    foreach (var session in sessionsChanged)
+                    foreach (Tuple<SessionInfo, bool> session in sessionsChanged)
                     {
                         int sessionChanged = session.Item1.sessionIdBit;
                         int etwSessionId = session.Item1.etwSessionId;
@@ -473,9 +473,9 @@ namespace System.Diagnostics.Tracing
             byte* buffer;
             for (; ; )
             {
-                var space = stackalloc byte[buffSize];
+                byte* space = stackalloc byte[buffSize];
                 buffer = space;
-                var hr = 0;
+                int hr = 0;
 
                 fixed (Guid* provider = &m_providerId)
                 {
@@ -504,7 +504,7 @@ namespace System.Diagnostics.Tracing
                 if (providerInstance->NextOffset == 0)
                     break;
                 Debug.Assert(0 <= providerInstance->NextOffset && providerInstance->NextOffset < buffSize);
-                var structBase = (byte*)providerInstance;
+                byte* structBase = (byte*)providerInstance;
                 providerInstance = (Interop.Advapi32.TRACE_PROVIDER_INSTANCE_INFO*)&structBase[providerInstance->NextOffset];
             }
 #else
@@ -609,7 +609,7 @@ namespace System.Diagnostics.Tracing
 #if ES_BUILD_STANDALONE
                 (new RegistryPermission(RegistryPermissionAccess.Read, regKey)).Assert();
 #endif
-                using (var key = Registry.LocalMachine.OpenSubKey(regKey))
+                using (RegistryKey? key = Registry.LocalMachine.OpenSubKey(regKey))
                 {
                     data = key?.GetValue(valueName, null) as byte[];
                     if (data != null)

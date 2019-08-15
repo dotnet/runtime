@@ -34,9 +34,9 @@ namespace System.Diagnostics.Tracing
 
         public override void WriteData(TraceLoggingDataCollector collector, PropertyValue value)
         {
-            var bookmark = collector.BeginBufferedArray();
+            int bookmark = collector.BeginBufferedArray();
 
-            var count = 0;
+            int count = 0;
             Array? array = (Array?)value.ReferenceValue;
             if (array != null)
             {

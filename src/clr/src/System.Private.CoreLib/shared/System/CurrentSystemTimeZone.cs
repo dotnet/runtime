@@ -156,7 +156,7 @@ namespace System
                 DateTime end;
                 TimeSpan delta;
 
-                foreach (var rule in TimeZoneInfo.Local.GetAdjustmentRules())
+                foreach (TimeZoneInfo.AdjustmentRule rule in TimeZoneInfo.Local.GetAdjustmentRules())
                 {
                     if (rule.DateStart.Year <= year && rule.DateEnd.Year >= year && rule.DaylightDelta != TimeSpan.Zero)
                     {

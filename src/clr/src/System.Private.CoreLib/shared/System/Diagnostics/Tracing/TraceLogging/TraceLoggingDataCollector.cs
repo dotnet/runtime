@@ -62,7 +62,7 @@ namespace System.Diagnostics.Tracing
 
         public void AddScalar(PropertyValue value)
         {
-            var scalar = value.ScalarValue;
+            PropertyValue.Scalar scalar = value.ScalarValue;
             DataCollector.ThreadInstance.AddScalar(&scalar, value.ScalarLength);
         }
 

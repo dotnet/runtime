@@ -37,8 +37,10 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -166,7 +168,7 @@ namespace System.Runtime.CompilerServices
                 // TaskCanceledException. TCE derives from OCE, and by throwing it we automatically pick up the
                 // completed task's CancellationToken if it has one, including that CT in the OCE.
                 case TaskStatus.Canceled:
-                    var oceEdi = task.GetCancellationExceptionDispatchInfo();
+                    ExceptionDispatchInfo? oceEdi = task.GetCancellationExceptionDispatchInfo();
                     if (oceEdi != null)
                     {
                         oceEdi.Throw();
@@ -177,7 +179,7 @@ namespace System.Runtime.CompilerServices
                 // If the task faulted, throw its first exception,
                 // even if it contained more than one.
                 case TaskStatus.Faulted:
-                    var edis = task.GetExceptionDispatchInfos();
+                    ReadOnlyCollection<ExceptionDispatchInfo> edis = task.GetExceptionDispatchInfos();
                     if (edis.Count > 0)
                     {
                         edis[0].Throw();
@@ -251,15 +253,15 @@ namespace System.Runtime.CompilerServices
                 Task.AddToActiveTasks(task);
             }
 
-            var log = TplEventSource.Log;
+            TplEventSource log = TplEventSource.Log;
 
             if (log.IsEnabled())
             {
                 // ETW event for Task Wait Begin
-                var currentTaskAtBegin = Task.InternalCurrent;
+                Task? currentTaskAtBegin = Task.InternalCurrent;
 
                 // If this task's continuation is another task, get it.
-                var continuationTask = AsyncMethodBuilderCore.TryGetContinuationTask(continuation);
+                Task? continuationTask = AsyncMethodBuilderCore.TryGetContinuationTask(continuation);
                 log.TaskWaitBegin(
                     (currentTaskAtBegin != null ? currentTaskAtBegin.m_taskScheduler!.Id : TaskScheduler.Default.Id),
                     (currentTaskAtBegin != null ? currentTaskAtBegin.Id : 0),
@@ -286,7 +288,7 @@ namespace System.Runtime.CompilerServices
                 bool bEtwLogEnabled = innerEtwLog.IsEnabled();
                 if (bEtwLogEnabled)
                 {
-                    var currentTaskAtEnd = Task.InternalCurrent;
+                    Task? currentTaskAtEnd = Task.InternalCurrent;
                     innerEtwLog.TaskWaitEnd(
                         (currentTaskAtEnd != null ? currentTaskAtEnd.m_taskScheduler!.Id : TaskScheduler.Default.Id),
                         (currentTaskAtEnd != null ? currentTaskAtEnd.Id : 0),

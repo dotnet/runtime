@@ -75,10 +75,10 @@ namespace System.Diagnostics.Tracing
 
             Debug.Assert((options & EventActivityOptions.Disable) == 0);
 
-            var currentActivity = m_current.Value;
-            var fullActivityName = NormalizeActivityName(providerName, activityName, task);
+            ActivityInfo? currentActivity = m_current.Value;
+            string fullActivityName = NormalizeActivityName(providerName, activityName, task);
 
-            var log = TplEventSource.Log;
+            TplEventSource log = TplEventSource.Log;
             if (log.Debug)
             {
                 log.DebugFacilityMessage("OnStartEnter", fullActivityName);
@@ -143,9 +143,9 @@ namespace System.Diagnostics.Tracing
             if (m_current == null)        // We are not enabled
                 return;
 
-            var fullActivityName = NormalizeActivityName(providerName, activityName, task);
+            string fullActivityName = NormalizeActivityName(providerName, activityName, task);
 
-            var log = TplEventSource.Log;
+            TplEventSource log = TplEventSource.Log;
             if (log.Debug)
             {
                 log.DebugFacilityMessage("OnStopEnter", fullActivityName);

@@ -2336,7 +2336,7 @@ namespace System.Threading.Tasks
                     int numTasks = tasks.Count;
                     for (int i = 0; i < numTasks; i++)
                     {
-                        var task = tasks[i];
+                        Task task = tasks[i];
                         if (task != null && // if an element was erroneously nulled out concurrently, just skip it; worst case is we don't remove a continuation
                             !task.IsCompleted) task.RemoveContinuation(this);
                     }
@@ -2365,7 +2365,7 @@ namespace System.Threading.Tasks
             int numTasks = tasks.Count;
             for (int i = 0; i < numTasks; i++)
             {
-                var task = tasks[i];
+                Task task = tasks[i];
                 if (task == null) throw new ArgumentException(SR.Task_MultiTaskContinuation_NullTask, nameof(tasks));
 
                 if (checkArgsOnly) continue;

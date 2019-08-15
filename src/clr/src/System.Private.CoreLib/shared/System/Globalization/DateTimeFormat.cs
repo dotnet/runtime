@@ -1162,7 +1162,7 @@ namespace System
             charsWritten = charsRequired;
 
             // Hoist most of the bounds checks on destination.
-            { var unused = destination[MinimumBytesNeeded - 1]; }
+            { _ = destination[MinimumBytesNeeded - 1]; }
 
             WriteFourDecimalDigits((uint)dateTime.Year, destination, 0);
             destination[4] = '-';
