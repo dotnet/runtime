@@ -10,6 +10,7 @@ namespace System.Security.Cryptography
     {
         private string _hashNameValue;
         private const string DefaultHash = "SHA1";
+
         public PKCS1MaskGenerationMethod()
         {
             _hashNameValue = DefaultHash;
@@ -21,11 +22,15 @@ namespace System.Security.Cryptography
             set { _hashNameValue = value ?? DefaultHash; }
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "CryptoConfig.CreateFromName may return platform-dependent objects, so this implementation is limited to SHA-1 for now")]
         public override byte[] GenerateMask(byte[] rgbSeed, int cbReturn)
         {
-            using (HashAlgorithm hasher = (HashAlgorithm)CryptoConfig.CreateFromName(_hashNameValue))
+            using (HashAlgorithm hasher = CryptoConfig.CreateFromName(_hashNameValue) as HashAlgorithm)
             {
+                if (hasher is null)
+                {
+                    throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, _hashNameValue));
+                }
+
                 byte[] rgbCounter = new byte[4];
                 byte[] rgbT = new byte[cbReturn];
 
@@ -42,6 +47,7 @@ namespace System.Security.Cryptography
 
                     ib += hasher.Hash.Length;
                 }
+
                 return rgbT;
             }
         }
