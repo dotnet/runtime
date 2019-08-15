@@ -2641,7 +2641,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 				G_BREAKPOINT ();
 			mini_get_dbg_callbacks ()->handle_exception ((MonoException *)obj, ctx, NULL, NULL);
 
-			if (mini_debug_options.suspend_on_unhandled) {
+			if (mini_debug_options.suspend_on_unhandled && mono_object_class (obj) != mono_defaults.threadabortexception_class) {
 				mono_runtime_printf_err ("Unhandled exception, suspending...");
 				while (1)
 					;
