@@ -110,7 +110,7 @@ namespace System.Diagnostics
                 StackNode n = _stack.Value;
                 if (n == null)
                 {
-                    base.Pop();
+                    base.Pop(); // used to throw proper exception
                 }
                 _stack.Value = n.Prev;
                 return n.Value;
