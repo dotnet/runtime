@@ -11,7 +11,7 @@ namespace System.Text.Json.Serialization.Tests
     public static partial class CustomConverterTests
     {
         // Demonstrates custom Dictionary<string, long>; Adds offset to each integer or long to verify converter ran.
-        private class DictionaryConverter : JsonConverter<Dictionary<string, long>>
+        internal class DictionaryConverter : JsonConverter<Dictionary<string, long>>
         {
             private long _offset;
 
