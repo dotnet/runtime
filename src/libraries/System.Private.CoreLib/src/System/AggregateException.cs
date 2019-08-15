@@ -380,8 +380,7 @@ namespace System
             List<Exception> flattenedExceptions = new List<Exception>();
 
             // Create a list to remember all aggregates to be flattened, this will be accessed like a FIFO queue
-            List<AggregateException> exceptionsToFlatten = new List<AggregateException>();
-            exceptionsToFlatten.Add(this);
+            var exceptionsToFlatten = new List<AggregateException> { this };
             int nDequeueIndex = 0;
 
             // Continue removing and recursively flattening exceptions, until there are no more.
