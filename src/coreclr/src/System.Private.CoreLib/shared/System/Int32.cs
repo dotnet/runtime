@@ -34,15 +34,16 @@ namespace System
             {
                 return 1;
             }
-            if (value is int)
+
+            // NOTE: Cannot use return (_value - value) as this causes a wrap
+            // around in cases where _value - value > MaxValue.
+            if (value is int i)
             {
-                // NOTE: Cannot use return (_value - value) as this causes a wrap
-                // around in cases where _value - value > MaxValue.
-                int i = (int)value;
                 if (m_value < i) return -1;
                 if (m_value > i) return 1;
                 return 0;
             }
+
             throw new ArgumentException(SR.Arg_MustBeInt32);
         }
 
