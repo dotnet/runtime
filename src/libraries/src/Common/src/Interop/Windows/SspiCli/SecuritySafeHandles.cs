@@ -392,7 +392,7 @@ namespace System.Net.Security
         //-------------------------------------------------------------------
         internal static unsafe int InitializeSecurityContext(
             ref SafeFreeCredentials inCredentials,
-            ref SafeDeleteContext refContext,
+            ref SafeDeleteSslContext refContext,
             string targetName,
             Interop.SspiCli.ContextFlags inFlags,
             Interop.SspiCli.Endianness endianness,
@@ -483,7 +483,7 @@ namespace System.Net.Security
                             // incorrect arguments to InitializeSecurityContextW in cases where an "contextHandle" was
                             // already present and non-zero.
                             if (isContextAbsent)
-                                refContext = new SafeDeleteContext_SECURITY();
+                                refContext = new SafeDeleteSslContext();
                         }
 
                         if (targetName == null || targetName.Length == 0)
@@ -623,7 +623,7 @@ namespace System.Net.Security
         //-------------------------------------------------------------------
         internal static unsafe int AcceptSecurityContext(
             ref SafeFreeCredentials inCredentials,
-            ref SafeDeleteContext refContext,
+            ref SafeDeleteSslContext refContext,
             Interop.SspiCli.ContextFlags inFlags,
             Interop.SspiCli.Endianness endianness,
             ReadOnlySpan<SecurityBuffer> inSecBuffers,
@@ -715,7 +715,7 @@ namespace System.Net.Security
                             // incorrect arguments to AcceptSecurityContext in cases where an "contextHandle" was
                             // already present and non-zero.
                             if (isContextAbsent)
-                                refContext = new SafeDeleteContext_SECURITY();
+                                refContext = new SafeDeleteSslContext();
                         }
 
                         errorCode = MustRunAcceptSecurityContext_SECURITY(
@@ -840,7 +840,7 @@ namespace System.Net.Security
         }
 
         internal static unsafe int CompleteAuthToken(
-            ref SafeDeleteContext refContext,
+            ref SafeDeleteSslContext refContext,
             in SecurityBuffer inSecBuffer)
         {
             if (NetEventSource.IsEnabled)
@@ -879,7 +879,7 @@ namespace System.Net.Security
                     // build a new "refContext" in an attempt to maximize compat.
                     if (contextHandle.IsZero)
                     {
-                        refContext = new SafeDeleteContext_SECURITY();
+                        refContext = new SafeDeleteSslContext();
                     }
                 }
 
@@ -944,7 +944,7 @@ namespace System.Net.Security
                     // build a new "refContext" in an attempt to maximize compat.
                     if (contextHandle.IsZero)
                     {
-                        refContext = new SafeDeleteContext_SECURITY();
+                        refContext = new SafeDeleteSslContext();
                     }
                 }
 
@@ -968,9 +968,9 @@ namespace System.Net.Security
         }
     }
 
-    internal sealed class SafeDeleteContext_SECURITY : SafeDeleteContext
+    internal sealed class SafeDeleteSslContext : SafeDeleteContext
     {
-        internal SafeDeleteContext_SECURITY() : base() { }
+        internal SafeDeleteSslContext() : base() { }
 
         protected override bool ReleaseHandle()
         {

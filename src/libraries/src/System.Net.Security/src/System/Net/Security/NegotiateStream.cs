@@ -41,7 +41,7 @@ namespace System.Net.Security
             using (DebugThreadTracking.SetThreadKind(ThreadKinds.User))
             {
 #endif
-                _negoState = new NegoState(innerStream, leaveInnerStreamOpen);
+                _negoState = new NegoState(innerStream);
                 _package = NegoState.DefaultPackage;
                 InitializeStreamPart();
 #if DEBUG

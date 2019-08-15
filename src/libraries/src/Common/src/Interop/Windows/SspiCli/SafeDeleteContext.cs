@@ -5,6 +5,7 @@
 using Microsoft.Win32.SafeHandles;
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Authentication.ExtendedProtection;
 
@@ -33,6 +34,7 @@ namespace System.Net.Security
 
         public override bool IsInvalid
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 return IsClosed || _handle.IsZero;
