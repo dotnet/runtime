@@ -174,7 +174,7 @@ namespace System.Text.Json
 
         internal JsonPropertyInfo CreatePolymorphicProperty(JsonPropertyInfo property, Type runtimePropertyType, JsonSerializerOptions options)
         {
-            JsonPropertyInfo runtimeProperty = CreateProperty(property.DeclaredPropertyType, runtimePropertyType, property.ImplementedPropertyType, property?.PropertyInfo, Type, options);
+            JsonPropertyInfo runtimeProperty = CreateProperty(property.DeclaredPropertyType, runtimePropertyType, property.ImplementedPropertyType, property.PropertyInfo, Type, options);
             property.CopyRuntimeSettingsTo(runtimeProperty);
 
             return runtimeProperty;
