@@ -89,7 +89,7 @@ namespace System.Net.Http
                     {
                         // Failure checking the policy. This is a rare error. We will assume the name check failed.
                         // TODO: Issue #2165. Log this error or perhaps throw an exception instead.
-                        if (NetEventSource.IsEnabled) NetEventSource.Error(certificate, "Failure calling {nameof(Interop.Crypt32.CertVerifyCertificateChainPolicy)}");
+                        if (NetEventSource.IsEnabled) NetEventSource.Error(certificate, $"Failure calling {nameof(Interop.Crypt32.CertVerifyCertificateChainPolicy)}");
                         sslPolicyErrors |= SslPolicyErrors.RemoteCertificateNameMismatch;
                     }
                 }
