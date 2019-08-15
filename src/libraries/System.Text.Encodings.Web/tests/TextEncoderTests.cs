@@ -7,10 +7,9 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Text.Encodings.Web;
 using Xunit;
 
-namespace Microsoft.Framework.WebEncoders
+namespace System.Text.Encodings.Web.Tests
 {
     public class TextEncoderTests
     {
