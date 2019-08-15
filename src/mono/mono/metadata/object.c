@@ -744,9 +744,16 @@ mono_set_always_build_imt_trampolines (gboolean value)
 gpointer 
 mono_compile_method (MonoMethod *method)
 {
+	gpointer result;
+
+	MONO_ENTER_GC_UNSAFE;
+
 	ERROR_DECL (error);
-	gpointer result = mono_compile_method_checked (method, error);
+	result = mono_compile_method_checked (method, error);
 	mono_error_cleanup (error);
+
+	MONO_EXIT_GC_UNSAFE;
+
 	return result;
 }
 
@@ -4505,6 +4512,8 @@ free_main_args (void)
 int
 mono_runtime_set_main_args (int argc, char* argv[])
 {
+	MONO_ENTER_GC_UNSAFE;
+
 	MONO_REQ_GC_NEUTRAL_MODE;
 
 	int i;
@@ -4526,7 +4535,9 @@ mono_runtime_set_main_args (int argc, char* argv[])
 		main_args [i] = utf8_arg;
 	}
 
-	MONO_EXTERNAL_ONLY (int, 0);
+	MONO_EXIT_GC_UNSAFE;
+
+	return 0;
 }
 
 /*
@@ -4645,17 +4656,25 @@ int
 mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
 		       MonoObject **exc)
 {
+	int res;
+
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	ERROR_DECL (error);
+
+	MONO_ENTER_GC_UNSAFE;
+
 	MonoArray *args = prepare_run_main (method, argc, argv);
-	int res;
-	if (exc) {
+	if (exc)
 		res = mono_runtime_try_exec_main (method, args, exc);
-	} else {
+	else
 		res = mono_runtime_exec_main_checked (method, args, error);
+
+	MONO_EXIT_GC_UNSAFE;
+
+	if (!exc)
 		mono_error_raise_exception_deprecated (error); /* OK to throw, external only without a better alternative */
-	}
+
 	return res;
 }
 
@@ -5041,12 +5060,15 @@ mono_runtime_exec_managed_code (MonoDomain *domain,
 				gpointer margs)
 {
 	// This function is external_only.
+	MONO_ENTER_GC_UNSAFE;
 
 	ERROR_DECL (error);
 	mono_thread_create_checked (domain, mfunc, margs, error);
 	mono_error_assert_ok (error);
 
 	mono_thread_manage ();
+
+	MONO_EXIT_GC_UNSAFE;
 }
 
 static void
@@ -5202,6 +5224,7 @@ mono_runtime_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 		rval = do_try_exec_main (method, args, exc);
 	} else {
 		rval = do_exec_main_checked (method, args, error);
+		// FIXME Maybe change mode back here?
 		mono_error_raise_exception_deprecated (error); /* OK to throw, external only with no better option */
 	}
 	MONO_EXIT_GC_UNSAFE;
@@ -8819,9 +8842,16 @@ mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoAr
 gpointer
 mono_load_remote_field (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, gpointer *res)
 {
+	gpointer result;
+
+	MONO_ENTER_GC_UNSAFE;
+
 	ERROR_DECL (error);
-	gpointer result = mono_load_remote_field_checked (this_obj, klass, field, res, error);
+	result = mono_load_remote_field_checked (this_obj, klass, field, res, error);
 	mono_error_cleanup (error);
+
+	MONO_EXIT_GC_UNSAFE;
+
 	return result;
 }
 
@@ -8921,10 +8951,17 @@ mono_load_remote_field_checked (MonoObject *this_obj, MonoClass *klass, MonoClas
 MonoObject *
 mono_load_remote_field_new (MonoObject *this_obj, MonoClass *klass, MonoClassField *field)
 {
+	MonoObject *result;
+
 	ERROR_DECL (error);
 
-	MonoObject *result = mono_load_remote_field_new_checked (this_obj, klass, field, error);
+	MONO_ENTER_GC_UNSAFE;
+
+	result = mono_load_remote_field_new_checked (this_obj, klass, field, error);
 	mono_error_cleanup (error);
+
+	MONO_EXIT_GC_UNSAFE;
+
 	return result;
 }
 
@@ -8981,9 +9018,13 @@ mono_load_remote_field_new_checked (MonoObject *this_obj, MonoClass *klass, Mono
 void
 mono_store_remote_field (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, gpointer val)
 {
+	MONO_ENTER_GC_UNSAFE;
+
 	ERROR_DECL (error);
 	(void) mono_store_remote_field_checked (this_obj, klass, field, val, error);
 	mono_error_cleanup (error);
+
+	MONO_EXIT_GC_UNSAFE;
 }
 
 /**
@@ -9035,9 +9076,13 @@ mono_store_remote_field_checked (MonoObject *this_obj, MonoClass *klass, MonoCla
 void
 mono_store_remote_field_new (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, MonoObject *arg)
 {
+	MONO_ENTER_GC_UNSAFE;
+
 	ERROR_DECL (error);
 	(void) mono_store_remote_field_new_checked (this_obj, klass, field, arg, error);
 	mono_error_cleanup (error);
+
+	MONO_EXIT_GC_UNSAFE;
 }
 
 /**
