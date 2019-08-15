@@ -94,7 +94,8 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <TargetArchitecture  Condition="'$(TargetArchitecture)' == ''">x64</TargetArchitecture>
+    <HostArch>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant())</HostArch>
+    <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">$(HostArch)</TargetArchitecture>
     <Platform Condition="'$(Platform)'==''">$(TargetArchitecture)</Platform>
   </PropertyGroup>
   <!--
