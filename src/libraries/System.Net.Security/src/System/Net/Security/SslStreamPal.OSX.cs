@@ -34,7 +34,7 @@ namespace System.Net.Security
 
         public static SecurityStatusPal AcceptSecurityContext(
             ref SafeFreeCredentials credential,
-            ref SafeDeleteContext context,
+            ref SafeDeleteSslContext context,
             ArraySegment<byte> inputBuffer,
             ref byte[] outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions)
@@ -44,7 +44,7 @@ namespace System.Net.Security
 
         public static SecurityStatusPal InitializeSecurityContext(
             ref SafeFreeCredentials credential,
-            ref SafeDeleteContext context,
+            ref SafeDeleteSslContext context,
             string targetName,
             ArraySegment<byte> inputBuffer,
             ref byte[] outputBuffer,
@@ -232,7 +232,7 @@ namespace System.Net.Security
 
         private static SecurityStatusPal HandshakeInternal(
             SafeFreeCredentials credential,
-            ref SafeDeleteContext context,
+            ref SafeDeleteSslContext context,
             ArraySegment<byte> inputBuffer,
             ref byte[] outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions)

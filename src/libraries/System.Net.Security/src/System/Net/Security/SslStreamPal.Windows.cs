@@ -46,7 +46,7 @@ namespace System.Net.Security
             return Interop.Sec_Application_Protocols.ToByteArray(protocols);
         }
 
-        public static SecurityStatusPal AcceptSecurityContext(ref SafeFreeCredentials credentialsHandle, ref SafeDeleteContext context, ArraySegment<byte> input, ref byte[] outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
+        public static SecurityStatusPal AcceptSecurityContext(ref SafeFreeCredentials credentialsHandle, ref SafeDeleteSslContext context, ArraySegment<byte> input, ref byte[] outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
         {
             Interop.SspiCli.ContextFlags unusedAttributes = default;
 
@@ -73,7 +73,7 @@ namespace System.Net.Security
             return SecurityStatusAdapterPal.GetSecurityStatusPalFromNativeInt(errorCode);
         }
 
-        public static SecurityStatusPal InitializeSecurityContext(ref SafeFreeCredentials credentialsHandle, ref SafeDeleteContext context, string targetName, ArraySegment<byte> input, ref byte[] outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
+        public static SecurityStatusPal InitializeSecurityContext(ref SafeFreeCredentials credentialsHandle, ref SafeDeleteSslContext context, string targetName, ArraySegment<byte> input, ref byte[] outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
         {
             Interop.SspiCli.ContextFlags unusedAttributes = default;
 
@@ -195,7 +195,7 @@ namespace System.Net.Security
             return null;
         }
 
-        public static unsafe SecurityStatusPal EncryptMessage(SafeDeleteContext securityContext, ReadOnlyMemory<byte> input, int headerSize, int trailerSize, ref byte[] output, out int resultSize)
+        public static unsafe SecurityStatusPal EncryptMessage(SafeDeleteSslContext securityContext, ReadOnlyMemory<byte> input, int headerSize, int trailerSize, ref byte[] output, out int resultSize)
         {
             // Ensure that there is sufficient space for the message output.
             int bufferSizeNeeded;
@@ -217,9 +217,11 @@ namespace System.Net.Security
             input.Span.CopyTo(new Span<byte>(output, headerSize, input.Length));
 
             const int NumSecBuffers = 4; // header + data + trailer + empty
-            var unmanagedBuffer = stackalloc Interop.SspiCli.SecBuffer[NumSecBuffers];
-            var sdcInOut = new Interop.SspiCli.SecBufferDesc(NumSecBuffers);
-            sdcInOut.pBuffers = unmanagedBuffer;
+            Interop.SspiCli.SecBuffer* unmanagedBuffer = stackalloc Interop.SspiCli.SecBuffer[NumSecBuffers];
+            Interop.SspiCli.SecBufferDesc sdcInOut = new Interop.SspiCli.SecBufferDesc(NumSecBuffers)
+            {
+                pBuffers = unmanagedBuffer
+            };
             fixed (byte* outputPtr = output)
             {
                 Interop.SspiCli.SecBuffer* headerSecBuffer = &unmanagedBuffer[0];
@@ -260,14 +262,12 @@ namespace System.Net.Security
             }
         }
 
-        public static unsafe SecurityStatusPal DecryptMessage(SafeDeleteContext securityContext, byte[] buffer, ref int offset, ref int count)
+        public static unsafe SecurityStatusPal DecryptMessage(SafeDeleteSslContext securityContext, byte[] buffer, ref int offset, ref int count)
         {
             const int NumSecBuffers = 4; // data + empty + empty + empty
-            var unmanagedBuffer = stackalloc Interop.SspiCli.SecBuffer[NumSecBuffers];
-            var sdcInOut = new Interop.SspiCli.SecBufferDesc(NumSecBuffers);
-            sdcInOut.pBuffers = unmanagedBuffer;
             fixed (byte* bufferPtr = buffer)
             {
+                Interop.SspiCli.SecBuffer* unmanagedBuffer = stackalloc Interop.SspiCli.SecBuffer[NumSecBuffers];
                 Interop.SspiCli.SecBuffer* dataBuffer = &unmanagedBuffer[0];
                 dataBuffer->BufferType = SecurityBufferType.SECBUFFER_DATA;
                 dataBuffer->pvBuffer = (IntPtr)bufferPtr + offset;
@@ -281,6 +281,10 @@ namespace System.Net.Security
                     emptyBuffer->cbBuffer = 0;
                 }
 
+                Interop.SspiCli.SecBufferDesc sdcInOut = new Interop.SspiCli.SecBufferDesc(NumSecBuffers)
+                {
+                    pBuffers = unmanagedBuffer
+                };
                 Interop.SECURITY_STATUS errorCode = (Interop.SECURITY_STATUS)GlobalSSPI.SSPISecureChannel.DecryptMessage(securityContext, ref sdcInOut, 0);
 
                 // Decrypt may repopulate the sec buffers, likely with header + data + trailer + empty.
