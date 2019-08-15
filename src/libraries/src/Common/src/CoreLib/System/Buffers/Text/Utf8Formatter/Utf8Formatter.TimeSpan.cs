@@ -56,7 +56,7 @@ namespace System.Buffers.Text
             ulong totalSecondsRemaining;
             {
                 // Turn this into a non-negative TimeSpan if possible.
-                var ticks = value.Ticks;
+                long ticks = value.Ticks;
                 if (ticks < 0)
                 {
                     ticks = -ticks;

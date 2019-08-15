@@ -98,7 +98,7 @@ namespace System.Threading
 
         internal static int ToTimeoutMilliseconds(TimeSpan timeout)
         {
-            var timeoutMilliseconds = (long)timeout.TotalMilliseconds;
+            long timeoutMilliseconds = (long)timeout.TotalMilliseconds;
             if (timeoutMilliseconds < -1)
             {
                 throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);

@@ -204,7 +204,7 @@ namespace System.Runtime.Intrinsics
 
             static Vector128<byte> SoftwareFallback(byte value)
             {
-                var pResult = stackalloc byte[16]
+                byte* pResult = stackalloc byte[16]
                 {
                     value,
                     value,
@@ -253,7 +253,7 @@ namespace System.Runtime.Intrinsics
 
             static Vector128<double> SoftwareFallback(double value)
             {
-                var pResult = stackalloc double[2]
+                double* pResult = stackalloc double[2]
                 {
                     value,
                     value,
@@ -289,7 +289,7 @@ namespace System.Runtime.Intrinsics
 
             static Vector128<short> SoftwareFallback(short value)
             {
-                var pResult = stackalloc short[8]
+                short* pResult = stackalloc short[8]
                 {
                     value,
                     value,
@@ -327,7 +327,7 @@ namespace System.Runtime.Intrinsics
 
             static Vector128<int> SoftwareFallback(int value)
             {
-                var pResult = stackalloc int[4]
+                int* pResult = stackalloc int[4]
                 {
                     value,
                     value,
@@ -363,7 +363,7 @@ namespace System.Runtime.Intrinsics
 
             static Vector128<long> SoftwareFallback(long value)
             {
-                var pResult = stackalloc long[2]
+                long* pResult = stackalloc long[2]
                 {
                     value,
                     value,
@@ -407,7 +407,7 @@ namespace System.Runtime.Intrinsics
 
             static Vector128<sbyte> SoftwareFallback(sbyte value)
             {
-                var pResult = stackalloc sbyte[16]
+                sbyte* pResult = stackalloc sbyte[16]
                 {
                     value,
                     value,
@@ -459,7 +459,7 @@ namespace System.Runtime.Intrinsics
 
             static Vector128<float> SoftwareFallback(float value)
             {
-                var pResult = stackalloc float[4]
+                float* pResult = stackalloc float[4]
                 {
                     value,
                     value,
@@ -498,7 +498,7 @@ namespace System.Runtime.Intrinsics
 
             static Vector128<ushort> SoftwareFallback(ushort value)
             {
-                var pResult = stackalloc ushort[8]
+                ushort* pResult = stackalloc ushort[8]
                 {
                     value,
                     value,
@@ -537,7 +537,7 @@ namespace System.Runtime.Intrinsics
 
             static Vector128<uint> SoftwareFallback(uint value)
             {
-                var pResult = stackalloc uint[4]
+                uint* pResult = stackalloc uint[4]
                 {
                     value,
                     value,
@@ -574,7 +574,7 @@ namespace System.Runtime.Intrinsics
 
             static Vector128<ulong> SoftwareFallback(ulong value)
             {
-                var pResult = stackalloc ulong[2]
+                ulong* pResult = stackalloc ulong[2]
                 {
                     value,
                     value,
@@ -662,7 +662,7 @@ namespace System.Runtime.Intrinsics
 
             static Vector128<byte> SoftwareFallback(byte e0, byte e1, byte e2, byte e3, byte e4, byte e5, byte e6, byte e7, byte e8, byte e9, byte e10, byte e11, byte e12, byte e13, byte e14, byte e15)
             {
-                var pResult = stackalloc byte[16]
+                byte* pResult = stackalloc byte[16]
                 {
                     e0,
                     e1,
@@ -705,7 +705,7 @@ namespace System.Runtime.Intrinsics
 
             static Vector128<double> SoftwareFallback(double e0, double e1)
             {
-                var pResult = stackalloc double[2]
+                double* pResult = stackalloc double[2]
                 {
                     e0,
                     e1,
@@ -744,7 +744,7 @@ namespace System.Runtime.Intrinsics
 
             static Vector128<short> SoftwareFallback(short e0, short e1, short e2, short e3, short e4, short e5, short e6, short e7)
             {
-                var pResult = stackalloc short[8]
+                short* pResult = stackalloc short[8]
                 {
                     e0,
                     e1,
@@ -792,7 +792,7 @@ namespace System.Runtime.Intrinsics
 
             static Vector128<int> SoftwareFallback(int e0, int e1, int e2, int e3)
             {
-                var pResult = stackalloc int[4]
+                int* pResult = stackalloc int[4]
                 {
                     e0,
                     e1,
@@ -826,7 +826,7 @@ namespace System.Runtime.Intrinsics
 
             static Vector128<long> SoftwareFallback(long e0, long e1)
             {
-                var pResult = stackalloc long[2]
+                long* pResult = stackalloc long[2]
                 {
                     e0,
                     e1,
@@ -915,7 +915,7 @@ namespace System.Runtime.Intrinsics
 
             static Vector128<sbyte> SoftwareFallback(sbyte e0, sbyte e1, sbyte e2, sbyte e3, sbyte e4, sbyte e5, sbyte e6, sbyte e7, sbyte e8, sbyte e9, sbyte e10, sbyte e11, sbyte e12, sbyte e13, sbyte e14, sbyte e15)
             {
-                var pResult = stackalloc sbyte[16]
+                sbyte* pResult = stackalloc sbyte[16]
                 {
                     e0,
                     e1,
@@ -968,7 +968,7 @@ namespace System.Runtime.Intrinsics
 
             static Vector128<float> SoftwareFallback(float e0, float e1, float e2, float e3)
             {
-                var pResult = stackalloc float[4]
+                float* pResult = stackalloc float[4]
                 {
                     e0,
                     e1,
@@ -1010,7 +1010,7 @@ namespace System.Runtime.Intrinsics
 
             static Vector128<ushort> SoftwareFallback(ushort e0, ushort e1, ushort e2, ushort e3, ushort e4, ushort e5, ushort e6, ushort e7)
             {
-                var pResult = stackalloc ushort[8]
+                ushort* pResult = stackalloc ushort[8]
                 {
                     e0,
                     e1,
@@ -1059,7 +1059,7 @@ namespace System.Runtime.Intrinsics
 
             static Vector128<uint> SoftwareFallback(uint e0, uint e1, uint e2, uint e3)
             {
-                var pResult = stackalloc uint[4]
+                uint* pResult = stackalloc uint[4]
                 {
                     e0,
                     e1,
@@ -1094,7 +1094,7 @@ namespace System.Runtime.Intrinsics
 
             static Vector128<ulong> SoftwareFallback(ulong e0, ulong e1)
             {
-                var pResult = stackalloc ulong[2]
+                ulong* pResult = stackalloc ulong[2]
                 {
                     e0,
                     e1,
@@ -1488,7 +1488,7 @@ namespace System.Runtime.Intrinsics
             // This relies on us stripping the "init" flag from the ".locals"
             // declaration to let the upper bits be uninitialized.
 
-            var pResult = stackalloc byte[16];
+            byte* pResult = stackalloc byte[16];
             pResult[0] = value;
             return Unsafe.AsRef<Vector128<byte>>(pResult);
         }
@@ -1502,7 +1502,7 @@ namespace System.Runtime.Intrinsics
             // This relies on us stripping the "init" flag from the ".locals"
             // declaration to let the upper bits be uninitialized.
 
-            var pResult = stackalloc double[2];
+            double* pResult = stackalloc double[2];
             pResult[0] = value;
             return Unsafe.AsRef<Vector128<double>>(pResult);
         }
@@ -1516,7 +1516,7 @@ namespace System.Runtime.Intrinsics
             // This relies on us stripping the "init" flag from the ".locals"
             // declaration to let the upper bits be uninitialized.
 
-            var pResult = stackalloc short[8];
+            short* pResult = stackalloc short[8];
             pResult[0] = value;
             return Unsafe.AsRef<Vector128<short>>(pResult);
         }
@@ -1530,7 +1530,7 @@ namespace System.Runtime.Intrinsics
             // This relies on us stripping the "init" flag from the ".locals"
             // declaration to let the upper bits be uninitialized.
 
-            var pResult = stackalloc int[4];
+            int* pResult = stackalloc int[4];
             pResult[0] = value;
             return Unsafe.AsRef<Vector128<int>>(pResult);
         }
@@ -1544,7 +1544,7 @@ namespace System.Runtime.Intrinsics
             // This relies on us stripping the "init" flag from the ".locals"
             // declaration to let the upper bits be uninitialized.
 
-            var pResult = stackalloc long[2];
+            long* pResult = stackalloc long[2];
             pResult[0] = value;
             return Unsafe.AsRef<Vector128<long>>(pResult);
         }
@@ -1559,7 +1559,7 @@ namespace System.Runtime.Intrinsics
             // This relies on us stripping the "init" flag from the ".locals"
             // declaration to let the upper bits be uninitialized.
 
-            var pResult = stackalloc sbyte[16];
+            sbyte* pResult = stackalloc sbyte[16];
             pResult[0] = value;
             return Unsafe.AsRef<Vector128<sbyte>>(pResult);
         }
@@ -1573,7 +1573,7 @@ namespace System.Runtime.Intrinsics
             // This relies on us stripping the "init" flag from the ".locals"
             // declaration to let the upper bits be uninitialized.
 
-            var pResult = stackalloc float[4];
+            float* pResult = stackalloc float[4];
             pResult[0] = value;
             return Unsafe.AsRef<Vector128<float>>(pResult);
         }
@@ -1588,7 +1588,7 @@ namespace System.Runtime.Intrinsics
             // This relies on us stripping the "init" flag from the ".locals"
             // declaration to let the upper bits be uninitialized.
 
-            var pResult = stackalloc ushort[8];
+            ushort* pResult = stackalloc ushort[8];
             pResult[0] = value;
             return Unsafe.AsRef<Vector128<ushort>>(pResult);
         }
@@ -1603,7 +1603,7 @@ namespace System.Runtime.Intrinsics
             // This relies on us stripping the "init" flag from the ".locals"
             // declaration to let the upper bits be uninitialized.
 
-            var pResult = stackalloc uint[4];
+            uint* pResult = stackalloc uint[4];
             pResult[0] = value;
             return Unsafe.AsRef<Vector128<uint>>(pResult);
         }
@@ -1618,7 +1618,7 @@ namespace System.Runtime.Intrinsics
             // This relies on us stripping the "init" flag from the ".locals"
             // declaration to let the upper bits be uninitialized.
 
-            var pResult = stackalloc ulong[2];
+            ulong* pResult = stackalloc ulong[2];
             pResult[0] = value;
             return Unsafe.AsRef<Vector128<ulong>>(pResult);
         }
@@ -1772,7 +1772,7 @@ namespace System.Runtime.Intrinsics
             // This relies on us stripping the "init" flag from the ".locals"
             // declaration to let the upper bits be uninitialized.
 
-            var pResult = stackalloc byte[Vector256.Size];
+            byte* pResult = stackalloc byte[Vector256.Size];
             Unsafe.AsRef<Vector128<T>>(pResult) = vector;
             return Unsafe.AsRef<Vector256<T>>(pResult);
         }

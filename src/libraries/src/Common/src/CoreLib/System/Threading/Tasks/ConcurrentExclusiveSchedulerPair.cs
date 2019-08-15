@@ -190,7 +190,7 @@ namespace System.Threading.Tasks
                 if (!CompletionRequested || m_processingCount != 0) return false;
 
                 // Now, only allow shutdown if an exception occurred or if there are no more tasks to process.
-                var cs = EnsureCompletionStateInitialized();
+                CompletionState cs = EnsureCompletionStateInitialized();
                 return
                     (cs.m_exceptions != null && cs.m_exceptions.Count > 0) ||
                     (m_concurrentTaskScheduler.m_tasks.IsEmpty && m_exclusiveTaskScheduler.m_tasks.IsEmpty);
@@ -205,7 +205,7 @@ namespace System.Threading.Tasks
 
             // Ensure we only try to complete once, then schedule completion
             // in order to escape held locks and the caller's context
-            var cs = EnsureCompletionStateInitialized();
+            CompletionState cs = EnsureCompletionStateInitialized();
             if (!cs.m_completionQueued)
             {
                 cs.m_completionQueued = true;
@@ -235,7 +235,7 @@ namespace System.Threading.Tasks
             ContractAssertMonitorStatus(ValueLock, held: true);
 
             // Store the faulted task's exceptions
-            var cs = EnsureCompletionStateInitialized();
+            CompletionState cs = EnsureCompletionStateInitialized();
             if (cs.m_exceptions == null) cs.m_exceptions = new List<Exception>();
             cs.m_exceptions.AddRange(faultedTask.Exception.InnerExceptions);
 
@@ -744,7 +744,7 @@ namespace System.Threading.Tasks
                 if (m_completionState != null && m_completionState.IsCompleted) return ProcessingMode.Completed;
 
                 // Otherwise, summarize our current state.
-                var mode = ProcessingMode.NotCurrentlyProcessing;
+                ProcessingMode mode = ProcessingMode.NotCurrentlyProcessing;
                 if (m_processingCount == EXCLUSIVE_PROCESSING_SENTINEL) mode |= ProcessingMode.ProcessingExclusiveTask;
                 if (m_processingCount >= 1) mode |= ProcessingMode.ProcessingConcurrentTasks;
                 if (CompletionRequested) mode |= ProcessingMode.Completing;

@@ -243,7 +243,7 @@ namespace System
             // Helper function to silently convert the value to UInt64 from the other base types for enum without throwing an exception.
             // This is need since the Convert functions do overflow checks.
             TypeCode typeCode = Convert.GetTypeCode(value);
-            var result = typeCode switch
+            ulong result = typeCode switch
             {
                 TypeCode.SByte => (ulong)(sbyte)value,
                 TypeCode.Byte => (byte)value,

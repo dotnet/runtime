@@ -2426,7 +2426,7 @@ namespace System
                 // function to round correctly instead. This can unfortunately lead to double-rounding
                 // bugs but is the best we have right now due to back-compat concerns.
 
-                var digit = dig[i];
+                byte digit = dig[i];
 
                 if ((digit == '\0') || isCorrectlyRounded)
                 {
