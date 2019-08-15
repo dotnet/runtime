@@ -423,20 +423,20 @@ namespace Microsoft.CSharp.RuntimeBinder
                 DynamicMetaObject mo = ido.GetMetaObject(parameter);
                 List<string> names = new List<string>(mo.GetDynamicMemberNames());
                 names.Sort();
-                if (names != null)
+
+                var result = new List<KeyValuePair<string, object>>();
+                foreach (string name in names)
                 {
-                    var result = new List<KeyValuePair<string, object>>();
-                    foreach (string name in names)
+                    object value;
+                    if ((value = TryGetMemberValue(obj, name, true)) != null)
                     {
-                        object value;
-                        if ((value = TryGetMemberValue(obj, name, true)) != null)
-                        {
-                            result.Add(new KeyValuePair<string, object>(name, value));
-                        }
+                        result.Add(new KeyValuePair<string, object>(name, value));
                     }
-                    return result;
                 }
+
+                return result;
             }
+
             return Array.Empty<KeyValuePair<string, object>>();
         }
 
