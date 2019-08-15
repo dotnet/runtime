@@ -270,7 +270,13 @@ set_resume_state (ThreadContext *context, InterpFrame *frame)
 			else \
 				goto exit_frame; \
 		} \
-	} while (0);
+	} while (0)
+
+// In a void function, leave ret empty.
+#define CHECK_RESUME_STATE_IN_HELPER_FUNCTION(context, ret) do { \
+		if ((context)->has_resume_state) \
+			return ret; \
+	} while (0)
 
 static void
 set_context (ThreadContext *context)
@@ -960,6 +966,15 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, con
 		}									\
 	} while (0)
 
+
+#define EXCEPTION_CHECKPOINT_IN_HELPER_FUNCTION	\
+	do {										\
+		if (*mono_thread_interruption_request_flag () && !mono_threads_is_critical_method (imethod->method)) { \
+			MonoException *exc = mono_thread_interruption_checkpoint ();	\
+			if (exc)							\
+				return exc;						\
+		}									\
+	} while (0)
 
 static MonoObject*
 ves_array_create (MonoDomain *domain, MonoClass *klass, int param_count, stackval *values, MonoError *error)
@@ -2977,11 +2992,13 @@ mono_interp_calli_nat_dynamic_pinvoke (
 	// Parameters are sorted by name.
 	InterpFrame* child_frame,
 	guchar* code,
-	ThreadContext *context,
+	ThreadContext* context,
 	MonoMethodSignature* csignature,
-	MonoError* error,
-	InterpMethod* imethod)
+	MonoError* error)
 {
+	// Recompute to limit parameters, which can also contribute to caller stack.
+	InterpMethod* const imethod = child_frame->parent->imethod;
+
 	g_assert (imethod->method->dynamic && csignature->pinvoke);
 
 	/* Pinvoke call is missing the wrapper. See mono_get_native_calli_wrapper */
@@ -3020,6 +3037,117 @@ mono_interp_leave (InterpFrame* child_frame)
 	do_icall_wrapper (child_frame, NULL, MINT_ICALL_V_P, &tmp_sp, (gpointer)mono_thread_get_undeniable_exception, FALSE);
 
 	return (MonoException*)tmp_sp.data.p;
+}
+
+static MONO_NEVER_INLINE void
+mono_interp_newobj_vt (
+	// Parameters are sorted by name and parameter list is minimized
+	// to reduce stack use in caller, on e.g. NT/AMD64 (up to 4 parameters
+	// use no stack in caller).
+	InterpFrame* child_frame,
+	ThreadContext* context,
+	MonoError* error)
+{
+	InterpFrame* const frame = child_frame->parent;
+	stackval* const sp = child_frame->stack_args;
+	gboolean const vtst = *frame->ip == MINT_NEWOBJ_VTST_FAST;
+
+	stackval valuetype_this;
+
+	if (vtst) {
+		// FIXME? Is this really using valuetype_this
+		// or it only needs a pointer? Make two separate functions?
+		valuetype_this.data.p = sp->data.p;
+	} else {
+		memset (&valuetype_this, 0, sizeof (stackval));
+		sp->data.p = &valuetype_this;
+	}
+
+	interp_exec_method (child_frame, context, error);
+
+	CHECK_RESUME_STATE_IN_HELPER_FUNCTION (context, );
+
+	*sp = valuetype_this;
+}
+
+static MONO_NEVER_INLINE MonoException*
+mono_interp_newobj (
+	// Parameters are sorted by name and parameter list is minimized
+	// to reduce stack use in caller, on e.g. NT/AMD64 (up to 4 parameters
+	// use no stack in caller).
+	InterpFrame* child_frame,
+	ThreadContext* context,
+	MonoError* error,
+	guchar* vt_sp)
+{
+	InterpFrame* const frame = child_frame->parent;
+	InterpMethod* const imethod = frame->imethod;
+	stackval* const sp = child_frame->stack_args;
+
+	MonoObject* o = NULL;
+	stackval valuetype_this;
+	stackval retval;
+
+	MonoClass * const newobj_class = child_frame->imethod->method->klass;
+	/*if (profiling_classes) {
+		guint count = GPOINTER_TO_UINT (g_hash_table_lookup (profiling_classes, newobj_class));
+		count++;
+		g_hash_table_insert (profiling_classes, newobj_class, GUINT_TO_POINTER (count));
+	}*/
+
+	/*
+	 * First arg is the object.
+	 */
+	if (m_class_is_valuetype (newobj_class)) {
+		MonoType *t = m_class_get_byval_arg (newobj_class);
+		memset (&valuetype_this, 0, sizeof (stackval));
+		if (!m_class_is_enumtype (newobj_class) && (t->type == MONO_TYPE_VALUETYPE || (t->type == MONO_TYPE_GENERICINST && mono_type_generic_inst_is_valuetype (t)))) {
+			sp->data.p = vt_sp;
+			valuetype_this.data.p = vt_sp;
+		} else {
+			sp->data.p = &valuetype_this;
+		}
+	} else {
+		if (newobj_class != mono_defaults.string_class) {
+			MonoVTable *vtable = mono_class_vtable_checked (imethod->domain, newobj_class, error);
+			if (!is_ok (error) || !mono_runtime_class_init_full (vtable, error)) {
+				MonoException* const exc = mono_error_convert_to_exception (error);
+				g_assert (exc);
+				return exc;
+			}
+			frame_objref (frame) = mono_object_new_checked (imethod->domain, newobj_class, error);
+			mono_error_cleanup (error); /* FIXME: don't swallow the error */
+			EXCEPTION_CHECKPOINT_IN_HELPER_FUNCTION;
+			sp->data.o = frame_objref (frame);
+#ifndef DISABLE_REMOTING
+			if (mono_object_is_transparent_proxy (frame_objref (frame))) {
+				MonoMethod *remoting_invoke_method = mono_marshal_get_remoting_invoke_with_check (child_frame->imethod->method, error);
+				mono_error_assert_ok (error);
+				child_frame->imethod = mono_interp_get_imethod (imethod->domain, remoting_invoke_method, error);
+				mono_error_assert_ok (error);
+			}
+#endif
+		} else {
+			sp->data.p = NULL;
+			child_frame->retval = &retval;
+		}
+	}
+
+	interp_exec_method (child_frame, context, error);
+
+	CHECK_RESUME_STATE_IN_HELPER_FUNCTION (context, NULL);
+
+	/*
+	 * a constructor returns void, but we need to return the object we created
+	 */
+	if (m_class_is_valuetype (newobj_class) && !m_class_is_enumtype (newobj_class)) {
+		*sp = valuetype_this;
+	} else if (newobj_class == mono_defaults.string_class) {
+		*sp = retval;
+	} else {
+		sp->data.o = frame_objref (frame);
+	}
+	return NULL;
 }
 
 /*
@@ -3364,7 +3492,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			child_frame.stack_args = sp;
 
 			if (imethod->method->dynamic && csignature->pinvoke) {
-				mono_interp_calli_nat_dynamic_pinvoke (&child_frame, code, context, csignature, error, imethod);
+				mono_interp_calli_nat_dynamic_pinvoke (&child_frame, code, context, csignature, error);
 			} else {
 				const gboolean save_last_error = *(guint16 *)(ip - 3 + 2);
 				ves_pinvoke_method (&child_frame, csignature, (MonoFuncV) code, FALSE, context, save_last_error);
@@ -4522,120 +4650,63 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 		}
 		MINT_IN_CASE(MINT_NEWOBJ_VT_FAST)
 		MINT_IN_CASE(MINT_NEWOBJ_VTST_FAST) {
-			guint16 param_count;
-			stackval valuetype_this;
+
+			// This is split up to:
+			//  - conserve stack
+			//  - keep exception handling and resume mostly in the main function
 
 			frame->ip = ip;
-
 			child_frame.imethod = (InterpMethod*) imethod->data_items [*(guint16*)(ip + 1)];
-			param_count = *(guint16*)(ip + 2);
+			guint16 const param_count = *(guint16*)(ip + 2);
 
 			if (param_count) {
 				sp -= param_count;
 				memmove (sp + 1, sp, param_count * sizeof (stackval));
 			}
 			child_frame.stack_args = sp;
-
-			gboolean vtst = *ip == MINT_NEWOBJ_VTST_FAST;
+			gboolean const vtst = *ip == MINT_NEWOBJ_VTST_FAST;
 			if (vtst) {
 				memset (vt_sp, 0, *(guint16*)(ip + 3));
 				sp->data.p = vt_sp;
-				valuetype_this.data.p = vt_sp;
 				ip += 4;
 			} else {
-				memset (&valuetype_this, 0, sizeof (stackval));
-				sp->data.p = &valuetype_this;
 				ip += 3;
 			}
-
-			interp_exec_method (&child_frame, context, error);
-
+			mono_interp_newobj_vt (&child_frame, context, error);
 			CHECK_RESUME_STATE (context);
-
-			*sp = valuetype_this;
 			++sp;
 			MINT_IN_BREAK;
 		}
+
 		MINT_IN_CASE(MINT_NEWOBJ) {
-			MonoClass *newobj_class;
-			MonoMethodSignature *csig;
-			stackval valuetype_this;
-			guint32 token;
-			stackval retval;
+
+			// This is split up to:
+			//  - conserve stack
+			//  - keep exception handling and resume mostly in the main function
 
 			frame->ip = ip;
 
-			token = * (guint16 *)(ip + 1);
-			ip += 2;
+			guint32 const token = * (guint16 *)(ip + 1);
+			ip += 2; // FIXME: Do this after throw?
 
 			child_frame.ip = NULL;
 			child_frame.ex = NULL;
 
 			child_frame.imethod = (InterpMethod*)imethod->data_items [token];
-			csig = mono_method_signature_internal (child_frame.imethod->method);
-			newobj_class = child_frame.imethod->method->klass;
-			/*if (profiling_classes) {
-				guint count = GPOINTER_TO_UINT (g_hash_table_lookup (profiling_classes, newobj_class));
-				count++;
-				g_hash_table_insert (profiling_classes, newobj_class, GUINT_TO_POINTER (count));
-			}*/
+			MonoMethodSignature* const csig = mono_method_signature_internal (child_frame.imethod->method);
 
 			g_assert (csig->hasthis);
 			if (csig->param_count) {
 				sp -= csig->param_count;
 				memmove (sp + 1, sp, csig->param_count * sizeof (stackval));
 			}
+
 			child_frame.stack_args = sp;
 
-			/*
-			 * First arg is the object.
-			 */
-			if (m_class_is_valuetype (newobj_class)) {
-				MonoType *t = m_class_get_byval_arg (newobj_class);
-				memset (&valuetype_this, 0, sizeof (stackval));
-				if (!m_class_is_enumtype (newobj_class) && (t->type == MONO_TYPE_VALUETYPE || (t->type == MONO_TYPE_GENERICINST && mono_type_generic_inst_is_valuetype (t)))) {
-					sp->data.p = vt_sp;
-					valuetype_this.data.p = vt_sp;
-				} else {
-					sp->data.p = &valuetype_this;
-				}
-			} else {
-				if (newobj_class != mono_defaults.string_class) {
-					MonoVTable *vtable = mono_class_vtable_checked (imethod->domain, newobj_class, error);
-					if (!is_ok (error) || !mono_runtime_class_init_full (vtable, error))
-						THROW_EX (mono_error_convert_to_exception (error), ip);
-					frame_objref (frame) = mono_object_new_checked (imethod->domain, newobj_class, error);
-					mono_error_cleanup (error); /* FIXME: don't swallow the error */
-					EXCEPTION_CHECKPOINT;
-					sp->data.o = frame_objref (frame);
-#ifndef DISABLE_REMOTING
-					if (mono_object_is_transparent_proxy (frame_objref (frame))) {
-						MonoMethod *remoting_invoke_method = mono_marshal_get_remoting_invoke_with_check (child_frame.imethod->method, error);
-						mono_error_assert_ok (error);
-						child_frame.imethod = mono_interp_get_imethod (imethod->domain, remoting_invoke_method, error);
-						mono_error_assert_ok (error);
-					}
-#endif
-				} else {
-					sp->data.p = NULL;
-					child_frame.retval = &retval;
-				}
-			}
-
-			interp_exec_method (&child_frame, context, error);
-
+			MonoException* const exc = mono_interp_newobj (&child_frame, context, error, vt_sp);
+			if (exc)
+				THROW_EX (exc, ip);
 			CHECK_RESUME_STATE (context);
-
-			/*
-			 * a constructor returns void, but we need to return the object we created
-			 */
-			if (m_class_is_valuetype (newobj_class) && !m_class_is_enumtype (newobj_class)) {
-				*sp = valuetype_this;
-			} else if (newobj_class == mono_defaults.string_class) {
-				*sp = retval;
-			} else {
-				sp->data.o = frame_objref (frame);
-			}
 			++sp;
 			MINT_IN_BREAK;
 		}
