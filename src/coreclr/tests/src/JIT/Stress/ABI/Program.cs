@@ -122,18 +122,12 @@ namespace ABIStress
             return 100 + mismatches;
         }
 
-        // https://github.com/dotnet/coreclr/issues/26054
-        private static readonly HashSet<int> s_pinvokeInfiniteLoops = new HashSet<int>
-        {
-            56, 113, 173, 611, 734, 863, 897, 960
-        };
-
         private static bool DoCall(int index)
         {
             bool result = true;
             if (Config.StressModes.HasFlag(StressModes.TailCalls))
                 result &= DoTailCall(index);
-            if (Config.StressModes.HasFlag(StressModes.PInvokes) && !s_pinvokeInfiniteLoops.Contains(index))
+            if (Config.StressModes.HasFlag(StressModes.PInvokes))
                 result &= DoPInvokes(index);
 
             return result;
