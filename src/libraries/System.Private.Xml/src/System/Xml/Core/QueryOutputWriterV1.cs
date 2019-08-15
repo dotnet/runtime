@@ -239,10 +239,12 @@ namespace System.Xml
 
         public override void WriteBase64(byte[] buffer, int index, int count)
         {
-            if (!_inAttr && (_inCDataSection || StartCDataSection()))
-                _wrapped.WriteBase64(buffer, index, count);
-            else
-                _wrapped.WriteBase64(buffer, index, count);
+            if (!_inAttr && !_inCDataSection)
+            {
+                StartCDataSection();
+            }
+
+            _wrapped.WriteBase64(buffer, index, count);
         }
 
         public override void WriteEntityRef(string name)
