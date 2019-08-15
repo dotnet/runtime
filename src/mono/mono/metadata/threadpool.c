@@ -325,6 +325,8 @@ worker_callback (void)
 
 	previous_tpdomain = NULL;
 
+	gsize name_generation = ~thread->name_generation;
+
 	while (!mono_runtime_is_shutting_down ()) {
 		gboolean retire = FALSE;
 
@@ -352,10 +354,17 @@ worker_callback (void)
 
 		domains_unlock ();
 
-		MonoString *thread_name = mono_string_new_checked (mono_get_root_domain (), "Thread Pool Worker", error);
-		mono_error_assert_ok (error);
-		mono_thread_set_name_internal (thread, thread_name, MonoSetThreadNameFlag_Reset, error);
-		mono_error_assert_ok (error);
+		// Any thread can set any other thread name at any time.
+		// So this is unavoidably racy.
+		// This only partly fights against that -- i.e. not atomic and not a loop.
+		// It is reliable against the thread setting its own name, and somewhat
+		// reliable against other threads setting this thread's name.
+		if (name_generation != thread->name_generation) {
+			MonoString *thread_name = mono_string_new_checked (mono_get_root_domain (), "Thread Pool Worker", error);
+			mono_error_assert_ok (error);
+			name_generation = mono_thread_set_name_internal (thread, thread_name, MonoSetThreadNameFlag_Reset, error);
+			mono_error_assert_ok (error);
+		}
 
 		mono_thread_clear_and_set_state (thread,
 			(MonoThreadState)~ThreadState_Background,

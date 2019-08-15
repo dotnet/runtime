@@ -1857,14 +1857,20 @@ ves_icall_System_Threading_Thread_GetName_internal (MonoInternalThreadHandle thr
 }
 #endif
 
-void
+gsize
 mono_thread_set_name_internal (MonoInternalThread *this_obj,
 			       MonoString *name,
 			       MonoSetThreadNameFlags flags, MonoError *error)
 {
 	MonoNativeThreadId tid = 0;
 
+	// A counter to optimize redundant sets.
+	// It is not exactly thread safe but no use of it could be.
+	gsize name_generation;
+
 	LOCK_THREAD (this_obj);
+
+	name_generation = this_obj->name_generation;
 
 	if (flags & MonoSetThreadNameFlag_Reset) {
 		this_obj->flags &= ~MONO_THREAD_FLAG_NAME_SET;
@@ -1872,8 +1878,11 @@ mono_thread_set_name_internal (MonoInternalThread *this_obj,
 		UNLOCK_THREAD (this_obj);
 		
 		mono_error_set_invalid_operation (error, "%s", "Thread.Name can only be set once.");
-		return;
+		return name_generation;
 	}
+
+	name_generation = ++this_obj->name_generation;
+
 	if (this_obj->name) {
 		g_free (this_obj->name);
 		this_obj->name_len = 0;
@@ -1895,13 +1904,16 @@ mono_thread_set_name_internal (MonoInternalThread *this_obj,
 
 	if (this_obj->name && tid) {
 		char *tname = mono_string_to_utf8_checked_internal (name, error);
-		return_if_nok (error);
-		MONO_PROFILER_RAISE (thread_name, ((uintptr_t)tid, tname));
-		mono_native_thread_set_name (tid, tname);
-		mono_free (tname);
+		if (is_ok (error)) {
+			MONO_PROFILER_RAISE (thread_name, ((uintptr_t)tid, tname));
+			mono_native_thread_set_name (tid, tname);
+			mono_free (tname);
+		}
 	}
 
 	mono_thread_set_name_windows (this_obj->native_handle, name ? mono_string_chars_internal (name) : NULL);
+
+	return name_generation;
 }
 
 void 

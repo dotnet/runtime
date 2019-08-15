@@ -574,6 +574,7 @@ struct _MonoInternalThread {
 	MonoThreadHandle *handle;
 	gpointer native_handle;
 	gunichar2  *name;
+	volatile gsize name_generation;
 	guint32	    name_len;
 	guint32	    state;      /* must be accessed while longlived->synch_cs is locked */
 	MonoException *abort_exc;

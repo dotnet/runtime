@@ -350,7 +350,7 @@ typedef enum {
 G_ENUM_FUNCTIONS (MonoSetThreadNameFlags)
 
 MONO_PROFILER_API
-void
+gsize
 mono_thread_set_name_internal (MonoInternalThread *thread,
 			       MonoString *name,
 			       MonoSetThreadNameFlags flags, MonoError *error);

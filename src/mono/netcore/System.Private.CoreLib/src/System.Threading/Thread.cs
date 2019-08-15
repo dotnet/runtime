@@ -22,6 +22,7 @@ namespace System.Threading
 		IntPtr native_handle; // used only on Win32
 		/* accessed only from unmanaged code */
 		private IntPtr name;
+		private IntPtr name_generation;
 		private int name_len;
 		private ThreadState state;
 		private object abort_exc;
