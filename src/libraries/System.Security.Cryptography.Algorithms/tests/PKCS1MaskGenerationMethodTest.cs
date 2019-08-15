@@ -68,6 +68,16 @@ namespace System.Security.Cryptography.Algorithms.Tests
             Assert.Throws<OverflowException>(() => pkcs1.GenerateMask(random, -1));
         }
 
+        [Theory]
+        [InlineData("DoesntExist")]
+        [InlineData("DSA")]
+        public static void GenerateMask_InvalidHashName_Throws(string hashName)
+        {
+            PKCS1MaskGenerationMethod pkcs1 = new PKCS1MaskGenerationMethod();
+            pkcs1.HashName = hashName;
+            Assert.Throws<CryptographicException>(() => pkcs1.GenerateMask(new byte[] { 0 }, 1));
+        }
+
         [Fact]
         public static void GenerateMaskTest_SHA1()
         {
