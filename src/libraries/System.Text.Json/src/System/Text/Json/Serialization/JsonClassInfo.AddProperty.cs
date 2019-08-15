@@ -112,10 +112,23 @@ namespace System.Text.Json
             Type propertyInfoClassType;
             if (runtimePropertyType.IsGenericType && runtimePropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
             {
-                // For Nullable, use the underlying type.
-                Type underlyingPropertyType = Nullable.GetUnderlyingType(runtimePropertyType);
-                propertyInfoClassType = typeof(JsonPropertyInfoNullable<,>).MakeGenericType(parentClassType, underlyingPropertyType);
-                converter = options.DetermineConverterForProperty(parentClassType, underlyingPropertyType, propertyInfo);
+                // First try to find a converter for the Nullable, then if not found use the underlying type.
+                // This supports custom converters that want to (de)serialize as null when the value is not null.
+                converter = options.DetermineConverterForProperty(parentClassType, runtimePropertyType, propertyInfo);
+                if (converter != null)
+                {
+                    propertyInfoClassType = typeof(JsonPropertyInfoNotNullable<,,,>).MakeGenericType(
+                        parentClassType,
+                        declaredPropertyType,
+                        runtimePropertyType,
+                        runtimePropertyType);
+                }
+                else
+                {
+                    Type typeToConvert = Nullable.GetUnderlyingType(runtimePropertyType);
+                    converter = options.DetermineConverterForProperty(parentClassType, typeToConvert, propertyInfo);
+                    propertyInfoClassType = typeof(JsonPropertyInfoNullable<,>).MakeGenericType(parentClassType, typeToConvert);
+                }
             }
             else
             {

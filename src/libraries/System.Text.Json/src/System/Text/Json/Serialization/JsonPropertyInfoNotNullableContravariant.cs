@@ -29,9 +29,6 @@ namespace System.Text.Json.Serialization
             }
             else
             {
-                // Null values were already handled.
-                Debug.Assert(value != null);
-
                 Set(state.Current.ReturnValue, (TDeclaredProperty)value);
             }
 

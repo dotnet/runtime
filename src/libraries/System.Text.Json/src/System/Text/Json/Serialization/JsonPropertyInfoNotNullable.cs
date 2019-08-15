@@ -30,9 +30,6 @@ namespace System.Text.Json
             }
             else
             {
-                // Null values were already handled.
-                Debug.Assert(value != null);
-
                 Set(state.Current.ReturnValue, value);
             }
         }
