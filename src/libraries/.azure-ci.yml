@@ -7,7 +7,7 @@ trigger:
   branches:
     include:
     - master
-    - release/3.0
+    - release/3.*
   paths:
     exclude:
     - Documentation/*
@@ -17,7 +17,7 @@ pr:
   branches:
     include:
     - master
-    - release/3.0
+    - release/3.*
   paths:
     exclude:
     - Documentation/*
