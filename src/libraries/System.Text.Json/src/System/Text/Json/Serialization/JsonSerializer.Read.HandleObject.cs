@@ -56,7 +56,11 @@ namespace System.Text.Json
         {
             Debug.Assert(!state.Current.IsProcessingDictionary && !state.Current.IsProcessingIDictionaryConstructible);
 
-            state.Current.JsonClassInfo.UpdateSortedPropertyCache(ref state.Current);
+            // Check if we are trying to build the sorted cache.
+            if (state.Current.PropertyRefCache != null)
+            {
+                state.Current.JsonClassInfo.UpdateSortedPropertyCache(ref state.Current);
+            }
 
             object value = state.Current.ReturnValue;
 
