@@ -989,15 +989,7 @@ namespace System.Reflection.Emit
     internal class DynamicScope
     {
         #region Private Data Members
-        internal List<object?> m_tokens;
-        #endregion
-
-        #region Constructor
-        internal DynamicScope()
-        {
-            m_tokens = new List<object?>();
-            m_tokens.Add(null);
-        }
+        internal readonly List<object?> m_tokens = new List<object?> { null };
         #endregion
 
         #region Internal Methods
