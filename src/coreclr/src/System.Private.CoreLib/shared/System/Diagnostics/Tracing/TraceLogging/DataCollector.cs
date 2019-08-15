@@ -83,8 +83,8 @@ namespace System.Diagnostics.Tracing
             var pb = (byte*)value;
             if (this.bufferNesting == 0)
             {
-                var scratchOld = this.scratch;
-                var scratchNew = scratchOld + size;
+                byte* scratchOld = this.scratch;
+                byte* scratchNew = scratchOld + size;
                 if (this.scratchEnd < scratchNew)
                 {
                     throw new IndexOutOfRangeException(SR.EventSource_AddScalarOutOfRange);
@@ -100,7 +100,7 @@ namespace System.Diagnostics.Tracing
             }
             else
             {
-                var oldPos = this.bufferPos;
+                int oldPos = this.bufferPos;
                 this.bufferPos = checked(this.bufferPos + size);
                 this.EnsureBuffer();
                 Debug.Assert(buffer != null);
@@ -135,7 +135,7 @@ namespace System.Diagnostics.Tracing
                 }
                 else
                 {
-                    var oldPos = this.bufferPos;
+                    int oldPos = this.bufferPos;
                     this.bufferPos = checked(this.bufferPos + size);
                     this.EnsureBuffer();
                     Debug.Assert(buffer != null);
@@ -177,7 +177,7 @@ namespace System.Diagnostics.Tracing
             }
             else
             {
-                var oldPos = this.bufferPos;
+                int oldPos = this.bufferPos;
                 this.bufferPos = checked(this.bufferPos + size);
                 this.EnsureBuffer();
                 Debug.Assert(buffer != null);
@@ -201,7 +201,7 @@ namespace System.Diagnostics.Tracing
                 length = ushort.MaxValue;
             }
 
-            var size = length * itemSize;
+            int size = length * itemSize;
             if (this.bufferNesting != 0)
             {
                 this.EnsureBuffer(size + 2);
@@ -218,7 +218,7 @@ namespace System.Diagnostics.Tracing
                 }
                 else
                 {
-                    var oldPos = this.bufferPos;
+                    int oldPos = this.bufferPos;
                     this.bufferPos = checked(this.bufferPos + size);
                     this.EnsureBuffer();
                     Debug.Assert(value != null && buffer != null);
@@ -288,7 +288,7 @@ namespace System.Diagnostics.Tracing
 
         private void EnsureBuffer()
         {
-            var required = this.bufferPos;
+            int required = this.bufferPos;
             if (this.buffer == null || this.buffer.Length < required)
             {
                 this.GrowBuffer(required);
@@ -297,7 +297,7 @@ namespace System.Diagnostics.Tracing
 
         private void EnsureBuffer(int additionalSize)
         {
-            var required = this.bufferPos + additionalSize;
+            int required = this.bufferPos + additionalSize;
             if (this.buffer == null || this.buffer.Length < required)
             {
                 this.GrowBuffer(required);
@@ -306,7 +306,7 @@ namespace System.Diagnostics.Tracing
 
         private void GrowBuffer(int required)
         {
-            var newSize = this.buffer == null ? 64 : this.buffer.Length;
+            int newSize = this.buffer == null ? 64 : this.buffer.Length;
 
             do
             {
@@ -319,13 +319,13 @@ namespace System.Diagnostics.Tracing
 
         private void PinArray(object? value, int size)
         {
-            var pinsTemp = this.pins;
+            GCHandle* pinsTemp = this.pins;
             if (this.pinsEnd <= pinsTemp)
             {
                 throw new IndexOutOfRangeException(SR.EventSource_PinArrayOutOfRange);
             }
 
-            var datasTemp = this.datas;
+            EventSource.EventData* datasTemp = this.datas;
             if (this.datasEnd <= datasTemp)
             {
                 throw new IndexOutOfRangeException(SR.EventSource_DataDescriptorsOutOfRange);
@@ -343,7 +343,7 @@ namespace System.Diagnostics.Tracing
         {
             if (!this.writingScalars)
             {
-                var datasTemp = this.datas;
+                EventSource.EventData* datasTemp = this.datas;
                 if (this.datasEnd <= datasTemp)
                 {
                     throw new IndexOutOfRangeException(SR.EventSource_DataDescriptorsOutOfRange);
@@ -358,7 +358,7 @@ namespace System.Diagnostics.Tracing
         {
             if (this.writingScalars)
             {
-                var datasTemp = this.datas;
+                EventSource.EventData* datasTemp = this.datas;
                 datasTemp->m_Size = checked((int)(this.scratch - (byte*)datasTemp->m_Ptr));
                 this.datas = datasTemp + 1;
                 this.writingScalars = false;

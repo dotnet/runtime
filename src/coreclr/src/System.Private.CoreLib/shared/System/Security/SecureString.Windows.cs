@@ -271,7 +271,7 @@ namespace System.Security
                 return;
             }
 
-            var oldBuffer = _buffer;
+            SafeBSTRHandle oldBuffer = _buffer;
             SafeBSTRHandle newBuffer = SafeBSTRHandle.Allocate(GetAlignedSize((uint)capacity));
             SafeBSTRHandle.Copy(oldBuffer, newBuffer, (uint)_decryptedLength * sizeof(char));
             _buffer = newBuffer;

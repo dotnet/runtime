@@ -35,13 +35,13 @@ namespace System.Diagnostics.Tracing
 
         public override void WriteData(TraceLoggingDataCollector collector, PropertyValue value)
         {
-            var bookmark = collector.BeginBufferedArray();
+            int bookmark = collector.BeginBufferedArray();
 
-            var count = 0;
+            int count = 0;
             IEnumerable? enumerable = (IEnumerable?)value.ReferenceValue;
             if (enumerable != null)
             {
-                foreach (var element in enumerable)
+                foreach (object? element in enumerable)
                 {
                     this.elementInfo.WriteData(collector, elementInfo.PropertyValueFactory(element));
                     count++;
@@ -56,7 +56,7 @@ namespace System.Diagnostics.Tracing
             Debug.Assert(value != null, "null accepted only for some overrides");
             var iterType = (IEnumerable)value;
             List<object?> serializedEnumerable = new List<object?>();
-            foreach (var element in iterType)
+            foreach (object? element in iterType)
             {
                 serializedEnumerable.Add(elementInfo.GetData(element));
             }

@@ -73,7 +73,7 @@ namespace System.Buffers
                 return Array.Empty<T>();
             }
 
-            var log = ArrayPoolEventSource.Log;
+            ArrayPoolEventSource log = ArrayPoolEventSource.Log;
             T[]? buffer;
 
             int index = Utilities.SelectBucketIndex(minimumLength);
@@ -152,7 +152,7 @@ namespace System.Buffers
             }
 
             // Log that the buffer was returned
-            var log = ArrayPoolEventSource.Log;
+            ArrayPoolEventSource log = ArrayPoolEventSource.Log;
             if (log.IsEnabled())
             {
                 log.BufferReturned(array.GetHashCode(), array.Length, Id);
@@ -217,7 +217,7 @@ namespace System.Buffers
                 {
                     buffer = GC.AllocateUninitializedArray<T>(_bufferLength);
 
-                    var log = ArrayPoolEventSource.Log;
+                    ArrayPoolEventSource log = ArrayPoolEventSource.Log;
                     if (log.IsEnabled())
                     {
                         log.BufferAllocated(buffer.GetHashCode(), _bufferLength, _poolId, Id,

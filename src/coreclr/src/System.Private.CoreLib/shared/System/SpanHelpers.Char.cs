@@ -993,7 +993,7 @@ namespace System
                 unchecked
                 {
                     // Flag least significant power of two bit
-                    var powerOfTwoFlag = match ^ (match - 1);
+                    ulong powerOfTwoFlag = match ^ (match - 1);
                     // Shift all powers of two into the high byte and extract
                     return (int)((powerOfTwoFlag * XorPowerOfTwoToHighChar) >> 49);
                 }

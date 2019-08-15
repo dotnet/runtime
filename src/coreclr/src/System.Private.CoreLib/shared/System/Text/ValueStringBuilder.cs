@@ -85,7 +85,7 @@ namespace System.Text
 
         public override string ToString()
         {
-            var s = _chars.Slice(0, _pos).ToString();
+            string s = _chars.Slice(0, _pos).ToString();
             Dispose();
             return s;
         }

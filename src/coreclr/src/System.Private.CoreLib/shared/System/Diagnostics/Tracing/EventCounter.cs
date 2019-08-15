@@ -174,7 +174,7 @@ namespace System.Diagnostics.Tracing
             Debug.Assert(Monitor.IsEntered(this));
             for (int i = 0; i < _bufferedValues.Length; i++)
             {
-                var value = Interlocked.Exchange(ref _bufferedValues[i], UnusedBufferSlotValue);
+                double value = Interlocked.Exchange(ref _bufferedValues[i], UnusedBufferSlotValue);
                 if (value != UnusedBufferSlotValue)
                 {
                     OnMetricWritten(value);

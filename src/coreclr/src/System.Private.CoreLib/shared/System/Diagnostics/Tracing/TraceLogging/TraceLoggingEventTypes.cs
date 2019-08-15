@@ -109,11 +109,11 @@ namespace System.Diagnostics.Tracing
             var collector = new TraceLoggingMetadataCollector();
             for (int i = 0; i < typeInfos.Length; ++i)
             {
-                var typeInfo = typeInfos[i];
+                TraceLoggingTypeInfo typeInfo = typeInfos[i];
                 this.level = Statics.Combine((int)typeInfo.Level, this.level);
                 this.opcode = Statics.Combine((int)typeInfo.Opcode, this.opcode);
                 this.keywords |= typeInfo.Keywords;
-                var paramName = paramInfos[i].Name;
+                string? paramName = paramInfos[i].Name;
                 if (Statics.ShouldOverrideFieldName(paramName!))
                 {
                     paramName = typeInfo.Name;
@@ -143,7 +143,7 @@ namespace System.Diagnostics.Tracing
             this.level = Statics.DefaultLevel;
 
             var collector = new TraceLoggingMetadataCollector();
-            foreach (var typeInfo in typeInfos)
+            foreach (TraceLoggingTypeInfo typeInfo in typeInfos)
             {
                 this.level = Statics.Combine((int)typeInfo.Level, this.level);
                 this.opcode = Statics.Combine((int)typeInfo.Opcode, this.opcode);
@@ -199,7 +199,7 @@ namespace System.Diagnostics.Tracing
 
         internal NameInfo GetNameInfo(string name, EventTags tags)
         {
-            var ret = this.nameInfos.TryGet(new KeyValuePair<string, EventTags>(name, tags));
+            NameInfo? ret = this.nameInfos.TryGet(new KeyValuePair<string, EventTags>(name, tags));
             if (ret == null)
             {
                 ret = this.nameInfos.GetOrAdd(new NameInfo(name, tags, this.typeMetadata.Length));

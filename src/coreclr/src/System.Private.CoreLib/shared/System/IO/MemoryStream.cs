@@ -413,7 +413,7 @@ namespace System.IO
             try
             {
                 int n = Read(buffer, offset, count);
-                var t = _lastReadTask;
+                Task<int>? t = _lastReadTask;
                 Debug.Assert(t == null || t.Status == TaskStatus.RanToCompletion,
                     "Expected that a stored last task completed successfully");
                 return (t != null && t.Result == n) ? t : (_lastReadTask = Task.FromResult<int>(n));

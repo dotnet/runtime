@@ -114,7 +114,7 @@ namespace System.Diagnostics.Tracing
             }
 
             Statics.CheckName(name);
-            var coreType = (int)dataType & Statics.InTypeMask;
+            int coreType = (int)dataType & Statics.InTypeMask;
             this.name = name;
             this.nameSize = Encoding.UTF8.GetByteCount(this.name) + 1;
             this.inType = (byte)(coreType | countFlags);

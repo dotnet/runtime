@@ -186,7 +186,7 @@ namespace System
             _compareInfo = (CompareInfo)info.GetValue("_compareInfo", typeof(CompareInfo))!;
             bool ignoreCase = info.GetBoolean("_ignoreCase");
 
-            var obj = info.GetValueNoThrow("_options", typeof(CompareOptions));
+            object? obj = info.GetValueNoThrow("_options", typeof(CompareOptions));
             if (obj != null)
                 _options = (CompareOptions)obj;
 

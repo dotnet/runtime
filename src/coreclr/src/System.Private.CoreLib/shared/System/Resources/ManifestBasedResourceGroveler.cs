@@ -146,7 +146,7 @@ namespace System.Resources
         {
             Debug.Assert(a != null, "assembly != null");
 
-            var attr = a.GetCustomAttribute<NeutralResourcesLanguageAttribute>();
+            NeutralResourcesLanguageAttribute? attr = a.GetCustomAttribute<NeutralResourcesLanguageAttribute>();
             if (attr == null)
             {
                 fallbackLocation = UltimateResourceFallbackLocation.MainAssembly;

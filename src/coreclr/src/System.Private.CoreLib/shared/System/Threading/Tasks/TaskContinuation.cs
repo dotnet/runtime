@@ -486,7 +486,7 @@ namespace System.Threading.Tasks
 
                 // Create the continuation task task. If we're allowed to inline, try to do so.
                 // The target scheduler may still deny us from executing on this thread, in which case this'll be queued.
-                var task = CreateTask(state =>
+                Task task = CreateTask(state =>
                 {
                     try
                     {
@@ -603,19 +603,19 @@ namespace System.Threading.Tasks
             {
                 // If there's a SynchronizationContext, we'll be conservative and say
                 // this is a bad location to inline.
-                var ctx = SynchronizationContext.Current;
+                SynchronizationContext? ctx = SynchronizationContext.Current;
                 if (ctx != null && ctx.GetType() != typeof(SynchronizationContext)) return false;
 
                 // Similarly, if there's a non-default TaskScheduler, we'll be conservative
                 // and say this is a bad location to inline.
-                var sched = TaskScheduler.InternalCurrent;
+                TaskScheduler? sched = TaskScheduler.InternalCurrent;
                 return sched == null || sched == TaskScheduler.Default;
             }
         }
 
         void IThreadPoolWorkItem.Execute()
         {
-            var log = TplEventSource.Log;
+            TplEventSource log = TplEventSource.Log;
             ExecutionContext? context = m_capturedContext;
 
             if (!log.IsEnabled() && context == null)
@@ -681,7 +681,7 @@ namespace System.Threading.Tasks
 
             // Pretend there's no current task, so that no task is seen as a parent
             // and TaskScheduler.Current does not reflect false information
-            var prevCurrentTask = currentTask;
+            Task? prevCurrentTask = currentTask;
             try
             {
                 if (prevCurrentTask != null) currentTask = null;
@@ -807,7 +807,7 @@ namespace System.Threading.Tasks
         {
             AwaitTaskContinuation atc = new AwaitTaskContinuation(action, flowExecutionContext: false);
 
-            var log = TplEventSource.Log;
+            TplEventSource log = TplEventSource.Log;
             if (log.IsEnabled() && task != null)
             {
                 atc.m_continuationId = Task.NewId();
