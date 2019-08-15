@@ -1,0 +1,129 @@
+<Project>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
+  <Target Name="SignPackages"
+          Condition="'$(SkipSigning)' != 'true' and '$(SignType)' != 'public'">
+    <Message Importance="High" Text="Signing final packages" />
+    <MSBuild
+      Projects="$(RepoRoot)signing\SignFinalPackages.proj"
+      Targets="Build"
+      Properties="DownloadDirectory=$(DownloadDirectory)" />
+  </Target>
+
+  <Target Name="UploadPreparedArtifactsToPipeline"
+          DependsOnTargets="
+            FindDownloadedArtifacts;
+            SignPackages">
+    <PropertyGroup>
+      <PreparedFileUploadDir>$(ArtifactsObjDir)PreparedFileUpload\</PreparedFileUploadDir>
+    </PropertyGroup>
+
+    <Copy SourceFiles="@(UploadToBlobStorageFile)" DestinationFolder="$(PreparedFileUploadDir)">
+      <Output TaskParameter="CopiedFiles" ItemName="CopiedUploadToBlobStorageFile" />
+    </Copy>
+
+    <Message Importance="High" Text="Uploading PreparedArtifacts to pipeline" />
+    <Message
+      Text="##vso[artifact.upload containerfolder=PreparedArtifacts;artifactname=PreparedArtifacts]%(CopiedUploadToBlobStorageFile.Identity)"
+      Importance="High" />
+  </Target>
+
+  <Target Name="PreparePublishToAzureBlobFeed">
+    <Error Condition="'$(PackagesUrl)'==''" Text="Missing property PackagesUrl" />
+
+    <PropertyGroup>
+      <ExpectedFeedUrl>$(PackagesUrl)</ExpectedFeedUrl>
+      <AssetManifestFilename>Manifest.xml</AssetManifestFilename>
+      <AssetManifestFile>$(ArtifactsLogDir)AssetManifest/$(AssetManifestFilename)</AssetManifestFile>
+
+      <!-- Create temp dir to store generated asset manifest, per Arcade guidance. -->
+      <TempWorkingDir>$(ArtifactsObjDir)TempWorkingDir\$([System.Guid]::NewGuid())\</TempWorkingDir>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ItemsToPush Remove="@(ItemsToPush)" />
+
+      <ItemsToPush Include="@(NupkgToPublishFile)" />
+      <ItemsToPush Include="@(SymbolNupkgToPublishFile)" />
+    </ItemGroup>
+
+    <!-- Push items to AzDO as build artifacts, generating the asset manifest as a side effect. -->
+    <PushToAzureDevOpsArtifacts
+      ItemsToPush="@(ItemsToPush)"
+      ManifestBuildData="Location=$(ExpectedFeedUrl)"
+      ManifestRepoUri="$(BUILD_REPOSITORY_URI)"
+      ManifestBranch="$(BUILD_SOURCEBRANCH)"
+      ManifestBuildId="$(BUILD_BUILDNUMBER)"
+      ManifestCommit="$(BUILD_SOURCEVERSION)"
+      AssetManifestPath="$(AssetManifestFile)"
+      AssetsTemporaryDirectory="$(TempWorkingDir)" />
+
+    <!-- Copy the generated manifest to the build's artifacts -->
+    <Copy SourceFiles="$(AssetManifestFile)" DestinationFolder="$(TempWorkingDir)" />
+
+    <Message Importance="High" Text="Uploading $(AssetManifestFilename) to pipeline" />
+    <Message
+      Text="##vso[artifact.upload containerfolder=AssetManifests;artifactname=AssetManifests]$(TempWorkingDir)$(AssetManifestFilename)"
+      Importance="High" />
+  </Target>
+
+  <Target Name="PreparePublishFilesToAzureBlobFeed"
+          DependsOnTargets="GetProductVersions">
+    <Error Condition="'$(PackagesUrl)'==''" Text="Missing property PackagesUrl" />
+
+    <PropertyGroup>
+      <ExpectedFeedUrl>$(PackagesUrl)</ExpectedFeedUrl>
+      <AssetManifestFilename>Manifest_Installers.xml</AssetManifestFilename>
+      <AssetManifestFile>$(ArtifactsLogDir)AssetManifest/$(AssetManifestFilename)</AssetManifestFile>
+
+      <!-- Create temp dir to store generated asset manifest, per Arcade guidance. -->
+      <TempWorkingDir>$(ArtifactsObjDir)TempWorkingDir\$([System.Guid]::NewGuid())\</TempWorkingDir>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ItemsToPush Remove="@(ItemsToPush)" />
+
+      <ItemsToPush
+        Include="@(UploadToBlobStorageFile)"
+        Exclude="@(NupkgToPublishFile);@(SymbolNupkgToPublishFile)" />
+      <ItemsToPush>
+        <RelativeBlobPath>assets/core-setup/$(InstallersRelativePath)%(Filename)%(Extension)</RelativeBlobPath>
+      </ItemsToPush>
+    </ItemGroup>
+
+    <!-- Push items to AzDO as build artifacts, generating the asset manifest as a side effect. -->
+    <PushToAzureDevOpsArtifacts
+      ItemsToPush="@(ItemsToPush)"
+      ManifestBuildData="Location=$(ExpectedFeedUrl)"
+      ManifestRepoUri="$(BUILD_REPOSITORY_URI)"
+      ManifestBranch="$(BUILD_SOURCEBRANCH)"
+      ManifestBuildId="$(BUILD_BUILDNUMBER)"
+      ManifestCommit="$(BUILD_SOURCEVERSION)"
+      PublishFlatContainer="true"
+      AssetManifestPath="$(AssetManifestFile)"
+      AssetsTemporaryDirectory="$(TempWorkingDir)" />
+
+    <!-- Copy the generated manifest to the build's artifacts -->
+    <Copy SourceFiles="$(AssetManifestFile)" DestinationFolder="$(TempWorkingDir)" />
+
+    <Message Importance="High" Text="Uploading $(AssetManifestFilename) to pipeline" />
+    <Message
+      Text="##vso[artifact.upload containerfolder=AssetManifests;artifactname=AssetManifests]$(TempWorkingDir)$(AssetManifestFilename)"
+      Importance="High" />
+  </Target>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+
+  <!--
+    Take assets from the build jobs, prepare them for publishing (signing, arrangement) then upload
+    them to the pipeline for Arcade and custom steps to publish.
+  -->
+  <Target Name="Build"
+          DependsOnTargets="
+            UploadPreparedArtifactsToPipeline;
+            PreparePublishToAzureBlobFeed;
+            PreparePublishFilesToAzureBlobFeed">
+    <Message Importance="High" Text="Complete!" />
+  </Target>
+
+</Project>
