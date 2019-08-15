@@ -39,7 +39,7 @@ namespace System.Net.Security
             {
                 if (!ExceptionCheck.IsFatal(e))
                 {
-                    NetEventSource.Fail(null, "Attempted to throw: {e}");
+                    if (NetEventSource.IsEnabled) NetEventSource.Fail(null, $"Attempted to throw: {e}");
                 }
             }
         }
