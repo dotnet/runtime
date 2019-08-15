@@ -492,22 +492,22 @@ namespace System.Tests
             yield return new object[] { fullUri, UriComponents.StrongPort, "80" };
             yield return new object[] { fullUri, UriComponents.UserInfo, "userinfo" };
 
-            Uri unicodeHostUri = new Uri("http://привет.βέλασμα");
-            yield return new object[] { unicodeHostUri, UriComponents.Host, "привет.βέλασμα" };
-            yield return new object[] { unicodeHostUri, UriComponents.NormalizedHost, "привет.βέλασμα" };
+            Uri unicodeHostUri = new Uri("http://\u043F\u0440\u0438\u0432\u0435\u0442.\u03B2\u03AD\u03BB\u03B1\u03C3\u03BC\u03B1");
+            yield return new object[] { unicodeHostUri, UriComponents.Host, "\u043F\u0440\u0438\u0432\u0435\u0442.\u03B2\u03AD\u03BB\u03B1\u03C3\u03BC\u03B1" };
+            yield return new object[] { unicodeHostUri, UriComponents.NormalizedHost, "\u043F\u0440\u0438\u0432\u0435\u0442.\u03B2\u03AD\u03BB\u03B1\u03C3\u03BC\u03B1" };
 
             // Punicode
             Uri punicodeUriWithoutAscii = new Uri("http://xn--b1agh1afp");
             yield return new object[] { punicodeUriWithoutAscii, UriComponents.Host, "xn--b1agh1afp" };
-            yield return new object[] { punicodeUriWithoutAscii, UriComponents.NormalizedHost, "привет" };
+            yield return new object[] { punicodeUriWithoutAscii, UriComponents.NormalizedHost, "\u043F\u0440\u0438\u0432\u0435\u0442" };
 
             Uri punicodeUriWithAscii1 = new Uri("http://xn--b1agh1afp.xyza");
             yield return new object[] { punicodeUriWithAscii1, UriComponents.Host, "xn--b1agh1afp.xyza" };
-            yield return new object[] { punicodeUriWithAscii1, UriComponents.NormalizedHost, "привет.xyza" };
+            yield return new object[] { punicodeUriWithAscii1, UriComponents.NormalizedHost, "\u043F\u0440\u0438\u0432\u0435\u0442.xyza" };
 
             Uri punicodeUriWithAscii2 = new Uri("http://xn--b1agh1afp.ascii.xn--b1agh1afp");
             yield return new object[] { punicodeUriWithAscii2, UriComponents.Host, "xn--b1agh1afp.ascii.xn--b1agh1afp" };
-            yield return new object[] { punicodeUriWithAscii2, UriComponents.NormalizedHost, "привет.ascii.привет" };
+            yield return new object[] { punicodeUriWithAscii2, UriComponents.NormalizedHost, "\u043F\u0440\u0438\u0432\u0435\u0442.ascii.\u043F\u0440\u0438\u0432\u0435\u0442" };
 
             Uri invalidPunicodeUri = new Uri("http://xn--\u1234pck.com");
             yield return new object[] { invalidPunicodeUri, UriComponents.Host, "xn--\u1234pck.com" };
@@ -581,55 +581,55 @@ namespace System.Tests
 
         public static IEnumerable<object[]> GetComponents_Advanced_TestData()
         {
-            Uri unescapedUri = new Uri("http://ab\u1234\u2345\u3456cd@привет/\u4567/\u5678?\u6789#\u7890");
-            yield return new object[] { unescapedUri, UriComponents.AbsoluteUri, UriFormat.UriEscaped, "http://ab%E1%88%B4%E2%8D%85%E3%91%96cd@привет/%E4%95%A7/%E5%99%B8?%E6%9E%89#%E7%A2%90" };
+            Uri unescapedUri = new Uri("http://ab\u1234\u2345\u3456cd@\u043F\u0440\u0438\u0432\u0435\u0442/\u4567/\u5678?\u6789#\u7890");
+            yield return new object[] { unescapedUri, UriComponents.AbsoluteUri, UriFormat.UriEscaped, "http://ab%E1%88%B4%E2%8D%85%E3%91%96cd@\u043F\u0440\u0438\u0432\u0435\u0442/%E4%95%A7/%E5%99%B8?%E6%9E%89#%E7%A2%90" };
             yield return new object[] { unescapedUri, UriComponents.Fragment, UriFormat.UriEscaped, "%E7%A2%90" };
-            yield return new object[] { unescapedUri, UriComponents.Host, UriFormat.UriEscaped, "привет" };
-            yield return new object[] { unescapedUri, UriComponents.HostAndPort, UriFormat.UriEscaped, "привет:80" };
-            yield return new object[] { unescapedUri, UriComponents.HttpRequestUrl, UriFormat.UriEscaped, "http://привет/%E4%95%A7/%E5%99%B8?%E6%9E%89" };
-            yield return new object[] { unescapedUri, UriComponents.NormalizedHost, UriFormat.UriEscaped, "привет" };
+            yield return new object[] { unescapedUri, UriComponents.Host, UriFormat.UriEscaped, "\u043F\u0440\u0438\u0432\u0435\u0442" };
+            yield return new object[] { unescapedUri, UriComponents.HostAndPort, UriFormat.UriEscaped, "\u043F\u0440\u0438\u0432\u0435\u0442:80" };
+            yield return new object[] { unescapedUri, UriComponents.HttpRequestUrl, UriFormat.UriEscaped, "http://\u043F\u0440\u0438\u0432\u0435\u0442/%E4%95%A7/%E5%99%B8?%E6%9E%89" };
+            yield return new object[] { unescapedUri, UriComponents.NormalizedHost, UriFormat.UriEscaped, "\u043F\u0440\u0438\u0432\u0435\u0442" };
             yield return new object[] { unescapedUri, UriComponents.Path, UriFormat.UriEscaped, "%E4%95%A7/%E5%99%B8" };
             yield return new object[] { unescapedUri, UriComponents.PathAndQuery, UriFormat.UriEscaped, "/%E4%95%A7/%E5%99%B8?%E6%9E%89" };
             yield return new object[] { unescapedUri, UriComponents.Port, UriFormat.UriEscaped, "" };
             yield return new object[] { unescapedUri, UriComponents.Query, UriFormat.UriEscaped, "%E6%9E%89" };
             yield return new object[] { unescapedUri, UriComponents.Scheme, UriFormat.UriEscaped, "http" };
-            yield return new object[] { unescapedUri, UriComponents.SchemeAndServer, UriFormat.UriEscaped, "http://привет" };
-            yield return new object[] { unescapedUri, UriComponents.SerializationInfoString, UriFormat.UriEscaped, "http://ab%E1%88%B4%E2%8D%85%E3%91%96cd@привет/%E4%95%A7/%E5%99%B8?%E6%9E%89#%E7%A2%90" };
-            yield return new object[] { unescapedUri, UriComponents.StrongAuthority, UriFormat.UriEscaped, "ab%E1%88%B4%E2%8D%85%E3%91%96cd@привет:80" };
+            yield return new object[] { unescapedUri, UriComponents.SchemeAndServer, UriFormat.UriEscaped, "http://\u043F\u0440\u0438\u0432\u0435\u0442" };
+            yield return new object[] { unescapedUri, UriComponents.SerializationInfoString, UriFormat.UriEscaped, "http://ab%E1%88%B4%E2%8D%85%E3%91%96cd@\u043F\u0440\u0438\u0432\u0435\u0442/%E4%95%A7/%E5%99%B8?%E6%9E%89#%E7%A2%90" };
+            yield return new object[] { unescapedUri, UriComponents.StrongAuthority, UriFormat.UriEscaped, "ab%E1%88%B4%E2%8D%85%E3%91%96cd@\u043F\u0440\u0438\u0432\u0435\u0442:80" };
             yield return new object[] { unescapedUri, UriComponents.StrongPort, UriFormat.UriEscaped, "80" };
             yield return new object[] { unescapedUri, UriComponents.UserInfo, UriFormat.UriEscaped, "ab%E1%88%B4%E2%8D%85%E3%91%96cd" };
 
-            yield return new object[] { unescapedUri, UriComponents.AbsoluteUri, UriFormat.Unescaped, "http://ab\u1234\u2345\u3456cd@привет/\u4567/\u5678?\u6789#\u7890" };
+            yield return new object[] { unescapedUri, UriComponents.AbsoluteUri, UriFormat.Unescaped, "http://ab\u1234\u2345\u3456cd@\u043F\u0440\u0438\u0432\u0435\u0442/\u4567/\u5678?\u6789#\u7890" };
             yield return new object[] { unescapedUri, UriComponents.Fragment, UriFormat.Unescaped, "\u7890" };
-            yield return new object[] { unescapedUri, UriComponents.Host, UriFormat.Unescaped, "привет" };
-            yield return new object[] { unescapedUri, UriComponents.HostAndPort, UriFormat.Unescaped, "привет:80" };
-            yield return new object[] { unescapedUri, UriComponents.HttpRequestUrl, UriFormat.Unescaped, "http://привет/\u4567/\u5678?\u6789" };
-            yield return new object[] { unescapedUri, UriComponents.NormalizedHost, UriFormat.Unescaped, "привет" };
+            yield return new object[] { unescapedUri, UriComponents.Host, UriFormat.Unescaped, "\u043F\u0440\u0438\u0432\u0435\u0442" };
+            yield return new object[] { unescapedUri, UriComponents.HostAndPort, UriFormat.Unescaped, "\u043F\u0440\u0438\u0432\u0435\u0442:80" };
+            yield return new object[] { unescapedUri, UriComponents.HttpRequestUrl, UriFormat.Unescaped, "http://\u043F\u0440\u0438\u0432\u0435\u0442/\u4567/\u5678?\u6789" };
+            yield return new object[] { unescapedUri, UriComponents.NormalizedHost, UriFormat.Unescaped, "\u043F\u0440\u0438\u0432\u0435\u0442" };
             yield return new object[] { unescapedUri, UriComponents.Path, UriFormat.Unescaped, "\u4567/\u5678" };
             yield return new object[] { unescapedUri, UriComponents.PathAndQuery, UriFormat.Unescaped, "/\u4567/\u5678?\u6789" };
             yield return new object[] { unescapedUri, UriComponents.Port, UriFormat.Unescaped, "" };
             yield return new object[] { unescapedUri, UriComponents.Query, UriFormat.Unescaped, "\u6789" };
             yield return new object[] { unescapedUri, UriComponents.Scheme, UriFormat.Unescaped, "http" };
-            yield return new object[] { unescapedUri, UriComponents.SchemeAndServer, UriFormat.Unescaped, "http://привет" };
-            yield return new object[] { unescapedUri, UriComponents.SerializationInfoString, UriFormat.Unescaped, "http://ab\u1234\u2345\u3456cd@привет/\u4567/\u5678?\u6789#\u7890" };
-            yield return new object[] { unescapedUri, UriComponents.StrongAuthority, UriFormat.Unescaped, "ab\u1234\u2345\u3456cd@привет:80" };
+            yield return new object[] { unescapedUri, UriComponents.SchemeAndServer, UriFormat.Unescaped, "http://\u043F\u0440\u0438\u0432\u0435\u0442" };
+            yield return new object[] { unescapedUri, UriComponents.SerializationInfoString, UriFormat.Unescaped, "http://ab\u1234\u2345\u3456cd@\u043F\u0440\u0438\u0432\u0435\u0442/\u4567/\u5678?\u6789#\u7890" };
+            yield return new object[] { unescapedUri, UriComponents.StrongAuthority, UriFormat.Unescaped, "ab\u1234\u2345\u3456cd@\u043F\u0440\u0438\u0432\u0435\u0442:80" };
             yield return new object[] { unescapedUri, UriComponents.StrongPort, UriFormat.Unescaped, "80" };
             yield return new object[] { unescapedUri, UriComponents.UserInfo, UriFormat.Unescaped, "ab\u1234\u2345\u3456cd" };
 
-            yield return new object[] { unescapedUri, UriComponents.AbsoluteUri, UriFormat.SafeUnescaped, "http://ab\u1234\u2345\u3456cd@привет/\u4567/\u5678?\u6789#\u7890" };
+            yield return new object[] { unescapedUri, UriComponents.AbsoluteUri, UriFormat.SafeUnescaped, "http://ab\u1234\u2345\u3456cd@\u043F\u0440\u0438\u0432\u0435\u0442/\u4567/\u5678?\u6789#\u7890" };
             yield return new object[] { unescapedUri, UriComponents.Fragment, UriFormat.SafeUnescaped, "\u7890" };
-            yield return new object[] { unescapedUri, UriComponents.Host, UriFormat.SafeUnescaped, "привет" };
-            yield return new object[] { unescapedUri, UriComponents.HostAndPort, UriFormat.SafeUnescaped, "привет:80" };
-            yield return new object[] { unescapedUri, UriComponents.HttpRequestUrl, UriFormat.SafeUnescaped, "http://привет/\u4567/\u5678?\u6789" };
-            yield return new object[] { unescapedUri, UriComponents.NormalizedHost, UriFormat.SafeUnescaped, "привет" };
+            yield return new object[] { unescapedUri, UriComponents.Host, UriFormat.SafeUnescaped, "\u043F\u0440\u0438\u0432\u0435\u0442" };
+            yield return new object[] { unescapedUri, UriComponents.HostAndPort, UriFormat.SafeUnescaped, "\u043F\u0440\u0438\u0432\u0435\u0442:80" };
+            yield return new object[] { unescapedUri, UriComponents.HttpRequestUrl, UriFormat.SafeUnescaped, "http://\u043F\u0440\u0438\u0432\u0435\u0442/\u4567/\u5678?\u6789" };
+            yield return new object[] { unescapedUri, UriComponents.NormalizedHost, UriFormat.SafeUnescaped, "\u043F\u0440\u0438\u0432\u0435\u0442" };
             yield return new object[] { unescapedUri, UriComponents.Path, UriFormat.SafeUnescaped, "\u4567/\u5678" };
             yield return new object[] { unescapedUri, UriComponents.PathAndQuery, UriFormat.SafeUnescaped, "/\u4567/\u5678?\u6789" };
             yield return new object[] { unescapedUri, UriComponents.Port, UriFormat.SafeUnescaped, "" };
             yield return new object[] { unescapedUri, UriComponents.Query, UriFormat.SafeUnescaped, "\u6789" };
             yield return new object[] { unescapedUri, UriComponents.Scheme, UriFormat.SafeUnescaped, "http" };
-            yield return new object[] { unescapedUri, UriComponents.SchemeAndServer, UriFormat.SafeUnescaped, "http://привет" };
-            yield return new object[] { unescapedUri, UriComponents.SerializationInfoString, UriFormat.SafeUnescaped, "http://ab\u1234\u2345\u3456cd@привет/\u4567/\u5678?\u6789#\u7890" };
-            yield return new object[] { unescapedUri, UriComponents.StrongAuthority, UriFormat.SafeUnescaped, "ab\u1234\u2345\u3456cd@привет:80" };
+            yield return new object[] { unescapedUri, UriComponents.SchemeAndServer, UriFormat.SafeUnescaped, "http://\u043F\u0440\u0438\u0432\u0435\u0442" };
+            yield return new object[] { unescapedUri, UriComponents.SerializationInfoString, UriFormat.SafeUnescaped, "http://ab\u1234\u2345\u3456cd@\u043F\u0440\u0438\u0432\u0435\u0442/\u4567/\u5678?\u6789#\u7890" };
+            yield return new object[] { unescapedUri, UriComponents.StrongAuthority, UriFormat.SafeUnescaped, "ab\u1234\u2345\u3456cd@\u043F\u0440\u0438\u0432\u0435\u0442:80" };
             yield return new object[] { unescapedUri, UriComponents.StrongPort, UriFormat.SafeUnescaped, "80" };
             yield return new object[] { unescapedUri, UriComponents.UserInfo, UriFormat.SafeUnescaped, "ab\u1234\u2345\u3456cd" };
 

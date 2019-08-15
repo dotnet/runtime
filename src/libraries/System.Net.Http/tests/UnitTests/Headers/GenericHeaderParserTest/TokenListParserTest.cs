@@ -37,9 +37,9 @@ namespace System.Net.Http.Tests
         [Fact]
         public void TryParse_SetOfInvalidValueStrings_ReturnsFalse()
         {
-            CheckInvalidParsedValue("teäxt", 0);
-            CheckInvalidParsedValue("text会", 0);
-            CheckInvalidParsedValue("会", 0);
+            CheckInvalidParsedValue("te\u00E4xt", 0);
+            CheckInvalidParsedValue("text\u4F1A", 0);
+            CheckInvalidParsedValue("\u4F1A", 0);
         }
 
         #region Helper methods

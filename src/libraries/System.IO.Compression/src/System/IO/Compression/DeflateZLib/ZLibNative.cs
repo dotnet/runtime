@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -108,7 +108,7 @@ namespace System.IO.Compression
         /// It should be in the range 8..15 for this version of the library. Larger values of this parameter result in better compression
         /// at the expense of memory usage. The default value is 15 if deflateInit is used instead.<br /></p>
         /// <strong>Note</strong>:
-        /// <code>windowBits</code> can also be –8..–15 for raw deflate. In this case, -windowBits determines the window size.
+        /// <code>windowBits</code> can also be -8..-15 for raw deflate. In this case, -windowBits determines the window size.
         /// <code>Deflate</code> will then generate raw deflate data with no ZLib header or trailer, and will not compute an adler32 check value.<br />
         /// <p>See also: How to choose a compression level (in comments to <code>CompressionLevel</code>.</p>
         /// </summary>

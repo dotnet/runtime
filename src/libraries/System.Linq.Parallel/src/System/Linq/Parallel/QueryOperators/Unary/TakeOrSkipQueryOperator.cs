@@ -21,7 +21,7 @@ namespace System.Linq.Parallel
     /// find the 'count'th index from the input.  We do this in parallel by sharing a count-
     /// sized array.  Each thread races to populate the array with indices in ascending
     /// order.  This requires synchronization for inserts.  We use a simple heap, for decent
-    /// worst case performance.  After a thread has scanned ‘count’ elements, or its current
+    /// worst case performance.  After a thread has scanned 'count' elements, or its current
     /// index is greater than or equal to the maximum index in the array (and the array is
     /// fully populated), the thread can stop searching.  All threads issue a barrier before
     /// moving to the Yield phase.  When the Yield phase is entered, the count-1th element

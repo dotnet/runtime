@@ -761,7 +761,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
 
     /// <summary>
     /// TaskType argument tells us what the type of all the antecedent tasks is, and what the type of the continuation task is.
-    /// The TaskTypeOption that ends with “NEW” additionally specifies that the ContinueWhen overload to be used is one that
+    /// The TaskTypeOption that ends with "NEW" additionally specifies that the ContinueWhen overload to be used is one that
     /// has two type arguments (TAntecedentResult, TResult).
     /// </summary>
     public enum TaskType

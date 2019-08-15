@@ -45,12 +45,12 @@ namespace System.Net.Http.Tests
         {
             CheckInvalidParsedValue("name[value", 0);
             CheckInvalidParsedValue("name=value=", 0);
-            CheckInvalidParsedValue("name=会", 0);
+            CheckInvalidParsedValue("name=\u4F1A", 0);
             CheckInvalidParsedValue("name==value", 0);
             CheckInvalidParsedValue("=value", 0);
             CheckInvalidParsedValue("name value", 0);
             CheckInvalidParsedValue("name=,value", 0);
-            CheckInvalidParsedValue("会", 0);
+            CheckInvalidParsedValue("\u4F1A", 0);
         }
 
         #region Helper methods

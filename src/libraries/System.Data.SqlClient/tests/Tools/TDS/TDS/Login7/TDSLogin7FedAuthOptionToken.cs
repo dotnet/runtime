@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -70,7 +70,7 @@ namespace Microsoft.SqlServer.TDS.Login7
         public TDSFedAuthLibraryType Library { get; private set; }
 
         /// <summary>
-        /// FedAuthEcho: The intention of this flag is for the client to echo the server’s FEDAUTHREQUIRED prelogin option.
+        /// FedAuthEcho: The intention of this flag is for the client to echo the server's FEDAUTHREQUIRED prelogin option.
         /// </summary>
         public TdsPreLoginFedAuthRequiredOption Echo { get; private set; }
 

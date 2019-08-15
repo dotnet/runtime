@@ -14,7 +14,7 @@ namespace System.Reflection.Emit.Tests
             yield return new object[] { "PropertyName", PropertyAttributes.None, typeof(int), new Type[] { typeof(int) }, "PropertyName", PropertyAttributes.None };
             yield return new object[] { "a\0b\0c", PropertyAttributes.HasDefault, typeof(int[]), new Type[] { typeof(int), typeof(double) }, "a", PropertyAttributes.None };
             yield return new object[] { "\uD800\uDC00", PropertyAttributes.RTSpecialName, typeof(EmptyNonGenericInterface1), new Type[0], "\uD800\uDC00", PropertyAttributes.None };
-            yield return new object[] { "привет", PropertyAttributes.SpecialName, typeof(EmptyNonGenericStruct), null, "привет", PropertyAttributes.SpecialName };
+            yield return new object[] { "\u043F\u0440\u0438\u0432\u0435\u0442", PropertyAttributes.SpecialName, typeof(EmptyNonGenericStruct), null, "\u043F\u0440\u0438\u0432\u0435\u0442", PropertyAttributes.SpecialName };
             yield return new object[] { "class", (PropertyAttributes)(-1), null, new Type[] { typeof(void) }, "class", PropertyAttributes.None };
             yield return new object[] { "Test Name With Spaces", (PropertyAttributes)8192, typeof(string), new Type[] { typeof(string) }, "Test Name With Spaces", PropertyAttributes.None };
             yield return new object[] { "PropertyName", PropertyAttributes.None, typeof(BasicDelegate), new Type[] { typeof(int) }, "PropertyName", PropertyAttributes.None };

@@ -384,9 +384,9 @@ namespace System.Net.Tests
                 "?name1=+&name2=\u1234&\u0100=value&name3=\u00FF", new NameValueCollection
                 {
                     { "name1", " " },
-                    { "name2", "á\u0088´" },
-                    { "Ä\u0080", "value" },
-                    { "name3", "Ã¿" }
+                    { "name2", "\u00E1\u0088\u00B4" },
+                    { "\u00C4\u0080", "value" },
+                    { "name3", "\u00C3\u00BF" }
                 }
             };
 

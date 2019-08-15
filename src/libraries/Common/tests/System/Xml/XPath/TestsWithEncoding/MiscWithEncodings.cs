@@ -42,7 +42,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         public void GlobalizationTest5612()
         {
             var xml = "Russian_problem_chars.xml";
-            var testExpression = @"//root[contains(text(), ""?? ¤ ?? ?? © ? ® ??"")]";
+            var testExpression = "//root[contains(text(), \"?? \u00A4 ?? ?? \u00A9 ? \u00AE ??\")]";
             var expected = new XPathResult(0,
                 new XPathResultToken
                 {
@@ -51,7 +51,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
                     LocalName = "root",
                     Name = "root",
                     HasNameTable = true,
-                    Value = "\n?? ¤ ?? ?? © ? ® ?? \n"
+                    Value = "\n?? \u00A4 ?? ?? \u00A9 ? \u00AE ?? \n"
                 });
 
             Utils.XPathNodesetTest(xml, testExpression, expected);
@@ -137,7 +137,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
                     Name = "EmployeeIDs",
                     HasNameTable = true,
                     Value =
-                        "\n\t\t\t\t3\n\t\t\t\t\n\t\t\t\t\t11/16/94\n\t\t\t\t\t12/14/94\n\t\t\t\t\t11/28/94\n\t\t\t\t\t1\n\t\t\t\t\t12.75\n\t\t\t\t\tLILA-Supermercado\n\t\t\t\t\tCarrera 52 con Ave. Bolívar #65-98 Llano Largo\n\t\t\t\t\tBarquisimeto\n\t\t\t\t\tLara\n\t\t\t\t\t3508\n\t\t\t\t\tVenezuela\n\t\t\t\t\n\t\t\t"
+                        "\n\t\t\t\t3\n\t\t\t\t\n\t\t\t\t\t11/16/94\n\t\t\t\t\t12/14/94\n\t\t\t\t\t11/28/94\n\t\t\t\t\t1\n\t\t\t\t\t12.75\n\t\t\t\t\tLILA-Supermercado\n\t\t\t\t\tCarrera 52 con Ave. Bol\u00EDvar #65-98 Llano Largo\n\t\t\t\t\tBarquisimeto\n\t\t\t\t\tLara\n\t\t\t\t\t3508\n\t\t\t\t\tVenezuela\n\t\t\t\t\n\t\t\t"
                 });
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);

@@ -108,7 +108,7 @@ namespace System.Globalization.Tests
         public static IEnumerable<object[]> IndexOf_Aesc_Ligature_TestData()
         {
             bool isWindows = PlatformDetection.IsWindows;
-            // Searches for the ligature Æ
+            // Searches for the ligature \u00C6
             string source1 = "Is AE or ae the same as \u00C6 or \u00E6?";
             yield return new object[] { s_invariantCompare, source1, "AE", 8, 18, CompareOptions.None, isWindows ? 24 : -1};
             yield return new object[] { s_invariantCompare, source1, "ae", 8, 18, CompareOptions.None, 9 };

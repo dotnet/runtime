@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -22,7 +22,7 @@ namespace System.Text.Json.Tests
         [InlineData("new lines\r\n")]
         [InlineData("tabs\ttabs\t")]
         [InlineData("\\u003e\\u003e\\u003e\\u003e\\u003e")]
-        [InlineData("zażółć gęślą jaźń")]
+        [InlineData("za\u017C\u00F3\u0142\u0107 g\u0119\u015Bl\u0105 ja\u017A\u0144")]
         [InlineData("\u6f22\u5b57 \u6f22\u5b57")]
         [InlineData(">><++>>>\">>\\>>&>>>\u6f22\u5B57>>>")]
         [InlineData("Here is a string: \\\"\\\"\":\"Here is a\",\"Here is a back slash\\\\\":[\"Multiline\\r\\n String\\r\\n\",\"\\tMul\\r\\ntiline String\",\"\\\"somequote\\\"\\tMu\\\"\\\"l\\r\\ntiline\\\"another\\\" String\\\\\"],\"str")]

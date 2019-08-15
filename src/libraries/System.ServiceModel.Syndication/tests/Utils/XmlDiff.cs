@@ -379,7 +379,7 @@ namespace System.ServiceModel.Syndication.Tests
         /// <code>writer.WriteString(&quot;foo&quot;); writer.WriteString(&quot;bar&quot;)</code>
         /// on the writer and then iterate calling reader.Read() on the document, the binary
         /// reader will report two text nodes (&quot;foo&quot;, &quot;bar&quot;), while the
-        /// other readers will report a single text node (&quot;foobar&quot;) – notice that
+        /// other readers will report a single text node (&quot;foobar&quot;) - notice that
         /// this is not a problem; calling ReadString, or Read[Element]ContentAsString in
         /// all readers will return &quot;foobar&quot;.
         /// </summary>

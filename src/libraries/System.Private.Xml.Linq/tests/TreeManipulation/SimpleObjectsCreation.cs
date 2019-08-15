@@ -255,13 +255,13 @@ namespace XLinqTests
         }
 
         // 22. Xml prefix:  Enforce
-        //    � http://www.w3.org/XML/1998/namespace
-        //    � Must not be bound to any other namespace name.
-        //    � No other prefix may be bound to this namespace name.
+        //    * http://www.w3.org/XML/1998/namespace
+        //    * Must not be bound to any other namespace name.
+        //    * No other prefix may be bound to this namespace name.
         // 23. Xmlns prefix:  Enforce, but some concern about performance
-        //    � http://www.w3.org/2000/xmlns/
-        //    � It must not be declared
-        //    � No other prefix may be bound to this namespace name.
+        //    * http://www.w3.org/2000/xmlns/
+        //    * It must not be declared
+        //    * No other prefix may be bound to this namespace name.
         //[Variation(Priority = 1, Desc = "XAttribute - xml namespace - prefix redef", Params = new object[] { "xml", "another", true })]
         //[Variation(Priority = 1, Desc = "XAttribute - xml namespace - bound to diff. prefix", Params = new object[] { "p", "http://www.w3.org/XML/1998/namespace", true })]
         //[Variation(Priority = 1, Desc = "XAttribute - xml namespace - redeclared (positive).", Params = new object[] { "xml", "http://www.w3.org/XML/1998/namespace", false })]

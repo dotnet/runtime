@@ -54,7 +54,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task Ctor_OneUnicodeEntry_Encoded()
         {
             var data = new Dictionary<string, string>();
-            data.Add("key", "valueク");
+            data.Add("key", "value\u30AF");
             var content = new FormUrlEncodedContent(data);
 
             Stream stream = await content.ReadAsStreamAsync();

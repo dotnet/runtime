@@ -254,11 +254,9 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     [Fact]
     public static void Xml_TypeNamesWithSpecialCharacters()
     {
-        SerializeAndDeserialize<__TypeNameWithSpecialCharacters漢ñ>(new __TypeNameWithSpecialCharacters漢ñ() { PropertyNameWithSpecialCharacters漢ñ = "Test" },
-@"<?xml version=""1.0""?>
-<__TypeNameWithSpecialCharacters漢ñ xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
-  <PropertyNameWithSpecialCharacters漢ñ>Test</PropertyNameWithSpecialCharacters漢ñ>
-</__TypeNameWithSpecialCharacters漢ñ>");
+        SerializeAndDeserialize<__TypeNameWithSpecialCharacters\u6F22\u00F1>(
+            new __TypeNameWithSpecialCharacters\u6F22\u00F1() { PropertyNameWithSpecialCharacters\u6F22\u00F1 = "Test" },
+            "<?xml version=\"1.0\"?><__TypeNameWithSpecialCharacters\u6F22\u00F1 xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">  <PropertyNameWithSpecialCharacters\u6F22\u00F1>Test</PropertyNameWithSpecialCharacters\u6F22\u00F1></__TypeNameWithSpecialCharacters\u6F22\u00F1>");
     }
 
     [Fact]
