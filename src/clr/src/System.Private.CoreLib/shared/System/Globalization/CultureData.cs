@@ -2,24 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Text;
-using System.Threading;
+using System.Diagnostics;
+
+#if CORERT
+#pragma warning restore nullable
+using StringStringDictionary = LowLevelDictionary<string, string>;
+using StringCultureDataDictionary = LowLevelDictionary<string, CultureData>;
+#else
+using StringStringDictionary = System.Collections.Generic.Dictionary<string, string>;
+using StringCultureDataDictionary = System.Collections.Generic.Dictionary<string, System.Globalization.CultureData>;
+#endif
 
 namespace System.Globalization
 {
-#if CORERT
-    #pragma warning restore nullable
-    using StringStringDictionary = LowLevelDictionary<string, string>;
-    using StringCultureDataDictionary = LowLevelDictionary<string, CultureData>;
-    using LcidToCultureNameDictionary = LowLevelDictionary<int, string>;
-#else
-    using StringStringDictionary = Dictionary<string, string>;
-    using StringCultureDataDictionary = Dictionary<string, CultureData>;
-    using LcidToCultureNameDictionary = Dictionary<int, string>;
-#endif
-
     /// <summary>
     /// List of culture data
     /// Note the we cache overrides.
