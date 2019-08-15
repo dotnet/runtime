@@ -1093,7 +1093,7 @@ namespace System.Xml
         {
             RealFoliate();
             other.RealFoliate();
-            Debug.Assert(other != null);
+
             if (IsSamePosition(other))
                 return XmlNodeOrder.Same;
             XmlNode curNode1 = null, curNode2 = null;
