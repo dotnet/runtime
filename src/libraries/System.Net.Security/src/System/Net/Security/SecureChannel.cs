@@ -353,7 +353,7 @@ namespace System.Net.Security
                 X509Certificate2 remoteCert = null;
                 try
                 {
-                    remoteCert = CertificateValidationPal.GetRemoteCertificate(_securityContext, out X509Certificate2Collection dummyCollection);
+                    remoteCert = CertificateValidationPal.GetRemoteCertificate(_securityContext);
                     if (_sslAuthenticationOptions.ClientCertificates == null)
                     {
                         _sslAuthenticationOptions.ClientCertificates = new X509CertificateCollection();
