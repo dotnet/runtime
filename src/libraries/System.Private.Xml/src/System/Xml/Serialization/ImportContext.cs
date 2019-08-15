@@ -393,10 +393,6 @@ namespace System.Xml.Serialization
                             baseType = list.ItemType;
                         }
                     }
-                    else if (content is XmlSchemaSimpleTypeRestriction)
-                    {
-                        baseName = ((XmlSchemaSimpleTypeRestriction)content).BaseTypeName;
-                    }
                     else if (t == typeof(XmlSchemaSimpleTypeUnion))
                     {
                         XmlQualifiedName[] memberTypes = ((XmlSchemaSimpleTypeUnion)item).MemberTypes;
