@@ -1898,12 +1898,6 @@ public:
         BOOL Next(CollectibleAssemblyHolder<DomainAssembly *> * pDomainAssemblyHolder);
         // Note: Does not lock the assembly list, but AddRefs collectible assemblies.
         BOOL Next_Unlocked(CollectibleAssemblyHolder<DomainAssembly *> * pDomainAssemblyHolder);
-#ifndef DACCESS_COMPILE
-    private:
-        // Can be called only from AppDomain shutdown code:AppDomain::ShutdownAssemblies.
-        // Note: Does not lock the assembly list and does not AddRefs collectible assemblies.
-        BOOL Next_UnsafeNoAddRef(DomainAssembly ** ppDomainAssembly);
-#endif
 
     private:
         inline DWORD GetIndex()
