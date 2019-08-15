@@ -237,8 +237,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 using (X509Certificate2 ee = certReq.Create(root, notBefore, notAfter, root.GetSerialNumber()))
                 {
                     X509Chain chain = new X509Chain();
+                    chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
                     Assert.False(chain.Build(ee));
                     Assert.Equal(1, chain.ChainElements.Count);
+                    Assert.Equal(X509ChainStatusFlags.PartialChain, chain.AllStatusFlags());
                 }
             }
         }
