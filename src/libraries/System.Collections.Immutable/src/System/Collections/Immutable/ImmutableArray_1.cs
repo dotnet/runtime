@@ -1262,6 +1262,11 @@ namespace System.Collections.Immutable
             if (otherArray != null)
             {
                 IStructuralComparable ours = self.array;
+                if (ours == null)
+                {
+                    throw new ArgumentException(SR.ArrayInitializedStateNotEqual, nameof(other));
+                }
+
                 return ours.CompareTo(otherArray, comparer);
             }
 
