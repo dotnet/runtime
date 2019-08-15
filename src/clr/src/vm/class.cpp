@@ -27,7 +27,6 @@
 #ifndef DACCESS_COMPILE 
 #include "methodtablebuilder.h"
 #endif
-#include "nsenumhandleallcases.h"
 
 #ifndef DACCESS_COMPILE 
 
@@ -1474,34 +1473,40 @@ CorElementType EEClassLayoutInfo::GetNativeHFATypeRaw()
     {
         CorElementType fieldType = ELEMENT_TYPE_END;
 
-        switch (pFieldMarshaler->GetNStructFieldType())
+        NativeFieldFlags category = pFieldMarshaler->GetNativeFieldFlags();
+
+        if (category & NATIVE_FIELD_SUBCATEGORY_FLOAT)
         {
-        case NFT_COPY4:
-        case NFT_COPY8:
-            fieldType = pFieldMarshaler->GetFieldDesc()->GetFieldType();
-            // An HFA can only have aligned float and double fields
-            if ((fieldType != ELEMENT_TYPE_R4 && fieldType != ELEMENT_TYPE_R8) || (pFieldMarshaler->GetExternalOffset() % pFieldMarshaler->AlignmentRequirement() != 0))
-                return ELEMENT_TYPE_END;
-            break;
+            if (category == NATIVE_FIELD_CATEGORY_R4)
+            {
+                fieldType = ELEMENT_TYPE_R4;
+            }
+            else if (category == NATIVE_FIELD_CATEGORY_R8)
+            {
+                fieldType = ELEMENT_TYPE_R8;
+            }
+            else if (category == NATIVE_FIELD_CATEGORY_DATE)
+            {
+                fieldType = ELEMENT_TYPE_R8;
+            }
+            else
+            {
+                UNREACHABLE_MSG("Invalid NativeFieldCategory.");
+                fieldType = ELEMENT_TYPE_END;
+            }
 
-        case NFT_NESTEDLAYOUTCLASS:
-            fieldType = ((FieldMarshaler_NestedLayoutClass *)pFieldMarshaler)->GetMethodTable()->GetNativeHFAType();
-            break;
-
-        case NFT_NESTEDVALUECLASS:
-            fieldType = ((FieldMarshaler_NestedValueClass *)pFieldMarshaler)->GetMethodTable()->GetNativeHFAType();
-            break;
-
-        case NFT_FIXEDARRAY:
-            fieldType = ((FieldMarshaler_FixedArray *)pFieldMarshaler)->GetElementTypeHandle().GetMethodTable()->GetNativeHFAType();
-            break;
-
-        case NFT_DATE:
-            fieldType = ELEMENT_TYPE_R8;
-            break;
-
-        default:
-            // Not HFA
+            // An HFA can only have aligned float and double fields.
+            if (pFieldMarshaler->GetExternalOffset() % pFieldMarshaler->AlignmentRequirement() != 0)
+            {
+                fieldType = ELEMENT_TYPE_END;
+            }
+        }
+        else if (category & NATIVE_FIELD_SUBCATEGORY_NESTED)
+        {
+            fieldType = ((FieldMarshaler_NestedType*)pFieldMarshaler)->GetNestedNativeMethodTable()->GetNativeHFAType();
+        }
+        else
+        {
             return ELEMENT_TYPE_END;
         }
 
@@ -3848,7 +3853,7 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
             LOG((LF_INTEROP, LL_INFO100000, "%s", fieldname));
             LOG((LF_INTEROP, LL_INFO100000, "\n"));
 
-            if (((FieldMarshaler*)&pfwalk->m_FieldMarshaler)->GetNStructFieldType() == NFT_ILLEGAL)
+            if (((FieldMarshaler*)&pfwalk->m_FieldMarshaler)->IsIllegalMarshaler())
                 illegalMarshaler = TRUE;             
         }
 
@@ -3858,7 +3863,7 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
             FieldMarshaler *pParentFM = pParentMT->GetLayoutInfo()->GetFieldMarshalers();
             for (UINT i = 0; i < pParentMT->GetLayoutInfo()->m_numCTMFields; i++)
             {
-                if (pParentFM->GetNStructFieldType() == NFT_ILLEGAL)
+                if (pParentFM->IsIllegalMarshaler())
                     illegalMarshaler = TRUE;                                 
                 ((BYTE*&)pParentFM) += MAXFIELDMARSHALERSIZE;
             }
