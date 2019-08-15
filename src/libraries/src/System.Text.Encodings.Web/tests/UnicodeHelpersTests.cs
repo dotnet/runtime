@@ -11,7 +11,7 @@ using System.Text;
 using System.Text.Unicode;
 using Xunit;
 
-namespace Microsoft.Framework.WebEncoders
+namespace System.Text.Encodings.Web.Tests
 {
     public unsafe class UnicodeHelpersTests
     {

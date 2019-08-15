@@ -4,10 +4,9 @@
 
 using System;
 using System.IO;
-using System.Text.Encodings.Web;
 using System.Text.Unicode;
 
-namespace Microsoft.Framework.WebEncoders
+namespace System.Text.Encodings.Web.Tests
 {
     // These implement ASP.NET interfaces. They will be removed once we transition ASP.NET
     internal sealed class HtmlEncoder : IHtmlEncoder

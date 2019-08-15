@@ -5,7 +5,7 @@
 using System;
 using System.IO;
 
-namespace Microsoft.Framework.WebEncoders
+namespace System.Text.Encodings.Web.Tests
 {
     /// <summary>
     /// Provides services for HTML-encoding input.
