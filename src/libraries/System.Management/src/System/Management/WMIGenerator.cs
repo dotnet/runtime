@@ -5190,11 +5190,6 @@ namespace System.Management
                 case CimType.SInt16:
                 case CimType.UInt16:
                 case CimType.SInt32:
-                    arrayToAdd.Add(System.Convert.ToInt32(numericValue,(IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(int))));
-                    retFunctionName = "ToInt32";
-                    enumType = "System.Int32";
-                    break;
-
                 case CimType.UInt32:
                     arrayToAdd.Add(System.Convert.ToInt32(numericValue,(IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(int))));
                     retFunctionName = "ToInt32";
