@@ -428,6 +428,7 @@ class OleVariant
     // Note that Rank == 0 means SZARRAY (that is rank 1, no lower bounds)
     static TypeHandle GetArrayForVarType(VARTYPE vt, TypeHandle elemType, unsigned rank=0);
     static UINT GetElementSizeForVarType(VARTYPE vt, MethodTable* pInterfaceMT);
+    static MethodTable* GetNativeMethodTableForVarType(VARTYPE vt, MethodTable* pManagedMT);
 
 #ifdef FEATURE_COMINTEROP
     // Determine the element type of the objects being wrapped by an array of wrappers.

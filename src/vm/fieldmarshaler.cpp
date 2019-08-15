@@ -34,6 +34,7 @@
 // forward declaration
 BOOL CheckForPrimitiveType(CorElementType elemType, CQuickArray<WCHAR> *pStrPrimitiveType);
 TypeHandle ArraySubTypeLoadWorker(const SString &strUserDefTypeName, Assembly* pAssembly);
+BOOL CheckIfDisqualifiedFromManagedSequential(CorElementType corElemType, LayoutRawFieldInfo * pfwalk, MetaSig &fsig);
 TypeHandle GetFieldTypeHandleWorker(MetaSig *pFieldSig);
 #ifdef _DEBUG
 BOOL IsFixedBuffer(mdFieldDef field, IMDInternalImport *pInternalImport);
@@ -43,6 +44,7 @@ BOOL IsFixedBuffer(mdFieldDef field, IMDInternalImport *pInternalImport);
 //=======================================================================
 // A database of NFT types.
 //=======================================================================
+
 struct NFTDataBaseEntry
 {
     UINT32            m_cbNativeSize;     // native size of field (0 if not constant)
@@ -52,9 +54,20 @@ struct NFTDataBaseEntry
 static const NFTDataBaseEntry NFTDataBase[] =
 {
     #undef DEFINE_NFT
-    #define DEFINE_NFT(name, nativesize, fWinRTSupported) { nativesize, fWinRTSupported },
+    #define DEFINE_NFT(name,  nativesize, fWinRTSupported) { nativesize, fWinRTSupported },
     #include "nsenums.h"
 };
+
+template<typename TFieldMarshaler, typename TSpace, typename... TArgs>
+NStructFieldType InitFieldMarshaler(TSpace& space, NativeFieldFlags flags, TArgs&&... args)
+{
+    static_assert_no_msg(sizeof(TFieldMarshaler) <= MAXFIELDMARSHALERSIZE);
+    static_assert_no_msg(sizeof(TSpace) == MAXFIELDMARSHALERSIZE);
+    TFieldMarshaler* marshaler = new (&space) TFieldMarshaler(std::forward<TArgs>(args)...);
+    marshaler->SetNStructFieldType(TFieldMarshaler::s_nft);
+    marshaler->SetNativeFieldFlags(flags);
+    return TFieldMarshaler::s_nft;
+}
 
 #ifdef _PREFAST_
 #pragma warning(push)
@@ -85,17 +98,10 @@ VOID ParseNativeType(Module*                     pModule,
     }
     CONTRACTL_END;
 
+
     // Make sure that there is no junk in the unused part of the field marshaler space (ngen image determinism)
     ZeroMemory(&pfwalk->m_FieldMarshaler, MAXFIELDMARSHALERSIZE);
 
-#define INITFIELDMARSHALER(nfttype, fmtype, args)       \
-do                                                      \
-{                                                       \
-    static_assert_no_msg(sizeof(fmtype) <= MAXFIELDMARSHALERSIZE);  \
-    pfwalk->m_nft = (nfttype);                          \
-    new ( &(pfwalk->m_FieldMarshaler) ) fmtype args;    \
-    ((FieldMarshaler*)&(pfwalk->m_FieldMarshaler))->SetNStructFieldType(nfttype); \
-} while(0)
 
     BOOL                fAnsi               = (flags == ParseNativeTypeFlags::IsAnsi);
 #ifdef FEATURE_COMINTEROP
@@ -108,8 +114,6 @@ do                                                      \
     BOOL                fDefault;
     BOOL                BestFit;
     BOOL                ThrowOnUnmappableChar;
-    
-    pfwalk->m_nft = NFT_NONE;
 
     if (cbNativeType == 0)
     {
@@ -123,14 +127,6 @@ do                                                      \
         fDefault = (ntype == NATIVE_TYPE_DEFAULT);
     }
 
-#ifdef FEATURE_COMINTEROP
-    if (fIsWinRT && !fDefault)
-    {
-        // Do not allow any MarshalAs in WinRT scenarios - marshaling is fully described by the field type.
-        INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHAL_WINRT_MARSHAL_AS));
-    }
-#endif // FEATURE_COMINTEROP
-
     // Setup the signature and normalize
     MetaSig fsig(pCOMSignature, cbCOMSignature, pModule, pTypeContext, MetaSig::sigField);
     corElemType = fsig.NextArgNormalized();
@@ -138,60 +134,18 @@ do                                                      \
 
     if (!(*pfDisqualifyFromManagedSequential))
     {
-        // This type may qualify for ManagedSequential. Collect managed size and alignment info.
-        if (CorTypeInfo::IsPrimitiveType(corElemType))
-        {
-            pfwalk->m_managedPlacement.m_size = ((UINT32)CorTypeInfo::Size(corElemType)); // Safe cast - no primitive type is larger than 4gb!
-#if defined(_TARGET_X86_) && defined(UNIX_X86_ABI)
-            switch (corElemType)
-            {
-                // The System V ABI for i386 defines different packing for these types.
-                case ELEMENT_TYPE_I8:
-                case ELEMENT_TYPE_U8:
-                case ELEMENT_TYPE_R8:
-                {
-                    pfwalk->m_managedPlacement.m_alignment = 4;
-                    break;
-                }
-
-                default:
-                {
-                    pfwalk->m_managedPlacement.m_alignment = pfwalk->m_managedPlacement.m_size;
-                    break;
-                }
-            }
-#else // _TARGET_X86_ && UNIX_X86_ABI
-            pfwalk->m_managedPlacement.m_alignment = pfwalk->m_managedPlacement.m_size;
-#endif
-        }
-        else if (corElemType == ELEMENT_TYPE_PTR)
-        {
-            pfwalk->m_managedPlacement.m_size = TARGET_POINTER_SIZE;
-            pfwalk->m_managedPlacement.m_alignment = TARGET_POINTER_SIZE;
-        }
-        else if (corElemType == ELEMENT_TYPE_VALUETYPE)
-        {
-            TypeHandle pNestedType = fsig.GetLastTypeHandleThrowing(ClassLoader::LoadTypes,
-                                                                    CLASS_LOAD_APPROXPARENTS,
-                                                                    TRUE);
-            if (pNestedType.GetMethodTable()->IsManagedSequential())
-            {
-                pfwalk->m_managedPlacement.m_size = (pNestedType.GetMethodTable()->GetNumInstanceFieldBytes());
-
-                _ASSERTE(pNestedType.GetMethodTable()->HasLayout()); // If it is ManagedSequential(), it also has Layout but doesn't hurt to check before we do a cast!
-                pfwalk->m_managedPlacement.m_alignment = pNestedType.GetMethodTable()->GetLayoutInfo()->m_ManagedLargestAlignmentRequirementOfAllMembers;
-            }
-            else
-            {
-                *pfDisqualifyFromManagedSequential = TRUE;
-            }
-        }
-        else
-        {
-            // No other type permitted for ManagedSequential.
-            *pfDisqualifyFromManagedSequential = TRUE;
-        }
+        *pfDisqualifyFromManagedSequential = CheckIfDisqualifiedFromManagedSequential(corElemType, pfwalk, fsig);
     }
+
+    NStructFieldType selectedNft = NFT_NONE;
+
+#ifdef FEATURE_COMINTEROP
+    if (fIsWinRT && !fDefault)
+    {
+        // Do not allow any MarshalAs in WinRT scenarios - marshaling is fully described by the field type.
+        selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHAL_WINRT_MARSHAL_AS);
+    }
+#endif // FEATURE_COMINTEROP
 
 #ifdef _TARGET_X86_
     // Normalization might have put corElementType and ntype out of sync which can
@@ -207,7 +161,7 @@ do                                                      \
     IfFailThrow(fsig.GetArgProps().PeekElemType(&sigElemType));
     if ((sigElemType == ELEMENT_TYPE_GENERICINST || sigElemType == ELEMENT_TYPE_VAR) && corElemType == ELEMENT_TYPE_CLASS)
     {
-        INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHAL_GENERICS_RESTRICTION));
+        selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHAL_GENERICS_RESTRICTION);
     }
     else switch (corElemType)
     {
@@ -217,25 +171,26 @@ do                                                      \
                 if (fAnsi)
                 {
                     ReadBestFitCustomAttribute(pModule, cl, &BestFit, &ThrowOnUnmappableChar);
-                    INITFIELDMARSHALER(NFT_ANSICHAR, FieldMarshaler_Ansi, (BestFit, ThrowOnUnmappableChar));
+                    selectedNft = InitFieldMarshaler<FieldMarshaler_Ansi>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_INTEGER_LIKE, BestFit, ThrowOnUnmappableChar);
                 }
                 else
                 {
-                    INITFIELDMARSHALER(NFT_COPY2, FieldMarshaler_Copy2, ());
+                    selectedNft = InitFieldMarshaler<FieldMarshaler_Copy2>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_BLITTABLE_INTEGER);
                 }
             }
             else if (ntype == NATIVE_TYPE_I1 || ntype == NATIVE_TYPE_U1)
             {
                 ReadBestFitCustomAttribute(pModule, cl, &BestFit, &ThrowOnUnmappableChar);
-                INITFIELDMARSHALER(NFT_ANSICHAR, FieldMarshaler_Ansi, (BestFit, ThrowOnUnmappableChar));
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Ansi>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_INTEGER_LIKE, BestFit, ThrowOnUnmappableChar);
+
             }
             else if (ntype == NATIVE_TYPE_I2 || ntype == NATIVE_TYPE_U2)
             {
-                INITFIELDMARSHALER(NFT_COPY2, FieldMarshaler_Copy2, ());
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Copy2>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_BLITTABLE_INTEGER);
             }
             else
             {
-                INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHAL_CHAR));
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHAL_CHAR);
             }
             break;
 
@@ -245,31 +200,31 @@ do                                                      \
 #ifdef FEATURE_COMINTEROP
                 if (fIsWinRT)
                 {
-                    INITFIELDMARSHALER(NFT_CBOOL, FieldMarshaler_CBool, ());
+                    selectedNft = InitFieldMarshaler<FieldMarshaler_CBool>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_INTEGER_LIKE);
                 }
                 else
 #endif // FEATURE_COMINTEROP
                 {
-                    INITFIELDMARSHALER(NFT_WINBOOL, FieldMarshaler_WinBool, ());
+                    selectedNft = InitFieldMarshaler<FieldMarshaler_WinBool>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_INTEGER_LIKE);
                 }
             }
             else if (ntype == NATIVE_TYPE_BOOLEAN)
             {
-                INITFIELDMARSHALER(NFT_WINBOOL, FieldMarshaler_WinBool, ());
+                selectedNft = InitFieldMarshaler<FieldMarshaler_WinBool>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_INTEGER_LIKE);
             }
 #ifdef FEATURE_COMINTEROP
             else if (ntype == NATIVE_TYPE_VARIANTBOOL)
             {
-                INITFIELDMARSHALER(NFT_VARIANTBOOL, FieldMarshaler_VariantBool, ());
+                selectedNft = InitFieldMarshaler<FieldMarshaler_VariantBool>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_COM_STRUCT);
             }
 #endif // FEATURE_COMINTEROP
             else if (ntype == NATIVE_TYPE_U1 || ntype == NATIVE_TYPE_I1)
             {
-                INITFIELDMARSHALER(NFT_CBOOL, FieldMarshaler_CBool, ());
+                selectedNft = InitFieldMarshaler<FieldMarshaler_CBool>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_INTEGER_LIKE);
             }
             else
             {
-                INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHAL_BOOLEAN));
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHAL_BOOLEAN);
             }
             break;
 
@@ -277,88 +232,88 @@ do                                                      \
         case ELEMENT_TYPE_I1:
             if (fDefault || ntype == NATIVE_TYPE_I1 || ntype == NATIVE_TYPE_U1)
             {
-                INITFIELDMARSHALER(NFT_COPY1, FieldMarshaler_Copy1, ());
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Copy1>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_BLITTABLE_INTEGER);
             }
             else
             {
-                INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHAL_I1));
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHAL_I1);
             }
             break;
 
         case ELEMENT_TYPE_U1:
             if (fDefault || ntype == NATIVE_TYPE_U1 || ntype == NATIVE_TYPE_I1)
             {
-                INITFIELDMARSHALER(NFT_COPY1, FieldMarshaler_Copy1, ());
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Copy1>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_BLITTABLE_INTEGER);
             }
             else
             {
-                INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHAL_I1));
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHAL_I1);
             }
             break;
 
         case ELEMENT_TYPE_I2:
             if (fDefault || ntype == NATIVE_TYPE_I2 || ntype == NATIVE_TYPE_U2)
             {
-                INITFIELDMARSHALER(NFT_COPY2, FieldMarshaler_Copy2, ());
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Copy2>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_BLITTABLE_INTEGER);
             }
             else
             {
-                INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHAL_I2));
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHAL_I2);
             }
             break;
 
         case ELEMENT_TYPE_U2:
             if (fDefault || ntype == NATIVE_TYPE_U2 || ntype == NATIVE_TYPE_I2)
             {
-                INITFIELDMARSHALER(NFT_COPY2, FieldMarshaler_Copy2, ());
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Copy2>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_BLITTABLE_INTEGER);
             }
             else
             {
-                INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHAL_I2));
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHAL_I2);
             }
             break;
 
         case ELEMENT_TYPE_I4:
             if (fDefault || ntype == NATIVE_TYPE_I4 || ntype == NATIVE_TYPE_U4 || ntype == NATIVE_TYPE_ERROR)
             {
-                INITFIELDMARSHALER(NFT_COPY4, FieldMarshaler_Copy4, ());
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Copy4>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_BLITTABLE_INTEGER);
             }
             else
             {
-                INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHAL_I4));
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHAL_I4);
             }
             break;
             
         case ELEMENT_TYPE_U4:
             if (fDefault || ntype == NATIVE_TYPE_U4 || ntype == NATIVE_TYPE_I4 || ntype == NATIVE_TYPE_ERROR)
             {
-                INITFIELDMARSHALER(NFT_COPY4, FieldMarshaler_Copy4, ());
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Copy4>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_BLITTABLE_INTEGER);
             }
             else
             {
-                INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHAL_I4));
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHAL_I4);
             }
             break;
 
         case ELEMENT_TYPE_I8:
             if (fDefault || ntype == NATIVE_TYPE_I8 || ntype == NATIVE_TYPE_U8)
             {
-                INITFIELDMARSHALER(NFT_COPY8, FieldMarshaler_Copy8, ());
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Copy8>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_BLITTABLE_INTEGER);
             }
             else
             {
-                INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHAL_I8));
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHAL_I8);
             }
             break;
 
         case ELEMENT_TYPE_U8:
             if (fDefault || ntype == NATIVE_TYPE_U8 || ntype == NATIVE_TYPE_I8)
             {
-                INITFIELDMARSHALER(NFT_COPY8, FieldMarshaler_Copy8, ());
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Copy8>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_BLITTABLE_INTEGER);
             }
             else
             {
-                INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHAL_I8));
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHAL_I8);
             }
             break;
 
@@ -367,43 +322,43 @@ do                                                      \
 #ifdef FEATURE_COMINTEROP
             if (fIsWinRT)
             {
-                INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHAL_WINRT_ILLEGAL_TYPE));
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHAL_WINRT_ILLEGAL_TYPE);
             }
             else
 #endif // FEATURE_COMINTEROP
             if (fDefault || ntype == NATIVE_TYPE_INT || ntype == NATIVE_TYPE_UINT)
             {
 #ifdef _TARGET_64BIT_
-                INITFIELDMARSHALER(NFT_COPY8, FieldMarshaler_Copy8, ());
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Copy8>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_BLITTABLE_INTEGER);
 #else // !_TARGET_64BIT_
-                INITFIELDMARSHALER(NFT_COPY4, FieldMarshaler_Copy4, ());
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Copy4>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_BLITTABLE_INTEGER);
 #endif // !_TARGET_64BIT_
             }
             else
             {
-                INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHAL_I));
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHAL_I);
             }
             break;
 
         case ELEMENT_TYPE_R4:
             if (fDefault || ntype == NATIVE_TYPE_R4)
             {
-                INITFIELDMARSHALER(NFT_COPY4, FieldMarshaler_Copy4, ());
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Copy4>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_R4);
             }
             else
             {
-                INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHAL_R4));
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHAL_R4);
             }
             break;
             
         case ELEMENT_TYPE_R8:
             if (fDefault || ntype == NATIVE_TYPE_R8)
             {
-                INITFIELDMARSHALER(NFT_COPY8, FieldMarshaler_Copy8, ());
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Copy8>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_R8);
             }
             else
             {
-                INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHAL_R8));
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHAL_R8);
             }
             break;
 
@@ -411,21 +366,21 @@ do                                                      \
 #ifdef FEATURE_COMINTEROP
             if (fIsWinRT)
             {
-                INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHAL_WINRT_ILLEGAL_TYPE));
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHAL_WINRT_ILLEGAL_TYPE);
             }
             else
 #endif // FEATURE_COMINTEROP
             if (fDefault)
             {
 #ifdef _TARGET_64BIT_
-                INITFIELDMARSHALER(NFT_COPY8, FieldMarshaler_Copy8, ());
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Copy8>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_BLITTABLE_INTEGER);
 #else // !_TARGET_64BIT_
-                INITFIELDMARSHALER(NFT_COPY4, FieldMarshaler_Copy4, ());
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Copy4>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_BLITTABLE_INTEGER);
 #endif // !_TARGET_64BIT_
             }
             else
             {
-                INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHAL_PTR));
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHAL_PTR);
             }
             break;
 
@@ -442,7 +397,7 @@ do                                                      \
             {
                 // If this is a generic value type, lets see whether it is a Nullable<T>
                 TypeHandle genType = fsig.GetLastTypeHandleThrowing();
-                if(genType != NULL && genType.GetMethodTable()->HasSameTypeDefAs(g_pNullableClass))
+                if(genType != nullptr && genType.GetMethodTable()->HasSameTypeDefAs(g_pNullableClass))
                 {
                     // The generic type is System.Nullable<T>. 
                     // Lets extract the typeArg and check if the typeArg is valid.
@@ -455,11 +410,11 @@ do                                                      \
                     if (!typeArgMT->IsLegalNonArrayWinRTType())
                     {
                         // Type is not a valid WinRT value type.
-                        INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHAL_NULLABLE_RESTRICTION));
+                        selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHAL_NULLABLE_RESTRICTION);
                     }
                     else
                     {
-                        INITFIELDMARSHALER(NFT_WINDOWSFOUNDATIONIREFERENCE, FieldMarshaler_Nullable, (genType.GetMethodTable()));
+                        selectedNft = InitFieldMarshaler<FieldMarshaler_Nullable>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_WELL_KNOWN, genType.GetMethodTable());
                     }
                     break;
                 }
@@ -469,28 +424,30 @@ do                                                      \
             {
                 if (fDefault || ntype == NATIVE_TYPE_STRUCT)
                 {
-                    INITFIELDMARSHALER(NFT_DATE, FieldMarshaler_Date, ());
+                    selectedNft = InitFieldMarshaler<FieldMarshaler_Date>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_DATE);
                 }
                 else
                 {
-                    INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHAL_DATETIME));
+                    selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHAL_DATETIME);
                 }
             }
             else if (fsig.IsClass(g_DecimalClassName))
             {
                 if (fDefault || ntype == NATIVE_TYPE_STRUCT)
                 {
-                    INITFIELDMARSHALER(NFT_DECIMAL, FieldMarshaler_Decimal, ());
+                    // The decimal type can't be blittable since the managed and native alignment requirements differ.
+                    // Native needs 8-byte alignment since one field is a 64-bit integer, but managed only needs 4-byte alignment since all fields are ints.
+                    selectedNft = InitFieldMarshaler<FieldMarshaler_Decimal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_NESTED);
                 }
 #ifdef FEATURE_COMINTEROP
                 else if (ntype == NATIVE_TYPE_CURRENCY)
                 {
-                    INITFIELDMARSHALER(NFT_CURRENCY, FieldMarshaler_Currency, ());
+                    selectedNft = InitFieldMarshaler<FieldMarshaler_Currency>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_COM_STRUCT);
                 }
 #endif // FEATURE_COMINTEROP
                 else
                 {
-                    INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHALFIELD_DECIMAL));                    
+                    selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHALFIELD_DECIMAL);                    
                 }
             }
 #ifdef FEATURE_COMINTEROP
@@ -498,16 +455,16 @@ do                                                      \
             {
                 if (fDefault || ntype == NATIVE_TYPE_STRUCT)
                 {
-                    INITFIELDMARSHALER(NFT_DATETIMEOFFSET, FieldMarshaler_DateTimeOffset, ());
+                    selectedNft = InitFieldMarshaler<FieldMarshaler_DateTimeOffset>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_WELL_KNOWN);
                 }
                 else
                 {
-                    INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHAL_DATETIMEOFFSET));
+                    selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHAL_DATETIMEOFFSET);
                 }
             }
             else if (fIsWinRT && !thNestedType.GetMethodTable()->IsLegalNonArrayWinRTType())
             {
-                INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHAL_WINRT_ILLEGAL_TYPE));
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHAL_WINRT_ILLEGAL_TYPE);
             }
 #endif // FEATURE_COMINTEROP
             else if (thNestedType.GetMethodTable()->HasLayout())
@@ -517,24 +474,24 @@ do                                                      \
                     if (IsStructMarshalable(thNestedType))
                     {
 #ifdef _DEBUG
-                        INITFIELDMARSHALER(NFT_NESTEDVALUECLASS, FieldMarshaler_NestedValueClass, (thNestedType.GetMethodTable(), IsFixedBuffer(pfwalk->m_MD, pModule->GetMDImport())));
+                        selectedNft = InitFieldMarshaler<FieldMarshaler_NestedValueClass>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_NESTED_VALUE_CLASS, thNestedType.GetMethodTable(), IsFixedBuffer(pfwalk->m_MD, pModule->GetMDImport()));
 #else
-                        INITFIELDMARSHALER(NFT_NESTEDVALUECLASS, FieldMarshaler_NestedValueClass, (thNestedType.GetMethodTable()));
+                        selectedNft = InitFieldMarshaler<FieldMarshaler_NestedValueClass>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_NESTED_VALUE_CLASS, thNestedType.GetMethodTable());
 #endif
                     }
                     else
                     {
-                        INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHAL_NOTMARSHALABLE));
+                        selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHAL_NOTMARSHALABLE);
                     }
                 }
                 else
                 {
-                    INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHAL_VALUETYPE));                                        
+                    selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHAL_VALUETYPE);                                        
                 }
             }
             else
             {
-                INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHAL_NOTMARSHALABLE));
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHAL_NOTMARSHALABLE);
             }
             break;
         }
@@ -559,25 +516,25 @@ do                                                      \
                     {
                         dwFlags |= ItfMarshalInfo::ITF_MARSHAL_DISP_ITF;
                     }
-                    INITFIELDMARSHALER(NFT_INTERFACE, FieldMarshaler_Interface, (NULL, NULL, dwFlags));
+                    selectedNft = InitFieldMarshaler<FieldMarshaler_Interface>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_INTERFACE_TYPE, nullptr, nullptr, dwFlags);
                 }
                 else if (ntype == NATIVE_TYPE_STRUCT)
                 {
-                    INITFIELDMARSHALER(NFT_VARIANT, FieldMarshaler_Variant, ());
+                    selectedNft = InitFieldMarshaler<FieldMarshaler_Variant>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_COM_STRUCT);
                 }
 #else // FEATURE_COMINTEROP
                 if (fDefault || ntype == NATIVE_TYPE_IUNKNOWN || ntype == NATIVE_TYPE_IDISPATCH || ntype == NATIVE_TYPE_INTF)
                 {
-                    INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_OBJECT_TO_ITF_NOT_SUPPORTED));
+                    selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_OBJECT_TO_ITF_NOT_SUPPORTED);
                 }
                 else if (ntype == NATIVE_TYPE_STRUCT)
                 {
-                    INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_OBJECT_TO_VARIANT_NOT_SUPPORTED));
+                    selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_OBJECT_TO_VARIANT_NOT_SUPPORTED);
                 }
 #endif // FEATURE_COMINTEROP
                 else
                 {
-                    INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHALFIELD_OBJECT));
+                    selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHALFIELD_OBJECT);
                 }
             }
 #ifdef FEATURE_COMINTEROP                
@@ -585,30 +542,30 @@ do                                                      \
             {
                 if (fIsWinRT && !thNestedType.GetMethodTable()->IsLegalNonArrayWinRTType())
                 {
-                    INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHAL_WINRT_ILLEGAL_TYPE));
+                    selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHAL_WINRT_ILLEGAL_TYPE);
                 }
                 else if (COMDelegate::IsDelegate(thNestedType.GetMethodTable()))
                 {
-                    INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHAL_DELEGATE_TLB_INTERFACE));
+                    selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHAL_DELEGATE_TLB_INTERFACE);
                 }
                 else
                 {
                     ItfMarshalInfo itfInfo;
                     if (FAILED(MarshalInfo::TryGetItfMarshalInfo(thNestedType, FALSE, FALSE, &itfInfo)))
                         break;
-                        
-                    INITFIELDMARSHALER(NFT_INTERFACE, FieldMarshaler_Interface, (itfInfo.thClass.GetMethodTable(), itfInfo.thItf.GetMethodTable(), itfInfo.dwFlags));
+
+                    selectedNft = InitFieldMarshaler<FieldMarshaler_Interface>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_INTERFACE_TYPE, itfInfo.thClass.GetMethodTable(), itfInfo.thItf.GetMethodTable(), itfInfo.dwFlags);
                 }
             }
 #else  // FEATURE_COMINTEROP
             else if (ntype == NATIVE_TYPE_INTF || thNestedType.IsInterface())
             {
-                INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_OBJECT_TO_ITF_NOT_SUPPORTED));
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_OBJECT_TO_ITF_NOT_SUPPORTED);
             }
 #endif // FEATURE_COMINTEROP
             else if (ntype == NATIVE_TYPE_CUSTOMMARSHALER)
             {
-                INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHALFIELD_NOCUSTOMMARSH));
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHALFIELD_NOCUSTOMMARSH);
             }
             else if (thNestedType == TypeHandle(g_pStringClass))
             {
@@ -617,18 +574,18 @@ do                                                      \
 #ifdef FEATURE_COMINTEROP
                     if (fIsWinRT)
                     {
-                        INITFIELDMARSHALER(NFT_HSTRING, FieldMarshaler_HSTRING, ());
+                        selectedNft = InitFieldMarshaler<FieldMarshaler_HSTRING>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_COM_STRUCT);
                     }
                     else
 #endif // FEATURE_COMINTEROP
                     if (fAnsi)
                     {
                         ReadBestFitCustomAttribute(pModule, cl, &BestFit, &ThrowOnUnmappableChar);
-                        INITFIELDMARSHALER(NFT_STRINGANSI, FieldMarshaler_StringAnsi, (BestFit, ThrowOnUnmappableChar));
+                        selectedNft = InitFieldMarshaler<FieldMarshaler_StringAnsi>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_INTEGER_LIKE, BestFit, ThrowOnUnmappableChar);
                     }
                     else
                     {
-                        INITFIELDMARSHALER(NFT_STRINGUNI, FieldMarshaler_StringUni, ());
+                        selectedNft = InitFieldMarshaler<FieldMarshaler_StringUni>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_INTEGER_LIKE);
                     }
                 }
                 else
@@ -637,29 +594,29 @@ do                                                      \
                     {
                         case NATIVE_TYPE_LPSTR:
                             ReadBestFitCustomAttribute(pModule, cl, &BestFit, &ThrowOnUnmappableChar);
-                            INITFIELDMARSHALER(NFT_STRINGANSI, FieldMarshaler_StringAnsi, (BestFit, ThrowOnUnmappableChar));
+                            selectedNft = InitFieldMarshaler<FieldMarshaler_StringAnsi>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_INTEGER_LIKE, BestFit, ThrowOnUnmappableChar);
                             break;
 
                         case NATIVE_TYPE_LPWSTR:
-                            INITFIELDMARSHALER(NFT_STRINGUNI, FieldMarshaler_StringUni, ());
+                            selectedNft = InitFieldMarshaler<FieldMarshaler_StringUni>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_INTEGER_LIKE);
                             break;
                         
                         case NATIVE_TYPE_LPUTF8STR:
-							INITFIELDMARSHALER(NFT_STRINGUTF8, FieldMarshaler_StringUtf8, ());
+							selectedNft = InitFieldMarshaler<FieldMarshaler_StringUtf8>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_INTEGER_LIKE);
 							break;
 
                         case NATIVE_TYPE_LPTSTR:
                             // We no longer support Win9x so LPTSTR always maps to a Unicode string.
-                            INITFIELDMARSHALER(NFT_STRINGUNI, FieldMarshaler_StringUni, ());
+                            selectedNft = InitFieldMarshaler<FieldMarshaler_StringUni>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_INTEGER_LIKE);
                             break;
 
                         case NATIVE_TYPE_BSTR:
-                            INITFIELDMARSHALER(NFT_BSTR, FieldMarshaler_BSTR, ());
+                            selectedNft = InitFieldMarshaler<FieldMarshaler_BSTR>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_INTEGER_LIKE);
                             break;
 
 #ifdef FEATURE_COMINTEROP
                         case NATIVE_TYPE_HSTRING:
-                            INITFIELDMARSHALER(NFT_HSTRING, FieldMarshaler_HSTRING, ());
+                            selectedNft = InitFieldMarshaler<FieldMarshaler_HSTRING>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_COM_STRUCT);
                             break;
 #endif // FEATURE_COMINTEROP
                         case NATIVE_TYPE_FIXEDSYSSTRING:
@@ -675,24 +632,24 @@ do                                                      \
 
                                 if (nchars == 0)
                                 {
-                                    INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHALFIELD_ZEROLENGTHFIXEDSTRING));
+                                    selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHALFIELD_ZEROLENGTHFIXEDSTRING);
                                     break;  
                                 }
 
                                 if (fAnsi)
                                 {
                                     ReadBestFitCustomAttribute(pModule, cl, &BestFit, &ThrowOnUnmappableChar);
-                                    INITFIELDMARSHALER(NFT_FIXEDSTRINGANSI, FieldMarshaler_FixedStringAnsi, (nchars, BestFit, ThrowOnUnmappableChar));
+                                    selectedNft = InitFieldMarshaler<FieldMarshaler_FixedStringAnsi>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_INTEGER_LIKE, nchars, BestFit, ThrowOnUnmappableChar);
                                 }
                                 else
                                 {
-                                    INITFIELDMARSHALER(NFT_FIXEDSTRINGUNI, FieldMarshaler_FixedStringUni, (nchars));
+                                    selectedNft = InitFieldMarshaler<FieldMarshaler_FixedStringUni>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_INTEGER_LIKE, nchars);
                                 }
                             }
                         break;
 
                         default:
-                            INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHALFIELD_STRING));
+                            selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHALFIELD_STRING);
                             break;
                     }
                 }
@@ -700,11 +657,11 @@ do                                                      \
 #ifdef FEATURE_COMINTEROP
             else if (fIsWinRT && fsig.IsClass(g_TypeClassName))
             {   // Note: If the System.Type field is in non-WinRT struct, do not change the previously shipped behavior
-                INITFIELDMARSHALER(NFT_SYSTEMTYPE, FieldMarshaler_SystemType, ());
+                selectedNft = InitFieldMarshaler<FieldMarshaler_SystemType>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_WELL_KNOWN);
             }
             else if (fIsWinRT && fsig.IsClass(g_ExceptionClassName))  // Marshal Windows.Foundation.HResult as System.Exception for WinRT.
             {
-                INITFIELDMARSHALER(NFT_WINDOWSFOUNDATIONHRESULT, FieldMarshaler_Exception, ());
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Exception>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_WELL_KNOWN);
             }
 #endif //FEATURE_COMINTEROP
 #ifdef FEATURE_CLASSIC_COMINTEROP
@@ -714,7 +671,7 @@ do                                                      \
                 {
                     NativeTypeParamInfo ParamInfo;
                     CorElementType etyp = ELEMENT_TYPE_OBJECT;
-                    MethodTable* pMT = NULL;
+                    MethodTable* pMT = nullptr;
                     VARTYPE vtElement = VT_EMPTY;
 
                     // Compat: If no safe array used def subtype was specified, we assume TypeOf(Object).                            
@@ -723,7 +680,7 @@ do                                                      \
                     // If we have no native type data, assume default behavior
                     if (S_OK != CheckForCompressedData(pNativeTypeStart, pNativeType, cbNativeTypeStart))
                     {
-                        INITFIELDMARSHALER(NFT_SAFEARRAY, FieldMarshaler_SafeArray, (VT_EMPTY, NULL));
+                        selectedNft = InitFieldMarshaler<FieldMarshaler_SafeArray>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_COM_STRUCT, VT_EMPTY, nullptr);
                         break;
                     }
       
@@ -735,12 +692,12 @@ do                                                      \
                         ULONG strLen;
                         if (FAILED(CPackedLen::SafeGetData(pNativeType, pNativeTypeStart + cbNativeTypeStart, &strLen, &pNativeType)))
                         {
-                            INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHAL_BADMETADATA)); 
+                            selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHAL_BADMETADATA); 
                             break;
                         }
                         if (strLen > 0)
                         {
-                            // Load the type. Use a SString for the string since we need to NULL terminate the string
+                            // Load the type. Use a SString for the string since we need to null terminate the string
                             // that comes from the metadata.
                             StackSString safeArrayUserDefTypeName(SString::Utf8, (LPCUTF8)pNativeType, strLen);
                             _ASSERTE((ULONG)(pNativeType + strLen - pNativeTypeStart) == cbNativeTypeStart);
@@ -759,18 +716,18 @@ do                                                      \
 
                     if (!arrayMarshalInfo.IsValid())
                     {
-                        INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (arrayMarshalInfo.GetErrorResourceId())); 
+                        selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, arrayMarshalInfo.GetErrorResourceId()); 
                         break;
                     }
 
-                    INITFIELDMARSHALER(NFT_SAFEARRAY, FieldMarshaler_SafeArray, (arrayMarshalInfo.GetElementVT(), arrayMarshalInfo.GetElementTypeHandle().GetMethodTable()));
+                    selectedNft = InitFieldMarshaler<FieldMarshaler_SafeArray>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_COM_STRUCT, arrayMarshalInfo.GetElementVT(), arrayMarshalInfo.GetElementTypeHandle().GetMethodTable());
                 }
                 else if (ntype == NATIVE_TYPE_FIXEDARRAY)
                 {
                     // Check for the number of elements. This is required, if not present fail.
                     if (S_OK != CheckForCompressedData(pNativeTypeStart, pNativeType, cbNativeTypeStart))
                     {
-                        INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHALFIELD_FIXEDARRAY_NOSIZE));                            
+                        selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHALFIELD_FIXEDARRAY_NOSIZE);                            
                         break;
                     }
                             
@@ -778,14 +735,14 @@ do                                                      \
 
                     if (numElements == 0)
                     {
-                        INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHALFIELD_FIXEDARRAY_ZEROSIZE));                            
+                        selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHALFIELD_FIXEDARRAY_ZEROSIZE);                            
                         break;
                     }
                            
                     // Since these always export to arrays of BSTRs, we don't need to fetch the native type.
 
                     // Compat: FixedArrays of System.Arrays map to fixed arrays of BSTRs.
-                    INITFIELDMARSHALER(NFT_FIXEDARRAY, FieldMarshaler_FixedArray, (pModule, cl, numElements, VT_BSTR, g_pStringClass));
+                    selectedNft = InitFieldMarshaler<FieldMarshaler_FixedArray>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_NESTED, pModule, cl, numElements, VT_BSTR, g_pStringClass);
                 }
             }
 #endif // FEATURE_CLASSIC_COMINTEROP
@@ -793,7 +750,7 @@ do                                                      \
             {
                 if (fDefault || ntype == NATIVE_TYPE_FUNC)
                 {
-                    INITFIELDMARSHALER(NFT_DELEGATE, FieldMarshaler_Delegate, (thNestedType.GetMethodTable()));
+                    selectedNft = InitFieldMarshaler<FieldMarshaler_Delegate>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_INTEGER_LIKE, thNestedType.GetMethodTable());
                 }
 #ifdef FEATURE_COMINTEROP
                 else if (ntype == NATIVE_TYPE_IDISPATCH)
@@ -802,67 +759,67 @@ do                                                      \
                     if (FAILED(MarshalInfo::TryGetItfMarshalInfo(thNestedType, FALSE, FALSE, &itfInfo)))
                         break;
 
-                    INITFIELDMARSHALER(NFT_INTERFACE, FieldMarshaler_Interface, (itfInfo.thClass.GetMethodTable(), itfInfo.thItf.GetMethodTable(), itfInfo.dwFlags));
+                    selectedNft = InitFieldMarshaler<FieldMarshaler_Interface>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_INTERFACE_TYPE, itfInfo.thClass.GetMethodTable(), itfInfo.thItf.GetMethodTable(), itfInfo.dwFlags);
                 }
 #endif // FEATURE_COMINTEROP
                 else
                 {
-                    INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHAL_DELEGATE));
+                    selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHAL_DELEGATE);
                 }
             } 
             else if (thNestedType.CanCastTo(TypeHandle(MscorlibBinder::GetClass(CLASS__SAFE_HANDLE))))
             {
                 if (fDefault) 
                 {
-                    INITFIELDMARSHALER(NFT_SAFEHANDLE, FieldMarshaler_SafeHandle, ());
+                    selectedNft = InitFieldMarshaler<FieldMarshaler_SafeHandle>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_INTEGER_LIKE);
                 }
                 else 
                 {
-                    INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHAL_SAFEHANDLE));
+                    selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHAL_SAFEHANDLE);
                 }
             }
             else if (thNestedType.CanCastTo(TypeHandle(MscorlibBinder::GetClass(CLASS__CRITICAL_HANDLE))))
             {
                 if (fDefault) 
                 {
-                    INITFIELDMARSHALER(NFT_CRITICALHANDLE, FieldMarshaler_CriticalHandle, ());
+                    selectedNft = InitFieldMarshaler<FieldMarshaler_CriticalHandle>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_INTEGER_LIKE);
                 }
                 else 
                 {
-                    INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHAL_CRITICALHANDLE));
+                    selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHAL_CRITICALHANDLE);
                 }
             }
             else if (fsig.IsClass(g_StringBufferClassName))
             {
-                INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHALFIELD_NOSTRINGBUILDER));
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHALFIELD_NOSTRINGBUILDER);
             }
             else if (IsStructMarshalable(thNestedType))
             {
                 if (fDefault || ntype == NATIVE_TYPE_STRUCT)
                 {
-                    INITFIELDMARSHALER(NFT_NESTEDLAYOUTCLASS, FieldMarshaler_NestedLayoutClass, (thNestedType.GetMethodTable()));
+                    selectedNft = InitFieldMarshaler<FieldMarshaler_NestedLayoutClass>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_NESTED, thNestedType.GetMethodTable());
                 }
                 else
                 {
-                    INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHALFIELD_LAYOUTCLASS));
+                    selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHALFIELD_LAYOUTCLASS);
                 }
             }
 #ifdef FEATURE_COMINTEROP
             else if (fIsWinRT)
             {
                 // no other reference types are allowed as field types in WinRT
-                INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHAL_WINRT_ILLEGAL_TYPE));
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHAL_WINRT_ILLEGAL_TYPE);
             }
             else if (fDefault)
             {
                 ItfMarshalInfo itfInfo;
                 if (FAILED(MarshalInfo::TryGetItfMarshalInfo(thNestedType, FALSE, FALSE, &itfInfo)))
                 {
-                    INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHAL_BADMANAGED));
+                    selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHAL_BADMANAGED);
                 }
                 else
                 {
-                    INITFIELDMARSHALER(NFT_INTERFACE, FieldMarshaler_Interface, (itfInfo.thClass.GetMethodTable(), itfInfo.thItf.GetMethodTable(), itfInfo.dwFlags));
+                    selectedNft = InitFieldMarshaler<FieldMarshaler_Interface>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_INTERFACE_TYPE, itfInfo.thClass.GetMethodTable(), itfInfo.thItf.GetMethodTable(), itfInfo.dwFlags);
                 }
             }
 #endif  // FEATURE_COMINTEROP
@@ -875,7 +832,7 @@ do                                                      \
 #ifdef FEATURE_COMINTEROP
             if (fIsWinRT)
             {
-                INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHAL_WINRT_ILLEGAL_TYPE));
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHAL_WINRT_ILLEGAL_TYPE);
                 break;
             }
 #endif // FEATURE_COMINTEROP
@@ -898,7 +855,7 @@ do                                                      \
                 // The size constant must be specified, if it isn't then the struct can't be marshalled.
                 if (S_OK != CheckForCompressedData(pNativeTypeStart, pNativeType, cbNativeTypeStart))
                 {
-                    INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHALFIELD_FIXEDARRAY_NOSIZE));                            
+                    selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHALFIELD_FIXEDARRAY_NOSIZE);                            
                     break;
                 }
 
@@ -906,7 +863,7 @@ do                                                      \
                 ULONG numElements = CorSigUncompressData(pNativeType);            
                 if (numElements == 0)
                 {
-                    INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHALFIELD_FIXEDARRAY_ZEROSIZE));                            
+                    selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHALFIELD_FIXEDARRAY_ZEROSIZE);                            
                     break;
                 }
 
@@ -919,7 +876,7 @@ do                                                      \
 
                 if (!arrayMarshalInfo.IsValid())
                 {
-                    INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (arrayMarshalInfo.GetErrorResourceId())); 
+                    selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, arrayMarshalInfo.GetErrorResourceId()); 
                     break;
                 }
 
@@ -929,14 +886,14 @@ do                                                      \
                     // that is used by the generic fixed size array marshaller doesn't support them
                     // properly. 
                     ReadBestFitCustomAttribute(pModule, cl, &BestFit, &ThrowOnUnmappableChar);
-                    INITFIELDMARSHALER(NFT_FIXEDCHARARRAYANSI, FieldMarshaler_FixedCharArrayAnsi, (numElements, BestFit, ThrowOnUnmappableChar));
+                    selectedNft = InitFieldMarshaler<FieldMarshaler_FixedCharArrayAnsi>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_INTEGER_LIKE, numElements, BestFit, ThrowOnUnmappableChar);
                     break;                    
                 }
                 else
                 {
                     VARTYPE elementVT = arrayMarshalInfo.GetElementVT();
 
-                    INITFIELDMARSHALER(NFT_FIXEDARRAY, FieldMarshaler_FixedArray, (pModule, cl, numElements, elementVT, arrayMarshalInfo.GetElementTypeHandle().GetMethodTable()));
+                    selectedNft = InitFieldMarshaler<FieldMarshaler_FixedArray>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_NESTED, pModule, cl, numElements, elementVT, arrayMarshalInfo.GetElementTypeHandle().GetMethodTable());
                     break;
                 }
             }
@@ -954,16 +911,16 @@ do                                                      \
 
                 if (!arrayMarshalInfo.IsValid())
                 {
-                    INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (arrayMarshalInfo.GetErrorResourceId())); 
+                    selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, arrayMarshalInfo.GetErrorResourceId()); 
                     break;
                 }
                     
-                INITFIELDMARSHALER(NFT_SAFEARRAY, FieldMarshaler_SafeArray, (arrayMarshalInfo.GetElementVT(), arrayMarshalInfo.GetElementTypeHandle().GetMethodTable()));
+                selectedNft = InitFieldMarshaler<FieldMarshaler_SafeArray>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_COM_STRUCT, arrayMarshalInfo.GetElementVT(), arrayMarshalInfo.GetElementTypeHandle().GetMethodTable());
             }
 #endif //FEATURE_CLASSIC_COMINTEROP
             else
             {
-                INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHALFIELD_ARRAY));                     
+                selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHALFIELD_ARRAY);                     
             }
             break;
         }            
@@ -977,23 +934,81 @@ do                                                      \
             break;
     }
 
-    if (pfwalk->m_nft == NFT_NONE)
+    if (selectedNft == NFT_NONE)
     {
-        INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHAL_BADMANAGED));
+        selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHAL_BADMANAGED);
     }
 #ifdef FEATURE_COMINTEROP
-    else if (fIsWinRT && !NFTDataBase[pfwalk->m_nft].m_fWinRTSupported)
+    else if (fIsWinRT && !NFTDataBase[(UINT16)selectedNft].m_fWinRTSupported)
     {
         // the field marshaler we came up with is not supported in WinRT scenarios
         ZeroMemory(&pfwalk->m_FieldMarshaler, MAXFIELDMARSHALERSIZE);
-        INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHAL_WINRT_ILLEGAL_TYPE));
+        selectedNft = InitFieldMarshaler<FieldMarshaler_Illegal>(pfwalk->m_FieldMarshaler, NATIVE_FIELD_CATEGORY_ILLEGAL, IDS_EE_BADMARSHAL_WINRT_ILLEGAL_TYPE);
     }
 #endif // FEATURE_COMINTEROP
-#undef INITFIELDMARSHALER
 }
+
 #ifdef _PREFAST_
 #pragma warning(pop)
 #endif
+
+BOOL CheckIfDisqualifiedFromManagedSequential(CorElementType corElemType, LayoutRawFieldInfo * pRawFieldInfo, MetaSig &fsig)
+{
+    // This type may qualify for ManagedSequential. Collect managed size and alignment info.
+    if (CorTypeInfo::IsPrimitiveType(corElemType))
+    {
+        pRawFieldInfo->m_managedPlacement.m_size = ((UINT32)CorTypeInfo::Size(corElemType)); // Safe cast - no primitive type is larger than 4gb!
+#if defined(_TARGET_X86_) && defined(UNIX_X86_ABI)
+        switch (corElemType)
+        {
+            // The System V ABI for i386 defines different packing for these types.
+        case ELEMENT_TYPE_I8:
+        case ELEMENT_TYPE_U8:
+        case ELEMENT_TYPE_R8:
+        {
+            pRawFieldInfo->m_managedPlacement.m_alignment = 4;
+            break;
+        }
+
+        default:
+        {
+            pRawFieldInfo->m_managedPlacement.m_alignment = pRawFieldInfo->m_managedPlacement.m_size;
+            break;
+        }
+        }
+#else // _TARGET_X86_ && UNIX_X86_ABI
+        pRawFieldInfo->m_managedPlacement.m_alignment = pRawFieldInfo->m_managedPlacement.m_size;
+#endif
+
+        return FALSE;
+    }
+    else if (corElemType == ELEMENT_TYPE_PTR)
+    {
+        pRawFieldInfo->m_managedPlacement.m_size = TARGET_POINTER_SIZE;
+        pRawFieldInfo->m_managedPlacement.m_alignment = TARGET_POINTER_SIZE;
+        
+        return FALSE;
+    }
+    else if (corElemType == ELEMENT_TYPE_VALUETYPE)
+    {
+        TypeHandle pNestedType = fsig.GetLastTypeHandleThrowing(ClassLoader::LoadTypes,
+            CLASS_LOAD_APPROXPARENTS,
+            TRUE);
+        if (!pNestedType.GetMethodTable()->IsManagedSequential())
+        {
+            return TRUE;
+        }
+        
+        pRawFieldInfo->m_managedPlacement.m_size = (pNestedType.GetMethodTable()->GetNumInstanceFieldBytes());
+
+        _ASSERTE(pNestedType.GetMethodTable()->HasLayout()); // If it is ManagedSequential(), it also has Layout but doesn't hurt to check before we do a cast!
+        pRawFieldInfo->m_managedPlacement.m_alignment = pNestedType.GetMethodTable()->GetLayoutInfo()->m_ManagedLargestAlignmentRequirementOfAllMembers;
+        
+        return FALSE;
+    }
+    // No other type permitted for ManagedSequential.
+    return TRUE;
+}
 
 
 TypeHandle ArraySubTypeLoadWorker(const SString &strUserDefTypeName, Assembly* pAssembly)
@@ -1094,7 +1109,7 @@ BOOL IsStructMarshalable(TypeHandle th)
 
     while (numReferenceFields--)
     {
-        if (pFieldMarshaler->GetNStructFieldType() == NFT_ILLEGAL)
+        if (pFieldMarshaler->IsIllegalMarshaler())
             return FALSE;
 
         ((BYTE*&)pFieldMarshaler) += MAXFIELDMARSHALERSIZE;
@@ -1105,24 +1120,26 @@ BOOL IsStructMarshalable(TypeHandle th)
 
 BOOL IsFieldBlittable(FieldMarshaler* pFM)
 {
-    // if it's a simple copy...
-    if (pFM->GetNStructFieldType() == NFT_COPY1    ||
-        pFM->GetNStructFieldType() == NFT_COPY2    ||
-        pFM->GetNStructFieldType() == NFT_COPY4    ||
-        pFM->GetNStructFieldType() == NFT_COPY8)
+    if (pFM->GetNativeFieldFlags() & NATIVE_FIELD_SUBCATEGORY_MAYBE_BLITTABLE)
     {
-        return TRUE;
-    }
-
-    // Or if it's a nested value class that is itself blittable...
-    if (pFM->GetNStructFieldType() == NFT_NESTEDVALUECLASS)
-    {
-        _ASSERTE(pFM->IsNestedValueClassMarshaler());
-
-        if (((FieldMarshaler_NestedValueClass *) pFM)->IsBlittable())
+        if (pFM->GetNativeFieldFlags() & NATIVE_FIELD_SUBCATEGORY_FLOAT)
+        {
             return TRUE;
-    }
+        }
+        else if (pFM->GetNativeFieldFlags() & NATIVE_FIELD_SUBCATEGORY_INTEGER)
+        {
+            return TRUE;
+        }
+        else if (pFM->GetNativeFieldFlags() & NATIVE_FIELD_SUBCATEGORY_NESTED)
+        {
+            FieldMarshaler_NestedType *pNestedFM = (FieldMarshaler_NestedType*)pFM;
 
+            if (pNestedFM->GetNestedNativeMethodTable()->IsBlittable())
+            {
+                return TRUE;
+            }
+        }
+    }
     return FALSE;
 }
 
@@ -3655,7 +3672,6 @@ VOID FieldMarshaler_Variant::DestroyNativeImpl(LPVOID pNativeValue) const
 
 #endif // FEATURE_COMINTEROP
 
-
 #define IMPLEMENT_FieldMarshaler_METHOD(ret, name, argsdecl, rettype, args) \
     ret FieldMarshaler::name argsdecl { \
         WRAPPER_NO_CONTRACT; \
@@ -3751,3 +3767,41 @@ IMPLEMENT_FieldMarshaler_METHOD(VOID, CopyTo,
     ,
     (pDest, destSize))
 #endif // !DACCESS_COMPILE
+
+
+
+MethodTable* FieldMarshaler_NestedType::GetNestedNativeMethodTable() const
+{
+    switch (GetNStructFieldType())
+    {
+        case NFT_NESTEDLAYOUTCLASS:
+            return ((FieldMarshaler_NestedLayoutClass*)this)->GetNestedNativeMethodTableImpl();
+        case NFT_NESTEDVALUECLASS:
+            return ((FieldMarshaler_NestedValueClass*)this)->GetNestedNativeMethodTableImpl();
+        case NFT_FIXEDARRAY:
+            return ((FieldMarshaler_FixedArray*)this)->GetNestedNativeMethodTableImpl();
+        case NFT_DECIMAL:
+            return ((FieldMarshaler_Decimal*)this)->GetNestedNativeMethodTableImpl();
+        default:
+            UNREACHABLE_MSG("unexpected type of FieldMarshaler_NestedType");
+            return nullptr;
+    }
+}
+
+UINT32 FieldMarshaler_NestedType::GetNumElements() const
+{
+    switch (GetNStructFieldType())
+    {
+        case NFT_NESTEDLAYOUTCLASS:
+            return ((FieldMarshaler_NestedLayoutClass*)this)->GetNumElementsImpl();
+        case NFT_NESTEDVALUECLASS:
+            return ((FieldMarshaler_NestedValueClass*)this)->GetNumElementsImpl();
+        case NFT_FIXEDARRAY:
+            return ((FieldMarshaler_FixedArray*)this)->GetNumElementsImpl();
+        case NFT_DECIMAL:
+            return ((FieldMarshaler_Decimal*)this)->GetNumElementsImpl();
+        default:
+            UNREACHABLE_MSG("unexpected type of FieldMarshaler_NestedType");
+            return 1;
+    }
+}
