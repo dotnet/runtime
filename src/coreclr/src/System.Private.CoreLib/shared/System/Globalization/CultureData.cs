@@ -158,149 +158,139 @@ namespace System.Globalization
         /// <remarks>
         /// Using a property so we avoid creating the dictionary until we need it
         /// </remarks>
-        private static StringStringDictionary RegionNames
-        {
-            get
+        private static StringStringDictionary RegionNames =>
+            s_regionNames ??=
+            new StringStringDictionary(211 /* prime */)
             {
-                if (s_regionNames == null)
-                {
-                    StringStringDictionary regionNames = new StringStringDictionary(211 /* prime */);
-
-                    regionNames.Add("029", "en-029");
-                    regionNames.Add("AE", "ar-AE");
-                    regionNames.Add("AF", "prs-AF");
-                    regionNames.Add("AL", "sq-AL");
-                    regionNames.Add("AM", "hy-AM");
-                    regionNames.Add("AR", "es-AR");
-                    regionNames.Add("AT", "de-AT");
-                    regionNames.Add("AU", "en-AU");
-                    regionNames.Add("AZ", "az-Cyrl-AZ");
-                    regionNames.Add("BA", "bs-Latn-BA");
-                    regionNames.Add("BD", "bn-BD");
-                    regionNames.Add("BE", "nl-BE");
-                    regionNames.Add("BG", "bg-BG");
-                    regionNames.Add("BH", "ar-BH");
-                    regionNames.Add("BN", "ms-BN");
-                    regionNames.Add("BO", "es-BO");
-                    regionNames.Add("BR", "pt-BR");
-                    regionNames.Add("BY", "be-BY");
-                    regionNames.Add("BZ", "en-BZ");
-                    regionNames.Add("CA", "en-CA");
-                    regionNames.Add("CH", "it-CH");
-                    regionNames.Add("CL", "es-CL");
-                    regionNames.Add("CN", "zh-CN");
-                    regionNames.Add("CO", "es-CO");
-                    regionNames.Add("CR", "es-CR");
-                    regionNames.Add("CS", "sr-Cyrl-CS");
-                    regionNames.Add("CZ", "cs-CZ");
-                    regionNames.Add("DE", "de-DE");
-                    regionNames.Add("DK", "da-DK");
-                    regionNames.Add("DO", "es-DO");
-                    regionNames.Add("DZ", "ar-DZ");
-                    regionNames.Add("EC", "es-EC");
-                    regionNames.Add("EE", "et-EE");
-                    regionNames.Add("EG", "ar-EG");
-                    regionNames.Add("ES", "es-ES");
-                    regionNames.Add("ET", "am-ET");
-                    regionNames.Add("FI", "fi-FI");
-                    regionNames.Add("FO", "fo-FO");
-                    regionNames.Add("FR", "fr-FR");
-                    regionNames.Add("GB", "en-GB");
-                    regionNames.Add("GE", "ka-GE");
-                    regionNames.Add("GL", "kl-GL");
-                    regionNames.Add("GR", "el-GR");
-                    regionNames.Add("GT", "es-GT");
-                    regionNames.Add("HK", "zh-HK");
-                    regionNames.Add("HN", "es-HN");
-                    regionNames.Add("HR", "hr-HR");
-                    regionNames.Add("HU", "hu-HU");
-                    regionNames.Add("ID", "id-ID");
-                    regionNames.Add("IE", "en-IE");
-                    regionNames.Add("IL", "he-IL");
-                    regionNames.Add("IN", "hi-IN");
-                    regionNames.Add("IQ", "ar-IQ");
-                    regionNames.Add("IR", "fa-IR");
-                    regionNames.Add("IS", "is-IS");
-                    regionNames.Add("IT", "it-IT");
-                    regionNames.Add("IV", "");
-                    regionNames.Add("JM", "en-JM");
-                    regionNames.Add("JO", "ar-JO");
-                    regionNames.Add("JP", "ja-JP");
-                    regionNames.Add("KE", "sw-KE");
-                    regionNames.Add("KG", "ky-KG");
-                    regionNames.Add("KH", "km-KH");
-                    regionNames.Add("KR", "ko-KR");
-                    regionNames.Add("KW", "ar-KW");
-                    regionNames.Add("KZ", "kk-KZ");
-                    regionNames.Add("LA", "lo-LA");
-                    regionNames.Add("LB", "ar-LB");
-                    regionNames.Add("LI", "de-LI");
-                    regionNames.Add("LK", "si-LK");
-                    regionNames.Add("LT", "lt-LT");
-                    regionNames.Add("LU", "lb-LU");
-                    regionNames.Add("LV", "lv-LV");
-                    regionNames.Add("LY", "ar-LY");
-                    regionNames.Add("MA", "ar-MA");
-                    regionNames.Add("MC", "fr-MC");
-                    regionNames.Add("ME", "sr-Latn-ME");
-                    regionNames.Add("MK", "mk-MK");
-                    regionNames.Add("MN", "mn-MN");
-                    regionNames.Add("MO", "zh-MO");
-                    regionNames.Add("MT", "mt-MT");
-                    regionNames.Add("MV", "dv-MV");
-                    regionNames.Add("MX", "es-MX");
-                    regionNames.Add("MY", "ms-MY");
-                    regionNames.Add("NG", "ig-NG");
-                    regionNames.Add("NI", "es-NI");
-                    regionNames.Add("NL", "nl-NL");
-                    regionNames.Add("NO", "nn-NO");
-                    regionNames.Add("NP", "ne-NP");
-                    regionNames.Add("NZ", "en-NZ");
-                    regionNames.Add("OM", "ar-OM");
-                    regionNames.Add("PA", "es-PA");
-                    regionNames.Add("PE", "es-PE");
-                    regionNames.Add("PH", "en-PH");
-                    regionNames.Add("PK", "ur-PK");
-                    regionNames.Add("PL", "pl-PL");
-                    regionNames.Add("PR", "es-PR");
-                    regionNames.Add("PT", "pt-PT");
-                    regionNames.Add("PY", "es-PY");
-                    regionNames.Add("QA", "ar-QA");
-                    regionNames.Add("RO", "ro-RO");
-                    regionNames.Add("RS", "sr-Latn-RS");
-                    regionNames.Add("RU", "ru-RU");
-                    regionNames.Add("RW", "rw-RW");
-                    regionNames.Add("SA", "ar-SA");
-                    regionNames.Add("SE", "sv-SE");
-                    regionNames.Add("SG", "zh-SG");
-                    regionNames.Add("SI", "sl-SI");
-                    regionNames.Add("SK", "sk-SK");
-                    regionNames.Add("SN", "wo-SN");
-                    regionNames.Add("SV", "es-SV");
-                    regionNames.Add("SY", "ar-SY");
-                    regionNames.Add("TH", "th-TH");
-                    regionNames.Add("TJ", "tg-Cyrl-TJ");
-                    regionNames.Add("TM", "tk-TM");
-                    regionNames.Add("TN", "ar-TN");
-                    regionNames.Add("TR", "tr-TR");
-                    regionNames.Add("TT", "en-TT");
-                    regionNames.Add("TW", "zh-TW");
-                    regionNames.Add("UA", "uk-UA");
-                    regionNames.Add("US", "en-US");
-                    regionNames.Add("UY", "es-UY");
-                    regionNames.Add("UZ", "uz-Cyrl-UZ");
-                    regionNames.Add("VE", "es-VE");
-                    regionNames.Add("VN", "vi-VN");
-                    regionNames.Add("YE", "ar-YE");
-                    regionNames.Add("ZA", "af-ZA");
-                    regionNames.Add("ZW", "en-ZW");
-
-                    s_regionNames = regionNames;
-                }
-
-                return s_regionNames!;
-            }
-        }
+                { "029", "en-029" },
+                { "AE", "ar-AE" },
+                { "AF", "prs-AF" },
+                { "AL", "sq-AL" },
+                { "AM", "hy-AM" },
+                { "AR", "es-AR" },
+                { "AT", "de-AT" },
+                { "AU", "en-AU" },
+                { "AZ", "az-Cyrl-AZ" },
+                { "BA", "bs-Latn-BA" },
+                { "BD", "bn-BD" },
+                { "BE", "nl-BE" },
+                { "BG", "bg-BG" },
+                { "BH", "ar-BH" },
+                { "BN", "ms-BN" },
+                { "BO", "es-BO" },
+                { "BR", "pt-BR" },
+                { "BY", "be-BY" },
+                { "BZ", "en-BZ" },
+                { "CA", "en-CA" },
+                { "CH", "it-CH" },
+                { "CL", "es-CL" },
+                { "CN", "zh-CN" },
+                { "CO", "es-CO" },
+                { "CR", "es-CR" },
+                { "CS", "sr-Cyrl-CS" },
+                { "CZ", "cs-CZ" },
+                { "DE", "de-DE" },
+                { "DK", "da-DK" },
+                { "DO", "es-DO" },
+                { "DZ", "ar-DZ" },
+                { "EC", "es-EC" },
+                { "EE", "et-EE" },
+                { "EG", "ar-EG" },
+                { "ES", "es-ES" },
+                { "ET", "am-ET" },
+                { "FI", "fi-FI" },
+                { "FO", "fo-FO" },
+                { "FR", "fr-FR" },
+                { "GB", "en-GB" },
+                { "GE", "ka-GE" },
+                { "GL", "kl-GL" },
+                { "GR", "el-GR" },
+                { "GT", "es-GT" },
+                { "HK", "zh-HK" },
+                { "HN", "es-HN" },
+                { "HR", "hr-HR" },
+                { "HU", "hu-HU" },
+                { "ID", "id-ID" },
+                { "IE", "en-IE" },
+                { "IL", "he-IL" },
+                { "IN", "hi-IN" },
+                { "IQ", "ar-IQ" },
+                { "IR", "fa-IR" },
+                { "IS", "is-IS" },
+                { "IT", "it-IT" },
+                { "IV", "" },
+                { "JM", "en-JM" },
+                { "JO", "ar-JO" },
+                { "JP", "ja-JP" },
+                { "KE", "sw-KE" },
+                { "KG", "ky-KG" },
+                { "KH", "km-KH" },
+                { "KR", "ko-KR" },
+                { "KW", "ar-KW" },
+                { "KZ", "kk-KZ" },
+                { "LA", "lo-LA" },
+                { "LB", "ar-LB" },
+                { "LI", "de-LI" },
+                { "LK", "si-LK" },
+                { "LT", "lt-LT" },
+                { "LU", "lb-LU" },
+                { "LV", "lv-LV" },
+                { "LY", "ar-LY" },
+                { "MA", "ar-MA" },
+                { "MC", "fr-MC" },
+                { "ME", "sr-Latn-ME" },
+                { "MK", "mk-MK" },
+                { "MN", "mn-MN" },
+                { "MO", "zh-MO" },
+                { "MT", "mt-MT" },
+                { "MV", "dv-MV" },
+                { "MX", "es-MX" },
+                { "MY", "ms-MY" },
+                { "NG", "ig-NG" },
+                { "NI", "es-NI" },
+                { "NL", "nl-NL" },
+                { "NO", "nn-NO" },
+                { "NP", "ne-NP" },
+                { "NZ", "en-NZ" },
+                { "OM", "ar-OM" },
+                { "PA", "es-PA" },
+                { "PE", "es-PE" },
+                { "PH", "en-PH" },
+                { "PK", "ur-PK" },
+                { "PL", "pl-PL" },
+                { "PR", "es-PR" },
+                { "PT", "pt-PT" },
+                { "PY", "es-PY" },
+                { "QA", "ar-QA" },
+                { "RO", "ro-RO" },
+                { "RS", "sr-Latn-RS" },
+                { "RU", "ru-RU" },
+                { "RW", "rw-RW" },
+                { "SA", "ar-SA" },
+                { "SE", "sv-SE" },
+                { "SG", "zh-SG" },
+                { "SI", "sl-SI" },
+                { "SK", "sk-SK" },
+                { "SN", "wo-SN" },
+                { "SV", "es-SV" },
+                { "SY", "ar-SY" },
+                { "TH", "th-TH" },
+                { "TJ", "tg-Cyrl-TJ" },
+                { "TM", "tk-TM" },
+                { "TN", "ar-TN" },
+                { "TR", "tr-TR" },
+                { "TT", "en-TT" },
+                { "TW", "zh-TW" },
+                { "UA", "uk-UA" },
+                { "US", "en-US" },
+                { "UY", "es-UY" },
+                { "UZ", "uz-Cyrl-UZ" },
+                { "VE", "es-VE" },
+                { "VN", "vi-VN" },
+                { "YE", "ar-YE" },
+                { "ZA", "af-ZA" },
+                { "ZW", "en-ZW" }
+            };
 
         // Cache of regions we've already looked up
         private static volatile StringCultureDataDictionary? s_cachedRegions;

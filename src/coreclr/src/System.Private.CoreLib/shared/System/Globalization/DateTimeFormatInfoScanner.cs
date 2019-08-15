@@ -117,39 +117,32 @@ namespace System.Globalization
         // Hashtable for the known words.
         private static volatile Dictionary<string, string>? s_knownWords;
 
-        private static Dictionary<string, string> KnownWords
-        {
-            get
+        private static Dictionary<string, string> KnownWords =>
+            s_knownWords ??=
+            new Dictionary<string, string>(16)
             {
-                if (s_knownWords == null)
-                {
-                    Dictionary<string, string> temp = new Dictionary<string, string>();
-                    // Add known words into the hash table.
+                // Add known words into the hash table.
 
-                    // Skip these special symbols.
-                    temp.Add("/", string.Empty);
-                    temp.Add("-", string.Empty);
-                    temp.Add(".", string.Empty);
-                    // Skip known CJK suffixes.
-                    temp.Add(CJKYearSuff, string.Empty);
-                    temp.Add(CJKMonthSuff, string.Empty);
-                    temp.Add(CJKDaySuff, string.Empty);
-                    temp.Add(KoreanYearSuff, string.Empty);
-                    temp.Add(KoreanMonthSuff, string.Empty);
-                    temp.Add(KoreanDaySuff, string.Empty);
-                    temp.Add(KoreanHourSuff, string.Empty);
-                    temp.Add(KoreanMinuteSuff, string.Empty);
-                    temp.Add(KoreanSecondSuff, string.Empty);
-                    temp.Add(CJKHourSuff, string.Empty);
-                    temp.Add(ChineseHourSuff, string.Empty);
-                    temp.Add(CJKMinuteSuff, string.Empty);
-                    temp.Add(CJKSecondSuff, string.Empty);
+                // Skip these special symbols.
+                { "/", string.Empty },
+                { "-", string.Empty },
+                { ".", string.Empty },
 
-                    s_knownWords = temp;
-                }
-                return s_knownWords;
-            }
-        }
+                // Skip known CJK suffixes.
+                { CJKYearSuff, string.Empty },
+                { CJKMonthSuff, string.Empty },
+                { CJKDaySuff, string.Empty },
+                { KoreanYearSuff, string.Empty },
+                { KoreanMonthSuff, string.Empty },
+                { KoreanDaySuff, string.Empty },
+                { KoreanHourSuff, string.Empty },
+                { KoreanMinuteSuff, string.Empty },
+                { KoreanSecondSuff, string.Empty },
+                { CJKHourSuff, string.Empty },
+                { ChineseHourSuff, string.Empty },
+                { CJKMinuteSuff, string.Empty },
+                { CJKSecondSuff, string.Empty }
+            };
 
         ////////////////////////////////////////////////////////////////////////////
         //
