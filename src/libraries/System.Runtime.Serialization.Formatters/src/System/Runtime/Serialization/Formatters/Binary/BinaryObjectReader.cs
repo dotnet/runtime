@@ -92,7 +92,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 if (_fullDeserialization)
                 {
                     // Reinitialize
-                    _objectManager = new ObjectManager(_surrogates, _context, false, false);
+                    _objectManager = new ObjectManager(_surrogates, _context);
                     _serObjectInfoInit = new SerObjectInfoInit();
                 }
 
@@ -147,7 +147,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         {
             _fullDeserialization = true;
             _stack = new SerStack("ObjectReader Object Stack");
-            _objectManager = new ObjectManager(_surrogates, _context, false, false);
+            _objectManager = new ObjectManager(_surrogates, _context);
             if (_formatterConverter == null)
             {
                 _formatterConverter = new FormatterConverter();
