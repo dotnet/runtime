@@ -2966,6 +2966,15 @@ mono_interp_load_remote_field_vt (
 	return vt_sp + ALIGN_TO (i32, MINT_VT_ALIGNMENT);
 }
 
+static MONO_NEVER_INLINE gboolean
+mono_interp_isinst (MonoObject* object, MonoClass* klass)
+{
+	ERROR_DECL (error);
+	const gboolean isinst = mono_object_isinst_checked (object, klass, error) != NULL;
+	mono_error_cleanup (error); // FIXME: do not swallow the error
+	return isinst;
+}
+
 /*
  * GC SAFETY:
  *
@@ -4777,8 +4786,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 					isinst = TRUE;
 				} else if (m_class_is_array_special_interface (c) || mono_object_is_transparent_proxy (o)) {
 					/* slow path */
-					isinst = mono_object_isinst_checked (o, c, error) != NULL;
-					mono_error_cleanup (error); /* FIXME: don't swallow the error */
+					isinst = mono_interp_isinst (o, c); // FIXME: do not swallow the error
 				} else {
 					isinst = FALSE;
 				}
@@ -4815,9 +4823,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			gboolean isinst_instr = *ip == MINT_ISINST;
 			c = (MonoClass*)imethod->data_items [*(guint16 *)(ip + 1)];
 			if ((o = sp [-1].data.o)) {
-				MonoObject *isinst_obj = mono_object_isinst_checked (o, c, error);
-				mono_error_cleanup (error); /* FIXME: don't swallow the error */
-				if (!isinst_obj) {
+				if (!mono_interp_isinst (o, c)) { // FIXME: do not swallow the error
 					if (isinst_instr)
 						sp [-1].data.p = NULL;
 					else
