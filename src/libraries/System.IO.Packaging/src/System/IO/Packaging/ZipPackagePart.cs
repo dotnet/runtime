@@ -27,7 +27,12 @@ namespace System.IO.Packaging
         {
             if (_zipArchiveEntry != null)
             {
-                if (streamFileMode == FileMode.Create)
+                // Reset the stream when FileMode.Create is specified.  Since ZipArchiveEntry only
+                // ever supports opening once when the backing archive is in Create mode, we'll avoid
+                // calling SetLength since the stream returned won't be seekable. You could still open
+                // an archive in Update mode then call part.GetStream(FileMode.Create), in which case
+                // we'll want this call to SetLength.
+                if (streamFileMode == FileMode.Create && _zipArchiveEntry.Archive.Mode != ZipArchiveMode.Create)
                 {
                     using (var tempStream = _zipStreamManager.Open(_zipArchiveEntry, streamFileMode, streamFileAccess))
                     {
