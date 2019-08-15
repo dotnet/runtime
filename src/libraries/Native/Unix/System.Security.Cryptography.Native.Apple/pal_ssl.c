@@ -20,6 +20,7 @@ SSLContextRef AppleCryptoNative_SslCreateContext(int32_t isServer)
 {
     if (isServer != 0 && isServer != 1)
         return NULL;
+
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     return SSLCreateContext(NULL, isServer ? kSSLServerSide : kSSLClientSide, kSSLStreamType);
@@ -63,6 +64,7 @@ static SSLProtocol PalSslProtocolToSslProtocol(PAL_SslProtocol palProtocolId)
 int32_t AppleCryptoNative_SslSetMinProtocolVersion(SSLContextRef sslContext, PAL_SslProtocol sslProtocol)
 {
     SSLProtocol protocol = PalSslProtocolToSslProtocol(sslProtocol);
+
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     if (protocol == kSSLProtocolUnknown)
@@ -76,6 +78,7 @@ int32_t AppleCryptoNative_SslSetMinProtocolVersion(SSLContextRef sslContext, PAL
 int32_t AppleCryptoNative_SslSetMaxProtocolVersion(SSLContextRef sslContext, PAL_SslProtocol sslProtocol)
 {
     SSLProtocol protocol = PalSslProtocolToSslProtocol(sslProtocol);
+
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     if (protocol == kSSLProtocolUnknown)
@@ -95,6 +98,7 @@ int32_t AppleCryptoNative_SslCopyCertChain(SSLContextRef sslContext, SecTrustRef
 
     if (sslContext == NULL || pChainOut == NULL || pOSStatus == NULL)
         return -1;
+
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     *pOSStatus = SSLCopyPeerTrust(sslContext, pChainOut);
@@ -112,10 +116,12 @@ AppleCryptoNative_SslCopyCADistinguishedNames(SSLContextRef sslContext, CFArrayR
 
     if (sslContext == NULL || pArrayOut == NULL || pOSStatus == NULL)
         return -1;
+
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     *pOSStatus = SSLCopyDistinguishedNames(sslContext, pArrayOut);
 #pragma clang diagnostic pop
+
     return *pOSStatus == noErr;
 }
 
@@ -129,10 +135,12 @@ static int32_t AppleCryptoNative_SslSetSessionOption(SSLContextRef sslContext,
 
     if (value != 0 && value != 1)
         return -2;
+
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     *pOSStatus = SSLSetSessionOption(sslContext, option, !!value);
 #pragma clang diagnostic pop
+
     return *pOSStatus == noErr;
 }
 
@@ -188,6 +196,7 @@ int32_t AppleCryptoNative_SslSetTargetName(SSLContextRef sslContext,
         *pOSStatus = SSLSetPeerDomainName(sslContext, pszTargetName, (size_t)cbTargetName);
     }
 #pragma clang diagnostic pop
+
     return *pOSStatus == noErr;
 }
 
@@ -248,10 +257,12 @@ PAL_TlsHandshakeState AppleCryptoNative_SslHandshake(SSLContextRef sslContext)
 {
     if (sslContext == NULL)
         return PAL_TlsHandshakeState_Unknown;
+
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     OSStatus osStatus = SSLHandshake(sslContext);
 #pragma clang diagnostic pop
+
     switch (osStatus)
     {
         case noErr:
@@ -288,10 +299,12 @@ AppleCryptoNative_SslWrite(SSLContextRef sslContext, const uint8_t* buf, uint32_
 
     size_t expected = (size_t)bufLen;
     size_t totalWritten;
+
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     OSStatus status = SSLWrite(sslContext, buf, expected, &totalWritten);
 #pragma clang diagnostic pop
+
     if (status != noErr)
     {
         *bytesWritten = (uint32_t)totalWritten;
@@ -308,10 +321,12 @@ PAL_TlsIo AppleCryptoNative_SslRead(SSLContextRef sslContext, uint8_t* buf, uint
 
     size_t writtenSize = 0;
     size_t bufSize = (size_t)bufLen;
+
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     OSStatus status = SSLRead(sslContext, buf, bufSize, &writtenSize);
 #pragma clang diagnostic pop
+
     if (writtenSize > UINT_MAX)
     {
         // This shouldn't happen, because we passed a uint32_t as the initial buffer size.
@@ -361,6 +376,7 @@ int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringR
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     OSStatus osStatus = SSLCopyPeerTrust(sslContext, &existingTrust);
 #pragma clang diagnostic pop
+
     if (osStatus != noErr)
     {
         CFRelease(certs);
@@ -408,10 +424,12 @@ int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringR
     {
         SecTrustResultType trustResult;
         memset(&trustResult, 0, sizeof(SecTrustResultType));
+
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
         osStatus = SecTrustEvaluate(trust, &trustResult);
 #pragma clang diagnostic pop
+
         if (osStatus != noErr)
         {
             ret = -7;
@@ -458,6 +476,7 @@ int32_t AppleCryptoNative_SslGetProtocolVersion(SSLContextRef sslContext, PAL_Ss
 
     if (sslContext == NULL || pProtocol == NULL)
         return errSecParam;
+
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     SSLProtocol protocol = kSSLProtocolUnknown;
@@ -483,6 +502,7 @@ int32_t AppleCryptoNative_SslGetProtocolVersion(SSLContextRef sslContext, PAL_Ss
         *pProtocol = matchedProtocol;
     }
 #pragma clang diagnostic pop
+
     return osStatus;
 }
 
@@ -530,10 +550,12 @@ int32_t AppleCryptoNative_SslSetEnabledCipherSuites(SSLContextRef sslContext, co
         {
             cipherSuites16[i] = (SSLCipherSuite)cipherSuites[i];
         }
+
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
         OSStatus status = SSLSetEnabledCiphers(sslContext, cipherSuites16, (size_t)numCipherSuites);
 #pragma clang diagnostic pop
+
         free(cipherSuites16);
         return status;
     }
