@@ -30,7 +30,6 @@
 #include "dbginterface.h"
 #include "comdelegate.h"
 #include "eventtrace.h"
-#include "fieldmarshaler.h"
 
 
 #include "eeprofinterfaces.h"
@@ -2692,287 +2691,62 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
         pField->GetName_NoThrow(&fieldName);
 #endif // _DEBUG
 
-        // Some NStruct Field Types have extra information and require special handling
-        NStructFieldType cls = pFieldMarshaler->GetNStructFieldType();
-        if (cls == NFT_FIXEDCHARARRAYANSI)
-        {
-            fieldClassificationType = SystemVClassificationTypeInteger;
-        }
-        else if (cls == NFT_FIXEDARRAY)
-        {
-            VARTYPE vtElement = ((FieldMarshaler_FixedArray*)pFieldMarshaler)->GetElementVT();
-            switch (vtElement)
-            {
-            case VT_EMPTY:
-            case VT_NULL:
-            case VT_BOOL:
-            case VT_I1:
-            case VT_I2:
-            case VT_I4:
-            case VT_I8:
-            case VT_UI1:
-            case VT_UI2:
-            case VT_UI4:
-            case VT_UI8:
-            case VT_PTR:
-            case VT_INT:
-            case VT_UINT:
-            case VT_LPSTR:
-            case VT_LPWSTR:
-                fieldClassificationType = SystemVClassificationTypeInteger;
-                break;
-            case VT_R4:
-            case VT_R8:
-                fieldClassificationType = SystemVClassificationTypeSSE;
-                break;
-            case VT_RECORD:
-            {
-                MethodTable* pFieldMT = ((FieldMarshaler_FixedArray*)pFieldMarshaler)->GetElementMethodTable();
+        NativeFieldFlags nfc = pFieldMarshaler->GetNativeFieldFlags();
 
-                unsigned int numElements = ((FieldMarshaler_FixedArray*)pFieldMarshaler)->GetNumElements();
-
-                bool structRet = true;
-
-                for (unsigned int i = 0; i < numElements; i++, normalizedFieldOffset += pFieldMT->GetNativeSize())
-                {
-                    bool inEmbeddedStructPrev = helperPtr->inEmbeddedStruct;
-                    helperPtr->inEmbeddedStruct = true;
-                    structRet = pFieldMT->ClassifyEightBytesWithNativeLayout(
-                        helperPtr,
-                        nestingLevel + 1,
-                        normalizedFieldOffset,
-                        useNativeLayout);
-                    helperPtr->inEmbeddedStruct = inEmbeddedStructPrev;
-
-                    if (!structRet)
-                    {
-                        // If the nested struct says not to enregister, there's no need to continue analyzing at this level. Just return do not enregister.
-                        return false;
-                    }
-                }
-                continue;
-            }
-            case VT_DECIMAL:
-            case VT_DATE:
-            case VT_BSTR:
-            case VT_UNKNOWN:
-            case VT_DISPATCH:
-            case VT_SAFEARRAY:
-            case VT_ERROR:
-            case VT_HRESULT:
-            case VT_CARRAY:
-            case VT_USERDEFINED:
-            case VT_FILETIME:
-            case VT_BLOB:
-            case VT_STREAM:
-            case VT_STORAGE:
-            case VT_STREAMED_OBJECT:
-            case VT_STORED_OBJECT:
-            case VT_BLOB_OBJECT:
-            case VT_CF:
-            case VT_CLSID:
-            default:
-                // Not supported.
-                return false;
-            }
-        }
 #ifdef FEATURE_COMINTEROP
-        else if (cls == NFT_INTERFACE)
+        if (nfc & NATIVE_FIELD_SUBCATEGORY_COM_ONLY)
         {
-            // COMInterop not supported for CORECLR.
-            _ASSERTE(false && "COMInterop not supported for CORECLR.");
+            _ASSERTE(false && "COMInterop not supported for CoreCLR on Unix.");
             return false;
         }
-#ifdef FEATURE_CLASSIC_COMINTEROP
-        else if (cls == NFT_SAFEARRAY)
-        {
-            // COMInterop not supported for CORECLR.
-            _ASSERTE(false && "COMInterop not supported for CORECLR.");
-            return false;
-        }
-#endif // FEATURE_CLASSIC_COMINTEROP
+        else
 #endif // FEATURE_COMINTEROP
-        else if (cls == NFT_NESTEDLAYOUTCLASS)
+        if (nfc & NATIVE_FIELD_SUBCATEGORY_NESTED)
         {
-            MethodTable* pFieldMT = ((FieldMarshaler_NestedLayoutClass*)pFieldMarshaler)->GetMethodTable();
+            FieldMarshaler_NestedType* pNestedMarshaler = (FieldMarshaler_NestedType*)pFieldMarshaler;
+            unsigned int numElements = pNestedMarshaler->GetNumElements();
+            unsigned int nestedElementOffset = normalizedFieldOffset;
 
-            bool inEmbeddedStructPrev = helperPtr->inEmbeddedStruct;
-            helperPtr->inEmbeddedStruct = true;
-            bool structRet = pFieldMT->ClassifyEightBytesWithNativeLayout(
-                helperPtr,
-                nestingLevel + 1,
-                normalizedFieldOffset,
-                useNativeLayout);
-            helperPtr->inEmbeddedStruct = inEmbeddedStructPrev;
+            MethodTable* pFieldMT = pNestedMarshaler->GetNestedNativeMethodTable();
 
-            if (!structRet)
+            if (pFieldMT == nullptr)
             {
-                // If the nested struct says not to enregister, there's no need to continue analyzing at this level. Just return do not enregister.
+                // If there is no method table that represents the native layout, then assume
+                // that the type cannot be enregistered.
                 return false;
+            }
+
+            const unsigned int nestedElementSize = pFieldMT->GetNativeSize();
+            for (unsigned int i = 0; i < numElements; ++i, nestedElementOffset += nestedElementSize)
+            {
+                bool inEmbeddedStructPrev = helperPtr->inEmbeddedStruct;
+                helperPtr->inEmbeddedStruct = true;
+                bool structRet = pFieldMT->ClassifyEightBytesWithNativeLayout(helperPtr, nestingLevel + 1, nestedElementOffset, useNativeLayout);
+                helperPtr->inEmbeddedStruct = inEmbeddedStructPrev;
+
+                if (!structRet)
+                {
+                    // If the nested struct says not to enregister, there's no need to continue analyzing at this level. Just return do not enregister.
+                    return false;
+                }
             }
             continue;
         }
-        else if (cls == NFT_NESTEDVALUECLASS)
+        else if (nfc & NATIVE_FIELD_SUBCATEGORY_FLOAT)
         {
-            MethodTable* pFieldMT = ((FieldMarshaler_NestedValueClass*)pFieldMarshaler)->GetMethodTable();
-
-            bool inEmbeddedStructPrev = helperPtr->inEmbeddedStruct;
-            helperPtr->inEmbeddedStruct = true;
-            bool structRet = pFieldMT->ClassifyEightBytesWithNativeLayout(
-                helperPtr,
-                nestingLevel + 1,
-                normalizedFieldOffset,
-                useNativeLayout);
-            helperPtr->inEmbeddedStruct = inEmbeddedStructPrev;
-
-            if (!structRet)
-            {
-                // If the nested struct says not to enregister, there's no need to continue analyzing at this level. Just return do not enregister.
-                return false;
-            }
-            continue;
+            fieldClassificationType = SystemVClassificationTypeSSE;
         }
-        else if (cls == NFT_DECIMAL)
-        {
-            bool inEmbeddedStructPrev = helperPtr->inEmbeddedStruct;
-            helperPtr->inEmbeddedStruct = true;
-            bool structRet = MscorlibBinder::GetClass(CLASS__DECIMAL)->ClassifyEightBytesWithNativeLayout(
-                helperPtr,
-                nestingLevel + 1,
-                normalizedFieldOffset,
-                useNativeLayout);
-            helperPtr->inEmbeddedStruct = inEmbeddedStructPrev;
-
-            if (!structRet)
-            {
-                // If the nested struct says not to enregister, there's no need to continue analyzing at this level. Just return do not enregister.
-                return false;
-            }
-            continue;
-        }
-        else if (cls == NFT_COPY1)
-        {
-            // The following CorElementTypes are the only ones handled with FieldMarshaler_Copy1. 
-            switch (fieldType)
-            {
-            case ELEMENT_TYPE_I1:
-                fieldClassificationType = SystemVClassificationTypeInteger;
-                break;
-
-            case ELEMENT_TYPE_U1:
-                fieldClassificationType = SystemVClassificationTypeInteger;
-                break;
-
-            default:
-                // Invalid entry.
-                return false; // Pass on stack.
-            }
-        }
-        else if (cls == NFT_COPY2)
-        {
-            // The following CorElementTypes are the only ones handled with FieldMarshaler_Copy2. 
-            switch (fieldType)
-            {
-            case ELEMENT_TYPE_CHAR:
-            case ELEMENT_TYPE_I2:
-            case ELEMENT_TYPE_U2:
-                fieldClassificationType = SystemVClassificationTypeInteger;
-                break;
-
-            default:
-                // Invalid entry.
-                return false; // Pass on stack.
-            }
-        }
-        else if (cls == NFT_COPY4)
-        {
-            // The following CorElementTypes are the only ones handled with FieldMarshaler_Copy4. 
-            switch (fieldType)
-            {
-                // At this point, ELEMENT_TYPE_I must be 4 bytes long.  Same for ELEMENT_TYPE_U.
-            case ELEMENT_TYPE_I:
-            case ELEMENT_TYPE_I4:
-            case ELEMENT_TYPE_U:
-            case ELEMENT_TYPE_U4:
-            case ELEMENT_TYPE_PTR:
-                fieldClassificationType = SystemVClassificationTypeInteger;
-                break;
-
-            case ELEMENT_TYPE_R4:
-                fieldClassificationType = SystemVClassificationTypeSSE;
-                break;
-
-            default:
-                // Invalid entry.
-                return false; // Pass on stack.
-            }
-        }
-        else if (cls == NFT_COPY8)
-        {
-            // The following CorElementTypes are the only ones handled with FieldMarshaler_Copy8. 
-            switch (fieldType)
-            {
-                // At this point, ELEMENT_TYPE_I must be 8 bytes long.  Same for ELEMENT_TYPE_U.
-            case ELEMENT_TYPE_I:
-            case ELEMENT_TYPE_I8:
-            case ELEMENT_TYPE_U:
-            case ELEMENT_TYPE_U8:
-            case ELEMENT_TYPE_PTR:
-                fieldClassificationType = SystemVClassificationTypeInteger;
-                break;
-
-            case ELEMENT_TYPE_R8:
-                fieldClassificationType = SystemVClassificationTypeSSE;
-                break;
-
-            default:
-                // Invalid entry.
-                return false; // Pass on stack.
-            }
-        }
-        else if (cls == NFT_FIXEDSTRINGUNI)
+        else if (nfc & NATIVE_FIELD_SUBCATEGORY_INTEGER)
         {
             fieldClassificationType = SystemVClassificationTypeInteger;
         }
-        else if (cls == NFT_FIXEDSTRINGANSI)
+        else if (nfc & NATIVE_FIELD_SUBCATEGORY_OTHER)
         {
-            fieldClassificationType = SystemVClassificationTypeInteger;
+            return false;
         }
         else
         {
-            // All other NStruct Field Types which do not require special handling.
-            switch (cls)
-            {
-#ifdef FEATURE_COMINTEROP
-            case NFT_HSTRING:
-            case NFT_VARIANT:
-            case NFT_VARIANTBOOL:
-            case NFT_CURRENCY:
-                // COMInterop not supported for CORECLR.
-                _ASSERTE(false && "COMInterop not supported for CORECLR.");
-                return false;
-#endif  // FEATURE_COMINTEROP
-            case NFT_STRINGUNI:
-            case NFT_STRINGANSI:
-            case NFT_ANSICHAR:
-            case NFT_STRINGUTF8:
-            case NFT_WINBOOL:
-            case NFT_CBOOL:
-            case NFT_DELEGATE:
-            case NFT_SAFEHANDLE:
-            case NFT_CRITICALHANDLE:
-            case NFT_BSTR:
-                fieldClassificationType = SystemVClassificationTypeInteger;
-                break;
-
-            // It's not clear what the right behavior for NTF_DECIMAL and NTF_DATE is
-            // But those two types would only make sense on windows. We can revisit this later
-            case NFT_DECIMAL:
-            case NFT_DATE:
-            case NFT_ILLEGAL:
-            default:
-                return false;
-            }
+            UNREACHABLE_MSG("Invalid native field subcategory.");
         }
 
         if ((normalizedFieldOffset % pFieldMarshaler->AlignmentRequirement()) != 0)
