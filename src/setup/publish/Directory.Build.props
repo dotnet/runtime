@@ -10,12 +10,15 @@
     <BaseUrl Condition="'$(BaseUrl)' == ''">https://dotnetcli.blob.core.windows.net/</BaseUrl>
 
     <ChecksumExtension>.sha512</ChecksumExtension>
-    <DownloadDirectory>$(ArtifactsDir)PackageDownload/Artifacts/</DownloadDirectory>
+    <DownloadDirectory>$(ArtifactsDir)PackageDownload/</DownloadDirectory>
+
+    <!-- Allow dev builds to set a custom blob feed, or default to dotnet-core. -->
+    <PackagesUrl Condition="'$(PackagesUrl)' == ''">$(PublishBlobFeedUrl)</PackagesUrl>
+    <PackagesUrl Condition="'$(PackagesUrl)' == ''">https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json</PackagesUrl>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="$(MicrosoftDotNetBuildTasksFeedPackage)" Version="$(MicrosoftDotNetBuildTasksFeedPackageVersion)" />
-    <PackageReference Include="$(MicrosoftSymbolUploaderBuildTaskPackage)" Version="$(MicrosoftSymbolUploaderBuildTaskVersion)" />
     <PackageReference Include="Microsoft.DotNet.VersionTools.Tasks" Version="$(MicrosoftDotNetVersionToolsTasksPackageVersion)" />
   </ItemGroup>
 

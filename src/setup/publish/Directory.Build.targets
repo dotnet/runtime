@@ -1,63 +1,60 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
-  <UsingTask TaskName="GenerateDebRepoUploadJsonFile" AssemblyFile="$(LocalBuildToolsTaskFile)" />
-
   <!-- Required by Common.Targets but not used by publishing projects. -->
   <Target Name="CreateManifestResourceNames" />
   <Target Name="CoreCompile" />
 
-  <Target Name="GenerateDebRepoFiles"
-          Condition="('$(TargetsUbuntu)' == 'true' or '$(TargetsDebian)' == 'true') and '$(TargetArchitecture)' == 'x64'">
+  <!--
+    Look through the downloaded artifacts to figure out how to ship them. Creates item groups for
+    other types of publishing to use.
 
+    DownloadDirectory is expected to have some directory inside, which then contains a dir for each
+    build job name. For example, this nupkg would be found:
+
+      $(DownloadDirectory)IntermediateUnsignedArtifacts\Windows_x64\Shipping\a.nupkg
+  -->
+  <Target Name="FindDownloadedArtifacts">
     <ItemGroup>
-      <RepoIds Include="DebianId_debian8-x64">
-        <Key>$(DebianId_debian8-x64)</Key>
-      </RepoIds>
-      <RepoIds Include="DebianId_debian9-x64">
-        <Key>$(DebianId_debian9-x64)</Key>
-      </RepoIds>
-      <RepoIds Include="DebianId_ubuntu1404-x64">
-        <Key>$(DebianId_ubuntu1404-x64)</Key>
-      </RepoIds>
-      <RepoIds Include="DebianId_ubuntu1604-x64">
-        <Key>$(DebianId_ubuntu1604-x64)</Key>
-      </RepoIds>
-      <RepoIds Include="DebianId_ubuntu1704-x64">
-        <Key>$(DebianId_ubuntu1704-x64)</Key>
-      </RepoIds>
-      <RepoIds Include="DebianId_ubuntu1710-x64">
-        <Key>$(DebianId_ubuntu1710-x64)</Key>
-      </RepoIds>
+      <DownloadedArtifactFile Include="$(DownloadDirectory)**" />
+
+      <DownloadedSymbolNupkgFile Include="$(DownloadDirectory)**\*.symbols.nupkg" />
+      <DownloadedNupkgFile
+        Include="$(DownloadDirectory)**\*.nupkg"
+        Exclude="@(DownloadedSymbolNupkgFile)" />
+
+      <!-- RID-specific nupkg. These are published from every job. -->
+      <RuntimeNupkgFile
+        Include="
+          $(DownloadDirectory)**\runtime.*.nupkg;
+          $(DownloadDirectory)**\*.Runtime.*.nupkg;
+          $(DownloadDirectory)**\*.App.Host.*.nupkg;
+          $(DownloadDirectory)**\VS.Redist.Common.*.nupkg"
+        Exclude="@(DownloadedSymbolNupkgFile)" />
+
+      <!--
+        RID-agnostic nupkg. These are built with the same ID/version by every job, so only one job's
+        results are picked for signing and publishing.
+      -->
+      <RidAgnosticNupkgToPublishFile
+        Include="$(DownloadDirectory)*\$(PublishRidAgnosticPackagesFromJobName)\**\*.nupkg"
+        Exclude="@(RuntimeNupkgFile);@(DownloadedSymbolNupkgFile)" />
+      
+      <RidAgnosticNupkgToIgnoreFile
+        Include="@(DownloadedNupkgFile)"
+        Exclude="@(RidAgnosticNupkgToPublishFile);@(RuntimeNupkgFile)" />
+
+      <RidAgnosticSymbolNupkgToIgnoreFile
+        Include="@(RidAgnosticNupkgToIgnoreFile -> '%(RootDir)%(Directory)%(Filename).symbols.nupkg')" />
+
+      <NupkgToPublishFile Include="@(RuntimeNupkgFile);@(RidAgnosticNupkgToPublishFile)" />
+      <SymbolNupkgToPublishFile Include="@(DownloadedSymbolNupkgFile)" Exclude="@(RidAgnosticSymbolNupkgToIgnoreFile)" />
+
+      <!-- Filter out duplicate nupkgs/symbols.nupkgs, but other artifacts are fine. -->
+      <UploadToBlobStorageFile
+        Include="@(DownloadedArtifactFile)"
+        Exclude="@(RidAgnosticNupkgToIgnoreFile);@(RidAgnosticSymbolNupkgToIgnoreFile)" />
     </ItemGroup>
-    <PropertyGroup>
-      <RidWithoutDots>$([System.String]::Copy($(OutputRid)).Replace('.', ''))</RidWithoutDots>
-      <DebRepoId Condition="$([System.String]::Copy(%(RepoIds.Identity)).EndsWith('$(RidWithoutDots)'))">%(RepoIds.Key)</DebRepoId>
-    </PropertyGroup>
-    <Error Condition="'$(DebRepoId)'=='' OR '$(DebRepoUser)'=='' OR '$(DebRepoPass)'=='' OR '$(DebRepoServer)'==''"
-           Text=" Missing parameters for debian publish." />
-
-    <ItemGroup>
-      <DebInstallerFile Include="$(SharedHostInstallerFile)" >
-        <PackageName>$(SharedHostDebPkgName)</PackageName>
-      </DebInstallerFile>
-      <DebInstallerFile Include="$(HostFxrInstallerFile)" >
-        <PackageName>$(HostFxrDebPkgName)</PackageName>
-      </DebInstallerFile>
-      <DebInstallerFile Include="$(SharedFrameworkInstallerFile)">
-        <PackageName>$(SharedFxDebPkgName)</PackageName>
-      </DebInstallerFile>
-
-      <DebInstallerFile>
-        <UploadJsonFilename>$(AssetOutputPath)%(PackageName)_package_upload.json</UploadJsonFilename>
-      </DebInstallerFile>
-    </ItemGroup>
-
-    <GenerateDebRepoUploadJsonFile RepoId="$(DebRepoId)"
-                                   UploadJsonFilename="%(DebInstallerFile.UploadJsonFilename)"
-                                   PackageName="%(DebInstallerFile.PackageName)"
-                                   PackageVersion="$(SharedFrameworkNugetVersion)"
-                                   UploadUrl="$(BaseUrl)$(ContainerName)/$(BinariesRelativePath)%(DebInstallerFile.Filename)%(DebInstallerFile.Extension)" />
   </Target>
 
   <Import Project="..\Directory.Build.targets" />

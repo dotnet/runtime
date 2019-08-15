@@ -11,8 +11,7 @@
     <DotNetFinalVersionKind Condition="'$(StabilizePackageVersion)' == 'true'">release</DotNetFinalVersionKind>
     <!-- Disable SemVer v2 until after 3.0.0. -->
     <SemanticVersioningV1 Condition="&#xA;      $(MajorVersion) &lt; 3 or&#xA;      '$(MajorVersion).$(MinorVersion).$(PatchVersion)' == '3.0.0'">true</SemanticVersioningV1>
-    <!-- "Latest" channel to publish to. -->
-    <Channel>master</Channel>
+    <!-- Blob storage container that has the "Latest" channel to publish to. -->
     <ContainerName>dotnet</ContainerName>
     <ChecksumContainerName>$(ContainerName)</ChecksumContainerName>
     <!-- Max version of NETCoreApp, used by test projects. -->
@@ -38,7 +37,7 @@
   <PropertyGroup>
     <!-- arcade -->
     <MicrosoftDotNetBuildTasksPackagingPackageVersion>1.0.0-beta.19308.1</MicrosoftDotNetBuildTasksPackagingPackageVersion>
-    <MicrosoftDotNetBuildTasksFeedPackageVersion>2.2.0-beta.19308.1</MicrosoftDotNetBuildTasksFeedPackageVersion>
+    <MicrosoftDotNetBuildTasksFeedPackageVersion>2.2.0-beta.19410.2</MicrosoftDotNetBuildTasksFeedPackageVersion>
     <MicrosoftDotNetVersionToolsTasksPackageVersion>1.0.0-beta.19308.1</MicrosoftDotNetVersionToolsTasksPackageVersion>
     <!-- corefx -->
     <MicrosoftNETCorePlatformsPackageVersion>5.0.0-alpha1.19409.9</MicrosoftNETCorePlatformsPackageVersion>

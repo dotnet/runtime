@@ -8,7 +8,6 @@ trigger:
 pr:
 - master
 - release/3.0
-- dev/arcade-migration
 
 name: $(Date:yyyyMMdd)$(Rev:.r)
 
@@ -21,6 +20,12 @@ variables:
   # Set Official Build Id
   - name: OfficialBuildId
     value: $(Build.BuildNumber)
+
+  # Set the target blob feed for package publish during official and validation builds.
+  - name: _DotNetArtifactsCategory
+    value: .NETCore
+  - name: _DotNetValidationArtifactsCategory
+    value: .NETCoreValidation
 
   # Produce test-signed build for PR and Public builds
   - ${{ if or(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'PullRequest')) }}:
@@ -150,19 +155,56 @@ stages:
       targetArchitecture: x86
 
 - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-  - stage: Publish
+  - stage: PrepareForPublish
+    displayName: Prepare for Publish
     dependsOn: Build
     jobs:
-    - template: /eng/jobs/finalize-publish.yml
+    # Prep artifacts: sign them and upload pipeline artifacts expected by stages-based publishing.
+    - template: /eng/jobs/prepare-signed-artifacts.yml
       parameters:
         PublishRidAgnosticPackagesFromJobName: Windows_x64
-
-  - stage: Publish_BAR
-    dependsOn: Publish
-    jobs:
-    # Publish to Build Asset Registry
+    # Publish to Build Asset Registry in order to generate the ReleaseConfigs artifact.
     - template: /eng/common/templates/job/publish-build-assets.yml
       parameters:
+        dependsOn: PrepareSignedArtifacts
         pool:
           name: NetCoreInternal-Pool
           queue: buildpool.windows.10.amd64.vs2017
+
+  # Stages-based publishing entry point
+  - template: eng\common\templates\post-build\post-build.yml
+    parameters:
+      dependsOn: [PrepareForPublish]
+      # Symbol validation is not ready yet. https://github.com/dotnet/arcade/issues/2871
+      enableSymbolValidation: false
+      # Doesn't work yet, not fully configured. https://github.com/dotnet/core-setup/issues/5254
+      enableSigningValidation: false
+      # SourceLink validation doesn't work in dev builds: tries to pull from GitHub. https://github.com/dotnet/arcade/issues/3604
+      enableSourceLinkValidation: false
+      # Allow symbol publish to emit expected warnings without failing the build.
+      symbolPublishingAdditionalParameters: -warnAsError:$false
+
+  - template: /eng/stages/custom-publish.yml
+    parameters:
+      # Custom publish stage dependency configuration.
+      # - dependsOn: <ID of the Arcade stage that custom publish should run after>
+      #   channel:
+      #     name: <Name of this channel, for logging and readability>
+      #     bar: <Name of the Arcade variable that contains the ID of this channel in BAR>
+      #     storage: <Name of the Latest channel to publish to in dotnetcli blob storage>
+      dependsOnPublishStages:
+      - dependsOn: PublishValidation
+        channel:
+          name: .NET Core 3 Dev
+          bar: PublicDevRelease_30_Channel_Id
+          storage: release/3.0
+      - dependsOn: NetCore_Dev5_PublishValidation
+        channel:
+          name: .NET Core 5 Dev
+          bar: NetCore_5_Dev_Channel_Id
+          storage: master
+      - dependsOn: PVR_PublishValidation
+        channel:
+          name: .NET Tools - Validation
+          bar: PublicValidationRelease_30_Channel_Id
+          storage: dev/validation
