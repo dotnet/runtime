@@ -351,9 +351,9 @@ G_ENUM_FUNCTIONS (MonoSetThreadNameFlags)
 
 MONO_PROFILER_API
 gsize
-mono_thread_set_name_internal (MonoInternalThread *thread,
-			       MonoString *name,
-			       MonoSetThreadNameFlags flags, MonoError *error);
+mono_thread_set_name (MonoInternalThread *thread,
+		      MonoString *name,
+		      MonoSetThreadNameFlags flags, MonoError *error);
 
 void mono_thread_suspend_all_other_threads (void);
 gboolean mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout);
