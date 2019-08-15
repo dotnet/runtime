@@ -193,7 +193,7 @@ namespace System.Data.ProviderBase
                 schemaTable = reader.GetSchemaTable();
                 foreach (DataRow row in schemaTable.Rows)
                 {
-                    resultTable.Columns.Add(row["ColumnName"] as string, (Type)row["DataType"] as Type);
+                    resultTable.Columns.Add(row["ColumnName"] as string, (Type)row["DataType"]);
                 }
                 object[] values = new object[resultTable.Columns.Count];
                 while (reader.Read())
