@@ -17,7 +17,7 @@ steps:
     displayName: Publish Artifacts
     inputs:
       pathToPublish: '$(Build.StagingDirectory)/Artifacts'
-      artifactName: Artifacts
+      artifactName: IntermediateUnsignedArtifacts
       artifactType: container
     condition: and(succeeded(), eq(variables._BuildConfig, 'Release'))
 
