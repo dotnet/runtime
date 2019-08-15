@@ -6501,53 +6501,6 @@ AppDomain::AssemblyIterator::Next_Unlocked(
     return FALSE;
 } // AppDomain::AssemblyIterator::Next_Unlocked
 
-#ifndef DACCESS_COMPILE
-
-//---------------------------------------------------------------------------------------
-// 
-// Can be called only from AppDomain shutdown code:AppDomain::ShutdownAssemblies.
-// Does not add-ref collectible assemblies (as the LoaderAllocator might not be reachable from the 
-// DomainAssembly anymore).
-// 
-BOOL 
-AppDomain::AssemblyIterator::Next_UnsafeNoAddRef(
-    DomainAssembly ** ppDomainAssembly)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    } CONTRACTL_END;
-    
-    // Make sure we are iterating all assemblies (see the only caller code:AppDomain::ShutdownAssemblies)
-    _ASSERTE(m_assemblyIterationFlags == 
-        (kIncludeLoaded | kIncludeLoading | kIncludeExecution | kIncludeFailedToLoad | kIncludeCollected));
-    // It also means that we do not exclude anything
-    _ASSERTE((m_assemblyIterationFlags & kExcludeCollectible) == 0);
-    
-    // We are on shutdown path, so lock shouldn't be neccessary, but all _Unlocked methods on AssemblyList 
-    // have asserts that the lock is held, so why not to take it ...
-    CrstHolder ch(m_pAppDomain->GetAssemblyListLock());
-    
-    while (m_Iterator.Next())
-    {
-        // Get element from the list/iterator (without adding reference to the assembly)
-        *ppDomainAssembly = dac_cast<PTR_DomainAssembly>(m_Iterator.GetElement());
-        if (*ppDomainAssembly == NULL)
-        {
-            continue;
-        }
-        
-        return TRUE;
-    }
-    
-    *ppDomainAssembly = NULL;
-    return FALSE;
-} // AppDomain::AssemblyIterator::Next_UnsafeNoAddRef
-
-
-#endif //!DACCESS_COMPILE
-
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
 // Returns S_OK if the assembly was successfully loaded
