@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace Microsoft.Framework.WebEncoders
+namespace System.Text.Encodings.Web.Tests
 {
     public static class Extensions
     {

@@ -3,12 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Text.Encodings.Web;
 using System.Text.Internal;
 using System.Text.Unicode;
 using Xunit;
 
-namespace Microsoft.Framework.WebEncoders
+namespace System.Text.Encodings.Web.Tests
 {
     public class AllowedCharsBitmapTests
     {

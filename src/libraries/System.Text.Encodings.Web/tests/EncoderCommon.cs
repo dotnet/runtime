@@ -4,7 +4,7 @@
 
 using System;
 
-namespace System.Text.Encodings.Web
+namespace System.Text.Encodings.Web.Tests
 {
     internal static class EncoderCommon
     {
