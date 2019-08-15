@@ -1420,10 +1420,6 @@ namespace System.Runtime.Serialization
             int newLength = _values.Length * 2;
             if (newLength < 0)
             {
-                if (newLength == int.MaxValue)
-                {
-                    throw new SerializationException(SR.Serialization_TooManyElements);
-                }
                 newLength = int.MaxValue;
             }
 
@@ -1508,10 +1504,6 @@ namespace System.Runtime.Serialization
             int newLength = _values.Length * 2;
             if (newLength < 0)
             {
-                if (newLength == int.MaxValue)
-                {
-                    throw new SerializationException(SR.Serialization_TooManyElements);
-                }
                 newLength = int.MaxValue;
             }
 
@@ -1555,10 +1547,6 @@ namespace System.Runtime.Serialization
             int newLength = _values.Length * 2;
             if (newLength < 0)
             {
-                if (newLength == int.MaxValue)
-                {
-                    throw new SerializationException(SR.Serialization_TooManyElements);
-                }
                 newLength = int.MaxValue;
             }
 
