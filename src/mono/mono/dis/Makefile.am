@@ -72,11 +72,11 @@ monodis_LDADD = 			\
 	libmonodismain_a-main.$(OBJEXT)	\
 	libmonodismain_a-declsec.$(OBJEXT) \
 	libmonodis.a			\
-	$(Z_LIBS)			\
 	$(runtime_lib)			\
 	$(LLVM_LIBS)			\
 	$(LLVM_LDFLAGS)			\
-	$(glib_libs)
+	$(glib_libs)			\
+	$(Z_LIBS)
 
 if HOST_DARWIN
 monodis_LDFLAGS=-framework CoreFoundation -framework Foundation
