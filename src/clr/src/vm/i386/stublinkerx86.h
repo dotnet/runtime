@@ -200,8 +200,11 @@ class StubLinkerCPU : public StubLinker
         VOID X64EmitMovSDToMem(X86Reg Xmmreg, X86Reg baseReg, __int32 ofs = 0);
         VOID X64EmitMovSSFromMem(X86Reg Xmmreg, X86Reg baseReg, __int32 ofs = 0);
         VOID X64EmitMovSSToMem(X86Reg Xmmreg, X86Reg baseReg, __int32 ofs = 0);
+        VOID X64EmitMovqRegXmm(X86Reg reg, X86Reg Xmmreg);
+        VOID X64EmitMovqXmmReg(X86Reg Xmmreg, X86Reg reg);
 
         VOID X64EmitMovXmmWorker(BYTE prefix, BYTE opcode, X86Reg Xmmreg, X86Reg baseReg, __int32 ofs = 0);
+        VOID X64EmitMovqWorker(BYTE opcode, X86Reg Xmmreg, X86Reg reg);
 #endif
 
         VOID X86EmitZeroOutReg(X86Reg reg);        
