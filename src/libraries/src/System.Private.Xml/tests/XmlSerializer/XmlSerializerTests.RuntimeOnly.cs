@@ -258,8 +258,7 @@ public static partial class XmlSerializerTests
 @"<?xml version=""1.0""?>
 <string> </string>"), string.Empty);
         Assert.Equal("Hello World! \u6F22 \u00F1", SerializeAndDeserialize<string>("Hello World! \u6F22 \u00F1",
-@"<?xml version=""1.0""?>
-<string>Hello World! 漢 ñ</string>"));
+"<?xml version=\"1.0\"?><string>Hello World! \u6F22 \u00F1</string>"));
     }
 
     [Fact]

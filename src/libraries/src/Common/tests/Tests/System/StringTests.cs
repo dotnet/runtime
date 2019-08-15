@@ -145,7 +145,7 @@ namespace System.Tests
         [InlineData(new char[] { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h' }, 2, 6, "cdefgh")]
         [InlineData(new char[] { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h' }, 0, 8, "abcdefgh")]
         [InlineData(new char[] { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', '\0', 'i', 'j' }, 0, 11, "abcdefgh\0ij")]
-        [InlineData(new char[] { 'П', 'Р', 'И', 'В', 'Е', 'Т' }, 0, 6, "ПРИВЕТ")]
+        [InlineData(new char[] { '\u041F', '\u0420', '\u0418', '\u0412', '\u0415', '\u0422' }, 0, 6, "\u041F\u0420\u0418\u0412\u0415\u0422")]
         [InlineData(new char[0], 0, 0, "")]
         [InlineData(null, 0, 0, "")]
         public static void Ctor_CharArray(char[] value, int startIndex, int length, string expected)
@@ -2172,29 +2172,29 @@ namespace System.Tests
 
                 Thread.CurrentThread.CurrentCulture = new CultureInfo("el-GR");
 
-                s = "\u03b4\u03b1\u03b2\u03b3"; // δαβγ
-                value = "\u03b1\u03b2\u03b3"; // αβγ
+                s = "\u03b4\u03b1\u03b2\u03b3"; // \u03B4\u03B1\u03B2\u03B3
+                value = "\u03b1\u03b2\u03b3"; // \u03B1\u03B2\u03B3
 
                 Assert.True(s.EndsWith(value, StringComparison.CurrentCulture));
                 Assert.True(s.EndsWith(value, StringComparison.CurrentCultureIgnoreCase));
 
-                span = s.AsSpan(); // δαβγ
-                spanValue = value.AsSpan(); // αβγ
+                span = s.AsSpan(); // \u03B4\u03B1\u03B2\u03B3
+                spanValue = value.AsSpan(); // \u03B1\u03B2\u03B3
 
                 Assert.True(span.EndsWith(spanValue, StringComparison.CurrentCulture));
                 Assert.True(span.EndsWith(spanValue, StringComparison.CurrentCultureIgnoreCase));
 
-                value = "\u03b1\u0392\u03b3"; // αΒγ
+                value = "\u03b1\u0392\u03b3"; // \u03B1\u0392\u03B3
                 Assert.False(s.EndsWith(value, StringComparison.CurrentCulture));
                 Assert.True(s.EndsWith(value, StringComparison.CurrentCultureIgnoreCase));
 
-                spanValue = value.AsSpan(); // αΒγ
+                spanValue = value.AsSpan(); // \u03B1\u0392\u03B3
                 Assert.False(span.EndsWith(spanValue, StringComparison.CurrentCulture));
                 Assert.True(span.EndsWith(spanValue, StringComparison.CurrentCultureIgnoreCase));
 
                 Thread.CurrentThread.CurrentCulture = backupCulture;
 
-                s = "\u03b4\u0069\u00df\u0049"; // δißI
+                s = "\u03b4\u0069\u00df\u0049"; // \u03B4i\u00DFI
                 value = "\u0069\u0073\u0073\u0049"; // issI
 
                 Assert.False(s.EndsWith(value, StringComparison.Ordinal));
@@ -2206,7 +2206,7 @@ namespace System.Tests
                     s.ToString().EndsWith(value.ToString(), StringComparison.InvariantCultureIgnoreCase),
                     s.EndsWith(value, StringComparison.InvariantCultureIgnoreCase));
 
-                span = s.AsSpan(); // δißI
+                span = s.AsSpan(); // \u03B4i\u00DFI
                 spanValue = value.AsSpan(); // issI
 
                 Assert.False(span.EndsWith(spanValue, StringComparison.Ordinal));
@@ -2255,48 +2255,48 @@ namespace System.Tests
 
                 Thread.CurrentThread.CurrentCulture = new CultureInfo("el-GR");
 
-                s = "\u03b4\u03b1\u03b2\u03b3"; // δαβγ
-                value = "\u03b1\u03b4\u03b3"; // αδγ
+                s = "\u03b4\u03b1\u03b2\u03b3"; // \u03B4\u03B1\u03B2\u03B3
+                value = "\u03b1\u03b4\u03b3"; // \u03B1\u03B4\u03B3
 
                 Assert.False(s.EndsWith(value, StringComparison.CurrentCulture));
                 Assert.False(s.EndsWith(value, StringComparison.CurrentCultureIgnoreCase));
 
-                span = s.AsSpan(); // δαβγ
-                spanValue = value.AsSpan(); // αδγ
+                span = s.AsSpan(); // \u03B4\u03B1\u03B2\u03B3
+                spanValue = value.AsSpan(); // \u03B1\u03B4\u03B3
 
                 Assert.False(span.EndsWith(spanValue, StringComparison.CurrentCulture));
                 Assert.False(span.EndsWith(spanValue, StringComparison.CurrentCultureIgnoreCase));
 
-                value = "\u03b1\u0394\u03b3"; // αΔγ
+                value = "\u03b1\u0394\u03b3"; // \u03B1\u0394\u03B3
                 Assert.False(s.EndsWith(value, StringComparison.CurrentCulture));
                 Assert.False(s.EndsWith(value, StringComparison.CurrentCultureIgnoreCase));
 
-                spanValue = value.AsSpan(); // αΔγ
+                spanValue = value.AsSpan(); // \u03B1\u0394\u03B3
                 Assert.False(span.EndsWith(spanValue, StringComparison.CurrentCulture));
                 Assert.False(span.EndsWith(spanValue, StringComparison.CurrentCultureIgnoreCase));
 
                 Thread.CurrentThread.CurrentCulture = backupCulture;
 
-                s = "\u03b4\u0069\u00df\u0049"; // δißI
-                value = "\u0069\u03b4\u03b4\u0049"; // iδδI
+                s = "\u03b4\u0069\u00df\u0049"; // \u03B4i\u00DFI
+                value = "\u0069\u03b4\u03b4\u0049"; // i\u03B4\u03B4I
 
                 Assert.False(s.EndsWith(value, StringComparison.Ordinal));
                 Assert.False(s.EndsWith(value, StringComparison.InvariantCulture));
                 Assert.False(s.EndsWith(value, StringComparison.InvariantCultureIgnoreCase));
 
-                span = s.AsSpan(); // δißI
-                spanValue = value.AsSpan(); // iδδI
+                span = s.AsSpan(); // \u03B4i\u00DFI
+                spanValue = value.AsSpan(); // i\u03B4\u03B4I
 
                 Assert.False(span.EndsWith(spanValue, StringComparison.Ordinal));
                 Assert.False(span.EndsWith(spanValue, StringComparison.InvariantCulture));
                 Assert.False(span.EndsWith(spanValue, StringComparison.InvariantCultureIgnoreCase));
 
-                value = "\u0049\u03b4\u03b4\u0049"; // IδδI
+                value = "\u0049\u03b4\u03b4\u0049"; // I\u03B4\u03B4I
                 Assert.False(s.EndsWith(value, StringComparison.OrdinalIgnoreCase));
                 Assert.False(s.EndsWith(value, StringComparison.InvariantCulture));
                 Assert.False(s.EndsWith(value, StringComparison.InvariantCultureIgnoreCase));
 
-                spanValue = value.AsSpan(); // IδδI
+                spanValue = value.AsSpan(); // I\u03B4\u03B4I
                 Assert.False(span.EndsWith(spanValue, StringComparison.OrdinalIgnoreCase));
                 Assert.False(span.EndsWith(spanValue, StringComparison.InvariantCulture));
                 Assert.False(span.EndsWith(spanValue, StringComparison.InvariantCultureIgnoreCase));
@@ -7001,8 +7001,8 @@ namespace System.Tests
 
                 Thread.CurrentThread.CurrentCulture = new CultureInfo("el-GR");
 
-                s1 = "\u03b1\u03b2\u03b3\u03b4";  // αβγδ
-                s2 = "\u03b1\u03b2\u03b3"; // αβγ
+                s1 = "\u03b1\u03b2\u03b3\u03b4";  // \u03B1\u03B2\u03B3\u03B4
+                s2 = "\u03b1\u03b2\u03b3"; // \u03B1\u03B2\u03B3
 
                 Assert.True(s1.StartsWith(s2, StringComparison.CurrentCulture));
                 Assert.True(s1.StartsWith(s2, StringComparison.CurrentCultureIgnoreCase));
@@ -7013,7 +7013,7 @@ namespace System.Tests
                 Assert.True(span.StartsWith(value, StringComparison.CurrentCulture));
                 Assert.True(span.StartsWith(value, StringComparison.CurrentCultureIgnoreCase));
 
-                s2 = "\u03b1\u0392\u03b3"; // αΒγ
+                s2 = "\u03b1\u0392\u03b3"; // \u03B1\u0392\u03B3
                 Assert.False(s1.StartsWith(s2, StringComparison.CurrentCulture));
                 Assert.True(s1.StartsWith(s2, StringComparison.CurrentCultureIgnoreCase));
 
@@ -7023,7 +7023,7 @@ namespace System.Tests
 
                 Thread.CurrentThread.CurrentCulture = backupCulture;
 
-                s1 = "\u0069\u00df\u0049\u03b4"; // ißIδ
+                s1 = "\u0069\u00df\u0049\u03b4"; // i\u00DFI\u03B4
                 s2 = "\u0069\u0073\u0073\u0049"; // issI
 
                 Assert.False(s1.StartsWith(s2, StringComparison.Ordinal));
@@ -7084,8 +7084,8 @@ namespace System.Tests
 
                 Thread.CurrentThread.CurrentCulture = new CultureInfo("el-GR");
 
-                s1 = "\u03b1\u03b2\u03b3\u03b4"; // αβγδ
-                s2 = "\u03b1\u03b4\u03b3"; // αδγ
+                s1 = "\u03b1\u03b2\u03b3\u03b4"; // \u03B1\u03B2\u03B3\u03B4
+                s2 = "\u03b1\u03b4\u03b3"; // \u03B1\u03B4\u03B3
 
                 Assert.False(s1.StartsWith(s2, StringComparison.CurrentCulture));
                 Assert.False(s1.StartsWith(s2, StringComparison.CurrentCultureIgnoreCase));
@@ -7096,7 +7096,7 @@ namespace System.Tests
                 Assert.False(span.StartsWith(value, StringComparison.CurrentCulture));
                 Assert.False(span.StartsWith(value, StringComparison.CurrentCultureIgnoreCase));
 
-                s2 = "\u03b1\u0394\u03b3"; // αΔγ
+                s2 = "\u03b1\u0394\u03b3"; // \u03B1\u0394\u03B3
                 Assert.False(s1.StartsWith(s2, StringComparison.CurrentCulture));
                 Assert.False(s1.StartsWith(s2, StringComparison.CurrentCultureIgnoreCase));
 
@@ -7106,8 +7106,8 @@ namespace System.Tests
 
                 Thread.CurrentThread.CurrentCulture = backupCulture;
 
-                s1 = "\u0069\u00df\u0049\u03b4"; // ißIδ
-                s2 = "\u0069\u03b4\u03b4\u0049"; // iδδI
+                s1 = "\u0069\u00df\u0049\u03b4"; // i\u00DFI\u03B4
+                s2 = "\u0069\u03b4\u03b4\u0049"; // i\u03B4\u03B4I
 
                 Assert.False(s1.StartsWith(s2, StringComparison.Ordinal));
                 Assert.False(s1.StartsWith(s2, StringComparison.InvariantCulture));
@@ -7120,7 +7120,7 @@ namespace System.Tests
                 Assert.False(span.StartsWith(value, StringComparison.InvariantCulture));
                 Assert.False(span.StartsWith(value, StringComparison.InvariantCultureIgnoreCase));
 
-                s2 = "\u0049\u03b4\u03b4\u0049"; // IδδI
+                s2 = "\u0049\u03b4\u03b4\u0049"; // I\u03B4\u03B4I
                 Assert.False(s1.StartsWith(s2, StringComparison.OrdinalIgnoreCase));
                 Assert.False(s1.StartsWith(s2, StringComparison.InvariantCulture));
                 Assert.False(s1.StartsWith(s2, StringComparison.InvariantCultureIgnoreCase));

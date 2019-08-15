@@ -56,11 +56,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                or Si and Ti must both be reference types.
         *   From System.Collections.Generic.IList<T>, System.Collections.Generic.IReadOnlyList<T> and their base interfaces to a one-dimensional array-type S[], provided there is an implicit or explicit reference conversion from S[] to System.Collections.Generic.IList<T> or System.Collections.Generic.IReadOnlyList<T>. This is precisely when either S and T are the same type or there is an implicit or explicit reference conversion from S to T.
 
-        For a type-parameter T that is known to be a reference type (§25.7), the following explicit reference conversions exist:
+        For a type-parameter T that is known to be a reference type (25.7), the following explicit reference conversions exist:
         *   From the effective base class C of T to T and from any base class of C to T.
         *   From any interface-type to T.
-        *   From T to any interface-type I provided there isn’t already an implicit reference conversion from T to I.
-        *   From a type-parameter U to T provided that T depends on U (§25.7). [Note: Since T is known to be a reference type, within the scope of T, the run-time type of U will always be a reference type, even if U is not known to be a reference type at compile-time. end note]
+        *   From T to any interface-type I provided there isn't already an implicit reference conversion from T to I.
+        *   From a type-parameter U to T provided that T depends on U (25.7). [Note: Since T is known to be a reference type, within the scope of T, the run-time type of U will always be a reference type, even if U is not known to be a reference type at compile-time. end note]
 
             * Both src and dst are reference types and there is a builtin explicit conversion from
               src to dst.
@@ -85,9 +85,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return true;
                 }
 
-                // For a type-parameter T that is known to be a reference type (§25.7), the following explicit reference conversions exist:
-                // •    From any interface-type to T.
-                // •    From T to any interface-type I provided there isn’t already an implicit reference conversion from T to I.
+                // For a type-parameter T that is known to be a reference type (25.7), the following explicit reference conversions exist:
+                // *    From any interface-type to T.
+                // *    From T to any interface-type I provided there isn't already an implicit reference conversion from T to I.
                 if (typeSrc.IsInterfaceType && typeDst is TypeParameterType || typeSrc is TypeParameterType && typeDst.IsInterfaceType)
                 {
                     return true;
@@ -295,7 +295,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         can be boxed to the type System.ValueType, since that is the direct base class for all
         structs (18.3.2) and a base class for all enums.
 
-        A nullable-type has a boxing conversion to the same set of types to which the nullable-type’s
+        A nullable-type has a boxing conversion to the same set of types to which the nullable-type's
         underlying type has boxing conversions.
 
         For a type-parameter T that is not known to be a reference type (25.7), the following conversions
@@ -304,9 +304,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         the conversion is executed as an implicit reference conversion or identity conversion.
         *   From T to its effective base class C, from T to any base class of C, and from T to any
             interface implemented by C. [Note: C will be one of the types System.Object, System.ValueType,
-            or System.Enum (otherwise T would be known to be a reference type and §13.1.4 would apply
+            or System.Enum (otherwise T would be known to be a reference type and 13.1.4 would apply
             instead of this clause). end note]
-        *   From T to an interface-type I in T’s effective interface set and from T to any base
+        *   From T to an interface-type I in T's effective interface set and from T to any base
             interface of I.
         ***************************************************************************************************/
 

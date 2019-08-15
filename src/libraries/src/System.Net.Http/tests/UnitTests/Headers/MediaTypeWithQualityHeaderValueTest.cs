@@ -146,7 +146,7 @@ namespace System.Net.Http.Tests
             CheckInvalidParse("");
             CheckInvalidParse("  ");
             CheckInvalidParse(null);
-            CheckInvalidParse("text/plain会");
+            CheckInvalidParse("text/plain\u4F1A");
             CheckInvalidParse("text/plain ,");
             CheckInvalidParse("text/plain,");
             CheckInvalidParse("text/plain; charset=utf-8 ,");
@@ -192,7 +192,7 @@ namespace System.Net.Http.Tests
             CheckInvalidTryParse("");
             CheckInvalidTryParse("  ");
             CheckInvalidTryParse(null);
-            CheckInvalidTryParse("text/plain会");
+            CheckInvalidTryParse("text/plain\u4F1A");
             CheckInvalidTryParse("text/plain ,");
             CheckInvalidTryParse("text/plain,");
             CheckInvalidTryParse("text/plain; charset=utf-8 ,");

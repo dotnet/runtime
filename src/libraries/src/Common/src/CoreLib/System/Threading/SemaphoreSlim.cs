@@ -327,7 +327,7 @@ namespace System.Threading
             {
                 // Perf: first spin wait for the count to be positive.
                 // This additional amount of spinwaiting in addition
-                // to Monitor.Enter()’s spinwaiting has shown measurable perf gains in test scenarios.
+                // to Monitor.Enter()'s spinwaiting has shown measurable perf gains in test scenarios.
                 if (m_currentCount == 0)
                 {
                     // Monitor.Enter followed by Monitor.Wait is much more expensive than waiting on an event as it involves another

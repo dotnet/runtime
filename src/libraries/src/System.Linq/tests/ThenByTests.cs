@@ -114,10 +114,10 @@ namespace System.Linq.Tests
         [Fact]
         public void OrderIsStable()
         {
-            var source = @"Because I could not stop for Death —
-He kindly stopped for me —
-The Carriage held but just Ourselves —
-And Immortality.".Split(new[] { ' ', '\n', '\r', '—' }, StringSplitOptions.RemoveEmptyEntries);
+            var source = @"Because I could not stop for Death -
+He kindly stopped for me -
+The Carriage held but just Ourselves -
+And Immortality.".Split(new[] { ' ', '\n', '\r', '-' }, StringSplitOptions.RemoveEmptyEntries);
             var expected = new[]
             {
                 "me", "not", "for", "for", "but", "stop", "held", "just", "could", "kindly", "stopped",
@@ -130,10 +130,10 @@ And Immortality.".Split(new[] { ' ', '\n', '\r', '—' }, StringSplitOptions.Rem
         [Fact]
         public void RunOnce()
         {
-            var source = @"Because I could not stop for Death —
-He kindly stopped for me —
-The Carriage held but just Ourselves —
-And Immortality.".Split(new[] { ' ', '\n', '\r', '—' }, StringSplitOptions.RemoveEmptyEntries);
+            var source = @"Because I could not stop for Death -
+He kindly stopped for me -
+The Carriage held but just Ourselves -
+And Immortality.".Split(new[] { ' ', '\n', '\r', '-' }, StringSplitOptions.RemoveEmptyEntries);
             var expected = new[]
             {
                 "me", "not", "for", "for", "but", "stop", "held", "just", "could", "kindly", "stopped",

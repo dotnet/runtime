@@ -707,7 +707,7 @@ namespace System.Net.Primitives.Unit.Tests
             yield return new[] { new Cookie(DefaultName, DefaultValue, ";", DefaultDomain) }; // Path contains reserved characters
 
             yield return new[] { new Cookie(DefaultName, DefaultValue, DefaultPath, " ") }; // Invalid domain
-            yield return new[] { new Cookie(DefaultName, DefaultValue, DefaultPath, "П.com") }; // Invalid domain
+            yield return new[] { new Cookie(DefaultName, DefaultValue, DefaultPath, "\u041F.com") }; // Invalid domain
 
             yield return new[] { new Cookie(DefaultName, DefaultValue, DefaultPath, "domain") }; // Plain cookie, explicit domain without version doesn't start with '.'
             yield return new[] { new Cookie(DefaultName, DefaultValue, DefaultPath, "domain") { Version = 100 } }; // Rfc2965 cookie, explicit domain with version doesn't start with '.'

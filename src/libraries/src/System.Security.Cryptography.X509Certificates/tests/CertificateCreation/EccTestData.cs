@@ -45,7 +45,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             CurveOid = Secp256r1OidValue,
             CurveEncodedOidHex = Secp256r1OidHexValue,
 
-            // Suite B Implementers Guide to FIPS 186-3,
+            // Suite B Implementers Guide to FIPS 186-3,
             // D.1 Example ECDSA Signature for P-256
             KeyParameters = new ECParameters
             {
@@ -67,7 +67,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             CurveOid = Secp384r1OidValue,
             CurveEncodedOidHex = Secp384r1OidHexValue,
 
-            // Suite B Implementers Guide to FIPS 186-3,
+            // Suite B Implementers Guide to FIPS 186-3,
             // D.2 Example ECDSA Signature for P-384
             KeyParameters = new ECParameters
             {

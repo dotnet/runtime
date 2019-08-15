@@ -72,7 +72,7 @@ public static partial class DataContractJsonSerializerTests
         Assert.StrictEqual(SerializeAndDeserialize<char>((char)0x85, @"""\u0085"""), (char)0x85);
 
         // Between #2 and #3
-        Assert.StrictEqual('ñ', SerializeAndDeserialize<char>('ñ', @"""ñ""")); // 0x00F1
+        Assert.StrictEqual('\u00F1', SerializeAndDeserialize<char>('\u00F1', "\"\u00F1\"")); // 0x00F1
 
         // #3. 0x2028 - 0x2029
         Assert.StrictEqual(SerializeAndDeserialize<char>((char)0x2028, @"""\u2028"""), (char)0x2028);
@@ -87,7 +87,7 @@ public static partial class DataContractJsonSerializerTests
         Assert.StrictEqual(SerializeAndDeserialize<char>((char)0xdfff, @"""\udfff"""), (char)0xdfff);
 
         // Between #4 and #5
-        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0xeabc, @""""""), (char)0xeabc);
+        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0xeabc, "\"\uEABC\""), (char)0xeabc);
 
         // #5. 0xFFFE - 0xFFFF
         Assert.StrictEqual(SerializeAndDeserialize<char>((char)0xfffe, @"""\ufffe"""), (char)0xfffe);
@@ -226,7 +226,7 @@ public static partial class DataContractJsonSerializerTests
     [Fact]
     public static void DCJS_StringAsRoot()
     {
-        foreach (string value in new string[] { "abc", "  a b  ", null, "", " ", "Hello World! 漢 ñ" })
+        foreach (string value in new string[] { "abc", "  a b  ", null, "", " ", "Hello World! \u6F22 \u00F1" })
         {
             Assert.Equal(SerializeAndDeserialize<string>(value, value == null ? "null" : string.Format(@"""{0}""", value.ToString())), value);
         }
@@ -1091,7 +1091,7 @@ public static partial class DataContractJsonSerializerTests
     public static void DCJS_WithDuplicateNames()
     {
         var x = new WithDuplicateNames(true);
-        var y = SerializeAndDeserialize<WithDuplicateNames>(x, @"{""ClassA1"":{""Name"":""Hello World! 漢 ñ""},""ClassA2"":{""Nombre"":""""},""EnumA1"":1,""EnumA2"":1,""StructA1"":{""Text"":""""},""StructA2"":{""Texto"":""""}}");
+        var y = SerializeAndDeserialize<WithDuplicateNames>(x, "{\"ClassA1\":{\"Name\":\"Hello World! \u6F22 \u00F1\"},\"ClassA2\":{\"Nombre\":\"\"},\"EnumA1\":1,\"EnumA2\":1,\"StructA1\":{\"Text\":\"\"},\"StructA2\":{\"Texto\":\"\"}}");
 
         Assert.Equal(x.ClassA1.Name, y.ClassA1.Name);
         Assert.StrictEqual(x.StructA1, y.StructA1);
@@ -1169,10 +1169,10 @@ public static partial class DataContractJsonSerializerTests
     [Fact]
     public static void DCJS_TypeNamesWithSpecialCharacters()
     {
-        var x = new __TypeNameWithSpecialCharacters漢ñ() { PropertyNameWithSpecialCharacters漢ñ = "Test" };
-        var y = SerializeAndDeserialize<__TypeNameWithSpecialCharacters漢ñ>(x, @"{""PropertyNameWithSpecialCharacters漢ñ"":""Test""}");
+        var x = new __TypeNameWithSpecialCharacters\u6F22\u00F1() { PropertyNameWithSpecialCharacters\u6F22\u00F1 = "Test" };
+        var y = SerializeAndDeserialize<__TypeNameWithSpecialCharacters\u6F22\u00F1>(x, "{\"PropertyNameWithSpecialCharacters\u6F22\u00F1\":\"Test\"}");
 
-        Assert.Equal(x.PropertyNameWithSpecialCharacters漢ñ, y.PropertyNameWithSpecialCharacters漢ñ);
+        Assert.Equal(x.PropertyNameWithSpecialCharacters\u6F22\u00F1, y.PropertyNameWithSpecialCharacters\u6F22\u00F1);
     }
 
     [Fact]

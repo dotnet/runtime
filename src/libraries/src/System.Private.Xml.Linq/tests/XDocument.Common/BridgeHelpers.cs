@@ -553,7 +553,7 @@ namespace CoreXml.Test.XLinq
             TextWriter tw = new StreamWriter(FilePathUtil.getStream(strFileName), encode);
 
             tw.WriteLine("<root>");
-            tw.Write("�");
+            tw.Write("\uFFFD");
             tw.WriteLine("</root>");
 
             tw.Flush();

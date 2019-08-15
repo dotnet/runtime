@@ -85,7 +85,7 @@ internal static class Utils
                 int from = Max(currentIndex - 10, 0);
                 int errPosition = currentIndex - from;
                 int to = Min(currentIndex + 20, commonLength);
-                string message = string.Format("strings differ at index {0}\n{3}↓\n[expected]:{1}\n[actual  ]:{2}\n{3}↑\n[Expected (with length={4})]:\n{5}\n[Actual (with length={6})]:\n{7}",
+                string message = string.Format("strings differ at index {0}\n{3}\u2193\n[expected]:{1}\n[actual  ]:{2}\n{3}\u2191\n[Expected (with length={4})]:\n{5}\n[Actual (with length={6})]:\n{7}",
                     currentIndex,
                     expected.Substring(from, to - from),
                     actual.Substring(from, to - from),

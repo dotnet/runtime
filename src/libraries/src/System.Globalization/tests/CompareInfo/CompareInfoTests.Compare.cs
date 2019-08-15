@@ -238,8 +238,8 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "\u30FC", "\uFF70", CompareOptions.None, isWindows ? 0 : -1 };
             yield return new object[] { s_hungarianCompare, "dzsdzs", "ddzs", CompareOptions.None, isWindows ? 0 : -1 };
             yield return new object[] { s_invariantCompare, "Test's", "Tests", CompareOptions.None, isWindows ? 1 : -1 };
-            yield return new object[] { new CultureInfo("de-DE").CompareInfo, "Ü", "UE", CompareOptions.None, -1 };
-            yield return new object[] { new CultureInfo("de-DE_phoneb").CompareInfo, "Ü", "UE", CompareOptions.None, isWindows ? 0 : -1 };
+            yield return new object[] { new CultureInfo("de-DE").CompareInfo, "\u00DC", "UE", CompareOptions.None, -1 };
+            yield return new object[] { new CultureInfo("de-DE_phoneb").CompareInfo, "\u00DC", "UE", CompareOptions.None, isWindows ? 0 : -1 };
             yield return new object[] { new CultureInfo("es-ES_tradnl").CompareInfo, "llegar", "lugar", CompareOptions.None, isWindows ? 1 : -1 };
         }
 

@@ -745,7 +745,7 @@ namespace SerializationTypes
         public WithDuplicateNames() { }
         public WithDuplicateNames(bool init)
         {
-            ClassA1 = new DuplicateTypeNamesTest.ns1.ClassA() { Name = "Hello World! 漢 ñ" };
+            ClassA1 = new DuplicateTypeNamesTest.ns1.ClassA() { Name = "Hello World! \u6F22 \u00F1" };
             StructA1 = new DuplicateTypeNamesTest.ns1.StructA() { Text = "" };
             EnumA1 = DuplicateTypeNamesTest.ns1.EnumA.two;
             ClassA2 = new DuplicateTypeNamesTest.ns2.ClassA() { Nombre = "" };

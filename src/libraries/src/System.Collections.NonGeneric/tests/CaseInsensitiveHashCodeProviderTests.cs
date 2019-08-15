@@ -139,7 +139,7 @@ namespace System.Collections.Tests
                 var provider = new CaseInsensitiveHashCodeProvider(culture);
 
                 // Turkish has lower-case and upper-case version of the dotted "i", so the upper case of "i" (U+0069) isn't "I" (U+0049)
-                // but rather "İ" (U+0130)
+                // but rather U+0130.
                 Assert.Equal(
                     culture.Name != "tr-TR",
                     provider.GetHashCode("file") == provider.GetHashCode("FILE"));
@@ -178,7 +178,7 @@ namespace System.Collections.Tests
         public void Default_Compare_TurkishI()
         {
             // Turkish has lower-case and upper-case version of the dotted "i", so the upper case of "i" (U+0069) isn't "I" (U+0049)
-            // but rather "İ" (U+0130)
+            // but rather U+0130.
             RemoteExecutor.Invoke(() =>
             {
                 CultureInfo.CurrentCulture = new CultureInfo("tr-TR");

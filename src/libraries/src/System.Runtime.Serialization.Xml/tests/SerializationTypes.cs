@@ -342,9 +342,9 @@ namespace SerializationTypes
         }
     }
 
-    public class __TypeNameWithSpecialCharacters漢ñ
+    public class __TypeNameWithSpecialCharacters\u6F22\u00F1
     {
-        public string PropertyNameWithSpecialCharacters漢ñ { get; set; }
+        public string PropertyNameWithSpecialCharacters\u6F22\u00F1 { get; set; }
     }
 
     public class BaseClassWithSamePropertyName

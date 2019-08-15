@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -220,8 +220,8 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void IriRelativeResolution_CompareRelativeAndOriginalHttpWithUnicodeIriOff_AllPropertiesTheSame()
         {
-            string unicodeTest = @"http://user:password@host.com:9090/path\u30AF/path3/ルtest.txt";
-            string nonUnicodeBase = @"http://user:password@host.com:9090/path2/file.txt";
+            string unicodeTest = "http://user:password@host.com:9090/path\u30AF/path3/\u30EBtest.txt";
+            string nonUnicodeBase = "http://user:password@host.com:9090/path2/file.txt";
 
             string testResults;
             int errorCount = RelatavizeRestoreCompareVsOriginal(unicodeTest,
@@ -233,8 +233,8 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void IriRelativeResolution_CompareRelativeAndOriginalHttpWithUnicodeAndReservedCharIriOff_AllPropertiesTheSame()
         {
-            string unicodeTest = @"http://user:password@host.com:9090/path\u30AF/path3/ルtest.txt%25%";
-            string nonUnicodeBase = @"http://user:password@host.com:9090/path2/file.txt";
+            string unicodeTest = "http://user:password@host.com:9090/path\u30AF/path3/\u30EBtest.txt%25%";
+            string nonUnicodeBase = "http://user:password@host.com:9090/path2/file.txt";
 
             string testResults;
             int errorCount = RelatavizeRestoreCompareVsOriginal(unicodeTest,
@@ -246,8 +246,8 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void IriRelativeResolution_CompareRelativeAndOriginalHttpWithUnicodeIriOn_AllPropertiesTheSame()
         {
-            string unicodeTest = @"http://user:password@host.com:9090/path\u30AF/path3/ルtest.txt";
-            string nonUnicodeBase = @"http://user:password@host.com:9090/path2/file.txt";
+            string unicodeTest = "http://user:password@host.com:9090/path\u30AF/path3/\u30EBtest.txt";
+            string nonUnicodeBase = "http://user:password@host.com:9090/path2/file.txt";
 
             string testResults;
             int errorCount = RelatavizeRestoreCompareVsOriginal(unicodeTest,
@@ -259,8 +259,8 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void IriRelativeResolution_CompareRelativeAndOriginalHttpWithUnicodeAndReservedCharIriOn_AllPropertiesTheSame()
         {
-            string unicodeTest = @"http://user:password@host.com:9090/path\u30AF/path3/ルtest.txt%25%";
-            string nonUnicodeBase = @"http://user:password@host.com:9090/path2/file.txt";
+            string unicodeTest = "http://user:password@host.com:9090/path\u30AF/path3/\u30EBtest.txt%25%";
+            string nonUnicodeBase = "http://user:password@host.com:9090/path2/file.txt";
 
             string testResults;
             int errorCount = RelatavizeRestoreCompareVsOriginal(unicodeTest,

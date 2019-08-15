@@ -39,7 +39,7 @@ namespace System.Net.Http.Tests
             CheckValidParsedValue("1 h \"t\" \"Tue, 20 Jul 2010 01:02:03 GMT\"", 0,
                 new WarningHeaderValue(1, "h", "\"t\"",
                     new DateTimeOffset(2010, 7, 20, 1, 2, 3, TimeSpan.Zero)), 39);
-            CheckValidParsedValue("1 会 \"t\" ,,", 0, new WarningHeaderValue(1, "会", "\"t\""), 10);
+            CheckValidParsedValue("1 \u4F1A \"t\" ,,", 0, new WarningHeaderValue(1, "\u4F1A", "\"t\""), 10);
 
             CheckValidParsedValue(null, 0, null, 0);
             CheckValidParsedValue(string.Empty, 0, null, 0);
@@ -54,8 +54,8 @@ namespace System.Net.Http.Tests
             CheckInvalidParsedValue("11 host text", 0);
             CheckInvalidParsedValue("11 host \"text\" Tue, 20 Jul 2010 01:02:03 GMT", 0);
             CheckInvalidParsedValue("11 host \"text\" 123 next \"text\"", 0);
-            CheckInvalidParsedValue("会", 0);
-            CheckInvalidParsedValue("123 会", 0);
+            CheckInvalidParsedValue("\u4F1A", 0);
+            CheckInvalidParsedValue("123 \u4F1A", 0);
             CheckInvalidParsedValue("111 [::1]:80\r(comment) \"text\"", 0);
             CheckInvalidParsedValue("111 [::1]:80\n(comment) \"text\"", 0);
         }

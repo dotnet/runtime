@@ -42,10 +42,10 @@ namespace System.Tests
 
             // Various texts copied from Microsoft's non-U.S. home pages, for further localization tests
 
-            yield return new object[] { "Игры и развлечения без границ в формате 4K." }; // ru-RU
-            yield return new object[] { "Poder portátil." }; // es-ES
-            yield return new object[] { "想像を超えた、パフォーマンスを。" }; // ja-JP
-            yield return new object[] { "Élégant et performant." }; // fr-FR
+            yield return new object[] { "\u0418\u0433\u0440\u044B \u0438 \u0440\u0430\u0437\u0432\u043B\u0435\u0447\u0435\u043D\u0438\u044F \u0431\u0435\u0437 \u0433\u0440\u0430\u043D\u0438\u0446 \u0432 \u0444\u043E\u0440\u043C\u0430\u0442\u0435 4K." }; // ru-RU
+            yield return new object[] { "Poder port\u00E1til." }; // es-ES
+            yield return new object[] { "\u60F3\u50CF\u3092\u8D85\u3048\u305F\u3001\u30D1\u30D5\u30A9\u30FC\u30DE\u30F3\u30B9\u3092\u3002" }; // ja-JP
+            yield return new object[] { "\u00C9l\u00E9gant et performant." }; // fr-FR
         }
     }
 }
