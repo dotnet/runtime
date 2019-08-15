@@ -156,9 +156,9 @@ namespace System
             {
                 return 1;
             }
-            if (value is float)
+
+            if (value is float f)
             {
-                float f = (float)value;
                 if (m_value < f) return -1;
                 if (m_value > f) return 1;
                 if (m_value == f) return 0;
@@ -169,6 +169,7 @@ namespace System
                 else // f is NaN.
                     return 1;
             }
+
             throw new ArgumentException(SR.Arg_MustBeSingle);
         }
 
