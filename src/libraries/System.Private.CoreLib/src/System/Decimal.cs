@@ -373,20 +373,12 @@ namespace System
         // if the given object is a boxed Decimal and its value is equal to the
         // value of this Decimal. Returns false otherwise.
         //
-        public override bool Equals(object? value)
-        {
-            if (value is decimal)
-            {
-                decimal other = (decimal)value;
-                return DecCalc.VarDecCmp(in this, in other) == 0;
-            }
-            return false;
-        }
+        public override bool Equals(object? value) =>
+            value is decimal other &&
+            DecCalc.VarDecCmp(in this, in other) == 0;
 
-        public bool Equals(decimal value)
-        {
-            return DecCalc.VarDecCmp(in this, in value) == 0;
-        }
+        public bool Equals(decimal value) =>
+            DecCalc.VarDecCmp(in this, in value) == 0;
 
         // Returns the hash code for this Decimal.
         //

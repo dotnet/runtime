@@ -162,9 +162,9 @@ namespace System
             {
                 return 1;
             }
-            if (value is double)
+
+            if (value is double d)
             {
-                double d = (double)value;
                 if (m_value < d) return -1;
                 if (m_value > d) return 1;
                 if (m_value == d) return 0;
@@ -175,6 +175,7 @@ namespace System
                 else
                     return 1;
             }
+
             throw new ArgumentException(SR.Arg_MustBeDouble);
         }
 
