@@ -81,7 +81,15 @@ namespace System.Net
         //
         // Extracts a remote certificate upon request.
         //
-        internal static X509Certificate2 GetRemoteCertificate(SafeDeleteContext securityContext, out X509Certificate2Collection remoteCertificateCollection)
+
+        internal static X509Certificate2 GetRemoteCertificate(SafeDeleteContext securityContext) =>
+            GetRemoteCertificate(securityContext, retrieveCollection: false, out _);
+
+        internal static X509Certificate2 GetRemoteCertificate(SafeDeleteContext securityContext, out X509Certificate2Collection remoteCertificateCollection) =>
+            GetRemoteCertificate(securityContext, retrieveCollection: true, out remoteCertificateCollection);
+
+        private static X509Certificate2 GetRemoteCertificate(
+            SafeDeleteContext securityContext, bool retrieveCollection, out X509Certificate2Collection remoteCertificateCollection)
         {
             remoteCertificateCollection = null;
 
@@ -106,7 +114,10 @@ namespace System.Net
             {
                 if (remoteContext != null && !remoteContext.IsInvalid)
                 {
-                    remoteCertificateCollection = UnmanagedCertificateContext.GetRemoteCertificatesFromStoreContext(remoteContext);
+                    if (retrieveCollection)
+                    {
+                        remoteCertificateCollection = UnmanagedCertificateContext.GetRemoteCertificatesFromStoreContext(remoteContext);
+                    }
 
                     remoteContext.Dispose();
                 }
