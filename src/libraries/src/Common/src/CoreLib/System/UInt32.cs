@@ -33,15 +33,16 @@ namespace System
             {
                 return 1;
             }
-            if (value is uint)
+
+            // Need to use compare because subtraction will wrap
+            // to positive for very large neg numbers, etc.
+            if (value is uint i)
             {
-                // Need to use compare because subtraction will wrap
-                // to positive for very large neg numbers, etc.
-                uint i = (uint)value;
                 if (m_value < i) return -1;
                 if (m_value > i) return 1;
                 return 0;
             }
+
             throw new ArgumentException(SR.Arg_MustBeUInt32);
         }
 
