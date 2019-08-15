@@ -1106,7 +1106,7 @@ namespace System.Data.Odbc
             DataTable schemaTable = reader.GetSchemaTable();
             foreach (DataRow row in schemaTable.Rows)
             {
-                resultTable.Columns.Add(row["ColumnName"] as string, (Type)row["DataType"] as Type);
+                resultTable.Columns.Add(row["ColumnName"] as string, (Type)row["DataType"]);
             }
 
             values = new object[resultTable.Columns.Count];
