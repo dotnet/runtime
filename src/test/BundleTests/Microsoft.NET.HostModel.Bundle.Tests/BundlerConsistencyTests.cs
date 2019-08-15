@@ -143,7 +143,7 @@ namespace Microsoft.NET.HostModel.Tests
             bundleDir.Should().OnlyHaveFiles(expectedFiles);
         }
 
-        [Fact(Skip = "Disabled in master temporarily to avoid infra issues")]
+        [Fact]
         public void TestWithAdditionalContentAfterBundleMetadata()
         {
             var fixture = sharedTestState.TestFixture.Copy();
