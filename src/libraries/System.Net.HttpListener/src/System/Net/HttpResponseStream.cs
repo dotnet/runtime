@@ -46,7 +46,7 @@ namespace System.Net
             if (NetEventSource.IsEnabled)
             {
                 NetEventSource.Enter(this);
-                NetEventSource.Info(this, "buffer.Length:" + buffer.Length + " size:" + size + " offset:" + offset);
+                NetEventSource.Info(this, "buffer.Length:" + buffer?.Length + " size:" + size + " offset:" + offset);
             }
             if (buffer == null)
             {
@@ -71,7 +71,7 @@ namespace System.Net
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int size, AsyncCallback callback, object state)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, "buffer.Length:" + buffer.Length + " size:" + size + " offset:" + offset);
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, "buffer.Length:" + buffer?.Length + " size:" + size + " offset:" + offset);
             if (buffer == null)
             {
                 throw new ArgumentNullException(nameof(buffer));
