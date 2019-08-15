@@ -891,17 +891,17 @@ stackval_to_data_addr (MonoType *type_, stackval *val)
  *   Throw an exception from the interpreter.
  */
 static MONO_NEVER_INLINE void
-interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, gconstpointer ip, gboolean rethrow)
+interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, const guint16* ip, gboolean rethrow)
 {
 	ERROR_DECL (error);
 	MonoLMFExt ext;
 
 	interp_push_lmf (&ext, frame);
-	frame->ip = (const guint16*)ip;
+	frame->ip = ip;
 	frame->ex = ex;
 
 	if (mono_object_isinst_checked ((MonoObject *) ex, mono_defaults.exception_class, error)) {
-		MonoException *mono_ex = (MonoException *) ex;
+		MonoException *mono_ex = ex;
 		if (!rethrow) {
 			mono_ex->stack_trace = NULL;
 			mono_ex->trace_ips = NULL;
@@ -3000,6 +3000,22 @@ mono_interp_calli_nat_dynamic_pinvoke (
 	mono_error_cleanup (error); /* FIXME: don't swallow the error */
 
 	interp_exec_method (child_frame, context, error);
+}
+
+// Leave is split into pieces in order to consume less stack,
+// but not have to change how exception handling macros access labels and locals.
+static MONO_NEVER_INLINE MonoException*
+mono_interp_leave (InterpFrame* child_frame)
+{
+	stackval tmp_sp;
+	/*
+	 * We need for mono_thread_get_undeniable_exception to be able to unwind
+	 * to check the abort threshold. For this to work we use child_frame as a
+	 * dummy frame that is stored in the lmf and serves as the transition frame
+	 */
+	do_icall_wrapper (child_frame, NULL, MINT_ICALL_V_P, &tmp_sp, (gpointer)mono_thread_get_undeniable_exception, FALSE);
+
+	return (MonoException*)tmp_sp.data.p;
 }
 
 /*
@@ -5781,24 +5797,19 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 		MINT_IN_CASE(MINT_LEAVE_S)
 		MINT_IN_CASE(MINT_LEAVE_CHECK)
 		MINT_IN_CASE(MINT_LEAVE_S_CHECK) {
+
+			// Leave is split into pieces in order to consume less stack,
+			// but not have to change how exception handling macros access labels and locals.
+
 			g_assert (sp >= frame->stack);
 			sp = frame->stack;
 			frame->ip = ip;
 
 			if (*ip == MINT_LEAVE_S_CHECK || *ip == MINT_LEAVE_CHECK) {
 				if (imethod->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE) {
-					stackval tmp_sp;
-
 					child_frame.parent = frame;
 					child_frame.imethod = NULL;
-					/*
-					 * We need for mono_thread_get_undeniable_exception to be able to unwind
-					 * to check the abort threshold. For this to work we use child_frame as a
-					 * dummy frame that is stored in the lmf and serves as the transition frame
-					 */
-					do_icall_wrapper (&child_frame, NULL, MINT_ICALL_V_P, &tmp_sp, (gpointer)mono_thread_get_undeniable_exception, FALSE);
-
-					MonoException *abort_exc = (MonoException*)tmp_sp.data.p;
+					MonoException *abort_exc = mono_interp_leave (&child_frame);
 					if (abort_exc)
 						THROW_EX (abort_exc, frame->ip);
 				}
@@ -5815,7 +5826,6 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			MonoExceptionClause *clause;
 			GSList *old_list = frame->finally_ips;
 			MonoMethod *method = imethod->method;
-
 #if DEBUG_INTERP
 			if (tracing)
 				g_print ("* Handle finally IL_%04x\n", frame->endfinally_ip == NULL ? 0 : frame->endfinally_ip - imethod->code);
