@@ -503,7 +503,7 @@ namespace System
                         if (tokenLen <= MaxSecondsFractionDigits)
                         {
                             long fraction = (dateTime.Ticks % Calendar.TicksPerSecond);
-                            fraction = fraction / (long)Math.Pow(10, 7 - tokenLen);
+                            fraction /= (long)Math.Pow(10, 7 - tokenLen);
                             if (ch == 'f')
                             {
                                 result.AppendSpanFormattable((int)fraction, fixedNumberFormats[tokenLen - 1], CultureInfo.InvariantCulture);
@@ -515,7 +515,7 @@ namespace System
                                 {
                                     if (fraction % 10 == 0)
                                     {
-                                        fraction = fraction / 10;
+                                        fraction /= 10;
                                         effectiveDigits--;
                                     }
                                     else
@@ -956,7 +956,7 @@ namespace System
                     if (offset != NullOffset)
                     {
                         // Convert to UTC invariants mean this will be in range
-                        dateTime = dateTime - offset;
+                        dateTime -= offset;
                     }
                     dtfi = DateTimeFormatInfo.InvariantInfo;
                     break;
@@ -967,7 +967,7 @@ namespace System
                     if (offset != NullOffset)
                     {
                         // Convert to UTC invariants mean this will be in range
-                        dateTime = dateTime - offset;
+                        dateTime -= offset;
                     }
                     dtfi = DateTimeFormatInfo.InvariantInfo;
                     break;
@@ -1223,7 +1223,7 @@ namespace System
             if (offset != NullOffset)
             {
                 // Convert to UTC invariants.
-                dateTime = dateTime - offset;
+                dateTime -= offset;
             }
 
             dateTime.GetDatePart(out int year, out int month, out int day);

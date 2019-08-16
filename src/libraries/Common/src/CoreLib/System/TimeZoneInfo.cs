@@ -682,7 +682,7 @@ namespace System
 
             if (sourceRule != null)
             {
-                sourceOffset = sourceOffset + sourceRule.BaseUtcOffsetDelta;
+                sourceOffset += sourceRule.BaseUtcOffsetDelta;
                 if (sourceRule.HasDaylightSaving)
                 {
                     bool sourceIsDaylightSavings = false;
@@ -1685,7 +1685,7 @@ namespace System
 
             if (rule != null)
             {
-                baseOffset = baseOffset + rule.BaseUtcOffsetDelta;
+                baseOffset += rule.BaseUtcOffsetDelta;
                 if (rule.HasDaylightSaving)
                 {
                     DaylightTimeStruct daylightTime = zone.GetDaylightTime(time.Year, rule, ruleIndex);
@@ -1750,7 +1750,7 @@ namespace System
 
             if (rule != null)
             {
-                baseOffset = baseOffset + rule.BaseUtcOffsetDelta;
+                baseOffset += rule.BaseUtcOffsetDelta;
                 if (rule.HasDaylightSaving)
                 {
                     isDaylightSavings = GetIsDaylightSavingsFromUtc(time, year, zone._baseUtcOffset, rule, ruleIndex, out isAmbiguousLocalDst, zone);

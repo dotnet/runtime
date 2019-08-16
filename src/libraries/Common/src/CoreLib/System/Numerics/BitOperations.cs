@@ -200,7 +200,7 @@ namespace System.Numerics
                 const uint c3 = 0x_0F0F0F0Fu;
                 const uint c4 = 0x_01010101u;
 
-                value = value - ((value >> 1) & c1);
+                value -= (value >> 1) & c1;
                 value = (value & c2) + ((value >> 2) & c2);
                 value = (((value + (value >> 4)) & c3) * c4) >> 24;
 
@@ -235,7 +235,7 @@ namespace System.Numerics
                 const ulong c3 = 0x_0F0F0F0F_0F0F0F0Ful;
                 const ulong c4 = 0x_01010101_01010101ul;
 
-                value = value - ((value >> 1) & c1);
+                value -= (value >> 1) & c1;
                 value = (value & c2) + ((value >> 2) & c2);
                 value = (((value + (value >> 4)) & c3) * c4) >> 56;
 

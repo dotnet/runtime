@@ -1261,7 +1261,7 @@ namespace System.Text
 
         public unsafe StringBuilder AppendJoin(string? separator, params object?[] values)
         {
-            separator = separator ?? string.Empty;
+            separator ??= string.Empty;
             fixed (char* pSeparator = separator)
             {
                 return AppendJoinCore(pSeparator, separator.Length, values);
@@ -1270,7 +1270,7 @@ namespace System.Text
 
         public unsafe StringBuilder AppendJoin<T>(string? separator, IEnumerable<T> values)
         {
-            separator = separator ?? string.Empty;
+            separator ??= string.Empty;
             fixed (char* pSeparator = separator)
             {
                 return AppendJoinCore(pSeparator, separator.Length, values);
@@ -1279,7 +1279,7 @@ namespace System.Text
 
         public unsafe StringBuilder AppendJoin(string? separator, params string?[] values)
         {
-            separator = separator ?? string.Empty;
+            separator ??= string.Empty;
             fixed (char* pSeparator = separator)
             {
                 return AppendJoinCore(pSeparator, separator.Length, values);
@@ -1962,7 +1962,7 @@ namespace System.Text
                 throw new ArgumentException(SR.Argument_EmptyName, nameof(oldValue));
             }
 
-            newValue = newValue ?? string.Empty;
+            newValue ??= string.Empty;
 
             int deltaLength = newValue.Length - oldValue.Length;
 

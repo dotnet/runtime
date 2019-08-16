@@ -420,7 +420,7 @@ namespace System.Globalization
                         {
                             if (tmp % 10 == 0)
                             {
-                                tmp = tmp / 10;
+                                tmp /= 10;
                                 effectiveDigits--;
                             }
                             else

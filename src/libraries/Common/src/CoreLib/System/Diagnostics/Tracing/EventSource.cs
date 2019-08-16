@@ -6094,8 +6094,8 @@ namespace System.Diagnostics.Tracing
                         keyword = string.Empty;
                     }
                     if (ret.Length != 0 && keyword.Length != 0)
-                        ret = ret + " ";
-                    ret = ret + keyword;
+                        ret += " ";
+                    ret += keyword;
                 }
             }
             return ret;

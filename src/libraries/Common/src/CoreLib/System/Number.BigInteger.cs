@@ -1011,8 +1011,8 @@ namespace System
                 ulong chkHi = divHi * q;
                 ulong chkLo = divLo * q;
 
-                chkHi = chkHi + (chkLo >> 32);
-                chkLo = chkLo & uint.MaxValue;
+                chkHi += (chkLo >> 32);
+                chkLo &= uint.MaxValue;
 
                 if (chkHi < valHi)
                     return false;
@@ -1048,7 +1048,7 @@ namespace System
                 {
                     carry += rhs._blocks[i] * q;
                     uint digit = unchecked((uint)carry);
-                    carry = carry >> 32;
+                    carry >>= 32;
 
                     ref uint lhsValue = ref lhs._blocks[lhsStartIndex + i];
 
