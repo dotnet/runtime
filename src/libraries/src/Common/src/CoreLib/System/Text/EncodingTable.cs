@@ -57,7 +57,7 @@ namespace System.Text
             int result;
 
             Debug.Assert(s_encodingNameIndices.Length == s_codePagesByName.Length + 1);
-            Debug.Assert(s_encodingNameIndices[s_encodingNameIndices.Length - 1] == s_encodingNames.Length);
+            Debug.Assert(s_encodingNameIndices[^1] == s_encodingNames.Length);
 
             ReadOnlySpan<char> invariantName = name.ToLowerInvariant().AsSpan();
 

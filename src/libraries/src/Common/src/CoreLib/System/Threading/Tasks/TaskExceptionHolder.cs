@@ -273,7 +273,7 @@ namespace System.Threading.Tasks
             {
                 combinedExceptions[i] = exceptions[i].SourceException;
             }
-            combinedExceptions[combinedExceptions.Length - 1] = includeThisException;
+            combinedExceptions[^1] = includeThisException;
             return new AggregateException(combinedExceptions);
         }
 
