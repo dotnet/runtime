@@ -788,9 +788,7 @@ namespace System.Reflection.Emit
             {
                 for (int i = 0; i < arguments.Length; i++)
                 {
-                    AddArgument(arguments[i],
-                        requiredCustomModifiers == null ? null : requiredCustomModifiers[i],
-                        optionalCustomModifiers == null ? null : optionalCustomModifiers[i]);
+                    AddArgument(arguments[i], requiredCustomModifiers?[i], optionalCustomModifiers?[i]);
                 }
             }
         }
