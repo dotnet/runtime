@@ -231,7 +231,7 @@ namespace System
         {
             // Make sure that the _source field is initialized if Source is not overriden.
             // We want it to contain the original faulting point.
-            string? source = Source;
+            _ = Source;
 
             string? tmpStackTraceString = StackTrace;
 

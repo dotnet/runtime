@@ -316,13 +316,12 @@ namespace System
             WinRT_IEnumerable<KeyValuePair<K, V>>(null, null, null);
 
             // instantiate stubs for commonly used methods on IDictionary<K, V> and ICollection<KeyValuePair<K, V>>
-            V dummy;
             mapToDictionaryAdapter.Indexer_Get<K, V>(default);
             mapToDictionaryAdapter.Indexer_Set<K, V>(default, default);
             mapToDictionaryAdapter.ContainsKey<K, V>(default);
             mapToDictionaryAdapter.Add<K, V>(default, default);
             mapToDictionaryAdapter.Remove<K, V>(default);
-            mapToDictionaryAdapter.TryGetValue<K, V>(default, out dummy);
+            mapToDictionaryAdapter.TryGetValue<K, V>(default, out _);
             mapToCollectionAdapter.Count<K, V>();
             mapToCollectionAdapter.Add<K, V>(new KeyValuePair<K, V>(default, default));
             mapToCollectionAdapter.Clear<K, V>();
@@ -342,10 +341,9 @@ namespace System
             WinRT_IReadOnlyCollection<KeyValuePair<K, V>>(null);
 
             // instantiate stubs for commonly used methods on IReadOnlyDictionary<K, V>
-            V dummy;
             mapToDictionaryAdapter.Indexer_Get<K, V>(default);
             mapToDictionaryAdapter.ContainsKey<K, V>(default);
-            mapToDictionaryAdapter.TryGetValue<K, V>(default, out dummy);
+            mapToDictionaryAdapter.TryGetValue<K, V>(default, out _);
 
             // instantiate stubs for commonly used methods in IReadOnlyCollection<T>
             mapViewToReadOnlyCollectionAdapter.Count<K, V>();

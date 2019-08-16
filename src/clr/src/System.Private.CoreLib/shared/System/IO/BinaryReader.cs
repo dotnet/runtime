@@ -558,11 +558,9 @@ namespace System.IO
                 ThrowIfDisposed();
 
                 int bytesRead = 0;
-                int n = 0;
-
                 do
                 {
-                    n = _stream.Read(_buffer, bytesRead, numBytes - bytesRead);
+                    int n = _stream.Read(_buffer, bytesRead, numBytes - bytesRead);
                     if (n == 0)
                     {
                         throw Error.GetEndOfFile();

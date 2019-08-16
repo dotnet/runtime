@@ -72,7 +72,6 @@ namespace System
             }
             _inext = 0;
             _inextp = 21;
-            Seed = 1;
         }
 
         //

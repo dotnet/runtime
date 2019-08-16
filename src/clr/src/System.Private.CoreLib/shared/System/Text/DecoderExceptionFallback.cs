@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.Serialization;
@@ -11,38 +10,16 @@ namespace System.Text
 {
     public sealed class DecoderExceptionFallback : DecoderFallback
     {
-        // Construction
-        public DecoderExceptionFallback()
-        {
-        }
-
-        public override DecoderFallbackBuffer CreateFallbackBuffer()
-        {
-            return new DecoderExceptionFallbackBuffer();
-        }
+        public override DecoderFallbackBuffer CreateFallbackBuffer() =>
+            new DecoderExceptionFallbackBuffer();
 
         // Maximum number of characters that this instance of this fallback could return
-        public override int MaxCharCount
-        {
-            get
-            {
-                return 0;
-            }
-        }
+        public override int MaxCharCount => 0;
 
-        public override bool Equals(object? value)
-        {
-            if (value is DecoderExceptionFallback that)
-            {
-                return (true);
-            }
-            return (false);
-        }
+        public override bool Equals(object? value) =>
+            value is DecoderExceptionFallback;
 
-        public override int GetHashCode()
-        {
-            return 879;
-        }
+        public override int GetHashCode() => 879;
     }
 
 
@@ -54,25 +31,13 @@ namespace System.Text
             return true;
         }
 
-        public override char GetNextChar()
-        {
-            return (char)0;
-        }
+        public override char GetNextChar() => (char)0;
 
-        public override bool MovePrevious()
-        {
-            // Exception fallback doesn't have anywhere to back up to.
-            return false;
-        }
+        // Exception fallback doesn't have anywhere to back up to.
+        public override bool MovePrevious() => false;
 
         // Exceptions are always empty
-        public override int Remaining
-        {
-            get
-            {
-                return 0;
-            }
-        }
+        public override int Remaining => 0;
 
         [DoesNotReturn]
         private void Throw(byte[] bytesUnknown, int index)
@@ -139,20 +104,8 @@ namespace System.Text
         {
         }
 
-        public byte[]? BytesUnknown
-        {
-            get
-            {
-                return _bytesUnknown;
-            }
-        }
+        public byte[]? BytesUnknown => _bytesUnknown;
 
-        public int Index
-        {
-            get
-            {
-                return _index;
-            }
-        }
+        public int Index => _index;
     }
 }

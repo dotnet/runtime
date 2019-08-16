@@ -62,8 +62,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
             IBindableVector _this = Unsafe.As<IBindableVector>(this);
 
-            uint index;
-            return _this.IndexOf(item, out index);
+            return _this.IndexOf(item, out _);
         }
 
         // void Clear()
