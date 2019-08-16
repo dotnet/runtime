@@ -201,7 +201,7 @@ namespace System.Globalization
             // Cannot be null terminated (normalization won't help us with this one, and
             // may have returned false before checking the whole string above)
             Debug.Assert(count >= 1, "[IdnMapping.GetAscii] Expected 0 length strings to fail before now.");
-            if (unicode[unicode.Length - 1] <= 0x1f)
+            if (unicode[^1] <= 0x1f)
             {
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidCharSequence, unicode.Length - 1), nameof(unicode));
             }
@@ -270,13 +270,13 @@ namespace System.Globalization
                 throw new ArgumentException(SR.Argument_IdnBadLabelSize, nameof(unicode));
 
             // Need to validate entire string length, 1 shorter if last char wasn't a dot
-            if (unicode.Length > c_defaultNameLimit - (IsDot(unicode[unicode.Length - 1]) ? 0 : 1))
+            if (unicode.Length > c_defaultNameLimit - (IsDot(unicode[^1]) ? 0 : 1))
                 throw new ArgumentException(SR.Format(SR.Argument_IdnBadNameSize,
-                                                        c_defaultNameLimit - (IsDot(unicode[unicode.Length - 1]) ? 0 : 1)), nameof(unicode));
+                                                        c_defaultNameLimit - (IsDot(unicode[^1]) ? 0 : 1)), nameof(unicode));
 
             // If last char wasn't a dot we need to check for trailing -
-            if (bUseStd3 && !IsDot(unicode[unicode.Length - 1]))
-                ValidateStd3(unicode[unicode.Length - 1], true);
+            if (bUseStd3 && !IsDot(unicode[^1]))
+                ValidateStd3(unicode[^1], true);
 
             return true;
         }
@@ -510,9 +510,9 @@ namespace System.Globalization
             }
 
             // Throw if we're too long
-            if (output.Length > c_defaultNameLimit - (IsDot(unicode[unicode.Length-1]) ? 0 : 1))
+            if (output.Length > c_defaultNameLimit - (IsDot(unicode[^1]) ? 0 : 1))
                 throw new ArgumentException(SR.Format(SR.Argument_IdnBadNameSize,
-                                                c_defaultNameLimit - (IsDot(unicode[unicode.Length-1]) ? 0 : 1)), nameof(unicode));
+                                                c_defaultNameLimit - (IsDot(unicode[^1]) ? 0 : 1)), nameof(unicode));
             // Return our output string
             return output.ToString();
         }
@@ -592,9 +592,9 @@ namespace System.Globalization
                 throw new ArgumentException(SR.Argument_IdnBadLabelSize, nameof(ascii));
 
             // Throw if we're too long
-            if (ascii.Length > c_defaultNameLimit - (IsDot(ascii[ascii.Length-1]) ? 0 : 1))
+            if (ascii.Length > c_defaultNameLimit - (IsDot(ascii[^1]) ? 0 : 1))
                 throw new ArgumentException(SR.Format(SR.Argument_IdnBadNameSize,
-                                            c_defaultNameLimit - (IsDot(ascii[ascii.Length-1]) ? 0 : 1)), nameof(ascii));
+                                            c_defaultNameLimit - (IsDot(ascii[^1]) ? 0 : 1)), nameof(ascii));
 
             // output stringbuilder
             StringBuilder output = new StringBuilder(ascii.Length);
