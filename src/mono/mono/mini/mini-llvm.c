@@ -1294,7 +1294,9 @@ convert_full (EmitContext *ctx, LLVMValueRef v, LLVMTypeRef dtype, gboolean is_u
 			return LLVMBuildBitCast (ctx->builder, v, dtype, "");
 
 		LLVMDumpValue (v);
+		printf ("\n");
 		LLVMDumpValue (LLVMConstNull (dtype));
+		printf ("\n");
 		g_assert_not_reached ();
 		return NULL;
 	} else {
@@ -7078,6 +7080,97 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 
+		case OP_XCOMPARE_FP: {
+			LLVMRealPredicate pred = fpcond_to_llvm_cond [ins->inst_c0];
+			LLVMValueRef cmp = LLVMBuildFCmp (builder, pred, lhs, rhs, "");
+			if (LLVMGetVectorSize (LLVMTypeOf (lhs)) == 2)
+				values [ins->dreg] = LLVMBuildBitCast (builder, LLVMBuildSExt (builder, cmp, LLVMVectorType (LLVMInt64Type (), 2), ""), LLVMTypeOf (lhs), "");
+			else
+				values [ins->dreg] = LLVMBuildBitCast (builder, LLVMBuildSExt (builder, cmp, LLVMVectorType (LLVMInt32Type (), 4), ""), LLVMTypeOf (lhs), "");
+			break;
+		}
+		case OP_XCOMPARE: {
+			LLVMIntPredicate pred = cond_to_llvm_cond [ins->inst_c0];
+			LLVMValueRef cmp = LLVMBuildICmp (builder, pred, lhs, rhs, "");
+			values [ins->dreg] = LLVMBuildSExt (builder, cmp, LLVMTypeOf (lhs), "");
+			break;
+		}
+		case OP_XEQUAL: {
+			LLVMTypeRef t = LLVMVectorType (LLVMInt8Type (), 16);
+			LLVMValueRef mask [16], shuffle;
+
+			//%c = icmp sgt <16 x i8> %a0, %a1
+			LLVMValueRef cmp = LLVMBuildICmp (builder, LLVMIntEQ, lhs, rhs, "");
+			cmp = LLVMBuildSExt (builder, cmp, LLVMVectorType (LLVMInt8Type (), 16), "");
+			// cmp is a <16 x i8> vector, each element is either 0xff or 0
+			// AND [0..7] and [8..15] into [0..7]
+			for (int i = 0; i < 8; ++i)
+				mask [i] = LLVMConstInt (LLVMInt32Type (), 8 + i, FALSE);
+			for (int i = 8; i < 16; ++i)
+				mask [i] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+			shuffle = LLVMBuildShuffleVector (builder, cmp, LLVMGetUndef (t), LLVMConstVector (mask, LLVMGetVectorSize (t)), "");
+			cmp = LLVMBuildAnd (builder, cmp, shuffle, "");
+			// AND [0..3] and [4..7] into [0..3]
+			for (int i = 0; i < 4; ++i)
+				mask [i] = LLVMConstInt (LLVMInt32Type (), 4 + i, FALSE);
+			for (int i = 4; i < 16; ++i)
+				mask [i] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+			shuffle = LLVMBuildShuffleVector (builder, cmp, LLVMGetUndef (t), LLVMConstVector (mask, LLVMGetVectorSize (t)), "");
+			cmp = LLVMBuildAnd (builder, cmp, shuffle, "");
+			// AND [0..1] and [2..3] into [0..1]
+			for (int i = 0; i < 2; ++i)
+				mask [i] = LLVMConstInt (LLVMInt32Type (), 2 + i, FALSE);
+			for (int i = 2; i < 16; ++i)
+				mask [i] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+			shuffle = LLVMBuildShuffleVector (builder, cmp, LLVMGetUndef (t), LLVMConstVector (mask, LLVMGetVectorSize (t)), "");
+			cmp = LLVMBuildAnd (builder, cmp, shuffle, "");
+			// AND [0] and [1] into [0]
+			for (int i = 0; i < 1; ++i)
+				mask [i] = LLVMConstInt (LLVMInt32Type (), 1 + i, FALSE);
+			for (int i = 1; i < 16; ++i)
+				mask [i] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+			shuffle = LLVMBuildShuffleVector (builder, cmp, LLVMGetUndef (t), LLVMConstVector (mask, LLVMGetVectorSize (t)), "");
+			cmp = LLVMBuildAnd (builder, cmp, shuffle, "");
+			// Extract [0]
+			values [ins->dreg] = LLVMBuildExtractElement (builder, cmp, LLVMConstInt (LLVMInt32Type (), 0, FALSE), "");
+			// Maybe convert to 0/1 ?
+			break;
+		}
+
+		case OP_XBINOP: {
+			switch (ins->inst_c0) {
+			case OP_IADD:
+				values [ins->dreg] = LLVMBuildAdd (builder, lhs, rhs, "");
+				break;
+			case OP_ISUB:
+				values [ins->dreg] = LLVMBuildSub (builder, lhs, rhs, "");
+				break;
+			case OP_IAND:
+				values [ins->dreg] = LLVMBuildAnd (builder, lhs, rhs, "");
+				break;
+			case OP_IOR:
+				values [ins->dreg] = LLVMBuildOr (builder, lhs, rhs, "");
+				break;
+			case OP_IXOR:
+				values [ins->dreg] = LLVMBuildXor (builder, lhs, rhs, "");
+				break;
+			case OP_FADD:
+				values [ins->dreg] = LLVMBuildFAdd (builder, lhs, rhs, "");
+				break;
+			case OP_FSUB:
+				values [ins->dreg] = LLVMBuildFSub (builder, lhs, rhs, "");
+				break;
+			case OP_FMUL:
+				values [ins->dreg] = LLVMBuildFMul (builder, lhs, rhs, "");
+				break;
+			case OP_FDIV:
+				values [ins->dreg] = LLVMBuildFDiv (builder, lhs, rhs, "");
+				break;
+			default:
+				g_assert_not_reached ();
+			}
+			break;
+		}
 #endif /* SIMD */
 
 		case OP_DUMMY_USE:

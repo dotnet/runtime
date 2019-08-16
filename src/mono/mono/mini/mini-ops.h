@@ -1354,3 +1354,11 @@ MINI_OP(OP_GET_LAST_ERROR, "get_last_error", IREG, NONE, NONE)
  * should be enough to locate arguments and variables.
  */
 MINI_OP(OP_FILL_PROF_CALL_CTX, "fill_prof_call_ctx", NONE, IREG, NONE)
+
+/* LLVM only, compare 2 vectors for equality, set dreg to 1/0 */
+MINI_OP(OP_XEQUAL, "xequal", IREG, XREG, XREG)
+/* Per element compate, inst_c0 contains a CompRelation */
+MINI_OP(OP_XCOMPARE, "xcompare", XREG, XREG, XREG)
+MINI_OP(OP_XCOMPARE_FP, "xcompare_fp", XREG, XREG, XREG)
+/* Binary op, inst_c0 contains the operation */
+MINI_OP(OP_XBINOP, "xbinop", XREG, XREG, XREG)

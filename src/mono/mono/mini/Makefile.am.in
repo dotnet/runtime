@@ -483,9 +483,11 @@ common_sources = \
 	branch-opts.c		\
 	mini-generic-sharing.c	\
 	simd-methods.h		\
+	simd-methods-netcore.h	\
 	tasklets.c		\
 	tasklets.h		\
 	simd-intrinsics.c	\
+	simd-intrinsics-netcore.c	\
 	mini-native-types.c \
 	mini-unwind.h		\
 	unwind.c		\

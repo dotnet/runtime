@@ -796,6 +796,14 @@ mono_class_create_generic_inst (MonoGenericClass *gclass)
 		if (mono_type_is_primitive (gclass->context.class_inst->type_argv [0]))
 			klass->simd_type = 1;
 	}
+#ifdef ENABLE_NETCORE
+	if (mono_is_corlib_image (gklass->image) && !strcmp (gklass->name, "Vector`1")) {
+		MonoType *etype = gclass->context.class_inst->type_argv [0];
+		if (mono_type_is_primitive (etype) && etype->type != MONO_TYPE_CHAR && etype->type != MONO_TYPE_BOOLEAN)
+			klass->simd_type = 1;
+	}
+#endif
+
 	klass->is_array_special_interface = gklass->is_array_special_interface;
 
 	klass->cast_class = klass->element_class = klass;
