@@ -157,7 +157,7 @@ namespace System.Threading
                             // for the head to end up > than the tail, since you can't set any more bits than all of
                             // them.
                             //
-                            m_headIndex = m_headIndex & m_mask;
+                            m_headIndex &= m_mask;
                             m_tailIndex = tail = m_tailIndex & m_mask;
                             Debug.Assert(m_headIndex <= m_tailIndex);
                         }

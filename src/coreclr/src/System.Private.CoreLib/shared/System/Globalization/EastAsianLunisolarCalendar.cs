@@ -374,7 +374,7 @@ namespace System.Globalization
             }
 
             // Add the actual lunar day to get the solar day we want
-            solarDay = solarDay + numLunarDays;
+            solarDay += numLunarDays;
 
             if (solarDay > (365 + (isLeapYear ? 1 : 0)))
             {
@@ -506,7 +506,7 @@ namespace System.Globalization
 
             for (int i = 1; i < m; i++)
             {
-                d = d + InternalGetDaysInMonth(y, i);
+                d += InternalGetDaysInMonth(y, i);
             }
             return d;
         }

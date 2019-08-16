@@ -381,15 +381,15 @@ namespace System
 
             if ((flags & PrintAsI1) != 0)
             {
-                ul = ul & 0xFF;
+                ul &= 0xFF;
             }
             else if ((flags & PrintAsI2) != 0)
             {
-                ul = ul & 0xFFFF;
+                ul &= 0xFFFF;
             }
             else if ((flags & PrintAsI4) != 0)
             {
-                ul = ul & 0xFFFFFFFF;
+                ul &= 0xFFFFFFFF;
             }
 
             //Special case the 0.

@@ -608,7 +608,7 @@ namespace System
 
         public static unsafe string Join(string? separator, params object?[] values)
         {
-            separator = separator ?? string.Empty;
+            separator ??= string.Empty;
             fixed (char* pSeparator = &separator._firstChar)
             {
                 // Defer argument validation to the internal function
@@ -618,7 +618,7 @@ namespace System
 
         public static unsafe string Join<T>(string? separator, IEnumerable<T> values)
         {
-            separator = separator ?? string.Empty;
+            separator ??= string.Empty;
             fixed (char* pSeparator = &separator._firstChar)
             {
                 // Defer argument validation to the internal function
@@ -667,7 +667,7 @@ namespace System
         //
         public static unsafe string Join(string? separator, string?[] value, int startIndex, int count)
         {
-            separator = separator ?? string.Empty;
+            separator ??= Empty;
             fixed (char* pSeparator = &separator._firstChar)
             {
                 // Defer argument validation to the internal function
