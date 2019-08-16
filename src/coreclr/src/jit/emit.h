@@ -18,7 +18,6 @@
 #ifdef _MSC_VER
 #pragma warning(disable : 4200) // allow arrays of 0 size inside structs
 #endif
-#define TRACK_GC_TEMP_LIFETIMES 0
 
 /*****************************************************************************/
 
