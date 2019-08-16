@@ -110,7 +110,7 @@ namespace System.Globalization
             }
             else
             {
-                return String.Substring(start, Indexes[lengthInTextElements + startingTextElement] - start);
+                return String[start..Indexes[lengthInTextElements + startingTextElement]];
             }
         }
 
