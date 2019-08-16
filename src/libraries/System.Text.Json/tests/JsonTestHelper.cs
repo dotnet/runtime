@@ -4,6 +4,7 @@
 
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Text.Json.Tests;
@@ -157,20 +158,49 @@ namespace System.Text.Json
             return new ReadOnlySequence<byte>(firstSegment, 0, secondSegment, secondMem.Length);
         }
 
-        public static ReadOnlySequence<byte> GetSequence(byte[] _dataUtf8, int segmentSize)
+        public static ReadOnlySequence<byte> CreateSegments(byte[] data, int splitLocation)
         {
-            int numberOfSegments = _dataUtf8.Length / segmentSize + 1;
+            Debug.Assert(splitLocation <= data.Length);
+
+            ReadOnlyMemory<byte> dataMemory = data;
+
+            var firstSegment = new BufferSegment<byte>(dataMemory.Slice(0, splitLocation));
+            ReadOnlyMemory<byte> secondMem = dataMemory.Slice(splitLocation);
+            BufferSegment<byte> secondSegment = firstSegment.Append(secondMem);
+
+            return new ReadOnlySequence<byte>(firstSegment, 0, secondSegment, secondMem.Length);
+        }
+
+        public static ReadOnlySequence<byte> CreateSegments(byte[] data, int firstSplit, int secondSplit)
+        {
+            Debug.Assert(firstSplit <= data.Length && secondSplit <= data.Length && firstSplit <= secondSplit);
+
+            ReadOnlyMemory<byte> dataMemory = data;
+
+            var firstSegment = new BufferSegment<byte>(dataMemory.Slice(0, firstSplit));
+            ReadOnlyMemory<byte> secondMem = dataMemory.Slice(firstSplit, secondSplit - firstSplit);
+            BufferSegment<byte> secondSegment = firstSegment.Append(secondMem);
+
+            ReadOnlyMemory<byte> thirdMem = dataMemory.Slice(secondSplit);
+            BufferSegment<byte> thirdSegment = secondSegment.Append(thirdMem);
+
+            return new ReadOnlySequence<byte>(firstSegment, 0, thirdSegment, thirdMem.Length);
+        }
+
+        public static ReadOnlySequence<byte> GetSequence(byte[] dataUtf8, int segmentSize)
+        {
+            int numberOfSegments = dataUtf8.Length / segmentSize + 1;
             byte[][] buffers = new byte[numberOfSegments][];
 
             for (int j = 0; j < numberOfSegments - 1; j++)
             {
                 buffers[j] = new byte[segmentSize];
-                Array.Copy(_dataUtf8, j * segmentSize, buffers[j], 0, segmentSize);
+                Array.Copy(dataUtf8, j * segmentSize, buffers[j], 0, segmentSize);
             }
 
-            int remaining = _dataUtf8.Length % segmentSize;
+            int remaining = dataUtf8.Length % segmentSize;
             buffers[numberOfSegments - 1] = new byte[remaining];
-            Array.Copy(_dataUtf8, _dataUtf8.Length - remaining, buffers[numberOfSegments - 1], 0, remaining);
+            Array.Copy(dataUtf8, dataUtf8.Length - remaining, buffers[numberOfSegments - 1], 0, remaining);
 
             return BufferFactory.Create(buffers);
         }
