@@ -305,7 +305,7 @@ namespace Internal.Win32
                         char[] blob = new char[datasize / 2];
 
                         ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
-                        if (blob.Length > 0 && blob[blob.Length - 1] == (char)0)
+                        if (blob.Length > 0 && blob[^1] == (char)0)
                         {
                             data = new string(blob, 0, blob.Length - 1);
                         }
@@ -336,7 +336,7 @@ namespace Internal.Win32
 
                         ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
 
-                        if (blob.Length > 0 && blob[blob.Length - 1] == (char)0)
+                        if (blob.Length > 0 && blob[^1] == (char)0)
                         {
                             data = new string(blob, 0, blob.Length - 1);
                         }
@@ -369,7 +369,7 @@ namespace Internal.Win32
                         ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
 
                         // make sure the string is null terminated before processing the data
-                        if (blob.Length > 0 && blob[blob.Length - 1] != (char)0)
+                        if (blob.Length > 0 && blob[^1] != (char)0)
                         {
                             Array.Resize(ref blob, blob.Length + 1);
                         }

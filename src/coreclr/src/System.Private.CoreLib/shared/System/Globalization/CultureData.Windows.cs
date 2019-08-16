@@ -457,7 +457,7 @@ namespace System.Globalization
 
             // Since its in n;n;n;n;n format, we can always get the length quickly
             int[] values;
-            if (win32Str[win32Str.Length - 1] == '0')
+            if (win32Str[^1] == '0')
             {
                 // Trailing 0 gets dropped. 1;0 -> 1
                 values = new int[(win32Str.Length / 2)];
@@ -466,7 +466,7 @@ namespace System.Globalization
             {
                 // Need extra space for trailing zero 1 -> 1;0
                 values = new int[(win32Str.Length / 2) + 2];
-                values[values.Length - 1] = 0;
+                values[^1] = 0;
             }
 
             int i;

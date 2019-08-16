@@ -31,7 +31,7 @@ namespace System
                 checkForZero *= array.GetLength(i);
             }
             // To make MoveNext simpler, decrement least significant index.
-            _indices[_indices.Length - 1]--;
+            _indices[^1]--;
             _complete = (checkForZero == 0);
         }
 
@@ -102,7 +102,7 @@ namespace System
             }
             _complete = (checkForZero == 0);
             // To make MoveNext simpler, decrement least significant index.
-            _indices[_indices.Length - 1]--;
+            _indices[^1]--;
         }
     }
 
