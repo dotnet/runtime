@@ -44,7 +44,7 @@ namespace System.Threading
         /// <summary>_count is positive until Dispose is called, after which it's (-1 - refcount).</summary>
         private int _count;
 
-        public bool AddRef(T obj)
+        public bool AddRef()
         {
             while (true)
             {

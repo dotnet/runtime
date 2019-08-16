@@ -155,7 +155,7 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
 
             // Taiwanese calendar get listed as one of the optional zh-TW calendars only when having zh-TW UI
-            return CallGetCalendarInfoEx("zh-TW", CalendarId.TAIWAN, CAL_SCALNAME, out _);
+            return CallGetCalendarInfoEx("zh-TW", CalendarId.TAIWAN, CAL_SCALNAME, out string _);
         }
 
         // PAL Layer ends here
@@ -208,13 +208,13 @@ namespace System.Globalization
             {
                 case CalendarId.GREGORIAN_US:
                     // See if this works
-                    if (!CallGetCalendarInfoEx(localeName, calendar, CAL_SCALNAME, out _))
+                    if (!CallGetCalendarInfoEx(localeName, calendar, CAL_SCALNAME, out string _))
                     {
                         // Failed, set it to a locale (fa-IR) that's alway has Gregorian US available in the OS
                         localeName = "fa-IR";
                     }
                     // See if that works
-                    if (!CallGetCalendarInfoEx(localeName, calendar, CAL_SCALNAME, out _))
+                    if (!CallGetCalendarInfoEx(localeName, calendar, CAL_SCALNAME, out string _))
                     {
                         // Failed again, just use en-US with the gregorian calendar
                         localeName = "en-US";
