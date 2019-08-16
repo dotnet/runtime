@@ -595,7 +595,6 @@ namespace System.Text.RegularExpressions
         internal virtual string TextposDescription()
         {
             var sb = new StringBuilder();
-            int remaining;
 
             sb.Append(runtextpos);
 
@@ -608,8 +607,6 @@ namespace System.Text.RegularExpressions
                 sb.Append('^');
 
             sb.Append('>');
-
-            remaining = runtextend - runtextpos;
 
             for (int i = runtextpos; i < runtextend; i++)
             {
