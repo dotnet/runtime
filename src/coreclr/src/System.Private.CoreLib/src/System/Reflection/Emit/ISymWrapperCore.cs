@@ -518,10 +518,7 @@ namespace System.Reflection.Emit
             return true;
         }
 
-        public override bool IsInvalid
-        {
-            get { return handle == ((IntPtr)0); }
-        }
+        public override bool IsInvalid => handle == ((IntPtr)0);
 
         private delegate void DRelease(IntPtr punk);         // Delegate type for P/Invoking to coreclr.dll and doing an IUnknown::Release()
         private static DRelease m_Release = (DRelease)Marshal.GetDelegateForFunctionPointer(nGetDReleaseTarget(), typeof(DRelease));

@@ -119,9 +119,6 @@ namespace System.Threading.Tasks
         /// This is the only scheduler that returns false for this property, indicating that the task entry codepath is unsafe (CAS free)
         /// since we know that the underlying scheduler already takes care of atomic transitions from queued to non-queued.
         /// </summary>
-        internal override bool RequiresAtomicStartTransition
-        {
-            get { return false; }
-        }
+        internal override bool RequiresAtomicStartTransition => false;
     }
 }

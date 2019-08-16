@@ -56,13 +56,7 @@ namespace System.IO
             get;
         }
 
-        public virtual bool CanTimeout
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public virtual bool CanTimeout => false;
 
         public abstract bool CanWrite
         {
@@ -670,7 +664,7 @@ namespace System.IO
                 }
             }
 
-            bool ITaskCompletionAction.InvokeMayRunArbitraryCode { get { return true; } }
+            bool ITaskCompletionAction.InvokeMayRunArbitraryCode => true;
         }
 
         public Task WriteAsync(byte[] buffer, int offset, int count)
@@ -1045,29 +1039,14 @@ namespace System.IO
                 _isWrite = isWrite;
             }
 
-            public bool IsCompleted
-            {
-                // We never hand out objects of this type to the user before the synchronous IO completed:
-                get { return true; }
-            }
+            public bool IsCompleted => true;
 
-            public WaitHandle AsyncWaitHandle
-            {
-                get
-                {
-                    return LazyInitializer.EnsureInitialized(ref _waitHandle, () => new ManualResetEvent(true));
-                }
-            }
+            public WaitHandle AsyncWaitHandle =>
+                LazyInitializer.EnsureInitialized(ref _waitHandle, () => new ManualResetEvent(true));
 
-            public object? AsyncState
-            {
-                get { return _stateObject; }
-            }
+            public object? AsyncState => _stateObject;
 
-            public bool CompletedSynchronously
-            {
-                get { return true; }
-            }
+            public bool CompletedSynchronously => true;
 
             internal void ThrowIfError()
             {

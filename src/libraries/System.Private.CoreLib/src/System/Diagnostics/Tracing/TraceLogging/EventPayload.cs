@@ -35,8 +35,8 @@ namespace System.Diagnostics.Tracing
             m_values = payloadValues;
         }
 
-        public ICollection<string> Keys { get { return m_names; } }
-        public ICollection<object?> Values { get { return m_values; } }
+        public ICollection<string> Keys => m_names;
+        public ICollection<object?> Values => m_values;
 
         public object? this[string key]
         {
@@ -96,9 +96,9 @@ namespace System.Diagnostics.Tracing
             return false;
         }
 
-        public int Count { get { return m_names.Count; } }
+        public int Count => m_names.Count;
 
-        public bool IsReadOnly { get { return true; } }
+        public bool IsReadOnly => true;
 
         public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
         {

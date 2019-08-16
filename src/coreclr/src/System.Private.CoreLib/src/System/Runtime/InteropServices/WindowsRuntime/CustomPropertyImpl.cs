@@ -28,31 +28,15 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // ICustomProperty interface implementation
         //
 
-        public string Name
-        {
-            get
-            {
-                return m_property.Name;
-            }
-        }
+        public string Name => m_property.Name;
 
-        public bool CanRead
-        {
-            get
-            {
-                // Return false if the getter is not public
-                return m_property.GetGetMethod() != null;
-            }
-        }
+        public bool CanRead =>
+            // Return false if the getter is not public
+            m_property.GetGetMethod() != null;
 
-        public bool CanWrite
-        {
-            get
-            {
-                // Return false if the setter is not public
-                return m_property.GetSetMethod() != null;
-            }
-        }
+        public bool CanWrite =>
+            // Return false if the setter is not public
+            m_property.GetSetMethod() != null;
 
         public object? GetValue(object target)
         {
@@ -113,12 +97,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             return rtMethod.Invoke(target, BindingFlags.Default, null, args, null);
         }
 
-        public Type Type
-        {
-            get
-            {
-                return m_property.PropertyType;
-            }
-        }
+        public Type Type => m_property.PropertyType;
     }
 }

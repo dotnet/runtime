@@ -68,25 +68,13 @@ namespace System.Reflection.Emit
         #endregion
 
         #region MemberInfo Overrides
-        public override Module Module
-        {
-            get { return m_module; }
-        }
+        public override Module Module => m_module;
 
-        public override Type? ReflectedType
-        {
-            get { return m_containingType as Type; }
-        }
+        public override Type? ReflectedType => m_containingType as Type;
 
-        public override string Name
-        {
-            get { return m_name; }
-        }
+        public override string Name => m_name;
 
-        public override Type? DeclaringType
-        {
-            get { return m_containingType; }
-        }
+        public override Type? DeclaringType => m_containingType;
         #endregion
 
         #region MethodBase Overrides
@@ -100,31 +88,16 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(SR.NotSupported_SymbolMethod);
         }
 
-        public override MethodAttributes Attributes
-        {
-            get { throw new NotSupportedException(SR.NotSupported_SymbolMethod); }
-        }
+        public override MethodAttributes Attributes => throw new NotSupportedException(SR.NotSupported_SymbolMethod);
 
-        public override CallingConventions CallingConvention
-        {
-            get { return m_callingConvention; }
-        }
+        public override CallingConventions CallingConvention => m_callingConvention;
 
-        public override RuntimeMethodHandle MethodHandle
-        {
-            get { throw new NotSupportedException(SR.NotSupported_SymbolMethod); }
-        }
+        public override RuntimeMethodHandle MethodHandle => throw new NotSupportedException(SR.NotSupported_SymbolMethod);
 
         #endregion
 
         #region MethodInfo Overrides
-        public override Type ReturnType
-        {
-            get
-            {
-                return m_returnType;
-            }
-        }
+        public override Type ReturnType => m_returnType;
 
         public override ICustomAttributeProvider ReturnTypeCustomAttributes => new EmptyCAHolder();
 

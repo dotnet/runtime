@@ -58,10 +58,7 @@ namespace System.IO
                 Debug.Assert(_overlapped != null, "AllocateNativeOverlapped returned null");
             }
 
-            internal NativeOverlapped* Overlapped
-            {
-                get { return _overlapped; }
-            }
+            internal NativeOverlapped* Overlapped => _overlapped;
 
             public void SetCompletedSynchronously(int numBytes)
             {

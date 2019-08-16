@@ -187,13 +187,7 @@ namespace System.Reflection
         private int length;
         private fixed int smallResult[16];
 
-        public int Length
-        {
-            get
-            {
-                return length;
-            }
-        }
+        public int Length => length;
 
         public int this[int index]
         {

@@ -57,13 +57,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
         }
 
-        public uint Size
-        {
-            get
-            {
-                return (uint)list.Count;
-            }
-        }
+        public uint Size => (uint)list.Count;
 
         public bool IndexOf(object value, out uint index)
         {

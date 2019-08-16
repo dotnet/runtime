@@ -62,7 +62,7 @@ namespace System.Reflection
                     RuntimeTypeHandle.GetModule(m.m_declaringType));
         }
 
-        internal BindingFlags BindingFlags { get { return m_bindingFlags; } }
+        internal BindingFlags BindingFlags => m_bindingFlags;
         #endregion
 
         #region Object Overrides
@@ -114,7 +114,7 @@ namespace System.Reflection
         #endregion
 
         #region MemberInfo Overrides
-        public override MemberTypes MemberType { get { return MemberTypes.Event; } }
+        public override MemberTypes MemberType => MemberTypes.Event;
         public override string Name
         {
             get
@@ -125,26 +125,14 @@ namespace System.Reflection
                 return m_name;
             }
         }
-        public override Type? DeclaringType { get { return m_declaringType; } }
+        public override Type? DeclaringType => m_declaringType;
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => HasSameMetadataDefinitionAsCore<RuntimeEventInfo>(other);
-        public override Type? ReflectedType
-        {
-            get
-            {
-                return ReflectedTypeInternal;
-            }
-        }
+        public override Type? ReflectedType => ReflectedTypeInternal;
 
-        private RuntimeType ReflectedTypeInternal
-        {
-            get
-            {
-                return m_reflectedTypeCache.GetRuntimeType();
-            }
-        }
+        private RuntimeType ReflectedTypeInternal => m_reflectedTypeCache.GetRuntimeType();
 
-        public override int MetadataToken { get { return m_token; } }
-        public override Module Module { get { return GetRuntimeModule(); } }
+        public override int MetadataToken => m_token;
+        public override Module Module => GetRuntimeModule();
         internal RuntimeModule GetRuntimeModule() { return m_declaringType.GetRuntimeModule(); }
         #endregion
 
@@ -189,13 +177,7 @@ namespace System.Reflection
             return m_raiseMethod;
         }
 
-        public override EventAttributes Attributes
-        {
-            get
-            {
-                return m_flags;
-            }
-        }
+        public override EventAttributes Attributes => m_flags;
         #endregion
     }
 }

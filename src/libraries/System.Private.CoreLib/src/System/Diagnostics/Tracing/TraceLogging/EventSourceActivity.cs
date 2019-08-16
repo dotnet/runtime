@@ -50,19 +50,13 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// Gets the event source to which this activity writes events.
         /// </summary>
-        public EventSource EventSource
-        {
-            get { return this.eventSource; }
-        }
+        public EventSource EventSource => this.eventSource;
 
         /// <summary>
         /// Gets this activity's unique identifier, or the default Guid if the
         /// event source was disabled when the activity was initialized.
         /// </summary>
-        public Guid Id
-        {
-            get { return this.activityId; }
-        }
+        public Guid Id => this.activityId;
 
 #if false // don't expose RelatedActivityId unless there is a need.
         /// <summary>
@@ -308,7 +302,7 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// If eventName is non-null then we logged a start event
         /// </summary>
-        private bool StartEventWasFired { get { return eventName != null; } }
+        private bool StartEventWasFired => eventName != null;
 
         private readonly EventSource eventSource;
         private EventSourceOptions startStopOptions;

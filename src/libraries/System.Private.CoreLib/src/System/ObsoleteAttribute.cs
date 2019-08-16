@@ -45,14 +45,8 @@ namespace System
             _error = error;
         }
 
-        public string? Message
-        {
-            get { return _message; }
-        }
+        public string? Message => _message;
 
-        public bool IsError
-        {
-            get { return _error; }
-        }
+        public bool IsError => _error;
     }
 }

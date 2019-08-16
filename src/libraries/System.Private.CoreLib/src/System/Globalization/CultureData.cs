@@ -1908,18 +1908,13 @@ namespace System.Globalization
             return calendarData;
         }
 
-        internal bool IsRightToLeft
-        {
-            get
-            {
-                // Returns one of the following 4 reading layout values:
-                // 0 - Left to right (eg en-US)
-                // 1 - Right to left (eg arabic locales)
-                // 2 - Vertical top to bottom with columns to the left and also left to right (ja-JP locales)
-                // 3 - Vertical top to bottom with columns proceeding to the right
-                return ReadingLayout == 1;
-            }
-        }
+        internal bool IsRightToLeft =>
+            // Returns one of the following 4 reading layout values:
+            // 0 - Left to right (eg en-US)
+            // 1 - Right to left (eg arabic locales)
+            // 2 - Vertical top to bottom with columns to the left and also left to right (ja-JP locales)
+            // 3 - Vertical top to bottom with columns proceeding to the right
+            ReadingLayout == 1;
 
         /// <summary>
         /// Returns one of the following 4 reading layout values:
@@ -2050,22 +2045,11 @@ namespace System.Globalization
             }
         }
 
-        internal bool IsNeutralCulture
-        {
-            get
-            {
-                // InitCultureData told us if we're neutral or not
-                return _bNeutral;
-            }
-        }
+        internal bool IsNeutralCulture =>
+            // InitCultureData told us if we're neutral or not
+            _bNeutral;
 
-        internal bool IsInvariantCulture
-        {
-            get
-            {
-                return string.IsNullOrEmpty(Name);
-            }
-        }
+        internal bool IsInvariantCulture => string.IsNullOrEmpty(Name);
 
         /// <summary>
         /// Get an instance of our default calendar

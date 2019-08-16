@@ -366,22 +366,12 @@ namespace System.Threading.Tasks
         }
 
         // Debugger support
-        private string DebuggerDisplayResultDescription
-        {
-            get
-            {
-                return IsCompletedSuccessfully ? "" + m_result : SR.TaskT_DebuggerNoResult;
-            }
-        }
+        private string DebuggerDisplayResultDescription =>
+            IsCompletedSuccessfully ? "" + m_result : SR.TaskT_DebuggerNoResult;
 
         // Debugger support
-        private string DebuggerDisplayMethodDescription
-        {
-            get
-            {
-                return m_action?.Method.ToString() ?? "{null}";
-            }
-        }
+        private string DebuggerDisplayMethodDescription =>
+            m_action?.Method.ToString() ?? "{null}";
 
 
         // internal helper function breaks out logic used by TaskCompletionSource
@@ -456,10 +446,10 @@ namespace System.Threading.Tasks
         /// immediately on later calls to <see cref="Result"/>.
         /// </remarks>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        public TResult Result
-        {
-            get { return IsWaitNotificationEnabledOrNotRanToCompletion ? GetResultCore(waitCompletionNotification: true) : m_result; }
-        }
+        public TResult Result =>
+            IsWaitNotificationEnabledOrNotRanToCompletion ?
+                GetResultCore(waitCompletionNotification: true) :
+                m_result;
 
         /// <summary>
         /// Gets the result value of this <see cref="Task{TResult}"/> once the task has completed successfully.
@@ -504,7 +494,7 @@ namespace System.Threading.Tasks
         /// of <see cref="System.Threading.Tasks.TaskFactory{TResult}"/>, as would result from using
         /// the default constructor on the factory type.
         /// </remarks>
-        public static new TaskFactory<TResult> Factory { get { return s_Factory; } }
+        public static new TaskFactory<TResult> Factory => s_Factory;
 
         /// <summary>
         /// Evaluates the value selector of the Task which is passed in as an object and stores the result.
@@ -1386,12 +1376,12 @@ namespace System.Threading.Tasks
             m_task = task;
         }
 
-        [MaybeNull] public TResult Result { get { return m_task.Status == TaskStatus.RanToCompletion ? m_task.Result : default!; } }
-        public object? AsyncState { get { return m_task.AsyncState; } }
-        public TaskCreationOptions CreationOptions { get { return m_task.CreationOptions; } }
-        public Exception? Exception { get { return m_task.Exception; } }
-        public int Id { get { return m_task.Id; } }
-        public bool CancellationPending { get { return (m_task.Status == TaskStatus.WaitingToRun) && m_task.CancellationToken.IsCancellationRequested; } }
-        public TaskStatus Status { get { return m_task.Status; } }
+        [MaybeNull] public TResult Result => m_task.Status == TaskStatus.RanToCompletion ? m_task.Result : default!;
+        public object? AsyncState => m_task.AsyncState;
+        public TaskCreationOptions CreationOptions => m_task.CreationOptions;
+        public Exception? Exception => m_task.Exception;
+        public int Id => m_task.Id;
+        public bool CancellationPending => (m_task.Status == TaskStatus.WaitingToRun) && m_task.CancellationToken.IsCancellationRequested;
+        public TaskStatus Status => m_task.Status;
     }
 }

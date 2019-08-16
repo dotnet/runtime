@@ -18,10 +18,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             _value = obj;
         }
 
-        public T Value
-        {
-            get { return _value; }
-        }
+        public T Value => _value;
 
         public override string? ToString()
         {
@@ -73,10 +70,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             _list = (IList)_value;
         }
 
-        public T[] Value
-        {
-            get { return _value; }
-        }
+        public T[] Value => _value;
 
         public override string? ToString()
         {
@@ -131,21 +125,9 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             _list.Clear();
         }
 
-        bool IList.IsReadOnly
-        {
-            get
-            {
-                return _list.IsReadOnly;
-            }
-        }
+        bool IList.IsReadOnly => _list.IsReadOnly;
 
-        bool IList.IsFixedSize
-        {
-            get
-            {
-                return _list.IsFixedSize;
-            }
-        }
+        bool IList.IsFixedSize => _list.IsFixedSize;
 
         int IList.IndexOf(object? value)
         {
@@ -172,29 +154,11 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             _list.CopyTo(array, index);
         }
 
-        int ICollection.Count
-        {
-            get
-            {
-                return _list.Count;
-            }
-        }
+        int ICollection.Count => _list.Count;
 
-        object ICollection.SyncRoot
-        {
-            get
-            {
-                return _list.SyncRoot;
-            }
-        }
+        object ICollection.SyncRoot => _list.SyncRoot;
 
-        bool ICollection.IsSynchronized
-        {
-            get
-            {
-                return _list.IsSynchronized;
-            }
-        }
+        bool ICollection.IsSynchronized => _list.IsSynchronized;
 
         object IGetProxyTarget.GetTarget()
         {

@@ -63,13 +63,13 @@ namespace System.Reflection.Emit
         #endregion
 
         #region MemberInfo Overrides
-        public override Type? DeclaringType { get { return m_type.DeclaringType; } }
+        public override Type? DeclaringType => m_type.DeclaringType;
 
-        public override Type? ReflectedType { get { return m_type.ReflectedType; } }
+        public override Type? ReflectedType => m_type.ReflectedType;
 
-        public override string Name { get { return m_type.Name; } }
+        public override string Name => m_type.Name;
 
-        public override Module Module { get { return m_type.Module; } }
+        public override Module Module => m_type.Module;
         #endregion
 
         #region Type Overrides
@@ -96,10 +96,10 @@ namespace System.Reflection.Emit
 
             return SymbolType.FormCompoundType(s, this, 0)!;
         }
-        public override Guid GUID { get { throw new NotSupportedException(); } }
+        public override Guid GUID => throw new NotSupportedException();
         public override object InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters) { throw new NotSupportedException(); }
-        public override Assembly Assembly { get { return m_type.Assembly; } }
-        public override RuntimeTypeHandle TypeHandle { get { throw new NotSupportedException(); } }
+        public override Assembly Assembly => m_type.Assembly;
+        public override RuntimeTypeHandle TypeHandle => throw new NotSupportedException();
         public override string? FullName
         {
             get
@@ -109,8 +109,8 @@ namespace System.Reflection.Emit
                 return m_strFullQualName;
             }
         }
-        public override string? Namespace { get { return m_type.Namespace; } }
-        public override string? AssemblyQualifiedName { get { return TypeNameBuilder.ToString(this, TypeNameBuilder.Format.AssemblyQualifiedName); } }
+        public override string? Namespace => m_type.Namespace;
+        public override string? AssemblyQualifiedName => TypeNameBuilder.ToString(this, TypeNameBuilder.Format.AssemblyQualifiedName);
         private Type Substitute(Type[] substitutes)
         {
             Type[] inst = GetGenericArguments();
@@ -192,13 +192,13 @@ namespace System.Reflection.Emit
         protected override bool IsCOMObjectImpl() { return false; }
         public override Type GetElementType() { throw new NotSupportedException(); }
         protected override bool HasElementTypeImpl() { return false; }
-        public override Type UnderlyingSystemType { get { return this; } }
+        public override Type UnderlyingSystemType => this;
         public override Type[] GetGenericArguments() { return m_inst; }
-        public override bool IsGenericTypeDefinition { get { return false; } }
-        public override bool IsGenericType { get { return true; } }
-        public override bool IsConstructedGenericType { get { return true; } }
-        public override bool IsGenericParameter { get { return false; } }
-        public override int GenericParameterPosition { get { throw new InvalidOperationException(); } }
+        public override bool IsGenericTypeDefinition => false;
+        public override bool IsGenericType => true;
+        public override bool IsConstructedGenericType => true;
+        public override bool IsGenericParameter => false;
+        public override int GenericParameterPosition => throw new InvalidOperationException();
         protected override bool IsValueTypeImpl() { return m_type.IsValueType; }
         public override bool ContainsGenericParameters
         {
@@ -213,7 +213,7 @@ namespace System.Reflection.Emit
                 return false;
             }
         }
-        public override MethodBase? DeclaringMethod { get { return null; } }
+        public override MethodBase? DeclaringMethod => null;
         public override Type GetGenericTypeDefinition() { return m_type; }
         public override Type MakeGenericType(params Type[] inst) { throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericTypeDefinition, this)); }
         public override bool IsAssignableFrom(Type? c) { throw new NotSupportedException(); }

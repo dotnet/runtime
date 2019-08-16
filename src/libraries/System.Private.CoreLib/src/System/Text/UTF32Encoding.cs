@@ -1198,14 +1198,9 @@ namespace System.Text
             }
 
             // Anything left in our decoder?
-            internal override bool HasState
-            {
-                get
-                {
-                    // ReadByteCount is our flag.  (iChar==0 doesn't mean much).
-                    return (this.readByteCount != 0);
-                }
-            }
+            internal override bool HasState =>
+                // ReadByteCount is our flag.  (iChar==0 doesn't mean much).
+                (this.readByteCount != 0);
         }
     }
 }

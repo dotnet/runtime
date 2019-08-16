@@ -73,8 +73,8 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             public NonGenericToGenericIterator(IBindableIterator iterator)
             { this.iterator = iterator; }
 
-            public object? Current { get { return iterator.Current; } }
-            public bool HasCurrent { get { return iterator.HasCurrent; } }
+            public object? Current => iterator.Current;
+            public bool HasCurrent => iterator.HasCurrent;
             public bool MoveNext() { return iterator.MoveNext(); }
             public int GetMany(object?[] items) { throw new NotSupportedException(); }
         }

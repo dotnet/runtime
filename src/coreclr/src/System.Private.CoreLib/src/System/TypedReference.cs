@@ -93,13 +93,7 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern unsafe object InternalToObject(void* value);
 
-        internal bool IsNull
-        {
-            get
-            {
-                return Value == IntPtr.Zero && Type == IntPtr.Zero;
-            }
-        }
+        internal bool IsNull => Value == IntPtr.Zero && Type == IntPtr.Zero;
 
         public static Type GetTargetType(TypedReference value)
         {

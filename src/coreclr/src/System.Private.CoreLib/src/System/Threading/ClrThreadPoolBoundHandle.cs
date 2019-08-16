@@ -31,10 +31,7 @@ namespace System.Threading
         /// <value>
         ///     A <see cref="SafeHandle"/> object that holds the bound operating system handle.
         /// </value>
-        public SafeHandle Handle
-        {
-            get { return _handle; }
-        }
+        public SafeHandle Handle => _handle;
 
         /// <summary>
         ///     Returns a <see cref="ThreadPoolBoundHandle"/> for the specific handle,
