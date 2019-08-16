@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.IO.Tests
@@ -52,7 +53,11 @@ namespace System.IO.Tests
         [Fact]
         public void File_Move_From_Unwatched_To_Watched()
         {
-            FileMove_FromUnwatchedToWatched(WatcherChangeTypes.Created);
+            // TODO remove OS version check after https://github.com/dotnet/corefx/issues/40034 fixed
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || Environment.OSVersion.Version.Major < 19)
+            {
+                FileMove_FromUnwatchedToWatched(WatcherChangeTypes.Created);
+            }
         }
 
         [Theory]
