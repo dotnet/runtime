@@ -3159,6 +3159,16 @@ mono_interp_newobj (
 	return NULL;
 }
 
+static MONO_NEVER_INLINE void
+mono_interp_enum_hasflag (stackval* sp, MonoClass* klass)
+{
+	guint64 a_val = 0, b_val = 0;
+
+	stackval_to_data (m_class_get_byval_arg (klass), --sp, &b_val, FALSE);
+	stackval_to_data (m_class_get_byval_arg (klass), --sp, &a_val, FALSE);
+	sp->data.i = (a_val & b_val) == b_val;
+}
+
 /*
  * If EXIT_AT_FINALLY is not -1, exit after exiting the finally clause with that index.
  * If BASE_FRAME is not NULL, copy arguments/locals from BASE_FRAME.
@@ -6537,12 +6547,8 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 
 		MINT_IN_CASE(MINT_INTRINS_ENUM_HASFLAG) {
 			MonoClass *klass = (MonoClass*)imethod->data_items[* (guint16 *)(ip + 1)];
-			guint64 a_val = 0, b_val = 0;
-
-			stackval_to_data (m_class_get_byval_arg (klass), &sp [-2], &a_val, FALSE);
-			stackval_to_data (m_class_get_byval_arg (klass), &sp [-1], &b_val, FALSE);
+			mono_interp_enum_hasflag (sp, klass);
 			sp--;
-			sp [-1].data.i = (a_val & b_val) == b_val;
 			ip += 2;
 			MINT_IN_BREAK;
 		}
