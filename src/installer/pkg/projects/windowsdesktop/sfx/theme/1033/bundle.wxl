@@ -58,7 +58,7 @@ Ready? Set? Let's go!</String>
   <String Id="FilesInUseDontCloseRadioButton">&amp;Do not close applications. A reboot will be required.</String>
   <String Id="FilesInUseOkButton">&amp;OK</String>
   <String Id="FilesInUseCancelButton">&amp;Cancel</String>
-  <String Id="WelcomeHeaderMessage">Windows Desktop Runtime</String>
+  <String Id="WelcomeHeaderMessage"></String>
   <String Id="WelcomeDescription"></String>
   <String Id="LearnMoreTitle">Learn more about .NET Core</String>
   <String Id="SuccessInstallLocation">The following was installed at [DOTNETHOME]</String>
