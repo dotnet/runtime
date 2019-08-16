@@ -6,7 +6,8 @@ schedules:
   branches:
     include:
     - master
-    - releases/3.0
+    - release/3.0
+  condition: endsWith(variables['Build.DefinitionName'], 'outerloop')
 
 resources:
   containers:
