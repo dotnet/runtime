@@ -60,8 +60,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
             IVector<T> _this = Unsafe.As<IVector<T>>(this);
 
-            uint index;
-            return _this.IndexOf(item, out index);
+            return _this.IndexOf(item, out _);
         }
 
         // void CopyTo(T[] array, int arrayIndex)

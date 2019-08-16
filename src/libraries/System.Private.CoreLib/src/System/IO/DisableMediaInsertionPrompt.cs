@@ -34,9 +34,8 @@ namespace System.IO
 
         public void Dispose()
         {
-            uint ignore;
             if (_disableSuccess)
-                Interop.Kernel32.SetThreadErrorMode(_oldMode, out ignore);
+                Interop.Kernel32.SetThreadErrorMode(_oldMode, out _);
         }
     }
 }

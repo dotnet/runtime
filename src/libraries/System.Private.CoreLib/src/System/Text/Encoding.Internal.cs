@@ -850,7 +850,7 @@ namespace System.Text
 
             ReadOnlySpan<byte> bytes = new ReadOnlySpan<byte>(pOriginalBytes, originalByteCount).Slice(bytesConsumedSoFar);
 
-            int bytesConsumedJustNow = 0;
+            int bytesConsumedJustNow;
             int totalCharCount = 0;
 
             if (decoder.HasLeftoverData)
@@ -1126,8 +1126,8 @@ namespace System.Text
             ReadOnlySpan<byte> bytes = new ReadOnlySpan<byte>(pOriginalBytes, originalByteCount).Slice(bytesConsumedSoFar);
             Span<char> chars = new Span<char>(pOriginalChars, originalCharCount).Slice(charsWrittenSoFar);
 
-            int bytesConsumedJustNow = 0;
-            int charsWrittenJustNow = 0;
+            int bytesConsumedJustNow;
+            int charsWrittenJustNow;
 
             if (decoder.HasLeftoverData)
             {

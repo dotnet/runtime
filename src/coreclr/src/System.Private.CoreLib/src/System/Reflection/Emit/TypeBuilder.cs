@@ -981,7 +981,7 @@ namespace System.Reflection.Emit
             if (TypeBuilder.IsTypeEqual(c, this))
                 return true;
 
-            Type? fromRuntimeType = null;
+            Type fromRuntimeType;
             TypeBuilder? fromTypeBuilder = c as TypeBuilder;
 
             if (fromTypeBuilder != null)

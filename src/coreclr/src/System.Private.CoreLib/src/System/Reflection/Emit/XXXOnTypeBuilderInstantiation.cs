@@ -171,7 +171,7 @@ namespace System.Reflection.Emit
         #region Private Static Members
         internal static FieldInfo GetField(FieldInfo Field, TypeBuilderInstantiation type)
         {
-            FieldInfo? m = null;
+            FieldInfo m;
 
             // This ifdef was introduced when non-generic collections were pulled from
             // silverlight. See code:Dictionary#DictionaryVersusHashtableThreadSafety
