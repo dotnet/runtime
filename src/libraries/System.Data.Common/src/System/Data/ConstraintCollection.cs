@@ -27,6 +27,7 @@ namespace System.Data
         /// </summary>
         internal ConstraintCollection(DataTable table)
         {
+            Debug.Assert(table != null);
             _table = table;
         }
 
@@ -420,18 +421,15 @@ namespace System.Data
         /// </summary>
         public void Clear()
         {
-            if (_table != null)
-            {
-                _table.PrimaryKey = null;
+            _table.PrimaryKey = null;
 
-                for (int i = 0; i < _table.ParentRelations.Count; i++)
-                {
-                    _table.ParentRelations[i].SetChildKeyConstraint(null);
-                }
-                for (int i = 0; i < _table.ChildRelations.Count; i++)
-                {
-                    _table.ChildRelations[i].SetParentKeyConstraint(null);
-                }
+            for (int i = 0; i < _table.ParentRelations.Count; i++)
+            {
+                _table.ParentRelations[i].SetChildKeyConstraint(null);
+            }
+            for (int i = 0; i < _table.ChildRelations.Count; i++)
+            {
+                _table.ChildRelations[i].SetParentKeyConstraint(null);
             }
 
             if (_table.fInitInProgress && _delayLoadingConstraints != null)
