@@ -377,14 +377,6 @@
 -nomethod System.Reflection.Tests.MemberInfoNetCoreAppTests.HasSameMetadataDefinitionAs_GenericTypeParameters
 
 ####################################################################
-##  System.Resources.ResourceManager.Tests
-####################################################################
-
-# TODO: Missing assembly resolve events on AppDomain and AssemblyLoadContext
-# https://github.com/mono/mono/issues/15081
--nomethod System.Resources.Tests.ResourceManagerTests.GetString_ExpectEvents
-
-####################################################################
 ##  System.Runtime.InteropServices.Tests
 ####################################################################
 
