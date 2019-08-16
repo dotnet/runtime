@@ -895,7 +895,7 @@ namespace System.Reflection.Emit
                 false, false);
 
             if (IsKnownCA(con))
-                ParseCA(con, binaryAttribute);
+                ParseCA(con);
         }
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
@@ -908,7 +908,7 @@ namespace System.Reflection.Emit
             customBuilder.CreateCustomAttribute((ModuleBuilder)m_module, MetadataTokenInternal);
 
             if (IsKnownCA(customBuilder.m_con))
-                ParseCA(customBuilder.m_con, customBuilder.m_blob);
+                ParseCA(customBuilder.m_con);
         }
 
         // this method should return true for any and every ca that requires more work
@@ -921,7 +921,7 @@ namespace System.Reflection.Emit
             else return false;
         }
 
-        private void ParseCA(ConstructorInfo con, byte[]? blob)
+        private void ParseCA(ConstructorInfo con)
         {
             Type? caType = con.DeclaringType;
             if (caType == typeof(System.Runtime.CompilerServices.MethodImplAttribute))
