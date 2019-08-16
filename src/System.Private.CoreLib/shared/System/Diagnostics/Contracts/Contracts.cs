@@ -50,10 +50,7 @@ namespace System.Diagnostics.Contracts
             _typeWithContracts = typeContainingContracts;
         }
 
-        public Type TypeContainingContracts
-        {
-            get { return _typeWithContracts; }
-        }
+        public Type TypeContainingContracts => _typeWithContracts;
     }
 
     /// <summary>
@@ -70,10 +67,7 @@ namespace System.Diagnostics.Contracts
             _typeIAmAContractFor = typeContractsAreFor;
         }
 
-        public Type TypeContractsAreFor
-        {
-            get { return _typeIAmAContractFor; }
-        }
+        public Type TypeContractsAreFor => _typeIAmAContractFor;
     }
 
     /// <summary>
@@ -126,10 +120,7 @@ namespace System.Diagnostics.Contracts
 
         public ContractVerificationAttribute(bool value) { _value = value; }
 
-        public bool Value
-        {
-            get { return _value; }
-        }
+        public bool Value => _value;
     }
 
     /// <summary>
@@ -147,10 +138,7 @@ namespace System.Diagnostics.Contracts
             _publicName = name;
         }
 
-        public string Name
-        {
-            get { return _publicName; }
-        }
+        public string Name => _publicName;
     }
 
     /// <summary>
@@ -198,25 +186,13 @@ namespace System.Diagnostics.Contracts
             _value = value;
         }
 
-        public string Category
-        {
-            get { return _category; }
-        }
+        public string Category => _category;
 
-        public string Setting
-        {
-            get { return _setting; }
-        }
+        public string Setting => _setting;
 
-        public bool Enabled
-        {
-            get { return _enabled; }
-        }
+        public bool Enabled => _enabled;
 
-        public string? Value
-        {
-            get { return _value; }
-        }
+        public string? Value => _value;
     }
 
     #endregion Attributes

@@ -48,14 +48,10 @@ namespace System
         {
         }
 
-        public override string Message
-        {
-            get
-            {
-                return ClassName == null ? base.Message :
-                    SR.Format(SR.MissingMethod_Name, ClassName + "." + MemberName +
-                        (Signature != null ? " " + FormatSignature(Signature) : string.Empty));
-            }
-        }
+        public override string Message =>
+            ClassName == null ?
+                base.Message :
+                SR.Format(SR.MissingMethod_Name, ClassName + "." + MemberName +
+                    (Signature != null ? " " + FormatSignature(Signature) : string.Empty));
     }
 }

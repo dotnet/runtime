@@ -36,10 +36,7 @@ namespace System.Collections.ObjectModel
             m_dictionary = dictionary;
         }
 
-        protected IDictionary<TKey, TValue> Dictionary
-        {
-            get { return m_dictionary; }
-        }
+        protected IDictionary<TKey, TValue> Dictionary => m_dictionary;
 
         public KeyCollection Keys
         {
@@ -67,31 +64,14 @@ namespace System.Collections.ObjectModel
 
         #region IDictionary<TKey, TValue> Members
 
-        public bool ContainsKey(TKey key)
-        {
-            return m_dictionary.ContainsKey(key);
-        }
+        public bool ContainsKey(TKey key) => m_dictionary.ContainsKey(key);
 
-        ICollection<TKey> IDictionary<TKey, TValue>.Keys
-        {
-            get
-            {
-                return Keys;
-            }
-        }
+        ICollection<TKey> IDictionary<TKey, TValue>.Keys => Keys;
 
-        public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
-        {
-            return m_dictionary.TryGetValue(key, out value);
-        }
+        public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value) =>
+            m_dictionary.TryGetValue(key, out value);
 
-        ICollection<TValue> IDictionary<TKey, TValue>.Values
-        {
-            get
-            {
-                return Values;
-            }
-        }
+        ICollection<TValue> IDictionary<TKey, TValue>.Values => Values;
 
         public TValue this[TKey key]
         {
@@ -101,10 +81,8 @@ namespace System.Collections.ObjectModel
             }
         }
 
-        void IDictionary<TKey, TValue>.Add(TKey key, TValue value)
-        {
+        void IDictionary<TKey, TValue>.Add(TKey key, TValue value) =>
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
-        }
 
         bool IDictionary<TKey, TValue>.Remove(TKey key)
         {
@@ -128,35 +106,21 @@ namespace System.Collections.ObjectModel
 
         #region ICollection<KeyValuePair<TKey, TValue>> Members
 
-        public int Count
-        {
-            get { return m_dictionary.Count; }
-        }
+        public int Count => m_dictionary.Count;
 
-        bool ICollection<KeyValuePair<TKey, TValue>>.Contains(KeyValuePair<TKey, TValue> item)
-        {
-            return m_dictionary.Contains(item);
-        }
+        bool ICollection<KeyValuePair<TKey, TValue>>.Contains(KeyValuePair<TKey, TValue> item) =>
+            m_dictionary.Contains(item);
 
-        void ICollection<KeyValuePair<TKey, TValue>>.CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
-        {
+        void ICollection<KeyValuePair<TKey, TValue>>.CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex) =>
             m_dictionary.CopyTo(array, arrayIndex);
-        }
 
-        bool ICollection<KeyValuePair<TKey, TValue>>.IsReadOnly
-        {
-            get { return true; }
-        }
+        bool ICollection<KeyValuePair<TKey, TValue>>.IsReadOnly => true;
 
-        void ICollection<KeyValuePair<TKey, TValue>>.Add(KeyValuePair<TKey, TValue> item)
-        {
+        void ICollection<KeyValuePair<TKey, TValue>>.Add(KeyValuePair<TKey, TValue> item) =>
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
-        }
 
-        void ICollection<KeyValuePair<TKey, TValue>>.Clear()
-        {
+        void ICollection<KeyValuePair<TKey, TValue>>.Clear() =>
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
-        }
 
         bool ICollection<KeyValuePair<TKey, TValue>>.Remove(KeyValuePair<TKey, TValue> item)
         {
@@ -168,19 +132,15 @@ namespace System.Collections.ObjectModel
 
         #region IEnumerable<KeyValuePair<TKey, TValue>> Members
 
-        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
-        {
-            return m_dictionary.GetEnumerator();
-        }
+        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() =>
+            m_dictionary.GetEnumerator();
 
         #endregion
 
         #region IEnumerable Members
 
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return ((IEnumerable)m_dictionary).GetEnumerator();
-        }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() =>
+            ((IEnumerable)m_dictionary).GetEnumerator();
 
         #endregion
 
@@ -195,20 +155,13 @@ namespace System.Collections.ObjectModel
             return key is TKey;
         }
 
-        void IDictionary.Add(object key, object? value)
-        {
+        void IDictionary.Add(object key, object? value) =>
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
-        }
 
-        void IDictionary.Clear()
-        {
+        void IDictionary.Clear() =>
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
-        }
 
-        bool IDictionary.Contains(object key)
-        {
-            return IsCompatibleKey(key) && ContainsKey((TKey)key);
-        }
+        bool IDictionary.Contains(object key) => IsCompatibleKey(key) && ContainsKey((TKey)key);
 
         IDictionaryEnumerator IDictionary.GetEnumerator()
         {
@@ -219,36 +172,16 @@ namespace System.Collections.ObjectModel
             return new DictionaryEnumerator(m_dictionary);
         }
 
-        bool IDictionary.IsFixedSize
-        {
-            get { return true; }
-        }
+        bool IDictionary.IsFixedSize => true;
 
-        bool IDictionary.IsReadOnly
-        {
-            get { return true; }
-        }
+        bool IDictionary.IsReadOnly => true;
 
-        ICollection IDictionary.Keys
-        {
-            get
-            {
-                return Keys;
-            }
-        }
+        ICollection IDictionary.Keys => Keys;
 
-        void IDictionary.Remove(object key)
-        {
+        void IDictionary.Remove(object key) =>
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
-        }
 
-        ICollection IDictionary.Values
-        {
-            get
-            {
-                return Values;
-            }
-        }
+        ICollection IDictionary.Values => Values;
 
         object? IDictionary.this[object key]
         {
@@ -329,10 +262,7 @@ namespace System.Collections.ObjectModel
             }
         }
 
-        bool ICollection.IsSynchronized
-        {
-            get { return false; }
-        }
+        bool ICollection.IsSynchronized => false;
 
         object ICollection.SyncRoot
         {
@@ -364,56 +294,26 @@ namespace System.Collections.ObjectModel
                 m_enumerator = m_dictionary.GetEnumerator();
             }
 
-            public DictionaryEntry Entry
-            {
-                get { return new DictionaryEntry(m_enumerator.Current.Key, m_enumerator.Current.Value); }
-            }
+            public DictionaryEntry Entry => new DictionaryEntry(m_enumerator.Current.Key, m_enumerator.Current.Value);
 
-            public object Key
-            {
-                get { return m_enumerator.Current.Key!; }
-            }
+            public object Key => m_enumerator.Current.Key!;
 
-            public object? Value
-            {
-                get { return m_enumerator.Current.Value; }
-            }
+            public object? Value => m_enumerator.Current.Value;
 
-            public object? Current
-            {
-                get { return Entry; }
-            }
+            public object? Current => Entry;
 
-            public bool MoveNext()
-            {
-                return m_enumerator.MoveNext();
-            }
+            public bool MoveNext() => m_enumerator.MoveNext();
 
-            public void Reset()
-            {
-                m_enumerator.Reset();
-            }
+            public void Reset() => m_enumerator.Reset();
         }
 
         #endregion
 
         #region IReadOnlyDictionary members
 
-        IEnumerable<TKey> IReadOnlyDictionary<TKey, TValue>.Keys
-        {
-            get
-            {
-                return Keys;
-            }
-        }
+        IEnumerable<TKey> IReadOnlyDictionary<TKey, TValue>.Keys => Keys;
 
-        IEnumerable<TValue> IReadOnlyDictionary<TKey, TValue>.Values
-        {
-            get
-            {
-                return Values;
-            }
-        }
+        IEnumerable<TValue> IReadOnlyDictionary<TKey, TValue>.Values => Values;
 
         #endregion IReadOnlyDictionary members
 
@@ -435,35 +335,17 @@ namespace System.Collections.ObjectModel
 
             #region ICollection<T> Members
 
-            void ICollection<TKey>.Add(TKey item)
-            {
-                ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
-            }
+            void ICollection<TKey>.Add(TKey item) => ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
 
-            void ICollection<TKey>.Clear()
-            {
-                ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
-            }
+            void ICollection<TKey>.Clear() => ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
 
-            bool ICollection<TKey>.Contains(TKey item)
-            {
-                return m_collection.Contains(item);
-            }
+            bool ICollection<TKey>.Contains(TKey item) => m_collection.Contains(item);
 
-            public void CopyTo(TKey[] array, int arrayIndex)
-            {
-                m_collection.CopyTo(array, arrayIndex);
-            }
+            public void CopyTo(TKey[] array, int arrayIndex) => m_collection.CopyTo(array, arrayIndex);
 
-            public int Count
-            {
-                get { return m_collection.Count; }
-            }
+            public int Count => m_collection.Count;
 
-            bool ICollection<TKey>.IsReadOnly
-            {
-                get { return true; }
-            }
+            bool ICollection<TKey>.IsReadOnly => true;
 
             bool ICollection<TKey>.Remove(TKey item)
             {
@@ -475,33 +357,21 @@ namespace System.Collections.ObjectModel
 
             #region IEnumerable<T> Members
 
-            public IEnumerator<TKey> GetEnumerator()
-            {
-                return m_collection.GetEnumerator();
-            }
+            public IEnumerator<TKey> GetEnumerator() => m_collection.GetEnumerator();
 
             #endregion
 
             #region IEnumerable Members
 
-            IEnumerator IEnumerable.GetEnumerator()
-            {
-                return ((IEnumerable)m_collection).GetEnumerator();
-            }
+            IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)m_collection).GetEnumerator();
 
             #endregion
 
             #region ICollection Members
 
-            void ICollection.CopyTo(Array array, int index)
-            {
-                ReadOnlyDictionaryHelpers.CopyToNonGenericICollectionHelper<TKey>(m_collection, array, index);
-            }
+            void ICollection.CopyTo(Array array, int index) => ReadOnlyDictionaryHelpers.CopyToNonGenericICollectionHelper<TKey>(m_collection, array, index);
 
-            bool ICollection.IsSynchronized
-            {
-                get { return false; }
-            }
+            bool ICollection.IsSynchronized => false;
 
             object ICollection.SyncRoot
             {
@@ -543,35 +413,17 @@ namespace System.Collections.ObjectModel
 
             #region ICollection<T> Members
 
-            void ICollection<TValue>.Add(TValue item)
-            {
-                ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
-            }
+            void ICollection<TValue>.Add(TValue item) => ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
 
-            void ICollection<TValue>.Clear()
-            {
-                ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
-            }
+            void ICollection<TValue>.Clear() => ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
 
-            bool ICollection<TValue>.Contains(TValue item)
-            {
-                return m_collection.Contains(item);
-            }
+            bool ICollection<TValue>.Contains(TValue item) => m_collection.Contains(item);
 
-            public void CopyTo(TValue[] array, int arrayIndex)
-            {
-                m_collection.CopyTo(array, arrayIndex);
-            }
+            public void CopyTo(TValue[] array, int arrayIndex) => m_collection.CopyTo(array, arrayIndex);
 
-            public int Count
-            {
-                get { return m_collection.Count; }
-            }
+            public int Count => m_collection.Count;
 
-            bool ICollection<TValue>.IsReadOnly
-            {
-                get { return true; }
-            }
+            bool ICollection<TValue>.IsReadOnly => true;
 
             bool ICollection<TValue>.Remove(TValue item)
             {
@@ -583,33 +435,21 @@ namespace System.Collections.ObjectModel
 
             #region IEnumerable<T> Members
 
-            public IEnumerator<TValue> GetEnumerator()
-            {
-                return m_collection.GetEnumerator();
-            }
+            public IEnumerator<TValue> GetEnumerator() => m_collection.GetEnumerator();
 
             #endregion
 
             #region IEnumerable Members
 
-            IEnumerator IEnumerable.GetEnumerator()
-            {
-                return ((IEnumerable)m_collection).GetEnumerator();
-            }
+            IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)m_collection).GetEnumerator();
 
             #endregion
 
             #region ICollection Members
 
-            void ICollection.CopyTo(Array array, int index)
-            {
-                ReadOnlyDictionaryHelpers.CopyToNonGenericICollectionHelper<TValue>(m_collection, array, index);
-            }
+            void ICollection.CopyTo(Array array, int index) => ReadOnlyDictionaryHelpers.CopyToNonGenericICollectionHelper<TValue>(m_collection, array, index);
 
-            bool ICollection.IsSynchronized
-            {
-                get { return false; }
-            }
+            bool ICollection.IsSynchronized => false;
 
             object ICollection.SyncRoot
             {

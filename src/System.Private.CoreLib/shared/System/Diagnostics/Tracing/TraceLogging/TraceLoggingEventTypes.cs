@@ -160,42 +160,27 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// Gets the default name that will be used for events with this descriptor.
         /// </summary>
-        internal string Name
-        {
-            get { return this.name; }
-        }
+        internal string Name => this.name;
 
         /// <summary>
         /// Gets the default level that will be used for events with this descriptor.
         /// </summary>
-        internal EventLevel Level
-        {
-            get { return (EventLevel)this.level; }
-        }
+        internal EventLevel Level => (EventLevel)this.level;
 
         /// <summary>
         /// Gets the default opcode that will be used for events with this descriptor.
         /// </summary>
-        internal EventOpcode Opcode
-        {
-            get { return (EventOpcode)this.opcode; }
-        }
+        internal EventOpcode Opcode => (EventOpcode)this.opcode;
 
         /// <summary>
         /// Gets the default set of keywords that will added to events with this descriptor.
         /// </summary>
-        internal EventKeywords Keywords
-        {
-            get { return (EventKeywords)this.keywords; }
-        }
+        internal EventKeywords Keywords => (EventKeywords)this.keywords;
 
         /// <summary>
         /// Gets the default tags that will be added events with this descriptor.
         /// </summary>
-        internal EventTags Tags
-        {
-            get { return this.tags; }
-        }
+        internal EventTags Tags => this.tags;
 
         internal NameInfo GetNameInfo(string name, EventTags tags)
         {

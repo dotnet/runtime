@@ -66,20 +66,11 @@ namespace System.Reflection.Emit
         #endregion
 
         #region MemberInfo Overrides
-        internal int MetadataTokenInternal
-        {
-            get { return m_fieldTok; }
-        }
+        internal int MetadataTokenInternal => m_fieldTok;
 
-        public override Module Module
-        {
-            get { return m_typeBuilder.Module; }
-        }
+        public override Module Module => m_typeBuilder.Module;
 
-        public override string Name
-        {
-            get { return m_fieldName; }
-        }
+        public override string Name => m_fieldName;
 
         public override Type? DeclaringType
         {
@@ -106,10 +97,7 @@ namespace System.Reflection.Emit
         #endregion
 
         #region FieldInfo Overrides
-        public override Type FieldType
-        {
-            get { return m_fieldType; }
-        }
+        public override Type FieldType => m_fieldType;
 
         public override object? GetValue(object? obj)
         {
@@ -129,15 +117,9 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(SR.NotSupported_DynamicModule);
         }
 
-        public override RuntimeFieldHandle FieldHandle
-        {
-            get { throw new NotSupportedException(SR.NotSupported_DynamicModule); }
-        }
+        public override RuntimeFieldHandle FieldHandle => throw new NotSupportedException(SR.NotSupported_DynamicModule);
 
-        public override FieldAttributes Attributes
-        {
-            get { return m_Attributes; }
-        }
+        public override FieldAttributes Attributes => m_Attributes;
 
         #endregion
 

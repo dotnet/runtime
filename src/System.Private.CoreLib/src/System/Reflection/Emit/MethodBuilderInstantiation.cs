@@ -38,29 +38,29 @@ namespace System.Reflection.Emit
         }
 
         #region MemberBase
-        public override MemberTypes MemberType { get { return m_method.MemberType; } }
-        public override string Name { get { return m_method.Name; } }
-        public override Type? DeclaringType { get { return m_method.DeclaringType; } }
-        public override Type? ReflectedType { get { return m_method.ReflectedType; } }
+        public override MemberTypes MemberType => m_method.MemberType;
+        public override string Name => m_method.Name;
+        public override Type? DeclaringType => m_method.DeclaringType;
+        public override Type? ReflectedType => m_method.ReflectedType;
         public override object[] GetCustomAttributes(bool inherit) { return m_method.GetCustomAttributes(inherit); }
         public override object[] GetCustomAttributes(Type attributeType, bool inherit) { return m_method.GetCustomAttributes(attributeType, inherit); }
         public override bool IsDefined(Type attributeType, bool inherit) { return m_method.IsDefined(attributeType, inherit); }
-        public override Module Module { get { return m_method.Module; } }
+        public override Module Module => m_method.Module;
         #endregion
 
         #region MethodBase Members
         public override ParameterInfo[] GetParameters() { throw new NotSupportedException(); }
         public override MethodImplAttributes GetMethodImplementationFlags() { return m_method.GetMethodImplementationFlags(); }
-        public override RuntimeMethodHandle MethodHandle { get { throw new NotSupportedException(SR.NotSupported_DynamicModule); } }
-        public override MethodAttributes Attributes { get { return m_method.Attributes; } }
+        public override RuntimeMethodHandle MethodHandle => throw new NotSupportedException(SR.NotSupported_DynamicModule);
+        public override MethodAttributes Attributes => m_method.Attributes;
         public override object Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
             throw new NotSupportedException();
         }
-        public override CallingConventions CallingConvention { get { return m_method.CallingConvention; } }
+        public override CallingConventions CallingConvention => m_method.CallingConvention;
         public override Type[] GetGenericArguments() { return m_inst; }
         public override MethodInfo GetGenericMethodDefinition() { return m_method; }
-        public override bool IsGenericMethodDefinition { get { return false; } }
+        public override bool IsGenericMethodDefinition => false;
         public override bool ContainsGenericParameters
         {
             get
@@ -83,21 +83,15 @@ namespace System.Reflection.Emit
             throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericMethodDefinition, this));
         }
 
-        public override bool IsGenericMethod { get { return true; } }
+        public override bool IsGenericMethod => true;
 
         #endregion
 
         #region Public Abstract\Virtual Members
-        public override Type ReturnType
-        {
-            get
-            {
-                return m_method.ReturnType;
-            }
-        }
+        public override Type ReturnType => m_method.ReturnType;
 
-        public override ParameterInfo ReturnParameter { get { throw new NotSupportedException(); } }
-        public override ICustomAttributeProvider ReturnTypeCustomAttributes { get { throw new NotSupportedException(); } }
+        public override ParameterInfo ReturnParameter => throw new NotSupportedException();
+        public override ICustomAttributeProvider ReturnTypeCustomAttributes => throw new NotSupportedException();
         public override MethodInfo GetBaseDefinition() { throw new NotSupportedException(); }
         #endregion
     }

@@ -88,13 +88,7 @@ namespace System.Globalization
         // This is the max Gregorian year can be represented by DateTime class.  The limitation
         // is derived from DateTime class.
         //
-        internal int MaxYear
-        {
-            get
-            {
-                return (m_maxYear);
-            }
-        }
+        internal int MaxYear => m_maxYear;
 
         internal static readonly int[] DaysToMonth365 =
         {

@@ -64,9 +64,6 @@ namespace System
             info.AddValue("OffendingNumber", _offendingNumber, typeof(double)); // Do not rename (binary serialization)
         }
 
-        public double OffendingNumber
-        {
-            get { return _offendingNumber; }
-        }
+        public double OffendingNumber => _offendingNumber;
     }
 }

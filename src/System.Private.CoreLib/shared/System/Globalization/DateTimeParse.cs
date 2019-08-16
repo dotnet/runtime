@@ -5295,10 +5295,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             m_checkDigitToken = ((dtfi.FormatFlags & DateTimeFormatFlags.UseDigitPrefixInTokens) != 0);
         }
 
-        internal CompareInfo CompareInfo
-        {
-            get { return m_info; }
-        }
+        internal CompareInfo CompareInfo => m_info;
 
         //
         // Advance the Index.

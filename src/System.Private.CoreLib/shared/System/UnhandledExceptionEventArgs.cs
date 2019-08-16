@@ -15,14 +15,8 @@ namespace System
             _isTerminating = isTerminating;
         }
 
-        public object ExceptionObject
-        {
-            get { return _exception; }
-        }
+        public object ExceptionObject => _exception;
 
-        public bool IsTerminating
-        {
-            get { return _isTerminating; }
-        }
+        public bool IsTerminating => _isTerminating;
     }
 }

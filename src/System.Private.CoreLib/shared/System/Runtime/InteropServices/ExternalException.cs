@@ -52,13 +52,7 @@ namespace System.Runtime.InteropServices
         {
         }
 
-        public virtual int ErrorCode
-        {
-            get
-            {
-                return HResult;
-            }
-        }
+        public virtual int ErrorCode => HResult;
 
         public override string ToString()
         {

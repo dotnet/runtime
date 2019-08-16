@@ -277,13 +277,7 @@ namespace System.Threading
                 }
             }
 
-            public bool IsExpired
-            {
-                get
-                {
-                    return RemainingMilliseconds == 0;
-                }
-            }
+            public bool IsExpired => RemainingMilliseconds == 0;
         }
 
         public bool TryEnterReadLock(TimeSpan timeout)
@@ -1421,29 +1415,11 @@ namespace System.Threading
             }
         }
 
-        public int WaitingReadCount
-        {
-            get
-            {
-                return (int)_numReadWaiters;
-            }
-        }
+        public int WaitingReadCount => (int)_numReadWaiters;
 
-        public int WaitingUpgradeCount
-        {
-            get
-            {
-                return (int)_numUpgradeWaiters;
-            }
-        }
+        public int WaitingUpgradeCount => (int)_numUpgradeWaiters;
 
-        public int WaitingWriteCount
-        {
-            get
-            {
-                return (int)_numWriteWaiters;
-            }
-        }
+        public int WaitingWriteCount => (int)_numWriteWaiters;
 
         private struct SpinLock
         {

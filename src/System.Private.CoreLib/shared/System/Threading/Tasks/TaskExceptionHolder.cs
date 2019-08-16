@@ -71,7 +71,7 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>Gets whether the exception holder is currently storing any exceptions for faults.</summary>
-        internal bool ContainsFaultList { get { return m_faultExceptions != null; } }
+        internal bool ContainsFaultList => m_faultExceptions != null;
 
         /// <summary>
         /// Add an exception to the holder.  This will ensure the holder is

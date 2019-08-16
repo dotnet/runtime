@@ -297,13 +297,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 return _vectorView.GetAt(index);
             }
 
-            uint IBindableVectorView.Size
-            {
-                get
-                {
-                    return _vectorView.Size;
-                }
-            }
+            uint IBindableVectorView.Size => _vectorView.Size;
 
             bool IBindableVectorView.IndexOf(object value, out uint index)
             {
@@ -487,8 +481,8 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             public IteratorOfTToIteratorAdapter(IIterator<T> iterator)
             { _iterator = iterator; }
 
-            public bool HasCurrent { get { return _iterator.HasCurrent; } }
-            public object? Current { get { return _iterator.Current; } }
+            public bool HasCurrent => _iterator.HasCurrent;
+            public object? Current => _iterator.Current;
             public bool MoveNext() { return _iterator.MoveNext(); }
         }
 

@@ -86,10 +86,7 @@ namespace System.Threading
         /// Gets the current count of the <see cref="SemaphoreSlim"/>.
         /// </summary>
         /// <value>The current count of the <see cref="SemaphoreSlim"/>.</value>
-        public int CurrentCount
-        {
-            get { return m_currentCount; }
-        }
+        public int CurrentCount => m_currentCount;
 
         /// <summary>
         /// Returns a <see cref="System.Threading.WaitHandle"/> that can be used to wait on the semaphore.

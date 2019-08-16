@@ -278,10 +278,7 @@ namespace System
 
         // Returns the maximum GC generation.  Currently assumes only 1 heap.
         //
-        public static int MaxGeneration
-        {
-            get { return GetMaxGeneration(); }
-        }
+        public static int MaxGeneration => GetMaxGeneration();
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void _WaitForPendingFinalizers();

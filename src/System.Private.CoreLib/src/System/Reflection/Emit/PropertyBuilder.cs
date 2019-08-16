@@ -69,18 +69,9 @@ namespace System.Reflection.Emit
 
         // Return the Token for this property within the TypeBuilder that the
         // property is defined within.
-        public PropertyToken PropertyToken
-        {
-            get { return m_prToken; }
-        }
+        public PropertyToken PropertyToken => m_prToken;
 
-        public override Module Module
-        {
-            get
-            {
-                return m_containingType.Module;
-            }
-        }
+        public override Module Module => m_containingType.Module;
 
         private void SetMethodSemantics(MethodBuilder mdBuilder, MethodSemanticsAttributes semantics)
         {
@@ -195,15 +186,9 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(SR.NotSupported_DynamicModule);
         }
 
-        public override Type PropertyType
-        {
-            get { return m_returnType; }
-        }
+        public override Type PropertyType => m_returnType;
 
-        public override PropertyAttributes Attributes
-        {
-            get { return m_attributes; }
-        }
+        public override PropertyAttributes Attributes => m_attributes;
 
         public override bool CanRead
         {
@@ -230,20 +215,11 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(SR.NotSupported_DynamicModule);
         }
 
-        public override string Name
-        {
-            get { return m_name; }
-        }
+        public override string Name => m_name;
 
-        public override Type? DeclaringType
-        {
-            get { return m_containingType; }
-        }
+        public override Type? DeclaringType => m_containingType;
 
-        public override Type? ReflectedType
-        {
-            get { return m_containingType; }
-        }
+        public override Type? ReflectedType => m_containingType;
 
         // These are package private so that TypeBuilder can access them.
         private string m_name;                // The name of the property

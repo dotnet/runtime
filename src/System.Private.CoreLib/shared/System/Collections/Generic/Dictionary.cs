@@ -145,18 +145,12 @@ namespace System.Collections.Generic
             HashHelpers.SerializationInfoTable.Add(this, info);
         }
 
-        public IEqualityComparer<TKey> Comparer
-        {
-            get
-            {
-                return (_comparer == null || _comparer is NonRandomizedStringEqualityComparer) ? EqualityComparer<TKey>.Default : _comparer;
-            }
-        }
+        public IEqualityComparer<TKey> Comparer =>
+            (_comparer == null ||_comparer is NonRandomizedStringEqualityComparer) ?
+                EqualityComparer<TKey>.Default :
+                _comparer;
 
-        public int Count
-        {
-            get { return _count - _freeCount; }
-        }
+        public int Count => _count - _freeCount;
 
         public KeyCollection Keys
         {

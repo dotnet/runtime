@@ -136,10 +136,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Property to get the number of frames in the stack trace
         /// </summary>
-        public virtual int FrameCount
-        {
-            get { return _numOfFrames; }
-        }
+        public virtual int FrameCount => _numOfFrames;
 
         /// <summary>
         /// Returns a given stack frame.  Stack frames are numbered starting at

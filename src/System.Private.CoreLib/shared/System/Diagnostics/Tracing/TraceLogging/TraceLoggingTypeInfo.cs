@@ -78,56 +78,35 @@ namespace System.Diagnostics.Tracing
         /// or the name to use for an implicitly-named field.
         /// Never null.
         /// </summary>
-        public string Name
-        {
-            get { return this.name; }
-        }
+        public string Name => this.name;
 
         /// <summary>
         /// Gets the event level associated with this type. Any value in the range 0..255
         /// is an associated event level. Any value outside the range 0..255 is invalid and
         /// indicates that this type has no associated event level.
         /// </summary>
-        public EventLevel Level
-        {
-            get { return this.level; }
-        }
+        public EventLevel Level => this.level;
 
         /// <summary>
         /// Gets the event opcode associated with this type. Any value in the range 0..255
         /// is an associated event opcode. Any value outside the range 0..255 is invalid and
         /// indicates that this type has no associated event opcode.
         /// </summary>
-        public EventOpcode Opcode
-        {
-            get { return this.opcode; }
-        }
+        public EventOpcode Opcode => this.opcode;
 
         /// <summary>
         /// Gets the keyword(s) associated with this type.
         /// </summary>
-        public EventKeywords Keywords
-        {
-            get { return this.keywords; }
-        }
+        public EventKeywords Keywords => this.keywords;
 
         /// <summary>
         /// Gets the event tags associated with this type.
         /// </summary>
-        public EventTags Tags
-        {
-            get { return this.tags; }
-        }
+        public EventTags Tags => this.tags;
 
-        internal Type DataType
-        {
-            get { return this.dataType; }
-        }
+        internal Type DataType => this.dataType;
 
-        internal Func<object?, PropertyValue> PropertyValueFactory
-        {
-            get { return this.propertyValueFactory; }
-        }
+        internal Func<object?, PropertyValue> PropertyValueFactory => this.propertyValueFactory;
 
         /// <summary>
         /// When overridden by a derived class, writes the metadata (schema) for

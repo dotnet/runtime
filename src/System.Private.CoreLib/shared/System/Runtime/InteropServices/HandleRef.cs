@@ -18,21 +18,9 @@ namespace System.Runtime.InteropServices
             _handle = handle;
         }
 
-        public object? Wrapper
-        {
-            get
-            {
-                return _wrapper;
-            }
-        }
+        public object? Wrapper => _wrapper;
 
-        public IntPtr Handle
-        {
-            get
-            {
-                return _handle;
-            }
-        }
+        public IntPtr Handle => _handle;
 
         public static explicit operator IntPtr(HandleRef value)
         {

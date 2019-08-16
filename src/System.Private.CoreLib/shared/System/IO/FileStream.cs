@@ -254,7 +254,7 @@ namespace System.IO
         }
 
         [Obsolete("This property has been deprecated.  Please use FileStream's SafeFileHandle property instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
-        public virtual IntPtr Handle { get { return SafeFileHandle.DangerousGetHandle(); } }
+        public virtual IntPtr Handle => SafeFileHandle.DangerousGetHandle();
 
         public virtual void Lock(long position, long length)
         {
@@ -512,16 +512,10 @@ namespace System.IO
         }
 
         /// <summary>Gets a value indicating whether the current stream supports reading.</summary>
-        public override bool CanRead
-        {
-            get { return !_fileHandle.IsClosed && (_access & FileAccess.Read) != 0; }
-        }
+        public override bool CanRead => !_fileHandle.IsClosed && (_access & FileAccess.Read) != 0;
 
         /// <summary>Gets a value indicating whether the current stream supports writing.</summary>
-        public override bool CanWrite
-        {
-            get { return !_fileHandle.IsClosed && (_access & FileAccess.Write) != 0; }
-        }
+        public override bool CanWrite => !_fileHandle.IsClosed && (_access & FileAccess.Write) != 0;
 
         /// <summary>Validates arguments to Read and Write and throws resulting exceptions.</summary>
         /// <param name="array">The buffer to read from or write to.</param>
@@ -568,13 +562,10 @@ namespace System.IO
         }
 
         /// <summary>Gets the path that was passed to the constructor.</summary>
-        public virtual string Name { get { return _path ?? SR.IO_UnknownFileName; } }
+        public virtual string Name => _path ?? SR.IO_UnknownFileName;
 
         /// <summary>Gets a value indicating whether the stream was opened for I/O to be performed synchronously or asynchronously.</summary>
-        public virtual bool IsAsync
-        {
-            get { return _useAsyncIO; }
-        }
+        public virtual bool IsAsync => _useAsyncIO;
 
         /// <summary>Gets the length of the stream in bytes.</summary>
         public override long Length

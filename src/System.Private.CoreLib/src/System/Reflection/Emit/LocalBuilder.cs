@@ -37,15 +37,9 @@ namespace System.Reflection.Emit
         #endregion
 
         #region LocalVariableInfo Override
-        public override bool IsPinned { get { return m_isPinned; } }
-        public override Type LocalType
-        {
-            get
-            {
-                return m_localType;
-            }
-        }
-        public override int LocalIndex { get { return m_localIndex; } }
+        public override bool IsPinned => m_isPinned;
+        public override Type LocalType => m_localType;
+        public override int LocalIndex => m_localIndex;
         #endregion
 
         #region Public Members

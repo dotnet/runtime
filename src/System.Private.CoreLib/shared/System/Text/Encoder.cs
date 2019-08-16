@@ -71,13 +71,7 @@ namespace System.Text
             }
         }
 
-        internal bool InternalHasFallbackBuffer
-        {
-            get
-            {
-                return _fallbackBuffer != null;
-            }
-        }
+        internal bool InternalHasFallbackBuffer => _fallbackBuffer != null;
 
         // Reset the Encoder
         //

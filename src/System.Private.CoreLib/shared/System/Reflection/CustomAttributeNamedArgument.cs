@@ -62,15 +62,10 @@ namespace System.Reflection
             return obj == (object)this;
         }
 
-        internal Type ArgumentType
-        {
-            get
-            {
-                return m_memberInfo is FieldInfo ?
-                    ((FieldInfo)m_memberInfo).FieldType :
-                    ((PropertyInfo)m_memberInfo).PropertyType;
-            }
-        }
+        internal Type ArgumentType =>
+            m_memberInfo is FieldInfo ?
+                ((FieldInfo)m_memberInfo).FieldType :
+                ((PropertyInfo)m_memberInfo).PropertyType;
 
         public MemberInfo MemberInfo => m_memberInfo;
         public CustomAttributeTypedArgument TypedValue => m_value;

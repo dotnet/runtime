@@ -21,13 +21,7 @@ namespace System.Collections.Generic
     {
         private static readonly IArraySortHelper<T> s_defaultArraySortHelper = CreateArraySortHelper();
 
-        public static IArraySortHelper<T> Default
-        {
-            get
-            {
-                return s_defaultArraySortHelper;
-            }
-        }
+        public static IArraySortHelper<T> Default => s_defaultArraySortHelper;
 
         private static IArraySortHelper<T> CreateArraySortHelper()
         {
@@ -61,13 +55,7 @@ namespace System.Collections.Generic
     {
         private static readonly IArraySortHelper<TKey, TValue> s_defaultArraySortHelper = CreateArraySortHelper();
 
-        public static IArraySortHelper<TKey, TValue> Default
-        {
-            get
-            {
-                return s_defaultArraySortHelper;
-            }
-        }
+        public static IArraySortHelper<TKey, TValue> Default => s_defaultArraySortHelper;
 
         private static IArraySortHelper<TKey, TValue> CreateArraySortHelper()
         {
