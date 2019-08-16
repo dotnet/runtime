@@ -150,7 +150,7 @@ namespace System
             EventInfo?[]? e = null;
             Type?[]? t = null;
 
-            int i = 0;
+            int i;
             int cnt = 0;            // Total Matchs
 
             // Check the methods

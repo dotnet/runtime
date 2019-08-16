@@ -71,24 +71,10 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
 
-        public int Count
-        {
-            get
-            {
-                return lastItemIndex - firstItemIndex + 1;
-            }
-        }
-
+        public int Count => lastItemIndex - firstItemIndex + 1;
 
         // [CLSCompliant(false)]
-        public uint Size
-        {
-            get
-            {
-                return (uint)(lastItemIndex - firstItemIndex + 1);
-            }
-        }
-
+        public uint Size => (uint)(lastItemIndex - firstItemIndex + 1);
 
         public TValue Lookup(TKey key)
         {
@@ -107,27 +93,17 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
 
-        public bool HasKey(TKey key)
-        {
-            TValue value;
-            bool hasKey = TryGetValue(key, out value);
-            return hasKey;
-        }
+        public bool HasKey(TKey key) =>
+            TryGetValue(key, out _);
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return ((IEnumerable<IKeyValuePair<TKey, TValue>>)this).GetEnumerator();
-        }
+        IEnumerator IEnumerable.GetEnumerator() =>
+            ((IEnumerable<IKeyValuePair<TKey, TValue>>)this).GetEnumerator();
 
-        public IIterator<IKeyValuePair<TKey, TValue>> First()
-        {
-            return new EnumeratorToIteratorAdapter<IKeyValuePair<TKey, TValue>>(GetEnumerator());
-        }
+        public IIterator<IKeyValuePair<TKey, TValue>> First() =>
+            new EnumeratorToIteratorAdapter<IKeyValuePair<TKey, TValue>>(GetEnumerator());
 
-        public IEnumerator<IKeyValuePair<TKey, TValue>> GetEnumerator()
-        {
-            return new IKeyValuePairEnumerator(items, firstItemIndex, lastItemIndex);
-        }
+        public IEnumerator<IKeyValuePair<TKey, TValue>> GetEnumerator() =>
+            new IKeyValuePairEnumerator(items, firstItemIndex, lastItemIndex);
 
         public void Split(out IMapView<TKey, TValue>? firstPartition, out IMapView<TKey, TValue>? secondPartition)
         {
@@ -206,18 +182,10 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 }
             }
 
-            object? IEnumerator.Current
-            {
-                get
-                {
-                    return Current;
-                }
-            }
+            object? IEnumerator.Current => Current;
 
-            void IEnumerator.Reset()
-            {
+            void IEnumerator.Reset() =>
                 _current = _start - 1;
-            }
 
             public void Dispose()
             {

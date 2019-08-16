@@ -533,7 +533,6 @@ namespace System.Reflection.Emit
 
         internal Type[] GetTypesNoLock()
         {
-            int size = _typeBuilderDict.Count;
             Type[] typeList = new Type[_typeBuilderDict.Count];
             int i = 0;
 
@@ -1251,7 +1250,7 @@ namespace System.Reflection.Emit
 
         internal int GetMethodTokenInternal(MethodBase method, IEnumerable<Type>? optionalParameterTypes, bool useMethodDef)
         {
-            int tk = 0;
+            int tk;
             MethodInfo? methodInfo = method as MethodInfo;
 
             if (method.IsGenericMethod)

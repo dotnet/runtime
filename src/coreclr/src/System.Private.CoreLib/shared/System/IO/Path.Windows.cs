@@ -148,7 +148,7 @@ namespace System.IO
 
         private static void GetTempPath(ref ValueStringBuilder builder)
         {
-            uint result = 0;
+            uint result;
             while ((result = Interop.Kernel32.GetTempPathW(builder.Capacity, ref builder.GetPinnableReference())) > builder.Capacity)
             {
                 // Reported size is greater than the buffer size. Increase the capacity.

@@ -170,8 +170,7 @@ namespace System.Reflection.Emit
                                                                Guid languageVendor,
                                                                Guid documentType)
             {
-                PunkSafeHandle psymUnmanagedDocumentWriter = new PunkSafeHandle();
-
+                PunkSafeHandle psymUnmanagedDocumentWriter;
                 int hr = m_vtable.DefineDocument(m_pWriter, url, ref language, ref languageVendor, ref documentType, out psymUnmanagedDocumentWriter);
                 if (hr < 0)
                 {

@@ -21,7 +21,7 @@ namespace System
 
             ulong mantissa = ExtractFractionAndBiasedExponent(value, out int exponent);
 
-            uint mantissaHighBitIdx = 0;
+            uint mantissaHighBitIdx;
             bool hasUnequalMargins = false;
 
             if ((mantissa >> DiyFp.DoubleImplicitBitIndex) != 0)
@@ -51,7 +51,7 @@ namespace System
 
             uint mantissa = ExtractFractionAndBiasedExponent(value, out int exponent);
 
-            uint mantissaHighBitIdx = 0;
+            uint mantissaHighBitIdx;
             bool hasUnequalMargins = false;
 
             if ((mantissa >> DiyFp.SingleImplicitBitIndex) != 0)

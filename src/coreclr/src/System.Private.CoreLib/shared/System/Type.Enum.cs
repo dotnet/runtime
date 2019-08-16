@@ -104,9 +104,7 @@ namespace System
         // Returns the enum values as an object array.
         private Array GetEnumRawConstantValues()
         {
-            string[] names;
-            Array values;
-            GetEnumData(out names, out values);
+            GetEnumData(out _, out Array values);
             return values;
         }
 

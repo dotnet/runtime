@@ -248,7 +248,7 @@ namespace System.Reflection
 
         public override unsafe Stream? GetManifestResourceStream(string name)
         {
-            uint length = 0;
+            uint length;
             RuntimeAssembly runtimeAssembly = this;
             byte* pbInMemoryResource = GetResource(JitHelpers.GetQCallAssemblyOnStack(ref runtimeAssembly), name, out length);
 
