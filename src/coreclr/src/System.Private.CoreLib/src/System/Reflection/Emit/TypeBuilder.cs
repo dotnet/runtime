@@ -1972,7 +1972,7 @@ namespace System.Reflection.Emit
                 if (m_typeParent != null)
                 {
                     constraints = new int[m_typeInterfaces.Count + 2];
-                    constraints[constraints.Length - 2] = tkParent;
+                    constraints[^2] = tkParent;
                 }
                 else
                 {

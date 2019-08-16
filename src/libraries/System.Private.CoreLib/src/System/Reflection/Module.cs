@@ -156,7 +156,7 @@ namespace System.Reflection
                 throw new InvalidFilterCriteriaException(SR.InvalidFilterCriteriaException_CritString);
             }
             // Check to see if this is a prefix or exact match requirement
-            if (str.Length > 0 && str[str.Length - 1] == '*')
+            if (str.Length > 0 && str[^1] == '*')
             {
                 ReadOnlySpan<char> slice = str.AsSpan(0, str.Length - 1);
                 return cls.Name.AsSpan().StartsWith(slice, comparison);
