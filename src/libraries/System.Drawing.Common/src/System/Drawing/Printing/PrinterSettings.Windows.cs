@@ -1337,7 +1337,7 @@ namespace System.Drawing.Printing
 
             public IEnumerator GetEnumerator()
             {
-                return new ArrayEnumerator(_array, 0, Count);
+                return new ArrayEnumerator(_array, Count);
             }
 
             int ICollection.Count
@@ -1429,7 +1429,7 @@ namespace System.Drawing.Printing
 
             public IEnumerator GetEnumerator()
             {
-                return new ArrayEnumerator(_array, 0, Count);
+                return new ArrayEnumerator(_array, Count);
             }
 
             int ICollection.Count
@@ -1519,7 +1519,7 @@ namespace System.Drawing.Printing
 
             public IEnumerator GetEnumerator()
             {
-                return new ArrayEnumerator(_array, 0, Count);
+                return new ArrayEnumerator(_array, Count);
             }
 
             int ICollection.Count
@@ -1608,7 +1608,7 @@ namespace System.Drawing.Printing
 
             public IEnumerator GetEnumerator()
             {
-                return new ArrayEnumerator(_array, 0, Count);
+                return new ArrayEnumerator(_array, Count);
             }
 
             int ICollection.Count
@@ -1667,28 +1667,17 @@ namespace System.Drawing.Printing
         private class ArrayEnumerator : IEnumerator
         {
             private readonly object[] _array;
-            private object _item;
-            private int _index;
-            private readonly int _startIndex;
             private readonly int _endIndex;
+            private int _index;
+            private object _item;
 
-            public ArrayEnumerator(object[] array, int startIndex, int count)
+            public ArrayEnumerator(object[] array, int count)
             {
                 _array = array;
-                _startIndex = startIndex;
-                _endIndex = _index + count;
-
-                _index = _startIndex;
+                _endIndex = count;
             }
 
-            public object Current
-            {
-                get
-                {
-                    return _item;
-                }
-            }
-
+            public object Current => _item;
 
             public bool MoveNext()
             {
@@ -1701,8 +1690,7 @@ namespace System.Drawing.Printing
             public void Reset()
             {
                 // Position enumerator before first item
-
-                _index = _startIndex;
+                _index = 0;
                 _item = null;
             }
         }
