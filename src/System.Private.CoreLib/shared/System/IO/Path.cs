@@ -379,7 +379,7 @@ namespace System.IO
                     maxSize += paths[i].Length;
                 }
 
-                char ch = paths[i][paths[i].Length - 1];
+                char ch = paths[i][^1];
                 if (!PathInternal.IsDirectorySeparator(ch))
                     maxSize++;
             }
@@ -940,6 +940,6 @@ namespace System.IO
         /// Returns true if the path ends in a directory separator.
         /// </summary>
         public static bool EndsInDirectorySeparator(string path)
-              => path != null && path.Length > 0 && PathInternal.IsDirectorySeparator(path[path.Length - 1]);
+              => path != null && path.Length > 0 && PathInternal.IsDirectorySeparator(path[^1]);
     }
 }

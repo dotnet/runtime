@@ -927,7 +927,7 @@ namespace System.Globalization
                             // Our existing names mostly look like:
                             // "English" + "United States" -> "English (United States)"
                             // "Azeri (Latin)" + "Azerbaijan" -> "Azeri (Latin, Azerbaijan)"
-                            if (EnglishLanguageName[EnglishLanguageName.Length - 1] == ')')
+                            if (EnglishLanguageName[^1] == ')')
                             {
                                 // "Azeri (Latin)" + "Azerbaijan" -> "Azeri (Latin, Azerbaijan)"
                                 _sEnglishDisplayName = string.Concat(

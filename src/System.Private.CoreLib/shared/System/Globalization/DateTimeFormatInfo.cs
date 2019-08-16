@@ -2682,7 +2682,7 @@ namespace System.Globalization
             int i = 0;
             // If there is whitespace characters in the beginning and end of the string, trim them since whitespaces are skipped by
             // DateTime.Parse().
-            if (char.IsWhiteSpace(str[0]) || char.IsWhiteSpace(str[str.Length - 1]))
+            if (char.IsWhiteSpace(str[0]) || char.IsWhiteSpace(str[^1]))
             {
                 str = str.Trim(null);   // Trim white space characters.
                 // Could have space for separators
