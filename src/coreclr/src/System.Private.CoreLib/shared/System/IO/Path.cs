@@ -919,7 +919,7 @@ namespace System.IO
         /// </summary>
         public static string TrimEndingDirectorySeparator(string path) =>
             EndsInDirectorySeparator(path) && !PathInternal.IsRoot(path.AsSpan()) ?
-                path.Substring(0, path.Length - 1) :
+                path[0..^1] :
                 path;
 
         /// <summary>
