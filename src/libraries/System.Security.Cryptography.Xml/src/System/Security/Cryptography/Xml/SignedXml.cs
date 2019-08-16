@@ -443,30 +443,16 @@ namespace System.Security.Cryptography.Xml
                 throw new CryptographicException(SR.Cryptography_Xml_InvalidSignatureLength2);
 
             BuildDigestedReferences();
-            switch (hash.HashName)
+            SignedInfo.SignatureMethod = hash.HashName switch
             {
-                case "SHA1":
-                    SignedInfo.SignatureMethod = SignedXml.XmlDsigHMACSHA1Url;
-                    break;
-                case "SHA256":
-                    SignedInfo.SignatureMethod = SignedXml.XmlDsigMoreHMACSHA256Url;
-                    break;
-                case "SHA384":
-                    SignedInfo.SignatureMethod = SignedXml.XmlDsigMoreHMACSHA384Url;
-                    break;
-                case "SHA512":
-                    SignedInfo.SignatureMethod = SignedXml.XmlDsigMoreHMACSHA512Url;
-                    break;
-                case "MD5":
-                    SignedInfo.SignatureMethod = SignedXml.XmlDsigMoreHMACMD5Url;
-                    break;
-                case "RIPEMD160":
-                    SignedInfo.SignatureMethod = SignedXml.XmlDsigMoreHMACRIPEMD160Url;
-                    break;
-                default:
-                    throw new CryptographicException(SR.Cryptography_Xml_SignatureMethodKeyMismatch);
-            }
-
+                "SHA1" => SignedXml.XmlDsigHMACSHA1Url,
+                "SHA256" => SignedXml.XmlDsigMoreHMACSHA256Url,
+                "SHA384" => SignedXml.XmlDsigMoreHMACSHA384Url,
+                "SHA512" => SignedXml.XmlDsigMoreHMACSHA512Url,
+                "MD5" => SignedXml.XmlDsigMoreHMACMD5Url,
+                "RIPEMD160" => SignedXml.XmlDsigMoreHMACRIPEMD160Url,
+                _ => throw new CryptographicException(SR.Cryptography_Xml_SignatureMethodKeyMismatch),
+            };
             byte[] hashValue = GetC14NDigest(hash);
 
             SignedXmlDebugLog.LogSigning(this, hash);

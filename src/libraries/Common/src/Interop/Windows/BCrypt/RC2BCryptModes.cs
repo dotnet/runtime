@@ -10,22 +10,17 @@ namespace Internal.Cryptography
 {
     internal static class RC2BCryptModes
     {
-        internal static SafeAlgorithmHandle GetHandle(CipherMode cipherMode, int effectiveKeyLength)
-        {
+        internal static SafeAlgorithmHandle GetHandle(CipherMode cipherMode, int effectiveKeyLength) =>
             // Windows 8 added support to set CipherMode and EffectiveKeyLength on a key,
             // but Windows 7 requires that they be set on the algorithm before key creation.
             // Unlike the other SymmetricAlgorithm types that cache the algorithm based on CipherMode,
             // RC2 creates a new algorithm each time since it must set EffectiveKeyLength.
-            switch (cipherMode)
+            cipherMode switch
             {
-                case CipherMode.CBC:
-                    return OpenRC2Algorithm(Cng.BCRYPT_CHAIN_MODE_CBC, effectiveKeyLength);
-                case CipherMode.ECB:
-                    return OpenRC2Algorithm(Cng.BCRYPT_CHAIN_MODE_ECB, effectiveKeyLength);
-                default:
-                    throw new NotSupportedException();
-            }
-        }
+                CipherMode.CBC => OpenRC2Algorithm(Cng.BCRYPT_CHAIN_MODE_CBC, effectiveKeyLength),
+                CipherMode.ECB => OpenRC2Algorithm(Cng.BCRYPT_CHAIN_MODE_ECB, effectiveKeyLength),
+                _ => throw new NotSupportedException(),
+            };
 
         private static SafeAlgorithmHandle OpenRC2Algorithm(string cipherMode, int effectiveKeyLength)
         {

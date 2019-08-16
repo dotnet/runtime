@@ -43,18 +43,16 @@ namespace MS.Internal.Xml.XPath
             return XmlConvert.ToXPathDouble(arg);
         }
 
-        public override object Evaluate(XPathNodeIterator nodeIterator)
-        {
-            switch (_ftype)
+        public override object Evaluate(XPathNodeIterator nodeIterator) =>
+            _ftype switch
             {
-                case FT.FuncNumber: return Number(nodeIterator);
-                case FT.FuncSum: return Sum(nodeIterator);
-                case FT.FuncFloor: return Floor(nodeIterator);
-                case FT.FuncCeiling: return Ceiling(nodeIterator);
-                case FT.FuncRound: return Round(nodeIterator);
-            }
-            return null;
-        }
+                FT.FuncNumber => (object)Number(nodeIterator),
+                FT.FuncSum => Sum(nodeIterator),
+                FT.FuncFloor => Floor(nodeIterator),
+                FT.FuncCeiling => Ceiling(nodeIterator),
+                FT.FuncRound => Round(nodeIterator),
+                _ => null,
+            };
 
         private double Number(XPathNodeIterator nodeIterator)
         {

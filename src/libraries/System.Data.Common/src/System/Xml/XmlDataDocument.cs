@@ -1045,41 +1045,29 @@ namespace System.Xml
             return clone;
         }
 
-        private XmlNode CloneNode(DataPointer dp)
-        {
-            switch (dp.NodeType)
+        private XmlNode CloneNode(DataPointer dp) =>
+            dp.NodeType switch
             {
                 //for the nodes without value and have no children
-                case XmlNodeType.DocumentFragment:
-                    return CreateDocumentFragment();
-                case XmlNodeType.DocumentType:
-                    return CreateDocumentType(dp.Name, dp.PublicId, dp.SystemId, dp.InternalSubset);
-                case XmlNodeType.XmlDeclaration:
-                    return CreateXmlDeclaration(dp.Version, dp.Encoding, dp.Standalone);
+                XmlNodeType.DocumentFragment => CreateDocumentFragment(),
+                XmlNodeType.DocumentType => CreateDocumentType(dp.Name, dp.PublicId, dp.SystemId, dp.InternalSubset),
+                XmlNodeType.XmlDeclaration => CreateXmlDeclaration(dp.Version, dp.Encoding, dp.Standalone),
 
                 //for the nodes with value but no children
-                case XmlNodeType.Text:
-                    return CreateTextNode(dp.Value);
-                case XmlNodeType.CDATA:
-                    return CreateCDataSection(dp.Value);
-                case XmlNodeType.ProcessingInstruction:
-                    return CreateProcessingInstruction(dp.Name, dp.Value);
-                case XmlNodeType.Comment:
-                    return CreateComment(dp.Value);
-                case XmlNodeType.Whitespace:
-                    return CreateWhitespace(dp.Value);
-                case XmlNodeType.SignificantWhitespace:
-                    return CreateSignificantWhitespace(dp.Value);
+                XmlNodeType.Text => CreateTextNode(dp.Value),
+                XmlNodeType.CDATA => CreateCDataSection(dp.Value),
+                XmlNodeType.ProcessingInstruction => CreateProcessingInstruction(dp.Name, dp.Value),
+                XmlNodeType.Comment => CreateComment(dp.Value),
+                XmlNodeType.Whitespace => CreateWhitespace(dp.Value),
+                XmlNodeType.SignificantWhitespace => CreateSignificantWhitespace(dp.Value),
+
                 //for the nodes that don't have values, but might have children -- only clone the node and leave the children untouched
-                case XmlNodeType.Element:
-                    return CreateElement(dp.Prefix, dp.LocalName, dp.NamespaceURI);
-                case XmlNodeType.Attribute:
-                    return CreateAttribute(dp.Prefix, dp.LocalName, dp.NamespaceURI);
-                case XmlNodeType.EntityReference:
-                    return CreateEntityReference(dp.Name);
-            }
-            throw new InvalidOperationException(SR.Format(SR.DataDom_CloneNode, dp.NodeType.ToString()));
-        }
+                XmlNodeType.Element => CreateElement(dp.Prefix, dp.LocalName, dp.NamespaceURI),
+                XmlNodeType.Attribute => CreateAttribute(dp.Prefix, dp.LocalName, dp.NamespaceURI),
+                XmlNodeType.EntityReference => CreateEntityReference(dp.Name),
+
+                _ => throw new InvalidOperationException(SR.Format(SR.DataDom_CloneNode, dp.NodeType.ToString())),
+            };
 
         internal static bool IsTextLikeNode(XmlNode n)
         {

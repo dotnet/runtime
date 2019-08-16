@@ -279,14 +279,14 @@ namespace System.Linq.Expressions
         {
             if (name == null && !tailCall)
             {
-                switch (parameters.Count)
+                return parameters.Count switch
                 {
-                    case 0: return new Expression0<TDelegate>(body);
-                    case 1: return new Expression1<TDelegate>(body, parameters[0]);
-                    case 2: return new Expression2<TDelegate>(body, parameters[0], parameters[1]);
-                    case 3: return new Expression3<TDelegate>(body, parameters[0], parameters[1], parameters[2]);
-                    default: return new ExpressionN<TDelegate>(body, parameters);
-                }
+                    0 => new Expression0<TDelegate>(body),
+                    1 => new Expression1<TDelegate>(body, parameters[0]),
+                    2 => new Expression2<TDelegate>(body, parameters[0], parameters[1]),
+                    3 => new Expression3<TDelegate>(body, parameters[0], parameters[1], parameters[2]),
+                    _ => new ExpressionN<TDelegate>(body, parameters),
+                };
             }
 
             return new FullExpression<TDelegate>(body, name, tailCall, parameters);
@@ -367,14 +367,12 @@ namespace System.Linq.Expressions
 
         internal override int ParameterCount => 1;
 
-        internal override ParameterExpression GetParameter(int index)
-        {
-            switch (index)
+        internal override ParameterExpression GetParameter(int index) =>
+            index switch
             {
-                case 0: return ExpressionUtils.ReturnObject<ParameterExpression>(_par0);
-                default: throw Error.ArgumentOutOfRange(nameof(index));
-            }
-        }
+                0 => ExpressionUtils.ReturnObject<ParameterExpression>(_par0),
+                _ => throw Error.ArgumentOutOfRange(nameof(index)),
+            };
 
         internal override bool SameParameters(ICollection<ParameterExpression> parameters)
         {
@@ -420,15 +418,13 @@ namespace System.Linq.Expressions
 
         internal override int ParameterCount => 2;
 
-        internal override ParameterExpression GetParameter(int index)
-        {
-            switch (index)
+        internal override ParameterExpression GetParameter(int index) =>
+            index switch
             {
-                case 0: return ExpressionUtils.ReturnObject<ParameterExpression>(_par0);
-                case 1: return _par1;
-                default: throw Error.ArgumentOutOfRange(nameof(index));
-            }
-        }
+                0 => ExpressionUtils.ReturnObject<ParameterExpression>(_par0),
+                1 => _par1,
+                _ => throw Error.ArgumentOutOfRange(nameof(index)),
+            };
 
         internal override bool SameParameters(ICollection<ParameterExpression> parameters)
         {
@@ -487,16 +483,14 @@ namespace System.Linq.Expressions
 
         internal override int ParameterCount => 3;
 
-        internal override ParameterExpression GetParameter(int index)
-        {
-            switch (index)
+        internal override ParameterExpression GetParameter(int index) =>
+            index switch
             {
-                case 0: return ExpressionUtils.ReturnObject<ParameterExpression>(_par0);
-                case 1: return _par1;
-                case 2: return _par2;
-                default: throw Error.ArgumentOutOfRange(nameof(index));
-            }
-        }
+                0 => ExpressionUtils.ReturnObject<ParameterExpression>(_par0),
+                1 => _par1,
+                2 => _par2,
+                _ => throw Error.ArgumentOutOfRange(nameof(index)),
+            };
 
         internal override bool SameParameters(ICollection<ParameterExpression> parameters)
         {

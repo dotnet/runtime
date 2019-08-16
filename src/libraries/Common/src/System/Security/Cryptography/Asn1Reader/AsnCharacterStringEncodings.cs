@@ -18,28 +18,18 @@ namespace System.Security.Cryptography.Asn1
         private static readonly Text.Encoding s_printableStringEncoding = new PrintableStringEncoding();
         private static readonly Text.Encoding s_t61Encoding = new T61Encoding();
 
-        internal static Text.Encoding GetEncoding(UniversalTagNumber encodingType)
-        {
-            switch (encodingType)
+        internal static Text.Encoding GetEncoding(UniversalTagNumber encodingType) =>
+            encodingType switch
             {
-                case UniversalTagNumber.UTF8String:
-                    return s_utf8Encoding;
-                case UniversalTagNumber.NumericString:
-                    return s_numericStringEncoding;
-                case UniversalTagNumber.PrintableString:
-                    return s_printableStringEncoding;
-                case UniversalTagNumber.IA5String:
-                    return s_ia5Encoding;
-                case UniversalTagNumber.VisibleString:
-                    return s_visibleStringEncoding;
-                case UniversalTagNumber.BMPString:
-                    return s_bmpEncoding;
-                case UniversalTagNumber.T61String:
-                    return s_t61Encoding;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(encodingType), encodingType, null);
-            }
-        }
+                UniversalTagNumber.UTF8String => s_utf8Encoding,
+                UniversalTagNumber.NumericString => s_numericStringEncoding,
+                UniversalTagNumber.PrintableString => s_printableStringEncoding,
+                UniversalTagNumber.IA5String => s_ia5Encoding,
+                UniversalTagNumber.VisibleString => s_visibleStringEncoding,
+                UniversalTagNumber.BMPString => s_bmpEncoding,
+                UniversalTagNumber.T61String => s_t61Encoding,
+                _ => throw new ArgumentOutOfRangeException(nameof(encodingType), encodingType, null),
+            };
     }
 
     internal abstract class SpanBasedEncoding : Text.Encoding

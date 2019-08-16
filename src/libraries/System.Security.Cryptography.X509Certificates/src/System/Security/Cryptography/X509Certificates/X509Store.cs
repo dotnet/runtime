@@ -42,36 +42,18 @@ namespace System.Security.Cryptography.X509Certificates
             if (storeLocation != StoreLocation.CurrentUser && storeLocation != StoreLocation.LocalMachine)
                 throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, nameof(storeLocation)));
 
-            switch (storeName)
+            Name = storeName switch
             {
-                case StoreName.AddressBook:
-                    Name = "AddressBook";
-                    break;
-                case StoreName.AuthRoot:
-                    Name = "AuthRoot";
-                    break;
-                case StoreName.CertificateAuthority:
-                    Name = IntermediateCAStoreName;
-                    break;
-                case StoreName.Disallowed:
-                    Name = DisallowedStoreName;
-                    break;
-                case StoreName.My:
-                    Name = MyStoreName;
-                    break;
-                case StoreName.Root:
-                    Name = RootStoreName;
-                    break;
-                case StoreName.TrustedPeople:
-                    Name = "TrustedPeople";
-                    break;
-                case StoreName.TrustedPublisher:
-                    Name = "TrustedPublisher";
-                    break;
-                default:
-                    throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, nameof(storeName)));
-            }
-
+                StoreName.AddressBook => "AddressBook",
+                StoreName.AuthRoot => "AuthRoot",
+                StoreName.CertificateAuthority => IntermediateCAStoreName,
+                StoreName.Disallowed => DisallowedStoreName,
+                StoreName.My => MyStoreName,
+                StoreName.Root => RootStoreName,
+                StoreName.TrustedPeople => "TrustedPeople",
+                StoreName.TrustedPublisher => "TrustedPublisher",
+                _ => throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, nameof(storeName))),
+            };
             Location = storeLocation;
         }
 

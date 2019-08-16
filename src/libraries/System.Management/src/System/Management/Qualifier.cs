@@ -67,23 +67,14 @@ namespace System.Management
         //This private function is used to refresh the information from the Wmi object before returning the requested data
         private void RefreshQualifierInfo()
         {
-            int status = (int)ManagementStatus.Failed;
-
             qualifierSet = null;
-            switch (qualifierType) {
-                case QualifierType.ObjectQualifier :
-                    status = parent.wbemObject.GetQualifierSet_(out qualifierSet);
-                    break;
-                case QualifierType.PropertyQualifier :
-                    status = parent.wbemObject.GetPropertyQualifierSet_(propertyOrMethodName, out qualifierSet);
-                    break;
-                case QualifierType.MethodQualifier :
-                    status = parent.wbemObject.GetMethodQualifierSet_(propertyOrMethodName, out qualifierSet);
-                    break;
-                default:
-                    throw new ManagementException(ManagementStatus.Unexpected, null, null); //is this the best fit error ??
-            }
-
+            int status = qualifierType switch
+            {
+                QualifierType.ObjectQualifier => parent.wbemObject.GetQualifierSet_(out qualifierSet),
+                QualifierType.PropertyQualifier => parent.wbemObject.GetPropertyQualifierSet_(propertyOrMethodName, out qualifierSet),
+                QualifierType.MethodQualifier => parent.wbemObject.GetMethodQualifierSet_(propertyOrMethodName, out qualifierSet),
+                _ => throw new ManagementException(ManagementStatus.Unexpected, null, null), //is this the best fit error ??
+            };
             if ((status & 0x80000000) == 0) //success
             {
                 qualifierValue = null; //Make sure it's null so that we don't leak !

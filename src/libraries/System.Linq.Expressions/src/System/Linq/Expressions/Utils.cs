@@ -42,17 +42,15 @@ namespace System.Linq.Expressions
 
         public static ConstantExpression Constant(bool value) => value ? s_true : s_false;
 
-        public static ConstantExpression Constant(int value)
-        {
-            switch (value)
+        public static ConstantExpression Constant(int value) =>
+            value switch
             {
-                case -1: return s_m1;
-                case 0: return s_0;
-                case 1: return s_1;
-                case 2: return s_2;
-                case 3: return s_3;
-                default: return Expression.Constant(value);
-            }
-        }
+                -1 => s_m1,
+                0 => s_0,
+                1 => s_1,
+                2 => s_2,
+                3 => s_3,
+                _ => Expression.Constant(value),
+            };
     }
 }

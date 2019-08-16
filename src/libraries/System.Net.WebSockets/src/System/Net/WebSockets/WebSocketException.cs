@@ -151,33 +151,22 @@ namespace System.Net.WebSockets
             }
         }
 
-        private static string GetErrorMessage(WebSocketError error)
-        {
+        private static string GetErrorMessage(WebSocketError error) =>
             // Provide a canned message for the error type.
-            switch (error)
+            error switch
             {
-                case WebSocketError.InvalidMessageType:
-                    return SR.Format(SR.net_WebSockets_InvalidMessageType_Generic,
-                        $"{nameof(WebSocket)}.{nameof(WebSocket.CloseAsync)}",
-                        $"{nameof(WebSocket)}.{nameof(WebSocket.CloseOutputAsync)}");
-                case WebSocketError.Faulted:
-                    return SR.net_Websockets_WebSocketBaseFaulted;
-                case WebSocketError.NotAWebSocket:
-                    return SR.net_WebSockets_NotAWebSocket_Generic;
-                case WebSocketError.UnsupportedVersion:
-                    return SR.net_WebSockets_UnsupportedWebSocketVersion_Generic;
-                case WebSocketError.UnsupportedProtocol:
-                    return SR.net_WebSockets_UnsupportedProtocol_Generic;
-                case WebSocketError.HeaderError:
-                    return SR.net_WebSockets_HeaderError_Generic;
-                case WebSocketError.ConnectionClosedPrematurely:
-                    return SR.net_WebSockets_ConnectionClosedPrematurely_Generic;
-                case WebSocketError.InvalidState:
-                    return SR.net_WebSockets_InvalidState_Generic;
-                default:
-                    return SR.net_WebSockets_Generic;
-            }
-        }
+                WebSocketError.InvalidMessageType => SR.Format(SR.net_WebSockets_InvalidMessageType_Generic,
+                       $"{nameof(WebSocket)}.{nameof(WebSocket.CloseAsync)}",
+                       $"{nameof(WebSocket)}.{nameof(WebSocket.CloseOutputAsync)}"),
+                WebSocketError.Faulted => SR.net_Websockets_WebSocketBaseFaulted,
+                WebSocketError.NotAWebSocket => SR.net_WebSockets_NotAWebSocket_Generic,
+                WebSocketError.UnsupportedVersion => SR.net_WebSockets_UnsupportedWebSocketVersion_Generic,
+                WebSocketError.UnsupportedProtocol => SR.net_WebSockets_UnsupportedProtocol_Generic,
+                WebSocketError.HeaderError => SR.net_WebSockets_HeaderError_Generic,
+                WebSocketError.ConnectionClosedPrematurely => SR.net_WebSockets_ConnectionClosedPrematurely_Generic,
+                WebSocketError.InvalidState => SR.net_WebSockets_InvalidState_Generic,
+                _ => SR.net_WebSockets_Generic,
+            };
 
         // Set the error code only if there is an error (i.e. nativeError >= 0). Otherwise the code fails during deserialization
         // as the Exception..ctor() throws on setting HResult to 0. The default for HResult is -2147467259.

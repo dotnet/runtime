@@ -513,19 +513,19 @@ namespace System.Xml.Xsl
 
                 Debug.Assert(!IsAtomicValue || schemaType.Datatype.Variety == XmlSchemaDatatypeVariety.Atomic);
 
-                switch (code)
+                _nodeKinds = code switch
                 {
-                    case XmlTypeCode.Item: _nodeKinds = XmlNodeKindFlags.Any; break;
-                    case XmlTypeCode.Node: _nodeKinds = XmlNodeKindFlags.Any; break;
-                    case XmlTypeCode.Document: _nodeKinds = XmlNodeKindFlags.Document; break;
-                    case XmlTypeCode.Element: _nodeKinds = XmlNodeKindFlags.Element; break;
-                    case XmlTypeCode.Attribute: _nodeKinds = XmlNodeKindFlags.Attribute; break;
-                    case XmlTypeCode.Namespace: _nodeKinds = XmlNodeKindFlags.Namespace; break;
-                    case XmlTypeCode.ProcessingInstruction: _nodeKinds = XmlNodeKindFlags.PI; break;
-                    case XmlTypeCode.Comment: _nodeKinds = XmlNodeKindFlags.Comment; break;
-                    case XmlTypeCode.Text: _nodeKinds = XmlNodeKindFlags.Text; break;
-                    default: _nodeKinds = XmlNodeKindFlags.None; break;
-                }
+                    XmlTypeCode.Item => XmlNodeKindFlags.Any,
+                    XmlTypeCode.Node => XmlNodeKindFlags.Any,
+                    XmlTypeCode.Document => XmlNodeKindFlags.Document,
+                    XmlTypeCode.Element => XmlNodeKindFlags.Element,
+                    XmlTypeCode.Attribute => XmlNodeKindFlags.Attribute,
+                    XmlTypeCode.Namespace => XmlNodeKindFlags.Namespace,
+                    XmlTypeCode.ProcessingInstruction => XmlNodeKindFlags.PI,
+                    XmlTypeCode.Comment => XmlNodeKindFlags.Comment,
+                    XmlTypeCode.Text => XmlNodeKindFlags.Text,
+                    _ => XmlNodeKindFlags.None,
+                };
             }
 
             //-----------------------------------------------

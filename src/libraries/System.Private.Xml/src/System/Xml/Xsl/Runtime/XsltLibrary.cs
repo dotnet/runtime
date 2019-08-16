@@ -372,18 +372,16 @@ namespace System.Xml.Xsl.Runtime
             return typeCode1 < typeCode2 ? typeCode1 : typeCode2;
         }
 
-        private static bool CompareNumbers(ComparisonOperator op, double left, double right)
-        {
-            switch (op)
+        private static bool CompareNumbers(ComparisonOperator op, double left, double right) =>
+            op switch
             {
-                case ComparisonOperator.Eq: return left == right;
-                case ComparisonOperator.Ne: return left != right;
-                case ComparisonOperator.Lt: return left < right;
-                case ComparisonOperator.Le: return left <= right;
-                case ComparisonOperator.Gt: return left > right;
-                default: return left >= right;
-            }
-        }
+                ComparisonOperator.Eq => left == right,
+                ComparisonOperator.Ne => left != right,
+                ComparisonOperator.Lt => left < right,
+                ComparisonOperator.Le => left <= right,
+                ComparisonOperator.Gt => left > right,
+                _ => left >= right,
+            };
 
         private static bool CompareValues(ComparisonOperator op, XPathItem left, XPathItem right, TypeCode compType)
         {
@@ -483,17 +481,15 @@ namespace System.Xml.Xsl.Runtime
         }
 
         // Inverts relational operator in order to swap operands of the comparison
-        private static ComparisonOperator InvertOperator(ComparisonOperator op)
-        {
-            switch (op)
+        private static ComparisonOperator InvertOperator(ComparisonOperator op) =>
+            op switch
             {
-                case ComparisonOperator.Lt: return ComparisonOperator.Gt;
-                case ComparisonOperator.Le: return ComparisonOperator.Ge;
-                case ComparisonOperator.Gt: return ComparisonOperator.Lt;
-                case ComparisonOperator.Ge: return ComparisonOperator.Le;
-                default: return op;
-            }
-        }
+                ComparisonOperator.Lt => ComparisonOperator.Gt,
+                ComparisonOperator.Le => ComparisonOperator.Ge,
+                ComparisonOperator.Gt => ComparisonOperator.Lt,
+                ComparisonOperator.Ge => ComparisonOperator.Le,
+                _ => op,
+            };
 
         public bool RelationalOperator(double opCode, IList<XPathItem> left, IList<XPathItem> right)
         {

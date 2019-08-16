@@ -77,21 +77,13 @@ namespace System.Security.Cryptography.X509Certificates
 
                 // Translate the three curves that were supported Windows 7-8.1, but emit no Oid.Value;
                 // otherwise just wash the friendly name back through Oid to see if we can get a value.
-                switch (friendlyName)
+                curveOid = friendlyName switch
                 {
-                    case "nistP256":
-                        curveOid = Oids.secp256r1;
-                        break;
-                    case "nistP384":
-                        curveOid = Oids.secp384r1;
-                        break;
-                    case "nistP521":
-                        curveOid = Oids.secp521r1;
-                        break;
-                    default:
-                        curveOid = new Oid(friendlyName).Value;
-                        break;
-                }
+                    "nistP256" => Oids.secp256r1,
+                    "nistP384" => Oids.secp384r1,
+                    "nistP521" => Oids.secp521r1,
+                    _ => new Oid(friendlyName).Value,
+                };
             }
 
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))

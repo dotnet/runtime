@@ -96,17 +96,16 @@ namespace Internal.Cryptography.Pal.Windows
                         delegate (CMSG_KEY_AGREE_RECIPIENT_INFO* recipient)
                         {
                             CMsgKeyAgreeOriginatorChoice originatorChoice = recipient->dwOriginatorChoice;
-                            switch (originatorChoice)
+                            return originatorChoice switch
                             {
-                                case CMsgKeyAgreeOriginatorChoice.CMSG_KEY_AGREE_ORIGINATOR_CERT:
-                                    return recipient->OriginatorCertId.ToSubjectIdentifierOrKey();
+                                CMsgKeyAgreeOriginatorChoice.CMSG_KEY_AGREE_ORIGINATOR_CERT =>
+                                    recipient->OriginatorCertId.ToSubjectIdentifierOrKey(),
 
-                                case CMsgKeyAgreeOriginatorChoice.CMSG_KEY_AGREE_ORIGINATOR_PUBLIC_KEY:
-                                    return recipient->OriginatorPublicKeyInfo.ToSubjectIdentifierOrKey();
+                                CMsgKeyAgreeOriginatorChoice.CMSG_KEY_AGREE_ORIGINATOR_PUBLIC_KEY =>
+                                    recipient->OriginatorPublicKeyInfo.ToSubjectIdentifierOrKey(),
 
-                                default:
-                                    throw new CryptographicException(SR.Format(SR.Cryptography_Cms_Invalid_Originator_Identifier_Choice, originatorChoice));
-                            }
+                                _ => throw new CryptographicException(SR.Format(SR.Cryptography_Cms_Invalid_Originator_Identifier_Choice, originatorChoice)),
+                            };
                         });
                 }
             }

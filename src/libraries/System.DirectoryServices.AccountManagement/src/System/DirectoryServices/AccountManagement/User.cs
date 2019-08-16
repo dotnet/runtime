@@ -383,29 +383,16 @@ namespace System.DirectoryServices.AccountManagement
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "User", "GetChangeStatusForProperty: name=" + propertyName);
 
-            switch (propertyName)
+            return propertyName switch
             {
-                case (PropertyNames.UserGivenName):
-                    return _givenNameChanged == LoadState.Changed;
-
-                case (PropertyNames.UserMiddleName):
-                    return _middleNameChanged == LoadState.Changed;
-
-                case (PropertyNames.UserSurname):
-                    return _surnameChanged == LoadState.Changed;
-
-                case (PropertyNames.UserEmailAddress):
-                    return _emailAddressChanged == LoadState.Changed;
-
-                case (PropertyNames.UserVoiceTelephoneNumber):
-                    return _voiceTelephoneNumberChanged == LoadState.Changed;
-
-                case (PropertyNames.UserEmployeeID):
-                    return _employeeIDChanged == LoadState.Changed;
-
-                default:
-                    return base.GetChangeStatusForProperty(propertyName);
-            }
+                PropertyNames.UserGivenName => _givenNameChanged == LoadState.Changed,
+                PropertyNames.UserMiddleName => _middleNameChanged == LoadState.Changed,
+                PropertyNames.UserSurname => _surnameChanged == LoadState.Changed,
+                PropertyNames.UserEmailAddress => _emailAddressChanged == LoadState.Changed,
+                PropertyNames.UserVoiceTelephoneNumber => _voiceTelephoneNumberChanged == LoadState.Changed,
+                PropertyNames.UserEmployeeID => _employeeIDChanged == LoadState.Changed,
+                _ => base.GetChangeStatusForProperty(propertyName),
+            };
         }
 
         // Given a property name, returns the current value for the property.
@@ -413,29 +400,16 @@ namespace System.DirectoryServices.AccountManagement
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "User", "GetValueForProperty: name=" + propertyName);
 
-            switch (propertyName)
+            return propertyName switch
             {
-                case (PropertyNames.UserGivenName):
-                    return _givenName;
-
-                case (PropertyNames.UserMiddleName):
-                    return _middleName;
-
-                case (PropertyNames.UserSurname):
-                    return _surname;
-
-                case (PropertyNames.UserEmailAddress):
-                    return _emailAddress;
-
-                case (PropertyNames.UserVoiceTelephoneNumber):
-                    return _voiceTelephoneNumber;
-
-                case (PropertyNames.UserEmployeeID):
-                    return _employeeID;
-
-                default:
-                    return base.GetValueForProperty(propertyName);
-            }
+                PropertyNames.UserGivenName => _givenName,
+                PropertyNames.UserMiddleName => _middleName,
+                PropertyNames.UserSurname => _surname,
+                PropertyNames.UserEmailAddress => _emailAddress,
+                PropertyNames.UserVoiceTelephoneNumber => _voiceTelephoneNumber,
+                PropertyNames.UserEmployeeID => _employeeID,
+                _ => base.GetValueForProperty(propertyName),
+            };
         }
 
         // Reset all change-tracking status for all properties on the object to "unchanged".

@@ -956,19 +956,15 @@ namespace Microsoft.Win32
             }
         }
 
-        private static void Win32ErrorStatic(int errorCode, string str)
-        {
-            switch (errorCode)
+        private static void Win32ErrorStatic(int errorCode, string str) =>
+            throw errorCode switch
             {
-                case Interop.Errors.ERROR_ACCESS_DENIED:
-                    throw str != null ?
-                        new UnauthorizedAccessException(SR.Format(SR.UnauthorizedAccess_RegistryKeyGeneric_Key, str)) :
-                        new UnauthorizedAccessException();
+                Interop.Errors.ERROR_ACCESS_DENIED => str != null ?
+                       new UnauthorizedAccessException(SR.Format(SR.UnauthorizedAccess_RegistryKeyGeneric_Key, str)) :
+                       new UnauthorizedAccessException(),
 
-                default:
-                    throw new IOException(Interop.Kernel32.GetMessage(errorCode), errorCode);
-            }
-        }
+                _ => new IOException(Interop.Kernel32.GetMessage(errorCode), errorCode),
+            };
 
         private static int GetRegistryKeyAccess(bool isWritable)
         {

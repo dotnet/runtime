@@ -58,24 +58,16 @@ namespace System.Data.SqlClient.SNI
             NO_INSTALLATION, INVALID_CONFIG, NO_SQLUSERINSTANCEDLL_PATH, INVALID_SQLUSERINSTANCEDLL_PATH, NONE
         }
 
-        internal static uint MapLocalDBErrorStateToCode(LocalDBErrorState errorState)
-        {
-            switch (errorState)
+        internal static uint MapLocalDBErrorStateToCode(LocalDBErrorState errorState) =>
+            errorState switch
             {
-                case LocalDBErrorState.NO_INSTALLATION:
-                    return SNICommon.LocalDBNoInstallation;
-                case LocalDBErrorState.INVALID_CONFIG:
-                    return SNICommon.LocalDBInvalidConfig;
-                case LocalDBErrorState.NO_SQLUSERINSTANCEDLL_PATH:
-                    return SNICommon.LocalDBNoSqlUserInstanceDllPath;
-                case LocalDBErrorState.INVALID_SQLUSERINSTANCEDLL_PATH:
-                    return SNICommon.LocalDBInvalidSqlUserInstanceDllPath;
-                case LocalDBErrorState.NONE:
-                    return 0;
-                default:
-                    return SNICommon.LocalDBInvalidConfig;
-            }
-        }
+                LocalDBErrorState.NO_INSTALLATION => SNICommon.LocalDBNoInstallation,
+                LocalDBErrorState.INVALID_CONFIG => SNICommon.LocalDBInvalidConfig,
+                LocalDBErrorState.NO_SQLUSERINSTANCEDLL_PATH => SNICommon.LocalDBNoSqlUserInstanceDllPath,
+                LocalDBErrorState.INVALID_SQLUSERINSTANCEDLL_PATH => SNICommon.LocalDBInvalidSqlUserInstanceDllPath,
+                LocalDBErrorState.NONE => 0,
+                _ => SNICommon.LocalDBInvalidConfig,
+            };
 
         /// <summary>
         /// Loads the User Instance dll.

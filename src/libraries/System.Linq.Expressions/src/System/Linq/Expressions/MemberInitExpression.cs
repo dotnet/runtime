@@ -103,16 +103,13 @@ namespace System.Linq.Expressions
         internal static Expression ReduceMemberBinding(ParameterExpression objVar, MemberBinding binding)
         {
             MemberExpression member = Expression.MakeMemberAccess(objVar, binding.Member);
-            switch (binding.BindingType)
+            return binding.BindingType switch
             {
-                case MemberBindingType.Assignment:
-                    return Expression.Assign(member, ((MemberAssignment)binding).Expression);
-                case MemberBindingType.ListBinding:
-                    return ReduceListInit(member, ((MemberListBinding)binding).Initializers, keepOnStack: false);
-                case MemberBindingType.MemberBinding:
-                    return ReduceMemberInit(member, ((MemberMemberBinding)binding).Bindings, keepOnStack: false);
-                default: throw ContractUtils.Unreachable;
-            }
+                MemberBindingType.Assignment => Expression.Assign(member, ((MemberAssignment)binding).Expression),
+                MemberBindingType.ListBinding => ReduceListInit(member, ((MemberListBinding)binding).Initializers, keepOnStack: false),
+                MemberBindingType.MemberBinding => ReduceMemberInit(member, ((MemberMemberBinding)binding).Bindings, keepOnStack: false),
+                _ => throw ContractUtils.Unreachable,
+            };
         }
 
         /// <summary>

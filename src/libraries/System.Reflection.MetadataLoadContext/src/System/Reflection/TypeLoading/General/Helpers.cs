@@ -133,15 +133,14 @@ namespace System.Reflection.TypeLoading
                 ((v.Minor == ushort.MaxValue) ? 0b0100 : 0) |
                 ((v.Major == ushort.MaxValue) ? 0b1000 : 0);
 
-            switch (mask)
+            return mask switch
             {
-                case 0b0000: return v;
-                case 0b0001: return new Version(v.Major, v.Minor, v.Build);
-                case 0b0010: return new Version(v.Major, v.Minor);
-                case 0b0011: return new Version(v.Major, v.Minor);
-                default:
-                    return null;
-            }
+                0b0000 => v,
+                0b0001 => new Version(v.Major, v.Minor, v.Build),
+                0b0010 => new Version(v.Major, v.Minor),
+                0b0011 => new Version(v.Major, v.Minor),
+                _ => null,
+            };
         }
 
         public static byte[] ComputePublicKeyToken(this byte[] pkt)

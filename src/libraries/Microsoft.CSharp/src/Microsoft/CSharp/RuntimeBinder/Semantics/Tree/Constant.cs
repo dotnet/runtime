@@ -55,55 +55,24 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return null;
                 }
 
-                object objval;
-                switch (System.Type.GetTypeCode(Type.AssociatedSystemType))
+                object objval = System.Type.GetTypeCode(Type.AssociatedSystemType) switch
                 {
-                    case TypeCode.Boolean:
-                        objval = Val.BooleanVal;
-                        break;
-                    case TypeCode.SByte:
-                        objval = Val.SByteVal;
-                        break;
-                    case TypeCode.Byte:
-                        objval = Val.ByteVal;
-                        break;
-                    case TypeCode.Int16:
-                        objval = Val.Int16Val;
-                        break;
-                    case TypeCode.UInt16:
-                        objval = Val.UInt16Val;
-                        break;
-                    case TypeCode.Int32:
-                        objval = Val.Int32Val;
-                        break;
-                    case TypeCode.UInt32:
-                        objval = Val.UInt32Val;
-                        break;
-                    case TypeCode.Int64:
-                        objval = Val.Int64Val;
-                        break;
-                    case TypeCode.UInt64:
-                        objval = Val.UInt64Val;
-                        break;
-                    case TypeCode.Single:
-                        objval = Val.SingleVal;
-                        break;
-                    case TypeCode.Double:
-                        objval = Val.DoubleVal;
-                        break;
-                    case TypeCode.Decimal:
-                        objval = Val.DecimalVal;
-                        break;
-                    case TypeCode.Char:
-                        objval = Val.CharVal;
-                        break;
-                    case TypeCode.String:
-                        objval = Val.StringVal;
-                        break;
-                    default:
-                        objval = Val.ObjectVal;
-                        break;
-                }
+                    TypeCode.Boolean => Val.BooleanVal,
+                    TypeCode.SByte => Val.SByteVal,
+                    TypeCode.Byte => Val.ByteVal,
+                    TypeCode.Int16 => Val.Int16Val,
+                    TypeCode.UInt16 => Val.UInt16Val,
+                    TypeCode.Int32 => Val.Int32Val,
+                    TypeCode.UInt32 => Val.UInt32Val,
+                    TypeCode.Int64 => Val.Int64Val,
+                    TypeCode.UInt64 => Val.UInt64Val,
+                    TypeCode.Single => Val.SingleVal,
+                    TypeCode.Double => Val.DoubleVal,
+                    TypeCode.Decimal => Val.DecimalVal,
+                    TypeCode.Char => Val.CharVal,
+                    TypeCode.String => Val.StringVal,
+                    _ => Val.ObjectVal,
+                };
 
                 return Type.IsEnumType ? Enum.ToObject(Type.AssociatedSystemType, objval) : objval;
             }

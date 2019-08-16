@@ -1141,30 +1141,16 @@ namespace Internal.NativeCrypto
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5351", Justification = "MD5 is used when the user asks for it.")]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 is used when the user asks for it.")]
-        internal static HashAlgorithm ObjToHashAlgorithm(object hashAlg)
-        {
-            int algId = ObjToHashAlgId(hashAlg);
-            switch (algId)
+        internal static HashAlgorithm ObjToHashAlgorithm(object hashAlg) =>
+            ObjToHashAlgId(hashAlg) switch
             {
-                case CapiHelper.CALG_MD5:
-                    return MD5.Create();
-
-                case CapiHelper.CALG_SHA1:
-                    return SHA1.Create();
-
-                case CapiHelper.CALG_SHA_256:
-                    return SHA256.Create();
-
-                case CapiHelper.CALG_SHA_384:
-                    return SHA384.Create();
-
-                case CapiHelper.CALG_SHA_512:
-                    return SHA512.Create();
-
-                default:
-                    throw new ArgumentException(SR.Argument_InvalidValue, nameof(hashAlg));
-            }
-        }
+                CapiHelper.CALG_MD5 => MD5.Create(),
+                CapiHelper.CALG_SHA1 => SHA1.Create(),
+                CapiHelper.CALG_SHA_256 => SHA256.Create(),
+                CapiHelper.CALG_SHA_384 => SHA384.Create(),
+                CapiHelper.CALG_SHA_512 => SHA512.Create(),
+                _ => throw new ArgumentException(SR.Argument_InvalidValue, nameof(hashAlg)),
+            };
 
         /// <summary>
         /// Convert an OID into a CAPI-1 CALG ID.

@@ -927,69 +927,30 @@ namespace System.DirectoryServices
                     int status = Marshal.ReadInt32(tempPtr, 32);
                     if (status != 0)
                     {
-                        int prefIndex = prefs[i].dwSearchPref;
-                        string property = "";
-                        switch (prefIndex)
+                        string property = prefs[i].dwSearchPref switch
                         {
-                            case (int)AdsSearchPreferences.SEARCH_SCOPE:
-                                property = "SearchScope";
-                                break;
-                            case (int)AdsSearchPreferences.SIZE_LIMIT:
-                                property = "SizeLimit";
-                                break;
-                            case (int)AdsSearchPreferences.TIME_LIMIT:
-                                property = "ServerTimeLimit";
-                                break;
-                            case (int)AdsSearchPreferences.ATTRIBTYPES_ONLY:
-                                property = "PropertyNamesOnly";
-                                break;
-                            case (int)AdsSearchPreferences.TIMEOUT:
-                                property = "ClientTimeout";
-                                break;
-                            case (int)AdsSearchPreferences.PAGESIZE:
-                                property = "PageSize";
-                                break;
-                            case (int)AdsSearchPreferences.PAGED_TIME_LIMIT:
-                                property = "ServerPageTimeLimit";
-                                break;
-                            case (int)AdsSearchPreferences.CHASE_REFERRALS:
-                                property = "ReferralChasing";
-                                break;
-                            case (int)AdsSearchPreferences.SORT_ON:
-                                property = "Sort";
-                                break;
-                            case (int)AdsSearchPreferences.CACHE_RESULTS:
-                                property = "CacheResults";
-                                break;
-                            case (int)AdsSearchPreferences.ASYNCHRONOUS:
-                                property = "Asynchronous";
-                                break;
-                            case (int)AdsSearchPreferences.TOMBSTONE:
-                                property = "Tombstone";
-                                break;
-                            case (int)AdsSearchPreferences.ATTRIBUTE_QUERY:
-                                property = "AttributeScopeQuery";
-                                break;
-                            case (int)AdsSearchPreferences.DEREF_ALIASES:
-                                property = "DerefAlias";
-                                break;
-                            case (int)AdsSearchPreferences.SECURITY_MASK:
-                                property = "SecurityMasks";
-                                break;
-                            case (int)AdsSearchPreferences.EXTENDED_DN:
-                                property = "ExtendedDn";
-                                break;
-                            case (int)AdsSearchPreferences.DIRSYNC:
-                                property = "DirectorySynchronization";
-                                break;
-                            case (int)AdsSearchPreferences.DIRSYNC_FLAG:
-                                property = "DirectorySynchronizationFlag";
-                                break;
-                            case (int)AdsSearchPreferences.VLV:
-                                property = "VirtualListView";
-                                break;
-                        }
-                        throw new InvalidOperationException(SR.Format(SR.DSSearchPreferencesNotAccepted , property));
+                            (int)AdsSearchPreferences.SEARCH_SCOPE => "SearchScope",
+                            (int)AdsSearchPreferences.SIZE_LIMIT => "SizeLimit",
+                            (int)AdsSearchPreferences.TIME_LIMIT => "ServerTimeLimit",
+                            (int)AdsSearchPreferences.ATTRIBTYPES_ONLY => "PropertyNamesOnly",
+                            (int)AdsSearchPreferences.TIMEOUT => "ClientTimeout",
+                            (int)AdsSearchPreferences.PAGESIZE => "PageSize",
+                            (int)AdsSearchPreferences.PAGED_TIME_LIMIT => "ServerPageTimeLimit",
+                            (int)AdsSearchPreferences.CHASE_REFERRALS => "ReferralChasing",
+                            (int)AdsSearchPreferences.SORT_ON => "Sort",
+                            (int)AdsSearchPreferences.CACHE_RESULTS => "CacheResults",
+                            (int)AdsSearchPreferences.ASYNCHRONOUS => "Asynchronous",
+                            (int)AdsSearchPreferences.TOMBSTONE => "Tombstone",
+                            (int)AdsSearchPreferences.ATTRIBUTE_QUERY => "AttributeScopeQuery",
+                            (int)AdsSearchPreferences.DEREF_ALIASES => "DerefAlias",
+                            (int)AdsSearchPreferences.SECURITY_MASK => "SecurityMasks",
+                            (int)AdsSearchPreferences.EXTENDED_DN => "ExtendedDn",
+                            (int)AdsSearchPreferences.DIRSYNC => "DirectorySynchronization",
+                            (int)AdsSearchPreferences.DIRSYNC_FLAG => "DirectorySynchronizationFlag",
+                            (int)AdsSearchPreferences.VLV => "VirtualListView",
+                            _ => "",
+                        };
+                        throw new InvalidOperationException(SR.Format(SR.DSSearchPreferencesNotAccepted, property));
                     }
 
                     tempPtr = IntPtr.Add(tempPtr, structSize);

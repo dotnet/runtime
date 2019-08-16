@@ -583,20 +583,14 @@ namespace System.Linq.Expressions
         /// <param name="node">The expression to visit.</param>
         /// <returns>The modified expression, if it or any subexpression was modified;
         /// otherwise, returns the original expression.</returns>
-        protected virtual MemberBinding VisitMemberBinding(MemberBinding node)
-        {
-            switch (node.BindingType)
+        protected virtual MemberBinding VisitMemberBinding(MemberBinding node) =>
+            node.BindingType switch
             {
-                case MemberBindingType.Assignment:
-                    return VisitMemberAssignment((MemberAssignment)node);
-                case MemberBindingType.MemberBinding:
-                    return VisitMemberMemberBinding((MemberMemberBinding)node);
-                case MemberBindingType.ListBinding:
-                    return VisitMemberListBinding((MemberListBinding)node);
-                default:
-                    throw Error.UnhandledBindingType(node.BindingType);
-            }
-        }
+                MemberBindingType.Assignment => VisitMemberAssignment((MemberAssignment)node),
+                MemberBindingType.MemberBinding => VisitMemberMemberBinding((MemberMemberBinding)node),
+                MemberBindingType.ListBinding => VisitMemberListBinding((MemberListBinding)node),
+                _ => throw Error.UnhandledBindingType(node.BindingType),
+            };
 
         /// <summary>
         /// Visits the children of the <see cref="MemberAssignment"/>.

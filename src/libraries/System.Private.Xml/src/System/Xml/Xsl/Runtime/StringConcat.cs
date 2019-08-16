@@ -67,18 +67,16 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Get the result string.
         /// </summary>
-        public string GetResult()
-        {
-            switch (_idxStr)
+        public string GetResult() =>
+            _idxStr switch
             {
-                case 0: return string.Empty;
-                case 1: return _s1;
-                case 2: return string.Concat(_s1, _s2);
-                case 3: return string.Concat(_s1, _s2, _s3);
-                case 4: return string.Concat(_s1, _s2, _s3, _s4);
-            }
-            return string.Concat(_strList.ToArray());
-        }
+                0 => string.Empty,
+                1 => _s1,
+                2 => string.Concat(_s1, _s2),
+                3 => string.Concat(_s1, _s2, _s3),
+                4 => string.Concat(_s1, _s2, _s3, _s4),
+                _ => string.Concat(_strList.ToArray()),
+            };
 
         /// <summary>
         /// Concatenate a new string to the result without adding a delimiter.

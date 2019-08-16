@@ -389,33 +389,17 @@ namespace System.DirectoryServices.AccountManagement
                     }
 
                     int comparisonResult = DateTime.Compare(value, (DateTime)valueToMatch.Value);
-                    bool result = true;
 
-                    switch (valueToMatch.Match)
+                    bool result = valueToMatch.Match switch
                     {
-                        case MatchType.Equals:
-                            result = comparisonResult == 0;
-                            break;
-                        case MatchType.NotEquals:
-                            result = comparisonResult != 0;
-                            break;
-                        case MatchType.GreaterThan:
-                            result = comparisonResult > 0;
-                            break;
-                        case MatchType.GreaterThanOrEquals:
-                            result = comparisonResult >= 0;
-                            break;
-                        case MatchType.LessThan:
-                            result = comparisonResult < 0;
-                            break;
-                        case MatchType.LessThanOrEquals:
-                            result = comparisonResult <= 0;
-                            break;
-                        default:
-                            result = false;
-                            break;
-                    }
-
+                        MatchType.Equals => comparisonResult == 0,
+                        MatchType.NotEquals => comparisonResult != 0,
+                        MatchType.GreaterThan => comparisonResult > 0,
+                        MatchType.GreaterThanOrEquals => comparisonResult >= 0,
+                        MatchType.LessThan => comparisonResult < 0,
+                        MatchType.LessThanOrEquals => comparisonResult <= 0,
+                        _ => false,
+                    };
                     return result;
                 }
             }
@@ -469,30 +453,16 @@ namespace System.DirectoryServices.AccountManagement
                     int value = (int)de.Properties[winNTPropertyName].Value;
                     int comparisonValue = (int)valueToMatch.Value;
 
-                    switch (valueToMatch.Match)
+                    result = valueToMatch.Match switch
                     {
-                        case MatchType.Equals:
-                            result = (value == comparisonValue);
-                            break;
-                        case MatchType.NotEquals:
-                            result = (value != comparisonValue);
-                            break;
-                        case MatchType.GreaterThan:
-                            result = (value > comparisonValue);
-                            break;
-                        case MatchType.GreaterThanOrEquals:
-                            result = (value >= comparisonValue);
-                            break;
-                        case MatchType.LessThan:
-                            result = (value < comparisonValue);
-                            break;
-                        case MatchType.LessThanOrEquals:
-                            result = (value <= comparisonValue);
-                            break;
-                        default:
-                            result = false;
-                            break;
-                    }
+                        MatchType.Equals => (value == comparisonValue),
+                        MatchType.NotEquals => (value != comparisonValue),
+                        MatchType.GreaterThan => (value > comparisonValue),
+                        MatchType.GreaterThanOrEquals => (value >= comparisonValue),
+                        MatchType.LessThan => (value < comparisonValue),
+                        MatchType.LessThanOrEquals => (value <= comparisonValue),
+                        _ => false,
+                    };
                 }
             }
 

@@ -62,18 +62,18 @@ namespace System.Xml.Xsl.Qil
         {
             get
             {
-                switch (index)
+                return index switch
                 {
-                    case 0: return _isDebug;
-                    case 1: return _defWSet;
-                    case 2: return _wsRules;
-                    case 3: return _gloParams;
-                    case 4: return _gloVars;
-                    case 5: return _earlBnd;
-                    case 6: return _funList;
-                    case 7: return _rootNod;
-                    default: throw new IndexOutOfRangeException();
-                }
+                    0 => _isDebug,
+                    1 => _defWSet,
+                    2 => _wsRules,
+                    3 => _gloParams,
+                    4 => _gloVars,
+                    5 => _earlBnd,
+                    6 => _funList,
+                    7 => _rootNod,
+                    _ => throw new IndexOutOfRangeException(),
+                };
             }
             set
             {

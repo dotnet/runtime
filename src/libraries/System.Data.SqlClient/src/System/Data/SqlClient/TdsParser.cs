@@ -9364,17 +9364,13 @@ namespace System.Data.SqlClient
             {
                 return null;
             }
-            switch (task.Status)
+            return task.Status switch
             {
-                case TaskStatus.RanToCompletion:
-                    return null;
-                case TaskStatus.Faulted:
-                    throw task.Exception.InnerException;
-                case TaskStatus.Canceled:
-                    throw SQL.OperationCancelled();
-                default:
-                    return task;
-            }
+                TaskStatus.RanToCompletion => null,
+                TaskStatus.Faulted => throw task.Exception.InnerException,
+                TaskStatus.Canceled => throw SQL.OperationCancelled(),
+                _ => task,
+            };
         }
 
         private Task WriteValue(object value, MetaType type, byte scale, int actualLength, int encodingByteSize, int offset, TdsParserStateObject stateObj, int paramSize, bool isDataFeed)

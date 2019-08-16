@@ -73,44 +73,26 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
-        internal static string GetNiceName(PredefinedType type)
-        {
-            switch (type)
+        internal static string GetNiceName(PredefinedType type) =>
+            type switch
             {
-                case PredefinedType.PT_BYTE:
-                    return "byte";
-                case PredefinedType.PT_SHORT:
-                    return "short";
-                case PredefinedType.PT_INT:
-                    return "int";
-                case PredefinedType.PT_LONG:
-                    return "long";
-                case PredefinedType.PT_FLOAT:
-                    return "float";
-                case PredefinedType.PT_DOUBLE:
-                    return "double";
-                case PredefinedType.PT_DECIMAL:
-                    return "decimal";
-                case PredefinedType.PT_CHAR:
-                    return "char";
-                case PredefinedType.PT_BOOL:
-                    return "bool";
-                case PredefinedType.PT_SBYTE:
-                    return "sbyte";
-                case PredefinedType.PT_USHORT:
-                    return "ushort";
-                case PredefinedType.PT_UINT:
-                    return "uint";
-                case PredefinedType.PT_ULONG:
-                    return "ulong";
-                case PredefinedType.PT_OBJECT:
-                    return "object";
-                case PredefinedType.PT_STRING:
-                    return "string";
-                default:
-                    return null;
-            }
-        }
+                PredefinedType.PT_BYTE => "byte",
+                PredefinedType.PT_SHORT => "short",
+                PredefinedType.PT_INT => "int",
+                PredefinedType.PT_LONG => "long",
+                PredefinedType.PT_FLOAT => "float",
+                PredefinedType.PT_DOUBLE => "double",
+                PredefinedType.PT_DECIMAL => "decimal",
+                PredefinedType.PT_CHAR => "char",
+                PredefinedType.PT_BOOL => "bool",
+                PredefinedType.PT_SBYTE => "sbyte",
+                PredefinedType.PT_USHORT => "ushort",
+                PredefinedType.PT_UINT => "uint",
+                PredefinedType.PT_ULONG => "ulong",
+                PredefinedType.PT_OBJECT => "object",
+                PredefinedType.PT_STRING => "string",
+                _ => null,
+            };
 
         public static PredefinedType TryGetPredefTypeIndex(string name) =>
             s_typesByName.TryGetValue(name, out PredefinedType type) ? type : PredefinedType.PT_UNDEFINEDINDEX;

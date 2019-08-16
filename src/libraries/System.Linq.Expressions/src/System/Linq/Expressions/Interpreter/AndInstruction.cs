@@ -173,22 +173,19 @@ namespace System.Linq.Expressions.Interpreter
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
-        public static Instruction Create(Type type)
-        {
-            switch (type.GetNonNullableType().GetTypeCode())
+        public static Instruction Create(Type type) =>
+            type.GetNonNullableType().GetTypeCode() switch
             {
-                case TypeCode.SByte: return s_SByte ?? (s_SByte = new AndSByte());
-                case TypeCode.Int16: return s_Int16 ?? (s_Int16 = new AndInt16());
-                case TypeCode.Int32: return s_Int32 ?? (s_Int32 = new AndInt32());
-                case TypeCode.Int64: return s_Int64 ?? (s_Int64 = new AndInt64());
-                case TypeCode.Byte: return s_Byte ?? (s_Byte = new AndByte());
-                case TypeCode.UInt16: return s_UInt16 ?? (s_UInt16 = new AndUInt16());
-                case TypeCode.UInt32: return s_UInt32 ?? (s_UInt32 = new AndUInt32());
-                case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new AndUInt64());
-                case TypeCode.Boolean: return s_Boolean ?? (s_Boolean = new AndBoolean());
-                default:
-                    throw ContractUtils.Unreachable;
-            }
-        }
+                TypeCode.SByte => s_SByte ?? (s_SByte = new AndSByte()),
+                TypeCode.Int16 => s_Int16 ?? (s_Int16 = new AndInt16()),
+                TypeCode.Int32 => s_Int32 ?? (s_Int32 = new AndInt32()),
+                TypeCode.Int64 => s_Int64 ?? (s_Int64 = new AndInt64()),
+                TypeCode.Byte => s_Byte ?? (s_Byte = new AndByte()),
+                TypeCode.UInt16 => s_UInt16 ?? (s_UInt16 = new AndUInt16()),
+                TypeCode.UInt32 => s_UInt32 ?? (s_UInt32 = new AndUInt32()),
+                TypeCode.UInt64 => s_UInt64 ?? (s_UInt64 = new AndUInt64()),
+                TypeCode.Boolean => s_Boolean ?? (s_Boolean = new AndBoolean()),
+                _ => throw ContractUtils.Unreachable,
+            };
     }
 }

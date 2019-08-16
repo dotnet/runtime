@@ -952,13 +952,13 @@ namespace System.Management
                                                                                 PutType.UpdateOrCreate);
             }
             set {
-                switch (value)
+                Flags |= value switch
                 {
-                    case PutType.UpdateOnly : Flags |= (int)tag_WBEM_CHANGE_FLAG_TYPE.WBEM_FLAG_UPDATE_ONLY; break;
-                    case PutType.CreateOnly : Flags |= (int)tag_WBEM_CHANGE_FLAG_TYPE.WBEM_FLAG_CREATE_ONLY; break;
-                    case PutType.UpdateOrCreate : Flags |= (int)tag_WBEM_CHANGE_FLAG_TYPE.WBEM_FLAG_CREATE_OR_UPDATE; break;
-                    default: throw new ArgumentException(null, "Type");
-                }
+                    PutType.UpdateOnly => (int)tag_WBEM_CHANGE_FLAG_TYPE.WBEM_FLAG_UPDATE_ONLY,
+                    PutType.CreateOnly => (int)tag_WBEM_CHANGE_FLAG_TYPE.WBEM_FLAG_CREATE_ONLY,
+                    PutType.UpdateOrCreate => (int)tag_WBEM_CHANGE_FLAG_TYPE.WBEM_FLAG_CREATE_OR_UPDATE,
+                    _ => throw new ArgumentException(null, nameof(Type)),
+                };
             }
         }
 

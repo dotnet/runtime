@@ -879,18 +879,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return false;
         }
 
-        private static bool IsEnumArithmeticBinOp(ExpressionKind ek, BinOpArgInfo info)
-        {
-            switch (ek)
+        private static bool IsEnumArithmeticBinOp(ExpressionKind ek, BinOpArgInfo info) =>
+            ek switch
             {
-                case ExpressionKind.Add:
-                    return info.typeRaw1.IsEnumType ^ info.typeRaw2.IsEnumType;
-                case ExpressionKind.Subtract:
-                    return info.typeRaw1.IsEnumType | info.typeRaw2.IsEnumType;
-            }
-
-            return false;
-        }
+                ExpressionKind.Add => info.typeRaw1.IsEnumType ^ info.typeRaw2.IsEnumType,
+                ExpressionKind.Subtract => info.typeRaw1.IsEnumType | info.typeRaw2.IsEnumType,
+                _ => false,
+            };
 
 
         /*
@@ -1035,25 +1030,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 bt2 = WhichTypeIsBetter(bofs1.Type2(), bofs2.Type2(), type2);
             }
 
-            int res;
-
             Debug.Assert(Enum.IsDefined(typeof(BetterType), bt1));
             Debug.Assert(Enum.IsDefined(typeof(BetterType), bt2));
-            switch (bt1)
+            int res = bt1 switch
             {
-                case BetterType.Left:
-                    res = -1;
-                    break;
-
-                case BetterType.Right:
-                    res = 1;
-                    break;
-
-                default:
-                    res = 0;
-                    break;
-            }
-
+                BetterType.Left => -1,
+                BetterType.Right => 1,
+                _ => 0,
+            };
             switch (bt2)
             {
                 case BetterType.Left:
@@ -1161,27 +1145,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 CType nonNub = nub.UnderlyingType;
                 if (nonNub.IsEnumType)
                 {
-                    PredefinedType ptOp;
-                    switch (nonNub.FundamentalType)
+                    PredefinedType ptOp = nonNub.FundamentalType switch
                     {
-                        case FUNDTYPE.FT_U4:
-                            ptOp = PredefinedType.PT_UINT;
-                            break;
-
-                        case FUNDTYPE.FT_I8:
-                            ptOp = PredefinedType.PT_LONG;
-                            break;
-
-                        case FUNDTYPE.FT_U8:
-                            ptOp = PredefinedType.PT_ULONG;
-                            break;
-
-                        default:
-                            // Promote all smaller types to int.
-                            ptOp = PredefinedType.PT_INT;
-                            break;
-                    }
-
+                        FUNDTYPE.FT_U4 => PredefinedType.PT_UINT,
+                        FUNDTYPE.FT_I8 => PredefinedType.PT_LONG,
+                        FUNDTYPE.FT_U8 => PredefinedType.PT_ULONG,
+                        _ => PredefinedType.PT_INT, // Promote all smaller types to int.
+                    };
                     return mustCast(
                         BindStandardUnaryOperator(
                             op, mustCast(pArgument, TypeManager.GetNullable(GetPredefindType(ptOp)))), nub);
@@ -1562,15 +1532,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             Debug.Assert(Enum.IsDefined(typeof(BetterType), bt));
-            switch (bt)
+            return bt switch
             {
-                case BetterType.Left:
-                    return -1;
-                case BetterType.Right:
-                    return +1;
-                default:
-                    return 0;
-            }
+                BetterType.Left => -1,
+                BetterType.Right => +1,
+                _ => 0,
+            };
         }
 
         /*
@@ -2006,25 +1973,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             AggregateType typeDst = GetEnumBinOpType(ek, arg1.Type, arg2.Type, out AggregateType typeEnum);
 
             Debug.Assert(typeEnum != null);
-            PredefinedType ptOp;
 
-            switch (typeEnum.FundamentalType)
+            PredefinedType ptOp = typeEnum.FundamentalType switch
             {
-                default:
-                    // Promote all smaller types to int.
-                    ptOp = PredefinedType.PT_INT;
-                    break;
-                case FUNDTYPE.FT_U4:
-                    ptOp = PredefinedType.PT_UINT;
-                    break;
-                case FUNDTYPE.FT_I8:
-                    ptOp = PredefinedType.PT_LONG;
-                    break;
-                case FUNDTYPE.FT_U8:
-                    ptOp = PredefinedType.PT_ULONG;
-                    break;
-            }
-
+                FUNDTYPE.FT_U4 => PredefinedType.PT_UINT,
+                FUNDTYPE.FT_I8 => PredefinedType.PT_LONG,
+                FUNDTYPE.FT_U8 => PredefinedType.PT_ULONG,
+                _ => PredefinedType.PT_INT, // Promote all smaller types to int.
+            };
             CType typeOp = GetPredefindType(ptOp);
             arg1 = binder.mustCast(arg1, typeOp, CONVERTTYPE.NOUDC);
             arg2 = binder.mustCast(arg2, typeOp, CONVERTTYPE.NOUDC);
@@ -2057,25 +2013,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             NullableType typeDst = TypeManager.GetNullable(GetEnumBinOpType(ek, nonNullableType1, nonNullableType2, out AggregateType typeEnum));
 
             Debug.Assert(typeEnum != null);
-            PredefinedType ptOp;
 
-            switch (typeEnum.FundamentalType)
+            PredefinedType ptOp = typeEnum.FundamentalType switch
             {
-                default:
-                    // Promote all smaller types to int.
-                    ptOp = PredefinedType.PT_INT;
-                    break;
-                case FUNDTYPE.FT_U4:
-                    ptOp = PredefinedType.PT_UINT;
-                    break;
-                case FUNDTYPE.FT_I8:
-                    ptOp = PredefinedType.PT_LONG;
-                    break;
-                case FUNDTYPE.FT_U8:
-                    ptOp = PredefinedType.PT_ULONG;
-                    break;
-            }
-
+                FUNDTYPE.FT_U4 => PredefinedType.PT_UINT,
+                FUNDTYPE.FT_I8 => PredefinedType.PT_LONG,
+                FUNDTYPE.FT_U8 => PredefinedType.PT_ULONG,
+                _ => PredefinedType.PT_INT, // Promote all smaller types to int.
+            };
             NullableType typeOp = TypeManager.GetNullable(GetPredefindType(ptOp));
             arg1 = mustCast(arg1, typeOp, CONVERTTYPE.NOUDC);
             arg2 = mustCast(arg2, typeOp, CONVERTTYPE.NOUDC);
@@ -2102,27 +2047,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(ek == ExpressionKind.BitwiseNot);
             Debug.Assert((ExprCast)arg != null);
             Debug.Assert(((ExprCast)arg).Argument.Type.IsEnumType);
-
-            PredefinedType ptOp;
             CType typeEnum = ((ExprCast)arg).Argument.Type;
 
-            switch (typeEnum.FundamentalType)
+            PredefinedType ptOp = typeEnum.FundamentalType switch
             {
-                default:
-                    // Promote all smaller types to int.
-                    ptOp = PredefinedType.PT_INT;
-                    break;
-                case FUNDTYPE.FT_U4:
-                    ptOp = PredefinedType.PT_UINT;
-                    break;
-                case FUNDTYPE.FT_I8:
-                    ptOp = PredefinedType.PT_LONG;
-                    break;
-                case FUNDTYPE.FT_U8:
-                    ptOp = PredefinedType.PT_ULONG;
-                    break;
-            }
-
+                FUNDTYPE.FT_U4 => PredefinedType.PT_UINT,
+                FUNDTYPE.FT_I8 => PredefinedType.PT_LONG,
+                FUNDTYPE.FT_U8 => PredefinedType.PT_ULONG,
+                _ => PredefinedType.PT_INT, // Promote all smaller types to int.
+            };
             CType typeOp = GetPredefindType(ptOp);
             arg = binder.mustCast(arg, typeOp, CONVERTTYPE.NOUDC);
 
@@ -2674,21 +2607,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             ExprCall call = ExprFactory.CreateCall(0, typeRet, args, pMemGroup, null);
             call.MethWithInst = new MethWithInst(mpwi);
 
-            switch (ek)
+            call.NullableCallLiftKind = ek switch
             {
-                case ExpressionKind.Eq:
-                    call.NullableCallLiftKind = NullableCallLiftKind.EqualityOperator;
-                    break;
+                ExpressionKind.Eq => NullableCallLiftKind.EqualityOperator,
 
-                case ExpressionKind.NotEq:
-                    call.NullableCallLiftKind = NullableCallLiftKind.InequalityOperator;
-                    break;
+                ExpressionKind.NotEq => NullableCallLiftKind.InequalityOperator,
 
-                default:
-                    call.NullableCallLiftKind = NullableCallLiftKind.Operator;
-                    break;
-            }
-
+                _ => NullableCallLiftKind.Operator,
+            };
             call.CastOfNonLiftedResultToLiftedType = mustCast(nonLiftedResult, typeRet, 0);
             return call;
         }

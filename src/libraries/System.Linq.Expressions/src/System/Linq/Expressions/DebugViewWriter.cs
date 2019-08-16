@@ -281,14 +281,13 @@ namespace System.Linq.Expressions
                 Dedent();
             }
 
-            char close;
-            switch (open)
+            char close = open switch
             {
-                case '(': close = ')'; break;
-                case '{': close = '}'; break;
-                case '[': close = ']'; break;
-                default: throw ContractUtils.Unreachable;
-            }
+                '(' => ')',
+                '{' => '}',
+                '[' => ']',
+                _ => throw ContractUtils.Unreachable,
+            };
 
             if (open == '{')
             {

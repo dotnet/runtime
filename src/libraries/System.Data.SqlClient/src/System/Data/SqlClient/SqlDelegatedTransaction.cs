@@ -55,26 +55,15 @@ namespace System.Data.SqlClient
             // of delegation, in case System.Transactions adds another isolation
             // level we don't know about -- we can throw the exception at a better
             // place.
-            switch (systxIsolationLevel)
+            _isolationLevel = systxIsolationLevel switch
             {
-                case Transactions.IsolationLevel.ReadCommitted:
-                    _isolationLevel = IsolationLevel.ReadCommitted;
-                    break;
-                case Transactions.IsolationLevel.ReadUncommitted:
-                    _isolationLevel = IsolationLevel.ReadUncommitted;
-                    break;
-                case Transactions.IsolationLevel.RepeatableRead:
-                    _isolationLevel = IsolationLevel.RepeatableRead;
-                    break;
-                case Transactions.IsolationLevel.Serializable:
-                    _isolationLevel = IsolationLevel.Serializable;
-                    break;
-                case Transactions.IsolationLevel.Snapshot:
-                    _isolationLevel = IsolationLevel.Snapshot;
-                    break;
-                default:
-                    throw SQL.UnknownSysTxIsolationLevel(systxIsolationLevel);
-            }
+                Transactions.IsolationLevel.ReadCommitted => IsolationLevel.ReadCommitted,
+                Transactions.IsolationLevel.ReadUncommitted => IsolationLevel.ReadUncommitted,
+                Transactions.IsolationLevel.RepeatableRead => IsolationLevel.RepeatableRead,
+                Transactions.IsolationLevel.Serializable => IsolationLevel.Serializable,
+                Transactions.IsolationLevel.Snapshot => IsolationLevel.Snapshot,
+                _ => throw SQL.UnknownSysTxIsolationLevel(systxIsolationLevel),
+            };
         }
 
         internal Transaction Transaction

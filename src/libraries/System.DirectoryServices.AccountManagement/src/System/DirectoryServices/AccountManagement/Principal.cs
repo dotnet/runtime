@@ -1147,58 +1147,25 @@ namespace System.DirectoryServices.AccountManagement
         internal virtual bool GetChangeStatusForProperty(string propertyName)
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "Principal", "GetChangeStatusForProperty: name=" + propertyName);
-            LoadState currentPropState;
 
-            switch (propertyName)
+            LoadState currentPropState = propertyName switch
             {
-                case PropertyNames.PrincipalDisplayName:
-                    currentPropState = _displayNameChanged;
-                    break;
+                PropertyNames.PrincipalDisplayName => _displayNameChanged,
+                PropertyNames.PrincipalDescription => _descriptionChanged,
+                PropertyNames.PrincipalSamAccountName => _samNameChanged,
+                PropertyNames.PrincipalUserPrincipalName => _userPrincipalNameChanged,
+                PropertyNames.PrincipalSid => _sidChanged,
+                PropertyNames.PrincipalGuid => _guidChanged,
+                PropertyNames.PrincipalDistinguishedName => _distinguishedNameChanged,
+                PropertyNames.PrincipalStructuralObjectClass => _structuralObjectClassChanged,
+                PropertyNames.PrincipalName => _nameChanged,
+                PropertyNames.PrincipalExtensionCache => _extensionCacheChanged,
 
-                case PropertyNames.PrincipalDescription:
-                    currentPropState = _descriptionChanged;
-                    break;
-
-                case PropertyNames.PrincipalSamAccountName:
-                    currentPropState = _samNameChanged;
-                    break;
-
-                case PropertyNames.PrincipalUserPrincipalName:
-                    currentPropState = _userPrincipalNameChanged;
-                    break;
-
-                case PropertyNames.PrincipalSid:
-                    currentPropState = _sidChanged;
-                    break;
-
-                case PropertyNames.PrincipalGuid:
-                    currentPropState = _guidChanged;
-                    break;
-
-                case PropertyNames.PrincipalDistinguishedName:
-                    currentPropState = _distinguishedNameChanged;
-                    break;
-
-                case PropertyNames.PrincipalStructuralObjectClass:
-                    currentPropState = _structuralObjectClassChanged;
-                    break;
-
-                case PropertyNames.PrincipalName:
-                    currentPropState = _nameChanged;
-                    break;
-
-                case PropertyNames.PrincipalExtensionCache:
-                    currentPropState = _extensionCacheChanged;
-                    break;
-
-                default:
-                    // If we're here, we didn't find the property.  They probably asked for a property we don't
-                    // support (e.g., we're a User, and they asked for PropertyNames.GroupMembers).  Since we don't
-                    // have it, it didn't change.
-                    currentPropState = LoadState.NotSet;
-                    break;
-            }
-
+                // If we're here, we didn't find the property.  They probably asked for a property we don't
+                // support (e.g., we're a User, and they asked for PropertyNames.GroupMembers).  Since we don't
+                // have it, it didn't change.
+                _ => LoadState.NotSet,
+            };
             return (currentPropState == LoadState.Changed);
         }
 

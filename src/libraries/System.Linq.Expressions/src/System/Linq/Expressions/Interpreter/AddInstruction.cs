@@ -164,19 +164,18 @@ namespace System.Linq.Expressions.Interpreter
         public static Instruction Create(Type type)
         {
             Debug.Assert(type.IsArithmetic());
-            switch (type.GetNonNullableType().GetTypeCode())
+            return type.GetNonNullableType().GetTypeCode() switch
             {
-                case TypeCode.Int16: return s_Int16 ?? (s_Int16 = new AddInt16());
-                case TypeCode.Int32: return s_Int32 ?? (s_Int32 = new AddInt32());
-                case TypeCode.Int64: return s_Int64 ?? (s_Int64 = new AddInt64());
-                case TypeCode.UInt16: return s_UInt16 ?? (s_UInt16 = new AddUInt16());
-                case TypeCode.UInt32: return s_UInt32 ?? (s_UInt32 = new AddUInt32());
-                case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new AddUInt64());
-                case TypeCode.Single: return s_Single ?? (s_Single = new AddSingle());
-                case TypeCode.Double: return s_Double ?? (s_Double = new AddDouble());
-                default:
-                    throw ContractUtils.Unreachable;
-            }
+                TypeCode.Int16 => s_Int16 ?? (s_Int16 = new AddInt16()),
+                TypeCode.Int32 => s_Int32 ?? (s_Int32 = new AddInt32()),
+                TypeCode.Int64 => s_Int64 ?? (s_Int64 = new AddInt64()),
+                TypeCode.UInt16 => s_UInt16 ?? (s_UInt16 = new AddUInt16()),
+                TypeCode.UInt32 => s_UInt32 ?? (s_UInt32 = new AddUInt32()),
+                TypeCode.UInt64 => s_UInt64 ?? (s_UInt64 = new AddUInt64()),
+                TypeCode.Single => s_Single ?? (s_Single = new AddSingle()),
+                TypeCode.Double => s_Double ?? (s_Double = new AddDouble()),
+                _ => throw ContractUtils.Unreachable,
+            };
         }
     }
 
@@ -301,17 +300,16 @@ namespace System.Linq.Expressions.Interpreter
         public static Instruction Create(Type type)
         {
             Debug.Assert(type.IsArithmetic());
-            switch (type.GetNonNullableType().GetTypeCode())
+            return type.GetNonNullableType().GetTypeCode() switch
             {
-                case TypeCode.Int16: return s_Int16 ?? (s_Int16 = new AddOvfInt16());
-                case TypeCode.Int32: return s_Int32 ?? (s_Int32 = new AddOvfInt32());
-                case TypeCode.Int64: return s_Int64 ?? (s_Int64 = new AddOvfInt64());
-                case TypeCode.UInt16: return s_UInt16 ?? (s_UInt16 = new AddOvfUInt16());
-                case TypeCode.UInt32: return s_UInt32 ?? (s_UInt32 = new AddOvfUInt32());
-                case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new AddOvfUInt64());
-                default:
-                    return AddInstruction.Create(type);
-            }
+                TypeCode.Int16 => s_Int16 ?? (s_Int16 = new AddOvfInt16()),
+                TypeCode.Int32 => s_Int32 ?? (s_Int32 = new AddOvfInt32()),
+                TypeCode.Int64 => s_Int64 ?? (s_Int64 = new AddOvfInt64()),
+                TypeCode.UInt16 => s_UInt16 ?? (s_UInt16 = new AddOvfUInt16()),
+                TypeCode.UInt32 => s_UInt32 ?? (s_UInt32 = new AddOvfUInt32()),
+                TypeCode.UInt64 => s_UInt64 ?? (s_UInt64 = new AddOvfUInt64()),
+                _ => AddInstruction.Create(type),
+            };
         }
     }
 }

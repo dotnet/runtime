@@ -3194,19 +3194,12 @@ namespace System.Xml
             else
             {
                 _ps.encoding = encoding;
-
-                switch (_ps.encoding.WebName)
-                { // Encoding.Codepage is not supported in Silverlight
-                    case "utf-16":
-                        _ps.decoder = new UTF16Decoder(false);
-                        break;
-                    case "utf-16BE":
-                        _ps.decoder = new UTF16Decoder(true);
-                        break;
-                    default:
-                        _ps.decoder = encoding.GetDecoder();
-                        break;
-                }
+                _ps.decoder = _ps.encoding.WebName switch // Encoding.Codepage is not supported in Silverlight
+                {
+                    "utf-16" => new UTF16Decoder(false),
+                    "utf-16BE" => new UTF16Decoder(true),
+                    _ => encoding.GetDecoder(),
+                };
             }
         }
 

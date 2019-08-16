@@ -20,15 +20,12 @@ namespace System.Data.Common
             Type valueType = value.GetType();
             StorageType stype = DataStorage.GetStorageType(valueType);
 
-            switch (stype)
+            return stype switch
             {
-                case StorageType.SqlByte:
-                    return (SqlByte)value;
-                case StorageType.Byte:
-                    return (byte)value;
-                default:
-                    throw ExceptionBuilder.ConvertFailed(valueType, typeof(SqlByte));
-            }
+                StorageType.SqlByte => (SqlByte)value,
+                StorageType.Byte => (byte)value,
+                _ => throw ExceptionBuilder.ConvertFailed(valueType, typeof(SqlByte)),
+            };
         }
 
         public static SqlInt16 ConvertToSqlInt16(object value)
@@ -40,19 +37,14 @@ namespace System.Data.Common
             }
             Type valueType = value.GetType();
             StorageType stype = DataStorage.GetStorageType(valueType);
-            switch (stype)
+            return stype switch
             {
-                case StorageType.Byte:
-                    return (byte)value;
-                case StorageType.Int16:
-                    return (short)value;
-                case StorageType.SqlByte:
-                    return (SqlByte)value;
-                case StorageType.SqlInt16:
-                    return (SqlInt16)value;
-                default:
-                    throw ExceptionBuilder.ConvertFailed(valueType, typeof(SqlInt16));
-            }
+                StorageType.Byte => (byte)value,
+                StorageType.Int16 => (short)value,
+                StorageType.SqlByte => (SqlByte)value,
+                StorageType.SqlInt16 => (SqlInt16)value,
+                _ => throw ExceptionBuilder.ConvertFailed(valueType, typeof(SqlInt16)),
+            };
         }
 
         public static SqlInt32 ConvertToSqlInt32(object value)
@@ -64,26 +56,18 @@ namespace System.Data.Common
             }
             Type valueType = value.GetType();
             StorageType stype = DataStorage.GetStorageType(valueType);
-            switch (stype)
+            return stype switch
             {
-                case StorageType.SqlInt32:
-                    return (SqlInt32)value;
-                case StorageType.Int32:
-                    return (int)value;
-                case StorageType.SqlInt16:
-                    return (SqlInt16)value;
-                case StorageType.Int16:
-                    return (short)value;
-                case StorageType.UInt16:
-                    return (ushort)value;
-                case StorageType.SqlByte:
-                    return (SqlByte)value;
-                case StorageType.Byte:
-                    return (byte)value;
+                StorageType.SqlInt32 => (SqlInt32)value,
+                StorageType.Int32 => (int)value,
+                StorageType.SqlInt16 => (SqlInt16)value,
+                StorageType.Int16 => (short)value,
+                StorageType.UInt16 => (ushort)value,
+                StorageType.SqlByte => (SqlByte)value,
+                StorageType.Byte => (byte)value,
 
-                default:
-                    throw ExceptionBuilder.ConvertFailed(valueType, typeof(SqlInt32));
-            }
+                _ => throw ExceptionBuilder.ConvertFailed(valueType, typeof(SqlInt32)),
+            };
         }
 
         public static SqlInt64 ConvertToSqlInt64(object value)
@@ -95,31 +79,20 @@ namespace System.Data.Common
             }
             Type valueType = value.GetType();
             StorageType stype = DataStorage.GetStorageType(valueType);
-            switch (stype)
+            return stype switch
             {
-                case StorageType.SqlInt64:
-                    return (SqlInt64)value;
-                case StorageType.Int64:
-                    return (long)value;
-                case StorageType.SqlInt16:
-                    return (SqlInt16)value;
-                case StorageType.Int16:
-                    return (short)value;
-                case StorageType.UInt16:
-                    return (ushort)value;
-                case StorageType.SqlInt32:
-                    return (SqlInt32)value;
-                case StorageType.Int32:
-                    return (int)value;
-                case StorageType.UInt32:
-                    return (uint)value;
-                case StorageType.SqlByte:
-                    return (SqlByte)value;
-                case StorageType.Byte:
-                    return (byte)value;
-                default:
-                    throw ExceptionBuilder.ConvertFailed(valueType, typeof(SqlInt64));
-            }
+                StorageType.SqlInt64 => (SqlInt64)value,
+                StorageType.Int64 => (long)value,
+                StorageType.SqlInt16 => (SqlInt16)value,
+                StorageType.Int16 => (short)value,
+                StorageType.UInt16 => (ushort)value,
+                StorageType.SqlInt32 => (SqlInt32)value,
+                StorageType.Int32 => (int)value,
+                StorageType.UInt32 => (uint)value,
+                StorageType.SqlByte => (SqlByte)value,
+                StorageType.Byte => (byte)value,
+                _ => throw ExceptionBuilder.ConvertFailed(valueType, typeof(SqlInt64)),
+            };
         }
 
         public static SqlDouble ConvertToSqlDouble(object value)
@@ -132,45 +105,27 @@ namespace System.Data.Common
             Type valueType = value.GetType();
             StorageType stype = DataStorage.GetStorageType(valueType);
 
-            switch (stype)
+            return stype switch
             {
-                case StorageType.SqlDouble:
-                    return (SqlDouble)value;
-                case StorageType.Double:
-                    return (double)value;
-                case StorageType.SqlInt64:
-                    return (SqlInt64)value;
-                case StorageType.Int64:
-                    return (long)value;
-                case StorageType.UInt64:
-                    return (ulong)value;
-                case StorageType.SqlInt16:
-                    return (SqlInt16)value;
-                case StorageType.Int16:
-                    return (short)value;
-                case StorageType.UInt16:
-                    return (ushort)value;
-                case StorageType.SqlInt32:
-                    return (SqlInt32)value;
-                case StorageType.Int32:
-                    return (int)value;
-                case StorageType.UInt32:
-                    return (uint)value;
-                case StorageType.SqlByte:
-                    return (SqlByte)value;
-                case StorageType.Byte:
-                    return (byte)value;
-                case StorageType.SqlSingle:
-                    return (SqlSingle)value;
-                case StorageType.Single:
-                    return (float)value;
-                case StorageType.SqlMoney:
-                    return (SqlMoney)value;
-                case StorageType.SqlDecimal:
-                    return (SqlDecimal)value;
-                default:
-                    throw ExceptionBuilder.ConvertFailed(valueType, typeof(SqlDouble));
-            }
+                StorageType.SqlDouble => (SqlDouble)value,
+                StorageType.Double => (double)value,
+                StorageType.SqlInt64 => (SqlInt64)value,
+                StorageType.Int64 => (long)value,
+                StorageType.UInt64 => (ulong)value,
+                StorageType.SqlInt16 => (SqlInt16)value,
+                StorageType.Int16 => (short)value,
+                StorageType.UInt16 => (ushort)value,
+                StorageType.SqlInt32 => (SqlInt32)value,
+                StorageType.Int32 => (int)value,
+                StorageType.UInt32 => (uint)value,
+                StorageType.SqlByte => (SqlByte)value,
+                StorageType.Byte => (byte)value,
+                StorageType.SqlSingle => (SqlSingle)value,
+                StorageType.Single => (float)value,
+                StorageType.SqlMoney => (SqlMoney)value,
+                StorageType.SqlDecimal => (SqlDecimal)value,
+                _ => throw ExceptionBuilder.ConvertFailed(valueType, typeof(SqlDouble)),
+            };
         }
 
         public static SqlDecimal ConvertToSqlDecimal(object value)
@@ -183,39 +138,24 @@ namespace System.Data.Common
             Type valueType = value.GetType();
             StorageType stype = DataStorage.GetStorageType(valueType);
 
-            switch (stype)
+            return stype switch
             {
-                case StorageType.SqlDecimal:
-                    return (SqlDecimal)value;
-                case StorageType.Decimal:
-                    return (decimal)value;
-                case StorageType.SqlInt64:
-                    return (SqlInt64)value;
-                case StorageType.Int64:
-                    return (long)value;
-                case StorageType.UInt64:
-                    return (ulong)value;
-                case StorageType.SqlInt16:
-                    return (SqlInt16)value;
-                case StorageType.Int16:
-                    return (short)value;
-                case StorageType.UInt16:
-                    return (ushort)value;
-                case StorageType.SqlInt32:
-                    return (SqlInt32)value;
-                case StorageType.Int32:
-                    return (int)value;
-                case StorageType.UInt32:
-                    return (uint)value;
-                case StorageType.SqlByte:
-                    return (SqlByte)value;
-                case StorageType.Byte:
-                    return (byte)value;
-                case StorageType.SqlMoney:
-                    return (SqlMoney)value;
-                default:
-                    throw ExceptionBuilder.ConvertFailed(valueType, typeof(SqlDecimal));
-            }
+                StorageType.SqlDecimal => (SqlDecimal)value,
+                StorageType.Decimal => (decimal)value,
+                StorageType.SqlInt64 => (SqlInt64)value,
+                StorageType.Int64 => (long)value,
+                StorageType.UInt64 => (ulong)value,
+                StorageType.SqlInt16 => (SqlInt16)value,
+                StorageType.Int16 => (short)value,
+                StorageType.UInt16 => (ushort)value,
+                StorageType.SqlInt32 => (SqlInt32)value,
+                StorageType.Int32 => (int)value,
+                StorageType.UInt32 => (uint)value,
+                StorageType.SqlByte => (SqlByte)value,
+                StorageType.Byte => (byte)value,
+                StorageType.SqlMoney => (SqlMoney)value,
+                _ => throw ExceptionBuilder.ConvertFailed(valueType, typeof(SqlDecimal)),
+            };
         }
 
         public static SqlSingle ConvertToSqlSingle(object value)
@@ -228,41 +168,25 @@ namespace System.Data.Common
             Type valueType = value.GetType();
             StorageType stype = DataStorage.GetStorageType(valueType);
 
-            switch (stype)
+            return stype switch
             {
-                case StorageType.SqlSingle:
-                    return (SqlSingle)value;
-                case StorageType.Single:
-                    return (float)value;
-                case StorageType.SqlInt64:
-                    return (SqlInt64)value;
-                case StorageType.Int64:
-                    return (long)value;
-                case StorageType.UInt64:
-                    return (ulong)value;
-                case StorageType.SqlInt16:
-                    return (SqlInt16)value;
-                case StorageType.Int16:
-                    return (short)value;
-                case StorageType.UInt16:
-                    return (ushort)value;
-                case StorageType.SqlInt32:
-                    return (SqlInt32)value;
-                case StorageType.Int32:
-                    return (int)value;
-                case StorageType.UInt32:
-                    return (uint)value;
-                case StorageType.SqlByte:
-                    return (SqlByte)value;
-                case StorageType.Byte:
-                    return (byte)value;
-                case StorageType.SqlMoney:
-                    return (SqlMoney)value;
-                case StorageType.SqlDecimal:
-                    return (SqlDecimal)value;
-                default:
-                    throw ExceptionBuilder.ConvertFailed(valueType, typeof(SqlSingle));
-            }
+                StorageType.SqlSingle => (SqlSingle)value,
+                StorageType.Single => (float)value,
+                StorageType.SqlInt64 => (SqlInt64)value,
+                StorageType.Int64 => (long)value,
+                StorageType.UInt64 => (ulong)value,
+                StorageType.SqlInt16 => (SqlInt16)value,
+                StorageType.Int16 => (short)value,
+                StorageType.UInt16 => (ushort)value,
+                StorageType.SqlInt32 => (SqlInt32)value,
+                StorageType.Int32 => (int)value,
+                StorageType.UInt32 => (uint)value,
+                StorageType.SqlByte => (SqlByte)value,
+                StorageType.Byte => (byte)value,
+                StorageType.SqlMoney => (SqlMoney)value,
+                StorageType.SqlDecimal => (SqlDecimal)value,
+                _ => throw ExceptionBuilder.ConvertFailed(valueType, typeof(SqlSingle)),
+            };
         }
 
         public static SqlMoney ConvertToSqlMoney(object value)
@@ -275,37 +199,23 @@ namespace System.Data.Common
             Type valueType = value.GetType();
             StorageType stype = DataStorage.GetStorageType(valueType);
 
-            switch (stype)
+            return stype switch
             {
-                case StorageType.SqlMoney:
-                    return (SqlMoney)value;
-                case StorageType.Decimal:
-                    return (decimal)value;
-                case StorageType.SqlInt64:
-                    return (SqlInt64)value;
-                case StorageType.Int64:
-                    return (long)value;
-                case StorageType.UInt64:
-                    return (ulong)value;
-                case StorageType.SqlInt16:
-                    return (SqlInt16)value;
-                case StorageType.Int16:
-                    return (short)value;
-                case StorageType.UInt16:
-                    return (ushort)value;
-                case StorageType.SqlInt32:
-                    return (SqlInt32)value;
-                case StorageType.Int32:
-                    return (int)value;
-                case StorageType.UInt32:
-                    return (uint)value;
-                case StorageType.SqlByte:
-                    return (SqlByte)value;
-                case StorageType.Byte:
-                    return (byte)value;
-                default:
-                    throw ExceptionBuilder.ConvertFailed(valueType, typeof(SqlMoney));
-            }
+                StorageType.SqlMoney => (SqlMoney)value,
+                StorageType.Decimal => (decimal)value,
+                StorageType.SqlInt64 => (SqlInt64)value,
+                StorageType.Int64 => (long)value,
+                StorageType.UInt64 => (ulong)value,
+                StorageType.SqlInt16 => (SqlInt16)value,
+                StorageType.Int16 => (short)value,
+                StorageType.UInt16 => (ushort)value,
+                StorageType.SqlInt32 => (SqlInt32)value,
+                StorageType.Int32 => (int)value,
+                StorageType.UInt32 => (uint)value,
+                StorageType.SqlByte => (SqlByte)value,
+                StorageType.Byte => (byte)value,
+                _ => throw ExceptionBuilder.ConvertFailed(valueType, typeof(SqlMoney)),
+            };
         }
 
 
@@ -319,15 +229,12 @@ namespace System.Data.Common
             Type valueType = value.GetType();
             StorageType stype = DataStorage.GetStorageType(valueType);
 
-            switch (stype)
+            return stype switch
             {
-                case StorageType.SqlDateTime:
-                    return (SqlDateTime)value;
-                case StorageType.DateTime:
-                    return (DateTime)value;
-                default:
-                    throw ExceptionBuilder.ConvertFailed(valueType, typeof(SqlDateTime));
-            }
+                StorageType.SqlDateTime => (SqlDateTime)value,
+                StorageType.DateTime => (DateTime)value,
+                _ => throw ExceptionBuilder.ConvertFailed(valueType, typeof(SqlDateTime)),
+            };
         }
 
         public static SqlBoolean ConvertToSqlBoolean(object value)
@@ -340,15 +247,12 @@ namespace System.Data.Common
             Type valueType = value.GetType();
             StorageType stype = DataStorage.GetStorageType(valueType);
 
-            switch (stype)
+            return stype switch
             {
-                case StorageType.SqlBoolean:
-                    return (SqlBoolean)value;
-                case StorageType.Boolean:
-                    return (bool)value;
-                default:
-                    throw ExceptionBuilder.ConvertFailed(valueType, typeof(SqlBoolean));
-            }
+                StorageType.SqlBoolean => (SqlBoolean)value,
+                StorageType.Boolean => (bool)value,
+                _ => throw ExceptionBuilder.ConvertFailed(valueType, typeof(SqlBoolean)),
+            };
         }
 
         public static SqlGuid ConvertToSqlGuid(object value)
@@ -361,15 +265,12 @@ namespace System.Data.Common
             Type valueType = value.GetType();
             StorageType stype = DataStorage.GetStorageType(valueType);
 
-            switch (stype)
+            return stype switch
             {
-                case StorageType.SqlGuid:
-                    return (SqlGuid)value;
-                case StorageType.Guid:
-                    return (Guid)value;
-                default:
-                    throw ExceptionBuilder.ConvertFailed(valueType, typeof(SqlGuid));
-            }
+                StorageType.SqlGuid => (SqlGuid)value,
+                StorageType.Guid => (Guid)value,
+                _ => throw ExceptionBuilder.ConvertFailed(valueType, typeof(SqlGuid)),
+            };
         }
 
         public static SqlBinary ConvertToSqlBinary(object value)
@@ -382,15 +283,12 @@ namespace System.Data.Common
             Type valueType = value.GetType();
             StorageType stype = DataStorage.GetStorageType(valueType);
 
-            switch (stype)
+            return stype switch
             {
-                case StorageType.SqlBinary:
-                    return (SqlBinary)value;
-                case StorageType.ByteArray:
-                    return (byte[])value;
-                default:
-                    throw ExceptionBuilder.ConvertFailed(valueType, typeof(SqlBinary));
-            }
+                StorageType.SqlBinary => (SqlBinary)value,
+                StorageType.ByteArray => (byte[])value,
+                _ => throw ExceptionBuilder.ConvertFailed(valueType, typeof(SqlBinary)),
+            };
         }
 
         public static SqlString ConvertToSqlString(object value)
@@ -403,15 +301,12 @@ namespace System.Data.Common
             Type valueType = value.GetType();
             StorageType stype = DataStorage.GetStorageType(valueType);
 
-            switch (stype)
+            return stype switch
             {
-                case StorageType.SqlString:
-                    return (SqlString)value;
-                case StorageType.String:
-                    return (string)value;
-                default:
-                    throw ExceptionBuilder.ConvertFailed(valueType, typeof(SqlString));
-            }
+                StorageType.SqlString => (SqlString)value,
+                StorageType.String => (string)value,
+                _ => throw ExceptionBuilder.ConvertFailed(valueType, typeof(SqlString)),
+            };
         }
 
         public static SqlChars ConvertToSqlChars(object value)
@@ -423,13 +318,11 @@ namespace System.Data.Common
             }
             Type valueType = value.GetType();
             StorageType stype = DataStorage.GetStorageType(valueType);
-            switch (stype)
+            return stype switch
             {
-                case StorageType.SqlChars:
-                    return (SqlChars)value;
-                default:
-                    throw ExceptionBuilder.ConvertFailed(valueType, typeof(SqlChars));
-            }
+                StorageType.SqlChars => (SqlChars)value,
+                _ => throw ExceptionBuilder.ConvertFailed(valueType, typeof(SqlChars)),
+            };
         }
 
         public static SqlBytes ConvertToSqlBytes(object value)
@@ -441,13 +334,11 @@ namespace System.Data.Common
             }
             Type valueType = value.GetType();
             StorageType stype = DataStorage.GetStorageType(valueType);
-            switch (stype)
+            return stype switch
             {
-                case StorageType.SqlBytes:
-                    return (SqlBytes)value;
-                default:
-                    throw ExceptionBuilder.ConvertFailed(valueType, typeof(SqlBytes));
-            }
+                StorageType.SqlBytes => (SqlBytes)value,
+                _ => throw ExceptionBuilder.ConvertFailed(valueType, typeof(SqlBytes)),
+            };
         }
 
         public static DateTimeOffset ConvertStringToDateTimeOffset(string value, IFormatProvider formatProvider)
@@ -601,17 +492,13 @@ namespace System.Data.Common
                             else if (StorageType.TimeSpan == stype)
                             {
                                 // destination is TimeSpan
-                                switch (vtype)
+                                return vtype switch
                                 {
-                                    case StorageType.String:
-                                        return XmlConvert.ToTimeSpan((string)value);
-                                    case StorageType.Int32:
-                                        return new TimeSpan((int)value);
-                                    case StorageType.Int64:
-                                        return new TimeSpan((long)value);
-                                    default:
-                                        return (TimeSpan)value;
-                                }
+                                    StorageType.String => XmlConvert.ToTimeSpan((string)value),
+                                    StorageType.Int32 => new TimeSpan((int)value),
+                                    StorageType.Int64 => new TimeSpan((long)value),
+                                    _ => (TimeSpan)value,
+                                };
                             }
                             else if (StorageType.DateTimeOffset == stype)
                             { // destination is DateTimeOffset
@@ -751,17 +638,13 @@ namespace System.Data.Common
                 case StorageType.DateTimeOffset:
                     return XmlConvert.ToDateTimeOffset((string)value);
                 case StorageType.TimeSpan:
-                    switch (vtype)
+                    return vtype switch
                     {
-                        case StorageType.String:
-                            return XmlConvert.ToTimeSpan((string)value);
-                        case StorageType.Int32:
-                            return new TimeSpan((int)value);
-                        case StorageType.Int64:
-                            return new TimeSpan((long)value);
-                        default:
-                            return (TimeSpan)value;
-                    }
+                        StorageType.String => XmlConvert.ToTimeSpan((string)value),
+                        StorageType.Int32 => new TimeSpan((int)value),
+                        StorageType.Int64 => new TimeSpan((long)value),
+                        _ => (TimeSpan)value,
+                    };
                 default:
                     {
                         if ((DBNull.Value == value) || (null == value))

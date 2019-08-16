@@ -1321,17 +1321,17 @@ namespace System.Xml.Schema
         {
             if (value == null) throw new ArgumentNullException(nameof(value));
 
-            switch (TypeCode)
+            return TypeCode switch
             {
-                case XmlTypeCode.Date: return StringToDate((string)value);
-                case XmlTypeCode.Time: return StringToTime((string)value);
-                case XmlTypeCode.GDay: return StringToGDay((string)value);
-                case XmlTypeCode.GMonth: return StringToGMonth((string)value);
-                case XmlTypeCode.GMonthDay: return StringToGMonthDay((string)value);
-                case XmlTypeCode.GYear: return StringToGYear((string)value);
-                case XmlTypeCode.GYearMonth: return StringToGYearMonth((string)value);
-            }
-            return StringToDateTime((string)value);
+                XmlTypeCode.Date => StringToDate((string)value),
+                XmlTypeCode.Time => StringToTime((string)value),
+                XmlTypeCode.GDay => StringToGDay((string)value),
+                XmlTypeCode.GMonth => StringToGMonth((string)value),
+                XmlTypeCode.GMonthDay => StringToGMonthDay((string)value),
+                XmlTypeCode.GYear => StringToGYear((string)value),
+                XmlTypeCode.GYearMonth => StringToGYearMonth((string)value),
+                _ => StringToDateTime((string)value),
+            };
         }
         public override DateTime ToDateTime(object value)
         {
@@ -1360,17 +1360,17 @@ namespace System.Xml.Schema
         {
             if (value == null) throw new ArgumentNullException(nameof(value));
 
-            switch (TypeCode)
+            return TypeCode switch
             {
-                case XmlTypeCode.Date: return StringToDateOffset((string)value);
-                case XmlTypeCode.Time: return StringToTimeOffset((string)value);
-                case XmlTypeCode.GDay: return StringToGDayOffset((string)value);
-                case XmlTypeCode.GMonth: return StringToGMonthOffset((string)value);
-                case XmlTypeCode.GMonthDay: return StringToGMonthDayOffset((string)value);
-                case XmlTypeCode.GYear: return StringToGYearOffset((string)value);
-                case XmlTypeCode.GYearMonth: return StringToGYearMonthOffset((string)value);
-            }
-            return StringToDateTimeOffset((string)value);
+                XmlTypeCode.Date => StringToDateOffset((string)value),
+                XmlTypeCode.Time => StringToTimeOffset((string)value),
+                XmlTypeCode.GDay => StringToGDayOffset((string)value),
+                XmlTypeCode.GMonth => StringToGMonthOffset((string)value),
+                XmlTypeCode.GMonthDay => StringToGMonthDayOffset((string)value),
+                XmlTypeCode.GYear => StringToGYearOffset((string)value),
+                XmlTypeCode.GYearMonth => StringToGYearMonthOffset((string)value),
+                _ => StringToDateTimeOffset((string)value),
+            };
         }
 
         public override DateTimeOffset ToDateTimeOffset(object value)
@@ -1426,35 +1426,32 @@ namespace System.Xml.Schema
         // ToString
         //-----------------------------------------------
 
-        public override string ToString(DateTime value)
-        {
-            switch (TypeCode)
+        public override string ToString(DateTime value) =>
+            TypeCode switch
             {
-                case XmlTypeCode.Date: return DateToString((DateTime)value);
-                case XmlTypeCode.Time: return TimeToString((DateTime)value);
-                case XmlTypeCode.GDay: return GDayToString((DateTime)value);
-                case XmlTypeCode.GMonth: return GMonthToString((DateTime)value);
-                case XmlTypeCode.GMonthDay: return GMonthDayToString((DateTime)value);
-                case XmlTypeCode.GYear: return GYearToString((DateTime)value);
-                case XmlTypeCode.GYearMonth: return GYearMonthToString((DateTime)value);
-            }
-            return DateTimeToString((DateTime)value);
-        }
+                XmlTypeCode.Date => DateToString((DateTime)value),
+                XmlTypeCode.Time => TimeToString((DateTime)value),
+                XmlTypeCode.GDay => GDayToString((DateTime)value),
+                XmlTypeCode.GMonth => GMonthToString((DateTime)value),
+                XmlTypeCode.GMonthDay => GMonthDayToString((DateTime)value),
+                XmlTypeCode.GYear => GYearToString((DateTime)value),
+                XmlTypeCode.GYearMonth => GYearMonthToString((DateTime)value),
+                _ => DateTimeToString((DateTime)value),
+            };
 
-        public override string ToString(DateTimeOffset value)
-        {
-            switch (TypeCode)
+        public override string ToString(DateTimeOffset value) =>
+            TypeCode switch
             {
-                case XmlTypeCode.Date: return DateOffsetToString((DateTimeOffset)value);
-                case XmlTypeCode.Time: return TimeOffsetToString((DateTimeOffset)value);
-                case XmlTypeCode.GDay: return GDayOffsetToString((DateTimeOffset)value);
-                case XmlTypeCode.GMonth: return GMonthOffsetToString((DateTimeOffset)value);
-                case XmlTypeCode.GMonthDay: return GMonthDayOffsetToString((DateTimeOffset)value);
-                case XmlTypeCode.GYear: return GYearOffsetToString((DateTimeOffset)value);
-                case XmlTypeCode.GYearMonth: return GYearMonthOffsetToString((DateTimeOffset)value);
-            }
-            return DateTimeOffsetToString((DateTimeOffset)value);
-        }
+                XmlTypeCode.Date => DateOffsetToString((DateTimeOffset)value),
+                XmlTypeCode.Time => TimeOffsetToString((DateTimeOffset)value),
+                XmlTypeCode.GDay => GDayOffsetToString((DateTimeOffset)value),
+                XmlTypeCode.GMonth => GMonthOffsetToString((DateTimeOffset)value),
+                XmlTypeCode.GMonthDay => GMonthDayOffsetToString((DateTimeOffset)value),
+                XmlTypeCode.GYear => GYearOffsetToString((DateTimeOffset)value),
+                XmlTypeCode.GYearMonth => GYearMonthOffsetToString((DateTimeOffset)value),
+                _ => DateTimeOffsetToString((DateTimeOffset)value),
+            };
+
         public override string ToString(object value, IXmlNamespaceResolver nsResolver)
         {
             if (value == null) throw new ArgumentNullException(nameof(value));

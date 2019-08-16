@@ -200,17 +200,15 @@ namespace System.IO.Compression
             }
 
 
-            protected override bool ReleaseHandle()
-            {
-                switch (InitializationState)
+            protected override bool ReleaseHandle() =>
+                InitializationState switch
                 {
-                    case State.NotInitialized: return true;
-                    case State.InitializedForDeflate: return (DeflateEnd() == ErrorCode.Ok);
-                    case State.InitializedForInflate: return (InflateEnd() == ErrorCode.Ok);
-                    case State.Disposed: return true;
-                    default: return false;  // This should never happen. Did we forget one of the State enum values in the switch?
-                }
-            }
+                    State.NotInitialized => true,
+                    State.InitializedForDeflate => (DeflateEnd() == ErrorCode.Ok),
+                    State.InitializedForInflate => (InflateEnd() == ErrorCode.Ok),
+                    State.Disposed => true,
+                    _ => false,  // This should never happen. Did we forget one of the State enum values in the switch?
+                };
 
             public IntPtr NextIn
             {

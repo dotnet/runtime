@@ -110,15 +110,12 @@ namespace System.IO.Enumeration
             bool ignoreCase = (options.MatchCasing == MatchCasing.PlatformDefault && !PathInternal.IsCaseSensitive)
                 || options.MatchCasing == MatchCasing.CaseInsensitive;
 
-            switch (options.MatchType)
+            return options.MatchType switch
             {
-                case MatchType.Simple:
-                    return FileSystemName.MatchesSimpleExpression(expression.AsSpan(), name, ignoreCase);
-                case MatchType.Win32:
-                    return FileSystemName.MatchesWin32Expression(expression.AsSpan(), name, ignoreCase);
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(options));
-            }
+                MatchType.Simple => FileSystemName.MatchesSimpleExpression(expression.AsSpan(), name, ignoreCase),
+                MatchType.Win32 => FileSystemName.MatchesWin32Expression(expression.AsSpan(), name, ignoreCase),
+                _ => throw new ArgumentOutOfRangeException(nameof(options)),
+            };
         }
 
         internal static IEnumerable<string> UserFiles(string directory,

@@ -250,45 +250,18 @@ namespace System.Drawing
             return (size, units);
         }
 
-        private GraphicsUnit ParseGraphicsUnits(string units)
-        {
-            GraphicsUnit fontSizeUnit;
-            switch (units)
+        private GraphicsUnit ParseGraphicsUnits(string units) =>
+            units switch
             {
-                case "display":
-                    fontSizeUnit = GraphicsUnit.Display;
-                    break;
-
-                case "doc":
-                    fontSizeUnit = GraphicsUnit.Document;
-                    break;
-
-                case "pt":
-                    fontSizeUnit = GraphicsUnit.Point;
-                    break;
-
-                case "in":
-                    fontSizeUnit = GraphicsUnit.Inch;
-                    break;
-
-                case "mm":
-                    fontSizeUnit = GraphicsUnit.Millimeter;
-                    break;
-
-                case "px":
-                    fontSizeUnit = GraphicsUnit.Pixel;
-                    break;
-
-                case "world":
-                    fontSizeUnit = GraphicsUnit.World;
-                    break;
-
-                default:
-                    throw new ArgumentException(SR.Format(SR.InvalidArgumentValue, units), nameof(units));
-            }
-
-            return fontSizeUnit;
-        }
+                "display" => GraphicsUnit.Display,
+                "doc" => GraphicsUnit.Document,
+                "pt" => GraphicsUnit.Point,
+                "in" => GraphicsUnit.Inch,
+                "mm" => GraphicsUnit.Millimeter,
+                "px" => GraphicsUnit.Pixel,
+                "world" => GraphicsUnit.World,
+                _ => throw new ArgumentException(SR.Format(SR.InvalidArgumentValue, units), nameof(units)),
+            };
 
         public override object CreateInstance(ITypeDescriptorContext context, IDictionary propertyValues)
         {

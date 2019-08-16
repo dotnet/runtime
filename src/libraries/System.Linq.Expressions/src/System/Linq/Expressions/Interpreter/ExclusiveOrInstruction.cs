@@ -161,22 +161,19 @@ namespace System.Linq.Expressions.Interpreter
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
-        public static Instruction Create(Type type)
-        {
-            switch (type.GetNonNullableType().GetTypeCode())
+        public static Instruction Create(Type type) =>
+            type.GetNonNullableType().GetTypeCode() switch
             {
-                case TypeCode.SByte: return s_SByte ?? (s_SByte = new ExclusiveOrSByte());
-                case TypeCode.Int16: return s_Int16 ?? (s_Int16 = new ExclusiveOrInt16());
-                case TypeCode.Int32: return s_Int32 ?? (s_Int32 = new ExclusiveOrInt32());
-                case TypeCode.Int64: return s_Int64 ?? (s_Int64 = new ExclusiveOrInt64());
-                case TypeCode.Byte: return s_Byte ?? (s_Byte = new ExclusiveOrByte());
-                case TypeCode.UInt16: return s_UInt16 ?? (s_UInt16 = new ExclusiveOrUInt16());
-                case TypeCode.UInt32: return s_UInt32 ?? (s_UInt32 = new ExclusiveOrUInt32());
-                case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new ExclusiveOrUInt64());
-                case TypeCode.Boolean: return s_Boolean ?? (s_Boolean = new ExclusiveOrBoolean());
-                default:
-                    throw ContractUtils.Unreachable;
-            }
-        }
+                TypeCode.SByte => s_SByte ?? (s_SByte = new ExclusiveOrSByte()),
+                TypeCode.Int16 => s_Int16 ?? (s_Int16 = new ExclusiveOrInt16()),
+                TypeCode.Int32 => s_Int32 ?? (s_Int32 = new ExclusiveOrInt32()),
+                TypeCode.Int64 => s_Int64 ?? (s_Int64 = new ExclusiveOrInt64()),
+                TypeCode.Byte => s_Byte ?? (s_Byte = new ExclusiveOrByte()),
+                TypeCode.UInt16 => s_UInt16 ?? (s_UInt16 = new ExclusiveOrUInt16()),
+                TypeCode.UInt32 => s_UInt32 ?? (s_UInt32 = new ExclusiveOrUInt32()),
+                TypeCode.UInt64 => s_UInt64 ?? (s_UInt64 = new ExclusiveOrUInt64()),
+                TypeCode.Boolean => s_Boolean ?? (s_Boolean = new ExclusiveOrBoolean()),
+                _ => throw ContractUtils.Unreachable,
+            };
     }
 }

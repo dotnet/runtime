@@ -156,19 +156,18 @@ namespace System.Linq.Expressions.Interpreter
         public static Instruction Create(Type type)
         {
             Debug.Assert(!type.IsEnum);
-            switch (type.GetNonNullableType().GetTypeCode())
+            return type.GetNonNullableType().GetTypeCode() switch
             {
-                case TypeCode.Int16: return s_Int16 ?? (s_Int16 = new IncrementInt16());
-                case TypeCode.Int32: return s_Int32 ?? (s_Int32 = new IncrementInt32());
-                case TypeCode.Int64: return s_Int64 ?? (s_Int64 = new IncrementInt64());
-                case TypeCode.UInt16: return s_UInt16 ?? (s_UInt16 = new IncrementUInt16());
-                case TypeCode.UInt32: return s_UInt32 ?? (s_UInt32 = new IncrementUInt32());
-                case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new IncrementUInt64());
-                case TypeCode.Single: return s_Single ?? (s_Single = new IncrementSingle());
-                case TypeCode.Double: return s_Double ?? (s_Double = new IncrementDouble());
-                default:
-                    throw ContractUtils.Unreachable;
-            }
+                TypeCode.Int16 => s_Int16 ?? (s_Int16 = new IncrementInt16()),
+                TypeCode.Int32 => s_Int32 ?? (s_Int32 = new IncrementInt32()),
+                TypeCode.Int64 => s_Int64 ?? (s_Int64 = new IncrementInt64()),
+                TypeCode.UInt16 => s_UInt16 ?? (s_UInt16 = new IncrementUInt16()),
+                TypeCode.UInt32 => s_UInt32 ?? (s_UInt32 = new IncrementUInt32()),
+                TypeCode.UInt64 => s_UInt64 ?? (s_UInt64 = new IncrementUInt64()),
+                TypeCode.Single => s_Single ?? (s_Single = new IncrementSingle()),
+                TypeCode.Double => s_Double ?? (s_Double = new IncrementDouble()),
+                _ => throw ContractUtils.Unreachable,
+            };
         }
     }
 }

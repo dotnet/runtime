@@ -108,19 +108,13 @@ namespace System.Data.ProviderBase
                     }
                     else
                     {
-                        switch (mappingAction)
+                        _tableMapping = mappingAction switch
                         {
-                            case MissingMappingAction.Passthrough:
-                                _tableMapping = new DataTableMapping(_dataTable.TableName, _dataTable.TableName);
-                                break;
-                            case MissingMappingAction.Ignore:
-                                _tableMapping = null;
-                                break;
-                            case MissingMappingAction.Error:
-                                throw ADP.MissingTableMappingDestination(_dataTable.TableName);
-                            default:
-                                throw ADP.InvalidMissingMappingAction(mappingAction);
-                        }
+                            MissingMappingAction.Passthrough => new DataTableMapping(_dataTable.TableName, _dataTable.TableName),
+                            MissingMappingAction.Ignore => null,
+                            MissingMappingAction.Error => throw ADP.MissingTableMappingDestination(_dataTable.TableName),
+                            _ => throw ADP.InvalidMissingMappingAction(mappingAction),
+                        };
                     }
                 }
             }
@@ -329,16 +323,13 @@ namespace System.Data.ProviderBase
                             }
                             else
                             {
-                                switch (_xmlMap[i])
+                                _readerDataValues[i] = _xmlMap[i] switch
                                 {
-                                    case SqlXml:
-                                        // map strongly typed SqlString.Null to SqlXml.Null
-                                        _readerDataValues[i] = System.Data.SqlTypes.SqlXml.Null;
-                                        break;
-                                    default:
-                                        _readerDataValues[i] = DBNull.Value;
-                                        break;
-                                }
+                                    // map strongly typed SqlString.Null to SqlXml.Null
+                                    SqlXml => System.Data.SqlTypes.SqlXml.Null,
+
+                                    _ => DBNull.Value,
+                                };
                             }
                         }
                         if (null != xml)

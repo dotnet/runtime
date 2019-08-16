@@ -221,135 +221,76 @@ namespace System.Data.OleDb
         }
 #endif
 
-        internal static NativeDBType FromDataType(OleDbType enumOleDbType)
-        {
-            switch (enumOleDbType)
-            { // @perfnote: Enum.IsDefined
-                case OleDbType.Empty:
-                    return D_Empty;            //   0
-                case OleDbType.SmallInt:
-                    return D_SmallInt;         //   2
-                case OleDbType.Integer:
-                    return D_Integer;          //   3
-                case OleDbType.Single:
-                    return D_Single;           //   4
-                case OleDbType.Double:
-                    return D_Double;           //   5
-                case OleDbType.Currency:
-                    return D_Currency;         //   6
-                case OleDbType.Date:
-                    return D_Date;             //   7
-                case OleDbType.BSTR:
-                    return D_BSTR;             //   8
-                case OleDbType.IDispatch:
-                    return D_IDispatch;        //   9
-                case OleDbType.Error:
-                    return D_Error;            //  10
-                case OleDbType.Boolean:
-                    return D_Boolean;          //  11
-                case OleDbType.Variant:
-                    return D_Variant;          //  12
-                case OleDbType.IUnknown:
-                    return D_IUnknown;         //  13
-                case OleDbType.Decimal:
-                    return D_Decimal;          //  14
-                case OleDbType.TinyInt:
-                    return D_TinyInt;          //  16
-                case OleDbType.UnsignedTinyInt:
-                    return D_UnsignedTinyInt;  //  17
-                case OleDbType.UnsignedSmallInt:
-                    return D_UnsignedSmallInt; //  18
-                case OleDbType.UnsignedInt:
-                    return D_UnsignedInt;      //  19
-                case OleDbType.BigInt:
-                    return D_BigInt;           //  20
-                case OleDbType.UnsignedBigInt:
-                    return D_UnsignedBigInt;   //  21
-                case OleDbType.Filetime:
-                    return D_Filetime;         //  64
-                case OleDbType.Guid:
-                    return D_Guid;             //  72
-                case OleDbType.Binary:
-                    return D_Binary;           // 128
-                case OleDbType.Char:
-                    return D_Char;             // 129
-                case OleDbType.WChar:
-                    return D_WChar;            // 130
-                case OleDbType.Numeric:
-                    return D_Numeric;          // 131
-                case OleDbType.DBDate:
-                    return D_DBDate;           // 133
-                case OleDbType.DBTime:
-                    return D_DBTime;           // 134
-                case OleDbType.DBTimeStamp:
-                    return D_DBTimeStamp;      // 135
-                case OleDbType.PropVariant:
-                    return D_PropVariant;      // 138
-                case OleDbType.VarNumeric:
-                    return D_VarNumeric;       // 139
-                case OleDbType.VarChar:
-                    return D_VarChar;          // 200
-                case OleDbType.LongVarChar:
-                    return D_LongVarChar;      // 201
-                case OleDbType.VarWChar:
-                    return D_VarWChar;         // 202: ORA-12704: character set mismatch
-                case OleDbType.LongVarWChar:
-                    return D_LongVarWChar;     // 203
-                case OleDbType.VarBinary:
-                    return D_VarBinary;        // 204
-                case OleDbType.LongVarBinary:
-                    return D_LongVarBinary;    // 205
-                default:
-                    throw ODB.InvalidOleDbType(enumOleDbType);
-            }
-        }
+        internal static NativeDBType FromDataType(OleDbType enumOleDbType) =>
+            enumOleDbType switch
+            {
+                OleDbType.Empty => D_Empty,                       //   0
+                OleDbType.SmallInt => D_SmallInt,                 //   2
+                OleDbType.Integer => D_Integer,                   //   3
+                OleDbType.Single => D_Single,                     //   4
+                OleDbType.Double => D_Double,                     //   5
+                OleDbType.Currency => D_Currency,                 //   6
+                OleDbType.Date => D_Date,                         //   7
+                OleDbType.BSTR => D_BSTR,                         //   8
+                OleDbType.IDispatch => D_IDispatch,               //   9
+                OleDbType.Error => D_Error,                       //  10
+                OleDbType.Boolean => D_Boolean,                   //  11
+                OleDbType.Variant => D_Variant,                   //  12
+                OleDbType.IUnknown => D_IUnknown,                 //  13
+                OleDbType.Decimal => D_Decimal,                   //  14
+                OleDbType.TinyInt => D_TinyInt,                   //  16
+                OleDbType.UnsignedTinyInt => D_UnsignedTinyInt,   //  17
+                OleDbType.UnsignedSmallInt => D_UnsignedSmallInt, //  18
+                OleDbType.UnsignedInt => D_UnsignedInt,           //  19
+                OleDbType.BigInt => D_BigInt,                     //  20
+                OleDbType.UnsignedBigInt => D_UnsignedBigInt,     //  21
+                OleDbType.Filetime => D_Filetime,                 //  64
+                OleDbType.Guid => D_Guid,                         //  72
+                OleDbType.Binary => D_Binary,                     // 128
+                OleDbType.Char => D_Char,                         // 129
+                OleDbType.WChar => D_WChar,                       // 130
+                OleDbType.Numeric => D_Numeric,                   // 131
+                OleDbType.DBDate => D_DBDate,                     // 133
+                OleDbType.DBTime => D_DBTime,                     // 134
+                OleDbType.DBTimeStamp => D_DBTimeStamp,           // 135
+                OleDbType.PropVariant => D_PropVariant,           // 138
+                OleDbType.VarNumeric => D_VarNumeric,             // 139
+                OleDbType.VarChar => D_VarChar,                   // 200
+                OleDbType.LongVarChar => D_LongVarChar,           // 201
+                OleDbType.VarWChar => D_VarWChar,                 // 202: ORA-12704: character set mismatch
+                OleDbType.LongVarWChar => D_LongVarWChar,         // 203
+                OleDbType.VarBinary => D_VarBinary,               // 204
+                OleDbType.LongVarBinary => D_LongVarBinary,       // 205
+                _ => throw ODB.InvalidOleDbType(enumOleDbType),
+            };
 
         internal static NativeDBType FromSystemType(object value)
         {
             IConvertible ic = (value as IConvertible);
             if (null != ic)
             {
-                switch (ic.GetTypeCode())
+                return ic.GetTypeCode() switch
                 {
-                    case TypeCode.Empty:
-                        return NativeDBType.D_Empty;
-                    case TypeCode.Object:
-                        return NativeDBType.D_Variant;
-                    case TypeCode.DBNull:
-                        throw ADP.InvalidDataType(TypeCode.DBNull);
-                    case TypeCode.Boolean:
-                        return NativeDBType.D_Boolean;
-                    case TypeCode.Char:
-                        return NativeDBType.D_Char;
-                    case TypeCode.SByte:
-                        return NativeDBType.D_TinyInt;
-                    case TypeCode.Byte:
-                        return NativeDBType.D_UnsignedTinyInt;
-                    case TypeCode.Int16:
-                        return NativeDBType.D_SmallInt;
-                    case TypeCode.UInt16:
-                        return NativeDBType.D_UnsignedSmallInt;
-                    case TypeCode.Int32:
-                        return NativeDBType.D_Integer;
-                    case TypeCode.UInt32:
-                        return NativeDBType.D_UnsignedInt;
-                    case TypeCode.Int64:
-                        return NativeDBType.D_BigInt;
-                    case TypeCode.UInt64:
-                        return NativeDBType.D_UnsignedBigInt;
-                    case TypeCode.Single:
-                        return NativeDBType.D_Single;
-                    case TypeCode.Double:
-                        return NativeDBType.D_Double;
-                    case TypeCode.Decimal:
-                        return NativeDBType.D_Decimal;
-                    case TypeCode.DateTime:
-                        return NativeDBType.D_DBTimeStamp;
-                    case TypeCode.String:
-                        return NativeDBType.D_VarWChar;
-                    default:
-                        throw ADP.UnknownDataTypeCode(value.GetType(), ic.GetTypeCode());
-                }
+                    TypeCode.Empty => NativeDBType.D_Empty,
+                    TypeCode.Object => NativeDBType.D_Variant,
+                    TypeCode.DBNull => throw ADP.InvalidDataType(TypeCode.DBNull),
+                    TypeCode.Boolean => NativeDBType.D_Boolean,
+                    TypeCode.Char => NativeDBType.D_Char,
+                    TypeCode.SByte => NativeDBType.D_TinyInt,
+                    TypeCode.Byte => NativeDBType.D_UnsignedTinyInt,
+                    TypeCode.Int16 => NativeDBType.D_SmallInt,
+                    TypeCode.UInt16 => NativeDBType.D_UnsignedSmallInt,
+                    TypeCode.Int32 => NativeDBType.D_Integer,
+                    TypeCode.UInt32 => NativeDBType.D_UnsignedInt,
+                    TypeCode.Int64 => NativeDBType.D_BigInt,
+                    TypeCode.UInt64 => NativeDBType.D_UnsignedBigInt,
+                    TypeCode.Single => NativeDBType.D_Single,
+                    TypeCode.Double => NativeDBType.D_Double,
+                    TypeCode.Decimal => NativeDBType.D_Decimal,
+                    TypeCode.DateTime => NativeDBType.D_DBTimeStamp,
+                    TypeCode.String => NativeDBType.D_VarWChar,
+                    _ => throw ADP.UnknownDataTypeCode(value.GetType(), ic.GetTypeCode()),
+                };
             }
             else if (value is byte[])
             {
@@ -370,64 +311,36 @@ namespace System.Data.OleDb
             //throw ADP.UnknownDataType(value.GetType());
         }
 
-        internal static NativeDBType FromDbType(DbType dbType)
-        {
-            switch (dbType)
+        internal static NativeDBType FromDbType(DbType dbType) =>
+            dbType switch
             {
-                case DbType.AnsiString:
-                    return D_VarChar;
-                case DbType.AnsiStringFixedLength:
-                    return D_Char;
-                case DbType.Binary:
-                    return D_VarBinary;
-                case DbType.Byte:
-                    return D_UnsignedTinyInt;
-                case DbType.Boolean:
-                    return D_Boolean;
-                case DbType.Currency:
-                    return D_Currency;
-                case DbType.Date:
-                    return D_DBDate;
-                case DbType.DateTime:
-                    return D_DBTimeStamp;
-                case DbType.Decimal:
-                    return D_Decimal;
-                case DbType.Double:
-                    return D_Double;
-                case DbType.Guid:
-                    return D_Guid;
-                case DbType.Int16:
-                    return D_SmallInt;
-                case DbType.Int32:
-                    return D_Integer;
-                case DbType.Int64:
-                    return D_BigInt;
-                case DbType.Object:
-                    return D_Variant;
-                case DbType.SByte:
-                    return D_TinyInt;
-                case DbType.Single:
-                    return D_Single;
-                case DbType.String:
-                    return D_VarWChar;
-                case DbType.StringFixedLength:
-                    return D_WChar;
-                case DbType.Time:
-                    return D_DBTime;
-                case DbType.UInt16:
-                    return D_UnsignedSmallInt;
-                case DbType.UInt32:
-                    return D_UnsignedInt;
-                case DbType.UInt64:
-                    return D_UnsignedBigInt;
-                case DbType.VarNumeric:
-                    return D_VarNumeric;
-                case DbType.Xml:
-                    return D_Xml;
-                default:
-                    throw ADP.DbTypeNotSupported(dbType, typeof(OleDbType));
-            }
-        }
+                DbType.AnsiString => D_VarChar,
+                DbType.AnsiStringFixedLength => D_Char,
+                DbType.Binary => D_VarBinary,
+                DbType.Byte => D_UnsignedTinyInt,
+                DbType.Boolean => D_Boolean,
+                DbType.Currency => D_Currency,
+                DbType.Date => D_DBDate,
+                DbType.DateTime => D_DBTimeStamp,
+                DbType.Decimal => D_Decimal,
+                DbType.Double => D_Double,
+                DbType.Guid => D_Guid,
+                DbType.Int16 => D_SmallInt,
+                DbType.Int32 => D_Integer,
+                DbType.Int64 => D_BigInt,
+                DbType.Object => D_Variant,
+                DbType.SByte => D_TinyInt,
+                DbType.Single => D_Single,
+                DbType.String => D_VarWChar,
+                DbType.StringFixedLength => D_WChar,
+                DbType.Time => D_DBTime,
+                DbType.UInt16 => D_UnsignedSmallInt,
+                DbType.UInt32 => D_UnsignedInt,
+                DbType.UInt64 => D_UnsignedBigInt,
+                DbType.VarNumeric => D_VarNumeric,
+                DbType.Xml => D_Xml,
+                _ => throw ADP.DbTypeNotSupported(dbType, typeof(OleDbType)),
+            };
 
         internal static NativeDBType FromDBType(short dbType, bool isLong, bool isFixed)
         {
