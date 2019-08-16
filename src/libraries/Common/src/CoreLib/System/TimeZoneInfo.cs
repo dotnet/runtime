@@ -1701,21 +1701,15 @@ namespace System
         /// Helper function that calculates the UTC offset for a UTC-dateTime in a timeZone.
         /// This function assumes that the dateTime is represented in UTC and has *not* already been converted into the timeZone.
         /// </summary>
-        private static TimeSpan GetUtcOffsetFromUtc(DateTime time, TimeZoneInfo zone)
-        {
-            bool isDaylightSavings;
-            return GetUtcOffsetFromUtc(time, zone, out isDaylightSavings);
-        }
+        private static TimeSpan GetUtcOffsetFromUtc(DateTime time, TimeZoneInfo zone) =>
+            GetUtcOffsetFromUtc(time, zone, out _);
 
         /// <summary>
         /// Helper function that calculates the UTC offset for a UTC-dateTime in a timeZone.
         /// This function assumes that the dateTime is represented in UTC and has *not* already been converted into the timeZone.
         /// </summary>
-        private static TimeSpan GetUtcOffsetFromUtc(DateTime time, TimeZoneInfo zone, out bool isDaylightSavings)
-        {
-            bool isAmbiguousLocalDst;
-            return GetUtcOffsetFromUtc(time, zone, out isDaylightSavings, out isAmbiguousLocalDst);
-        }
+        private static TimeSpan GetUtcOffsetFromUtc(DateTime time, TimeZoneInfo zone, out bool isDaylightSavings) =>
+            GetUtcOffsetFromUtc(time, zone, out isDaylightSavings, out _);
 
         /// <summary>
         /// Helper function that calculates the UTC offset for a UTC-dateTime in a timeZone.
@@ -1847,12 +1841,11 @@ namespace System
 
             TimeZoneInfoResult result = TimeZoneInfoResult.Success;
             e = null;
-            TimeZoneInfo? match = null;
 
             // check the cache
             if (cachedData._systemTimeZones != null)
             {
-                if (cachedData._systemTimeZones.TryGetValue(id, out match))
+                if (cachedData._systemTimeZones.TryGetValue(id, out TimeZoneInfo? match))
                 {
                     if (dstDisabled && match._supportsDaylightSavingTime)
                     {
@@ -1864,6 +1857,7 @@ namespace System
                         value = new TimeZoneInfo(match._id, match._baseUtcOffset, match._displayName, match._standardDisplayName,
                                               match._daylightDisplayName, match._adjustmentRules, disableDaylightSavingTime: false);
                     }
+
                     return result;
                 }
             }

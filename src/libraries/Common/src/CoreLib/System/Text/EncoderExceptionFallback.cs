@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Runtime.Serialization;
 
 namespace System.Text
@@ -14,33 +13,16 @@ namespace System.Text
         {
         }
 
-        public override EncoderFallbackBuffer CreateFallbackBuffer()
-        {
-            return new EncoderExceptionFallbackBuffer();
-        }
+        public override EncoderFallbackBuffer CreateFallbackBuffer() =>
+            new EncoderExceptionFallbackBuffer();
 
         // Maximum number of characters that this instance of this fallback could return
-        public override int MaxCharCount
-        {
-            get
-            {
-                return 0;
-            }
-        }
+        public override int MaxCharCount => 0;
 
-        public override bool Equals(object? value)
-        {
-            if (value is EncoderExceptionFallback that)
-            {
-                return true;
-            }
-            return false;
-        }
+        public override bool Equals(object? value) =>
+            value is EncoderExceptionFallback;
 
-        public override int GetHashCode()
-        {
-            return 654;
-        }
+        public override int GetHashCode() => 654;
     }
 
 
@@ -74,25 +56,13 @@ namespace System.Text
                 SR.Format(SR.Argument_InvalidCodePageConversionIndex, iTemp, index), charUnknownHigh, charUnknownLow, index);
         }
 
-        public override char GetNextChar()
-        {
-            return (char)0;
-        }
+        public override char GetNextChar() => (char)0;
 
-        public override bool MovePrevious()
-        {
-            // Exception fallback doesn't have anywhere to back up to.
-            return false;
-        }
+        // Exception fallback doesn't have anywhere to back up to.
+        public override bool MovePrevious() => false;
 
         // Exceptions are always empty
-        public override int Remaining
-        {
-            get
-            {
-                return 0;
-            }
-        }
+        public override int Remaining => 0;
     }
 
     [Serializable]
@@ -153,42 +123,15 @@ namespace System.Text
         {
         }
 
-        public char CharUnknown
-        {
-            get
-            {
-                return _charUnknown;
-            }
-        }
+        public char CharUnknown => _charUnknown;
 
-        public char CharUnknownHigh
-        {
-            get
-            {
-                return _charUnknownHigh;
-            }
-        }
+        public char CharUnknownHigh => _charUnknownHigh;
 
-        public char CharUnknownLow
-        {
-            get
-            {
-                return _charUnknownLow;
-            }
-        }
+        public char CharUnknownLow => _charUnknownLow;
 
-        public int Index
-        {
-            get
-            {
-                return _index;
-            }
-        }
+        public int Index => _index;
 
         // Return true if the unknown character is a surrogate pair.
-        public bool IsUnknownSurrogate()
-        {
-            return _charUnknownHigh != '\0';
-        }
+        public bool IsUnknownSurrogate() => _charUnknownHigh != '\0';
     }
 }

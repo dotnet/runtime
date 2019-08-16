@@ -496,8 +496,7 @@ namespace System.Resources
         {
             if (_version == 1)
                 return LoadObjectV1(pos);
-            ResourceTypeCode typeCode;
-            return LoadObjectV2(pos, out typeCode);
+            return LoadObjectV2(pos, out _);
         }
 
         internal object? LoadObject(int pos, out ResourceTypeCode typeCode)

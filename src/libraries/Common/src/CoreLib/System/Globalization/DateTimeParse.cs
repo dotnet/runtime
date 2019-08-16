@@ -19,7 +19,7 @@ namespace System
 
         internal static DateTime ParseExact(ReadOnlySpan<char> s, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, DateTimeStyles style)
         {
-            DateTimeResult result = new DateTimeResult();       // The buffer to store the parsing result.
+            DateTimeResult result = default; // The buffer to store the parsing result.
             result.Init(s);
             if (TryParseExact(s, format, dtfi, style, ref result))
             {
@@ -33,8 +33,7 @@ namespace System
 
         internal static DateTime ParseExact(ReadOnlySpan<char> s, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, DateTimeStyles style, out TimeSpan offset)
         {
-            DateTimeResult result = new DateTimeResult();       // The buffer to store the parsing result.
-            offset = TimeSpan.Zero;
+            DateTimeResult result = default; // The buffer to store the parsing result.
             result.Init(s);
             result.flags |= ParseFlags.CaptureOffset;
             if (TryParseExact(s, format, dtfi, style, ref result))
@@ -116,7 +115,6 @@ namespace System
                                                 DateTimeFormatInfo dtfi, DateTimeStyles style, out TimeSpan offset)
         {
             DateTimeResult result = new DateTimeResult();       // The buffer to store the parsing result.
-            offset = TimeSpan.Zero;
             result.Init(s);
             result.flags |= ParseFlags.CaptureOffset;
             if (TryParseExactMultiple(s, formats, dtfi, style, ref result))
@@ -494,7 +492,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         private static bool ParseTimeZone(ref __DTString str, ref TimeSpan result)
         {
             // The hour/minute offset for timezone.
-            int hourOffset = 0;
+            int hourOffset;
             int minuteOffset = 0;
             DTSubString sub;
 
@@ -5350,8 +5348,6 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 return;
             }
 
-            tokenType = TokenType.UnknownToken;
-
         Start:
             if (DateTimeParse.IsDigit(m_current))
             {
@@ -5449,8 +5445,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             if (!DateTimeParse.IsDigit(m_current))
             {
                 // Not a digit.  Tokenize it.
-                int tokenValue;
-                bool found = dtfi.Tokenize(TokenType.SeparatorTokenMask, out tokenType, out tokenValue, ref this);
+                bool found = dtfi.Tokenize(TokenType.SeparatorTokenMask, out tokenType, out _, ref this);
                 if (!found)
                 {
                     tokenType = TokenType.SEP_Space;
@@ -5971,8 +5966,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
     // This will store the result of the parsing.  And it will be eventually
     // used to construct a DateTime instance.
     //
-    internal
-    ref struct DateTimeResult
+    internal ref struct DateTimeResult
     {
         internal int Year;
         internal int Month;
