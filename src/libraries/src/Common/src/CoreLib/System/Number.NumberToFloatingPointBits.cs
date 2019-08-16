@@ -258,7 +258,7 @@ namespace System
             uint middleBlockIndex = topBlockIndex - 1;
             uint bottomBlockIndex = middleBlockIndex - 1;
 
-            ulong mantissa = 0;
+            ulong mantissa;
             int exponent = baseExponent + ((int)(bottomBlockIndex) * 32);
             bool hasZeroTail = !hasNonZeroFractionalPart;
 

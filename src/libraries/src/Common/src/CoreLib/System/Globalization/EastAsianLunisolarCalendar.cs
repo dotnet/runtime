@@ -25,7 +25,8 @@ namespace System.Globalization
         {
             CheckTicksRange(time.Ticks);
 
-            TimeToLunar(time, out int year, out int month, out int day);
+
+            TimeToLunar(time, out int year, out _, out _);
             return ((year - 4) % 60) + 1;
         }
 
@@ -517,7 +518,8 @@ namespace System.Globalization
         public override int GetDayOfMonth(DateTime time)
         {
             CheckTicksRange(time.Ticks);
-            TimeToLunar(time, out int y, out int m, out int d);
+
+            TimeToLunar(time, out _, out _, out int d);
 
             return d;
         }
@@ -547,7 +549,8 @@ namespace System.Globalization
         public override int GetMonth(DateTime time)
         {
             CheckTicksRange(time.Ticks);
-            TimeToLunar(time, out int y, out int m, out int d);
+
+            TimeToLunar(time, out _, out int m, out _);
 
             return m;
         }
@@ -559,7 +562,8 @@ namespace System.Globalization
         public override int GetYear(DateTime time)
         {
             CheckTicksRange(time.Ticks);
-            TimeToLunar(time, out int y, out int m, out int d);
+
+            TimeToLunar(time, out int y, out _, out _);
 
             return GetYear(y, time);
         }

@@ -58,9 +58,10 @@ namespace System.IO
 
             uint fileMode;
 
+
             int status = Interop.NtDll.NtQueryInformationFile(
                 FileHandle: fileHandle,
-                IoStatusBlock: out Interop.NtDll.IO_STATUS_BLOCK ioStatus,
+                IoStatusBlock: out _,
                 FileInformation: &fileMode,
                 Length: sizeof(uint),
                 FileInformationClass: Interop.NtDll.FileModeInformation);

@@ -516,8 +516,8 @@ namespace System.Globalization
         // Returns the number of months in the specified year and era.
         public int GetMonthsInYear(int year, int era)
         {
-            year = GetGregorianYear(year, era);
-            return (12);
+            GetGregorianYear(year, era);
+            return 12;
         }
 
         // Returns the year part of the specified DateTime. The returned value is an
@@ -592,8 +592,8 @@ namespace System.Globalization
         //
         public int GetLeapMonth(int year, int era)
         {
-            year = GetGregorianYear(year, era);
-            return (0);
+            GetGregorianYear(year, era);
+            return 0;
         }
 
         // Checks whether a given month in the specified era is a leap month. This method returns true if

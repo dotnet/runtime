@@ -329,9 +329,9 @@ namespace System
                 Debug.Assert(v > 0);
                 Debug.Assert(double.IsFinite(v));
 
-                int length = 0;
-                int decimalExponent = 0;
-                bool result = false;
+                int length;
+                int decimalExponent;
+                bool result;
 
                 if (requestedDigits == -1)
                 {
@@ -363,9 +363,9 @@ namespace System
                 Debug.Assert(v > 0);
                 Debug.Assert(float.IsFinite(v));
 
-                int length = 0;
-                int decimalExponent = 0;
-                bool result = false;
+                int length;
+                int decimalExponent;
+                bool result;
 
                 if (requestedDigits == -1)
                 {
