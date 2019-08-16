@@ -1,0 +1,25 @@
+trigger:
+  batch: true
+  branches:
+    include:
+    - master
+
+pr: none
+
+- template: /eng/platform-matrix.yml
+  parameters:
+    jobTemplate: build-job.yml
+    buildConfig: release
+    platforms:
+    - Linux_x64
+    - Windows_NT_x64
+    - Windows_NT_x86
+    
+- template: /eng/platform-matrix.yml
+  parameters:
+    jobTemplate: perf-job.yml
+    buildConfig: release
+    platforms:
+    - Linux_x64
+    - Windows_NT_x64
+    - Windows_NT_x86
