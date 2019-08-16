@@ -121,17 +121,12 @@ namespace System.Linq.Expressions
             // Only reduce OpAssignment expressions.
             if (IsOpAssignment(NodeType))
             {
-                switch (Left.NodeType)
+                return Left.NodeType switch
                 {
-                    case ExpressionType.MemberAccess:
-                        return ReduceMember();
-
-                    case ExpressionType.Index:
-                        return ReduceIndex();
-
-                    default:
-                        return ReduceVariable();
-                }
+                    ExpressionType.MemberAccess => ReduceMember(),
+                    ExpressionType.Index => ReduceIndex(),
+                    _ => ReduceVariable(),
+                };
             }
             return this;
         }
@@ -140,39 +135,24 @@ namespace System.Linq.Expressions
         private static ExpressionType GetBinaryOpFromAssignmentOp(ExpressionType op)
         {
             Debug.Assert(IsOpAssignment(op));
-            switch (op)
+            return op switch
             {
-                case ExpressionType.AddAssign:
-                    return ExpressionType.Add;
-                case ExpressionType.AddAssignChecked:
-                    return ExpressionType.AddChecked;
-                case ExpressionType.SubtractAssign:
-                    return ExpressionType.Subtract;
-                case ExpressionType.SubtractAssignChecked:
-                    return ExpressionType.SubtractChecked;
-                case ExpressionType.MultiplyAssign:
-                    return ExpressionType.Multiply;
-                case ExpressionType.MultiplyAssignChecked:
-                    return ExpressionType.MultiplyChecked;
-                case ExpressionType.DivideAssign:
-                    return ExpressionType.Divide;
-                case ExpressionType.ModuloAssign:
-                    return ExpressionType.Modulo;
-                case ExpressionType.PowerAssign:
-                    return ExpressionType.Power;
-                case ExpressionType.AndAssign:
-                    return ExpressionType.And;
-                case ExpressionType.OrAssign:
-                    return ExpressionType.Or;
-                case ExpressionType.RightShiftAssign:
-                    return ExpressionType.RightShift;
-                case ExpressionType.LeftShiftAssign:
-                    return ExpressionType.LeftShift;
-                case ExpressionType.ExclusiveOrAssign:
-                    return ExpressionType.ExclusiveOr;
-                default:
-                    throw ContractUtils.Unreachable;
-            }
+                ExpressionType.AddAssign => ExpressionType.Add,
+                ExpressionType.AddAssignChecked => ExpressionType.AddChecked,
+                ExpressionType.SubtractAssign => ExpressionType.Subtract,
+                ExpressionType.SubtractAssignChecked => ExpressionType.SubtractChecked,
+                ExpressionType.MultiplyAssign => ExpressionType.Multiply,
+                ExpressionType.MultiplyAssignChecked => ExpressionType.MultiplyChecked,
+                ExpressionType.DivideAssign => ExpressionType.Divide,
+                ExpressionType.ModuloAssign => ExpressionType.Modulo,
+                ExpressionType.PowerAssign => ExpressionType.Power,
+                ExpressionType.AndAssign => ExpressionType.And,
+                ExpressionType.OrAssign => ExpressionType.Or,
+                ExpressionType.RightShiftAssign => ExpressionType.RightShift,
+                ExpressionType.LeftShiftAssign => ExpressionType.LeftShift,
+                ExpressionType.ExclusiveOrAssign => ExpressionType.ExclusiveOr,
+                _ => throw ContractUtils.Unreachable,
+            };
         }
 
         private Expression ReduceVariable()
@@ -898,92 +878,50 @@ namespace System.Linq.Expressions
         /// <param name="conversion">A LambdaExpression that represents a type conversion function. This parameter is used if binaryType is Coalesce or compound assignment.</param>
         /// <returns>The BinaryExpression that results from calling the appropriate factory method.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
-        public static BinaryExpression MakeBinary(ExpressionType binaryType, Expression left, Expression right, bool liftToNull, MethodInfo method, LambdaExpression conversion)
-        {
-            switch (binaryType)
+        public static BinaryExpression MakeBinary(ExpressionType binaryType, Expression left, Expression right, bool liftToNull, MethodInfo method, LambdaExpression conversion) =>
+            binaryType switch
             {
-                case ExpressionType.Add:
-                    return Add(left, right, method);
-                case ExpressionType.AddChecked:
-                    return AddChecked(left, right, method);
-                case ExpressionType.Subtract:
-                    return Subtract(left, right, method);
-                case ExpressionType.SubtractChecked:
-                    return SubtractChecked(left, right, method);
-                case ExpressionType.Multiply:
-                    return Multiply(left, right, method);
-                case ExpressionType.MultiplyChecked:
-                    return MultiplyChecked(left, right, method);
-                case ExpressionType.Divide:
-                    return Divide(left, right, method);
-                case ExpressionType.Modulo:
-                    return Modulo(left, right, method);
-                case ExpressionType.Power:
-                    return Power(left, right, method);
-                case ExpressionType.And:
-                    return And(left, right, method);
-                case ExpressionType.AndAlso:
-                    return AndAlso(left, right, method);
-                case ExpressionType.Or:
-                    return Or(left, right, method);
-                case ExpressionType.OrElse:
-                    return OrElse(left, right, method);
-                case ExpressionType.LessThan:
-                    return LessThan(left, right, liftToNull, method);
-                case ExpressionType.LessThanOrEqual:
-                    return LessThanOrEqual(left, right, liftToNull, method);
-                case ExpressionType.GreaterThan:
-                    return GreaterThan(left, right, liftToNull, method);
-                case ExpressionType.GreaterThanOrEqual:
-                    return GreaterThanOrEqual(left, right, liftToNull, method);
-                case ExpressionType.Equal:
-                    return Equal(left, right, liftToNull, method);
-                case ExpressionType.NotEqual:
-                    return NotEqual(left, right, liftToNull, method);
-                case ExpressionType.ExclusiveOr:
-                    return ExclusiveOr(left, right, method);
-                case ExpressionType.Coalesce:
-                    return Coalesce(left, right, conversion);
-                case ExpressionType.ArrayIndex:
-                    return ArrayIndex(left, right);
-                case ExpressionType.RightShift:
-                    return RightShift(left, right, method);
-                case ExpressionType.LeftShift:
-                    return LeftShift(left, right, method);
-                case ExpressionType.Assign:
-                    return Assign(left, right);
-                case ExpressionType.AddAssign:
-                    return AddAssign(left, right, method, conversion);
-                case ExpressionType.AndAssign:
-                    return AndAssign(left, right, method, conversion);
-                case ExpressionType.DivideAssign:
-                    return DivideAssign(left, right, method, conversion);
-                case ExpressionType.ExclusiveOrAssign:
-                    return ExclusiveOrAssign(left, right, method, conversion);
-                case ExpressionType.LeftShiftAssign:
-                    return LeftShiftAssign(left, right, method, conversion);
-                case ExpressionType.ModuloAssign:
-                    return ModuloAssign(left, right, method, conversion);
-                case ExpressionType.MultiplyAssign:
-                    return MultiplyAssign(left, right, method, conversion);
-                case ExpressionType.OrAssign:
-                    return OrAssign(left, right, method, conversion);
-                case ExpressionType.PowerAssign:
-                    return PowerAssign(left, right, method, conversion);
-                case ExpressionType.RightShiftAssign:
-                    return RightShiftAssign(left, right, method, conversion);
-                case ExpressionType.SubtractAssign:
-                    return SubtractAssign(left, right, method, conversion);
-                case ExpressionType.AddAssignChecked:
-                    return AddAssignChecked(left, right, method, conversion);
-                case ExpressionType.SubtractAssignChecked:
-                    return SubtractAssignChecked(left, right, method, conversion);
-                case ExpressionType.MultiplyAssignChecked:
-                    return MultiplyAssignChecked(left, right, method, conversion);
-                default:
-                    throw Error.UnhandledBinary(binaryType, nameof(binaryType));
-            }
-        }
+                ExpressionType.Add => Add(left, right, method),
+                ExpressionType.AddChecked => AddChecked(left, right, method),
+                ExpressionType.Subtract => Subtract(left, right, method),
+                ExpressionType.SubtractChecked => SubtractChecked(left, right, method),
+                ExpressionType.Multiply => Multiply(left, right, method),
+                ExpressionType.MultiplyChecked => MultiplyChecked(left, right, method),
+                ExpressionType.Divide => Divide(left, right, method),
+                ExpressionType.Modulo => Modulo(left, right, method),
+                ExpressionType.Power => Power(left, right, method),
+                ExpressionType.And => And(left, right, method),
+                ExpressionType.AndAlso => AndAlso(left, right, method),
+                ExpressionType.Or => Or(left, right, method),
+                ExpressionType.OrElse => OrElse(left, right, method),
+                ExpressionType.LessThan => LessThan(left, right, liftToNull, method),
+                ExpressionType.LessThanOrEqual => LessThanOrEqual(left, right, liftToNull, method),
+                ExpressionType.GreaterThan => GreaterThan(left, right, liftToNull, method),
+                ExpressionType.GreaterThanOrEqual => GreaterThanOrEqual(left, right, liftToNull, method),
+                ExpressionType.Equal => Equal(left, right, liftToNull, method),
+                ExpressionType.NotEqual => NotEqual(left, right, liftToNull, method),
+                ExpressionType.ExclusiveOr => ExclusiveOr(left, right, method),
+                ExpressionType.Coalesce => Coalesce(left, right, conversion),
+                ExpressionType.ArrayIndex => ArrayIndex(left, right),
+                ExpressionType.RightShift => RightShift(left, right, method),
+                ExpressionType.LeftShift => LeftShift(left, right, method),
+                ExpressionType.Assign => Assign(left, right),
+                ExpressionType.AddAssign => AddAssign(left, right, method, conversion),
+                ExpressionType.AndAssign => AndAssign(left, right, method, conversion),
+                ExpressionType.DivideAssign => DivideAssign(left, right, method, conversion),
+                ExpressionType.ExclusiveOrAssign => ExclusiveOrAssign(left, right, method, conversion),
+                ExpressionType.LeftShiftAssign => LeftShiftAssign(left, right, method, conversion),
+                ExpressionType.ModuloAssign => ModuloAssign(left, right, method, conversion),
+                ExpressionType.MultiplyAssign => MultiplyAssign(left, right, method, conversion),
+                ExpressionType.OrAssign => OrAssign(left, right, method, conversion),
+                ExpressionType.PowerAssign => PowerAssign(left, right, method, conversion),
+                ExpressionType.RightShiftAssign => RightShiftAssign(left, right, method, conversion),
+                ExpressionType.SubtractAssign => SubtractAssign(left, right, method, conversion),
+                ExpressionType.AddAssignChecked => AddAssignChecked(left, right, method, conversion),
+                ExpressionType.SubtractAssignChecked => SubtractAssignChecked(left, right, method, conversion),
+                ExpressionType.MultiplyAssignChecked => MultiplyAssignChecked(left, right, method, conversion),
+                _ => throw Error.UnhandledBinary(binaryType, nameof(binaryType)),
+            };
 
         #region Equality Operators
 

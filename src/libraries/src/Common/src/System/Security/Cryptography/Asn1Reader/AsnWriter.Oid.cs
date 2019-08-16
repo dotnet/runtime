@@ -174,22 +174,13 @@ namespace System.Security.Cryptography.Asn1
 
             try
             {
-                int firstComponent;
-
-                switch (oidValue[0])
+                int firstComponent = oidValue[0] switch
                 {
-                    case '0':
-                        firstComponent = 0;
-                        break;
-                    case '1':
-                        firstComponent = 1;
-                        break;
-                    case '2':
-                        firstComponent = 2;
-                        break;
-                    default:
-                        throw new CryptographicException(SR.Argument_InvalidOidValue);
-                }
+                    '0' => 0,
+                    '1' => 1,
+                    '2' => 2,
+                    _ => throw new CryptographicException(SR.Argument_InvalidOidValue),
+                };
 
                 // The first two components are special:
                 // ITU X.690 8.19.4:

@@ -47,15 +47,12 @@ namespace System.Data.Common
         {
             Debug.Assert(IsValidPoolBlockingPeriodValue(value));
 
-            switch (value)
+            return value switch
             {
-                case PoolBlockingPeriod.AlwaysBlock:
-                    return nameof(PoolBlockingPeriod.AlwaysBlock);
-                case PoolBlockingPeriod.NeverBlock:
-                    return nameof(PoolBlockingPeriod.NeverBlock);
-                default:
-                    return nameof(PoolBlockingPeriod.Auto);
-            }
+                PoolBlockingPeriod.AlwaysBlock => nameof(PoolBlockingPeriod.AlwaysBlock),
+                PoolBlockingPeriod.NeverBlock => nameof(PoolBlockingPeriod.NeverBlock),
+                _ => nameof(PoolBlockingPeriod.Auto),
+            };
         }
 
         /// <summary>

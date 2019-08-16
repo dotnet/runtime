@@ -68,18 +68,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public bool IsNullRef => ObjectVal == null;
 
-        public bool IsZero(ConstValKind kind)
-        {
-            switch (kind)
+        public bool IsZero(ConstValKind kind) =>
+            kind switch
             {
-                case ConstValKind.Decimal:
-                    return DecimalVal == 0;
-                case ConstValKind.String:
-                    return false;
-                default:
-                    return IsDefault(ObjectVal);
-            }
-        }
+                ConstValKind.Decimal => DecimalVal == 0,
+                ConstValKind.String => false,
+                _ => IsDefault(ObjectVal),
+            };
 
         private static T SpecialUnbox<T>(object o)
         {
@@ -91,69 +86,38 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return (T)Convert.ChangeType(o, typeof(T), CultureInfo.InvariantCulture);
         }
 
-        private static bool IsDefault(object o)
-        {
-            if (o == null)
-                return true;
-
-            switch (Type.GetTypeCode(o.GetType()))
+        private static bool IsDefault(object o) =>
+            o is null ||
+            Type.GetTypeCode(o.GetType()) switch
             {
-                case TypeCode.Boolean:
-                    return default(bool).Equals(o);
-                case TypeCode.SByte:
-                    return default(sbyte).Equals(o);
-                case TypeCode.Byte:
-                    return default(byte).Equals(o);
-                case TypeCode.Int16:
-                    return default(short).Equals(o);
-                case TypeCode.UInt16:
-                    return default(ushort).Equals(o);
-                case TypeCode.Int32:
-                    return default(int).Equals(o);
-                case TypeCode.UInt32:
-                    return default(uint).Equals(o);
-                case TypeCode.Int64:
-                    return default(long).Equals(o);
-                case TypeCode.UInt64:
-                    return default(ulong).Equals(o);
-                case TypeCode.Single:
-                    return default(float).Equals(o);
-                case TypeCode.Double:
-                    return default(double).Equals(o);
-                case TypeCode.Decimal:
-                    return default(decimal).Equals(o);
-                case TypeCode.Char:
-                    return default(char).Equals(o);
-            }
+                TypeCode.Boolean => default(bool).Equals(o),
+                TypeCode.SByte => default(sbyte).Equals(o),
+                TypeCode.Byte => default(byte).Equals(o),
+                TypeCode.Int16 => default(short).Equals(o),
+                TypeCode.UInt16 => default(ushort).Equals(o),
+                TypeCode.Int32 => default(int).Equals(o),
+                TypeCode.UInt32 => default(uint).Equals(o),
+                TypeCode.Int64 => default(long).Equals(o),
+                TypeCode.UInt64 => default(ulong).Equals(o),
+                TypeCode.Single => default(float).Equals(o),
+                TypeCode.Double => default(double).Equals(o),
+                TypeCode.Decimal => default(decimal).Equals(o),
+                TypeCode.Char => default(char).Equals(o),
 
-            return false;
-        }
+                _ => false,
+            };
 
-        public static ConstVal GetDefaultValue(ConstValKind kind)
-        {
-            switch (kind)
+        public static ConstVal GetDefaultValue(ConstValKind kind) =>
+            kind switch
             {
-                case ConstValKind.Int:
-                    return new ConstVal(s_zeroInt32);
-
-                case ConstValKind.Double:
-                    return new ConstVal(0.0);
-
-                case ConstValKind.Long:
-                    return new ConstVal(0L);
-
-                case ConstValKind.Decimal:
-                    return new ConstVal(0M);
-
-                case ConstValKind.Float:
-                    return new ConstVal(0F);
-
-                case ConstValKind.Boolean:
-                    return new ConstVal(s_false);
-            }
-
-            return default(ConstVal);
-        }
+                ConstValKind.Int => new ConstVal(s_zeroInt32),
+                ConstValKind.Double => new ConstVal(0.0),
+                ConstValKind.Long => new ConstVal(0L),
+                ConstValKind.Decimal => new ConstVal(0M),
+                ConstValKind.Float => new ConstVal(0F),
+                ConstValKind.Boolean => new ConstVal(s_false),
+                _ => default,
+            };
 
         public static ConstVal Get(bool value) => new ConstVal(value ? s_true : s_false);
 

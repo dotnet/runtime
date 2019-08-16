@@ -1523,27 +1523,23 @@ namespace System.Data
         }
 
 
-        internal static string TranslateAcceptRejectRule(AcceptRejectRule rule)
-        {
-            switch (rule)
+        internal static string TranslateAcceptRejectRule(AcceptRejectRule rule) =>
+            rule switch
             {
-                case AcceptRejectRule.Cascade: return "Cascade";
-                case AcceptRejectRule.None: return "None";
-                default: return null;
-            }
-        }
+                AcceptRejectRule.Cascade => "Cascade",
+                AcceptRejectRule.None => "None",
+                _ => null,
+            };
 
-        internal static string TranslateRule(Rule rule)
-        {
-            switch (rule)
+        internal static string TranslateRule(Rule rule) =>
+            rule switch
             {
-                case Rule.Cascade: return "Cascade";
-                case Rule.None: return "None";
-                case Rule.SetNull: return "SetNull";
-                case Rule.SetDefault: return "SetDefault";
-                default: return null;
-            }
-        }
+                Rule.Cascade => "Cascade",
+                Rule.None => "None",
+                Rule.SetNull => "SetNull",
+                Rule.SetDefault => "SetDefault",
+                _ => null,
+            };
 
         internal void AppendChildWithoutRef(XmlElement node, string Namespace, XmlElement el, string refString)
         {

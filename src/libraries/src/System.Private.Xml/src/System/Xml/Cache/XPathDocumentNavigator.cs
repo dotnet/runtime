@@ -863,20 +863,17 @@ namespace MS.Internal.Xml.Cache
 
             // Yes, so secondary location should be derived from current node
             // This happens with attributes nodes, namespace nodes, collapsed text nodes, and atomic values
-            switch (_pageCurrent[_idxCurrent].NodeType)
+            return _pageCurrent[_idxCurrent].NodeType switch
             {
-                case XPathNodeType.Namespace:
-                    // Namespace nodes come first (make location negative, but greater than int.MinValue)
-                    return int.MinValue + 1 + XPathNodeHelper.GetLocation(_pageCurrent, _idxCurrent);
+                // Namespace nodes come first (make location negative, but greater than int.MinValue)
+                XPathNodeType.Namespace => int.MinValue + 1 + XPathNodeHelper.GetLocation(_pageCurrent, _idxCurrent),
 
-                case XPathNodeType.Attribute:
-                    // Attribute nodes come next (location is always positive)
-                    return XPathNodeHelper.GetLocation(_pageCurrent, _idxCurrent);
+                // Attribute nodes come next (location is always positive)
+                XPathNodeType.Attribute => XPathNodeHelper.GetLocation(_pageCurrent, _idxCurrent),
 
-                default:
-                    // Collapsed text nodes are always last
-                    return int.MaxValue;
-            }
+                // Collapsed text nodes are always last
+                _ => int.MaxValue,
+            };
         }
 
         /// <summary>

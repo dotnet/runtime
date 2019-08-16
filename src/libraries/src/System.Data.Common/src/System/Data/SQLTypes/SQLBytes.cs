@@ -137,17 +137,12 @@ namespace System.Data.SqlTypes
         {
             get
             {
-                switch (_state)
+                return _state switch
                 {
-                    case SqlBytesCharsState.Null:
-                        throw new SqlNullValueException();
-
-                    case SqlBytesCharsState.Stream:
-                        return _stream.Length;
-
-                    default:
-                        return _lCurLen;
-                }
+                    SqlBytesCharsState.Null => throw new SqlNullValueException(),
+                    SqlBytesCharsState.Stream => _stream.Length,
+                    _ => _lCurLen,
+                };
             }
         }
 
@@ -159,14 +154,11 @@ namespace System.Data.SqlTypes
         {
             get
             {
-                switch (_state)
+                return _state switch
                 {
-                    case SqlBytesCharsState.Stream:
-                        return -1L;
-
-                    default:
-                        return (_rgbBuf == null) ? -1L : _rgbBuf.Length;
-                }
+                    SqlBytesCharsState.Stream => -1L,
+                    _ => (_rgbBuf == null) ? -1L : _rgbBuf.Length,
+                };
             }
         }
 
@@ -228,19 +220,13 @@ namespace System.Data.SqlTypes
         {
             get
             {
-                switch (_state)
+                return _state switch
                 {
-                    case SqlBytesCharsState.Null:
-                        throw new SqlNullValueException();
-                    case SqlBytesCharsState.Stream:
-                        return StorageState.Stream;
-
-                    case SqlBytesCharsState.Buffer:
-                        return StorageState.Buffer;
-
-                    default:
-                        return StorageState.UnmanagedBuffer;
-                }
+                    SqlBytesCharsState.Null => throw new SqlNullValueException(),
+                    SqlBytesCharsState.Stream => StorageState.Stream,
+                    SqlBytesCharsState.Buffer => StorageState.Buffer,
+                    _ => StorageState.UnmanagedBuffer,
+                };
             }
         }
 

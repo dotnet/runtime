@@ -112,23 +112,14 @@ namespace System.Reflection.PortableExecutable
             return builder.ToImmutable();
         }
 
-        protected override BlobBuilder SerializeSection(string name, SectionLocation location)
-        {
-            switch (name)
+        protected override BlobBuilder SerializeSection(string name, SectionLocation location) =>
+            name switch
             {
-                case TextSectionName:
-                    return SerializeTextSection(location);
-
-                case ResourceSectionName:
-                    return SerializeResourceSection(location);
-
-                case RelocationSectionName:
-                    return SerializeRelocationSection(location);
-
-                default:
-                    throw new ArgumentException(SR.Format(SR.UnknownSectionName, name), nameof(name));
-            }
-        }
+                TextSectionName => SerializeTextSection(location),
+                ResourceSectionName => SerializeResourceSection(location),
+                RelocationSectionName => SerializeRelocationSection(location),
+                _ => throw new ArgumentException(SR.Format(SR.UnknownSectionName, name), nameof(name)),
+            };
 
         private BlobBuilder SerializeTextSection(SectionLocation location)
         {

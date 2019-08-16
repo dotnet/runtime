@@ -5155,15 +5155,11 @@ namespace System.Data
                     }
                     break;
                 case LoadOption.PreserveChanges:
-                    switch (dataRow.RowState)
+                    action = dataRow.RowState switch
                     {
-                        case DataRowState.Unchanged:
-                            action = DataRowAction.ChangeCurrentAndOriginal;
-                            break;
-                        default:
-                            action = DataRowAction.ChangeOriginal;
-                            break;
-                    }
+                        DataRowState.Unchanged => DataRowAction.ChangeCurrentAndOriginal,
+                        _ => DataRowAction.ChangeOriginal,
+                    };
                     break;
                 default:
                     throw ExceptionBuilder.ArgumentOutOfRange(nameof(LoadOption));

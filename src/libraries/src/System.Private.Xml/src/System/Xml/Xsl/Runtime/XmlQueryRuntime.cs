@@ -720,14 +720,13 @@ namespace System.Xml.Xsl.Runtime
         public bool MatchesXmlType(IList<XPathItem> seq, int indexType)
         {
             XmlQueryType typBase = GetXmlType(indexType);
-            XmlQueryCardinality card;
 
-            switch (seq.Count)
+            XmlQueryCardinality card = seq.Count switch
             {
-                case 0: card = XmlQueryCardinality.Zero; break;
-                case 1: card = XmlQueryCardinality.One; break;
-                default: card = XmlQueryCardinality.More; break;
-            }
+                0 => XmlQueryCardinality.Zero,
+                1 => XmlQueryCardinality.One,
+                _ => XmlQueryCardinality.More,
+            };
 
             if (!(card <= typBase.Cardinality))
                 return false;

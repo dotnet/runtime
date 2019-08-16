@@ -29,62 +29,33 @@ namespace System.Data.Common
         public string UdtAssemblyQualifiedName { get; protected set; }
         public Type DataType { get; protected set; }
         public string DataTypeName { get; protected set; }
-        public virtual object this[string property]
-        {
-            get
+        public virtual object this[string property] =>
+            property switch
             {
-                switch (property)
-                {
-                    case nameof(AllowDBNull):
-                        return AllowDBNull;
-                    case nameof(BaseCatalogName):
-                        return BaseCatalogName;
-                    case nameof(BaseColumnName):
-                        return BaseColumnName;
-                    case nameof(BaseSchemaName):
-                        return BaseSchemaName;
-                    case nameof(BaseServerName):
-                        return BaseServerName;
-                    case nameof(BaseTableName):
-                        return BaseTableName;
-                    case nameof(ColumnName):
-                        return ColumnName;
-                    case nameof(ColumnOrdinal):
-                        return ColumnOrdinal;
-                    case nameof(ColumnSize):
-                        return ColumnSize;
-                    case nameof(IsAliased):
-                        return IsAliased;
-                    case nameof(IsAutoIncrement):
-                        return IsAutoIncrement;
-                    case nameof(IsExpression):
-                        return IsExpression;
-                    case nameof(IsHidden):
-                        return IsHidden;
-                    case nameof(IsIdentity):
-                        return IsIdentity;
-                    case nameof(IsKey):
-                        return IsKey;
-                    case nameof(IsLong):
-                        return IsLong;
-                    case nameof(IsReadOnly):
-                        return IsReadOnly;
-                    case nameof(IsUnique):
-                        return IsUnique;
-                    case nameof(NumericPrecision):
-                        return NumericPrecision;
-                    case nameof(NumericScale):
-                        return NumericScale;
-                    case nameof(UdtAssemblyQualifiedName):
-                        return UdtAssemblyQualifiedName;
-                    case nameof(DataType):
-                        return DataType;
-                    case nameof(DataTypeName):
-                        return DataTypeName;
-                    default:
-                        return null;
-                }
-            }
-        }
+                nameof(AllowDBNull) => AllowDBNull,
+                nameof(BaseCatalogName) => BaseCatalogName,
+                nameof(BaseColumnName) => BaseColumnName,
+                nameof(BaseSchemaName) => BaseSchemaName,
+                nameof(BaseServerName) => BaseServerName,
+                nameof(BaseTableName) => BaseTableName,
+                nameof(ColumnName) => ColumnName,
+                nameof(ColumnOrdinal) => ColumnOrdinal,
+                nameof(ColumnSize) => ColumnSize,
+                nameof(IsAliased) => IsAliased,
+                nameof(IsAutoIncrement) => IsAutoIncrement,
+                nameof(IsExpression) => IsExpression,
+                nameof(IsHidden) => IsHidden,
+                nameof(IsIdentity) => IsIdentity,
+                nameof(IsKey) => IsKey,
+                nameof(IsLong) => IsLong,
+                nameof(IsReadOnly) => IsReadOnly,
+                nameof(IsUnique) => IsUnique,
+                nameof(NumericPrecision) => NumericPrecision,
+                nameof(NumericScale) => NumericScale,
+                nameof(UdtAssemblyQualifiedName) => UdtAssemblyQualifiedName,
+                nameof(DataType) => DataType,
+                nameof(DataTypeName) => DataTypeName,
+                _ => null,
+            };
     }
 }

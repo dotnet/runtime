@@ -254,14 +254,12 @@ namespace System.Diagnostics.PerformanceData
                             // ERROR_INVALID_PARAMETER, ERROR_ALREADY_EXISTS, ERROR_NOT_ENOUGH_MEMORY, ERROR_OUTOFMEMORY
                             if (Status != (uint)Interop.Errors.ERROR_SUCCESS)
                             {
-                                switch (Status)
+                                throw Status switch
                                 {
-                                    case (uint)Interop.Errors.ERROR_ALREADY_EXISTS:
-                                        throw new ArgumentException(SR.Format(SR.Perflib_Argument_CounterSetAlreadyRegister, _counterSet), "CounterSetGuid");
+                                    (uint)Interop.Errors.ERROR_ALREADY_EXISTS => new ArgumentException(SR.Format(SR.Perflib_Argument_CounterSetAlreadyRegister, _counterSet), "CounterSetGuid"),
 
-                                    default:
-                                        throw new Win32Exception((int)Status);
-                                }
+                                    _ => new Win32Exception((int)Status),
+                                };
                             }
 
                             Interlocked.Increment(ref _provider._counterSet);

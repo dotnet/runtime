@@ -152,28 +152,16 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         internal static NotifyCollectionChangedEventArgs CreateNotifyCollectionChangedEventArgs(
-            NotifyCollectionChangedAction action, IList newItems, IList oldItems, int newStartingIndex, int oldStartingIndex)
-        {
-            switch (action)
+            NotifyCollectionChangedAction action, IList newItems, IList oldItems, int newStartingIndex, int oldStartingIndex) =>
+            action switch
             {
-                case NotifyCollectionChangedAction.Add:
-                    return new NotifyCollectionChangedEventArgs(action, newItems, newStartingIndex);
-
-                case NotifyCollectionChangedAction.Remove:
-                    return new NotifyCollectionChangedEventArgs(action, oldItems, oldStartingIndex);
-
-                case NotifyCollectionChangedAction.Replace:
-                    return new NotifyCollectionChangedEventArgs(action, newItems, oldItems, newStartingIndex);
-
-                case NotifyCollectionChangedAction.Move:
-                    return new NotifyCollectionChangedEventArgs(action, newItems, newStartingIndex, oldStartingIndex);
-
-                case NotifyCollectionChangedAction.Reset:
-                    return new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset);
-
-                default: throw new ArgumentException("Invalid action value: " + action);
-            }
-        }
+                NotifyCollectionChangedAction.Add => new NotifyCollectionChangedEventArgs(action, newItems, newStartingIndex),
+                NotifyCollectionChangedAction.Remove => new NotifyCollectionChangedEventArgs(action, oldItems, oldStartingIndex),
+                NotifyCollectionChangedAction.Replace => new NotifyCollectionChangedEventArgs(action, newItems, oldItems, newStartingIndex),
+                NotifyCollectionChangedAction.Move => new NotifyCollectionChangedEventArgs(action, newItems, newStartingIndex, oldStartingIndex),
+                NotifyCollectionChangedAction.Reset => new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset),
+                _ => throw new ArgumentException("Invalid action value: " + action),
+            };
     }
 
     internal static class PropertyChangedEventArgsMarshaler

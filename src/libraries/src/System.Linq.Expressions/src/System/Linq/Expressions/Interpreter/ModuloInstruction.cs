@@ -164,19 +164,18 @@ namespace System.Linq.Expressions.Interpreter
         public static Instruction Create(Type type)
         {
             Debug.Assert(!type.IsEnum);
-            switch (type.GetNonNullableType().GetTypeCode())
+            return type.GetNonNullableType().GetTypeCode() switch
             {
-                case TypeCode.Int16: return s_Int16 ?? (s_Int16 = new ModuloInt16());
-                case TypeCode.Int32: return s_Int32 ?? (s_Int32 = new ModuloInt32());
-                case TypeCode.Int64: return s_Int64 ?? (s_Int64 = new ModuloInt64());
-                case TypeCode.UInt16: return s_UInt16 ?? (s_UInt16 = new ModuloUInt16());
-                case TypeCode.UInt32: return s_UInt32 ?? (s_UInt32 = new ModuloUInt32());
-                case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new ModuloUInt64());
-                case TypeCode.Single: return s_Single ?? (s_Single = new ModuloSingle());
-                case TypeCode.Double: return s_Double ?? (s_Double = new ModuloDouble());
-                default:
-                    throw ContractUtils.Unreachable;
-            }
+                TypeCode.Int16 => s_Int16 ?? (s_Int16 = new ModuloInt16()),
+                TypeCode.Int32 => s_Int32 ?? (s_Int32 = new ModuloInt32()),
+                TypeCode.Int64 => s_Int64 ?? (s_Int64 = new ModuloInt64()),
+                TypeCode.UInt16 => s_UInt16 ?? (s_UInt16 = new ModuloUInt16()),
+                TypeCode.UInt32 => s_UInt32 ?? (s_UInt32 = new ModuloUInt32()),
+                TypeCode.UInt64 => s_UInt64 ?? (s_UInt64 = new ModuloUInt64()),
+                TypeCode.Single => s_Single ?? (s_Single = new ModuloSingle()),
+                TypeCode.Double => s_Double ?? (s_Double = new ModuloDouble()),
+                _ => throw ContractUtils.Unreachable,
+            };
         }
     }
 }

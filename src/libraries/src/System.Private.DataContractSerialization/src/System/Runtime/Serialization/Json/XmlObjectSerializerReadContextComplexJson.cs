@@ -126,33 +126,21 @@ namespace System.Runtime.Serialization.Json
         {
             TypeCode type;
             object numericalValue = JsonObjectDataContract.ParseJsonNumber(xmlReader.ReadContentAsString(), out type);
-            switch (type)
+            return type switch
             {
-                case TypeCode.Byte:
-                    return new DataNode<byte>((byte)numericalValue);
-                case TypeCode.SByte:
-                    return new DataNode<sbyte>((sbyte)numericalValue);
-                case TypeCode.Int16:
-                    return new DataNode<short>((short)numericalValue);
-                case TypeCode.Int32:
-                    return new DataNode<int>((int)numericalValue);
-                case TypeCode.Int64:
-                    return new DataNode<long>((long)numericalValue);
-                case TypeCode.UInt16:
-                    return new DataNode<ushort>((ushort)numericalValue);
-                case TypeCode.UInt32:
-                    return new DataNode<uint>((uint)numericalValue);
-                case TypeCode.UInt64:
-                    return new DataNode<ulong>((ulong)numericalValue);
-                case TypeCode.Single:
-                    return new DataNode<float>((float)numericalValue);
-                case TypeCode.Double:
-                    return new DataNode<double>((double)numericalValue);
-                case TypeCode.Decimal:
-                    return new DataNode<decimal>((decimal)numericalValue);
-                default:
-                    throw new InvalidOperationException(SR.ParseJsonNumberReturnInvalidNumber);
-            }
+                TypeCode.Byte => new DataNode<byte>((byte)numericalValue),
+                TypeCode.SByte => new DataNode<sbyte>((sbyte)numericalValue),
+                TypeCode.Int16 => new DataNode<short>((short)numericalValue),
+                TypeCode.Int32 => new DataNode<int>((int)numericalValue),
+                TypeCode.Int64 => new DataNode<long>((long)numericalValue),
+                TypeCode.UInt16 => new DataNode<ushort>((ushort)numericalValue),
+                TypeCode.UInt32 => new DataNode<uint>((uint)numericalValue),
+                TypeCode.UInt64 => new DataNode<ulong>((ulong)numericalValue),
+                TypeCode.Single => new DataNode<float>((float)numericalValue),
+                TypeCode.Double => new DataNode<double>((double)numericalValue),
+                TypeCode.Decimal => new DataNode<decimal>((decimal)numericalValue),
+                _ => throw new InvalidOperationException(SR.ParseJsonNumberReturnInvalidNumber),
+            };
         }
 
         internal override void ReadAttributes(XmlReaderDelegator xmlReader)

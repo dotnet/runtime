@@ -165,29 +165,16 @@ namespace System.DirectoryServices.AccountManagement
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "AdvancedFilters", "GetChangeStatusForProperty: name=" + propertyName);
 
-            switch (propertyName)
+            return propertyName switch
             {
-                case PropertyNames.PwdInfoLastBadPasswordAttempt:
-                    return _badPasswordAttemptChanged;
-
-                case PropertyNames.AcctInfoExpiredAccount:
-                    return _expirationTimeChanged;
-
-                case PropertyNames.AcctInfoBadLogonCount:
-                    return _badLogonCountChanged;
-
-                case PropertyNames.AcctInfoLastLogon:
-                    return _logonTimeChanged;
-
-                case PropertyNames.AcctInfoAcctLockoutTime:
-                    return _lockoutTimeChanged;
-
-                case PropertyNames.PwdInfoLastPasswordSet:
-                    return _passwordSetTimeChanged;
-
-                default:
-                    return null;
-            }
+                PropertyNames.PwdInfoLastBadPasswordAttempt => _badPasswordAttemptChanged,
+                PropertyNames.AcctInfoExpiredAccount => _expirationTimeChanged,
+                PropertyNames.AcctInfoBadLogonCount => _badLogonCountChanged,
+                PropertyNames.AcctInfoLastLogon => _logonTimeChanged,
+                PropertyNames.AcctInfoAcctLockoutTime => _lockoutTimeChanged,
+                PropertyNames.PwdInfoLastPasswordSet => _passwordSetTimeChanged,
+                _ => (bool?)null,
+            };
         }
 
         // Given a property name, returns the current value for the property.
@@ -204,29 +191,16 @@ namespace System.DirectoryServices.AccountManagement
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "AdvancedFilters", "GetValueForProperty: name=" + propertyName);
 
-            switch (propertyName)
+            return propertyName switch
             {
-                case PropertyNames.PwdInfoLastBadPasswordAttempt:
-                    return _badPasswordAttemptVal;
-
-                case PropertyNames.AcctInfoExpiredAccount:
-                    return _expirationTimeVal;
-
-                case PropertyNames.AcctInfoBadLogonCount:
-                    return _badLogonCountVal;
-
-                case PropertyNames.AcctInfoLastLogon:
-                    return _logonTimeVal;
-
-                case PropertyNames.AcctInfoAcctLockoutTime:
-                    return _lockoutTimeVal;
-
-                case PropertyNames.PwdInfoLastPasswordSet:
-                    return _passwordSetTimeVal;
-
-                default:
-                    return null;
-            }
+                PropertyNames.PwdInfoLastBadPasswordAttempt => _badPasswordAttemptVal,
+                PropertyNames.AcctInfoExpiredAccount => _expirationTimeVal,
+                PropertyNames.AcctInfoBadLogonCount => _badLogonCountVal,
+                PropertyNames.AcctInfoLastLogon => _logonTimeVal,
+                PropertyNames.AcctInfoAcctLockoutTime => _lockoutTimeVal,
+                PropertyNames.PwdInfoLastPasswordSet => _passwordSetTimeVal,
+                _ => null,
+            };
         }
 
         // Reset all change-tracking status for all properties on the object to "unchanged".

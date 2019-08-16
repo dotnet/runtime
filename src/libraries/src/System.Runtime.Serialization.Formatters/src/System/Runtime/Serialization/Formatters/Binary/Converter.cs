@@ -100,25 +100,23 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
         }
 
-        internal static int TypeLength(InternalPrimitiveTypeE code)
-        {
-            switch (code)
+        internal static int TypeLength(InternalPrimitiveTypeE code) =>
+            code switch
             {
-                case InternalPrimitiveTypeE.Boolean: return 1;
-                case InternalPrimitiveTypeE.Char: return 2;
-                case InternalPrimitiveTypeE.Byte: return 1;
-                case InternalPrimitiveTypeE.Double: return 8;
-                case InternalPrimitiveTypeE.Int16: return 2;
-                case InternalPrimitiveTypeE.Int32: return 4;
-                case InternalPrimitiveTypeE.Int64: return 8;
-                case InternalPrimitiveTypeE.SByte: return 1;
-                case InternalPrimitiveTypeE.Single: return 4;
-                case InternalPrimitiveTypeE.UInt16: return 2;
-                case InternalPrimitiveTypeE.UInt32: return 4;
-                case InternalPrimitiveTypeE.UInt64: return 8;
-                default: return 0;
-            }
-        }
+                InternalPrimitiveTypeE.Boolean => 1,
+                InternalPrimitiveTypeE.Char => 2,
+                InternalPrimitiveTypeE.Byte => 1,
+                InternalPrimitiveTypeE.Double => 8,
+                InternalPrimitiveTypeE.Int16 => 2,
+                InternalPrimitiveTypeE.Int32 => 4,
+                InternalPrimitiveTypeE.Int64 => 8,
+                InternalPrimitiveTypeE.SByte => 1,
+                InternalPrimitiveTypeE.Single => 4,
+                InternalPrimitiveTypeE.UInt16 => 2,
+                InternalPrimitiveTypeE.UInt32 => 4,
+                InternalPrimitiveTypeE.UInt64 => 8,
+                _ => 0,
+            };
 
         internal static Type ToArrayType(InternalPrimitiveTypeE code)
         {
@@ -182,28 +180,26 @@ namespace System.Runtime.Serialization.Formatters.Binary
             return s_typeA[(int)code];
         }
 
-        internal static Array CreatePrimitiveArray(InternalPrimitiveTypeE code, int length)
-        {
-            switch (code)
+        internal static Array CreatePrimitiveArray(InternalPrimitiveTypeE code, int length) =>
+            code switch
             {
-                case InternalPrimitiveTypeE.Boolean: return new bool[length];
-                case InternalPrimitiveTypeE.Byte: return new byte[length];
-                case InternalPrimitiveTypeE.Char: return new char[length];
-                case InternalPrimitiveTypeE.Decimal: return new decimal[length];
-                case InternalPrimitiveTypeE.Double: return new double[length];
-                case InternalPrimitiveTypeE.Int16: return new short[length];
-                case InternalPrimitiveTypeE.Int32: return new int[length];
-                case InternalPrimitiveTypeE.Int64: return new long[length];
-                case InternalPrimitiveTypeE.SByte: return new sbyte[length];
-                case InternalPrimitiveTypeE.Single: return new float[length];
-                case InternalPrimitiveTypeE.TimeSpan: return new TimeSpan[length];
-                case InternalPrimitiveTypeE.DateTime: return new DateTime[length];
-                case InternalPrimitiveTypeE.UInt16: return new ushort[length];
-                case InternalPrimitiveTypeE.UInt32: return new uint[length];
-                case InternalPrimitiveTypeE.UInt64: return new ulong[length];
-                default: return null;
-            }
-        }
+                InternalPrimitiveTypeE.Boolean => new bool[length],
+                InternalPrimitiveTypeE.Byte => new byte[length],
+                InternalPrimitiveTypeE.Char => new char[length],
+                InternalPrimitiveTypeE.Decimal => new decimal[length],
+                InternalPrimitiveTypeE.Double => new double[length],
+                InternalPrimitiveTypeE.Int16 => new short[length],
+                InternalPrimitiveTypeE.Int32 => new int[length],
+                InternalPrimitiveTypeE.Int64 => new long[length],
+                InternalPrimitiveTypeE.SByte => new sbyte[length],
+                InternalPrimitiveTypeE.Single => new float[length],
+                InternalPrimitiveTypeE.TimeSpan => new TimeSpan[length],
+                InternalPrimitiveTypeE.DateTime => new DateTime[length],
+                InternalPrimitiveTypeE.UInt16 => new ushort[length],
+                InternalPrimitiveTypeE.UInt32 => new uint[length],
+                InternalPrimitiveTypeE.UInt64 => new ulong[length],
+                _ => null,
+            };
 
         internal static bool IsPrimitiveArray(Type type, out object typeInformation)
         {

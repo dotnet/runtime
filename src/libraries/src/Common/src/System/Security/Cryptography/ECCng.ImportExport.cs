@@ -386,64 +386,50 @@ namespace System.Security.Cryptography
         /// to the pre-Win10 magic numbers to support import on pre-Win10 environments
         /// that don't have the named curve functionality.
         /// </summary>
-        private static KeyBlobMagicNumber EcdsaCurveNameToMagicNumber(string name, bool includePrivateParameters)
-        {
-            switch (EcdsaCurveNameToAlgorithm(name))
+        private static KeyBlobMagicNumber EcdsaCurveNameToMagicNumber(string name, bool includePrivateParameters) =>
+            EcdsaCurveNameToAlgorithm(name) switch
             {
-                case AlgorithmName.ECDsaP256:
-                    return includePrivateParameters ?
-                        KeyBlobMagicNumber.BCRYPT_ECDSA_PRIVATE_P256_MAGIC :
-                        KeyBlobMagicNumber.BCRYPT_ECDSA_PUBLIC_P256_MAGIC;
+                AlgorithmName.ECDsaP256 => includePrivateParameters ?
+                       KeyBlobMagicNumber.BCRYPT_ECDSA_PRIVATE_P256_MAGIC :
+                       KeyBlobMagicNumber.BCRYPT_ECDSA_PUBLIC_P256_MAGIC,
 
-                case AlgorithmName.ECDsaP384:
-                    return includePrivateParameters ?
+                AlgorithmName.ECDsaP384 => includePrivateParameters ?
                         KeyBlobMagicNumber.BCRYPT_ECDSA_PRIVATE_P384_MAGIC :
-                        KeyBlobMagicNumber.BCRYPT_ECDSA_PUBLIC_P384_MAGIC;
+                        KeyBlobMagicNumber.BCRYPT_ECDSA_PUBLIC_P384_MAGIC,
 
-                case AlgorithmName.ECDsaP521:
-                    return includePrivateParameters ?
+                AlgorithmName.ECDsaP521 => includePrivateParameters ?
                         KeyBlobMagicNumber.BCRYPT_ECDSA_PRIVATE_P521_MAGIC :
-                        KeyBlobMagicNumber.BCRYPT_ECDSA_PUBLIC_P521_MAGIC;
+                        KeyBlobMagicNumber.BCRYPT_ECDSA_PUBLIC_P521_MAGIC,
 
-                default:
-                    // all other curves are new in Win10 so use named curves
-                    return includePrivateParameters ?
+                _ => includePrivateParameters ?
                         KeyBlobMagicNumber.BCRYPT_ECDSA_PRIVATE_GENERIC_MAGIC :
-                        KeyBlobMagicNumber.BCRYPT_ECDSA_PUBLIC_GENERIC_MAGIC;
-            }
-        }
+                        KeyBlobMagicNumber.BCRYPT_ECDSA_PUBLIC_GENERIC_MAGIC,
+            };
 
         /// <summary>
         /// Map a curve name to magic number. Maps the names of the curves that worked pre-Win10
         /// to the pre-Win10 magic numbers to support import on pre-Win10 environments
         /// that don't have the named curve functionality.
         /// </summary>
-        private static KeyBlobMagicNumber EcdhCurveNameToMagicNumber(string name, bool includePrivateParameters)
-        {
-            switch (EcdhCurveNameToAlgorithm(name))
+        private static KeyBlobMagicNumber EcdhCurveNameToMagicNumber(string name, bool includePrivateParameters) =>
+            EcdhCurveNameToAlgorithm(name) switch
             {
-                case AlgorithmName.ECDHP256:
-                    return includePrivateParameters ?
-                        KeyBlobMagicNumber.BCRYPT_ECDH_PRIVATE_P256_MAGIC :
-                        KeyBlobMagicNumber.BCRYPT_ECDH_PUBLIC_P256_MAGIC;
+                AlgorithmName.ECDHP256 => includePrivateParameters ?
+                       KeyBlobMagicNumber.BCRYPT_ECDH_PRIVATE_P256_MAGIC :
+                       KeyBlobMagicNumber.BCRYPT_ECDH_PUBLIC_P256_MAGIC,
 
-                case AlgorithmName.ECDHP384:
-                    return includePrivateParameters ?
+                AlgorithmName.ECDHP384 => includePrivateParameters ?
                         KeyBlobMagicNumber.BCRYPT_ECDH_PRIVATE_P384_MAGIC :
-                        KeyBlobMagicNumber.BCRYPT_ECDH_PUBLIC_P384_MAGIC;
+                        KeyBlobMagicNumber.BCRYPT_ECDH_PUBLIC_P384_MAGIC,
 
-                case AlgorithmName.ECDHP521:
-                    return includePrivateParameters ?
+                AlgorithmName.ECDHP521 => includePrivateParameters ?
                         KeyBlobMagicNumber.BCRYPT_ECDH_PRIVATE_P521_MAGIC :
-                        KeyBlobMagicNumber.BCRYPT_ECDH_PUBLIC_P521_MAGIC;
+                        KeyBlobMagicNumber.BCRYPT_ECDH_PUBLIC_P521_MAGIC,
 
-                default:
-                    // all other curves are new in Win10 so use named curves
-                    return includePrivateParameters ?
+                _ => includePrivateParameters ?
                         KeyBlobMagicNumber.BCRYPT_ECDH_PRIVATE_GENERIC_MAGIC :
-                        KeyBlobMagicNumber.BCRYPT_ECDH_PUBLIC_GENERIC_MAGIC;
-            }
-        }
+                        KeyBlobMagicNumber.BCRYPT_ECDH_PUBLIC_GENERIC_MAGIC,
+            };
 
         /// <summary>
         /// Helper method to map between BCrypt.ECC_CURVE_TYPE_ENUM and ECCurve.ECCurveType

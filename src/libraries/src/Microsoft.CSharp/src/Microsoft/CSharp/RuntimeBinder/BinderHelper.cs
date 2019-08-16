@@ -411,89 +411,53 @@ namespace Microsoft.CSharp.RuntimeBinder
             return new CallInfo(argCount - discard, argNames);
         }
 
-        internal static string GetCLROperatorName(this ExpressionType p)
-        {
-            switch (p)
+        internal static string GetCLROperatorName(this ExpressionType p) =>
+            p switch
             {
-                default:
-                    return null;
 
                 // Binary Operators
-                case ExpressionType.Add:
-                    return SpecialNames.CLR_Add;
-                case ExpressionType.Subtract:
-                    return SpecialNames.CLR_Subtract;
-                case ExpressionType.Multiply:
-                    return SpecialNames.CLR_Multiply;
-                case ExpressionType.Divide:
-                    return SpecialNames.CLR_Division;
-                case ExpressionType.Modulo:
-                    return SpecialNames.CLR_Modulus;
-                case ExpressionType.LeftShift:
-                    return SpecialNames.CLR_LShift;
-                case ExpressionType.RightShift:
-                    return SpecialNames.CLR_RShift;
-                case ExpressionType.LessThan:
-                    return SpecialNames.CLR_LT;
-                case ExpressionType.GreaterThan:
-                    return SpecialNames.CLR_GT;
-                case ExpressionType.LessThanOrEqual:
-                    return SpecialNames.CLR_LTE;
-                case ExpressionType.GreaterThanOrEqual:
-                    return SpecialNames.CLR_GTE;
-                case ExpressionType.Equal:
-                    return SpecialNames.CLR_Equality;
-                case ExpressionType.NotEqual:
-                    return SpecialNames.CLR_Inequality;
-                case ExpressionType.And:
-                    return SpecialNames.CLR_BitwiseAnd;
-                case ExpressionType.ExclusiveOr:
-                    return SpecialNames.CLR_ExclusiveOr;
-                case ExpressionType.Or:
-                    return SpecialNames.CLR_BitwiseOr;
+                ExpressionType.Add => SpecialNames.CLR_Add,
+                ExpressionType.Subtract => SpecialNames.CLR_Subtract,
+                ExpressionType.Multiply => SpecialNames.CLR_Multiply,
+                ExpressionType.Divide => SpecialNames.CLR_Division,
+                ExpressionType.Modulo => SpecialNames.CLR_Modulus,
+                ExpressionType.LeftShift => SpecialNames.CLR_LShift,
+                ExpressionType.RightShift => SpecialNames.CLR_RShift,
+                ExpressionType.LessThan => SpecialNames.CLR_LT,
+                ExpressionType.GreaterThan => SpecialNames.CLR_GT,
+                ExpressionType.LessThanOrEqual => SpecialNames.CLR_LTE,
+                ExpressionType.GreaterThanOrEqual => SpecialNames.CLR_GTE,
+                ExpressionType.Equal => SpecialNames.CLR_Equality,
+                ExpressionType.NotEqual => SpecialNames.CLR_Inequality,
+                ExpressionType.And => SpecialNames.CLR_BitwiseAnd,
+                ExpressionType.ExclusiveOr => SpecialNames.CLR_ExclusiveOr,
+                ExpressionType.Or => SpecialNames.CLR_BitwiseOr,
 
                 // "op_LogicalNot";
-                case ExpressionType.AddAssign:
-                    return SpecialNames.CLR_InPlaceAdd;
-                case ExpressionType.SubtractAssign:
-                    return SpecialNames.CLR_InPlaceSubtract;
-                case ExpressionType.MultiplyAssign:
-                    return SpecialNames.CLR_InPlaceMultiply;
-                case ExpressionType.DivideAssign:
-                    return SpecialNames.CLR_InPlaceDivide;
-                case ExpressionType.ModuloAssign:
-                    return SpecialNames.CLR_InPlaceModulus;
-                case ExpressionType.AndAssign:
-                    return SpecialNames.CLR_InPlaceBitwiseAnd;
-                case ExpressionType.ExclusiveOrAssign:
-                    return SpecialNames.CLR_InPlaceExclusiveOr;
-                case ExpressionType.OrAssign:
-                    return SpecialNames.CLR_InPlaceBitwiseOr;
-                case ExpressionType.LeftShiftAssign:
-                    return SpecialNames.CLR_InPlaceLShift;
-                case ExpressionType.RightShiftAssign:
-                    return SpecialNames.CLR_InPlaceRShift;
+                ExpressionType.AddAssign => SpecialNames.CLR_InPlaceAdd,
+                ExpressionType.SubtractAssign => SpecialNames.CLR_InPlaceSubtract,
+                ExpressionType.MultiplyAssign => SpecialNames.CLR_InPlaceMultiply,
+                ExpressionType.DivideAssign => SpecialNames.CLR_InPlaceDivide,
+                ExpressionType.ModuloAssign => SpecialNames.CLR_InPlaceModulus,
+                ExpressionType.AndAssign => SpecialNames.CLR_InPlaceBitwiseAnd,
+                ExpressionType.ExclusiveOrAssign => SpecialNames.CLR_InPlaceExclusiveOr,
+                ExpressionType.OrAssign => SpecialNames.CLR_InPlaceBitwiseOr,
+                ExpressionType.LeftShiftAssign => SpecialNames.CLR_InPlaceLShift,
+                ExpressionType.RightShiftAssign => SpecialNames.CLR_InPlaceRShift,
 
                 // Unary Operators
-                case ExpressionType.Negate:
-                    return SpecialNames.CLR_UnaryNegation;
-                case ExpressionType.UnaryPlus:
-                    return SpecialNames.CLR_UnaryPlus;
-                case ExpressionType.Not:
-                    return SpecialNames.CLR_LogicalNot;
-                case ExpressionType.OnesComplement:
-                    return SpecialNames.CLR_OnesComplement;
-                case ExpressionType.IsTrue:
-                    return SpecialNames.CLR_True;
-                case ExpressionType.IsFalse:
-                    return SpecialNames.CLR_False;
+                ExpressionType.Negate => SpecialNames.CLR_UnaryNegation,
+                ExpressionType.UnaryPlus => SpecialNames.CLR_UnaryPlus,
+                ExpressionType.Not => SpecialNames.CLR_LogicalNot,
+                ExpressionType.OnesComplement => SpecialNames.CLR_OnesComplement,
+                ExpressionType.IsTrue => SpecialNames.CLR_True,
+                ExpressionType.IsFalse => SpecialNames.CLR_False,
 
-                case ExpressionType.Increment:
-                    return SpecialNames.CLR_Increment;
-                case ExpressionType.Decrement:
-                    return SpecialNames.CLR_Decrement;
-            }
-        }
+                ExpressionType.Increment => SpecialNames.CLR_Increment,
+                ExpressionType.Decrement => SpecialNames.CLR_Decrement,
+
+                _ => null,
+            };
 
         internal static int AddArgHashes(int hash, Type[] typeArguments, CSharpArgumentInfo[] argInfos)
         {

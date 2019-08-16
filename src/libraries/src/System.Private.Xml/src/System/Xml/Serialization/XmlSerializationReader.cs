@@ -1269,26 +1269,17 @@ namespace System.Xml.Serialization
             }
         }
 
-        private string CurrentTag()
-        {
-            switch (_r.NodeType)
+        private string CurrentTag() =>
+            _r.NodeType switch
             {
-                case XmlNodeType.Element:
-                    return "<" + _r.LocalName + " xmlns='" + _r.NamespaceURI + "'>";
-                case XmlNodeType.EndElement:
-                    return ">";
-                case XmlNodeType.Text:
-                    return _r.Value;
-                case XmlNodeType.CDATA:
-                    return "CDATA";
-                case XmlNodeType.Comment:
-                    return "<--";
-                case XmlNodeType.ProcessingInstruction:
-                    return "<?";
-                default:
-                    return "(unknown)";
-            }
-        }
+                XmlNodeType.Element => "<" + _r.LocalName + " xmlns='" + _r.NamespaceURI + "'>",
+                XmlNodeType.EndElement => ">",
+                XmlNodeType.Text => _r.Value,
+                XmlNodeType.CDATA => "CDATA",
+                XmlNodeType.Comment => "<--",
+                XmlNodeType.ProcessingInstruction => "<?",
+                _ => "(unknown)",
+            };
 
         protected Exception CreateUnknownTypeException(XmlQualifiedName type)
         {

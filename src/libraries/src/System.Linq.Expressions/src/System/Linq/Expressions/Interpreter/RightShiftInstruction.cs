@@ -163,19 +163,18 @@ namespace System.Linq.Expressions.Interpreter
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         public static Instruction Create(Type type)
         {
-            switch (type.GetNonNullableType().GetTypeCode())
+            return type.GetNonNullableType().GetTypeCode() switch
             {
-                case TypeCode.SByte: return s_SByte ?? (s_SByte = new RightShiftSByte());
-                case TypeCode.Int16: return s_Int16 ?? (s_Int16 = new RightShiftInt16());
-                case TypeCode.Int32: return s_Int32 ?? (s_Int32 = new RightShiftInt32());
-                case TypeCode.Int64: return s_Int64 ?? (s_Int64 = new RightShiftInt64());
-                case TypeCode.Byte: return s_Byte ?? (s_Byte = new RightShiftByte());
-                case TypeCode.UInt16: return s_UInt16 ?? (s_UInt16 = new RightShiftUInt16());
-                case TypeCode.UInt32: return s_UInt32 ?? (s_UInt32 = new RightShiftUInt32());
-                case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new RightShiftUInt64());
-                default:
-                    throw ContractUtils.Unreachable;
-            }
+                TypeCode.SByte => s_SByte ?? (s_SByte = new RightShiftSByte()),
+                TypeCode.Int16 => s_Int16 ?? (s_Int16 = new RightShiftInt16()),
+                TypeCode.Int32 => s_Int32 ?? (s_Int32 = new RightShiftInt32()),
+                TypeCode.Int64 => s_Int64 ?? (s_Int64 = new RightShiftInt64()),
+                TypeCode.Byte => s_Byte ?? (s_Byte = new RightShiftByte()),
+                TypeCode.UInt16 => s_UInt16 ?? (s_UInt16 = new RightShiftUInt16()),
+                TypeCode.UInt32 => s_UInt32 ?? (s_UInt32 = new RightShiftUInt32()),
+                TypeCode.UInt64 => s_UInt64 ?? (s_UInt64 = new RightShiftUInt64()),
+                _ => throw ContractUtils.Unreachable,
+            };
         }
     }
 }

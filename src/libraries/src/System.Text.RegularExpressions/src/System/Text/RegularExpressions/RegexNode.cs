@@ -212,18 +212,13 @@ namespace System.Text.RegularExpressions
         /// one child strip out the intermediate node. If it has zero children,
         /// turn it into an empty.
         /// </summary>
-        private RegexNode StripEnation(int emptyType)
-        {
-            switch (ChildCount())
+        private RegexNode StripEnation(int emptyType) =>
+            ChildCount() switch
             {
-                case 0:
-                    return new RegexNode(emptyType, Options);
-                case 1:
-                    return Child(0);
-                default:
-                    return this;
-            }
-        }
+                0 => new RegexNode(emptyType, Options),
+                1 => Child(0),
+                _ => this,
+            };
 
         /// <summary>
         /// Simple optimization. Once parsed into a tree, non-capturing groups

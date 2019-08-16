@@ -46,12 +46,12 @@ namespace System.Xml.Xsl.Qil
         {
             get
             {
-                switch (index)
+                return index switch
                 {
-                    case 0: return _left;
-                    case 1: return _right;
-                    default: throw new IndexOutOfRangeException();
-                }
+                    0 => _left,
+                    1 => _right,
+                    _ => throw new IndexOutOfRangeException(),
+                };
             }
             set
             {

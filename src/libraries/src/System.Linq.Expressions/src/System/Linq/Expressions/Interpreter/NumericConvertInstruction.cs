@@ -64,45 +64,45 @@ namespace System.Linq.Expressions.Interpreter
 
             protected override object Convert(object obj)
             {
-                switch (_from)
+                return _from switch
                 {
-                    case TypeCode.Boolean: return ConvertInt32((bool)obj ? 1 : 0);
-                    case TypeCode.Byte: return ConvertInt32((byte)obj);
-                    case TypeCode.SByte: return ConvertInt32((sbyte)obj);
-                    case TypeCode.Int16: return ConvertInt32((short)obj);
-                    case TypeCode.Char: return ConvertInt32((char)obj);
-                    case TypeCode.Int32: return ConvertInt32((int)obj);
-                    case TypeCode.Int64: return ConvertInt64((long)obj);
-                    case TypeCode.UInt16: return ConvertInt32((ushort)obj);
-                    case TypeCode.UInt32: return ConvertInt64((uint)obj);
-                    case TypeCode.UInt64: return ConvertUInt64((ulong)obj);
-                    case TypeCode.Single: return ConvertDouble((float)obj);
-                    case TypeCode.Double: return ConvertDouble((double)obj);
-                    default: throw ContractUtils.Unreachable;
-                }
+                    TypeCode.Boolean => ConvertInt32((bool)obj ? 1 : 0),
+                    TypeCode.Byte => ConvertInt32((byte)obj),
+                    TypeCode.SByte => ConvertInt32((sbyte)obj),
+                    TypeCode.Int16 => ConvertInt32((short)obj),
+                    TypeCode.Char => ConvertInt32((char)obj),
+                    TypeCode.Int32 => ConvertInt32((int)obj),
+                    TypeCode.Int64 => ConvertInt64((long)obj),
+                    TypeCode.UInt16 => ConvertInt32((ushort)obj),
+                    TypeCode.UInt32 => ConvertInt64((uint)obj),
+                    TypeCode.UInt64 => ConvertUInt64((ulong)obj),
+                    TypeCode.Single => ConvertDouble((float)obj),
+                    TypeCode.Double => ConvertDouble((double)obj),
+                    _ => throw ContractUtils.Unreachable,
+                };
             }
 
             private object ConvertInt32(int obj)
             {
                 unchecked
                 {
-                    switch (_to)
+                    return _to switch
                     {
-                        case TypeCode.Byte: return (byte)obj;
-                        case TypeCode.SByte: return (sbyte)obj;
-                        case TypeCode.Int16: return (short)obj;
-                        case TypeCode.Char: return (char)obj;
-                        case TypeCode.Int32: return (int)obj;
-                        case TypeCode.Int64: return (long)obj;
-                        case TypeCode.UInt16: return (ushort)obj;
-                        case TypeCode.UInt32: return (uint)obj;
-                        case TypeCode.UInt64: return (ulong)obj;
-                        case TypeCode.Single: return (float)obj;
-                        case TypeCode.Double: return (double)obj;
-                        case TypeCode.Decimal: return (decimal)obj;
-                        case TypeCode.Boolean: return obj != 0;
-                        default: throw ContractUtils.Unreachable;
-                    }
+                        TypeCode.Byte => (byte)obj,
+                        TypeCode.SByte => (sbyte)obj,
+                        TypeCode.Int16 => (short)obj,
+                        TypeCode.Char => (char)obj,
+                        TypeCode.Int32 => (int)obj,
+                        TypeCode.Int64 => (long)obj,
+                        TypeCode.UInt16 => (ushort)obj,
+                        TypeCode.UInt32 => (uint)obj,
+                        TypeCode.UInt64 => (ulong)obj,
+                        TypeCode.Single => (float)obj,
+                        TypeCode.Double => (double)obj,
+                        TypeCode.Decimal => (decimal)obj,
+                        TypeCode.Boolean => obj != 0,
+                        _ => throw ContractUtils.Unreachable,
+                    };
                 }
             }
 
@@ -110,22 +110,22 @@ namespace System.Linq.Expressions.Interpreter
             {
                 unchecked
                 {
-                    switch (_to)
+                    return _to switch
                     {
-                        case TypeCode.Byte: return (byte)obj;
-                        case TypeCode.SByte: return (sbyte)obj;
-                        case TypeCode.Int16: return (short)obj;
-                        case TypeCode.Char: return (char)obj;
-                        case TypeCode.Int32: return (int)obj;
-                        case TypeCode.Int64: return (long)obj;
-                        case TypeCode.UInt16: return (ushort)obj;
-                        case TypeCode.UInt32: return (uint)obj;
-                        case TypeCode.UInt64: return (ulong)obj;
-                        case TypeCode.Single: return (float)obj;
-                        case TypeCode.Double: return (double)obj;
-                        case TypeCode.Decimal: return (decimal)obj;
-                        default: throw ContractUtils.Unreachable;
-                    }
+                        TypeCode.Byte => (byte)obj,
+                        TypeCode.SByte => (sbyte)obj,
+                        TypeCode.Int16 => (short)obj,
+                        TypeCode.Char => (char)obj,
+                        TypeCode.Int32 => (int)obj,
+                        TypeCode.Int64 => (long)obj,
+                        TypeCode.UInt16 => (ushort)obj,
+                        TypeCode.UInt32 => (uint)obj,
+                        TypeCode.UInt64 => (ulong)obj,
+                        TypeCode.Single => (float)obj,
+                        TypeCode.Double => (double)obj,
+                        TypeCode.Decimal => (decimal)obj,
+                        _ => throw ContractUtils.Unreachable,
+                    };
                 }
             }
 
@@ -133,22 +133,22 @@ namespace System.Linq.Expressions.Interpreter
             {
                 unchecked
                 {
-                    switch (_to)
+                    return _to switch
                     {
-                        case TypeCode.Byte: return (byte)obj;
-                        case TypeCode.SByte: return (sbyte)obj;
-                        case TypeCode.Int16: return (short)obj;
-                        case TypeCode.Char: return (char)obj;
-                        case TypeCode.Int32: return (int)obj;
-                        case TypeCode.Int64: return (long)obj;
-                        case TypeCode.UInt16: return (ushort)obj;
-                        case TypeCode.UInt32: return (uint)obj;
-                        case TypeCode.UInt64: return (ulong)obj;
-                        case TypeCode.Single: return (float)obj;
-                        case TypeCode.Double: return (double)obj;
-                        case TypeCode.Decimal: return (decimal)obj;
-                        default: throw ContractUtils.Unreachable;
-                    }
+                        TypeCode.Byte => (byte)obj,
+                        TypeCode.SByte => (sbyte)obj,
+                        TypeCode.Int16 => (short)obj,
+                        TypeCode.Char => (char)obj,
+                        TypeCode.Int32 => (int)obj,
+                        TypeCode.Int64 => (long)obj,
+                        TypeCode.UInt16 => (ushort)obj,
+                        TypeCode.UInt32 => (uint)obj,
+                        TypeCode.UInt64 => (ulong)obj,
+                        TypeCode.Single => (float)obj,
+                        TypeCode.Double => (double)obj,
+                        TypeCode.Decimal => (decimal)obj,
+                        _ => throw ContractUtils.Unreachable,
+                    };
                 }
             }
 
@@ -156,22 +156,22 @@ namespace System.Linq.Expressions.Interpreter
             {
                 unchecked
                 {
-                    switch (_to)
+                    return _to switch
                     {
-                        case TypeCode.Byte: return (byte)obj;
-                        case TypeCode.SByte: return (sbyte)obj;
-                        case TypeCode.Int16: return (short)obj;
-                        case TypeCode.Char: return (char)obj;
-                        case TypeCode.Int32: return (int)obj;
-                        case TypeCode.Int64: return (long)obj;
-                        case TypeCode.UInt16: return (ushort)obj;
-                        case TypeCode.UInt32: return (uint)obj;
-                        case TypeCode.UInt64: return (ulong)obj;
-                        case TypeCode.Single: return (float)obj;
-                        case TypeCode.Double: return (double)obj;
-                        case TypeCode.Decimal: return (decimal)obj;
-                        default: throw ContractUtils.Unreachable;
-                    }
+                        TypeCode.Byte => (byte)obj,
+                        TypeCode.SByte => (sbyte)obj,
+                        TypeCode.Int16 => (short)obj,
+                        TypeCode.Char => (char)obj,
+                        TypeCode.Int32 => (int)obj,
+                        TypeCode.Int64 => (long)obj,
+                        TypeCode.UInt16 => (ushort)obj,
+                        TypeCode.UInt32 => (uint)obj,
+                        TypeCode.UInt64 => (ulong)obj,
+                        TypeCode.Single => (float)obj,
+                        TypeCode.Double => (double)obj,
+                        TypeCode.Decimal => (decimal)obj,
+                        _ => throw ContractUtils.Unreachable,
+                    };
                 }
             }
         }
@@ -188,45 +188,45 @@ namespace System.Linq.Expressions.Interpreter
 
             protected override object Convert(object obj)
             {
-                switch (_from)
+                return _from switch
                 {
-                    case TypeCode.Boolean: return ConvertInt32((bool)obj ? 1 : 0);
-                    case TypeCode.Byte: return ConvertInt32((byte)obj);
-                    case TypeCode.SByte: return ConvertInt32((sbyte)obj);
-                    case TypeCode.Int16: return ConvertInt32((short)obj);
-                    case TypeCode.Char: return ConvertInt32((char)obj);
-                    case TypeCode.Int32: return ConvertInt32((int)obj);
-                    case TypeCode.Int64: return ConvertInt64((long)obj);
-                    case TypeCode.UInt16: return ConvertInt32((ushort)obj);
-                    case TypeCode.UInt32: return ConvertInt64((uint)obj);
-                    case TypeCode.UInt64: return ConvertUInt64((ulong)obj);
-                    case TypeCode.Single: return ConvertDouble((float)obj);
-                    case TypeCode.Double: return ConvertDouble((double)obj);
-                    default: throw ContractUtils.Unreachable;
-                }
+                    TypeCode.Boolean => ConvertInt32((bool)obj ? 1 : 0),
+                    TypeCode.Byte => ConvertInt32((byte)obj),
+                    TypeCode.SByte => ConvertInt32((sbyte)obj),
+                    TypeCode.Int16 => ConvertInt32((short)obj),
+                    TypeCode.Char => ConvertInt32((char)obj),
+                    TypeCode.Int32 => ConvertInt32((int)obj),
+                    TypeCode.Int64 => ConvertInt64((long)obj),
+                    TypeCode.UInt16 => ConvertInt32((ushort)obj),
+                    TypeCode.UInt32 => ConvertInt64((uint)obj),
+                    TypeCode.UInt64 => ConvertUInt64((ulong)obj),
+                    TypeCode.Single => ConvertDouble((float)obj),
+                    TypeCode.Double => ConvertDouble((double)obj),
+                    _ => throw ContractUtils.Unreachable,
+                };
             }
 
             private object ConvertInt32(int obj)
             {
                 checked
                 {
-                    switch (_to)
+                    return _to switch
                     {
-                        case TypeCode.Byte: return (byte)obj;
-                        case TypeCode.SByte: return (sbyte)obj;
-                        case TypeCode.Int16: return (short)obj;
-                        case TypeCode.Char: return (char)obj;
-                        case TypeCode.Int32: return (int)obj;
-                        case TypeCode.Int64: return (long)obj;
-                        case TypeCode.UInt16: return (ushort)obj;
-                        case TypeCode.UInt32: return (uint)obj;
-                        case TypeCode.UInt64: return (ulong)obj;
-                        case TypeCode.Single: return (float)obj;
-                        case TypeCode.Double: return (double)obj;
-                        case TypeCode.Decimal: return (decimal)obj;
-                        case TypeCode.Boolean: return obj != 0;
-                        default: throw ContractUtils.Unreachable;
-                    }
+                        TypeCode.Byte => (byte)obj,
+                        TypeCode.SByte => (sbyte)obj,
+                        TypeCode.Int16 => (short)obj,
+                        TypeCode.Char => (char)obj,
+                        TypeCode.Int32 => (int)obj,
+                        TypeCode.Int64 => (long)obj,
+                        TypeCode.UInt16 => (ushort)obj,
+                        TypeCode.UInt32 => (uint)obj,
+                        TypeCode.UInt64 => (ulong)obj,
+                        TypeCode.Single => (float)obj,
+                        TypeCode.Double => (double)obj,
+                        TypeCode.Decimal => (decimal)obj,
+                        TypeCode.Boolean => obj != 0,
+                        _ => throw ContractUtils.Unreachable,
+                    };
                 }
             }
 
@@ -234,22 +234,22 @@ namespace System.Linq.Expressions.Interpreter
             {
                 checked
                 {
-                    switch (_to)
+                    return _to switch
                     {
-                        case TypeCode.Byte: return (byte)obj;
-                        case TypeCode.SByte: return (sbyte)obj;
-                        case TypeCode.Int16: return (short)obj;
-                        case TypeCode.Char: return (char)obj;
-                        case TypeCode.Int32: return (int)obj;
-                        case TypeCode.Int64: return (long)obj;
-                        case TypeCode.UInt16: return (ushort)obj;
-                        case TypeCode.UInt32: return (uint)obj;
-                        case TypeCode.UInt64: return (ulong)obj;
-                        case TypeCode.Single: return (float)obj;
-                        case TypeCode.Double: return (double)obj;
-                        case TypeCode.Decimal: return (decimal)obj;
-                        default: throw ContractUtils.Unreachable;
-                    }
+                        TypeCode.Byte => (byte)obj,
+                        TypeCode.SByte => (sbyte)obj,
+                        TypeCode.Int16 => (short)obj,
+                        TypeCode.Char => (char)obj,
+                        TypeCode.Int32 => (int)obj,
+                        TypeCode.Int64 => (long)obj,
+                        TypeCode.UInt16 => (ushort)obj,
+                        TypeCode.UInt32 => (uint)obj,
+                        TypeCode.UInt64 => (ulong)obj,
+                        TypeCode.Single => (float)obj,
+                        TypeCode.Double => (double)obj,
+                        TypeCode.Decimal => (decimal)obj,
+                        _ => throw ContractUtils.Unreachable,
+                    };
                 }
             }
 
@@ -257,22 +257,22 @@ namespace System.Linq.Expressions.Interpreter
             {
                 checked
                 {
-                    switch (_to)
+                    return _to switch
                     {
-                        case TypeCode.Byte: return (byte)obj;
-                        case TypeCode.SByte: return (sbyte)obj;
-                        case TypeCode.Int16: return (short)obj;
-                        case TypeCode.Char: return (char)obj;
-                        case TypeCode.Int32: return (int)obj;
-                        case TypeCode.Int64: return (long)obj;
-                        case TypeCode.UInt16: return (ushort)obj;
-                        case TypeCode.UInt32: return (uint)obj;
-                        case TypeCode.UInt64: return (ulong)obj;
-                        case TypeCode.Single: return (float)obj;
-                        case TypeCode.Double: return (double)obj;
-                        case TypeCode.Decimal: return (decimal)obj;
-                        default: throw ContractUtils.Unreachable;
-                    }
+                        TypeCode.Byte => (byte)obj,
+                        TypeCode.SByte => (sbyte)obj,
+                        TypeCode.Int16 => (short)obj,
+                        TypeCode.Char => (char)obj,
+                        TypeCode.Int32 => (int)obj,
+                        TypeCode.Int64 => (long)obj,
+                        TypeCode.UInt16 => (ushort)obj,
+                        TypeCode.UInt32 => (uint)obj,
+                        TypeCode.UInt64 => (ulong)obj,
+                        TypeCode.Single => (float)obj,
+                        TypeCode.Double => (double)obj,
+                        TypeCode.Decimal => (decimal)obj,
+                        _ => throw ContractUtils.Unreachable,
+                    };
                 }
             }
 
@@ -280,22 +280,22 @@ namespace System.Linq.Expressions.Interpreter
             {
                 checked
                 {
-                    switch (_to)
+                    return _to switch
                     {
-                        case TypeCode.Byte: return (byte)obj;
-                        case TypeCode.SByte: return (sbyte)obj;
-                        case TypeCode.Int16: return (short)obj;
-                        case TypeCode.Char: return (char)obj;
-                        case TypeCode.Int32: return (int)obj;
-                        case TypeCode.Int64: return (long)obj;
-                        case TypeCode.UInt16: return (ushort)obj;
-                        case TypeCode.UInt32: return (uint)obj;
-                        case TypeCode.UInt64: return (ulong)obj;
-                        case TypeCode.Single: return (float)obj;
-                        case TypeCode.Double: return (double)obj;
-                        case TypeCode.Decimal: return (decimal)obj;
-                        default: throw ContractUtils.Unreachable;
-                    }
+                        TypeCode.Byte => (byte)obj,
+                        TypeCode.SByte => (sbyte)obj,
+                        TypeCode.Int16 => (short)obj,
+                        TypeCode.Char => (char)obj,
+                        TypeCode.Int32 => (int)obj,
+                        TypeCode.Int64 => (long)obj,
+                        TypeCode.UInt16 => (ushort)obj,
+                        TypeCode.UInt32 => (uint)obj,
+                        TypeCode.UInt64 => (ulong)obj,
+                        TypeCode.Single => (float)obj,
+                        TypeCode.Double => (double)obj,
+                        TypeCode.Decimal => (decimal)obj,
+                        _ => throw ContractUtils.Unreachable,
+                    };
                 }
             }
         }
@@ -313,20 +313,20 @@ namespace System.Linq.Expressions.Interpreter
             {
                 unchecked
                 {
-                    switch (_to)
+                    return _to switch
                     {
-                        case TypeCode.Boolean: return (bool)obj;
-                        case TypeCode.Byte: return (byte)obj;
-                        case TypeCode.SByte: return (sbyte)obj;
-                        case TypeCode.Int16: return (short)obj;
-                        case TypeCode.Char: return (char)obj;
-                        case TypeCode.Int32: return (int)obj;
-                        case TypeCode.Int64: return (long)obj;
-                        case TypeCode.UInt16: return (ushort)obj;
-                        case TypeCode.UInt32: return (uint)obj;
-                        case TypeCode.UInt64: return (ulong)obj;
-                        default: throw ContractUtils.Unreachable;
-                    }
+                        TypeCode.Boolean => (bool)obj,
+                        TypeCode.Byte => (byte)obj,
+                        TypeCode.SByte => (sbyte)obj,
+                        TypeCode.Int16 => (short)obj,
+                        TypeCode.Char => (char)obj,
+                        TypeCode.Int32 => (int)obj,
+                        TypeCode.Int64 => (long)obj,
+                        TypeCode.UInt16 => (ushort)obj,
+                        TypeCode.UInt32 => (uint)obj,
+                        TypeCode.UInt64 => (ulong)obj,
+                        _ => throw ContractUtils.Unreachable,
+                    };
                 }
             }
         }

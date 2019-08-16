@@ -611,15 +611,12 @@ namespace System.Linq
             public TResult[] ToArray()
             {
                 int count = _source.GetCount(onlyIfCheap: true);
-                switch (count)
+                return count switch
                 {
-                    case -1:
-                        return LazyToArray();
-                    case 0:
-                        return Array.Empty<TResult>();
-                    default:
-                        return PreallocatingToArray(count);
-                }
+                    -1 => LazyToArray(),
+                    0 => Array.Empty<TResult>(),
+                    _ => PreallocatingToArray(count),
+                };
             }
 
             public List<TResult> ToList()

@@ -1311,37 +1311,23 @@ namespace System.Xml
             return exception;
         }
 
-        private static DateTime SwitchToLocalTime(DateTime value)
-        {
-            switch (value.Kind)
+        private static DateTime SwitchToLocalTime(DateTime value) =>
+            value.Kind switch
             {
-                case DateTimeKind.Local:
-                    return value;
+                DateTimeKind.Local => value,
+                DateTimeKind.Unspecified => new DateTime(value.Ticks, DateTimeKind.Local),
+                DateTimeKind.Utc => value.ToLocalTime(),
+                _ => value,
+            };
 
-                case DateTimeKind.Unspecified:
-                    return new DateTime(value.Ticks, DateTimeKind.Local);
-
-                case DateTimeKind.Utc:
-                    return value.ToLocalTime();
-            }
-            return value;
-        }
-
-        private static DateTime SwitchToUtcTime(DateTime value)
-        {
-            switch (value.Kind)
+        private static DateTime SwitchToUtcTime(DateTime value) =>
+            value.Kind switch
             {
-                case DateTimeKind.Utc:
-                    return value;
-
-                case DateTimeKind.Unspecified:
-                    return new DateTime(value.Ticks, DateTimeKind.Utc);
-
-                case DateTimeKind.Local:
-                    return value.ToUniversalTime();
-            }
-            return value;
-        }
+                DateTimeKind.Utc => value,
+                DateTimeKind.Unspecified => new DateTime(value.Ticks, DateTimeKind.Utc),
+                DateTimeKind.Local => value.ToUniversalTime(),
+                _ => value,
+            };
 
         internal static Uri ToUri(string s)
         {

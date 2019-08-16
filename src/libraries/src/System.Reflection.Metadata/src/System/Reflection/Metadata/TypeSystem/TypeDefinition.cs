@@ -267,16 +267,12 @@ namespace System.Reflection.Metadata
         {
             var name = _reader.TypeDefTable.GetName(Handle);
 
-            switch (Treatment & TypeDefTreatment.KindMask)
+            return (Treatment & TypeDefTreatment.KindMask) switch
             {
-                case TypeDefTreatment.UnmangleWinRTName:
-                    return name.SuffixRaw(MetadataReader.ClrPrefix.Length);
-
-                case TypeDefTreatment.PrefixWinRTName:
-                    return name.WithWinRTPrefix();
-            }
-
-            return name;
+                TypeDefTreatment.UnmangleWinRTName => name.SuffixRaw(MetadataReader.ClrPrefix.Length),
+                TypeDefTreatment.PrefixWinRTName => name.WithWinRTPrefix(),
+                _ => name,
+            };
         }
 
         private NamespaceDefinitionHandle GetProjectedNamespace()

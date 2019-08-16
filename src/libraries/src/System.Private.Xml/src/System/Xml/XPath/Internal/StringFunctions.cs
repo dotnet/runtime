@@ -45,23 +45,21 @@ namespace MS.Internal.Xml.XPath
             }
         }
 
-        public override object Evaluate(XPathNodeIterator nodeIterator)
-        {
-            switch (_funcType)
+        public override object Evaluate(XPathNodeIterator nodeIterator) =>
+            _funcType switch
             {
-                case Function.FunctionType.FuncString: return toString(nodeIterator);
-                case Function.FunctionType.FuncConcat: return Concat(nodeIterator);
-                case Function.FunctionType.FuncStartsWith: return StartsWith(nodeIterator);
-                case Function.FunctionType.FuncContains: return Contains(nodeIterator);
-                case Function.FunctionType.FuncSubstringBefore: return SubstringBefore(nodeIterator);
-                case Function.FunctionType.FuncSubstringAfter: return SubstringAfter(nodeIterator);
-                case Function.FunctionType.FuncSubstring: return Substring(nodeIterator);
-                case Function.FunctionType.FuncStringLength: return StringLength(nodeIterator);
-                case Function.FunctionType.FuncNormalize: return Normalize(nodeIterator);
-                case Function.FunctionType.FuncTranslate: return Translate(nodeIterator);
-            }
-            return string.Empty;
-        }
+                Function.FunctionType.FuncString => toString(nodeIterator),
+                Function.FunctionType.FuncConcat => Concat(nodeIterator),
+                Function.FunctionType.FuncStartsWith => StartsWith(nodeIterator),
+                Function.FunctionType.FuncContains => Contains(nodeIterator),
+                Function.FunctionType.FuncSubstringBefore => SubstringBefore(nodeIterator),
+                Function.FunctionType.FuncSubstringAfter => SubstringAfter(nodeIterator),
+                Function.FunctionType.FuncSubstring => Substring(nodeIterator),
+                Function.FunctionType.FuncStringLength => StringLength(nodeIterator),
+                Function.FunctionType.FuncNormalize => Normalize(nodeIterator),
+                Function.FunctionType.FuncTranslate => Translate(nodeIterator),
+                _ => string.Empty,
+            };
 
         internal static string toString(double num)
         {

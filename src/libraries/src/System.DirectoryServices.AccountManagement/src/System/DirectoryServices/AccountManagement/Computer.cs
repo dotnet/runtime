@@ -137,14 +137,11 @@ namespace System.DirectoryServices.AccountManagement
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "Computer", "GetChangeStatusForProperty: name=" + propertyName);
 
-            switch (propertyName)
+            return propertyName switch
             {
-                case (PropertyNames.ComputerServicePrincipalNames):
-                    return _servicePrincipalNames.Changed;
-
-                default:
-                    return base.GetChangeStatusForProperty(propertyName);
-            }
+                PropertyNames.ComputerServicePrincipalNames => _servicePrincipalNames.Changed,
+                _ => base.GetChangeStatusForProperty(propertyName),
+            };
         }
 
         // Given a property name, returns the current value for the property.
@@ -152,14 +149,11 @@ namespace System.DirectoryServices.AccountManagement
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "Computer", "GetValueForProperty: name=" + propertyName);
 
-            switch (propertyName)
+            return propertyName switch
             {
-                case (PropertyNames.ComputerServicePrincipalNames):
-                    return _servicePrincipalNames;
-
-                default:
-                    return base.GetValueForProperty(propertyName);
-            }
+                PropertyNames.ComputerServicePrincipalNames => _servicePrincipalNames,
+                _ => base.GetValueForProperty(propertyName),
+            };
         }
 
         // Reset all change-tracking status for all properties on the object to "unchanged".

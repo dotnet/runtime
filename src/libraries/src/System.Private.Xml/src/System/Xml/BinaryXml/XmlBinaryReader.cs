@@ -424,15 +424,12 @@ namespace System.Xml
                     settings.NameTable = _xnt;
                 }
                 // 0=>auto, 1=>doc/pre-dtd, 2=>doc/pre-elem, 3=>doc/instance -1=>doc/post-elem, 9=>frag
-                switch (_docState)
+                settings.ConformanceLevel = _docState switch
                 {
-                    case 0:
-                        settings.ConformanceLevel = ConformanceLevel.Auto; break;
-                    case 9:
-                        settings.ConformanceLevel = ConformanceLevel.Fragment; break;
-                    default:
-                        settings.ConformanceLevel = ConformanceLevel.Document; break;
-                }
+                    0 => ConformanceLevel.Auto,
+                    9 => ConformanceLevel.Fragment,
+                    _ => ConformanceLevel.Document,
+                };
                 settings.CheckCharacters = _checkCharacters;
                 settings.IgnoreWhitespace = _ignoreWhitespace;
                 settings.IgnoreProcessingInstructions = _ignorePIs;
@@ -3846,20 +3843,13 @@ namespace System.Xml
         private DateTimeOffset ValueAsDateTimeOffset()
         {
             CheckValueTokenBounds();
-            switch (_token)
+            return _token switch
             {
-                case BinXmlToken.XSD_KATMAI_DATEOFFSET:
-                    return BinXmlDateTime.XsdKatmaiDateOffsetToDateTimeOffset(_data, _tokDataPos);
-
-                case BinXmlToken.XSD_KATMAI_DATETIMEOFFSET:
-                    return BinXmlDateTime.XsdKatmaiDateTimeOffsetToDateTimeOffset(_data, _tokDataPos);
-
-                case BinXmlToken.XSD_KATMAI_TIMEOFFSET:
-                    return BinXmlDateTime.XsdKatmaiTimeOffsetToDateTimeOffset(_data, _tokDataPos);
-
-                default:
-                    throw ThrowUnexpectedToken(_token);
-            }
+                BinXmlToken.XSD_KATMAI_DATEOFFSET => BinXmlDateTime.XsdKatmaiDateOffsetToDateTimeOffset(_data, _tokDataPos),
+                BinXmlToken.XSD_KATMAI_DATETIMEOFFSET => BinXmlDateTime.XsdKatmaiDateTimeOffsetToDateTimeOffset(_data, _tokDataPos),
+                BinXmlToken.XSD_KATMAI_TIMEOFFSET => BinXmlDateTime.XsdKatmaiTimeOffsetToDateTimeOffset(_data, _tokDataPos),
+                _ => throw ThrowUnexpectedToken(_token),
+            };
         }
 
 

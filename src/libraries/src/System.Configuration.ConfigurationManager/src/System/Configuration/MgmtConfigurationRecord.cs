@@ -1256,26 +1256,15 @@ namespace System.Configuration
         //
         // Take an ExeDefinition and translate it to a string
         //
-        private string ExeDefinitionToString(
-            ConfigurationAllowExeDefinition allowDefinition)
-        {
-            switch (allowDefinition)
+        private string ExeDefinitionToString(ConfigurationAllowExeDefinition allowDefinition) =>
+            allowDefinition switch
             {
-                case ConfigurationAllowExeDefinition.MachineOnly:
-                    return AllowDefinitionMachineOnly;
-
-                case ConfigurationAllowExeDefinition.MachineToApplication:
-                    return AllowDefinitionMachineToApplication;
-
-                case ConfigurationAllowExeDefinition.MachineToRoamingUser:
-                    return AllowExeDefinitionMachineToRoaming;
-
-                case ConfigurationAllowExeDefinition.MachineToLocalUser:
-                    return AllowExeDefinitionMachineToLocal;
-            }
-
-            throw ExceptionUtil.PropertyInvalid("AllowExeDefinition");
-        }
+                ConfigurationAllowExeDefinition.MachineOnly => AllowDefinitionMachineOnly,
+                ConfigurationAllowExeDefinition.MachineToApplication => AllowDefinitionMachineToApplication,
+                ConfigurationAllowExeDefinition.MachineToRoamingUser => AllowExeDefinitionMachineToRoaming,
+                ConfigurationAllowExeDefinition.MachineToLocalUser => AllowExeDefinitionMachineToLocal,
+                _ => throw ExceptionUtil.PropertyInvalid("AllowExeDefinition"),
+            };
 
         private string GetUpdatedSectionGroupDeclarationXml(FactoryRecord factoryRecord,
             ConfigurationSectionGroup configSectionGroup)

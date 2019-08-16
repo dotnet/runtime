@@ -28,42 +28,25 @@ namespace System.Net.Http
 
         internal Http2ProtocolErrorCode ProtocolError { get; }
 
-        protected static string GetName(Http2ProtocolErrorCode code)
-        {
+        protected static string GetName(Http2ProtocolErrorCode code) =>
             // These strings are the names used in the HTTP2 spec and should not be localized.
-            switch (code)
+            code switch
             {
-                case Http2ProtocolErrorCode.NoError:
-                    return "NO_ERROR";
-                case Http2ProtocolErrorCode.ProtocolError:
-                    return "PROTOCOL_ERROR";
-                case Http2ProtocolErrorCode.InternalError:
-                    return "INTERNAL_ERROR";
-                case Http2ProtocolErrorCode.FlowControlError:
-                    return "FLOW_CONTROL_ERROR";
-                case Http2ProtocolErrorCode.SettingsTimeout:
-                    return "SETTINGS_TIMEOUT";
-                case Http2ProtocolErrorCode.StreamClosed:
-                    return "STREAM_CLOSED";
-                case Http2ProtocolErrorCode.FrameSizeError:
-                    return "FRAME_SIZE_ERROR";
-                case Http2ProtocolErrorCode.RefusedStream:
-                    return "REFUSED_STREAM";
-                case Http2ProtocolErrorCode.Cancel:
-                    return "CANCEL";
-                case Http2ProtocolErrorCode.CompressionError:
-                    return "COMPRESSION_ERROR";
-                case Http2ProtocolErrorCode.ConnectError:
-                    return "CONNECT_ERROR";
-                case Http2ProtocolErrorCode.EnhanceYourCalm:
-                    return "ENHANCE_YOUR_CALM";
-                case Http2ProtocolErrorCode.InadequateSecurity:
-                    return "INADEQUATE_SECURITY";
-                case Http2ProtocolErrorCode.Http11Required:
-                    return "HTTP_1_1_REQUIRED";
-                default:
-                    return "(unknown error)";
-            }
-        }
+                Http2ProtocolErrorCode.NoError => "NO_ERROR",
+                Http2ProtocolErrorCode.ProtocolError => "PROTOCOL_ERROR",
+                Http2ProtocolErrorCode.InternalError => "INTERNAL_ERROR",
+                Http2ProtocolErrorCode.FlowControlError => "FLOW_CONTROL_ERROR",
+                Http2ProtocolErrorCode.SettingsTimeout => "SETTINGS_TIMEOUT",
+                Http2ProtocolErrorCode.StreamClosed => "STREAM_CLOSED",
+                Http2ProtocolErrorCode.FrameSizeError => "FRAME_SIZE_ERROR",
+                Http2ProtocolErrorCode.RefusedStream => "REFUSED_STREAM",
+                Http2ProtocolErrorCode.Cancel => "CANCEL",
+                Http2ProtocolErrorCode.CompressionError => "COMPRESSION_ERROR",
+                Http2ProtocolErrorCode.ConnectError => "CONNECT_ERROR",
+                Http2ProtocolErrorCode.EnhanceYourCalm => "ENHANCE_YOUR_CALM",
+                Http2ProtocolErrorCode.InadequateSecurity => "INADEQUATE_SECURITY",
+                Http2ProtocolErrorCode.Http11Required => "HTTP_1_1_REQUIRED",
+                _ => "(unknown error)",
+            };
     }
 }

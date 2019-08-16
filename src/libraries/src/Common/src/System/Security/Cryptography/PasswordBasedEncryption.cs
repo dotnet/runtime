@@ -701,28 +701,17 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
-            HashAlgorithmName prf;
-
-            switch (pbkdf2Params.Prf.Algorithm.Value)
+            HashAlgorithmName prf = pbkdf2Params.Prf.Algorithm.Value switch
             {
-                case Oids.HmacWithSha1:
-                    prf = HashAlgorithmName.SHA1;
-                    break;
-                case Oids.HmacWithSha256:
-                    prf = HashAlgorithmName.SHA256;
-                    break;
-                case Oids.HmacWithSha384:
-                    prf = HashAlgorithmName.SHA384;
-                    break;
-                case Oids.HmacWithSha512:
-                    prf = HashAlgorithmName.SHA512;
-                    break;
-                default:
-                    throw new CryptographicException(
+                Oids.HmacWithSha1 => HashAlgorithmName.SHA1,
+                Oids.HmacWithSha256 => HashAlgorithmName.SHA256,
+                Oids.HmacWithSha384 => HashAlgorithmName.SHA384,
+                Oids.HmacWithSha512 => HashAlgorithmName.SHA512,
+                _ => throw new CryptographicException(
                         SR.Format(
                             SR.Cryptography_UnknownAlgorithmIdentifier,
-                            pbkdf2Params.Prf.Algorithm));
-            }
+                            pbkdf2Params.Prf.Algorithm)),
+            };
 
             // All of the PRFs that we know about have NULL parameters, so check that now that we know
             // it's not just that we don't know the algorithm.

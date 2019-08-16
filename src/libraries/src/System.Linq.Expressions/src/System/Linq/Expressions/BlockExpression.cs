@@ -199,15 +199,13 @@ namespace System.Linq.Expressions
             _arg1 = arg1;
         }
 
-        internal override Expression GetExpression(int index)
-        {
-            switch (index)
+        internal override Expression GetExpression(int index) =>
+            index switch
             {
-                case 0: return ExpressionUtils.ReturnObject<Expression>(_arg0);
-                case 1: return _arg1;
-                default: throw Error.ArgumentOutOfRange(nameof(index));
-            }
-        }
+                0 => ExpressionUtils.ReturnObject<Expression>(_arg0),
+                1 => _arg1,
+                _ => throw Error.ArgumentOutOfRange(nameof(index)),
+            };
 
         internal override bool SameExpressions(ICollection<Expression> expressions)
         {
@@ -292,16 +290,14 @@ namespace System.Linq.Expressions
             return false;
         }
 
-        internal override Expression GetExpression(int index)
-        {
-            switch (index)
+        internal override Expression GetExpression(int index) =>
+            index switch
             {
-                case 0: return ExpressionUtils.ReturnObject<Expression>(_arg0);
-                case 1: return _arg1;
-                case 2: return _arg2;
-                default: throw Error.ArgumentOutOfRange(nameof(index));
-            }
-        }
+                0 => ExpressionUtils.ReturnObject<Expression>(_arg0),
+                1 => _arg1,
+                2 => _arg2,
+                _ => throw Error.ArgumentOutOfRange(nameof(index)),
+            };
 
         internal override int ExpressionCount => 3;
 
@@ -366,17 +362,15 @@ namespace System.Linq.Expressions
             return false;
         }
 
-        internal override Expression GetExpression(int index)
-        {
-            switch (index)
+        internal override Expression GetExpression(int index) =>
+            index switch
             {
-                case 0: return ExpressionUtils.ReturnObject<Expression>(_arg0);
-                case 1: return _arg1;
-                case 2: return _arg2;
-                case 3: return _arg3;
-                default: throw Error.ArgumentOutOfRange(nameof(index));
-            }
-        }
+                0 => ExpressionUtils.ReturnObject<Expression>(_arg0),
+                1 => _arg1,
+                2 => _arg2,
+                3 => _arg3,
+                _ => throw Error.ArgumentOutOfRange(nameof(index)),
+            };
 
         internal override int ExpressionCount => 4;
 
@@ -409,18 +403,16 @@ namespace System.Linq.Expressions
             _arg4 = arg4;
         }
 
-        internal override Expression GetExpression(int index)
-        {
-            switch (index)
+        internal override Expression GetExpression(int index) =>
+            index switch
             {
-                case 0: return ExpressionUtils.ReturnObject<Expression>(_arg0);
-                case 1: return _arg1;
-                case 2: return _arg2;
-                case 3: return _arg3;
-                case 4: return _arg4;
-                default: throw Error.ArgumentOutOfRange(nameof(index));
-            }
-        }
+                0 => ExpressionUtils.ReturnObject<Expression>(_arg0),
+                1 => _arg1,
+                2 => _arg2,
+                3 => _arg3,
+                4 => _arg4,
+                _ => throw Error.ArgumentOutOfRange(nameof(index)),
+            };
 
         internal override bool SameExpressions(ICollection<Expression> expressions)
         {
@@ -584,14 +576,12 @@ namespace System.Linq.Expressions
             return false;
         }
 
-        internal override Expression GetExpression(int index)
-        {
-            switch (index)
+        internal override Expression GetExpression(int index) =>
+            index switch
             {
-                case 0: return ExpressionUtils.ReturnObject<Expression>(_body);
-                default: throw Error.ArgumentOutOfRange(nameof(index));
-            }
-        }
+                0 => ExpressionUtils.ReturnObject<Expression>(_body),
+                _ => throw Error.ArgumentOutOfRange(nameof(index)),
+            };
 
         internal override int ExpressionCount => 1;
 
@@ -1071,15 +1061,12 @@ namespace System.Linq.Expressions
                 }
             }
 
-            switch (expressions.Count)
+            return expressions.Count switch
             {
-                case 0:
-                    return new ScopeWithType(variables, expressions, typeof(void));
-                case 1:
-                    return new Scope1(variables, expressions[0]);
-                default:
-                    return new ScopeN(variables, expressions);
-            }
+                0 => new ScopeWithType(variables, expressions, typeof(void)),
+                1 => new Scope1(variables, expressions[0]),
+                _ => new ScopeN(variables, expressions),
+            };
         }
 
         // Checks that all variables are non-null, not byref, and unique.
@@ -1107,16 +1094,15 @@ namespace System.Linq.Expressions
 
         private static BlockExpression GetOptimizedBlockExpression(IReadOnlyList<Expression> expressions)
         {
-            switch (expressions.Count)
+            return expressions.Count switch
             {
-                case 0: return BlockCore(typeof(void), EmptyReadOnlyCollection<ParameterExpression>.Instance, EmptyReadOnlyCollection<Expression>.Instance);
-                case 2: return new Block2(expressions[0], expressions[1]);
-                case 3: return new Block3(expressions[0], expressions[1], expressions[2]);
-                case 4: return new Block4(expressions[0], expressions[1], expressions[2], expressions[3]);
-                case 5: return new Block5(expressions[0], expressions[1], expressions[2], expressions[3], expressions[4]);
-                default:
-                    return new BlockN(expressions as ReadOnlyCollection<Expression> ?? (IReadOnlyList<Expression>)expressions.ToArray());
-            }
+                0 => BlockCore(typeof(void), EmptyReadOnlyCollection<ParameterExpression>.Instance, EmptyReadOnlyCollection<Expression>.Instance),
+                2 => new Block2(expressions[0], expressions[1]),
+                3 => new Block3(expressions[0], expressions[1], expressions[2]),
+                4 => new Block4(expressions[0], expressions[1], expressions[2], expressions[3]),
+                5 => new Block5(expressions[0], expressions[1], expressions[2], expressions[3], expressions[4]),
+                _ => new BlockN(expressions as ReadOnlyCollection<Expression> ?? (IReadOnlyList<Expression>)expressions.ToArray()),
+            };
         }
     }
 }

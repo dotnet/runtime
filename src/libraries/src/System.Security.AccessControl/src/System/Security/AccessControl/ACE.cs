@@ -1400,33 +1400,18 @@ nameof(opaque),
         // computes the numerical type of the ACE
         //
 
-        private static AceType TypeFromQualifier(bool isCallback, AceQualifier qualifier)
-        {
+        private static AceType TypeFromQualifier(bool isCallback, AceQualifier qualifier) =>
             //
             // Might benefit from replacing this with a static hard-coded table
             //
-
-            switch (qualifier)
+            qualifier switch
             {
-                case AceQualifier.AccessAllowed:
-                    return isCallback ? AceType.AccessAllowedCallback : AceType.AccessAllowed;
-
-                case AceQualifier.AccessDenied:
-                    return isCallback ? AceType.AccessDeniedCallback : AceType.AccessDenied;
-
-                case AceQualifier.SystemAudit:
-                    return isCallback ? AceType.SystemAuditCallback : AceType.SystemAudit;
-
-                case AceQualifier.SystemAlarm:
-                    return isCallback ? AceType.SystemAlarmCallback : AceType.SystemAlarm;
-
-                default:
-
-                    throw new ArgumentOutOfRangeException(
-nameof(qualifier),
-                        SR.ArgumentOutOfRange_Enum);
-            }
-        }
+                AceQualifier.AccessAllowed => isCallback ? AceType.AccessAllowedCallback : AceType.AccessAllowed,
+                AceQualifier.AccessDenied => isCallback ? AceType.AccessDeniedCallback : AceType.AccessDenied,
+                AceQualifier.SystemAudit => isCallback ? AceType.SystemAuditCallback : AceType.SystemAudit,
+                AceQualifier.SystemAlarm => isCallback ? AceType.SystemAlarmCallback : AceType.SystemAlarm,
+                _ => throw new ArgumentOutOfRangeException(nameof(qualifier), SR.ArgumentOutOfRange_Enum),
+            };
 
         #endregion
 
@@ -1791,29 +1776,15 @@ nameof(qualifier),
         //
         internal const int AccessMaskWithObjectType = 0x1 | 0x2 | 0x8 | 0x10 | 0x20 | 0x100;
 
-        private static AceType TypeFromQualifier(bool isCallback, AceQualifier qualifier)
-        {
-            switch (qualifier)
+        private static AceType TypeFromQualifier(bool isCallback, AceQualifier qualifier) =>
+            qualifier switch
             {
-                case AceQualifier.AccessAllowed:
-                    return isCallback ? AceType.AccessAllowedCallbackObject : AceType.AccessAllowedObject;
-
-                case AceQualifier.AccessDenied:
-                    return isCallback ? AceType.AccessDeniedCallbackObject : AceType.AccessDeniedObject;
-
-                case AceQualifier.SystemAudit:
-                    return isCallback ? AceType.SystemAuditCallbackObject : AceType.SystemAuditObject;
-
-                case AceQualifier.SystemAlarm:
-                    return isCallback ? AceType.SystemAlarmCallbackObject : AceType.SystemAlarmObject;
-
-                default:
-
-                    throw new ArgumentOutOfRangeException(
-nameof(qualifier),
-                        SR.ArgumentOutOfRange_Enum);
-            }
-        }
+                AceQualifier.AccessAllowed => isCallback ? AceType.AccessAllowedCallbackObject : AceType.AccessAllowedObject,
+                AceQualifier.AccessDenied => isCallback ? AceType.AccessDeniedCallbackObject : AceType.AccessDeniedObject,
+                AceQualifier.SystemAudit => isCallback ? AceType.SystemAuditCallbackObject : AceType.SystemAuditObject,
+                AceQualifier.SystemAlarm => isCallback ? AceType.SystemAlarmCallbackObject : AceType.SystemAlarmObject,
+                _ => throw new ArgumentOutOfRangeException(nameof(qualifier), SR.ArgumentOutOfRange_Enum),
+            };
 
         //
         // This method checks if the objectType matches with the specified object type

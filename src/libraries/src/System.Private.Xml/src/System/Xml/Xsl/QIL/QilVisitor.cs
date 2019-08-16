@@ -106,137 +106,137 @@ namespace System.Xml.Xsl.Qil
             if (n == null)
                 return VisitNull();
 
-            switch (n.NodeType)
+            return n.NodeType switch
             {
-                case QilNodeType.QilExpression: return VisitQilExpression((QilExpression)n);
-                case QilNodeType.FunctionList: return VisitFunctionList((QilList)n);
-                case QilNodeType.GlobalVariableList: return VisitGlobalVariableList((QilList)n);
-                case QilNodeType.GlobalParameterList: return VisitGlobalParameterList((QilList)n);
-                case QilNodeType.ActualParameterList: return VisitActualParameterList((QilList)n);
-                case QilNodeType.FormalParameterList: return VisitFormalParameterList((QilList)n);
-                case QilNodeType.SortKeyList: return VisitSortKeyList((QilList)n);
-                case QilNodeType.BranchList: return VisitBranchList((QilList)n);
-                case QilNodeType.OptimizeBarrier: return VisitOptimizeBarrier((QilUnary)n);
-                case QilNodeType.Unknown: return VisitUnknown(n);
+                QilNodeType.QilExpression => VisitQilExpression((QilExpression)n),
+                QilNodeType.FunctionList => VisitFunctionList((QilList)n),
+                QilNodeType.GlobalVariableList => VisitGlobalVariableList((QilList)n),
+                QilNodeType.GlobalParameterList => VisitGlobalParameterList((QilList)n),
+                QilNodeType.ActualParameterList => VisitActualParameterList((QilList)n),
+                QilNodeType.FormalParameterList => VisitFormalParameterList((QilList)n),
+                QilNodeType.SortKeyList => VisitSortKeyList((QilList)n),
+                QilNodeType.BranchList => VisitBranchList((QilList)n),
+                QilNodeType.OptimizeBarrier => VisitOptimizeBarrier((QilUnary)n),
+                QilNodeType.Unknown => VisitUnknown(n),
 
-                case QilNodeType.DataSource: return VisitDataSource((QilDataSource)n);
-                case QilNodeType.Nop: return VisitNop((QilUnary)n);
-                case QilNodeType.Error: return VisitError((QilUnary)n);
-                case QilNodeType.Warning: return VisitWarning((QilUnary)n);
+                QilNodeType.DataSource => VisitDataSource((QilDataSource)n),
+                QilNodeType.Nop => VisitNop((QilUnary)n),
+                QilNodeType.Error => VisitError((QilUnary)n),
+                QilNodeType.Warning => VisitWarning((QilUnary)n),
 
-                case QilNodeType.For: return VisitFor((QilIterator)n);
-                case QilNodeType.Let: return VisitLet((QilIterator)n);
-                case QilNodeType.Parameter: return VisitParameter((QilParameter)n);
-                case QilNodeType.PositionOf: return VisitPositionOf((QilUnary)n);
+                QilNodeType.For => VisitFor((QilIterator)n),
+                QilNodeType.Let => VisitLet((QilIterator)n),
+                QilNodeType.Parameter => VisitParameter((QilParameter)n),
+                QilNodeType.PositionOf => VisitPositionOf((QilUnary)n),
 
-                case QilNodeType.True: return VisitTrue(n);
-                case QilNodeType.False: return VisitFalse(n);
-                case QilNodeType.LiteralString: return VisitLiteralString((QilLiteral)n);
-                case QilNodeType.LiteralInt32: return VisitLiteralInt32((QilLiteral)n);
-                case QilNodeType.LiteralInt64: return VisitLiteralInt64((QilLiteral)n);
-                case QilNodeType.LiteralDouble: return VisitLiteralDouble((QilLiteral)n);
-                case QilNodeType.LiteralDecimal: return VisitLiteralDecimal((QilLiteral)n);
-                case QilNodeType.LiteralQName: return VisitLiteralQName((QilName)n);
-                case QilNodeType.LiteralType: return VisitLiteralType((QilLiteral)n);
-                case QilNodeType.LiteralObject: return VisitLiteralObject((QilLiteral)n);
+                QilNodeType.True => VisitTrue(n),
+                QilNodeType.False => VisitFalse(n),
+                QilNodeType.LiteralString => VisitLiteralString((QilLiteral)n),
+                QilNodeType.LiteralInt32 => VisitLiteralInt32((QilLiteral)n),
+                QilNodeType.LiteralInt64 => VisitLiteralInt64((QilLiteral)n),
+                QilNodeType.LiteralDouble => VisitLiteralDouble((QilLiteral)n),
+                QilNodeType.LiteralDecimal => VisitLiteralDecimal((QilLiteral)n),
+                QilNodeType.LiteralQName => VisitLiteralQName((QilName)n),
+                QilNodeType.LiteralType => VisitLiteralType((QilLiteral)n),
+                QilNodeType.LiteralObject => VisitLiteralObject((QilLiteral)n),
 
-                case QilNodeType.And: return VisitAnd((QilBinary)n);
-                case QilNodeType.Or: return VisitOr((QilBinary)n);
-                case QilNodeType.Not: return VisitNot((QilUnary)n);
+                QilNodeType.And => VisitAnd((QilBinary)n),
+                QilNodeType.Or => VisitOr((QilBinary)n),
+                QilNodeType.Not => VisitNot((QilUnary)n),
 
-                case QilNodeType.Conditional: return VisitConditional((QilTernary)n);
-                case QilNodeType.Choice: return VisitChoice((QilChoice)n);
+                QilNodeType.Conditional => VisitConditional((QilTernary)n),
+                QilNodeType.Choice => VisitChoice((QilChoice)n),
 
-                case QilNodeType.Length: return VisitLength((QilUnary)n);
-                case QilNodeType.Sequence: return VisitSequence((QilList)n);
-                case QilNodeType.Union: return VisitUnion((QilBinary)n);
-                case QilNodeType.Intersection: return VisitIntersection((QilBinary)n);
-                case QilNodeType.Difference: return VisitDifference((QilBinary)n);
-                case QilNodeType.Average: return VisitAverage((QilUnary)n);
-                case QilNodeType.Sum: return VisitSum((QilUnary)n);
-                case QilNodeType.Minimum: return VisitMinimum((QilUnary)n);
-                case QilNodeType.Maximum: return VisitMaximum((QilUnary)n);
+                QilNodeType.Length => VisitLength((QilUnary)n),
+                QilNodeType.Sequence => VisitSequence((QilList)n),
+                QilNodeType.Union => VisitUnion((QilBinary)n),
+                QilNodeType.Intersection => VisitIntersection((QilBinary)n),
+                QilNodeType.Difference => VisitDifference((QilBinary)n),
+                QilNodeType.Average => VisitAverage((QilUnary)n),
+                QilNodeType.Sum => VisitSum((QilUnary)n),
+                QilNodeType.Minimum => VisitMinimum((QilUnary)n),
+                QilNodeType.Maximum => VisitMaximum((QilUnary)n),
 
-                case QilNodeType.Negate: return VisitNegate((QilUnary)n);
-                case QilNodeType.Add: return VisitAdd((QilBinary)n);
-                case QilNodeType.Subtract: return VisitSubtract((QilBinary)n);
-                case QilNodeType.Multiply: return VisitMultiply((QilBinary)n);
-                case QilNodeType.Divide: return VisitDivide((QilBinary)n);
-                case QilNodeType.Modulo: return VisitModulo((QilBinary)n);
+                QilNodeType.Negate => VisitNegate((QilUnary)n),
+                QilNodeType.Add => VisitAdd((QilBinary)n),
+                QilNodeType.Subtract => VisitSubtract((QilBinary)n),
+                QilNodeType.Multiply => VisitMultiply((QilBinary)n),
+                QilNodeType.Divide => VisitDivide((QilBinary)n),
+                QilNodeType.Modulo => VisitModulo((QilBinary)n),
 
-                case QilNodeType.StrLength: return VisitStrLength((QilUnary)n);
-                case QilNodeType.StrConcat: return VisitStrConcat((QilStrConcat)n);
-                case QilNodeType.StrParseQName: return VisitStrParseQName((QilBinary)n);
+                QilNodeType.StrLength => VisitStrLength((QilUnary)n),
+                QilNodeType.StrConcat => VisitStrConcat((QilStrConcat)n),
+                QilNodeType.StrParseQName => VisitStrParseQName((QilBinary)n),
 
-                case QilNodeType.Ne: return VisitNe((QilBinary)n);
-                case QilNodeType.Eq: return VisitEq((QilBinary)n);
-                case QilNodeType.Gt: return VisitGt((QilBinary)n);
-                case QilNodeType.Ge: return VisitGe((QilBinary)n);
-                case QilNodeType.Lt: return VisitLt((QilBinary)n);
-                case QilNodeType.Le: return VisitLe((QilBinary)n);
+                QilNodeType.Ne => VisitNe((QilBinary)n),
+                QilNodeType.Eq => VisitEq((QilBinary)n),
+                QilNodeType.Gt => VisitGt((QilBinary)n),
+                QilNodeType.Ge => VisitGe((QilBinary)n),
+                QilNodeType.Lt => VisitLt((QilBinary)n),
+                QilNodeType.Le => VisitLe((QilBinary)n),
 
-                case QilNodeType.Is: return VisitIs((QilBinary)n);
-                case QilNodeType.After: return VisitAfter((QilBinary)n);
-                case QilNodeType.Before: return VisitBefore((QilBinary)n);
+                QilNodeType.Is => VisitIs((QilBinary)n),
+                QilNodeType.After => VisitAfter((QilBinary)n),
+                QilNodeType.Before => VisitBefore((QilBinary)n),
 
-                case QilNodeType.Loop: return VisitLoop((QilLoop)n);
-                case QilNodeType.Filter: return VisitFilter((QilLoop)n);
+                QilNodeType.Loop => VisitLoop((QilLoop)n),
+                QilNodeType.Filter => VisitFilter((QilLoop)n),
 
-                case QilNodeType.Sort: return VisitSort((QilLoop)n);
-                case QilNodeType.SortKey: return VisitSortKey((QilSortKey)n);
-                case QilNodeType.DocOrderDistinct: return VisitDocOrderDistinct((QilUnary)n);
+                QilNodeType.Sort => VisitSort((QilLoop)n),
+                QilNodeType.SortKey => VisitSortKey((QilSortKey)n),
+                QilNodeType.DocOrderDistinct => VisitDocOrderDistinct((QilUnary)n),
 
-                case QilNodeType.Function: return VisitFunction((QilFunction)n);
-                case QilNodeType.Invoke: return VisitInvoke((QilInvoke)n);
+                QilNodeType.Function => VisitFunction((QilFunction)n),
+                QilNodeType.Invoke => VisitInvoke((QilInvoke)n),
 
-                case QilNodeType.Content: return VisitContent((QilUnary)n);
-                case QilNodeType.Attribute: return VisitAttribute((QilBinary)n);
-                case QilNodeType.Parent: return VisitParent((QilUnary)n);
-                case QilNodeType.Root: return VisitRoot((QilUnary)n);
-                case QilNodeType.XmlContext: return VisitXmlContext(n);
-                case QilNodeType.Descendant: return VisitDescendant((QilUnary)n);
-                case QilNodeType.DescendantOrSelf: return VisitDescendantOrSelf((QilUnary)n);
-                case QilNodeType.Ancestor: return VisitAncestor((QilUnary)n);
-                case QilNodeType.AncestorOrSelf: return VisitAncestorOrSelf((QilUnary)n);
-                case QilNodeType.Preceding: return VisitPreceding((QilUnary)n);
-                case QilNodeType.FollowingSibling: return VisitFollowingSibling((QilUnary)n);
-                case QilNodeType.PrecedingSibling: return VisitPrecedingSibling((QilUnary)n);
-                case QilNodeType.NodeRange: return VisitNodeRange((QilBinary)n);
-                case QilNodeType.Deref: return VisitDeref((QilBinary)n);
+                QilNodeType.Content => VisitContent((QilUnary)n),
+                QilNodeType.Attribute => VisitAttribute((QilBinary)n),
+                QilNodeType.Parent => VisitParent((QilUnary)n),
+                QilNodeType.Root => VisitRoot((QilUnary)n),
+                QilNodeType.XmlContext => VisitXmlContext(n),
+                QilNodeType.Descendant => VisitDescendant((QilUnary)n),
+                QilNodeType.DescendantOrSelf => VisitDescendantOrSelf((QilUnary)n),
+                QilNodeType.Ancestor => VisitAncestor((QilUnary)n),
+                QilNodeType.AncestorOrSelf => VisitAncestorOrSelf((QilUnary)n),
+                QilNodeType.Preceding => VisitPreceding((QilUnary)n),
+                QilNodeType.FollowingSibling => VisitFollowingSibling((QilUnary)n),
+                QilNodeType.PrecedingSibling => VisitPrecedingSibling((QilUnary)n),
+                QilNodeType.NodeRange => VisitNodeRange((QilBinary)n),
+                QilNodeType.Deref => VisitDeref((QilBinary)n),
 
-                case QilNodeType.ElementCtor: return VisitElementCtor((QilBinary)n);
-                case QilNodeType.AttributeCtor: return VisitAttributeCtor((QilBinary)n);
-                case QilNodeType.CommentCtor: return VisitCommentCtor((QilUnary)n);
-                case QilNodeType.PICtor: return VisitPICtor((QilBinary)n);
-                case QilNodeType.TextCtor: return VisitTextCtor((QilUnary)n);
-                case QilNodeType.RawTextCtor: return VisitRawTextCtor((QilUnary)n);
-                case QilNodeType.DocumentCtor: return VisitDocumentCtor((QilUnary)n);
-                case QilNodeType.NamespaceDecl: return VisitNamespaceDecl((QilBinary)n);
-                case QilNodeType.RtfCtor: return VisitRtfCtor((QilBinary)n);
+                QilNodeType.ElementCtor => VisitElementCtor((QilBinary)n),
+                QilNodeType.AttributeCtor => VisitAttributeCtor((QilBinary)n),
+                QilNodeType.CommentCtor => VisitCommentCtor((QilUnary)n),
+                QilNodeType.PICtor => VisitPICtor((QilBinary)n),
+                QilNodeType.TextCtor => VisitTextCtor((QilUnary)n),
+                QilNodeType.RawTextCtor => VisitRawTextCtor((QilUnary)n),
+                QilNodeType.DocumentCtor => VisitDocumentCtor((QilUnary)n),
+                QilNodeType.NamespaceDecl => VisitNamespaceDecl((QilBinary)n),
+                QilNodeType.RtfCtor => VisitRtfCtor((QilBinary)n),
 
-                case QilNodeType.NameOf: return VisitNameOf((QilUnary)n);
-                case QilNodeType.LocalNameOf: return VisitLocalNameOf((QilUnary)n);
-                case QilNodeType.NamespaceUriOf: return VisitNamespaceUriOf((QilUnary)n);
-                case QilNodeType.PrefixOf: return VisitPrefixOf((QilUnary)n);
+                QilNodeType.NameOf => VisitNameOf((QilUnary)n),
+                QilNodeType.LocalNameOf => VisitLocalNameOf((QilUnary)n),
+                QilNodeType.NamespaceUriOf => VisitNamespaceUriOf((QilUnary)n),
+                QilNodeType.PrefixOf => VisitPrefixOf((QilUnary)n),
 
-                case QilNodeType.TypeAssert: return VisitTypeAssert((QilTargetType)n);
-                case QilNodeType.IsType: return VisitIsType((QilTargetType)n);
-                case QilNodeType.IsEmpty: return VisitIsEmpty((QilUnary)n);
+                QilNodeType.TypeAssert => VisitTypeAssert((QilTargetType)n),
+                QilNodeType.IsType => VisitIsType((QilTargetType)n),
+                QilNodeType.IsEmpty => VisitIsEmpty((QilUnary)n),
 
-                case QilNodeType.XPathNodeValue: return VisitXPathNodeValue((QilUnary)n);
-                case QilNodeType.XPathFollowing: return VisitXPathFollowing((QilUnary)n);
-                case QilNodeType.XPathPreceding: return VisitXPathPreceding((QilUnary)n);
-                case QilNodeType.XPathNamespace: return VisitXPathNamespace((QilUnary)n);
+                QilNodeType.XPathNodeValue => VisitXPathNodeValue((QilUnary)n),
+                QilNodeType.XPathFollowing => VisitXPathFollowing((QilUnary)n),
+                QilNodeType.XPathPreceding => VisitXPathPreceding((QilUnary)n),
+                QilNodeType.XPathNamespace => VisitXPathNamespace((QilUnary)n),
 
-                case QilNodeType.XsltGenerateId: return VisitXsltGenerateId((QilUnary)n);
-                case QilNodeType.XsltInvokeLateBound: return VisitXsltInvokeLateBound((QilInvokeLateBound)n);
-                case QilNodeType.XsltInvokeEarlyBound: return VisitXsltInvokeEarlyBound((QilInvokeEarlyBound)n);
-                case QilNodeType.XsltCopy: return VisitXsltCopy((QilBinary)n);
-                case QilNodeType.XsltCopyOf: return VisitXsltCopyOf((QilUnary)n);
-                case QilNodeType.XsltConvert: return VisitXsltConvert((QilTargetType)n);
+                QilNodeType.XsltGenerateId => VisitXsltGenerateId((QilUnary)n),
+                QilNodeType.XsltInvokeLateBound => VisitXsltInvokeLateBound((QilInvokeLateBound)n),
+                QilNodeType.XsltInvokeEarlyBound => VisitXsltInvokeEarlyBound((QilInvokeEarlyBound)n),
+                QilNodeType.XsltCopy => VisitXsltCopy((QilBinary)n),
+                QilNodeType.XsltCopyOf => VisitXsltCopyOf((QilUnary)n),
+                QilNodeType.XsltConvert => VisitXsltConvert((QilTargetType)n),
 
-                default: return VisitUnknown(n);
-            }
+                _ => VisitUnknown(n),
+            };
         }
 
         protected virtual QilNode VisitReference(QilNode n)
@@ -244,16 +244,16 @@ namespace System.Xml.Xsl.Qil
             if (n == null)
                 return VisitNull();
 
-            switch (n.NodeType)
+            return n.NodeType switch
             {
-                case QilNodeType.For: return VisitForReference((QilIterator)n);
-                case QilNodeType.Let: return VisitLetReference((QilIterator)n);
-                case QilNodeType.Parameter: return VisitParameterReference((QilParameter)n);
+                QilNodeType.For => VisitForReference((QilIterator)n),
+                QilNodeType.Let => VisitLetReference((QilIterator)n),
+                QilNodeType.Parameter => VisitParameterReference((QilParameter)n),
 
-                case QilNodeType.Function: return VisitFunctionReference((QilFunction)n);
+                QilNodeType.Function => VisitFunctionReference((QilFunction)n),
 
-                default: return VisitUnknown(n);
-            }
+                _ => VisitUnknown(n),
+            };
         }
 
         protected virtual QilNode VisitNull() { return null; }

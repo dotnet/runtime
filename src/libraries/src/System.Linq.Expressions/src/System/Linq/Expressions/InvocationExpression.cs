@@ -194,14 +194,12 @@ namespace System.Linq.Expressions
             return ExpressionUtils.ReturnReadOnly(this, ref _arg0);
         }
 
-        public override Expression GetArgument(int index)
-        {
-            switch (index)
+        public override Expression GetArgument(int index) =>
+            index switch
             {
-                case 0: return ExpressionUtils.ReturnObject<Expression>(_arg0);
-                default: throw new ArgumentOutOfRangeException(nameof(index));
-            }
-        }
+                0 => ExpressionUtils.ReturnObject<Expression>(_arg0),
+                _ => throw new ArgumentOutOfRangeException(nameof(index)),
+            };
 
         public override int ArgumentCount => 1;
 
@@ -235,15 +233,13 @@ namespace System.Linq.Expressions
             return ExpressionUtils.ReturnReadOnly(this, ref _arg0);
         }
 
-        public override Expression GetArgument(int index)
-        {
-            switch (index)
+        public override Expression GetArgument(int index) =>
+            index switch
             {
-                case 0: return ExpressionUtils.ReturnObject<Expression>(_arg0);
-                case 1: return _arg1;
-                default: throw new ArgumentOutOfRangeException(nameof(index));
-            }
-        }
+                0 => ExpressionUtils.ReturnObject<Expression>(_arg0),
+                1 => _arg1,
+                _ => throw new ArgumentOutOfRangeException(nameof(index)),
+            };
 
         public override int ArgumentCount => 2;
 
@@ -279,16 +275,14 @@ namespace System.Linq.Expressions
             return ExpressionUtils.ReturnReadOnly(this, ref _arg0);
         }
 
-        public override Expression GetArgument(int index)
-        {
-            switch (index)
+        public override Expression GetArgument(int index) =>
+            index switch
             {
-                case 0: return ExpressionUtils.ReturnObject<Expression>(_arg0);
-                case 1: return _arg1;
-                case 2: return _arg2;
-                default: throw new ArgumentOutOfRangeException(nameof(index));
-            }
-        }
+                0 => ExpressionUtils.ReturnObject<Expression>(_arg0),
+                1 => _arg1,
+                2 => _arg2,
+                _ => throw new ArgumentOutOfRangeException(nameof(index)),
+            };
 
         public override int ArgumentCount => 3;
 
@@ -326,17 +320,15 @@ namespace System.Linq.Expressions
             return ExpressionUtils.ReturnReadOnly(this, ref _arg0);
         }
 
-        public override Expression GetArgument(int index)
-        {
-            switch (index)
+        public override Expression GetArgument(int index) =>
+            index switch
             {
-                case 0: return ExpressionUtils.ReturnObject<Expression>(_arg0);
-                case 1: return _arg1;
-                case 2: return _arg2;
-                case 3: return _arg3;
-                default: throw new ArgumentOutOfRangeException(nameof(index));
-            }
-        }
+                0 => ExpressionUtils.ReturnObject<Expression>(_arg0),
+                1 => _arg1,
+                2 => _arg2,
+                3 => _arg3,
+                _ => throw new ArgumentOutOfRangeException(nameof(index)),
+            };
 
         public override int ArgumentCount => 4;
 
@@ -376,18 +368,16 @@ namespace System.Linq.Expressions
             return ExpressionUtils.ReturnReadOnly(this, ref _arg0);
         }
 
-        public override Expression GetArgument(int index)
-        {
-            switch (index)
+        public override Expression GetArgument(int index) =>
+            index switch
             {
-                case 0: return ExpressionUtils.ReturnObject<Expression>(_arg0);
-                case 1: return _arg1;
-                case 2: return _arg2;
-                case 3: return _arg3;
-                case 4: return _arg4;
-                default: throw new ArgumentOutOfRangeException(nameof(index));
-            }
-        }
+                0 => ExpressionUtils.ReturnObject<Expression>(_arg0),
+                1 => _arg1,
+                2 => _arg2,
+                3 => _arg3,
+                4 => _arg4,
+                _ => throw new ArgumentOutOfRangeException(nameof(index)),
+            };
 
         public override int ArgumentCount => 5;
 

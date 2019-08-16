@@ -6,123 +6,65 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
 {
     internal static class TokenFacts
     {
-        internal static string GetText(TokenKind kind)
-        {
-            switch (kind)
+        internal static string GetText(TokenKind kind) =>
+            kind switch
             {
-                case TokenKind.ArgList:
-                    return "__arglist";
-                case TokenKind.MakeRef:
-                    return "__makeref";
-                case TokenKind.RefType:
-                    return "__reftype";
-                case TokenKind.RefValue:
-                    return "__refvalue";
-                case TokenKind.As:
-                    return "as";
-                case TokenKind.Base:
-                    return "base";
-                case TokenKind.Checked:
-                    return "checked";
-                case TokenKind.Explicit:
-                    return "explicit";
-                case TokenKind.False:
-                    return "false";
-                case TokenKind.Implicit:
-                    return "implicit";
-                case TokenKind.Is:
-                    return "is";
-                case TokenKind.Null:
-                    return "null";
-                case TokenKind.This:
-                    return "this";
-                case TokenKind.True:
-                    return "true";
-                case TokenKind.TypeOf:
-                    return "typeof";
-                case TokenKind.Unchecked:
-                    return "unchecked";
-                case TokenKind.Void:
-                    return "void";
-                case TokenKind.Equal:
-                    return "=";
-                case TokenKind.PlusEqual:
-                    return "+=";
-                case TokenKind.MinusEqual:
-                    return "-=";
-                case TokenKind.SplatEqual:
-                    return "*=";
-                case TokenKind.SlashEqual:
-                    return "/=";
-                case TokenKind.PercentEqual:
-                    return "%=";
-                case TokenKind.AndEqual:
-                    return "&=";
-                case TokenKind.HatEqual:
-                    return "^=";
-                case TokenKind.BarEqual:
-                    return "|=";
-                case TokenKind.LeftShiftEqual:
-                    return "<<=";
-                case TokenKind.RightShiftEqual:
-                    return ">>=";
-                case TokenKind.Question:
-                    return "?";
-                case TokenKind.Colon:
-                    return ":";
-                case TokenKind.ColonColon:
-                    return "::";
-                case TokenKind.LogicalOr:
-                    return "||";
-                case TokenKind.LogicalAnd:
-                    return "&&";
-                case TokenKind.Bar:
-                    return "|";
-                case TokenKind.Hat:
-                    return "^";
-                case TokenKind.Ampersand:
-                    return "&";
-                case TokenKind.EqualEqual:
-                    return "==";
-                case TokenKind.NotEqual:
-                    return "!=";
-                case TokenKind.LessThan:
-                    return "<";
-                case TokenKind.LessThanEqual:
-                    return "<=";
-                case TokenKind.GreaterThan:
-                    return ">";
-                case TokenKind.GreaterThanEqual:
-                    return ">=";
-                case TokenKind.LeftShift:
-                    return "<<";
-                case TokenKind.RightShift:
-                    return ">>";
-                case TokenKind.Plus:
-                    return "+";
-                case TokenKind.Minus:
-                    return "-";
-                case TokenKind.Splat:
-                    return "*";
-                case TokenKind.Slash:
-                    return "/";
-                case TokenKind.Percent:
-                    return "%";
-                case TokenKind.Tilde:
-                    return "~";
-                case TokenKind.Bang:
-                    return "!";
-                case TokenKind.PlusPlus:
-                    return "++";
-                case TokenKind.MinusMinus:
-                    return "--";
-                case TokenKind.Dot:
-                    return ".";
-                case TokenKind.QuestionQuestion:
-                    return "??";
-                default:
-                    throw Error.InternalCompilerError();
-            }
-        }
+                TokenKind.ArgList => "__arglist",
+                TokenKind.MakeRef => "__makeref",
+                TokenKind.RefType => "__reftype",
+                TokenKind.RefValue => "__refvalue",
+                TokenKind.As => "as",
+                TokenKind.Base => "base",
+                TokenKind.Checked => "checked",
+                TokenKind.Explicit => "explicit",
+                TokenKind.False => "false",
+                TokenKind.Implicit => "implicit",
+                TokenKind.Is => "is",
+                TokenKind.Null => "null",
+                TokenKind.This => "this",
+                TokenKind.True => "true",
+                TokenKind.TypeOf => "typeof",
+                TokenKind.Unchecked => "unchecked",
+                TokenKind.Void => "void",
+                TokenKind.Equal => "=",
+                TokenKind.PlusEqual => "+=",
+                TokenKind.MinusEqual => "-=",
+                TokenKind.SplatEqual => "*=",
+                TokenKind.SlashEqual => "/=",
+                TokenKind.PercentEqual => "%=",
+                TokenKind.AndEqual => "&=",
+                TokenKind.HatEqual => "^=",
+                TokenKind.BarEqual => "|=",
+                TokenKind.LeftShiftEqual => "<<=",
+                TokenKind.RightShiftEqual => ">>=",
+                TokenKind.Question => "?",
+                TokenKind.Colon => ":",
+                TokenKind.ColonColon => "::",
+                TokenKind.LogicalOr => "||",
+                TokenKind.LogicalAnd => "&&",
+                TokenKind.Bar => "|",
+                TokenKind.Hat => "^",
+                TokenKind.Ampersand => "&",
+                TokenKind.EqualEqual => "==",
+                TokenKind.NotEqual => "!=",
+                TokenKind.LessThan => "<",
+                TokenKind.LessThanEqual => "<=",
+                TokenKind.GreaterThan => ">",
+                TokenKind.GreaterThanEqual => ">=",
+                TokenKind.LeftShift => "<<",
+                TokenKind.RightShift => ">>",
+                TokenKind.Plus => "+",
+                TokenKind.Minus => "-",
+                TokenKind.Splat => "*",
+                TokenKind.Slash => "/",
+                TokenKind.Percent => "%",
+                TokenKind.Tilde => "~",
+                TokenKind.Bang => "!",
+                TokenKind.PlusPlus => "++",
+                TokenKind.MinusMinus => "--",
+                TokenKind.Dot => ".",
+                TokenKind.QuestionQuestion => "??",
+                _ => throw Error.InternalCompilerError(),
+            };
     }
 }

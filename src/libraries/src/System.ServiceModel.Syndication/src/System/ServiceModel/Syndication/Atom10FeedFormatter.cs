@@ -560,21 +560,13 @@ namespace System.ServiceModel.Syndication
                 type = Atom10Constants.PlaintextType;
             }
 
-            TextSyndicationContentKind kind;
-            switch (type)
+            TextSyndicationContentKind kind = type switch
             {
-                case Atom10Constants.PlaintextType:
-                    kind = TextSyndicationContentKind.Plaintext;
-                    break;
-                case Atom10Constants.HtmlType:
-                    kind = TextSyndicationContentKind.Html;
-                    break;
-                case Atom10Constants.XHtmlType:
-                    kind = TextSyndicationContentKind.XHtml;
-                    break;
-                default:
-                    throw new XmlException(FeedUtils.AddLineInfo(reader, SR.Format(SR.Atom10SpecRequiresTextConstruct, context, type)));
-            }
+                Atom10Constants.PlaintextType => TextSyndicationContentKind.Plaintext,
+                Atom10Constants.HtmlType => TextSyndicationContentKind.Html,
+                Atom10Constants.XHtmlType => TextSyndicationContentKind.XHtml,
+                _ => throw new XmlException(FeedUtils.AddLineInfo(reader, SR.Format(SR.Atom10SpecRequiresTextConstruct, context, type))),
+            };
 
             Dictionary<XmlQualifiedName, string> attrs = null;
             if (reader.HasAttributes)

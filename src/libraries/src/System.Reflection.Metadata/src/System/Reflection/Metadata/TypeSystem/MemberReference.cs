@@ -106,17 +106,12 @@ namespace System.Reflection.Metadata
             BlobReader blobReader = _reader.GetBlobReader(this.Signature);
             SignatureHeader header = blobReader.ReadSignatureHeader();
 
-            switch (header.Kind)
+            return header.Kind switch
             {
-                case SignatureKind.Method:
-                    return MemberReferenceKind.Method;
-
-                case SignatureKind.Field:
-                    return MemberReferenceKind.Field;
-
-                default:
-                    throw new BadImageFormatException();
-            }
+                SignatureKind.Method => MemberReferenceKind.Method,
+                SignatureKind.Field => MemberReferenceKind.Field,
+                _ => throw new BadImageFormatException(),
+            };
         }
 
         public CustomAttributeHandleCollection GetCustomAttributes()

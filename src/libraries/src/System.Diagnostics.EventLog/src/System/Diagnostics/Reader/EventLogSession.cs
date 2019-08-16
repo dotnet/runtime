@@ -224,20 +224,12 @@ namespace System.Diagnostics.Eventing.Reader
 
             if (targetFilePath == null)
                 throw new ArgumentNullException(nameof(targetFilePath));
-
-            UnsafeNativeMethods.EvtExportLogFlags flag;
-            switch (pathType)
+            UnsafeNativeMethods.EvtExportLogFlags flag = pathType switch
             {
-                case PathType.LogName:
-                    flag = UnsafeNativeMethods.EvtExportLogFlags.EvtExportLogChannelPath;
-                    break;
-                case PathType.FilePath:
-                    flag = UnsafeNativeMethods.EvtExportLogFlags.EvtExportLogFilePath;
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(pathType));
-            }
-
+                PathType.LogName => UnsafeNativeMethods.EvtExportLogFlags.EvtExportLogChannelPath,
+                PathType.FilePath => UnsafeNativeMethods.EvtExportLogFlags.EvtExportLogFilePath,
+                _ => throw new ArgumentOutOfRangeException(nameof(pathType)),
+            };
             if (tolerateQueryErrors == false)
                 NativeWrapper.EvtExportLog(this.Handle, path, query, targetFilePath, (int)flag);
             else

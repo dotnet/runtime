@@ -357,19 +357,12 @@ namespace System.Reflection.Metadata.Ecma335
             return array.MoveToImmutable();
         }
 
-        private TType GetTypeFromHandle(EntityHandle handle)
-        {
-            switch (handle.Kind)
+        private TType GetTypeFromHandle(EntityHandle handle) =>
+            handle.Kind switch
             {
-                case HandleKind.TypeDefinition:
-                    return _provider.GetTypeFromDefinition(_reader, (TypeDefinitionHandle)handle, 0);
-
-                case HandleKind.TypeReference:
-                    return _provider.GetTypeFromReference(_reader, (TypeReferenceHandle)handle, 0);
-
-                default:
-                    throw new BadImageFormatException(SR.NotTypeDefOrRefHandle);
-            }
-        }
+                HandleKind.TypeDefinition => _provider.GetTypeFromDefinition(_reader, (TypeDefinitionHandle)handle, 0),
+                HandleKind.TypeReference => _provider.GetTypeFromReference(_reader, (TypeReferenceHandle)handle, 0),
+                _ => throw new BadImageFormatException(SR.NotTypeDefOrRefHandle),
+            };
     }
 }

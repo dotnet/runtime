@@ -2296,18 +2296,13 @@ namespace System.Data.SqlClient
         {
             Debug.Assert(oledbDirection >= 1 && oledbDirection <= 4, "invalid parameter direction from params_rowset!");
 
-            switch (oledbDirection)
+            return oledbDirection switch
             {
-                case 2:
-                    return ParameterDirection.InputOutput;
-                case 3:
-                    return ParameterDirection.Output;
-                case 4:
-                    return ParameterDirection.ReturnValue;
-                default:
-                    return ParameterDirection.Input;
-            }
-
+                2 => ParameterDirection.InputOutput,
+                3 => ParameterDirection.Output,
+                4 => ParameterDirection.ReturnValue,
+                _ => ParameterDirection.Input,
+            };
         }
 
         // get cached metadata

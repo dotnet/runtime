@@ -475,18 +475,15 @@ namespace System.Xml
         {
             if (_bCreatedOnAttribute)
                 return null;
-            switch (_curNode.NodeType)
+
+            return _curNode.NodeType switch
             {
-                case XmlNodeType.Element:
-                    return GetAttributeFromElement((XmlElement)_curNode, name);
-                case XmlNodeType.Attribute:
-                    return GetAttributeFromElement((XmlElement)_elemNode, name);
-                case XmlNodeType.XmlDeclaration:
-                    return GetDeclarationAttr((XmlDeclaration)_curNode, name);
-                case XmlNodeType.DocumentType:
-                    return GetDocumentTypeAttr((XmlDocumentType)_curNode, name);
-            }
-            return null;
+                XmlNodeType.Element => GetAttributeFromElement((XmlElement)_curNode, name),
+                XmlNodeType.Attribute => GetAttributeFromElement((XmlElement)_elemNode, name),
+                XmlNodeType.XmlDeclaration => GetDeclarationAttr((XmlDeclaration)_curNode, name),
+                XmlNodeType.DocumentType => GetDocumentTypeAttr((XmlDocumentType)_curNode, name),
+                _ => null,
+            };
         }
 
         private string GetAttributeFromElement(XmlElement elem, string name, string ns)
@@ -500,18 +497,15 @@ namespace System.Xml
         {
             if (_bCreatedOnAttribute)
                 return null;
-            switch (_curNode.NodeType)
+
+            return _curNode.NodeType switch
             {
-                case XmlNodeType.Element:
-                    return GetAttributeFromElement((XmlElement)_curNode, name, ns);
-                case XmlNodeType.Attribute:
-                    return GetAttributeFromElement((XmlElement)_elemNode, name, ns);
-                case XmlNodeType.XmlDeclaration:
-                    return (ns.Length == 0) ? GetDeclarationAttr((XmlDeclaration)_curNode, name) : null;
-                case XmlNodeType.DocumentType:
-                    return (ns.Length == 0) ? GetDocumentTypeAttr((XmlDocumentType)_curNode, name) : null;
-            }
-            return null;
+                XmlNodeType.Element => GetAttributeFromElement((XmlElement)_curNode, name, ns),
+                XmlNodeType.Attribute => GetAttributeFromElement((XmlElement)_elemNode, name, ns),
+                XmlNodeType.XmlDeclaration => (ns.Length == 0) ? GetDeclarationAttr((XmlDeclaration)_curNode, name) : null,
+                XmlNodeType.DocumentType => (ns.Length == 0) ? GetDocumentTypeAttr((XmlDocumentType)_curNode, name) : null,
+                _ => null,
+            };
         }
 
         public string GetAttribute(int attributeIndex)

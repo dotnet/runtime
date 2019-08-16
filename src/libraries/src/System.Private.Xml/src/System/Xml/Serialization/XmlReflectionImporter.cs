@@ -591,17 +591,14 @@ namespace System.Xml.Serialization
             mapping.SetBaseMapping((SerializableMapping)_serializables[baseQname]);
         }
 
-        private static string GetContextName(ImportContext context)
-        {
-            switch (context)
+        private static string GetContextName(ImportContext context) =>
+            context switch
             {
-                case ImportContext.Element: return "element";
-                case ImportContext.Attribute: return "attribute";
-                case ImportContext.Text: return "text";
-                default:
-                    throw new ArgumentException(SR.XmlInternalError, nameof(context));
-            }
-        }
+                ImportContext.Element => "element",
+                ImportContext.Attribute => "attribute",
+                ImportContext.Text => "text",
+                _ => throw new ArgumentException(SR.XmlInternalError, nameof(context)),
+            };
 
         private static Exception InvalidAttributeUseException(Type type)
         {

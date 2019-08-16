@@ -836,40 +836,24 @@ namespace System.Runtime.Serialization
             _ilGen.Emit(OpCodes.Unbox, type);
         }
 
-        private OpCode GetLdindOpCode(TypeCode typeCode)
-        {
-            switch (typeCode)
+        private OpCode GetLdindOpCode(TypeCode typeCode) =>
+            typeCode switch
             {
-                case TypeCode.Boolean:
-                    return OpCodes.Ldind_I1; // TypeCode.Boolean:
-                case TypeCode.Char:
-                    return OpCodes.Ldind_I2; // TypeCode.Char:
-                case TypeCode.SByte:
-                    return OpCodes.Ldind_I1; // TypeCode.SByte:
-                case TypeCode.Byte:
-                    return OpCodes.Ldind_U1; // TypeCode.Byte:
-                case TypeCode.Int16:
-                    return OpCodes.Ldind_I2; // TypeCode.Int16:
-                case TypeCode.UInt16:
-                    return OpCodes.Ldind_U2; // TypeCode.UInt16:
-                case TypeCode.Int32:
-                    return OpCodes.Ldind_I4; // TypeCode.Int32:
-                case TypeCode.UInt32:
-                    return OpCodes.Ldind_U4; // TypeCode.UInt32:
-                case TypeCode.Int64:
-                    return OpCodes.Ldind_I8; // TypeCode.Int64:
-                case TypeCode.UInt64:
-                    return OpCodes.Ldind_I8; // TypeCode.UInt64:
-                case TypeCode.Single:
-                    return OpCodes.Ldind_R4; // TypeCode.Single:
-                case TypeCode.Double:
-                    return OpCodes.Ldind_R8; // TypeCode.Double:
-                case TypeCode.String:
-                    return OpCodes.Ldind_Ref; // TypeCode.String:
-                default:
-                    return OpCodes.Nop;
-            }
-        }
+                TypeCode.Boolean => OpCodes.Ldind_I1, // TypeCode.Boolean:
+                TypeCode.Char => OpCodes.Ldind_I2,    // TypeCode.Char:
+                TypeCode.SByte => OpCodes.Ldind_I1,   // TypeCode.SByte:
+                TypeCode.Byte => OpCodes.Ldind_U1,    // TypeCode.Byte:
+                TypeCode.Int16 => OpCodes.Ldind_I2,   // TypeCode.Int16:
+                TypeCode.UInt16 => OpCodes.Ldind_U2,  // TypeCode.UInt16:
+                TypeCode.Int32 => OpCodes.Ldind_I4,   // TypeCode.Int32:
+                TypeCode.UInt32 => OpCodes.Ldind_U4,  // TypeCode.UInt32:
+                TypeCode.Int64 => OpCodes.Ldind_I8,   // TypeCode.Int64:
+                TypeCode.UInt64 => OpCodes.Ldind_I8,  // TypeCode.UInt64:
+                TypeCode.Single => OpCodes.Ldind_R4,  // TypeCode.Single:
+                TypeCode.Double => OpCodes.Ldind_R8,  // TypeCode.Double:
+                TypeCode.String => OpCodes.Ldind_Ref, // TypeCode.String:
+                _ => OpCodes.Nop,
+            };
 
         internal void Ldobj(Type type)
         {
@@ -1177,42 +1161,25 @@ namespace System.Runtime.Serialization
             _ilGen.Emit(OpCodes.Conv_I4);
         }
 
-        private OpCode GetLdelemOpCode(TypeCode typeCode)
-        {
-            switch (typeCode)
+        private OpCode GetLdelemOpCode(TypeCode typeCode) =>
+            typeCode switch
             {
-                case TypeCode.Object:
-                    return OpCodes.Ldelem_Ref;// TypeCode.Object:
-                case TypeCode.Boolean:
-                    return OpCodes.Ldelem_I1;// TypeCode.Boolean:
-                case TypeCode.Char:
-                    return OpCodes.Ldelem_I2;// TypeCode.Char:
-                case TypeCode.SByte:
-                    return OpCodes.Ldelem_I1;// TypeCode.SByte:
-                case TypeCode.Byte:
-                    return OpCodes.Ldelem_U1;// TypeCode.Byte:
-                case TypeCode.Int16:
-                    return OpCodes.Ldelem_I2;// TypeCode.Int16:
-                case TypeCode.UInt16:
-                    return OpCodes.Ldelem_U2;// TypeCode.UInt16:
-                case TypeCode.Int32:
-                    return OpCodes.Ldelem_I4;// TypeCode.Int32:
-                case TypeCode.UInt32:
-                    return OpCodes.Ldelem_U4;// TypeCode.UInt32:
-                case TypeCode.Int64:
-                    return OpCodes.Ldelem_I8;// TypeCode.Int64:
-                case TypeCode.UInt64:
-                    return OpCodes.Ldelem_I8;// TypeCode.UInt64:
-                case TypeCode.Single:
-                    return OpCodes.Ldelem_R4;// TypeCode.Single:
-                case TypeCode.Double:
-                    return OpCodes.Ldelem_R8;// TypeCode.Double:
-                case TypeCode.String:
-                    return OpCodes.Ldelem_Ref;// TypeCode.String:
-                default:
-                    return OpCodes.Nop;
-            }
-        }
+                TypeCode.Object => OpCodes.Ldelem_Ref, // TypeCode.Object:
+                TypeCode.Boolean => OpCodes.Ldelem_I1, // TypeCode.Boolean:
+                TypeCode.Char => OpCodes.Ldelem_I2,    // TypeCode.Char:
+                TypeCode.SByte => OpCodes.Ldelem_I1,   // TypeCode.SByte:
+                TypeCode.Byte => OpCodes.Ldelem_U1,    // TypeCode.Byte:
+                TypeCode.Int16 => OpCodes.Ldelem_I2,   // TypeCode.Int16:
+                TypeCode.UInt16 => OpCodes.Ldelem_U2,  // TypeCode.UInt16:
+                TypeCode.Int32 => OpCodes.Ldelem_I4,   // TypeCode.Int32:
+                TypeCode.UInt32 => OpCodes.Ldelem_U4,  // TypeCode.UInt32:
+                TypeCode.Int64 => OpCodes.Ldelem_I8,   // TypeCode.Int64:
+                TypeCode.UInt64 => OpCodes.Ldelem_I8,  // TypeCode.UInt64:
+                TypeCode.Single => OpCodes.Ldelem_R4,  // TypeCode.Single:
+                TypeCode.Double => OpCodes.Ldelem_R8,  // TypeCode.Double:
+                TypeCode.String => OpCodes.Ldelem_Ref, // TypeCode.String:
+                _ => OpCodes.Nop,
+            };
 
         internal void Ldelem(Type arrayElementType)
         {
@@ -1241,42 +1208,25 @@ namespace System.Runtime.Serialization
             EmitStackTop(arrayElementType);
         }
 
-        private OpCode GetStelemOpCode(TypeCode typeCode)
-        {
-            switch (typeCode)
+        private OpCode GetStelemOpCode(TypeCode typeCode) =>
+            typeCode switch
             {
-                case TypeCode.Object:
-                    return OpCodes.Stelem_Ref;// TypeCode.Object:
-                case TypeCode.Boolean:
-                    return OpCodes.Stelem_I1;// TypeCode.Boolean:
-                case TypeCode.Char:
-                    return OpCodes.Stelem_I2;// TypeCode.Char:
-                case TypeCode.SByte:
-                    return OpCodes.Stelem_I1;// TypeCode.SByte:
-                case TypeCode.Byte:
-                    return OpCodes.Stelem_I1;// TypeCode.Byte:
-                case TypeCode.Int16:
-                    return OpCodes.Stelem_I2;// TypeCode.Int16:
-                case TypeCode.UInt16:
-                    return OpCodes.Stelem_I2;// TypeCode.UInt16:
-                case TypeCode.Int32:
-                    return OpCodes.Stelem_I4;// TypeCode.Int32:
-                case TypeCode.UInt32:
-                    return OpCodes.Stelem_I4;// TypeCode.UInt32:
-                case TypeCode.Int64:
-                    return OpCodes.Stelem_I8;// TypeCode.Int64:
-                case TypeCode.UInt64:
-                    return OpCodes.Stelem_I8;// TypeCode.UInt64:
-                case TypeCode.Single:
-                    return OpCodes.Stelem_R4;// TypeCode.Single:
-                case TypeCode.Double:
-                    return OpCodes.Stelem_R8;// TypeCode.Double:
-                case TypeCode.String:
-                    return OpCodes.Stelem_Ref;// TypeCode.String:
-                default:
-                    return OpCodes.Nop;
-            }
-        }
+                TypeCode.Object => OpCodes.Stelem_Ref, // TypeCode.Object:
+                TypeCode.Boolean => OpCodes.Stelem_I1, // TypeCode.Boolean:
+                TypeCode.Char => OpCodes.Stelem_I2,    // TypeCode.Char:
+                TypeCode.SByte => OpCodes.Stelem_I1,   // TypeCode.SByte:
+                TypeCode.Byte => OpCodes.Stelem_I1,    // TypeCode.Byte:
+                TypeCode.Int16 => OpCodes.Stelem_I2,   // TypeCode.Int16:
+                TypeCode.UInt16 => OpCodes.Stelem_I2,  // TypeCode.UInt16:
+                TypeCode.Int32 => OpCodes.Stelem_I4,   // TypeCode.Int32:
+                TypeCode.UInt32 => OpCodes.Stelem_I4,  // TypeCode.UInt32:
+                TypeCode.Int64 => OpCodes.Stelem_I8,   // TypeCode.Int64:
+                TypeCode.UInt64 => OpCodes.Stelem_I8,  // TypeCode.UInt64:
+                TypeCode.Single => OpCodes.Stelem_R4,  // TypeCode.Single:
+                TypeCode.Double => OpCodes.Stelem_R8,  // TypeCode.Double:
+                TypeCode.String => OpCodes.Stelem_Ref, // TypeCode.String:
+                _ => OpCodes.Nop,
+            };
 
         internal void Stelem(Type arrayElementType)
         {
@@ -1419,38 +1369,23 @@ namespace System.Runtime.Serialization
             _blockStack.Push(ifState);
         }
 
-        private OpCode GetConvOpCode(TypeCode typeCode)
-        {
-            switch (typeCode)
+        private OpCode GetConvOpCode(TypeCode typeCode) =>
+            typeCode switch
             {
-                case TypeCode.Boolean:
-                    return OpCodes.Conv_I1;// TypeCode.Boolean:
-                case TypeCode.Char:
-                    return OpCodes.Conv_I2;// TypeCode.Char:
-                case TypeCode.SByte:
-                    return OpCodes.Conv_I1;// TypeCode.SByte:
-                case TypeCode.Byte:
-                    return OpCodes.Conv_U1;// TypeCode.Byte:
-                case TypeCode.Int16:
-                    return OpCodes.Conv_I2;// TypeCode.Int16:
-                case TypeCode.UInt16:
-                    return OpCodes.Conv_U2;// TypeCode.UInt16:
-                case TypeCode.Int32:
-                    return OpCodes.Conv_I4;// TypeCode.Int32:
-                case TypeCode.UInt32:
-                    return OpCodes.Conv_U4;// TypeCode.UInt32:
-                case TypeCode.Int64:
-                    return OpCodes.Conv_I8;// TypeCode.Int64:
-                case TypeCode.UInt64:
-                    return OpCodes.Conv_I8;// TypeCode.UInt64:
-                case TypeCode.Single:
-                    return OpCodes.Conv_R4;// TypeCode.Single:
-                case TypeCode.Double:
-                    return OpCodes.Conv_R8;// TypeCode.Double:
-                default:
-                    return OpCodes.Nop;
-            }
-        }
+                TypeCode.Boolean => OpCodes.Conv_I1, // TypeCode.Boolean:
+                TypeCode.Char => OpCodes.Conv_I2,    // TypeCode.Char:
+                TypeCode.SByte => OpCodes.Conv_I1,   // TypeCode.SByte:
+                TypeCode.Byte => OpCodes.Conv_U1,    // TypeCode.Byte:
+                TypeCode.Int16 => OpCodes.Conv_I2,   // TypeCode.Int16:
+                TypeCode.UInt16 => OpCodes.Conv_U2,  // TypeCode.UInt16:
+                TypeCode.Int32 => OpCodes.Conv_I4,   // TypeCode.Int32:
+                TypeCode.UInt32 => OpCodes.Conv_U4,  // TypeCode.UInt32:
+                TypeCode.Int64 => OpCodes.Conv_I8,   // TypeCode.Int64:
+                TypeCode.UInt64 => OpCodes.Conv_I8,  // TypeCode.UInt64:
+                TypeCode.Single => OpCodes.Conv_R4,  // TypeCode.Single:
+                TypeCode.Double => OpCodes.Conv_R8,  // TypeCode.Double:
+                _ => OpCodes.Nop,
+            };
 
         private void InternalConvert(Type source, Type target, bool isAddress)
         {
