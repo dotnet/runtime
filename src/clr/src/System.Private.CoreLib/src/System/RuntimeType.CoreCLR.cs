@@ -2077,7 +2077,7 @@ namespace System
                     // We set prefixLookup to true if name ends with a "*".
                     // We will also set listType to All so that all members are included in
                     // the candidates which are later filtered by FilterApplyPrefixLookup.
-                    name = name.Substring(0, name.Length - 1);
+                    name = name[0..^1];
                     prefixLookup = true;
                     listType = MemberListType.All;
                 }
