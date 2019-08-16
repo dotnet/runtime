@@ -1882,13 +1882,7 @@ namespace System.Text
             }
 
             // Anything left in our decoder?
-            internal override bool HasState
-            {
-                get
-                {
-                    return (this.lastByte != -1 || this.lastChar != '\0');
-                }
-            }
+            internal override bool HasState => (this.lastByte != -1 || this.lastChar != '\0');
         }
     }
 }

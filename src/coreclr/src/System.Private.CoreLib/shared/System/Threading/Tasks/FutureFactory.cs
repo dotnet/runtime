@@ -203,7 +203,7 @@ namespace System.Threading.Tasks
         /// tasks created by this factory unless another CancellationToken value is explicitly specified
         /// during the call to the factory methods.
         /// </remarks>
-        public CancellationToken CancellationToken { get { return m_defaultCancellationToken; } }
+        public CancellationToken CancellationToken => m_defaultCancellationToken;
 
         /// <summary>
         /// Gets the <see cref="System.Threading.Tasks.TaskScheduler">TaskScheduler</see> of this
@@ -215,7 +215,7 @@ namespace System.Threading.Tasks
         /// If null, <see cref="System.Threading.Tasks.TaskScheduler.Current">TaskScheduler.Current</see>
         /// will be used.
         /// </remarks>
-        public TaskScheduler? Scheduler { get { return m_defaultScheduler; } }
+        public TaskScheduler? Scheduler => m_defaultScheduler;
 
         /// <summary>
         /// Gets the <see cref="System.Threading.Tasks.TaskCreationOptions">TaskCreationOptions
@@ -225,7 +225,7 @@ namespace System.Threading.Tasks
         /// This property returns the default creation options for this factory.  They will be used to create all
         /// tasks unless other options are explicitly specified during calls to this factory's methods.
         /// </remarks>
-        public TaskCreationOptions CreationOptions { get { return m_defaultCreationOptions; } }
+        public TaskCreationOptions CreationOptions => m_defaultCreationOptions;
 
         /// <summary>
         /// Gets the <see cref="System.Threading.Tasks.TaskCreationOptions">TaskContinuationOptions
@@ -235,7 +235,7 @@ namespace System.Threading.Tasks
         /// This property returns the default continuation options for this factory.  They will be used to create
         /// all continuation tasks unless other options are explicitly specified during calls to this factory's methods.
         /// </remarks>
-        public TaskContinuationOptions ContinuationOptions { get { return m_defaultContinuationOptions; } }
+        public TaskContinuationOptions ContinuationOptions => m_defaultContinuationOptions;
 
 
         /* StartNew */

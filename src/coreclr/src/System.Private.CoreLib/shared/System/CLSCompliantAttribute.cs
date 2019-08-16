@@ -22,12 +22,6 @@ namespace System
         {
             _compliant = isCompliant;
         }
-        public bool IsCompliant
-        {
-            get
-            {
-                return _compliant;
-            }
-        }
+        public bool IsCompliant => _compliant;
     }
 }

@@ -27,32 +27,19 @@ namespace System.Reflection
                 throw new ArgumentNullException(nameof(keyPairArray));
         }
 
-        protected StrongNameKeyPair(SerializationInfo info, StreamingContext context)
-        {
+        protected StrongNameKeyPair(SerializationInfo info, StreamingContext context) =>
             throw new PlatformNotSupportedException();
-        }
 
-        public StrongNameKeyPair(string keyPairContainer)
-        {
+        public StrongNameKeyPair(string keyPairContainer) =>
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_StrongNameSigning);
-        }
 
-        public byte[] PublicKey
-        {
-            get
-            {
-                throw new PlatformNotSupportedException(SR.PlatformNotSupported_StrongNameSigning);
-            }
-        }
+        public byte[] PublicKey =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_StrongNameSigning);
 
-        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
-        {
+        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context) =>
             throw new PlatformNotSupportedException();
-        }
 
-        void IDeserializationCallback.OnDeserialization(object? sender)
-        {
+        void IDeserializationCallback.OnDeserialization(object? sender) =>
             throw new PlatformNotSupportedException();
-        }
     }
 }

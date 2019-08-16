@@ -398,10 +398,7 @@ namespace System.Reflection.Emit
             return m_exceptions;
         }
 
-        internal int ExceptionHandlerCount
-        {
-            get { return m_exceptions != null ? m_exceptions.Length : 0; }
-        }
+        internal int ExceptionHandlerCount => m_exceptions != null ? m_exceptions.Length : 0;
 
         internal int CalculateNumberOfExceptions(__ExceptionInfo[]? excp)
         {
@@ -479,29 +476,11 @@ namespace System.Reflection.Emit
         #endregion
 
         #region MemberInfo Overrides
-        public override string Name
-        {
-            get
-            {
-                return m_strName;
-            }
-        }
+        public override string Name => m_strName;
 
-        internal int MetadataTokenInternal
-        {
-            get
-            {
-                return GetToken().Token;
-            }
-        }
+        internal int MetadataTokenInternal => GetToken().Token;
 
-        public override Module Module
-        {
-            get
-            {
-                return m_containingType.Module;
-            }
-        }
+        public override Module Module => m_containingType.Module;
 
         public override Type? DeclaringType
         {
@@ -515,13 +494,7 @@ namespace System.Reflection.Emit
 
         public override ICustomAttributeProvider ReturnTypeCustomAttributes => new EmptyCAHolder();
 
-        public override Type? ReflectedType
-        {
-            get
-            {
-                return DeclaringType;
-            }
-        }
+        public override Type? ReflectedType => DeclaringType;
 
         #endregion
 
@@ -536,35 +509,17 @@ namespace System.Reflection.Emit
             return m_dwMethodImplFlags;
         }
 
-        public override MethodAttributes Attributes
-        {
-            get { return m_iAttributes; }
-        }
+        public override MethodAttributes Attributes => m_iAttributes;
 
-        public override CallingConventions CallingConvention
-        {
-            get { return m_callingConvention; }
-        }
+        public override CallingConventions CallingConvention => m_callingConvention;
 
-        public override RuntimeMethodHandle MethodHandle
-        {
-            get { throw new NotSupportedException(SR.NotSupported_DynamicModule); }
-        }
+        public override RuntimeMethodHandle MethodHandle => throw new NotSupportedException(SR.NotSupported_DynamicModule);
 
-        public override bool IsSecurityCritical
-        {
-            get { return true; }
-        }
+        public override bool IsSecurityCritical => true;
 
-        public override bool IsSecuritySafeCritical
-        {
-            get { return false; }
-        }
+        public override bool IsSecuritySafeCritical => false;
 
-        public override bool IsSecurityTransparent
-        {
-            get { return false; }
-        }
+        public override bool IsSecurityTransparent => false;
         #endregion
 
         #region MethodInfo Overrides
@@ -573,13 +528,7 @@ namespace System.Reflection.Emit
             return this;
         }
 
-        public override Type ReturnType
-        {
-            get
-            {
-                return m_returnType;
-            }
-        }
+        public override Type ReturnType => m_returnType;
 
         public override ParameterInfo[] GetParameters()
         {
@@ -624,13 +573,13 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Generic Members
-        public override bool IsGenericMethodDefinition { get { return m_bIsGenMethDef; } }
+        public override bool IsGenericMethodDefinition => m_bIsGenMethDef;
 
-        public override bool ContainsGenericParameters { get { throw new NotSupportedException(); } }
+        public override bool ContainsGenericParameters => throw new NotSupportedException();
 
         public override MethodInfo GetGenericMethodDefinition() { if (!IsGenericMethod) throw new InvalidOperationException(); return this; }
 
-        public override bool IsGenericMethod { get { return m_inst != null; } }
+        public override bool IsGenericMethod => m_inst != null;
 
         public override Type[] GetGenericArguments() => m_inst ?? Array.Empty<Type>();
 
@@ -871,13 +820,7 @@ namespace System.Reflection.Emit
             return GetModuleBuilder();
         }
 
-        public string Signature
-        {
-            get
-            {
-                return GetMethodSignature().ToString();
-            }
-        }
+        public string Signature => GetMethodSignature().ToString();
 
 
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)

@@ -60,10 +60,7 @@ namespace System
             _args = args;
         }
 
-        public int Length
-        {
-            get { return _args.Length; }
-        }
+        public int Length => _args.Length;
 
         public object? this[int index]
         {

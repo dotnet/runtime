@@ -179,10 +179,10 @@ namespace System.Threading.Tasks
             // - IsCompleted and AsyncWaitHandle just pass through to the Task.
             // - AsyncState and CompletedSynchronously return the corresponding values stored in this object.
 
-            object? IAsyncResult.AsyncState { get { return _state; } }
-            bool IAsyncResult.CompletedSynchronously { get { return _completedSynchronously; } }
-            bool IAsyncResult.IsCompleted { get { return this.Task.IsCompleted; } }
-            WaitHandle IAsyncResult.AsyncWaitHandle { get { return ((IAsyncResult)this.Task).AsyncWaitHandle; } }
+            object? IAsyncResult.AsyncState => _state;
+            bool IAsyncResult.CompletedSynchronously => _completedSynchronously;
+            bool IAsyncResult.IsCompleted => this.Task.IsCompleted;
+            WaitHandle IAsyncResult.AsyncWaitHandle => ((IAsyncResult)this.Task).AsyncWaitHandle;
         }
     }
 }

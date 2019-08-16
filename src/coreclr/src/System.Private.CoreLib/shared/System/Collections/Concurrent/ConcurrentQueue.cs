@@ -211,16 +211,11 @@ namespace System.Collections.Concurrent
         /// that another thread will modify the collection after <see cref="IsEmpty"/> returns, thus invalidating
         /// the result.
         /// </remarks>
-        public bool IsEmpty
-        {
-            get
-            {
-                // IsEmpty == !TryPeek. We use a "resultUsed:false" peek in order to avoid marking
-                // segments as preserved for observation, making IsEmpty a cheaper way than either
-                // TryPeek(out T) or Count == 0 to check whether any elements are in the queue.
-                return !TryPeek(out _, resultUsed: false);
-            }
-        }
+        public bool IsEmpty =>
+            // IsEmpty == !TryPeek. We use a "resultUsed:false" peek in order to avoid marking
+            // segments as preserved for observation, making IsEmpty a cheaper way than either
+            // TryPeek(out T) or Count == 0 to check whether any elements are in the queue.
+            !TryPeek(out _, resultUsed: false);
 
         /// <summary>Copies the elements stored in the <see cref="ConcurrentQueue{T}"/> to a new array.</summary>
         /// <returns>A new array containing a snapshot of elements copied from the <see cref="ConcurrentQueue{T}"/>.</returns>

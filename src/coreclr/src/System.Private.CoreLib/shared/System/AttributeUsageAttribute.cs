@@ -37,10 +37,7 @@ namespace System
             _inherited = inherited;
         }
 
-        public AttributeTargets ValidOn
-        {
-            get { return _attributeTarget; }
-        }
+        public AttributeTargets ValidOn => _attributeTarget;
 
         public bool AllowMultiple
         {

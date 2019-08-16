@@ -30,26 +30,20 @@ namespace System.Diagnostics.Contracts
             _originalException = originalException;
         }
 
-        public string? Message { get { return _message; } }
-        public string? Condition { get { return _condition; } }
-        public ContractFailureKind FailureKind { get { return _failureKind; } }
-        public Exception? OriginalException { get { return _originalException; } }
+        public string? Message => _message;
+        public string? Condition => _condition;
+        public ContractFailureKind FailureKind => _failureKind;
+        public Exception? OriginalException => _originalException;
 
         // Whether the event handler "handles" this contract failure, or to fail via escalation policy.
-        public bool Handled
-        {
-            get { return _handled; }
-        }
+        public bool Handled => _handled;
 
         public void SetHandled()
         {
             _handled = true;
         }
 
-        public bool Unwind
-        {
-            get { return _unwind; }
-        }
+        public bool Unwind => _unwind;
 
         public void SetUnwind()
         {

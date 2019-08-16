@@ -39,15 +39,9 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
         }
 
-        public int Count
-        {
-            get { return dictionary.Count; }
-        }
+        public int Count => dictionary.Count;
 
-        bool ICollection<TKey>.IsReadOnly
-        {
-            get { return true; }
-        }
+        bool ICollection<TKey>.IsReadOnly => true;
 
         void ICollection<TKey>.Add(TKey item)
         {
@@ -105,15 +99,9 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             return enumeration.MoveNext();
         }
 
-        object? IEnumerator.Current
-        {
-            get { return ((IEnumerator<TKey>)this).Current; }
-        }
+        object? IEnumerator.Current => ((IEnumerator<TKey>)this).Current;
 
-        public TKey Current
-        {
-            get { return enumeration.Current.Key; }
-        }
+        public TKey Current => enumeration.Current.Key;
 
         public void Reset()
         {

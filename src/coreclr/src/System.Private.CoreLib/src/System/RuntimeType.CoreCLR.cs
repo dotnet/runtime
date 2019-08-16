@@ -3323,10 +3323,8 @@ namespace System
             }
         }
 
-        public override bool ContainsGenericParameters
-        {
-            get => GetRootElementType().GetTypeHandleInternal().ContainsGenericVariables();
-        }
+        public override bool ContainsGenericParameters =>
+            GetRootElementType().GetTypeHandleInternal().ContainsGenericVariables();
 
         public override Type[] GetGenericParameterConstraints()
         {
@@ -3359,10 +3357,7 @@ namespace System
             return new RuntimeTypeHandle(this).MakeArray(rank);
         }
 
-        public override StructLayoutAttribute? StructLayoutAttribute
-        {
-            get => PseudoCustomAttribute.GetStructLayoutCustomAttribute(this);
-        }
+        public override StructLayoutAttribute? StructLayoutAttribute => PseudoCustomAttribute.GetStructLayoutCustomAttribute(this);
 
         #endregion
 

@@ -266,15 +266,10 @@ namespace System.Reflection
             throw new PlatformNotSupportedException();
         }
 
-        public override Module ManifestModule
-        {
-            get
-            {
-                // We don't need to return the "external" ModuleBuilder because
-                // it is meant to be read-only
-                return RuntimeAssembly.GetManifestModule(GetNativeHandle());
-            }
-        }
+        public override Module ManifestModule =>
+            // We don't need to return the "external" ModuleBuilder because
+            // it is meant to be read-only
+            RuntimeAssembly.GetManifestModule(GetNativeHandle());
 
         public override object[] GetCustomAttributes(bool inherit)
         {
@@ -351,13 +346,7 @@ namespace System.Reflection
                                                     bool throwOnFileNotFound,
                                                     AssemblyLoadContext? assemblyLoadContext = null);
 
-        public override bool ReflectionOnly
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public override bool ReflectionOnly => false;
 
         // Returns the module in this assembly with name 'name'
 
@@ -471,21 +460,9 @@ namespace System.Reflection
             }
         }
 
-        public override bool GlobalAssemblyCache
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public override bool GlobalAssemblyCache => false;
 
-        public override long HostContext
-        {
-            get
-            {
-                return 0;
-            }
-        }
+        public override long HostContext => 0;
 
         private static string? VerifyCodeBase(string? codebase)
         {
@@ -549,13 +526,7 @@ namespace System.Reflection
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool FCallIsDynamic(RuntimeAssembly assembly);
 
-        public override bool IsDynamic
-        {
-            get
-            {
-                return FCallIsDynamic(GetNativeHandle());
-            }
-        }
+        public override bool IsDynamic => FCallIsDynamic(GetNativeHandle());
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void GetSimpleName(QCallAssembly assembly, StringHandleOnStack retSimpleName);

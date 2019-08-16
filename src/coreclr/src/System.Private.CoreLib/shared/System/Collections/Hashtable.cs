@@ -222,13 +222,7 @@ namespace System.Collections
         }
 
 
-        protected IEqualityComparer? EqualityComparer
-        {
-            get
-            {
-                return _keycomparer;
-            }
-        }
+        protected IEqualityComparer? EqualityComparer => _keycomparer;
 
         // Note: this constructor is a bogus constructor that does nothing
         // and is for use only with SyncHashtable.
@@ -804,21 +798,12 @@ namespace System.Collections
         }
 
         // Is this Hashtable read-only?
-        public virtual bool IsReadOnly
-        {
-            get { return false; }
-        }
+        public virtual bool IsReadOnly => false;
 
-        public virtual bool IsFixedSize
-        {
-            get { return false; }
-        }
+        public virtual bool IsFixedSize => false;
 
         // Is this Hashtable synchronized?  See SyncRoot property
-        public virtual bool IsSynchronized
-        {
-            get { return false; }
-        }
+        public virtual bool IsSynchronized => false;
 
         // Internal method to compare two keys.  If you have provided an IComparer
         // instance in the constructor, this method will call comparer.Compare(item, key).
@@ -1074,10 +1059,7 @@ namespace System.Collections
 
         // Returns the number of associations in this hashtable.
         //
-        public virtual int Count
-        {
-            get { return _count; }
-        }
+        public virtual int Count => _count;
 
         // Returns a thread-safe wrapper for a Hashtable.
         //
@@ -1274,20 +1256,11 @@ namespace System.Collections
                 return new HashtableEnumerator(_hashtable, HashtableEnumerator.Keys);
             }
 
-            public virtual bool IsSynchronized
-            {
-                get { return _hashtable.IsSynchronized; }
-            }
+            public virtual bool IsSynchronized => _hashtable.IsSynchronized;
 
-            public virtual object SyncRoot
-            {
-                get { return _hashtable.SyncRoot; }
-            }
+            public virtual object SyncRoot => _hashtable.SyncRoot;
 
-            public virtual int Count
-            {
-                get { return _hashtable._count; }
-            }
+            public virtual int Count => _hashtable._count;
         }
 
         // Implements a Collection for the values of a hashtable. An instance of
@@ -1319,20 +1292,11 @@ namespace System.Collections
                 return new HashtableEnumerator(_hashtable, HashtableEnumerator.Values);
             }
 
-            public virtual bool IsSynchronized
-            {
-                get { return _hashtable.IsSynchronized; }
-            }
+            public virtual bool IsSynchronized => _hashtable.IsSynchronized;
 
-            public virtual object SyncRoot
-            {
-                get { return _hashtable.SyncRoot; }
-            }
+            public virtual object SyncRoot => _hashtable.SyncRoot;
 
-            public virtual int Count
-            {
-                get { return _hashtable._count; }
-            }
+            public virtual int Count => _hashtable._count;
         }
 
         // Synchronized wrapper for hashtable
@@ -1355,25 +1319,13 @@ namespace System.Collections
                 throw new PlatformNotSupportedException();
             }
 
-            public override int Count
-            {
-                get { return _table.Count; }
-            }
+            public override int Count => _table.Count;
 
-            public override bool IsReadOnly
-            {
-                get { return _table.IsReadOnly; }
-            }
+            public override bool IsReadOnly => _table.IsReadOnly;
 
-            public override bool IsFixedSize
-            {
-                get { return _table.IsFixedSize; }
-            }
+            public override bool IsFixedSize => _table.IsFixedSize;
 
-            public override bool IsSynchronized
-            {
-                get { return true; }
-            }
+            public override bool IsSynchronized => true;
 
             public override object? this[object key]
             {
@@ -1390,10 +1342,7 @@ namespace System.Collections
                 }
             }
 
-            public override object SyncRoot
-            {
-                get { return _table.SyncRoot; }
-            }
+            public override object SyncRoot => _table.SyncRoot;
 
             public override void Add(object key, object? value)
             {
@@ -1625,13 +1574,7 @@ namespace System.Collections
             }
 
             [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-            public KeyValuePairs[] Items
-            {
-                get
-                {
-                    return _hashtable.ToKeyValuePairsArray();
-                }
-            }
+            public KeyValuePairs[] Items => _hashtable.ToKeyValuePairsArray();
         }
     }
 }

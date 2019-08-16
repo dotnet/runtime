@@ -307,15 +307,9 @@ namespace System.IO
             }
         }
 
-        public virtual Stream BaseStream
-        {
-            get { return _stream; }
-        }
+        public virtual Stream BaseStream => _stream;
 
-        public override Encoding Encoding
-        {
-            get { return _encoding; }
-        }
+        public override Encoding Encoding => _encoding;
 
         public override void Write(char value)
         {

@@ -12,13 +12,13 @@ namespace System.Reflection
     {
         protected Module() { }
 
-        public virtual Assembly Assembly { get { throw NotImplemented.ByDesign; } }
-        public virtual string FullyQualifiedName { get { throw NotImplemented.ByDesign; } }
-        public virtual string Name { get { throw NotImplemented.ByDesign; } }
+        public virtual Assembly Assembly => throw NotImplemented.ByDesign;
+        public virtual string FullyQualifiedName => throw NotImplemented.ByDesign;
+        public virtual string Name => throw NotImplemented.ByDesign;
 
-        public virtual int MDStreamVersion { get { throw NotImplemented.ByDesign; } }
-        public virtual Guid ModuleVersionId { get { throw NotImplemented.ByDesign; } }
-        public virtual string ScopeName { get { throw NotImplemented.ByDesign; } }
+        public virtual int MDStreamVersion => throw NotImplemented.ByDesign;
+        public virtual Guid ModuleVersionId => throw NotImplemented.ByDesign;
+        public virtual string ScopeName => throw NotImplemented.ByDesign;
         public ModuleHandle ModuleHandle => GetModuleHandleImpl();
         protected virtual ModuleHandle GetModuleHandleImpl() => ModuleHandle.EmptyHandle; // Not an api but declared protected because of Reflection.Core/Corelib divide (when built by CoreRt)
         public virtual void GetPEKind(out PortableExecutableKinds peKind, out ImageFileMachine machine) { throw NotImplemented.ByDesign; }
@@ -94,7 +94,7 @@ namespace System.Reflection
             return ret;
         }
 
-        public virtual int MetadataToken { get { throw NotImplemented.ByDesign; } }
+        public virtual int MetadataToken => throw NotImplemented.ByDesign;
 
         public FieldInfo? ResolveField(int metadataToken) => ResolveField(metadataToken, null, null);
         public virtual FieldInfo? ResolveField(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments) { throw NotImplemented.ByDesign; }

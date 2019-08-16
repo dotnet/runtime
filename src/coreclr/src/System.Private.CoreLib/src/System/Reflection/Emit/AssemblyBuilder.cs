@@ -100,15 +100,9 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
         }
 
-        public override string Location
-        {
-            get => throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
-        }
+        public override string Location => throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
 
-        public override string? CodeBase
-        {
-            get => throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
-        }
+        public override string? CodeBase => throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
 
         public override Type[] GetExportedTypes()
         {

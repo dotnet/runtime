@@ -273,8 +273,8 @@ namespace System.Reflection
             }
         }
 
-        public override object? DefaultValue { get { return GetDefaultValue(false); } }
-        public override object? RawDefaultValue { get { return GetDefaultValue(true); } }
+        public override object? DefaultValue => GetDefaultValue(false);
+        public override object? RawDefaultValue => GetDefaultValue(true);
 
         private object? GetDefaultValue(bool raw)
         {
@@ -483,13 +483,7 @@ namespace System.Reflection
                 return null;
         }
 
-        public override int MetadataToken
-        {
-            get
-            {
-                return m_tkParamDef;
-            }
-        }
+        public override int MetadataToken => m_tkParamDef;
 
         public override Type[] GetRequiredCustomModifiers()
         {

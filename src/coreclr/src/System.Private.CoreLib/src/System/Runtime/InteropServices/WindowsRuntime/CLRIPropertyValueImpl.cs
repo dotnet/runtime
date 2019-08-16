@@ -48,18 +48,9 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
         }
 
-        public PropertyType Type
-        {
-            get { return _type; }
-        }
+        public PropertyType Type => _type;
 
-        public bool IsNumericScalar
-        {
-            get
-            {
-                return IsNumericScalarImpl(_type, _data);
-            }
-        }
+        public bool IsNumericScalar => IsNumericScalarImpl(_type, _data);
 
         public override string? ToString()
         {

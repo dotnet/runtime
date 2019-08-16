@@ -35,14 +35,9 @@ namespace System.Globalization
 
         public override DateTime MaxSupportedDateTime => s_maxDate;
 
-        protected override int DaysInYearBeforeMinSupportedYear
-        {
-            get
-            {
-                // 1911 from ChineseLunisolarCalendar
-                return 384;
-            }
-        }
+        protected override int DaysInYearBeforeMinSupportedYear =>
+            // 1911 from ChineseLunisolarCalendar
+            384;
 
         private static readonly int[,] s_yinfo =
         {

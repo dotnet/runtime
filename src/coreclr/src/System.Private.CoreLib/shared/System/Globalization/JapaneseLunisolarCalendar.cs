@@ -27,14 +27,9 @@ namespace System.Globalization
 
         public override DateTime MaxSupportedDateTime => s_maxDate;
 
-        protected override int DaysInYearBeforeMinSupportedYear
-        {
-            get
-            {
-                // 1959 from ChineseLunisolarCalendar
-                return 354;
-            }
-        }
+        protected override int DaysInYearBeforeMinSupportedYear =>
+            // 1959 from ChineseLunisolarCalendar
+            354;
 
         // Data for years 1960-2049 matches output of Calendrical Calculations [1] and published calendar tables [2].
         // [1] Reingold, Edward M, and Nachum Dershowitz. Calendrical Calculations: The Ultimate Edition. Cambridge [etc.: Cambridge University Press, 2018. Print.

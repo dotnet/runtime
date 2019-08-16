@@ -215,13 +215,7 @@ namespace System
             return (MethodInfo)_methodBase;
         }
 
-        public object? Target
-        {
-            get
-            {
-                return GetTarget();
-            }
-        }
+        public object? Target => GetTarget();
 
         // V1 API.
         public static Delegate? CreateDelegate(Type type, object target, string method, bool ignoreCase, bool throwOnBindFailure)

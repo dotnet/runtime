@@ -39,13 +39,7 @@ namespace System.Runtime.ExceptionServices
         }
 
         // Return the exception object represented by this ExceptionDispatchInfo instance
-        public Exception SourceException
-        {
-            get
-            {
-                return _exception;
-            }
-        }
+        public Exception SourceException => _exception;
 
         // When a framework needs to "Rethrow" an exception on a thread different (but not necessarily so) from
         // where it was thrown, it should invoke this method against the ExceptionDispatchInfo

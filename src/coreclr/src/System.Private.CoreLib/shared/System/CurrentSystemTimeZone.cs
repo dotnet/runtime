@@ -42,21 +42,9 @@ namespace System
             m_daylightName = local.DaylightName;
         }
 
-        public override string StandardName
-        {
-            get
-            {
-                return m_standardName;
-            }
-        }
+        public override string StandardName => m_standardName;
 
-        public override string DaylightName
-        {
-            get
-            {
-                return m_daylightName;
-            }
-        }
+        public override string DaylightName => m_daylightName;
 
         internal long GetUtcOffsetFromUniversalTime(DateTime time, ref bool isAmbiguousLocalDst)
         {

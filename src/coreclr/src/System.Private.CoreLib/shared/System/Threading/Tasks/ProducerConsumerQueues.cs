@@ -71,10 +71,10 @@ namespace System.Threading.Tasks
         bool IProducerConsumerQueue<T>.TryDequeue([MaybeNullWhen(false)] out T result) { return base.TryDequeue(out result); }
 
         /// <summary>Gets whether the collection is currently empty.</summary>
-        bool IProducerConsumerQueue<T>.IsEmpty { get { return base.IsEmpty; } }
+        bool IProducerConsumerQueue<T>.IsEmpty => base.IsEmpty;
 
         /// <summary>Gets the number of items in the collection.</summary>
-        int IProducerConsumerQueue<T>.Count { get { return base.Count; } }
+        int IProducerConsumerQueue<T>.Count => base.Count;
     }
 
     /// <summary>

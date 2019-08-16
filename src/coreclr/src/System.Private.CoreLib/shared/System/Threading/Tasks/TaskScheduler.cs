@@ -148,13 +148,7 @@ namespace System.Threading.Tasks
         /// Indicates the maximum concurrency level this
         /// <see cref="TaskScheduler"/>  is able to support.
         /// </summary>
-        public virtual int MaximumConcurrencyLevel
-        {
-            get
-            {
-                return int.MaxValue;
-            }
-        }
+        public virtual int MaximumConcurrencyLevel => int.MaxValue;
 
         ////////////////////////////////////////////////////////////
         //
@@ -229,10 +223,7 @@ namespace System.Threading.Tasks
         /// Indicates whether this is a custom scheduler, in which case the safe code paths will be taken upon task entry
         /// using a CAS to transition from queued state to executing.
         /// </summary>
-        internal virtual bool RequiresAtomicStartTransition
-        {
-            get { return true; }
-        }
+        internal virtual bool RequiresAtomicStartTransition => true;
 
         /// <summary>
         /// Calls QueueTask() after performing any needed firing of events
@@ -304,13 +295,7 @@ namespace System.Threading.Tasks
         /// <summary>
         /// Gets the default <see cref="System.Threading.Tasks.TaskScheduler">TaskScheduler</see> instance.
         /// </summary>
-        public static TaskScheduler Default
-        {
-            get
-            {
-                return s_defaultTaskScheduler;
-            }
-        }
+        public static TaskScheduler Default => s_defaultTaskScheduler;
 
         /// <summary>
         /// Gets the <see cref="System.Threading.Tasks.TaskScheduler">TaskScheduler</see>
@@ -319,13 +304,7 @@ namespace System.Threading.Tasks
         /// <remarks>
         /// When not called from within a task, <see cref="Current"/> will return the <see cref="Default"/> scheduler.
         /// </remarks>
-        public static TaskScheduler Current
-        {
-            get
-            {
-                return InternalCurrent ?? Default;
-            }
-        }
+        public static TaskScheduler Current => InternalCurrent ?? Default;
 
         /// <summary>
         /// Gets the <see cref="System.Threading.Tasks.TaskScheduler">TaskScheduler</see>
@@ -546,16 +525,10 @@ namespace System.Threading.Tasks
             }
 
             // returns the scheduler's Id
-            public int Id
-            {
-                get { return m_taskScheduler.Id; }
-            }
+            public int Id => m_taskScheduler.Id;
 
             // returns the scheduler's GetScheduledTasks
-            public IEnumerable<Task>? ScheduledTasks
-            {
-                get { return m_taskScheduler.GetScheduledTasks(); }
-            }
+            public IEnumerable<Task>? ScheduledTasks => m_taskScheduler.GetScheduledTasks();
         }
     }
 
@@ -625,13 +598,7 @@ namespace System.Threading.Tasks
         /// By default it returns 1, because a <see cref="System.Threading.SynchronizationContext"/> based
         /// scheduler only supports execution on a single thread.
         /// </summary>
-        public override int MaximumConcurrencyLevel
-        {
-            get
-            {
-                return 1;
-            }
-        }
+        public override int MaximumConcurrencyLevel => 1;
 
         // preallocated SendOrPostCallback delegate
         private static readonly SendOrPostCallback s_postCallback = s =>
@@ -672,11 +639,11 @@ namespace System.Threading.Tasks
         /// <summary>
         /// Gets whether this exception has been marked as "observed."
         /// </summary>
-        public bool Observed { get { return m_observed; } }
+        public bool Observed => m_observed;
 
         /// <summary>
         /// The Exception that went unobserved.
         /// </summary>
-        public AggregateException? Exception { get { return m_exception; } }
+        public AggregateException? Exception => m_exception;
     }
 }

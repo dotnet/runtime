@@ -318,13 +318,7 @@ namespace System
 
         //This is a family-only accessor for the CVType.
         //This is never to be exposed externally.
-        internal int CVType
-        {
-            get
-            {
-                return (_flags & TypeCodeBitMask);
-            }
-        }
+        internal int CVType => (_flags & TypeCodeBitMask);
 
         public object? ToObject()
         {

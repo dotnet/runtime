@@ -323,13 +323,7 @@ namespace System.Reflection
             ModuleHandle.GetPEKind(GetNativeHandle(), out peKind, out machine);
         }
 
-        public override int MDStreamVersion
-        {
-            get
-            {
-                return ModuleHandle.GetMDStreamVersion(GetNativeHandle());
-            }
-        }
+        public override int MDStreamVersion => ModuleHandle.GetMDStreamVersion(GetNativeHandle());
         #endregion
 
         #region Data Members
@@ -466,13 +460,7 @@ namespace System.Reflection
             return fullyQualifiedName!;
         }
 
-        public override string FullyQualifiedName
-        {
-            get
-            {
-                return GetFullyQualifiedName();
-            }
-        }
+        public override string FullyQualifiedName => GetFullyQualifiedName();
 
         public override Type[] GetTypes()
         {
@@ -496,13 +484,7 @@ namespace System.Reflection
             }
         }
 
-        public override int MetadataToken
-        {
-            get
-            {
-                return ModuleHandle.GetToken(GetNativeHandle());
-            }
-        }
+        public override int MetadataToken => ModuleHandle.GetToken(GetNativeHandle());
 
         public override bool IsResource()
         {
@@ -565,13 +547,7 @@ namespace System.Reflection
             }
         }
 
-        public override Assembly Assembly
-        {
-            get
-            {
-                return GetRuntimeAssembly();
-            }
-        }
+        public override Assembly Assembly => GetRuntimeAssembly();
 
         internal RuntimeAssembly GetRuntimeAssembly()
         {

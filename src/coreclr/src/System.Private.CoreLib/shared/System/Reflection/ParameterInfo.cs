@@ -23,9 +23,9 @@ namespace System.Reflection
         public bool IsOut => (Attributes & ParameterAttributes.Out) != 0;
         public bool IsRetval => (Attributes & ParameterAttributes.Retval) != 0;
 
-        public virtual object? DefaultValue { get { throw NotImplemented.ByDesign; } }
-        public virtual object? RawDefaultValue { get { throw NotImplemented.ByDesign; } }
-        public virtual bool HasDefaultValue { get { throw NotImplemented.ByDesign; } }
+        public virtual object? DefaultValue => throw NotImplemented.ByDesign;
+        public virtual object? RawDefaultValue => throw NotImplemented.ByDesign;
+        public virtual bool HasDefaultValue => throw NotImplemented.ByDesign;
 
         public virtual bool IsDefined(Type attributeType, bool inherit)
         {
