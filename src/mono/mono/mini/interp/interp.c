@@ -2903,6 +2903,15 @@ static int opcode_counts[512];
 		} \
 	} while (0);
 
+static MONO_NEVER_INLINE MonoObject*
+mono_interp_new (MonoDomain* domain, MonoClass* klass)
+{
+	ERROR_DECL (error);
+	MonoObject* const object = mono_object_new_checked (domain, klass, error);
+	mono_error_cleanup (error); // FIXME: do not swallow the error
+	return object;
+}
+
 static
 #ifndef DISABLE_REMOTING
 MONO_NEVER_INLINE // To reduce stack.
@@ -3124,8 +3133,9 @@ mono_interp_newobj (
 				g_assert (exc);
 				return exc;
 			}
+			ERROR_DECL (error);
 			frame_objref (frame) = mono_object_new_checked (imethod->domain, newobj_class, error);
-			mono_error_cleanup (error); /* FIXME: don't swallow the error */
+			mono_error_cleanup (error); // FIXME: do not swallow the error
 			EXCEPTION_CHECKPOINT_IN_HELPER_FUNCTION;
 			sp->data.o = frame_objref (frame);
 #ifndef DISABLE_REMOTING
@@ -5991,8 +6001,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			++sp;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MONO_NEWOBJ)
-			sp->data.o = mono_object_new_checked (imethod->domain, (MonoClass*)imethod->data_items [*(guint16 *)(ip + 1)], error);
-			mono_error_cleanup (error); /* FIXME: don't swallow the error */
+			sp->data.o = mono_interp_new (imethod->domain, (MonoClass*)imethod->data_items [*(guint16 *)(ip + 1)]); // FIXME: do not swallow the error
 			ip += 2;
 			sp++;
 			MINT_IN_BREAK;
