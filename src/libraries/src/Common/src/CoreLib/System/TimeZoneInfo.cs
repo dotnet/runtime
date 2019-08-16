@@ -380,7 +380,7 @@ namespace System
                 }
             }
 
-            return GetUtcOffset(dateTime, this, flags);
+            return GetUtcOffset(dateTime, this);
         }
 
         /// <summary>
@@ -513,7 +513,7 @@ namespace System
             if (rule != null && rule.HasDaylightSaving)
             {
                 DaylightTimeStruct daylightTime = GetDaylightTime(adjustedTime.Year, rule, ruleIndex);
-                return GetIsDaylightSavings(adjustedTime, rule, daylightTime, flags);
+                return GetIsDaylightSavings(adjustedTime, rule, daylightTime);
             }
             else
             {
@@ -694,7 +694,7 @@ namespace System
                     {
                         throw new ArgumentException(SR.Argument_DateTimeIsInvalid, nameof(dateTime));
                     }
-                    sourceIsDaylightSavings = GetIsDaylightSavings(dateTime, sourceRule, sourceDaylightTime, flags);
+                    sourceIsDaylightSavings = GetIsDaylightSavings(dateTime, sourceRule, sourceDaylightTime);
 
                     // adjust the sourceOffset according to the Adjustment Rule / Daylight Saving Rule
                     sourceOffset += (sourceIsDaylightSavings ? sourceRule.DaylightDelta : TimeSpan.Zero /*FUTURE: sourceRule.StandardDelta*/);
@@ -1252,7 +1252,7 @@ namespace System
         /// Helper function that checks if a given dateTime is in Daylight Saving Time (DST).
         /// This function assumes the dateTime and AdjustmentRule are both in the same time zone.
         /// </summary>
-        private static bool GetIsDaylightSavings(DateTime time, AdjustmentRule rule, DaylightTimeStruct daylightTime, TimeZoneInfoOptions flags)
+        private static bool GetIsDaylightSavings(DateTime time, AdjustmentRule rule, DaylightTimeStruct daylightTime)
         {
             if (rule == null)
             {
@@ -1677,7 +1677,7 @@ namespace System
         /// Helper function that calculates the UTC offset for a dateTime in a timeZone.
         /// This function assumes that the dateTime is already converted into the timeZone.
         /// </summary>
-        private static TimeSpan GetUtcOffset(DateTime time, TimeZoneInfo zone, TimeZoneInfoOptions flags)
+        private static TimeSpan GetUtcOffset(DateTime time, TimeZoneInfo zone)
         {
             TimeSpan baseOffset = zone.BaseUtcOffset;
             int? ruleIndex;
@@ -1689,7 +1689,7 @@ namespace System
                 if (rule.HasDaylightSaving)
                 {
                     DaylightTimeStruct daylightTime = zone.GetDaylightTime(time.Year, rule, ruleIndex);
-                    bool isDaylightSavings = GetIsDaylightSavings(time, rule, daylightTime, flags);
+                    bool isDaylightSavings = GetIsDaylightSavings(time, rule, daylightTime);
                     baseOffset += (isDaylightSavings ? rule.DaylightDelta : TimeSpan.Zero /* FUTURE: rule.StandardDelta */);
                 }
             }
