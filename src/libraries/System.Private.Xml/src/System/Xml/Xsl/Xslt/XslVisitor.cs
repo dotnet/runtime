@@ -6,44 +6,42 @@ namespace System.Xml.Xsl.Xslt
 {
     internal abstract class XslVisitor<T>
     {
-        protected virtual T Visit(XslNode node)
-        {
-            switch (node.NodeType)
+        protected virtual T Visit(XslNode node) =>
+            node.NodeType switch
             {
-                case XslNodeType.ApplyImports: return VisitApplyImports((XslNode)node);
-                case XslNodeType.ApplyTemplates: return VisitApplyTemplates((XslNode)node);
-                case XslNodeType.Attribute: return VisitAttribute((NodeCtor)node);
-                case XslNodeType.AttributeSet: return VisitAttributeSet((AttributeSet)node);
-                case XslNodeType.CallTemplate: return VisitCallTemplate((XslNode)node);
-                case XslNodeType.Choose: return VisitChoose((XslNode)node);
-                case XslNodeType.Comment: return VisitComment((XslNode)node);
-                case XslNodeType.Copy: return VisitCopy((XslNode)node);
-                case XslNodeType.CopyOf: return VisitCopyOf((XslNode)node);
-                case XslNodeType.Element: return VisitElement((NodeCtor)node);
-                case XslNodeType.Error: return VisitError((XslNode)node);
-                case XslNodeType.ForEach: return VisitForEach((XslNode)node);
-                case XslNodeType.If: return VisitIf((XslNode)node);
-                case XslNodeType.Key: return VisitKey((Key)node);
-                case XslNodeType.List: return VisitList((XslNode)node);
-                case XslNodeType.LiteralAttribute: return VisitLiteralAttribute((XslNode)node);
-                case XslNodeType.LiteralElement: return VisitLiteralElement((XslNode)node);
-                case XslNodeType.Message: return VisitMessage((XslNode)node);
-                case XslNodeType.Nop: return VisitNop((XslNode)node);
-                case XslNodeType.Number: return VisitNumber((Number)node);
-                case XslNodeType.Otherwise: return VisitOtherwise((XslNode)node);
-                case XslNodeType.Param: return VisitParam((VarPar)node);
-                case XslNodeType.PI: return VisitPI((XslNode)node);
-                case XslNodeType.Sort: return VisitSort((Sort)node);
-                case XslNodeType.Template: return VisitTemplate((Template)node);
-                case XslNodeType.Text: return VisitText((Text)node);
-                case XslNodeType.UseAttributeSet: return VisitUseAttributeSet((XslNode)node);
-                case XslNodeType.ValueOf: return VisitValueOf((XslNode)node);
-                case XslNodeType.ValueOfDoe: return VisitValueOfDoe((XslNode)node);
-                case XslNodeType.Variable: return VisitVariable((VarPar)node);
-                case XslNodeType.WithParam: return VisitWithParam((VarPar)node);
-                default: return VisitUnknown((XslNode)node);
-            }
-        }
+                XslNodeType.ApplyImports => VisitApplyImports((XslNode)node),
+                XslNodeType.ApplyTemplates => VisitApplyTemplates((XslNode)node),
+                XslNodeType.Attribute => VisitAttribute((NodeCtor)node),
+                XslNodeType.AttributeSet => VisitAttributeSet((AttributeSet)node),
+                XslNodeType.CallTemplate => VisitCallTemplate((XslNode)node),
+                XslNodeType.Choose => VisitChoose((XslNode)node),
+                XslNodeType.Comment => VisitComment((XslNode)node),
+                XslNodeType.Copy => VisitCopy((XslNode)node),
+                XslNodeType.CopyOf => VisitCopyOf((XslNode)node),
+                XslNodeType.Element => VisitElement((NodeCtor)node),
+                XslNodeType.Error => VisitError((XslNode)node),
+                XslNodeType.ForEach => VisitForEach((XslNode)node),
+                XslNodeType.If => VisitIf((XslNode)node),
+                XslNodeType.Key => VisitKey((Key)node),
+                XslNodeType.List => VisitList((XslNode)node),
+                XslNodeType.LiteralAttribute => VisitLiteralAttribute((XslNode)node),
+                XslNodeType.LiteralElement => VisitLiteralElement((XslNode)node),
+                XslNodeType.Message => VisitMessage((XslNode)node),
+                XslNodeType.Nop => VisitNop((XslNode)node),
+                XslNodeType.Number => VisitNumber((Number)node),
+                XslNodeType.Otherwise => VisitOtherwise((XslNode)node),
+                XslNodeType.Param => VisitParam((VarPar)node),
+                XslNodeType.PI => VisitPI((XslNode)node),
+                XslNodeType.Sort => VisitSort((Sort)node),
+                XslNodeType.Template => VisitTemplate((Template)node),
+                XslNodeType.Text => VisitText((Text)node),
+                XslNodeType.UseAttributeSet => VisitUseAttributeSet((XslNode)node),
+                XslNodeType.ValueOf => VisitValueOf((XslNode)node),
+                XslNodeType.ValueOfDoe => VisitValueOfDoe((XslNode)node),
+                XslNodeType.Variable => VisitVariable((VarPar)node),
+                XslNodeType.WithParam => VisitWithParam((VarPar)node),
+                _ => VisitUnknown((XslNode)node),
+            };
 
         protected virtual T VisitApplyImports(XslNode node) { return VisitChildren(node); }
         protected virtual T VisitApplyTemplates(XslNode node) { return VisitChildren(node); }

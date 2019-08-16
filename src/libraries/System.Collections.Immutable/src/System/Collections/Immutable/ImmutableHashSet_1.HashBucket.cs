@@ -330,15 +330,12 @@ namespace System.Collections.Immutable
                     get
                     {
                         this.ThrowIfDisposed();
-                        switch (_currentPosition)
+                        return _currentPosition switch
                         {
-                            case Position.First:
-                                return _bucket._firstValue;
-                            case Position.Additional:
-                                return _additionalEnumerator.Current;
-                            default:
-                                throw new InvalidOperationException();
-                        }
+                            Position.First => _bucket._firstValue,
+                            Position.Additional => _additionalEnumerator.Current,
+                            _ => throw new InvalidOperationException(),
+                        };
                     }
                 }
 

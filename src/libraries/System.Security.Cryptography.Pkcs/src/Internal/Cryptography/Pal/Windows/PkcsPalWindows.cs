@@ -43,31 +43,16 @@ namespace Internal.Cryptography.Pal.Windows
                 if (!Interop.Crypt32.CryptMsgGetParam(hCryptMsg, CryptMsgParamType.CMSG_TYPE_PARAM, 0, out msgTypeAsInt, ref cbSize))
                     throw Marshal.GetLastWin32Error().ToCryptographicException();
 
-                CryptMsgType msgType = (CryptMsgType)msgTypeAsInt;
-
-                switch (msgType)
+                return (CryptMsgType)msgTypeAsInt switch
                 {
-                    case CryptMsgType.CMSG_DATA:
-                        return Oid.FromOidValue(Oids.Pkcs7Data, OidGroup.ExtensionOrAttribute);
-
-                    case CryptMsgType.CMSG_SIGNED:
-                        return Oid.FromOidValue(Oids.Pkcs7Signed, OidGroup.ExtensionOrAttribute);
-
-                    case CryptMsgType.CMSG_ENVELOPED:
-                        return Oid.FromOidValue(Oids.Pkcs7Enveloped, OidGroup.ExtensionOrAttribute);
-
-                    case CryptMsgType.CMSG_SIGNED_AND_ENVELOPED:
-                        return Oid.FromOidValue(Oids.Pkcs7SignedEnveloped, OidGroup.ExtensionOrAttribute);
-
-                    case CryptMsgType.CMSG_HASHED:
-                        return Oid.FromOidValue(Oids.Pkcs7Hashed, OidGroup.ExtensionOrAttribute);
-
-                    case CryptMsgType.CMSG_ENCRYPTED:
-                        return Oid.FromOidValue(Oids.Pkcs7Encrypted, OidGroup.ExtensionOrAttribute);
-
-                    default:
-                        throw ErrorCode.CRYPT_E_INVALID_MSG_TYPE.ToCryptographicException();
-                }
+                    CryptMsgType.CMSG_DATA => Oid.FromOidValue(Oids.Pkcs7Data, OidGroup.ExtensionOrAttribute),
+                    CryptMsgType.CMSG_SIGNED => Oid.FromOidValue(Oids.Pkcs7Signed, OidGroup.ExtensionOrAttribute),
+                    CryptMsgType.CMSG_ENVELOPED => Oid.FromOidValue(Oids.Pkcs7Enveloped, OidGroup.ExtensionOrAttribute),
+                    CryptMsgType.CMSG_SIGNED_AND_ENVELOPED => Oid.FromOidValue(Oids.Pkcs7SignedEnveloped, OidGroup.ExtensionOrAttribute),
+                    CryptMsgType.CMSG_HASHED => Oid.FromOidValue(Oids.Pkcs7Hashed, OidGroup.ExtensionOrAttribute),
+                    CryptMsgType.CMSG_ENCRYPTED => Oid.FromOidValue(Oids.Pkcs7Encrypted, OidGroup.ExtensionOrAttribute),
+                    _ => throw ErrorCode.CRYPT_E_INVALID_MSG_TYPE.ToCryptographicException(),
+                };
             }
         }
 

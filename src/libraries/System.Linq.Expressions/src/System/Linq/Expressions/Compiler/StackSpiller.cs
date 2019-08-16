@@ -294,19 +294,14 @@ namespace System.Linq.Expressions.Compiler
         {
             var node = (BinaryExpression)expr;
 
-            switch (node.Left.NodeType)
+            return node.Left.NodeType switch
             {
-                case ExpressionType.Index:
-                    return RewriteIndexAssignment(node, stack);
-                case ExpressionType.MemberAccess:
-                    return RewriteMemberAssignment(node, stack);
-                case ExpressionType.Parameter:
-                    return RewriteVariableAssignment(node, stack);
-                case ExpressionType.Extension:
-                    return RewriteExtensionAssignment(node, stack);
-                default:
-                    throw Error.InvalidLvalue(node.Left.NodeType);
-            }
+                ExpressionType.Index => RewriteIndexAssignment(node, stack),
+                ExpressionType.MemberAccess => RewriteMemberAssignment(node, stack),
+                ExpressionType.Parameter => RewriteVariableAssignment(node, stack),
+                ExpressionType.Extension => RewriteExtensionAssignment(node, stack),
+                _ => throw Error.InvalidLvalue(node.Left.NodeType),
+            };
         }
 
         private Result RewriteExtensionAssignment(BinaryExpression node, Stack stack)

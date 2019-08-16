@@ -70,12 +70,12 @@ namespace System.Linq
             {
                 Debug.Assert(index >= 0 && index <= 2);
 
-                switch (index)
+                return index switch
                 {
-                    case 0: return _first;
-                    case 1: return _second;
-                    default: return null;
-                }
+                    0 => _first,
+                    1 => _second,
+                    _ => null,
+                };
             }
         }
 

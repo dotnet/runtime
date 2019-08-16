@@ -431,25 +431,25 @@ namespace Microsoft.SqlServer.Server
                     || _metadata.SqlDbType == SqlDbType.DateTime2,
                     "Invalid metadata");
 
-                switch (_type)
+                return _type switch
                 {
-                    case StorageType.Boolean: return SmiMetaData.DefaultBit;
-                    case StorageType.Byte: return SmiMetaData.DefaultTinyInt;
-                    case StorageType.ByteArray: return SmiMetaData.DefaultVarBinary;
-                    case StorageType.CharArray: return SmiMetaData.DefaultNVarChar;
-                    case StorageType.DateTime: return _metadata ?? SmiMetaData.DefaultDateTime;
-                    case StorageType.DateTimeOffset: return SmiMetaData.DefaultDateTimeOffset;
-                    case StorageType.Double: return SmiMetaData.DefaultFloat;
-                    case StorageType.Guid: return SmiMetaData.DefaultUniqueIdentifier;
-                    case StorageType.Int16: return SmiMetaData.DefaultSmallInt;
-                    case StorageType.Int32: return SmiMetaData.DefaultInt;
-                    case StorageType.Int64: return _metadata ?? SmiMetaData.DefaultBigInt;
-                    case StorageType.Single: return SmiMetaData.DefaultReal;
-                    case StorageType.String: return _metadata ?? SmiMetaData.DefaultNVarChar;
-                    case StorageType.SqlDecimal: return new SmiMetaData(SqlDbType.Decimal, 17, ((SqlDecimal)_object).Precision, ((SqlDecimal)_object).Scale, 0, SqlCompareOptions.None, null);
-                    case StorageType.TimeSpan: return SmiMetaData.DefaultTime;
-                }
-                return null;
+                    StorageType.Boolean => SmiMetaData.DefaultBit,
+                    StorageType.Byte => SmiMetaData.DefaultTinyInt,
+                    StorageType.ByteArray => SmiMetaData.DefaultVarBinary,
+                    StorageType.CharArray => SmiMetaData.DefaultNVarChar,
+                    StorageType.DateTime => _metadata ?? SmiMetaData.DefaultDateTime,
+                    StorageType.DateTimeOffset => SmiMetaData.DefaultDateTimeOffset,
+                    StorageType.Double => SmiMetaData.DefaultFloat,
+                    StorageType.Guid => SmiMetaData.DefaultUniqueIdentifier,
+                    StorageType.Int16 => SmiMetaData.DefaultSmallInt,
+                    StorageType.Int32 => SmiMetaData.DefaultInt,
+                    StorageType.Int64 => _metadata ?? SmiMetaData.DefaultBigInt,
+                    StorageType.Single => SmiMetaData.DefaultReal,
+                    StorageType.String => _metadata ?? SmiMetaData.DefaultNVarChar,
+                    StorageType.SqlDecimal => new SmiMetaData(SqlDbType.Decimal, 17, ((SqlDecimal)_object).Precision, ((SqlDecimal)_object).Scale, 0, SqlCompareOptions.None, null),
+                    StorageType.TimeSpan => SmiMetaData.DefaultTime,
+                    _ => null,
+                };
             }
             set
             {

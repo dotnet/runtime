@@ -193,51 +193,23 @@ namespace System.Runtime.Serialization.Json
                 else if (keyParseMode == KeyParseMode.UsingCustomParse)
                 {
                     TypeCode typeCode = Type.GetTypeCode(keyDataContract.UnderlyingType);
-                    switch (typeCode)
+                    pairKey = typeCode switch
                     {
-                        case TypeCode.Boolean:
-                            pairKey = bool.Parse(keyString);
-                            break;
-                        case TypeCode.Int16:
-                            pairKey = short.Parse(keyString);
-                            break;
-                        case TypeCode.Int32:
-                            pairKey = int.Parse(keyString);
-                            break;
-                        case TypeCode.Int64:
-                            pairKey = long.Parse(keyString);
-                            break;
-                        case TypeCode.Char:
-                            pairKey = char.Parse(keyString);
-                            break;
-                        case TypeCode.Byte:
-                            pairKey = byte.Parse(keyString);
-                            break;
-                        case TypeCode.SByte:
-                            pairKey = sbyte.Parse(keyString);
-                            break;
-                        case TypeCode.Double:
-                            pairKey = double.Parse(keyString);
-                            break;
-                        case TypeCode.Decimal:
-                            pairKey = decimal.Parse(keyString);
-                            break;
-                        case TypeCode.Single:
-                            pairKey = float.Parse(keyString);
-                            break;
-                        case TypeCode.UInt16:
-                            pairKey = ushort.Parse(keyString);
-                            break;
-                        case TypeCode.UInt32:
-                            pairKey = uint.Parse(keyString);
-                            break;
-                        case TypeCode.UInt64:
-                            pairKey = ulong.Parse(keyString);
-                            break;
-                        default:
-                            pairKey = keyDataContract.ParseMethod.Invoke(null, new object[] { keyString });
-                            break;
-                    }
+                        TypeCode.Boolean => bool.Parse(keyString),
+                        TypeCode.Int16 => short.Parse(keyString),
+                        TypeCode.Int32 => int.Parse(keyString),
+                        TypeCode.Int64 => long.Parse(keyString),
+                        TypeCode.Char => char.Parse(keyString),
+                        TypeCode.Byte => byte.Parse(keyString),
+                        TypeCode.SByte => sbyte.Parse(keyString),
+                        TypeCode.Double => double.Parse(keyString),
+                        TypeCode.Decimal => decimal.Parse(keyString),
+                        TypeCode.Single => float.Parse(keyString),
+                        TypeCode.UInt16 => ushort.Parse(keyString),
+                        TypeCode.UInt32 => uint.Parse(keyString),
+                        TypeCode.UInt64 => ulong.Parse(keyString),
+                        _ => keyDataContract.ParseMethod.Invoke(null, new object[] { keyString }),
+                    };
                 }
                 else
                 {

@@ -58,15 +58,15 @@ namespace MS.Internal.Xml.XPath
         private static double GetValue(Operator.Op op, double n1, double n2)
         {
             Debug.Assert(op == Operator.Op.PLUS || op == Operator.Op.MINUS || op == Operator.Op.MOD || op == Operator.Op.DIV || op == Operator.Op.MUL);
-            switch (op)
+            return op switch
             {
-                case Operator.Op.PLUS: return n1 + n2;
-                case Operator.Op.MINUS: return n1 - n2;
-                case Operator.Op.MOD: return n1 % n2;
-                case Operator.Op.DIV: return n1 / n2;
-                case Operator.Op.MUL: return n1 * n2;
-            }
-            return 0;
+                Operator.Op.PLUS => n1 + n2,
+                Operator.Op.MINUS => n1 - n2,
+                Operator.Op.MOD => n1 % n2,
+                Operator.Op.DIV => n1 / n2,
+                Operator.Op.MUL => n1 * n2,
+                _ => 0,
+            };
         }
 
         public override XPathResultType StaticType { get { return XPathResultType.Number; } }

@@ -29,20 +29,13 @@ namespace System.Linq
             {
                 if (onlyIfCheap)
                 {
-                    switch (_source)
+                    return _source switch
                     {
-                        case IIListProvider<TSource> listProv:
-                            return listProv.GetCount(onlyIfCheap: true);
-
-                        case ICollection<TSource> colT:
-                            return colT.Count;
-
-                        case ICollection col:
-                            return col.Count;
-
-                        default:
-                            return -1;
-                    }
+                        IIListProvider<TSource> listProv => listProv.GetCount(onlyIfCheap: true),
+                        ICollection<TSource> colT => colT.Count,
+                        ICollection col => col.Count,
+                        _ => -1,
+                    };
                 }
 
                 return _source.Count();

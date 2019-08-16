@@ -2112,45 +2112,29 @@ namespace System.Configuration
         /// </summary>
         /// <param name="allowExeDefinition">string representation of value</param>
         /// <param name="xmlUtil">[optional] - can provide better error</param>
-        internal static ConfigurationAllowExeDefinition
-            AllowExeDefinitionToEnum(string allowExeDefinition, XmlUtil xmlUtil)
-        {
-            switch (allowExeDefinition)
+        internal static ConfigurationAllowExeDefinition AllowExeDefinitionToEnum(string allowExeDefinition, XmlUtil xmlUtil) =>
+            allowExeDefinition switch
             {
-                case AllowDefinitionMachineOnly:
-                    return ConfigurationAllowExeDefinition.MachineOnly;
-                case AllowDefinitionMachineToApplication:
-                    return ConfigurationAllowExeDefinition.MachineToApplication;
-                case AllowExeDefinitionMachineToRoaming:
-                    return ConfigurationAllowExeDefinition.MachineToRoamingUser;
-                case AllowExeDefinitionMachineToLocal:
-                    return ConfigurationAllowExeDefinition.MachineToLocalUser;
-                default:
-                    throw new ConfigurationErrorsException(
+                AllowDefinitionMachineOnly => ConfigurationAllowExeDefinition.MachineOnly,
+                AllowDefinitionMachineToApplication => ConfigurationAllowExeDefinition.MachineToApplication,
+                AllowExeDefinitionMachineToRoaming => ConfigurationAllowExeDefinition.MachineToRoamingUser,
+                AllowExeDefinitionMachineToLocal => ConfigurationAllowExeDefinition.MachineToLocalUser,
+                _ => throw new ConfigurationErrorsException(
                         SR.Config_section_allow_exe_definition_attribute_invalid,
-                        xmlUtil);
-            }
-        }
+                        xmlUtil),
+            };
 
-        internal static ConfigurationAllowDefinition
-            AllowDefinitionToEnum(string allowDefinition, XmlUtil xmlUtil)
-        {
-            switch (xmlUtil.Reader.Value)
+        internal static ConfigurationAllowDefinition AllowDefinitionToEnum(string allowDefinition, XmlUtil xmlUtil) =>
+            xmlUtil.Reader.Value switch
             {
-                case AllowDefinitionEverywhere:
-                    return ConfigurationAllowDefinition.Everywhere;
-                case AllowDefinitionMachineOnly:
-                    return ConfigurationAllowDefinition.MachineOnly;
-                case AllowDefinitionMachineToApplication:
-                    return ConfigurationAllowDefinition.MachineToApplication;
-                case AllowDefinitionMachineToWebRoot:
-                    return ConfigurationAllowDefinition.MachineToWebRoot;
-                default:
-                    throw new ConfigurationErrorsException(
+                AllowDefinitionEverywhere => ConfigurationAllowDefinition.Everywhere,
+                AllowDefinitionMachineOnly => ConfigurationAllowDefinition.MachineOnly,
+                AllowDefinitionMachineToApplication => ConfigurationAllowDefinition.MachineToApplication,
+                AllowDefinitionMachineToWebRoot => ConfigurationAllowDefinition.MachineToWebRoot,
+                _ => throw new ConfigurationErrorsException(
                         SR.Config_section_allow_definition_attribute_invalid,
-                        xmlUtil);
-            }
-        }
+                        xmlUtil),
+            };
 
         internal static string CombineConfigKey(string parentConfigKey, string tagName)
         {

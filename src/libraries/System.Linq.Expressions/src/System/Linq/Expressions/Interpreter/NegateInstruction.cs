@@ -105,16 +105,15 @@ namespace System.Linq.Expressions.Interpreter
         public static Instruction Create(Type type)
         {
             Debug.Assert(!type.IsEnum);
-            switch (type.GetNonNullableType().GetTypeCode())
+            return type.GetNonNullableType().GetTypeCode() switch
             {
-                case TypeCode.Int16: return s_Int16 ?? (s_Int16 = new NegateInt16());
-                case TypeCode.Int32: return s_Int32 ?? (s_Int32 = new NegateInt32());
-                case TypeCode.Int64: return s_Int64 ?? (s_Int64 = new NegateInt64());
-                case TypeCode.Single: return s_Single ?? (s_Single = new NegateSingle());
-                case TypeCode.Double: return s_Double ?? (s_Double = new NegateDouble());
-                default:
-                    throw ContractUtils.Unreachable;
-            }
+                TypeCode.Int16 => s_Int16 ?? (s_Int16 = new NegateInt16()),
+                TypeCode.Int32 => s_Int32 ?? (s_Int32 = new NegateInt32()),
+                TypeCode.Int64 => s_Int64 ?? (s_Int64 = new NegateInt64()),
+                TypeCode.Single => s_Single ?? (s_Single = new NegateSingle()),
+                TypeCode.Double => s_Double ?? (s_Double = new NegateDouble()),
+                _ => throw ContractUtils.Unreachable,
+            };
         }
     }
 
@@ -182,14 +181,13 @@ namespace System.Linq.Expressions.Interpreter
         public static Instruction Create(Type type)
         {
             Debug.Assert(!type.IsEnum);
-            switch (type.GetNonNullableType().GetTypeCode())
+            return type.GetNonNullableType().GetTypeCode() switch
             {
-                case TypeCode.Int16: return s_Int16 ?? (s_Int16 = new NegateCheckedInt16());
-                case TypeCode.Int32: return s_Int32 ?? (s_Int32 = new NegateCheckedInt32());
-                case TypeCode.Int64: return s_Int64 ?? (s_Int64 = new NegateCheckedInt64());
-                default:
-                    return NegateInstruction.Create(type);
-            }
+                TypeCode.Int16 => s_Int16 ?? (s_Int16 = new NegateCheckedInt16()),
+                TypeCode.Int32 => s_Int32 ?? (s_Int32 = new NegateCheckedInt32()),
+                TypeCode.Int64 => s_Int64 ?? (s_Int64 = new NegateCheckedInt64()),
+                _ => NegateInstruction.Create(type),
+            };
         }
     }
 }

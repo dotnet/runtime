@@ -52,25 +52,14 @@ namespace System.Data.Odbc
                 {
                     //Get the isolation level
                     int sql_iso = connection.GetConnectAttr(ODBC32.SQL_ATTR.TXN_ISOLATION, ODBC32.HANDLER.THROW);
-                    switch ((ODBC32.SQL_TRANSACTION)sql_iso)
+                    _isolevel = (ODBC32.SQL_TRANSACTION)sql_iso switch
                     {
-                        case ODBC32.SQL_TRANSACTION.READ_UNCOMMITTED:
-                            _isolevel = IsolationLevel.ReadUncommitted;
-                            break;
-                        case ODBC32.SQL_TRANSACTION.READ_COMMITTED:
-                            _isolevel = IsolationLevel.ReadCommitted;
-                            break;
-                        case ODBC32.SQL_TRANSACTION.REPEATABLE_READ:
-                            _isolevel = IsolationLevel.RepeatableRead;
-                            break;
-                        case ODBC32.SQL_TRANSACTION.SERIALIZABLE:
-                            _isolevel = IsolationLevel.Serializable;
-                            break;
-                        case ODBC32.SQL_TRANSACTION.SNAPSHOT:
-                            _isolevel = IsolationLevel.Snapshot;
-                            break;
-                        default:
-                            throw ODBC.NoMappingForSqlTransactionLevel(sql_iso);
+                        ODBC32.SQL_TRANSACTION.READ_UNCOMMITTED => IsolationLevel.ReadUncommitted,
+                        ODBC32.SQL_TRANSACTION.READ_COMMITTED => IsolationLevel.ReadCommitted,
+                        ODBC32.SQL_TRANSACTION.REPEATABLE_READ => IsolationLevel.RepeatableRead,
+                        ODBC32.SQL_TRANSACTION.SERIALIZABLE => IsolationLevel.Serializable,
+                        ODBC32.SQL_TRANSACTION.SNAPSHOT => IsolationLevel.Snapshot,
+                        _ => throw ODBC.NoMappingForSqlTransactionLevel(sql_iso),
                     };
                 }
                 return _isolevel;

@@ -280,41 +280,39 @@ namespace System.Linq.Expressions.Interpreter
             Debug.Assert(!type.IsEnum);
             if (liftedToNull)
             {
-                switch (type.GetNonNullableType().GetTypeCode())
+                return type.GetNonNullableType().GetTypeCode() switch
                 {
-                    case TypeCode.SByte: return s_liftedToNullSByte ?? (s_liftedToNullSByte = new GreaterThanOrEqualSByte(null));
-                    case TypeCode.Int16: return s_liftedToNullInt16 ?? (s_liftedToNullInt16 = new GreaterThanOrEqualInt16(null));
-                    case TypeCode.Char: return s_liftedToNullChar ?? (s_liftedToNullChar = new GreaterThanOrEqualChar(null));
-                    case TypeCode.Int32: return s_liftedToNullInt32 ?? (s_liftedToNullInt32 = new GreaterThanOrEqualInt32(null));
-                    case TypeCode.Int64: return s_liftedToNullInt64 ?? (s_liftedToNullInt64 = new GreaterThanOrEqualInt64(null));
-                    case TypeCode.Byte: return s_liftedToNullByte ?? (s_liftedToNullByte = new GreaterThanOrEqualByte(null));
-                    case TypeCode.UInt16: return s_liftedToNullUInt16 ?? (s_liftedToNullUInt16 = new GreaterThanOrEqualUInt16(null));
-                    case TypeCode.UInt32: return s_liftedToNullUInt32 ?? (s_liftedToNullUInt32 = new GreaterThanOrEqualUInt32(null));
-                    case TypeCode.UInt64: return s_liftedToNullUInt64 ?? (s_liftedToNullUInt64 = new GreaterThanOrEqualUInt64(null));
-                    case TypeCode.Single: return s_liftedToNullSingle ?? (s_liftedToNullSingle = new GreaterThanOrEqualSingle(null));
-                    case TypeCode.Double: return s_liftedToNullDouble ?? (s_liftedToNullDouble = new GreaterThanOrEqualDouble(null));
-                    default:
-                        throw ContractUtils.Unreachable;
-                }
+                    TypeCode.SByte => s_liftedToNullSByte ?? (s_liftedToNullSByte = new GreaterThanOrEqualSByte(null)),
+                    TypeCode.Int16 => s_liftedToNullInt16 ?? (s_liftedToNullInt16 = new GreaterThanOrEqualInt16(null)),
+                    TypeCode.Char => s_liftedToNullChar ?? (s_liftedToNullChar = new GreaterThanOrEqualChar(null)),
+                    TypeCode.Int32 => s_liftedToNullInt32 ?? (s_liftedToNullInt32 = new GreaterThanOrEqualInt32(null)),
+                    TypeCode.Int64 => s_liftedToNullInt64 ?? (s_liftedToNullInt64 = new GreaterThanOrEqualInt64(null)),
+                    TypeCode.Byte => s_liftedToNullByte ?? (s_liftedToNullByte = new GreaterThanOrEqualByte(null)),
+                    TypeCode.UInt16 => s_liftedToNullUInt16 ?? (s_liftedToNullUInt16 = new GreaterThanOrEqualUInt16(null)),
+                    TypeCode.UInt32 => s_liftedToNullUInt32 ?? (s_liftedToNullUInt32 = new GreaterThanOrEqualUInt32(null)),
+                    TypeCode.UInt64 => s_liftedToNullUInt64 ?? (s_liftedToNullUInt64 = new GreaterThanOrEqualUInt64(null)),
+                    TypeCode.Single => s_liftedToNullSingle ?? (s_liftedToNullSingle = new GreaterThanOrEqualSingle(null)),
+                    TypeCode.Double => s_liftedToNullDouble ?? (s_liftedToNullDouble = new GreaterThanOrEqualDouble(null)),
+                    _ => throw ContractUtils.Unreachable,
+                };
             }
             else
             {
-                switch (type.GetNonNullableType().GetTypeCode())
+                return type.GetNonNullableType().GetTypeCode() switch
                 {
-                    case TypeCode.SByte: return s_SByte ?? (s_SByte = new GreaterThanOrEqualSByte(Utils.BoxedFalse));
-                    case TypeCode.Int16: return s_Int16 ?? (s_Int16 = new GreaterThanOrEqualInt16(Utils.BoxedFalse));
-                    case TypeCode.Char: return s_Char ?? (s_Char = new GreaterThanOrEqualChar(Utils.BoxedFalse));
-                    case TypeCode.Int32: return s_Int32 ?? (s_Int32 = new GreaterThanOrEqualInt32(Utils.BoxedFalse));
-                    case TypeCode.Int64: return s_Int64 ?? (s_Int64 = new GreaterThanOrEqualInt64(Utils.BoxedFalse));
-                    case TypeCode.Byte: return s_Byte ?? (s_Byte = new GreaterThanOrEqualByte(Utils.BoxedFalse));
-                    case TypeCode.UInt16: return s_UInt16 ?? (s_UInt16 = new GreaterThanOrEqualUInt16(Utils.BoxedFalse));
-                    case TypeCode.UInt32: return s_UInt32 ?? (s_UInt32 = new GreaterThanOrEqualUInt32(Utils.BoxedFalse));
-                    case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new GreaterThanOrEqualUInt64(Utils.BoxedFalse));
-                    case TypeCode.Single: return s_Single ?? (s_Single = new GreaterThanOrEqualSingle(Utils.BoxedFalse));
-                    case TypeCode.Double: return s_Double ?? (s_Double = new GreaterThanOrEqualDouble(Utils.BoxedFalse));
-                    default:
-                        throw ContractUtils.Unreachable;
-                }
+                    TypeCode.SByte => s_SByte ?? (s_SByte = new GreaterThanOrEqualSByte(Utils.BoxedFalse)),
+                    TypeCode.Int16 => s_Int16 ?? (s_Int16 = new GreaterThanOrEqualInt16(Utils.BoxedFalse)),
+                    TypeCode.Char => s_Char ?? (s_Char = new GreaterThanOrEqualChar(Utils.BoxedFalse)),
+                    TypeCode.Int32 => s_Int32 ?? (s_Int32 = new GreaterThanOrEqualInt32(Utils.BoxedFalse)),
+                    TypeCode.Int64 => s_Int64 ?? (s_Int64 = new GreaterThanOrEqualInt64(Utils.BoxedFalse)),
+                    TypeCode.Byte => s_Byte ?? (s_Byte = new GreaterThanOrEqualByte(Utils.BoxedFalse)),
+                    TypeCode.UInt16 => s_UInt16 ?? (s_UInt16 = new GreaterThanOrEqualUInt16(Utils.BoxedFalse)),
+                    TypeCode.UInt32 => s_UInt32 ?? (s_UInt32 = new GreaterThanOrEqualUInt32(Utils.BoxedFalse)),
+                    TypeCode.UInt64 => s_UInt64 ?? (s_UInt64 = new GreaterThanOrEqualUInt64(Utils.BoxedFalse)),
+                    TypeCode.Single => s_Single ?? (s_Single = new GreaterThanOrEqualSingle(Utils.BoxedFalse)),
+                    TypeCode.Double => s_Double ?? (s_Double = new GreaterThanOrEqualDouble(Utils.BoxedFalse)),
+                    _ => throw ContractUtils.Unreachable,
+                };
             }
         }
     }

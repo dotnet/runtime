@@ -369,24 +369,14 @@ namespace System.Diagnostics.Eventing.Reader
                                 _defaultProviderHandle = NativeWrapper.EvtOpenProviderMetadata(_session.Handle, null, null, 0, 0);
                             }
 
-                            switch (objectTypeName)
+                            generalDisplayName = objectTypeName switch
                             {
-                                case ObjectTypeName.Level:
-                                    generalDisplayName = FindStandardLevelDisplayName(generalName, generalValue);
-                                    break;
-                                case ObjectTypeName.Opcode:
-                                    generalDisplayName = FindStandardOpcodeDisplayName(generalName, generalValue >> 16);
-                                    break;
-                                case ObjectTypeName.Keyword:
-                                    generalDisplayName = FindStandardKeywordDisplayName(generalName, generalValueKeyword);
-                                    break;
-                                case ObjectTypeName.Task:
-                                    generalDisplayName = FindStandardTaskDisplayName(generalName, generalValue);
-                                    break;
-                                default:
-                                    generalDisplayName = null;
-                                    break;
-                            }
+                                ObjectTypeName.Level => FindStandardLevelDisplayName(generalName, generalValue),
+                                ObjectTypeName.Opcode => FindStandardOpcodeDisplayName(generalName, generalValue >> 16),
+                                ObjectTypeName.Keyword => FindStandardKeywordDisplayName(generalName, generalValueKeyword),
+                                ObjectTypeName.Task => FindStandardTaskDisplayName(generalName, generalValue),
+                                _ => null,
+                            };
                         }
                     }
                     else
@@ -414,18 +404,14 @@ namespace System.Diagnostics.Eventing.Reader
                     }
                 }
 
-                switch (objectTypeName)
+                return objectTypeName switch
                 {
-                    case ObjectTypeName.Level:
-                        return levelList;
-                    case ObjectTypeName.Opcode:
-                        return opcodeList;
-                    case ObjectTypeName.Keyword:
-                        return keywordList;
-                    case ObjectTypeName.Task:
-                        return taskList;
-                }
-                return null;
+                    ObjectTypeName.Level => levelList,
+                    ObjectTypeName.Opcode => opcodeList,
+                    ObjectTypeName.Keyword => keywordList,
+                    ObjectTypeName.Task => taskList,
+                    _ => null,
+                };
             }
             finally
             {

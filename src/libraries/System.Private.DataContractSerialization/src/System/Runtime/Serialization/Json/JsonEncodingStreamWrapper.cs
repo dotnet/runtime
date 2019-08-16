@@ -278,41 +278,23 @@ namespace System.Runtime.Serialization.Json
             Write(_byteBuffer, 0, 1);
         }
 
-        private static Encoding GetEncoding(SupportedEncoding e)
-        {
-            switch (e)
+        private static Encoding GetEncoding(SupportedEncoding e) =>
+            e switch
             {
-                case SupportedEncoding.UTF8:
-                    return s_validatingUTF8;
+                SupportedEncoding.UTF8 => s_validatingUTF8,
+                SupportedEncoding.UTF16LE => s_validatingUTF16,
+                SupportedEncoding.UTF16BE => s_validatingBEUTF16,
+                _ => throw new XmlException(SR.JsonEncodingNotSupported),
+            };
 
-                case SupportedEncoding.UTF16LE:
-                    return s_validatingUTF16;
-
-                case SupportedEncoding.UTF16BE:
-                    return s_validatingBEUTF16;
-
-                default:
-                    throw new XmlException(SR.JsonEncodingNotSupported);
-            }
-        }
-
-        private static string GetEncodingName(SupportedEncoding enc)
-        {
-            switch (enc)
+        private static string GetEncodingName(SupportedEncoding enc) =>
+            enc switch
             {
-                case SupportedEncoding.UTF8:
-                    return "utf-8";
-
-                case SupportedEncoding.UTF16LE:
-                    return "utf-16LE";
-
-                case SupportedEncoding.UTF16BE:
-                    return "utf-16BE";
-
-                default:
-                    throw new XmlException(SR.JsonEncodingNotSupported);
-            }
-        }
+                SupportedEncoding.UTF8 => "utf-8",
+                SupportedEncoding.UTF16LE => "utf-16LE",
+                SupportedEncoding.UTF16BE => "utf-16BE",
+                _ => throw new XmlException(SR.JsonEncodingNotSupported),
+            };
 
         private static SupportedEncoding GetSupportedEncoding(Encoding encoding)
         {

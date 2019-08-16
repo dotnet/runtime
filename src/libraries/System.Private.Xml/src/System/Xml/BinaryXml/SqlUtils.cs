@@ -40,23 +40,14 @@ namespace System.Xml
         public BinXmlSqlDecimal(byte[] data, int offset, bool trim)
         {
             byte b = data[offset];
-            switch (b)
+            m_bLen = b switch
             {
-                case 7:
-                    m_bLen = 1;
-                    break;
-                case 11:
-                    m_bLen = 2;
-                    break;
-                case 15:
-                    m_bLen = 3;
-                    break;
-                case 19:
-                    m_bLen = 4;
-                    break;
-                default:
-                    throw new XmlException(SR.XmlBinary_InvalidSqlDecimal, (string[])null);
-            }
+                7 => 1,
+                11 => 2,
+                15 => 3,
+                19 => 4,
+                _ => throw new XmlException(SR.XmlBinary_InvalidSqlDecimal, (string[])null),
+            };
             m_bPrec = data[offset + 1];
             m_bScale = data[offset + 2];
             m_bSign = 0 == data[offset + 3] ? (byte)1 : (byte)0;

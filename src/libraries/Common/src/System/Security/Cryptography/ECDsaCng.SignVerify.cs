@@ -28,18 +28,15 @@ namespace System.Security.Cryptography
             if (hash == null)
                 throw new ArgumentNullException(nameof(hash));
 
-            int estimatedSize;
-            switch (KeySize)
+            int estimatedSize = KeySize switch
             {
-                case 256: estimatedSize = 64; break;
-                case 384: estimatedSize = 96; break;
-                case 521: estimatedSize = 132; break;
-                default:
-                    // If we got here, the range of legal key sizes for ECDsaCng was expanded and someone didn't update this switch.
-                    // Since it isn't a fatal error to miscalculate the estimatedSize, don't throw an exception. Just truck along.
-                    estimatedSize = KeySize / 4;
-                    break;
-            }
+                256 => 64,
+                384 => 96,
+                521 => 132,
+                // If we got here, the range of legal key sizes for ECDsaCng was expanded and someone didn't update this switch.
+                // Since it isn't a fatal error to miscalculate the estimatedSize, don't throw an exception. Just truck along.
+                _ => KeySize / 4,
+            };
 
             unsafe
             {

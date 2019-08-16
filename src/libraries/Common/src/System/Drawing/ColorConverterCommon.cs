@@ -70,19 +70,13 @@ namespace System.Drawing
             // 3 -- RGB
             // 4 -- ARGB
             //
-            switch (values.Length)
+            return values.Length switch
             {
-                case 1:
-                    return PossibleKnownColor(Color.FromArgb(values[0]));
-
-                case 3:
-                    return PossibleKnownColor(Color.FromArgb(values[0], values[1], values[2]));
-
-                case 4:
-                    return PossibleKnownColor(Color.FromArgb(values[0], values[1], values[2], values[3]));
-            }
-
-            throw new ArgumentException(SR.Format(SR.InvalidColor, text));
+                1 => PossibleKnownColor(Color.FromArgb(values[0])),
+                3 => PossibleKnownColor(Color.FromArgb(values[0], values[1], values[2])),
+                4 => PossibleKnownColor(Color.FromArgb(values[0], values[1], values[2], values[3])),
+                _ => throw new ArgumentException(SR.Format(SR.InvalidColor, text)),
+            };
         }
 
         private static Color PossibleKnownColor(Color color)

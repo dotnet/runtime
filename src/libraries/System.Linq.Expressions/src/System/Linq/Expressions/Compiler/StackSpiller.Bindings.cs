@@ -227,17 +227,13 @@ namespace System.Linq.Expressions.Compiler
                 _rhs = result.Node;
             }
 
-            internal override MemberBinding AsBinding()
-            {
-                switch (_action)
+            internal override MemberBinding AsBinding() =>
+                _action switch
                 {
-                    case RewriteAction.None:
-                        return _binding;
-                    case RewriteAction.Copy:
-                        return new MemberAssignment(_binding.Member, _rhs);
-                }
-                throw ContractUtils.Unreachable;
-            }
+                    RewriteAction.None => _binding,
+                    RewriteAction.Copy => new MemberAssignment(_binding.Member, _rhs),
+                    _ => throw ContractUtils.Unreachable,
+                };
 
             internal override Expression AsExpression(Expression target)
             {

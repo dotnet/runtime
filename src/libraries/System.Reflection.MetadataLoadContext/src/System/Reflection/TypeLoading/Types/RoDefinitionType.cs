@@ -153,25 +153,20 @@ namespace System.Reflection.TypeLoading
                     return null;
 
                 TypeAttributes attributes = Attributes;
-
-                LayoutKind layoutKind;
-                switch (attributes & TypeAttributes.LayoutMask)
+                LayoutKind layoutKind = (attributes & TypeAttributes.LayoutMask) switch
                 {
-                    case TypeAttributes.ExplicitLayout: layoutKind = LayoutKind.Explicit; break;
-                    case TypeAttributes.AutoLayout: layoutKind = LayoutKind.Auto; break;
-                    case TypeAttributes.SequentialLayout: layoutKind = LayoutKind.Sequential; break;
-                    default: layoutKind = LayoutKind.Auto; break;
-                }
-
-                CharSet charSet;
-                switch (attributes & TypeAttributes.StringFormatMask)
+                    TypeAttributes.ExplicitLayout => LayoutKind.Explicit,
+                    TypeAttributes.AutoLayout => LayoutKind.Auto,
+                    TypeAttributes.SequentialLayout => LayoutKind.Sequential,
+                    _ => LayoutKind.Auto,
+                };
+                CharSet charSet = (attributes & TypeAttributes.StringFormatMask) switch
                 {
-                    case TypeAttributes.AnsiClass: charSet = CharSet.Ansi; break;
-                    case TypeAttributes.AutoClass: charSet = CharSet.Auto; break;
-                    case TypeAttributes.UnicodeClass: charSet = CharSet.Unicode; break;
-                    default: charSet = CharSet.None; break;
-                }
-
+                    TypeAttributes.AnsiClass => CharSet.Ansi,
+                    TypeAttributes.AutoClass => CharSet.Auto,
+                    TypeAttributes.UnicodeClass => CharSet.Unicode,
+                    _ => CharSet.None,
+                };
                 GetPackSizeAndSize(out int pack, out int size);
 
                 // Metadata parameter checking should not have allowed 0 for packing size.

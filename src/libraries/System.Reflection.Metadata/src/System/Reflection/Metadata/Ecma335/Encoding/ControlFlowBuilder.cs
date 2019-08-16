@@ -355,21 +355,12 @@ namespace System.Reflection.Metadata.Ecma335
                     Throw.InvalidOperation(SR.Format(SR.InvalidExceptionRegionBounds, handlerStart, handlerEnd));
                 }
 
-                int catchTokenOrOffset;
-                switch (handler.Kind)
+                int catchTokenOrOffset = handler.Kind switch
                 {
-                    case ExceptionRegionKind.Catch:
-                        catchTokenOrOffset = MetadataTokens.GetToken(handler.CatchType);
-                        break;
-
-                    case ExceptionRegionKind.Filter:
-                        catchTokenOrOffset = GetLabelOffsetChecked(handler.FilterStart);
-                        break;
-
-                    default:
-                        catchTokenOrOffset = 0;
-                        break;
-                }
+                    ExceptionRegionKind.Catch => MetadataTokens.GetToken(handler.CatchType),
+                    ExceptionRegionKind.Filter => GetLabelOffsetChecked(handler.FilterStart),
+                    _ => 0,
+                };
 
                 regionEncoder.AddUnchecked(
                     handler.Kind,

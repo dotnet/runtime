@@ -265,27 +265,15 @@ namespace System.Configuration
             {
 
                 ConfigurationUserLevel userLevel = (ConfigurationUserLevel)hostInitConfigurationParams[0];
-                string desiredConfigPath = null;
                 Host = TypeUtil.CreateInstance<IInternalConfigHost>(ClientConfigurationHostTypeName);
 
-                switch (userLevel)
+                string desiredConfigPath = userLevel switch
                 {
-                    case ConfigurationUserLevel.None:
-                        desiredConfigPath = ClientHost.GetExeConfigPath();
-                        break;
-
-                    case ConfigurationUserLevel.PerUserRoaming:
-                        desiredConfigPath = ClientHost.GetRoamingUserConfigPath();
-                        break;
-
-                    case ConfigurationUserLevel.PerUserRoamingAndLocal:
-                        desiredConfigPath = ClientHost.GetLocalUserConfigPath();
-                        break;
-
-                    default:
-                        throw new ArgumentException(SR.UnknownUserLevel);
-                }
-
+                    ConfigurationUserLevel.None => ClientHost.GetExeConfigPath(),
+                    ConfigurationUserLevel.PerUserRoaming => ClientHost.GetRoamingUserConfigPath(),
+                    ConfigurationUserLevel.PerUserRoamingAndLocal => ClientHost.GetLocalUserConfigPath(),
+                    _ => throw new ArgumentException(SR.UnknownUserLevel),
+                };
 
                 Host.InitForConfiguration(ref locationSubPath, out configPath, out locationConfigPath, configRoot, null, null, desiredConfigPath);
             }

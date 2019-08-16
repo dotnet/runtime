@@ -130,13 +130,13 @@ namespace System.Xml.Xsl.IlGen
                     index--;
                 }
 
-                switch (index)
+                return index switch
                 {
-                    case 0: return _constrInfo;
-                    case 1: return _optPatt;
-                }
+                    0 => _constrInfo,
+                    1 => _optPatt,
 
-                throw new IndexOutOfRangeException();
+                    _ => throw new IndexOutOfRangeException(),
+                };
             }
             set
             {

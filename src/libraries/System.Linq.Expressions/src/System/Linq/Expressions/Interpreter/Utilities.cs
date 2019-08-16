@@ -84,24 +84,17 @@ namespace System.Linq.Expressions.Interpreter
 
     internal static class ScriptingRuntimeHelpers
     {
-        public static object Int32ToObject(int i)
-        {
-            switch (i)
+        public static object Int32ToObject(int i) =>
+            i switch
             {
-                case -1:
-                    return Utils.BoxedIntM1;
-                case 0:
-                    return Utils.BoxedInt0;
-                case 1:
-                    return Utils.BoxedInt1;
-                case 2:
-                    return Utils.BoxedInt2;
-                case 3:
-                    return Utils.BoxedInt3;
-            }
+                -1 => Utils.BoxedIntM1,
+                0 => Utils.BoxedInt0,
+                1 => Utils.BoxedInt1,
+                2 => Utils.BoxedInt2,
+                3 => Utils.BoxedInt3,
 
-            return i;
-        }
+                _ => i,
+            };
 
         internal static object GetPrimitiveDefaultValue(Type type)
         {

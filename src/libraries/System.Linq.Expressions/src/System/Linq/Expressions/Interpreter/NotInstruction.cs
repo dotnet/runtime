@@ -169,22 +169,19 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        public static Instruction Create(Type type)
-        {
-            switch (type.GetNonNullableType().GetTypeCode())
+        public static Instruction Create(Type type) =>
+            type.GetNonNullableType().GetTypeCode() switch
             {
-                case TypeCode.Boolean: return s_Boolean ?? (s_Boolean = new NotBoolean());
-                case TypeCode.Int64: return s_Int64 ?? (s_Int64 = new NotInt64());
-                case TypeCode.Int32: return s_Int32 ?? (s_Int32 = new NotInt32());
-                case TypeCode.Int16: return s_Int16 ?? (s_Int16 = new NotInt16());
-                case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new NotUInt64());
-                case TypeCode.UInt32: return s_UInt32 ?? (s_UInt32 = new NotUInt32());
-                case TypeCode.UInt16: return s_UInt16 ?? (s_UInt16 = new NotUInt16());
-                case TypeCode.Byte: return s_Byte ?? (s_Byte = new NotByte());
-                case TypeCode.SByte: return s_SByte ?? (s_SByte = new NotSByte());
-                default:
-                    throw ContractUtils.Unreachable;
-            }
-        }
+                TypeCode.Boolean => s_Boolean ?? (s_Boolean = new NotBoolean()),
+                TypeCode.Int64 => s_Int64 ?? (s_Int64 = new NotInt64()),
+                TypeCode.Int32 => s_Int32 ?? (s_Int32 = new NotInt32()),
+                TypeCode.Int16 => s_Int16 ?? (s_Int16 = new NotInt16()),
+                TypeCode.UInt64 => s_UInt64 ?? (s_UInt64 = new NotUInt64()),
+                TypeCode.UInt32 => s_UInt32 ?? (s_UInt32 = new NotUInt32()),
+                TypeCode.UInt16 => s_UInt16 ?? (s_UInt16 = new NotUInt16()),
+                TypeCode.Byte => s_Byte ?? (s_Byte = new NotByte()),
+                TypeCode.SByte => s_SByte ?? (s_SByte = new NotSByte()),
+                _ => throw ContractUtils.Unreachable,
+            };
     }
 }

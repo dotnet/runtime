@@ -167,23 +167,13 @@ namespace Windows.UI.Xaml.Media.Animation
         {
             if (_Type == repeatBehavior._Type)
             {
-                switch (_Type)
+                return _Type switch
                 {
-                    case RepeatBehaviorType.Forever:
-
-                        return true;
-
-                    case RepeatBehaviorType.Count:
-
-                        return _Count == repeatBehavior._Count;
-
-                    case RepeatBehaviorType.Duration:
-
-                        return _Duration == repeatBehavior._Duration;
-
-                    default:
-                        return false;
-                }
+                    RepeatBehaviorType.Forever => true,
+                    RepeatBehaviorType.Count => _Count == repeatBehavior._Count,
+                    RepeatBehaviorType.Duration => _Duration == repeatBehavior._Duration,
+                    _ => false,
+                };
             }
             else
             {
@@ -198,25 +188,17 @@ namespace Windows.UI.Xaml.Media.Animation
 
         public override int GetHashCode()
         {
-            switch (_Type)
+            return _Type switch
             {
-                case RepeatBehaviorType.Count:
+                RepeatBehaviorType.Count => _Count.GetHashCode(),
+                RepeatBehaviorType.Duration => _Duration.GetHashCode(),
 
-                    return _Count.GetHashCode();
+                // We try to choose an unlikely hash code value for Forever.
+                // All Forevers need to return the same hash code value.
+                RepeatBehaviorType.Forever => int.MaxValue - 42,
 
-                case RepeatBehaviorType.Duration:
-
-                    return _Duration.GetHashCode();
-
-                case RepeatBehaviorType.Forever:
-
-                    // We try to choose an unlikely hash code value for Forever.
-                    // All Forevers need to return the same hash code value.
-                    return int.MaxValue - 42;
-
-                default:
-                    return base.GetHashCode();
-            }
+                _ => base.GetHashCode(),
+            };
         }
 
         public static bool operator ==(RepeatBehavior repeatBehavior1, RepeatBehavior repeatBehavior2)

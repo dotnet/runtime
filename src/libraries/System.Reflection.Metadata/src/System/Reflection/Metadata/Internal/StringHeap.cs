@@ -196,16 +196,12 @@ namespace System.Reflection.Metadata.Ecma335
         {
             Debug.Assert(handle.IsVirtual);
 
-            switch (handle.StringKind)
+            return handle.StringKind switch
             {
-                case StringKind.Virtual:
-                    return GetVirtualString(handle.GetVirtualIndex());
-
-                case StringKind.WinRTPrefixed:
-                    return GetNonVirtualString(handle, utf8Decoder, MetadataReader.WinRTPrefix);
-            }
-
-            throw ExceptionUtilities.UnexpectedValue(handle.StringKind);
+                StringKind.Virtual => GetVirtualString(handle.GetVirtualIndex()),
+                StringKind.WinRTPrefixed => GetNonVirtualString(handle, utf8Decoder, MetadataReader.WinRTPrefix),
+                _ => throw ExceptionUtilities.UnexpectedValue(handle.StringKind),
+            };
         }
 
         private MemoryBlock GetVirtualHandleMemoryBlock(StringHandle handle)
@@ -217,21 +213,12 @@ namespace System.Reflection.Metadata.Ecma335
             {
                 if (!heap.TryGetMemoryBlock(handle.RawValue, out var block))
                 {
-                    byte[] bytes;
-                    switch (handle.StringKind)
+                    byte[] bytes = handle.StringKind switch
                     {
-                        case StringKind.Virtual:
-                            bytes = Encoding.UTF8.GetBytes(GetVirtualString(handle.GetVirtualIndex()));
-                            break;
-
-                        case StringKind.WinRTPrefixed:
-                            bytes = GetNonVirtualStringBytes(handle, MetadataReader.WinRTPrefix);
-                            break;
-
-                        default:
-                            throw ExceptionUtilities.UnexpectedValue(handle.StringKind);
-                    }
-
+                        StringKind.Virtual => Encoding.UTF8.GetBytes(GetVirtualString(handle.GetVirtualIndex())),
+                        StringKind.WinRTPrefixed => GetNonVirtualStringBytes(handle, MetadataReader.WinRTPrefix),
+                        _ => throw ExceptionUtilities.UnexpectedValue(handle.StringKind),
+                    };
                     block = heap.AddBlob(handle.RawValue, bytes);
                 }
 

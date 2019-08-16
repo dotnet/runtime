@@ -27,19 +27,12 @@ namespace Internal.Cryptography
         {
             _encrypting = encrypting;
             _cngKey = cngKeyFactory();
-
-            CngProperty chainingModeProperty;
-            switch (cipherMode)
+            CngProperty chainingModeProperty = cipherMode switch
             {
-                case CipherMode.ECB:
-                    chainingModeProperty = s_ECBMode;
-                    break;
-                case CipherMode.CBC:
-                    chainingModeProperty = s_CBCMode;
-                    break;
-                default:
-                    throw new CryptographicException(SR.Cryptography_InvalidCipherMode);
-            }
+                CipherMode.ECB => s_ECBMode,
+                CipherMode.CBC => s_CBCMode,
+                _ => throw new CryptographicException(SR.Cryptography_InvalidCipherMode),
+            };
             _cngKey.SetProperty(chainingModeProperty);
 
             Reset();

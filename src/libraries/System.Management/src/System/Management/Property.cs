@@ -338,40 +338,17 @@ namespace System.Management
                 }
                 else
                 {
-                    switch (type)
+                    val = type switch
                     {
-                        case CimType.SInt8:
-                            val = (sbyte)((short)wmiValue);
-                            break;
-
-                        case CimType.UInt16:
-                            val = (ushort)((int)wmiValue);
-                            break;
-
-                        case CimType.UInt32:
-                            val = (uint)((int)wmiValue);
-                            break;
-
-                        case CimType.UInt64:
-                            val = Convert.ToUInt64((string)wmiValue,(IFormatProvider)CultureInfo.CurrentCulture.GetFormat(typeof(ulong)));
-                            break;
-
-                        case CimType.SInt64:
-                            val = Convert.ToInt64((string)wmiValue,(IFormatProvider)CultureInfo.CurrentCulture.GetFormat(typeof(long)));
-                            break;
-
-                        case CimType.Char16:
-                            val = (char)((short)wmiValue);
-                            break;
-
-                        case CimType.Object:
-                            val = new ManagementBaseObject(new IWbemClassObjectFreeThreaded(Marshal.GetIUnknownForObject(wmiValue)));
-                            break;
-
-                        default:
-                            val = wmiValue;
-                            break;
-                    }
+                        CimType.SInt8 => (sbyte)((short)wmiValue),
+                        CimType.UInt16 => (ushort)((int)wmiValue),
+                        CimType.UInt32 => (uint)((int)wmiValue),
+                        CimType.UInt64 => Convert.ToUInt64((string)wmiValue, (IFormatProvider)CultureInfo.CurrentCulture.GetFormat(typeof(ulong))),
+                        CimType.SInt64 => Convert.ToInt64((string)wmiValue, (IFormatProvider)CultureInfo.CurrentCulture.GetFormat(typeof(long))),
+                        CimType.Char16 => (char)((short)wmiValue),
+                        CimType.Object => new ManagementBaseObject(new IWbemClassObjectFreeThreaded(Marshal.GetIUnknownForObject(wmiValue))),
+                        _ => wmiValue,
+                    };
                 }
             }
 

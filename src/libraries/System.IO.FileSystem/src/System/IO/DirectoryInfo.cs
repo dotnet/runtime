@@ -181,17 +181,13 @@ namespace System.IO
 
             _isNormalized &= FileSystemEnumerableFactory.NormalizeInputs(ref path, ref searchPattern, options.MatchType);
 
-            switch (searchTarget)
+            return searchTarget switch
             {
-                case SearchTarget.Directories:
-                    return FileSystemEnumerableFactory.DirectoryInfos(path, searchPattern, options, _isNormalized);
-                case SearchTarget.Files:
-                    return FileSystemEnumerableFactory.FileInfos(path, searchPattern, options, _isNormalized);
-                case SearchTarget.Both:
-                    return FileSystemEnumerableFactory.FileSystemInfos(path, searchPattern, options, _isNormalized);
-                default:
-                    throw new ArgumentException(SR.ArgumentOutOfRange_Enum, nameof(searchTarget));
-            }
+                SearchTarget.Directories => FileSystemEnumerableFactory.DirectoryInfos(path, searchPattern, options, _isNormalized),
+                SearchTarget.Files => FileSystemEnumerableFactory.FileInfos(path, searchPattern, options, _isNormalized),
+                SearchTarget.Both => FileSystemEnumerableFactory.FileSystemInfos(path, searchPattern, options, _isNormalized),
+                _ => throw new ArgumentException(SR.ArgumentOutOfRange_Enum, nameof(searchTarget)),
+            };
         }
 
         public DirectoryInfo Root => new DirectoryInfo(Path.GetPathRoot(FullPath));

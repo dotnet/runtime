@@ -259,20 +259,14 @@ namespace System.IO
             return handle;
         }
 
-        private static HANDLE_ACCESS_OPTIONS FileAccessToHandleAccessOptions(FileAccess access)
-        {
-            switch (access)
+        private static HANDLE_ACCESS_OPTIONS FileAccessToHandleAccessOptions(FileAccess access) =>
+            access switch
             {
-                case FileAccess.ReadWrite:
-                    return HANDLE_ACCESS_OPTIONS.HAO_READ | HANDLE_ACCESS_OPTIONS.HAO_WRITE;
-                case FileAccess.Read:
-                    return HANDLE_ACCESS_OPTIONS.HAO_READ;
-                case FileAccess.Write:
-                    return HANDLE_ACCESS_OPTIONS.HAO_WRITE;
-            }
-
-            throw new ArgumentOutOfRangeException(nameof(access), access, null);
-        }
+                FileAccess.ReadWrite => HANDLE_ACCESS_OPTIONS.HAO_READ | HANDLE_ACCESS_OPTIONS.HAO_WRITE,
+                FileAccess.Read => HANDLE_ACCESS_OPTIONS.HAO_READ,
+                FileAccess.Write => HANDLE_ACCESS_OPTIONS.HAO_WRITE,
+                _ => throw new ArgumentOutOfRangeException(nameof(access), access, null),
+            };
 
         private static HANDLE_SHARING_OPTIONS FileShareToHandleSharingOptions(FileShare share)
         {

@@ -84,23 +84,14 @@ namespace System.Management
         private IWbemQualifierSetFreeThreaded GetTypeQualifierSet(QualifierType qualifierSetType)
         {
             IWbemQualifierSetFreeThreaded qualifierSet    = null;
-            int status                        = (int)ManagementStatus.NoError;
 
-            switch (qualifierSetType)
+            int status = qualifierSetType switch
             {
-                case QualifierType.ObjectQualifier :
-                    status = parent.wbemObject.GetQualifierSet_(out qualifierSet);
-                    break;
-                case QualifierType.PropertyQualifier :
-                    status = parent.wbemObject.GetPropertyQualifierSet_(propertyOrMethodName, out qualifierSet);
-                    break;
-                case QualifierType.MethodQualifier :
-                    status = parent.wbemObject.GetMethodQualifierSet_(propertyOrMethodName, out qualifierSet);
-                    break;
-                default:
-                    throw new ManagementException(ManagementStatus.Unexpected, null, null);    // Is this the best fit error ??
-            }
-
+                QualifierType.ObjectQualifier => parent.wbemObject.GetQualifierSet_(out qualifierSet),
+                QualifierType.PropertyQualifier => parent.wbemObject.GetPropertyQualifierSet_(propertyOrMethodName, out qualifierSet),
+                QualifierType.MethodQualifier => parent.wbemObject.GetMethodQualifierSet_(propertyOrMethodName, out qualifierSet),
+                _ => throw new ManagementException(ManagementStatus.Unexpected, null, null),    // Is this the best fit error ??
+            };
             if (status < 0)
             {
                 if ((status & 0xfffff000) == 0x80041000)
@@ -323,20 +314,13 @@ namespace System.Management
                 IWbemQualifierSetFreeThreaded qualifierSet = null;
                 int status = (int)ManagementStatus.NoError;
 
-                switch (qualifierType)
+                status = qualifierType switch
                 {
-                    case QualifierType.ObjectQualifier :
-                        status = parent.wbemObject.GetQualifierSet_(out qualifierSet);
-                        break;
-                    case QualifierType.PropertyQualifier :
-                        status = parent.wbemObject.GetPropertyQualifierSet_(propertyOrMethodName, out qualifierSet);
-                        break;
-                    case QualifierType.MethodQualifier :
-                        status = parent.wbemObject.GetMethodQualifierSet_(propertyOrMethodName, out qualifierSet);
-                        break;
-                    default:
-                        throw new ManagementException(ManagementStatus.Unexpected, null, null);    // Is this the best fit error ??
-                }
+                    QualifierType.ObjectQualifier => parent.wbemObject.GetQualifierSet_(out qualifierSet),
+                    QualifierType.PropertyQualifier => parent.wbemObject.GetPropertyQualifierSet_(propertyOrMethodName, out qualifierSet),
+                    QualifierType.MethodQualifier => parent.wbemObject.GetMethodQualifierSet_(propertyOrMethodName, out qualifierSet),
+                    _ => throw new ManagementException(ManagementStatus.Unexpected, null, null),    // Is this the best fit error ??
+                };
 
                 // If we got an error code back, assume there are NO qualifiers for this object/property/method
                 if (status < 0)

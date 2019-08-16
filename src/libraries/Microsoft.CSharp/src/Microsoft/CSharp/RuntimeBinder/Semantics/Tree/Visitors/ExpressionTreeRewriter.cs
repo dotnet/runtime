@@ -337,40 +337,32 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private Expr GenerateBuiltInBinaryOperator(ExprBinOp expr)
         {
             Debug.Assert(expr != null);
-            PREDEFMETH pdm;
 
-            switch (expr.Kind)
+            PREDEFMETH pdm = expr.Kind switch
             {
-                case ExpressionKind.LeftShirt: pdm = PREDEFMETH.PM_EXPRESSION_LEFTSHIFT; break;
-                case ExpressionKind.RightShift: pdm = PREDEFMETH.PM_EXPRESSION_RIGHTSHIFT; break;
-                case ExpressionKind.BitwiseExclusiveOr: pdm = PREDEFMETH.PM_EXPRESSION_EXCLUSIVEOR; break;
-                case ExpressionKind.BitwiseOr: pdm = PREDEFMETH.PM_EXPRESSION_OR; break;
-                case ExpressionKind.BitwiseAnd: pdm = PREDEFMETH.PM_EXPRESSION_AND; break;
-                case ExpressionKind.LogicalAnd: pdm = PREDEFMETH.PM_EXPRESSION_ANDALSO; break;
-                case ExpressionKind.LogicalOr: pdm = PREDEFMETH.PM_EXPRESSION_ORELSE; break;
-                case ExpressionKind.StringEq: pdm = PREDEFMETH.PM_EXPRESSION_EQUAL; break;
-                case ExpressionKind.Eq: pdm = PREDEFMETH.PM_EXPRESSION_EQUAL; break;
-                case ExpressionKind.StringNotEq: pdm = PREDEFMETH.PM_EXPRESSION_NOTEQUAL; break;
-                case ExpressionKind.NotEq: pdm = PREDEFMETH.PM_EXPRESSION_NOTEQUAL; break;
-                case ExpressionKind.GreaterThanOrEqual: pdm = PREDEFMETH.PM_EXPRESSION_GREATERTHANOREQUAL; break;
-                case ExpressionKind.LessThanOrEqual: pdm = PREDEFMETH.PM_EXPRESSION_LESSTHANOREQUAL; break;
-                case ExpressionKind.LessThan: pdm = PREDEFMETH.PM_EXPRESSION_LESSTHAN; break;
-                case ExpressionKind.GreaterThan: pdm = PREDEFMETH.PM_EXPRESSION_GREATERTHAN; break;
-                case ExpressionKind.Modulo: pdm = PREDEFMETH.PM_EXPRESSION_MODULO; break;
-                case ExpressionKind.Divide: pdm = PREDEFMETH.PM_EXPRESSION_DIVIDE; break;
-                case ExpressionKind.Multiply:
-                    pdm = expr.isChecked() ? PREDEFMETH.PM_EXPRESSION_MULTIPLYCHECKED : PREDEFMETH.PM_EXPRESSION_MULTIPLY;
-                    break;
-                case ExpressionKind.Subtract:
-                    pdm = expr.isChecked() ? PREDEFMETH.PM_EXPRESSION_SUBTRACTCHECKED : PREDEFMETH.PM_EXPRESSION_SUBTRACT;
-                    break;
-                case ExpressionKind.Add:
-                    pdm = expr.isChecked() ? PREDEFMETH.PM_EXPRESSION_ADDCHECKED : PREDEFMETH.PM_EXPRESSION_ADD;
-                    break;
+                ExpressionKind.LeftShirt => PREDEFMETH.PM_EXPRESSION_LEFTSHIFT,
+                ExpressionKind.RightShift => PREDEFMETH.PM_EXPRESSION_RIGHTSHIFT,
+                ExpressionKind.BitwiseExclusiveOr => PREDEFMETH.PM_EXPRESSION_EXCLUSIVEOR,
+                ExpressionKind.BitwiseOr => PREDEFMETH.PM_EXPRESSION_OR,
+                ExpressionKind.BitwiseAnd => PREDEFMETH.PM_EXPRESSION_AND,
+                ExpressionKind.LogicalAnd => PREDEFMETH.PM_EXPRESSION_ANDALSO,
+                ExpressionKind.LogicalOr => PREDEFMETH.PM_EXPRESSION_ORELSE,
+                ExpressionKind.StringEq => PREDEFMETH.PM_EXPRESSION_EQUAL,
+                ExpressionKind.Eq => PREDEFMETH.PM_EXPRESSION_EQUAL,
+                ExpressionKind.StringNotEq => PREDEFMETH.PM_EXPRESSION_NOTEQUAL,
+                ExpressionKind.NotEq => PREDEFMETH.PM_EXPRESSION_NOTEQUAL,
+                ExpressionKind.GreaterThanOrEqual => PREDEFMETH.PM_EXPRESSION_GREATERTHANOREQUAL,
+                ExpressionKind.LessThanOrEqual => PREDEFMETH.PM_EXPRESSION_LESSTHANOREQUAL,
+                ExpressionKind.LessThan => PREDEFMETH.PM_EXPRESSION_LESSTHAN,
+                ExpressionKind.GreaterThan => PREDEFMETH.PM_EXPRESSION_GREATERTHAN,
+                ExpressionKind.Modulo => PREDEFMETH.PM_EXPRESSION_MODULO,
+                ExpressionKind.Divide => PREDEFMETH.PM_EXPRESSION_DIVIDE,
+                ExpressionKind.Multiply => expr.isChecked() ? PREDEFMETH.PM_EXPRESSION_MULTIPLYCHECKED : PREDEFMETH.PM_EXPRESSION_MULTIPLY,
+                ExpressionKind.Subtract => expr.isChecked() ? PREDEFMETH.PM_EXPRESSION_SUBTRACTCHECKED : PREDEFMETH.PM_EXPRESSION_SUBTRACT,
+                ExpressionKind.Add => expr.isChecked() ? PREDEFMETH.PM_EXPRESSION_ADDCHECKED : PREDEFMETH.PM_EXPRESSION_ADD,
 
-                default:
-                    throw Error.InternalCompilerError();
-            }
+                _ => throw Error.InternalCompilerError(),
+            };
             Expr origL = expr.OptionalLeftChild;
             Expr origR = expr.OptionalRightChild;
             Debug.Assert(origL != null);
@@ -597,23 +589,21 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private Expr GenerateUserDefinedComparisonOperator(ExprBinOp expr)
         {
             Debug.Assert(expr != null);
-            PREDEFMETH pdm;
 
-            switch (expr.Kind)
+            PREDEFMETH pdm = expr.Kind switch
             {
-                case ExpressionKind.StringEq: pdm = PREDEFMETH.PM_EXPRESSION_EQUAL_USER_DEFINED; break;
-                case ExpressionKind.StringNotEq: pdm = PREDEFMETH.PM_EXPRESSION_NOTEQUAL_USER_DEFINED; break;
-                case ExpressionKind.DelegateEq: pdm = PREDEFMETH.PM_EXPRESSION_EQUAL_USER_DEFINED; break;
-                case ExpressionKind.DelegateNotEq: pdm = PREDEFMETH.PM_EXPRESSION_NOTEQUAL_USER_DEFINED; break;
-                case ExpressionKind.Eq: pdm = PREDEFMETH.PM_EXPRESSION_EQUAL_USER_DEFINED; break;
-                case ExpressionKind.NotEq: pdm = PREDEFMETH.PM_EXPRESSION_NOTEQUAL_USER_DEFINED; break;
-                case ExpressionKind.LessThanOrEqual: pdm = PREDEFMETH.PM_EXPRESSION_LESSTHANOREQUAL_USER_DEFINED; break;
-                case ExpressionKind.LessThan: pdm = PREDEFMETH.PM_EXPRESSION_LESSTHAN_USER_DEFINED; break;
-                case ExpressionKind.GreaterThanOrEqual: pdm = PREDEFMETH.PM_EXPRESSION_GREATERTHANOREQUAL_USER_DEFINED; break;
-                case ExpressionKind.GreaterThan: pdm = PREDEFMETH.PM_EXPRESSION_GREATERTHAN_USER_DEFINED; break;
-                default:
-                    throw Error.InternalCompilerError();
-            }
+                ExpressionKind.StringEq => PREDEFMETH.PM_EXPRESSION_EQUAL_USER_DEFINED,
+                ExpressionKind.StringNotEq => PREDEFMETH.PM_EXPRESSION_NOTEQUAL_USER_DEFINED,
+                ExpressionKind.DelegateEq => PREDEFMETH.PM_EXPRESSION_EQUAL_USER_DEFINED,
+                ExpressionKind.DelegateNotEq => PREDEFMETH.PM_EXPRESSION_NOTEQUAL_USER_DEFINED,
+                ExpressionKind.Eq => PREDEFMETH.PM_EXPRESSION_EQUAL_USER_DEFINED,
+                ExpressionKind.NotEq => PREDEFMETH.PM_EXPRESSION_NOTEQUAL_USER_DEFINED,
+                ExpressionKind.LessThanOrEqual => PREDEFMETH.PM_EXPRESSION_LESSTHANOREQUAL_USER_DEFINED,
+                ExpressionKind.LessThan => PREDEFMETH.PM_EXPRESSION_LESSTHAN_USER_DEFINED,
+                ExpressionKind.GreaterThanOrEqual => PREDEFMETH.PM_EXPRESSION_GREATERTHANOREQUAL_USER_DEFINED,
+                ExpressionKind.GreaterThan => PREDEFMETH.PM_EXPRESSION_GREATERTHAN_USER_DEFINED,
+                _ => throw Error.InternalCompilerError(),
+            };
             Expr p1 = expr.OptionalLeftChild;
             Expr p2 = expr.OptionalRightChild;
             if (expr.OptionalUserDefinedCall != null)

@@ -2294,19 +2294,12 @@ namespace System.DirectoryServices.ActiveDirectory
                 return SidType.FakeObject;
             }
 
-            switch (rid)
+            return rid switch
             {
-                case 21:
-                    // Account SID
-                    return SidType.RealObject;
-
-                case 32:
-                    // BUILTIN SID
-                    return SidType.RealObjectFakeDomain;
-
-                default:
-                    return SidType.FakeObject;
-            }
+                21 => SidType.RealObject, // Account SID
+                32 => SidType.RealObjectFakeDomain, // BUILTIN SID
+                _ => SidType.FakeObject,
+            };
         }
 
 

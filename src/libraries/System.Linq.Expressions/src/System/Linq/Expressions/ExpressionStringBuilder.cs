@@ -699,16 +699,14 @@ namespace System.Linq.Expressions
 
         protected internal override Expression VisitGoto(GotoExpression node)
         {
-            string op;
-            switch (node.Kind)
+            string op = node.Kind switch
             {
-                case GotoExpressionKind.Goto: op = "goto"; break;
-                case GotoExpressionKind.Break: op = "break"; break;
-                case GotoExpressionKind.Continue: op = "continue"; break;
-                case GotoExpressionKind.Return: op = "return"; break;
-                default:
-                    throw new InvalidOperationException();
-            }
+                GotoExpressionKind.Goto => "goto",
+                GotoExpressionKind.Break => "break",
+                GotoExpressionKind.Continue => "continue",
+                GotoExpressionKind.Return => "return",
+                _ => throw new InvalidOperationException(),
+            };
             Out(op);
             Out(' ');
             DumpLabel(node.Target);

@@ -180,15 +180,12 @@ namespace Microsoft.Internal.Collections
             ICollection collection = source as ICollection;
             if (collection != null)
             {
-                switch (collection.Count)
+                return collection.Count switch
                 {
-                    case 0:
-                        return EnumerableCardinality.Zero;
-                    case 1:
-                        return EnumerableCardinality.One;
-                    default:
-                        return EnumerableCardinality.TwoOrMore;
-                }
+                    0 => EnumerableCardinality.Zero,
+                    1 => EnumerableCardinality.One,
+                    _ => EnumerableCardinality.TwoOrMore,
+                };
             }
 
             using (var enumerator = source.GetEnumerator())

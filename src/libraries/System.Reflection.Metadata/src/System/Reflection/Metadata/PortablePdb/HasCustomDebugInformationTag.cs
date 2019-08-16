@@ -130,66 +130,39 @@ namespace System.Reflection.Metadata.Ecma335
         {
             uint tokenType = handle.Type;
             uint rowId = (uint)handle.RowId;
-            switch (tokenType >> TokenTypeIds.RowIdBitCount)
+            return (tokenType >> TokenTypeIds.RowIdBitCount) switch
             {
-                case TokenTypeIds.MethodDef >> TokenTypeIds.RowIdBitCount:
-                    return rowId << NumberOfBits | MethodDef;
-                case TokenTypeIds.FieldDef >> TokenTypeIds.RowIdBitCount:
-                    return rowId << NumberOfBits | Field;
-                case TokenTypeIds.TypeRef >> TokenTypeIds.RowIdBitCount:
-                    return rowId << NumberOfBits | TypeRef;
-                case TokenTypeIds.TypeDef >> TokenTypeIds.RowIdBitCount:
-                    return rowId << NumberOfBits | TypeDef;
-                case TokenTypeIds.ParamDef >> TokenTypeIds.RowIdBitCount:
-                    return rowId << NumberOfBits | Param;
-                case TokenTypeIds.InterfaceImpl >> TokenTypeIds.RowIdBitCount:
-                    return rowId << NumberOfBits | InterfaceImpl;
-                case TokenTypeIds.MemberRef >> TokenTypeIds.RowIdBitCount:
-                    return rowId << NumberOfBits | MemberRef;
-                case TokenTypeIds.Module >> TokenTypeIds.RowIdBitCount:
-                    return rowId << NumberOfBits | Module;
-                case TokenTypeIds.DeclSecurity >> TokenTypeIds.RowIdBitCount:
-                    return rowId << NumberOfBits | DeclSecurity;
-                case TokenTypeIds.Property >> TokenTypeIds.RowIdBitCount:
-                    return rowId << NumberOfBits | Property;
-                case TokenTypeIds.Event >> TokenTypeIds.RowIdBitCount:
-                    return rowId << NumberOfBits | Event;
-                case TokenTypeIds.Signature >> TokenTypeIds.RowIdBitCount:
-                    return rowId << NumberOfBits | StandAloneSig;
-                case TokenTypeIds.ModuleRef >> TokenTypeIds.RowIdBitCount:
-                    return rowId << NumberOfBits | ModuleRef;
-                case TokenTypeIds.TypeSpec >> TokenTypeIds.RowIdBitCount:
-                    return rowId << NumberOfBits | TypeSpec;
-                case TokenTypeIds.Assembly >> TokenTypeIds.RowIdBitCount:
-                    return rowId << NumberOfBits | Assembly;
-                case TokenTypeIds.AssemblyRef >> TokenTypeIds.RowIdBitCount:
-                    return rowId << NumberOfBits | AssemblyRef;
-                case TokenTypeIds.File >> TokenTypeIds.RowIdBitCount:
-                    return rowId << NumberOfBits | File;
-                case TokenTypeIds.ExportedType >> TokenTypeIds.RowIdBitCount:
-                    return rowId << NumberOfBits | ExportedType;
-                case TokenTypeIds.ManifestResource >> TokenTypeIds.RowIdBitCount:
-                    return rowId << NumberOfBits | ManifestResource;
-                case TokenTypeIds.GenericParam >> TokenTypeIds.RowIdBitCount:
-                    return rowId << NumberOfBits | GenericParam;
-                case TokenTypeIds.GenericParamConstraint >> TokenTypeIds.RowIdBitCount:
-                    return rowId << NumberOfBits | GenericParamConstraint;
-                case TokenTypeIds.MethodSpec >> TokenTypeIds.RowIdBitCount:
-                    return rowId << NumberOfBits | MethodSpec;
+                TokenTypeIds.MethodDef >> TokenTypeIds.RowIdBitCount => rowId << NumberOfBits | MethodDef,
+                TokenTypeIds.FieldDef >> TokenTypeIds.RowIdBitCount => rowId << NumberOfBits | Field,
+                TokenTypeIds.TypeRef >> TokenTypeIds.RowIdBitCount => rowId << NumberOfBits | TypeRef,
+                TokenTypeIds.TypeDef >> TokenTypeIds.RowIdBitCount => rowId << NumberOfBits | TypeDef,
+                TokenTypeIds.ParamDef >> TokenTypeIds.RowIdBitCount => rowId << NumberOfBits | Param,
+                TokenTypeIds.InterfaceImpl >> TokenTypeIds.RowIdBitCount => rowId << NumberOfBits | InterfaceImpl,
+                TokenTypeIds.MemberRef >> TokenTypeIds.RowIdBitCount => rowId << NumberOfBits | MemberRef,
+                TokenTypeIds.Module >> TokenTypeIds.RowIdBitCount => rowId << NumberOfBits | Module,
+                TokenTypeIds.DeclSecurity >> TokenTypeIds.RowIdBitCount => rowId << NumberOfBits | DeclSecurity,
+                TokenTypeIds.Property >> TokenTypeIds.RowIdBitCount => rowId << NumberOfBits | Property,
+                TokenTypeIds.Event >> TokenTypeIds.RowIdBitCount => rowId << NumberOfBits | Event,
+                TokenTypeIds.Signature >> TokenTypeIds.RowIdBitCount => rowId << NumberOfBits | StandAloneSig,
+                TokenTypeIds.ModuleRef >> TokenTypeIds.RowIdBitCount => rowId << NumberOfBits | ModuleRef,
+                TokenTypeIds.TypeSpec >> TokenTypeIds.RowIdBitCount => rowId << NumberOfBits | TypeSpec,
+                TokenTypeIds.Assembly >> TokenTypeIds.RowIdBitCount => rowId << NumberOfBits | Assembly,
+                TokenTypeIds.AssemblyRef >> TokenTypeIds.RowIdBitCount => rowId << NumberOfBits | AssemblyRef,
+                TokenTypeIds.File >> TokenTypeIds.RowIdBitCount => rowId << NumberOfBits | File,
+                TokenTypeIds.ExportedType >> TokenTypeIds.RowIdBitCount => rowId << NumberOfBits | ExportedType,
+                TokenTypeIds.ManifestResource >> TokenTypeIds.RowIdBitCount => rowId << NumberOfBits | ManifestResource,
+                TokenTypeIds.GenericParam >> TokenTypeIds.RowIdBitCount => rowId << NumberOfBits | GenericParam,
+                TokenTypeIds.GenericParamConstraint >> TokenTypeIds.RowIdBitCount => rowId << NumberOfBits | GenericParamConstraint,
+                TokenTypeIds.MethodSpec >> TokenTypeIds.RowIdBitCount => rowId << NumberOfBits | MethodSpec,
 
-                case TokenTypeIds.Document >> TokenTypeIds.RowIdBitCount:
-                    return rowId << NumberOfBits | Document;
-                case TokenTypeIds.LocalScope >> TokenTypeIds.RowIdBitCount:
-                    return rowId << NumberOfBits | LocalScope;
-                case TokenTypeIds.LocalVariable >> TokenTypeIds.RowIdBitCount:
-                    return rowId << NumberOfBits | LocalVariable;
-                case TokenTypeIds.LocalConstant >> TokenTypeIds.RowIdBitCount:
-                    return rowId << NumberOfBits | LocalConstant;
-                case TokenTypeIds.ImportScope >> TokenTypeIds.RowIdBitCount:
-                    return rowId << NumberOfBits | Import;
-            }
+                TokenTypeIds.Document >> TokenTypeIds.RowIdBitCount => rowId << NumberOfBits | Document,
+                TokenTypeIds.LocalScope >> TokenTypeIds.RowIdBitCount => rowId << NumberOfBits | LocalScope,
+                TokenTypeIds.LocalVariable >> TokenTypeIds.RowIdBitCount => rowId << NumberOfBits | LocalVariable,
+                TokenTypeIds.LocalConstant >> TokenTypeIds.RowIdBitCount => rowId << NumberOfBits | LocalConstant,
+                TokenTypeIds.ImportScope >> TokenTypeIds.RowIdBitCount => rowId << NumberOfBits | Import,
 
-            return 0;
+                _ => 0,
+            };
         }
     }
 }

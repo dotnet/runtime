@@ -55,13 +55,13 @@ namespace System.Xml.Xsl.Qil
         {
             get
             {
-                switch (index)
+                return index switch
                 {
-                    case 0: return _arguments;
-                    case 1: return _definition;
-                    case 2: return _sideEffects;
-                    default: throw new IndexOutOfRangeException();
-                }
+                    0 => _arguments,
+                    1 => _definition,
+                    2 => _sideEffects,
+                    _ => throw new IndexOutOfRangeException(),
+                };
             }
             set
             {

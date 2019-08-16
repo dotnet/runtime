@@ -317,20 +317,13 @@ namespace System.DirectoryServices.AccountManagement
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "Group", "GetValueForProperty: name=" + propertyName);
 
-            switch (propertyName)
+            return propertyName switch
             {
-                case PropertyNames.GroupIsSecurityGroup:
-                    return _isSecurityGroup;
-
-                case PropertyNames.GroupGroupScope:
-                    return _groupScope;
-
-                case PropertyNames.GroupMembers:
-                    return _members;
-
-                default:
-                    return base.GetValueForProperty(propertyName);
-            }
+                PropertyNames.GroupIsSecurityGroup => _isSecurityGroup,
+                PropertyNames.GroupGroupScope => _groupScope,
+                PropertyNames.GroupMembers => _members,
+                _ => base.GetValueForProperty(propertyName),
+            };
         }
 
         // Reset all change-tracking status for all properties on the object to "unchanged".

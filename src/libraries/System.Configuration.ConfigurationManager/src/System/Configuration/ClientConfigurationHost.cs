@@ -355,22 +355,19 @@ namespace System.Configuration
         {
             if (!IsDefinitionAllowed(configPath, allowDefinition, allowExeDefinition))
             {
-                switch (allowExeDefinition)
+                throw allowExeDefinition switch
                 {
-                    case ConfigurationAllowExeDefinition.MachineOnly:
-                        throw new ConfigurationErrorsException(
-                            SR.Config_allow_exedefinition_error_machine, errorInfo);
-                    case ConfigurationAllowExeDefinition.MachineToApplication:
-                        throw new ConfigurationErrorsException(
-                            SR.Config_allow_exedefinition_error_application, errorInfo);
-                    case ConfigurationAllowExeDefinition.MachineToRoamingUser:
-                        throw new ConfigurationErrorsException(
-                            SR.Config_allow_exedefinition_error_roaminguser, errorInfo);
-                    default:
-                        // If we have extended ConfigurationAllowExeDefinition
-                        // make sure to update this switch accordingly
-                        throw ExceptionUtil.UnexpectedError("ClientConfigurationHost::VerifyDefinitionAllowed");
-                }
+                    ConfigurationAllowExeDefinition.MachineOnly => new ConfigurationErrorsException(
+                           SR.Config_allow_exedefinition_error_machine, errorInfo),
+                    ConfigurationAllowExeDefinition.MachineToApplication => new ConfigurationErrorsException(
+                            SR.Config_allow_exedefinition_error_application, errorInfo),
+                    ConfigurationAllowExeDefinition.MachineToRoamingUser => new ConfigurationErrorsException(
+                            SR.Config_allow_exedefinition_error_roaminguser, errorInfo),
+
+                    // If we have extended ConfigurationAllowExeDefinition
+                    // make sure to update this switch accordingly
+                    _ => ExceptionUtil.UnexpectedError("ClientConfigurationHost::VerifyDefinitionAllowed"),
+                };
             }
         }
 

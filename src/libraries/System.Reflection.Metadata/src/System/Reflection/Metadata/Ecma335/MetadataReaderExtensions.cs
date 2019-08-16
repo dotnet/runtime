@@ -45,67 +45,66 @@ namespace System.Reflection.Metadata.Ecma335
                 throw new ArgumentNullException(nameof(reader));
             }
 
-            switch (tableIndex)
+            return tableIndex switch
             {
-                case TableIndex.Module: return reader.ModuleTable.RowSize;
-                case TableIndex.TypeRef: return reader.TypeRefTable.RowSize;
-                case TableIndex.TypeDef: return reader.TypeDefTable.RowSize;
-                case TableIndex.FieldPtr: return reader.FieldPtrTable.RowSize;
-                case TableIndex.Field: return reader.FieldTable.RowSize;
-                case TableIndex.MethodPtr: return reader.MethodPtrTable.RowSize;
-                case TableIndex.MethodDef: return reader.MethodDefTable.RowSize;
-                case TableIndex.ParamPtr: return reader.ParamPtrTable.RowSize;
-                case TableIndex.Param: return reader.ParamTable.RowSize;
-                case TableIndex.InterfaceImpl: return reader.InterfaceImplTable.RowSize;
-                case TableIndex.MemberRef: return reader.MemberRefTable.RowSize;
-                case TableIndex.Constant: return reader.ConstantTable.RowSize;
-                case TableIndex.CustomAttribute: return reader.CustomAttributeTable.RowSize;
-                case TableIndex.FieldMarshal: return reader.FieldMarshalTable.RowSize;
-                case TableIndex.DeclSecurity: return reader.DeclSecurityTable.RowSize;
-                case TableIndex.ClassLayout: return reader.ClassLayoutTable.RowSize;
-                case TableIndex.FieldLayout: return reader.FieldLayoutTable.RowSize;
-                case TableIndex.StandAloneSig: return reader.StandAloneSigTable.RowSize;
-                case TableIndex.EventMap: return reader.EventMapTable.RowSize;
-                case TableIndex.EventPtr: return reader.EventPtrTable.RowSize;
-                case TableIndex.Event: return reader.EventTable.RowSize;
-                case TableIndex.PropertyMap: return reader.PropertyMapTable.RowSize;
-                case TableIndex.PropertyPtr: return reader.PropertyPtrTable.RowSize;
-                case TableIndex.Property: return reader.PropertyTable.RowSize;
-                case TableIndex.MethodSemantics: return reader.MethodSemanticsTable.RowSize;
-                case TableIndex.MethodImpl: return reader.MethodImplTable.RowSize;
-                case TableIndex.ModuleRef: return reader.ModuleRefTable.RowSize;
-                case TableIndex.TypeSpec: return reader.TypeSpecTable.RowSize;
-                case TableIndex.ImplMap: return reader.ImplMapTable.RowSize;
-                case TableIndex.FieldRva: return reader.FieldRvaTable.RowSize;
-                case TableIndex.EncLog: return reader.EncLogTable.RowSize;
-                case TableIndex.EncMap: return reader.EncMapTable.RowSize;
-                case TableIndex.Assembly: return reader.AssemblyTable.RowSize;
-                case TableIndex.AssemblyProcessor: return reader.AssemblyProcessorTable.RowSize;
-                case TableIndex.AssemblyOS: return reader.AssemblyOSTable.RowSize;
-                case TableIndex.AssemblyRef: return reader.AssemblyRefTable.RowSize;
-                case TableIndex.AssemblyRefProcessor: return reader.AssemblyRefProcessorTable.RowSize;
-                case TableIndex.AssemblyRefOS: return reader.AssemblyRefOSTable.RowSize;
-                case TableIndex.File: return reader.FileTable.RowSize;
-                case TableIndex.ExportedType: return reader.ExportedTypeTable.RowSize;
-                case TableIndex.ManifestResource: return reader.ManifestResourceTable.RowSize;
-                case TableIndex.NestedClass: return reader.NestedClassTable.RowSize;
-                case TableIndex.GenericParam: return reader.GenericParamTable.RowSize;
-                case TableIndex.MethodSpec: return reader.MethodSpecTable.RowSize;
-                case TableIndex.GenericParamConstraint: return reader.GenericParamConstraintTable.RowSize;
+                TableIndex.Module => reader.ModuleTable.RowSize,
+                TableIndex.TypeRef => reader.TypeRefTable.RowSize,
+                TableIndex.TypeDef => reader.TypeDefTable.RowSize,
+                TableIndex.FieldPtr => reader.FieldPtrTable.RowSize,
+                TableIndex.Field => reader.FieldTable.RowSize,
+                TableIndex.MethodPtr => reader.MethodPtrTable.RowSize,
+                TableIndex.MethodDef => reader.MethodDefTable.RowSize,
+                TableIndex.ParamPtr => reader.ParamPtrTable.RowSize,
+                TableIndex.Param => reader.ParamTable.RowSize,
+                TableIndex.InterfaceImpl => reader.InterfaceImplTable.RowSize,
+                TableIndex.MemberRef => reader.MemberRefTable.RowSize,
+                TableIndex.Constant => reader.ConstantTable.RowSize,
+                TableIndex.CustomAttribute => reader.CustomAttributeTable.RowSize,
+                TableIndex.FieldMarshal => reader.FieldMarshalTable.RowSize,
+                TableIndex.DeclSecurity => reader.DeclSecurityTable.RowSize,
+                TableIndex.ClassLayout => reader.ClassLayoutTable.RowSize,
+                TableIndex.FieldLayout => reader.FieldLayoutTable.RowSize,
+                TableIndex.StandAloneSig => reader.StandAloneSigTable.RowSize,
+                TableIndex.EventMap => reader.EventMapTable.RowSize,
+                TableIndex.EventPtr => reader.EventPtrTable.RowSize,
+                TableIndex.Event => reader.EventTable.RowSize,
+                TableIndex.PropertyMap => reader.PropertyMapTable.RowSize,
+                TableIndex.PropertyPtr => reader.PropertyPtrTable.RowSize,
+                TableIndex.Property => reader.PropertyTable.RowSize,
+                TableIndex.MethodSemantics => reader.MethodSemanticsTable.RowSize,
+                TableIndex.MethodImpl => reader.MethodImplTable.RowSize,
+                TableIndex.ModuleRef => reader.ModuleRefTable.RowSize,
+                TableIndex.TypeSpec => reader.TypeSpecTable.RowSize,
+                TableIndex.ImplMap => reader.ImplMapTable.RowSize,
+                TableIndex.FieldRva => reader.FieldRvaTable.RowSize,
+                TableIndex.EncLog => reader.EncLogTable.RowSize,
+                TableIndex.EncMap => reader.EncMapTable.RowSize,
+                TableIndex.Assembly => reader.AssemblyTable.RowSize,
+                TableIndex.AssemblyProcessor => reader.AssemblyProcessorTable.RowSize,
+                TableIndex.AssemblyOS => reader.AssemblyOSTable.RowSize,
+                TableIndex.AssemblyRef => reader.AssemblyRefTable.RowSize,
+                TableIndex.AssemblyRefProcessor => reader.AssemblyRefProcessorTable.RowSize,
+                TableIndex.AssemblyRefOS => reader.AssemblyRefOSTable.RowSize,
+                TableIndex.File => reader.FileTable.RowSize,
+                TableIndex.ExportedType => reader.ExportedTypeTable.RowSize,
+                TableIndex.ManifestResource => reader.ManifestResourceTable.RowSize,
+                TableIndex.NestedClass => reader.NestedClassTable.RowSize,
+                TableIndex.GenericParam => reader.GenericParamTable.RowSize,
+                TableIndex.MethodSpec => reader.MethodSpecTable.RowSize,
+                TableIndex.GenericParamConstraint => reader.GenericParamConstraintTable.RowSize,
 
                 // debug tables
-                case TableIndex.Document: return reader.DocumentTable.RowSize;
-                case TableIndex.MethodDebugInformation: return reader.MethodDebugInformationTable.RowSize;
-                case TableIndex.LocalScope: return reader.LocalScopeTable.RowSize;
-                case TableIndex.LocalVariable: return reader.LocalVariableTable.RowSize;
-                case TableIndex.LocalConstant: return reader.LocalConstantTable.RowSize;
-                case TableIndex.ImportScope: return reader.ImportScopeTable.RowSize;
-                case TableIndex.StateMachineMethod: return reader.StateMachineMethodTable.RowSize;
-                case TableIndex.CustomDebugInformation: return reader.CustomDebugInformationTable.RowSize;
+                TableIndex.Document => reader.DocumentTable.RowSize,
+                TableIndex.MethodDebugInformation => reader.MethodDebugInformationTable.RowSize,
+                TableIndex.LocalScope => reader.LocalScopeTable.RowSize,
+                TableIndex.LocalVariable => reader.LocalVariableTable.RowSize,
+                TableIndex.LocalConstant => reader.LocalConstantTable.RowSize,
+                TableIndex.ImportScope => reader.ImportScopeTable.RowSize,
+                TableIndex.StateMachineMethod => reader.StateMachineMethodTable.RowSize,
+                TableIndex.CustomDebugInformation => reader.CustomDebugInformationTable.RowSize,
 
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(tableIndex));
-            }
+                _ => throw new ArgumentOutOfRangeException(nameof(tableIndex)),
+            };
         }
 
         /// <summary>
@@ -127,67 +126,66 @@ namespace System.Reflection.Metadata.Ecma335
         {
             Debug.Assert(reader != null);
 
-            switch (tableIndex)
+            return tableIndex switch
             {
-                case TableIndex.Module: return reader.ModuleTable.Block;
-                case TableIndex.TypeRef: return reader.TypeRefTable.Block;
-                case TableIndex.TypeDef: return reader.TypeDefTable.Block;
-                case TableIndex.FieldPtr: return reader.FieldPtrTable.Block;
-                case TableIndex.Field: return reader.FieldTable.Block;
-                case TableIndex.MethodPtr: return reader.MethodPtrTable.Block;
-                case TableIndex.MethodDef: return reader.MethodDefTable.Block;
-                case TableIndex.ParamPtr: return reader.ParamPtrTable.Block;
-                case TableIndex.Param: return reader.ParamTable.Block;
-                case TableIndex.InterfaceImpl: return reader.InterfaceImplTable.Block;
-                case TableIndex.MemberRef: return reader.MemberRefTable.Block;
-                case TableIndex.Constant: return reader.ConstantTable.Block;
-                case TableIndex.CustomAttribute: return reader.CustomAttributeTable.Block;
-                case TableIndex.FieldMarshal: return reader.FieldMarshalTable.Block;
-                case TableIndex.DeclSecurity: return reader.DeclSecurityTable.Block;
-                case TableIndex.ClassLayout: return reader.ClassLayoutTable.Block;
-                case TableIndex.FieldLayout: return reader.FieldLayoutTable.Block;
-                case TableIndex.StandAloneSig: return reader.StandAloneSigTable.Block;
-                case TableIndex.EventMap: return reader.EventMapTable.Block;
-                case TableIndex.EventPtr: return reader.EventPtrTable.Block;
-                case TableIndex.Event: return reader.EventTable.Block;
-                case TableIndex.PropertyMap: return reader.PropertyMapTable.Block;
-                case TableIndex.PropertyPtr: return reader.PropertyPtrTable.Block;
-                case TableIndex.Property: return reader.PropertyTable.Block;
-                case TableIndex.MethodSemantics: return reader.MethodSemanticsTable.Block;
-                case TableIndex.MethodImpl: return reader.MethodImplTable.Block;
-                case TableIndex.ModuleRef: return reader.ModuleRefTable.Block;
-                case TableIndex.TypeSpec: return reader.TypeSpecTable.Block;
-                case TableIndex.ImplMap: return reader.ImplMapTable.Block;
-                case TableIndex.FieldRva: return reader.FieldRvaTable.Block;
-                case TableIndex.EncLog: return reader.EncLogTable.Block;
-                case TableIndex.EncMap: return reader.EncMapTable.Block;
-                case TableIndex.Assembly: return reader.AssemblyTable.Block;
-                case TableIndex.AssemblyProcessor: return reader.AssemblyProcessorTable.Block;
-                case TableIndex.AssemblyOS: return reader.AssemblyOSTable.Block;
-                case TableIndex.AssemblyRef: return reader.AssemblyRefTable.Block;
-                case TableIndex.AssemblyRefProcessor: return reader.AssemblyRefProcessorTable.Block;
-                case TableIndex.AssemblyRefOS: return reader.AssemblyRefOSTable.Block;
-                case TableIndex.File: return reader.FileTable.Block;
-                case TableIndex.ExportedType: return reader.ExportedTypeTable.Block;
-                case TableIndex.ManifestResource: return reader.ManifestResourceTable.Block;
-                case TableIndex.NestedClass: return reader.NestedClassTable.Block;
-                case TableIndex.GenericParam: return reader.GenericParamTable.Block;
-                case TableIndex.MethodSpec: return reader.MethodSpecTable.Block;
-                case TableIndex.GenericParamConstraint: return reader.GenericParamConstraintTable.Block;
+                TableIndex.Module => reader.ModuleTable.Block,
+                TableIndex.TypeRef => reader.TypeRefTable.Block,
+                TableIndex.TypeDef => reader.TypeDefTable.Block,
+                TableIndex.FieldPtr => reader.FieldPtrTable.Block,
+                TableIndex.Field => reader.FieldTable.Block,
+                TableIndex.MethodPtr => reader.MethodPtrTable.Block,
+                TableIndex.MethodDef => reader.MethodDefTable.Block,
+                TableIndex.ParamPtr => reader.ParamPtrTable.Block,
+                TableIndex.Param => reader.ParamTable.Block,
+                TableIndex.InterfaceImpl => reader.InterfaceImplTable.Block,
+                TableIndex.MemberRef => reader.MemberRefTable.Block,
+                TableIndex.Constant => reader.ConstantTable.Block,
+                TableIndex.CustomAttribute => reader.CustomAttributeTable.Block,
+                TableIndex.FieldMarshal => reader.FieldMarshalTable.Block,
+                TableIndex.DeclSecurity => reader.DeclSecurityTable.Block,
+                TableIndex.ClassLayout => reader.ClassLayoutTable.Block,
+                TableIndex.FieldLayout => reader.FieldLayoutTable.Block,
+                TableIndex.StandAloneSig => reader.StandAloneSigTable.Block,
+                TableIndex.EventMap => reader.EventMapTable.Block,
+                TableIndex.EventPtr => reader.EventPtrTable.Block,
+                TableIndex.Event => reader.EventTable.Block,
+                TableIndex.PropertyMap => reader.PropertyMapTable.Block,
+                TableIndex.PropertyPtr => reader.PropertyPtrTable.Block,
+                TableIndex.Property => reader.PropertyTable.Block,
+                TableIndex.MethodSemantics => reader.MethodSemanticsTable.Block,
+                TableIndex.MethodImpl => reader.MethodImplTable.Block,
+                TableIndex.ModuleRef => reader.ModuleRefTable.Block,
+                TableIndex.TypeSpec => reader.TypeSpecTable.Block,
+                TableIndex.ImplMap => reader.ImplMapTable.Block,
+                TableIndex.FieldRva => reader.FieldRvaTable.Block,
+                TableIndex.EncLog => reader.EncLogTable.Block,
+                TableIndex.EncMap => reader.EncMapTable.Block,
+                TableIndex.Assembly => reader.AssemblyTable.Block,
+                TableIndex.AssemblyProcessor => reader.AssemblyProcessorTable.Block,
+                TableIndex.AssemblyOS => reader.AssemblyOSTable.Block,
+                TableIndex.AssemblyRef => reader.AssemblyRefTable.Block,
+                TableIndex.AssemblyRefProcessor => reader.AssemblyRefProcessorTable.Block,
+                TableIndex.AssemblyRefOS => reader.AssemblyRefOSTable.Block,
+                TableIndex.File => reader.FileTable.Block,
+                TableIndex.ExportedType => reader.ExportedTypeTable.Block,
+                TableIndex.ManifestResource => reader.ManifestResourceTable.Block,
+                TableIndex.NestedClass => reader.NestedClassTable.Block,
+                TableIndex.GenericParam => reader.GenericParamTable.Block,
+                TableIndex.MethodSpec => reader.MethodSpecTable.Block,
+                TableIndex.GenericParamConstraint => reader.GenericParamConstraintTable.Block,
 
                 // debug tables
-                case TableIndex.Document: return reader.DocumentTable.Block;
-                case TableIndex.MethodDebugInformation: return reader.MethodDebugInformationTable.Block;
-                case TableIndex.LocalScope: return reader.LocalScopeTable.Block;
-                case TableIndex.LocalVariable: return reader.LocalVariableTable.Block;
-                case TableIndex.LocalConstant: return reader.LocalConstantTable.Block;
-                case TableIndex.ImportScope: return reader.ImportScopeTable.Block;
-                case TableIndex.StateMachineMethod: return reader.StateMachineMethodTable.Block;
-                case TableIndex.CustomDebugInformation: return reader.CustomDebugInformationTable.Block;
+                TableIndex.Document => reader.DocumentTable.Block,
+                TableIndex.MethodDebugInformation => reader.MethodDebugInformationTable.Block,
+                TableIndex.LocalScope => reader.LocalScopeTable.Block,
+                TableIndex.LocalVariable => reader.LocalVariableTable.Block,
+                TableIndex.LocalConstant => reader.LocalConstantTable.Block,
+                TableIndex.ImportScope => reader.ImportScopeTable.Block,
+                TableIndex.StateMachineMethod => reader.StateMachineMethodTable.Block,
+                TableIndex.CustomDebugInformation => reader.CustomDebugInformationTable.Block,
 
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(tableIndex));
-            }
+                _ => throw new ArgumentOutOfRangeException(nameof(tableIndex)),
+            };
         }
 
         /// <summary>
@@ -229,23 +227,14 @@ namespace System.Reflection.Metadata.Ecma335
         {
             Debug.Assert(reader != null);
 
-            switch (heapIndex)
+            return heapIndex switch
             {
-                case HeapIndex.UserString:
-                    return reader.UserStringHeap.Block;
-
-                case HeapIndex.String:
-                    return reader.StringHeap.Block;
-
-                case HeapIndex.Blob:
-                    return reader.BlobHeap.Block;
-
-                case HeapIndex.Guid:
-                    return reader.GuidHeap.Block;
-
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(heapIndex));
-            }
+                HeapIndex.UserString => reader.UserStringHeap.Block,
+                HeapIndex.String => reader.StringHeap.Block,
+                HeapIndex.Blob => reader.BlobHeap.Block,
+                HeapIndex.Guid => reader.GuidHeap.Block,
+                _ => throw new ArgumentOutOfRangeException(nameof(heapIndex)),
+            };
         }
 
         /// <summary>
@@ -401,21 +390,13 @@ namespace System.Reflection.Metadata.Ecma335
 
                 case HandleKind.TypeReference:
                     var treatment = reader.GetTypeReference((TypeReferenceHandle)typeHandle).SignatureTreatment;
-                    switch (treatment)
+                    return treatment switch
                     {
-                        case TypeRefSignatureTreatment.ProjectedToClass:
-                            return SignatureTypeKind.Class;
-
-                        case TypeRefSignatureTreatment.ProjectedToValueType:
-                            return SignatureTypeKind.ValueType;
-
-                        case TypeRefSignatureTreatment.None:
-                            return typeKind;
-
-                        default:
-                            throw ExceptionUtilities.UnexpectedValue(treatment);
-                    }
-
+                        TypeRefSignatureTreatment.ProjectedToClass => SignatureTypeKind.Class,
+                        TypeRefSignatureTreatment.ProjectedToValueType => SignatureTypeKind.ValueType,
+                        TypeRefSignatureTreatment.None => typeKind,
+                        _ => throw ExceptionUtilities.UnexpectedValue(treatment),
+                    };
                 case HandleKind.TypeSpecification:
                     // TODO: https://github.com/dotnet/corefx/issues/8139
                     // We need more work here in differentiating case because instantiations can project class

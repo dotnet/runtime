@@ -1594,26 +1594,17 @@ namespace System.Text.RegularExpressions
         /*
          * Returns ReNode type for zero-length assertions with a \ code.
          */
-        private int TypeFromCode(char ch)
-        {
-            switch (ch)
+        private int TypeFromCode(char ch) =>
+            ch switch
             {
-                case 'b':
-                    return UseOptionE() ? RegexNode.ECMABoundary : RegexNode.Boundary;
-                case 'B':
-                    return UseOptionE() ? RegexNode.NonECMABoundary : RegexNode.Nonboundary;
-                case 'A':
-                    return RegexNode.Beginning;
-                case 'G':
-                    return RegexNode.Start;
-                case 'Z':
-                    return RegexNode.EndZ;
-                case 'z':
-                    return RegexNode.End;
-                default:
-                    return RegexNode.Nothing;
-            }
-        }
+                'b' => UseOptionE() ? RegexNode.ECMABoundary : RegexNode.Boundary,
+                'B' => UseOptionE() ? RegexNode.NonECMABoundary : RegexNode.Nonboundary,
+                'A' => RegexNode.Beginning,
+                'G' => RegexNode.Start,
+                'Z' => RegexNode.EndZ,
+                'z' => RegexNode.End,
+                _ => RegexNode.Nothing,
+            };
 
         /*
          * Returns option bit from single-char (?cimsx) code.
@@ -1624,29 +1615,20 @@ namespace System.Text.RegularExpressions
             if (ch >= 'A' && ch <= 'Z')
                 ch += (char)('a' - 'A');
 
-            switch (ch)
+            return ch switch
             {
-                case 'i':
-                    return RegexOptions.IgnoreCase;
-                case 'r':
-                    return RegexOptions.RightToLeft;
-                case 'm':
-                    return RegexOptions.Multiline;
-                case 'n':
-                    return RegexOptions.ExplicitCapture;
-                case 's':
-                    return RegexOptions.Singleline;
-                case 'x':
-                    return RegexOptions.IgnorePatternWhitespace;
+                'i' => RegexOptions.IgnoreCase,
+                'r' => RegexOptions.RightToLeft,
+                'm' => RegexOptions.Multiline,
+                'n' => RegexOptions.ExplicitCapture,
+                's' => RegexOptions.Singleline,
+                'x' => RegexOptions.IgnorePatternWhitespace,
 #if DEBUG
-                case 'd':
-                    return RegexOptions.Debug;
+                'd' => RegexOptions.Debug,
 #endif
-                case 'e':
-                    return RegexOptions.ECMAScript;
-                default:
-                    return 0;
-            }
+                'e' => RegexOptions.ECMAScript,
+                _ => 0,
+            };
         }
 
         /*

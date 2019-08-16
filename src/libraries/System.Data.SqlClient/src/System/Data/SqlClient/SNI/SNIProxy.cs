@@ -588,22 +588,13 @@ namespace System.Data.SqlClient.SNI
             else
             {
                 // We trim before switching because " tcp : server , 1433 " is a valid data source
-                switch (splitByColon[0].Trim())
+                ConnectionProtocol = splitByColon[0].Trim() switch
                 {
-                    case TdsEnums.TCP:
-                        ConnectionProtocol = DataSource.Protocol.TCP;
-                        break;
-                    case TdsEnums.NP:
-                        ConnectionProtocol = DataSource.Protocol.NP;
-                        break;
-                    case TdsEnums.ADMIN:
-                        ConnectionProtocol = DataSource.Protocol.Admin;
-                        break;
-                    default:
-                        // None of the supported protocols were found. This may be a IPv6 address
-                        ConnectionProtocol = DataSource.Protocol.None;
-                        break;
-                }
+                    TdsEnums.TCP => DataSource.Protocol.TCP,
+                    TdsEnums.NP => DataSource.Protocol.NP,
+                    TdsEnums.ADMIN => DataSource.Protocol.Admin,
+                    _ => DataSource.Protocol.None, // None of the supported protocols were found. This may be an IPv6 address.
+                };
             }
         }
 

@@ -520,31 +520,20 @@ namespace System.Net
                 return "An exception when invoking Win32 API";
             }
 
-            switch ((Interop.SECURITY_STATUS)errorCode)
+            return (Interop.SECURITY_STATUS)errorCode switch
             {
-                case Interop.SECURITY_STATUS.InvalidHandle:
-                    return "Invalid handle";
-                case Interop.SECURITY_STATUS.InvalidToken:
-                    return "Invalid token";
-                case Interop.SECURITY_STATUS.ContinueNeeded:
-                    return "Continue needed";
-                case Interop.SECURITY_STATUS.IncompleteMessage:
-                    return "Message incomplete";
-                case Interop.SECURITY_STATUS.WrongPrincipal:
-                    return "Wrong principal";
-                case Interop.SECURITY_STATUS.TargetUnknown:
-                    return "Target unknown";
-                case Interop.SECURITY_STATUS.PackageNotFound:
-                    return "Package not found";
-                case Interop.SECURITY_STATUS.BufferNotEnough:
-                    return "Buffer not enough";
-                case Interop.SECURITY_STATUS.MessageAltered:
-                    return "Message altered";
-                case Interop.SECURITY_STATUS.UntrustedRoot:
-                    return "Untrusted root";
-                default:
-                    return "0x" + errorCode.ToString("x", NumberFormatInfo.InvariantInfo);
-            }
+                Interop.SECURITY_STATUS.InvalidHandle => "Invalid handle",
+                Interop.SECURITY_STATUS.InvalidToken => "Invalid token",
+                Interop.SECURITY_STATUS.ContinueNeeded => "Continue needed",
+                Interop.SECURITY_STATUS.IncompleteMessage => "Message incomplete",
+                Interop.SECURITY_STATUS.WrongPrincipal => "Wrong principal",
+                Interop.SECURITY_STATUS.TargetUnknown => "Target unknown",
+                Interop.SECURITY_STATUS.PackageNotFound => "Package not found",
+                Interop.SECURITY_STATUS.BufferNotEnough => "Buffer not enough",
+                Interop.SECURITY_STATUS.MessageAltered => "Message altered",
+                Interop.SECURITY_STATUS.UntrustedRoot => "Untrusted root",
+                _ => "0x" + errorCode.ToString("x", NumberFormatInfo.InvariantInfo),
+            };
         }
     } // class SSPIWrapper
 }

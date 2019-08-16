@@ -133,15 +133,14 @@ namespace System.Xml.Xsl.XPath
         public QilNode InvokeEqualityOperator(QilNodeType op, QilNode left, QilNode right)
         {
             Debug.Assert(op == QilNodeType.Eq || op == QilNodeType.Ne);
-            double opCode;
             left = TypeAssert(left, T.ItemS);
             right = TypeAssert(right, T.ItemS);
 
-            switch (op)
+            double opCode = op switch
             {
-                case QilNodeType.Eq: opCode = (double)XsltLibrary.ComparisonOperator.Eq; break;
-                default: opCode = (double)XsltLibrary.ComparisonOperator.Ne; break;
-            }
+                QilNodeType.Eq => (double)XsltLibrary.ComparisonOperator.Eq,
+                _ => (double)XsltLibrary.ComparisonOperator.Ne,
+            };
             return XsltInvokeEarlyBound(QName("EqualityOperator"),
                 XsltMethods.EqualityOperator, T.BooleanX, new QilNode[] { Double(opCode), left, right }
             );
@@ -150,17 +149,16 @@ namespace System.Xml.Xsl.XPath
         public QilNode InvokeRelationalOperator(QilNodeType op, QilNode left, QilNode right)
         {
             Debug.Assert(op == QilNodeType.Lt || op == QilNodeType.Le || op == QilNodeType.Gt || op == QilNodeType.Ge);
-            double opCode;
             left = TypeAssert(left, T.ItemS);
             right = TypeAssert(right, T.ItemS);
 
-            switch (op)
+            double opCode = op switch
             {
-                case QilNodeType.Lt: opCode = (double)XsltLibrary.ComparisonOperator.Lt; break;
-                case QilNodeType.Le: opCode = (double)XsltLibrary.ComparisonOperator.Le; break;
-                case QilNodeType.Gt: opCode = (double)XsltLibrary.ComparisonOperator.Gt; break;
-                default: opCode = (double)XsltLibrary.ComparisonOperator.Ge; break;
-            }
+                QilNodeType.Lt => (double)XsltLibrary.ComparisonOperator.Lt,
+                QilNodeType.Le => (double)XsltLibrary.ComparisonOperator.Le,
+                QilNodeType.Gt => (double)XsltLibrary.ComparisonOperator.Gt,
+                _ => (double)XsltLibrary.ComparisonOperator.Ge,
+            };
             return XsltInvokeEarlyBound(QName("RelationalOperator"),
                 XsltMethods.RelationalOperator, T.BooleanX, new QilNode[] { Double(opCode), left, right }
             );

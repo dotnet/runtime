@@ -697,37 +697,35 @@ namespace System.Xml
                 return false;
             int xntInt = s_xmlNodeType_To_XpathNodeType_Map[(int)(parent.NodeType)];
             Debug.Assert(xntInt != -1);
-            switch (xntInt)
+            return xntInt switch
             {
-                case (int)XPathNodeType.Root:
-                    return (xntChildInt == (int)XPathNodeType.Element ||
-                             xntChildInt == (int)XPathNodeType.Comment ||
-                             xntChildInt == (int)XPathNodeType.ProcessingInstruction);
-                case (int)XPathNodeType.Element:
-                    return (xntChildInt == (int)XPathNodeType.Element ||
-                             xntChildInt == (int)XPathNodeType.Text ||
-                             xntChildInt == (int)XPathNodeType.Comment ||
-                             xntChildInt == (int)XPathNodeType.Whitespace ||
-                             xntChildInt == (int)XPathNodeType.SignificantWhitespace ||
-                             xntChildInt == (int)XPathNodeType.ProcessingInstruction);
-                default:
-                    return false;
-            }
+                (int)XPathNodeType.Root =>
+                    (xntChildInt == (int)XPathNodeType.Element ||
+                     xntChildInt == (int)XPathNodeType.Comment ||
+                     xntChildInt == (int)XPathNodeType.ProcessingInstruction),
+
+                (int)XPathNodeType.Element =>
+                    (xntChildInt == (int)XPathNodeType.Element ||
+                     xntChildInt == (int)XPathNodeType.Text ||
+                     xntChildInt == (int)XPathNodeType.Comment ||
+                     xntChildInt == (int)XPathNodeType.Whitespace ||
+                     xntChildInt == (int)XPathNodeType.SignificantWhitespace ||
+                     xntChildInt == (int)XPathNodeType.ProcessingInstruction),
+
+                _ => false,
+            };
         }
 
         private bool IsValidChild(XmlNode parent, DataColumn c)
         {
             int xntInt = s_xmlNodeType_To_XpathNodeType_Map[(int)(parent.NodeType)];
             Debug.Assert(xntInt != -1);
-            switch (xntInt)
+            return xntInt switch
             {
-                case (int)XPathNodeType.Root:
-                    return c.ColumnMapping == MappingType.Element;
-                case (int)XPathNodeType.Element:
-                    return (c.ColumnMapping == MappingType.Element || c.ColumnMapping == MappingType.SimpleContent);
-                default:
-                    return false;
-            }
+                (int)XPathNodeType.Root => c.ColumnMapping == MappingType.Element,
+                (int)XPathNodeType.Element => (c.ColumnMapping == MappingType.Element || c.ColumnMapping == MappingType.SimpleContent),
+                _ => false,
+            };
         }
 
         internal bool MoveToNextSibling()

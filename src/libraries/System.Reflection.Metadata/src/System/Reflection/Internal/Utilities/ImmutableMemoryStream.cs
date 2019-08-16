@@ -78,23 +78,13 @@ namespace System.Reflection.Internal
             long target;
             try
             {
-                switch (origin)
+                target = origin switch
                 {
-                    case SeekOrigin.Begin:
-                        target = offset;
-                        break;
-
-                    case SeekOrigin.Current:
-                        target = checked(offset + _position);
-                        break;
-
-                    case SeekOrigin.End:
-                        target = checked(offset + _array.Length);
-                        break;
-
-                    default:
-                        throw new ArgumentOutOfRangeException(nameof(origin));
-                }
+                    SeekOrigin.Begin => offset,
+                    SeekOrigin.Current => checked(offset + _position),
+                    SeekOrigin.End => checked(offset + _array.Length),
+                    _ => throw new ArgumentOutOfRangeException(nameof(origin)),
+                };
             }
             catch (OverflowException)
             {

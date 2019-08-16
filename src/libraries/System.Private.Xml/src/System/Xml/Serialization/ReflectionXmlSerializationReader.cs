@@ -1163,58 +1163,25 @@ namespace System.Xml.Serialization
                 if (!mapping.TypeDesc.HasCustomFormatter)
                 {
                     string value = readFunc(funcState);
-                    object retObj;
-                    switch (mapping.TypeDesc.FormatterName)
+                    object retObj = mapping.TypeDesc.FormatterName switch
                     {
-                        case "Boolean":
-                            retObj = XmlConvert.ToBoolean(value);
-                            break;
-                        case "Int32":
-                            retObj = XmlConvert.ToInt32(value);
-                            break;
-                        case "Int16":
-                            retObj = XmlConvert.ToInt16(value);
-                            break;
-                        case "Int64":
-                            retObj = XmlConvert.ToInt64(value);
-                            break;
-                        case "Single":
-                            retObj = XmlConvert.ToSingle(value);
-                            break;
-                        case "Double":
-                            retObj = XmlConvert.ToDouble(value);
-                            break;
-                        case "Decimal":
-                            retObj = XmlConvert.ToDecimal(value);
-                            break;
-                        case "Byte":
-                            retObj = XmlConvert.ToByte(value);
-                            break;
-                        case "SByte":
-                            retObj = XmlConvert.ToSByte(value);
-                            break;
-                        case "UInt16":
-                            retObj = XmlConvert.ToUInt16(value);
-                            break;
-                        case "UInt32":
-                            retObj = XmlConvert.ToUInt32(value);
-                            break;
-                        case "UInt64":
-                            retObj = XmlConvert.ToUInt64(value);
-                            break;
-                        case "Guid":
-                            retObj = XmlConvert.ToGuid(value);
-                            break;
-                        case "Char":
-                            retObj = XmlConvert.ToChar(value);
-                            break;
-                        case "TimeSpan":
-                            retObj = XmlConvert.ToTimeSpan(value);
-                            break;
-                        default:
-                            throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, $"unknown FormatterName: {mapping.TypeDesc.FormatterName}"));
-                    }
-
+                        "Boolean" => XmlConvert.ToBoolean(value),
+                        "Int32" => XmlConvert.ToInt32(value),
+                        "Int16" => XmlConvert.ToInt16(value),
+                        "Int64" => XmlConvert.ToInt64(value),
+                        "Single" => XmlConvert.ToSingle(value),
+                        "Double" => XmlConvert.ToDouble(value),
+                        "Decimal" => XmlConvert.ToDecimal(value),
+                        "Byte" => XmlConvert.ToByte(value),
+                        "SByte" => XmlConvert.ToSByte(value),
+                        "UInt16" => XmlConvert.ToUInt16(value),
+                        "UInt32" => XmlConvert.ToUInt32(value),
+                        "UInt64" => XmlConvert.ToUInt64(value),
+                        "Guid" => XmlConvert.ToGuid(value),
+                        "Char" => XmlConvert.ToChar(value),
+                        "TimeSpan" => XmlConvert.ToTimeSpan(value),
+                        _ => throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, $"unknown FormatterName: {mapping.TypeDesc.FormatterName}")),
+                    };
                     return retObj;
                 }
                 else

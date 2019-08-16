@@ -869,32 +869,17 @@ namespace System.Data.SqlClient
             TdsEnums.TransactionManagerRequestType requestType = TdsEnums.TransactionManagerRequestType.Begin;
             TdsEnums.TransactionManagerIsolationLevel isoLevel = TdsEnums.TransactionManagerIsolationLevel.ReadCommitted;
 
-            switch (iso)
+            isoLevel = iso switch
             {
-                case IsolationLevel.Unspecified:
-                    isoLevel = TdsEnums.TransactionManagerIsolationLevel.Unspecified;
-                    break;
-                case IsolationLevel.ReadCommitted:
-                    isoLevel = TdsEnums.TransactionManagerIsolationLevel.ReadCommitted;
-                    break;
-                case IsolationLevel.ReadUncommitted:
-                    isoLevel = TdsEnums.TransactionManagerIsolationLevel.ReadUncommitted;
-                    break;
-                case IsolationLevel.RepeatableRead:
-                    isoLevel = TdsEnums.TransactionManagerIsolationLevel.RepeatableRead;
-                    break;
-                case IsolationLevel.Serializable:
-                    isoLevel = TdsEnums.TransactionManagerIsolationLevel.Serializable;
-                    break;
-                case IsolationLevel.Snapshot:
-                    isoLevel = TdsEnums.TransactionManagerIsolationLevel.Snapshot;
-                    break;
-                case IsolationLevel.Chaos:
-                    throw SQL.NotSupportedIsolationLevel(iso);
-                default:
-                    throw ADP.InvalidIsolationLevel(iso);
-            }
-
+                IsolationLevel.Unspecified => TdsEnums.TransactionManagerIsolationLevel.Unspecified,
+                IsolationLevel.ReadCommitted => TdsEnums.TransactionManagerIsolationLevel.ReadCommitted,
+                IsolationLevel.ReadUncommitted => TdsEnums.TransactionManagerIsolationLevel.ReadUncommitted,
+                IsolationLevel.RepeatableRead => TdsEnums.TransactionManagerIsolationLevel.RepeatableRead,
+                IsolationLevel.Serializable => TdsEnums.TransactionManagerIsolationLevel.Serializable,
+                IsolationLevel.Snapshot => TdsEnums.TransactionManagerIsolationLevel.Snapshot,
+                IsolationLevel.Chaos => throw SQL.NotSupportedIsolationLevel(iso),
+                _ => throw ADP.InvalidIsolationLevel(iso),
+            };
             TdsParserStateObject stateObj = _parser._physicalStateObj;
             TdsParser parser = _parser;
             bool mustPutSession = false;

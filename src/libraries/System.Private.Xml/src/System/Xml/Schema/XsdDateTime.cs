@@ -358,23 +358,17 @@ namespace System.Xml.Schema
             }
         }
 
-        public DateTime ToZulu()
-        {
-            switch (InternalKind)
+        public DateTime ToZulu() =>
+            InternalKind switch
             {
-                case XsdDateTimeKind.Zulu:
-                    // set it to UTC
-                    return new DateTime(_dt.Ticks, DateTimeKind.Utc);
-                case XsdDateTimeKind.LocalEastOfZulu:
-                    // Adjust to UTC and then convert to local in the current time zone
-                    return new DateTime(_dt.Subtract(new TimeSpan(ZoneHour, ZoneMinute, 0)).Ticks, DateTimeKind.Utc);
-                case XsdDateTimeKind.LocalWestOfZulu:
-                    // Adjust to UTC and then convert to local in the current time zone
-                    return new DateTime(_dt.Add(new TimeSpan(ZoneHour, ZoneMinute, 0)).Ticks, DateTimeKind.Utc);
-                default:
-                    return _dt;
-            }
-        }
+                // set it to UTC
+                XsdDateTimeKind.Zulu => new DateTime(_dt.Ticks, DateTimeKind.Utc),
+
+                // Adjust to UTC and then convert to local in the current time zone
+                XsdDateTimeKind.LocalEastOfZulu => new DateTime(_dt.Subtract(new TimeSpan(ZoneHour, ZoneMinute, 0)).Ticks, DateTimeKind.Utc),
+                XsdDateTimeKind.LocalWestOfZulu => new DateTime(_dt.Add(new TimeSpan(ZoneHour, ZoneMinute, 0)).Ticks, DateTimeKind.Utc),
+                _ => _dt,
+            };
 
         /// <summary>
         /// Cast to DateTime

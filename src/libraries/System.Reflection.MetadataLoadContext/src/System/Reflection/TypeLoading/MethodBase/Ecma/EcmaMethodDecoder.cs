@@ -136,29 +136,22 @@ namespace System.Reflection.TypeLoading.Ecma
             string libraryName = mi.Module.GetModuleReference(reader).Name.GetString(reader);
             string entryPointName = mi.Name.GetString(reader);
             MethodImportAttributes a = mi.Attributes;
-
-            CharSet charSet;
-            switch (a & MethodImportAttributes.CharSetMask)
+            CharSet charSet = (a & MethodImportAttributes.CharSetMask) switch
             {
-                case MethodImportAttributes.CharSetAnsi: charSet = CharSet.Ansi; break;
-                case MethodImportAttributes.CharSetAuto: charSet = CharSet.Auto; break;
-                case MethodImportAttributes.CharSetUnicode: charSet = CharSet.Unicode; break;
-                default:
-                    charSet = CharSet.None; break; // Note: CharSet.None is actually the typical case, not an error case.
-            }
-
-            CallingConvention callConv;
-            switch (a & MethodImportAttributes.CallingConventionMask)
+                MethodImportAttributes.CharSetAnsi => CharSet.Ansi,
+                MethodImportAttributes.CharSetAuto => CharSet.Auto,
+                MethodImportAttributes.CharSetUnicode => CharSet.Unicode,
+                _ => CharSet.None, // Note: CharSet.None is actually the typical case, not an error case.
+            };
+            CallingConvention callConv = (a & MethodImportAttributes.CallingConventionMask) switch
             {
-                case MethodImportAttributes.CallingConventionCDecl: callConv = CallingConvention.Cdecl; break;
-                case MethodImportAttributes.CallingConventionFastCall: callConv = CallingConvention.FastCall; break;
-                case MethodImportAttributes.CallingConventionStdCall: callConv = CallingConvention.StdCall; break;
-                case MethodImportAttributes.CallingConventionThisCall: callConv = CallingConvention.ThisCall; break;
-                case MethodImportAttributes.CallingConventionWinApi: callConv = CallingConvention.Winapi; break;
-                default:
-                    throw new BadImageFormatException();
-            }
-
+                MethodImportAttributes.CallingConventionCDecl => CallingConvention.Cdecl,
+                MethodImportAttributes.CallingConventionFastCall => CallingConvention.FastCall,
+                MethodImportAttributes.CallingConventionStdCall => CallingConvention.StdCall,
+                MethodImportAttributes.CallingConventionThisCall => CallingConvention.ThisCall,
+                MethodImportAttributes.CallingConventionWinApi => CallingConvention.Winapi,
+                _ => throw new BadImageFormatException(),
+            };
             return new DllImportAttribute(libraryName)
             {
                 EntryPoint = entryPointName,

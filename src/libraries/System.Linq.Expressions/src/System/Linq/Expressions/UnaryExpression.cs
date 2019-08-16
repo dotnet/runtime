@@ -316,54 +316,31 @@ namespace System.Linq.Expressions
         /// <exception cref="ArgumentException">Thrown when <paramref name="unaryType"/> does not correspond to a unary expression.</exception>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="operand"/> is null.</exception>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
-        public static UnaryExpression MakeUnary(ExpressionType unaryType, Expression operand, Type type, MethodInfo method)
-        {
-            switch (unaryType)
+        public static UnaryExpression MakeUnary(ExpressionType unaryType, Expression operand, Type type, MethodInfo method) =>
+            unaryType switch
             {
-                case ExpressionType.Negate:
-                    return Negate(operand, method);
-                case ExpressionType.NegateChecked:
-                    return NegateChecked(operand, method);
-                case ExpressionType.Not:
-                    return Not(operand, method);
-                case ExpressionType.IsFalse:
-                    return IsFalse(operand, method);
-                case ExpressionType.IsTrue:
-                    return IsTrue(operand, method);
-                case ExpressionType.OnesComplement:
-                    return OnesComplement(operand, method);
-                case ExpressionType.ArrayLength:
-                    return ArrayLength(operand);
-                case ExpressionType.Convert:
-                    return Convert(operand, type, method);
-                case ExpressionType.ConvertChecked:
-                    return ConvertChecked(operand, type, method);
-                case ExpressionType.Throw:
-                    return Throw(operand, type);
-                case ExpressionType.TypeAs:
-                    return TypeAs(operand, type);
-                case ExpressionType.Quote:
-                    return Quote(operand);
-                case ExpressionType.UnaryPlus:
-                    return UnaryPlus(operand, method);
-                case ExpressionType.Unbox:
-                    return Unbox(operand, type);
-                case ExpressionType.Increment:
-                    return Increment(operand, method);
-                case ExpressionType.Decrement:
-                    return Decrement(operand, method);
-                case ExpressionType.PreIncrementAssign:
-                    return PreIncrementAssign(operand, method);
-                case ExpressionType.PostIncrementAssign:
-                    return PostIncrementAssign(operand, method);
-                case ExpressionType.PreDecrementAssign:
-                    return PreDecrementAssign(operand, method);
-                case ExpressionType.PostDecrementAssign:
-                    return PostDecrementAssign(operand, method);
-                default:
-                    throw Error.UnhandledUnary(unaryType, nameof(unaryType));
-            }
-        }
+                ExpressionType.Negate => Negate(operand, method),
+                ExpressionType.NegateChecked => NegateChecked(operand, method),
+                ExpressionType.Not => Not(operand, method),
+                ExpressionType.IsFalse => IsFalse(operand, method),
+                ExpressionType.IsTrue => IsTrue(operand, method),
+                ExpressionType.OnesComplement => OnesComplement(operand, method),
+                ExpressionType.ArrayLength => ArrayLength(operand),
+                ExpressionType.Convert => Convert(operand, type, method),
+                ExpressionType.ConvertChecked => ConvertChecked(operand, type, method),
+                ExpressionType.Throw => Throw(operand, type),
+                ExpressionType.TypeAs => TypeAs(operand, type),
+                ExpressionType.Quote => Quote(operand),
+                ExpressionType.UnaryPlus => UnaryPlus(operand, method),
+                ExpressionType.Unbox => Unbox(operand, type),
+                ExpressionType.Increment => Increment(operand, method),
+                ExpressionType.Decrement => Decrement(operand, method),
+                ExpressionType.PreIncrementAssign => PreIncrementAssign(operand, method),
+                ExpressionType.PostIncrementAssign => PostIncrementAssign(operand, method),
+                ExpressionType.PreDecrementAssign => PreDecrementAssign(operand, method),
+                ExpressionType.PostDecrementAssign => PostDecrementAssign(operand, method),
+                _ => throw Error.UnhandledUnary(unaryType, nameof(unaryType)),
+            };
 
         private static UnaryExpression GetUserDefinedUnaryOperatorOrThrow(ExpressionType unaryType, string name, Expression operand)
         {

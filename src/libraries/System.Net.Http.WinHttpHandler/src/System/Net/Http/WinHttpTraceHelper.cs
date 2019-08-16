@@ -33,166 +33,67 @@ namespace System.Net.Http
                 memberName);
         }
 
-        private static string GetNameFromApiIndex(uint index)
-        {
-            switch (index)
+        private static string GetNameFromApiIndex(uint index) =>
+            index switch
             {
-                case Interop.WinHttp.API_RECEIVE_RESPONSE:
-                    return "API_RECEIVE_RESPONSE";
+                Interop.WinHttp.API_RECEIVE_RESPONSE => "API_RECEIVE_RESPONSE",
+                Interop.WinHttp.API_QUERY_DATA_AVAILABLE => "API_QUERY_DATA_AVAILABLE",
+                Interop.WinHttp.API_READ_DATA => "API_READ_DATA",
+                Interop.WinHttp.API_WRITE_DATA => "API_WRITE_DATA",
+                Interop.WinHttp.API_SEND_REQUEST => "API_SEND_REQUEST",
+                _ => index.ToString(),
+            };
 
-                case Interop.WinHttp.API_QUERY_DATA_AVAILABLE:
-                    return "API_QUERY_DATA_AVAILABLE";
-
-                case Interop.WinHttp.API_READ_DATA:
-                    return "API_READ_DATA";
-
-                case Interop.WinHttp.API_WRITE_DATA:
-                    return "API_WRITE_DATA";
-
-                case Interop.WinHttp.API_SEND_REQUEST:
-                    return "API_SEND_REQUEST";
-
-                default:
-                    return index.ToString();
-            }
-        }
-
-        private static string GetNameFromError(uint error)
-        {
-            switch (error)
+        private static string GetNameFromError(uint error) =>
+            error switch
             {
-                case Interop.WinHttp.ERROR_FILE_NOT_FOUND:
-                    return "ERROR_FILE_NOT_FOUND";
+                Interop.WinHttp.ERROR_FILE_NOT_FOUND => "ERROR_FILE_NOT_FOUND",
+                Interop.WinHttp.ERROR_INVALID_HANDLE => "ERROR_INVALID_HANDLE",
+                Interop.WinHttp.ERROR_INVALID_PARAMETER => "ERROR_INVALID_PARAMETER",
+                Interop.WinHttp.ERROR_INSUFFICIENT_BUFFER => "ERROR_INSUFFICIENT_BUFFER",
+                Interop.WinHttp.ERROR_NOT_FOUND => "ERROR_NOT_FOUND",
+                Interop.WinHttp.ERROR_WINHTTP_INVALID_OPTION => "WINHTTP_INVALID_OPTION",
+                Interop.WinHttp.ERROR_WINHTTP_LOGIN_FAILURE => "WINHTTP_LOGIN_FAILURE",
+                Interop.WinHttp.ERROR_WINHTTP_OPERATION_CANCELLED => "WINHTTP_OPERATION_CANCELLED",
+                Interop.WinHttp.ERROR_WINHTTP_INCORRECT_HANDLE_STATE => "WINHTTP_INCORRECT_HANDLE_STATE",
+                Interop.WinHttp.ERROR_WINHTTP_CONNECTION_ERROR => "WINHTTP_CONNECTION_ERROR",
+                Interop.WinHttp.ERROR_WINHTTP_RESEND_REQUEST => "WINHTTP_RESEND_REQUEST",
+                Interop.WinHttp.ERROR_WINHTTP_CLIENT_AUTH_CERT_NEEDED => "WINHTTP_CLIENT_AUTH_CERT_NEEDED",
+                Interop.WinHttp.ERROR_WINHTTP_HEADER_NOT_FOUND => "WINHTTP_HEADER_NOT_FOUND",
+                Interop.WinHttp.ERROR_WINHTTP_SECURE_FAILURE => "WINHTTP_SECURE_FAILURE",
+                Interop.WinHttp.ERROR_WINHTTP_AUTODETECTION_FAILED => "WINHTTP_AUTODETECTION_FAILED",
+                _ => error.ToString(),
+            };
 
-                case Interop.WinHttp.ERROR_INVALID_HANDLE:
-                    return "ERROR_INVALID_HANDLE";
-
-                case Interop.WinHttp.ERROR_INVALID_PARAMETER:
-                    return "ERROR_INVALID_PARAMETER";
-
-                case Interop.WinHttp.ERROR_INSUFFICIENT_BUFFER:
-                    return "ERROR_INSUFFICIENT_BUFFER";
-
-                case Interop.WinHttp.ERROR_NOT_FOUND:
-                    return "ERROR_NOT_FOUND";
-
-                case Interop.WinHttp.ERROR_WINHTTP_INVALID_OPTION:
-                    return "WINHTTP_INVALID_OPTION";
-
-                case Interop.WinHttp.ERROR_WINHTTP_LOGIN_FAILURE:
-                    return "WINHTTP_LOGIN_FAILURE";
-
-                case Interop.WinHttp.ERROR_WINHTTP_OPERATION_CANCELLED:
-                    return "WINHTTP_OPERATION_CANCELLED";
-
-                case Interop.WinHttp.ERROR_WINHTTP_INCORRECT_HANDLE_STATE:
-                    return "WINHTTP_INCORRECT_HANDLE_STATE";
-
-                case Interop.WinHttp.ERROR_WINHTTP_CONNECTION_ERROR:
-                    return "WINHTTP_CONNECTION_ERROR";
-
-                case Interop.WinHttp.ERROR_WINHTTP_RESEND_REQUEST:
-                    return "WINHTTP_RESEND_REQUEST";
-
-                case Interop.WinHttp.ERROR_WINHTTP_CLIENT_AUTH_CERT_NEEDED:
-                    return "WINHTTP_CLIENT_AUTH_CERT_NEEDED";
-
-                case Interop.WinHttp.ERROR_WINHTTP_HEADER_NOT_FOUND:
-                    return "WINHTTP_HEADER_NOT_FOUND";
-
-                case Interop.WinHttp.ERROR_WINHTTP_SECURE_FAILURE:
-                    return "WINHTTP_SECURE_FAILURE";
-
-                case Interop.WinHttp.ERROR_WINHTTP_AUTODETECTION_FAILED:
-                    return "WINHTTP_AUTODETECTION_FAILED";
-
-                 default:
-                    return error.ToString();
-            }
-        }
-
-        private static string GetStringFromInternetStatus(uint status)
-        {
-            switch (status)
+        private static string GetStringFromInternetStatus(uint status) =>
+            status switch
             {
-                case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_RESOLVING_NAME:
-                    return "STATUS_RESOLVING_NAME";
-
-                case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_NAME_RESOLVED:
-                    return "STATUS_NAME_RESOLVED";
-
-                case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_CONNECTING_TO_SERVER:
-                    return "STATUS_CONNECTING_TO_SERVER";
-
-                case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_CONNECTED_TO_SERVER:
-                    return "STATUS_CONNECTED_TO_SERVER";
-
-                case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_SENDING_REQUEST:
-                    return "STATUS_SENDING_REQUEST";
-
-                case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_REQUEST_SENT:
-                    return "STATUS_REQUEST_SENT";
-
-                case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_RECEIVING_RESPONSE:
-                    return "STATUS_RECEIVING_RESPONSE";
-
-                case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_RESPONSE_RECEIVED:
-                    return "STATUS_RESPONSE_RECEIVED";
-
-                case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_CLOSING_CONNECTION:
-                    return "STATUS_CLOSING_CONNECTION";
-
-                case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_CONNECTION_CLOSED:
-                    return "STATUS_CONNECTION_CLOSED";
-
-                case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_HANDLE_CREATED:
-                    return "STATUS_HANDLE_CREATED";
-
-                case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_HANDLE_CLOSING:
-                    return "STATUS_HANDLE_CLOSING";
-
-                case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_DETECTING_PROXY:
-                    return "STATUS_DETECTING_PROXY";
-
-                case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_REDIRECT:
-                    return "STATUS_REDIRECT";
-
-                case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_INTERMEDIATE_RESPONSE:
-                    return "STATUS_INTERMEDIATE_RESPONSE";
-
-                case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_SECURE_FAILURE:
-                    return "STATUS_SECURE_FAILURE";
-
-                case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_HEADERS_AVAILABLE:
-                    return "STATUS_HEADERS_AVAILABLE";
-
-                case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_DATA_AVAILABLE:
-                    return "STATUS_DATA_AVAILABLE";
-
-                case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_READ_COMPLETE:
-                    return "STATUS_READ_COMPLETE";
-
-                case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_WRITE_COMPLETE:
-                    return "STATUS_WRITE_COMPLETE";
-
-                case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_REQUEST_ERROR:
-                    return "STATUS_REQUEST_ERROR";
-
-                case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_SENDREQUEST_COMPLETE:
-                    return "STATUS_SENDREQUEST_COMPLETE";
-
-                case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_GETPROXYFORURL_COMPLETE:
-                    return "STATUS_GETPROXYFORURL_COMPLETE";
-
-                case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_CLOSE_COMPLETE:
-                    return "STATUS_CLOSE_COMPLETE";
-
-                case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_SHUTDOWN_COMPLETE:
-                    return "STATUS_SHUTDOWN_COMPLETE";
-
-                default:
-                    return string.Format("0x{0:X}", status);
-            }
-        }
+                Interop.WinHttp.WINHTTP_CALLBACK_STATUS_RESOLVING_NAME => "STATUS_RESOLVING_NAME",
+                Interop.WinHttp.WINHTTP_CALLBACK_STATUS_NAME_RESOLVED => "STATUS_NAME_RESOLVED",
+                Interop.WinHttp.WINHTTP_CALLBACK_STATUS_CONNECTING_TO_SERVER => "STATUS_CONNECTING_TO_SERVER",
+                Interop.WinHttp.WINHTTP_CALLBACK_STATUS_CONNECTED_TO_SERVER => "STATUS_CONNECTED_TO_SERVER",
+                Interop.WinHttp.WINHTTP_CALLBACK_STATUS_SENDING_REQUEST => "STATUS_SENDING_REQUEST",
+                Interop.WinHttp.WINHTTP_CALLBACK_STATUS_REQUEST_SENT => "STATUS_REQUEST_SENT",
+                Interop.WinHttp.WINHTTP_CALLBACK_STATUS_RECEIVING_RESPONSE => "STATUS_RECEIVING_RESPONSE",
+                Interop.WinHttp.WINHTTP_CALLBACK_STATUS_RESPONSE_RECEIVED => "STATUS_RESPONSE_RECEIVED",
+                Interop.WinHttp.WINHTTP_CALLBACK_STATUS_CLOSING_CONNECTION => "STATUS_CLOSING_CONNECTION",
+                Interop.WinHttp.WINHTTP_CALLBACK_STATUS_CONNECTION_CLOSED => "STATUS_CONNECTION_CLOSED",
+                Interop.WinHttp.WINHTTP_CALLBACK_STATUS_HANDLE_CREATED => "STATUS_HANDLE_CREATED",
+                Interop.WinHttp.WINHTTP_CALLBACK_STATUS_HANDLE_CLOSING => "STATUS_HANDLE_CLOSING",
+                Interop.WinHttp.WINHTTP_CALLBACK_STATUS_DETECTING_PROXY => "STATUS_DETECTING_PROXY",
+                Interop.WinHttp.WINHTTP_CALLBACK_STATUS_REDIRECT => "STATUS_REDIRECT",
+                Interop.WinHttp.WINHTTP_CALLBACK_STATUS_INTERMEDIATE_RESPONSE => "STATUS_INTERMEDIATE_RESPONSE",
+                Interop.WinHttp.WINHTTP_CALLBACK_STATUS_SECURE_FAILURE => "STATUS_SECURE_FAILURE",
+                Interop.WinHttp.WINHTTP_CALLBACK_STATUS_HEADERS_AVAILABLE => "STATUS_HEADERS_AVAILABLE",
+                Interop.WinHttp.WINHTTP_CALLBACK_STATUS_DATA_AVAILABLE => "STATUS_DATA_AVAILABLE",
+                Interop.WinHttp.WINHTTP_CALLBACK_STATUS_READ_COMPLETE => "STATUS_READ_COMPLETE",
+                Interop.WinHttp.WINHTTP_CALLBACK_STATUS_WRITE_COMPLETE => "STATUS_WRITE_COMPLETE",
+                Interop.WinHttp.WINHTTP_CALLBACK_STATUS_REQUEST_ERROR => "STATUS_REQUEST_ERROR",
+                Interop.WinHttp.WINHTTP_CALLBACK_STATUS_SENDREQUEST_COMPLETE => "STATUS_SENDREQUEST_COMPLETE",
+                Interop.WinHttp.WINHTTP_CALLBACK_STATUS_GETPROXYFORURL_COMPLETE => "STATUS_GETPROXYFORURL_COMPLETE",
+                Interop.WinHttp.WINHTTP_CALLBACK_STATUS_CLOSE_COMPLETE => "STATUS_CLOSE_COMPLETE",
+                Interop.WinHttp.WINHTTP_CALLBACK_STATUS_SHUTDOWN_COMPLETE => "STATUS_SHUTDOWN_COMPLETE",
+                _ => string.Format("0x{0:X}", status),
+            };
     }
 }

@@ -533,14 +533,12 @@ namespace System.Linq.Expressions
             _arg0 = arg0;
         }
 
-        Expression IArgumentProvider.GetArgument(int index)
-        {
-            switch (index)
+        Expression IArgumentProvider.GetArgument(int index) =>
+            index switch
             {
-                case 0: return ExpressionUtils.ReturnObject<Expression>(_arg0);
-                default: throw new ArgumentOutOfRangeException(nameof(index));
-            }
-        }
+                0 => ExpressionUtils.ReturnObject<Expression>(_arg0),
+                _ => throw new ArgumentOutOfRangeException(nameof(index)),
+            };
 
         int IArgumentProvider.ArgumentCount => 1;
 
@@ -594,15 +592,13 @@ namespace System.Linq.Expressions
             _arg1 = arg1;
         }
 
-        Expression IArgumentProvider.GetArgument(int index)
-        {
-            switch (index)
+        Expression IArgumentProvider.GetArgument(int index) =>
+            index switch
             {
-                case 0: return ExpressionUtils.ReturnObject<Expression>(_arg0);
-                case 1: return _arg1;
-                default: throw new ArgumentOutOfRangeException(nameof(index));
-            }
-        }
+                0 => ExpressionUtils.ReturnObject<Expression>(_arg0),
+                1 => _arg1,
+                _ => throw new ArgumentOutOfRangeException(nameof(index)),
+            };
 
         int IArgumentProvider.ArgumentCount => 2;
 
@@ -667,16 +663,14 @@ namespace System.Linq.Expressions
             _arg2 = arg2;
         }
 
-        Expression IArgumentProvider.GetArgument(int index)
-        {
-            switch (index)
+        Expression IArgumentProvider.GetArgument(int index) =>
+            index switch
             {
-                case 0: return ExpressionUtils.ReturnObject<Expression>(_arg0);
-                case 1: return _arg1;
-                case 2: return _arg2;
-                default: throw new ArgumentOutOfRangeException(nameof(index));
-            }
-        }
+                0 => ExpressionUtils.ReturnObject<Expression>(_arg0),
+                1 => _arg1,
+                2 => _arg2,
+                _ => throw new ArgumentOutOfRangeException(nameof(index)),
+            };
 
         int IArgumentProvider.ArgumentCount => 3;
 
@@ -746,17 +740,15 @@ namespace System.Linq.Expressions
             _arg3 = arg3;
         }
 
-        Expression IArgumentProvider.GetArgument(int index)
-        {
-            switch (index)
+        Expression IArgumentProvider.GetArgument(int index) =>
+            index switch
             {
-                case 0: return ExpressionUtils.ReturnObject<Expression>(_arg0);
-                case 1: return _arg1;
-                case 2: return _arg2;
-                case 3: return _arg3;
-                default: throw new ArgumentOutOfRangeException(nameof(index));
-            }
-        }
+                0 => ExpressionUtils.ReturnObject<Expression>(_arg0),
+                1 => _arg1,
+                2 => _arg2,
+                3 => _arg3,
+                _ => throw new ArgumentOutOfRangeException(nameof(index)),
+            };
 
         int IArgumentProvider.ArgumentCount => 4;
 
@@ -1251,14 +1243,14 @@ namespace System.Linq.Expressions
             // Since we made a delegate with argument types that exactly match,
             // we can skip delegate and argument validation
 
-            switch (n)
+            return n switch
             {
-                case 1: return DynamicExpression.Make(returnType, delegateType, binder, arguments[0]);
-                case 2: return DynamicExpression.Make(returnType, delegateType, binder, arguments[0], arguments[1]);
-                case 3: return DynamicExpression.Make(returnType, delegateType, binder, arguments[0], arguments[1], arguments[2]);
-                case 4: return DynamicExpression.Make(returnType, delegateType, binder, arguments[0], arguments[1], arguments[2], arguments[3]);
-                default: return DynamicExpression.Make(returnType, delegateType, binder, arguments);
-            }
+                1 => DynamicExpression.Make(returnType, delegateType, binder, arguments[0]),
+                2 => DynamicExpression.Make(returnType, delegateType, binder, arguments[0], arguments[1]),
+                3 => DynamicExpression.Make(returnType, delegateType, binder, arguments[0], arguments[1], arguments[2]),
+                4 => DynamicExpression.Make(returnType, delegateType, binder, arguments[0], arguments[1], arguments[2], arguments[3]),
+                _ => DynamicExpression.Make(returnType, delegateType, binder, arguments),
+            };
         }
 
         private static void ValidateDynamicArgument(Expression arg, string paramName)
