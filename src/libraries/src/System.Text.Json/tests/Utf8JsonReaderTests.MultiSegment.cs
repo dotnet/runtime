@@ -38,6 +38,111 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
+        public static void EmptyJsonMultiSegmentIsInvalid()
+        {
+            ReadOnlyMemory<byte> dataMemory = Array.Empty<byte>();
+
+            var firstSegment = new BufferSegment<byte>(dataMemory.Slice(0, 0));
+            ReadOnlyMemory<byte> secondMem = dataMemory.Slice(0, 0);
+            BufferSegment<byte> secondSegment = firstSegment.Append(secondMem);
+
+            var sequence = new ReadOnlySequence<byte>(firstSegment, 0, secondSegment, secondMem.Length);
+
+            Assert.ThrowsAny<JsonException>(() =>
+            {
+                var json = new Utf8JsonReader(sequence, isFinalBlock: true, state: default);
+
+                Assert.Equal(0, json.BytesConsumed);
+                Assert.Equal(0, json.TokenStartIndex);
+                Assert.Equal(0, json.CurrentDepth);
+                Assert.Equal(JsonTokenType.None, json.TokenType);
+                Assert.NotEqual(default, json.Position);
+                Assert.False(json.HasValueSequence);
+                Assert.True(json.ValueSpan.SequenceEqual(default));
+                Assert.True(json.ValueSequence.IsEmpty);
+
+                Assert.Equal(64, json.CurrentState.Options.MaxDepth);
+                Assert.False(json.CurrentState.Options.AllowTrailingCommas);
+                Assert.Equal(JsonCommentHandling.Disallow, json.CurrentState.Options.CommentHandling);
+
+                json.Read(); // this should throw
+            });
+        }
+
+        [Theory]
+        [InlineData("2e2", 200, 3)]
+        [InlineData("2e+2", 200, 4)]
+        [InlineData("123e-01", 12.3, 7)]
+        [InlineData("0", 0, 1)]
+        [InlineData("0.1", 0.1, 3)]
+        [InlineData("-0", 0, 2)]
+        [InlineData("-0.1", -0.1, 4)]
+        [InlineData("   2e2   ", 200, 3)]
+        [InlineData("   2e+2   ", 200, 4)]
+        [InlineData("   123e-01   ", 12.3, 7)]
+        [InlineData("   0   ", 0, 1)]
+        [InlineData("   0.1   ", 0.1, 3)]
+        [InlineData("   -0   ", 0, 2)]
+        [InlineData("   -0.1   ", -0.1, 4)]
+        [InlineData("[2e2]", 200, 3)]
+        [InlineData("[2e+2]", 200, 4)]
+        [InlineData("[123e-01]", 12.3, 7)]
+        [InlineData("[0]", 0, 1)]
+        [InlineData("[0.1]", 0.1, 3)]
+        [InlineData("[-0]", 0, 2)]
+        [InlineData("[-0.1]", -0.1, 4)]
+        [InlineData("{\"foo\": 2e2}", 200, 3)]
+        [InlineData("{\"foo\": 2e+2}", 200, 4)]
+        [InlineData("{\"foo\": 123e-01}", 12.3, 7)]
+        [InlineData("{\"foo\": 0}", 0, 1)]
+        [InlineData("{\"foo\": 0.1}", 0.1, 3)]
+        [InlineData("{\"foo\": -0}", 0, 2)]
+        [InlineData("{\"foo\": -0.1}", -0.1, 4)]
+        public static void ReadJsonWithNumberVariousSegmentSizes(string input, double expectedValue, long expectedTokenLength)
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes(input);
+
+            var jsonReader = new Utf8JsonReader(utf8);
+            ReadDoubleHelper(ref jsonReader, utf8.Length, expectedValue, expectedTokenLength);
+
+            ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(utf8, 1);
+            jsonReader = new Utf8JsonReader(sequence);
+            ReadDoubleHelper(ref jsonReader, utf8.Length, expectedValue, expectedTokenLength);
+
+            for (int splitLocation = 0; splitLocation < utf8.Length; splitLocation++)
+            {
+                sequence = JsonTestHelper.CreateSegments(utf8, splitLocation);
+                jsonReader = new Utf8JsonReader(sequence);
+                ReadDoubleHelper(ref jsonReader, utf8.Length, expectedValue, expectedTokenLength);
+            }
+
+            for (int firstSplit = 0; firstSplit < utf8.Length; firstSplit++)
+            {
+                for (int secondSplit = firstSplit; secondSplit < utf8.Length; secondSplit++)
+                {
+                    sequence = JsonTestHelper.CreateSegments(utf8, firstSplit, secondSplit);
+                    jsonReader = new Utf8JsonReader(sequence);
+                    ReadDoubleHelper(ref jsonReader, utf8.Length, expectedValue, expectedTokenLength);
+                }
+            }
+        }
+
+        private static void ReadDoubleHelper(ref Utf8JsonReader jsonReader, int expectedBytesConsumed, double expectedValue, long expectedTokenLength)
+        {
+            while (jsonReader.Read())
+            {
+                if (jsonReader.TokenType == JsonTokenType.Number)
+                {
+                    long tokenLength = jsonReader.HasValueSequence ? jsonReader.ValueSequence.Length : jsonReader.ValueSpan.Length;
+                    Assert.Equal(expectedTokenLength, tokenLength);
+                    Assert.Equal(tokenLength, jsonReader.BytesConsumed - jsonReader.TokenStartIndex);
+                    Assert.Equal(expectedValue, jsonReader.GetDouble());
+                }
+            }
+            Assert.Equal(expectedBytesConsumed, jsonReader.BytesConsumed);
+        }
+
+        [Fact]
         public static void InitialStateSimpleCtorMultiSegment()
         {
             byte[] utf8 = Encoding.UTF8.GetBytes("1");

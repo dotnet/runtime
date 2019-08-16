@@ -66,7 +66,9 @@ namespace System.Text.Json
             {
                 _currentPosition = jsonData.Start;
                 _nextPosition = _currentPosition;
-                if (_buffer.Length == 0)
+
+                bool firstSegmentIsEmpty = _buffer.Length == 0;
+                if (firstSegmentIsEmpty)
                 {
                     // Once we find a non-empty segment, we need to set current position to it.
                     // Therefore, track the next position in a copy before it gets advanced to the next segment.
@@ -84,7 +86,15 @@ namespace System.Text.Json
                     }
                 }
 
-                _isLastSegment = !jsonData.TryGet(ref _nextPosition, out _, advance: true) && isFinalBlock; // Don't re-order to avoid short-circuiting
+                // If firstSegmentIsEmpty is true,
+                //    only check if we have reached the last segment but do not advance _nextPosition. The while loop above already advanced it.
+                //    Otherwise, we would end up skipping a segment (i.e. advance = false).
+                // If firstSegmentIsEmpty is false,
+                //    make sure to advance _nextPosition so that it is no longer the same as _currentPosition (i.e. advance = true).
+                _isLastSegment = !jsonData.TryGet(ref _nextPosition, out _, advance: !firstSegmentIsEmpty) && isFinalBlock; // Don't re-order to avoid short-circuiting
+
+                Debug.Assert(!_nextPosition.Equals(_currentPosition));
+
                 _isMultiSegment = true;
             }
         }
@@ -1309,6 +1319,7 @@ namespace System.Text.Json
 
         private ConsumeNumberResult ConsumeNegativeSignMultiSegment(ref ReadOnlySpan<byte> data, ref int i)
         {
+            Debug.Assert(i == 0);
             byte nextByte = data[i];
 
             if (nextByte == '-')
@@ -1329,7 +1340,8 @@ namespace System.Text.Json
                         }
                         return ConsumeNumberResult.NeedMoreData;
                     }
-                    _totalConsumed++;
+                    Debug.Assert(i == 1);
+                    _totalConsumed += i;
                     HasValueSequence = true;
                     i = 0;
                     data = _buffer;
@@ -1347,9 +1359,10 @@ namespace System.Text.Json
         private ConsumeNumberResult ConsumeZeroMultiSegment(ref ReadOnlySpan<byte> data, ref int i)
         {
             Debug.Assert(data[i] == (byte)'0');
+            Debug.Assert(i == 0 || i == 1);
             i++;
             _bytePositionInLine++;
-            byte nextByte = default;
+            byte nextByte;
             if (i < data.Length)
             {
                 nextByte = data[i];
@@ -1377,7 +1390,7 @@ namespace System.Text.Json
                     return ConsumeNumberResult.NeedMoreData;
                 }
 
-                _totalConsumed++;
+                _totalConsumed += i;
                 HasValueSequence = true;
                 i = 0;
                 data = _buffer;
@@ -1522,6 +1535,7 @@ namespace System.Text.Json
                     }
                     return ConsumeNumberResult.NeedMoreData;
                 }
+                _totalConsumed += i;
                 HasValueSequence = true;
                 i = 0;
                 data = _buffer;
@@ -1547,7 +1561,7 @@ namespace System.Text.Json
                         }
                         return ConsumeNumberResult.NeedMoreData;
                     }
-                    _totalConsumed++;
+                    _totalConsumed += i;
                     HasValueSequence = true;
                     i = 0;
                     data = _buffer;
