@@ -112,7 +112,7 @@ namespace System.Text
             {
                 arrayEncodingInfo[i] = new EncodingInfo(
                     s_mappedCodePages[i],
-                    s_webNames.Substring(s_webNameIndices[i], s_webNameIndices[i + 1] - s_webNameIndices[i]),
+                    s_webNames[s_webNameIndices[i]..s_webNameIndices[i + 1]],
                     GetDisplayName(s_mappedCodePages[i], i)
                     );
             }
@@ -172,7 +172,7 @@ namespace System.Text
         private static CodePageDataItem InternalGetCodePageDataItem(int codePage, int index)
         {
             int uiFamilyCodePage = s_uiFamilyCodePages[index];
-            string webName = s_webNames.Substring(s_webNameIndices[index], s_webNameIndices[index + 1] - s_webNameIndices[index]);
+            string webName = s_webNames[s_webNameIndices[index]..s_webNameIndices[index + 1]];
             // All supported code pages have identical header names, and body names.
             string headerName = webName;
             string bodyName = webName;
@@ -186,7 +186,7 @@ namespace System.Text
         {
             string? displayName = SR.GetResourceString("Globalization_cp_" + codePage.ToString());
             if (string.IsNullOrEmpty(displayName))
-                displayName = s_englishNames.Substring(s_englishNameIndices[englishNameIndex], s_englishNameIndices[englishNameIndex + 1] - s_englishNameIndices[englishNameIndex]);
+                displayName = s_englishNames[s_englishNameIndices[englishNameIndex]..s_englishNameIndices[englishNameIndex + 1]];
 
             return displayName;
         }
