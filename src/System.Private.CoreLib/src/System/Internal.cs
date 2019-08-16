@@ -11,15 +11,16 @@
 **
 ===========================================================*/
 
-#pragma warning disable CA2007 // Code in this file isn't actually executed; ConfigureAwait doesn't matter (and impacts the types employed, which does matter)
+// Code in this file isn't actually executed
+#nullable disable
+#pragma warning disable CA2007 // ConfigureAwait
+#pragma warning disable IDE0060 // unused parameters
 
-#nullable disable // Code in this file isn't actually executed
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
-using System.Security;
 using System.StubHelpers;
 using System.Threading.Tasks;
 

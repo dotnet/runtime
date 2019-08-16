@@ -492,8 +492,8 @@ namespace System.Text
                         if (!buffer.AddByte(_base64Bytes[(bits >> bitCount) & 0x3F]))
                         {
                             bitCount += 6;                              // We didn't use these bits
-                            currentChar = buffer.GetNextChar();              // We're processing this char still, but AddByte
-                                                                             // --'d it when we ran out of space
+                            buffer.GetNextChar();                       // We're processing this char still, but AddByte
+                                                                        // --'d it when we ran out of space
                             break;                                      // Stop here, not enough room for bytes
                         }
                     }
@@ -851,39 +851,17 @@ namespace System.Text
         // and turn off base64 mode if it was in that mode.  We still exit the mode, but now we fallback.
         private sealed class DecoderUTF7Fallback : DecoderFallback
         {
-            // Construction.  Default replacement fallback uses no best fit and ? replacement string
-            public DecoderUTF7Fallback()
-            {
-            }
+            // Default replacement fallback uses no best fit and ? replacement string
 
-            public override DecoderFallbackBuffer CreateFallbackBuffer()
-            {
-                return new DecoderUTF7FallbackBuffer(this);
-            }
+            public override DecoderFallbackBuffer CreateFallbackBuffer() =>
+                new DecoderUTF7FallbackBuffer();
 
             // Maximum number of characters that this instance of this fallback could return
-            public override int MaxCharCount
-            {
-                get
-                {
-                    // returns 1 char per bad byte
-                    return 1;
-                }
-            }
+            public override int MaxCharCount => 1; // returns 1 char per bad byte
 
-            public override bool Equals(object? value)
-            {
-                if (value is DecoderUTF7Fallback)
-                {
-                    return true;
-                }
-                return false;
-            }
+            public override bool Equals(object? value) => value is DecoderUTF7Fallback;
 
-            public override int GetHashCode()
-            {
-                return 984;
-            }
+            public override int GetHashCode() => 984;
         }
 
         private sealed class DecoderUTF7FallbackBuffer : DecoderFallbackBuffer
@@ -892,11 +870,6 @@ namespace System.Text
             private char cFallback = (char)0;
             private int iCount = -1;
             private int iSize;
-
-            // Construction
-            public DecoderUTF7FallbackBuffer(DecoderUTF7Fallback fallback)
-            {
-            }
 
             // Fallback Methods
             public override bool Fallback(byte[] bytesUnknown, int index)
@@ -940,13 +913,7 @@ namespace System.Text
             }
 
             // Return # of chars left in this fallback
-            public override int Remaining
-            {
-                get
-                {
-                    return (iCount > 0) ? iCount : 0;
-                }
-            }
+            public override int Remaining => (iCount > 0) ? iCount : 0;
 
             // Clear the buffer
             public override unsafe void Reset()
