@@ -66,13 +66,7 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        internal bool IsOpcodeSet
-        {
-            get
-            {
-                return (this.valuesSet & opcodeSet) != 0;
-            }
-        }
+        internal bool IsOpcodeSet => (this.valuesSet & opcodeSet) != 0;
 
         /// <summary>
         /// Gets or sets the keywords to use for the specified event. If this

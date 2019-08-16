@@ -25,8 +25,7 @@ namespace System.Diagnostics.Tracing.Internal
     {
         public static readonly string NewLine = System.Environment.NewLine;
 
-        public static int TickCount
-        { get { return System.Environment.TickCount; } }
+        public static int TickCount => System.Environment.TickCount;
 
         public static string GetResourceString(string key, params object?[] args)
         {

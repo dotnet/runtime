@@ -804,15 +804,10 @@ namespace System.Text
             }
 
             // Anything left in our encoder?
-            internal override bool HasState
-            {
-                get
-                {
-                    // NOTE: This forces the last -, which some encoder might not encode.  If we
-                    // don't see it we don't think we're done reading.
-                    return (this.bitCount != -1);
-                }
-            }
+            internal override bool HasState =>
+                // NOTE: This forces the last -, which some encoder might not encode.  If we
+                // don't see it we don't think we're done reading.
+                (this.bitCount != -1);
         }
 
         // Of all the amazing things... This MUST be Encoder so that our com name
@@ -838,13 +833,7 @@ namespace System.Text
             }
 
             // Anything left in our encoder?
-            internal override bool HasState
-            {
-                get
-                {
-                    return this.bits != 0 || this.bitCount != -1;
-                }
-            }
+            internal override bool HasState => this.bits != 0 || this.bitCount != -1;
         }
 
         // Preexisting UTF7 behavior for bad bytes was just to spit out the byte as the next char

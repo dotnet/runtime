@@ -24,10 +24,7 @@ namespace System.Diagnostics.Tracing
     {
         private static TraceLoggingEventTypes? instance;
 
-        public static TraceLoggingEventTypes Instance
-        {
-            get { return instance ?? InitInstance(); }
-        }
+        public static TraceLoggingEventTypes Instance => instance ?? InitInstance();
 
         private static TraceLoggingEventTypes InitInstance()
         {

@@ -18,53 +18,19 @@ namespace System
         private static readonly OrdinalCaseSensitiveComparer s_ordinal = new OrdinalCaseSensitiveComparer();
         private static readonly OrdinalIgnoreCaseComparer s_ordinalIgnoreCase = new OrdinalIgnoreCaseComparer();
 
-        public static StringComparer InvariantCulture
-        {
-            get
-            {
-                return s_invariantCulture;
-            }
-        }
+        public static StringComparer InvariantCulture => s_invariantCulture;
 
-        public static StringComparer InvariantCultureIgnoreCase
-        {
-            get
-            {
-                return s_invariantCultureIgnoreCase;
-            }
-        }
+        public static StringComparer InvariantCultureIgnoreCase => s_invariantCultureIgnoreCase;
 
-        public static StringComparer CurrentCulture
-        {
-            get
-            {
-                return new CultureAwareComparer(CultureInfo.CurrentCulture, CompareOptions.None);
-            }
-        }
+        public static StringComparer CurrentCulture =>
+            new CultureAwareComparer(CultureInfo.CurrentCulture, CompareOptions.None);
 
-        public static StringComparer CurrentCultureIgnoreCase
-        {
-            get
-            {
-                return new CultureAwareComparer(CultureInfo.CurrentCulture, CompareOptions.IgnoreCase);
-            }
-        }
+        public static StringComparer CurrentCultureIgnoreCase =>
+            new CultureAwareComparer(CultureInfo.CurrentCulture, CompareOptions.IgnoreCase);
 
-        public static StringComparer Ordinal
-        {
-            get
-            {
-                return s_ordinal;
-            }
-        }
+        public static StringComparer Ordinal => s_ordinal;
 
-        public static StringComparer OrdinalIgnoreCase
-        {
-            get
-            {
-                return s_ordinalIgnoreCase;
-            }
-        }
+        public static StringComparer OrdinalIgnoreCase => s_ordinalIgnoreCase;
 
         // Convert a StringComparison to a StringComparer
         public static StringComparer FromComparison(StringComparison comparisonType)

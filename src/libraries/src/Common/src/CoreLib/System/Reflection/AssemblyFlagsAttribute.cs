@@ -18,15 +18,9 @@ namespace System.Reflection
 
         [Obsolete("This property has been deprecated. Please use AssemblyFlags instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         [CLSCompliant(false)]
-        public uint Flags
-        {
-            get { return (uint)_flags; }
-        }
+        public uint Flags => (uint)_flags;
 
-        public int AssemblyFlags
-        {
-            get { return (int)_flags; }
-        }
+        public int AssemblyFlags => (int)_flags;
 
         [Obsolete("This constructor has been deprecated. Please use AssemblyFlagsAttribute(AssemblyNameFlags) instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public AssemblyFlagsAttribute(int assemblyFlags)

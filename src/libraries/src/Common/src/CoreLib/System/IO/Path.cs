@@ -904,15 +904,10 @@ namespace System.IO
         }
 
         /// <summary>Returns a comparison that can be used to compare file and directory names for equality.</summary>
-        internal static StringComparison StringComparison
-        {
-            get
-            {
-                return IsCaseSensitive ?
-                    StringComparison.Ordinal :
-                    StringComparison.OrdinalIgnoreCase;
-            }
-        }
+        internal static StringComparison StringComparison =>
+            IsCaseSensitive ?
+                StringComparison.Ordinal :
+                StringComparison.OrdinalIgnoreCase;
 
         /// <summary>
         /// Trims one trailing directory separator beyond the root of the path.

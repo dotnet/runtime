@@ -63,41 +63,19 @@ namespace System.Text
             _strDefault = replacement;
         }
 
-        public string DefaultString
-        {
-            get
-            {
-                return _strDefault;
-            }
-        }
+        public string DefaultString => _strDefault;
 
-        public override EncoderFallbackBuffer CreateFallbackBuffer()
-        {
-            return new EncoderReplacementFallbackBuffer(this);
-        }
+        public override EncoderFallbackBuffer CreateFallbackBuffer() =>
+            new EncoderReplacementFallbackBuffer(this);
 
         // Maximum number of characters that this instance of this fallback could return
-        public override int MaxCharCount
-        {
-            get
-            {
-                return _strDefault.Length;
-            }
-        }
+        public override int MaxCharCount => _strDefault.Length;
 
-        public override bool Equals(object? value)
-        {
-            if (value is EncoderReplacementFallback that)
-            {
-                return _strDefault == that._strDefault;
-            }
-            return false;
-        }
+        public override bool Equals(object? value) =>
+            value is EncoderReplacementFallback that &&
+            _strDefault == that._strDefault;
 
-        public override int GetHashCode()
-        {
-            return _strDefault.GetHashCode();
-        }
+        public override int GetHashCode() => _strDefault.GetHashCode();
     }
 
     public sealed class EncoderReplacementFallbackBuffer : EncoderFallbackBuffer
@@ -202,14 +180,9 @@ namespace System.Text
         }
 
         // How many characters left to output?
-        public override int Remaining
-        {
-            get
-            {
+        public override int Remaining =>
                 // Our count is 0 for 1 character left.
-                return (_fallbackCount < 0) ? 0 : _fallbackCount;
-            }
-        }
+                (_fallbackCount < 0) ? 0 : _fallbackCount;
 
         // Clear the buffer
         public override unsafe void Reset()

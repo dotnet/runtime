@@ -124,31 +124,16 @@ namespace System.Collections
         }
 
         // Read-only property describing how many elements are in the List.
-        public virtual int Count
-        {
-            get
-            {
-                return _size;
-            }
-        }
+        public virtual int Count => _size;
 
-        public virtual bool IsFixedSize
-        {
-            get { return false; }
-        }
+        public virtual bool IsFixedSize => false;
 
 
         // Is this ArrayList read-only?
-        public virtual bool IsReadOnly
-        {
-            get { return false; }
-        }
+        public virtual bool IsReadOnly => false;
 
         // Is this ArrayList synchronized (thread-safe)?
-        public virtual bool IsSynchronized
-        {
-            get { return false; }
-        }
+        public virtual bool IsSynchronized => false;
 
         // Synchronization root for this object.
         public virtual object SyncRoot => this;
@@ -789,26 +774,14 @@ namespace System.Collections
                 }
             }
 
-            public override int Count
-            {
-                get { return _list.Count; }
-            }
+            public override int Count => _list.Count;
 
-            public override bool IsReadOnly
-            {
-                get { return _list.IsReadOnly; }
-            }
+            public override bool IsReadOnly => _list.IsReadOnly;
 
-            public override bool IsFixedSize
-            {
-                get { return _list.IsFixedSize; }
-            }
+            public override bool IsFixedSize => _list.IsFixedSize;
 
 
-            public override bool IsSynchronized
-            {
-                get { return _list.IsSynchronized; }
-            }
+            public override bool IsSynchronized => _list.IsSynchronized;
 
             public override object? this[int index]
             {
@@ -823,10 +796,7 @@ namespace System.Collections
                 }
             }
 
-            public override object SyncRoot
-            {
-                get { return _list.SyncRoot; }
-            }
+            public override object SyncRoot => _list.SyncRoot;
 
             public override int Add(object? obj)
             {
@@ -1268,21 +1238,12 @@ namespace System.Collections
                 get { lock (_root) { return _list.Count; } }
             }
 
-            public override bool IsReadOnly
-            {
-                get { return _list.IsReadOnly; }
-            }
+            public override bool IsReadOnly => _list.IsReadOnly;
 
-            public override bool IsFixedSize
-            {
-                get { return _list.IsFixedSize; }
-            }
+            public override bool IsFixedSize => _list.IsFixedSize;
 
 
-            public override bool IsSynchronized
-            {
-                get { return true; }
-            }
+            public override bool IsSynchronized => true;
 
             public override object? this[int index]
             {
@@ -1302,10 +1263,7 @@ namespace System.Collections
                 }
             }
 
-            public override object SyncRoot
-            {
-                get { return _root; }
-            }
+            public override object SyncRoot => _root;
 
             public override int Add(object? value)
             {
@@ -1603,21 +1561,12 @@ namespace System.Collections
                 get { lock (_root) { return _list.Count; } }
             }
 
-            public virtual bool IsReadOnly
-            {
-                get { return _list.IsReadOnly; }
-            }
+            public virtual bool IsReadOnly => _list.IsReadOnly;
 
-            public virtual bool IsFixedSize
-            {
-                get { return _list.IsFixedSize; }
-            }
+            public virtual bool IsFixedSize => _list.IsFixedSize;
 
 
-            public virtual bool IsSynchronized
-            {
-                get { return true; }
-            }
+            public virtual bool IsSynchronized => true;
 
             public virtual object? this[int index]
             {
@@ -1637,10 +1586,7 @@ namespace System.Collections
                 }
             }
 
-            public virtual object SyncRoot
-            {
-                get { return _root; }
-            }
+            public virtual object SyncRoot => _root;
 
             public virtual int Add(object? value)
             {
@@ -1725,25 +1671,13 @@ namespace System.Collections
                 _list = l;
             }
 
-            public virtual int Count
-            {
-                get { return _list.Count; }
-            }
+            public virtual int Count => _list.Count;
 
-            public virtual bool IsReadOnly
-            {
-                get { return _list.IsReadOnly; }
-            }
+            public virtual bool IsReadOnly => _list.IsReadOnly;
 
-            public virtual bool IsFixedSize
-            {
-                get { return true; }
-            }
+            public virtual bool IsFixedSize => true;
 
-            public virtual bool IsSynchronized
-            {
-                get { return _list.IsSynchronized; }
-            }
+            public virtual bool IsSynchronized => _list.IsSynchronized;
 
             public virtual object? this[int index]
             {
@@ -1757,10 +1691,7 @@ namespace System.Collections
                 }
             }
 
-            public virtual object SyncRoot
-            {
-                get { return _list.SyncRoot; }
-            }
+            public virtual object SyncRoot => _list.SyncRoot;
 
             public virtual int Add(object? obj)
             {
@@ -1818,25 +1749,13 @@ namespace System.Collections
                 _version = _list._version;
             }
 
-            public override int Count
-            {
-                get { return _list.Count; }
-            }
+            public override int Count => _list.Count;
 
-            public override bool IsReadOnly
-            {
-                get { return _list.IsReadOnly; }
-            }
+            public override bool IsReadOnly => _list.IsReadOnly;
 
-            public override bool IsFixedSize
-            {
-                get { return true; }
-            }
+            public override bool IsFixedSize => true;
 
-            public override bool IsSynchronized
-            {
-                get { return _list.IsSynchronized; }
-            }
+            public override bool IsSynchronized => _list.IsSynchronized;
 
             public override object? this[int index]
             {
@@ -1851,10 +1770,7 @@ namespace System.Collections
                 }
             }
 
-            public override object SyncRoot
-            {
-                get { return _list.SyncRoot; }
-            }
+            public override object SyncRoot => _list.SyncRoot;
 
             public override int Add(object? obj)
             {
@@ -2037,25 +1953,13 @@ namespace System.Collections
                 _list = l;
             }
 
-            public virtual int Count
-            {
-                get { return _list.Count; }
-            }
+            public virtual int Count => _list.Count;
 
-            public virtual bool IsReadOnly
-            {
-                get { return true; }
-            }
+            public virtual bool IsReadOnly => true;
 
-            public virtual bool IsFixedSize
-            {
-                get { return true; }
-            }
+            public virtual bool IsFixedSize => true;
 
-            public virtual bool IsSynchronized
-            {
-                get { return _list.IsSynchronized; }
-            }
+            public virtual bool IsSynchronized => _list.IsSynchronized;
 
             public virtual object? this[int index]
             {
@@ -2069,10 +1973,7 @@ namespace System.Collections
                 }
             }
 
-            public virtual object SyncRoot
-            {
-                get { return _list.SyncRoot; }
-            }
+            public virtual object SyncRoot => _list.SyncRoot;
 
             public virtual int Add(object? obj)
             {
@@ -2129,25 +2030,13 @@ namespace System.Collections
                 _list = l;
             }
 
-            public override int Count
-            {
-                get { return _list.Count; }
-            }
+            public override int Count => _list.Count;
 
-            public override bool IsReadOnly
-            {
-                get { return true; }
-            }
+            public override bool IsReadOnly => true;
 
-            public override bool IsFixedSize
-            {
-                get { return true; }
-            }
+            public override bool IsFixedSize => true;
 
-            public override bool IsSynchronized
-            {
-                get { return _list.IsSynchronized; }
-            }
+            public override bool IsSynchronized => _list.IsSynchronized;
 
             public override object? this[int index]
             {
@@ -2161,10 +2050,7 @@ namespace System.Collections
                 }
             }
 
-            public override object SyncRoot
-            {
-                get { return _list.SyncRoot; }
-            }
+            public override object SyncRoot => _list.SyncRoot;
 
             public override int Add(object? obj)
             {
@@ -2561,20 +2447,11 @@ namespace System.Collections
                 }
             }
 
-            public override bool IsReadOnly
-            {
-                get { return _baseList.IsReadOnly; }
-            }
+            public override bool IsReadOnly => _baseList.IsReadOnly;
 
-            public override bool IsFixedSize
-            {
-                get { return _baseList.IsFixedSize; }
-            }
+            public override bool IsFixedSize => _baseList.IsFixedSize;
 
-            public override bool IsSynchronized
-            {
-                get { return _baseList.IsSynchronized; }
-            }
+            public override bool IsSynchronized => _baseList.IsSynchronized;
 
             public override IEnumerator GetEnumerator()
             {
@@ -2603,13 +2480,7 @@ namespace System.Collections
                 return new Range(this, index, count);
             }
 
-            public override object SyncRoot
-            {
-                get
-                {
-                    return _baseList.SyncRoot;
-                }
-            }
+            public override object SyncRoot => _baseList.SyncRoot;
 
 
             public override int IndexOf(object? value)
@@ -2920,13 +2791,7 @@ namespace System.Collections
             }
 
             [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-            public object?[] Items
-            {
-                get
-                {
-                    return _arrayList.ToArray();
-                }
-            }
+            public object?[] Items => _arrayList.ToArray();
         }
     }
 }

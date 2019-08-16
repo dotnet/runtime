@@ -20,16 +20,11 @@ namespace System.Reflection
         public virtual CallingConventions CallingConvention => CallingConventions.Standard;
 
         public bool IsAbstract => (Attributes & MethodAttributes.Abstract) != 0;
-        public bool IsConstructor
-        {
-            get
-            {
-                // To be backward compatible we only return true for instance RTSpecialName ctors.
-                return (this is ConstructorInfo &&
-                        !IsStatic &&
-                        ((Attributes & MethodAttributes.RTSpecialName) == MethodAttributes.RTSpecialName));
-            }
-        }
+        public bool IsConstructor =>
+            // To be backward compatible we only return true for instance RTSpecialName ctors.
+            this is ConstructorInfo &&
+            !IsStatic &&
+            (Attributes & MethodAttributes.RTSpecialName) == MethodAttributes.RTSpecialName;
         public bool IsFinal => (Attributes & MethodAttributes.Final) != 0;
         public bool IsHideBySig => (Attributes & MethodAttributes.HideBySig) != 0;
         public bool IsSpecialName => (Attributes & MethodAttributes.SpecialName) != 0;
@@ -56,9 +51,9 @@ namespace System.Reflection
 
         public abstract RuntimeMethodHandle MethodHandle { get; }
 
-        public virtual bool IsSecurityCritical { get { throw NotImplemented.ByDesign; } }
-        public virtual bool IsSecuritySafeCritical { get { throw NotImplemented.ByDesign; } }
-        public virtual bool IsSecurityTransparent { get { throw NotImplemented.ByDesign; } }
+        public virtual bool IsSecurityCritical => throw NotImplemented.ByDesign;
+        public virtual bool IsSecuritySafeCritical => throw NotImplemented.ByDesign;
+        public virtual bool IsSecurityTransparent => throw NotImplemented.ByDesign;
 
         public override bool Equals(object? obj) => base.Equals(obj);
         public override int GetHashCode() => base.GetHashCode();

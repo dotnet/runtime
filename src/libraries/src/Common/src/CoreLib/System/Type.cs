@@ -32,21 +32,21 @@ namespace System
         public override Type? ReflectedType => null;
         public abstract Type UnderlyingSystemType { get; }
 
-        public virtual bool IsTypeDefinition { get { throw NotImplemented.ByDesign; } }
+        public virtual bool IsTypeDefinition => throw NotImplemented.ByDesign;
         public bool IsArray => IsArrayImpl();
         protected abstract bool IsArrayImpl();
         public bool IsByRef => IsByRefImpl();
         protected abstract bool IsByRefImpl();
         public bool IsPointer => IsPointerImpl();
         protected abstract bool IsPointerImpl();
-        public virtual bool IsConstructedGenericType { get { throw NotImplemented.ByDesign; } }
+        public virtual bool IsConstructedGenericType => throw NotImplemented.ByDesign;
         public virtual bool IsGenericParameter => false;
         public virtual bool IsGenericTypeParameter => IsGenericParameter && DeclaringMethod is null;
         public virtual bool IsGenericMethodParameter => IsGenericParameter && DeclaringMethod != null;
         public virtual bool IsGenericType => false;
         public virtual bool IsGenericTypeDefinition => false;
 
-        public virtual bool IsSZArray { get { throw NotImplemented.ByDesign; } }
+        public virtual bool IsSZArray => throw NotImplemented.ByDesign;
         public virtual bool IsVariableBoundArray => IsArray && !IsSZArray;
 
         public virtual bool IsByRefLike => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
@@ -55,14 +55,14 @@ namespace System
         protected abstract bool HasElementTypeImpl();
         public abstract Type? GetElementType();
 
-        public virtual int GetArrayRank() { throw new NotSupportedException(SR.NotSupported_SubclassOverride); }
+        public virtual int GetArrayRank() => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
 
-        public virtual Type GetGenericTypeDefinition() { throw new NotSupportedException(SR.NotSupported_SubclassOverride); }
+        public virtual Type GetGenericTypeDefinition() => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
         public virtual Type[] GenericTypeArguments => (IsGenericType && !IsGenericTypeDefinition) ? GetGenericArguments() : Array.Empty<Type>();
-        public virtual Type[] GetGenericArguments() { throw new NotSupportedException(SR.NotSupported_SubclassOverride); }
+        public virtual Type[] GetGenericArguments() => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
 
-        public virtual int GenericParameterPosition { get { throw new InvalidOperationException(SR.Arg_NotGenericParameter); } }
-        public virtual GenericParameterAttributes GenericParameterAttributes { get { throw new NotSupportedException(); } }
+        public virtual int GenericParameterPosition => throw new InvalidOperationException(SR.Arg_NotGenericParameter);
+        public virtual GenericParameterAttributes GenericParameterAttributes => throw new NotSupportedException();
         public virtual Type[] GetGenericParameterConstraints()
         {
             if (!IsGenericParameter)
@@ -112,11 +112,11 @@ namespace System
 
         public virtual bool IsSignatureType => false;
 
-        public virtual bool IsSecurityCritical { get { throw NotImplemented.ByDesign; } }
-        public virtual bool IsSecuritySafeCritical { get { throw NotImplemented.ByDesign; } }
-        public virtual bool IsSecurityTransparent { get { throw NotImplemented.ByDesign; } }
+        public virtual bool IsSecurityCritical => throw NotImplemented.ByDesign;
+        public virtual bool IsSecuritySafeCritical => throw NotImplemented.ByDesign;
+        public virtual bool IsSecurityTransparent => throw NotImplemented.ByDesign;
 
-        public virtual StructLayoutAttribute? StructLayoutAttribute { get { throw new NotSupportedException(); } }
+        public virtual StructLayoutAttribute? StructLayoutAttribute => throw new NotSupportedException();
         public ConstructorInfo? TypeInitializer => GetConstructorImpl(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, CallingConventions.Any, Type.EmptyTypes, null);
 
         public ConstructorInfo? GetConstructor(Type[] types) => GetConstructor(BindingFlags.Public | BindingFlags.Instance, null, types, null);
@@ -151,7 +151,7 @@ namespace System
 
         public MemberInfo[] GetMember(string name) => GetMember(name, Type.DefaultLookup);
         public virtual MemberInfo[] GetMember(string name, BindingFlags bindingAttr) => GetMember(name, MemberTypes.All, bindingAttr);
-        public virtual MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr) { throw new NotSupportedException(SR.NotSupported_SubclassOverride); }
+        public virtual MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr) => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
 
         public MemberInfo[] GetMembers() => GetMembers(Type.DefaultLookup);
         public abstract MemberInfo[] GetMembers(BindingFlags bindingAttr);
@@ -245,9 +245,9 @@ namespace System
         public PropertyInfo[] GetProperties() => GetProperties(Type.DefaultLookup);
         public abstract PropertyInfo[] GetProperties(BindingFlags bindingAttr);
 
-        public virtual MemberInfo[] GetDefaultMembers() { throw NotImplemented.ByDesign; }
+        public virtual MemberInfo[] GetDefaultMembers() => throw NotImplemented.ByDesign;
 
-        public virtual RuntimeTypeHandle TypeHandle { get { throw new NotSupportedException(); } }
+        public virtual RuntimeTypeHandle TypeHandle => throw new NotSupportedException();
         public static RuntimeTypeHandle GetTypeHandle(object o)
         {
             if (o == null)
@@ -311,7 +311,7 @@ namespace System
         public abstract Type? GetInterface(string name, bool ignoreCase);
         public abstract Type[] GetInterfaces();
 
-        public virtual InterfaceMapping GetInterfaceMap(Type interfaceType) { throw new NotSupportedException(SR.NotSupported_SubclassOverride); }
+        public virtual InterfaceMapping GetInterfaceMap(Type interfaceType) => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
 
         public virtual bool IsInstanceOfType(object? o) => o == null ? false : IsAssignableFrom(o.GetType());
         public virtual bool IsEquivalentTo(Type? other) => this == other;
@@ -337,11 +337,11 @@ namespace System
             throw NotImplemented.ByDesign;
         }
 
-        public virtual Type MakeArrayType() { throw new NotSupportedException(); }
-        public virtual Type MakeArrayType(int rank) { throw new NotSupportedException(); }
-        public virtual Type MakeByRefType() { throw new NotSupportedException(); }
-        public virtual Type MakeGenericType(params Type[] typeArguments) { throw new NotSupportedException(SR.NotSupported_SubclassOverride); }
-        public virtual Type MakePointerType() { throw new NotSupportedException(); }
+        public virtual Type MakeArrayType() => throw new NotSupportedException();
+        public virtual Type MakeArrayType(int rank) => throw new NotSupportedException();
+        public virtual Type MakeByRefType() => throw new NotSupportedException();
+        public virtual Type MakeGenericType(params Type[] typeArguments) => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
+        public virtual Type MakePointerType() => throw new NotSupportedException();
 
         public static Type MakeGenericSignatureType(Type genericTypeDefinition, params Type[] typeArguments) => new SignatureConstructedGenericType(genericTypeDefinition, typeArguments);
 
@@ -364,7 +364,7 @@ namespace System
         }
         public virtual bool Equals(Type? o) => o == null ? false : object.ReferenceEquals(this.UnderlyingSystemType, o.UnderlyingSystemType);
 
-        public static Type? ReflectionOnlyGetType(string typeName, bool throwIfNotFound, bool ignoreCase) { throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionOnly); }
+        public static Type? ReflectionOnlyGetType(string typeName, bool throwIfNotFound, bool ignoreCase) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionOnly);
 
         public static Binder DefaultBinder
         {

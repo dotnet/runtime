@@ -30,10 +30,7 @@ namespace System.Runtime.Versioning
 
         // The target framework moniker that this assembly was compiled against.
         // Use the FrameworkName class to interpret target framework monikers.
-        public string FrameworkName
-        {
-            get { return _frameworkName; }
-        }
+        public string FrameworkName => _frameworkName;
 
         public string? FrameworkDisplayName
         {

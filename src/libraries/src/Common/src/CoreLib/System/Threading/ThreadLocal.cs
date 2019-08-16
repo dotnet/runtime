@@ -555,10 +555,8 @@ namespace System.Threading
         }
 
         /// <summary>Gets the values of all threads that accessed the ThreadLocal&lt;T&gt;.</summary>
-        internal List<T>? ValuesForDebugDisplay // same as Values property, but doesn't throw if disposed
-        {
-            get { return GetValuesAsList(); }
-        }
+        internal List<T>? ValuesForDebugDisplay => // same as Values property, but doesn't throw if disposed
+            GetValuesAsList();
 
         /// <summary>
         /// Resizes a table to a certain length (or larger).

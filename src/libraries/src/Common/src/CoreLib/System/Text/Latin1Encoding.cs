@@ -453,13 +453,7 @@ namespace System.Text
         }
 
         // True if and only if the encoding only uses single byte code points.  (Ie, ASCII, 1252, etc)
-        public override bool IsSingleByte
-        {
-            get
-            {
-                return true;
-            }
-        }
+        public override bool IsSingleByte => true;
 
         public override bool IsAlwaysNormalized(NormalizationForm form)
         {

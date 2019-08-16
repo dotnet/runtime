@@ -48,7 +48,7 @@ namespace System.Runtime.CompilerServices
         {
             /// <summary>Gets whether a yield is not required.</summary>
             /// <remarks>This property is intended for compiler user rather than use directly in code.</remarks>
-            public bool IsCompleted { get { return false; } } // yielding is always required for YieldAwaiter, hence false
+            public bool IsCompleted => false;  // yielding is always required for YieldAwaiter, hence false
 
             /// <summary>Posts the <paramref name="continuation"/> back to the current context.</summary>
             /// <param name="continuation">The action to invoke asynchronously.</param>

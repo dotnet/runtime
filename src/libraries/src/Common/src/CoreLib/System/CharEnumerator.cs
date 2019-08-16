@@ -54,10 +54,7 @@ namespace System
             _str = null;
         }
 
-        object? IEnumerator.Current
-        {
-            get { return Current; }
-        }
+        object? IEnumerator.Current => Current;
 
         public char Current
         {

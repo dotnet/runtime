@@ -172,52 +172,20 @@ namespace System
 
         // Returns a DateTimeOffset representing the current date and time. The
         // resolution of the returned value depends on the system timer.
-        public static DateTimeOffset Now
-        {
-            get
-            {
-                return ToLocalTime(DateTime.UtcNow, true);
-            }
-        }
+        public static DateTimeOffset Now => ToLocalTime(DateTime.UtcNow, true);
 
-        public static DateTimeOffset UtcNow
-        {
-            get
-            {
-                return new DateTimeOffset(DateTime.UtcNow);
-            }
-        }
+        public static DateTimeOffset UtcNow => new DateTimeOffset(DateTime.UtcNow);
 
-        public DateTime DateTime
-        {
-            get
-            {
-                return ClockDateTime;
-            }
-        }
+        public DateTime DateTime => ClockDateTime;
 
-        public DateTime UtcDateTime
-        {
-            get
-            {
-                return DateTime.SpecifyKind(_dateTime, DateTimeKind.Utc);
-            }
-        }
+        public DateTime UtcDateTime => DateTime.SpecifyKind(_dateTime, DateTimeKind.Utc);
 
-        public DateTime LocalDateTime
-        {
-            get
-            {
-                return UtcDateTime.ToLocalTime();
-            }
-        }
+        public DateTime LocalDateTime => UtcDateTime.ToLocalTime();
 
         // Adjust to a given offset with the same UTC time.  Can throw ArgumentException
         //
-        public DateTimeOffset ToOffset(TimeSpan offset)
-        {
-            return new DateTimeOffset((_dateTime + offset).Ticks, offset);
-        }
+        public DateTimeOffset ToOffset(TimeSpan offset) =>
+            new DateTimeOffset((_dateTime + offset).Ticks, offset);
 
 
         // Instance Properties
@@ -225,174 +193,82 @@ namespace System
         // The clock or visible time represented. This is just a wrapper around the internal date because this is
         // the chosen storage mechanism. Going through this helper is good for readability and maintainability.
         // This should be used for display but not identity.
-        private DateTime ClockDateTime
-        {
-            get
-            {
-                return new DateTime((_dateTime + Offset).Ticks, DateTimeKind.Unspecified);
-            }
-        }
+        private DateTime ClockDateTime => new DateTime((_dateTime + Offset).Ticks, DateTimeKind.Unspecified);
 
         // Returns the date part of this DateTimeOffset. The resulting value
         // corresponds to this DateTimeOffset with the time-of-day part set to
         // zero (midnight).
         //
-        public DateTime Date
-        {
-            get
-            {
-                return ClockDateTime.Date;
-            }
-        }
+        public DateTime Date => ClockDateTime.Date;
 
         // Returns the day-of-month part of this DateTimeOffset. The returned
         // value is an integer between 1 and 31.
         //
-        public int Day
-        {
-            get
-            {
-                return ClockDateTime.Day;
-            }
-        }
+        public int Day => ClockDateTime.Day;
 
         // Returns the day-of-week part of this DateTimeOffset. The returned value
         // is an integer between 0 and 6, where 0 indicates Sunday, 1 indicates
         // Monday, 2 indicates Tuesday, 3 indicates Wednesday, 4 indicates
         // Thursday, 5 indicates Friday, and 6 indicates Saturday.
         //
-        public DayOfWeek DayOfWeek
-        {
-            get
-            {
-                return ClockDateTime.DayOfWeek;
-            }
-        }
+        public DayOfWeek DayOfWeek => ClockDateTime.DayOfWeek;
 
         // Returns the day-of-year part of this DateTimeOffset. The returned value
         // is an integer between 1 and 366.
         //
-        public int DayOfYear
-        {
-            get
-            {
-                return ClockDateTime.DayOfYear;
-            }
-        }
+        public int DayOfYear => ClockDateTime.DayOfYear;
 
         // Returns the hour part of this DateTimeOffset. The returned value is an
         // integer between 0 and 23.
         //
-        public int Hour
-        {
-            get
-            {
-                return ClockDateTime.Hour;
-            }
-        }
+        public int Hour => ClockDateTime.Hour;
 
 
         // Returns the millisecond part of this DateTimeOffset. The returned value
         // is an integer between 0 and 999.
         //
-        public int Millisecond
-        {
-            get
-            {
-                return ClockDateTime.Millisecond;
-            }
-        }
+        public int Millisecond => ClockDateTime.Millisecond;
 
         // Returns the minute part of this DateTimeOffset. The returned value is
         // an integer between 0 and 59.
         //
-        public int Minute
-        {
-            get
-            {
-                return ClockDateTime.Minute;
-            }
-        }
+        public int Minute => ClockDateTime.Minute;
 
         // Returns the month part of this DateTimeOffset. The returned value is an
         // integer between 1 and 12.
         //
-        public int Month
-        {
-            get
-            {
-                return ClockDateTime.Month;
-            }
-        }
+        public int Month => ClockDateTime.Month;
 
-        public TimeSpan Offset
-        {
-            get
-            {
-                return new TimeSpan(0, _offsetMinutes, 0);
-            }
-        }
+        public TimeSpan Offset => new TimeSpan(0, _offsetMinutes, 0);
 
         // Returns the second part of this DateTimeOffset. The returned value is
         // an integer between 0 and 59.
         //
-        public int Second
-        {
-            get
-            {
-                return ClockDateTime.Second;
-            }
-        }
+        public int Second => ClockDateTime.Second;
 
         // Returns the tick count for this DateTimeOffset. The returned value is
         // the number of 100-nanosecond intervals that have elapsed since 1/1/0001
         // 12:00am.
         //
-        public long Ticks
-        {
-            get
-            {
-                return ClockDateTime.Ticks;
-            }
-        }
+        public long Ticks => ClockDateTime.Ticks;
 
-        public long UtcTicks
-        {
-            get
-            {
-                return UtcDateTime.Ticks;
-            }
-        }
+        public long UtcTicks => UtcDateTime.Ticks;
 
         // Returns the time-of-day part of this DateTimeOffset. The returned value
         // is a TimeSpan that indicates the time elapsed since midnight.
         //
-        public TimeSpan TimeOfDay
-        {
-            get
-            {
-                return ClockDateTime.TimeOfDay;
-            }
-        }
+        public TimeSpan TimeOfDay => ClockDateTime.TimeOfDay;
 
         // Returns the year part of this DateTimeOffset. The returned value is an
         // integer between 1 and 9999.
         //
-        public int Year
-        {
-            get
-            {
-                return ClockDateTime.Year;
-            }
-        }
+        public int Year => ClockDateTime.Year;
 
         // Returns the DateTimeOffset resulting from adding the given
         // TimeSpan to this DateTimeOffset.
         //
-        public DateTimeOffset Add(TimeSpan timeSpan)
-        {
-            return new DateTimeOffset(ClockDateTime.Add(timeSpan), Offset);
-        }
+        public DateTimeOffset Add(TimeSpan timeSpan) =>
+            new DateTimeOffset(ClockDateTime.Add(timeSpan), Offset);
 
         // Returns the DateTimeOffset resulting from adding a fractional number of
         // days to this DateTimeOffset. The result is computed by rounding the
@@ -400,10 +276,8 @@ namespace System
         // millisecond, and adding that interval to this DateTimeOffset. The
         // value argument is permitted to be negative.
         //
-        public DateTimeOffset AddDays(double days)
-        {
-            return new DateTimeOffset(ClockDateTime.AddDays(days), Offset);
-        }
+        public DateTimeOffset AddDays(double days) =>
+            new DateTimeOffset(ClockDateTime.AddDays(days), Offset);
 
         // Returns the DateTimeOffset resulting from adding a fractional number of
         // hours to this DateTimeOffset. The result is computed by rounding the
@@ -411,10 +285,8 @@ namespace System
         // millisecond, and adding that interval to this DateTimeOffset. The
         // value argument is permitted to be negative.
         //
-        public DateTimeOffset AddHours(double hours)
-        {
-            return new DateTimeOffset(ClockDateTime.AddHours(hours), Offset);
-        }
+        public DateTimeOffset AddHours(double hours) =>
+            new DateTimeOffset(ClockDateTime.AddHours(hours), Offset);
 
         // Returns the DateTimeOffset resulting from the given number of
         // milliseconds to this DateTimeOffset. The result is computed by rounding
@@ -422,10 +294,8 @@ namespace System
         // and adding that interval to this DateTimeOffset. The value
         // argument is permitted to be negative.
         //
-        public DateTimeOffset AddMilliseconds(double milliseconds)
-        {
-            return new DateTimeOffset(ClockDateTime.AddMilliseconds(milliseconds), Offset);
-        }
+        public DateTimeOffset AddMilliseconds(double milliseconds) =>
+            new DateTimeOffset(ClockDateTime.AddMilliseconds(milliseconds), Offset);
 
         // Returns the DateTimeOffset resulting from adding a fractional number of
         // minutes to this DateTimeOffset. The result is computed by rounding the
@@ -433,15 +303,11 @@ namespace System
         // millisecond, and adding that interval to this DateTimeOffset. The
         // value argument is permitted to be negative.
         //
-        public DateTimeOffset AddMinutes(double minutes)
-        {
-            return new DateTimeOffset(ClockDateTime.AddMinutes(minutes), Offset);
-        }
+        public DateTimeOffset AddMinutes(double minutes) =>
+            new DateTimeOffset(ClockDateTime.AddMinutes(minutes), Offset);
 
-        public DateTimeOffset AddMonths(int months)
-        {
-            return new DateTimeOffset(ClockDateTime.AddMonths(months), Offset);
-        }
+        public DateTimeOffset AddMonths(int months) =>
+            new DateTimeOffset(ClockDateTime.AddMonths(months), Offset);
 
         // Returns the DateTimeOffset resulting from adding a fractional number of
         // seconds to this DateTimeOffset. The result is computed by rounding the
@@ -449,19 +315,15 @@ namespace System
         // millisecond, and adding that interval to this DateTimeOffset. The
         // value argument is permitted to be negative.
         //
-        public DateTimeOffset AddSeconds(double seconds)
-        {
-            return new DateTimeOffset(ClockDateTime.AddSeconds(seconds), Offset);
-        }
+        public DateTimeOffset AddSeconds(double seconds) =>
+            new DateTimeOffset(ClockDateTime.AddSeconds(seconds), Offset);
 
         // Returns the DateTimeOffset resulting from adding the given number of
         // 100-nanosecond ticks to this DateTimeOffset. The value argument
         // is permitted to be negative.
         //
-        public DateTimeOffset AddTicks(long ticks)
-        {
-            return new DateTimeOffset(ClockDateTime.AddTicks(ticks), Offset);
-        }
+        public DateTimeOffset AddTicks(long ticks) =>
+            new DateTimeOffset(ClockDateTime.AddTicks(ticks), Offset);
 
         // Returns the DateTimeOffset resulting from adding the given number of
         // years to this DateTimeOffset. The result is computed by incrementing
@@ -471,18 +333,14 @@ namespace System
         // DateTimeOffset becomes 2/28. Otherwise, the month, day, and time-of-day
         // parts of the result are the same as those of this DateTimeOffset.
         //
-        public DateTimeOffset AddYears(int years)
-        {
-            return new DateTimeOffset(ClockDateTime.AddYears(years), Offset);
-        }
+        public DateTimeOffset AddYears(int years) =>
+            new DateTimeOffset(ClockDateTime.AddYears(years), Offset);
 
         // Compares two DateTimeOffset values, returning an integer that indicates
         // their relationship.
         //
-        public static int Compare(DateTimeOffset first, DateTimeOffset second)
-        {
-            return DateTime.Compare(first.UtcDateTime, second.UtcDateTime);
-        }
+        public static int Compare(DateTimeOffset first, DateTimeOffset second) =>
+            DateTime.Compare(first.UtcDateTime, second.UtcDateTime);
 
         // Compares this DateTimeOffset to a given object. This method provides an
         // implementation of the IComparable interface. The object
@@ -519,48 +377,34 @@ namespace System
         // is equal to the value of this DateTimeOffset. Returns false
         // otherwise.
         //
-        public override bool Equals(object? obj)
-        {
-            if (obj is DateTimeOffset)
-            {
-                return UtcDateTime.Equals(((DateTimeOffset)obj).UtcDateTime);
-            }
-            return false;
-        }
+        public override bool Equals(object? obj) =>
+            obj is DateTimeOffset && UtcDateTime.Equals(((DateTimeOffset)obj).UtcDateTime);
 
-        public bool Equals(DateTimeOffset other)
-        {
-            return UtcDateTime.Equals(other.UtcDateTime);
-        }
+        public bool Equals(DateTimeOffset other) =>
+            UtcDateTime.Equals(other.UtcDateTime);
 
-        public bool EqualsExact(DateTimeOffset other)
-        {
+        public bool EqualsExact(DateTimeOffset other) =>
             //
             // returns true when the ClockDateTime, Kind, and Offset match
             //
             // currently the Kind should always be Unspecified, but there is always the possibility that a future version
             // of DateTimeOffset overloads the Kind field
             //
-            return (ClockDateTime == other.ClockDateTime && Offset == other.Offset && ClockDateTime.Kind == other.ClockDateTime.Kind);
-        }
+            (ClockDateTime == other.ClockDateTime && Offset == other.Offset && ClockDateTime.Kind == other.ClockDateTime.Kind);
 
         // Compares two DateTimeOffset values for equality. Returns true if
         // the two DateTimeOffset values are equal, or false if they are
         // not equal.
         //
-        public static bool Equals(DateTimeOffset first, DateTimeOffset second)
-        {
-            return DateTime.Equals(first.UtcDateTime, second.UtcDateTime);
-        }
+        public static bool Equals(DateTimeOffset first, DateTimeOffset second) =>
+            DateTime.Equals(first.UtcDateTime, second.UtcDateTime);
 
         // Creates a DateTimeOffset from a Windows filetime. A Windows filetime is
         // a long representing the date and time as the number of
         // 100-nanosecond intervals that have elapsed since 1/1/1601 12:00am.
         //
-        public static DateTimeOffset FromFileTime(long fileTime)
-        {
-            return ToLocalTime(DateTime.FromFileTimeUtc(fileTime), true);
-        }
+        public static DateTimeOffset FromFileTime(long fileTime) =>
+            ToLocalTime(DateTime.FromFileTimeUtc(fileTime), true);
 
         public static DateTimeOffset FromUnixTimeSeconds(long seconds)
         {
@@ -630,10 +474,7 @@ namespace System
 
         // Returns the hash code for this DateTimeOffset.
         //
-        public override int GetHashCode()
-        {
-            return UtcDateTime.GetHashCode();
-        }
+        public override int GetHashCode() => UtcDateTime.GetHashCode();
 
         // Constructs a DateTimeOffset from a string. The string must specify a
         // date and optionally a time in a culture-specific or universal format.
@@ -739,21 +580,14 @@ namespace System
             return new DateTimeOffset(dateResult.Ticks, offset);
         }
 
-        public TimeSpan Subtract(DateTimeOffset value)
-        {
-            return UtcDateTime.Subtract(value.UtcDateTime);
-        }
+        public TimeSpan Subtract(DateTimeOffset value) =>
+            UtcDateTime.Subtract(value.UtcDateTime);
 
-        public DateTimeOffset Subtract(TimeSpan value)
-        {
-            return new DateTimeOffset(ClockDateTime.Subtract(value), Offset);
-        }
+        public DateTimeOffset Subtract(TimeSpan value) =>
+            new DateTimeOffset(ClockDateTime.Subtract(value), Offset);
 
 
-        public long ToFileTime()
-        {
-            return UtcDateTime.ToFileTime();
-        }
+        public long ToFileTime() => UtcDateTime.ToFileTime();
 
         public long ToUnixTimeSeconds()
         {
@@ -785,15 +619,11 @@ namespace System
             return milliseconds - UnixEpochMilliseconds;
         }
 
-        public DateTimeOffset ToLocalTime()
-        {
-            return ToLocalTime(false);
-        }
+        public DateTimeOffset ToLocalTime() =>
+            ToLocalTime(false);
 
-        internal DateTimeOffset ToLocalTime(bool throwOnOverflow)
-        {
-            return ToLocalTime(UtcDateTime, throwOnOverflow);
-        }
+        internal DateTimeOffset ToLocalTime(bool throwOnOverflow) =>
+            ToLocalTime(UtcDateTime, throwOnOverflow);
 
         private static DateTimeOffset ToLocalTime(DateTime utcDateTime, bool throwOnOverflow)
         {
@@ -810,33 +640,23 @@ namespace System
             return new DateTimeOffset(localTicks, offset);
         }
 
-        public override string ToString()
-        {
-            return DateTimeFormat.Format(ClockDateTime, null, null, Offset);
-        }
+        public override string ToString() =>
+            DateTimeFormat.Format(ClockDateTime, null, null, Offset);
 
-        public string ToString(string? format)
-        {
-            return DateTimeFormat.Format(ClockDateTime, format, null, Offset);
-        }
+        public string ToString(string? format) =>
+            DateTimeFormat.Format(ClockDateTime, format, null, Offset);
 
-        public string ToString(IFormatProvider? formatProvider)
-        {
-            return DateTimeFormat.Format(ClockDateTime, null, formatProvider, Offset);
-        }
+        public string ToString(IFormatProvider? formatProvider) =>
+            DateTimeFormat.Format(ClockDateTime, null, formatProvider, Offset);
 
-        public string ToString(string? format, IFormatProvider? formatProvider)
-        {
-            return DateTimeFormat.Format(ClockDateTime, format, formatProvider, Offset);
-        }
+        public string ToString(string? format, IFormatProvider? formatProvider) =>
+            DateTimeFormat.Format(ClockDateTime, format, formatProvider, Offset);
 
         public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? formatProvider = null) =>
             DateTimeFormat.TryFormat(ClockDateTime, destination, out charsWritten, format, formatProvider, Offset);
 
-        public DateTimeOffset ToUniversalTime()
-        {
-            return new DateTimeOffset(UtcDateTime);
-        }
+        public DateTimeOffset ToUniversalTime() =>
+            new DateTimeOffset(UtcDateTime);
 
         public static bool TryParse(string? input, out DateTimeOffset result)
         {

@@ -26,15 +26,10 @@ namespace System.Globalization
 
         public override DateTime MaxSupportedDateTime => s_maxDate;
 
-        protected override int DaysInYearBeforeMinSupportedYear
-        {
-            get
-            {
-                // 1900: 1-29 2-30 3-29 4-29 5-30 6-29 7-30 8-30 Leap8-29 9-30 10-30 11-29 12-30 from Calendrical Tabulations [1]
-                // [1] Reingold, Edward M, and Nachum Dershowitz. Calendrical Tabulations, 1900 - 2200.Cambridge: Cambridge Univ. Press, 2002.Print.
-                return 384;
-            }
-        }
+        protected override int DaysInYearBeforeMinSupportedYear =>
+            // 1900: 1-29 2-30 3-29 4-29 5-30 6-29 7-30 8-30 Leap8-29 9-30 10-30 11-29 12-30 from Calendrical Tabulations [1]
+            // [1] Reingold, Edward M, and Nachum Dershowitz. Calendrical Tabulations, 1900 - 2200.Cambridge: Cambridge Univ. Press, 2002.Print.
+            384;
 
         // Data for years 1901-1905 and 1907-2100 matches output of Calendrical Calculations [2] and published calendar tables [3].
         // For 1906, month 4 of the Chinese year starts on 24 Apr 1906 and has 29 days.  This is historially accurate
@@ -298,14 +293,9 @@ namespace System.Globalization
 
         internal override CalendarId ID => CalendarId.CHINESELUNISOLAR;
 
-        internal override CalendarId BaseCalendarID
-        {
-            get
-            {
-                //Use CAL_GREGORIAN just to get CurrentEraValue as 1 since we do not have data under the ID CAL_ChineseLunisolar yet
-                return CalendarId.GREGORIAN;
-            }
-        }
+        internal override CalendarId BaseCalendarID =>
+            //Use CAL_GREGORIAN just to get CurrentEraValue as 1 since we do not have data under the ID CAL_ChineseLunisolar yet
+            CalendarId.GREGORIAN;
 
         public override int[] Eras => new int[] { ChineseEra };
     }
