@@ -64,10 +64,8 @@
     <TargetGroup Condition="'$(TargetGroup)' == ''">netcoreapp</TargetGroup>
     <OSGroup Condition="'$(OSGroup)' == ''">$(DefaultOSGroup)</OSGroup>
     <ConfigurationGroup Condition="'$(ConfigurationGroup)' == ''">Debug</ConfigurationGroup>
-    <HostArch>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture)</HostArch>
-    <ArchGroup Condition="'$(ArchGroup)' == '' AND '$(HostArch)' == 'Arm'">arm</ArchGroup>
-    <ArchGroup Condition="'$(ArchGroup)' == '' AND '$(HostArch)' == 'Arm64'">arm64</ArchGroup>
-    <ArchGroup Condition="'$(ArchGroup)' == ''">x64</ArchGroup>
+    <HostArch>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant())</HostArch>
+    <ArchGroup Condition="'$(ArchGroup)' == ''">$(HostArch)</ArchGroup>
 
     <!-- Initialize BuildConfiguration from the individual properties if it wasn't already explicitly set -->
     <BuildConfiguration Condition="'$(BuildConfiguration)' == ''">$(TargetGroup)-$(OSGroup)-$(ConfigurationGroup)-$(ArchGroup)</BuildConfiguration>
@@ -135,9 +133,9 @@
     <_runtimeOS Condition="'$(_runtimeOS)' == 'tizen.4.0.0'">linux</_runtimeOS>
     <_runtimeOS Condition="'$(_runtimeOS)' == 'tizen.5.0.0'">linux</_runtimeOS>
     <_runtimeOS Condition="'$(PortableBuild)' == 'true'">$(_portableOS)</_runtimeOS>
-    <ToolRuntimeRID>$(_runtimeOS)-x64</ToolRuntimeRID>
+    <ToolRuntimeRID>$(_runtimeOS)-$(HostArch)</ToolRuntimeRID>
     <!-- We build linux-musl-arm on a ubuntu container, so we can't use the toolset build for alpine runtime. We need to use portable linux RID for our toolset in order to be able to use it. -->
-    <ToolRuntimeRID Condition="'$(_runtimeOS)' == 'linux-musl' AND $(ArchGroup.StartsWith('arm')) AND !$(HostArch.StartsWith('Arm'))">linux-x64</ToolRuntimeRID>
+    <ToolRuntimeRID Condition="'$(_runtimeOS)' == 'linux-musl' AND $(ArchGroup.StartsWith('arm')) AND !$(HostArch.StartsWith('arm'))">linux-x64</ToolRuntimeRID>
 
     <!-- There are no WebAssembly tools, so treat them as Windows -->
     <ToolRuntimeRID Condition="'$(RuntimeOS)' == 'WebAssembly'">win-x64</ToolRuntimeRID>
