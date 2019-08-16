@@ -517,8 +517,7 @@ namespace System.Text.RegularExpressions
         public void AddRange(char first, char last)
         {
             _rangelist.Add(new SingleRange(first, last));
-            if (_canonical && _rangelist.Count > 0 &&
-                first <= _rangelist[_rangelist.Count - 1].Last)
+            if (_canonical && first <= last)
             {
                 _canonical = false;
             }
