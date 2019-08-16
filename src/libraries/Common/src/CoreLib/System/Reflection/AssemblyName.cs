@@ -59,7 +59,7 @@ namespace System.Reflection
         {
             get
             {
-                return (_cultureInfo == null) ? null : _cultureInfo.Name;
+                return _cultureInfo?.Name;
             }
             set
             {
