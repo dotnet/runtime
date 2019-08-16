@@ -200,7 +200,7 @@ namespace System.Reflection
 
             composedOfAllPrivateMethods = (attributes & Attributes.ComposedOfAllPrivateMethods) != 0;
 
-            other = (otherList != null) ? otherList.ToArray() : null;
+            other = otherList?.ToArray();
         }
     }
 }
