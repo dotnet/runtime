@@ -99,7 +99,7 @@ namespace System.Reflection.Emit
                         // lower bound is specified. Consume the low bound
                         while (format[curIndex] >= '0' && format[curIndex] <= '9')
                         {
-                            iLowerBound = iLowerBound * 10;
+                            iLowerBound *= 10;
                             iLowerBound += format[curIndex] - '0';
                             curIndex++;
                         }
@@ -139,7 +139,7 @@ namespace System.Reflection.Emit
                             // lower bound is specified. Consume the low bound
                             while (format[curIndex] >= '0' && format[curIndex] <= '9')
                             {
-                                iUpperBound = iUpperBound * 10;
+                                iUpperBound *= 10;
                                 iUpperBound += format[curIndex] - '0';
                                 curIndex++;
                             }

@@ -379,7 +379,7 @@ namespace System
 
             if (match.Rule != null)
             {
-                baseOffset = baseOffset + match.Rule.BaseUtcOffsetDelta;
+                baseOffset += match.Rule.BaseUtcOffsetDelta;
                 if (match.Rule.HasDaylightSaving)
                 {
                     bool isDaylightSavings = GetIsDaylightSavingsFromUtc(time, timeYear, match.Offset, match.Rule, null, out isAmbiguousLocalDst, Local);

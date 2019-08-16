@@ -72,7 +72,7 @@ namespace System.Buffers.Text
             int digits = 1;
             if (value >= 100000)
             {
-                value = value / 100000;
+                value /= 100000;
                 digits += 5;
             }
 

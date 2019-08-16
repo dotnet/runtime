@@ -123,7 +123,7 @@ namespace System.Diagnostics.Tracing
                 byte current = (byte)((tagsLeft >> 21) & 0x7f);
                 more = (tagsLeft & 0x1fffff) != 0;
                 current |= (byte)(more ? 0x80 : 0x00);
-                tagsLeft = tagsLeft << 7;
+                tagsLeft <<= 7;
 
                 if (metadata != null)
                 {

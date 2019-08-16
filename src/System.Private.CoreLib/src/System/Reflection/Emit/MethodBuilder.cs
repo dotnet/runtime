@@ -91,7 +91,7 @@ namespace System.Reflection.Emit
             if ((attributes & MethodAttributes.Static) == 0)
             {
                 // turn on the has this calling convention
-                callingConvention = callingConvention | CallingConventions.HasThis;
+                callingConvention |= CallingConventions.HasThis;
             }
             else if ((attributes & MethodAttributes.Virtual) != 0)
             {
@@ -800,7 +800,7 @@ namespace System.Reflection.Emit
             if (position > 0 && (m_parameterTypes == null || position > m_parameterTypes.Length))
                 throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_ParamSequence);
 
-            attributes = attributes & ~ParameterAttributes.ReservedMask;
+            attributes &= ~ParameterAttributes.ReservedMask;
             return new ParameterBuilder(this, position, attributes, strParamName);
         }
 

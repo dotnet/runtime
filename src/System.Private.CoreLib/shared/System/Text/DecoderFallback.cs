@@ -300,7 +300,7 @@ namespace System.Text
         [DoesNotReturn]
         internal void ThrowLastBytesRecursive(byte[] bytesUnknown)
         {
-            bytesUnknown = bytesUnknown ?? Array.Empty<byte>();
+            bytesUnknown ??= Array.Empty<byte>();
 
             // Create a string representation of our bytes.
             StringBuilder strBytes = new StringBuilder(bytesUnknown.Length * 3);

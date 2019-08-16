@@ -579,7 +579,7 @@ namespace System.Threading
                             // If we see IsSet=false, then we are guaranteed that Set() will see that we are
                             // waiting and will pulse the monitor correctly.
 
-                            Waiters = Waiters + 1;
+                            Waiters++;
 
                             if (IsSet) //This check must occur after updating Waiters.
                             {
@@ -597,7 +597,7 @@ namespace System.Threading
                             finally
                             {
                                 // Clean up: we're done waiting.
-                                Waiters = Waiters - 1;
+                                Waiters--;
                             }
                             // Now just loop back around, and the right thing will happen.  Either:
                             //     1. We had a spurious wake-up due to some other wait being canceled via a different cancellationToken (rewait)
