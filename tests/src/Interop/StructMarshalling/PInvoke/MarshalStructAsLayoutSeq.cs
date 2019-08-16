@@ -29,6 +29,7 @@ public class Managed
         SequentialDoubleWrapperId,
         AggregateSequentialWrapperId,
         FixedBufferClassificationTestId,
+        UnicodeCharArrayClassificationId,
         HFAId,
         DoubleHFAId
     }
@@ -326,6 +327,8 @@ public class Managed
     static extern bool MarshalStructAsParam_AsSeqByValFixedBufferClassificationTest(FixedBufferClassificationTestBlittable str, float f);
     [DllImport("MarshalStructAsParam")]
     static extern bool MarshalStructAsParam_AsSeqByValFixedBufferClassificationTest(FixedArrayClassificationTest str, float f);
+    [DllImport("MarshalStructAsParam")]
+    static extern bool MarshalStructAsParam_AsSeqByValUnicodeCharArrayClassification(UnicodeCharArrayClassification str, float f);
     [DllImport("MarshalStructAsParam")]
     static extern int GetStringLength(AutoString str);
 
@@ -678,6 +681,19 @@ public class Managed
                     {
                         Console.WriteLine("\tFAILED! Managed to Native failed in MarshalStructAsParam_AsSeqByValFixedBufferClassificationTest. Expected:True;Actual:False");
                         failures++;
+                    }
+                    break;
+                case StructID.UnicodeCharArrayClassificationId:
+                    Console.WriteLine("\tCalling MarshalStructAsParam_AsSeqByValUnicodeCharArrayClassification with nonblittable struct...");
+                    unsafe
+                    {
+                        UnicodeCharArrayClassification str = new UnicodeCharArrayClassification { arr = new char[6] };
+                        str.f = 56.789f;
+                        if (!MarshalStructAsParam_AsSeqByValUnicodeCharArrayClassification(str, str.f))
+                        {
+                            Console.WriteLine("\tFAILED! Managed to Native failed in MarshalStructAsParam_AsSeqByValUnicodeCharArrayClassification. Expected:True;Actual:False");
+                            failures++;
+                        }
                     }
                     break;
                 case StructID.HFAId:
@@ -2345,6 +2361,7 @@ public class Managed
         MarshalStructAsParam_AsSeqByVal(StructID.SequentialDoubleWrapperId);
         MarshalStructAsParam_AsSeqByVal(StructID.AggregateSequentialWrapperId);
         MarshalStructAsParam_AsSeqByVal(StructID.FixedBufferClassificationTestId);
+        MarshalStructAsParam_AsSeqByVal(StructID.UnicodeCharArrayClassificationId);
         MarshalStructAsParam_AsSeqByVal(StructID.HFAId);
         MarshalStructAsParam_AsSeqByVal(StructID.DoubleHFAId);
     }

@@ -1194,6 +1194,11 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByValFixe
     return str.f == f;
 }
 
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByValUnicodeCharArrayClassification(UnicodeCharArrayClassification str, float f)
+{
+    return str.f == f;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////
 extern "C" DLL_EXPORT int GetStringLength(AutoString str)
 {
