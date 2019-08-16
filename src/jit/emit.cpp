@@ -6643,11 +6643,7 @@ void emitter::emitGCvarLiveUpd(int offs, int varNum, GCtype gcType, BYTE* addr)
                     LclVarDsc* varDsc = &emitComp->lvaTable[varNum];
                     isTracked         = emitComp->lvaIsGCTracked(varDsc);
                 }
-                else
-                {
-                    // Is it an untracked spill temp?
-                    isTracked = TRACK_GC_TEMP_LIFETIMES;
-                }
+
                 if (!isTracked)
                 {
 #if DOUBLE_ALIGN
