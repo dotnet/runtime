@@ -58,7 +58,7 @@ namespace System
                 if (oneYearLocFromUtc == null || oneYearLocFromUtc.Year != year)
                 {
                     TimeZoneInfo currentYear = GetCurrentOneYearLocal();
-                    AdjustmentRule? rule = currentYear._adjustmentRules == null ? null : currentYear._adjustmentRules[0];
+                    AdjustmentRule? rule = currentYear._adjustmentRules?[0];
                     oneYearLocFromUtc = new OffsetAndRule(year, currentYear.BaseUtcOffset, rule);
                     _oneYearLocalFromUtc = oneYearLocFromUtc;
                 }

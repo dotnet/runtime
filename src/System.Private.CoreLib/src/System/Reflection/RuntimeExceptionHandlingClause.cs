@@ -50,7 +50,7 @@ namespace System.Reflection
                 {
                     Type? declaringType = _methodBody._methodBase.DeclaringType;
                     Module module = (declaringType == null) ? _methodBody._methodBase.Module : declaringType.Module;
-                    type = module.ResolveType(_catchMetadataToken, (declaringType == null) ? null : declaringType.GetGenericArguments(),
+                    type = module.ResolveType(_catchMetadataToken, declaringType?.GetGenericArguments(),
                         _methodBody._methodBase is MethodInfo ? _methodBody._methodBase.GetGenericArguments() : null);
                 }
 
