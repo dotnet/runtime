@@ -66,7 +66,7 @@ namespace System.Threading
 
                     var newQueues = new WorkStealingQueue[oldQueues.Length + 1];
                     Array.Copy(oldQueues, 0, newQueues, 0, oldQueues.Length);
-                    newQueues[newQueues.Length - 1] = queue;
+                    newQueues[^1] = queue;
                     if (Interlocked.CompareExchange(ref _queues, newQueues, oldQueues) == oldQueues)
                     {
                         break;

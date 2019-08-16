@@ -885,7 +885,7 @@ namespace System
 
                 // Validate that `s_Pow10BigNumTable` has exactly enough trailing elements to fill a BigInteger (which contains MaxBlockCount + 1 elements)
                 // We validate here, since this is the only current consumer of the array
-                Debug.Assert((s_Pow10BigNumTableIndices[s_Pow10BigNumTableIndices.Length - 1] + MaxBlockCount + 2) == s_Pow10BigNumTable.Length);
+                Debug.Assert((s_Pow10BigNumTableIndices[^1] + MaxBlockCount + 2) == s_Pow10BigNumTable.Length);
 
                 BigInteger temp1 = new BigInteger(s_Pow10UInt32Table[exponent & 0x7]);
                 ref BigInteger lhs = ref temp1;

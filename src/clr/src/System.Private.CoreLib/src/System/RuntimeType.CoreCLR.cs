@@ -2309,7 +2309,7 @@ namespace System
                         if (shortByMoreThanOneSuppliedArgument)
                             return false;
 
-                        ParameterInfo lastParameter = parameterInfos[parameterInfos.Length - 1];
+                        ParameterInfo lastParameter = parameterInfos[^1];
 
                         if (!lastParameter.ParameterType.IsArray)
                             return false;
