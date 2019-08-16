@@ -4611,16 +4611,12 @@ void CodeGen::genCheckUseBlockInit()
     }
 
     /* Don't forget about spill temps that hold pointers */
-
-    if (!TRACK_GC_TEMP_LIFETIMES)
+    assert(regSet.tmpAllFree());
+    for (TempDsc* tempThis = regSet.tmpListBeg(); tempThis != nullptr; tempThis = regSet.tmpListNxt(tempThis))
     {
-        assert(regSet.tmpAllFree());
-        for (TempDsc* tempThis = regSet.tmpListBeg(); tempThis != nullptr; tempThis = regSet.tmpListNxt(tempThis))
+        if (varTypeIsGC(tempThis->tdTempType()))
         {
-            if (varTypeIsGC(tempThis->tdTempType()))
-            {
-                initStkLclCnt++;
-            }
+            initStkLclCnt++;
         }
     }
 
@@ -6375,20 +6371,17 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
             }
         }
 
-        if (!TRACK_GC_TEMP_LIFETIMES)
+        assert(regSet.tmpAllFree());
+        for (TempDsc* tempThis = regSet.tmpListBeg(); tempThis != nullptr; tempThis = regSet.tmpListNxt(tempThis))
         {
-            assert(regSet.tmpAllFree());
-            for (TempDsc* tempThis = regSet.tmpListBeg(); tempThis != nullptr; tempThis = regSet.tmpListNxt(tempThis))
+            if (!varTypeIsGC(tempThis->tdTempType()))
             {
-                if (!varTypeIsGC(tempThis->tdTempType()))
-                {
-                    continue;
-                }
-
-                // printf("initialize untracked spillTmp [EBP-%04X]\n", stkOffs);
-
-                inst_ST_RV(ins_Store(TYP_I_IMPL), tempThis, 0, genGetZeroReg(initReg, pInitRegZeroed), TYP_I_IMPL);
+                continue;
             }
+
+            // printf("initialize untracked spillTmp [EBP-%04X]\n", stkOffs);
+
+            inst_ST_RV(ins_Store(TYP_I_IMPL), tempThis, 0, genGetZeroReg(initReg, pInitRegZeroed), TYP_I_IMPL);
         }
     }
 }
@@ -7783,41 +7776,38 @@ void CodeGen::genFnProlog()
 
     /* Don't forget about spill temps that hold pointers */
 
-    if (!TRACK_GC_TEMP_LIFETIMES)
+    assert(regSet.tmpAllFree());
+    for (TempDsc* tempThis = regSet.tmpListBeg(); tempThis != nullptr; tempThis = regSet.tmpListNxt(tempThis))
     {
-        assert(regSet.tmpAllFree());
-        for (TempDsc* tempThis = regSet.tmpListBeg(); tempThis != nullptr; tempThis = regSet.tmpListNxt(tempThis))
+        if (!varTypeIsGC(tempThis->tdTempType()))
         {
-            if (!varTypeIsGC(tempThis->tdTempType()))
-            {
-                continue;
-            }
+            continue;
+        }
 
-            signed int loOffs = tempThis->tdTempOffs();
-            signed int hiOffs = loOffs + TARGET_POINTER_SIZE;
+        signed int loOffs = tempThis->tdTempOffs();
+        signed int hiOffs = loOffs + TARGET_POINTER_SIZE;
 
-            // If there is a frame pointer used, due to frame pointer chaining it will point to the stored value of the
-            // previous frame pointer. Thus, stkOffs can't be zero.
-            CLANG_FORMAT_COMMENT_ANCHOR;
+        // If there is a frame pointer used, due to frame pointer chaining it will point to the stored value of the
+        // previous frame pointer. Thus, stkOffs can't be zero.
+        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if !defined(_TARGET_AMD64_)
-            // However, on amd64 there is no requirement to chain frame pointers.
+        // However, on amd64 there is no requirement to chain frame pointers.
 
-            noway_assert(!isFramePointerUsed() || loOffs != 0);
+        noway_assert(!isFramePointerUsed() || loOffs != 0);
 #endif // !defined(_TARGET_AMD64_)
 
-            // printf("    Untracked tmp at [EBP-%04X]\n", -stkOffs);
+        // printf("    Untracked tmp at [EBP-%04X]\n", -stkOffs);
 
-            hasUntrLcl = true;
+        hasUntrLcl = true;
 
-            if (loOffs < untrLclLo)
-            {
-                untrLclLo = loOffs;
-            }
-            if (hiOffs > untrLclHi)
-            {
-                untrLclHi = hiOffs;
-            }
+        if (loOffs < untrLclLo)
+        {
+            untrLclLo = loOffs;
+        }
+        if (hiOffs > untrLclHi)
+        {
+            untrLclHi = hiOffs;
         }
     }
 
