@@ -39,7 +39,7 @@ namespace System
                 // Even if this exception is NOT thrown, things will still work as expected
                 //  because the StackTrace property returns the concatenation of the
                 //  _remoteStackTraceString and the _stackTraceString.
-                _remoteStackTraceString = _remoteStackTraceString + _stackTraceString;
+                _remoteStackTraceString += _stackTraceString;
                 _stackTraceString = null;
             }
         }

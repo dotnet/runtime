@@ -1440,7 +1440,7 @@ namespace System.Reflection.Emit
 
                 ThrowIfCreated();
 
-                attributes = attributes | MethodAttributes.PinvokeImpl;
+                attributes |= MethodAttributes.PinvokeImpl;
                 MethodBuilder method = new MethodBuilder(name, attributes, callingConvention,
                     returnType, returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers,
                     parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers,
@@ -1635,7 +1635,7 @@ namespace System.Reflection.Emit
                 name = ConstructorInfo.TypeConstructorName;
             }
 
-            attributes = attributes | MethodAttributes.SpecialName;
+            attributes |= MethodAttributes.SpecialName;
 
             ConstructorBuilder constBuilder =
                 new ConstructorBuilder(name, attributes, callingConvention,

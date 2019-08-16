@@ -233,7 +233,7 @@ namespace System
             {
                 // The exponent estimate was incorrect.
                 // Increment the exponent and don't perform the premultiply needed for the first loop iteration.
-                digitExponent = digitExponent + 1;
+                digitExponent++;
             }
             else
             {

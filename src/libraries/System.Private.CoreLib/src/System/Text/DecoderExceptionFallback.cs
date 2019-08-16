@@ -42,7 +42,7 @@ namespace System.Text
         [DoesNotReturn]
         private void Throw(byte[] bytesUnknown, int index)
         {
-            bytesUnknown = bytesUnknown ?? Array.Empty<byte>();
+            bytesUnknown ??= Array.Empty<byte>();
 
             // Create a string representation of our bytes.
             StringBuilder strBytes = new StringBuilder(bytesUnknown.Length * 3);

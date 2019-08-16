@@ -293,7 +293,7 @@ namespace System.Diagnostics.Tracing
                 eventName = this.eventName;
                 if (eventName.EndsWith("Start"))
                     eventName = eventName.Substring(0, eventName.Length - 5);
-                eventName = eventName + "Stop";
+                eventName += "Stop";
             }
             this.startStopOptions.Opcode = EventOpcode.Stop;
             this.eventSource.Write(eventName, ref this.startStopOptions, ref this.activityId, ref s_empty, ref data);
