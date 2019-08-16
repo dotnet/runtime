@@ -258,15 +258,10 @@ namespace System.Globalization
 
         internal override CalendarId ID => CalendarId.UMALQURA;
 
-        protected override int DaysInYearBeforeMinSupportedYear
-        {
-            get
-            {
-                // HijriCalendar has same number of days as UmAlQuraCalendar for any given year
-                // HijriCalendar says year 1317 has 355 days.
-                return 355;
-            }
-        }
+        protected override int DaysInYearBeforeMinSupportedYear =>
+            // HijriCalendar has same number of days as UmAlQuraCalendar for any given year
+            // HijriCalendar says year 1317 has 355 days.
+            355;
 
         private static void ConvertHijriToGregorian(int HijriYear, int HijriMonth, int HijriDay, out int yg, out int mg, out int dg)
         {

@@ -55,30 +55,15 @@ namespace System.Reflection.Emit
         #endregion
 
         #region MemberInfo Overrides
-        internal int MetadataTokenInternal
-        {
-            get { return m_methodBuilder.MetadataTokenInternal; }
-        }
+        internal int MetadataTokenInternal => m_methodBuilder.MetadataTokenInternal;
 
-        public override Module Module
-        {
-            get { return m_methodBuilder.Module; }
-        }
+        public override Module Module => m_methodBuilder.Module;
 
-        public override Type? ReflectedType
-        {
-            get { return m_methodBuilder.ReflectedType; }
-        }
+        public override Type? ReflectedType => m_methodBuilder.ReflectedType;
 
-        public override Type? DeclaringType
-        {
-            get { return m_methodBuilder.DeclaringType; }
-        }
+        public override Type? DeclaringType => m_methodBuilder.DeclaringType;
 
-        public override string Name
-        {
-            get { return m_methodBuilder.Name; }
-        }
+        public override string Name => m_methodBuilder.Name;
 
         #endregion
 
@@ -94,20 +79,14 @@ namespace System.Reflection.Emit
             return rci.GetParameters();
         }
 
-        public override MethodAttributes Attributes
-        {
-            get { return m_methodBuilder.Attributes; }
-        }
+        public override MethodAttributes Attributes => m_methodBuilder.Attributes;
 
         public override MethodImplAttributes GetMethodImplementationFlags()
         {
             return m_methodBuilder.GetMethodImplementationFlags();
         }
 
-        public override RuntimeMethodHandle MethodHandle
-        {
-            get { return m_methodBuilder.MethodHandle; }
-        }
+        public override RuntimeMethodHandle MethodHandle => m_methodBuilder.MethodHandle;
 
         #endregion
 
@@ -191,10 +170,7 @@ namespace System.Reflection.Emit
             return m_methodBuilder.ReturnType;
         }
 
-        public string Signature
-        {
-            get { return m_methodBuilder.Signature; }
-        }
+        public string Signature => m_methodBuilder.Signature;
 
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {

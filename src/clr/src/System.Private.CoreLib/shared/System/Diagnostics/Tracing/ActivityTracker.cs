@@ -243,7 +243,7 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// An activity tracker is a singleton, this is how you get the one and only instance.
         /// </summary>
-        public static ActivityTracker Instance { get { return s_activityTrackerInstance; } }
+        public static ActivityTracker Instance => s_activityTrackerInstance;
 
 
         #region private
@@ -323,13 +323,7 @@ namespace System.Diagnostics.Tracing
                 CreateActivityPathGuid(out m_guid, out m_activityPathGuidOffset);
             }
 
-            public Guid ActivityId
-            {
-                get
-                {
-                    return m_guid;
-                }
-            }
+            public Guid ActivityId => m_guid;
 
             public static string Path(ActivityInfo? activityInfo)
             {

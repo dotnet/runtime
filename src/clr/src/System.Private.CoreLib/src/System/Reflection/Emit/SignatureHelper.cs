@@ -669,13 +669,7 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Internal Members
-        internal int ArgumentCount
-        {
-            get
-            {
-                return m_argCount;
-            }
-        }
+        internal int ArgumentCount => m_argCount;
 
         internal static bool IsSimpleType(CorElementType type)
         {

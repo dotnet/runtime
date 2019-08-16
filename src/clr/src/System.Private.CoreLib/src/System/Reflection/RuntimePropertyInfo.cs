@@ -109,7 +109,7 @@ namespace System.Reflection
 
             return Signature.CompareSig(this.Signature, target.Signature);
         }
-        internal BindingFlags BindingFlags { get { return m_bindingFlags; } }
+        internal BindingFlags BindingFlags => m_bindingFlags;
         #endregion
 
         #region Object Overrides
@@ -172,7 +172,7 @@ namespace System.Reflection
         #endregion
 
         #region MemberInfo Overrides
-        public override MemberTypes MemberType { get { return MemberTypes.Property; } }
+        public override MemberTypes MemberType => MemberTypes.Property;
         public override string Name
         {
             get
@@ -183,35 +183,17 @@ namespace System.Reflection
                 return m_name;
             }
         }
-        public override Type? DeclaringType
-        {
-            get
-            {
-                return m_declaringType;
-            }
-        }
+        public override Type? DeclaringType => m_declaringType;
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => HasSameMetadataDefinitionAsCore<RuntimePropertyInfo>(other);
 
-        public override Type? ReflectedType
-        {
-            get
-            {
-                return ReflectedTypeInternal;
-            }
-        }
+        public override Type? ReflectedType => ReflectedTypeInternal;
 
-        private RuntimeType ReflectedTypeInternal
-        {
-            get
-            {
-                return m_reflectedTypeCache.GetRuntimeType();
-            }
-        }
+        private RuntimeType ReflectedTypeInternal => m_reflectedTypeCache.GetRuntimeType();
 
-        public override int MetadataToken { get { return m_token; } }
+        public override int MetadataToken => m_token;
 
-        public override Module Module { get { return GetRuntimeModule(); } }
+        public override Module Module => GetRuntimeModule();
         internal RuntimeModule GetRuntimeModule() { return m_declaringType.GetRuntimeModule(); }
         public override bool IsCollectible => m_declaringType.IsCollectible;
         #endregion
@@ -266,10 +248,7 @@ namespace System.Reflection
             return accessorList.ToArray();
         }
 
-        public override Type PropertyType
-        {
-            get { return Signature.ReturnType; }
-        }
+        public override Type PropertyType => Signature.ReturnType;
 
         public override MethodInfo? GetGetMethod(bool nonPublic)
         {
@@ -347,29 +326,11 @@ namespace System.Reflection
             return m_parameters;
         }
 
-        public override PropertyAttributes Attributes
-        {
-            get
-            {
-                return m_flags;
-            }
-        }
+        public override PropertyAttributes Attributes => m_flags;
 
-        public override bool CanRead
-        {
-            get
-            {
-                return m_getterMethod != null;
-            }
-        }
+        public override bool CanRead => m_getterMethod != null;
 
-        public override bool CanWrite
-        {
-            get
-            {
-                return m_setterMethod != null;
-            }
-        }
+        public override bool CanWrite => m_setterMethod != null;
         #endregion
 
         #region Dynamic

@@ -51,13 +51,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         private readonly string _NamespaceName;
         private readonly Collection<string> _ResolvedAssemblyFiles;
 
-        public Collection<string> ResolvedAssemblyFiles
-        {
-            get
-            {
-                return _ResolvedAssemblyFiles;
-            }
-        }
+        public Collection<string> ResolvedAssemblyFiles => _ResolvedAssemblyFiles;
 
         public DesignerNamespaceResolveEventArgs(string namespaceName)
         {

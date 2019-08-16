@@ -712,13 +712,7 @@ namespace System.IO
             {
             }
 
-            public override Encoding Encoding
-            {
-                get
-                {
-                    return Encoding.Unicode;
-                }
-            }
+            public override Encoding Encoding => Encoding.Unicode;
 
             public override void Write(char[] buffer, int index, int count)
             {

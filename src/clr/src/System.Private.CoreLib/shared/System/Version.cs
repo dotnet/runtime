@@ -110,35 +110,17 @@ namespace System
         }
 
         // Properties for setting and getting version numbers
-        public int Major
-        {
-            get { return _Major; }
-        }
+        public int Major => _Major;
 
-        public int Minor
-        {
-            get { return _Minor; }
-        }
+        public int Minor => _Minor;
 
-        public int Build
-        {
-            get { return _Build; }
-        }
+        public int Build => _Build;
 
-        public int Revision
-        {
-            get { return _Revision; }
-        }
+        public int Revision => _Revision;
 
-        public short MajorRevision
-        {
-            get { return (short)(_Revision >> 16); }
-        }
+        public short MajorRevision => (short)(_Revision >> 16);
 
-        public short MinorRevision
-        {
-            get { return (short)(_Revision & 0xFFFF); }
-        }
+        public short MinorRevision => (short)(_Revision & 0xFFFF);
 
         public int CompareTo(object? version)
         {

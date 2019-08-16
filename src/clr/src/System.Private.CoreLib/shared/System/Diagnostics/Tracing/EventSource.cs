@@ -249,11 +249,11 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// The human-friendly name of the eventSource.  It defaults to the simple name of the class
         /// </summary>
-        public string Name { get { return m_name; } }
+        public string Name => m_name;
         /// <summary>
         /// Every eventSource is assigned a GUID to uniquely identify it to the system.
         /// </summary>
-        public Guid Guid { get { return m_guid; } }
+        public Guid Guid => m_guid;
 
         /// <summary>
         /// Returns true if the eventSource has been enabled at all. This is the preferred test
@@ -305,10 +305,7 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// Returns the settings for the event source instance
         /// </summary>
-        public EventSourceSettings Settings
-        {
-            get { return m_config; }
-        }
+        public EventSourceSettings Settings => m_config;
 
         // Manifest support
         /// <summary>
@@ -446,7 +443,7 @@ namespace System.Diagnostics.Tracing
         /// The event source constructor does not throw exceptions.  Instead we remember any exception that
         /// was generated (it is also logged to Trace.WriteLine).
         /// </summary>
-        public Exception? ConstructionException { get { return m_constructionException; } }
+        public Exception? ConstructionException => m_constructionException;
 
         /// <summary>
         /// EventSources can have arbitrary string key-value pairs associated with them called Traits.
@@ -2896,10 +2893,7 @@ namespace System.Diagnostics.Tracing
             return false;
         }
 
-        private bool IsDisposed
-        {
-            get { return m_eventSourceDisposed; }
-        }
+        private bool IsDisposed => m_eventSourceDisposed;
 
         private void EnsureDescriptorsInitialized()
         {
@@ -3883,10 +3877,7 @@ namespace System.Diagnostics.Tracing
             return settings;
         }
 
-        private bool ThrowOnEventWriteErrors
-        {
-            get { return (m_config & EventSourceSettings.ThrowOnEventWriteErrors) != 0; }
-        }
+        private bool ThrowOnEventWriteErrors => (m_config & EventSourceSettings.ThrowOnEventWriteErrors) != 0;
 
         private bool SelfDescribingEvents
         {
@@ -4778,7 +4769,7 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// Gets the event source object.
         /// </summary>
-        public EventSource EventSource { get { return m_eventSource; } }
+        public EventSource EventSource => m_eventSource;
 
         /// <summary>
         /// Gets the keywords for the event.
@@ -5037,13 +5028,7 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        internal bool IsOpcodeSet
-        {
-            get
-            {
-                return m_opcodeSet;
-            }
-        }
+        internal bool IsOpcodeSet => m_opcodeSet;
 
         /// <summary>Event's task: allows logical grouping of events</summary>
         public EventTask Task { get; set; }
@@ -5241,10 +5226,7 @@ namespace System.Diagnostics.Tracing
             return (this.m_mask | m.m_mask) == this.m_mask;
         }
 
-        public static SessionMask All
-        {
-            get { return new SessionMask(MASK); }
-        }
+        public static SessionMask All => new SessionMask(MASK);
 
         public static SessionMask FromId(int perEventSourceSessionId)
         {
@@ -5685,7 +5667,7 @@ namespace System.Diagnostics.Tracing
             return Encoding.UTF8.GetBytes(str);
         }
 
-        public IList<string> Errors { get { return errors; } }
+        public IList<string> Errors => errors;
 
         /// <summary>
         /// When validating an event source it adds the error to the error collection.

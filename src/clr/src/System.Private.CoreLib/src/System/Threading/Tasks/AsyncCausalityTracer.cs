@@ -19,13 +19,7 @@ namespace System.Threading.Tasks
                 f_LoggingOn &= ~Loggers.ETW;
         }
 
-        internal static bool LoggingOn
-        {
-            get
-            {
-                return f_LoggingOn != 0;
-            }
-        }
+        internal static bool LoggingOn => f_LoggingOn != 0;
 
         //s_PlatformId = {4B0171A6-F3D0-41A0-9B33-02550652B995}
         private static readonly Guid s_PlatformId = new Guid(0x4B0171A6, 0xF3D0, 0x41A0, 0x9B, 0x33, 0x02, 0x55, 0x06, 0x52, 0xB9, 0x95);

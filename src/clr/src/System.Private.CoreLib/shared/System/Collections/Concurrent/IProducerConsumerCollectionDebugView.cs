@@ -28,9 +28,6 @@ namespace System.Collections.Concurrent
         /// Returns a snapshot of the underlying collection's elements.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        public T[] Items
-        {
-            get { return _collection.ToArray(); }
-        }
+        public T[] Items => _collection.ToArray();
     }
 }

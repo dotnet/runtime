@@ -118,63 +118,15 @@ namespace System.Diagnostics.Tracing
             m_task = (ushort)task;
         }
 
-        public int EventId
-        {
-            get
-            {
-                return m_id;
-            }
-        }
-        public byte Version
-        {
-            get
-            {
-                return m_version;
-            }
-        }
-        public byte Channel
-        {
-            get
-            {
-                return m_channel;
-            }
-        }
-        public byte Level
-        {
-            get
-            {
-                return m_level;
-            }
-        }
-        public byte Opcode
-        {
-            get
-            {
-                return m_opcode;
-            }
-        }
-        public int Task
-        {
-            get
-            {
-                return m_task;
-            }
-        }
-        public long Keywords
-        {
-            get
-            {
-                return m_keywords;
-            }
-        }
+        public int EventId => m_id;
+        public byte Version => m_version;
+        public byte Channel => m_channel;
+        public byte Level => m_level;
+        public byte Opcode => m_opcode;
+        public int Task => m_task;
+        public long Keywords => m_keywords;
 
-        internal int TraceLoggingId
-        {
-            get
-            {
-                return m_traceloggingId;
-            }
-        }
+        internal int TraceLoggingId => m_traceloggingId;
 
         public override bool Equals(object? obj)
         {

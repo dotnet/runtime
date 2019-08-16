@@ -440,9 +440,9 @@ namespace System.Reflection
         #endregion
 
         #region Public Members
-        public virtual Type AttributeType { get { return Constructor.DeclaringType!; } }
+        public virtual Type AttributeType => Constructor.DeclaringType!;
 
-        public virtual ConstructorInfo Constructor { get { return m_ctor; } }
+        public virtual ConstructorInfo Constructor => m_ctor;
 
         public virtual IList<CustomAttributeTypedArgument> ConstructorArguments
         {

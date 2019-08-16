@@ -16,6 +16,6 @@ namespace System
     {
         private IntPtr m_ptr;
 
-        internal IntPtr Value { get { return m_ptr; } }
+        internal IntPtr Value => m_ptr;
     }
 }

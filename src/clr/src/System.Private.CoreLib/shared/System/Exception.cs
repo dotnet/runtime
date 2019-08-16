@@ -52,21 +52,9 @@ namespace System
             RestoreRemoteStackTrace(info, context);
         }
 
-        public virtual string Message
-        {
-            get
-            {
-                return _message ?? SR.Format(SR.Exception_WasThrown, GetClassName());
-            }
-        }
+        public virtual string Message => _message ?? SR.Format(SR.Exception_WasThrown, GetClassName());
 
-        public virtual IDictionary Data
-        {
-            get
-            {
-                return _data ?? (_data = CreateDataContainer());
-            }
-        }
+        public virtual IDictionary Data => _data ??= CreateDataContainer();
 
         private string GetClassName() => GetType().ToString();
 

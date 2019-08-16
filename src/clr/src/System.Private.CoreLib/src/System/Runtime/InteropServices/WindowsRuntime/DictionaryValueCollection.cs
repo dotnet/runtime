@@ -39,15 +39,9 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
         }
 
-        public int Count
-        {
-            get { return dictionary.Count; }
-        }
+        public int Count => dictionary.Count;
 
-        bool ICollection<TValue>.IsReadOnly
-        {
-            get { return true; }
-        }
+        bool ICollection<TValue>.IsReadOnly => true;
 
         void ICollection<TValue>.Add(TValue item)
         {
@@ -109,15 +103,9 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             return enumeration.MoveNext();
         }
 
-        object? IEnumerator.Current
-        {
-            get { return ((IEnumerator<TValue>)this).Current; }
-        }
+        object? IEnumerator.Current => ((IEnumerator<TValue>)this).Current;
 
-        public TValue Current
-        {
-            get { return enumeration.Current.Value; }
-        }
+        public TValue Current => enumeration.Current.Value;
 
         public void Reset()
         {

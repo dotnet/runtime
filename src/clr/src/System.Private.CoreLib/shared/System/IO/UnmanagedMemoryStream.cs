@@ -195,26 +195,17 @@ namespace System.IO
         /// <summary>
         /// Returns true if the stream can be read; otherwise returns false.
         /// </summary>
-        public override bool CanRead
-        {
-            get { return _isOpen && (_access & FileAccess.Read) != 0; }
-        }
+        public override bool CanRead => _isOpen && (_access & FileAccess.Read) != 0;
 
         /// <summary>
         /// Returns true if the stream can seek; otherwise returns false.
         /// </summary>
-        public override bool CanSeek
-        {
-            get { return _isOpen; }
-        }
+        public override bool CanSeek => _isOpen;
 
         /// <summary>
         /// Returns true if the stream can be written to; otherwise returns false.
         /// </summary>
-        public override bool CanWrite
-        {
-            get { return _isOpen && (_access & FileAccess.Write) != 0; }
-        }
+        public override bool CanWrite => _isOpen && (_access & FileAccess.Write) != 0;
 
         /// <summary>
         /// Closes the stream. The stream's memory needs to be dealt with separately.

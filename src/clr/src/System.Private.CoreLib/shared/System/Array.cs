@@ -242,22 +242,22 @@ namespace System
         }
 
         // Number of elements in the Array.
-        int ICollection.Count { get { return Length; } }
+        int ICollection.Count => Length;
 
         // Returns an object appropriate for synchronizing access to this
         // Array.
-        public object SyncRoot { get { return this; } }
+        public object SyncRoot => this;
 
         // Is this Array read-only?
-        public bool IsReadOnly { get { return false; } }
+        public bool IsReadOnly => false;
 
-        public bool IsFixedSize { get { return true; } }
+        public bool IsFixedSize => true;
 
         // Is this Array synchronized (i.e., thread-safe)?  If you want a synchronized
         // collection, you can use SyncRoot as an object to synchronize your
         // collection with.  You could also call GetSynchronized()
         // to get a synchronized wrapper around the Array.
-        public bool IsSynchronized { get { return false; } }
+        public bool IsSynchronized => false;
 
         object? IList.this[int index]
         {

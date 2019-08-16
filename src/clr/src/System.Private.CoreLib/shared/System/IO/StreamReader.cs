@@ -250,15 +250,9 @@ namespace System.IO
             }
         }
 
-        public virtual Encoding CurrentEncoding
-        {
-            get { return _encoding; }
-        }
+        public virtual Encoding CurrentEncoding => _encoding;
 
-        public virtual Stream BaseStream
-        {
-            get { return _stream; }
-        }
+        public virtual Stream BaseStream => _stream;
 
         // DiscardBufferedData tells StreamReader to throw away its internal
         // buffer contents.  This is useful if the user needs to seek on the
@@ -1321,10 +1315,7 @@ namespace System.IO
         // Note this class is threadsafe.
         private sealed class NullStreamReader : StreamReader
         {
-            public override Encoding CurrentEncoding
-            {
-                get { return Encoding.Unicode; }
-            }
+            public override Encoding CurrentEncoding => Encoding.Unicode;
 
             protected override void Dispose(bool disposing)
             {

@@ -52,61 +52,19 @@ namespace System.Reflection.Emit
             return (m_flags >> StackChangeShift);
         }
 
-        public OperandType OperandType
-        {
-            get
-            {
-                return (OperandType)(m_flags & OperandTypeMask);
-            }
-        }
+        public OperandType OperandType => (OperandType)(m_flags & OperandTypeMask);
 
-        public FlowControl FlowControl
-        {
-            get
-            {
-                return (FlowControl)((m_flags >> FlowControlShift) & FlowControlMask);
-            }
-        }
+        public FlowControl FlowControl => (FlowControl)((m_flags >> FlowControlShift) & FlowControlMask);
 
-        public OpCodeType OpCodeType
-        {
-            get
-            {
-                return (OpCodeType)((m_flags >> OpCodeTypeShift) & OpCodeTypeMask);
-            }
-        }
+        public OpCodeType OpCodeType => (OpCodeType)((m_flags >> OpCodeTypeShift) & OpCodeTypeMask);
 
-        public StackBehaviour StackBehaviourPop
-        {
-            get
-            {
-                return (StackBehaviour)((m_flags >> StackBehaviourPopShift) & StackBehaviourMask);
-            }
-        }
+        public StackBehaviour StackBehaviourPop => (StackBehaviour)((m_flags >> StackBehaviourPopShift) & StackBehaviourMask);
 
-        public StackBehaviour StackBehaviourPush
-        {
-            get
-            {
-                return (StackBehaviour)((m_flags >> StackBehaviourPushShift) & StackBehaviourMask);
-            }
-        }
+        public StackBehaviour StackBehaviourPush => (StackBehaviour)((m_flags >> StackBehaviourPushShift) & StackBehaviourMask);
 
-        public int Size
-        {
-            get
-            {
-                return (m_flags >> SizeShift) & SizeMask;
-            }
-        }
+        public int Size => (m_flags >> SizeShift) & SizeMask;
 
-        public short Value
-        {
-            get
-            {
-                return (short)m_value;
-            }
-        }
+        public short Value => (short)m_value;
 
         private static volatile string[]? g_nameCache;
 

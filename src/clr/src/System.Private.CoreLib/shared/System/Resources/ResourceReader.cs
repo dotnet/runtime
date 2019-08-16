@@ -37,11 +37,7 @@ namespace System.Resources
             _value = value;
         }
 
-        internal int DataPosition
-        {
-            get { return _dataPos; }
-            //set { _dataPos = value; }
-        }
+        internal int DataPosition => _dataPos;
 
         // Allows adding in profiling data in a future version, or a special
         // resource profiling build.  We could also use WeakReference.

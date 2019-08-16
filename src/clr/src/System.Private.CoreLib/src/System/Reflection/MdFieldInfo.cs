@@ -51,17 +51,17 @@ namespace System.Reflection
             }
         }
 
-        public override int MetadataToken { get { return m_tkField; } }
+        public override int MetadataToken => m_tkField;
         internal override RuntimeModule GetRuntimeModule() { return m_declaringType.GetRuntimeModule(); }
         #endregion
 
         #region FieldInfo Overrides
-        public override RuntimeFieldHandle FieldHandle { get { throw new NotSupportedException(); } }
-        public override FieldAttributes Attributes { get { return m_fieldAttributes; } }
+        public override RuntimeFieldHandle FieldHandle => throw new NotSupportedException();
+        public override FieldAttributes Attributes => m_fieldAttributes;
 
-        public override bool IsSecurityCritical { get { return DeclaringType!.IsSecurityCritical; } }
-        public override bool IsSecuritySafeCritical { get { return DeclaringType!.IsSecuritySafeCritical; } }
-        public override bool IsSecurityTransparent { get { return DeclaringType!.IsSecurityTransparent; } }
+        public override bool IsSecurityCritical => DeclaringType!.IsSecurityCritical;
+        public override bool IsSecuritySafeCritical => DeclaringType!.IsSecuritySafeCritical;
+        public override bool IsSecurityTransparent => DeclaringType!.IsSecurityTransparent;
 
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]

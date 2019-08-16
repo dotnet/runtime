@@ -39,7 +39,7 @@ namespace System.Reflection
         public virtual IEnumerable<CustomAttributeData> CustomAttributes => GetCustomAttributesData();
         public virtual IList<CustomAttributeData> GetCustomAttributesData() { throw NotImplemented.ByDesign; }
         public virtual bool IsCollectible => true;
-        public virtual int MetadataToken { get { throw new InvalidOperationException(); } }
+        public virtual int MetadataToken => throw new InvalidOperationException();
 
         public override bool Equals(object? obj) => base.Equals(obj);
         public override int GetHashCode() => base.GetHashCode();

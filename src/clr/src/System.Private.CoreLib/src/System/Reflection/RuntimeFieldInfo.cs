@@ -29,14 +29,8 @@ namespace System.Reflection
         #endregion
 
         #region NonPublic Members
-        internal BindingFlags BindingFlags { get { return m_bindingFlags; } }
-        private RuntimeType ReflectedTypeInternal
-        {
-            get
-            {
-                return m_reflectedTypeCache.GetRuntimeType();
-            }
-        }
+        internal BindingFlags BindingFlags => m_bindingFlags;
+        private RuntimeType ReflectedTypeInternal => m_reflectedTypeCache.GetRuntimeType();
 
         internal RuntimeType GetDeclaringTypeInternal()
         {
@@ -48,26 +42,14 @@ namespace System.Reflection
         #endregion
 
         #region MemberInfo Overrides
-        public override MemberTypes MemberType { get { return MemberTypes.Field; } }
-        public override Type? ReflectedType
-        {
-            get
-            {
-                return m_reflectedTypeCache.IsGlobal ? null : ReflectedTypeInternal;
-            }
-        }
+        public override MemberTypes MemberType => MemberTypes.Field;
+        public override Type? ReflectedType => m_reflectedTypeCache.IsGlobal ? null : ReflectedTypeInternal;
 
-        public override Type? DeclaringType
-        {
-            get
-            {
-                return m_reflectedTypeCache.IsGlobal ? null : m_declaringType;
-            }
-        }
+        public override Type? DeclaringType => m_reflectedTypeCache.IsGlobal ? null : m_declaringType;
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => HasSameMetadataDefinitionAsCore<RuntimeFieldInfo>(other);
 
-        public override Module Module { get { return GetRuntimeModule(); } }
+        public override Module Module => GetRuntimeModule();
         public override bool IsCollectible => m_declaringType.IsCollectible;
         #endregion
 

@@ -440,10 +440,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                     _key = key;
                 }
 
-                internal EventCacheKey Key
-                {
-                    get { return _key; }
-                }
+                internal EventCacheKey Key => _key;
 
                 internal void Inc()
                 {

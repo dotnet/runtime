@@ -46,7 +46,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             public NonGenericToGenericEnumerator(IEnumerator enumerator)
             { this.enumerator = enumerator; }
 
-            public object? Current { get { return enumerator.Current; } }
+            public object? Current => enumerator.Current;
             public bool MoveNext() { return enumerator.MoveNext(); }
             public void Reset() { enumerator.Reset(); }
             public void Dispose() { }
@@ -94,13 +94,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
         }
 
-        object? IBindableIterator.Current
-        {
-            get
-            {
-                return ((IIterator<T>)this).Current;
-            }
-        }
+        object? IBindableIterator.Current => ((IIterator<T>)this).Current;
 
         public bool HasCurrent
         {

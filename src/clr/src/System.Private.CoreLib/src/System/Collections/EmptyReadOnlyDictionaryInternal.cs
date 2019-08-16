@@ -51,29 +51,11 @@ namespace System.Collections
             // the actual copy is a NOP
         }
 
-        public int Count
-        {
-            get
-            {
-                return 0;
-            }
-        }
+        public int Count => 0;
 
-        public object SyncRoot
-        {
-            get
-            {
-                return this;
-            }
-        }
+        public object SyncRoot => this;
 
-        public bool IsSynchronized
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public bool IsSynchronized => false;
 
         // IDictionary members
 
@@ -104,21 +86,9 @@ namespace System.Collections
             }
         }
 
-        public ICollection Keys
-        {
-            get
-            {
-                return Array.Empty<object>();
-            }
-        }
+        public ICollection Keys => Array.Empty<object>();
 
-        public ICollection Values
-        {
-            get
-            {
-                return Array.Empty<object>();
-            }
-        }
+        public ICollection Values => Array.Empty<object>();
 
         public bool Contains(object key)
         {
@@ -146,21 +116,9 @@ namespace System.Collections
             throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
         }
 
-        public bool IsReadOnly
-        {
-            get
-            {
-                return true;
-            }
-        }
+        public bool IsReadOnly => true;
 
-        public bool IsFixedSize
-        {
-            get
-            {
-                return true;
-            }
-        }
+        public bool IsFixedSize => true;
 
         public IDictionaryEnumerator GetEnumerator()
         {
@@ -185,13 +143,7 @@ namespace System.Collections
                 return false;
             }
 
-            public object? Current
-            {
-                get
-                {
-                    throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
-                }
-            }
+            public object? Current => throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
 
             public void Reset()
             {
@@ -199,29 +151,11 @@ namespace System.Collections
 
             // IDictionaryEnumerator members
 
-            public object Key
-            {
-                get
-                {
-                    throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
-                }
-            }
+            public object Key => throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
 
-            public object? Value
-            {
-                get
-                {
-                    throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
-                }
-            }
+            public object? Value => throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
 
-            public DictionaryEntry Entry
-            {
-                get
-                {
-                    throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
-                }
-            }
+            public DictionaryEntry Entry => throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
         }
     }
 }

@@ -298,10 +298,7 @@ namespace System.Reflection.Emit
             return m_cRank;
         }
 
-        public override Guid GUID
-        {
-            get { throw new NotSupportedException(SR.NotSupported_NonReflectedType); }
-        }
+        public override Guid GUID => throw new NotSupportedException(SR.NotSupported_NonReflectedType);
 
         public override object InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target,
             object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters)
@@ -332,10 +329,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override RuntimeTypeHandle TypeHandle
-        {
-            get { throw new NotSupportedException(SR.NotSupported_NonReflectedType); }
-        }
+        public override RuntimeTypeHandle TypeHandle => throw new NotSupportedException(SR.NotSupported_NonReflectedType);
 
         public override string Name
         {
@@ -351,36 +345,18 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override string? FullName
-        {
-            get
-            {
-                return TypeNameBuilder.ToString(this, TypeNameBuilder.Format.FullName);
-            }
-        }
+        public override string? FullName => TypeNameBuilder.ToString(this, TypeNameBuilder.Format.FullName);
 
-        public override string? AssemblyQualifiedName
-        {
-            get
-            {
-                return TypeNameBuilder.ToString(this, TypeNameBuilder.Format.AssemblyQualifiedName);
-            }
-        }
+        public override string? AssemblyQualifiedName => TypeNameBuilder.ToString(this, TypeNameBuilder.Format.AssemblyQualifiedName);
 
         public override string ToString()
         {
             return TypeNameBuilder.ToString(this, TypeNameBuilder.Format.ToString)!;
         }
 
-        public override string? Namespace
-        {
-            get { return m_baseType.Namespace; }
-        }
+        public override string? Namespace => m_baseType.Namespace;
 
-        public override Type BaseType
-        {
-            get { return typeof(System.Array); }
-        }
+        public override Type BaseType => typeof(System.Array);
 
         protected override ConstructorInfo GetConstructorImpl(BindingFlags bindingAttr, Binder? binder,
                 CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers)
@@ -513,13 +489,7 @@ namespace System.Reflection.Emit
             return false;
         }
 
-        public override bool IsConstructedGenericType
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public override bool IsConstructedGenericType => false;
 
         public override Type? GetElementType()
         {
@@ -531,10 +501,7 @@ namespace System.Reflection.Emit
             return m_baseType != null;
         }
 
-        public override Type UnderlyingSystemType
-        {
-            get { return this; }
-        }
+        public override Type UnderlyingSystemType => this;
 
         public override object[] GetCustomAttributes(bool inherit)
         {

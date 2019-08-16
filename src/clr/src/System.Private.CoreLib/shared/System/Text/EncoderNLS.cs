@@ -214,13 +214,7 @@ namespace System.Text
             }
         }
 
-        public bool MustFlush
-        {
-            get
-            {
-                return _mustFlush;
-            }
-        }
+        public bool MustFlush => _mustFlush;
 
         /// <summary>
         /// States whether a call to <see cref="Encoding.GetBytes(char*, int, byte*, int, EncoderNLS)"/> must first drain data on this <see cref="EncoderNLS"/> instance.
@@ -228,13 +222,7 @@ namespace System.Text
         internal bool HasLeftoverData => _charLeftOver != default || (_fallbackBuffer != null && _fallbackBuffer.Remaining > 0);
 
         // Anything left in our encoder?
-        internal virtual bool HasState
-        {
-            get
-            {
-                return (_charLeftOver != (char)0);
-            }
-        }
+        internal virtual bool HasState => (_charLeftOver != (char)0);
 
         // Allow encoding to clear our must flush instead of throwing (in ThrowBytesOverflow)
         internal void ClearMustFlush()

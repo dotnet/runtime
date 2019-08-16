@@ -888,14 +888,14 @@ namespace System.Reflection.Emit
                 return m_localSignature;
             }
         }
-        internal byte[] Exceptions { get { return m_exceptions; } }
-        internal byte[] Code { get { return m_code; } }
-        internal int MaxStackSize { get { return m_maxStackSize; } }
+        internal byte[] Exceptions => m_exceptions;
+        internal byte[] Code => m_code;
+        internal int MaxStackSize => m_maxStackSize;
         #endregion
 
         #region Public ILGenerator Methods
-        public DynamicMethod DynamicMethod { get { return m_method; } }
-        internal DynamicScope DynamicScope { get { return m_scope; } }
+        public DynamicMethod DynamicMethod => m_method;
+        internal DynamicScope DynamicScope => m_scope;
 
         public void SetCode(byte[]? code, int maxStackSize)
         {

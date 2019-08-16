@@ -53,25 +53,13 @@ namespace System.Diagnostics.Tracing
             set;
         }
 
-        internal int ScratchSize
-        {
-            get { return this.impl.scratchSize; }
-        }
+        internal int ScratchSize => this.impl.scratchSize;
 
-        internal int DataCount
-        {
-            get { return this.impl.dataCount; }
-        }
+        internal int DataCount => this.impl.dataCount;
 
-        internal int PinCount
-        {
-            get { return this.impl.pinCount; }
-        }
+        internal int PinCount => this.impl.pinCount;
 
-        private bool BeginningBufferedArray
-        {
-            get { return this.bufferedArrayFieldCount == 0; }
-        }
+        private bool BeginningBufferedArray => this.bufferedArrayFieldCount == 0;
 
         /// <summary>
         /// Call this method to add a group to the event and to return

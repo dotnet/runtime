@@ -73,10 +73,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>Gets whether the task being awaited is completed.</summary>
         /// <remarks>This property is intended for compiler user rather than use directly in code.</remarks>
         /// <exception cref="System.NullReferenceException">The awaiter was not properly initialized.</exception>
-        public bool IsCompleted
-        {
-            get { return m_task.IsCompleted; }
-        }
+        public bool IsCompleted => m_task.IsCompleted;
 
         /// <summary>Schedules the continuation onto the <see cref="System.Threading.Tasks.Task"/> associated with this <see cref="TaskAwaiter"/>.</summary>
         /// <param name="continuation">The action to invoke when the await operation completes.</param>
@@ -334,10 +331,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>Gets whether the task being awaited is completed.</summary>
         /// <remarks>This property is intended for compiler user rather than use directly in code.</remarks>
         /// <exception cref="System.NullReferenceException">The awaiter was not properly initialized.</exception>
-        public bool IsCompleted
-        {
-            get { return m_task.IsCompleted; }
-        }
+        public bool IsCompleted => m_task.IsCompleted;
 
         /// <summary>Schedules the continuation onto the <see cref="System.Threading.Tasks.Task"/> associated with this <see cref="TaskAwaiter"/>.</summary>
         /// <param name="continuation">The action to invoke when the await operation completes.</param>
@@ -439,10 +433,7 @@ namespace System.Runtime.CompilerServices
             /// <summary>Gets whether the task being awaited is completed.</summary>
             /// <remarks>This property is intended for compiler user rather than use directly in code.</remarks>
             /// <exception cref="System.NullReferenceException">The awaiter was not properly initialized.</exception>
-            public bool IsCompleted
-            {
-                get { return m_task.IsCompleted; }
-            }
+            public bool IsCompleted => m_task.IsCompleted;
 
             /// <summary>Schedules the continuation onto the <see cref="System.Threading.Tasks.Task"/> associated with this <see cref="TaskAwaiter"/>.</summary>
             /// <param name="continuation">The action to invoke when the await operation completes.</param>
@@ -527,10 +518,7 @@ namespace System.Runtime.CompilerServices
             /// <summary>Gets whether the task being awaited is completed.</summary>
             /// <remarks>This property is intended for compiler user rather than use directly in code.</remarks>
             /// <exception cref="System.NullReferenceException">The awaiter was not properly initialized.</exception>
-            public bool IsCompleted
-            {
-                get { return m_task.IsCompleted; }
-            }
+            public bool IsCompleted => m_task.IsCompleted;
 
             /// <summary>Schedules the continuation onto the <see cref="System.Threading.Tasks.Task"/> associated with this <see cref="TaskAwaiter"/>.</summary>
             /// <param name="continuation">The action to invoke when the await operation completes.</param>

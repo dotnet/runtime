@@ -194,15 +194,9 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             return enumeration.MoveNext();
         }
 
-        object? IEnumerator.Current
-        {
-            get { return ((IEnumerator<TKey>)this).Current; }
-        }
+        object? IEnumerator.Current => ((IEnumerator<TKey>)this).Current;
 
-        public TKey Current
-        {
-            get { return enumeration.Current.Key; }
-        }
+        public TKey Current => enumeration.Current.Key;
 
         public void Reset()
         {
@@ -293,15 +287,9 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             return enumeration.MoveNext();
         }
 
-        object? IEnumerator.Current
-        {
-            get { return ((IEnumerator<TValue>)this).Current; }
-        }
+        object? IEnumerator.Current => ((IEnumerator<TValue>)this).Current;
 
-        public TValue Current
-        {
-            get { return enumeration.Current.Value; }
-        }
+        public TValue Current => enumeration.Current.Value;
 
         public void Reset()
         {
