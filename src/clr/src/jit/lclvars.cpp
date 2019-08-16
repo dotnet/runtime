@@ -6695,46 +6695,15 @@ int Compiler::lvaAllocateTemps(int stkOffs, bool mustDoubleAlign)
 #ifdef _TARGET_ARM_
         preSpillSize = genCountBits(codeGen->regSet.rsMaskPreSpillRegs(true)) * TARGET_POINTER_SIZE;
 #endif
-        bool assignDone;
-        bool assignNptr;
-        bool assignPtrs = true;
 
         /* Allocate temps */
 
-        if (TRACK_GC_TEMP_LIFETIMES)
-        {
-            /* first pointers, then non-pointers in second pass */
-            assignNptr = false;
-            assignDone = false;
-        }
-        else
-        {
-            /* Pointers and non-pointers together in single pass */
-            assignNptr = true;
-            assignDone = true;
-        }
-
         assert(codeGen->regSet.tmpAllFree());
-
-    AGAIN2:
 
         for (TempDsc* temp = codeGen->regSet.tmpListBeg(); temp != nullptr; temp = codeGen->regSet.tmpListNxt(temp))
         {
             var_types tempType = temp->tdTempType();
-            unsigned  size;
-
-            /* Make sure the type is appropriate */
-
-            if (!assignPtrs && varTypeIsGC(tempType))
-            {
-                continue;
-            }
-            if (!assignNptr && !varTypeIsGC(tempType))
-            {
-                continue;
-            }
-
-            size = temp->tdTempSize();
+            unsigned  size     = temp->tdTempSize();
 
             /* Figure out and record the stack offset of the temp */
 
@@ -6782,17 +6751,6 @@ int Compiler::lvaAllocateTemps(int stkOffs, bool mustDoubleAlign)
         // Only required for the ARM platform that we have an accurate estimate for the spillTempSize
         noway_assert(spillTempSize <= lvaGetMaxSpillTempSize());
 #endif
-
-        /* If we've only assigned some temps, go back and do the rest now */
-
-        if (!assignDone)
-        {
-            assignNptr = !assignNptr;
-            assignPtrs = !assignPtrs;
-            assignDone = true;
-
-            goto AGAIN2;
-        }
     }
     else // We haven't run codegen, so there are no Spill temps yet!
     {
