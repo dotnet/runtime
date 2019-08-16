@@ -1115,7 +1115,6 @@ namespace System
 
             int index = 0;
             int num = value[0];
-            uint numValue;
 
             // Skip past any whitespace at the beginning.
             if ((styles & NumberStyles.AllowLeadingWhite) != 0 && IsWhite(num))
@@ -1158,6 +1157,8 @@ namespace System
                     if ((uint)index >= (uint)value.Length)
                         goto DoneAtEnd;
                     num = value[index];
+
+                    uint numValue;
                     if ((uint)num >= (uint)charToHexLookup.Length || (numValue = charToHexLookup[num]) == 0xFF)
                         goto HasTrailingChars;
                     index++;
@@ -1168,7 +1169,7 @@ namespace System
                 if ((uint)index >= (uint)value.Length)
                     goto DoneAtEnd;
                 num = value[index];
-                if ((uint)num >= (uint)charToHexLookup.Length || (numValue = charToHexLookup[num]) == 0xFF)
+                if ((uint)num >= (uint)charToHexLookup.Length || charToHexLookup[num] == 0xFF)
                     goto HasTrailingChars;
 
                 // At this point, we're either overflowing or hitting a formatting error.
@@ -1443,7 +1444,6 @@ namespace System
 
             int index = 0;
             int num = value[0];
-            uint numValue;
 
             // Skip past any whitespace at the beginning.
             if ((styles & NumberStyles.AllowLeadingWhite) != 0 && IsWhite(num))
@@ -1486,6 +1486,8 @@ namespace System
                     if ((uint)index >= (uint)value.Length)
                         goto DoneAtEnd;
                     num = value[index];
+
+                    uint numValue;
                     if ((uint)num >= (uint)charToHexLookup.Length || (numValue = charToHexLookup[num]) == 0xFF)
                         goto HasTrailingChars;
                     index++;
@@ -1496,7 +1498,7 @@ namespace System
                 if ((uint)index >= (uint)value.Length)
                     goto DoneAtEnd;
                 num = value[index];
-                if ((uint)num >= (uint)charToHexLookup.Length || (numValue = charToHexLookup[num]) == 0xFF)
+                if ((uint)num >= (uint)charToHexLookup.Length || charToHexLookup[num] == 0xFF)
                     goto HasTrailingChars;
 
                 // At this point, we're either overflowing or hitting a formatting error.

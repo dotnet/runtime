@@ -243,8 +243,8 @@ namespace System
             //
             // Try using the "kernel32!GetDynamicTimeZoneInformation" API to get the "id"
             //
-            var dynamicTimeZoneInformation = new TIME_DYNAMIC_ZONE_INFORMATION();
 
+            TIME_DYNAMIC_ZONE_INFORMATION dynamicTimeZoneInformation;
             // call kernel32!GetDynamicTimeZoneInformation...
             uint result = Interop.Kernel32.GetDynamicTimeZoneInformation(out dynamicTimeZoneInformation);
             if (result == Interop.Kernel32.TIME_ZONE_ID_INVALID)
@@ -371,23 +371,22 @@ namespace System
         // DateTime.Now fast path that avoids allocating an historically accurate TimeZoneInfo.Local and just creates a 1-year (current year) accurate time zone
         internal static TimeSpan GetDateTimeNowUtcOffsetFromUtc(DateTime time, out bool isAmbiguousLocalDst)
         {
-            bool isDaylightSavings = false;
             isAmbiguousLocalDst = false;
-            TimeSpan baseOffset;
             int timeYear = time.Year;
 
             OffsetAndRule match = s_cachedData.GetOneYearLocalFromUtc(timeYear);
-            baseOffset = match.Offset;
+            TimeSpan baseOffset = match.Offset;
 
             if (match.Rule != null)
             {
                 baseOffset = baseOffset + match.Rule.BaseUtcOffsetDelta;
                 if (match.Rule.HasDaylightSaving)
                 {
-                    isDaylightSavings = GetIsDaylightSavingsFromUtc(time, timeYear, match.Offset, match.Rule, null, out isAmbiguousLocalDst, Local);
+                    bool isDaylightSavings = GetIsDaylightSavingsFromUtc(time, timeYear, match.Offset, match.Rule, null, out isAmbiguousLocalDst, Local);
                     baseOffset += (isDaylightSavings ? match.Rule.DaylightDelta : TimeSpan.Zero /* FUTURE: rule.StandardDelta */);
                 }
             }
+
             return baseOffset;
         }
 

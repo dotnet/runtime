@@ -16,8 +16,7 @@ namespace System.Reflection
         {
             Debug.Assert(method is RuntimeMethodInfo || method is RuntimeConstructorInfo);
 
-            ParameterInfo? dummy;
-            return GetParameters(method, member, sig, out dummy, false);
+            return GetParameters(method, member, sig, out _, false);
         }
 
         internal static unsafe ParameterInfo GetReturnParameter(IRuntimeMethodInfo method, MemberInfo member, Signature sig)

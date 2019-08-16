@@ -478,8 +478,7 @@ namespace System.Reflection
 
         public ConstArray GetMemberRefProps(int memberTokenRef)
         {
-            ConstArray signature = new ConstArray();
-
+            ConstArray signature;
             _GetMemberRefProps(m_metadataImport2, memberTokenRef, out signature);
 
             return signature;

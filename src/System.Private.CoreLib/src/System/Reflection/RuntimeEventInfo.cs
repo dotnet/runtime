@@ -46,10 +46,9 @@ namespace System.Reflection
 
             scope.GetEventProps(tkEvent, out m_utf8name, out m_flags);
 
-            RuntimeMethodInfo? dummy;
             Associates.AssignAssociates(scope, tkEvent, declaredType, reflectedType,
                 out m_addMethod, out m_removeMethod, out m_raiseMethod,
-                out dummy, out dummy, out m_otherMethod, out isPrivate, out m_bindingFlags);
+                out _, out _, out m_otherMethod, out isPrivate, out m_bindingFlags);
         }
         #endregion
 

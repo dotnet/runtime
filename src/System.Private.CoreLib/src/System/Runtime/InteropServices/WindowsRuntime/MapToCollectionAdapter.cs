@@ -113,8 +113,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             {
                 IVector<KeyValuePair<K, V>> _this_vector = Unsafe.As<IVector<KeyValuePair<K, V>>>(this);
 
-                uint index;
-                return _this_vector.IndexOf(item, out index);
+                return _this_vector.IndexOf(item, out _);
             }
         }
 

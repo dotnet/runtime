@@ -16,18 +16,14 @@ namespace System.Reflection.Emit
         internal ConstructorBuilder(string name, MethodAttributes attributes, CallingConventions callingConvention,
             Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers, ModuleBuilder mod, TypeBuilder type)
         {
-            int sigLength;
-            byte[] sigBytes;
-            MethodToken token;
-
             m_methodBuilder = new MethodBuilder(name, attributes, callingConvention, null, null, null,
                 parameterTypes, requiredCustomModifiers, optionalCustomModifiers, mod, type, false);
 
             type.m_listMethods.Add(m_methodBuilder);
 
-            sigBytes = m_methodBuilder.GetMethodSignature().InternalGetSignature(out sigLength);
+            m_methodBuilder.GetMethodSignature().InternalGetSignature(out _);
 
-            token = m_methodBuilder.GetToken();
+            m_methodBuilder.GetToken();
         }
 
         internal ConstructorBuilder(string name, MethodAttributes attributes, CallingConventions callingConvention,
