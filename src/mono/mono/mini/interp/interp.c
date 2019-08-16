@@ -3193,11 +3193,10 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 	MonoObject *o = NULL;
 	MonoClass *c;
 #if USE_COMPUTED_GOTO
-	static void *in_labels[] = {
-#define OPDEF(a,b,c,d) \
-	&&LAB_ ## a,
+	static void * const in_labels[] = {
+#define OPDEF(a,b,c,d) &&LAB_ ## a,
 #include "mintops.def"
-	0 };
+	};
 #endif
 
 	frame->ex = NULL;
