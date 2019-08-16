@@ -150,7 +150,7 @@ namespace System.Reflection.Emit
             // defined on the return parameters won't be very useful but won't do much harm either.
 
             // MD will assert if we try to set the reserved bits explicitly
-            attributes = attributes & ~ParameterAttributes.ReservedMask;
+            attributes &= ~ParameterAttributes.ReservedMask;
             return m_methodBuilder.DefineParameter(iSequence, attributes, strParamName);
         }
 

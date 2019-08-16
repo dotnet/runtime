@@ -348,7 +348,7 @@ namespace System.StubHelpers
             pNative = (byte*)Marshal.AllocCoTaskMem(nbytes);
             int* pLength = (int*)pNative;
 
-            pNative = pNative + sizeof(uint);
+            pNative += sizeof(uint);
 
             if (0 == cch)
             {
