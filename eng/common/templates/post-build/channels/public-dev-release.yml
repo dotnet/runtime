@@ -36,6 +36,7 @@ stages:
             /p:DotNetSymbolServerTokenSymWeb=$(symweb-symbol-server-pat) 
             /p:PDBArtifactsDirectory='$(Build.ArtifactStagingDirectory)/PDBArtifacts/'
             /p:BlobBasePath='$(Build.ArtifactStagingDirectory)/BlobArtifacts/'
+            /p:SymbolPublishingExclusionsFile='$(Build.SourcesDirectory)/eng/SymbolPublishingExclusionsFile.txt'
             /p:Configuration=Release
             ${{ parameters.symbolPublishingAdditionalParameters }}
 
