@@ -131,7 +131,7 @@ namespace System.Reflection
         {
             get
             {
-                MethodBase? result = m_originalMember != null ? m_originalMember : MemberImpl as MethodBase;
+                MethodBase? result = m_originalMember ?? MemberImpl as MethodBase;
                 Debug.Assert(result != null);
                 return result;
             }
