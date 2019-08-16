@@ -109,6 +109,23 @@ patch-local-dotnet: prepare
 	cp System.Private.CoreLib/bin/$(COREARCH)/System.Private.CoreLib.dll ../.dotnet/shared/Microsoft.NETCore.App/$(BOOTSTRAP_RUNTIME)
 	cp System.Private.CoreLib/bin/$(COREARCH)/System.Private.CoreLib.pdb ../.dotnet/shared/Microsoft.NETCore.App/$(BOOTSTRAP_RUNTIME)
 
+# Precompile BCL libs in $(DOTNET) using LLVM (requires `--enable-llvm` build)
+patch-local-dotnet-aot-llvm: patch-local-dotnet
+	for assembly in ../.dotnet/shared/Microsoft.NETCore.App/$(BOOTSTRAP_RUNTIME)/*.dll; do \
+		echo "[AOT] $$assembly"; \
+		PATH="../llvm/usr/bin/:$(PATH)" \
+		MONO_ENV_OPTIONS="--aot=llvm,llvmllc=\"-mcpu=native\"" \
+		$(DOTNET) $$assembly ; \
+	done; \
+
+# run HelloWorld using --aot=llvm (requires `--enable-llvm` build)
+run-sample-local-dotnet-llvm: patch-local-dotnet
+	$(DOTNET) build -c Release sample/HelloWorld
+	PATH="../llvm/usr/bin/:$(PATH)" \
+	MONO_ENV_OPTIONS="--aot=llvm,llvmllc=\"-mcpu=native\"" \
+	$(DOTNET) sample/HelloWorld/bin/netcoreapp3.0/HelloWorld.dll
+	$(DOTNET) sample/HelloWorld/bin/netcoreapp3.0/HelloWorld.dll
+
 # COREHOST_TRACE=1 
 SHAREDRUNTIME := shared/Microsoft.NETCore.App/$(NETCOREAPP_VERSION)
 
