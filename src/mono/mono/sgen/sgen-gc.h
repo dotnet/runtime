@@ -477,6 +477,8 @@ int sgen_get_current_collection_generation (void);
 gboolean sgen_collection_is_concurrent (void);
 gboolean sgen_get_concurrent_collection_in_progress (void);
 
+void sgen_set_total_bytes_allocated(guint64);
+
 typedef struct _SgenFragment SgenFragment;
 
 struct _SgenFragment {

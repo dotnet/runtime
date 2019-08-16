@@ -56,6 +56,10 @@ gboolean sgen_mono_xdomain_checks = FALSE;
 /* Functions supplied by the runtime to be called by the GC */
 static MonoGCCallbacks gc_callbacks;
 
+/* The total number of bytes allocated so far in program exection.
+ * This is not constantly syncrhonized, but only updated on each GC. */
+static gint64 total_bytes_allocated = 0;
+
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \
 	a = i,
 
@@ -2495,6 +2499,12 @@ mono_gc_get_los_limit (void)
 	return SGEN_MAX_SMALL_OBJ_SIZE;
 }
 
+void
+sgen_set_total_bytes_allocated(guint64 bytes)
+{
+	total_bytes_allocated += total_bytes_allocated;
+}
+
 guint64
 mono_gc_get_allocated_bytes_for_current_thread (void)
 {
@@ -2503,6 +2513,12 @@ mono_gc_get_allocated_bytes_for_current_thread (void)
 
 	/*There are some more allocated bytes in the current tlab that have not been recorded yet */
 	return info->total_bytes_allocated + info->tlab_next - info->tlab_start;
+}
+
+guint64
+mono_gc_get_total_allocated_bytes(MonoBoolean precise)
+{
+	return total_bytes_allocated;
 }
 
 gpointer

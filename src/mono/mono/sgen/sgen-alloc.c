@@ -406,6 +406,9 @@ sgen_try_alloc_obj_nolock (GCVTable vtable, size_t size)
 	return (GCObject*)p;
 }
 
+
+gboolean sgen_debug_null = 0;
+
 GCObject*
 sgen_alloc_obj (GCVTable vtable, size_t size)
 {
@@ -446,6 +449,11 @@ sgen_alloc_obj (GCVTable vtable, size_t size)
 	LOCK_GC;
 	res = sgen_alloc_obj_nolock (vtable, size);
 	UNLOCK_GC;
+
+	if (! res)
+	{
+		sgen_debug_null = 1;
+	}
 	return res;
 }
 
@@ -507,15 +515,20 @@ sgen_alloc_obj_mature (GCVTable vtable, size_t size)
 void
 sgen_clear_tlabs (void)
 {
+	guint64 total_bytes_allocated_globally = 0;
+
 	FOREACH_THREAD_ALL (info) {
 		/* A new TLAB will be allocated when the thread does its first allocation */
 		info->total_bytes_allocated += info->tlab_next - info->tlab_start;
+		total_bytes_allocated_globally += info->total_bytes_allocated;
 		info->tlab_start = NULL;
 		info->tlab_next = NULL;
 		info->tlab_temp_end = NULL;
 		info->tlab_real_end = NULL;
 	} FOREACH_THREAD_END
-}
+
+	sgen_set_total_bytes_allocated(total_bytes_allocated_globally);
+} 
 
 void
 sgen_init_allocator (void)
