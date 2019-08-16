@@ -965,7 +965,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static char HexToChar(int a)
         {
-            a = a & 0xf;
+            a &= 0xf;
             return (char)((a > 9) ? a - 10 + 0x61 : a + 0x30);
         }
 
