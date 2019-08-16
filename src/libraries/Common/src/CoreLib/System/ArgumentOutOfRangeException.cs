@@ -92,9 +92,6 @@ namespace System
         // Note - we don't set this anywhere in the class libraries in
         // version 1, but it might come in handy for other developers who
         // want to avoid sticking printf's in their code.
-        public virtual object? ActualValue
-        {
-            get { return _actualValue; }
-        }
+        public virtual object? ActualValue => _actualValue;
     }
 }

@@ -663,13 +663,7 @@ namespace System.Threading.Tasks
         }
 
         // Debugger support
-        private string DebuggerDisplayMethodDescription
-        {
-            get
-            {
-                return m_action?.Method.ToString() ?? "{null}";
-            }
-        }
+        private string DebuggerDisplayMethodDescription => m_action?.Method.ToString() ?? "{null}";
 
         // Internal property to process TaskCreationOptions access and mutation.
         internal TaskCreationOptions Options => OptionsMethod(m_stateFlags);
@@ -824,10 +818,8 @@ namespace System.Threading.Tasks
 
         /// <summary>Gets whether the task's debugger notification for wait completion bit is set.</summary>
         /// <returns>true if the bit is set; false if it's not set.</returns>
-        internal bool IsWaitNotificationEnabled // internal only to enable unit tests; would otherwise be private
-        {
-            get { return (m_stateFlags & TASK_STATE_WAIT_COMPLETION_NOTIFICATION) != 0; }
-        }
+        internal bool IsWaitNotificationEnabled => // internal only to enable unit tests; would otherwise be private
+            (m_stateFlags & TASK_STATE_WAIT_COMPLETION_NOTIFICATION) != 0;
 
         /// <summary>Placeholder method used as a breakpoint target by the debugger.  Must not be inlined or optimized.</summary>
         /// <remarks>All joins with a task should end up calling this if their debugger notification bit is set.</remarks>
@@ -1228,10 +1220,7 @@ namespace System.Threading.Tasks
         /// Gets the <see cref="Task">Task</see> instance currently executing, or
         /// null if none exists.
         /// </summary>
-        internal static Task? InternalCurrent
-        {
-            get { return t_currentTask; }
-        }
+        internal static Task? InternalCurrent => t_currentTask;
 
         /// <summary>
         /// Gets the Task instance currently executing if the specified creation options
@@ -1312,14 +1301,9 @@ namespace System.Threading.Tasks
         /// <see cref="System.OperationCanceledException">OperationCanceledException</see> that bears the same
         /// <see cref="System.Threading.CancellationToken">CancellationToken</see>.
         /// </remarks>
-        public bool IsCanceled
-        {
-            get
-            {
+        public bool IsCanceled =>
                 // Return true if canceled bit is set and faulted bit is not set
-                return (m_stateFlags & (TASK_STATE_CANCELED | TASK_STATE_FAULTED)) == TASK_STATE_CANCELED;
-            }
-        }
+                (m_stateFlags & (TASK_STATE_CANCELED | TASK_STATE_FAULTED)) == TASK_STATE_CANCELED;
 
         /// <summary>
         /// Returns true if this task has a cancellation token and it was signaled.
@@ -1373,10 +1357,7 @@ namespace System.Threading.Tasks
         /// <summary>
         /// Gets whether this <see cref="Task"/> threw an OperationCanceledException while its CancellationToken was signaled.
         /// </summary>
-        internal bool IsCancellationAcknowledged
-        {
-            get { return (m_stateFlags & TASK_STATE_CANCELLATIONACKNOWLEDGED) != 0; }
-        }
+        internal bool IsCancellationAcknowledged => (m_stateFlags & TASK_STATE_CANCELLATIONACKNOWLEDGED) != 0;
 
 
         /// <summary>
@@ -1404,19 +1385,13 @@ namespace System.Threading.Tasks
             return (flags & TASK_STATE_COMPLETED_MASK) != 0;
         }
 
-        public bool IsCompletedSuccessfully
-        {
-            get { return (m_stateFlags & TASK_STATE_COMPLETED_MASK) == TASK_STATE_RAN_TO_COMPLETION; }
-        }
+        public bool IsCompletedSuccessfully => (m_stateFlags & TASK_STATE_COMPLETED_MASK) == TASK_STATE_RAN_TO_COMPLETION;
 
         /// <summary>
         /// Gets the <see cref="System.Threading.Tasks.TaskCreationOptions">TaskCreationOptions</see> used
         /// to create this task.
         /// </summary>
-        public TaskCreationOptions CreationOptions
-        {
-            get { return Options & (TaskCreationOptions)(~InternalTaskOptions.InternalOptionsMask); }
-        }
+        public TaskCreationOptions CreationOptions => Options & (TaskCreationOptions)(~InternalTaskOptions.InternalOptionsMask);
 
         /// <summary>
         /// Gets a <see cref="System.Threading.WaitHandle"/> that can be used to wait for the task to
@@ -1449,30 +1424,18 @@ namespace System.Threading.Tasks
         /// Gets the state object supplied when the <see cref="Task">Task</see> was created,
         /// or null if none was supplied.
         /// </summary>
-        public object? AsyncState
-        {
-            get { return m_stateObject; }
-        }
+        public object? AsyncState => m_stateObject;
 
         /// <summary>
         /// Gets an indication of whether the asynchronous operation completed synchronously.
         /// </summary>
         /// <value>true if the asynchronous operation completed synchronously; otherwise, false.</value>
-        bool IAsyncResult.CompletedSynchronously
-        {
-            get
-            {
-                return false;
-            }
-        }
+        bool IAsyncResult.CompletedSynchronously => false;
 
         /// <summary>
         /// Provides access to the TaskScheduler responsible for executing this Task.
         /// </summary>
-        internal TaskScheduler? ExecutingTaskScheduler
-        {
-            get { return m_taskScheduler; }
-        }
+        internal TaskScheduler? ExecutingTaskScheduler => m_taskScheduler;
 
         /// <summary>
         /// Provides access to factory methods for creating <see cref="Task"/> and <see cref="Task{TResult}"/> instances.
@@ -1538,14 +1501,9 @@ namespace System.Threading.Tasks
         /// <see cref="System.Threading.Tasks.TaskStatus.Faulted">TaskStatus.Faulted</see>, and its
         /// <see cref="Exception"/> property will be non-null.
         /// </remarks>
-        public bool IsFaulted
-        {
-            get
-            {
-                // Faulted is "king" -- if that bit is present (regardless of other bits), we are faulted.
-                return ((m_stateFlags & TASK_STATE_FAULTED) != 0);
-            }
-        }
+        public bool IsFaulted =>
+            // Faulted is "king" -- if that bit is present (regardless of other bits), we are faulted.
+            ((m_stateFlags & TASK_STATE_FAULTED) != 0);
 
         /// <summary>
         /// The captured execution context for the current task to run inside
@@ -1982,24 +1940,12 @@ namespace System.Threading.Tasks
         /// This will only be used by the implicit wait to prevent double throws
         ///
         /// </summary>
-        internal bool IsExceptionObservedByParent
-        {
-            get
-            {
-                return (m_stateFlags & TASK_STATE_EXCEPTIONOBSERVEDBYPARENT) != 0;
-            }
-        }
+        internal bool IsExceptionObservedByParent => (m_stateFlags & TASK_STATE_EXCEPTIONOBSERVEDBYPARENT) != 0;
 
         /// <summary>
         /// Checks whether the body was ever invoked. Used by task scheduler code to verify custom schedulers actually ran the task.
         /// </summary>
-        internal bool IsDelegateInvoked
-        {
-            get
-            {
-                return (m_stateFlags & TASK_STATE_DELEGATE_INVOKED) != 0;
-            }
-        }
+        internal bool IsDelegateInvoked => (m_stateFlags & TASK_STATE_DELEGATE_INVOKED) != 0;
 
         /// <summary>
         /// Signals completion of this particular task.
@@ -2894,7 +2840,7 @@ namespace System.Threading.Tasks
         {
             internal SetOnInvokeMres() : base(false, 0) { }
             public void Invoke(Task completingTask) { Set(); }
-            public bool InvokeMayRunArbitraryCode { get { return false; } }
+            public bool InvokeMayRunArbitraryCode => false;
         }
 
         /// <summary>
@@ -4901,7 +4847,7 @@ namespace System.Threading.Tasks
                 Debug.Assert(_count >= 0, "Count should never go below 0");
             }
 
-            public bool InvokeMayRunArbitraryCode { get { return false; } }
+            public bool InvokeMayRunArbitraryCode => false;
         }
 
         /// <summary>
@@ -5786,21 +5732,15 @@ namespace System.Threading.Tasks
                 Debug.Assert(m_count >= 0, "Count should never go below 0");
             }
 
-            public bool InvokeMayRunArbitraryCode { get { return true; } }
+            public bool InvokeMayRunArbitraryCode => true;
 
             /// <summary>
             /// Returns whether we should notify the debugger of a wait completion.  This returns
             /// true iff at least one constituent task has its bit set.
             /// </summary>
-            internal override bool ShouldNotifyDebuggerOfWaitCompletion
-            {
-                get
-                {
-                    return
-                        base.ShouldNotifyDebuggerOfWaitCompletion &&
-                        Task.AnyTaskRequiresNotifyDebuggerOfWaitCompletion(m_tasks);
-                }
-            }
+            internal override bool ShouldNotifyDebuggerOfWaitCompletion =>
+                base.ShouldNotifyDebuggerOfWaitCompletion &&
+                AnyTaskRequiresNotifyDebuggerOfWaitCompletion(m_tasks);
         }
 
         /// <summary>
@@ -6032,21 +5972,15 @@ namespace System.Threading.Tasks
                 Debug.Assert(m_count >= 0, "Count should never go below 0");
             }
 
-            public bool InvokeMayRunArbitraryCode { get { return true; } }
+            public bool InvokeMayRunArbitraryCode => true;
 
             /// <summary>
             /// Returns whether we should notify the debugger of a wait completion.  This returns true
             /// iff at least one constituent task has its bit set.
             /// </summary>
-            internal override bool ShouldNotifyDebuggerOfWaitCompletion
-            {
-                get
-                {
-                    return
-                        base.ShouldNotifyDebuggerOfWaitCompletion &&
-                        Task.AnyTaskRequiresNotifyDebuggerOfWaitCompletion(m_tasks);
-                }
-            }
+            internal override bool ShouldNotifyDebuggerOfWaitCompletion =>
+                base.ShouldNotifyDebuggerOfWaitCompletion &&
+                AnyTaskRequiresNotifyDebuggerOfWaitCompletion(m_tasks);
         }
         #endregion
 
@@ -6289,12 +6223,12 @@ namespace System.Threading.Tasks
             m_task = task;
         }
 
-        public object? AsyncState { get { return m_task.AsyncState; } }
-        public TaskCreationOptions CreationOptions { get { return m_task.CreationOptions; } }
-        public Exception? Exception { get { return m_task.Exception; } }
-        public int Id { get { return m_task.Id; } }
-        public bool CancellationPending { get { return (m_task.Status == TaskStatus.WaitingToRun) && m_task.CancellationToken.IsCancellationRequested; } }
-        public TaskStatus Status { get { return m_task.Status; } }
+        public object? AsyncState => m_task.AsyncState;
+        public TaskCreationOptions CreationOptions => m_task.CreationOptions;
+        public Exception? Exception => m_task.Exception;
+        public int Id => m_task.Id;
+        public bool CancellationPending => (m_task.Status == TaskStatus.WaitingToRun) && m_task.CancellationToken.IsCancellationRequested;
+        public TaskStatus Status => m_task.Status;
     }
 
     /// <summary>
@@ -6709,6 +6643,6 @@ namespace System.Threading.Tasks
             }
         }
 
-        public bool InvokeMayRunArbitraryCode { get { return true; } }
+        public bool InvokeMayRunArbitraryCode => true;
     }
 }

@@ -85,13 +85,7 @@ namespace System.IO
             Debug.Assert(_decoder != null, "[BinaryReader.ctor]_decoder!=null");
         }
 
-        public virtual Stream BaseStream
-        {
-            get
-            {
-                return _stream;
-            }
-        }
+        public virtual Stream BaseStream => _stream;
 
         protected virtual void Dispose(bool disposing)
         {

@@ -306,10 +306,7 @@ namespace System
         /// Gets a read-only collection of the <see cref="System.Exception"/> instances that caused the
         /// current exception.
         /// </summary>
-        public ReadOnlyCollection<Exception> InnerExceptions
-        {
-            get { return m_innerExceptions; }
-        }
+        public ReadOnlyCollection<Exception> InnerExceptions => m_innerExceptions;
 
 
         /// <summary>
@@ -472,12 +469,6 @@ namespace System
         ///
         /// See https://docs.microsoft.com/en-us/visualstudio/debugger/using-the-debuggerdisplay-attribute
         /// </summary>
-        private int InnerExceptionCount
-        {
-            get
-            {
-                return InnerExceptions.Count;
-            }
-        }
+        private int InnerExceptionCount => InnerExceptions.Count;
     }
 }

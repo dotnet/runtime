@@ -163,10 +163,7 @@ namespace System.Runtime.InteropServices
 
         // Returns whether the handle has been explicitly marked as closed
         // (Close/Dispose) or invalid (SetHandleAsInvalid).
-        public bool IsClosed
-        {
-            get { return _isClosed; }
-        }
+        public bool IsClosed => _isClosed;
 
         // Returns whether the handle looks like an invalid value (i.e. matches one
         // of the handle's designated illegal values). CriticalHandle itself doesn't

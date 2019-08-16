@@ -214,22 +214,10 @@ namespace System.Text
             // Our data thingy are now full, we can return
         }
 
-        public bool MustFlush
-        {
-            get
-            {
-                return _mustFlush;
-            }
-        }
+        public bool MustFlush => _mustFlush;
 
         // Anything left in our decoder?
-        internal virtual bool HasState
-        {
-            get
-            {
-                return false;
-            }
-        }
+        internal virtual bool HasState => false;
 
         // Allow encoding to clear our must flush instead of throwing (in ThrowCharsOverflow)
         internal void ClearMustFlush()
@@ -237,10 +225,8 @@ namespace System.Text
             _mustFlush = false;
         }
 
-        internal ReadOnlySpan<byte> GetLeftoverData()
-        {
-            return MemoryMarshal.AsBytes(new ReadOnlySpan<int>(ref _leftoverBytes, 1)).Slice(0, _leftoverByteCount);
-        }
+        internal ReadOnlySpan<byte> GetLeftoverData() =>
+            MemoryMarshal.AsBytes(new ReadOnlySpan<int>(ref _leftoverBytes, 1)).Slice(0, _leftoverByteCount);
 
         internal void SetLeftoverData(ReadOnlySpan<byte> bytes)
         {

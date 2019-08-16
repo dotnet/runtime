@@ -79,17 +79,12 @@ namespace System.Globalization
             }
         }
 
-        internal override CalendarId ID
-        {
-            get
-            {
-                // By returning different ID for different variations of GregorianCalendar,
-                // we can support the Transliterated Gregorian calendar.
-                // DateTimeFormatInfo will use this ID to get formatting information about
-                // the calendar.
-                return ((CalendarId)_type);
-            }
-        }
+        internal override CalendarId ID =>
+            // By returning different ID for different variations of GregorianCalendar,
+            // we can support the Transliterated Gregorian calendar.
+            // DateTimeFormatInfo will use this ID to get formatting information about
+            // the calendar.
+            ((CalendarId)_type);
 
         /// <summary>
         /// Gets the absolute date for the given Gregorian date. The absolute date means
