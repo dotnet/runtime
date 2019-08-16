@@ -103,7 +103,7 @@ namespace Microsoft.Extensions.Options
         string Name { get; }
         Microsoft.Extensions.Primitives.IChangeToken GetChangeToken();
     }
-    public partial interface IOptionsFactory<TOptions> where TOptions : class, new()
+    public partial interface IOptionsFactory<TOptions> where TOptions : class
     {
         TOptions Create(string name);
     }
@@ -120,11 +120,11 @@ namespace Microsoft.Extensions.Options
         TOptions Get(string name);
         System.IDisposable OnChange(System.Action<TOptions, string> listener);
     }
-    public partial interface IOptionsSnapshot<out TOptions> : Microsoft.Extensions.Options.IOptions<TOptions> where TOptions : class, new()
+    public partial interface IOptionsSnapshot<out TOptions> : Microsoft.Extensions.Options.IOptions<TOptions> where TOptions : class
     {
         TOptions Get(string name);
     }
-    public partial interface IOptions<out TOptions> where TOptions : class, new()
+    public partial interface IOptions<out TOptions> where TOptions : class
     {
         TOptions Value { get; }
     }
@@ -139,7 +139,7 @@ namespace Microsoft.Extensions.Options
     public static partial class Options
     {
         public static readonly string DefaultName;
-        public static Microsoft.Extensions.Options.IOptions<TOptions> Create<TOptions>(TOptions options) where TOptions : class, new() { throw null; }
+        public static Microsoft.Extensions.Options.IOptions<TOptions> Create<TOptions>(TOptions options) where TOptions : class { throw null; }
     }
     public partial class OptionsBuilder<TOptions> where TOptions : class
     {
@@ -179,13 +179,14 @@ namespace Microsoft.Extensions.Options
         public virtual bool TryAdd(string name, TOptions options) { throw null; }
         public virtual bool TryRemove(string name) { throw null; }
     }
-    public partial class OptionsFactory<TOptions> : Microsoft.Extensions.Options.IOptionsFactory<TOptions> where TOptions : class, new()
+    public partial class OptionsFactory<TOptions> : Microsoft.Extensions.Options.IOptionsFactory<TOptions> where TOptions : class
     {
         public OptionsFactory(System.Collections.Generic.IEnumerable<Microsoft.Extensions.Options.IConfigureOptions<TOptions>> setups, System.Collections.Generic.IEnumerable<Microsoft.Extensions.Options.IPostConfigureOptions<TOptions>> postConfigures) { }
         public OptionsFactory(System.Collections.Generic.IEnumerable<Microsoft.Extensions.Options.IConfigureOptions<TOptions>> setups, System.Collections.Generic.IEnumerable<Microsoft.Extensions.Options.IPostConfigureOptions<TOptions>> postConfigures, System.Collections.Generic.IEnumerable<Microsoft.Extensions.Options.IValidateOptions<TOptions>> validations) { }
         public TOptions Create(string name) { throw null; }
+        protected virtual TOptions CreateInstance(string name) { throw null; }
     }
-    public partial class OptionsManager<TOptions> : Microsoft.Extensions.Options.IOptions<TOptions>, Microsoft.Extensions.Options.IOptionsSnapshot<TOptions> where TOptions : class, new()
+    public partial class OptionsManager<TOptions> : Microsoft.Extensions.Options.IOptions<TOptions>, Microsoft.Extensions.Options.IOptionsSnapshot<TOptions> where TOptions : class
     {
         public OptionsManager(Microsoft.Extensions.Options.IOptionsFactory<TOptions> factory) { }
         public TOptions Value { get { throw null; } }
@@ -195,7 +196,7 @@ namespace Microsoft.Extensions.Options
     {
         public static System.IDisposable OnChange<TOptions>(this Microsoft.Extensions.Options.IOptionsMonitor<TOptions> monitor, System.Action<TOptions> listener) { throw null; }
     }
-    public partial class OptionsMonitor<TOptions> : Microsoft.Extensions.Options.IOptionsMonitor<TOptions>, System.IDisposable where TOptions : class, new()
+    public partial class OptionsMonitor<TOptions> : Microsoft.Extensions.Options.IOptionsMonitor<TOptions>, System.IDisposable where TOptions : class
     {
         public OptionsMonitor(Microsoft.Extensions.Options.IOptionsFactory<TOptions> factory, System.Collections.Generic.IEnumerable<Microsoft.Extensions.Options.IOptionsChangeTokenSource<TOptions>> sources, Microsoft.Extensions.Options.IOptionsMonitorCache<TOptions> cache) { }
         public TOptions CurrentValue { get { throw null; } }
@@ -211,7 +212,7 @@ namespace Microsoft.Extensions.Options
         public string OptionsName { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
         public System.Type OptionsType { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
     }
-    public partial class OptionsWrapper<TOptions> : Microsoft.Extensions.Options.IOptions<TOptions> where TOptions : class, new()
+    public partial class OptionsWrapper<TOptions> : Microsoft.Extensions.Options.IOptions<TOptions> where TOptions : class
     {
         public OptionsWrapper(TOptions options) { }
         public TOptions Value { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
