@@ -6792,6 +6792,17 @@ AdjustContextForWriteBarrier(
 {
     WRAPPER_NO_CONTRACT;
 
+    PCODE ip = GetIP(pContext);
+
+#ifdef FEATURE_WRITEBARRIER_COPY
+    if (IsIPInWriteBarrierCodeCopy(ip))
+    {
+        // Pretend we were executing the barrier function at its original location so that the unwinder can unwind the frame
+        ip = AdjustWriteBarrierIP(ip);
+        SetIP(pContext, ip);
+    }
+#endif // FEATURE_WRITEBARRIER_COPY
+
 #ifdef FEATURE_DATABREAKPOINT
 
     // If pExceptionRecord is null, it means it is called from EEDbgInterfaceImpl::AdjustContextForWriteBarrierForDebugger()
@@ -6802,7 +6813,6 @@ AdjustContextForWriteBarrier(
 
     if (pExceptionRecord == nullptr)
     {
-        PCODE ip = GetIP(pContext);
 #if defined(_TARGET_X86_)
         bool withinWriteBarrierGroup = ((ip >= (PCODE) JIT_WriteBarrierGroup) && (ip <= (PCODE) JIT_WriteBarrierGroup_End));
         bool withinPatchedWriteBarrierGroup = ((ip >= (PCODE) JIT_PatchedWriteBarrierGroup) && (ip <= (PCODE) JIT_PatchedWriteBarrierGroup_End));
