@@ -485,3 +485,11 @@ public unsafe struct FixedArrayClassificationTest
     public Int32Wrapper[] arr;
     public float f;
 }
+
+[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+public struct UnicodeCharArrayClassification
+{
+    [MarshalAs(UnmanagedType.ByValArray, SizeConst = 6)]
+    public char[] arr;
+    public float f;
+}

@@ -957,3 +957,9 @@ union OverlappingMultipleEightbyteMultiple
         int i[3];
     };
 };
+
+struct UnicodeCharArrayClassification
+{
+    WCHAR arr[6];
+    float f;
+};

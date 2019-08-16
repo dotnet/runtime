@@ -803,49 +803,53 @@ MethodTable* OleVariant::GetNativeMethodTableForVarType(VARTYPE vt, MethodTable*
 {
     CONTRACTL
     {
-        NOTHROW;
-        GC_NOTRIGGER;
+        THROWS;
+        GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END;
 
+    if (vt & VT_ARRAY)
     {
-        GCX_COOP();
-        if (vt & VT_ARRAY)
-        {
-            return MscorlibBinder::GetClass(CLASS__INTPTR);
-        }
+        return MscorlibBinder::GetClass(CLASS__INTPTR);
+    }
 
-        switch (vt)
-        {
-            case VT_DATE:
-                return MscorlibBinder::GetClass(CLASS__DOUBLE);
-            case VT_CY:
-                return MscorlibBinder::GetClass(CLASS__CURRENCY);
-            case VTHACK_WINBOOL:
-                return MscorlibBinder::GetClass(CLASS__INT32);
-            case VT_BOOL:
-                return MscorlibBinder::GetClass(CLASS__INT16);
-            case VTHACK_CBOOL:
-                return MscorlibBinder::GetClass(CLASS__BYTE);
-            case VT_DISPATCH:
-            case VT_UNKNOWN:
-            case VT_LPSTR:
-            case VT_LPWSTR:
-            case VT_BSTR:
-            case VT_USERDEFINED:
-            case VT_SAFEARRAY:
-            case VT_CARRAY:
-                return MscorlibBinder::GetClass(CLASS__INTPTR);
-            case VT_VARIANT:
-                return MscorlibBinder::GetClass(CLASS__NATIVEVARIANT);
-            default:
-                PREFIX_ASSUME(pManagedMT != NULL);
-                return pManagedMT;
-        }
+    switch (vt)
+    {
+        case VT_DATE:
+            return MscorlibBinder::GetClass(CLASS__DOUBLE);
+        case VT_CY:
+            return MscorlibBinder::GetClass(CLASS__CURRENCY);
+        case VTHACK_WINBOOL:
+            return MscorlibBinder::GetClass(CLASS__INT32);
+        case VT_BOOL:
+            return MscorlibBinder::GetClass(CLASS__INT16);
+        case VTHACK_CBOOL:
+            return MscorlibBinder::GetClass(CLASS__BYTE);
+        case VT_DISPATCH:
+        case VT_UNKNOWN:
+        case VT_LPSTR:
+        case VT_LPWSTR:
+        case VT_BSTR:
+        case VT_USERDEFINED:
+        case VT_SAFEARRAY:
+        case VT_CARRAY:
+            return MscorlibBinder::GetClass(CLASS__INTPTR);
+        case VT_VARIANT:
+            return MscorlibBinder::GetClass(CLASS__NATIVEVARIANT);
+        case VTHACK_ANSICHAR:
+            return MscorlibBinder::GetClass(CLASS__BYTE);
+        case VT_UI2:
+            // When CharSet = CharSet.Unicode, System.Char arrays are marshaled as VT_UI2.
+            // However, since System.Char itself is CharSet.Ansi, the native size of
+            // System.Char is 1 byte instead of 2. So here we explicitly return System.UInt16's
+            // MethodTable to ensure the correct size.
+            return MscorlibBinder::GetClass(CLASS__UINT16);
+        default:
+            PREFIX_ASSUME(pManagedMT != NULL);
+            return pManagedMT;
     }
 }
-
 
 //
 // GetMarshalerForVarType returns the marshaler for the
