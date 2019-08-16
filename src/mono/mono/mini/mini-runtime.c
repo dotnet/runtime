@@ -1264,6 +1264,7 @@ mono_patch_info_hash (gconstpointer data)
 		printf ("info type: %d\n", ji->type);
 		mono_print_ji (ji); printf ("\n");
 		g_assert_not_reached ();
+	case MONO_PATCH_INFO_NONE:
 		return 0;
 	}
 }
@@ -1331,6 +1332,7 @@ mono_patch_info_equal (gconstpointer ka, gconstpointer kb)
 	case MONO_PATCH_INFO_GSHAREDVT_IN_WRAPPER:
 		return mono_metadata_signature_equal (ji1->data.sig, ji2->data.sig);
 	case MONO_PATCH_INFO_GC_SAFE_POINT_FLAG:
+	case MONO_PATCH_INFO_NONE:
 		return 1;
 	}
 

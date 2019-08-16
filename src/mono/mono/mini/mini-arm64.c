@@ -1005,6 +1005,8 @@ mono_arch_patch_code_new (MonoCompile *cfg, MonoDomain *domain, guint8 *code, Mo
 	default:
 		arm_patch_full (cfg, domain, ip, (guint8*)target, ji->relocation);
 		break;
+	case MONO_PATCH_INFO_NONE:
+		break;
 	}
 }
 

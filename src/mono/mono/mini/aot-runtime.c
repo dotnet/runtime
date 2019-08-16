@@ -3996,8 +3996,8 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		ji->data.index = decode_value (p, &p);
 		break;
 	default:
-		g_warning ("unhandled type %d", ji->type);
-		g_assert_not_reached ();
+		g_error ("unhandled type %d", ji->type);
+		break;
 	}
 
 	*endbuf = p;
