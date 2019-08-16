@@ -274,7 +274,7 @@ namespace System.Resources
         // to construct ResourceSets.
         public virtual Type ResourceSetType
         {
-            get { return (_userResourceSet == null) ? typeof(RuntimeResourceSet) : _userResourceSet; }
+            get { return _userResourceSet ?? typeof(RuntimeResourceSet); }
         }
 
         protected UltimateResourceFallbackLocation FallbackLocation

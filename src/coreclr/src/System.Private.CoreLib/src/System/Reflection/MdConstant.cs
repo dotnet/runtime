@@ -126,7 +126,7 @@ namespace System.Reflection
                     CorElementType.ELEMENT_TYPE_BOOLEAN => (*(int*)&buffer != 0),
                     CorElementType.ELEMENT_TYPE_R4 => *(float*)&buffer,
                     CorElementType.ELEMENT_TYPE_R8 => *(double*)&buffer,
-                    CorElementType.ELEMENT_TYPE_STRING => stringVal == null ? string.Empty : stringVal,
+                    CorElementType.ELEMENT_TYPE_STRING => stringVal ?? string.Empty,
                     CorElementType.ELEMENT_TYPE_CLASS => null,
                     _ => throw new FormatException(SR.Arg_BadLiteralFormat),
                 };
