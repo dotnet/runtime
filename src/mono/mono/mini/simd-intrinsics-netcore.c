@@ -3,9 +3,10 @@
  */
 
 #include <config.h>
+#include <mono/utils/mono-compiler.h>
 
 /*
- * On LLVM is supported as a backend.
+ * Only LLVM is supported as a backend.
  */
 
 #if !defined(DISABLE_JIT) && defined(ENABLE_NETCORE)
