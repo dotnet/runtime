@@ -254,8 +254,11 @@ set_resume_state (ThreadContext *context, InterpFrame *frame, GSList* finally_ip
 			sp->data.p = frame->ex;										\
 			++sp;														\
 		} \
-		(finally_ips) = set_resume_state ((context), (frame), (finally_ips));			\
-		goto main_loop;										\
+		(finally_ips) = set_resume_state ((context), (frame), (finally_ips));				\
+		/* goto main_loop instead of MINT_IN_DISPATCH helps the compiler and therefore conserves stack. \
+		 * This is a slow/rare path and conserving stack is preferred over its performance otherwise.	\
+                 */												\
+		goto main_loop;											\
 	} while (0)
 
 /*
@@ -5911,6 +5914,8 @@ main_loop:
 				/* Throw abort after the last finally block to avoid confusing EH */
 				if (pending_abort && !finally_ips)
 					EXCEPTION_CHECKPOINT;
+				// goto main_loop instead of MINT_IN_DISPATCH helps the compiler and therefore conserves stack.
+				// This is a slow/rare path and conserving stack is preferred over its performance otherwise.
 				goto main_loop;
 			}
 			ves_abort();
@@ -5981,6 +5986,8 @@ main_loop:
 				finally_ips = g_slist_remove (finally_ips, ip);
 				sp = frame->stack; /* spec says stack should be empty at endfinally so it should be at the start too */
 				vt_sp = (unsigned char *) sp + imethod->stack_size;
+				// goto main_loop instead of MINT_IN_DISPATCH helps the compiler and therefore conserves stack.
+				// This is a slow/rare path and conserving stack is preferred over its performance otherwise.
 				goto main_loop;
 			}
 
