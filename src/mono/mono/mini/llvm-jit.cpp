@@ -375,13 +375,10 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
 	MonoEHFrameSymbol = "mono_eh_frame";
 
 	EngineBuilder EB;
-#if defined(TARGET_AMD64) || defined(TARGET_X86)
-	std::vector<std::string> attrs;
-	// FIXME: Autodetect this
-	attrs.push_back("sse3");
-	attrs.push_back("sse4.1");
-	EB.setMAttrs (attrs);
-#endif
+	
+	EB.setOptLevel(CodeGenOpt::Aggressive);
+	EB.setMCPU(sys::getHostCPUName());
+
 	auto TM = EB.selectTarget ();
 	assert (TM);
 
