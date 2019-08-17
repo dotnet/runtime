@@ -11,7 +11,7 @@ namespace System.Linq.Tests
     {
         protected class TestCollection<T> : ICollection<T>
         {
-            public T[] Items = new T[0];
+            public T[] Items;
             public int CountTouched = 0;
             public int CopyToTouched = 0;
             public TestCollection(T[] items) { Items = items; }
@@ -27,9 +27,25 @@ namespace System.Linq.Tests
             IEnumerator IEnumerable.GetEnumerator() => Items.GetEnumerator();
         }
 
+        protected class TestNonGenericCollection<T> : ICollection, IEnumerable<T>
+        {
+            public T[] Items;
+            public int CountTouched = 0;
+
+            public TestNonGenericCollection(T[] items) => Items = items;
+
+            public virtual int Count { get { CountTouched++; return Items.Length; } }
+            public bool IsSynchronized => false;
+            public object SyncRoot => this;
+            public void CopyTo(Array array, int index) => throw new NotImplementedException();
+
+            public IEnumerator<T> GetEnumerator() => ((IEnumerable<T>)Items).GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => Items.GetEnumerator();
+        }
+
         protected class TestEnumerable<T> : IEnumerable<T>
         {
-            public T[] Items = new T[0];
+            public T[] Items;
             public TestEnumerable(T[] items) { Items = items; }
 
             public IEnumerator<T> GetEnumerator() => ((IEnumerable<T>)Items).GetEnumerator();
@@ -38,7 +54,7 @@ namespace System.Linq.Tests
 
         protected class TestReadOnlyCollection<T> : IReadOnlyCollection<T>
         {
-            public T[] Items = new T[0];
+            public T[] Items;
             public int CountTouched = 0;
             public TestReadOnlyCollection(T[] items) { Items = items; }
 
