@@ -2786,6 +2786,7 @@ enum {
 };
 
 typedef enum {
+	MONO_CPU_NONE = 0,
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 	MONO_CPU_X86_POPCNT = 1 << 0,
 	MONO_CPU_X86_LZCNT = 2 << 0,
