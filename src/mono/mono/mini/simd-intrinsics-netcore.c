@@ -13,6 +13,7 @@
 
 #include "mini.h"
 #include "ir-emit.h"
+#include "llvm-jit.h"
 #include "mono/utils/bsearch.h"
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/reflection-internals.h>
@@ -393,6 +394,54 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 	return NULL;
 }
 
+#ifdef TARGET_AMD64
+
+static guint16 popcnt_methods [] = {
+	SN_PopCount,
+	SN_get_IsSupported
+};
+
+static MonoInst*
+emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+{
+	const char *class_name;
+	const char *class_ns;
+	MonoInst *ins;
+	int id;
+	gboolean supported, is_64bit;
+	MonoClass *klass = cmethod->klass;
+
+	class_ns = m_class_get_name_space (klass);
+	class_name = m_class_get_name (klass);
+	if (!strcmp (class_name, "Popcnt") || (!strcmp (class_name, "X64") && cmethod->klass->nested_in && !strcmp (m_class_get_name (cmethod->klass->nested_in), "Popcnt"))) {
+		id = lookup_intrins (popcnt_methods, sizeof (popcnt_methods), cmethod);
+		if (id == -1)
+			return NULL;
+
+		supported = (mono_llvm_get_cpu_features () & MONO_CPU_X86_POPCNT) != 0;
+		is_64bit = !strcmp (class_name, "X64");
+
+		switch (id) {
+		case SN_get_IsSupported:
+			EMIT_NEW_ICONST (cfg, ins, supported ? 1 : 0);
+			ins->type = STACK_I4;
+			return ins;
+		case SN_PopCount:
+			if (!supported)
+				return NULL;
+			MONO_INST_NEW (cfg, ins, is_64bit ? OP_POPCNT64 : OP_POPCNT32);
+			ins->dreg = alloc_ireg (cfg);
+			ins->sreg1 = args [0]->dreg;
+			MONO_ADD_INS (cfg->cbb, ins);
+			return ins;
+		default:
+			return NULL;
+		}
+	}
+	return NULL;
+}
+#endif
+
 MonoInst*
 mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
@@ -407,6 +456,7 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	// FIXME:
 	if (cfg->compile_aot)
 		return NULL;
+
 	class_ns = m_class_get_name_space (cmethod->klass);
 	class_name = m_class_get_name (cmethod->klass);
 	if (!strcmp (class_ns, "System.Numerics") && !strcmp (class_name, "Vector"))
@@ -418,6 +468,12 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		}
 		return ins;
 	}
+#ifdef TARGET_AMD64
+	if (cmethod->klass->nested_in)
+		class_ns = m_class_get_name_space (cmethod->klass->nested_in), class_name, cmethod->klass->nested_in;
+	if (!strcmp (class_ns, "System.Runtime.Intrinsics.X86"))
+		return emit_x86_intrinsics (cfg ,cmethod, fsig, args);
+#endif
 
 	return NULL;
 }

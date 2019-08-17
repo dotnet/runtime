@@ -299,6 +299,8 @@ typedef enum {
 	INTRINS_POWF,
 	INTRINS_EXPECT_I8,
 	INTRINS_EXPECT_I1,
+	INTRINS_CTPOP_I32,
+	INTRINS_CTPOP_I64,
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
 	INTRINS_SSE_PMOVMSKB,
 	INTRINS_SSE_PSRLI_W,
@@ -7136,7 +7138,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			// Maybe convert to 0/1 ?
 			break;
 		}
-
 		case OP_XBINOP: {
 			switch (ins->inst_c0) {
 			case OP_IADD:
@@ -7171,6 +7172,12 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			}
 			break;
 		}
+		case OP_POPCNT32:
+			values [ins->dreg] = LLVMBuildCall (builder, get_intrins (ctx, INTRINS_CTPOP_I32), &lhs, 1, "");
+			break;
+		case OP_POPCNT64:
+			values [ins->dreg] = LLVMBuildCall (builder, get_intrins (ctx, INTRINS_CTPOP_I64), &lhs, 1, "");
+			break;
 #endif /* SIMD */
 
 		case OP_DUMMY_USE:
@@ -8312,6 +8319,16 @@ AddFunc (LLVMModuleRef module, const char *name, LLVMTypeRef ret_type, LLVMTypeR
 }
 
 static inline void
+AddFunc1 (LLVMModuleRef module, const char *name, LLVMTypeRef ret_type, LLVMTypeRef param_type1)
+{
+	LLVMTypeRef param_types [4];
+
+	param_types [0] = param_type1;
+
+	AddFunc (module, name, ret_type, param_types, 1);
+}
+
+static inline void
 AddFunc2 (LLVMModuleRef module, const char *name, LLVMTypeRef ret_type, LLVMTypeRef param_type1, LLVMTypeRef param_type2)
 {
 	LLVMTypeRef param_types [4];
@@ -8354,6 +8371,8 @@ static IntrinsicDesc intrinsics[] = {
 	{INTRINS_POWF, "llvm.pow.f32"},
 	{INTRINS_EXPECT_I8, "llvm.expect.i8"},
 	{INTRINS_EXPECT_I1, "llvm.expect.i1"},
+	{INTRINS_CTPOP_I32, "llvm.ctpop.i32"},
+	{INTRINS_CTPOP_I64, "llvm.ctpop.i64"},
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
 	{INTRINS_SSE_PMOVMSKB, "llvm.x86.sse2.pmovmskb.128"},
 	{INTRINS_SSE_PSRLI_W, "llvm.x86.sse2.psrli.w"},
@@ -8510,6 +8529,12 @@ add_intrinsic (LLVMModuleRef module, int id)
 		break;
 	case INTRINS_EXPECT_I1:
 		AddFunc2 (module, name, LLVMInt1Type (), LLVMInt1Type (), LLVMInt1Type ());
+		break;
+	case INTRINS_CTPOP_I32:
+		AddFunc1 (module, name, LLVMInt32Type (), LLVMInt32Type ());
+		break;
+	case INTRINS_CTPOP_I64:
+		AddFunc1 (module, name, LLVMInt64Type (), LLVMInt64Type ());
 		break;
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
 	case INTRINS_SSE_PMOVMSKB:
