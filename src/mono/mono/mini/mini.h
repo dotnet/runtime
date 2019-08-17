@@ -2782,8 +2782,15 @@ enum {
 	/* this value marks the end of the bit indexes used in 
 	 * this emum.
 	 */
-	SIMD_VERSION_INDEX_END = 6 
+	SIMD_VERSION_INDEX_END = 6
 };
+
+typedef enum {
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+	MONO_CPU_X86_POPCNT = 1 << 0,
+	MONO_CPU_X86_LZCNT = 2 << 0,
+#endif
+} MonoCPUFeatures;
 
 enum {
 	SIMD_COMP_EQ,

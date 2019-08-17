@@ -6,9 +6,6 @@
 //
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
-// Mono's internal header files are not C++ clean, so avoid including them if 
-// possible
-//
 
 #include "config.h"
 
@@ -41,6 +38,8 @@ using namespace llvm::orc;
 
 extern cl::opt<bool> EnableMonoEH;
 extern cl::opt<std::string> MonoEHFrameSymbol;
+
+static MonoCPUFeatures cpu_features;
 
 void
 mono_llvm_set_unhandled_exception_handler (void)
@@ -375,7 +374,22 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
 	MonoEHFrameSymbol = "mono_eh_frame";
 
 	EngineBuilder EB;
-	
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
+	//std::vector<std::string> attrs;
+
+	uint64_t f = 0;
+	llvm::StringMap<bool> HostFeatures;
+	if (llvm::sys::getHostCPUFeatures(HostFeatures)) {
+		if (HostFeatures ["popcnt"])
+			f |= MONO_CPU_X86_POPCNT;
+		/*
+		  for (auto &F : HostFeatures)
+		  attrs.push_back (F.first ());
+		*/
+	}
+	cpu_features = (MonoCPUFeatures)f;
+#endif
+
 	EB.setOptLevel(CodeGenOpt::Aggressive);
 	EB.setMCPU(sys::getHostCPUName());
 
@@ -405,6 +419,12 @@ mono_llvm_dispose_ee (MonoEERef *eeref)
 {
 }
 
+MonoCPUFeatures
+mono_llvm_get_cpu_features (void)
+{
+	return cpu_features;
+}
+
 #else /* MONO_CROSS_COMPILE or LLVM_API_VERSION < 600 */
 
 void
@@ -430,6 +450,12 @@ void
 mono_llvm_dispose_ee (MonoEERef *eeref)
 {
 	g_assert_not_reached ();
+}
+
+MonoCPUFeatures
+mono_llvm_get_cpu_features (void)
+{
+	return (MonoCPUFeatures)0;
 }
 
 #endif /* !MONO_CROSS_COMPILE */
