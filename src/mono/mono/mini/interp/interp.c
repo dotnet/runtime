@@ -229,18 +229,19 @@ int mono_interp_traceopt = 0;
 #define MINT_IN_DEFAULT default:
 #endif
 
-static MONO_NEVER_INLINE void // Inlining this causes caller to use more stack.
-set_resume_state (ThreadContext *context, InterpFrame *frame)
+static MONO_NEVER_INLINE GSList* // Inlining this causes caller to use more stack.
+set_resume_state (ThreadContext *context, InterpFrame *frame, GSList* finally_ips)
 {
-	/* We have thrown an exception from a finally block. Some of the leave targets were unwinded already */
-	while (frame->finally_ips &&
-		   frame->finally_ips->data >= context->handler_ei->try_start &&
-		   frame->finally_ips->data < context->handler_ei->try_end)
-		frame->finally_ips = g_slist_remove (frame->finally_ips, frame->finally_ips->data);
+	/* We have thrown an exception from a finally block. Some of the leave targets were unwound already */
+	while (finally_ips &&
+		   finally_ips->data >= context->handler_ei->try_start &&
+		   finally_ips->data < context->handler_ei->try_end)
+		finally_ips = g_slist_remove (finally_ips, finally_ips->data);
 	frame->ex = NULL;
 	context->has_resume_state = 0;
 	context->handler_frame = NULL;
 	context->handler_ei = NULL;
+	return finally_ips;
 }
 
 /* Set the current execution state to the resume state in context */
@@ -253,8 +254,8 @@ set_resume_state (ThreadContext *context, InterpFrame *frame)
 			sp->data.p = frame->ex;										\
 			++sp;														\
 		} \
-		set_resume_state ((context), (frame));							\
-		MINT_IN_DISPATCH(*ip);											\
+		(finally_ips) = set_resume_state ((context), (frame), (finally_ips));			\
+		goto main_loop;										\
 	} while (0)
 
 /*
@@ -3189,7 +3190,9 @@ static void
 interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClauseArgs *clause_args, MonoError *error)
 {
 	InterpFrame child_frame;
-	const unsigned short *ip = NULL;
+	GSList *finally_ips = NULL;
+	const guint16 *endfinally_ip = NULL;
+	const guint16 *ip = NULL;
 	stackval *sp;
 	InterpMethod *imethod = NULL;
 #if DEBUG_INTERP
@@ -3206,9 +3209,6 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 #endif
 
 	frame->ex = NULL;
-	frame->finally_ips = NULL;
-	frame->endfinally_ip = NULL;
-
 #if DEBUG_INTERP
 	debug_enter (frame, &tracing);
 #endif
@@ -3259,9 +3259,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 	 * but it may be useful for debug
 	 */
 	while (1) {
-#ifndef USE_COMPUTED_GOTO
-	main_loop:
-#endif
+main_loop:
 		/* g_assert (sp >= frame->stack); */
 		/* g_assert(vt_sp - vtalloc <= imethod->vt_stack_size); */
 		DUMP_INSTR();
@@ -5903,16 +5901,17 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 
 			if (clause_args && clause_index == clause_args->exit_clause)
 				goto exit_frame;
+
 			g_assert (sp >= frame->stack);
 			sp = frame->stack;
 
-			if (frame->finally_ips) {
-				ip = (const guint16*)frame->finally_ips->data;
-				frame->finally_ips = g_slist_remove (frame->finally_ips, ip);
+			if (finally_ips) {
+				ip = (const guint16*)finally_ips->data;
+				finally_ips = g_slist_remove (finally_ips, ip);
 				/* Throw abort after the last finally block to avoid confusing EH */
-				if (pending_abort && !frame->finally_ips)
+				if (pending_abort && !finally_ips)
 					EXCEPTION_CHECKPOINT;
-				MINT_IN_DISPATCH(*ip);
+				goto main_loop;
 			}
 			ves_abort();
 			MINT_IN_BREAK;
@@ -5930,46 +5929,43 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			sp = frame->stack;
 			frame->ip = ip;
 
-			if (*ip == MINT_LEAVE_S_CHECK || *ip == MINT_LEAVE_CHECK) {
-				if (imethod->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE) {
-					child_frame.parent = frame;
-					child_frame.imethod = NULL;
-					MonoException *abort_exc = mono_interp_leave (&child_frame);
-					if (abort_exc)
-						THROW_EX (abort_exc, frame->ip);
-				}
+			int opcode = *ip;
+			gboolean const check = opcode == MINT_LEAVE_CHECK || opcode == MINT_LEAVE_S_CHECK;
+
+			if (check && imethod->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE) {
+				child_frame.parent = frame;
+				child_frame.imethod = NULL;
+				MonoException *abort_exc = mono_interp_leave (&child_frame);
+				if (abort_exc)
+					THROW_EX (abort_exc, frame->ip);
 			}
 
-			if (*ip == MINT_LEAVE_S || *ip == MINT_LEAVE_S_CHECK) {
-				ip += (short) *(ip + 1);
-			} else {
-				ip += (gint32) READ32 (ip + 1);
-			}
-			frame->endfinally_ip = ip;
-
-			guint32 ip_offset;
-			MonoExceptionClause *clause;
-			GSList *old_list = frame->finally_ips;
+			opcode = *ip; // Refetch to avoid register/stack pressure.
+			gboolean const short_offset = opcode == MINT_LEAVE_S || opcode == MINT_LEAVE_S_CHECK;
+			ip += short_offset ? (short)*(ip + 1) : (gint32)READ32 (ip + 1);
+			endfinally_ip = ip;
+			GSList *old_list = finally_ips;
 			MonoMethod *method = imethod->method;
 #if DEBUG_INTERP
 			if (tracing)
-				g_print ("* Handle finally IL_%04x\n", frame->endfinally_ip == NULL ? 0 : frame->endfinally_ip - imethod->code);
+				g_print ("* Handle finally IL_%04x\n", endfinally_ip == NULL ? 0 : endfinally_ip - imethod->code);
 #endif
+			// FIXME Null check for imethod follows deref.
 			if (imethod == NULL || (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
-				|| (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME))) {
+					|| (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME))) {
 				goto exit_frame;
 			}
-			ip_offset = frame->ip - imethod->code;
+			guint32 const ip_offset = frame->ip - imethod->code;
 
-			if (frame->endfinally_ip != NULL)
-				frame->finally_ips = g_slist_prepend(frame->finally_ips, (void *)frame->endfinally_ip);
+			if (endfinally_ip != NULL)
+				finally_ips = g_slist_prepend (finally_ips, (void *)endfinally_ip);
 
 			for (int i = imethod->num_clauses - 1; i >= 0; i--) {
-				clause = &imethod->clauses [i];
-				if (MONO_OFFSET_IN_CLAUSE (clause, ip_offset) && (frame->endfinally_ip == NULL || !(MONO_OFFSET_IN_CLAUSE (clause, frame->endfinally_ip - imethod->code)))) {
+				MonoExceptionClause* const clause = &imethod->clauses [i];
+				if (MONO_OFFSET_IN_CLAUSE (clause, ip_offset) && (endfinally_ip == NULL || !(MONO_OFFSET_IN_CLAUSE (clause, endfinally_ip - imethod->code)))) {
 					if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY) {
 						ip = imethod->code + clause->handler_offset;
-						frame->finally_ips = g_slist_prepend (frame->finally_ips, (gpointer) ip);
+						finally_ips = g_slist_prepend (finally_ips, (gpointer) ip);
 #if DEBUG_INTERP
 						if (tracing)
 							g_print ("* Found finally at IL_%04x with exception: %s\n", clause->handler_offset, frame->ex? "yes": "no");
@@ -5978,14 +5974,14 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 				}
 			}
 
-			frame->endfinally_ip = NULL;
+			endfinally_ip = NULL;
 
-			if (old_list != frame->finally_ips && frame->finally_ips) {
-				ip = (const guint16*)frame->finally_ips->data;
-				frame->finally_ips = g_slist_remove (frame->finally_ips, ip);
+			if (old_list != finally_ips && finally_ips) {
+				ip = (const guint16*)finally_ips->data;
+				finally_ips = g_slist_remove (finally_ips, ip);
 				sp = frame->stack; /* spec says stack should be empty at endfinally so it should be at the start too */
 				vt_sp = (unsigned char *) sp + imethod->stack_size;
-				MINT_IN_DISPATCH (*ip);
+				goto main_loop;
 			}
 
 			ves_abort();
