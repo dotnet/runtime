@@ -75,7 +75,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue(36330)]
         [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData(PROV_RSA_FULL, KeyNumber.Signature)]
         [InlineData(PROV_RSA_FULL, KeyNumber.Exchange)]
