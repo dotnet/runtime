@@ -21,17 +21,22 @@
 #define MSGSTRFIELD(line) MSGSTRFIELD1(line)
 #define MSGSTRFIELD1(line) str##line
 static const struct msgstr_t {
-#define SIMD_METHOD(str,name) char MSGSTRFIELD(__LINE__) [sizeof (str)];
+#define METHOD(name) char MSGSTRFIELD(__LINE__) [sizeof (#name)];
+#define METHOD2(str,name) char MSGSTRFIELD(__LINE__) [sizeof (str)];
 #include "simd-methods-netcore.h"
-#undef SIMD_METHOD
+#undef METHOD
+#undef METHOD2
 } method_names = {
-#define SIMD_METHOD(str,name) str,
+#define METHOD(name) #name,
+#define METHOD2(str,name) str,
 #include "simd-methods-netcore.h"
-#undef SIMD_METHOD
+#undef METHOD
+#undef METHOD2
 };
 
 enum {
-#define SIMD_METHOD(str,name) name = offsetof (struct msgstr_t, MSGSTRFIELD(__LINE__)),
+#define METHOD(name) SN_ ## name = offsetof (struct msgstr_t, MSGSTRFIELD(__LINE__)),
+#define METHOD2(str,name) SN_ ## name = offsetof (struct msgstr_t, MSGSTRFIELD(__LINE__)),
 #include "simd-methods-netcore.h"
 };
 #define method_name(idx) ((const char*)&method_names + (idx))
