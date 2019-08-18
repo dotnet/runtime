@@ -36,9 +36,18 @@ enum {
 };
 #define method_name(idx) ((const char*)&method_names + (idx))
 
+static int register_size;
+
 void
 mono_simd_intrinsics_init (void)
 {
+	register_size = 16;
+#if FALSE
+	if ((mono_llvm_get_cpu_features () & MONO_CPU_X86_AVX) != 0)
+		register_size = 32;
+#endif
+	/* Tell the class init code the size of the System.Numerics.Register type */
+	mono_simd_register_size = register_size;
 }
 
 MonoInst*
@@ -246,7 +255,7 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 	etype = mono_class_get_context (klass)->class_inst->type_argv [0];
 	size = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
 	g_assert (size);
-	len = 16 / size;
+	len = register_size / size;
 
 	if (!MONO_TYPE_IS_PRIMITIVE (etype) || etype->type == MONO_TYPE_CHAR || etype->type == MONO_TYPE_BOOLEAN)
 		return NULL;
