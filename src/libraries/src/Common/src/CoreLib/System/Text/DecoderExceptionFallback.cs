@@ -45,10 +45,10 @@ namespace System.Text
             bytesUnknown ??= Array.Empty<byte>();
 
             // Create a string representation of our bytes.
-            StringBuilder strBytes = new StringBuilder(bytesUnknown.Length * 3);
+            StringBuilder strBytes = new StringBuilder(bytesUnknown.Length * 4);
 
-            int i;
-            for (i = 0; i < bytesUnknown.Length && i < 20; i++)
+            const int MaxLength = 20;
+            for (int i = 0; i < bytesUnknown.Length && i < MaxLength; i++)
             {
                 strBytes.Append('[');
                 strBytes.Append(bytesUnknown[i].ToString("X2", CultureInfo.InvariantCulture));
@@ -56,8 +56,10 @@ namespace System.Text
             }
 
             // In case the string's really long
-            if (i == 20)
+            if (bytesUnknown.Length > MaxLength)
+            {
                 strBytes.Append(" ...");
+            }
 
             // Known index
             throw new DecoderFallbackException(
