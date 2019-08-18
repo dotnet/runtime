@@ -415,6 +415,11 @@ static guint16 popcnt_methods [] = {
 	SN_get_IsSupported
 };
 
+static guint16 bmi_methods [] = {
+	SN_TrailingZeroCount,
+	SN_get_IsSupported,
+};
+
 static MonoInst*
 emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
@@ -452,6 +457,24 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 			return NULL;
 		}
 	}
+	if (!strcmp (class_name, "Bmi1") || (!strcmp (class_name, "X64") && cmethod->klass->nested_in && !strcmp (m_class_get_name (cmethod->klass->nested_in), "Bmi1"))) {
+		id = lookup_intrins (bmi_methods, sizeof (bmi_methods), cmethod);
+		if (id == -1)
+			return NULL;
+		supported = (mono_llvm_get_cpu_features () & MONO_CPU_X86_BMI1) != 0;
+		is_64bit = !strcmp (class_name, "X64");
+
+		switch (id) {
+		case SN_get_IsSupported:
+			EMIT_NEW_ICONST (cfg, ins, supported ? 1 : 0);
+			ins->type = STACK_I4;
+			return ins;
+		default:
+			return NULL;
+		}
+		//printf ("X: %s %s\n", mono_method_get_full_name (cfg->method), mono_method_get_full_name (cmethod));
+	}
+
 	return NULL;
 }
 #endif
