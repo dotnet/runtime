@@ -91,9 +91,20 @@ MonoJitMemoryManager::allocateDataSection(uintptr_t Size,
 										  unsigned Alignment,
 										  unsigned SectionID,
 										  StringRef SectionName,
-										  bool IsReadOnly) {
-	uint8_t *res = (uint8_t*)malloc (Size);
+										  bool IsReadOnly)
+{
+	uint8_t *res;
+
+	// FIXME: Use a mempool
+	if (Alignment == 32) {
+		/* Used for SIMD */
+		res = (uint8_t*)malloc (Size + 32);
+		res += (GPOINTER_TO_UINT (res) % 32);
+	} else {
+		res = (uint8_t*)malloc (Size);
+	}
 	assert (res);
+	g_assert (GPOINTER_TO_UINT (res) % Alignment == 0);
 	memset (res, 0, Size);
 	return res;
 }

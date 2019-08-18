@@ -473,23 +473,24 @@ simd_class_to_llvm_type (EmitContext *ctx, MonoClass *klass)
 		return LLVMVectorType (LLVMFloatType (), 4);
 	} else if (!strcmp (klass_name, "Vector`1")) {
 		MonoType *etype = mono_class_get_generic_class (klass)->context.class_inst->type_argv [0];
+		int size = mono_class_value_size (klass, NULL);
 		switch (etype->type) {
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
-			return LLVMVectorType (LLVMInt8Type (), 16);
+			return LLVMVectorType (LLVMInt8Type (), size);
 		case MONO_TYPE_I2:
 		case MONO_TYPE_U2:
-			return LLVMVectorType (LLVMInt16Type (), 8);
+			return LLVMVectorType (LLVMInt16Type (), size / 2);
 		case MONO_TYPE_I4:
 		case MONO_TYPE_U4:
-			return LLVMVectorType (LLVMInt32Type (), 4);
+			return LLVMVectorType (LLVMInt32Type (), size / 4);
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
-			return LLVMVectorType (LLVMInt64Type (), 2);
+			return LLVMVectorType (LLVMInt64Type (), size / 8);
 		case MONO_TYPE_R4:
-			return LLVMVectorType (LLVMFloatType (), 4);
+			return LLVMVectorType (LLVMFloatType (), size / 4);
 		case MONO_TYPE_R8:
-			return LLVMVectorType (LLVMDoubleType (), 2);
+			return LLVMVectorType (LLVMDoubleType (), size / 8);
 		default:
 			g_assert_not_reached ();
 			return NULL;
@@ -2607,7 +2608,7 @@ build_alloca (EmitContext *ctx, MonoType *t)
 	g_assert (!mini_is_gsharedvt_variable_type (t));
 
 	if (MONO_CLASS_IS_SIMD (ctx->cfg, k))
-		align = 16;
+		align = mono_class_value_size (k, NULL);
 	else
 		align = mono_class_min_align (k);
 
@@ -5882,6 +5883,9 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				 * FIXME: If later code uses the regs defined by these instructions,
 				 * compilation will fail.
 				 */
+				const char *spec = INS_INFO (next->opcode);
+				if (spec [MONO_INST_DEST] == 'i')
+					ctx->values [next->dreg] = LLVMConstNull (LLVMInt32Type ());
 				MONO_DELETE_INS (bb, next);
 			}				
 			break;
@@ -6717,11 +6721,16 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_EXPAND_I8:
 		case OP_EXPAND_R4:
 		case OP_EXPAND_R8: {
-			LLVMTypeRef t = simd_op_to_llvm_type (ins->opcode);
-			LLVMValueRef mask [16], v;
+			LLVMTypeRef t;
+			LLVMValueRef mask [32], v;
 			int i;
 
-			for (i = 0; i < 16; ++i)
+#ifdef ENABLE_NETCORE
+			t = simd_class_to_llvm_type (ctx, ins->klass);
+#else
+			t = simd_op_to_llvm_type (ins->opcode);
+#endif
+			for (i = 0; i < 32; ++i)
 				mask [i] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
 
 			v = convert (ctx, values [ins->sreg1], LLVMGetElementType (t));
@@ -7082,9 +7091,11 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 
+#ifdef ENABLE_NETCORE
 		case OP_XCOMPARE_FP: {
 			LLVMRealPredicate pred = fpcond_to_llvm_cond [ins->inst_c0];
 			LLVMValueRef cmp = LLVMBuildFCmp (builder, pred, lhs, rhs, "");
+			g_assert_not_reached ();
 			if (LLVMGetVectorSize (LLVMTypeOf (lhs)) == 2)
 				values [ins->dreg] = LLVMBuildBitCast (builder, LLVMBuildSExt (builder, cmp, LLVMVectorType (LLVMInt64Type (), 2), ""), LLVMTypeOf (lhs), "");
 			else
@@ -7098,41 +7109,66 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_XEQUAL: {
-			LLVMTypeRef t = LLVMVectorType (LLVMInt8Type (), 16);
-			LLVMValueRef mask [16], shuffle;
+			LLVMTypeRef t;
+			LLVMValueRef mask [32], shuffle;
+			int nelems;
 
 			//%c = icmp sgt <16 x i8> %a0, %a1
 			LLVMValueRef cmp = LLVMBuildICmp (builder, LLVMIntEQ, lhs, rhs, "");
-			cmp = LLVMBuildSExt (builder, cmp, LLVMVectorType (LLVMInt8Type (), 16), "");
+			nelems = LLVMGetVectorSize (LLVMTypeOf (cmp));
+			t = LLVMVectorType (LLVMInt8Type (), nelems);
+			cmp = LLVMBuildSExt (builder, cmp, t, "");
 			// cmp is a <16 x i8> vector, each element is either 0xff or 0
+			int half = nelems / 2;
+			while (half >= 1) {
+				// AND the top and bottom halfes into the bottom half
+				for (int i = 0; i < half; ++i)
+					mask [i] = LLVMConstInt (LLVMInt32Type (), half + i, FALSE);
+				for (int i = half; i < nelems; ++i)
+					mask [i] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+				shuffle = LLVMBuildShuffleVector (builder, cmp, LLVMGetUndef (t), LLVMConstVector (mask, LLVMGetVectorSize (t)), "");
+				cmp = LLVMBuildAnd (builder, cmp, shuffle, "");
+				half = half / 2;
+			}
+#if 0
+			if (nelems == 32) {
+				// AND [0..15] and [16..31] into [0..15]
+				for (int i = 0; i < 16; ++i)
+					mask [i] = LLVMConstInt (LLVMInt32Type (), 16 + i, FALSE);
+				for (int i = 16; i < 32; ++i)
+					mask [i] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+				shuffle = LLVMBuildShuffleVector (builder, cmp, LLVMGetUndef (t), LLVMConstVector (mask, LLVMGetVectorSize (t)), "");
+				cmp = LLVMBuildAnd (builder, cmp, shuffle, "");
+			}
 			// AND [0..7] and [8..15] into [0..7]
 			for (int i = 0; i < 8; ++i)
 				mask [i] = LLVMConstInt (LLVMInt32Type (), 8 + i, FALSE);
-			for (int i = 8; i < 16; ++i)
+			for (int i = 8; i < nelems; ++i)
 				mask [i] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
 			shuffle = LLVMBuildShuffleVector (builder, cmp, LLVMGetUndef (t), LLVMConstVector (mask, LLVMGetVectorSize (t)), "");
 			cmp = LLVMBuildAnd (builder, cmp, shuffle, "");
 			// AND [0..3] and [4..7] into [0..3]
 			for (int i = 0; i < 4; ++i)
 				mask [i] = LLVMConstInt (LLVMInt32Type (), 4 + i, FALSE);
-			for (int i = 4; i < 16; ++i)
+			for (int i = 4; i < nelems; ++i)
 				mask [i] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
 			shuffle = LLVMBuildShuffleVector (builder, cmp, LLVMGetUndef (t), LLVMConstVector (mask, LLVMGetVectorSize (t)), "");
 			cmp = LLVMBuildAnd (builder, cmp, shuffle, "");
 			// AND [0..1] and [2..3] into [0..1]
 			for (int i = 0; i < 2; ++i)
 				mask [i] = LLVMConstInt (LLVMInt32Type (), 2 + i, FALSE);
-			for (int i = 2; i < 16; ++i)
+			for (int i = 2; i < nelems; ++i)
 				mask [i] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
 			shuffle = LLVMBuildShuffleVector (builder, cmp, LLVMGetUndef (t), LLVMConstVector (mask, LLVMGetVectorSize (t)), "");
 			cmp = LLVMBuildAnd (builder, cmp, shuffle, "");
 			// AND [0] and [1] into [0]
 			for (int i = 0; i < 1; ++i)
 				mask [i] = LLVMConstInt (LLVMInt32Type (), 1 + i, FALSE);
-			for (int i = 1; i < 16; ++i)
+			for (int i = 1; i < nelems; ++i)
 				mask [i] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
 			shuffle = LLVMBuildShuffleVector (builder, cmp, LLVMGetUndef (t), LLVMConstVector (mask, LLVMGetVectorSize (t)), "");
 			cmp = LLVMBuildAnd (builder, cmp, shuffle, "");
+#endif
 			// Extract [0]
 			values [ins->dreg] = LLVMBuildExtractElement (builder, cmp, LLVMConstInt (LLVMInt32Type (), 0, FALSE), "");
 			// Maybe convert to 0/1 ?
@@ -7178,6 +7214,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_POPCNT64:
 			values [ins->dreg] = LLVMBuildCall (builder, get_intrins (ctx, INTRINS_CTPOP_I64), &lhs, 1, "");
 			break;
+#endif /* ENABLE_NETCORE */
 #endif /* SIMD */
 
 		case OP_DUMMY_USE:
