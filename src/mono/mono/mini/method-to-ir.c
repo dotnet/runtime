@@ -3765,7 +3765,8 @@ method_does_not_return (MonoMethod *method)
 	// FIXME: Under netcore, these are decorated with the [DoesNotReturn] attribute
 	return m_class_get_image (method->klass) == mono_defaults.corlib &&
 		!strcmp (m_class_get_name (method->klass), "ThrowHelper") &&
-		strstr (method->name, "Throw") == method->name;
+		strstr (method->name, "Throw") == method->name &&
+		!method->is_inflated;
 }
 
 static int inline_limit, llvm_jit_inline_limit;
@@ -7877,6 +7878,8 @@ calli_end:
 		}
 		case MONO_CEE_RET:
 			mini_profiler_emit_leave (cfg, sig->ret->type != MONO_TYPE_VOID ? sp [-1] : NULL);
+
+			g_assert (!method_does_not_return (method));
 
 			if (cfg->method != method) {
 				/* return from inlined method */
