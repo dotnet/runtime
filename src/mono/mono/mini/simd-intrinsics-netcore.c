@@ -13,7 +13,9 @@
 
 #include "mini.h"
 #include "ir-emit.h"
+#ifdef ENABLE_LLVM
 #include "llvm-jit.h"
+#endif
 #include "mono/utils/bsearch.h"
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/reflection-internals.h>
@@ -43,12 +45,22 @@ enum {
 
 static int register_size;
 
+static MonoCPUFeatures
+get_cpu_features (void)
+{
+#ifdef ENABLE_LLVM
+	return mono_llvm_get_cpu_features ();
+#else
+	return (MonoCPUFeatures)0;
+#endif
+}
+
 void
 mono_simd_intrinsics_init (void)
 {
 	register_size = 16;
 #if FALSE
-	if ((mono_llvm_get_cpu_features () & MONO_CPU_X86_AVX) != 0)
+	if ((get_cpu_features () & MONO_CPU_X86_AVX) != 0)
 		register_size = 32;
 #endif
 	/* Tell the class init code the size of the System.Numerics.Register type */
@@ -443,7 +455,7 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		if (id == -1)
 			return NULL;
 
-		supported = (mono_llvm_get_cpu_features () & MONO_CPU_X86_POPCNT) != 0;
+		supported = (get_cpu_features () & MONO_CPU_X86_POPCNT) != 0;
 		is_64bit = !strcmp (class_name, "X64");
 
 		switch (id) {
@@ -469,7 +481,7 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 			return NULL;
 		id = lookup_intrins (bmi1_methods, sizeof (bmi1_methods), cmethod);
 		g_assert (id != -1);
-		supported = (mono_llvm_get_cpu_features () & MONO_CPU_X86_BMI1) != 0;
+		supported = (get_cpu_features () & MONO_CPU_X86_BMI1) != 0;
 		is_64bit = !strcmp (class_name, "X64");
 
 		switch (id) {
@@ -494,7 +506,7 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 			return NULL;
 		id = lookup_intrins (bmi2_methods, sizeof (bmi2_methods), cmethod);
 		g_assert (id != -1);
-		supported = (mono_llvm_get_cpu_features () & MONO_CPU_X86_BMI2) != 0;
+		supported = (get_cpu_features () & MONO_CPU_X86_BMI2) != 0;
 		is_64bit = !strcmp (class_name, "X64");
 
 		switch (id) {
