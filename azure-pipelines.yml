@@ -181,8 +181,9 @@ stages:
       enableSigningValidation: false
       # SourceLink validation doesn't work in dev builds: tries to pull from GitHub. https://github.com/dotnet/arcade/issues/3604
       enableSourceLinkValidation: false
-      # Allow symbol publish to emit expected warnings without failing the build.
-      symbolPublishingAdditionalParameters: -warnAsError:$false
+      # Allow symbol publish to emit expected warnings without failing the build. Include single
+      # quotes inside the string so that it passes through to MSBuild without script interference.
+      symbolPublishingAdditionalParameters: "'-warnAsError:$false'"
 
   - template: /eng/stages/custom-publish.yml
     parameters:
