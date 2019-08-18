@@ -385,22 +385,6 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
 	MonoEHFrameSymbol = "mono_eh_frame";
 
 	EngineBuilder EB;
-#if defined(TARGET_AMD64) || defined(TARGET_X86)
-	//std::vector<std::string> attrs;
-
-	uint64_t f = 0;
-	llvm::StringMap<bool> HostFeatures;
-	if (llvm::sys::getHostCPUFeatures(HostFeatures)) {
-		if (HostFeatures ["popcnt"])
-			f |= MONO_CPU_X86_POPCNT;
-		/*
-		  for (auto &F : HostFeatures)
-		  attrs.push_back (F.first ());
-		*/
-	}
-	cpu_features = (MonoCPUFeatures)f;
-#endif
-
 	EB.setOptLevel(CodeGenOpt::Aggressive);
 	EB.setMCPU(sys::getHostCPUName());
 
@@ -433,6 +417,27 @@ mono_llvm_dispose_ee (MonoEERef *eeref)
 MonoCPUFeatures
 mono_llvm_get_cpu_features (void)
 {
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
+	if (cpu_features == 0) {
+		uint64_t f = 0;
+		llvm::StringMap<bool> HostFeatures;
+		if (llvm::sys::getHostCPUFeatures(HostFeatures)) {
+			if (HostFeatures ["popcnt"])
+				f |= MONO_CPU_X86_POPCNT;
+			if (HostFeatures ["avx"])
+				f |= MONO_CPU_X86_AVX;
+			/*
+			for (auto &F : HostFeatures)
+				if (F.second)
+					outs () << "X: " << F.first () << "\n";
+			*/
+		}
+		f |= MONO_CPU_INITED;
+		mono_memory_barrier ();
+		cpu_features = (MonoCPUFeatures)f;
+	}
+#endif
+
 	return cpu_features;
 }
 
