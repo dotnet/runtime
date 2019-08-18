@@ -4796,10 +4796,9 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 		}
 		MINT_IN_CASE(MINT_CASTCLASS_INTERFACE)
 		MINT_IN_CASE(MINT_ISINST_INTERFACE) {
-			gboolean isinst_instr = *ip == MINT_ISINST_INTERFACE;
-			MonoClass* const c = (MonoClass*)imethod->data_items [*(guint16 *)(ip + 1)];
 			MonoObject* const o = sp [-1].data.o; // See the comment about GC safety above.
 			if (o) {
+				MonoClass* const c = (MonoClass*)imethod->data_items [*(guint16 *)(ip + 1)];
 				gboolean isinst;
 				if (MONO_VTABLE_IMPLEMENTS_INTERFACE (o->vtable, m_class_get_interface_id (c))) {
 					isinst = TRUE;
@@ -4811,6 +4810,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 				}
 
 				if (!isinst) {
+					gboolean const isinst_instr = *ip == MINT_ISINST_INTERFACE;
 					if (isinst_instr)
 						sp [-1].data.p = NULL;
 					else
@@ -4822,13 +4822,13 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 		}
 		MINT_IN_CASE(MINT_CASTCLASS_COMMON)
 		MINT_IN_CASE(MINT_ISINST_COMMON) {
-			gboolean isinst_instr = *ip == MINT_ISINST_COMMON;
-			MonoClass* const c = (MonoClass*)imethod->data_items [*(guint16 *)(ip + 1)];
 			MonoObject* const o = sp [-1].data.o; // See the comment about GC safety above
 			if (o) {
+				MonoClass* const c = (MonoClass*)imethod->data_items [*(guint16 *)(ip + 1)];
 				gboolean isinst = mono_class_has_parent_fast (o->vtable->klass, c);
 
 				if (!isinst) {
+					gboolean const isinst_instr = *ip == MINT_ISINST_COMMON;
 					if (isinst_instr)
 						sp [-1].data.p = NULL;
 					else
@@ -4840,11 +4840,11 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 		}
 		MINT_IN_CASE(MINT_CASTCLASS)
 		MINT_IN_CASE(MINT_ISINST) {
-			gboolean isinst_instr = *ip == MINT_ISINST;
-			MonoClass* const c = (MonoClass*)imethod->data_items [*(guint16 *)(ip + 1)];
 			MonoObject* const o = sp [-1].data.o; // See the comment about GC safety above
 			if (o) {
+				MonoClass* const c = (MonoClass*)imethod->data_items [*(guint16 *)(ip + 1)];
 				if (!mono_interp_isinst (o, c)) { // FIXME: do not swallow the error
+					gboolean const isinst_instr = *ip == MINT_ISINST;
 					if (isinst_instr)
 						sp [-1].data.p = NULL;
 					else
@@ -4863,10 +4863,9 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_UNBOX) {
-			MonoClass* const c = (MonoClass*)imethod->data_items[*(guint16 *)(ip + 1)];
-			
 			MonoObject* const o = sp [-1].data.o; // See the comment about GC safety above
 			NULL_CHECK (o);
+			MonoClass* const c = (MonoClass*)imethod->data_items[*(guint16 *)(ip + 1)];
 
 			if (!(m_class_get_rank (o->vtable->klass) == 0 && m_class_get_element_class (o->vtable->klass) == m_class_get_element_class (c)))
 				THROW_EX (mono_get_exception_invalid_cast (), ip);
