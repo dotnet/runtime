@@ -415,8 +415,14 @@ static guint16 popcnt_methods [] = {
 	SN_get_IsSupported
 };
 
-static guint16 bmi_methods [] = {
+static guint16 bmi1_methods [] = {
 	SN_TrailingZeroCount,
+	SN_get_IsSupported,
+};
+
+static guint16 bmi2_methods [] = {
+	SN_ParallelBitDeposit,
+	SN_ParallelBitExtract,
 	SN_get_IsSupported,
 };
 
@@ -458,9 +464,11 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		}
 	}
 	if (!strcmp (class_name, "Bmi1") || (!strcmp (class_name, "X64") && cmethod->klass->nested_in && !strcmp (m_class_get_name (cmethod->klass->nested_in), "Bmi1"))) {
-		id = lookup_intrins (bmi_methods, sizeof (bmi_methods), cmethod);
-		if (id == -1)
+		// We only support the subset used by corelib
+		if (m_class_get_image (cfg->method->klass) != mono_get_corlib ())
 			return NULL;
+		id = lookup_intrins (bmi1_methods, sizeof (bmi1_methods), cmethod);
+		g_assert (id != -1);
 		supported = (mono_llvm_get_cpu_features () & MONO_CPU_X86_BMI1) != 0;
 		is_64bit = !strcmp (class_name, "X64");
 
@@ -469,10 +477,51 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 			EMIT_NEW_ICONST (cfg, ins, supported ? 1 : 0);
 			ins->type = STACK_I4;
 			return ins;
+		case SN_TrailingZeroCount:
+			MONO_INST_NEW (cfg, ins, is_64bit ? OP_CTTZ64 : OP_CTTZ32);
+			ins->dreg = alloc_ireg (cfg);
+			ins->sreg1 = args [0]->dreg;
+			ins->type = STACK_I4;
+			MONO_ADD_INS (cfg->cbb, ins);
+			return ins;
 		default:
-			return NULL;
+			g_assert_not_reached ();
 		}
-		//printf ("X: %s %s\n", mono_method_get_full_name (cfg->method), mono_method_get_full_name (cmethod));
+	}
+	if (!strcmp (class_name, "Bmi2") || (!strcmp (class_name, "X64") && cmethod->klass->nested_in && !strcmp (m_class_get_name (cmethod->klass->nested_in), "Bmi2"))) {
+		// We only support the subset used by corelib
+		if (m_class_get_image (cfg->method->klass) != mono_get_corlib ())
+			return NULL;
+		id = lookup_intrins (bmi2_methods, sizeof (bmi2_methods), cmethod);
+		g_assert (id != -1);
+		supported = (mono_llvm_get_cpu_features () & MONO_CPU_X86_BMI2) != 0;
+		is_64bit = !strcmp (class_name, "X64");
+
+		switch (id) {
+		case SN_get_IsSupported:
+			EMIT_NEW_ICONST (cfg, ins, supported ? 1 : 0);
+			ins->type = STACK_I4;
+			return ins;
+		case SN_ParallelBitExtract:
+			MONO_INST_NEW (cfg, ins, is_64bit ? OP_PEXT64 : OP_PEXT32);
+			ins->dreg = alloc_ireg (cfg);
+			ins->sreg1 = args [0]->dreg;
+			ins->sreg2 = args [1]->dreg;
+			ins->type = STACK_I4;
+			MONO_ADD_INS (cfg->cbb, ins);
+			return ins;
+		case SN_ParallelBitDeposit:
+			MONO_INST_NEW (cfg, ins, is_64bit ? OP_PDEP64 : OP_PDEP32);
+			ins->dreg = alloc_ireg (cfg);
+			ins->sreg1 = args [0]->dreg;
+			ins->sreg2 = args [1]->dreg;
+			ins->type = STACK_I4;
+			MONO_ADD_INS (cfg->cbb, ins);
+			return ins;
+		default:
+			g_assert_not_reached ();
+		}
+		//printf ("%s %s\n", mono_method_get_full_name (cfg->method), mono_method_get_full_name (cmethod));
 	}
 
 	return NULL;

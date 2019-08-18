@@ -2792,6 +2792,8 @@ typedef enum {
 	MONO_CPU_X86_POPCNT = 1 << 1,
 	MONO_CPU_X86_LZCNT = 1 << 2,
 	MONO_CPU_X86_AVX = 1 << 3,
+	MONO_CPU_X86_BMI1 = 1 << 4,
+	MONO_CPU_X86_BMI2 = 1 << 5,
 #endif
 } MonoCPUFeatures;
 

@@ -22,7 +22,6 @@ METHOD(op_Explicit)
 METHOD(op_Inequality)
 METHOD(op_Multiply)
 METHOD(op_Subtraction)
-
 // BMI1
 //METHOD(AndNot)
 //METHOD(BitFieldExtract)
@@ -30,4 +29,8 @@ METHOD(op_Subtraction)
 //METHOD(GetMaskUpToLowestSetBit)
 //METHOD(ResetLowestSetBit)
 METHOD(TrailingZeroCount)
-
+// BMI2
+//METHOD(ZeroHighBits)
+//METHOD(MultiplyNoFlags)
+METHOD(ParallelBitDeposit)
+METHOD(ParallelBitExtract)

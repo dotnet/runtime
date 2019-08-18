@@ -426,6 +426,10 @@ mono_llvm_get_cpu_features (void)
 				f |= MONO_CPU_X86_POPCNT;
 			if (HostFeatures ["avx"])
 				f |= MONO_CPU_X86_AVX;
+			if (HostFeatures ["bmi"])
+				f |= MONO_CPU_X86_BMI1;
+			if (HostFeatures ["bmi2"])
+				f |= MONO_CPU_X86_BMI2;
 			/*
 			for (auto &F : HostFeatures)
 				if (F.second)

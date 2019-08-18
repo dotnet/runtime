@@ -301,6 +301,12 @@ typedef enum {
 	INTRINS_EXPECT_I1,
 	INTRINS_CTPOP_I32,
 	INTRINS_CTPOP_I64,
+	INTRINS_CTTZ_I32,
+	INTRINS_CTTZ_I64,
+	INTRINS_PEXT_I32,
+	INTRINS_PEXT_I64,
+	INTRINS_PDEP_I32,
+	INTRINS_PDEP_I64,
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
 	INTRINS_SSE_PMOVMSKB,
 	INTRINS_SSE_PSRLI_W,
@@ -7214,6 +7220,30 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_POPCNT64:
 			values [ins->dreg] = LLVMBuildCall (builder, get_intrins (ctx, INTRINS_CTPOP_I64), &lhs, 1, "");
 			break;
+		case OP_CTTZ32:
+		case OP_CTTZ64: {
+			LLVMValueRef args [2];
+			args [0] = lhs;
+			args [1] = LLVMConstInt (LLVMInt1Type (), 0, FALSE);
+			values [ins->dreg] = LLVMBuildCall (builder, get_intrins (ctx, ins->opcode == OP_CTTZ32 ? INTRINS_CTTZ_I32 : INTRINS_CTTZ_I64), args, 2, "");
+			break;
+		}
+		case OP_PEXT32:
+		case OP_PEXT64: {
+			LLVMValueRef args [2];
+			args [0] = lhs;
+			args [1] = rhs;
+			values [ins->dreg] = LLVMBuildCall (builder, get_intrins (ctx, ins->opcode == OP_PEXT32 ? INTRINS_PEXT_I32 : INTRINS_PEXT_I64), args, 2, "");
+			break;
+		}
+		case OP_PDEP32:
+		case OP_PDEP64: {
+			LLVMValueRef args [2];
+			args [0] = lhs;
+			args [1] = rhs;
+			values [ins->dreg] = LLVMBuildCall (builder, get_intrins (ctx, ins->opcode == OP_PDEP32 ? INTRINS_PDEP_I32 : INTRINS_PDEP_I64), args, 2, "");
+			break;
+		}
 #endif /* ENABLE_NETCORE */
 #endif /* SIMD */
 
@@ -8410,6 +8440,12 @@ static IntrinsicDesc intrinsics[] = {
 	{INTRINS_EXPECT_I1, "llvm.expect.i1"},
 	{INTRINS_CTPOP_I32, "llvm.ctpop.i32"},
 	{INTRINS_CTPOP_I64, "llvm.ctpop.i64"},
+	{INTRINS_CTTZ_I32, "llvm.cttz.i32"},
+	{INTRINS_CTTZ_I64, "llvm.cttz.i64"},
+	{INTRINS_PEXT_I32, "llvm.x86.bmi.pext.32"},
+	{INTRINS_PEXT_I64, "llvm.x86.bmi.pext.64"},
+	{INTRINS_PDEP_I32, "llvm.x86.bmi.pdep.32"},
+	{INTRINS_PDEP_I64, "llvm.x86.bmi.pdep.64"},
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
 	{INTRINS_SSE_PMOVMSKB, "llvm.x86.sse2.pmovmskb.128"},
 	{INTRINS_SSE_PSRLI_W, "llvm.x86.sse2.psrli.w"},
@@ -8572,6 +8608,24 @@ add_intrinsic (LLVMModuleRef module, int id)
 		break;
 	case INTRINS_CTPOP_I64:
 		AddFunc1 (module, name, LLVMInt64Type (), LLVMInt64Type ());
+		break;
+	case INTRINS_CTTZ_I32:
+		AddFunc2 (module, name, LLVMInt32Type (), LLVMInt32Type (), LLVMInt1Type ());
+		break;
+	case INTRINS_CTTZ_I64:
+		AddFunc2 (module, name, LLVMInt64Type (), LLVMInt64Type (), LLVMInt1Type ());
+		break;
+	case INTRINS_PEXT_I32:
+		AddFunc2 (module, name, LLVMInt32Type (), LLVMInt32Type (), LLVMInt32Type ());
+		break;
+	case INTRINS_PEXT_I64:
+		AddFunc2 (module, name, LLVMInt64Type (), LLVMInt64Type (), LLVMInt64Type ());
+		break;
+	case INTRINS_PDEP_I32:
+		AddFunc2 (module, name, LLVMInt32Type (), LLVMInt32Type (), LLVMInt32Type ());
+		break;
+	case INTRINS_PDEP_I64:
+		AddFunc2 (module, name, LLVMInt64Type (), LLVMInt64Type (), LLVMInt64Type ());
 		break;
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
 	case INTRINS_SSE_PMOVMSKB:
