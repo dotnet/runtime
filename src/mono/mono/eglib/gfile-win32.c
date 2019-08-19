@@ -114,11 +114,8 @@ g_file_test (const gchar *filename, GFileTest test)
 	}
 
 	if ((test & G_FILE_TEST_IS_EXECUTABLE) != 0) {
-		size_t len = strlen (filename);
-		if (len > 4 && strcmp (filename + len-3, "exe"))
-		    return TRUE;
-		    
-		return FALSE;
+		/* Testing executable permission on Windows is hard, and this is unused, treat as EXISTS for now. */
+		return TRUE;
 	}
 
 	if ((test & G_FILE_TEST_IS_REGULAR) != 0) {
