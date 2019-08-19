@@ -384,13 +384,13 @@ namespace System.Text.Json.Serialization.Tests
             GenericConverterTestHelper<bool>("JsonConverterBoolean", true, "true", options);
             GenericConverterTestHelper<byte>("JsonConverterByte", (byte)128, "128", options);
             GenericConverterTestHelper<char>("JsonConverterChar", 'A', "\"A\"", options);
-            GenericConverterTestHelper<double>("JsonConverterDouble", 3.14d, "3.14", options);
+            GenericConverterTestHelper<double>("JsonConverterDouble", 15.1d, "15.1", options);
             GenericConverterTestHelper<SampleEnum>("JsonConverterEnum`1", SampleEnum.Two, "2", options);
             GenericConverterTestHelper<short>("JsonConverterInt16", (short)5, "5", options);
             GenericConverterTestHelper<int>("JsonConverterInt32", -100, "-100", options);
             GenericConverterTestHelper<long>("JsonConverterInt64", (long)11111, "11111", options);
             GenericConverterTestHelper<sbyte>("JsonConverterSByte", (sbyte)-121, "-121", options);
-            GenericConverterTestHelper<float>("JsonConverterSingle", 3.14f, "3.14", options);
+            GenericConverterTestHelper<float>("JsonConverterSingle", 14.5f, "14.5", options);
             GenericConverterTestHelper<string>("JsonConverterString", "Hello", "\"Hello\"", options);
             GenericConverterTestHelper<ushort>("JsonConverterUInt16", (ushort)1206, "1206", options);
             GenericConverterTestHelper<uint>("JsonConverterUInt32", (uint)3333, "3333", options);
