@@ -146,8 +146,6 @@ struct _InterpFrame {
 	/* exception info */
 	const unsigned short  *ip;
 	MonoException     *ex;
-	GSList *finally_ips;
-	const unsigned short *endfinally_ip;
 };
 
 typedef struct {
