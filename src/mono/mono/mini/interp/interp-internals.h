@@ -131,7 +131,6 @@ struct _InterpFrame {
 	InterpFrame *parent; /* parent */
 	InterpMethod  *imethod; /* parent */
 	stackval       *retval; /* parent */
-	char           *args;
 	char           *varargs;
 	stackval       *stack_args; /* parent */
 	stackval       *stack;

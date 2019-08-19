@@ -3229,16 +3229,16 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 	}
 
 	if (!clause_args) {
-		frame->args = g_newa (char, imethod->alloca_size);
+		frame->stack = (stackval*)g_alloca (imethod->alloca_size);
 		ip = imethod->code;
 	} else {
 		ip = clause_args->start_with_ip;
 		if (clause_args->base_frame) {
-			frame->args = g_newa (char, imethod->alloca_size);
-			memcpy (frame->args, clause_args->base_frame->args, imethod->alloca_size);
+			frame->stack = (stackval*)g_alloca (imethod->alloca_size);
+			memcpy (frame->stack, clause_args->base_frame->stack, imethod->alloca_size);
 		}
 	}
-	sp = frame->stack = (stackval *) (char *) frame->args;
+	sp = frame->stack;
 	vt_sp = (unsigned char *) sp + imethod->stack_size;
 #if DEBUG_INTERP
 	vtalloc = vt_sp;
@@ -3422,9 +3422,9 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			 * than the callee stack frame (at the interp level)
 			 */
 			if (realloc_frame) {
-				frame->args = g_newa (char, imethod->alloca_size);
-				memset (frame->args, 0, imethod->alloca_size);
-				sp = frame->stack = (stackval *) frame->args;
+				frame->stack = (stackval*)g_alloca (imethod->alloca_size);
+				memset (frame->stack, 0, imethod->alloca_size);
+				sp = frame->stack;
 			}
 			vt_sp = (unsigned char *) sp + imethod->stack_size;
 #if DEBUG_INTERP
@@ -6599,7 +6599,7 @@ exit_frame:
 	error_init_reuse (error);
 
 	if (clause_args && clause_args->base_frame)
-		memcpy (clause_args->base_frame->args, frame->args, imethod->alloca_size);
+		memcpy (clause_args->base_frame->stack, frame->stack, imethod->alloca_size);
 
 	if (!frame->ex && MONO_PROFILER_ENABLED (method_leave) &&
 	    imethod->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE) {
