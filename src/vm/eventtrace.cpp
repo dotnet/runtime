@@ -6901,7 +6901,7 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
         ReJITID ilCodeId = 0;
         NativeCodeVersion nativeCodeVersion;
 #ifdef FEATURE_CODE_VERSIONING
-        if (fGetCodeIds)
+        if (fGetCodeIds && pMD->IsVersionable())
         {
             CodeVersionManager *pCodeVersionManager = pMD->GetCodeVersionManager();
             _ASSERTE(pCodeVersionManager->LockOwnedByCurrentThread());

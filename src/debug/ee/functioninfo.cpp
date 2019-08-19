@@ -1603,13 +1603,20 @@ DebuggerJitInfo *DebuggerMethodInfo::FindOrCreateInitAndAddJitInfo(MethodDesc* f
     // The DJI may already be populated in the cache, if so CreateInitAndAddJitInfo is a no-op and that is fine.
     // CreateInitAndAddJitInfo takes a lock and checks the list again, which makes this thread-safe.
 
-    CodeVersionManager::TableLockHolder lockHolder(fd->GetCodeVersionManager());
-    CodeVersionManager *pCodeVersionManager = fd->GetCodeVersionManager();
-    NativeCodeVersion nativeCodeVersion = pCodeVersionManager->GetNativeCodeVersion(fd, startAddr);
-
-    // Some day we'll get EnC to use code versioning properly, but until then we'll get the right behavior treating all EnC versions as the default native code version.
-    if (nativeCodeVersion.IsNull())
+    NativeCodeVersion nativeCodeVersion;
+    if (fd->IsVersionable())
     {
+        CodeVersionManager::TableLockHolder lockHolder(fd->GetCodeVersionManager());
+        CodeVersionManager *pCodeVersionManager = fd->GetCodeVersionManager();
+        nativeCodeVersion = pCodeVersionManager->GetNativeCodeVersion(fd, startAddr);
+        if (nativeCodeVersion.IsNull())
+        {
+            return NULL;
+        }
+    }
+    else
+    {
+        // Some day we'll get EnC to use code versioning properly, but until then we'll get the right behavior treating all EnC versions as the default native code version.
         nativeCodeVersion = NativeCodeVersion(fd);
     }
 
