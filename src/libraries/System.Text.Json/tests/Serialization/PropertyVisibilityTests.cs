@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using Xunit;
+using System.Numerics;
 
 namespace System.Text.Json.Serialization.Tests
 {
@@ -120,6 +122,128 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(@"MyStringWithIgnore", obj.MyStringWithIgnore);
             Assert.Equal(2, obj.MyStringsWithIgnore.Length);
             Assert.Equal(1, obj.MyDictionaryWithIgnore["Key"]);
+        }
+
+        [Fact]
+        public static void JsonIgnoreAttribute_UnsupportedCollection()
+        {
+            string json =
+                    @"{
+                        ""MyConcurrentDict"":{
+                            ""key"":""value""
+                        },
+                        ""MyIDict"":{
+                            ""key"":""value""
+                        },
+                        ""MyDict"":{
+                            ""key"":""value""
+                        }
+                    }";
+            string wrapperJson =
+                    @"{
+                        ""MyClass"":{
+                            ""MyConcurrentDict"":{
+                                ""key"":""value""
+                            },
+                            ""MyIDict"":{
+                                ""key"":""value""
+                            },
+                            ""MyDict"":{
+                                ""key"":""value""
+                            }
+                        }
+                    }";
+
+            // Unsupported collections will throw by default.
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithUnsupportedDictionary>(json));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(new ClassWithUnsupportedDictionary()));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<WrapperForClassWithUnsupportedDictionary>(wrapperJson));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(new WrapperForClassWithUnsupportedDictionary()));
+
+            // When ignored, we can serialize and deserialize without exceptions.
+            ClassWithIgnoredUnsupportedDictionary obj = JsonSerializer.Deserialize<ClassWithIgnoredUnsupportedDictionary>(json);
+            Assert.Null(obj.MyDict);
+            Assert.Equal("{}", JsonSerializer.Serialize(new ClassWithIgnoredUnsupportedDictionary()));
+
+            WrapperForClassWithIgnoredUnsupportedDictionary wrapperObj = JsonSerializer.Deserialize<WrapperForClassWithIgnoredUnsupportedDictionary>(wrapperJson);
+            Assert.Null(wrapperObj.MyClass.MyDict);
+            Assert.Equal(@"{""MyClass"":{}}", JsonSerializer.Serialize(new WrapperForClassWithIgnoredUnsupportedDictionary()
+            {
+                MyClass = new ClassWithIgnoredUnsupportedDictionary(),
+            })); ;
+        }
+
+        [Fact]
+        public static void JsonIgnoreAttribute_UnsupportedBigInteger()
+        {
+            string json = @"{""MyBigInteger"":1}";
+            string wrapperJson = @"{""MyClass"":{""MyBigInteger"":1}}";
+
+            // Unsupported types will throw by default.
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithUnsupportedBigInteger>(json));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<WrapperForClassWithUnsupportedBigInteger>(wrapperJson));
+
+            // When ignored, we can serialize and deserialize without exceptions.
+            ClassWithIgnoredUnsupportedBigInteger obj = JsonSerializer.Deserialize<ClassWithIgnoredUnsupportedBigInteger>(json);
+            Assert.Null(obj.MyBigInteger);
+            Assert.Equal("{}", JsonSerializer.Serialize(new ClassWithIgnoredUnsupportedBigInteger()));
+
+            WrapperForClassWithIgnoredUnsupportedBigInteger wrapperObj = JsonSerializer.Deserialize<WrapperForClassWithIgnoredUnsupportedBigInteger>(wrapperJson);
+            Assert.Null(wrapperObj.MyClass.MyBigInteger);
+            Assert.Equal(@"{""MyClass"":{}}", JsonSerializer.Serialize(new WrapperForClassWithIgnoredUnsupportedBigInteger()
+            {
+                MyClass = new ClassWithIgnoredUnsupportedBigInteger(),
+            })); ;
+        }
+
+        public class ObjectDictWrapper : Dictionary<int, string> { }
+
+        public class ClassWithUnsupportedDictionary
+        {
+            public ConcurrentDictionary<object, object> MyConcurrentDict { get; set; }
+            public IDictionary<object, object> MyIDict { get; set; }
+            public ObjectDictWrapper MyDict { get; set; }
+        }
+
+        public class WrapperForClassWithUnsupportedDictionary
+        {
+            public ClassWithUnsupportedDictionary MyClass { get; set; } = new ClassWithUnsupportedDictionary();
+        }
+
+        public class ClassWithIgnoredUnsupportedDictionary
+        {
+            [JsonIgnore]
+            public ConcurrentDictionary<object, object> MyConcurrentDict { get; set; }
+            [JsonIgnore]
+            public IDictionary<object, object> MyIDict { get; set; }
+            [JsonIgnore]
+            public ObjectDictWrapper MyDict { get; set; }
+        }
+
+        public class WrapperForClassWithIgnoredUnsupportedDictionary
+        {
+            public ClassWithIgnoredUnsupportedDictionary MyClass { get; set; }
+        }
+
+        public class ClassWithUnsupportedBigInteger
+        {
+            public BigInteger? MyBigInteger { get; set; }
+        }
+
+        public class WrapperForClassWithUnsupportedBigInteger
+        {
+            public ClassWithUnsupportedBigInteger MyClass { get; set; } = new ClassWithUnsupportedBigInteger();
+        }
+
+        public class ClassWithIgnoredUnsupportedBigInteger
+        {
+            [JsonIgnore]
+            public BigInteger? MyBigInteger { get; set; }
+        }
+
+        public class WrapperForClassWithIgnoredUnsupportedBigInteger
+        {
+            public ClassWithIgnoredUnsupportedBigInteger MyClass { get; set; }
         }
 
         // Todo: add tests with missing object property and missing collection property.

@@ -33,7 +33,7 @@ namespace System.Text.Json
 
             if (implementedType != propertyType)
             {
-                jsonInfo = CreateProperty(implementedType, implementedType, implementedType, null, typeof(object), options);
+                jsonInfo = CreateProperty(implementedType, implementedType, implementedType, propertyInfo, typeof(object), options);
             }
             else
             {
