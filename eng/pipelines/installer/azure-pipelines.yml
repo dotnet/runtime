@@ -3,11 +3,11 @@ trigger:
   branches:
     include:
     - master
-    - release/3.0
+    - release/3.*
 
 pr:
 - master
-- release/3.0
+- release/3.*
 
 name: $(Date:yyyyMMdd)$(Rev:.r)
 
