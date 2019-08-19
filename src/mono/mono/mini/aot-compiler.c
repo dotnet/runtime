@@ -1116,6 +1116,10 @@ arch_init (MonoAotCompile *acfg)
 	acfg->align_pad_value = 0x90;
 #endif
 
+	if (mono_use_fast_math) {
+		g_string_append (acfg->llc_args, " -fp-contract=fast");
+	}
+
 #ifdef TARGET_ARM
 	if (acfg->aot_opts.mtriple && strstr (acfg->aot_opts.mtriple, "darwin")) {
 		g_string_append (acfg->llc_args, "-mattr=+v6");
@@ -9644,6 +9648,10 @@ emit_llvm_file (MonoAotCompile *acfg)
 
 	if (acfg->aot_opts.llvm_opts) {
 		opts = g_strdup_printf ("%s %s", opts, acfg->aot_opts.llvm_opts);
+	}
+
+	if (mono_use_fast_math) {
+		opts = g_strdup_printf ("%s -fp-contract=fast", opts);
 	}
 
 	command = g_strdup_printf ("\"%sopt\" -f %s -o \"%s\" \"%s\"", acfg->aot_opts.llvm_path, opts, optbc, tempbc);

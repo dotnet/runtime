@@ -5974,6 +5974,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_LMIN_UN:
 		case OP_IMAX_UN:
 		case OP_LMAX_UN:
+		case OP_RMIN:
 		case OP_RMAX: {
 			LLVMValueRef v;
 
@@ -5999,6 +6000,9 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				break;
 			case OP_RMAX:
 				v = LLVMBuildFCmp (builder, LLVMRealUGE, lhs, rhs, "");
+				break;
+			case OP_RMIN:
+				v = LLVMBuildFCmp (builder, LLVMRealULE, lhs, rhs, "");
 				break;
 			default:
 				g_assert_not_reached ();

@@ -2347,6 +2347,8 @@ mono_main (int argc, char* argv[])
 #endif
 		} else if (strcmp (argv [i], "--nollvm") == 0){
 			mono_use_llvm = FALSE;
+		} else if (strcmp (argv [i], "--ffast-math") == 0){
+			mono_use_fast_math = TRUE;
 		} else if ((strcmp (argv [i], "--interpreter") == 0) || !strcmp (argv [i], "--interp")) {
 			mono_runtime_set_execution_mode (MONO_EE_MODE_INTERP);
 		} else if (strncmp (argv [i], "--interp=", 9) == 0) {

@@ -125,6 +125,8 @@ int mini_verbose = 0;
  */
 gboolean mono_use_llvm = FALSE;
 
+gboolean mono_use_fast_math = FALSE;
+
 gboolean mono_use_interpreter = FALSE;
 const char *mono_interp_opts_string = NULL;
 

@@ -369,6 +369,7 @@ MONO_API_DATA const char *mono_build_date;
 extern gboolean mono_do_signal_chaining;
 extern gboolean mono_do_crash_chaining;
 MONO_API_DATA gboolean mono_use_llvm;
+MONO_API_DATA gboolean mono_use_fast_math;
 MONO_API_DATA gboolean mono_use_interpreter;
 extern const char* mono_interp_opts_string;
 extern gboolean mono_do_single_method_regression;

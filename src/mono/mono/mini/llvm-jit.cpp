@@ -16,6 +16,7 @@
 #include <llvm-c/ExecutionEngine.h>
 
 #include "mini-llvm-cpp.h"
+#include "mini-runtime.h"
 #include "llvm-jit.h"
 
 #if defined(MONO_ARCH_LLVM_JIT_SUPPORTED) && !defined(MONO_CROSS_COMPILE) && LLVM_API_VERSION > 600
@@ -375,10 +376,21 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
 	MonoEHFrameSymbol = "mono_eh_frame";
 
 	EngineBuilder EB;
+	TargetOptions opts;
 	
 	EB.setOptLevel(CodeGenOpt::Aggressive);
 	EB.setMCPU(sys::getHostCPUName());
 
+	if (mono_use_fast_math) {
+		opts.NoInfsFPMath = true;
+		opts.NoNaNsFPMath = true;
+		opts.NoSignedZerosFPMath = true;
+		opts.NoTrappingFPMath = true;
+		opts.UnsafeFPMath = true;
+		opts.AllowFPOpFusion = FPOpFusion::Fast;
+	}
+
+	EB.setTargetOptions (opts);
 	auto TM = EB.selectTarget ();
 	assert (TM);
 
