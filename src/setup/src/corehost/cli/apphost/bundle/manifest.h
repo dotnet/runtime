@@ -5,7 +5,6 @@
 #ifndef __MANIFEST_H__
 #define __MANIFEST_H__
 
-#include <cstdint>
 #include <list>
 #include "file_entry.h"
 
@@ -19,7 +18,7 @@ namespace bundle
     public:
         std::vector<file_entry_t> files;
 
-        static manifest_t read(FILE* host, int32_t num_files);
+        static manifest_t read(reader_t &reader, int32_t num_files);
     };
 }
 #endif // __MANIFEST_H__

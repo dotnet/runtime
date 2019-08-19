@@ -11,8 +11,8 @@
 #include "utils.h"
 
 #if defined(FEATURE_APPHOST)
-#include "cli/apphost/bundle/bundle_runner.h"
 #include "cli/apphost/bundle/marker.h"
+#include "cli/apphost/bundle/runner.h"
 
 #define CURHOST_TYPE    _X("apphost")
 #define CUREXE_PKG_VER  COMMON_HOST_PKG_VER
@@ -116,8 +116,8 @@ int exe_start(const int argc, const pal::char_t* argv[])
 
     if (bundle::marker_t::is_bundle())
     {
-        bundle::bundle_runner_t extractor(host_path);
-        StatusCode bundle_status = extractor.extract();
+        bundle::runner_t bundle_runner(host_path);
+        StatusCode bundle_status = bundle_runner.extract();
 
         if (bundle_status != StatusCode::Success)
         {
@@ -125,7 +125,7 @@ int exe_start(const int argc, const pal::char_t* argv[])
             return bundle_status;
         }
 
-        app_path.assign(extractor.get_extraction_dir());
+        app_path.assign(bundle_runner.extraction_dir());
     }
     else
     {

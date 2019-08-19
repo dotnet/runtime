@@ -57,6 +57,37 @@ bool pal::touch_file(const pal::string_t& path)
     return true;
 }
 
+void* pal::map_file_readonly(const pal::string_t& path, size_t& length)
+{
+    int fd = open(path.c_str(), O_RDONLY, (S_IRUSR | S_IRGRP | S_IROTH));
+    if (fd == -1)
+    {
+        trace::warning(_X("Failed to map file. open(%s) failed with error %d"), path.c_str(), errno);
+        return nullptr;
+    }
+
+    struct stat buf;
+    if (fstat(fd, &buf) != 0)
+    {
+        trace::warning(_X("Failed to map file. fstat(%s) failed with error %d"), path.c_str(), errno);
+        close(fd);
+        return nullptr;
+    }
+
+    length = buf.st_size;
+    void* address = mmap(nullptr, length, PROT_READ, MAP_SHARED, fd, 0);
+
+    if(address == nullptr)
+    {
+        trace::warning(_X("Failed to map file. mmap(%s) failed with error %d"), path.c_str(), errno);
+        close(fd);
+        return nullptr;
+    }
+
+    close(fd);
+    return address;
+}
+
 bool pal::getcwd(pal::string_t* recv)
 {
     recv->clear();
