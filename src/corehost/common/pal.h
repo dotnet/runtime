@@ -40,6 +40,7 @@
 #include <mutex>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/mman.h>
 
 #define xerr std::cerr
 #define xout std::cout
@@ -112,7 +113,7 @@ namespace pal
     // temporarily wchar for Windows and char for Unix. Current implementation
     // implicitly expects the contents on both Windows and Unix as char and
     // converts them to wchar in code for Windows. This line should become:
-    // typedef std::basic_ifstream<pal::char_t> ifstream_t.
+    // typedef std::basic_ifstream<char_t> ifstream_t.
     typedef std::basic_ifstream<char> ifstream_t;
     typedef std::istreambuf_iterator<ifstream_t::char_type> istreambuf_iterator_t;
     typedef std::basic_istream<char> istream_t;
@@ -146,24 +147,25 @@ namespace pal
     inline int strncasecmp(const char_t* str1, const char_t* str2, int len) { return ::_wcsnicmp(str1, str2, len); }
 
     inline size_t strlen(const char_t* str) { return ::wcslen(str); }
-    inline FILE * file_open(const pal::string_t& path, const char_t* mode) { return ::_wfopen(path.c_str(), mode); }
+    inline FILE * file_open(const string_t& path, const char_t* mode) { return ::_wfopen(path.c_str(), mode); }
+
     inline void file_vprintf(FILE* f, const char_t* format, va_list vl) { ::vfwprintf(f, format, vl); ::fputwc(_X('\n'), f); }
     inline void err_fputs(const char_t* message) { ::fputws(message, stderr); ::fputwc(_X('\n'), stderr); }
     inline void out_vprintf(const char_t* format, va_list vl) { ::vfwprintf(stdout, format, vl); ::fputwc(_X('\n'), stdout); }
     inline int str_vprintf(char_t* buffer, size_t count, const char_t* format, va_list vl) { return ::_vsnwprintf(buffer, count, format, vl); }
 
-    bool pal_utf8string(const pal::string_t& str, std::vector<char>* out);
-    bool utf8_palstring(const std::string& str, pal::string_t* out);
-    bool pal_clrstring(const pal::string_t& str, std::vector<char>* out);
-    bool clr_palstring(const char* cstr, pal::string_t* out);
+    bool pal_utf8string(const string_t& str, std::vector<char>* out);
+    bool utf8_palstring(const std::string& str, string_t* out);
+    bool pal_clrstring(const string_t& str, std::vector<char>* out);
+    bool clr_palstring(const char* cstr, string_t* out);
 
-    inline bool mkdir(const pal::char_t* dir, int mode) { return CreateDirectoryW(dir, NULL) != 0; }
-    inline bool rmdir (const pal::char_t* path) { return RemoveDirectoryW(path) != 0; }
-    inline int rename(const pal::char_t* old_name, const pal::char_t* new_name) { return ::_wrename(old_name, new_name); }
-    inline int remove(const pal::char_t* path) { return ::_wremove(path); }
+    inline bool mkdir(const char_t* dir, int mode) { return CreateDirectoryW(dir, NULL) != 0; }
+    inline bool rmdir (const char_t* path) { return RemoveDirectoryW(path) != 0; }
+    inline int rename(const char_t* old_name, const char_t* new_name) { return ::_wrename(old_name, new_name); }
+    inline int remove(const char_t* path) { return ::_wremove(path); }
+    inline bool unmap_file(void* addr, size_t length) { return UnmapViewOfFile(addr) != 0; }
     inline int get_pid() { return GetCurrentProcessId(); }
     inline void sleep(uint32_t milliseconds) { Sleep(milliseconds); }
-
 #else
     #ifdef EXPORT_SHARED_API
         #define SHARED_API extern "C" __attribute__((__visibility__("default")))
@@ -202,21 +204,22 @@ namespace pal
     inline int strncasecmp(const char_t* str1, const char_t* str2, int len) { return ::strncasecmp(str1, str2, len); }
 
     inline size_t strlen(const char_t* str) { return ::strlen(str); }
-    inline FILE * file_open(const pal::string_t& path, const char_t* mode) { return fopen(path.c_str(), mode); }
+    inline FILE * file_open(const string_t& path, const char_t* mode) { return fopen(path.c_str(), mode); }
     inline void file_vprintf(FILE* f, const char_t* format, va_list vl) { ::vfprintf(f, format, vl); ::fputc('\n', f); }
     inline void err_fputs(const char_t* message) { ::fputs(message, stderr); ::fputc(_X('\n'), stderr); }
     inline void out_vprintf(const char_t* format, va_list vl) { ::vfprintf(stdout, format, vl); ::fputc('\n', stdout); }
     inline int str_vprintf(char_t* str, size_t size, const char_t* format, va_list vl) { return ::vsnprintf(str, size, format, vl); }
 
-    inline bool pal_utf8string(const pal::string_t& str, std::vector<char>* out) { out->assign(str.begin(), str.end()); out->push_back('\0'); return true; }
-    inline bool utf8_palstring(const std::string& str, pal::string_t* out) { out->assign(str); return true; }
-    inline bool pal_clrstring(const pal::string_t& str, std::vector<char>* out) { return pal_utf8string(str, out); }
-    inline bool clr_palstring(const char* cstr, pal::string_t* out) { out->assign(cstr); return true; }
+    inline bool pal_utf8string(const string_t& str, std::vector<char>* out) { out->assign(str.begin(), str.end()); out->push_back('\0'); return true; }
+    inline bool utf8_palstring(const std::string& str, string_t* out) { out->assign(str); return true; }
+    inline bool pal_clrstring(const string_t& str, std::vector<char>* out) { return pal_utf8string(str, out); }
+    inline bool clr_palstring(const char* cstr, string_t* out) { out->assign(cstr); return true; }
 
-    inline bool mkdir(const pal::char_t* dir, int mode) { return ::mkdir(dir, mode) == 0; }
-    inline bool rmdir(const pal::char_t* path) { return ::rmdir(path) == 0; }
-    inline int rename(const pal::char_t* old_name, const pal::char_t* new_name) { return ::rename(old_name, new_name); }
-    inline int remove(const pal::char_t* path) { return ::remove(path); }
+    inline bool mkdir(const char_t* dir, int mode) { return ::mkdir(dir, mode) == 0; }
+    inline bool rmdir(const char_t* path) { return ::rmdir(path) == 0; }
+    inline int rename(const char_t* old_name, const char_t* new_name) { return ::rename(old_name, new_name); }
+    inline int remove(const char_t* path) { return ::remove(path); }
+    inline bool unmap_file(void* addr, size_t length) { return munmap(addr, length) == 0; }
     inline int get_pid() { return getpid(); }
     inline void sleep(uint32_t milliseconds) { usleep(milliseconds * 1000); }
 
@@ -231,11 +234,11 @@ namespace pal
         return ret;
     }
 
-    pal::string_t to_string(int value);
-    pal::string_t get_timestamp();
+    string_t to_string(int value);
+    string_t get_timestamp();
 
-    bool getcwd(pal::string_t* recv);
-    pal::string_t to_lower(const pal::string_t& in);
+    bool getcwd(string_t* recv);
+    string_t to_lower(const string_t& in);
 
 
     inline void file_flush(FILE *f) { std::fflush(f); }
@@ -243,22 +246,23 @@ namespace pal
     inline void out_flush() { std::fflush(stdout); }
 
     // Based upon https://github.com/dotnet/core-setup/blob/master/src/Microsoft.DotNet.PlatformAbstractions/Native/PlatformApis.cs
-    pal::string_t get_current_os_rid_platform();
-    inline pal::string_t get_current_os_fallback_rid()
+    string_t get_current_os_rid_platform();
+    inline string_t get_current_os_fallback_rid()
     {
-        pal::string_t fallbackRid(FALLBACK_HOST_RID);
+        string_t fallbackRid(FALLBACK_HOST_RID);
 
         return fallbackRid;
     }
 
-    bool touch_file(const pal::string_t& path);
+    void* map_file_readonly(const string_t& path, size_t& length);
+    bool touch_file(const string_t& path);
     bool realpath(string_t* path, bool skip_error_logging = false);
     bool file_exists(const string_t& path);
     inline bool directory_exists(const string_t& path) { return file_exists(path); }
-    void readdir(const string_t& path, const string_t& pattern, std::vector<pal::string_t>* list);
-    void readdir(const string_t& path, std::vector<pal::string_t>* list);
-    void readdir_onlydirectories(const string_t& path, const string_t& pattern, std::vector<pal::string_t>* list);
-    void readdir_onlydirectories(const string_t& path, std::vector<pal::string_t>* list);
+    void readdir(const string_t& path, const string_t& pattern, std::vector<string_t>* list);
+    void readdir(const string_t& path, std::vector<string_t>* list);
+    void readdir_onlydirectories(const string_t& path, const string_t& pattern, std::vector<string_t>* list);
+    void readdir_onlydirectories(const string_t& path, std::vector<string_t>* list);
 
     bool get_own_executable_path(string_t* recv);
     bool get_own_module_path(string_t* recv);
@@ -268,24 +272,24 @@ namespace pal
     bool get_default_servicing_directory(string_t* recv);
 
     // Returns the globally registered install location (if any)
-    bool get_dotnet_self_registered_dir(pal::string_t* recv);
+    bool get_dotnet_self_registered_dir(string_t* recv);
     // Returns name of the global registry location (for error messages)
-    bool get_dotnet_self_registered_config_location(pal::string_t* recv);
+    bool get_dotnet_self_registered_config_location(string_t* recv);
 
     // Returns the default install location for a given platform
-    bool get_default_installation_dir(pal::string_t* recv);
+    bool get_default_installation_dir(string_t* recv);
 
     // Returns the global locations to search for SDK/Frameworks - used when multi-level lookup is enabled
-    bool get_global_dotnet_dirs(std::vector<pal::string_t>* recv);
+    bool get_global_dotnet_dirs(std::vector<string_t>* recv);
 
     bool get_default_breadcrumb_store(string_t* recv);
     bool is_path_rooted(const string_t& path);
 
-    bool get_temp_directory(pal::string_t& tmp_dir);
+    bool get_temp_directory(string_t& tmp_dir);
 
     int xtoi(const char_t* input);
 
-    bool get_loaded_library(const char_t *library_name, const char *symbol_name, /*out*/ dll_t *dll, /*out*/ pal::string_t *path);
+    bool get_loaded_library(const char_t *library_name, const char *symbol_name, /*out*/ dll_t *dll, /*out*/ string_t *path);
     bool load_library(const string_t* path, dll_t* dll);
     proc_t get_symbol(dll_t library, const char* name);
     void unload_library(dll_t library);

@@ -2,26 +2,25 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#include "bundle_runner.h"
-#include "pal.h"
-#include "error_codes.h"
+#include "file_entry.h"
 #include "trace.h"
-#include "utils.h"
+#include "dir_utils.h"
+#include "error_codes.h"
 
 using namespace bundle;
 
-bool file_entry_t::is_valid()
+bool file_entry_t::is_valid() const
 {
-    return m_data.offset > 0 && m_data.size > 0 &&
-        static_cast<file_type_t>(m_data.type) < file_type_t::__last;
+    return m_offset > 0 && m_size > 0 &&
+        static_cast<file_type_t>(m_type) < file_type_t::__last;
 }
 
-file_entry_t file_entry_t::read(FILE* stream)
+file_entry_t file_entry_t::read(reader_t &reader)
 {
-    file_entry_t entry;
-
     // First read the fixed-sized portion of file-entry
-    bundle_runner_t::read(&entry.m_data, sizeof(entry.m_data), stream);
+    const file_entry_fixed_t* fixed_data = reinterpret_cast<const file_entry_fixed_t*>(reader.read_direct(sizeof(file_entry_fixed_t)));
+    file_entry_t entry(fixed_data);
+
     if (!entry.is_valid())
     {
         trace::error(_X("Failure processing application bundle; possible file corruption."));
@@ -29,23 +28,8 @@ file_entry_t file_entry_t::read(FILE* stream)
         throw StatusCode::BundleExtractionFailure;
     }
 
-    size_t path_length =
-        bundle_runner_t::get_path_length(entry.m_data.path_length_byte_1, stream);
-
-    // Read the relative-path, given its length 
-    pal::string_t& path = entry.m_relative_path;
-    bundle_runner_t::read_string(path, path_length, stream);
-
-    // Fixup the relative-path to have current platform's directory separator.
-    if (bundle_dir_separator != DIR_SEPARATOR)
-    {
-        for (size_t pos = path.find(bundle_dir_separator);
-            pos != pal::string_t::npos;
-            pos = path.find(bundle_dir_separator, pos))
-        {
-            path[pos] = DIR_SEPARATOR;
-        }
-    }
+    reader.read_path_string(entry.m_relative_path);
+    dir_utils_t::fixup_path_separator(entry.m_relative_path);
 
     return entry;
 }
