@@ -552,6 +552,7 @@ namespace System.Runtime.Loader
             }
         }
 
+#if !CORERT
         // This method is invoked by the VM when using the host-provided assembly load context
         // implementation.
         private static Assembly? Resolve(IntPtr gchManagedAssemblyLoadContext, AssemblyName assemblyName)
@@ -656,6 +657,7 @@ namespace System.Runtime.Loader
 
             return assembly;
         }
+#endif // !CORERT
 
         private Assembly? ResolveSatelliteAssembly(AssemblyName assemblyName)
         {
