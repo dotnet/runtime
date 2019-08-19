@@ -1078,7 +1078,7 @@ ves_array_get (InterpFrame *frame, stackval *sp, stackval *retval, MonoMethodSig
 	stackval_from_data (mt, retval, ea, FALSE);
 }
 
-static gpointer
+static MONO_NEVER_INLINE gpointer
 ves_array_element_address (InterpFrame *frame, MonoClass *required_type, MonoArray *ao, stackval *sp, gboolean needs_typecheck)
 {
 	MonoClass *ac = ((MonoObject *) ao)->vtable->klass;
