@@ -4538,7 +4538,99 @@ namespace System.Text.Json.Tests
         [InlineData(false, false, 12345)]
         public void WriteIntegerValue(bool formatted, bool skipValidation, int value)
         {
-            string expectedStr = GetIntegerExpectedString(prettyPrint: formatted, value);
+            string expectedStr = GetPropertyExpectedString(prettyPrint: formatted, value);
+
+            var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
+
+            for (int i = 0; i < 4; i++)
+            {
+                var output = new ArrayBufferWriter<byte>(1024);
+                using var jsonUtf8 = new Utf8JsonWriter(output, options);
+
+                jsonUtf8.WriteStartObject();
+
+                switch (i)
+                {
+                    case 0:
+                        jsonUtf8.WriteNumber("message", value);
+                        break;
+                    case 1:
+                        jsonUtf8.WriteNumber("message".AsSpan(), value);
+                        break;
+                    case 2:
+                        jsonUtf8.WriteNumber(Encoding.UTF8.GetBytes("message"), value);
+                        break;
+                    case 3:
+                        jsonUtf8.WritePropertyName("message");
+                        jsonUtf8.WriteNumberValue(value);
+                        break;
+                }
+
+                jsonUtf8.WriteEndObject();
+                jsonUtf8.Flush();
+
+                JsonTestHelper.AssertContents(expectedStr, output);
+            }
+        }
+
+        [Theory]
+        [InlineData(true, true, float.MinValue)]
+        [InlineData(true, false, float.MinValue)]
+        [InlineData(false, true, float.MinValue)]
+        [InlineData(false, false, float.MinValue)]
+        [InlineData(true, true, float.MaxValue)]
+        [InlineData(true, false, float.MaxValue)]
+        [InlineData(false, true, float.MaxValue)]
+        [InlineData(false, false, float.MaxValue)]
+        public void WriteFloatValue(bool formatted, bool skipValidation, float value)
+        {
+            string expectedStr = GetPropertyExpectedString(prettyPrint: formatted, value);
+
+            var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
+
+            for (int i = 0; i < 4; i++)
+            {
+                var output = new ArrayBufferWriter<byte>(1024);
+                using var jsonUtf8 = new Utf8JsonWriter(output, options);
+
+                jsonUtf8.WriteStartObject();
+
+                switch (i)
+                {
+                    case 0:
+                        jsonUtf8.WriteNumber("message", value);
+                        break;
+                    case 1:
+                        jsonUtf8.WriteNumber("message".AsSpan(), value);
+                        break;
+                    case 2:
+                        jsonUtf8.WriteNumber(Encoding.UTF8.GetBytes("message"), value);
+                        break;
+                    case 3:
+                        jsonUtf8.WritePropertyName("message");
+                        jsonUtf8.WriteNumberValue(value);
+                        break;
+                }
+
+                jsonUtf8.WriteEndObject();
+                jsonUtf8.Flush();
+
+                JsonTestHelper.AssertContents(expectedStr, output);
+            }
+        }
+
+        [Theory]
+        [InlineData(true, true, double.MinValue)]
+        [InlineData(true, false, double.MinValue)]
+        [InlineData(false, true, double.MinValue)]
+        [InlineData(false, false, double.MinValue)]
+        [InlineData(true, true, double.MaxValue)]
+        [InlineData(true, false, double.MaxValue)]
+        [InlineData(false, true, double.MaxValue)]
+        [InlineData(false, false, double.MaxValue)]
+        public void WriteDoubleValue(bool formatted, bool skipValidation, double value)
+        {
+            string expectedStr = GetPropertyExpectedString(prettyPrint: formatted, value);
 
             var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
 
@@ -4815,16 +4907,17 @@ namespace System.Text.Json.Tests
             int numberOfElements = 0;
             jsonUtf8.WriteStartArray();
             int currentCapactiy = output.Capacity;
+            int value = 1234567;
             while (currentCapactiy == output.Capacity)
             {
-                jsonUtf8.WriteNumberValue(1234567);
+                jsonUtf8.WriteNumberValue(value);
                 numberOfElements++;
             }
             Assert.Equal(currentCapactiy + 4096, output.Capacity);
             jsonUtf8.WriteEndArray();
             jsonUtf8.Flush();
 
-            string expectedStr = GetNumbersExpectedString(formatted, numberOfElements);
+            string expectedStr = GetNumbersExpectedString(formatted, numberOfElements, value);
             JsonTestHelper.AssertContents(expectedStr, output);
         }
 
@@ -4843,16 +4936,17 @@ namespace System.Text.Json.Tests
             int numberOfElements = 0;
             jsonUtf8.WriteStartArray();
             int currentCapactiy = output.Capacity;
+            long value = 1234567;
             while (currentCapactiy == output.Capacity)
             {
-                jsonUtf8.WriteNumberValue((long)1234567);
+                jsonUtf8.WriteNumberValue(value);
                 numberOfElements++;
             }
             Assert.Equal(currentCapactiy + 4096, output.Capacity);
             jsonUtf8.WriteEndArray();
             jsonUtf8.Flush();
 
-            string expectedStr = GetNumbersExpectedString(formatted, numberOfElements);
+            string expectedStr = GetNumbersExpectedString(formatted, numberOfElements, value);
             JsonTestHelper.AssertContents(expectedStr, output);
         }
 
@@ -4871,16 +4965,17 @@ namespace System.Text.Json.Tests
             int numberOfElements = 0;
             jsonUtf8.WriteStartArray();
             int currentCapactiy = output.Capacity;
+            uint value = 1234567;
             while (currentCapactiy == output.Capacity)
             {
-                jsonUtf8.WriteNumberValue((uint)1234567);
+                jsonUtf8.WriteNumberValue(value);
                 numberOfElements++;
             }
             Assert.Equal(currentCapactiy + 4096, output.Capacity);
             jsonUtf8.WriteEndArray();
             jsonUtf8.Flush();
 
-            string expectedStr = GetNumbersExpectedString(formatted, numberOfElements);
+            string expectedStr = GetNumbersExpectedString(formatted, numberOfElements, value);
             JsonTestHelper.AssertContents(expectedStr, output);
         }
 
@@ -4899,25 +4994,30 @@ namespace System.Text.Json.Tests
             int numberOfElements = 0;
             jsonUtf8.WriteStartArray();
             int currentCapactiy = output.Capacity;
+            ulong value = 1234567;
             while (currentCapactiy == output.Capacity)
             {
-                jsonUtf8.WriteNumberValue((ulong)1234567);
+                jsonUtf8.WriteNumberValue(value);
                 numberOfElements++;
             }
             Assert.Equal(currentCapactiy + 4096, output.Capacity);
             jsonUtf8.WriteEndArray();
             jsonUtf8.Flush();
 
-            string expectedStr = GetNumbersExpectedString(formatted, numberOfElements);
+            string expectedStr = GetNumbersExpectedString(formatted, numberOfElements, value);
             JsonTestHelper.AssertContents(expectedStr, output);
         }
 
         [Theory]
-        [InlineData(true, true)]
-        [InlineData(true, false)]
-        [InlineData(false, true)]
-        [InlineData(false, false)]
-        public void WriteNumberValueSingle(bool formatted, bool skipValidation)
+        [InlineData(true, true, float.MinValue)]
+        [InlineData(true, false, float.MinValue)]
+        [InlineData(false, true, float.MinValue)]
+        [InlineData(false, false, float.MinValue)]
+        [InlineData(true, true, float.MaxValue)]
+        [InlineData(true, false, float.MaxValue)]
+        [InlineData(false, true, float.MaxValue)]
+        [InlineData(false, false, float.MaxValue)]
+        public void WriteNumberValueSingle(bool formatted, bool skipValidation, float value)
         {
             var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
 
@@ -4929,23 +5029,27 @@ namespace System.Text.Json.Tests
             int currentCapactiy = output.Capacity;
             while (currentCapactiy == output.Capacity)
             {
-                jsonUtf8.WriteNumberValue((float)1234567);
+                jsonUtf8.WriteNumberValue(value);
                 numberOfElements++;
             }
             Assert.Equal(currentCapactiy + 4096, output.Capacity);
             jsonUtf8.WriteEndArray();
             jsonUtf8.Flush();
 
-            string expectedStr = GetNumbersExpectedString(formatted, numberOfElements);
+            string expectedStr = GetNumbersExpectedString(formatted, numberOfElements, value);
             JsonTestHelper.AssertContents(expectedStr, output);
         }
 
         [Theory]
-        [InlineData(true, true)]
-        [InlineData(true, false)]
-        [InlineData(false, true)]
-        [InlineData(false, false)]
-        public void WriteNumberValueDouble(bool formatted, bool skipValidation)
+        [InlineData(true, true, double.MinValue)]
+        [InlineData(true, false, double.MinValue)]
+        [InlineData(false, true, double.MinValue)]
+        [InlineData(false, false, double.MinValue)]
+        [InlineData(true, true, double.MaxValue)]
+        [InlineData(true, false, double.MaxValue)]
+        [InlineData(false, true, double.MaxValue)]
+        [InlineData(false, false, double.MaxValue)]
+        public void WriteNumberValueDouble(bool formatted, bool skipValidation, double value)
         {
             var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
 
@@ -4957,14 +5061,14 @@ namespace System.Text.Json.Tests
             int currentCapactiy = output.Capacity;
             while (currentCapactiy == output.Capacity)
             {
-                jsonUtf8.WriteNumberValue((double)1234567);
+                jsonUtf8.WriteNumberValue(value);
                 numberOfElements++;
             }
             Assert.Equal(currentCapactiy + 4096, output.Capacity);
             jsonUtf8.WriteEndArray();
             jsonUtf8.Flush();
 
-            string expectedStr = GetNumbersExpectedString(formatted, numberOfElements);
+            string expectedStr = GetNumbersExpectedString(formatted, numberOfElements, value);
             JsonTestHelper.AssertContents(expectedStr, output);
         }
 
@@ -4983,16 +5087,17 @@ namespace System.Text.Json.Tests
             int numberOfElements = 0;
             jsonUtf8.WriteStartArray();
             int currentCapactiy = output.Capacity;
+            decimal value = 1234567.0M;
             while (currentCapactiy == output.Capacity)
             {
-                jsonUtf8.WriteNumberValue((decimal)1234567);
+                jsonUtf8.WriteNumberValue(value);
                 numberOfElements++;
             }
             Assert.Equal(currentCapactiy + 4096, output.Capacity);
             jsonUtf8.WriteEndArray();
             jsonUtf8.Flush();
 
-            string expectedStr = GetNumbersExpectedString(formatted, numberOfElements);
+            string expectedStr = GetNumbersExpectedString(formatted, numberOfElements, value);
             JsonTestHelper.AssertContents(expectedStr, output);
         }
 
@@ -6631,12 +6736,12 @@ namespace System.Text.Json.Tests
             return Encoding.UTF8.GetString(ms.ToArray());
         }
 
-        private static string GetIntegerExpectedString(bool prettyPrint, int value)
+        private static string GetPropertyExpectedString<T>(bool prettyPrint, T value)
         {
-            var ms = new MemoryStream();
-            TextWriter streamWriter = new StreamWriter(ms, new UTF8Encoding(false), 1024, true);
+            var sb = new StringBuilder();
+            StringWriter stringWriter = new StringWriter(sb);
 
-            var json = new JsonTextWriter(streamWriter)
+            var json = new JsonTextWriter(stringWriter)
             {
                 Formatting = prettyPrint ? Formatting.Indented : Formatting.None
             };
@@ -6648,7 +6753,7 @@ namespace System.Text.Json.Tests
 
             json.Flush();
 
-            return Encoding.UTF8.GetString(ms.ToArray());
+            return sb.ToString();
         }
 
         private static string GetNumbersExpectedString(bool prettyPrint, string keyString, int[] ints, uint[] uints, long[] longs, ulong[] ulongs, float[] floats, double[] doubles, decimal[] decimals, bool escape = false)
@@ -6777,12 +6882,12 @@ namespace System.Text.Json.Tests
             return Encoding.UTF8.GetString(ms.ToArray());
         }
 
-        private static string GetNumbersExpectedString(bool prettyPrint, int numberOfElements)
+        private static string GetNumbersExpectedString<T>(bool prettyPrint, int numberOfElements, T value)
         {
-            var ms = new MemoryStream();
-            TextWriter streamWriter = new StreamWriter(ms, new UTF8Encoding(false), 1024, true);
+            var sb = new StringBuilder();
+            StringWriter stringWriter = new StringWriter(sb);
 
-            var json = new JsonTextWriter(streamWriter)
+            var json = new JsonTextWriter(stringWriter)
             {
                 Formatting = prettyPrint ? Formatting.Indented : Formatting.None,
             };
@@ -6790,13 +6895,13 @@ namespace System.Text.Json.Tests
             json.WriteStartArray();
             for (int i = 0; i < numberOfElements; i++)
             {
-                json.WriteValue(1234567);
+                json.WriteValue(value);
             }
             json.WriteEnd();
 
             json.Flush();
 
-            return Encoding.UTF8.GetString(ms.ToArray());
+            return sb.ToString();
         }
 
         private static string GetDatesExpectedString(bool prettyPrint, string keyString, DateTime[] dates, bool escape = false)
