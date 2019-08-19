@@ -943,13 +943,9 @@ mono_runtime_do_background_work (void)
 static gsize WINAPI
 finalizer_thread (gpointer unused)
 {
-	ERROR_DECL (error);
 	gboolean wait = TRUE;
 
-	MonoString *finalizer = mono_string_new_checked (mono_get_root_domain (), "Finalizer", error);
-	mono_error_assert_ok (error);
-	mono_thread_set_name (mono_thread_internal_current (), finalizer, MonoSetThreadNameFlag_None, error);
-	mono_error_assert_ok (error);
+	mono_thread_set_name_constant_ignore_error (mono_thread_internal_current (), "Finalizer", MonoSetThreadNameFlag_None);
 
 	/* Register a hazard free queue pump callback */
 	mono_hazard_pointer_install_free_queue_size_callback (hazard_free_queue_is_too_big);

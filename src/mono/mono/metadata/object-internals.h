@@ -556,8 +556,8 @@ typedef enum {
 struct _MonoThreadInfo;
 
 typedef struct MonoThreadName {
-	char* chars;
-	volatile gsize generation;
+	char* volatile chars;      // null check outside of lock
+	gsize volatile generation; // read outside of lock
 	gint32 free;
 	gint32 length;
 } MonoThreadName;

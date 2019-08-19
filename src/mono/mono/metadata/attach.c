@@ -502,17 +502,13 @@ transport_start_receive (void)
 static gsize WINAPI
 receiver_thread (void *arg)
 {
-	ERROR_DECL (error);
 	int res, content_len;
 	guint8 buffer [256];
 	guint8 *p, *p_end;
-	MonoInternalThread *internal;
+	MonoInternalThread *internal = mono_thread_internal_current ();
 
-	internal = mono_thread_internal_current ();
-	MonoString *attach_str = mono_string_new_checked (mono_domain_get (), "Attach receiver", error);
-	mono_error_assert_ok (error);
-	mono_thread_set_name (internal, attach_str, MonoSetThreadNameFlag_Permanent, error);
-	mono_error_assert_ok (error);
+	mono_thread_set_name_constant_ignore_error (internal, "Attach receiver", MonoSetThreadNameFlag_Permanent);
+
 	/* Ask the runtime to not abort this thread */
 	//internal->flags |= MONO_THREAD_FLAG_DONT_MANAGE;
 	/* Ask the runtime to not wait for this thread */
