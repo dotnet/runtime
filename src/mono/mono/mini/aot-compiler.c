@@ -1117,7 +1117,8 @@ arch_init (MonoAotCompile *acfg)
 #endif
 
 	if (mono_use_fast_math) {
-		g_string_append (acfg->llc_args, " -fp-contract=fast");
+		// same parameters are passed to opt and LLVM JIT
+		g_string_append (acfg->llc_args, " -fp-contract=fast -enable-no-infs-fp-math -enable-no-nans-fp-math -enable-no-signed-zeros-fp-math -enable-no-trapping-fp-math -enable-unsafe-fp-math");
 	}
 
 #ifdef TARGET_ARM
@@ -9651,7 +9652,8 @@ emit_llvm_file (MonoAotCompile *acfg)
 	}
 
 	if (mono_use_fast_math) {
-		opts = g_strdup_printf ("%s -fp-contract=fast", opts);
+		// same parameters are passed to llc and LLVM JIT
+		opts = g_strdup_printf ("%s -fp-contract=fast -enable-no-infs-fp-math -enable-no-nans-fp-math -enable-no-signed-zeros-fp-math -enable-no-trapping-fp-math -enable-unsafe-fp-math", opts);
 	}
 
 	command = g_strdup_printf ("\"%sopt\" -f %s -o \"%s\" \"%s\"", acfg->aot_opts.llvm_path, opts, optbc, tempbc);
