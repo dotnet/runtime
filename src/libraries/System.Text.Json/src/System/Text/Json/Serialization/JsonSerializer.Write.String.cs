@@ -26,22 +26,22 @@ namespace System.Text.Json
         /// </summary>
         /// <returns>A <see cref="string"/> representation of the value.</returns>
         /// <param name="value">The value to convert.</param>
-        /// <param name="type">The type of the <paramref name="value"/> to convert.</param>
+        /// <param name="inputType">The type of the <paramref name="value"/> to convert.</param>
         /// <param name="options">Options to control the conversion behavior.</param>
         /// <remarks>Using a <see cref="string"/> is not as efficient as using UTF-8
         /// encoding since the implementation internally uses UTF-8. See also <see cref="SerializeToUtf8Bytes"/>
         /// and <see cref="SerializeAsync"/>.
         /// </remarks>
-        public static string Serialize(object value, Type type, JsonSerializerOptions options = null)
+        public static string Serialize(object value, Type inputType, JsonSerializerOptions options = null)
         {
-            VerifyValueAndType(value, type);
+            VerifyValueAndType(value, inputType);
 
-            return ToStringInternal(value, type, options);
+            return ToStringInternal(value, inputType, options);
         }
 
-        private static string ToStringInternal(object value, Type type, JsonSerializerOptions options)
+        private static string ToStringInternal(object value, Type inputType, JsonSerializerOptions options)
         {
-            return WriteCoreString(value, type, options);
+            return WriteCoreString(value, inputType, options);
         }
     }
 }
