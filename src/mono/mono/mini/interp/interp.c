@@ -3246,8 +3246,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 #if DEBUG_INTERP
 	vtalloc = vt_sp;
 #endif
-	locals = (unsigned char *) vt_sp + imethod->vt_stack_size;
-	frame->locals = locals;
+	locals = frame_locals (frame);
 	child_frame.parent = frame;
 
 	if (clause_args && clause_args->filter_exception) {
@@ -3268,7 +3267,7 @@ main_loop:
 		DUMP_INSTR();
 		MINT_IN_SWITCH (*ip) {
 		MINT_IN_CASE(MINT_INITLOCALS)
-			memset (locals, 0, imethod->locals_size);
+			memset (frame_locals (frame), 0, imethod->locals_size);
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_NOP)
@@ -3431,8 +3430,7 @@ main_loop:
 #if DEBUG_INTERP
 			vtalloc = vt_sp;
 #endif
-			locals = vt_sp + imethod->vt_stack_size;
-			frame->locals = locals;
+			locals = frame_locals (frame);
 			ip = imethod->code;
 			MINT_IN_BREAK;
 		}
@@ -6495,7 +6493,7 @@ main_loop:
 #endif
 	   MINT_IN_CASE(MINT_RETHROW) {
 			int exvar_offset = *(guint16*)(ip + 1);
-			THROW_EX_GENERAL (*(MonoException**)(frame->locals + exvar_offset), ip, TRUE);
+			THROW_EX_GENERAL (*(MonoException**)(frame_locals (frame) + exvar_offset), ip, TRUE);
 			MINT_IN_BREAK;
 	   }
 	   MINT_IN_CASE(MINT_MONO_RETHROW) {
@@ -6678,7 +6676,7 @@ interp_set_resume_state (MonoJitTlsData *jit_tls, MonoException *ex, MonoJitExce
 	context->handler_frame->ex = ex;
 	/* Ditto */
 	if (ei)
-		*(MonoException**)(context->handler_frame->locals + ei->exvar_offset) = ex;
+		*(MonoException**)(frame_locals (context->handler_frame) + ei->exvar_offset) = ex;
 	context->handler_ip = (guint16*) handler_ip;
 }
 
@@ -6885,7 +6883,7 @@ interp_frame_get_local (MonoInterpFrameHandle frame, int pos)
 
 	g_assert (iframe->imethod);
 
-	return iframe->locals + iframe->imethod->local_offsets [pos];
+	return frame_locals (iframe) + iframe->imethod->local_offsets [pos];
 }
 
 static gpointer

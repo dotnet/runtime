@@ -134,7 +134,6 @@ struct _InterpFrame {
 	char           *varargs;
 	stackval       *stack_args; /* parent */
 	stackval       *stack;
-	unsigned char  *locals;
 	/*
 	 * For GC tracking of local objrefs in exec_method ().
 	 * Storing into this field will keep the object pinned
@@ -147,6 +146,8 @@ struct _InterpFrame {
 	const unsigned short  *ip;
 	MonoException     *ex;
 };
+
+#define frame_locals(frame) (((guchar*)((frame)->stack)) + (frame)->imethod->stack_size + (frame)->imethod->vt_stack_size)
 
 typedef struct {
 	/* Resume state for resuming execution in mixed mode */
