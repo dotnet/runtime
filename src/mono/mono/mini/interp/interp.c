@@ -3070,21 +3070,16 @@ mono_interp_newobj_vt (
 	ThreadContext* context,
 	MonoError* error)
 {
-	InterpFrame* const frame = child_frame->parent;
 	stackval* const sp = child_frame->stack_args;
-	gboolean const vtst = *frame->ip == MINT_NEWOBJ_VTST_FAST;
 
 	stackval valuetype_this;
 
-	if (vtst) {
-		// FIXME? Is this really using valuetype_this
-		// or it only needs a pointer? Make two separate functions?
-		valuetype_this.data.p = sp->data.p;
-	} else {
-		memset (&valuetype_this, 0, sizeof (stackval));
-		sp->data.p = &valuetype_this;
-	}
+	memset (&valuetype_this, 0, sizeof (stackval));
+	sp->data.p = &valuetype_this;
 
+	// FIXME It is unfortunate to outline a recursive case as it
+	// increases its stack usage. We do this however as it conserves
+	// stack for all the other recursive cases.
 	interp_exec_method (child_frame, context, error);
 
 	CHECK_RESUME_STATE_IN_HELPER_FUNCTION (context, );
@@ -4695,11 +4690,17 @@ main_loop:
 				memset (vt_sp, 0, *(guint16*)(ip + 3));
 				sp->data.p = vt_sp;
 				ip += 4;
+
+				interp_exec_method (&child_frame, context, error);
+
+				CHECK_RESUME_STATE (context);
+				sp->data.p = vt_sp;
+
 			} else {
 				ip += 3;
+				mono_interp_newobj_vt (&child_frame, context, error);
+				CHECK_RESUME_STATE (context);
 			}
-			mono_interp_newobj_vt (&child_frame, context, error);
-			CHECK_RESUME_STATE (context);
 			++sp;
 			MINT_IN_BREAK;
 		}
