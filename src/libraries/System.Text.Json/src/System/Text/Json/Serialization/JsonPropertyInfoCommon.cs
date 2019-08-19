@@ -32,7 +32,11 @@ namespace System.Text.Json
         {
             base.Initialize(parentClassType, declaredPropertyType, runtimePropertyType, implementedPropertyType, propertyInfo, elementType, converter, options);
 
-            if (propertyInfo != null)
+            if (propertyInfo != null &&
+                // We only want to get the getter and setter if we are going to use them.
+                // If the declared type is not the property info type, then we are just
+                // getting metadata on how best to (de)serialize derived types.
+                declaredPropertyType == propertyInfo.PropertyType)
             {
                 if (propertyInfo.GetMethod?.IsPublic == true)
                 {
