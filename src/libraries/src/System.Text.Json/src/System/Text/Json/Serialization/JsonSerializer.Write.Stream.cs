@@ -29,20 +29,20 @@ namespace System.Text.Json
         /// <returns>A task that represents the asynchronous write operation.</returns>
         /// <param name="utf8Json">The UTF-8 <see cref="System.IO.Stream"/> to write to.</param>
         /// <param name="value">The value to convert.</param>
-        /// <param name="type">The type of the <paramref name="value"/> to convert.</param>
+        /// <param name="inputType">The type of the <paramref name="value"/> to convert.</param>
         /// <param name="options">Options to control the conversion behavior.</param>
         /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> which may be used to cancel the write operation.</param>
-        public static Task SerializeAsync(Stream utf8Json, object value, Type type, JsonSerializerOptions options = null, CancellationToken cancellationToken = default)
+        public static Task SerializeAsync(Stream utf8Json, object value, Type inputType, JsonSerializerOptions options = null, CancellationToken cancellationToken = default)
         {
             if (utf8Json == null)
                 throw new ArgumentNullException(nameof(utf8Json));
 
-            VerifyValueAndType(value, type);
+            VerifyValueAndType(value, inputType);
 
-            return WriteAsyncCore(utf8Json, value, type, options, cancellationToken);
+            return WriteAsyncCore(utf8Json, value, inputType, options, cancellationToken);
         }
 
-        private static async Task WriteAsyncCore(Stream utf8Json, object value, Type type, JsonSerializerOptions options, CancellationToken cancellationToken)
+        private static async Task WriteAsyncCore(Stream utf8Json, object value, Type inputType, JsonSerializerOptions options, CancellationToken cancellationToken)
         {
             if (options == null)
             {
@@ -64,13 +64,13 @@ namespace System.Text.Json
                     return;
                 }
 
-                if (type == null)
+                if (inputType == null)
                 {
-                    type = value.GetType();
+                    inputType = value.GetType();
                 }
 
                 WriteStack state = default;
-                state.Current.Initialize(type, options);
+                state.Current.Initialize(inputType, options);
                 state.Current.CurrentValue = value;
 
                 bool isFinalBlock;
