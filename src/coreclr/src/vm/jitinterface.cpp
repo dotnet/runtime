@@ -14283,12 +14283,14 @@ NativeCodeVersion EECodeInfo::GetNativeCodeVersion()
     }
 
 #ifdef FEATURE_CODE_VERSIONING
-    CodeVersionManager *pCodeVersionManager = pMD->GetCodeVersionManager();
-    CodeVersionManager::TableLockHolder lockHolder(pCodeVersionManager);
-    return pCodeVersionManager->GetNativeCodeVersion(pMD, PINSTRToPCODE(GetStartAddress()));
-#else
-    return NativeCodeVersion(pMD);
+    if (pMD->IsVersionable())
+    {
+        CodeVersionManager *pCodeVersionManager = pMD->GetCodeVersionManager();
+        CodeVersionManager::TableLockHolder lockHolder(pCodeVersionManager);
+        return pCodeVersionManager->GetNativeCodeVersion(pMD, PINSTRToPCODE(GetStartAddress()));
+    }
 #endif
+    return NativeCodeVersion(pMD);
 }
 
 #if defined(WIN64EXCEPTIONS)
