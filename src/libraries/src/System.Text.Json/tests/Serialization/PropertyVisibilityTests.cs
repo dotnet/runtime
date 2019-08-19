@@ -156,21 +156,31 @@ namespace System.Text.Json.Serialization.Tests
 
             // Unsupported collections will throw by default.
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithUnsupportedDictionary>(json));
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(new ClassWithUnsupportedDictionary()));
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<WrapperForClassWithUnsupportedDictionary>(wrapperJson));
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(new WrapperForClassWithUnsupportedDictionary()));
+            // Using new options instance to prevent using previously cached metadata.
+            JsonSerializerOptions options = new JsonSerializerOptions();
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(new ClassWithUnsupportedDictionary(), options));
+            options = new JsonSerializerOptions();
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<WrapperForClassWithUnsupportedDictionary>(wrapperJson, options));
+            options = new JsonSerializerOptions();
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(new WrapperForClassWithUnsupportedDictionary(), options));
 
             // When ignored, we can serialize and deserialize without exceptions.
-            ClassWithIgnoredUnsupportedDictionary obj = JsonSerializer.Deserialize<ClassWithIgnoredUnsupportedDictionary>(json);
+            options = new JsonSerializerOptions();
+            ClassWithIgnoredUnsupportedDictionary obj = JsonSerializer.Deserialize<ClassWithIgnoredUnsupportedDictionary>(json, options);
             Assert.Null(obj.MyDict);
+
+            options = new JsonSerializerOptions();
             Assert.Equal("{}", JsonSerializer.Serialize(new ClassWithIgnoredUnsupportedDictionary()));
 
-            WrapperForClassWithIgnoredUnsupportedDictionary wrapperObj = JsonSerializer.Deserialize<WrapperForClassWithIgnoredUnsupportedDictionary>(wrapperJson);
+            options = new JsonSerializerOptions();
+            WrapperForClassWithIgnoredUnsupportedDictionary wrapperObj = JsonSerializer.Deserialize<WrapperForClassWithIgnoredUnsupportedDictionary>(wrapperJson, options);
             Assert.Null(wrapperObj.MyClass.MyDict);
+
+            options = new JsonSerializerOptions();
             Assert.Equal(@"{""MyClass"":{}}", JsonSerializer.Serialize(new WrapperForClassWithIgnoredUnsupportedDictionary()
             {
                 MyClass = new ClassWithIgnoredUnsupportedDictionary(),
-            })); ;
+            }, options)); ;
         }
 
         [Fact]
@@ -181,19 +191,27 @@ namespace System.Text.Json.Serialization.Tests
 
             // Unsupported types will throw by default.
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithUnsupportedBigInteger>(json));
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<WrapperForClassWithUnsupportedBigInteger>(wrapperJson));
+            // Using new options instance to prevent using previously cached metadata.
+            JsonSerializerOptions options = new JsonSerializerOptions();
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<WrapperForClassWithUnsupportedBigInteger>(wrapperJson, options));
 
             // When ignored, we can serialize and deserialize without exceptions.
-            ClassWithIgnoredUnsupportedBigInteger obj = JsonSerializer.Deserialize<ClassWithIgnoredUnsupportedBigInteger>(json);
+            options = new JsonSerializerOptions();
+            ClassWithIgnoredUnsupportedBigInteger obj = JsonSerializer.Deserialize<ClassWithIgnoredUnsupportedBigInteger>(json, options);
             Assert.Null(obj.MyBigInteger);
+
+            options = new JsonSerializerOptions();
             Assert.Equal("{}", JsonSerializer.Serialize(new ClassWithIgnoredUnsupportedBigInteger()));
 
-            WrapperForClassWithIgnoredUnsupportedBigInteger wrapperObj = JsonSerializer.Deserialize<WrapperForClassWithIgnoredUnsupportedBigInteger>(wrapperJson);
+            options = new JsonSerializerOptions();
+            WrapperForClassWithIgnoredUnsupportedBigInteger wrapperObj = JsonSerializer.Deserialize<WrapperForClassWithIgnoredUnsupportedBigInteger>(wrapperJson, options);
             Assert.Null(wrapperObj.MyClass.MyBigInteger);
+
+            options = new JsonSerializerOptions();
             Assert.Equal(@"{""MyClass"":{}}", JsonSerializer.Serialize(new WrapperForClassWithIgnoredUnsupportedBigInteger()
             {
                 MyClass = new ClassWithIgnoredUnsupportedBigInteger(),
-            })); ;
+            }, options));
         }
 
         public class ObjectDictWrapper : Dictionary<int, string> { }
