@@ -248,7 +248,7 @@ User thread runs out of quantum and gets a new quantum via try_allocate_more_spa
 try_allocate_more_space calls GarbageCollectGeneration when it needs to trigger a GC.
 
 Given WKS GC with concurrent GC off, GarbageCollectGeneration is done all
-on the user thread that triggerred the GC. The code flow is:
+on the user thread that triggered the GC. The code flow is:
 
      GarbageCollectGeneration()
      {
