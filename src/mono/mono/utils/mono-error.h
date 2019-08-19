@@ -65,10 +65,16 @@ typedef union _MonoError {
 		uint16_t private_flags; /*DON'T TOUCH */
 		void *hidden_1 [12]; /*DON'T TOUCH */
 	};
-} MonoError;
+} MonoErrorExternal;
 
 #ifdef _MSC_VER
 __pragma(warning (pop))
+#endif
+
+#ifdef MONO_INSIDE_RUNTIME
+typedef union _MonoErrorInternal MonoError;
+#else
+typedef MonoErrorExternal MonoError;
 #endif
 
 /* Mempool-allocated MonoError.*/
