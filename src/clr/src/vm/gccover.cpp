@@ -1315,7 +1315,9 @@ bool IsGcCoverageInterrupt(LPVOID ip)
         return false;
     }
 
-    GCCoverageInfo *gcCover = codeInfo.GetNativeCodeVersion().GetGCCoverageInfo();
+    NativeCodeVersion nativeCodeVersion = codeInfo.GetNativeCodeVersion();
+    _ASSERTE(!nativeCodeVersion.IsNull());
+    GCCoverageInfo *gcCover = nativeCodeVersion.GetGCCoverageInfo();
     if (gcCover == nullptr)
     {
         return false;
@@ -1377,7 +1379,9 @@ BOOL OnGcCoverageInterrupt(PCONTEXT regs)
     forceStack[1] = &pMD;                // This is so I can see it fastchecked
     forceStack[2] = &offset;             // This is so I can see it fastchecked
 
-    GCCoverageInfo* gcCover = codeInfo.GetNativeCodeVersion().GetGCCoverageInfo();
+    NativeCodeVersion nativeCodeVersion = codeInfo.GetNativeCodeVersion();
+    _ASSERTE(!nativeCodeVersion.IsNull());
+    GCCoverageInfo* gcCover = nativeCodeVersion.GetGCCoverageInfo();
     forceStack[3] = &gcCover;            // This is so I can see it fastchecked
     if (gcCover == 0)
         return(FALSE);        // we aren't doing code gcCoverage on this function

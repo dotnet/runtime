@@ -200,7 +200,7 @@ void NativeCodeVersionNode::SetGCCoverageInfo(PTR_GCCoverageInfo gcCover)
 #endif // HAVE_GCCOVER
 
 NativeCodeVersion::NativeCodeVersion() :
-    m_storageKind(StorageKind::Unknown)
+    m_storageKind(StorageKind::Unknown), m_pVersionNode(PTR_NULL)
 {}
 
 NativeCodeVersion::NativeCodeVersion(const NativeCodeVersion & rhs) :
