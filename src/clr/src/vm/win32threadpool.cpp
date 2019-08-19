@@ -1901,7 +1901,8 @@ DWORD WINAPI ThreadpoolMgr::WorkerThreadStart(LPVOID lpArgs)
     bool foundWork = true, wasNotRecalled = true;
 
     counts = WorkerCounter.GetCleanCounts();
-    FireEtwThreadPoolWorkerThreadStart(counts.NumActive, counts.NumRetired, GetClrInstanceId());
+    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, ThreadPoolWorkerThreadStart))
+        FireEtwThreadPoolWorkerThreadStart(counts.NumActive, counts.NumRetired, GetClrInstanceId());
 
 #ifdef FEATURE_COMINTEROP
     BOOL fCoInited = FALSE;
@@ -2115,7 +2116,8 @@ WaitForWork:
         MaybeAddWorkingWorker();
     }
 
-    FireEtwThreadPoolWorkerThreadWait(counts.NumActive, counts.NumRetired, GetClrInstanceId());
+    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, ThreadPoolWorkerThreadWait))
+        FireEtwThreadPoolWorkerThreadWait(counts.NumActive, counts.NumRetired, GetClrInstanceId());
 
 RetryWaitForWork:
     if (WorkerSemaphore->Wait(AppX::IsAppXProcess() ? WorkerTimeoutAppX : WorkerTimeout, WorkerThreadSpinLimit, NumberOfProcessors))
@@ -2195,7 +2197,8 @@ Exit:
     _ASSERTE(!IsIoPending());
 
     counts = WorkerCounter.GetCleanCounts();
-    FireEtwThreadPoolWorkerThreadStop(counts.NumActive, counts.NumRetired, GetClrInstanceId());
+    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, ThreadPoolWorkerThreadStop))
+        FireEtwThreadPoolWorkerThreadStop(counts.NumActive, counts.NumRetired, GetClrInstanceId());
 
     return ERROR_SUCCESS;
 }
