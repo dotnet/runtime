@@ -23,8 +23,11 @@ set(SOURCES
     ./bundle/file_entry.cpp
     ./bundle/manifest.cpp
     ./bundle/header.cpp
-    ./bundle/bundle_runner.cpp
     ./bundle/marker.cpp
+    ./bundle/reader.cpp
+    ./bundle/extractor.cpp
+    ./bundle/runner.cpp
+    ./bundle/dir_utils.cpp
 )
 
 set(HEADERS
@@ -33,8 +36,11 @@ set(HEADERS
     ./bundle/file_entry.h
     ./bundle/manifest.h
     ./bundle/header.h
-    ./bundle/bundle_runner.h
     ./bundle/marker.h
+    ./bundle/reader.h
+    ./bundle/extractor.h
+    ./bundle/runner.h
+    ./bundle/dir_utils.h
 )
 
 include(../exe.cmake)
