@@ -239,7 +239,7 @@ namespace System.Text.Json
             output[BytesPending++] = JsonConstants.Quote;
             output[BytesPending++] = JsonConstants.KeyValueSeperator;
 
-            bool result = Utf8Formatter.TryFormat(value, output.Slice(BytesPending), out int bytesWritten);
+            bool result = TryFormatSingle(value, output.Slice(BytesPending), out int bytesWritten);
             Debug.Assert(result);
             BytesPending += bytesWritten;
         }
@@ -270,7 +270,7 @@ namespace System.Text.Json
             output[BytesPending++] = JsonConstants.Quote;
             output[BytesPending++] = JsonConstants.KeyValueSeperator;
 
-            bool result = Utf8Formatter.TryFormat(value, output.Slice(BytesPending), out int bytesWritten);
+            bool result = TryFormatSingle(value, output.Slice(BytesPending), out int bytesWritten);
             Debug.Assert(result);
             BytesPending += bytesWritten;
         }
@@ -316,7 +316,7 @@ namespace System.Text.Json
             output[BytesPending++] = JsonConstants.KeyValueSeperator;
             output[BytesPending++] = JsonConstants.Space;
 
-            bool result = Utf8Formatter.TryFormat(value, output.Slice(BytesPending), out int bytesWritten);
+            bool result = TryFormatSingle(value, output.Slice(BytesPending), out int bytesWritten);
             Debug.Assert(result);
             BytesPending += bytesWritten;
         }
@@ -362,7 +362,7 @@ namespace System.Text.Json
             output[BytesPending++] = JsonConstants.KeyValueSeperator;
             output[BytesPending++] = JsonConstants.Space;
 
-            bool result = Utf8Formatter.TryFormat(value, output.Slice(BytesPending), out int bytesWritten);
+            bool result = TryFormatSingle(value, output.Slice(BytesPending), out int bytesWritten);
             Debug.Assert(result);
             BytesPending += bytesWritten;
         }

@@ -56,7 +56,7 @@ namespace System.Text.Json
                 output[BytesPending++] = JsonConstants.ListSeparator;
             }
 
-            bool result = Utf8Formatter.TryFormat(value, output.Slice(BytesPending), out int bytesWritten);
+            bool result = TryFormatDouble(value, output.Slice(BytesPending), out int bytesWritten);
             Debug.Assert(result);
             BytesPending += bytesWritten;
         }
