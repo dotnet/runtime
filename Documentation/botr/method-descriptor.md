@@ -171,7 +171,7 @@ The precode is a small fragment of code used to implement temporary entry points
 	mov eax,pMethodDesc // Load MethodDesc into scratch register
 	jmp target          // Jump to a target
 
-**Efficient Stub wrappers:** The implementation of certain methods (e.g. P/Invoke, delegate invocation, multi dimensional array setters and getters) is provided by the runtime, typically as hand-written assembly stubs. Precode provides a space-efficient wrapper over stubs, to multiplex them for multiple callers.
+**Efficient Stub wrappers:** The implementation of certain methods (e.g. P/Invoke, delegate invocation, multidimensional array setters and getters) is provided by the runtime, typically as hand-written assembly stubs. Precode provides a space-efficient wrapper over stubs, to multiplex them for multiple callers.
 
 The worker code of the stub is wrapped by a precode fragment that can be mapped to the MethodDesc and that jumps to the worker code of the stub. The worker code of the stub can be shared between multiple methods this way. It is an important optimization used to implement P/Invoke marshalling stubs. It also creates a 1:1 mapping between MethodDescs and entry points, which establishes a simple and efficient low-level system.
 

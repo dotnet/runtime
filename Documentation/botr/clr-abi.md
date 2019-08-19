@@ -269,7 +269,7 @@ Finally1:
 	ret
 ```
 
-Note that JIT64 does not implement this properly. The C# compiler used to always insert all necessary "step" blocks. The Roslyn C# compiler at one point did not, but then was change to once again insert them.
+Note that JIT64 does not implement this properly. The C# compiler used to always insert all necessary "step" blocks. The Roslyn C# compiler at one point did not, but then was changed to once again insert them.
 
 ## The PSPSym and funclet parameters
 
