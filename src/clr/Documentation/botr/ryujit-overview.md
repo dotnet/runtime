@@ -421,7 +421,7 @@ The “@ 27” is the location number of the node. “internal” indicates a re
 
 ### Notable features of RyuJIT LinearScan
 
-Unlike most register allocators, LSRA performs register allocation on an IR (Intermediate Representation) that is not a direct representation of the target instrutions. A given IR node may map to 0, 1 or multiple target instructions. Nodes that are "contained" are handled by code generation as part of their parent node and thus may map to 0 instructions. A simple node will have a 1-to-1 mapping to a target instruction, and a more complex node (e.g. `GT_STORE_BLK`) may map to multiple instructions.
+Unlike most register allocators, LSRA performs register allocation on an IR (Intermediate Representation) that is not a direct representation of the target instructions. A given IR node may map to 0, 1 or multiple target instructions. Nodes that are "contained" are handled by code generation as part of their parent node and thus may map to 0 instructions. A simple node will have a 1-to-1 mapping to a target instruction, and a more complex node (e.g. `GT_STORE_BLK`) may map to multiple instructions.
 
 ### Pre-conditions:
 
@@ -593,7 +593,7 @@ Full instructions for dumping the compilation of some managed code can be found 
 
 ## Reading expression trees
 
-Expression trees are displayed using a pre-order traversal, with the subtrees of a node being displayed under the node in operand order (e.g. `gtOp1`, `gtOp2`). This is similar to the way trees are displayed in tyical user interfaces (e.g. folder trees). Note that the operand order may be different from the actual execution order, determined by `GTF_REVERSE_OPS` or other means. The operand order usually follows the order in high level languages so that the typical infix, left to right expression `a - b` becomes prefix, top to bottom tree:
+Expression trees are displayed using a pre-order traversal, with the subtrees of a node being displayed under the node in operand order (e.g. `gtOp1`, `gtOp2`). This is similar to the way trees are displayed in typical user interfaces (e.g. folder trees). Note that the operand order may be different from the actual execution order, determined by `GTF_REVERSE_OPS` or other means. The operand order usually follows the order in high level languages so that the typical infix, left to right expression `a - b` becomes prefix, top to bottom tree:
 ```
 ▌  SUB       double
 ├──▌  LCL_VAR   double V03 a

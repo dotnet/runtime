@@ -210,7 +210,7 @@ Yet another flavor of invalid argument exception.
 COMPlusThrowInvalidCastException(thFrom, thTo)
 ----------------------------------------------
 
-Given type handles to from and to types of the attempted cast, the helper creates the a nicely formatted exception message.
+Given type handles to from and to types of the attempted cast, the helper creates a nicely formatted exception message.
 
 EX_THROW
 --------
