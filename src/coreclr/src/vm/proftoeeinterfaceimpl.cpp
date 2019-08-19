@@ -9015,9 +9015,6 @@ HRESULT ProfToEEInterfaceImpl::GetRuntimeInformation(USHORT * pClrInstanceId,
         LL_INFO1000, 
         "**PROF: GetRuntimeInformation.\n"));
 
-    // TODO: use this string instead
-    LPCWSTR fxProductVersion = Configuration::GetKnobStringValue(W("FX_PRODUCT_VERSION"))
-
     if ((szVersionString != NULL) && (pcchVersionString == NULL))
     {
         return E_INVALIDARG;
