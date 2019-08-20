@@ -41,6 +41,7 @@
       Targets="Restore"
       Properties="
         ArtifactsShippingPackagesDir=$(ArtifactsShippingPackagesDir);
+        ArtifactsNonShippingPackagesDir=$(ArtifactsNonShippingPackagesDir);
         TestRestorePackagesPath=$(TestRestorePackagesPath);
         TestTargetRid=$(TestTargetRid);
         MNAVersion=$(ProductVersion)" />

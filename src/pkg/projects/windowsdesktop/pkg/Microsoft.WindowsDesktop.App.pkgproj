@@ -17,6 +17,8 @@
       it in correctly. Being wrong means dependency failures at runtime.
     -->
     <SkipValidatePackage>false</SkipValidatePackage>
+
+    <IsShippingPackage>false</IsShippingPackage>
   </PropertyGroup>
 
   <!-- Temporarily ignore duplicate types until WPF updates. https://github.com/dotnet/core-setup/issues/6838 -->

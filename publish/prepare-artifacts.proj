@@ -41,9 +41,19 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <!-- Split nupkgs into shipping/nonshipping for BAR categorization. -->
+      <ShippingNupkgToPublishFile
+        Include="@(NupkgToPublishFile)"
+        Condition="$([System.String]::new('%(Identity)').Contains('\Shipping\'))" />
+
+      <NonShippingNupkgToPublishFile
+        Include="@(NupkgToPublishFile)"
+        Exclude="@(ShippingNupkgToPublishFile)" />
+
       <ItemsToPush Remove="@(ItemsToPush)" />
 
-      <ItemsToPush Include="@(NupkgToPublishFile)" />
+      <ItemsToPush Include="@(ShippingNupkgToPublishFile)" />
+      <ItemsToPush Include="@(NonShippingNupkgToPublishFile)" ManifestArtifactData="NonShipping=true" />
       <ItemsToPush Include="@(SymbolNupkgToPublishFile)" />
     </ItemGroup>
 

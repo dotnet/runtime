@@ -3,6 +3,7 @@
 
   <ItemGroup>
     <RestoreTestFallbackSource Include="$(ArtifactsShippingPackagesDir)" />
+    <RestoreTestFallbackSource Include="$(ArtifactsNonShippingPackagesDir)" />
     <RestoreTestSource Include="$(RestoreSources)" />
     <RestoreTestSource Include="https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json" />
     <RestoreTestSource Include="https://api.nuget.org/v3/index.json" />

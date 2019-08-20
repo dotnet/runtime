@@ -23,7 +23,16 @@
         Include="$(DownloadDirectory)**\*.nupkg"
         Exclude="@(DownloadedSymbolNupkgFile)" />
 
-      <!-- RID-specific nupkg. These are published from every job. -->
+      <!-- Add files that are not affected by filtering. -->
+      <UploadToBlobStorageFile
+        Include="@(DownloadedArtifactFile)"
+        Exclude="@(DownloadedSymbolNupkgFile);@(DownloadedNupkgFile)" />
+
+      <!--
+        Filter out the RID-specific (Runtime) nupkgs and RID-agnostic nupkgs. RID-specific packages
+        are published from every job. RID-agnostic nupkgs are built with the same ID/version by
+        every job, so one specific job's outputs must be picked to sign and publish.
+      -->
       <RuntimeNupkgFile
         Include="
           $(DownloadDirectory)**\runtime.*.nupkg;
@@ -32,29 +41,34 @@
           $(DownloadDirectory)**\VS.Redist.Common.*.nupkg"
         Exclude="@(DownloadedSymbolNupkgFile)" />
 
-      <!--
-        RID-agnostic nupkg. These are built with the same ID/version by every job, so only one job's
-        results are picked for signing and publishing.
-      -->
       <RidAgnosticNupkgToPublishFile
         Include="$(DownloadDirectory)*\$(PublishRidAgnosticPackagesFromJobName)\**\*.nupkg"
         Exclude="@(RuntimeNupkgFile);@(DownloadedSymbolNupkgFile)" />
-      
-      <RidAgnosticNupkgToIgnoreFile
-        Include="@(DownloadedNupkgFile)"
-        Exclude="@(RidAgnosticNupkgToPublishFile);@(RuntimeNupkgFile)" />
-
-      <RidAgnosticSymbolNupkgToIgnoreFile
-        Include="@(RidAgnosticNupkgToIgnoreFile -> '%(RootDir)%(Directory)%(Filename).symbols.nupkg')" />
 
       <NupkgToPublishFile Include="@(RuntimeNupkgFile);@(RidAgnosticNupkgToPublishFile)" />
-      <SymbolNupkgToPublishFile Include="@(DownloadedSymbolNupkgFile)" Exclude="@(RidAgnosticSymbolNupkgToIgnoreFile)" />
 
-      <!-- Filter out duplicate nupkgs/symbols.nupkgs, but other artifacts are fine. -->
-      <UploadToBlobStorageFile
-        Include="@(DownloadedArtifactFile)"
-        Exclude="@(RidAgnosticNupkgToIgnoreFile);@(RidAgnosticSymbolNupkgToIgnoreFile)" />
+      <UploadToBlobStorageFile Include="@(NupkgToPublishFile)" />
+
+      <!--
+        Assuming all symbol packages ship and can be found by turning .nupkg => .symbols.nupkg, find
+        them. Don't check for missing symbol packages here: some nupkgs don't have them for valid
+        reasons, such as the VS insertion packages that transport MSIs. Symbol package validation
+        will check for symbol completeness with file-by-file granularity rather than looking for
+        missing symbols.nupkg files: https://github.com/dotnet/arcade/issues/2499.
+      -->
+      <PotentialSymbolNupkgToPublishFile
+        Include="@(NupkgToPublishFile->Replace('\NonShipping\', '\Shipping\')->Replace('.nupkg', '.symbols.nupkg'))" />
+
+      <SymbolNupkgToPublishFile
+        Include="@(PotentialSymbolNupkgToPublishFile)"
+        Condition="Exists('%(Identity)')" />
+
+      <UploadToBlobStorageFile Include="@(SymbolNupkgToPublishFile)" />
     </ItemGroup>
+
+    <Error
+      Condition="'@(SymbolNupkgToPublishFile)' == ''"
+      Text="No symbol packages found." />
   </Target>
 
   <Import Project="..\Directory.Build.targets" />
