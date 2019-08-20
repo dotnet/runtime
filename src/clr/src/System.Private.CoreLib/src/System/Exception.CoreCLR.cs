@@ -342,14 +342,14 @@ namespace System
             }
         }
 
-        private MethodBase? _exceptionMethod;  //Needed for serialization.
+        private MethodBase? _exceptionMethod;  // Needed for serialization.
         internal string? _message;
         private IDictionary? _data;
         private readonly Exception? _innerException;
         private string? _helpURL;
         private object? _stackTrace;
         private object? _watsonBuckets;
-        private string? _stackTraceString; //Needed for serialization.
+        private string? _stackTraceString; // Needed for serialization.
         private string? _remoteStackTraceString;
 #pragma warning disable 414  // Fields are not used from managed.
 #pragma warning disable CA1823

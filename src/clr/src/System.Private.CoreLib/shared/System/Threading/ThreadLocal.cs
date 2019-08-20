@@ -791,7 +791,7 @@ namespace System.Threading
     /// to ensure that the ThreadLocal&lt;T&gt; does not become initialized if it was not already.</summary>
     internal sealed class SystemThreading_ThreadLocalDebugView<T>
     {
-        //The ThreadLocal object being viewed.
+        // The ThreadLocal object being viewed.
         private readonly ThreadLocal<T> _tlocal;
 
         /// <summary>Constructs a new debugger view object for the provided ThreadLocal object.</summary>

@@ -1171,7 +1171,7 @@ namespace System.Text
 
         public override int GetHashCode()
         {
-            //Not great distribution, but this is relatively unlikely to be used as the key in a hashtable.
+            // Not great distribution, but this is relatively unlikely to be used as the key in a hashtable.
             return this.EncoderFallback.GetHashCode() + this.DecoderFallback.GetHashCode() +
                    CodePage + (_emitUTF32ByteOrderMark ? 4 : 0) + (_bigEndian ? 8 : 0);
         }

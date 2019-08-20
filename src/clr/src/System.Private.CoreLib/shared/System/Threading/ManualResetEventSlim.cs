@@ -41,25 +41,25 @@ namespace System.Threading
         private volatile ManualResetEvent? m_eventObj; // A true Win32 event used for waiting.
 
         // -- State -- //
-        //For a packed word a uint would seem better, but Interlocked.* doesn't support them as uint isn't CLS-compliant.
-        private volatile int m_combinedState; //ie a uint. Used for the state items listed below.
+        // For a packed word a uint would seem better, but Interlocked.* doesn't support them as uint isn't CLS-compliant.
+        private volatile int m_combinedState; // ie a uint. Used for the state items listed below.
 
-        //1-bit for  signalled state
-        private const int SignalledState_BitMask = unchecked((int)0x80000000); //1000 0000 0000 0000 0000 0000 0000 0000
+        // 1-bit for  signalled state
+        private const int SignalledState_BitMask = unchecked((int)0x80000000); // 1000 0000 0000 0000 0000 0000 0000 0000
         private const int SignalledState_ShiftCount = 31;
 
-        //1-bit for disposed state
-        private const int Dispose_BitMask = unchecked((int)0x40000000); //0100 0000 0000 0000 0000 0000 0000 0000
+        // 1-bit for disposed state
+        private const int Dispose_BitMask = unchecked((int)0x40000000); // 0100 0000 0000 0000 0000 0000 0000 0000
 
-        //11-bits for m_spinCount
-        private const int SpinCountState_BitMask = unchecked((int)0x3FF80000); //0011 1111 1111 1000 0000 0000 0000 0000
+        // 11-bits for m_spinCount
+        private const int SpinCountState_BitMask = unchecked((int)0x3FF80000); // 0011 1111 1111 1000 0000 0000 0000 0000
         private const int SpinCountState_ShiftCount = 19;
-        private const int SpinCountState_MaxValue = (1 << 11) - 1; //2047
+        private const int SpinCountState_MaxValue = (1 << 11) - 1; // 2047
 
-        //19-bits for m_waiters.  This allows support of 512K threads waiting which should be ample
+        // 19-bits for m_waiters.  This allows support of 512K threads waiting which should be ample
         private const int NumWaitersState_BitMask = unchecked((int)0x0007FFFF); // 0000 0000 0000 0111 1111 1111 1111 1111
         private const int NumWaitersState_ShiftCount = 0;
-        private const int NumWaitersState_MaxValue = (1 << 19) - 1; //512K-1
+        private const int NumWaitersState_MaxValue = (1 << 19) - 1; // 512K-1
         // ----------- //
 
         /// <summary>
@@ -137,7 +137,7 @@ namespace System.Threading
 
             set
             {
-                //setting to <0 would indicate an internal flaw, hence Assert is appropriate.
+                // setting to <0 would indicate an internal flaw, hence Assert is appropriate.
                 Debug.Assert(value >= 0, "NumWaiters should never be less than zero. This indicates an internal error.");
 
                 // it is possible for the max number of waiters to be exceeded via user-code, hence we use a real exception here.
@@ -212,8 +212,8 @@ namespace System.Threading
         private void Initialize(bool initialState, int spinCount)
         {
             m_combinedState = initialState ? (1 << SignalledState_ShiftCount) : 0;
-            //the spinCount argument has been validated by the ctors.
-            //but we now sanity check our predefined constants.
+            // the spinCount argument has been validated by the ctors.
+            // but we now sanity check our predefined constants.
             Debug.Assert(DEFAULT_SPIN_SP >= 0, "Internal error - DEFAULT_SPIN_SP is outside the legal range.");
             Debug.Assert(DEFAULT_SPIN_SP <= SpinCountState_MaxValue, "Internal error - DEFAULT_SPIN_SP is outside the legal range.");
 
@@ -305,7 +305,7 @@ namespace System.Threading
             // If there are waiting threads, we need to pulse them.
             if (Waiters > 0)
             {
-                Debug.Assert(m_lock != null); //if waiters>0, then m_lock has already been created.
+                Debug.Assert(m_lock != null); // if waiters>0, then m_lock has already been created.
                 lock (m_lock)
                 {
                     Monitor.PulseAll(m_lock);
@@ -314,8 +314,8 @@ namespace System.Threading
 
             ManualResetEvent? eventObj = m_eventObj;
 
-            //Design-decision: do not set the event if we are in cancellation -> better to deadlock than to wake up waiters incorrectly
-            //It would be preferable to wake up the event and have it throw OCE. This requires MRE to implement cancellation logic
+            // Design-decision: do not set the event if we are in cancellation -> better to deadlock than to wake up waiters incorrectly
+            // It would be preferable to wake up the event and have it throw OCE. This requires MRE to implement cancellation logic
 
             if (eventObj != null && !duringCancellation)
             {
@@ -518,7 +518,7 @@ namespace System.Threading
                 // We spin briefly before falling back to allocating and/or waiting on a true event.
                 uint startTime = 0;
                 bool bNeedTimeoutAdjustment = false;
-                int realMillisecondsTimeout = millisecondsTimeout; //this will be adjusted if necessary.
+                int realMillisecondsTimeout = millisecondsTimeout; // this will be adjusted if necessary.
 
                 if (millisecondsTimeout != Timeout.Infinite)
                 {
@@ -563,7 +563,7 @@ namespace System.Threading
                             // If our token was canceled, we must throw and exit.
                             cancellationToken.ThrowIfCancellationRequested();
 
-                            //update timeout (delays in wait commencement are due to spinning and/or spurious wakeups from other waits being canceled)
+                            // update timeout (delays in wait commencement are due to spinning and/or spurious wakeups from other waits being canceled)
                             if (bNeedTimeoutAdjustment)
                             {
                                 realMillisecondsTimeout = TimeoutHelper.UpdateTimeOut(startTime, millisecondsTimeout);
@@ -581,9 +581,9 @@ namespace System.Threading
 
                             Waiters++;
 
-                            if (IsSet) //This check must occur after updating Waiters.
+                            if (IsSet) // This check must occur after updating Waiters.
                             {
-                                Waiters--; //revert the increment.
+                                Waiters--; // revert the increment.
                                 return true;
                             }
 
@@ -592,7 +592,7 @@ namespace System.Threading
                             {
                                 // ** the actual wait **
                                 if (!Monitor.Wait(m_lock, realMillisecondsTimeout))
-                                    return false; //return immediately if the timeout has expired.
+                                    return false; // return immediately if the timeout has expired.
                             }
                             finally
                             {
@@ -607,7 +607,7 @@ namespace System.Threading
                 }
             } // automatically disposes (and unregisters) the callback
 
-            return true; //done. The wait was satisfied.
+            return true; // done. The wait was satisfied.
         }
 
         /// <summary>
@@ -638,7 +638,7 @@ namespace System.Threading
             if ((m_combinedState & Dispose_BitMask) != 0)
                 return; // already disposed
 
-            m_combinedState |= Dispose_BitMask; //set the dispose bit
+            m_combinedState |= Dispose_BitMask; // set the dispose bit
             if (disposing)
             {
                 // We will dispose of the event object.  We do this under a lock to protect
@@ -672,7 +672,7 @@ namespace System.Threading
         {
             Debug.Assert(obj is ManualResetEventSlim, "Expected a ManualResetEventSlim");
             ManualResetEventSlim mre = (ManualResetEventSlim)obj;
-            Debug.Assert(mre.m_lock != null); //the lock should have been created before this callback is registered for use.
+            Debug.Assert(mre.m_lock != null); // the lock should have been created before this callback is registered for use.
             lock (mre.m_lock)
             {
                 Monitor.PulseAll(mre.m_lock); // awaken all waiters
@@ -723,8 +723,8 @@ namespace System.Threading
         /// <returns></returns>
         private static int ExtractStatePortionAndShiftRight(int state, int mask, int rightBitShiftCount)
         {
-            //convert to uint before shifting so that right-shift does not replicate the sign-bit,
-            //then convert back to int.
+            // convert to uint before shifting so that right-shift does not replicate the sign-bit,
+            // then convert back to int.
             return unchecked((int)(((uint)(state & mask)) >> rightBitShiftCount));
         }
 

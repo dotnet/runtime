@@ -680,7 +680,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
             bool isValid = (bool)_validateTypeAndReturnDetails.Invoke(null, BindingFlags.DoNotWrapExceptions, binder: null, parameters: parameters, culture: null)!;
             if (!isValid)
             {
-                throw new COMException(); //E_FAIL
+                throw new COMException(); // E_FAIL
             }
 
             var license = (IDisposable?)parameters[2];
@@ -692,7 +692,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
             var licenseKey = (string?)parameters[3];
             if (licenseKey == null)
             {
-                throw new COMException(); //E_FAIL
+                throw new COMException(); // E_FAIL
             }
 
             return licenseKey;

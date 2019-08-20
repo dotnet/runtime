@@ -245,7 +245,7 @@ namespace System.Reflection.Emit
 
         public override Type UnderlyingSystemType => GetEnumUnderlyingType();
 
-        //ICustomAttributeProvider
+        // ICustomAttributeProvider
         public override object[] GetCustomAttributes(bool inherit)
         {
             return m_typeBuilder.GetCustomAttributes(inherit);

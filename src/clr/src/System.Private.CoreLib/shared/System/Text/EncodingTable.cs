@@ -61,8 +61,8 @@ namespace System.Text
 
             ReadOnlySpan<char> invariantName = name.ToLowerInvariant().AsSpan();
 
-            //Binary search the array until we have only a couple of elements left and then
-            //just walk those elements.
+            // Binary search the array until we have only a couple of elements left and then
+            // just walk those elements.
             while ((right - left) > 3)
             {
                 index = ((right - left) / 2) + left;
@@ -72,22 +72,22 @@ namespace System.Text
 
                 if (result == 0)
                 {
-                    //We found the item, return the associated codePage.
+                    // We found the item, return the associated codePage.
                     return s_codePagesByName[index];
                 }
                 else if (result < 0)
                 {
-                    //The name that we're looking for is less than our current index.
+                    // The name that we're looking for is less than our current index.
                     right = index;
                 }
                 else
                 {
-                    //The name that we're looking for is greater than our current index
+                    // The name that we're looking for is greater than our current index
                     left = index;
                 }
             }
 
-            //Walk the remaining elements (it'll be 3 or fewer).
+            // Walk the remaining elements (it'll be 3 or fewer).
             for (; left <= right; left++)
             {
                 Debug.Assert(left < s_encodingNameIndices.Length - 1);

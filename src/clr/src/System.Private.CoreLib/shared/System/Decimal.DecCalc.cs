@@ -168,11 +168,11 @@ namespace System
             private static unsafe uint GetExponent(float f)
             {
                 // Based on pulling out the exp from this single struct layout
-                //typedef struct {
+                // typedef struct {
                 //    ULONG mant:23;
                 //    ULONG exp:8;
                 //    ULONG sign:1;
-                //} SNGSTRUCT;
+                // } SNGSTRUCT;
 
                 return (byte)(*(uint*)&f >> 23);
             }
@@ -180,7 +180,7 @@ namespace System
             private static unsafe uint GetExponent(double d)
             {
                 // Based on pulling out the exp from this double struct layout
-                //typedef struct {
+                // typedef struct {
                 //   DWORDLONG mant:52;
                 //   DWORDLONG signexp:12;
                 // } DBLSTRUCT;

@@ -8,8 +8,6 @@
 **
 ===========================================================*/
 
-//This class contains only static members and doesn't require serialization.
-
 using System.Runtime.CompilerServices;
 
 namespace System
