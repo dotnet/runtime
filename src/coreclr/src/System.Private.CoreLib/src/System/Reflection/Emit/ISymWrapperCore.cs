@@ -67,10 +67,10 @@ namespace System.Reflection.Emit
             }
 
 
-            //=========================================================================================
+            // =========================================================================================
             // Public interface methods start here. (Well actually, they're all NotSupported
             // stubs since that's what they are on the real ISymWrapper.dll.)
-            //=========================================================================================
+            // =========================================================================================
 
             //------------------------------------------------------------------------------
             // SetSource() wrapper
@@ -362,9 +362,9 @@ namespace System.Reflection.Emit
             // Define delegates for the unmanaged COM methods we invoke.
             //------------------------------------------------------------------------------
             private delegate int DInitialize(ISymUnmanagedWriter* pthis,
-                                             IntPtr emitter,  //IUnknown*
-                                             [MarshalAs(UnmanagedType.LPWStr)] string filename, //WCHAR*
-                                             IntPtr pIStream, //IStream*
+                                             IntPtr emitter,  // IUnknown*
+                                             [MarshalAs(UnmanagedType.LPWStr)] string filename, // WCHAR*
+                                             IntPtr pIStream, // IStream*
                                              [MarshalAs(UnmanagedType.Bool)] bool fFullBuild
                                              );
 
@@ -488,7 +488,7 @@ namespace System.Reflection.Emit
             //------------------------------------------------------------------------------
             private ISymUnmanagedWriterVTable m_vtable;
         } // class SymWriter
-    } //class SymWrapperCore
+    } // class SymWrapperCore
 
 
 
@@ -529,4 +529,4 @@ namespace System.Reflection.Emit
             m_Release((IntPtr)0); // make one call to make sure the delegate is fully prepped before we're in the critical finalizer situation.
         }
     } // PunkSafeHandle
-} //namespace System.Reflection.Emit
+} // namespace System.Reflection.Emit

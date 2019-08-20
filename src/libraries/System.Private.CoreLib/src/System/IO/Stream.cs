@@ -1023,7 +1023,6 @@ namespace System.IO
             {
                 _bytesRead = bytesRead;
                 _stateObject = asyncStateObject;
-                //_isWrite = false;
             }
 
             internal SynchronousAsyncResult(object? asyncStateObject)

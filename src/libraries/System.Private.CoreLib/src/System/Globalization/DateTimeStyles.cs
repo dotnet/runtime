@@ -26,7 +26,7 @@ namespace System.Globalization
 
         AllowLeadingWhite = 0x00000001,
 
-        AllowTrailingWhite = 0x00000002, //Bitflag indicating trailing whitespace is allowed.
+        AllowTrailingWhite = 0x00000002, // Bitflag indicating trailing whitespace is allowed.
 
         AllowInnerWhite = 0x00000004,
 

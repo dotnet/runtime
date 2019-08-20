@@ -24,11 +24,8 @@ using System.Text;
 
 namespace System.Globalization
 {
-    //
     // from LocaleEx.txt header
-    //
-    //; IFORMATFLAGS
-    //;       Parsing/formatting flags.
+    // IFORMATFLAGS
     internal enum FORMATFLAGS
     {
         None = 0x00000000,

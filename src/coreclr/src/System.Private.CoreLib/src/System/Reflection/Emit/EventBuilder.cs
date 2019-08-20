@@ -29,7 +29,7 @@ namespace System.Reflection.Emit
             ModuleBuilder mod,                    // the module containing this EventBuilder
             string name,                    // Event name
             EventAttributes attr,                    // event attribute such as Public, Private, and Protected defined above
-                                                     //int            eventType,                // event type
+                                                     // int            eventType,                // event type
             TypeBuilder type,                    // containing type
             EventToken evToken)
         {

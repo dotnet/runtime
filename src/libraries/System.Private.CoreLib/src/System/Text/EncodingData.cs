@@ -280,9 +280,7 @@ namespace System.Text
         private const uint MIMECONTF_SAVABLE_MAILNEWS = Encoding.MIMECONTF_SAVABLE_MAILNEWS;
         private const uint MIMECONTF_SAVABLE_BROWSER = Encoding.MIMECONTF_SAVABLE_BROWSER;
 
-        //
-        //s_flags is indexed by the corresponding index in s_mappedCodePages.
-        //
+        // s_flags is indexed by the corresponding index in s_mappedCodePages.
         private static readonly uint[] s_flags = new uint[]
         {
             MIMECONTF_SAVABLE_BROWSER,

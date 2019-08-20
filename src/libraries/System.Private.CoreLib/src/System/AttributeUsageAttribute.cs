@@ -23,7 +23,6 @@ namespace System
 
         internal static readonly AttributeUsageAttribute Default = new AttributeUsageAttribute(AttributeTargets.All);
 
-        //Constructors
         public AttributeUsageAttribute(AttributeTargets validOn)
         {
             _attributeTarget = validOn;

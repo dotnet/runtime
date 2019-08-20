@@ -348,7 +348,6 @@ namespace System.Resources
 
                 // On 64-bit machines, these char*'s may be misaligned.  Use a
                 // byte-by-byte comparison instead.
-                //return FastResourceComparer.CompareOrdinal((char*)bytes, byteLen/2, name) == 0;
                 return FastResourceComparer.CompareOrdinal(bytes, byteLen, name) == 0;
             }
             else

@@ -447,7 +447,7 @@ namespace System.Reflection.Emit
                 {
                     type = RuntimeTypeHandle.GetCorElementType((RuntimeType)clsArgument);
 
-                    //GetCorElementType returns CorElementType.ELEMENT_TYPE_CLASS for both object and string
+                    // GetCorElementType returns CorElementType.ELEMENT_TYPE_CLASS for both object and string
                     if (type == CorElementType.ELEMENT_TYPE_CLASS)
                     {
                         if (clsArgument == typeof(object))
@@ -518,8 +518,8 @@ namespace System.Reflection.Emit
             // Pulls the token appart to get a rid, adds some appropriate bits
             // to the token and then adds this to the signature.
 
-            int rid = (token & 0x00FFFFFF); //This is RidFromToken;
-            MetadataTokenType type = (MetadataTokenType)(token & unchecked((int)0xFF000000)); //This is TypeFromToken;
+            int rid = (token & 0x00FFFFFF); // This is RidFromToken;
+            MetadataTokenType type = (MetadataTokenType)(token & unchecked((int)0xFF000000)); // This is TypeFromToken;
 
             if (rid > 0x3FFFFFF)
             {
@@ -534,12 +534,12 @@ namespace System.Reflection.Emit
             // TypeSpec is encoded with low bits 10
             if (type == MetadataTokenType.TypeRef)
             {
-                //if type is mdtTypeRef
+                // if type is mdtTypeRef
                 rid |= 0x1;
             }
             else if (type == MetadataTokenType.TypeSpec)
             {
-                //if type is mdtTypeSpec
+                // if type is mdtTypeSpec
                 rid |= 0x2;
             }
 
@@ -595,7 +595,7 @@ namespace System.Reflection.Emit
         {
             if (m_sizeLoc == NO_SIZE_IN_SIG)
             {
-                //We don't have a size if this is a field.
+                // We don't have a size if this is a field.
                 return;
             }
 
@@ -620,17 +620,17 @@ namespace System.Reflection.Emit
             if (m_sizeLoc == NO_SIZE_IN_SIG)
                 return;
 
-            //If we have fewer than 128 arguments and we haven't been told to copy the
-            //array, we can just set the appropriate bit and return.
+            // If we have fewer than 128 arguments and we haven't been told to copy the
+            // array, we can just set the appropriate bit and return.
             if (m_argCount < 0x80 && !forceCopy)
             {
                 m_signature[m_sizeLoc] = (byte)m_argCount;
                 return;
             }
 
-            //We need to have more bytes for the size.  Figure out how many bytes here.
-            //Since we need to copy anyway, we're just going to take the cost of doing a
-            //new allocation.
+            // We need to have more bytes for the size.  Figure out how many bytes here.
+            // Since we need to copy anyway, we're just going to take the cost of doing a
+            // new allocation.
             if (m_argCount < 0x80)
             {
                 newSigSize = 1;
@@ -644,17 +644,17 @@ namespace System.Reflection.Emit
                 newSigSize = 4;
             }
 
-            //Allocate the new array.
+            // Allocate the new array.
             temp = new byte[m_currSig + newSigSize - 1];
 
-            //Copy the calling convention.  The calling convention is always just one byte
-            //so we just copy that byte.  Then copy the rest of the array, shifting everything
-            //to make room for the new number of elements.
+            // Copy the calling convention.  The calling convention is always just one byte
+            // so we just copy that byte.  Then copy the rest of the array, shifting everything
+            // to make room for the new number of elements.
             temp[0] = m_signature[0];
             Buffer.BlockCopy(m_signature, m_sizeLoc + 1, temp, m_sizeLoc + newSigSize, currSigHolder - (m_sizeLoc + 1));
             m_signature = temp;
 
-            //Use the AddData method to add the number of elements appropriately compressed.
+            // Use the AddData method to add the number of elements appropriately compressed.
             m_currSig = m_sizeLoc;
             AddData(m_argCount);
             m_currSig = currSigHolder + (newSigSize - 1);
@@ -709,7 +709,7 @@ namespace System.Reflection.Emit
             int currSigLength = m_currSig;
             int newSigSize = currSigLength;
 
-            //Allocate the new array.
+            // Allocate the new array.
             if (argCount < 0x7F)
                 newSigSize += 1;
             else if (argCount < 0x3FFF)

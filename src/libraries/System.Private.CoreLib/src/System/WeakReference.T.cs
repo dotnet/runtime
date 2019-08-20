@@ -24,7 +24,7 @@ namespace System
         {
         }
 
-        //Creates a new WeakReference that keeps track of target.
+        // Creates a new WeakReference that keeps track of target.
         //
         public WeakReference(T target, bool trackResurrection)
         {

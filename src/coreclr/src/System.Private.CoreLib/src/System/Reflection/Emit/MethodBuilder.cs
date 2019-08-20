@@ -130,7 +130,7 @@ namespace System.Reflection.Emit
             m_parameterTypeRequiredCustomModifiers = parameterTypeRequiredCustomModifiers;
             m_parameterTypeOptionalCustomModifiers = parameterTypeOptionalCustomModifiers;
 
-            //            m_signature = SignatureHelper.GetMethodSigHelper(mod, callingConvention,
+            // m_signature = SignatureHelper.GetMethodSigHelper(mod, callingConvention,
             //                returnType, returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers,
             //                parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers);
 
@@ -210,7 +210,7 @@ namespace System.Reflection.Emit
 
             m_mdMethodFixups = il.GetTokenFixups();
 
-            //Okay, now the fun part.  Calculate all of the exceptions.
+            // Okay, now the fun part.  Calculate all of the exceptions.
             excp = il.GetExceptions()!;
             int numExceptions = CalculateNumberOfExceptions(excp);
             if (numExceptions > 0)
@@ -895,7 +895,7 @@ namespace System.Reflection.Emit
         // and namespace information with a given active lexical scope.
 
         #region Internal Data Members
-        internal string[] m_strName = null!;  //All these arrys initialized in helper method
+        internal string[] m_strName = null!;  // All these arrys initialized in helper method
         internal byte[][] m_ubSignature = null!;
         internal int[] m_iLocalSlot = null!;
         internal int[] m_iStartOffset = null!;

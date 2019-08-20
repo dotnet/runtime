@@ -36,7 +36,7 @@ namespace System.Globalization
         {
             short[] rawData = new short[]
             {
-                //These data is taken from Tables/Excel/UmAlQura.xls please make sure that the two places are in sync
+                // These data are taken from Tables/Excel/UmAlQura.xls please make sure that the two places are in sync
                 /*  DaysPerM     GY      GM     GD      D1   D2   D3   D4   D5   D6   D7   D8   D9   D10  D11  D12
                 1318*/0x02EA,    1900,     4,    30, /* 0    1    0    1    0    1    1    1    0    1    0    0    4/30/1900
                 1319*/0x06E9,    1901,     4,    19, /* 1    0    0    1    0    1    1    1    0    1    1    0    4/19/1901
@@ -345,7 +345,7 @@ namespace System.Globalization
             int index = (int)((time.Ticks - s_minDate.Ticks) / Calendar.TicksPerDay) / 355;
             do
             {
-            } while (time.CompareTo(s_hijriYearInfo[++index].GregorianDate) > 0); //while greater
+            } while (time.CompareTo(s_hijriYearInfo[++index].GregorianDate) > 0); // while greater
 
             if (time.CompareTo(s_hijriYearInfo[index].GregorianDate) != 0)
             {
