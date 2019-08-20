@@ -38,6 +38,7 @@ namespace System.Diagnostics.Tracing
             _max = double.NegativeInfinity;
 
             InitializeBuffer();
+            Publish();
         }
 
         /// <summary>

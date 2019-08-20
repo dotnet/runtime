@@ -30,6 +30,7 @@ namespace System.Diagnostics.Tracing
         /// <param name="eventSource">The event source.</param>
         public IncrementingEventCounter(string name, EventSource eventSource) : base(name, eventSource)
         {
+            Publish();
         }
 
         /// <summary>
