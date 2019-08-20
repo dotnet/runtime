@@ -62,7 +62,7 @@ MONO_VERSION_BUILD=`echo $VERSION | cut -d . -f 3`
 # This line is parsed by tools besides autoconf, such as msvc/mono.winconfig.targets.
 # It should remain in the format they expect.
 #
-MONO_CORLIB_VERSION=2cfaeda3-94a9-44e5-8fcb-51979a3398c9
+MONO_CORLIB_VERSION=69f9feb5-e6ef-4d90-8722-17346c85efb6
 
 #
 # Put a quoted #define in config.h.
@@ -692,12 +692,12 @@ AC_CHECK_HEADERS(linux/serial.h)
 case "$host" in
 	# Use bundled zlib on Windows to be sure it is static.
 	*-mingw*|*-cygwin*)
-		have_zlib=no
+		have_sys_zlib=no
 		zlib_msg="bundled zlib"
 		;;
-	default)
-		AC_CHECK_HEADER(zlib.h, [have_zlib=yes], [have_zlib=no])
-		if test x$have_zlib = xyes; then
+	*)
+		AC_CHECK_HEADER(zlib.h, [have_sys_zlib=yes], [have_sys_zlib=no])
+		if test x$have_sys_zlib = xyes; then
 			AC_TRY_COMPILE([#include <zlib.h>], [
 				#if defined(ZLIB_VERNUM) && (ZLIB_VERNUM >= 0x1230)
 				#else
@@ -706,12 +706,16 @@ case "$host" in
 			],[
 				AC_MSG_RESULT(Using system zlib)
 				zlib_msg="system zlib"
-				AC_DEFINE(HAVE_SYS_ZLIB,1,[Have system zlib])
+				have_sys_zlib=yes
 			],[
-				AC_MSG_RESULT(Using embedded zlib)
-				have_zlib=no
+				AC_MSG_RESULT(zlib too old, using embedded zlib)
+				have_sys_zlib=no
 				zlib_msg="bundled zlib"
 			])
+		else
+			AC_MSG_RESULT(zlib not found, using embedded zlib)
+			have_sys_zlib=no
+			zlib_msg="bundled zlib"
 		fi
 		;;
 esac
@@ -719,13 +723,19 @@ esac
 AC_ARG_WITH(static-zlib, [  --with-static-zlib=PATH    use the specified static zlib instead of -lz],[STATIC_ZLIB_PATH=$with_static_zlib],[STATIC_ZLIB_PATH=])
 if test "x$STATIC_ZLIB_PATH" != "x"; then
 	have_static_zlib=yes
+	have_sys_zlib=no
+	zlib_msg="static zlib from $STATIC_ZLIB_PATH"
 	AC_SUBST(STATIC_ZLIB_PATH)
 fi
 
 AM_CONDITIONAL(HAVE_STATIC_ZLIB, test x$have_static_zlib = xyes)
-AM_CONDITIONAL(HAVE_ZLIB, test x$have_zlib = xyes)
-AC_DEFINE(HAVE_ZLIB,1,[Have system zlib])
-
+AM_CONDITIONAL(HAVE_SYS_ZLIB, test x$have_sys_zlib = xyes)
+if test x$have_static_zlib = xyes; then
+	AC_DEFINE(HAVE_STATIC_ZLIB, 1, [Use static zlib])
+fi
+if test x$have_sys_zlib = xyes; then
+	AC_DEFINE(HAVE_SYS_ZLIB, 1, [Use OS-provided zlib])
+fi
 # for mono/metadata/debug-symfile.c
 AC_CHECK_HEADERS(elf.h)
 
@@ -1351,7 +1361,6 @@ elif test x$with_runtime_preset = xnetcore; then
    mono_feature_disable_com='yes'
    mono_feature_disable_gac='yes'
    mono_feature_disable_perfcounters='yes'
-   mono_feature_disable_sockets='yes'
    disable_mono_native=yes
    support_boehm=no
 elif test x$with_runtime_preset = xnet_4_x; then

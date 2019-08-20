@@ -36,3 +36,13 @@ to
 ## Running with the mono runtime executable
 
 DYLD_LIBRARY_PATH=shared/Microsoft.NETCore.App/<dotnet version> MONO_PATH=shared/Microsoft.NETCore.App/<dotnet version> ../mono/mini/mono-sgen --assembly-loader=strict sample/HelloWorld/bin/netcoreapp3.0/HelloWorld.dll
+
+## How to set up managed debugging
+
+Change the DebugType to full in your .csproj
+	<DebugType>full</DebugType>
+Enable debugger agent using the environment variable MONO_ENV_OPTIONS
+	export MONO_ENV_OPTIONS="--debug --debugger-agent=transport=dt_socket,address=127.0.0.1:1235,server=y,suspend=y"
+Run 
+	./dotnet --fx-version "5.0.0-alpha1.19409.2" sample/HelloWorld/bin/netcoreapp3.0/HelloWorld.dll
+

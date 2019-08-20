@@ -57,6 +57,16 @@ libmonodismain_a_SOURCES =	\
 
 monodis_SOURCES =
 
+if HAVE_SYS_ZLIB
+Z_LIBS= -lz
+else
+if HAVE_STATIC_ZLIB
+Z_LIBS=$(STATIC_ZLIB_PATH)
+else
+Z_LIBS=
+endif
+endif
+
 monodis_LDADD = 			\
 	libmonodismain_a-dump.$(OBJEXT)	\
 	libmonodismain_a-main.$(OBJEXT)	\
@@ -65,7 +75,8 @@ monodis_LDADD = 			\
 	$(runtime_lib)			\
 	$(LLVM_LIBS)			\
 	$(LLVM_LDFLAGS)			\
-	$(glib_libs)
+	$(glib_libs)			\
+	$(Z_LIBS)
 
 if HOST_DARWIN
 monodis_LDFLAGS=-framework CoreFoundation -framework Foundation

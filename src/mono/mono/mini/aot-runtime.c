@@ -2093,7 +2093,7 @@ if (container_assm_name && !container_amodule) {
 	MonoImageOpenStatus status = MONO_IMAGE_OK;
 	MonoAssemblyOpenRequest req;
 	gchar *dll = g_strdup_printf (		"%s.dll", local_ref);
-	mono_assembly_request_prepare (&req.request, sizeof (req), MONO_ASMCTX_DEFAULT, alc);
+	mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, alc);
 	MonoAssembly *assm = mono_assembly_request_open (dll, &req, &status);
 	if (!assm) {
 		gchar *exe = g_strdup_printf ("%s.exe", local_ref);
@@ -3996,8 +3996,8 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		ji->data.index = decode_value (p, &p);
 		break;
 	default:
-		g_warning ("unhandled type %d", ji->type);
-		g_assert_not_reached ();
+		g_error ("unhandled type %d", ji->type);
+		break;
 	}
 
 	*endbuf = p;

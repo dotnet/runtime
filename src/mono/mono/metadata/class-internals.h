@@ -1023,6 +1023,11 @@ GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL (appdomain_unloaded_exception)
 GENERATE_GET_CLASS_WITH_CACHE_DECL (valuetype)
 
 GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL(handleref)
+
+#ifdef ENABLE_NETCORE
+GENERATE_GET_CLASS_WITH_CACHE_DECL (assembly_load_context)
+#endif
+
 /* If you need a MonoType, use one of the mono_get_*_type () functions in class-inlines.h */
 extern MonoDefaults mono_defaults;
 

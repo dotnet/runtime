@@ -5357,6 +5357,8 @@ mono_arch_patch_code (MonoCompile *cfg, MonoMethod *method, MonoDomain *domain,
 				target = S390_RELATIVE(target, ip);
 				ip += 2;
 				s390_patch_rel (ip, (guint64) target);
+			case MONO_PATCH_INFO_NONE:
+				break;
 		}
 	}
 }

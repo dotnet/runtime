@@ -100,7 +100,7 @@ endif
 if HAVE_STATIC_ZLIB
 zlib_dep = $(STATIC_ZLIB_PATH)
 else
-if HAVE_ZLIB
+if HAVE_SYS_ZLIB
 # The log profiler uses zlib for output compression when available.
 zlib_dep = -lz
 else

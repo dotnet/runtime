@@ -908,7 +908,7 @@ interp_generate_bie_throw (TransformData *td)
 {
 	MonoJitICallInfo *info = &mono_get_jit_icall_info ()->mono_throw_bad_image;
 
-	interp_add_ins (td, MINT_ICALL_PP_V);
+	interp_add_ins (td, MINT_ICALL_V_V);
 	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
 }
 
@@ -1928,7 +1928,6 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			 * the InterpMethod pointer. FIXME
 			 */
 			native = csignature->pinvoke || method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE;
-			--td->sp;
 
 			target_method = NULL;
 		} else {
@@ -2119,6 +2118,21 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	if (op == -1 && td->inlined_method)
 		return FALSE;
 
+	/* We need to convert delegate invoke to a indirect call on the interp_invoke_impl field */
+	if (target_method && m_class_get_parent (target_method->klass) == mono_defaults.multicastdelegate_class) {
+		const char *name = target_method->name;
+		if (*name == 'I' && (strcmp (name, "Invoke") == 0)) {
+			calli = TRUE;
+			interp_add_ins (td, MINT_LD_DELEGATE_INVOKE_IMPL);
+			td->last_ins->data [0] = csignature->param_count + 1;
+			PUSH_SIMPLE_TYPE (td, STACK_TYPE_I);
+		}
+	}
+
+	/* Pop the function pointer */
+	if (calli)
+		--td->sp;
+
 	td->sp -= csignature->param_count + !!csignature->hasthis;
 	for (i = 0; i < csignature->param_count; ++i) {
 		if (td->sp [i + !!csignature->hasthis].type == STACK_TYPE_VT) {
@@ -2151,16 +2165,6 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		PUSH_TYPE(td, stack_type[mt], klass);
 	} else
 		is_void = TRUE;
-
-	/* We need to convert delegate invoke to a indirect call on the interp_invoke_impl field */
-	if (target_method && m_class_get_parent (target_method->klass) == mono_defaults.multicastdelegate_class) {
-		const char *name = target_method->name;
-		if (*name == 'I' && (strcmp (name, "Invoke") == 0)) {
-			calli = TRUE;
-			interp_add_ins (td, MINT_LD_DELEGATE_INVOKE_IMPL);
-			td->last_ins->data [0] = csignature->param_count + 1;
-		}
-	}
 
 	if (op >= 0) {
 		interp_add_ins (td, op);
@@ -5764,12 +5768,14 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					interp_add_ins (td, MINT_INITOBJ);
 					i32 = mono_class_value_size (klass, NULL);
 					WRITE32_INS (td->last_ins, 0, &i32);
+					--td->sp;
 				} else {
 					interp_add_ins (td, MINT_LDNULL);
+					PUSH_TYPE(td, STACK_TYPE_O, NULL);
 					interp_add_ins (td, MINT_STIND_REF);
+					td->sp -= 2;
 				}
 				td->ip += 5;
-				--td->sp;
 				break;
 			case CEE_CPBLK:
 				CHECK_STACK(td, 3);

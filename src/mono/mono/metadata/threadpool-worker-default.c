@@ -30,7 +30,6 @@
 #include <mono/utils/mono-proclib.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-time.h>
-#include <mono/utils/mono-rand.h>
 #include <mono/utils/refcount.h>
 #include <mono/utils/w32api.h>
 #include <mono/utils/mono-complex.h> // This header has defines to muck with names, so put it late.
@@ -104,7 +103,6 @@ typedef struct {
 	gdouble *thread_counts;
 
 	guint32 current_sample_interval;
-	gpointer random_interval_generator;
 
 	gint32 accumulated_completion_count;
 	gdouble accumulated_sample_duration;
@@ -194,19 +192,17 @@ COUNTER_READ (void)
 	return counter;
 }
 
-static gpointer
-rand_create (void)
-{
-	mono_rand_open ();
-	return mono_rand_init (NULL, 0);
-}
-
 static guint32
-rand_next (gpointer *handle, guint32 min, guint32 max)
+rand_next (guint32 min, guint32 max)
 {
 	ERROR_DECL (error);
-	guint32 val;
-	mono_rand_try_get_uint32 (handle, &val, min, max, error);
+
+#ifdef HOST_WIN32
+	guint32 val = (rand () % (max - min)) + min;
+#else
+	guint32 val = (random () % (max - min)) + min;
+#endif
+
 	// FIXME handle error
 	mono_error_assert_ok (error);
 	return val;
@@ -245,8 +241,6 @@ mono_threadpool_worker_init (MonoThreadPoolWorkerCallback callback)
 	worker.heuristic_adjustment_interval = 10;
 	mono_coop_mutex_init (&worker.heuristic_lock);
 
-	mono_rand_open ();
-
 	hc = &worker.heuristic_hill_climbing;
 
 	hc->wave_period = HILL_CLIMBING_WAVE_PERIOD;
@@ -271,8 +265,7 @@ mono_threadpool_worker_init (MonoThreadPoolWorkerCallback callback)
 	hc->accumulated_sample_duration = 0;
 	hc->samples = g_new0 (gdouble, hc->samples_to_measure);
 	hc->thread_counts = g_new0 (gdouble, hc->samples_to_measure);
-	hc->random_interval_generator = rand_create ();
-	hc->current_sample_interval = rand_next (&hc->random_interval_generator, hc->sample_interval_low, hc->sample_interval_high);
+	hc->current_sample_interval = rand_next (hc->sample_interval_low, hc->sample_interval_high);
 
 	if (!(threads_per_cpu_env = g_getenv ("MONO_THREADS_PER_CPU")))
 		threads_per_cpu = 1;
@@ -368,13 +361,7 @@ worker_park (void)
 		GUINT_TO_POINTER (MONO_NATIVE_THREAD_ID_TO_UINT (mono_native_thread_id_get ())));
 
 	if (!mono_runtime_is_shutting_down ()) {
-		static gpointer rand_handle = NULL;
 		ThreadPoolWorkerCounter counter;
-
-		if (!rand_handle) {
-			rand_handle = rand_create ();
-			g_assert (rand_handle);
-		}
 
 		COUNTER_ATOMIC (counter, {
 			counter._.working --;
@@ -388,7 +375,7 @@ worker_park (void)
 			new_ = old + 1;
 		} while (mono_atomic_cas_i32 (&worker.parked_threads_count, new_, old) != old);
 
-		switch (mono_coop_sem_timedwait (&worker.parked_threads_sem, rand_next (&rand_handle, 5 * 1000, 60 * 1000), MONO_SEM_FLAGS_ALERTABLE)) {
+		switch (mono_coop_sem_timedwait (&worker.parked_threads_sem, rand_next (5 * 1000, 60 * 1000), MONO_SEM_FLAGS_ALERTABLE)) {
 		case MONO_SEM_TIMEDWAIT_RET_SUCCESS:
 			break;
 		case MONO_SEM_TIMEDWAIT_RET_ALERTED:
@@ -812,7 +799,7 @@ hill_climbing_change_thread_count (gint16 new_thread_count, ThreadPoolHeuristicS
 		GUINT_TO_POINTER (MONO_NATIVE_THREAD_ID_TO_UINT (mono_native_thread_id_get ())), new_thread_count);
 
 	hc->last_thread_count = new_thread_count;
-	hc->current_sample_interval = rand_next (&hc->random_interval_generator, hc->sample_interval_low, hc->sample_interval_high);
+	hc->current_sample_interval = rand_next (hc->sample_interval_low, hc->sample_interval_high);
 	hc->elapsed_since_last_change = 0;
 	hc->completions_since_last_change = 0;
 }

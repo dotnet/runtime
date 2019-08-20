@@ -4181,6 +4181,7 @@ mini_get_rgctx_entry_slot (MonoJumpInfoRgctxEntry *entry)
 	}
 	default:
 		g_assert_not_reached ();
+	case MONO_PATCH_INFO_NONE:
 		break;
 	}
 

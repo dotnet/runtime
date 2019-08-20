@@ -214,14 +214,7 @@ helper_thread (void *arg)
 {
 	mono_thread_attach (mono_get_root_domain ());
 
-	MonoInternalThread *internal = mono_thread_internal_current ();
-
-	ERROR_DECL (error);
-
-	MonoString *name_str = mono_string_new_checked (mono_get_root_domain (), "AOT Profiler Helper", error);
-	mono_error_assert_ok (error);
-	mono_thread_set_name_internal (internal, name_str, MonoSetThreadNameFlag_None, error);
-	mono_error_assert_ok (error);
+	mono_thread_set_name_constant_ignore_error (mono_thread_internal_current (), "AOT Profiler Helper", MonoSetThreadNameFlag_None);
 
 	mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NO_GC | MONO_THREAD_INFO_FLAGS_NO_SAMPLE);
 

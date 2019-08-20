@@ -6338,6 +6338,9 @@ clear_runtime_invoke_method_cache (GHashTable *table, MonoMethod *method)
 void
 mono_marshal_free_dynamic_wrappers (MonoMethod *method)
 {
+	if (!method)
+		return;
+
 	MonoImage *image = get_method_image (method);
 
 	g_assert (method_is_dynamic (method));

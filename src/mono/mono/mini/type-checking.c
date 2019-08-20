@@ -509,8 +509,8 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context
 		if (!m_class_get_rank (klass) && !cfg->compile_aot && !(cfg->opt & MONO_OPT_SHARED) && mono_class_is_sealed (klass)) {
 			/* the remoting code is broken, access the class for now */
 			if (0) { /*FIXME what exactly is broken? This change refers to r39380 from 2005 and mention some remoting fixes were due.*/
-				MonoVTable *vt = mono_class_vtable_checked (cfg->domain, klass, &cfg->error);
-				if (!is_ok (&cfg->error)) {
+				MonoVTable *vt = mono_class_vtable_checked (cfg->domain, klass, cfg->error);
+				if (!is_ok (cfg->error)) {
 					mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
 					return NULL;
 				}
@@ -730,8 +730,8 @@ handle_isinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context_us
 				g_assert (!context_used);
 				/* the remoting code is broken, access the class for now */
 				if (0) {/*FIXME what exactly is broken? This change refers to r39380 from 2005 and mention some remoting fixes were due.*/
-					MonoVTable *vt = mono_class_vtable_checked (cfg->domain, klass, &cfg->error);
-					if (!is_ok (&cfg->error)) {
+					MonoVTable *vt = mono_class_vtable_checked (cfg->domain, klass, cfg->error);
+					if (!is_ok (cfg->error)) {
 						mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
 						return NULL;
 					}

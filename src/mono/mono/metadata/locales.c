@@ -303,13 +303,15 @@ ves_icall_System_Globalization_CultureData_fill_number_data (gint32 number_index
 static MonoBoolean
 construct_culture (MonoCultureInfoHandle this_obj, const CultureInfoEntry *ci, MonoError *error)
 {
+	MonoBoolean result = FALSE;
+	HANDLE_FUNCTION_ENTER ();
 	MonoDomain *domain = mono_domain_get ();
 
 	mono_handle_setval (this_obj, lcid, ci->lcid);
 
 #define SET_STR_FIELD(obj,field,domain,expr,error) do {					\
 	MonoString *_str = mono_string_new_checked ((domain), (expr), (error));	\
-	return_val_if_nok (error, FALSE);										\
+	goto_if_nok (error, leave);										\
 	MONO_HANDLE_SETRAW ((obj), field, _str);	\
 	} while (0)
 
@@ -326,15 +328,17 @@ construct_culture (MonoCultureInfoHandle this_obj, const CultureInfoEntry *ci, M
 
 #undef SET_STR_FIELD
 
-	MonoArrayHandle native_calendar_names = create_names_array_idx (ci->native_calendar_names, NUM_CALENDARS, error);
-	return_val_if_nok (error, FALSE);
+	MonoArrayHandle native_calendar_names; native_calendar_names = create_names_array_idx (ci->native_calendar_names, NUM_CALENDARS, error);
+	goto_if_nok (error, leave);
 	mono_handle_setref (this_obj, native_calendar_names, native_calendar_names);
 	mono_handle_setval (this_obj, parent_lcid, ci->parent_lcid);
 	mono_handle_setval (this_obj, datetime_index, ci->datetime_format_index);
 	mono_handle_setval (this_obj, number_index, ci->number_format_index);
 	mono_handle_setval (this_obj, calendar_type, ci->calendar_type);
 	mono_handle_setval (this_obj, text_info_data, &ci->text_info);
-	return TRUE;
+	result = TRUE;
+leave:
+	HANDLE_FUNCTION_RETURN_VAL (result);
 }
 
 static MonoBoolean

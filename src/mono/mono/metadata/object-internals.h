@@ -555,6 +555,13 @@ typedef enum {
 
 struct _MonoThreadInfo;
 
+typedef struct MonoThreadName {
+	char* volatile chars;      // null check outside of lock
+	gsize volatile generation; // read outside of lock
+	gint32 free;
+	gint32 length;
+} MonoThreadName;
+
 void
 mono_gstring_append_thread_name (GString*, MonoInternalThread*);
 
@@ -573,8 +580,7 @@ struct _MonoInternalThread {
 	volatile int lock_thread_id; /* to be used as the pre-shifted thread id in thin locks. Used for appdomain_ref push/pop */
 	MonoThreadHandle *handle;
 	gpointer native_handle;
-	gunichar2  *name;
-	guint32	    name_len;
+	MonoThreadName name;
 	guint32	    state;      /* must be accessed while longlived->synch_cs is locked */
 	MonoException *abort_exc;
 	int abort_state_handle;
@@ -2223,7 +2229,7 @@ MonoArray*
 ves_icall_CustomAttributeBuilder_GetBlob (MonoReflectionAssembly *assembly, MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *propValues, MonoArray *fields, MonoArray* fieldValues);
 
 MonoAssembly*
-mono_try_assembly_resolve_handle (MonoDomain *domain, MonoStringHandle fname, MonoAssembly *requesting, gboolean refonly, MonoError *error);
+mono_try_assembly_resolve_handle (MonoAssemblyLoadContext *alc, MonoStringHandle fname, MonoAssembly *requesting, gboolean refonly, MonoError *error);
 
 gboolean
 mono_runtime_object_init_handle (MonoObjectHandle this_obj, MonoError *error);

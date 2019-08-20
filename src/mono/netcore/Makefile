@@ -89,6 +89,10 @@ run-sample: prepare
 	$(DOTNET) build sample/HelloWorld
 	MONO_ENV_OPTIONS="--debug" COMPlus_DebugWriteToStdErr=1 ./dotnet --fx-version "$(NETCOREAPP_VERSION)" sample/HelloWorld/bin/netcoreapp3.0/HelloWorld.dll
 
+run-sample-dbg: prepare
+	$(DOTNET) build sample/HelloWorld
+	MONO_ENV_OPTIONS="--debug --debugger-agent=transport=dt_socket,address=127.0.0.1:1235,server=y,suspend=y" COMPlus_DebugWriteToStdErr=1 ./dotnet --fx-version "$(NETCOREAPP_VERSION)" sample/HelloWorld/bin/netcoreapp3.0/HelloWorld.dll
+
 run-sample-coreclr:
 	cd sample/HelloWorld && $(DOTNET) run
 
@@ -104,6 +108,23 @@ patch-local-dotnet: prepare
 	cp ../mono/mini/.libs/libmonosgen-2.0$(PLATFORM_AOT_SUFFIX) ../.dotnet/shared/Microsoft.NETCore.App/$(BOOTSTRAP_RUNTIME)/$(PLATFORM_AOT_PREFIX)coreclr$(PLATFORM_AOT_SUFFIX)
 	cp System.Private.CoreLib/bin/$(COREARCH)/System.Private.CoreLib.dll ../.dotnet/shared/Microsoft.NETCore.App/$(BOOTSTRAP_RUNTIME)
 	cp System.Private.CoreLib/bin/$(COREARCH)/System.Private.CoreLib.pdb ../.dotnet/shared/Microsoft.NETCore.App/$(BOOTSTRAP_RUNTIME)
+
+# Precompile BCL libs in $(DOTNET) using LLVM (requires `--enable-llvm` build)
+patch-local-dotnet-aot-llvm: patch-local-dotnet
+	for assembly in ../.dotnet/shared/Microsoft.NETCore.App/$(BOOTSTRAP_RUNTIME)/*.dll; do \
+		echo "[AOT] $$assembly"; \
+		PATH="../llvm/usr/bin/:$(PATH)" \
+		MONO_ENV_OPTIONS="--aot=llvm,llvmllc=\"-mcpu=native\"" \
+		$(DOTNET) $$assembly ; \
+	done; \
+
+# run HelloWorld using --aot=llvm (requires `--enable-llvm` build)
+run-sample-local-dotnet-llvm: patch-local-dotnet
+	$(DOTNET) build -c Release sample/HelloWorld
+	PATH="../llvm/usr/bin/:$(PATH)" \
+	MONO_ENV_OPTIONS="--aot=llvm,llvmllc=\"-mcpu=native\"" \
+	$(DOTNET) sample/HelloWorld/bin/netcoreapp3.0/HelloWorld.dll
+	$(DOTNET) sample/HelloWorld/bin/netcoreapp3.0/HelloWorld.dll
 
 # COREHOST_TRACE=1 
 SHAREDRUNTIME := shared/Microsoft.NETCore.App/$(NETCOREAPP_VERSION)

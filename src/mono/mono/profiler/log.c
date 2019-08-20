@@ -3144,7 +3144,7 @@ new_filename (const char* filename)
 }
 
 static MonoProfilerThread *
-profiler_thread_begin (const char *name, gboolean send)
+profiler_thread_begin_function (const char *name8, const gunichar2* name16, size_t name_length, gboolean send)
 {
 	mono_thread_info_attach ();
 	MonoProfilerThread *thread = init_thread (FALSE);
@@ -3160,12 +3160,7 @@ profiler_thread_begin (const char *name, gboolean send)
 	 */
 	internal->flags |= MONO_THREAD_FLAG_DONT_MANAGE;
 
-	ERROR_DECL (error);
-
-	MonoString *name_str = mono_string_new_checked (mono_get_root_domain (), name, error);
-	mono_error_assert_ok (error);
-	mono_thread_set_name_internal (internal, name_str, MonoSetThreadNameFlag_None, error);
-	mono_error_assert_ok (error);
+	mono_thread_set_name (internal, name8, name_length, name16, MonoSetThreadNameFlag_Constant, NULL);
 
 	mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NO_GC | MONO_THREAD_INFO_FLAGS_NO_SAMPLE);
 
@@ -3179,6 +3174,9 @@ profiler_thread_begin (const char *name, gboolean send)
 
 	return thread;
 }
+
+#define profiler_thread_begin(name, send)							\
+	profiler_thread_begin_function (name, MONO_THREAD_NAME_WINDOWS_CONSTANT (name), G_N_ELEMENTS (name) - 1, (send))
 
 static void
 profiler_thread_end (MonoProfilerThread *thread, MonoOSEvent *event, gboolean send)

@@ -344,16 +344,21 @@ typedef enum {
     MonoSetThreadNameFlag_None      = 0x0000,
     MonoSetThreadNameFlag_Permanent = 0x0001,
     MonoSetThreadNameFlag_Reset     = 0x0002,
-    //MonoSetThreadNameFlag_Constant  = 0x0004,
+    MonoSetThreadNameFlag_Constant  = 0x0004,
 } MonoSetThreadNameFlags;
 
 G_ENUM_FUNCTIONS (MonoSetThreadNameFlags)
 
 MONO_PROFILER_API
-void
-mono_thread_set_name_internal (MonoInternalThread *thread,
-			       MonoString *name,
-			       MonoSetThreadNameFlags flags, MonoError *error);
+gsize
+mono_thread_set_name (MonoInternalThread *thread,
+		      const char* name8, size_t name8_length, const gunichar2* name16,
+		      MonoSetThreadNameFlags flags, MonoError *error);
+
+#define mono_thread_set_name_constant_ignore_error(thread, name, flags) \
+	mono_thread_set_name ((thread), name, G_N_ELEMENTS (name) - 1,  \
+		MONO_THREAD_NAME_WINDOWS_CONSTANT (name),               \
+		(flags) | MonoSetThreadNameFlag_Constant, NULL)
 
 void mono_thread_suspend_all_other_threads (void);
 gboolean mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout);

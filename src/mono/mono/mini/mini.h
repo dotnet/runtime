@@ -1570,7 +1570,8 @@ typedef struct {
 	guint32 gc_map_size;
 
 	/* Error handling */
-	MonoError error;
+	MonoError* error;
+	MonoErrorInternal error_value;
 
 	/* pointer to context datastructure used for graph dumping */
 	MonoGraphDumper *gdump_ctx;

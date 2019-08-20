@@ -2194,6 +2194,9 @@ mono_get_method_constrained_checked (MonoImage *image, guint32 token, MonoClass 
 void
 mono_free_method  (MonoMethod *method)
 {
+	if (!method)
+		return;
+
 	MONO_PROFILER_RAISE (method_free, (method));
 	
 	/* FIXME: This hack will go away when the profiler will support freeing methods */
