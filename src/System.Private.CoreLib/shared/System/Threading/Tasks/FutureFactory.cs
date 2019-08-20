@@ -1628,7 +1628,6 @@ namespace System.Threading.Tasks
             if (continuationFunction != null)
             {
                 return starter.ContinueWith<TResult>(
-                   // use a cached delegate
                    GenericDelegateCache<TAntecedentResult, TResult>.CWAllFuncDelegate,
                    continuationFunction, scheduler, cancellationToken, continuationOptions);
             }
@@ -1637,7 +1636,6 @@ namespace System.Threading.Tasks
                 Debug.Assert(continuationAction != null);
 
                 return starter.ContinueWith<TResult>(
-                   // use a cached delegate
                    GenericDelegateCache<TAntecedentResult, TResult>.CWAllActionDelegate,
                    continuationAction, scheduler, cancellationToken, continuationOptions);
             }
@@ -1674,9 +1672,6 @@ namespace System.Threading.Tasks
             if (continuationFunction != null)
             {
                 return starter.ContinueWith(
-                    // the following delegate avoids closure capture as much as possible
-                    // completedTasks.Result == tasksCopy;
-                    // state == continuationFunction
                     (completedTasks, state) =>
                     {
                         completedTasks.NotifyDebuggerOfWaitCompletionIfNecessary();
@@ -1689,9 +1684,6 @@ namespace System.Threading.Tasks
             {
                 Debug.Assert(continuationAction != null);
                 return starter.ContinueWith<TResult>(
-                   // the following delegate avoids closure capture as much as possible
-                   // completedTasks.Result == tasksCopy;
-                   // state == continuationAction
                    (completedTasks, state) =>
                    {
                        completedTasks.NotifyDebuggerOfWaitCompletionIfNecessary();
@@ -2002,8 +1994,6 @@ namespace System.Threading.Tasks
             if (continuationFunction != null)
             {
                 return starter.ContinueWith(
-                     // the following delegate avoids closure capture as much as possible
-                     // completedTask.Result is the winning task; state == continuationAction
                      (completedTask, state) =>
                      {
                          Debug.Assert(state is Func<Task, TResult>);
@@ -2015,8 +2005,6 @@ namespace System.Threading.Tasks
             {
                 Debug.Assert(continuationAction != null);
                 return starter.ContinueWith<TResult>(
-                    // the following delegate avoids closure capture as much as possible
-                    // completedTask.Result is the winning task; state == continuationAction
                     (completedTask, state) =>
                     {
                         Debug.Assert(state is Action<Task>);
@@ -2057,7 +2045,6 @@ namespace System.Threading.Tasks
             if (continuationFunction != null)
             {
                 return starter.ContinueWith<TResult>(
-                    // Use a cached delegate
                     GenericDelegateCache<TAntecedentResult, TResult>.CWAnyFuncDelegate,
                     continuationFunction, scheduler, cancellationToken, continuationOptions);
             }
@@ -2065,7 +2052,6 @@ namespace System.Threading.Tasks
             {
                 Debug.Assert(continuationAction != null);
                 return starter.ContinueWith<TResult>(
-                    // Use a cached delegate
                     GenericDelegateCache<TAntecedentResult, TResult>.CWAnyActionDelegate,
                     continuationAction, scheduler, cancellationToken, continuationOptions);
             }
