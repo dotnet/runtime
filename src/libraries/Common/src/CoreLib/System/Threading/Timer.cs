@@ -72,11 +72,11 @@ namespace System.Threading
             {
                 long elapsed = TickCount64 - _currentTimerStartTicks;
                 if (elapsed >= _currentTimerDuration)
-                    return true; //the timer's about to fire
+                    return true; // the timer's about to fire
 
                 uint remainingDuration = _currentTimerDuration - (uint)elapsed;
                 if (actualDuration >= remainingDuration)
-                    return true; //the timer will fire earlier than this request
+                    return true; // the timer will fire earlier than this request
             }
 
             if (SetTimer(actualDuration))

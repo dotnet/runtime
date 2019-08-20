@@ -133,14 +133,11 @@ namespace System.Resources
         // 5) ResourceSet type name for this file (bytelength-prefixed UTF8 String)
         public static readonly int HeaderVersionNumber = 1;
 
-        //
-        //It would be better if we could use _neutralCulture instead of calling
-        //CultureInfo.InvariantCulture everywhere, but we run into problems with the .cctor.  CultureInfo
-        //initializes assembly, which initializes ResourceManager, which tries to get a CultureInfo which isn't
-        //there yet because CultureInfo's class initializer hasn't finished.  If we move SystemResMgr off of
-        //Assembly (or at least make it an internal property) we should be able to circumvent this problem.
-        //
-        //      private static CultureInfo _neutralCulture = null;
+        // It would be better if we could use a _neutralCulture instead of calling
+        // CultureInfo.InvariantCulture everywhere, but we run into problems with the .cctor.  CultureInfo
+        // initializes assembly, which initializes ResourceManager, which tries to get a CultureInfo which isn't
+        // there yet because CultureInfo's class initializer hasn't finished.  If we move SystemResMgr off of
+        // Assembly (or at least make it an internal property) we should be able to circumvent this problem.
 
         // This is our min required ResourceSet type.
         private static readonly Type s_minResourceSet = typeof(ResourceSet);

@@ -849,7 +849,7 @@ namespace System.Text
 
         public override int GetHashCode()
         {
-            //Not great distribution, but this is relatively unlikely to be used as the key in a hashtable.
+            // Not great distribution, but this is relatively unlikely to be used as the key in a hashtable.
             return this.EncoderFallback.GetHashCode() + this.DecoderFallback.GetHashCode() +
                    UTF8_CODEPAGE + (_emitUTF8Identifier ? 1 : 0);
         }

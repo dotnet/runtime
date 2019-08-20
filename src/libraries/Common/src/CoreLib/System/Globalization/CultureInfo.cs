@@ -101,7 +101,7 @@ namespace System.Globalization
         // Get the current user default culture. This one is almost always used, so we create it by default.
         private static volatile CultureInfo? s_userDefaultCulture;
 
-        //The culture used in the user interface. This is mostly used to load correct localized resources.
+        // The culture used in the user interface. This is mostly used to load correct localized resources.
         private static volatile CultureInfo? s_userDefaultUICulture;
 
         // WARNING: We allow diagnostic tools to directly inspect these three members (s_InvariantCultureInfo, s_DefaultThreadCurrentUICulture and s_DefaultThreadCurrentCulture)
@@ -697,7 +697,6 @@ namespace System.Globalization
         /// </summary>
         public virtual string ThreeLetterWindowsLanguageName => _cultureData.ThreeLetterWindowsLanguageName;
 
-        //  CompareInfo               Read-Only Property
         /// <summary>
         /// Gets the CompareInfo for this culture.
         /// </summary>

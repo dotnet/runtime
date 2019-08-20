@@ -294,7 +294,7 @@ namespace System.Globalization
         internal override CalendarId ID => CalendarId.CHINESELUNISOLAR;
 
         internal override CalendarId BaseCalendarID =>
-            //Use CAL_GREGORIAN just to get CurrentEraValue as 1 since we do not have data under the ID CAL_ChineseLunisolar yet
+            // Use CAL_GREGORIAN just to get CurrentEraValue as 1 since we do not have data under the ID CAL_ChineseLunisolar yet
             CalendarId.GREGORIAN;
 
         public override int[] Eras => new int[] { ChineseEra };

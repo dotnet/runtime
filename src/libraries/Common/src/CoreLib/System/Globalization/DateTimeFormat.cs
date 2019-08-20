@@ -120,7 +120,7 @@ namespace System
 
     */
 
-    //This class contains only static members and does not require the serializable attribute.
+    // This class contains only static members and does not require the serializable attribute.
     internal static
     class DateTimeFormat
     {
@@ -196,9 +196,9 @@ namespace System
 
             int digits = (int)(buffer + 16 - p);
 
-            //If the repeat count is greater than 0, we're trying
-            //to emulate the "00" format, so we have to prepend
-            //a zero if the string only has one character.
+            // If the repeat count is greater than 0, we're trying
+            // to emulate the "00" format, so we have to prepend
+            // a zero if the string only has one character.
             while ((digits < len) && (p > buffer))
             {
                 *--p = '0';

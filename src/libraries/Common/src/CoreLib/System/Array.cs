@@ -236,7 +236,7 @@ namespace System
 
         public long GetLongLength(int dimension)
         {
-            //This method should throw an IndexOufOfRangeException for compat if dimension < 0 or >= Rank
+            // This method should throw an IndexOufOfRangeException for compat if dimension < 0 or >= Rank
             return GetLength(dimension);
         }
 

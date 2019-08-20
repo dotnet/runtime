@@ -93,10 +93,10 @@ namespace System.Buffers.Text
 
             // The commented out code below is code that directly implements the logic described above.
 
-            //uint packedOriginalValues = (((uint)value & 0xF0U) << 4) + ((uint)value & 0x0FU);
-            //uint difference = 0x8989U - packedOriginalValues;
-            //uint add7Mask = (difference & 0x7070U) >> 4; // line YYY and ZZZ back up with the packed values
-            //uint packedResult = packedOriginalValues + add7Mask + 0x3030U /* ascii '0' */;
+            // uint packedOriginalValues = (((uint)value & 0xF0U) << 4) + ((uint)value & 0x0FU);
+            // uint difference = 0x8989U - packedOriginalValues;
+            // uint add7Mask = (difference & 0x7070U) >> 4; // line YYY and ZZZ back up with the packed values
+            // uint packedResult = packedOriginalValues + add7Mask + 0x3030U /* ascii '0' */;
 
             // The code below is equivalent to the commented out code above but has been tweaked
             // to allow codegen to make some extra optimizations.

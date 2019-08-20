@@ -1259,7 +1259,7 @@ namespace System.Threading
             i = 0;
             foreach (object item in workitems)
             {
-                if (i < result.Length) //just in case someone calls us while the queues are in motion
+                if (i < result.Length) // just in case someone calls us while the queues are in motion
                     result[i] = item;
                 i++;
             }
