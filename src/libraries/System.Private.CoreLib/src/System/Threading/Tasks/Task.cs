@@ -5881,8 +5881,7 @@ namespace System.Threading.Tasks
             /// <summary>The number of tasks remaining to complete.</summary>
             private int m_count;
 
-            internal WhenAllPromise(Task<T>[] tasks) :
-                base()
+            internal WhenAllPromise(Task<T>[] tasks)
             {
                 Debug.Assert(tasks != null, "Expected a non-null task array");
                 Debug.Assert(tasks.Length > 0, "Expected a non-zero length task array");

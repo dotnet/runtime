@@ -116,7 +116,7 @@ namespace System.Runtime.InteropServices
         }
 
         private const VarEnum VT_BYREF_VARIANT = VarEnum.VT_BYREF | VarEnum.VT_VARIANT;
-        private const VarEnum VT_TYPEMASK = (VarEnum) 0x0fff;
+        private const VarEnum VT_TYPEMASK = (VarEnum)0x0fff;
         private const VarEnum VT_BYREF_TYPEMASK = VT_TYPEMASK | VarEnum.VT_BYREF;
 
         private static unsafe ref Variant GetVariant(ref Variant pSrc)

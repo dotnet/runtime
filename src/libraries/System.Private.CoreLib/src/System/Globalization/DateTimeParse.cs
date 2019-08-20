@@ -4735,7 +4735,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     return false;
                 }
 
-                day = (int)(digit1*10 + digit2);
+                day = (int)(digit1 * 10 + digit2);
             }
 
             if (source[7] != ' ')
@@ -4786,7 +4786,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     return false;
                 }
 
-                year = (int)(y1*1000 + y2*100 + y3*10 + y4);
+                year = (int)(y1 * 1000 + y2 * 100 + y3 * 10 + y4);
             }
 
             if (source[16] != ' ')
@@ -4806,7 +4806,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     return false;
                 }
 
-                hour = (int)(h1*10 + h2);
+                hour = (int)(h1 * 10 + h2);
             }
 
             if (source[19] != ':')
@@ -4827,7 +4827,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     return false;
                 }
 
-                minute = (int)(m1*10 + m2);
+                minute = (int)(m1 * 10 + m2);
             }
 
             if (source[22] != ':')
@@ -4847,7 +4847,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     return false;
                 }
 
-                second = (int)(s1*10 + s2);
+                second = (int)(s1 * 10 + s2);
             }
 
             // Parse " GMT".  It must be upper case.
@@ -4904,7 +4904,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     return false;
                 }
 
-                year = (int)(y1*1000 + y2*100 + y3*10 + y4);
+                year = (int)(y1 * 1000 + y2 * 100 + y3 * 10 + y4);
             }
 
             int month;
@@ -4917,7 +4917,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     return false;
                 }
 
-                month = (int)(m1*10 + m2);
+                month = (int)(m1 * 10 + m2);
             }
 
             int day;
@@ -4930,7 +4930,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     return false;
                 }
 
-                day = (int)(d1*10 + d2);
+                day = (int)(d1 * 10 + d2);
             }
 
             int hour;
@@ -4943,7 +4943,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     return false;
                 }
 
-                hour = (int)(h1*10 + h2);
+                hour = (int)(h1 * 10 + h2);
             }
 
             int minute;
@@ -4956,7 +4956,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     return false;
                 }
 
-                minute = (int)(m1*10 + m2);
+                minute = (int)(m1 * 10 + m2);
             }
 
             int second;
@@ -4969,7 +4969,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     return false;
                 }
 
-                second = (int)(s1*10 + s2);
+                second = (int)(s1 * 10 + s2);
             }
 
             double fraction;
@@ -4988,7 +4988,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     return false;
                 }
 
-                fraction = (f1*1000000 + f2*100000 + f3*10000 + f4*1000 + f5*100 + f6*10 + f7) / 10000000.0;
+                fraction = (f1 * 1000000 + f2 * 100000 + f3 * 10000 + f4 * 1000 + f5 * 100 + f6 * 10 + f7) / 10000000.0;
             }
 
             if (!DateTime.TryCreate(year, month, day, hour, minute, second, 0, out DateTime dateTime))
@@ -5068,7 +5068,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                                 return false;
                             }
 
-                            offsetMinutes = (int)(om1*10 + om2);
+                            offsetMinutes = (int)(om1 * 10 + om2);
                         }
 
                         result.flags |= ParseFlags.TimeZoneUsed;

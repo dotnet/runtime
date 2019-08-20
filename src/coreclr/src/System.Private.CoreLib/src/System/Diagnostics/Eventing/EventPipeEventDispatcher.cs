@@ -112,7 +112,7 @@ namespace System.Diagnostics.Tracing
             // Enable the EventPipe session.
             EventPipeProviderConfiguration[] providerConfiguration = new EventPipeProviderConfiguration[]
             {
-                new EventPipeProviderConfiguration(NativeRuntimeEventSource.EventSourceName, (ulong) aggregatedKeywords, (uint) highestLevel, null)
+                new EventPipeProviderConfiguration(NativeRuntimeEventSource.EventSourceName, (ulong)aggregatedKeywords, (uint)highestLevel, null)
             };
 
             m_sessionID = EventPipeInternal.Enable(null, EventPipeSerializationFormat.NetTrace, DefaultEventListenerCircularMBSize, providerConfiguration, 1);
@@ -214,7 +214,7 @@ namespace System.Diagnostics.Tracing
 
             Debug.Assert((m_syncTimeUtc.Ticks != 0) && (m_syncTimeQPC != 0) && (m_timeQPCFrequency != 0));
             long inTicks = (long)((timeStamp - m_syncTimeQPC) * 10000000.0 / m_timeQPCFrequency) + m_syncTimeUtc.Ticks;
-            if ((inTicks < 0)|| (DateTime.MaxTicks < inTicks))
+            if ((inTicks < 0) || (DateTime.MaxTicks < inTicks))
             {
                 inTicks = DateTime.MaxTicks;
             }

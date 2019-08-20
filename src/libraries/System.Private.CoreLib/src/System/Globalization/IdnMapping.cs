@@ -452,7 +452,7 @@ namespace System.Globalization
                         Debug.Assert(delta > 0, "[IdnMapping.cs]1 punycode_encode - delta overflowed int");
                         n = m;
 
-                        for (j = iAfterLastDot;  j < iNextDot;  j+= IsSupplementary(test) ? 2 : 1)
+                        for (j = iAfterLastDot;  j < iNextDot;  j += IsSupplementary(test) ? 2 : 1)
                         {
                             // Make sure we're aware of surrogates
                             test = char.ConvertToUtf32(unicode, j);
@@ -662,7 +662,7 @@ namespace System.Globalization
                                 throw new ArgumentException(SR.Argument_IdnBadPunycode, nameof(ascii));
 
                             // When appending make sure they get lower cased
-                            output.Append((char)(ascii[copyAscii] >= 'A' && ascii[copyAscii] <='Z' ? ascii[copyAscii] - 'A' + 'a' : ascii[copyAscii]));
+                            output.Append((char)(ascii[copyAscii] >= 'A' && ascii[copyAscii] <= 'Z' ? ascii[copyAscii] - 'A' + 'a' : ascii[copyAscii]));
                         }
                     }
 
@@ -809,8 +809,8 @@ namespace System.Globalization
             }
 
             // Throw if we're too long
-            if (output.Length > c_defaultNameLimit - (IsDot(output[output.Length-1]) ? 0 : 1))
-                throw new ArgumentException(SR.Format(SR.Argument_IdnBadNameSize, c_defaultNameLimit - (IsDot(output[output.Length-1]) ? 0 : 1)), nameof(ascii));
+            if (output.Length > c_defaultNameLimit - (IsDot(output[output.Length - 1]) ? 0 : 1))
+                throw new ArgumentException(SR.Format(SR.Argument_IdnBadNameSize, c_defaultNameLimit - (IsDot(output[output.Length - 1]) ? 0 : 1)), nameof(ascii));
 
             // Return our output string
             return output.ToString();

@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices
             return LoadByName(libraryName,
                               JitHelpers.GetQCallAssemblyOnStack(ref rtAsm),
                               searchPath.HasValue,
-                              (uint) searchPath.GetValueOrDefault(),
+                              (uint)searchPath.GetValueOrDefault(),
                               throwOnError);
         }
 
