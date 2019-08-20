@@ -306,8 +306,8 @@ namespace System.Globalization
         // Will check the if the parameters are valid.
         internal static long TimeToTicks(int hour, int minute, int second, int millisecond)
         {
-            //TimeSpan.TimeToTicks is a family access function which does no error checking, so
-            //we need to put some error checking out here.
+            // TimeSpan.TimeToTicks is a family access function which does no error checking, so
+            // we need to put some error checking out here.
             if (hour >= 0 && hour < 24 && minute >= 0 && minute < 60 && second >= 0 && second < 60)
             {
                 if (millisecond < 0 || millisecond >= MillisPerSecond)

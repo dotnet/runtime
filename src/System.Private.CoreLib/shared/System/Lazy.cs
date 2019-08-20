@@ -511,7 +511,7 @@ namespace System
     /// to ensure that the Lazy&lt;T&gt; does not become initialized if it was not already.</summary>
     internal sealed class LazyDebugView<T>
     {
-        //The Lazy object being viewed.
+        // The Lazy object being viewed.
         private readonly Lazy<T> _lazy;
 
         /// <summary>Constructs a new debugger view object for the provided Lazy object.</summary>

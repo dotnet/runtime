@@ -150,7 +150,7 @@ namespace System.Globalization
             // 1/1/0001 is absolute date 1.
             long numDays = ticks / GregorianCalendar.TicksPerDay + 1;
 
-            //  Calculate the appromixate Persian Year.
+            // Calculate the appromixate Persian Year.
             long yearStart = CalendricalCalculationsHelper.PersianNewYearOnOrBefore(numDays);
             int y = (int)(Math.Floor(((yearStart - s_persianEpoch) / CalendricalCalculationsHelper.MeanTropicalYearInDays) + 0.5)) + 1;
             Debug.Assert(y >= 1);
@@ -160,7 +160,7 @@ namespace System.Globalization
                 return y;
             }
 
-            //  Calculate the Persian Month.
+            // Calculate the Persian Month.
             int ordinalDay = (int)(numDays - CalendricalCalculationsHelper.GetNumberOfDays(this.ToDateTime(y, 1, 1, 0, 0, 0, 0, 1)));
             if (part == DatePartDayOfYear)
             {
@@ -179,7 +179,7 @@ namespace System.Globalization
             Debug.Assert(1 <= d);
             Debug.Assert(d <= 31);
 
-            //  Calculate the Persian Day.
+            // Calculate the Persian Day.
             if (part == DatePartDay)
             {
                 return d;

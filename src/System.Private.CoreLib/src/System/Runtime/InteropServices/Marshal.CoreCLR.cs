@@ -72,12 +72,11 @@ namespace System.Runtime.InteropServices
             return ReadValueSlow(ptr, ofs, (IntPtr nativeHome, int offset) => ReadInt64(nativeHome, offset));
         }
 
-        //====================================================================
-        // Read value from marshaled object (marshaled using AsAny)
-        // It's quite slow and can return back dangling pointers
-        // It's only there for backcompact
-        // People should instead use the IntPtr overloads
-        //====================================================================
+        /// <summary>Read value from marshaled object (marshaled using AsAny).</summary>
+        /// <remarks>
+        /// It's quite slow and can return back dangling pointers. It's only there for backcompat.
+        /// People should instead use the IntPtr overloads.
+        /// </remarks>
         private static unsafe T ReadValueSlow<T>(object ptr, int ofs, Func<IntPtr, int, T> readValueHelper)
         {
             // Consumers of this method are documented to throw AccessViolationException on any AV

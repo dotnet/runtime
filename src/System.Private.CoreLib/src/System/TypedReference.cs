@@ -101,7 +101,7 @@ namespace System
             return __reftype(value).TypeHandle;
         }
 
-        //  This may cause the type to be changed.
+        // This may cause the type to be changed.
         [CLSCompliant(false)]
         public static unsafe void SetTypedReference(TypedReference target, object? value)
         {

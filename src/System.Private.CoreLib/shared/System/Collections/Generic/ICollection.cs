@@ -21,10 +21,7 @@ namespace System.Collections.Generic
 
         // CopyTo copies a collection into an Array, starting at a particular
         // index into the array.
-        //
         void CopyTo(T[] array, int arrayIndex);
-
-        //void CopyTo(int sourceIndex, T[] destinationArray, int destinationIndex, int count);
 
         bool Remove(T item);
     }

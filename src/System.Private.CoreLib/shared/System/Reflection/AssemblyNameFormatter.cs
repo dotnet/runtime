@@ -93,8 +93,8 @@ namespace System.Reflection
             bool needsQuoting = false;
             const char quoteChar = '\"';
 
-            //@todo: App-compat: You can use double or single quotes to quote a name, and Fusion (or rather the IdentityAuthority) picks one
-            // by some algorithm. Rather than guess at it, I'll just use double-quote consistently.
+            // App-compat: You can use double or single quotes to quote a name, and Fusion (or rather the IdentityAuthority) picks one
+            // by some algorithm. Rather than guess at it, we use double quotes consistently.
             if (s != s.Trim() || s.Contains('\"') || s.Contains('\''))
                 needsQuoting = true;
 

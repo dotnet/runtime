@@ -39,7 +39,7 @@ namespace System.Text
 
 
         public UnicodeEncoding(bool bigEndian, bool byteOrderMark)
-            : base(bigEndian ? 1201 : 1200)  //Set the data item.
+            : base(bigEndian ? 1201 : 1200)  // Set the data item.
         {
             this.bigEndian = bigEndian;
             this.byteOrderMark = byteOrderMark;
@@ -1743,7 +1743,7 @@ namespace System.Text
             {
                 Debug.Assert((decoder.MustFlush == false) || ((lastChar == (char)0) && (lastByte == -1)),
                     "[UnicodeEncoding.GetChars] Expected no left over chars or bytes if flushing"
-                    //                    + " " + ((int)lastChar).ToString("X4") + " " + lastByte.ToString("X2")
+                    // + " " + ((int)lastChar).ToString("X4") + " " + lastByte.ToString("X2")
                     );
 
                 decoder._bytesUsed = (int)(bytes - byteStart);
@@ -1847,7 +1847,7 @@ namespace System.Text
                 //
                 return (CodePage == that.CodePage) &&
                         byteOrderMark == that.byteOrderMark &&
-                        //                        isThrowException == that.isThrowException &&  // Same as Encoder/Decoder being exception fallbacks
+                        // isThrowException == that.isThrowException &&  // Same as Encoder/Decoder being exception fallbacks
                         bigEndian == that.bigEndian &&
                        (EncoderFallback.Equals(that.EncoderFallback)) &&
                        (DecoderFallback.Equals(that.DecoderFallback));

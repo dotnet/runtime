@@ -736,7 +736,7 @@ namespace System.Text.Unicode
                             goto Error; // this is an overlong encoding; fail
                         }
 
-                        partialChar -= ((0xEDu - 0xC2u) << 12) + (0xA0u << 6); //if partialChar = 0, we're at beginning of UTF-16 surrogate code point range
+                        partialChar -= ((0xEDu - 0xC2u) << 12) + (0xA0u << 6); // if partialChar = 0, we're at beginning of UTF-16 surrogate code point range
                         if (partialChar < (0x0800u /* number of code points in UTF-16 surrogate code point range */))
                         {
                             goto Error; // attempted to encode a UTF-16 surrogate code point; fail

@@ -171,7 +171,7 @@ namespace System
         //
         public static void Collect()
         {
-            //-1 says to GC all generations.
+            // -1 says to GC all generations.
             _Collect(-1, (int)InternalGCCollectionMode.Blocking);
         }
 

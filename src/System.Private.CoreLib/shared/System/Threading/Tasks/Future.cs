@@ -104,13 +104,6 @@ namespace System.Threading.Tasks
             }
         }
 
-        // Uncomment if/when we want Task.FromException
-        //// Construct a pre-faulted Task<TResult>
-        //internal Task(Exception exception)
-        //    : base(exception)
-        //{
-        //}
-
         /// <summary>
         /// Initializes a new <see cref="Task{TResult}"/> with the specified function.
         /// </summary>

@@ -288,14 +288,14 @@ namespace System.Reflection.Emit
 
                 if (destType.IsEnum)
                 {
-                    //                                   |  UnderlyingSystemType     |  Enum.GetUnderlyingType() |  IsEnum
-                    // ----------------------------------|---------------------------|---------------------------|---------
-                    // runtime Enum Type                 |  self                     |  underlying type of enum  |  TRUE
-                    // EnumBuilder                       |  underlying type of enum  |  underlying type of enum* |  TRUE
-                    // TypeBuilder of enum types**       |  underlying type of enum  |  Exception                |  TRUE
-                    // TypeBuilder of enum types (baked) |  runtime enum type        |  Exception                |  TRUE
+                    // |                                   |  UnderlyingSystemType     |  Enum.GetUnderlyingType() |  IsEnum
+                    // |-----------------------------------|---------------------------|---------------------------|---------
+                    // | runtime Enum Type                 |  self                     |  underlying type of enum  |  TRUE
+                    // | EnumBuilder                       |  underlying type of enum  |  underlying type of enum* |  TRUE
+                    // | TypeBuilder of enum types**       |  underlying type of enum  |  Exception                |  TRUE
+                    // | TypeBuilder of enum types (baked) |  runtime enum type        |  Exception                |  TRUE
 
-                    //  *: the behavior of Enum.GetUnderlyingType(EnumBuilder) might change in the future
+                    // *: the behavior of Enum.GetUnderlyingType(EnumBuilder) might change in the future
                     //     so let's not depend on it.
                     // **: created with System.Enum as the parent type.
 
@@ -368,7 +368,7 @@ namespace System.Reflection.Emit
                         }
                         else if (type == typeof(DateTime))
                         {
-                            //date is a I8 representation
+                            // date is a I8 representation
                             long ticks = ((DateTime)value).Ticks;
                             SetConstantValue(JitHelpers.GetQCallModuleOnStack(ref module), tk, (int)CorElementType.ELEMENT_TYPE_I8, &ticks);
                         }
@@ -1299,7 +1299,7 @@ namespace System.Reflection.Emit
 
             if (!m_isHiddenGlobalType)
             {
-                //If this method is declared to be a constructor, increment our constructor count.
+                // If this method is declared to be a constructor, increment our constructor count.
                 if ((method.Attributes & MethodAttributes.SpecialName) != 0 && method.Name.Equals(ConstructorInfo.ConstructorName))
                 {
                     m_constructorCount++;
@@ -1388,8 +1388,8 @@ namespace System.Reflection.Emit
                     parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers,
                     m_module, this, false);
 
-                //The signature grabbing code has to be up here or the signature won't be finished
-                //and our equals check won't work.
+                // The signature grabbing code has to be up here or the signature won't be finished
+                // and our equals check won't work.
                 int sigLength;
                 byte[] sigBytes = method.GetMethodSignature().InternalGetSignature(out sigLength);
 
@@ -1853,7 +1853,7 @@ namespace System.Reflection.Emit
                     m_module,
                     name,
                     attributes,
-                    //tkType,
+                    // tkType,
                     this,
                     evToken);
         }
@@ -2004,7 +2004,7 @@ namespace System.Reflection.Emit
                     // We won't check on Interface because we can have class static initializer on interface.
                     // We will just let EE or validator to catch the problem.
 
-                    //((m_iAttr & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Interface))
+                    // ((m_iAttr & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Interface))
 
                     if (body != null)
                         throw new InvalidOperationException(SR.Format(SR.InvalidOperation_BadMethodBody, meth.Name));

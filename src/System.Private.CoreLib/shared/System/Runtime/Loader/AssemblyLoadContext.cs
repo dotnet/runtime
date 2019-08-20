@@ -405,7 +405,7 @@ namespace System.Runtime.Loader
         // This function needs to return the HMODULE of the dll it loads
         protected virtual IntPtr LoadUnmanagedDll(string unmanagedDllName)
         {
-            //defer to default coreclr policy of loading unmanaged dll
+            // defer to default coreclr policy of loading unmanaged dll
             return IntPtr.Zero;
         }
 

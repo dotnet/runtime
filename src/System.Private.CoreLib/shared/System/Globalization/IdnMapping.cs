@@ -884,7 +884,7 @@ namespace System.Globalization
             // 26-35 map to ASCII 0-9
             if (d > 25) return (char)(d - 26 + '0');
 
-            //  0-25 map to a-z or A-Z
+            // 0-25 map to a-z or A-Z
             return (char)(d + 'a');
         }
     }

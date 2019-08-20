@@ -446,7 +446,7 @@ namespace System.Text
             }
             set
             {
-                //If the new length is less than 0 or greater than our Maximum capacity, bail.
+                // If the new length is less than 0 or greater than our Maximum capacity, bail.
                 if (value < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NegativeLength);

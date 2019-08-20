@@ -253,9 +253,8 @@ namespace System
             return IsNaN(obj) && IsNaN(m_value);
         }
 
-        //The hashcode for a double is the absolute value of the integer representation
-        //of that double.
-        //
+        // The hashcode for a double is the absolute value of the integer representation
+        // of that double.
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // 64-bit constants make the IL unusually large that makes the inliner to reject the method
         public override int GetHashCode()
         {

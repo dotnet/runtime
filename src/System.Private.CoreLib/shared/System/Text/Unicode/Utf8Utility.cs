@@ -78,7 +78,7 @@ namespace System.Text.Unicode
             {
                 if (Rune.DecodeFromUtf8(valueAsBytes, out _, out int bytesConsumed) == OperationStatus.Done)
                 {
-                    //  Valid scalar value - copy data as-is to MemoryStream
+                    // Valid scalar value - copy data as-is to MemoryStream
                     memStream.Write(valueAsBytes.Slice(0, bytesConsumed));
                 }
                 else
