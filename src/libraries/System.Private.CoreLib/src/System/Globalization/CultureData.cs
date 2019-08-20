@@ -63,7 +63,7 @@ namespace System.Globalization
         private string? _sNativeLanguage; // Native name of this language
         private string? _sAbbrevLang; // abbreviated language name (Windows Language Name) ex: ENU
         private string? _sConsoleFallbackName; // The culture name for the console fallback UI culture
-        private int    _iInputLanguageHandle=undef;// input language handle
+        private int _iInputLanguageHandle=undef; // input language handle
 
         // Region
         private string? _sRegionName; // (RegionInfo)
@@ -72,7 +72,7 @@ namespace System.Globalization
         private string? _sNativeCountry; // native country name
         private string? _sISO3166CountryName; // ISO 3166 (RegionInfo), ie: US
         private string? _sISO3166CountryName2; // 3 char ISO 3166 country name 2 2(RegionInfo) ex: USA (ISO)
-        private int    _iGeoId = undef; // GeoId
+        private int _iGeoId = undef; // GeoId
 
         // Numbers
         private string? _sPositiveSign; // (user can override) positive sign

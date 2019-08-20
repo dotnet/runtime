@@ -80,7 +80,7 @@ namespace System.Globalization
             invariant.saEraNames = new string[] { "A.D." };     // Era names
             invariant.saAbbrevEraNames = new string[] { "AD" };      // Abbreviated Era names
             invariant.saAbbrevEnglishEraNames = new string[] { "AD" };     // Abbreviated era names in English
-            invariant.saDayNames = new string[] { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" };// day names
+            invariant.saDayNames = new string[] { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" }; // day names
             invariant.saAbbrevDayNames = new string[] { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };     // abbreviated day names
             invariant.saSuperShortDayNames = new string[] { "Su", "Mo", "Tu", "We", "Th", "Fr", "Sa" };      // The super short day names
             invariant.saMonthNames = new string[] { "January", "February", "March", "April", "May", "June",

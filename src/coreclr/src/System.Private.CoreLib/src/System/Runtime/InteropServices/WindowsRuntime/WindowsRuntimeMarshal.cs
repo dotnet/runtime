@@ -849,7 +849,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 internal void AcquireReaderLock(int millisecondsTimeout)
                 {
                     EnterMyLock();
-                    for (;;)
+                    while (true)
                     {
                         // We can enter a read lock if there are only read-locks have been given out
                         // and a writer is not trying to get in.
@@ -875,7 +875,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 internal void AcquireWriterLock(int millisecondsTimeout)
                 {
                     EnterMyLock();
-                    for (;;)
+                    while (true)
                     {
                         if (owners == 0)
                         {

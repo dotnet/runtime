@@ -105,7 +105,7 @@ namespace System.Globalization
             // Someplace to stick our buffer
             char[] cBuffer;
 
-            for (;;)
+            while (true)
             {
                 // (re)allocation buffer and normalize string
                 cBuffer = new char[iLength];

@@ -369,7 +369,7 @@ namespace System.Threading
             bool retVal = true;
             int spinCount = 0;
 
-            for (; ;)
+            while (true)
             {
                 // We can enter a read lock if there are only read-locks have been given out
                 // and a writer is not trying to get in.
@@ -521,7 +521,7 @@ namespace System.Threading
             bool retVal = true;
             int spinCount = 0;
 
-            for (; ;)
+            while (true)
             {
                 if (IsWriterAcquired())
                 {
@@ -716,7 +716,7 @@ namespace System.Threading
             bool retVal = true;
             int spinCount = 0;
 
-            for (; ;)
+            while (true)
             {
                 //Once an upgrade lock is taken, it's like having a reader lock held
                 //until upgrade or downgrade operations are performed.
