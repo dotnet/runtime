@@ -1300,6 +1300,7 @@ namespace System.Text.Json
             {
                 if (IsLastSpan)
                 {
+                    _bytePositionInLine += localBuffer.Length + 1;  // Account for the start quote
                     ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.EndOfStringNotFound);
                 }
                 return false;
@@ -1344,19 +1345,7 @@ namespace System.Text.Json
                         ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.InvalidCharacterAfterEscapeWithinString, currentByte);
                     }
 
-                    if (currentByte == JsonConstants.Quote)
-                    {
-                        // Ignore an escaped quote.
-                        // This is likely the most common case, so adding an explicit check
-                        // to avoid doing the unnecessary checks below.
-                    }
-                    else if (currentByte == 'n')
-                    {
-                        // Escaped new line character
-                        _bytePositionInLine = -1; // Should be 0, but we increment _bytePositionInLine below already
-                        _lineNumber++;
-                    }
-                    else if (currentByte == 'u')
+                    if (currentByte == 'u')
                     {
                         // Expecting 4 hex digits to follow the escaped 'u'
                         _bytePositionInLine++;  // move past the 'u'
@@ -1529,7 +1518,7 @@ namespace System.Text.Json
             Debug.Assert(resultExponent == ConsumeNumberResult.OperationIncomplete);
 
             _bytePositionInLine += i;
-            ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedEndOfDigitNotFound, nextByte);
+            ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedEndOfDigitNotFound, data[i]);
 
         Done:
             ValueSpan = data.Slice(0, i);

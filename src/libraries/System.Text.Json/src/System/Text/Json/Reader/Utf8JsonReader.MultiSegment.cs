@@ -781,6 +781,7 @@ namespace System.Text.Json
             {
                 if (IsLastSpan)
                 {
+                    _bytePositionInLine += localBuffer.Length + 1;  // Account for the start quote
                     ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.EndOfStringNotFound);
                 }
                 return ConsumeStringNextSegment();
@@ -789,27 +790,23 @@ namespace System.Text.Json
 
         private bool ConsumeStringNextSegment()
         {
-            SequencePosition startPosition = _currentPosition;
-            SequencePosition end = default;
-            int startConsumed = _consumed + 1;
+            PartialStateForRollback rollBackState = CaptureState();
+
+            SequencePosition end;
             HasValueSequence = true;
             int leftOver = _buffer.Length - _consumed;
-
-            long prevTotalConsumed = _totalConsumed;
-            long prevPosition = _bytePositionInLine;
 
             while (true)
             {
                 if (!GetNextSpan())
                 {
-                    _totalConsumed = prevTotalConsumed;
-                    _bytePositionInLine = prevPosition;
-                    _consumed = startConsumed - 1;
-                    _currentPosition = startPosition;
                     if (IsLastSpan)
                     {
+                        _bytePositionInLine += leftOver;
+                        RollBackState(rollBackState, isError: true);
                         ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.EndOfStringNotFound);
                     }
+                    RollBackState(rollBackState);
                     return false;
                 }
 
@@ -831,13 +828,10 @@ namespace System.Text.Json
                     }
                     else
                     {
-                        long prevLineNumber = _lineNumber;
-
-                        _bytePositionInLine += idx + 1; // Add 1 for the first quote
+                        _bytePositionInLine += leftOver + idx;
                         _stringHasEscaping = true;
 
                         bool nextCharEscaped = false;
-                        bool sawNewLine = false;
                         while (true)
                         {
                         StartOfLoop:
@@ -861,30 +855,16 @@ namespace System.Text.Json
                                     int index = JsonConstants.EscapableChars.IndexOf(currentByte);
                                     if (index == -1)
                                     {
-                                        _currentPosition = startPosition;
+                                        RollBackState(rollBackState, isError: true);
                                         ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.InvalidCharacterAfterEscapeWithinString, currentByte);
                                     }
 
-                                    if (currentByte == JsonConstants.Quote)
-                                    {
-                                        // Ignore an escaped quote.
-                                        // This is likely the most common case, so adding an explicit check
-                                        // to avoid doing the unnecessary checks below.
-                                    }
-                                    else if (currentByte == 'n')
-                                    {
-                                        // Escaped new line character
-                                        _bytePositionInLine = -1; // Should be 0, but we increment _bytePositionInLine below already
-                                        _lineNumber++;
-                                        sawNewLine = true;
-                                    }
-                                    else if (currentByte == 'u')
+                                    if (currentByte == 'u')
                                     {
                                         // Expecting 4 hex digits to follow the escaped 'u'
                                         _bytePositionInLine++;  // move past the 'u'
 
-                                        bool movedToNext = false;
-                                        int numberOfHexDigits = 3;
+                                        int numberOfHexDigits = 0;
                                         int j = idx + 1;
                                         while (true)
                                         {
@@ -893,53 +873,43 @@ namespace System.Text.Json
                                                 byte nextByte = localBuffer[j];
                                                 if (!JsonReaderHelper.IsHexDigit(nextByte))
                                                 {
-                                                    _currentPosition = startPosition;
+                                                    RollBackState(rollBackState, isError: true);
                                                     ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.InvalidHexCharacterWithinString, nextByte);
                                                 }
-                                                if (j - idx > numberOfHexDigits)
-                                                {
-                                                    if (movedToNext)
-                                                    {
-                                                        nextCharEscaped = false;
-                                                        goto StartOfLoop;
-                                                    }
-                                                    goto DoneWithHex;
-                                                }
+                                                numberOfHexDigits++;
                                                 _bytePositionInLine++;
+                                                if (numberOfHexDigits >= 4)
+                                                {
+                                                    nextCharEscaped = false;
+                                                    idx = j + 1; // Skip the 4 hex digits, the for loop accounts for idx incrementing past the 'u'
+                                                    goto StartOfLoop;
+                                                }
                                             }
 
                                             if (!GetNextSpan())
                                             {
-                                                _currentPosition = startPosition;
                                                 if (IsLastSpan)
                                                 {
+                                                    RollBackState(rollBackState, isError: true);
                                                     ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.EndOfStringNotFound);
                                                 }
 
                                                 // We found less than 4 hex digits.
-                                                _lineNumber = prevLineNumber;
-                                                _bytePositionInLine = prevPosition;
-                                                _totalConsumed = prevTotalConsumed;
+                                                RollBackState(rollBackState);
                                                 return false;
                                             }
 
                                             _totalConsumed += localBuffer.Length;
 
                                             localBuffer = _buffer;
-                                            numberOfHexDigits -= j - idx;
-                                            idx = 0;
                                             j = 0;
-                                            movedToNext = true;
                                         }
-
-                                    DoneWithHex:
-                                        idx += 4;   // Skip the 4 hex digits, the for loop accounts for idx incrementing past the 'u'
                                     }
                                     nextCharEscaped = false;
                                 }
                                 else if (currentByte < JsonConstants.Space)
                                 {
-                                    _currentPosition = startPosition;
+                                    RollBackState(rollBackState, isError: true);
                                     ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.InvalidCharacterWithinString, currentByte);
                                 }
 
@@ -948,14 +918,12 @@ namespace System.Text.Json
 
                             if (!GetNextSpan())
                             {
-                                _currentPosition = startPosition;
                                 if (IsLastSpan)
                                 {
+                                    RollBackState(rollBackState, isError: true);
                                     ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.EndOfStringNotFound);
                                 }
-                                _lineNumber = prevLineNumber;
-                                _bytePositionInLine = prevPosition;
-                                _totalConsumed = prevTotalConsumed;
+                                RollBackState(rollBackState);
                                 return false;
                             }
 
@@ -965,7 +933,7 @@ namespace System.Text.Json
                         }
 
                     Done:
-                        _bytePositionInLine += sawNewLine ? leftOver + idx : leftOver + idx + 1;  // Add 1 for the end quote of the string.
+                        _bytePositionInLine++;  // Add 1 for the end quote of the string.
                         _consumed = idx + 1;    // Add 1 for the end quote of the string.
                         _totalConsumed += leftOver;
                         end = new SequencePosition(_currentPosition.GetObject(), _currentPosition.GetInteger() + idx);
@@ -977,7 +945,7 @@ namespace System.Text.Json
                 _bytePositionInLine += localBuffer.Length;
             }
 
-            SequencePosition start = new SequencePosition(startPosition.GetObject(), startPosition.GetInteger() + startConsumed);
+            SequencePosition start = rollBackState.GetStartPosition(offset: 1); // Offset for the starting quote
             ValueSequence = _sequence.Slice(start, end);
             _tokenType = JsonTokenType.String;
             return true;
@@ -992,15 +960,11 @@ namespace System.Text.Json
             Debug.Assert(data[idx] != JsonConstants.Quote);
             Debug.Assert(data[idx] == JsonConstants.BackSlash || data[idx] < JsonConstants.Space);
 
-            SequencePosition startPosition = _currentPosition;
-            SequencePosition end = default;
-            int startConsumed = _consumed + 1;
-            HasValueSequence = false;
-            int leftOver = _buffer.Length - idx;
-            int leftOverFromConsumed = _buffer.Length - _consumed;
+            PartialStateForRollback rollBackState = CaptureState();
 
-            long prevLineBytePosition = _bytePositionInLine;
-            long prevLineNumber = _lineNumber;
+            SequencePosition end;
+            HasValueSequence = false;
+            int leftOverFromConsumed = _buffer.Length - _consumed;
 
             _bytePositionInLine += idx + 1; // Add 1 for the first quote
 
@@ -1028,29 +992,16 @@ namespace System.Text.Json
                         int index = JsonConstants.EscapableChars.IndexOf(currentByte);
                         if (index == -1)
                         {
-                            _currentPosition = startPosition;
+                            RollBackState(rollBackState, isError: true);
                             ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.InvalidCharacterAfterEscapeWithinString, currentByte);
                         }
 
-                        if (currentByte == JsonConstants.Quote)
-                        {
-                            // Ignore an escaped quote.
-                            // This is likely the most common case, so adding an explicit check
-                            // to avoid doing the unnecessary checks below.
-                        }
-                        else if (currentByte == 'n')
-                        {
-                            // Escaped new line character
-                            _bytePositionInLine = -1; // Should be 0, but we increment _bytePositionInLine below already
-                            _lineNumber++;
-                        }
-                        else if (currentByte == 'u')
+                        if (currentByte == 'u')
                         {
                             // Expecting 4 hex digits to follow the escaped 'u'
                             _bytePositionInLine++;  // move past the 'u'
 
-                            bool movedToNext = false;
-                            int numberOfHexDigits = 3;
+                            int numberOfHexDigits = 0;
                             int j = idx + 1;
                             while (true)
                             {
@@ -1059,32 +1010,29 @@ namespace System.Text.Json
                                     byte nextByte = data[j];
                                     if (!JsonReaderHelper.IsHexDigit(nextByte))
                                     {
-                                        _currentPosition = startPosition;
+                                        RollBackState(rollBackState, isError: true);
                                         ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.InvalidHexCharacterWithinString, nextByte);
                                     }
-                                    if (j - idx > numberOfHexDigits)
-                                    {
-                                        if (movedToNext)
-                                        {
-                                            nextCharEscaped = false;
-                                            goto StartOfLoop;
-                                        }
-                                        goto DoneWithHex;
-                                    }
+                                    numberOfHexDigits++;
                                     _bytePositionInLine++;
+                                    if (numberOfHexDigits >= 4)
+                                    {
+                                        nextCharEscaped = false;
+                                        idx = j + 1; // Skip the 4 hex digits, the for loop accounts for idx incrementing past the 'u'
+                                        goto StartOfLoop;
+                                    }
                                 }
 
                                 if (!GetNextSpan())
                                 {
-                                    _currentPosition = startPosition;
                                     if (IsLastSpan)
                                     {
+                                        RollBackState(rollBackState, isError: true);
                                         ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.EndOfStringNotFound);
                                     }
 
                                     // We found less than 4 hex digits.
-                                    _lineNumber = prevLineNumber;
-                                    _bytePositionInLine = prevLineBytePosition;
+                                    RollBackState(rollBackState);
                                     return false;
                                 }
 
@@ -1095,21 +1043,15 @@ namespace System.Text.Json
                                 }
 
                                 data = _buffer;
-                                numberOfHexDigits -= j - idx;
-                                idx = 0;
                                 j = 0;
                                 HasValueSequence = true;
-                                movedToNext = true;
                             }
-
-                        DoneWithHex:
-                            idx += 4;   // Skip the 4 hex digits, the for loop accounts for idx incrementing past the 'u'
                         }
                         nextCharEscaped = false;
                     }
                     else if (currentByte < JsonConstants.Space)
                     {
-                        _currentPosition = startPosition;
+                        RollBackState(rollBackState, isError: true);
                         ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.InvalidCharacterWithinString, currentByte);
                     }
 
@@ -1118,13 +1060,12 @@ namespace System.Text.Json
 
                 if (!GetNextSpan())
                 {
-                    _currentPosition = startPosition;
                     if (IsLastSpan)
                     {
+                        RollBackState(rollBackState, isError: true);
                         ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.EndOfStringNotFound);
                     }
-                    _lineNumber = prevLineNumber;
-                    _bytePositionInLine = prevLineBytePosition;
+                    RollBackState(rollBackState);
                     return false;
                 }
 
@@ -1142,11 +1083,11 @@ namespace System.Text.Json
         Done:
             if (HasValueSequence)
             {
-                _bytePositionInLine += leftOver + idx + 1;  // Add 1 for the end quote of the string.
+                _bytePositionInLine++;  // Add 1 for the end quote of the string.
                 _consumed = idx + 1;    // Add 1 for the end quote of the string.
                 _totalConsumed += leftOverFromConsumed;
                 end = new SequencePosition(_currentPosition.GetObject(), _currentPosition.GetInteger() + idx);
-                SequencePosition start = new SequencePosition(startPosition.GetObject(), startPosition.GetInteger() + startConsumed);
+                SequencePosition start = rollBackState.GetStartPosition(offset: 1); // Offset for the starting quote
                 ValueSequence = _sequence.Slice(start, end);
             }
             else
@@ -1161,6 +1102,21 @@ namespace System.Text.Json
             return true;
         }
 
+        private void RollBackState(in PartialStateForRollback state, bool isError = false)
+        {
+            _totalConsumed = state._prevTotalConsumed;
+
+            // Don't roll back byte position in line for invalid JSON since that is provided
+            // to the user within the exception.
+            if (!isError)
+            {
+                _bytePositionInLine = state._prevBytePositionInLine;
+            }
+
+            _consumed = state._prevConsumed;
+            _currentPosition = state._prevCurrentPosition;
+        }
+
         // https://tools.ietf.org/html/rfc7159#section-6
         private bool TryGetNumberMultiSegment(ReadOnlySpan<byte> data, out int consumed)
         {
@@ -1168,20 +1124,16 @@ namespace System.Text.Json
             Debug.Assert(data.Length > 0);
 
             _numberFormat = default;
-            SequencePosition startPosition = _currentPosition;
-            int startConsumed = _consumed;
+
+            PartialStateForRollback rollBackState = CaptureState();
+
             consumed = 0;
-            long prevTotalConsumed = _totalConsumed;
-            long prevPosition = _bytePositionInLine;
             int i = 0;
 
-            ConsumeNumberResult signResult = ConsumeNegativeSignMultiSegment(ref data, ref i);
+            ConsumeNumberResult signResult = ConsumeNegativeSignMultiSegment(ref data, ref i, rollBackState);
             if (signResult == ConsumeNumberResult.NeedMoreData)
             {
-                _totalConsumed = prevTotalConsumed;
-                _bytePositionInLine = prevPosition;
-                _consumed = startConsumed;
-                _currentPosition = startPosition;
+                RollBackState(rollBackState);
                 return false;
             }
 
@@ -1192,13 +1144,10 @@ namespace System.Text.Json
 
             if (nextByte == '0')
             {
-                ConsumeNumberResult result = ConsumeZeroMultiSegment(ref data, ref i);
+                ConsumeNumberResult result = ConsumeZeroMultiSegment(ref data, ref i, rollBackState);
                 if (result == ConsumeNumberResult.NeedMoreData)
                 {
-                    _totalConsumed = prevTotalConsumed;
-                    _bytePositionInLine = prevPosition;
-                    _consumed = startConsumed;
-                    _currentPosition = startPosition;
+                    RollBackState(rollBackState);
                     return false;
                 }
                 if (result == ConsumeNumberResult.Success)
@@ -1214,10 +1163,7 @@ namespace System.Text.Json
                 ConsumeNumberResult result = ConsumeIntegerDigitsMultiSegment(ref data, ref i);
                 if (result == ConsumeNumberResult.NeedMoreData)
                 {
-                    _totalConsumed = prevTotalConsumed;
-                    _bytePositionInLine = prevPosition;
-                    _consumed = startConsumed;
-                    _currentPosition = startPosition;
+                    RollBackState(rollBackState);
                     return false;
                 }
                 if (result == ConsumeNumberResult.Success)
@@ -1229,7 +1175,7 @@ namespace System.Text.Json
                 nextByte = data[i];
                 if (nextByte != '.' && nextByte != 'E' && nextByte != 'e')
                 {
-                    _currentPosition = startPosition;
+                    RollBackState(rollBackState, isError: true);
                     ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedEndOfDigitNotFound, nextByte);
                 }
             }
@@ -1240,13 +1186,10 @@ namespace System.Text.Json
             {
                 i++;
                 _bytePositionInLine++;
-                ConsumeNumberResult result = ConsumeDecimalDigitsMultiSegment(ref data, ref i);
+                ConsumeNumberResult result = ConsumeDecimalDigitsMultiSegment(ref data, ref i, rollBackState);
                 if (result == ConsumeNumberResult.NeedMoreData)
                 {
-                    _totalConsumed = prevTotalConsumed;
-                    _bytePositionInLine = prevPosition;
-                    _consumed = startConsumed;
-                    _currentPosition = startPosition;
+                    RollBackState(rollBackState);
                     return false;
                 }
                 if (result == ConsumeNumberResult.Success)
@@ -1258,7 +1201,7 @@ namespace System.Text.Json
                 nextByte = data[i];
                 if (nextByte != 'E' && nextByte != 'e')
                 {
-                    _currentPosition = startPosition;
+                    RollBackState(rollBackState, isError: true);
                     ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedNextDigitEValueNotFound, nextByte);
                 }
             }
@@ -1268,13 +1211,10 @@ namespace System.Text.Json
             _numberFormat = JsonConstants.ScientificNotationFormat;
             _bytePositionInLine++;
 
-            signResult = ConsumeSignMultiSegment(ref data, ref i);
+            signResult = ConsumeSignMultiSegment(ref data, ref i, rollBackState);
             if (signResult == ConsumeNumberResult.NeedMoreData)
             {
-                _totalConsumed = prevTotalConsumed;
-                _bytePositionInLine = prevPosition;
-                _consumed = startConsumed;
-                _currentPosition = startPosition;
+                RollBackState(rollBackState);
                 return false;
             }
 
@@ -1285,10 +1225,7 @@ namespace System.Text.Json
             ConsumeNumberResult resultExponent = ConsumeIntegerDigitsMultiSegment(ref data, ref i);
             if (resultExponent == ConsumeNumberResult.NeedMoreData)
             {
-                _totalConsumed = prevTotalConsumed;
-                _bytePositionInLine = prevPosition;
-                _consumed = startConsumed;
-                _currentPosition = startPosition;
+                RollBackState(rollBackState);
                 return false;
             }
             if (resultExponent == ConsumeNumberResult.Success)
@@ -1298,13 +1235,13 @@ namespace System.Text.Json
 
             Debug.Assert(resultExponent == ConsumeNumberResult.OperationIncomplete);
 
-            _currentPosition = startPosition;
+            RollBackState(rollBackState, isError: true);
             ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedEndOfDigitNotFound, data[i]);
 
         Done:
             if (HasValueSequence)
             {
-                SequencePosition start = new SequencePosition(startPosition.GetObject(), startPosition.GetInteger() + startConsumed);
+                SequencePosition start = rollBackState.GetStartPosition();
                 SequencePosition end = new SequencePosition(_currentPosition.GetObject(), _currentPosition.GetInteger() + i);
                 ValueSequence = _sequence.Slice(start, end);
                 consumed = i;
@@ -1317,7 +1254,7 @@ namespace System.Text.Json
             return true;
         }
 
-        private ConsumeNumberResult ConsumeNegativeSignMultiSegment(ref ReadOnlySpan<byte> data, ref int i)
+        private ConsumeNumberResult ConsumeNegativeSignMultiSegment(ref ReadOnlySpan<byte> data, ref int i, in PartialStateForRollback rollBackState)
         {
             Debug.Assert(i == 0);
             byte nextByte = data[i];
@@ -1330,12 +1267,14 @@ namespace System.Text.Json
                 {
                     if (IsLastSpan)
                     {
+                        RollBackState(rollBackState, isError: true);
                         ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.RequiredDigitNotFoundEndOfData);
                     }
                     if (!GetNextSpan())
                     {
                         if (IsLastSpan)
                         {
+                            RollBackState(rollBackState, isError: true);
                             ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.RequiredDigitNotFoundEndOfData);
                         }
                         return ConsumeNumberResult.NeedMoreData;
@@ -1350,13 +1289,14 @@ namespace System.Text.Json
                 nextByte = data[i];
                 if (!JsonHelpers.IsDigit(nextByte))
                 {
+                    RollBackState(rollBackState, isError: true);
                     ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.RequiredDigitNotFoundAfterSign, nextByte);
                 }
             }
             return ConsumeNumberResult.OperationIncomplete;
         }
 
-        private ConsumeNumberResult ConsumeZeroMultiSegment(ref ReadOnlySpan<byte> data, ref int i)
+        private ConsumeNumberResult ConsumeZeroMultiSegment(ref ReadOnlySpan<byte> data, ref int i, in PartialStateForRollback rollBackState)
         {
             Debug.Assert(data[i] == (byte)'0');
             Debug.Assert(i == 0 || i == 1);
@@ -1403,6 +1343,7 @@ namespace System.Text.Json
             nextByte = data[i];
             if (nextByte != '.' && nextByte != 'E' && nextByte != 'e')
             {
+                RollBackState(rollBackState, isError: true);
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedEndOfDigitNotFound, nextByte);
             }
 
@@ -1487,18 +1428,20 @@ namespace System.Text.Json
             return ConsumeNumberResult.OperationIncomplete;
         }
 
-        private ConsumeNumberResult ConsumeDecimalDigitsMultiSegment(ref ReadOnlySpan<byte> data, ref int i)
+        private ConsumeNumberResult ConsumeDecimalDigitsMultiSegment(ref ReadOnlySpan<byte> data, ref int i, in PartialStateForRollback rollBackState)
         {
             if (i >= data.Length)
             {
                 if (IsLastSpan)
                 {
+                    RollBackState(rollBackState, isError: true);
                     ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.RequiredDigitNotFoundEndOfData);
                 }
                 if (!GetNextSpan())
                 {
                     if (IsLastSpan)
                     {
+                        RollBackState(rollBackState, isError: true);
                         ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.RequiredDigitNotFoundEndOfData);
                     }
                     return ConsumeNumberResult.NeedMoreData;
@@ -1511,6 +1454,7 @@ namespace System.Text.Json
             byte nextByte = data[i];
             if (!JsonHelpers.IsDigit(nextByte))
             {
+                RollBackState(rollBackState, isError: true);
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.RequiredDigitNotFoundAfterDecimal, nextByte);
             }
             i++;
@@ -1518,12 +1462,13 @@ namespace System.Text.Json
             return ConsumeIntegerDigitsMultiSegment(ref data, ref i);
         }
 
-        private ConsumeNumberResult ConsumeSignMultiSegment(ref ReadOnlySpan<byte> data, ref int i)
+        private ConsumeNumberResult ConsumeSignMultiSegment(ref ReadOnlySpan<byte> data, ref int i, in PartialStateForRollback rollBackState)
         {
             if (i >= data.Length)
             {
                 if (IsLastSpan)
                 {
+                    RollBackState(rollBackState, isError: true);
                     ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.RequiredDigitNotFoundEndOfData);
                 }
 
@@ -1531,6 +1476,7 @@ namespace System.Text.Json
                 {
                     if (IsLastSpan)
                     {
+                        RollBackState(rollBackState, isError: true);
                         ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.RequiredDigitNotFoundEndOfData);
                     }
                     return ConsumeNumberResult.NeedMoreData;
@@ -1550,6 +1496,7 @@ namespace System.Text.Json
                 {
                     if (IsLastSpan)
                     {
+                        RollBackState(rollBackState, isError: true);
                         ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.RequiredDigitNotFoundEndOfData);
                     }
 
@@ -1557,6 +1504,7 @@ namespace System.Text.Json
                     {
                         if (IsLastSpan)
                         {
+                            RollBackState(rollBackState, isError: true);
                             ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.RequiredDigitNotFoundEndOfData);
                         }
                         return ConsumeNumberResult.NeedMoreData;
@@ -1571,6 +1519,7 @@ namespace System.Text.Json
 
             if (!JsonHelpers.IsDigit(nextByte))
             {
+                RollBackState(rollBackState, isError: true);
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.RequiredDigitNotFoundAfterSign, nextByte);
             }
 
@@ -2616,6 +2565,32 @@ namespace System.Text.Json
                     localBuffer = _buffer;
                     Debug.Assert(!localBuffer.IsEmpty);
                 }
+            }
+        }
+
+        private PartialStateForRollback CaptureState()
+        {
+            return new PartialStateForRollback(_totalConsumed, _bytePositionInLine, _consumed, _currentPosition);
+        }
+
+        private readonly struct PartialStateForRollback
+        {
+            public readonly long _prevTotalConsumed;
+            public readonly long _prevBytePositionInLine;
+            public readonly int _prevConsumed;
+            public readonly SequencePosition _prevCurrentPosition;
+
+            public PartialStateForRollback(long totalConsumed, long bytePositionInLine, int consumed, SequencePosition currentPosition)
+            {
+                _prevTotalConsumed = totalConsumed;
+                _prevBytePositionInLine = bytePositionInLine;
+                _prevConsumed = consumed;
+                _prevCurrentPosition = currentPosition;
+            }
+
+            public SequencePosition GetStartPosition(int offset = 0)
+            {
+                return new SequencePosition(_prevCurrentPosition.GetObject(), _prevCurrentPosition.GetInteger() + _prevConsumed + offset);
             }
         }
     }
