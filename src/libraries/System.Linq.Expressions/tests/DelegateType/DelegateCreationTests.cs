@@ -30,48 +30,48 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        public static IEnumerable<object> ExcessiveLengthTypeArgs()
+        public static IEnumerable<object[]> ExcessiveLengthTypeArgs()
         {
             yield return new object[] { Enumerable.Repeat(typeof(int), 18).ToArray() };
         }
 
-        public static IEnumerable<object> ExcessiveLengthOpenGenericTypeArgs()
+        public static IEnumerable<object[]> ExcessiveLengthOpenGenericTypeArgs()
         {
             yield return new object[] { Enumerable.Repeat(typeof(List<int>), 18).ToArray() };
         }
 
-        public static IEnumerable<object> EmptyTypeArgs()
+        public static IEnumerable<object[]> EmptyTypeArgs()
         {
             yield return new object[] { Array.Empty<Type>() };
         }
 
-        public static IEnumerable<object> ByRefTypeArgs()
+        public static IEnumerable<object[]> ByRefTypeArgs()
         {
             yield return new object[] { new[] { typeof(int), typeof(int).MakeByRefType(), typeof(string) } };
             yield return new object[] { new[] { typeof(int).MakeByRefType() } };
             yield return new object[] { Enumerable.Repeat(typeof(double).MakeByRefType(), 20).ToArray() };
         }
 
-        public static IEnumerable<object> ByRefLikeTypeArgs()
+        public static IEnumerable<object[]> ByRefLikeTypeArgs()
         {
             yield return new object[] { new[] { typeof(Span<char>) } };
         }
 
-        public static IEnumerable<object> PointerTypeArgs()
+        public static IEnumerable<object[]> PointerTypeArgs()
         {
             yield return new object[] { new[] { typeof(int).MakePointerType() } };
             yield return new object[] { new[] { typeof(string), typeof(double).MakePointerType(), typeof(int) } };
             yield return new object[] { Enumerable.Repeat(typeof(int).MakePointerType(), 20).ToArray() };
         }
 
-        public static IEnumerable<object> ManagedPointerTypeArgs()
+        public static IEnumerable<object[]> ManagedPointerTypeArgs()
         {
             yield return new object[] { new[] { typeof(string).MakePointerType() } };
             yield return new object[] { new[] { typeof(int), typeof(string).MakePointerType(), typeof(double) } };
             yield return new object[] { Enumerable.Repeat(typeof(string).MakePointerType(), 20).ToArray() };
         }
 
-        public static IEnumerable<object> VoidTypeArgs(bool includeSingleVoid)
+        public static IEnumerable<object[]> VoidTypeArgs(bool includeSingleVoid)
         {
             if (includeSingleVoid)
             {

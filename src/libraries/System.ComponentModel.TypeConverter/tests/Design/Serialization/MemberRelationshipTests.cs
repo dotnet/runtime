@@ -52,7 +52,7 @@ namespace System.ComponentModel.Design.Serialization.Tests
             Assert.True(memberRelationship.IsEmpty);
         }
 
-        public static IEnumerable<object> Equals_TestData()
+        public static IEnumerable<object[]> Equals_TestData()
         {
             var owner1 = new object();
             var owner2 = new object();

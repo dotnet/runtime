@@ -528,7 +528,7 @@ namespace System.Net.Http.Functional.Tests
             }, new LoopbackServer.Options { StreamWrapper = GetStream });
         }
 
-        public static IEnumerable<object> GetAsync_Chunked_VaryingSizeChunks_ReceivedCorrectly_MemberData()
+        public static IEnumerable<object[]> GetAsync_Chunked_VaryingSizeChunks_ReceivedCorrectly_MemberData()
         {
             foreach (int maxChunkSize in new[] { 1, 10_000 })
                 foreach (string lineEnding in new[] { "\n", "\r\n" })

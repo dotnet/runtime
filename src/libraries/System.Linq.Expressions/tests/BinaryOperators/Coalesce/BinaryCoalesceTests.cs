@@ -67,7 +67,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        public static IEnumerable<object> ImplicitNumericConversionData()
+        public static IEnumerable<object[]> ImplicitNumericConversionData()
         {
             foreach (bool useInterpreter in new bool[] { true, false })
             {
