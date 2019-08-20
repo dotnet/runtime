@@ -4286,11 +4286,11 @@ namespace System
                     {
                         if (isString)
                         {
-                            newArray[currElem] = wrapperCons.Invoke(new object?[] { (string?)oldArray.GetValue(currElem)});
+                            newArray[currElem] = wrapperCons.Invoke(new object?[] { (string?)oldArray.GetValue(currElem) });
                         }
                         else
                         {
-                            newArray[currElem] = wrapperCons.Invoke(new object?[] { oldArray.GetValue(currElem)});
+                            newArray[currElem] = wrapperCons.Invoke(new object?[] { oldArray.GetValue(currElem) });
                         }
                     }
 
