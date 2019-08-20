@@ -95,7 +95,7 @@ namespace System.Reflection.PortableExecutable.Tests
             peBlob.WriteContentTo(peStream);
         }
 
-        public static IEnumerable<object> AllMachineTypes()
+        public static IEnumerable<object[]> AllMachineTypes()
         {
             return ((Machine[])Enum.GetValues(typeof(Machine))).Select(m => new object[]{(object)m});
         }

@@ -359,7 +359,7 @@ namespace System.Collections.Tests
             Assert.NotSame(bitArray.SyncRoot, ((ICollection)new BitArray(10)).SyncRoot);
         }
 
-        public static IEnumerable<object> CopyTo_Hidden_Data()
+        public static IEnumerable<object[]> CopyTo_Hidden_Data()
         {
             yield return new object[] { "ZeroLength", new BitArray(0) };
             yield return new object[] { "Constructor", new BitArray(BitsPerInt32 / 2 - 3, true) };

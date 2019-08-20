@@ -387,6 +387,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        public static IEnumerable<object> StorageFlags => CollectionImportTests.StorageFlags;
+        public static IEnumerable<object[]> StorageFlags => CollectionImportTests.StorageFlags;
     }
 }

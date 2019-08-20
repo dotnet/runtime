@@ -1540,7 +1540,7 @@ namespace System.Numerics.Tests
             yield return new object[] { 0, double.MinValue, 9.48075190810917E+153, -9.48075190810917E+153 };
         }
 
-        public static IEnumerable<object> Sqrt_AdvancedTestData ()
+        public static IEnumerable<object[]> Sqrt_AdvancedTestData ()
         {
             yield return new object[] { -1, 0, 0, 1 }; // .NET Framework does not properly handle this simple case.
             yield return new object[] { -double.MaxValue, 0.0, 0.0, Math.Sqrt(double.MaxValue) };
