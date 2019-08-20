@@ -5129,9 +5129,9 @@ main_loop:
 		MINT_IN_CASE(MINT_LDTSFLD_P) LDTSFLD(p, gpointer); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_LDSSFLD) {
-			MonoClassField *field = (MonoClassField*)imethod->data_items [* (guint16 *)(ip + 1)];
 			guint32 offset = READ32(ip + 2);
 			gpointer addr = mono_get_special_static_data (offset);
+			MonoClassField *field = (MonoClassField*)imethod->data_items [* (guint16 *)(ip + 1)];
 			stackval_from_data (field->type, sp, addr, FALSE);
 			ip += 4;
 			++sp;
@@ -5202,9 +5202,9 @@ main_loop:
 		MINT_IN_CASE(MINT_STTSFLD_O) STTSFLD(p, gpointer); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_STSSFLD) {
-			MonoClassField *field = (MonoClassField*)imethod->data_items [* (guint16 *)(ip + 1)];
 			guint32 offset = READ32(ip + 2);
 			gpointer addr = mono_get_special_static_data (offset);
+			MonoClassField *field = (MonoClassField*)imethod->data_items [* (guint16 *)(ip + 1)];
 			--sp;
 			stackval_to_data (field->type, sp, addr, FALSE);
 			ip += 4;
