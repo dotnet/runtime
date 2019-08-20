@@ -49,7 +49,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        public static object[] GetHashCodeTestData => new[]
+        public static IEnumerable<object[]> GetHashCodeTestData => new[]
         {
             new object[] { "abc", CompareOptions.OrdinalIgnoreCase, "ABC", CompareOptions.OrdinalIgnoreCase, true },
             new object[] { "abc", CompareOptions.Ordinal, "ABC", CompareOptions.Ordinal, false },

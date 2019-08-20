@@ -58,7 +58,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             yield return new TestCase(new MaxLengthAttribute(12), new int[4, 4]);
         }
 
-        public static IEnumerable<object> InvalidValues_ICollection()
+        public static IEnumerable<object[]> InvalidValues_ICollection()
         {
             yield return new object[] { new MaxLengthAttribute(12), new Collection<byte>(new byte[13]) };
             yield return new object[] { new MaxLengthAttribute(12), new List<byte>(new byte[13]) };

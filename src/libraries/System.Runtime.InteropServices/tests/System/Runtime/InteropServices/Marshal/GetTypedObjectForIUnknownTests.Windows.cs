@@ -10,7 +10,7 @@ namespace System.Runtime.InteropServices.Tests
 {
     public partial class GetTypedObjectForIUnknownTests
     {
-        public static IEnumerable<object> GetTypedObjectForIUnknown_ComObject_TestData()
+        public static IEnumerable<object[]> GetTypedObjectForIUnknown_ComObject_TestData()
         {
             yield return new object[] { new ComImportObject(), typeof(ComImportObject) };
             yield return new object[] { new ComImportObject(), typeof(ComImportObject).BaseType };

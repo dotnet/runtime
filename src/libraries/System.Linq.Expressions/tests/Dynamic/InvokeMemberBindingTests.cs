@@ -363,7 +363,7 @@ namespace System.Dynamic.Tests
             Assert.Equal(11, d.GetValue2(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
         }
 
-        public static IEnumerable<object> SameNameObjectPairs()
+        public static IEnumerable<object[]> SameNameObjectPairs()
         {
             object[] testObjects = Enumerable.Range(0, 4)
                 .Select(

@@ -59,7 +59,7 @@ namespace System.Net.Http.Functional.Tests
             await VisitSite(site);
         }
 
-        public static IEnumerable<string[]> GetSelectedSites()
+        public static IEnumerable<object[]> GetSelectedSites()
         {
             const string resourceName = "SelectedSitesTest.txt";
             Assembly assembly = typeof(HttpClient_SelectedSites_Test).Assembly;

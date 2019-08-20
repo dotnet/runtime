@@ -326,18 +326,18 @@ namespace System.Security.Cryptography.Encoding.Tests
             Assert.Equal(ObsoleteSmime3desWrap_Name, oid.FriendlyName);
         }
 
-        public static IEnumerable<string[]> ValidOidFriendlyNamePairs
+        public static IEnumerable<object[]> ValidOidFriendlyNamePairs
         {
             get
             {
-                List<string[]> data = new List<string[]>(ValidOidFriendlyNameHashAlgorithmPairs);
+                List<object[]> data = new List<object[]>(ValidOidFriendlyNameHashAlgorithmPairs);
                 data.AddRange(ValidOidFriendlyNameEncryptionAlgorithmPairs);
 
                 return data;
             }
         }
 
-        public static IEnumerable<string[]> ValidOidFriendlyNameHashAlgorithmPairs
+        public static IEnumerable<object[]> ValidOidFriendlyNameHashAlgorithmPairs
         {
             get
             {
@@ -352,7 +352,7 @@ namespace System.Security.Cryptography.Encoding.Tests
             }
         }
 
-        public static IEnumerable<string[]> ValidOidFriendlyNameEncryptionAlgorithmPairs
+        public static IEnumerable<object[]> ValidOidFriendlyNameEncryptionAlgorithmPairs
         {
             get
             {

@@ -111,7 +111,7 @@ namespace System.Linq.Expressions.Tests
             yield return new object[] { Expression.Property(Expression.Constant(new ReadOnlyIndexer()), "Item", new Expression[] { Expression.Constant(1) }) };
         }
 
-        public static IEnumerable<object> WriteOnlyExpressions()
+        public static IEnumerable<object[]> WriteOnlyExpressions()
         {
             Expression obj = Expression.Constant(new PropertyAndFields());
             yield return new object[] { Expression.Property(obj, typeof(PropertyAndFields), nameof(PropertyAndFields.WriteOnlyInt32)) };
@@ -121,7 +121,7 @@ namespace System.Linq.Expressions.Tests
             yield return new object[] { Expression.Property(Expression.Constant(new WriteOnlyIndexer()), "Item", new Expression[] { Expression.Constant(1) }) };
         }
 
-        public static IEnumerable<object> MemberAssignments()
+        public static IEnumerable<object[]> MemberAssignments()
         {
             Expression obj = Expression.Constant(new PropertyAndFields());
             yield return new object[] { Expression.Field(null, typeof(PropertyAndFields), nameof(PropertyAndFields.StaticInt32Field)), 1 };
