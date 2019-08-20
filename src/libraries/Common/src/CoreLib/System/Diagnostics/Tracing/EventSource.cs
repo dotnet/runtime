@@ -3907,7 +3907,7 @@ namespace System.Diagnostics.Tracing
         private bool m_completelyInited;                // The EventSource constructor has returned without exception.
         private Exception? m_constructionException;      // If there was an exception construction, this is it
         private byte m_outOfBandMessageCount;           // The number of out of band messages sent (we throttle them
-        private EventCommandEventArgs? m_deferredCommands;// If we get commands before we are fully we store them here and run the when we are fully inited.
+        private EventCommandEventArgs? m_deferredCommands; // If we get commands before we are fully we store them here and run the when we are fully inited.
 
         private string[]? m_traits;                      // Used to implement GetTraits
 
@@ -4090,7 +4090,7 @@ namespace System.Diagnostics.Tracing
                     {
                         // Find 'this' from the s_Listeners linked list.
                         EventListener prev = s_Listeners;
-                        for (;;)
+                        while (true)
                         {
                             EventListener? cur = prev.m_Next;
                             if (cur == null)
@@ -4360,7 +4360,7 @@ namespace System.Diagnostics.Tracing
                     {
                         // Remove 'listenerToRemove' from the eventSource.m_Dispatchers linked list.
                         EventDispatcher? prev = eventSource.m_Dispatchers;
-                        for (;;)
+                        while (true)
                         {
                             EventDispatcher? cur = prev.m_Next;
                             if (cur == null)
@@ -4432,7 +4432,7 @@ namespace System.Diagnostics.Tracing
                     foreach (EventListener listener in allListeners.Keys)
                     {
                         dispatcher = eventSource.m_Dispatchers;
-                        for (;;)
+                        while (true)
                         {
                             Debug.Assert(dispatcher != null, "Listener is not on all eventSources.");
                             if (dispatcher.m_Listener == listener)

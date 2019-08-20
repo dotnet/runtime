@@ -664,7 +664,7 @@ namespace System
 
             // Skip past leading 0s.
             int i = 0;
-            for (; i < guidString.Length && guidString[i] == '0'; i++);
+            for (; i < guidString.Length && guidString[i] == '0'; i++) ;
 
             int processedDigits = 0;
             ReadOnlySpan<byte> charToHexLookup = Number.CharToHexLookup;
@@ -1108,7 +1108,7 @@ namespace System
             {
                 fixed (char* guidChars = &MemoryMarshal.GetReference(destination))
                 {
-                    char * p = guidChars;
+                    char* p = guidChars;
 
                     if (braces != 0)
                         *p++ = (char)braces;
