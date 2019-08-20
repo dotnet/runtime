@@ -971,10 +971,10 @@ namespace System.DirectoryServices.Protocols
                     {
                         // Check whether we have save it in the handle table before.
                         WeakReference reference = (WeakReference)(LdapConnection.s_handleTable[referralFromConnection]);
-                        if (reference != null && reference.IsAlive && null != ((LdapConnection)reference.Target)._ldapHandle)
+                        if (reference != null && reference.Target is LdapConnection conn && conn._ldapHandle != null)
                         {
                             // Save this before and object has not been garbage collected yet.
-                            tempReferralConnection = (LdapConnection)reference.Target;
+                            tempReferralConnection = conn;
                         }
                         else
                         {
