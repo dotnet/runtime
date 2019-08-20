@@ -5110,8 +5110,8 @@ main_loop:
 		}
 
 #define LDTSFLD(datamem, fieldtype) { \
-	guint32 offset = READ32(ip + 1); \
 	MonoInternalThread *thread = mono_thread_internal_current (); \
+	guint32 offset = READ32 (ip + 1); \
 	gpointer addr = ((char*)thread->static_data [offset & 0x3f]) + (offset >> 6); \
 	sp[0].data.datamem = *(fieldtype*)addr; \
 	ip += 3; \
@@ -5182,8 +5182,8 @@ main_loop:
 		}
 
 #define STTSFLD(datamem, fieldtype) { \
-	guint32 offset = READ32(ip + 1); \
 	MonoInternalThread *thread = mono_thread_internal_current (); \
+	guint32 offset = READ32 (ip + 1); \
 	gpointer addr = ((char*)thread->static_data [offset & 0x3f]) + (offset >> 6); \
 	sp--; \
 	*(fieldtype*)addr = sp[0].data.datamem; \
