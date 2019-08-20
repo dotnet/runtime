@@ -313,6 +313,106 @@ namespace System.Collections.Tests
         }
 
         [Fact]
+        public static void CopyToByteArray()
+        {
+            for (int size = 4; size < 100; size++)
+            {
+                var bitArray = new BitArray(size);
+                bitArray[1] = true;
+                bitArray[3] = true;
+
+                for (int i = 0; i < 100; i++)
+                {
+                    byte[] expectedOutput = new byte[100 + (size / 8 + 1)];
+                    byte[] actualOutput = new byte[expectedOutput.Length];
+
+                    expectedOutput[i] = 10;
+                    bitArray.CopyTo(actualOutput, i);
+
+                    Assert.Equal(expectedOutput, actualOutput);
+                }
+            }
+        }
+
+        [Fact]
+        public static void CopyToBoolArray()
+        {
+            for (int size = 4; size < 100; size++)
+            {
+                var bitArray = new BitArray(size);
+                bitArray[1] = true;
+                bitArray[3] = true;
+
+                for (int i = 0; i < 100; i++)
+                {
+                    bool[] expectedOutput = new bool[100 + size];
+                    bool[] actualOutput = new bool[expectedOutput.Length];
+
+                    expectedOutput[i + 1] = true;
+                    expectedOutput[i + 3] = true;
+                    bitArray.CopyTo(actualOutput, i);
+
+                    Assert.Equal(expectedOutput, actualOutput);
+                }
+            }
+        }
+
+        [Fact]
+        public static void CopyToIntArray()
+        {
+            for (int size = 10; size < 100; size++)
+            {
+                var bitArray = new BitArray(size);
+                bitArray[1] = true;
+                bitArray[3] = true;
+                bitArray[9] = true;
+
+                for (int i = 0; i < 100; i++)
+                {
+                    int[] expectedOutput = new int[100 + (size / 32 + 1)];
+                    int[] actualOutput = new int[expectedOutput.Length];
+
+                    expectedOutput[i] = 522;
+                    bitArray.CopyTo(actualOutput, i);
+
+                    Assert.Equal(expectedOutput, actualOutput);
+                }
+            }
+        }
+
+        // https://github.com/dotnet/corefx/issues/39929
+        [Fact]
+        public static void CopyToByteArray_Regression39929()
+        {
+            bool[] directionBools = { true, true, true, true };
+            bool[] levelBools = { false, false, false, true };
+            byte[] byteHolder = new byte[2];
+            BitArray directionBits = new BitArray(directionBools);
+            BitArray levelBits = new BitArray(levelBools);
+
+            directionBits.CopyTo(byteHolder, 0);
+            levelBits.CopyTo(byteHolder, 1);
+
+            byte[] expectedOutput = { 0x0F, 0x08 };
+            Assert.Equal(expectedOutput, byteHolder);
+        }
+
+        // https://github.com/dotnet/core/issues/3194
+        [Fact]
+        public static void CopyToByteArray_Regression3194()
+        {
+            byte[] actualOutput = new byte[10];
+            BitArray bitArray = new BitArray(1);
+            bitArray[0] = true;
+
+            bitArray.CopyTo(actualOutput, 5);
+
+            byte[] expectedOutput = new byte[10];
+            expectedOutput[5] = 1;
+            Assert.Equal(expectedOutput, actualOutput);
+        }
+
+        [Fact]
         public static void CopyTo_Type_Invalid()
         {
             ICollection bitArray = new BitArray(10);

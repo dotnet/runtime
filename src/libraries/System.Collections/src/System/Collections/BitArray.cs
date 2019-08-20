@@ -657,7 +657,7 @@ namespace System.Collections
                     Debug.Assert(span.Length > 0);
                     Debug.Assert(m_array.Length > quotient);
                     // mask the final byte
-                    span[span.Length - 1] = (byte)((m_array[quotient] >> (remainder * 8)) & ((1 << (int)extraBits) - 1));
+                    span[remainder] = (byte)((m_array[quotient] >> (remainder * 8)) & ((1 << (int)extraBits) - 1));
                 }
 
                 switch (remainder)
