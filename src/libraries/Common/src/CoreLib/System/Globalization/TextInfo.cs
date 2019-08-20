@@ -649,7 +649,7 @@ namespace System.Globalization
                 {
                     // Special case to check for Dutch specific titlecasing with "IJ" characters
                     // at the beginning of a word
-                    if (isDutchCulture && i < str.Length - 1 && (str[i] == 'i' || str[i] == 'I') && (str[i+1] == 'j' || str[i+1] == 'J'))
+                    if (isDutchCulture && i < str.Length - 1 && (str[i] == 'i' || str[i] == 'I') && (str[i + 1] == 'j' || str[i + 1] == 'J'))
                     {
                         result.Append("IJ");
                         i += 2;
@@ -702,7 +702,7 @@ namespace System.Globalization
                         {
                             // This category is considered to be part of the word.
                             // This is any category that is marked as false in wordSeprator array.
-                            i+= charLen;
+                            i += charLen;
                         }
                         else
                         {
@@ -785,25 +785,25 @@ namespace System.Globalization
                 switch (input[inputIndex])
                 {
                     // For AppCompat, the Titlecase Case Mapping data from NDP 2.0 is used below.
-                    case (char) 0x01C4:  // DZ with Caron -> Dz with Caron
-                    case (char) 0x01C5:  // Dz with Caron -> Dz with Caron
-                    case (char) 0x01C6:  // dz with Caron -> Dz with Caron
-                        result.Append((char) 0x01C5);
+                    case (char)0x01C4:  // DZ with Caron -> Dz with Caron
+                    case (char)0x01C5:  // Dz with Caron -> Dz with Caron
+                    case (char)0x01C6:  // dz with Caron -> Dz with Caron
+                        result.Append((char)0x01C5);
                         break;
-                    case (char) 0x01C7:  // LJ -> Lj
-                    case (char) 0x01C8:  // Lj -> Lj
-                    case (char) 0x01C9:  // lj -> Lj
-                        result.Append((char) 0x01C8);
+                    case (char)0x01C7:  // LJ -> Lj
+                    case (char)0x01C8:  // Lj -> Lj
+                    case (char)0x01C9:  // lj -> Lj
+                        result.Append((char)0x01C8);
                         break;
-                    case (char) 0x01CA:  // NJ -> Nj
-                    case (char) 0x01CB:  // Nj -> Nj
-                    case (char) 0x01CC:  // nj -> Nj
-                        result.Append((char) 0x01CB);
+                    case (char)0x01CA:  // NJ -> Nj
+                    case (char)0x01CB:  // Nj -> Nj
+                    case (char)0x01CC:  // nj -> Nj
+                        result.Append((char)0x01CB);
                         break;
-                    case (char) 0x01F1:  // DZ -> Dz
-                    case (char) 0x01F2:  // Dz -> Dz
-                    case (char) 0x01F3:  // dz -> Dz
-                        result.Append((char) 0x01F2);
+                    case (char)0x01F1:  // DZ -> Dz
+                    case (char)0x01F2:  // Dz -> Dz
+                    case (char)0x01F3:  // dz -> Dz
+                        result.Append((char)0x01F2);
                         break;
                     default:
                         result.Append(ToUpper(input[inputIndex]));
@@ -850,7 +850,7 @@ namespace System.Globalization
 
         private static bool IsWordSeparator(UnicodeCategory category)
         {
-            return (c_wordSeparatorMask & (1 << (int) category)) != 0;
+            return (c_wordSeparatorMask & (1 << (int)category)) != 0;
         }
 
         private static bool IsLetterCategory(UnicodeCategory uc)

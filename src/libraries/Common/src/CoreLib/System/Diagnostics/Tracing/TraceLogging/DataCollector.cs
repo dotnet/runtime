@@ -349,7 +349,7 @@ namespace System.Diagnostics.Tracing
                     throw new IndexOutOfRangeException(SR.EventSource_DataDescriptorsOutOfRange);
                 }
 
-                datasTemp->DataPointer = (IntPtr) this.scratch;
+                datasTemp->DataPointer = (IntPtr)this.scratch;
                 this.writingScalars = true;
             }
         }

@@ -63,7 +63,7 @@ namespace System.Globalization
         private string? _sNativeLanguage; // Native name of this language
         private string? _sAbbrevLang; // abbreviated language name (Windows Language Name) ex: ENU
         private string? _sConsoleFallbackName; // The culture name for the console fallback UI culture
-        private int _iInputLanguageHandle=undef; // input language handle
+        private int _iInputLanguageHandle = undef; // input language handle
 
         // Region
         private string? _sRegionName; // (RegionInfo)

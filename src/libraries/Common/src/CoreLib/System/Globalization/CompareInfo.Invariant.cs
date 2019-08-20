@@ -231,10 +231,10 @@ namespace System.Globalization
                 {
                     if ((options & (CompareOptions.IgnoreCase | CompareOptions.OrdinalIgnoreCase)) != 0)
                     {
-                        short *pShort = (short *) pByte;
-                        for (int i=0; i<source.Length; i++)
+                        short *pShort = (short *)pByte;
+                        for (int i = 0; i < source.Length; i++)
                         {
-                            pShort[i] = (short) InvariantToUpper(source[i]);
+                            pShort[i] = (short)InvariantToUpper(source[i]);
                         }
                     }
                     else
