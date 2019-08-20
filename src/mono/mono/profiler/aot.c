@@ -19,6 +19,7 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/debug-helpers.h>
+#include <mono/utils/mono-publib.h>
 #include <mono/mini/jit.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-os-mutex.h>
@@ -337,7 +338,7 @@ runtime_initialized (MonoProfiler *profiler)
 		start_helper_thread ();
 }
 
-void
+MONO_API void
 mono_profiler_init_aot (const char *desc);
 
 /**

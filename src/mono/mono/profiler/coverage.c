@@ -77,6 +77,7 @@
 #include <mono/utils/mono-os-mutex.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-counters.h>
+#include <mono/utils/mono-publib.h>
 
 // Statistics for profiler events.
 static gint32 coverage_methods_ctr,

@@ -46,6 +46,7 @@
 #include <mono/utils/mono-threads-api.h>
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-error-internals.h>
+#include <mono/utils/mono-publib.h>
 #include <mono/utils/os-event.h>
 #include "log.h"
 #include "helper.h"
