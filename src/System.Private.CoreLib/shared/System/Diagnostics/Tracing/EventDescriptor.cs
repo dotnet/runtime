@@ -2,18 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Runtime.InteropServices;
-
 #if ES_BUILD_STANDALONE
+using System;
 using Environment = Microsoft.Diagnostics.Tracing.Internal.Environment;
 #endif
-
-#if !ES_BUILD_AGAINST_DOTNET_V35
-using Contract = System.Diagnostics.Contracts.Contract;
-#else
-using Contract = Microsoft.Diagnostics.Contracts.Internal.Contract;
-#endif
+using System.Runtime.InteropServices;
 
 #if ES_BUILD_STANDALONE
 namespace Microsoft.Diagnostics.Tracing

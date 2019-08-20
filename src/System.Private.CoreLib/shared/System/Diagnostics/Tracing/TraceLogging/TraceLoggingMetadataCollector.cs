@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#if ES_BUILD_STANDALONE
 using System;
+using Environment = Microsoft.Diagnostics.Tracing.Internal.Environment;
+#endif
 using System.Collections.Generic;
 
 #if ES_BUILD_STANDALONE
-using Environment = Microsoft.Diagnostics.Tracing.Internal.Environment;
 namespace Microsoft.Diagnostics.Tracing
 #else
 namespace System.Diagnostics.Tracing

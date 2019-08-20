@@ -6,7 +6,6 @@
 // Don't override IsAlwaysNormalized because it is just a Unicode Transformation and could be confused.
 //
 
-using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 

@@ -14,22 +14,15 @@
 **
 ===========================================================*/
 
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Reflection;
+using System.Text;
+using System.Diagnostics;
+
 namespace System.Resources
 {
-    using System;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Globalization;
-    using System.IO;
-    using System.Reflection;
-    using System.Runtime.InteropServices;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.Versioning;
-    using System.Text;
-    using System.Threading;
-    using System.Diagnostics;
-    using Microsoft.Win32;
-
     //
     // Note: this type is integral to the construction of exception objects,
     // and sometimes this has to be done in low memory situtations (OOM) or

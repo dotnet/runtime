@@ -11,8 +11,6 @@
 **
 =============================================================================*/
 
-using System;
-
 namespace System.Diagnostics
 {
     internal sealed class EditAndContinueHelper

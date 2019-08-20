@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
-using System.Security;
 using System.Threading.Tasks;
 
 namespace System.Runtime.CompilerServices
