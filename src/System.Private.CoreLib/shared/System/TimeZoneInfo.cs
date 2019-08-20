@@ -26,7 +26,7 @@ namespace System
     {
         None = 1,
         NoThrowOnInvalidTime = 2
-    };
+    }
 
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Core, Version=3.5.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
@@ -42,7 +42,7 @@ namespace System
             TimeZoneNotFoundException = 1,
             InvalidTimeZoneException = 2,
             SecurityException = 3
-        };
+        }
 
         private readonly string _id;
         private readonly string? _displayName;
@@ -142,7 +142,7 @@ namespace System
             public Dictionary<string, TimeZoneInfo>? _systemTimeZones;
             public ReadOnlyCollection<TimeZoneInfo>? _readOnlySystemTimeZones;
             public bool _allSystemTimeZonesRead;
-        };
+        }
 
         // used by GetUtcOffsetFromUtc (DateTime.Now, DateTime.ToLocalTime) for max/min whole-day range checks
         private static readonly DateTime s_maxDateOnly = new DateTime(9999, 12, 31);

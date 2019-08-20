@@ -146,7 +146,7 @@ namespace System.Runtime.InteropServices.ComTypes
             public IDLDESC idldesc;
             [FieldOffset(0)]
             public PARAMDESC paramdesc;
-        };
+        }
         public DESCUNION desc;
     }
 
@@ -172,7 +172,7 @@ namespace System.Runtime.InteropServices.ComTypes
             public int oInst;
             [FieldOffset(0)]
             public IntPtr lpvarValue;
-        };
+        }
 
         public DESCUNION desc;
 

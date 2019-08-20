@@ -230,7 +230,7 @@ namespace System.Diagnostics.Tracing
                 throw new ArgumentNullException(nameof(typeInfos));
             }
 
-            return (TraceLoggingTypeInfo[])typeInfos.Clone(); ;
+            return (TraceLoggingTypeInfo[])typeInfos.Clone();
         }
 
 #if FEATURE_PERFTRACING

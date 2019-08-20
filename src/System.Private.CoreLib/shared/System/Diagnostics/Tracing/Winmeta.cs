@@ -133,8 +133,7 @@ namespace System.Diagnostics.Tracing
         Analytic = 18,
         /// <summary>The debug channel</summary>
         Debug = 19,
-
-    };
+    }
 
     /// <summary>
     /// EventOpcode

@@ -98,7 +98,7 @@ namespace System.Globalization
                 Number -= 5000;
             }
 
-            Debug.Assert(Number > 0 && Number <= 999, "Number is out of range."); ;
+            Debug.Assert(Number > 0 && Number <= 999, "Number is out of range.");
 
             //
             //  Get the Hundreds.
@@ -228,7 +228,7 @@ namespace System.Globalization
             Digit9 = 7,
             SingleQuote = 8,
             DoubleQuote = 9,
-        };
+        }
 
         ////////////////////////////////////////////////////////////////////////////
         //

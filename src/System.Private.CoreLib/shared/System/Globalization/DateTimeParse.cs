@@ -1590,7 +1590,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             }
 
             int n1 = raw.GetNumber(0);
-            int n2 = raw.GetNumber(1); ;
+            int n2 = raw.GetNumber(1);
             int n3 = raw.GetNumber(2);
 
             int order;
@@ -5937,7 +5937,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         FormatWithFormatSpecifier = 5,
         FormatWithOriginalDateTimeAndParameter = 6,
         FormatBadDateTimeCalendar = 7,  // FormatException when ArgumentOutOfRange is thrown by a Calendar.TryToDateTime().
-    };
+    }
 
     [Flags]
     internal enum ParseFlags
