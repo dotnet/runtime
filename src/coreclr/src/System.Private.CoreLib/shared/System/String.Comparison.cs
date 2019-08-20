@@ -671,7 +671,7 @@ namespace System
         // Determines whether two Strings match.
         public static bool Equals(string? a, string? b)
         {
-            if (object.ReferenceEquals(a,b))
+            if (object.ReferenceEquals(a, b))
             {
                 return true;
             }
