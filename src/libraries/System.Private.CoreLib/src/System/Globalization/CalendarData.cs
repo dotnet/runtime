@@ -84,9 +84,9 @@ namespace System.Globalization
             invariant.saAbbrevDayNames = new string[] { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };     // abbreviated day names
             invariant.saSuperShortDayNames = new string[] { "Su", "Mo", "Tu", "We", "Th", "Fr", "Sa" };      // The super short day names
             invariant.saMonthNames = new string[] { "January", "February", "March", "April", "May", "June",
-                                                            "July", "August", "September", "October", "November", "December", string.Empty}; // month names
+                                                            "July", "August", "September", "October", "November", "December", string.Empty }; // month names
             invariant.saAbbrevMonthNames = new string[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                                                            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", string.Empty}; // abbreviated month names
+                                                            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", string.Empty }; // abbreviated month names
             invariant.saMonthGenitiveNames = invariant.saMonthNames;              // Genitive month names (same as month names for invariant)
             invariant.saAbbrevMonthGenitiveNames = invariant.saAbbrevMonthNames;    // Abbreviated genitive month names (same as abbrev month names for invariant)
             invariant.saLeapYearMonthNames = invariant.saMonthNames;              // leap year month names are unused in Gregorian English (invariant)
