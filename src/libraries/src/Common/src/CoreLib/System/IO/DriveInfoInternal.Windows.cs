@@ -4,7 +4,6 @@
 
 #nullable enable
 using System.Diagnostics;
-using System.Text;
 
 namespace System.IO
 {

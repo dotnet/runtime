@@ -13,8 +13,6 @@
 **
 ===========================================================*/
 
-using System;
-
 namespace System
 {
     [AttributeUsage(AttributeTargets.Field, Inherited = false)]

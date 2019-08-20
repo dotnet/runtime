@@ -13,11 +13,8 @@
 **
 ===========================================================*/
 
-using System;
 using System.Globalization;
-using System.Threading;
 using System.Collections.Generic;
-using System.Runtime.Versioning;
 
 namespace System.Resources
 {

@@ -11,7 +11,6 @@
 **
 =============================================================================*/
 
-using System.Globalization;
 using System.Runtime.Serialization;
 
 namespace System
