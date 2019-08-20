@@ -4274,11 +4274,11 @@ namespace System
                     ConstructorInfo wrapperCons;
                     if (isString)
                     {
-                         wrapperCons = wrapperType.GetConstructor(new Type[] {typeof(string) })!;
+                         wrapperCons = wrapperType.GetConstructor(new Type[] { typeof(string) })!;
                     }
                     else
                     {
-                         wrapperCons = wrapperType.GetConstructor(new Type[] {typeof(object) })!;
+                         wrapperCons = wrapperType.GetConstructor(new Type[] { typeof(object) })!;
                     }
 
                     // Wrap each of the elements of the array.
@@ -4290,7 +4290,7 @@ namespace System
                         }
                         else
                         {
-                            newArray[currElem] = wrapperCons.Invoke(new object?[] {oldArray.GetValue(currElem)});
+                            newArray[currElem] = wrapperCons.Invoke(new object?[] { oldArray.GetValue(currElem)});
                         }
                     }
 

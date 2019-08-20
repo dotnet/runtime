@@ -20,7 +20,7 @@ namespace System.Collections
         }
 
         // Returns a collections of the keys in this dictionary.
-        ICollection Keys {get; }
+        ICollection Keys { get; }
 
         // Returns a collections of the values in this dictionary.
         ICollection Values { get; }
