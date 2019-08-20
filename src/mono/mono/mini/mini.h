@@ -400,7 +400,7 @@ typedef union MonoInstSpec { // instruction specification
 	char bytes[MONO_INST_MAX];
 } MonoInstSpec;
 
-extern const char mini_ins_info[];
+extern const char mini_ins_info[] MONO_LLVM_INTERNAL;
 extern const gint8 mini_ins_sreg_counts [];
 
 #ifndef DISABLE_JIT

@@ -5,11 +5,18 @@
 #include <config.h>
 #include <mono/utils/mono-compiler.h>
 
+#if defined(DISABLE_JIT)
+
+void
+mono_simd_intrinsics_init (void)
+{
+}
+
+#else
+
 /*
  * Only LLVM is supported as a backend.
  */
-
-#if !defined(DISABLE_JIT) && defined(ENABLE_NETCORE)
 
 #include "mini.h"
 #include "ir-emit.h"
@@ -19,6 +26,8 @@
 #include "mono/utils/bsearch.h"
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/reflection-internals.h>
+
+#if defined (MONO_ARCH_SIMD_INTRINSICS) && defined(ENABLE_NETCORE)
 
 #define MSGSTRFIELD(line) MSGSTRFIELD1(line)
 #define MSGSTRFIELD1(line) str##line
@@ -591,3 +600,5 @@ mono_simd_simplify_indirection (MonoCompile *cfg)
 MONO_EMPTY_SOURCE_FILE (simd_intrinsics_netcore);
 
 #endif
+
+#endif /* DISABLE_JIT */
