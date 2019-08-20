@@ -435,7 +435,7 @@ namespace System.Text.Json
         public static Type GetElementType(Type propertyType, Type parentType, MemberInfo memberInfo, JsonSerializerOptions options)
         {
             // We want to handle as the implemented collection type, if applicable.
-            Type implementedType = GetImplementedCollectionType(propertyType);
+            Type implementedType = GetImplementedCollectionType(parentType, propertyType, null, out _, options);
 
             if (!typeof(IEnumerable).IsAssignableFrom(implementedType))
             {
@@ -484,7 +484,7 @@ namespace System.Text.Json
             Debug.Assert(type != null);
 
             // We want to handle as the implemented collection type, if applicable.
-            Type implementedType = GetImplementedCollectionType(type);
+            Type implementedType = GetImplementedCollectionType(typeof(object), type, null, out _, options);
 
             if (implementedType.IsGenericType && implementedType.GetGenericTypeDefinition() == typeof(Nullable<>))
             {
