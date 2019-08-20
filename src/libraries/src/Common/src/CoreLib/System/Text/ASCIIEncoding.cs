@@ -667,7 +667,7 @@ namespace System.Text
             {
                 char replacementChar = replacementFallback.DefaultString[0];
 
-                int numElementsToConvert = Math.Min( bytes.Length, chars.Length);
+                int numElementsToConvert = Math.Min(bytes.Length, chars.Length);
                 int idx = 0;
 
                 fixed (byte* pBytes = &MemoryMarshal.GetReference(bytes))

@@ -134,7 +134,7 @@ namespace System
 
         [Intrinsic]
         [NonVersionable]
-        public static unsafe explicit operator void* (UIntPtr value)
+        public static unsafe explicit operator void*(UIntPtr value)
         {
             return value._value;
         }

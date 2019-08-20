@@ -285,7 +285,7 @@ namespace System.Text
             if (byteIndex < 0 || byteCount < 0)
                 throw new ArgumentOutOfRangeException((byteIndex < 0 ? nameof(byteIndex) : nameof(byteCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
 
-            if ( bytes.Length - byteIndex < byteCount)
+            if (bytes.Length - byteIndex < byteCount)
                 throw new ArgumentOutOfRangeException(nameof(bytes), SR.ArgumentOutOfRange_IndexCountBuffer);
 
             if (charIndex < 0 || charIndex > chars.Length)
@@ -406,7 +406,7 @@ namespace System.Text
                     // No fallback, maybe we can do it fast
 #if FASTLOOP
                     // If endianess is backwards then each pair of bytes would be backwards.
-                    if ( (bigEndian ^ BitConverter.IsLittleEndian) &&
+                    if ((bigEndian ^ BitConverter.IsLittleEndian) &&
 #if BIT64
                         (unchecked((long)chars) & 7) == 0 &&
 #else
@@ -695,7 +695,7 @@ namespace System.Text
                     // No fallback, maybe we can do it fast
 #if FASTLOOP
                     // If endianess is backwards then each pair of bytes would be backwards.
-                    if ( (bigEndian ^ BitConverter.IsLittleEndian) &&
+                    if ((bigEndian ^ BitConverter.IsLittleEndian) &&
 #if BIT64
                         (unchecked((long)chars) & 7) == 0 &&
 #else

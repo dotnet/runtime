@@ -19,7 +19,7 @@ namespace System.Globalization
     {
         private static readonly EraInfo[] s_thaiBuddhistEraInfo = new EraInfo[]
         {
-            new EraInfo( 1, 1, 1, 1, -543, 544, GregorianCalendar.MaxYear + 543)     // era #, start year/month/day, yearOffset, minEraYear
+            new EraInfo(1, 1, 1, 1, -543, 544, GregorianCalendar.MaxYear + 543)     // era #, start year/month/day, yearOffset, minEraYear
         };
 
         public const int ThaiBuddhistEra = 1;
