@@ -223,7 +223,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowOM();
     UNINSTALL_EXCEPTION_HANDLING_RECORD(&(___pExRecord->m_ExReg));              \
 }                                                                               
 
-#if !defined(WIN64EXCEPTIONS)
+#if !defined(FEATURE_EH_FUNCLETS)
 
 #define INSTALL_NESTED_EXCEPTION_HANDLER(frame)                                                                       \
    NestedHandlerExRecord *__pNestedHandlerExRecord = (NestedHandlerExRecord*) _alloca(sizeof(NestedHandlerExRecord)); \
@@ -234,12 +234,12 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowOM();
 #define UNINSTALL_NESTED_EXCEPTION_HANDLER()                                                                          \
    UNINSTALL_EXCEPTION_HANDLING_RECORD(&(__pNestedHandlerExRecord->m_ExReg));
 
-#else // defined(WIN64EXCEPTIONS)
+#else // defined(FEATURE_EH_FUNCLETS)
 
 #define INSTALL_NESTED_EXCEPTION_HANDLER(frame)
 #define UNINSTALL_NESTED_EXCEPTION_HANDLER()
 
-#endif // !defined(WIN64EXCEPTIONS)
+#endif // !defined(FEATURE_EH_FUNCLETS)
 
 LONG WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo);
 

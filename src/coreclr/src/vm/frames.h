@@ -768,7 +768,7 @@ private:
 #ifdef BIT64
     friend Thread * __stdcall JIT_InitPInvokeFrame(InlinedCallFrame *pFrame, PTR_VOID StubSecretArg);
 #endif
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     friend class ExceptionTracker;
 #endif
 #if defined(DACCESS_COMPILE)
@@ -1039,7 +1039,7 @@ class FaultingExceptionFrame : public Frame
 {
     friend class CheckAsmOffsets;
 
-#ifndef WIN64EXCEPTIONS
+#ifndef FEATURE_EH_FUNCLETS
 #ifdef _TARGET_X86_
     DWORD                   m_Esp;
     CalleeSavedRegisters    m_regs;
@@ -1047,11 +1047,11 @@ class FaultingExceptionFrame : public Frame
 #else  // _TARGET_X86_
     #error "Unsupported architecture"
 #endif // _TARGET_X86_
-#else // WIN64EXCEPTIONS
+#else // FEATURE_EH_FUNCLETS
     BOOL                    m_fFilterExecuted;  // Flag for FirstCallToHandler
     TADDR                   m_ReturnAddress;
     T_CONTEXT               m_ctx;
-#endif // !WIN64EXCEPTIONS
+#endif // !FEATURE_EH_FUNCLETS
 
     VPTR_VTABLE_CLASS(FaultingExceptionFrame, Frame)
 
@@ -1083,7 +1083,7 @@ public:
         return FRAME_ATTR_EXCEPTION | FRAME_ATTR_FAULTED;
     }
 
-#ifndef WIN64EXCEPTIONS
+#ifndef FEATURE_EH_FUNCLETS
     CalleeSavedRegisters *GetCalleeSavedRegisters()
     {
 #ifdef _TARGET_X86_
@@ -1093,9 +1093,9 @@ public:
         PORTABILITY_ASSERT("GetCalleeSavedRegisters");
 #endif // _TARGET_X86_
     }
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     T_CONTEXT *GetExceptionContext ()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1107,7 +1107,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         return &m_fFilterExecuted;
     }
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
     virtual BOOL NeedsUpdateRegDisplay()
     {

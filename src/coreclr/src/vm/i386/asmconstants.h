@@ -65,7 +65,7 @@ ASMCONSTANTS_C_ASSERT(CONTEXT_Eip == offsetof(CONTEXT,Eip))
 #define CONTEXT_Esp 0xc4
 ASMCONSTANTS_C_ASSERT(CONTEXT_Esp == offsetof(CONTEXT,Esp))
 
-#ifndef WIN64EXCEPTIONS
+#ifndef FEATURE_EH_FUNCLETS
 // EHContext from clr/src/vm/i386/cgencpu.h
 #define EHContext_Eax 0x00
 ASMCONSTANTS_C_ASSERT(EHContext_Eax == offsetof(EHContext,Eax))
@@ -93,7 +93,7 @@ ASMCONSTANTS_C_ASSERT(EHContext_Esp == offsetof(EHContext,Esp))
 
 #define EHContext_Eip 0x20
 ASMCONSTANTS_C_ASSERT(EHContext_Eip == offsetof(EHContext,Eip))
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
 
 // from clr/src/fjit/helperframe.h

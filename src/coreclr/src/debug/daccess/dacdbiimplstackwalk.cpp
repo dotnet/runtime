@@ -556,7 +556,7 @@ BOOL DacDbiInterfaceImpl::IsMatchingParentFrame(FramePointer fpToCheck, FramePoi
 {
     DD_ENTER_MAY_THROW;
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     StackFrame sfToCheck = StackFrame((UINT_PTR)fpToCheck.GetSPValue());
 
     StackFrame sfParent  = StackFrame((UINT_PTR)fpParent.GetSPValue());
@@ -565,10 +565,10 @@ BOOL DacDbiInterfaceImpl::IsMatchingParentFrame(FramePointer fpToCheck, FramePoi
     // Don't try to compare the StackFrames/FramePointers ourselves.
     return ExceptionTracker::IsUnwoundToTargetParentFrame(sfToCheck, sfParent); 
 
-#else // !WIN64EXCEPTIONS
+#else // !FEATURE_EH_FUNCLETS
     return FALSE;
 
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 }
 
 // Return the stack parameter size of the given method.
@@ -907,7 +907,7 @@ void DacDbiInterfaceImpl::InitNativeCodeAddrAndSize(TADDR                      t
 void DacDbiInterfaceImpl::InitParentFrameInfo(CrawlFrame * pCF,
                                               DebuggerIPCE_JITFuncData * pJITFuncData)
 {
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     pJITFuncData->fIsFilterFrame = pCF->IsFilterFunclet();
 
     if (pCF->IsFunclet())
@@ -937,7 +937,7 @@ void DacDbiInterfaceImpl::InitParentFrameInfo(CrawlFrame * pCF,
         pJITFuncData->fpParentOrSelf = FramePointer::MakeFramePointer(sfSelf.SP);
         pJITFuncData->parentNativeOffset = 0;
     }
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 }
 
 // Return the stack parameter size of the given method.
@@ -1149,7 +1149,7 @@ CorDebugInternalFrameType DacDbiInterfaceImpl::GetInternalFrameType(Frame * pFra
 void DacDbiInterfaceImpl::UpdateContextFromRegDisp(REGDISPLAY * pRegDisp,
                                                    T_CONTEXT *  pContext)
 {
-#if defined(_TARGET_X86_) && !defined(WIN64EXCEPTIONS)
+#if defined(_TARGET_X86_) && !defined(FEATURE_EH_FUNCLETS)
     // Do a partial copy first.
     pContext->ContextFlags = (CONTEXT_INTEGER | CONTEXT_CONTROL);
 
@@ -1171,9 +1171,9 @@ void DacDbiInterfaceImpl::UpdateContextFromRegDisp(REGDISPLAY * pRegDisp,
     {
         *pContext = *pRegDisp->pContext;
     }
-#else // _TARGET_X86_ && !WIN64EXCEPTIONS
+#else // _TARGET_X86_ && !FEATURE_EH_FUNCLETS
     *pContext = *pRegDisp->pCurrentContext;
-#endif // !_TARGET_X86_ || WIN64EXCEPTIONS
+#endif // !_TARGET_X86_ || FEATURE_EH_FUNCLETS
 }
 
 //---------------------------------------------------------------------------------------

@@ -18,12 +18,6 @@
 #ifndef _COR_COMPILE_H_
 #define _COR_COMPILE_H_
 
-#if !defined(_TARGET_X86_) || defined(FEATURE_PAL)
-#ifndef WIN64EXCEPTIONS
-#define WIN64EXCEPTIONS
-#endif
-#endif  // !_TARGET_X86_ || FEATURE_PAL
-
 #include <cor.h>
 #include <corhdr.h>
 #include <corinfo.h>
@@ -772,7 +766,7 @@ struct CORCOMPILE_EXCEPTION_CLAUSE
 
 struct CORCOMPILE_COLD_METHOD_ENTRY
 {
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     DWORD       mainFunctionEntryRVA;
 #endif
     // TODO: hotCodeSize should be encoded in GC info

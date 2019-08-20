@@ -3025,7 +3025,7 @@ void NativeImageDumper::DumpCompleteMethod(PTR_Module module, MethodIterator& mi
 {
     PTR_MethodDesc md = mi.GetMethodDesc();
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     PTR_RUNTIME_FUNCTION pRuntimeFunction = mi.GetRuntimeFunction();
 #endif 
 
@@ -3419,7 +3419,7 @@ size_t NativeImageDumper::TranslateSymbol(IXCLRDisassemblySupport *dis,
                 int MethodIndex = NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(rva, pNgenLayout->m_pRuntimeFunctions[iRange], 0, pNgenLayout->m_nRuntimeFunctions[iRange] - 1);
                 if (MethodIndex >= 0)
                 {
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
                     while (pNgenLayout->m_MethodDescs[iRange][MethodIndex] == 0)
                         MethodIndex--;
 #endif
@@ -3445,7 +3445,7 @@ size_t NativeImageDumper::TranslateSymbol(IXCLRDisassemblySupport *dis,
 
                 PTR_CORCOMPILE_COLD_METHOD_ENTRY pColdCodeMap = pNgenLayout->m_ColdCodeMap;
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
                 while (pColdCodeMap[ColdMethodIndex].mainFunctionEntryRVA == 0)
                     ColdMethodIndex--;
 
@@ -6452,7 +6452,7 @@ void NativeImageDumper::EntryPointToString( TADDR pEntryPoint,
                 int MethodIndex = NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(rva, pNgenLayout->m_pRuntimeFunctions[iRange], 0, pNgenLayout->m_nRuntimeFunctions[iRange] - 1);
                 if (MethodIndex >= 0)
                 {
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
                     while (pNgenLayout->m_MethodDescs[iRange][MethodIndex] == 0)
                         MethodIndex--;
 #endif

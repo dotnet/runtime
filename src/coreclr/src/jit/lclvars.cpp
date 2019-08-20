@@ -44,7 +44,7 @@ void Compiler::lvaInit()
     lvaTrackedFixed = false; // false: We can still add new tracked variables
 
     lvaDoneFrameLayout = NO_FRAME_LAYOUT;
-#if !FEATURE_EH_FUNCLETS
+#if !defined(FEATURE_EH_FUNCLETS)
     lvaShadowSPslotsVar = BAD_VAR_NUM;
 #endif // !FEATURE_EH_FUNCLETS
     lvaInlinedPInvokeFrameVar = BAD_VAR_NUM;
@@ -74,7 +74,7 @@ void Compiler::lvaInit()
     lvaInlineeReturnSpillTemp = BAD_VAR_NUM;
 
     gsShadowVarInfo = nullptr;
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
     lvaPSPSym = BAD_VAR_NUM;
 #endif
 #if FEATURE_SIMD
@@ -3429,7 +3429,7 @@ void Compiler::lvaSortByRefCount()
         {
             lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_NoRegVars));
         }
-#if defined(JIT32_GCENCODER) && defined(WIN64EXCEPTIONS)
+#if defined(JIT32_GCENCODER) && defined(FEATURE_EH_FUNCLETS)
         else if (lvaIsOriginalThisArg(lclNum) && (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0)
         {
             // For x86/Linux, we need to track "this".
@@ -3995,7 +3995,7 @@ void Compiler::lvaMarkLocalVars()
         }
     }
 
-#if !FEATURE_EH_FUNCLETS
+#if !defined(FEATURE_EH_FUNCLETS)
 
     // Grab space for exception handling
 
@@ -4028,7 +4028,7 @@ void Compiler::lvaMarkLocalVars()
     // PSPSym and LocAllocSPvar are not used by the CoreRT ABI
     if (!IsTargetAbi(CORINFO_CORERT_ABI))
     {
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
         if (ehNeedsPSPSym())
         {
             lvaPSPSym            = lvaGrabTempWithImplicitUse(false DEBUGARG("PSPSym"));
@@ -4857,7 +4857,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
 {
     LclVarDsc* varDsc;
 
-#if FEATURE_EH_FUNCLETS && defined(_TARGET_AMD64_)
+#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_AMD64_)
     if (lvaPSPSym != BAD_VAR_NUM)
     {
         // We need to fix the offset of the PSPSym so there is no padding between it and the outgoing argument space.
@@ -5799,7 +5799,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     }
 #endif //_TARGET_AMD64_
 
-#if FEATURE_EH_FUNCLETS && defined(_TARGET_ARMARCH_)
+#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARMARCH_)
     if (lvaPSPSym != BAD_VAR_NUM)
     {
         // On ARM/ARM64, if we need a PSPSym, allocate it first, before anything else, including
@@ -5887,7 +5887,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     }
 #endif
 
-#if !FEATURE_EH_FUNCLETS
+#if !defined(FEATURE_EH_FUNCLETS)
     /* If we need space for slots for shadow SP, reserve it now */
     if (ehNeedsShadowSPslots())
     {
@@ -6052,7 +6052,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             // These need to be located as the very first variables (highest memory address)
             // and so they have already been assigned an offset
             if (
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
                 lclNum == lvaPSPSym ||
 #else
                 lclNum == lvaShadowSPslotsVar ||
@@ -6315,7 +6315,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         }
     }
 
-#if FEATURE_EH_FUNCLETS && defined(_TARGET_AMD64_)
+#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_AMD64_)
     if (lvaPSPSym != BAD_VAR_NUM)
     {
         // On AMD64, if we need a PSPSym, allocate it last, immediately above the outgoing argument

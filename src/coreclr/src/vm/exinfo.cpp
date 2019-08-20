@@ -9,7 +9,7 @@
 #include "exinfo.h"
 #include "dbginterface.h"
 
-#ifndef WIN64EXCEPTIONS
+#ifndef FEATURE_EH_FUNCLETS
 #ifndef DACCESS_COMPILE
 //
 // Destroy the handle within an ExInfo. This respects the fact that we can have preallocated global handles living
@@ -306,4 +306,4 @@ void ExInfo::SetExceptionCode(const EXCEPTION_RECORD *pCER)
     DacError(E_UNEXPECTED);
 #endif // !DACCESS_COMPILE
 }
-#endif // !WIN64EXCEPTIONS
+#endif // !FEATURE_EH_FUNCLETS

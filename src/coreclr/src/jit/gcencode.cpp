@@ -102,7 +102,7 @@ ReturnKind GCInfo::getReturnKind()
     }
 }
 
-#if !defined(JIT32_GCENCODER) || defined(WIN64EXCEPTIONS)
+#if !defined(JIT32_GCENCODER) || defined(FEATURE_EH_FUNCLETS)
 
 // gcMarkFilterVarsPinned - Walk all lifetimes and make it so that anything
 //     live in a filter is marked as pinned (often by splitting the lifetime
@@ -393,7 +393,7 @@ void GCInfo::gcDumpVarPtrDsc(varPtrDsc* desc)
 
 #endif // DEBUG
 
-#endif // !defined(JIT32_GCENCODER) || defined(WIN64EXCEPTIONS)
+#endif // !defined(JIT32_GCENCODER) || defined(FEATURE_EH_FUNCLETS)
 
 #ifdef JIT32_GCENCODER
 
@@ -2257,8 +2257,8 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
                     }
                 }
 
-#ifndef WIN64EXCEPTIONS
-                // For WIN64EXCEPTIONS, "this" must always be in untracked variables
+#ifndef FEATURE_EH_FUNCLETS
+                // For FEATURE_EH_FUNCLETS, "this" must always be in untracked variables
                 // so we cannot have "this" in variable lifetimes
                 if (compiler->lvaIsOriginalThisArg(varNum) && compiler->lvaKeepAliveAndReportThis())
 
@@ -2431,7 +2431,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
     varPtrDsc* varTmp;
     count = 0;
 
-#ifndef WIN64EXCEPTIONS
+#ifndef FEATURE_EH_FUNCLETS
     if (thisKeptAliveIsInUntracked)
     {
         count = 1;
@@ -4047,7 +4047,7 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
             compiler->lvaGetCallerSPRelativeOffset(compiler->lvaSecurityObject));
     }
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
     if (compiler->lvaPSPSym != BAD_VAR_NUM)
     {
 #ifdef _TARGET_AMD64_

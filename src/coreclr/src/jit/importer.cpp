@@ -9190,7 +9190,7 @@ REDO_RETURN_NODE:
    After this function, the BBJ_LEAVE block has been converted to a different type.
  */
 
-#if !FEATURE_EH_FUNCLETS
+#if !defined(FEATURE_EH_FUNCLETS)
 
 void Compiler::impImportLeave(BasicBlock* block)
 {
@@ -9905,7 +9905,7 @@ void Compiler::impImportLeave(BasicBlock* block)
 
 void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
 {
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
     // With EH Funclets, while importing leave opcode we create another block ending with BBJ_ALWAYS (call it B1)
     // and the block containing leave (say B0) is marked as BBJ_CALLFINALLY.   Say for some reason we reimport B0,
     // it is reset (in this routine) by marking as ending with BBJ_LEAVE and further down when B0 is reimported, we

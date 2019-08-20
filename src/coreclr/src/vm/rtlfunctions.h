@@ -7,7 +7,7 @@
 #ifndef __RTLFUNCTIONS_H__
 #define __RTLFUNCTIONS_H__
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
 
 enum EEDynamicFunctionTableType
 {
@@ -47,10 +47,10 @@ PVOID DecodeDynamicFunctionTableContext (PVOID pvContext)
 
 #define DYNAMIC_FUNCTION_TABLE_MAX_RANGE LONG_MAX
 
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
 
-#if defined(WIN64EXCEPTIONS) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE) && !defined(FEATURE_PAL)
+#if defined(FEATURE_EH_FUNCLETS) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE) && !defined(FEATURE_PAL)
 
 // Wrapper for RtlInstallFunctionTableCallback.
 VOID InstallEEFunctionTable(
@@ -68,12 +68,12 @@ VOID DeleteEEFunctionTable(
     RtlDeleteFunctionTable((PT_RUNTIME_FUNCTION)((ULONG64)pvTableID | 3));
 }
 
-#else // WIN64EXCEPTIONS && !DACCESS_COMPILE && !CROSSGEN_COMPILE && !FEATURE_PAL
+#else // FEATURE_EH_FUNCLETS && !DACCESS_COMPILE && !CROSSGEN_COMPILE && !FEATURE_PAL
 
 #define InstallEEFunctionTable(pvTableID, pvStartRange, cbRange, pfnGetRuntimeFunctionCallback, pvContext, TableType) do { } while (0)
 #define DeleteEEFunctionTable(pvTableID) do { } while (0)
 
-#endif // WIN64EXCEPTIONS && !DACCESS_COMPILE && !CROSSGEN_COMPILE && !FEATURE_PAL
+#endif // FEATURE_EH_FUNCLETS && !DACCESS_COMPILE && !CROSSGEN_COMPILE && !FEATURE_PAL
 
 
 #endif // !__RTLFUNCTIONS_H__

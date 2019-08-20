@@ -76,9 +76,9 @@ EXTERN_C void SinglecastDelegateInvokeStub();
 #define JUMP_ALLOCATE_SIZE                      8   // # bytes to allocate for a jump instruction
 #define BACK_TO_BACK_JUMP_ALLOCATE_SIZE         8   // # bytes to allocate for a back to back jump instruction
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
 #define USE_INDIRECT_CODEHEADER
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
 #define HAS_COMPACT_ENTRYPOINTS                 1
 
@@ -185,7 +185,7 @@ struct ArgumentRegisters {
 struct REGDISPLAY;
 typedef REGDISPLAY *PREGDISPLAY;
 
-#ifndef WIN64EXCEPTIONS
+#ifndef FEATURE_EH_FUNCLETS
 // Sufficient context for Try/Catch restoration.
 struct EHContext {
     INT32       Eax;
@@ -234,7 +234,7 @@ struct EHContext {
         Eip = 0;
     }
 };
-#endif // !WIN64EXCEPTIONS
+#endif // !FEATURE_EH_FUNCLETS
 
 #define ARGUMENTREGISTERS_SIZE sizeof(ArgumentRegisters)
 

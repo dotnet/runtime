@@ -440,8 +440,8 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* untrackedCount, UNALIGNED 
                 }
             }
 
-#if !defined(JIT32_GCENCODER) || !defined(WIN64EXCEPTIONS)
-            // For x86/WIN64EXCEPTIONS, "this" must always be in untracked variables
+#if !defined(JIT32_GCENCODER) || !defined(FEATURE_EH_FUNCLETS)
+            // For x86/FEATURE_EH_FUNCLETS, "this" must always be in untracked variables
             // so we cannot have "this" in variable lifetimes
             if (compiler->lvaIsOriginalThisArg(varNum) && compiler->lvaKeepAliveAndReportThis())
             {
