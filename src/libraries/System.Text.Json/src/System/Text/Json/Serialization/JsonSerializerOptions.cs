@@ -355,7 +355,14 @@ namespace System.Text.Json
         {
             if (!_objectJsonProperties.TryGetValue(objectType, out JsonPropertyInfo propertyInfo))
             {
-                propertyInfo = JsonClassInfo.CreateProperty(objectType, objectType, objectType, null, typeof(object), null, options);
+                propertyInfo = JsonClassInfo.CreateProperty(
+                    objectType,
+                    objectType,
+                    objectType,
+                    propertyInfo: null,
+                    typeof(object),
+                    converter: null,
+                    options);
                 _objectJsonProperties[objectType] = propertyInfo;
             }
 
