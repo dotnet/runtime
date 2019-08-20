@@ -662,7 +662,7 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentNullException(nameof(s));
             }
 
-            return s.MarshalToString(globalAlloc: true, unicode: true); ;
+            return s.MarshalToString(globalAlloc: true, unicode: true);
         }
 
         public static unsafe IntPtr StringToHGlobalAnsi(string? s)
