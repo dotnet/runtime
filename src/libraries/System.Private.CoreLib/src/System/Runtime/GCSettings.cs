@@ -28,7 +28,7 @@ namespace System.Runtime
         {
             Succeeded = 0,
             NoGCInProgress = 1 // NoGCRegion is in progress, can't change pause mode.
-        };
+        }
 
         public static GCLatencyMode LatencyMode
         {

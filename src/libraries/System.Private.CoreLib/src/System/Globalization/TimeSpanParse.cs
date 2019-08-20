@@ -1519,7 +1519,7 @@ namespace System.Globalization
                     if (!ParseTime(out time, ref result))
                     {
                         return false;
-                    };
+                    }
                 }
                 else
                 {
@@ -1538,7 +1538,7 @@ namespace System.Globalization
                         if (!ParseTime(out remainingTime, ref result))
                         {
                             return false;
-                        };
+                        }
                         time += remainingTime;
                     }
                 }

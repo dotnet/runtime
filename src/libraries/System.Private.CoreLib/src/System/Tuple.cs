@@ -216,7 +216,7 @@ namespace System
 
         public override bool Equals(object? obj)
         {
-            return ((IStructuralEquatable)this).Equals(obj, EqualityComparer<object>.Default); ;
+            return ((IStructuralEquatable)this).Equals(obj, EqualityComparer<object>.Default);
         }
 
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
@@ -327,7 +327,7 @@ namespace System
 
         public override bool Equals(object? obj)
         {
-            return ((IStructuralEquatable)this).Equals(obj, EqualityComparer<object>.Default); ;
+            return ((IStructuralEquatable)this).Equals(obj, EqualityComparer<object>.Default);
         }
 
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
@@ -448,7 +448,7 @@ namespace System
 
         public override bool Equals(object? obj)
         {
-            return ((IStructuralEquatable)this).Equals(obj, EqualityComparer<object>.Default); ;
+            return ((IStructuralEquatable)this).Equals(obj, EqualityComparer<object>.Default);
         }
 
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
@@ -579,7 +579,7 @@ namespace System
 
         public override bool Equals(object? obj)
         {
-            return ((IStructuralEquatable)this).Equals(obj, EqualityComparer<object>.Default); ;
+            return ((IStructuralEquatable)this).Equals(obj, EqualityComparer<object>.Default);
         }
 
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
@@ -720,7 +720,7 @@ namespace System
 
         public override bool Equals(object? obj)
         {
-            return ((IStructuralEquatable)this).Equals(obj, EqualityComparer<object>.Default); ;
+            return ((IStructuralEquatable)this).Equals(obj, EqualityComparer<object>.Default);
         }
 
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
@@ -871,7 +871,7 @@ namespace System
 
         public override bool Equals(object? obj)
         {
-            return ((IStructuralEquatable)this).Equals(obj, EqualityComparer<object>.Default); ;
+            return ((IStructuralEquatable)this).Equals(obj, EqualityComparer<object>.Default);
         }
 
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
@@ -1037,7 +1037,7 @@ namespace System
 
         public override bool Equals(object? obj)
         {
-            return ((IStructuralEquatable)this).Equals(obj, EqualityComparer<object>.Default); ;
+            return ((IStructuralEquatable)this).Equals(obj, EqualityComparer<object>.Default);
         }
 
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
