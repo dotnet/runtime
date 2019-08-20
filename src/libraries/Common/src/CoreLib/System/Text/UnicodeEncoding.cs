@@ -10,8 +10,6 @@
 // the problem is fastloop-specific.
 #define FASTLOOP
 
-using System;
-using System.Globalization;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 

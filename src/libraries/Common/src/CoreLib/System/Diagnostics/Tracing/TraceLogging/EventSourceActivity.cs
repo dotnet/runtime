@@ -2,13 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#if ES_BUILD_STANDALONE
 using System;
 using System.Diagnostics;
-
-#if !ES_BUILD_AGAINST_DOTNET_V35
-using Contract = System.Diagnostics.Contracts.Contract;
-#else
-using Contract = Microsoft.Diagnostics.Contracts.Internal.Contract;
 #endif
 
 #if ES_BUILD_STANDALONE
@@ -230,7 +226,7 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        #region private
+#region private
         private EventSourceActivity Start<T>(string? eventName, ref EventSourceOptions options, ref T data)
         {
             if (this.state != State.Started)
@@ -312,6 +308,6 @@ namespace System.Diagnostics.Tracing
         private string? eventName;
 
         internal static Guid s_empty;
-        #endregion
+#endregion
     }
 }

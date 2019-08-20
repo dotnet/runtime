@@ -3,8 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Runtime.CompilerServices; // Do not remove. This is necessary for netstandard, since this file is mirrored into corefx
-
 #if !netstandard
 using Internal.Runtime.CompilerServices;
 #endif

@@ -3,9 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 #nullable enable
-using Microsoft.Win32.SafeHandles;
-using System;
-using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 
