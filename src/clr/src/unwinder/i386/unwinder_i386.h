@@ -9,7 +9,7 @@
 
 #include "unwinder.h"
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
 //---------------------------------------------------------------------------------------
 //
 // See the comment for the base class code:OOPStackUnwinder.
@@ -30,6 +30,6 @@ public:
         __inout_opt PKNONVOLATILE_CONTEXT_POINTERS ContextPointers,
         __deref_opt_out_opt PEXCEPTION_ROUTINE *HandlerRoutine);
 };
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
 #endif // __unwinder_i386_h__

@@ -891,7 +891,7 @@ void CodeGen::siInit()
 
     assert(compiler->opts.compScopeInfo);
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
     if (compiler->info.compVarScopesCount > 0)
     {
         siInFuncletRegion = false;
@@ -951,7 +951,7 @@ void CodeGen::siBeginBlock(BasicBlock* block)
         return;
     }
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
     if (siInFuncletRegion)
     {
         return;
@@ -1057,7 +1057,7 @@ void CodeGen::siOpenScopesForNonTrackedVars(const BasicBlock* block, unsigned in
         // Check if there are any scopes on the current block's start boundary.
         VarScopeDsc* varScope = nullptr;
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
 
         // If we find a spot where the code offset isn't what we expect, because
         // there is a gap, it might be because we've moved the funclets out of
@@ -1086,7 +1086,7 @@ void CodeGen::siOpenScopesForNonTrackedVars(const BasicBlock* block, unsigned in
             }
         }
 
-#else // FEATURE_EH_FUNCLETS
+#else // !FEATURE_EH_FUNCLETS
 
         if (lastBlockILEndOffset != beginOffs)
         {
@@ -1094,7 +1094,7 @@ void CodeGen::siOpenScopesForNonTrackedVars(const BasicBlock* block, unsigned in
             return;
         }
 
-#endif // FEATURE_EH_FUNCLETS
+#endif // !FEATURE_EH_FUNCLETS
 
         while ((varScope = compiler->compGetNextEnterScope(beginOffs)) != nullptr)
         {
@@ -1148,7 +1148,7 @@ void CodeGen::siEndBlock(BasicBlock* block)
 {
     assert(compiler->opts.compScopeInfo && (compiler->info.compVarScopesCount > 0));
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
     if (siInFuncletRegion)
     {
         return;
@@ -1237,7 +1237,7 @@ void CodeGen::siUpdate()
         return;
     }
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
     if (siInFuncletRegion)
     {
         return;
@@ -1274,7 +1274,7 @@ void CodeGen::siCheckVarScope(unsigned varNum, IL_OFFSET offs)
 {
     assert(compiler->opts.compScopeInfo && !compiler->opts.compDbgCode && (compiler->info.compVarScopesCount > 0));
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
     if (siInFuncletRegion)
     {
         return;

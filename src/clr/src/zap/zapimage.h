@@ -32,7 +32,7 @@ class ZapBaseRelocs;
 class ZapBlobWithRelocs;
 
 //class ZapGCInfoTable;
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
 class ZapUnwindDataTable;
 #endif
 
@@ -214,11 +214,11 @@ public:
     ZapVirtualSection * m_pHotRuntimeFunctionLookupSection;
     ZapVirtualSection * m_pRuntimeFunctionLookupSection;
     ZapVirtualSection * m_pColdCodeMapSection;
-#if defined(WIN64EXCEPTIONS)
+#if defined(FEATURE_EH_FUNCLETS)
     ZapVirtualSection * m_pHotUnwindDataSection;
     ZapVirtualSection * m_pUnwindDataSection;
     ZapVirtualSection * m_pColdUnwindDataSection;
-#endif // defined(WIN64EXCEPTIONS)
+#endif // defined(FEATURE_EH_FUNCLETS)
 
 #ifdef FEATURE_READYTORUN_COMPILER
     ZapVirtualSection * m_pAvailableTypesSection;
@@ -280,7 +280,7 @@ private:
 
     ZapGCInfoTable *            m_pGCInfoTable;
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     ZapUnwindDataTable *        m_pUnwindDataTable;
 #endif
 
@@ -578,7 +578,7 @@ private:
     ZapVirtualSection * GetCodeMethodDescSection(CodeType codeType);
     ZapVirtualSection * GetUnwindInfoLookupSection(CodeType codeType);
 
-#if defined(WIN64EXCEPTIONS)
+#if defined(FEATURE_EH_FUNCLETS)
     ZapVirtualSection * GetUnwindDataSection(CodeType codeType);
 #endif
 
@@ -679,7 +679,7 @@ public:
     void SetDependencies(CORCOMPILE_DEPENDENCY *pDependencies, DWORD cDependencies);
     void SetPdbFileName(const SString &strFileName);
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     void SetRuntimeFunctionsDirectoryEntry();
 #endif
 

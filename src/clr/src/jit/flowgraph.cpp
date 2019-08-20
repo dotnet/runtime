@@ -66,7 +66,7 @@ void Compiler::fgInit()
     fgLastBB         = nullptr;
     fgFirstColdBlock = nullptr;
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
     fgFirstFuncletBB  = nullptr;
     fgFuncletsCreated = false;
 #endif // FEATURE_EH_FUNCLETS
@@ -134,7 +134,7 @@ void Compiler::fgInit()
     fgEnterBlksSetValid = false;
 #endif // DEBUG
 
-#if !FEATURE_EH_FUNCLETS
+#if !defined(FEATURE_EH_FUNCLETS)
     ehMaxHndNestingCount = 0;
 #endif // !FEATURE_EH_FUNCLETS
 
@@ -1900,7 +1900,7 @@ void Compiler::fgComputeEnterBlocksSet()
         }
     }
 
-#if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
     // TODO-ARM-Cleanup: The ARM code here to prevent creating retless calls by adding the BBJ_ALWAYS
     // to the enter blocks is a bit of a compromise, because sometimes the blocks are already reachable,
     // and it messes up DFS ordering to have them marked as enter block. We should prevent the
@@ -1916,7 +1916,7 @@ void Compiler::fgComputeEnterBlocksSet()
             BlockSetOps::AddElemD(this, fgEnterBlks, block->bbNext->bbNum);
         }
     }
-#endif // FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
 
 #ifdef DEBUG
     if (verbose)
@@ -1999,7 +1999,7 @@ bool Compiler::fgRemoveUnreachableBlocks()
             block->bbJumpKind = BBJ_THROW;
             block->bbSetRunRarely();
 
-#if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
             // If this is a <BBJ_CALLFINALLY, BBJ_ALWAYS> pair, we have to clear BBF_FINALLY_TARGET flag on
             // the target node (of BBJ_ALWAYS) since BBJ_CALLFINALLY node is getting converted to a BBJ_THROW.
             if (bIsBBCallAlwaysPair)
@@ -2007,7 +2007,7 @@ bool Compiler::fgRemoveUnreachableBlocks()
                 noway_assert(block->bbNext->bbJumpKind == BBJ_ALWAYS);
                 fgClearFinallyTargetBit(block->bbNext->bbJumpDest);
             }
-#endif // FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
         }
         else
         {
@@ -2199,7 +2199,7 @@ void Compiler::fgDfsInvPostOrder()
     // an incoming edge into the block).
     assert(fgEnterBlksSetValid);
 
-#if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
     //
     //    BlockSetOps::UnionD(this, startNodes, fgEnterBlks);
     //
@@ -6309,7 +6309,7 @@ void Compiler::fgFindBasicBlocks()
  *  try-finally blocks.
  */
 
-#if !FEATURE_EH_FUNCLETS
+#if !defined(FEATURE_EH_FUNCLETS)
         HBtab->ebdHandlerNestingLevel = 0;
 #endif // !FEATURE_EH_FUNCLETS
 
@@ -6321,7 +6321,7 @@ void Compiler::fgFindBasicBlocks()
 
         for (EHblkDsc* xtab = compHndBBtab; xtab < HBtab; xtab++)
         {
-#if !FEATURE_EH_FUNCLETS
+#if !defined(FEATURE_EH_FUNCLETS)
             if (jitIsBetween(xtab->ebdHndBegOffs(), hndBegOff, hndEndOff))
             {
                 xtab->ebdHandlerNestingLevel++;
@@ -6359,7 +6359,7 @@ void Compiler::fgFindBasicBlocks()
 
     } // end foreach handler table entry
 
-#if !FEATURE_EH_FUNCLETS
+#if !defined(FEATURE_EH_FUNCLETS)
 
     EHblkDsc* HBtabEnd;
     for (HBtab = compHndBBtab, HBtabEnd = compHndBBtab + compHndBBtabCount; HBtab < HBtabEnd; HBtab++)
@@ -6509,7 +6509,7 @@ void Compiler::fgCheckBasicBlockControlFlow()
 
                 break;
 
-            case BBJ_EHCATCHRET:  // block ends with a leave out of a catch (only #if FEATURE_EH_FUNCLETS)
+            case BBJ_EHCATCHRET:  // block ends with a leave out of a catch (only #if defined(FEATURE_EH_FUNCLETS))
             case BBJ_CALLFINALLY: // block always calls the target finally
             default:
                 noway_assert(!"Unexpected bbJumpKind"); // these blocks don't get created until importing
@@ -7877,7 +7877,7 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
     return tree;
 }
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
 
 /*****************************************************************************
  *
@@ -8936,7 +8936,7 @@ void Compiler::fgAddInternal()
     // Merge return points if required or beneficial
     MergedReturns merger(this);
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
     // Add the synchronized method enter/exit calls and try/finally protection. Note
     // that this must happen before the one BBJ_RETURN block is created below, so the
     // BBJ_RETURN block gets placed at the top-level, not within an EH region. (Otherwise,
@@ -9106,7 +9106,7 @@ void Compiler::fgAddInternal()
 #endif
     }
 
-#if !FEATURE_EH_FUNCLETS
+#if !defined(FEATURE_EH_FUNCLETS)
 
     /* Is this a 'synchronized' method? */
 
@@ -9363,9 +9363,9 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     // interruptible if we exercised more care here.
     newBlock->bbFlags &= ~BBF_GC_SAFE_POINT;
 
-#if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
     newBlock->bbFlags &= ~(BBF_FINALLY_TARGET);
-#endif // FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
 
     // The new block has no code, so we leave bbCodeOffs/bbCodeOffsEnd set to BAD_IL_OFFSET. If a caller
     // puts code in the block, then it needs to update these.
@@ -10059,7 +10059,7 @@ inline bool OperIsControlFlow(genTreeOps oper)
 
         case GT_RETURN:
         case GT_RETFILT:
-#if !FEATURE_EH_FUNCLETS
+#if !defined(FEATURE_EH_FUNCLETS)
         case GT_END_LFIN:
 #endif // !FEATURE_EH_FUNCLETS
             return true;
@@ -10194,9 +10194,9 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
     noway_assert(bNext->countOfInEdges() == 1 || block->isEmpty());
     noway_assert(bNext->bbPreds);
 
-#if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
     noway_assert((bNext->bbFlags & BBF_FINALLY_TARGET) == 0);
-#endif // FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
 
     // Make sure the second block is not the start of a TRY block or an exception handler
 
@@ -10677,9 +10677,9 @@ void Compiler::fgUnreachableBlock(BasicBlock* block)
 
     noway_assert(block->bbPrev != nullptr); // Can use this function to remove the first block
 
-#if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
     assert(!block->bbPrev->isBBCallAlwaysPair()); // can't remove the BBJ_ALWAYS of a BBJ_CALLFINALLY / BBJ_ALWAYS pair
-#endif                                            // FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+#endif                                            // defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
 
     /* First walk the statement trees in this basic block and delete each stmt */
 
@@ -10833,7 +10833,7 @@ void Compiler::fgRemoveConditionalJump(BasicBlock* block)
 
 BasicBlock* Compiler::fgLastBBInMainFunction()
 {
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
 
     if (fgFirstFuncletBB != nullptr)
     {
@@ -10857,7 +10857,7 @@ BasicBlock* Compiler::fgLastBBInMainFunction()
 
 BasicBlock* Compiler::fgEndBBAfterMainFunction()
 {
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
 
     if (fgFirstFuncletBB != nullptr)
     {
@@ -10942,7 +10942,7 @@ void Compiler::fgUnlinkRange(BasicBlock* bBeg, BasicBlock* bEnd)
         fgFirstColdBlock = bPrev->bbNext;
     }
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
 #ifdef DEBUG
     // You can't unlink a range that includes the first funclet block. A range certainly
     // can't cross the non-funclet/funclet region. And you can't unlink the first block
@@ -10982,10 +10982,10 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
     // Should never remove a genReturnBB, as we might have special hookups there.
     noway_assert(block != genReturnBB);
 
-#if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
     // Don't remove a finally target
     assert(!(block->bbFlags & BBF_FINALLY_TARGET));
-#endif // FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
 
     if (unreachable)
     {
@@ -10999,7 +10999,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
             fgLastBB = bPrev;
         }
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
         // If block was the fgFirstFuncletBB then set fgFirstFuncletBB to block->bbNext
         if (block == fgFirstFuncletBB)
         {
@@ -11012,9 +11012,9 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
             // bPrev CALL becomes RETLESS as the BBJ_ALWAYS block is unreachable
             bPrev->bbFlags |= BBF_RETLESS_CALL;
 
-#if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
             NO_WAY("No retless call finally blocks; need unwind target instead");
-#endif // FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
         }
         else if (bPrev->bbJumpKind == BBJ_ALWAYS && bPrev->bbJumpDest == block->bbNext &&
                  !(bPrev->bbFlags & BBF_KEEP_BBJ_ALWAYS) && (block != fgFirstColdBlock) &&
@@ -11054,9 +11054,9 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
             fgRemoveBlock(leaveBlk, true);
 
-#if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
             fgClearFinallyTargetBit(leaveBlk->bbJumpDest);
-#endif // FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
         }
         else if (block->bbJumpKind == BBJ_RETURN)
         {
@@ -11148,7 +11148,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
             fgFirstColdBlock = block->bbNext;
         }
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
         // Update fgFirstFuncletBB if necessary
         if (block == fgFirstFuncletBB)
         {
@@ -11747,7 +11747,7 @@ bool Compiler::fgExpandRarelyRunBlocks()
                             // additional predecessor for the BBJ_ALWAYS block
                             tmpbb = bPrev->bbPrev;
                             noway_assert(tmpbb != nullptr);
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
                             noway_assert(tmpbb->isBBCallAlwaysPair());
                             bPrevPrev = tmpbb;
 #else
@@ -12026,7 +12026,7 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
     BasicBlock* bLast   = nullptr;
     BasicBlock* bPrev   = nullptr;
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
     // We don't support moving try regions... yet?
     noway_assert(relocateType == FG_RELOCATE_HANDLER);
 #endif // FEATURE_EH_FUNCLETS
@@ -12067,7 +12067,7 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
         goto FAILURE;
     }
 
-#if !FEATURE_EH_FUNCLETS
+#if !defined(FEATURE_EH_FUNCLETS)
     // In the funclets case, we still need to set some information on the handler blocks
     if (bLast->bbNext == NULL)
     {
@@ -12082,7 +12082,7 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
     // in the range.
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if !FEATURE_EH_FUNCLETS
+#if !defined(FEATURE_EH_FUNCLETS)
     bool isRare;
     isRare = bStart->isRunRarely();
 #endif // !FEATURE_EH_FUNCLETS
@@ -12103,7 +12103,7 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
 
         if (inTheRange)
         {
-#if !FEATURE_EH_FUNCLETS
+#if !defined(FEATURE_EH_FUNCLETS)
             // Unless all blocks are (not) run rarely we must return false.
             if (isRare != block->isRunRarely())
             {
@@ -12138,18 +12138,19 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
         fgDispHandlerTab();
     }
 
-    if (!FEATURE_EH_FUNCLETS)
+#if !defined(FEATURE_EH_FUNCLETS)
+
+    // This is really expensive, and quickly becomes O(n^n) with funclets
+    // so only do it once after we've created them (see fgCreateFunclets)
+    if (expensiveDebugCheckLevel >= 2)
     {
-        // This is really expensive, and quickly becomes O(n^n) with funclets
-        // so only do it once after we've created them (see fgCreateFunclets)
-        if (expensiveDebugCheckLevel >= 2)
-        {
-            fgDebugCheckBBlist();
-        }
+        fgDebugCheckBBlist();
     }
+#endif
+
 #endif // DEBUG
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
 
     bStart->bbFlags |= BBF_FUNCLET_BEG; // Mark the start block of the funclet
 
@@ -12169,7 +12170,7 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
     BasicBlock* insertAfterBlk;
     insertAfterBlk = fgLastBB;
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
 
     // There are several cases we need to consider when moving an EH range.
     // If moving a range X, we must consider its relationship to every other EH
@@ -12274,20 +12275,11 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
         fgDispHandlerTab();
     }
 
-    // We have to wait to do this until we've created all the additional regions
-    // Because this relies on ebdEnclosingTryIndex and ebdEnclosingHndIndex
-    if (!FEATURE_EH_FUNCLETS)
-    {
-        // This is really expensive, and quickly becomes O(n^n) with funclets
-        // so only do it once after we've created them (see fgCreateFunclets)
-        if (expensiveDebugCheckLevel >= 2)
-        {
-            fgDebugCheckBBlist();
-        }
-    }
+// We have to wait to do this until we've created all the additional regions
+// Because this relies on ebdEnclosingTryIndex and ebdEnclosingHndIndex
 #endif // DEBUG
 
-#else // FEATURE_EH_FUNCLETS
+#else // !FEATURE_EH_FUNCLETS
 
     for (XTnum = 0, HBtab = compHndBBtab; XTnum < compHndBBtabCount; XTnum++, HBtab++)
     {
@@ -12344,7 +12336,7 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
     // If bLast falls through, we will insert a jump to bNext
     fgConnectFallThrough(bLast, bNext);
 
-#endif // FEATURE_EH_FUNCLETS
+#endif // !FEATURE_EH_FUNCLETS
 
     goto DONE;
 
@@ -12365,7 +12357,7 @@ DONE:
     return bLast;
 }
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
 
 #if defined(_TARGET_ARM_)
 
@@ -13747,7 +13739,7 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
         optimizeJump = false;
     }
 
-#if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
     // Don't optimize a jump to a finally target. For BB1->BB2->BB3, where
     // BB2 is a finally target, if we changed BB1 to jump directly to BB3,
     // it would skip the finally target. BB1 might be a BBJ_ALWAYS block part
@@ -13757,7 +13749,7 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
     {
         optimizeJump = false;
     }
-#endif // FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
 
     // Must optimize jump if bDest has been removed
     //
@@ -13955,13 +13947,13 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
                 }
             }
 
-#if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
             /* Don't remove finally targets */
             if (block->bbFlags & BBF_FINALLY_TARGET)
                 break;
-#endif // FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
             /* Don't remove an empty block that is in a different EH region
              * from its successor block, if the block is the target of a
              * catch return. It is required that the return address of a
@@ -15097,7 +15089,7 @@ void Compiler::fgReorderBlocks()
 {
     noway_assert(opts.compDbgCode == false);
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
     assert(fgFuncletsCreated);
 #endif // FEATURE_EH_FUNCLETS
 
@@ -15114,7 +15106,7 @@ void Compiler::fgReorderBlocks()
     // First let us expand the set of run rarely blocks
     newRarelyRun |= fgExpandRarelyRunBlocks();
 
-#if !FEATURE_EH_FUNCLETS
+#if !defined(FEATURE_EH_FUNCLETS)
     movedBlocks |= fgRelocateEHRegions();
 #endif // !FEATURE_EH_FUNCLETS
 
@@ -15581,7 +15573,7 @@ void Compiler::fgReorderBlocks()
                     break;
                 }
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
                 // Check if we've reached the funclets region, at the end of the function
                 if (fgFirstFuncletBB == bEnd->bbNext)
                 {
@@ -16296,7 +16288,7 @@ void Compiler::fgDetermineFirstColdBlock()
     }
 #endif // DEBUG
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
     // TODO-CQ: handle hot/cold splitting in functions with EH (including synchronized methods
     // that create EH in methods without explicit EH clauses).
 
@@ -16801,7 +16793,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication)
                 continue;
             }
 
-#if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
             // Don't remove the BBJ_ALWAYS block of a BBJ_CALLFINALLY/BBJ_ALWAYS pair.
             if (block->countOfInEdges() == 0 && bPrev->bbJumpKind == BBJ_CALLFINALLY)
             {
@@ -16811,7 +16803,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication)
                 bPrev = block;
                 continue;
             }
-#endif // FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
 
             noway_assert(!block->bbCatchTyp);
             noway_assert(!(block->bbFlags & BBF_TRY_BEG));
@@ -16952,7 +16944,7 @@ void Compiler::fgDebugCheckUpdate()
         /* no unreachable blocks */
 
         if ((block->countOfInEdges() == 0) && !(block->bbFlags & BBF_DONT_REMOVE)
-#if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
             // With funclets, we never get rid of the BBJ_ALWAYS part of a BBJ_CALLFINALLY/BBJ_ALWAYS pair,
             // even if we can prove that the finally block never returns.
             && (prev == NULL || block->bbJumpKind != BBJ_ALWAYS || !prev->isBBCallAlwaysPair())
@@ -17130,7 +17122,7 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
             HBtab->ebdHndBeg = bPrev;
             bPrev->bbFlags |= BBF_DONT_REMOVE | BBF_HAS_LABEL;
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
             if (fgFuncletsCreated)
             {
                 assert((block->bbFlags & BBF_FUNCLET_BEG) != 0);
@@ -17179,7 +17171,7 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
             HBtab->ebdFilter = bPrev;
             bPrev->bbFlags |= BBF_DONT_REMOVE | BBF_HAS_LABEL;
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
             if (fgFuncletsCreated)
             {
                 assert((block->bbFlags & BBF_FUNCLET_BEG) != 0);
@@ -17311,7 +17303,7 @@ void Compiler::fgInsertBBbefore(BasicBlock* insertBeforeBlk, BasicBlock* newBlk)
         newBlk->bbPrev = nullptr;
     }
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
 
     /* Update fgFirstFuncletBB if insertBeforeBlk is the first block of the funclet region. */
 
@@ -20453,7 +20445,7 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
                 padWidth, "~~~~~~~~~~~~", ibcColWidth, "~~~~~~~~~~~~", maxBlockNumWidth, "~~~~");
         }
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
         if (block == fgFirstFuncletBB)
         {
             printf(
@@ -20844,7 +20836,7 @@ bool BBPredsChecker::CheckEHFinalyRet(BasicBlock* blockPred, BasicBlock* block)
         }
     }
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
 
     if (comp->fgFuncletsCreated)
     {
@@ -20913,7 +20905,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
 
     DWORD startTickCount = GetTickCount();
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
     bool reachedFirstFunclet = false;
     if (fgFuncletsCreated)
     {
@@ -20973,7 +20965,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
             }
         }
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
         if (fgFuncletsCreated)
         {
             //
@@ -23827,7 +23819,7 @@ void Compiler::fgRemoveEmptyFinally()
 {
     JITDUMP("\n*************** In fgRemoveEmptyFinally()\n");
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
     // We need to do this transformation before funclets are created.
     assert(!fgFuncletsCreated);
 #endif // FEATURE_EH_FUNCLETS
@@ -24072,7 +24064,7 @@ void Compiler::fgRemoveEmptyTry()
 {
     JITDUMP("\n*************** In fgRemoveEmptyTry()\n");
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
     // We need to do this transformation before funclets are created.
     assert(!fgFuncletsCreated);
 #endif // FEATURE_EH_FUNCLETS
@@ -24340,7 +24332,7 @@ void Compiler::fgRemoveEmptyTry()
                 }
             }
 
-#if !FEATURE_EH_FUNCLETS
+#if !defined(FEATURE_EH_FUNCLETS)
             // If we're in a non-funclet model, decrement the nesting
             // level of any GT_END_LFIN we find in the handler region,
             // since we're removing the enclosing handler.
@@ -24418,7 +24410,7 @@ void Compiler::fgCloneFinally()
 {
     JITDUMP("\n*************** In fgCloneFinally()\n");
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
     // We need to do this transformation before funclets are created.
     assert(!fgFuncletsCreated);
 #endif // FEATURE_EH_FUNCLETS
@@ -25205,7 +25197,7 @@ void Compiler::fgCleanupContinuation(BasicBlock* continuation)
     // always flag.
     continuation->bbFlags &= ~BBF_KEEP_BBJ_ALWAYS;
 
-#if !FEATURE_EH_FUNCLETS
+#if !defined(FEATURE_EH_FUNCLETS)
     // Remove the GT_END_LFIN from the continuation,
     // Note we only expect to see one such statement.
     bool foundEndLFin = false;
@@ -25229,7 +25221,7 @@ void Compiler::fgCleanupContinuation(BasicBlock* continuation)
 
 void Compiler::fgUpdateFinallyTargetFlags()
 {
-#if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
 
     // Any fixup required?
     if (!fgOptimizedFinally)
@@ -25243,7 +25235,7 @@ void Compiler::fgUpdateFinallyTargetFlags()
     fgClearAllFinallyTargetBits();
     fgAddFinallyTargetFlags();
 
-#endif // FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
 }
 
 //------------------------------------------------------------------------
@@ -25252,7 +25244,7 @@ void Compiler::fgUpdateFinallyTargetFlags()
 //
 void Compiler::fgClearAllFinallyTargetBits()
 {
-#if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
 
     JITDUMP("*************** In fgClearAllFinallyTargetBits()\n");
 
@@ -25265,7 +25257,7 @@ void Compiler::fgClearAllFinallyTargetBits()
         block->bbFlags &= ~BBF_FINALLY_TARGET;
     }
 
-#endif // FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
 }
 
 //------------------------------------------------------------------------
@@ -25273,7 +25265,7 @@ void Compiler::fgClearAllFinallyTargetBits()
 //
 void Compiler::fgAddFinallyTargetFlags()
 {
-#if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
 
     JITDUMP("*************** In fgAddFinallyTargetFlags()\n");
 
@@ -25299,7 +25291,7 @@ void Compiler::fgAddFinallyTargetFlags()
             }
         }
     }
-#endif // FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
 }
 
 //------------------------------------------------------------------------
@@ -25316,7 +25308,7 @@ void Compiler::fgMergeFinallyChains()
 {
     JITDUMP("\n*************** In fgMergeFinallyChains()\n");
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
     // We need to do this transformation before funclets are created.
     assert(!fgFuncletsCreated);
 #endif // FEATURE_EH_FUNCLETS
@@ -25344,7 +25336,7 @@ void Compiler::fgMergeFinallyChains()
 
     bool enableMergeFinallyChains = true;
 
-#if !FEATURE_EH_FUNCLETS
+#if !defined(FEATURE_EH_FUNCLETS)
     // For non-funclet models (x86) the callfinallys may contain
     // statements and the continuations contain GT_END_LFINs.  So no
     // merging is possible until the GT_END_LFIN blocks can be merged

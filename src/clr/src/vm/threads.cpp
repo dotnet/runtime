@@ -864,9 +864,9 @@ void DestroyThread(Thread *th)
     }
 
     // Clear any outstanding stale EH state that maybe still active on the thread.
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     ExceptionTracker::PopTrackers((void*)-1);
-#else // !WIN64EXCEPTIONS
+#else // !FEATURE_EH_FUNCLETS
 #ifdef _TARGET_X86_
     PTR_ThreadExceptionState pExState = th->GetExceptionState();
     if (pExState->IsExceptionInProgress())
@@ -877,7 +877,7 @@ void DestroyThread(Thread *th)
 #else // !_TARGET_X86_
 #error Unsupported platform
 #endif // _TARGET_X86_
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
     if (g_fEEShutDown == 0) 
     {
@@ -900,9 +900,9 @@ HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
     STATIC_CONTRACT_GC_NOTRIGGER;
 
     // Clear any outstanding stale EH state that maybe still active on the thread.
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     ExceptionTracker::PopTrackers((void*)-1);
-#else // !WIN64EXCEPTIONS
+#else // !FEATURE_EH_FUNCLETS
 #ifdef _TARGET_X86_
     PTR_ThreadExceptionState pExState = GetExceptionState();
     if (pExState->IsExceptionInProgress())
@@ -913,7 +913,7 @@ HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
 #else // !_TARGET_X86_
 #error Unsupported platform
 #endif // _TARGET_X86_
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
 #ifdef FEATURE_COMINTEROP
     IErrorInfo *pErrorInfo;
@@ -1531,10 +1531,10 @@ Thread::Thread()
     m_dwDisableAbortCheckCount = 0;
 #endif // _DEBUG
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     m_dwIndexClauseForCatch = 0;
     m_sfEstablisherOfActualHandlerFrame.Clear();
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
     m_workerThreadPoolCompletionCount = 0;
     m_ioThreadPoolCompletionCount = 0;
@@ -7597,9 +7597,9 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
     _ASSERTE(GetThread() != NULL);
 
     Thread *pThread = GetThread();
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     Frame  *pFrame = pThread->m_pFrame;
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
     // The sole purpose of having this frame is to tell the debugger that we have a catch handler here 
     // which may swallow managed exceptions.  The debugger needs this in order to send a 
@@ -7616,9 +7616,9 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
 
         BOOL *pfHadException; 
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
         Frame *pFrame;
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
     }args;
 
     args.pTryParam = &param;
@@ -7627,9 +7627,9 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
     BOOL fHadException = TRUE;
     args.pfHadException = &fHadException;
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     args.pFrame = pFrame;
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
     PAL_TRY(TryArgs *, pArgs, &args)
     {
@@ -7644,12 +7644,12 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
             //
             // If eCLRDeterminedPolicy, we only swallow for TA, RTA, and ADU exception.
             // For eHostDeterminedPolicy, we will swallow all the managed exception.
-    #ifdef WIN64EXCEPTIONS
+    #ifdef FEATURE_EH_FUNCLETS
             // this must be done after the second pass has run, it does not
             // reference anything on the stack, so it is safe to run in an
             // SEH __except clause as well as a C++ catch clause.
             ExceptionTracker::PopTrackers(pArgs->pFrame);
-    #endif // WIN64EXCEPTIONS
+    #endif // FEATURE_EH_FUNCLETS
 
             // Fortunately, ThreadAbortExceptions are always
             if (pArgs->pThread->IsAbortRequested())
@@ -8839,7 +8839,7 @@ Thread::EnumMemoryRegionsWorker(CLRDataEnumMemoryFlags flags)
         if (pMD != NULL)
         {
             pMD->EnumMemoryRegions(flags);
-#if defined(WIN64EXCEPTIONS) && defined(FEATURE_PREJIT)
+#if defined(FEATURE_EH_FUNCLETS) && defined(FEATURE_PREJIT)
             // Enumerate unwind info
             // Note that we don't do this based on the MethodDesc because in theory there isn't a 1:1 correspondence
             // between MethodDesc and code (and so unwind info, and even debug info).  Eg., EnC creates new versions
@@ -8850,7 +8850,7 @@ Thread::EnumMemoryRegionsWorker(CLRDataEnumMemoryFlags flags)
             {
                 frameIter.m_crawl.GetJitManager()->EnumMemoryRegionsForMethodUnwindInfo(flags, frameIter.m_crawl.GetCodeInfo());
             }
-#endif // defined(WIN64EXCEPTIONS) && defined(FEATURE_PREJIT)
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(FEATURE_PREJIT)
         }
 
         previousSP = currentSP;

@@ -7180,7 +7180,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             case GT_NO_OP:
             case GT_JMP:   // Control flow
             case GT_LABEL: // Control flow
-#if !FEATURE_EH_FUNCLETS
+#if !defined(FEATURE_EH_FUNCLETS)
             case GT_END_LFIN: // Control flow
 #endif
             case GT_ARGPLACE:

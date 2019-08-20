@@ -71,7 +71,7 @@ void Compiler::unwindSaveReg(regNumber reg, unsigned offset)
 //
 void Compiler::unwindReserve()
 {
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
     assert(!compGeneratingProlog);
     assert(!compGeneratingEpilog);
 
@@ -92,7 +92,7 @@ void Compiler::unwindReserve()
 //
 void Compiler::unwindEmit(void* pHotCode, void* pColdCode)
 {
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
     assert(!compGeneratingProlog);
     assert(!compGeneratingEpilog);
 
@@ -104,7 +104,7 @@ void Compiler::unwindEmit(void* pHotCode, void* pColdCode)
 #endif // FEATURE_EH_FUNCLETS
 }
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
 //------------------------------------------------------------------------
 // Compiler::unwindReserveFunc: Reserve the unwind information from the VM for a
 // given main function or funclet.

@@ -471,7 +471,7 @@ protected:
     void genFnProlog();
     void genFnEpilog(BasicBlock* block);
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
 
     void genReserveFuncletProlog(BasicBlock* block);
     void genReserveFuncletEpilog(BasicBlock* block);
@@ -486,7 +486,7 @@ protected:
     void genInsertNopForUnwinder(BasicBlock* block);
 #endif
 
-#else // FEATURE_EH_FUNCLETS
+#else // !FEATURE_EH_FUNCLETS
 
     // This is a no-op when there are no funclets!
     void genUpdateCurrentFunclet(BasicBlock* block)
@@ -501,7 +501,7 @@ protected:
     }
 #endif
 
-#endif // FEATURE_EH_FUNCLETS
+#endif // !FEATURE_EH_FUNCLETS
 
     void genGeneratePrologsAndEpilogs();
 
@@ -608,7 +608,7 @@ public:
     void siOpenScopesForNonTrackedVars(const BasicBlock* block, unsigned int lastBlockILEndOffset);
 
 protected:
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
     bool siInFuncletRegion; // Have we seen the start of the funclet region?
 #endif                      // FEATURE_EH_FUNCLETS
 
@@ -1194,7 +1194,7 @@ protected:
     void genCodeForJumpCompare(GenTreeOp* tree);
 #endif // _TARGET_ARM64_
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
     void genEHCatchRet(BasicBlock* block);
 #else  // !FEATURE_EH_FUNCLETS
     void genEHFinallyOrFilterRet(BasicBlock* block);

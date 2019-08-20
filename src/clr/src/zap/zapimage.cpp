@@ -78,7 +78,7 @@ ZapImage::~ZapImage()
     if (m_pGCInfoTable != NULL)
         m_pGCInfoTable->~ZapGCInfoTable();
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     if (m_pUnwindDataTable != NULL)
         m_pUnwindDataTable->~ZapUnwindDataTable();
 #endif
@@ -153,7 +153,7 @@ void ZapImage::InitializeSections()
     m_pGCInfoTable = new (GetHeap()) ZapGCInfoTable(this);
     m_pExceptionInfoLookupTable = new (GetHeap()) ZapExceptionInfoLookupTable(this);
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     m_pUnwindDataTable = new (GetHeap()) ZapUnwindDataTable(this);
 #endif
 
@@ -255,7 +255,7 @@ void ZapImage::InitializeSectionsForReadyToRun()
 
     m_pGCInfoTable = new (GetHeap()) ZapGCInfoTable(this);
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     m_pUnwindDataTable = new (GetHeap()) ZapUnwindDataTable(this);
 #endif
 
@@ -478,10 +478,10 @@ void ZapImage::AllocateVirtualSections()
         m_pHotCodeSection = NewVirtualSection(pTextSection, IBCProfiledSection | HotRange | CodeSection, codeSectionAlign);
         m_pHotCodeSection->SetDefaultFill(DEFAULT_CODE_BUFFER_INIT);
 
-#if defined(WIN64EXCEPTIONS)
+#if defined(FEATURE_EH_FUNCLETS)
         m_pHotUnwindDataSection = NewVirtualSection(pTextSection, IBCProfiledSection | HotRange | UnwindDataSection, sizeof(DWORD)); // .rdata area
 
-        // All RuntimeFunctionSections have to be together for WIN64EXCEPTIONS
+        // All RuntimeFunctionSections have to be together for FEATURE_EH_FUNCLETS
         m_pHotRuntimeFunctionSection = NewVirtualSection(pTextSection, IBCProfiledSection | HotRange | RuntimeFunctionSection, sizeof(DWORD));  // .pdata area
         m_pRuntimeFunctionSection = NewVirtualSection(pTextSection, IBCProfiledSection | WarmRange  | ColdRange | RuntimeFunctionSection, sizeof(DWORD));
         m_pColdRuntimeFunctionSection = NewVirtualSection(pTextSection, IBCProfiledSection | IBCUnProfiledSection | ColdRange | RuntimeFunctionSection, sizeof(DWORD));
@@ -489,7 +489,7 @@ void ZapImage::AllocateVirtualSections()
         // The following sentinel section is just a padding for RuntimeFunctionSection - Apply same classification 
         NewVirtualSection(pTextSection, IBCProfiledSection | IBCUnProfiledSection | ColdRange | RuntimeFunctionSection, sizeof(DWORD))
             ->Place(new (GetHeap()) ZapBlobPtr((PVOID)&dwRuntimeFunctionSectionSentinel, sizeof(DWORD)));
-#endif  // defined(WIN64EXCEPTIONS)
+#endif  // defined(FEATURE_EH_FUNCLETS)
 
         m_pStubsSection = NewVirtualSection(pTextSection, IBCProfiledSection | HotColdSortedRange | StubsSection);
         m_pReadOnlyDataSection = NewVirtualSection(pTextSection, IBCProfiledSection | HotColdSortedRange | ReadonlyDataSection);
@@ -499,7 +499,7 @@ void ZapImage::AllocateVirtualSections()
         m_pStubDispatchDataSection = NewVirtualSection(pTextSection, IBCProfiledSection | HotColdSortedRange | StubDispatchDataSection, sizeof(DWORD));
 
         m_pHotRuntimeFunctionLookupSection = NewVirtualSection(pTextSection, IBCProfiledSection | HotRange | RuntimeFunctionSection, sizeof(DWORD));
-#if !defined(WIN64EXCEPTIONS)
+#if !defined(FEATURE_EH_FUNCLETS)
         m_pHotRuntimeFunctionSection = NewVirtualSection(pTextSection, IBCProfiledSection | HotRange | RuntimeFunctionSection, sizeof(DWORD));
 
         // The following sentinel section is just a padding for RuntimeFunctionSection - Apply same classification 
@@ -549,7 +549,7 @@ void ZapImage::AllocateVirtualSections()
         m_pCodeSection->SetDefaultFill(DEFAULT_CODE_BUFFER_INIT);
 
         m_pRuntimeFunctionLookupSection = NewVirtualSection(pTextSection, IBCProfiledSection | WarmRange | ColdRange | RuntimeFunctionSection, sizeof(DWORD));
-#if !defined(WIN64EXCEPTIONS)
+#if !defined(FEATURE_EH_FUNCLETS)
         m_pRuntimeFunctionSection = NewVirtualSection(pTextSection, IBCProfiledSection | WarmRange  | ColdRange | RuntimeFunctionSection, sizeof(DWORD));
 
         // The following sentinel section is just a padding for RuntimeFunctionSection - Apply same classification 
@@ -566,9 +566,9 @@ void ZapImage::AllocateVirtualSections()
         }
 #endif    
 
-#if defined(WIN64EXCEPTIONS)
+#if defined(FEATURE_EH_FUNCLETS)
         m_pUnwindDataSection = NewVirtualSection(pTextSection, IBCProfiledSection | WarmRange | ColdRange | UnwindDataSection, sizeof(DWORD));
-#endif // defined(WIN64EXCEPTIONS)
+#endif // defined(FEATURE_EH_FUNCLETS)
 
         m_pPreloadSections[CORCOMPILE_SECTION_READONLY_WARM] = NewVirtualSection(pTextSection, IBCProfiledSection | WarmRange | ReadonlySection, TARGET_POINTER_SIZE);
         m_pPreloadSections[CORCOMPILE_SECTION_READONLY_VCHUNKS] = NewVirtualSection(pTextSection, IBCProfiledSection | WarmRange | ReadonlySection, TARGET_POINTER_SIZE);
@@ -603,7 +603,7 @@ void ZapImage::AllocateVirtualSections()
 #endif // _TARGET_ARM_
         m_pColdCodeMapSection = NewVirtualSection(pTextSection, IBCProfiledSection | IBCUnProfiledSection | ColdRange | CodeManagerSection, sizeof(DWORD));
 
-#if !defined(WIN64EXCEPTIONS)
+#if !defined(FEATURE_EH_FUNCLETS)
         m_pColdRuntimeFunctionSection = NewVirtualSection(pTextSection, IBCProfiledSection | IBCUnProfiledSection | ColdRange | RuntimeFunctionSection, sizeof(DWORD));
 
         // The following sentinel section is just a padding for RuntimeFunctionSection - Apply same classification 
@@ -611,9 +611,9 @@ void ZapImage::AllocateVirtualSections()
             ->Place(new (GetHeap()) ZapBlobPtr((PVOID)&dwRuntimeFunctionSectionSentinel, sizeof(DWORD)));
 #endif
 
-#if defined(WIN64EXCEPTIONS)
+#if defined(FEATURE_EH_FUNCLETS)
         m_pColdUnwindDataSection = NewVirtualSection(pTextSection, IBCProfiledSection | IBCUnProfiledSection | ColdRange | UnwindDataSection, sizeof(DWORD));
-#endif // defined(WIN64EXCEPTIONS)
+#endif // defined(FEATURE_EH_FUNCLETS)
 
         //
         // Allocate space for compressed LookupMaps (ridmaps). This needs to come after the .data physical
@@ -667,9 +667,9 @@ void ZapImage::Preallocate()
     if (m_pILMetaData != NULL)
         m_pILMetaData->Preallocate(cbILImage);
     m_pGCInfoTable->Preallocate(cbILImage);
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     m_pUnwindDataTable->Preallocate(cbILImage);
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
     m_pDebugInfoTable->Preallocate(cbILImage);
 }
 
@@ -690,7 +690,7 @@ void ZapImage::SetPdbFileName(const SString &strFileName)
     m_pdbFileName.Set(strFileName);
 }
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
 void ZapImage::SetRuntimeFunctionsDirectoryEntry()
 {
     //
@@ -733,7 +733,7 @@ void ZapImage::SetRuntimeFunctionsDirectoryEntry()
         SetDirectoryEntry(IMAGE_DIRECTORY_ENTRY_EXCEPTION, pAllRuntimeFunctionSections);
     }
 }
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
 // Assign RVAs to all ZapNodes
 void ZapImage::ComputeRVAs()
@@ -748,7 +748,7 @@ void ZapImage::ComputeRVAs()
 
     m_pInnerPtrs->Resolve();
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     SetRuntimeFunctionsDirectoryEntry();
 #endif
 
@@ -1121,12 +1121,12 @@ void ZapImage::PrintStats(LPCWSTR wszOutputFileName)
     ACCUM_SIZE(m_stats->m_gcInfoSize, m_pHotTouchedGCSection);
     ACCUM_SIZE(m_stats->m_gcInfoSize, m_pHotGCSection);
     ACCUM_SIZE(m_stats->m_gcInfoSize, m_pGCSection);
-#if defined(WIN64EXCEPTIONS)
+#if defined(FEATURE_EH_FUNCLETS)
     ACCUM_SIZE(m_stats->m_unwindInfoSize, m_pUnwindDataSection);
     ACCUM_SIZE(m_stats->m_unwindInfoSize, m_pHotRuntimeFunctionSection);
     ACCUM_SIZE(m_stats->m_unwindInfoSize, m_pRuntimeFunctionSection);
     ACCUM_SIZE(m_stats->m_unwindInfoSize, m_pColdRuntimeFunctionSection);
-#endif // defined(WIN64EXCEPTIONS)
+#endif // defined(FEATURE_EH_FUNCLETS)
 
     //
     // Get the size of the input & output files

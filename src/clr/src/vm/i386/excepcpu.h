@@ -21,7 +21,7 @@
 
 #define STATUS_CLR_GCCOVER_CODE         STATUS_PRIVILEGED_INSTRUCTION
 
-#ifndef WIN64EXCEPTIONS
+#ifndef FEATURE_EH_FUNCLETS
 class Thread;
 
 #if defined(_MSC_VER)
@@ -83,21 +83,21 @@ PEXCEPTION_REGISTRATION_RECORD GetFirstCOMPlusSEHRecord(Thread*);
 LPVOID COMPlusEndCatchWorker(Thread *pCurThread);
 EXTERN_C LPVOID STDCALL COMPlusEndCatch(LPVOID ebp, DWORD ebx, DWORD edi, DWORD esi, LPVOID* pRetAddress);
 
-#else // WIN64EXCEPTIONS
+#else // FEATURE_EH_FUNCLETS
 #define INSTALL_EXCEPTION_HANDLING_RECORD(record)
 #define UNINSTALL_EXCEPTION_HANDLING_RECORD(record)
 #define DECLARE_CPFH_EH_RECORD(pCurThread)
 
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
 //
 // Retrieves the redirected CONTEXT* from the stack frame of one of the
 // RedirectedHandledJITCaseForXXX_Stub's.
 //
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(CONTEXT * pContext);
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_DISPATCHER_CONTEXT * pDispatcherContext);
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
 // Determine the address of the instruction that made the current call.
 inline

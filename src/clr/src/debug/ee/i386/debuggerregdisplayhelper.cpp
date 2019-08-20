@@ -16,7 +16,7 @@ void CopyREGDISPLAY(REGDISPLAY* pDst, REGDISPLAY* pSrc)
 {
     *pDst = *pSrc;
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     if (pSrc->pCurrentContextPointers == &(pSrc->ctxPtrsOne))
     {
         pDst->pCurrentContextPointers = &(pDst->ctxPtrsOne);

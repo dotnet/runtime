@@ -936,7 +936,7 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
                             // Pulls in sequence points and local variable info
                             DebugInfoManager::EnumMemoryRegionsForMethodDebugInfo(flags, pMethodDesc);
 
-#if defined(WIN64EXCEPTIONS) && defined(USE_GC_INFO_DECODER)
+#if defined(FEATURE_EH_FUNCLETS) && defined(USE_GC_INFO_DECODER)
                           
                             if (addr != NULL)
                             {
@@ -957,7 +957,7 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
                                     }
                                 }
                             }
-#endif // WIN64EXCEPTIONS && USE_GC_INFO_DECODER
+#endif // FEATURE_EH_FUNCLETS && USE_GC_INFO_DECODER
                         }
                         pMethodDefinition.Clear();
                     }

@@ -18,9 +18,9 @@
 #include "eeconfig.h"
 #include "frameworkexceptionloader.h"
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
 #include "exceptionhandling.h"
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
 #ifdef FEATURE_COMINTEROP
 #include "interoputil.inl"
@@ -932,7 +932,7 @@ void CLRException::HandlerState::SetupCatch(INDEBUG_COMMA(__in_z const char * sz
         }
     }
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     if (!DidCatchCxx())
     {
         // this must be done after the second pass has run, it does not 
@@ -940,7 +940,7 @@ void CLRException::HandlerState::SetupCatch(INDEBUG_COMMA(__in_z const char * sz
         // SEH __except clause as well as a C++ catch clause.
         ExceptionTracker::PopTrackers(this);
     }
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 }
 
 #ifdef LOGGING

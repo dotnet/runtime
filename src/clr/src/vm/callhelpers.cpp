@@ -46,7 +46,7 @@ void AssertMulticoreJitAllowedModule(PCODE pTarget)
 // and get the platform-appropriate exception handling.  A few places try to optimize by calling direct
 // to managed methods (see ArrayInitializeWorker or FastCallFinalize).  This sort of thing is
 // dangerous.  You have to worry about marking yourself as a legal managed caller and you have to
-// worry about how exceptions will be handled on a WIN64EXCEPTIONS plan.  It is generally only suitable
+// worry about how exceptions will be handled on a FEATURE_EH_FUNCLETS plan.  It is generally only suitable
 // for X86.
 
 //*******************************************************************************

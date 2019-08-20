@@ -22,8 +22,8 @@
 #include <limits.h>
 
 #if !defined(_TARGET_X86_) || defined(FEATURE_PAL)
-#ifndef WIN64EXCEPTIONS
-#define WIN64EXCEPTIONS
+#ifndef FEATURE_EH_FUNCLETS
+#define FEATURE_EH_FUNCLETS
 #endif
 #endif // !_TARGET_X86_ || FEATURE_PAL
 
