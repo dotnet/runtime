@@ -125,7 +125,7 @@ namespace System.Text.Json
         {
             object instance = collectionPropertyInfo.DeclaredTypeClassInfo.CreateObject();
 
-            if (instance is IList instanceOfIList)
+            if (instance is IList instanceOfIList && !instanceOfIList.IsReadOnly)
             {
                 foreach (object item in sourceList)
                 {
@@ -133,7 +133,7 @@ namespace System.Text.Json
                 }
                 return instanceOfIList;
             }
-            else if (instance is ICollection<TRuntimeProperty> instanceOfICollection)
+            else if (instance is ICollection<TRuntimeProperty> instanceOfICollection && !instanceOfICollection.IsReadOnly)
             {
                 foreach (TRuntimeProperty item in sourceList)
                 {
@@ -160,15 +160,17 @@ namespace System.Text.Json
 
             // TODO: Use reflection to support types implementing Stack or Queue.
 
-            ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(collectionPropertyInfo.DeclaredPropertyType, jsonPath);
-            return null;
+            throw ThrowHelper.GetNotSupportedException_SerializationNotSupportedCollection(
+                collectionPropertyInfo.DeclaredPropertyType,
+                collectionPropertyInfo.ParentClassType,
+                collectionPropertyInfo.PropertyInfo);
         }
 
         public override object CreateDerivedDictionaryInstance(JsonPropertyInfo collectionPropertyInfo, IDictionary sourceDictionary, string jsonPath, JsonSerializerOptions options)
         {
             object instance = collectionPropertyInfo.DeclaredTypeClassInfo.CreateObject();
 
-            if (instance is IDictionary instanceOfIDictionary)
+            if (instance is IDictionary instanceOfIDictionary && !instanceOfIDictionary.IsReadOnly)
             {
                 foreach (DictionaryEntry entry in sourceDictionary)
                 {
@@ -176,7 +178,7 @@ namespace System.Text.Json
                 }
                 return instanceOfIDictionary;
             }
-            else if (instance is IDictionary<string, TRuntimeProperty> instanceOfGenericIDictionary)
+            else if (instance is IDictionary<string, TRuntimeProperty> instanceOfGenericIDictionary && !instanceOfGenericIDictionary.IsReadOnly)
             {
                 foreach (DictionaryEntry entry in sourceDictionary)
                 {
@@ -188,8 +190,10 @@ namespace System.Text.Json
             // TODO: Use reflection to support types implementing SortedList and maybe immutable dictionaries.
 
             // Types implementing SortedList and immutable dictionaries will fail here.
-            ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(collectionPropertyInfo.DeclaredPropertyType, jsonPath);
-            return null;
+            throw ThrowHelper.GetNotSupportedException_SerializationNotSupportedCollection(
+                collectionPropertyInfo.DeclaredPropertyType,
+                collectionPropertyInfo.ParentClassType,
+                collectionPropertyInfo.PropertyInfo);
         }
 
         public override IEnumerable CreateIEnumerableInstance(Type parentType, IList sourceList, string jsonPath, JsonSerializerOptions options)

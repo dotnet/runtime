@@ -199,7 +199,7 @@ namespace System.Text.Json.Serialization.Tests
 
         public int Count => _list.Count;
 
-        public bool IsReadOnly => ((ICollection<string>)_list).IsReadOnly;
+        public virtual bool IsReadOnly => ((ICollection<string>)_list).IsReadOnly;
 
         public void Add(string item)
         {
@@ -237,6 +237,11 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
+    public class ReadOnlyStringICollectionWrapper : StringICollectionWrapper
+    {
+        public override bool IsReadOnly => true;
+    }
+
     public class StringIListWrapper : IList<string>
     {
         private readonly List<string> _list = new List<string>();
@@ -245,7 +250,7 @@ namespace System.Text.Json.Serialization.Tests
 
         public int Count => _list.Count;
 
-        public bool IsReadOnly => ((IList<string>)_list).IsReadOnly;
+        public virtual bool IsReadOnly => ((IList<string>)_list).IsReadOnly;
 
         public void Add(string item)
         {
@@ -296,6 +301,11 @@ namespace System.Text.Json.Serialization.Tests
         {
             return ((IList<string>)_list).GetEnumerator();
         }
+    }
+
+    public class ReadOnlyStringIListWrapper : StringIListWrapper
+    {
+        public override bool IsReadOnly => true;
     }
 
     public class GenericIListWrapper<T> : IList<T>
@@ -714,7 +724,7 @@ namespace System.Text.Json.Serialization.Tests
 
         public int Count => ((IDictionary<string, string>)_dictionary).Count;
 
-        public bool IsReadOnly => ((IDictionary<string, string>)_dictionary).IsReadOnly;
+        public virtual bool IsReadOnly => ((IDictionary<string, string>)_dictionary).IsReadOnly;
 
         public void Add(string key, string value)
         {
@@ -770,6 +780,11 @@ namespace System.Text.Json.Serialization.Tests
         {
             return ((IDictionary<string, string>)_dictionary).GetEnumerator();
         }
+    }
+
+    public class ReadOnlyStringToStringIDictionaryWrapper : StringToStringIDictionaryWrapper
+    {
+        public override bool IsReadOnly => true;
     }
 
     public class StringToObjectIDictionaryWrapper : IDictionary<string, object>
