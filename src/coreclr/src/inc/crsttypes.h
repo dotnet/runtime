@@ -291,7 +291,7 @@ int g_rgCrstLevelMap[] =
     0,          // CrstReDacl
     9,          // CrstReflection
     9,          // CrstReJITDomainTable
-    14,         // CrstReJITGlobalRequest
+    16,         // CrstReJITGlobalRequest
     19,         // CrstRemoting
     3,          // CrstRetThunkCache
     0,          // CrstRWLock
