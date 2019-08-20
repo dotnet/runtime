@@ -157,7 +157,7 @@ namespace System.Runtime.CompilerServices
                 // fire the correlation ETW event
                 TplEventSource.Log.AwaitTaskContinuationScheduled(TaskScheduler.Current.Id, (currentTask != null) ? currentTask.Id : 0, continuationId);
 
-                return AsyncMethodBuilderCore.CreateContinuationWrapper(continuation, (innerContinuation,continuationIdTask) =>
+                return AsyncMethodBuilderCore.CreateContinuationWrapper(continuation, (innerContinuation, continuationIdTask) =>
                 {
                     TplEventSource log = TplEventSource.Log;
                     log.TaskWaitContinuationStarted(((Task<int>)continuationIdTask).Result);

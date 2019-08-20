@@ -105,7 +105,7 @@ namespace Internal.Runtime.InteropServices
             // Throws
             IsolatedComponentLoadContext alc = GetIsolatedComponentLoadContext(assemblyPath);
 
-            Func<AssemblyName,Assembly> resolver = name => alc.LoadFromAssemblyName(name);
+            Func<AssemblyName, Assembly> resolver = name => alc.LoadFromAssemblyName(name);
 
             // Throws
             Type type = Type.GetType(typeName, resolver, null, throwOnError: true)!;
