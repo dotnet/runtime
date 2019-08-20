@@ -259,7 +259,7 @@ namespace System
         /// <param name="mode">The lazy thread-safety mode</param>
         /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="mode"/> mode contains an invalid valuee</exception>
         public Lazy(LazyThreadSafetyMode mode) :
-            this(null, mode, useDefaultConstructor:true)
+            this(null, mode, useDefaultConstructor: true)
         {
         }
 
@@ -291,7 +291,7 @@ namespace System
         /// a null reference (Nothing in Visual Basic).</exception>
         /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="mode"/> mode contains an invalid value.</exception>
         public Lazy(Func<T> valueFactory, LazyThreadSafetyMode mode)
-            : this(valueFactory, mode, useDefaultConstructor:false)
+            : this(valueFactory, mode, useDefaultConstructor: false)
         {
         }
 
@@ -419,11 +419,11 @@ namespace System
                         break;
 
                     case LazyState.ExecutionAndPublicationViaConstructor:
-                        ExecutionAndPublication(state, useDefaultConstructor:true);
+                        ExecutionAndPublication(state, useDefaultConstructor: true);
                         break;
 
                     case LazyState.ExecutionAndPublicationViaFactory:
-                        ExecutionAndPublication(state, useDefaultConstructor:false);
+                        ExecutionAndPublication(state, useDefaultConstructor: false);
                         break;
 
                     default:

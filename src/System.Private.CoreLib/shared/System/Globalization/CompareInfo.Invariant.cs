@@ -18,7 +18,7 @@ namespace System.Globalization
             fixed (char* pSource = source) fixed (char* pValue = value)
             {
                 char* pSrc = &pSource[startIndex];
-                int index = InvariantFindString(pSrc, count, pValue, value.Length, ignoreCase, fromBeginning : true);
+                int index = InvariantFindString(pSrc, count, pValue, value.Length, ignoreCase, fromBeginning: true);
                 if (index >= 0)
                 {
                     return index + startIndex;
@@ -48,7 +48,7 @@ namespace System.Globalization
             fixed (char* pSource = source) fixed (char* pValue = value)
             {
                 char* pSrc = &pSource[startIndex - count + 1];
-                int index = InvariantFindString(pSrc, count, pValue, value.Length, ignoreCase, fromBeginning : false);
+                int index = InvariantFindString(pSrc, count, pValue, value.Length, ignoreCase, fromBeginning: false);
                 if (index >= 0)
                 {
                     return index + startIndex - count + 1;

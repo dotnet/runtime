@@ -4757,18 +4757,18 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
 
                 switch ((m0 << 24) | (m1 << 16) | (m2 << 8) | space | 0x20202000)
                 {
-                    case 0x6a616e20 /* 'jan ' */ : month = 1; break;
-                    case 0x66656220 /* 'feb ' */ : month = 2; break;
-                    case 0x6d617220 /* 'mar ' */ : month = 3; break;
-                    case 0x61707220 /* 'apr ' */ : month = 4; break;
-                    case 0x6d617920 /* 'may ' */ : month = 5; break;
-                    case 0x6a756e20 /* 'jun ' */ : month = 6; break;
-                    case 0x6a756c20 /* 'jul ' */ : month = 7; break;
-                    case 0x61756720 /* 'aug ' */ : month = 8; break;
-                    case 0x73657020 /* 'sep ' */ : month = 9; break;
-                    case 0x6f637420 /* 'oct ' */ : month = 10; break;
-                    case 0x6e6f7620 /* 'nov ' */ : month = 11; break;
-                    case 0x64656320 /* 'dec ' */ : month = 12; break;
+                    case 0x6a616e20: /* 'jan ' */ month = 1; break;
+                    case 0x66656220: /* 'feb ' */ month = 2; break;
+                    case 0x6d617220: /* 'mar ' */ month = 3; break;
+                    case 0x61707220: /* 'apr ' */ month = 4; break;
+                    case 0x6d617920: /* 'may ' */ month = 5; break;
+                    case 0x6a756e20: /* 'jun ' */ month = 6; break;
+                    case 0x6a756c20: /* 'jul ' */ month = 7; break;
+                    case 0x61756720: /* 'aug ' */ month = 8; break;
+                    case 0x73657020: /* 'sep ' */ month = 9; break;
+                    case 0x6f637420: /* 'oct ' */ month = 10; break;
+                    case 0x6e6f7620: /* 'nov ' */ month = 11; break;
+                    case 0x64656320: /* 'dec ' */ month = 12; break;
                     default:
                         result.SetBadDateTimeFailure();
                         return false;
