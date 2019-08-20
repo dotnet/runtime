@@ -126,7 +126,7 @@ namespace System.Diagnostics.Tracing
             if (!(obj is EventDescriptor))
                 return false;
 
-            return Equals((EventDescriptor) obj);
+            return Equals((EventDescriptor)obj);
         }
 
         public override int GetHashCode()

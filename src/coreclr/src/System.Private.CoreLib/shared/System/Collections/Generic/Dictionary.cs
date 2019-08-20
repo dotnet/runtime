@@ -146,7 +146,7 @@ namespace System.Collections.Generic
         }
 
         public IEqualityComparer<TKey> Comparer =>
-            (_comparer == null ||_comparer is NonRandomizedStringEqualityComparer) ?
+            (_comparer == null || _comparer is NonRandomizedStringEqualityComparer) ?
                 EqualityComparer<TKey>.Default :
                 _comparer;
 
