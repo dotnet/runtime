@@ -9,8 +9,6 @@
 **
 ===========================================================*/
 
-using System;
-
 namespace System.Diagnostics
 {
     // Defines an interface indicating that a custom debugger notification is requested under specific

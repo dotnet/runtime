@@ -11,8 +11,6 @@
 **
 ===========================================================*/
 
-using System.Reflection;
-
 namespace System
 {
     /* By default, attributes are inherited and multiple attributes are not allowed */

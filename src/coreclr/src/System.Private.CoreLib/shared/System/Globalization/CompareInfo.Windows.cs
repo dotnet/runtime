@@ -6,8 +6,6 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-using Internal.Runtime.CompilerServices;
-
 namespace System.Globalization
 {
     public partial class CompareInfo

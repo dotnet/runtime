@@ -3,19 +3,21 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Reflection;
+#if ES_BUILD_PCL || ES_BUILD_PN
 using System.Collections.Generic;
-using Microsoft.Reflection;
-
-#if ES_BUILD_AGAINST_DOTNET_V35
-using Microsoft.Internal;
 #endif
-
+using System.Reflection;
 #if ES_BUILD_STANDALONE
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
+#endif
+#if ES_BUILD_AGAINST_DOTNET_V35
+using Microsoft.Internal;
+#endif
+using Microsoft.Reflection;
 
+#if ES_BUILD_STANDALONE
 namespace Microsoft.Diagnostics.Tracing.Internal
 #else
 namespace System.Diagnostics.Tracing.Internal
@@ -223,7 +225,7 @@ namespace Microsoft.Reflection
 
         public static bool ReflectionOnly(this Assembly assm) { return assm.ReflectionOnly; }
 
-#else // ES_BUILD_PCL
+#else
 
         //
         // Type extension methods

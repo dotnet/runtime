@@ -2,33 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#if ES_BUILD_STANDALONE
 using Microsoft.Win32;
-using System.Collections.Generic;
+using System;
 using System.Diagnostics;
+using System.Security.Permissions;
+using BitOperations = Microsoft.Diagnostics.Tracing.Internal.BitOperations;
+#endif
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.InteropServices;
-using System.Security;
-#if ES_BUILD_STANDALONE
-using System.Security.Permissions;
-#endif
 #if CORECLR && PLATFORM_WINDOWS
 using Internal.Win32;
 #endif
-using System.Threading;
-using System;
-
-#if ES_BUILD_STANDALONE
-using BitOperations = Microsoft.Diagnostics.Tracing.Internal.BitOperations;
-#endif
-
-#if !ES_BUILD_AGAINST_DOTNET_V35
-using Contract = System.Diagnostics.Contracts.Contract;
-#else
-using Contract = Microsoft.Diagnostics.Contracts.Internal.Contract;
-#endif
-
 #if ES_BUILD_AGAINST_DOTNET_V35
 using Microsoft.Internal;       // for Tuple (can't define alias for open generic types so we "use" the whole namespace)
 #endif

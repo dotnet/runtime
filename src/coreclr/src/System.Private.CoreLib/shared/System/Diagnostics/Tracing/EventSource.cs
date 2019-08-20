@@ -163,38 +163,27 @@
 // This allows us to use the EventData* form to be the canonical data format in the low level APIs.  This also gives us the
 // opportunity to expose this format to EventListeners in the future.
 //
+
+#if ES_BUILD_STANDALONE
 using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
-using System.Numerics;
-using System.Reflection;
-using System.Resources;
-using System.Security;
-#if ES_BUILD_STANDALONE
 using System.Security.Permissions;
-#endif
-
-using System.Text;
-using System.Threading;
-using Microsoft.Win32;
-
-#if ES_BUILD_STANDALONE
 using EventDescriptor = Microsoft.Diagnostics.Tracing.EventDescriptor;
 using BitOperations = Microsoft.Diagnostics.Tracing.Internal.BitOperations;
 #else
 using System.Threading.Tasks;
 #endif
-
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Numerics;
+using System.Reflection;
+using System.Resources;
+using System.Text;
+using System.Threading;
 using Microsoft.Reflection;
 
-#if !ES_BUILD_AGAINST_DOTNET_V35
-using Contract = System.Diagnostics.Contracts.Contract;
-#else
-using Contract = Microsoft.Diagnostics.Contracts.Internal.Contract;
-#endif
 
 #if ES_BUILD_STANDALONE
 namespace Microsoft.Diagnostics.Tracing
