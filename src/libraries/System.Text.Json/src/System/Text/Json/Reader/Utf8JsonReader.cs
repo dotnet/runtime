@@ -1980,46 +1980,34 @@ namespace System.Text.Json
             }
             else if (_tokenType == JsonTokenType.StartObject)
             {
-                if (first == JsonConstants.CloseBrace)
+                Debug.Assert(first != JsonConstants.CloseBrace);
+                if (first != JsonConstants.Quote)
                 {
-                    EndObject();
+                    ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedStartOfPropertyNotFound, first);
                 }
-                else
-                {
-                    if (first != JsonConstants.Quote)
-                    {
-                        ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedStartOfPropertyNotFound, first);
-                    }
 
-                    int prevConsumed = _consumed;
-                    long prevPosition = _bytePositionInLine;
-                    long prevLineNumber = _lineNumber;
-                    if (!ConsumePropertyName())
-                    {
-                        // roll back potential changes
-                        _consumed = prevConsumed;
-                        _tokenType = JsonTokenType.StartObject;
-                        _bytePositionInLine = prevPosition;
-                        _lineNumber = prevLineNumber;
-                        goto RollBack;
-                    }
-                    goto Done;
+                int prevConsumed = _consumed;
+                long prevPosition = _bytePositionInLine;
+                long prevLineNumber = _lineNumber;
+                if (!ConsumePropertyName())
+                {
+                    // roll back potential changes
+                    _consumed = prevConsumed;
+                    _tokenType = JsonTokenType.StartObject;
+                    _bytePositionInLine = prevPosition;
+                    _lineNumber = prevLineNumber;
+                    goto RollBack;
                 }
+                goto Done;
             }
             else if (_tokenType == JsonTokenType.StartArray)
             {
-                if (first == JsonConstants.CloseBracket)
+                Debug.Assert(first != JsonConstants.CloseBracket);
+                if (!ConsumeValue(first))
                 {
-                    EndArray();
+                    goto RollBack;
                 }
-                else
-                {
-                    if (!ConsumeValue(first))
-                    {
-                        goto RollBack;
-                    }
-                    goto Done;
-                }
+                goto Done;
             }
             else if (_tokenType == JsonTokenType.PropertyName)
             {
@@ -2031,7 +2019,37 @@ namespace System.Text.Json
             }
             else
             {
-                goto RollBack;
+                Debug.Assert(_tokenType == JsonTokenType.EndArray || _tokenType == JsonTokenType.EndObject);
+                if (_inObject)
+                {
+                    Debug.Assert(first != JsonConstants.CloseBracket);
+                    if (first != JsonConstants.Quote)
+                    {
+                        ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedStartOfPropertyNotFound, first);
+                    }
+
+                    if (ConsumePropertyName())
+                    {
+                        goto Done;
+                    }
+                    else
+                    {
+                        goto RollBack;
+                    }
+                }
+                else
+                {
+                    Debug.Assert(first != JsonConstants.CloseBracket);
+
+                    if (ConsumeValue(first))
+                    {
+                        goto Done;
+                    }
+                    else
+                    {
+                        goto RollBack;
+                    }
+                }
             }
 
         Done:
