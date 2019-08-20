@@ -8322,7 +8322,6 @@ ves_icall_System_TypedReference_ToObject (MonoTypedRef* tref, MonoError *error)
 void
 ves_icall_System_TypedReference_InternalMakeTypedReference (MonoTypedRef *res, MonoObjectHandle target, MonoArrayHandle fields, MonoReflectionTypeHandle last_field, MonoError *error)
 {
-	MonoClass *klass;
 	MonoType *ftype = NULL;
 	int i;
 
@@ -8330,7 +8329,7 @@ ves_icall_System_TypedReference_InternalMakeTypedReference (MonoTypedRef *res, M
 
 	g_assert (mono_array_handle_length (fields) > 0);
 
-	klass = mono_handle_class (target);
+	(void)mono_handle_class (target);
 
 	int offset = 0;
 	for (i = 0; i < mono_array_handle_length (fields); ++i) {
@@ -8343,7 +8342,7 @@ ves_icall_System_TypedReference_InternalMakeTypedReference (MonoTypedRef *res, M
 			offset = f->offset;
 		else
 			offset += f->offset - sizeof (MonoObject);
-		klass = mono_class_from_mono_type_internal (f->type);
+		(void)mono_class_from_mono_type_internal (f->type);
 		ftype = f->type;
 	}
 

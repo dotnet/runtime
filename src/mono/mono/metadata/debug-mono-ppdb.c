@@ -159,7 +159,7 @@ mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 	gint32 pe_timestamp;
 	guint8 *ppdb_data = NULL;
 	guint8 *to_free = NULL;
-	int ppdb_size, ppdb_compressed_size;
+	int ppdb_size = 0, ppdb_compressed_size = 0;
 
 	if (image->tables [MONO_TABLE_DOCUMENT].rows) {
 		/* Embedded ppdb */
