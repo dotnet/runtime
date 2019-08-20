@@ -141,6 +141,6 @@ namespace System
             return (T)((RuntimeType)typeof(T)).CreateInstanceDefaultCtor(publicOnly: true, skipCheckThis: true, fillCache: true, wrapExceptions: true);
         }
 
-        private static T CreateDefaultInstance<T>() where T: struct => default;
+        private static T CreateDefaultInstance<T>() where T : struct => default;
     }
 }
