@@ -1070,7 +1070,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
             else
             {
-                string? message = (messageResource != null ? SR.GetResourceString(messageResource): null);
+                string? message = messageResource != null ? SR.GetResourceString(messageResource) : null;
                 e = new Exception(message);
             }
 
