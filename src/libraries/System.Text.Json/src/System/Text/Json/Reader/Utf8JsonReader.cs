@@ -2022,7 +2022,7 @@ namespace System.Text.Json
                 Debug.Assert(_tokenType == JsonTokenType.EndArray || _tokenType == JsonTokenType.EndObject);
                 if (_inObject)
                 {
-                    Debug.Assert(first != JsonConstants.CloseBracket);
+                    Debug.Assert(first != JsonConstants.CloseBrace);
                     if (first != JsonConstants.Quote)
                     {
                         ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedStartOfPropertyNotFound, first);
