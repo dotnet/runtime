@@ -292,6 +292,13 @@ void EventPipeProtocolHelper::CollectTracing2(DiagnosticsIpc::IpcMessage& messag
         delete payload;
         delete pStream;
     }
+    else
+    {
+        DiagnosticsIpc::IpcMessage successResponse;
+        if (successResponse.Initialize(DiagnosticsIpc::GenericSuccessHeader, sessionId))
+            successResponse.Send(pStream);
+        EventPipe::StartStreaming(sessionId);
+    }
 }
 
 #endif // FEATURE_PERFTRACING
