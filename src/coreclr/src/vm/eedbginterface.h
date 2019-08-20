@@ -158,10 +158,10 @@ public:
                                            size_t * hotSize, 
                                            size_t * coldSize) = 0;
 
-#if defined(WIN64EXCEPTIONS)
+#if defined(FEATURE_EH_FUNCLETS)
     virtual DWORD GetFuncletStartOffsets(const BYTE *pStart, DWORD* pStartOffsets, DWORD dwLength) = 0;
     virtual StackFrame FindParentStackFrame(CrawlFrame* pCF) = 0;
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
     virtual size_t GetFunctionSize(MethodDesc *pFD) = 0;
 

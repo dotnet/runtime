@@ -56,7 +56,7 @@ HRESULT EnsureRtlFunctions()
 
 #endif // _TARGET_AMD64_
 
-#if defined(WIN64EXCEPTIONS)
+#if defined(FEATURE_EH_FUNCLETS)
 
 VOID InstallEEFunctionTable (
         PVOID pvTableID,
@@ -128,5 +128,5 @@ VOID InstallEEFunctionTable (
     }
 }
 
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 

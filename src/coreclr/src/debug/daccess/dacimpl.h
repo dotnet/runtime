@@ -1986,9 +1986,9 @@ private:
         
         // Walk the stack, set mEnumerated to true to ensure we don't do it again.
         unsigned int flagsStackWalk = ALLOW_INVALID_OBJECTS|ALLOW_ASYNC_STACK_WALK|SKIP_GSCOOKIE_CHECK;
-#if defined(WIN64EXCEPTIONS)
+#if defined(FEATURE_EH_FUNCLETS)
         flagsStackWalk |= GC_FUNCLET_REFERENCE_REPORTING;
-#endif // defined(WIN64EXCEPTIONS)
+#endif // defined(FEATURE_EH_FUNCLETS)
 
         mEnumerated = true;
         mThread->StackWalkFrames(DacStackReferenceWalker::Callback, &gcctx, flagsStackWalk);
@@ -3493,11 +3493,11 @@ private:
 //
 //----------------------------------------------------------------------------
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
 typedef ExceptionTracker ClrDataExStateType;
-#else // WIN64EXCEPTIONS
+#else // FEATURE_EH_FUNCLETS
 typedef ExInfo ClrDataExStateType;
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
 
 class ClrDataExceptionState : public IXCLRDataExceptionState

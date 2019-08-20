@@ -89,7 +89,7 @@ public:
     // only set for stackwalking, not stepping
     void                *exactGenericArgsToken;
 
-#if defined(WIN64EXCEPTIONS)
+#if defined(FEATURE_EH_FUNCLETS)
     // This field is only used on IA64 to determine which registers are available and 
     // whether we need to adjust the IP.
     bool                 fIsLeaf;
@@ -101,7 +101,7 @@ public:
     bool IsFuncletFrame()          { return fIsFunclet; }
     bool IsFilterFrame()           { return fIsFilter;  }
     bool IsNonFilterFuncletFrame() { return (fIsFunclet && !fIsFilter); }
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
 
     // A ridiculous flag that is targetting a very narrow fix at issue 650903 (4.5.1/Blue).

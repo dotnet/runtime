@@ -42,7 +42,7 @@ CompPhaseNameMacro(PHASE_GS_COOKIE,              "GS Cookie",                   
 CompPhaseNameMacro(PHASE_COMPUTE_PREDS,          "Compute preds",                  "PREDS",    false, -1, false)
 CompPhaseNameMacro(PHASE_MARK_GC_POLL_BLOCKS,    "Mark GC poll blocks",            "GC-POLL",  false, -1, false)
 CompPhaseNameMacro(PHASE_COMPUTE_EDGE_WEIGHTS,   "Compute edge weights (1, false)",       "EDG-WGT",  false, -1, false)
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
 CompPhaseNameMacro(PHASE_CREATE_FUNCLETS,        "Create EH funclets",             "EH-FUNC",  false, -1, false)
 #endif // FEATURE_EH_FUNCLETS
 CompPhaseNameMacro(PHASE_OPTIMIZE_LAYOUT,        "Optimize layout",                "LAYOUT",   false, -1, false)

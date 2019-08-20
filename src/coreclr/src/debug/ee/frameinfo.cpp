@@ -101,12 +101,12 @@ struct DebuggerFrameData
         this->info.frame     = NULL;
         this->needParentInfo = false;
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
         this->fpParent        = LEAF_MOST_FRAME;
         this->info.fIsLeaf    = true;
         this->info.fIsFunclet = false;
         this->info.fIsFilter  = false;
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
         // Look strange?  Go to definition of this field.  I dare you.
         this->info.fIgnoreThisFrameIfSuppressingUMChainFromComPlusMethodFrameGeneric = false;
@@ -127,10 +127,10 @@ struct DebuggerFrameData
     REGDISPLAY              regDisplay;
 
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     // This is used to skip funclets in a stackwalk.  It marks the frame pointer to which we should skip.
     FramePointer            fpParent;
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 #if defined(_DEBUG)
     // For debugging, track the previous FramePointer so we can assert that we're
     // making progress through the stack.
@@ -697,7 +697,7 @@ void FrameInfo::InitForUMChain(FramePointer fpRoot, REGDISPLAY * pRDSrc)
 
 void FrameInfo::InitForScratchFrameInfo()
 {
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     // The following flags cannot be trashed when we are calling this function on the curret FrameInfo
     // (the one we keep track of across multiple stackwalker callbacks).  Thus, make sure you do not call
     // this function from InitForDynamicMethod().  In all other cases, we can call this method after we
@@ -705,7 +705,7 @@ void FrameInfo::InitForScratchFrameInfo()
     this->fIsLeaf    = false;
     this->fIsFunclet = false;
     this->fIsFilter  = false;
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 }
 
 
@@ -1265,7 +1265,7 @@ FramePointer GetFramePointerForDebugger(DebuggerFrameData* pData, CrawlFrame* pC
 
     FramePointer fpResult;
 
-#if defined(WIN64EXCEPTIONS)
+#if defined(FEATURE_EH_FUNCLETS)
     if (pData->info.frame == NULL)
     {
         // This is a managed method frame.
@@ -1277,7 +1277,7 @@ FramePointer GetFramePointerForDebugger(DebuggerFrameData* pData, CrawlFrame* pC
         fpResult = FramePointer::MakeFramePointer((LPVOID)(pData->info.frame));
     }
 
-#else  // !WIN64EXCEPTIONS
+#else  // !FEATURE_EH_FUNCLETS
     if ((pCF == NULL || !pCF->IsFrameless()) && pData->info.frame != NULL)
     {
         //
@@ -1299,7 +1299,7 @@ FramePointer GetFramePointerForDebugger(DebuggerFrameData* pData, CrawlFrame* pC
         fpResult = FramePointer::MakeFramePointer((LPVOID)GetRegdisplayStackMark(&(pData->regDisplay)));
     }
 
-#endif // !WIN64EXCEPTIONS
+#endif // !FEATURE_EH_FUNCLETS
 
     LOG((LF_CORDB, LL_INFO100000, "GFPFD: Frame pointer is 0x%p\n", fpResult.GetSPValue()));
 
@@ -1307,7 +1307,7 @@ FramePointer GetFramePointerForDebugger(DebuggerFrameData* pData, CrawlFrame* pC
 }
 
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
 //---------------------------------------------------------------------------------------
 //
 // This function is called to determine if we should start skipping funclets.  If we should, then we return the 
@@ -1361,7 +1361,7 @@ inline FramePointer CheckForParentFP(FramePointer fpCurrentParentMarker, CrawlFr
         return fpCurrentParentMarker;
     }
 }
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
 
 //-----------------------------------------------------------------------------
@@ -1391,7 +1391,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
 
     if (pCF->IsNativeMarker())
     {
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
         // The tricky part here is that we want to skip all frames between a funclet method frame
         // and the parent method frame UNLESS the funclet is a filter.  Moreover, we should never
         // let a native marker execute the rest of this method, so we just short-circuit it here.
@@ -1399,7 +1399,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
         {
             return SWA_CONTINUE;
         }
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
         // This REGDISPLAY is for the native method immediately following the managed method for which 
         // we have received the previous callback, i.e. the native caller of the last managed method 
@@ -1462,13 +1462,13 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
     } // if (d->needParentInfo)
 
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     // The tricky part here is that we want to skip all frames between a funclet method frame
     // and the parent method frame UNLESS the funclet is a filter.  We only have to check for fpParent
     // here (instead of checking d->info.fIsFunclet and d->info.fIsFilter as well, as in the beginning of
     // this method) is because at this point, fpParent is already set by the code above.
     if (d->fpParent == LEAF_MOST_FRAME)
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
     {
         // Track the UM chain after we flush any managed goo from the last iteration.
         if (TrackUMChain(pCF, d) == SWA_ABORT)
@@ -1489,7 +1489,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
     // register display we passed in - assert it to be sure
     _ASSERTE(pCF->GetRegisterSet() == &d->regDisplay);
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     Frame* pPrevFrame = d->info.frame;
 
     // Here we need to determine if we are in a non-leaf frame, in which case we want to adjust the relative offset.
@@ -1538,7 +1538,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
         }
     }
 
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
     d->info.frame = frame;
     d->info.ambientSP = NULL;
@@ -1550,7 +1550,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
     //  Grab all the info from CrawlFrame that we need to
     //  check for "Am I in an exeption code blob?" now.
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     // We are still searching for the parent of the last funclet we encounter.
     if (d->fpParent != LEAF_MOST_FRAME)
     {
@@ -1558,7 +1558,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
         LOG((LF_CORDB, LL_INFO100000, "DWSP: Skipping to parent method frame at 0x%p.\n", d->fpParent.GetSPValue()));
     }
     else
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
     // We should ignore IL stubs with no frames in our stackwalking.
     // The only exception is dynamic methods.  We want to report them when SIS is turned on.
     if ((md != NULL) && md->IsILStub() && pCF->IsFrameless())
@@ -1852,9 +1852,9 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
         LOG((LF_CORDB, LL_INFO100000, "DWSP: Setting needParentInfo\n"));
     }
 
-#if defined(WIN64EXCEPTIONS)
+#if defined(FEATURE_EH_FUNCLETS)
     d->fpParent = CheckForParentFP(d->fpParent, pCF, d->info.IsNonFilterFuncletFrame());
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
     //
     // The stackwalker doesn't update the register set for the

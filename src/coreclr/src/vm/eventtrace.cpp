@@ -4599,11 +4599,11 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
         gc.innerExceptionObj = ((EXCEPTIONREF)gc.exceptionObj)->GetInnerException();
 
         ThreadExceptionState *pExState = pThread->GetExceptionState();
-#ifndef WIN64EXCEPTIONS
+#ifndef FEATURE_EH_FUNCLETS
         PTR_ExInfo pExInfo = NULL;
 #else
         PTR_ExceptionTracker pExInfo = NULL;
-#endif //!WIN64EXCEPTIONS
+#endif //!FEATURE_EH_FUNCLETS
         pExInfo = pExState->GetCurrentExceptionTracker();
         _ASSERTE(pExInfo != NULL);
         bIsNestedException = (pExInfo->GetPreviousExceptionTracker() != NULL);

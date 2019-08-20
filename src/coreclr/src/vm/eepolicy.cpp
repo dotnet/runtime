@@ -1098,9 +1098,9 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
             }   
         }
         FrameWithCookie<FaultingExceptionFrame> fef;
-#if defined(WIN64EXCEPTIONS)
+#if defined(FEATURE_EH_FUNCLETS)
         *((&fef)->GetGSCookiePtr()) = GetProcessGSCookie();
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
         if (pExceptionInfo && pExceptionInfo->ContextRecord)
         {
             GCX_COOP();

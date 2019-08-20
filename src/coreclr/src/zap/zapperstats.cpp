@@ -79,9 +79,9 @@ ZapperStats::ZapperStats()
     , m_nativeColdCodeSize( 0 )
     , m_nativeRODataSize( 0 )
     , m_gcInfoSize( 0 )
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     , m_unwindInfoSize( 0 )
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
     , m_NumHotAllocations( 0 )
     , m_NumHotColdAllocations( 0 )
     , m_NumMediumHeaders( 0 )
@@ -211,10 +211,10 @@ void ZapperStats::PrintStats()
     GetSvcLogger()->Printf( "Total Native RO Data:   %8d\n", m_nativeRODataSize);
     GetSvcLogger()->Printf( "Total Native GC Info:   %8d\n", m_gcInfoSize);
     size_t nativeTotal = m_nativeCodeSize + m_nativeRODataSize + m_gcInfoSize;
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     GetSvcLogger()->Printf( "Total Native UnwindInfo:%8d\n", m_unwindInfoSize);
     nativeTotal += m_unwindInfoSize;
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
     GetSvcLogger()->Printf( "Total Native Total :    %8d\n", nativeTotal);
 
     if (m_methods > 0) {
@@ -223,9 +223,9 @@ void ZapperStats::PrintStats()
         GetSvcLogger()->Printf( "Average NativeCode:         %8.2f\n", double(m_nativeCodeSize) / m_methods);
         GetSvcLogger()->Printf( "Average Native RO Data:     %8.2f\n", double(m_nativeRODataSize) / m_methods);
         GetSvcLogger()->Printf( "Average Native GC Info:     %8.2f\n", double(m_gcInfoSize) / m_methods);
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
         GetSvcLogger()->Printf( "Average Native UnwindInfo:  %8.2f\n", double(m_unwindInfoSize) / m_methods);
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
         GetSvcLogger()->Printf( "Average Native:             %8.2f\n", double(nativeTotal) / m_methods);
         GetSvcLogger()->Printf( "\n");
         GetSvcLogger()->Printf( "NativeGC / Native:      %8.2f\n", double(m_gcInfoSize) / nativeTotal);

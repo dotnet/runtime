@@ -91,7 +91,7 @@ struct EHblkDsc
 
     EHHandlerType ebdHandlerType;
 
-#if !FEATURE_EH_FUNCLETS
+#if !defined(FEATURE_EH_FUNCLETS)
     // How nested is the try/handler within other *handlers* - 0 for outermost clauses, 1 for nesting with a handler,
     // etc.
     unsigned short ebdHandlerNestingLevel;
@@ -110,7 +110,7 @@ struct EHblkDsc
     // The index of the enclosing outer handler region, NO_ENCLOSING_INDEX if none.
     unsigned short ebdEnclosingHndIndex;
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
 
     // After funclets are created, this is the index of corresponding FuncInfoDsc
     // Special case for Filter/Filter-handler:

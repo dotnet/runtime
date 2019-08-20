@@ -17007,14 +17007,14 @@ void Compiler::fgMorph()
     DBEXEC(VERBOSE, fgDispBasicBlocks(true));
 #endif
 
-#if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
     if (fgNeedToAddFinallyTargetBits)
     {
         // We previously wiped out the BBF_FINALLY_TARGET bits due to some morphing; add them back.
         fgAddFinallyTargetFlags();
         fgNeedToAddFinallyTargetBits = false;
     }
-#endif // FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
 
     /* Decide the kind of code we want to generate */
 

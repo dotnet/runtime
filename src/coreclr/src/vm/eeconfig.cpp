@@ -317,7 +317,7 @@ HRESULT EEConfig::Init()
     fStubLinkerUnwindInfoVerificationOn = FALSE;
 #endif
 
-#if defined(_DEBUG) && defined(WIN64EXCEPTIONS)
+#if defined(_DEBUG) && defined(FEATURE_EH_FUNCLETS)
     fSuppressLockViolationsOnReentryFromOS = false;
 #endif
 
@@ -1162,7 +1162,7 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
     if (iGCPollTypeOverride < GCPOLL_TYPE_COUNT)
         iGCPollType = GCPollType(iGCPollTypeOverride);
 
-#if defined(_DEBUG) && defined(WIN64EXCEPTIONS)
+#if defined(_DEBUG) && defined(FEATURE_EH_FUNCLETS)
     fSuppressLockViolationsOnReentryFromOS = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SuppressLockViolationsOnReentryFromOS) != 0);
 #endif
 

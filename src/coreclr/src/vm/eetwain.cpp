@@ -568,7 +568,7 @@ FrameType   GetHandlerFrameInfo(hdrInfo   * info,
     // Since each subsequent slot contains the SP of a more nested EH clause, the contents of the slots are
     // expected to be in decreasing order.
     size_t lvl = 0;
-#ifndef WIN64EXCEPTIONS
+#ifndef FEATURE_EH_FUNCLETS
     PTR_TADDR pSlot;
     for(lvl = 0, pSlot = pFirstBaseSPslot;
         *pSlot && lvl < unwindLevel;
@@ -631,7 +631,7 @@ FrameType   GetHandlerFrameInfo(hdrInfo   * info,
             baseSP = curSlotVal;
         }
     }
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
     if (unwindESP != (TADDR) IGNORE_VAL)
     {
@@ -698,7 +698,7 @@ inline size_t GetSizeOfFrameHeaderForEnC(hdrInfo * info)
 #endif // !USE_GC_INFO_DECODER
 
 #ifndef DACCESS_COMPILE
-#ifndef WIN64EXCEPTIONS
+#ifndef FEATURE_EH_FUNCLETS
 
 /*****************************************************************************
  *
@@ -779,7 +779,7 @@ void EECodeManager::FixContext( ContextType     ctxType,
     *((OBJECTREF*)&(ctx->Eax)) = thrownObject;
 }
 
-#endif // !WIN64EXCEPTIONS
+#endif // !FEATURE_EH_FUNCLETS
 
 
 
@@ -3122,7 +3122,7 @@ unsigned SKIP_ALLOC_FRAME(int size, PTR_CBYTE base, unsigned offset)
 #endif // !USE_GC_INFO_DECODER
 
 
-#if defined(WIN64EXCEPTIONS) && !defined(CROSSGEN_COMPILE)
+#if defined(FEATURE_EH_FUNCLETS) && !defined(CROSSGEN_COMPILE)
 
 void EECodeManager::EnsureCallerContextIsValid( PREGDISPLAY  pRD, StackwalkCacheEntry* pCacheEntry, EECodeInfo * pCodeInfo /*= NULL*/ )
 {
@@ -3176,7 +3176,7 @@ size_t EECodeManager::GetCallerSp( PREGDISPLAY  pRD )
     return GetSP(pRD->pCallerContext);
 }
 
-#endif // WIN64EXCEPTIONS && !CROSSGEN_COMPILE
+#endif // FEATURE_EH_FUNCLETS && !CROSSGEN_COMPILE
 
 #ifdef HAS_QUICKUNWIND
 /*
@@ -3285,7 +3285,7 @@ const RegMask CALLEE_SAVED_REGISTERS_MASK[] =
 
 static void SetLocation(PREGDISPLAY pRD, int ind, PDWORD loc)
 {
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     static const SIZE_T OFFSET_OF_CALLEE_SAVED_REGISTERS[] =
     {
         offsetof(T_KNONVOLATILE_CONTEXT_POINTERS, Edi), // first register to be pushed
@@ -3882,7 +3882,7 @@ bool UnwindEbpDoubleAlignFrame(
     {
         TADDR baseSP;
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
         // Funclets' frame pointers(EBP) are always restored so they can access to main function's local variables.
         // Therefore the value of EBP is invalid for unwinder so we should use ESP instead.
         // TODO If funclet frame layout is changed from CodeGen::genFuncletProlog() and genFuncletEpilog(),
@@ -3912,7 +3912,7 @@ bool UnwindEbpDoubleAlignFrame(
 
             return true;
         }
-#else // WIN64EXCEPTIONS
+#else // FEATURE_EH_FUNCLETS
 
         FrameType frameType = GetHandlerFrameInfo(info, curEBP,
                                                   curESP, (DWORD) IGNORE_VAL,
@@ -3968,7 +3968,7 @@ bool UnwindEbpDoubleAlignFrame(
 
             return true;
         }
-#endif // !WIN64EXCEPTIONS
+#endif // !FEATURE_EH_FUNCLETS
     }
 
     //
@@ -4118,7 +4118,7 @@ bool UnwindStackFrame(PREGDISPLAY     pContext,
 
 #endif // _TARGET_X86_
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
 #ifdef _TARGET_X86_
 size_t EECodeManager::GetResumeSp( PCONTEXT  pContext )
 {
@@ -4164,10 +4164,10 @@ size_t EECodeManager::GetResumeSp( PCONTEXT  pContext )
     return GetOutermostBaseFP(curEBP, info);
 }
 #endif // _TARGET_X86_
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
 #ifndef CROSSGEN_COMPILE
-#ifndef WIN64EXCEPTIONS
+#ifndef FEATURE_EH_FUNCLETS
 
 /*****************************************************************************
  *
@@ -4194,7 +4194,7 @@ bool EECodeManager::UnwindStackFrame(PREGDISPLAY     pContext,
 }
 
 /*****************************************************************************/
-#else // !WIN64EXCEPTIONS
+#else // !FEATURE_EH_FUNCLETS
 /*****************************************************************************/
 
 bool EECodeManager::UnwindStackFrame(PREGDISPLAY     pContext,
@@ -4224,7 +4224,7 @@ bool EECodeManager::UnwindStackFrame(PREGDISPLAY     pContext,
 }
 
 /*****************************************************************************/
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 #endif // !CROSSGEN_COMPILE
 
 /*****************************************************************************/
@@ -4299,13 +4299,13 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     if (flags & ParentOfFuncletStackFrame)
     {
         LOG((LF_GCROOTS, LL_INFO100000, "Not reporting this frame because it was already reported via another funclet.\n"));
         return true;
     }
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
     GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
     unsigned  curOffs = pCodeInfo->GetRelOffset();
@@ -4740,12 +4740,12 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
 
     /* Process the untracked frame variable table */
 
-#if defined(WIN64EXCEPTIONS)   // funclets
+#if defined(FEATURE_EH_FUNCLETS)   // funclets
     // Filters are the only funclet that run during the 1st pass, and must have
     // both the leaf and the parent frame reported.  In order to avoid double
     // reporting of the untracked variables, do not report them for the filter.
     if (!pCodeInfo->GetJitManager()->IsFilterFunclet(pCodeInfo))
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
     {
         count = info.untrackedCnt;
         int lastStkOffs = 0;
@@ -4874,7 +4874,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
                 if (dspPtr) {
                     printf("    Frame %s%s local at [E",
                            (lowBits & byref_OFFSET_FLAG) ? "byref "   : "",
-#ifndef WIN64EXCEPTIONS
+#ifndef FEATURE_EH_FUNCLETS
                            (lowBits & this_OFFSET_FLAG)  ? "this-ptr" : "");
 #else
                            (lowBits & pinned_OFFSET_FLAG)  ? "pinned" : "");
@@ -4901,7 +4901,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
 #endif
 
                 unsigned flags = CHECK_APP_DOMAIN;
-#ifndef WIN64EXCEPTIONS
+#ifndef FEATURE_EH_FUNCLETS
                 // First  Bit : byref
                 // Second Bit : this
                 // The second bit means `this` not `pinned`. So we ignore it.
@@ -4931,7 +4931,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
     _ASSERTE(*castto(table, unsigned short *)++ == 0xBABE);
 #endif
 
-#ifdef WIN64EXCEPTIONS   // funclets
+#ifdef FEATURE_EH_FUNCLETS   // funclets
     //
     // If we're in a funclet, we do not want to report the incoming varargs.  This is
     // taken care of by the parent method and the funclet should access those arguments
@@ -4941,7 +4941,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
     {
         return true;
     }
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
     /* Are we a varargs function, if so we have to report all args
        except 'this' (note that the GC tables created by the x86 jit
@@ -5110,7 +5110,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
     }
 
 
-#if defined(WIN64EXCEPTIONS)   // funclets
+#if defined(FEATURE_EH_FUNCLETS)   // funclets
     if (pCodeInfo->GetJitManager()->IsFilterFunclet(pCodeInfo))
     {
         // Filters are the only funclet that run during the 1st pass, and must have
@@ -5118,7 +5118,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
         // reporting of the untracked variables, do not report them for the filter.
         flags |= NoReportUntracked;
     }
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
     bool reportScratchSlots;
 
@@ -5148,7 +5148,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
         return false;
     }
 
-#ifdef WIN64EXCEPTIONS   // funclets
+#ifdef FEATURE_EH_FUNCLETS   // funclets
     //
     // If we're in a funclet, we do not want to report the incoming varargs.  This is
     // taken care of by the parent method and the funclet should access those arguments
@@ -5158,7 +5158,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
     {
         return true;
     }
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
     if (gcInfoDecoder.GetIsVarArg())
     {
@@ -5407,7 +5407,7 @@ OBJECTREF EECodeManager::GetInstance( PREGDISPLAY    pContext,
     _ASSERTE(*castto(table, unsigned short *)++ == 0xBEEF);
 #endif
 
-#ifndef WIN64EXCEPTIONS
+#ifndef FEATURE_EH_FUNCLETS
     /* Parse the untracked frame variable table */
 
     /* The 'this' pointer can never be located in the untracked table */
@@ -5454,7 +5454,7 @@ OBJECTREF EECodeManager::GetInstance( PREGDISPLAY    pContext,
     _ASSERTE(*castto(table, unsigned short *) == 0xBABE);
 #endif
 
-#else // WIN64EXCEPTIONS
+#else // FEATURE_EH_FUNCLETS
     if (pCodeInfo->GetMethodDesc()->AcquiresInstMethodTableFromThis()) // Generic Context is "this"
     {
         // Untracked table must have at least one entry - this pointer
@@ -5465,7 +5465,7 @@ OBJECTREF EECodeManager::GetInstance( PREGDISPLAY    pContext,
         taArgBase -= stkOffs & ~OFFSET_MASK;
         return (OBJECTREF)(size_t)(*PTR_DWORD(taArgBase));
     }
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
     return NULL;
 #else // !USE_GC_INFO_DECODER
@@ -5577,7 +5577,7 @@ PTR_VOID EECodeManager::GetParamTypeArg(PREGDISPLAY     pContext,
 }
 #endif // !CROSSGEN_COMPILE
 
-#if defined(WIN64EXCEPTIONS) && defined(USE_GC_INFO_DECODER) && !defined(CROSSGEN_COMPILE)
+#if defined(FEATURE_EH_FUNCLETS) && defined(USE_GC_INFO_DECODER) && !defined(CROSSGEN_COMPILE)
 /*
     Returns the generics token.  This is used by GetInstance() and GetParamTypeArg() on WIN64.
 */
@@ -5648,7 +5648,7 @@ PTR_VOID EECodeManager::GetExactGenericsToken(SIZE_T          baseStackSlot,
 }
 
 
-#endif // WIN64EXCEPTIONS && USE_GC_INFO_DECODER && !CROSSGEN_COMPILE
+#endif // FEATURE_EH_FUNCLETS && USE_GC_INFO_DECODER && !CROSSGEN_COMPILE
 
 #ifndef CROSSGEN_COMPILE
 /*****************************************************************************/
@@ -5667,7 +5667,7 @@ void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
     GCInfoToken    gcInfoToken = pCodeInfo->GetGCInfoToken();
     unsigned       relOffset = pCodeInfo->GetRelOffset();
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     if (pCodeInfo->IsFunclet())
     {
         return NULL;
@@ -5875,7 +5875,7 @@ unsigned int EECodeManager::GetFrameSize(GCInfoToken gcInfoToken)
 
 /*****************************************************************************/
 
-#ifndef WIN64EXCEPTIONS
+#ifndef FEATURE_EH_FUNCLETS
 const BYTE* EECodeManager::GetFinallyReturnAddr(PREGDISPLAY pReg)
 {
     LIMITED_METHOD_CONTRACT;
@@ -5978,7 +5978,7 @@ void EECodeManager::LeaveCatch(GCInfoToken gcInfoToken,
 
     return;
 }
-#endif // !WIN64EXCEPTIONS
+#endif // !FEATURE_EH_FUNCLETS
 #endif // #ifndef DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE
@@ -6105,13 +6105,13 @@ ULONG32 EECodeManager::GetStackParameterSize(EECodeInfo * pCodeInfo)
     } CONTRACTL_END;
 
 #if defined(_TARGET_X86_)
-#if defined(WIN64EXCEPTIONS)
+#if defined(FEATURE_EH_FUNCLETS)
     if (pCodeInfo->IsFunclet())
     {
         // Funclet has no stack argument
         return 0;
     }
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
     GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
     unsigned    dwOffset = pCodeInfo->GetRelOffset();

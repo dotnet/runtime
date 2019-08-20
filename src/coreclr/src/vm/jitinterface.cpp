@@ -11279,7 +11279,7 @@ void reservePersonalityRoutineSpace(ULONG &unwindSize)
 //
 void CEEJitInfo::reserveUnwindInfo(BOOL isFunclet, BOOL isColdCode, ULONG unwindSize)
 {
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -11304,10 +11304,10 @@ void CEEJitInfo::reserveUnwindInfo(BOOL isFunclet, BOOL isColdCode, ULONG unwind
     m_totalUnwindInfos++;
 
     EE_TO_JIT_TRANSITION_LEAF();
-#else // WIN64EXCEPTIONS
+#else // FEATURE_EH_FUNCLETS
     LIMITED_METHOD_CONTRACT;
     // Dummy implementation to make cross-platform altjit work
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 }
 
 // Allocate and initialize the .rdata and .pdata for this method or
@@ -11340,7 +11340,7 @@ void CEEJitInfo::allocUnwindInfo (
         CorJitFuncKind      funcKind               /* IN */
         )
 {
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -11481,10 +11481,10 @@ void CEEJitInfo::allocUnwindInfo (
 #endif // defined(_TARGET_AMD64_)
 
     EE_TO_JIT_TRANSITION();
-#else // WIN64EXCEPTIONS
+#else // FEATURE_EH_FUNCLETS
     LIMITED_METHOD_CONTRACT;
     // Dummy implementation to make cross-platform altjit work
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 }
 
 void CEEJitInfo::recordCallSite(ULONG                 instrOffset,
@@ -12108,7 +12108,7 @@ void CEEJitInfo::allocMem (
         totalSize += roDataSize;
     }
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     totalSize.AlignUp(sizeof(DWORD));
     totalSize += m_totalUnwindSize;
 #endif
@@ -12127,7 +12127,7 @@ void CEEJitInfo::allocMem (
     }
 
     m_CodeHeader = m_jitManager->allocCode(m_pMethodBeingCompiled, totalSize.Value(), GetReserveForJumpStubs(), flag
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
                                            , m_totalUnwindInfos
                                            , &m_moduleBase
 #endif
@@ -12149,7 +12149,7 @@ void CEEJitInfo::allocMem (
         *roDataBlock = NULL;
     }
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     current = (BYTE *)ALIGN_UP(current, sizeof(DWORD));
 
     m_theUnwindBlock = current;
@@ -14183,7 +14183,7 @@ EECodeInfo::EECodeInfo()
     m_pMD = NULL;
     m_relOffset = 0;
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     m_pFunctionEntry = NULL;
 #endif
 }
@@ -14222,7 +14222,7 @@ Invalid:
     m_pMD = NULL;
     m_relOffset = 0;
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     m_pFunctionEntry = NULL;
 #endif
 }
@@ -14293,7 +14293,7 @@ NativeCodeVersion EECodeInfo::GetNativeCodeVersion()
     return NativeCodeVersion(pMD);
 }
 
-#if defined(WIN64EXCEPTIONS)
+#if defined(FEATURE_EH_FUNCLETS)
 
 // ----------------------------------------------------------------------------
 // EECodeInfo::GetMainFunctionInfo
@@ -14349,7 +14349,7 @@ BOOL EECodeInfo::HasFrameRegister()
 }
 #endif // defined(_TARGET_AMD64_)
 
-#endif // defined(WIN64EXCEPTIONS)
+#endif // defined(FEATURE_EH_FUNCLETS)
 
 
 #if defined(_TARGET_AMD64_)

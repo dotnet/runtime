@@ -159,7 +159,7 @@ class ZapInfo
     ZapBlobWithRelocs *         m_pColdCode;
     ZapBlobWithRelocs *         m_pROData;
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     // Unwind info of the main method body. It will get merged with GC info.
     BYTE *                      m_pMainUnwindInfo;
     ULONG                       m_cbMainUnwindInfo;
@@ -169,7 +169,7 @@ class ZapInfo
 #if defined(_TARGET_AMD64_)
     ZapUnwindInfo *             m_pChainedColdUnwindInfo;
 #endif
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
     ZapExceptionInfo *          m_pExceptionInfo;
 

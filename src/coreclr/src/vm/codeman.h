@@ -70,9 +70,9 @@ Abstract:
 #include "gcinfo.h"
 #include "eexcp.h"
 
-#if defined(WIN64EXCEPTIONS) && !defined(USE_INDIRECT_CODEHEADER)
-#error "WIN64EXCEPTIONS requires USE_INDIRECT_CODEHEADER"
-#endif // WIN64EXCEPTIONS && !USE_INDIRECT_CODEHEADER
+#if defined(FEATURE_EH_FUNCLETS) && !defined(USE_INDIRECT_CODEHEADER)
+#error "FEATURE_EH_FUNCLETS requires USE_INDIRECT_CODEHEADER"
+#endif // FEATURE_EH_FUNCLETS && !USE_INDIRECT_CODEHEADER
 
 class MethodDesc;
 class ICorJitCompiler;
@@ -149,10 +149,10 @@ public:
 
     PTR_MethodDesc      phdrMDesc;
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     DWORD               nUnwindInfos;
     T_RUNTIME_FUNCTION  unwindInfos[0];
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
 public:
 #ifndef USE_INDIRECT_CODEHEADER
@@ -324,7 +324,7 @@ public:
         pRealCodeHeader = (PTR_RealCodeHeader)kind;
     }
 
-#if defined(WIN64EXCEPTIONS)
+#if defined(FEATURE_EH_FUNCLETS)
     UINT                    GetNumberOfUnwindInfos()
     {
         SUPPORTS_DAC;
@@ -342,7 +342,7 @@ public:
         return dac_cast<PTR_RUNTIME_FUNCTION>(
             PTR_TO_MEMBER_TADDR(RealCodeHeader, pRealCodeHeader, unwindInfos) + iUnwindInfo * sizeof(T_RUNTIME_FUNCTION));
     }
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags, IJitManager* pJitMan);
@@ -775,7 +775,7 @@ public:
 
     TADDR JitTokenToModuleBase(const METHODTOKEN& MethodToken);
 
-#if defined(WIN64EXCEPTIONS)
+#if defined(FEATURE_EH_FUNCLETS)
     virtual PTR_RUNTIME_FUNCTION LazyGetFunctionEntry(EECodeInfo * pCodeInfo) = 0;
 
     // GetFuncletStartAddress returns the starting address of the function or funclet indicated by the EECodeInfo address.
@@ -785,7 +785,7 @@ public:
 
     BOOL IsFunclet(EECodeInfo * pCodeInfo);
     virtual BOOL IsFilterFunclet(EECodeInfo * pCodeInfo);
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
     virtual StubCodeBlockKind   GetStubCodeBlockKind(RangeSection * pRangeSection, PCODE currentPC) = 0;
 
@@ -795,10 +795,10 @@ public:
 #if defined(DACCESS_COMPILE)
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
     virtual void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, MethodDesc * pMD) = 0;
-#if defined(WIN64EXCEPTIONS)
+#if defined(FEATURE_EH_FUNCLETS)
     // Enumerate the memory necessary to retrieve the unwind info for a specific method
     virtual void EnumMemoryRegionsForMethodUnwindInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo) = 0;
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 #endif // DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
@@ -1011,7 +1011,7 @@ public:
     BOOL                LoadJIT();
 
     CodeHeader*         allocCode(MethodDesc* pFD, size_t blockSize, size_t reserveForJumpStubs, CorJitAllocMemFlag flag
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
                                   , UINT nUnwindInfos
                                   , TADDR * pModuleBase
 #endif
@@ -1030,12 +1030,12 @@ public:
     static CodeHeader * GetCodeHeaderFromStartAddress(TADDR methodStartAddress);
 
 #ifndef CROSSGEN_COMPILE
-#if defined(WIN64EXCEPTIONS)
+#if defined(FEATURE_EH_FUNCLETS)
     // Compute function entry lazily. Do not call directly. Use EECodeInfo::GetFunctionEntry instead.
     virtual PTR_RUNTIME_FUNCTION    LazyGetFunctionEntry(EECodeInfo * pCodeInfo);
 
     virtual DWORD                   GetFuncletStartOffsets(const METHODTOKEN& MethodToken, DWORD* pStartFuncletOffsets, DWORD dwLength);
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
     virtual StubCodeBlockKind       GetStubCodeBlockKind(RangeSection * pRangeSection, PCODE currentPC);
 
@@ -1043,7 +1043,7 @@ public:
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
     virtual void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, MethodDesc * pMD);
 #endif // DACCESS_COMPILE
-#if defined(WIN64EXCEPTIONS)
+#if defined(FEATURE_EH_FUNCLETS)
     // Enumerate the memory necessary to retrieve the unwind info for a specific method
     virtual void EnumMemoryRegionsForMethodUnwindInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo)
     {
@@ -1053,7 +1053,7 @@ public:
         // unwind information at dump generation time (since it's dynamic, it will not be otherwise
         // available at debug time).
     }
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 #endif // !CROSSGEN_COMPILE
     
 #ifndef CROSSGEN_COMPILE
@@ -1600,23 +1600,23 @@ public:
     
     virtual GCInfoToken  GetGCInfoToken(const METHODTOKEN& MethodToken);
 
-#if defined(WIN64EXCEPTIONS)
+#if defined(FEATURE_EH_FUNCLETS)
     virtual PTR_RUNTIME_FUNCTION    LazyGetFunctionEntry(EECodeInfo * pCodeInfo);
 
     virtual TADDR                   GetFuncletStartAddress(EECodeInfo * pCodeInfo);
     virtual DWORD                   GetFuncletStartOffsets(const METHODTOKEN& MethodToken, DWORD* pStartFuncletOffsets, DWORD dwLength);
     virtual BOOL                    IsFilterFunclet(EECodeInfo * pCodeInfo);
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
     virtual StubCodeBlockKind       GetStubCodeBlockKind(RangeSection * pRangeSection, PCODE currentPC);
 
 #if defined(DACCESS_COMPILE)
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
     virtual void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, MethodDesc * pMD);
-#if defined(WIN64EXCEPTIONS)
+#if defined(FEATURE_EH_FUNCLETS)
     // Enumerate the memory necessary to retrieve the unwind info for a specific method
     virtual void EnumMemoryRegionsForMethodUnwindInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo);
-#endif //WIN64EXCEPTIONS
+#endif //FEATURE_EH_FUNCLETS
 #endif //DACCESS_COMPILE
 };
 
@@ -1718,23 +1718,23 @@ public:
     
     virtual GCInfoToken  GetGCInfoToken(const METHODTOKEN& MethodToken);
 
-#if defined(WIN64EXCEPTIONS)
+#if defined(FEATURE_EH_FUNCLETS)
     virtual PTR_RUNTIME_FUNCTION    LazyGetFunctionEntry(EECodeInfo * pCodeInfo);
 
     virtual TADDR                   GetFuncletStartAddress(EECodeInfo * pCodeInfo);
     virtual DWORD                   GetFuncletStartOffsets(const METHODTOKEN& MethodToken, DWORD* pStartFuncletOffsets, DWORD dwLength);
     virtual BOOL                    IsFilterFunclet(EECodeInfo * pCodeInfo);
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
     virtual StubCodeBlockKind       GetStubCodeBlockKind(RangeSection * pRangeSection, PCODE currentPC);
 
 #if defined(DACCESS_COMPILE)
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
     virtual void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, MethodDesc * pMD);
-#if defined(WIN64EXCEPTIONS)
+#if defined(FEATURE_EH_FUNCLETS)
     // Enumerate the memory necessary to retrieve the unwind info for a specific method
     virtual void EnumMemoryRegionsForMethodUnwindInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo);
-#endif //WIN64EXCEPTIONS
+#endif //FEATURE_EH_FUNCLETS
 #endif //DACCESS_COMPILE
 };
 
@@ -1845,7 +1845,7 @@ public:
         return GetJitManager()->JitTokenToModuleBase(GetMethodToken());
     }
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     PTR_RUNTIME_FUNCTION GetFunctionEntry();
     BOOL        IsFunclet()     { WRAPPER_NO_CONTRACT; return GetJitManager()->IsFunclet(this); }
     EECodeInfo  GetMainFunctionInfo();
@@ -1855,13 +1855,13 @@ public:
     BOOL        HasFrameRegister();
 #endif // _TARGET_AMD64_
 
-#else // WIN64EXCEPTIONS
+#else // FEATURE_EH_FUNCLETS
     ULONG       GetFixedStackSize()
     {
         WRAPPER_NO_CONTRACT;
         return GetCodeManager()->GetFrameSize(GetGCInfoToken());
     }
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
 #if defined(_TARGET_AMD64_)
     void         GetOffsetsFromUnwindInfo(ULONG* pRSPOffset, ULONG* pRBPOffset);
@@ -1878,9 +1878,9 @@ private:
     MethodDesc         *m_pMD;
     IJitManager        *m_pJM;
     DWORD               m_relOffset;
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     PTR_RUNTIME_FUNCTION m_pFunctionEntry;
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
 #ifdef _TARGET_AMD64_
     // Simple helper to return a pointer to the UNWIND_INFO given the offset to the unwind info.
