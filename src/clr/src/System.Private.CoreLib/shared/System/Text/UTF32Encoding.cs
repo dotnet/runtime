@@ -940,8 +940,8 @@ namespace System.Text
                         bytes -= 4;                                       // get back to where we were
                         iChar = 0;                                        // Remembering nothing
                         fallbackBuffer.InternalReset();
-                        ThrowCharsOverflow(decoder, chars == charStart);// Might throw, if no chars output
-                        break;                                          // Stop here, didn't throw
+                        ThrowCharsOverflow(decoder, chars == charStart); // Might throw, if no chars output
+                        break;                                           // Stop here, didn't throw
                     }
 
                     // Ignore the illegal character
@@ -963,8 +963,8 @@ namespace System.Text
                             "[UTF32Encoding.GetChars]Expected to have consumed bytes or throw (surrogate)");
                         bytes -= 4;                                       // get back to where we were
                         iChar = 0;                                        // Remembering nothing
-                        ThrowCharsOverflow(decoder, chars == charStart);// Might throw, if no chars output
-                        break;                                          // Stop here, didn't throw
+                        ThrowCharsOverflow(decoder, chars == charStart); // Might throw, if no chars output
+                        break;                                           // Stop here, didn't throw
                     }
 
                     *(chars++) = GetHighSurrogate(iChar);
@@ -980,8 +980,8 @@ namespace System.Text
                         "[UTF32Encoding.GetChars]Expected to have consumed bytes or throw (normal char)");
                     bytes -= 4;                                       // get back to where we were
                     iChar = 0;                                        // Remembering nothing
-                    ThrowCharsOverflow(decoder, chars == charStart);// Might throw, if no chars output
-                    break;                                          // Stop here, didn't throw
+                    ThrowCharsOverflow(decoder, chars == charStart); // Might throw, if no chars output
+                    break;                                           // Stop here, didn't throw
                 }
 
                 // Add the rest of the surrogate or our normal character
@@ -1022,7 +1022,7 @@ namespace System.Text
                 {
                     // Couldn't fallback.
                     fallbackBuffer.InternalReset();
-                    ThrowCharsOverflow(decoder, chars == charStart);// Might throw, if no chars output
+                    ThrowCharsOverflow(decoder, chars == charStart); // Might throw, if no chars output
                     // Stop here, didn't throw, backed up, so still nothing in buffer
                 }
                 else
