@@ -73,7 +73,7 @@ namespace System.Threading
         // Thr thread tracking disabled mask
         private const int LOCK_ID_DISABLE_MASK = unchecked((int)0x80000000);        // 1000 0000 0000 0000 0000 0000 0000 0000
 
-        //the lock is held by some thread, but we don't know which
+        // the lock is held by some thread, but we don't know which
         private const int LOCK_ANONYMOUS_OWNED = 0x1;                               // 0000 0000 0000 0000 0000 0000 0000 0001
 
         // Waiters mask if the thread tracking is disabled
@@ -152,7 +152,7 @@ namespace System.Threading
             int observedOwner = _owner;
             if (lockTaken || // invalid parameter
                 (observedOwner & ID_DISABLED_AND_ANONYMOUS_OWNED) != LOCK_ID_DISABLE_MASK || // thread tracking is enabled or the lock is already acquired
-                CompareExchange(ref _owner, observedOwner | LOCK_ANONYMOUS_OWNED, observedOwner, ref lockTaken) != observedOwner) //acquiring the lock failed
+                CompareExchange(ref _owner, observedOwner | LOCK_ANONYMOUS_OWNED, observedOwner, ref lockTaken) != observedOwner) // acquiring the lock failed
                 ContinueTryEnter(Timeout.Infinite, ref lockTaken); // Then try the slow path if any of the above conditions is met
         }
 
@@ -259,9 +259,9 @@ namespace System.Threading
         public void TryEnter(int millisecondsTimeout, ref bool lockTaken)
         {
             int observedOwner = _owner;
-            if (millisecondsTimeout < -1 || //invalid parameter
-                lockTaken || //invalid parameter
-                (observedOwner & ID_DISABLED_AND_ANONYMOUS_OWNED) != LOCK_ID_DISABLE_MASK ||  //thread tracking is enabled or the lock is already acquired
+            if (millisecondsTimeout < -1 || // invalid parameter
+                lockTaken || // invalid parameter
+                (observedOwner & ID_DISABLED_AND_ANONYMOUS_OWNED) != LOCK_ID_DISABLE_MASK ||  // thread tracking is enabled or the lock is already acquired
                 CompareExchange(ref _owner, observedOwner | LOCK_ANONYMOUS_OWNED, observedOwner, ref lockTaken) != observedOwner) // acquiring the lock failed
                 ContinueTryEnter(millisecondsTimeout, ref lockTaken); // The call the slow pth
         }
@@ -313,7 +313,7 @@ namespace System.Threading
 
             int observedOwner;
             int turn = int.MaxValue;
-            //***Step 1, take the lock or update the waiters
+            // ***Step 1, take the lock or update the waiters
 
             // try to acquire the lock directly if possible or update the waiters count
             observedOwner = _owner;
@@ -336,7 +336,7 @@ namespace System.Threading
                 // Did not acquire lock as owned and timeout is 0 so fail fast
                 return;
             }
-            else //failed to acquire the lock, then try to update the waiters. If the waiters count reached the maximum, just break the loop to avoid overflow
+            else // failed to acquire the lock, then try to update the waiters. If the waiters count reached the maximum, just break the loop to avoid overflow
             {
                 if ((observedOwner & WAITERS_MASK) != MAXIMUM_WAITERS)
                 {
@@ -347,7 +347,7 @@ namespace System.Threading
 
             // lock acquired failed and waiters updated
 
-            //*** Step 2, Spinning and Yielding
+            // *** Step 2, Spinning and Yielding
             var spinner = new SpinWait();
             if (turn > PlatformHelper.ProcessorCount)
             {
@@ -460,7 +460,7 @@ namespace System.Threading
         /// </exception>
         public void Exit()
         {
-            //This is the fast path for the thread tracking is disabled, otherwise go to the slow path
+            // This is the fast path for the thread tracking is disabled, otherwise go to the slow path
             if ((_owner & LOCK_ID_DISABLE_MASK) == 0)
                 ExitSlowPath(true);
             else

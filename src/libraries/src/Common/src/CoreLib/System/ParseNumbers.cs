@@ -95,7 +95,7 @@ namespace System
 
             if ((flags & IsTight) != 0)
             {
-                //If we've got effluvia left at the end of the string, complain.
+                // If we've got effluvia left at the end of the string, complain.
                 if (i < length)
                     throw new FormatException(SR.Format_ExtraJunkAtEnd);
             }
@@ -363,7 +363,7 @@ namespace System
             if (radix < MinRadix || radix > MaxRadix)
                 throw new ArgumentException(SR.Arg_InvalidBase, nameof(radix));
 
-            //If the number is negative, make it positive and remember the sign.
+            // If the number is negative, make it positive and remember the sign.
             ulong ul;
             bool isNegative = false;
             if (n < 0)
@@ -392,7 +392,7 @@ namespace System
                 ul &= 0xFFFFFFFF;
             }
 
-            //Special case the 0.
+            // Special case the 0.
             int index;
             if (0 == ul)
             {
@@ -421,7 +421,7 @@ namespace System
                 Debug.Assert(ul == 0, $"Expected {ul} == 0");
             }
 
-            //If they want the base, append that to the string (in reverse order)
+            // If they want the base, append that to the string (in reverse order)
             if (radix != 10 && ((flags & PrintBase) != 0))
             {
                 if (16 == radix)
@@ -443,19 +443,19 @@ namespace System
 
             if (10 == radix)
             {
-                //If it was negative, append the sign.
+                // If it was negative, append the sign.
                 if (isNegative)
                 {
                     buffer[index++] = '-';
                 }
 
-                //else if they requested, add the '+';
+                // else if they requested, add the '+';
                 else if ((flags & PrintSign) != 0)
                 {
                     buffer[index++] = '+';
                 }
 
-                //If they requested a leading space, put it on.
+                // If they requested a leading space, put it on.
                 else if ((flags & PrefixSpace) != 0)
                 {
                     buffer[index++] = ' ';

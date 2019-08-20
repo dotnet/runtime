@@ -130,7 +130,7 @@ namespace System
         // Determines whether two Boolean objects are equal.
         public override bool Equals(object? obj)
         {
-            //If it's not a boolean, we're definitely not equal
+            // If it's not a boolean, we're definitely not equal
             if (!(obj is bool))
             {
                 return false;

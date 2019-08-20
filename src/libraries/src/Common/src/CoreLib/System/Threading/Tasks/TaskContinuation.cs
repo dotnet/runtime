@@ -306,9 +306,9 @@ namespace System.Threading.Tasks
             Task continuationTask = m_task;
             if (isRightKind)
             {
-                //If the task was cancel before running (e.g a ContinueWhenAll with a cancelled caancelation token)
-                //we will still flow it to ScheduleAndStart() were it will check the status before running
-                //We check here to avoid faulty logs that contain a join event to an operation that was already set as completed.
+                // If the task was cancel before running (e.g a ContinueWhenAll with a cancelled caancelation token)
+                // we will still flow it to ScheduleAndStart() were it will check the status before running
+                // We check here to avoid faulty logs that contain a join event to an operation that was already set as completed.
                 if (!continuationTask.IsCanceled && AsyncCausalityTracer.LoggingOn)
                 {
                     // Log now that we are sure that this continuation is being ran

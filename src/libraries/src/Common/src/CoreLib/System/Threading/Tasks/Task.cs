@@ -119,7 +119,7 @@ namespace System.Threading.Tasks
         [ThreadStatic]
         internal static Task? t_currentTask;  // The currently executing task.
 
-        internal static int s_taskIdCounter; //static counter used to generate unique task IDs
+        internal static int s_taskIdCounter; // static counter used to generate unique task IDs
 
         private volatile int m_taskId; // this task's unique ID. initialized only if it is ever requested
 
@@ -150,21 +150,21 @@ namespace System.Threading.Tasks
         // See TaskCreationOptions for bit values associated with TaskCreationOptions
         //
         private const int OptionsMask = 0xFFFF; // signifies the Options portion of m_stateFlags bin: 0000 0000 0000 0000 1111 1111 1111 1111
-        internal const int TASK_STATE_STARTED = 0x10000;                                       //bin: 0000 0000 0000 0001 0000 0000 0000 0000
-        internal const int TASK_STATE_DELEGATE_INVOKED = 0x20000;                              //bin: 0000 0000 0000 0010 0000 0000 0000 0000
-        internal const int TASK_STATE_DISPOSED = 0x40000;                                      //bin: 0000 0000 0000 0100 0000 0000 0000 0000
-        internal const int TASK_STATE_EXCEPTIONOBSERVEDBYPARENT = 0x80000;                     //bin: 0000 0000 0000 1000 0000 0000 0000 0000
-        internal const int TASK_STATE_CANCELLATIONACKNOWLEDGED = 0x100000;                     //bin: 0000 0000 0001 0000 0000 0000 0000 0000
-        internal const int TASK_STATE_FAULTED = 0x200000;                                      //bin: 0000 0000 0010 0000 0000 0000 0000 0000
-        internal const int TASK_STATE_CANCELED = 0x400000;                                     //bin: 0000 0000 0100 0000 0000 0000 0000 0000
-        internal const int TASK_STATE_WAITING_ON_CHILDREN = 0x800000;                          //bin: 0000 0000 1000 0000 0000 0000 0000 0000
-        internal const int TASK_STATE_RAN_TO_COMPLETION = 0x1000000;                           //bin: 0000 0001 0000 0000 0000 0000 0000 0000
-        internal const int TASK_STATE_WAITINGFORACTIVATION = 0x2000000;                        //bin: 0000 0010 0000 0000 0000 0000 0000 0000
-        internal const int TASK_STATE_COMPLETION_RESERVED = 0x4000000;                         //bin: 0000 0100 0000 0000 0000 0000 0000 0000
-        internal const int TASK_STATE_WAIT_COMPLETION_NOTIFICATION = 0x10000000;               //bin: 0001 0000 0000 0000 0000 0000 0000 0000
-        //This could be moved to InternalTaskOptions enum
-        internal const int TASK_STATE_EXECUTIONCONTEXT_IS_NULL = 0x20000000;                   //bin: 0010 0000 0000 0000 0000 0000 0000 0000
-        internal const int TASK_STATE_TASKSCHEDULED_WAS_FIRED = 0x40000000;                    //bin: 0100 0000 0000 0000 0000 0000 0000 0000
+        internal const int TASK_STATE_STARTED = 0x10000;                                      // bin: 0000 0000 0000 0001 0000 0000 0000 0000
+        internal const int TASK_STATE_DELEGATE_INVOKED = 0x20000;                             // bin: 0000 0000 0000 0010 0000 0000 0000 0000
+        internal const int TASK_STATE_DISPOSED = 0x40000;                                     // bin: 0000 0000 0000 0100 0000 0000 0000 0000
+        internal const int TASK_STATE_EXCEPTIONOBSERVEDBYPARENT = 0x80000;                    // bin: 0000 0000 0000 1000 0000 0000 0000 0000
+        internal const int TASK_STATE_CANCELLATIONACKNOWLEDGED = 0x100000;                    // bin: 0000 0000 0001 0000 0000 0000 0000 0000
+        internal const int TASK_STATE_FAULTED = 0x200000;                                     // bin: 0000 0000 0010 0000 0000 0000 0000 0000
+        internal const int TASK_STATE_CANCELED = 0x400000;                                    // bin: 0000 0000 0100 0000 0000 0000 0000 0000
+        internal const int TASK_STATE_WAITING_ON_CHILDREN = 0x800000;                         // bin: 0000 0000 1000 0000 0000 0000 0000 0000
+        internal const int TASK_STATE_RAN_TO_COMPLETION = 0x1000000;                          // bin: 0000 0001 0000 0000 0000 0000 0000 0000
+        internal const int TASK_STATE_WAITINGFORACTIVATION = 0x2000000;                       // bin: 0000 0010 0000 0000 0000 0000 0000 0000
+        internal const int TASK_STATE_COMPLETION_RESERVED = 0x4000000;                        // bin: 0000 0100 0000 0000 0000 0000 0000 0000
+        internal const int TASK_STATE_WAIT_COMPLETION_NOTIFICATION = 0x10000000;              // bin: 0001 0000 0000 0000 0000 0000 0000 0000
+        // This could be moved to InternalTaskOptions enum
+        internal const int TASK_STATE_EXECUTIONCONTEXT_IS_NULL = 0x20000000;                  // bin: 0010 0000 0000 0000 0000 0000 0000 0000
+        internal const int TASK_STATE_TASKSCHEDULED_WAS_FIRED = 0x40000000;                   // bin: 0100 0000 0000 0000 0000 0000 0000 0000
 
         // A mask for all of the final states a task may be in.
         // SOS DumpAsync command depends on these values.
@@ -182,7 +182,7 @@ namespace System.Threading.Tasks
 
         // A private flag that would be set (only) by the debugger
         // When true the Async Causality logging trace is enabled as well as a dictionary to relate operation ids with Tasks
-        internal static bool s_asyncDebuggingEnabled; //false by default
+        internal static bool s_asyncDebuggingEnabled; // false by default
 
         // This dictonary relates the task id, from an operation id located in the Async Causality log to the actual
         // task. This is to be used by the debugger ONLY. Task in this dictionary represent current active tasks.
@@ -201,7 +201,7 @@ namespace System.Threading.Tasks
             {
                 s_currentActiveTasks[taskId] = task;
             }
-            //always return true to keep signature as bool for backwards compatibility
+            // always return true to keep signature as bool for backwards compatibility
             return true;
         }
 
@@ -1534,7 +1534,7 @@ namespace System.Threading.Tasks
                 {
                     EnsureContingentPropertiesInitializedUnsafe().m_capturedContext = value;
                 }
-                //else do nothing, this is the default context
+                // else do nothing, this is the default context
             }
         }
 
@@ -1662,7 +1662,7 @@ namespace System.Threading.Tasks
 
             if (AsyncCausalityTracer.LoggingOn && (Options & (TaskCreationOptions)InternalTaskOptions.ContinuationTask) == 0)
             {
-                //For all other task than TaskContinuations we want to log. TaskContinuations log in their constructor
+                // For all other task than TaskContinuations we want to log. TaskContinuations log in their constructor
                 Debug.Assert(m_action != null, "Must have a delegate to be in ScheduleAndStart");
                 AsyncCausalityTracer.TraceOperationCreation(this, "Task: " + m_action.Method.Name);
             }
@@ -3069,9 +3069,10 @@ namespace System.Threading.Tasks
         internal void CancellationCleanupLogic()
         {
             Debug.Assert((m_stateFlags & (TASK_STATE_CANCELED | TASK_STATE_COMPLETION_RESERVED)) != 0, "Task.CancellationCleanupLogic(): Task not canceled or reserved.");
-            // I'd like to do this, but there is a small window for a race condition.  If someone calls Wait() between InternalCancel() and
+            // We'd like to be able to:
+            //     Debug.Assert((m_completionEvent == null) || !m_completionEvent.IsSet, "Task.CancellationCleanupLogic(): Completion event already set.");
+            // However, there is a small window for a race condition.  If someone calls Wait() between InternalCancel() and
             // here, that will set m_completionEvent, leading to a meaningless/harmless assertion.
-            //Debug.Assert((m_completionEvent == null) || !m_completionEvent.IsSet, "Task.CancellationCleanupLogic(): Completion event already set.");
 
             // This may have been set already, but we need to make sure.
             Interlocked.Exchange(ref m_stateFlags, m_stateFlags | TASK_STATE_CANCELED);
@@ -5710,7 +5711,7 @@ namespace System.Threading.Tasks
                     {
                         Debug.Assert(observedExceptions.Count > 0, "Expected at least one exception");
 
-                        //We don't need to TraceOperationCompleted here because TrySetException will call Finish and we'll log it there
+                        // We don't need to TraceOperationCompleted here because TrySetException will call Finish and we'll log it there
 
                         TrySetException(observedExceptions);
                     }
@@ -5949,7 +5950,7 @@ namespace System.Threading.Tasks
                     {
                         Debug.Assert(observedExceptions.Count > 0, "Expected at least one exception");
 
-                        //We don't need to TraceOperationCompleted here because TrySetException will call Finish and we'll log it there
+                        // We don't need to TraceOperationCompleted here because TrySetException will call Finish and we'll log it there
 
                         TrySetException(observedExceptions);
                     }
@@ -6127,7 +6128,7 @@ namespace System.Threading.Tasks
 
         internal virtual Delegate[]? GetDelegateContinuationsForDebugger()
         {
-            //Avoid an infinite loop by making sure the continuation object is not a reference to istelf.
+            // Avoid an infinite loop by making sure the continuation object is not a reference to istelf.
             if (m_continuationObject != this)
                 return GetDelegatesFromContinuationObject(m_continuationObject);
             else
@@ -6156,8 +6157,8 @@ namespace System.Threading.Tasks
                         return delegates;
                 }
 
-                //We need this ITaskCompletionAction after the Task because in the case of UnwrapPromise
-                //the VS debugger is more interested in the continuation than the internal invoke()
+                // We need this ITaskCompletionAction after the Task because in the case of UnwrapPromise
+                // the VS debugger is more interested in the continuation than the internal invoke()
                 if (continuationObject is ITaskCompletionAction singleCompletionAction)
                 {
                     return new Delegate[] { new Action<Task>(singleCompletionAction.Invoke) };
@@ -6186,7 +6187,7 @@ namespace System.Threading.Tasks
             return null;
         }
 
-        //Do not remove: VS debugger calls this API directly using func-eval to populate data in the tasks window
+        // Do not remove: VS debugger calls this API directly using func-eval to populate data in the tasks window
         private static Task? GetActiveTaskFromId(int taskId)
         {
             Task? task = null;

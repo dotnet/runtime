@@ -104,7 +104,7 @@ namespace System.Diagnostics.Tracing
         [SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible")]
         public enum WriteEventErrorCode : int
         {
-            //check mapping to runtime codes
+            // check mapping to runtime codes
             NoError = 0,
             NoFreeBuffers = 1,
             EventTooBig = 2,

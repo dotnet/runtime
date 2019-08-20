@@ -26,10 +26,6 @@ namespace System.Reflection.Emit
     {
         internal readonly int m_label;
 
-        //public Label() {
-        //    m_label=0;
-        //}
-
         internal Label(int label)
         {
             m_label = label;

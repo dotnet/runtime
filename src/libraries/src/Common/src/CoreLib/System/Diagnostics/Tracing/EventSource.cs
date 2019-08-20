@@ -1131,8 +1131,8 @@ namespace System.Diagnostics.Tracing
                 this.m_Reserved = reserved; // Mark this descriptor as containing tracelogging-compatible metadata.
             }
 
-            //Important, we pass this structure directly to the Win32 EventWrite API, so this structure must be layed out exactly
-            // the way EventWrite wants it.
+            // Important, we pass this structure directly to the Win32 EventWrite API, so this structure must
+            // be layed out exactly the way EventWrite wants it.
             internal ulong m_Ptr;
             internal int m_Size;
 #pragma warning disable 0649
@@ -1454,7 +1454,7 @@ namespace System.Diagnostics.Tracing
                 m_name = eventSourceName;
                 m_guid = eventSourceGuid;
 
-                //Enable Implicit Activity tracker
+                // Enable Implicit Activity tracker
                 m_activityTracker = ActivityTracker.Instance;
 
 #if FEATURE_MANAGED_ETW || FEATURE_PERFTRACING
@@ -1859,7 +1859,6 @@ namespace System.Diagnostics.Tracing
                     // Everything else is marshaled as a string.
                     // ETW strings are NULL-terminated, so marshal everything up to the first
                     // null in the string.
-                    //return System.Runtime.InteropServices.Marshal.PtrToStringUni(dataPointer);
                     if (dataPointer == IntPtr.Zero)
                     {
                         return null;

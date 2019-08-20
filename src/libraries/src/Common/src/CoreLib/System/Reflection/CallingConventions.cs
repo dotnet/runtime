@@ -9,8 +9,7 @@ namespace System.Reflection
     [Flags]
     public enum CallingConventions
     {
-        //NOTE: If you change this please update COMMember.cpp.  These
-        //    are defined there.
+        // Keep in sync with COMMember.cpp.
         Standard = 0x0001,
         VarArgs = 0x0002,
         Any = Standard | VarArgs,

@@ -94,9 +94,9 @@ namespace System
 
     public static partial class Convert
     {
-        //A typeof operation is fairly expensive (does a system call), so we'll cache these here
-        //statically.  These are exactly lined up with the TypeCode, eg. ConvertType[TypeCode.Int16]
-        //will give you the type of an short.
+        // A typeof operation is fairly expensive (does a system call), so we'll cache these here
+        // statically.  These are exactly lined up with the TypeCode, eg. ConvertType[TypeCode.Int16]
+        // will give you the type of an short.
         internal static readonly Type[] ConvertTypes = {
             typeof(System.Empty),
             typeof(object),
@@ -115,7 +115,7 @@ namespace System
             typeof(double),
             typeof(decimal),
             typeof(DateTime),
-            typeof(object), //TypeCode is discontinuous so we need a placeholder.
+            typeof(object), // TypeCode is discontinuous so we need a placeholder.
             typeof(string)
         };
 
@@ -272,7 +272,7 @@ namespace System
                 return value.ToString(provider);
             if (ReferenceEquals(targetType, ConvertTypes[(int)TypeCode.Object]))
                 return (object)value;
-            //  Need to special case Enum because typecode will be underlying type, e.g. Int32
+            // Need to special case Enum because typecode will be underlying type, e.g. Int32
             if (ReferenceEquals(targetType, EnumType))
                 return (Enum)value;
             if (ReferenceEquals(targetType, ConvertTypes[(int)TypeCode.DBNull]))
@@ -2427,7 +2427,7 @@ namespace System
 
         public static unsafe int ToBase64CharArray(byte[] inArray, int offsetIn, int length, char[] outArray, int offsetOut, Base64FormattingOptions options)
         {
-            //Do data verfication
+            // Do data verfication
             if (inArray == null)
                 throw new ArgumentNullException(nameof(inArray));
             if (outArray == null)
@@ -2460,7 +2460,7 @@ namespace System
                 return 0;
 
             bool insertLineBreaks = (options == Base64FormattingOptions.InsertLineBreaks);
-            //This is the maximally required length that must be available in the char array
+            // This is the maximally required length that must be available in the char array
             outArrayLength = outArray.Length;
 
             // Length of the char buffer required
@@ -2516,7 +2516,7 @@ namespace System
             int calcLength = offset + (length - lengthmod3);
             int j = 0;
             int charcount = 0;
-            //Convert three bytes at a time to base64 notation.  This will consume 4 chars.
+            // Convert three bytes at a time to base64 notation.  This will consume 4 chars.
             int i;
 
             // get a pointer to the base64Table to avoid unnecessary range checking
@@ -2541,7 +2541,7 @@ namespace System
                     j += 4;
                 }
 
-                //Where we left off before
+                // Where we left off before
                 i = calcLength;
 
                 if (insertLineBreaks && (lengthmod3 != 0) && (charcount == base64LineBreakPosition))
@@ -2552,18 +2552,18 @@ namespace System
 
                 switch (lengthmod3)
                 {
-                    case 2: //One character padding needed
+                    case 2: // One character padding needed
                         outChars[j] = base64[(inData[i] & 0xfc) >> 2];
                         outChars[j + 1] = base64[((inData[i] & 0x03) << 4) | ((inData[i + 1] & 0xf0) >> 4)];
                         outChars[j + 2] = base64[(inData[i + 1] & 0x0f) << 2];
-                        outChars[j + 3] = base64[64]; //Pad
+                        outChars[j + 3] = base64[64]; // Pad
                         j += 4;
                         break;
                     case 1: // Two character padding needed
                         outChars[j] = base64[(inData[i] & 0xfc) >> 2];
                         outChars[j + 1] = base64[(inData[i] & 0x03) << 4];
-                        outChars[j + 2] = base64[64]; //Pad
-                        outChars[j + 3] = base64[64]; //Pad
+                        outChars[j + 2] = base64[64]; // Pad
+                        outChars[j + 3] = base64[64]; // Pad
                         j += 4;
                         break;
                 }

@@ -67,9 +67,9 @@ namespace System.Globalization
         {
             // Standard Format Styles
             None = 0x00000000,
-            Invariant = 0x00000001, //Allow Invariant Culture
-            Localized = 0x00000002, //Allow Localized Culture
-            RequireFull = 0x00000004, //Require the input to be in DHMSF format
+            Invariant = 0x00000001, // Allow Invariant Culture
+            Localized = 0x00000002, // Allow Localized Culture
+            RequireFull = 0x00000004, // Require the input to be in DHMSF format
             Any = Invariant | Localized,
         }
 

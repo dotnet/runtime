@@ -48,8 +48,8 @@ namespace System.Runtime.Serialization
             _data = info;
             _types = types;
 
-            //The MoveNext semantic is much easier if we enforce that [0..m_numItems] are valid entries
-            //in the enumerator, hence we subtract 1.
+            // The MoveNext semantic is much easier if we enforce that [0..m_numItems] are valid entries
+            // in the enumerator, hence we subtract 1.
             _numItems = numItems - 1;
             _currItem = -1;
             _current = false;

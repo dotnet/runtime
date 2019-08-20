@@ -47,13 +47,13 @@ namespace System
             int ii = 0;
             int mj, mk;
 
-            //Initialize our Seed array.
+            // Initialize our Seed array.
             int subtraction = (Seed == int.MinValue) ? int.MaxValue : Math.Abs(Seed);
             mj = MSEED - subtraction;
             _seedArray[55] = mj;
             mk = 1;
             for (int i = 1; i < 55; i++)
-            {  //Apparently the range [1..55] is special (Knuth) and so we're wasting the 0'th position.
+            {  // Apparently the range [1..55] is special (Knuth) and so we're wasting the 0'th position.
                 if ((ii += 21) >= 55) ii -= 55;
                 _seedArray[ii] = mk;
                 mk = mj - mk;
@@ -86,8 +86,8 @@ namespace System
         ==============================================================================*/
         protected virtual double Sample()
         {
-            //Including this division at the end gives us significantly improved
-            //random number distribution.
+            // Including this division at the end gives us significantly improved
+            // random number distribution.
             return (InternalSample() * (1.0 / MBIG));
         }
 
