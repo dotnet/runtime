@@ -457,7 +457,7 @@ namespace System.StubHelpers
     internal struct DateTimeNative
     {
         public long UniversalTime;
-    };
+    }
 
     internal static class DateTimeOffsetMarshaler
     {
@@ -1271,7 +1271,7 @@ namespace System.StubHelpers
         Primitive,
         Metadata,
         Projection
-    };
+    }
 
     internal static class WinRTTypeNameConverter
     {

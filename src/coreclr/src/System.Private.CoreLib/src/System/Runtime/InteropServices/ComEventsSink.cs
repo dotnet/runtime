@@ -277,5 +277,5 @@ namespace System.Runtime.InteropServices
                 _connectionPoint = null;
             }
         }
-    };
+    }
 }
