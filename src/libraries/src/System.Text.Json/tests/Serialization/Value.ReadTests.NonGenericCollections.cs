@@ -25,7 +25,7 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             // No way to populate this collection.
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<GenericIEnumerableWrapper<WrapperForIEnumerable>>(@"[[1,2],[3,4]]"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<GenericIEnumerableWrapper<WrapperForIEnumerable>>(@"[[1,2],[3,4]]"));
         }
 
         [Fact]
@@ -181,7 +181,7 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             // No way to populate this collection.
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<GenericICollectionWrapper<WrapperForICollection>>(@"[[1,2],[3,4]]"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<GenericICollectionWrapper<WrapperForICollection>>(@"[[1,2],[3,4]]"));
         }
 
         [Fact]
@@ -305,7 +305,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(0, count);
 
             // TODO: use reflection to support types deriving from Stack.
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<StackWrapper>(@"[1,2]"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<StackWrapper>(@"[1,2]"));
         }
 
         [Fact]
@@ -375,7 +375,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(0, count);
 
             // TODO: use reflection to support types deriving from Queue.
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<QueueWrapper>(@"[1,2]"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<QueueWrapper>(@"[1,2]"));
         }
 
         [Fact]
@@ -451,10 +451,10 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ReadSimpleTestClass_NonGenericWrappers_NoAddMethod_Throws()
         {
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleTestClassWithIEnumerableWrapper>(SimpleTestClassWithIEnumerableWrapper.s_json));
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleTestClassWithICollectionWrapper>(SimpleTestClassWithICollectionWrapper.s_json));
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleTestClassWithStackWrapper>(SimpleTestClassWithStackWrapper.s_json));
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleTestClassWithQueueWrapper>(SimpleTestClassWithQueueWrapper.s_json));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<SimpleTestClassWithIEnumerableWrapper>(SimpleTestClassWithIEnumerableWrapper.s_json));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<SimpleTestClassWithICollectionWrapper>(SimpleTestClassWithICollectionWrapper.s_json));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<SimpleTestClassWithStackWrapper>(SimpleTestClassWithStackWrapper.s_json));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<SimpleTestClassWithQueueWrapper>(SimpleTestClassWithQueueWrapper.s_json));
         }
     }
 }
