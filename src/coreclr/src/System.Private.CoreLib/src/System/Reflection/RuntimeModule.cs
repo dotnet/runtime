@@ -524,7 +524,7 @@ namespace System.Reflection
             {
                 string? scopeName = null;
                 RuntimeModule thisAsLocal = this;
-                GetScopeName(JitHelpers.GetQCallModuleOnStack(ref thisAsLocal),JitHelpers.GetStringHandleOnStack(ref scopeName));
+                GetScopeName(JitHelpers.GetQCallModuleOnStack(ref thisAsLocal), JitHelpers.GetStringHandleOnStack(ref scopeName));
                 return scopeName!;
             }
         }
