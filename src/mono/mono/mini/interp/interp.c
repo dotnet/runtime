@@ -3178,6 +3178,26 @@ mono_interp_enum_hasflag (stackval* sp, MonoClass* klass)
 	sp->data.i = (a_val & b_val) == b_val;
 }
 
+static MONO_NEVER_INLINE int
+mono_interp_box_nullable (InterpFrame* frame, const guint16* ip, stackval* sp, MonoError* error)
+{
+	InterpMethod* const imethod = frame->imethod;
+	MonoClass* const c = (MonoClass*)imethod->data_items [* (guint16 *)(ip + 1)];
+
+	int size = mono_class_value_size (c, NULL);
+
+	guint16 offset = * (guint16 *)(ip + 2);
+	gboolean pop_vt_sp = !(offset & BOX_NOT_CLEAR_VT_SP);
+	offset &= ~BOX_NOT_CLEAR_VT_SP;
+
+	sp [-1 - offset].data.o = mono_nullable_box (sp [-1 - offset].data.p, c, error);
+	mono_error_cleanup (error); /* FIXME: don't swallow the error */
+
+	size = ALIGN_TO (size, MINT_VT_ALIGNMENT);
+
+	return pop_vt_sp ? size : 0;
+}
+
 /*
  * If EXIT_AT_FINALLY is not -1, exit after exiting the finally clause with that index.
  * If BASE_FRAME is not NULL, copy arguments/locals from BASE_FRAME.
@@ -5333,26 +5353,12 @@ main_loop:
 			ip += 3;
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_BOX_NULLABLE) {
-			MonoClass* const c = (MonoClass*)imethod->data_items [* (guint16 *)(ip + 1)];
+		MINT_IN_CASE(MINT_BOX_NULLABLE)
 
-			int size = mono_class_value_size (c, NULL);
-
-			guint16 offset = * (guint16 *)(ip + 2);
-			gboolean pop_vt_sp = !(offset & BOX_NOT_CLEAR_VT_SP);
-			offset &= ~BOX_NOT_CLEAR_VT_SP;
-
-			sp [-1 - offset].data.o = mono_nullable_box (sp [-1 - offset].data.p, c, error);
-			mono_error_cleanup (error); /* FIXME: don't swallow the error */
-
-			size = ALIGN_TO (size, MINT_VT_ALIGNMENT);
-
-			if (pop_vt_sp)
-				vt_sp -= size;
-
+			vt_sp -= mono_interp_box_nullable (frame, ip, sp, error);
 			ip += 3;
 			MINT_IN_BREAK;
-		}
+
 		MINT_IN_CASE(MINT_NEWARR) {
 			MonoVTable *vtable = (MonoVTable*)imethod->data_items[*(guint16 *)(ip + 1)];
 			sp [-1].data.o = (MonoObject*) mono_array_new_specific_checked (vtable, sp [-1].data.i, error);
