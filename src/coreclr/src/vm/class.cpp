@@ -603,12 +603,16 @@ HRESULT EEClass::AddMethod(MethodTable * pMT, mdMethodDef methodDef, RVA newRVA,
     // Get the new MethodDesc (Note: The method desc memory is zero initialized)
     MethodDesc *pNewMD = pChunk->GetFirstMethodDesc();
 
-    ACQUIRE_STACKING_ALLOCATOR(pStackingAllocator);
 
     // Initialize the new MethodDesc
+    
+     // This method runs on a debugger thread. Debugger threads do not have Thread object that caches StackingAllocator.
+     // Use a local StackingAllocator instead.
+    StackingAllocator stackingAllocator;
+
     MethodTableBuilder builder(pMT,
                                pClass,
-                               pStackingAllocator,
+                               &stackingAllocator,
                                &dummyAmTracker);
     EX_TRY
     {
