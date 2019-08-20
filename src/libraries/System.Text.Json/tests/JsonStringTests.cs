@@ -90,7 +90,7 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void TestDateTimeOffset()
         {
-            DateTimeOffset dateTimeOffset = new DateTime(DateTime.MinValue.Ticks);
+            DateTimeOffset dateTimeOffset = new DateTime(DateTime.MinValue.Ticks, DateTimeKind.Utc);
             var jsonString = new JsonString(dateTimeOffset);
             Assert.Equal(dateTimeOffset.ToString(), jsonString);
         }
