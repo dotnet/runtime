@@ -285,6 +285,12 @@ try_invoke_perform_wait_callback (MonoObject** exc, MonoError *error)
 	HANDLE_FUNCTION_RETURN_VAL (res);
 }
 
+static gsize
+set_thread_name (MonoInternalThread *thread)
+{
+	return mono_thread_set_name_constant_ignore_error (thread, "Thread Pool Worker", MonoSetThreadNameFlag_Reset);
+}
+
 static void
 worker_callback (void)
 {
@@ -320,11 +326,14 @@ worker_callback (void)
 	 */
 	mono_defaults.threadpool_perform_wait_callback_method->save_lmf = TRUE;
 
+	gsize name_generation = thread->name.generation;
+	/* Set the name if this is the first call to worker_callback on this thread */
+	if (name_generation == 0)
+	   name_generation = set_thread_name (thread);
+
 	domains_lock ();
 
 	previous_tpdomain = NULL;
-
-	gsize name_generation = ~thread->name.generation;
 
 	while (!mono_runtime_is_shutting_down ()) {
 		gboolean retire = FALSE;
@@ -359,7 +368,7 @@ worker_callback (void)
 		// It is reliable against the thread setting its own name, and somewhat
 		// reliable against other threads setting this thread's name.
 		if (name_generation != thread->name.generation)
-			name_generation = mono_thread_set_name_constant_ignore_error (thread, "Thread Pool Worker", MonoSetThreadNameFlag_Reset);
+			name_generation = set_thread_name (thread);
 
 		mono_thread_clear_and_set_state (thread,
 			(MonoThreadState)~ThreadState_Background,
@@ -385,6 +394,10 @@ worker_callback (void)
 			mono_domain_set_fast (mono_get_root_domain (), TRUE);
 		}
 		mono_thread_pop_appdomain_ref ();
+
+		/* Reset name after every callback */
+		if (name_generation != thread->name.generation)
+			name_generation = set_thread_name (thread);
 
 		domains_lock ();
 

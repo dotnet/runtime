@@ -1868,7 +1868,6 @@ ves_icall_System_Threading_Thread_GetName_internal (MonoInternalThreadHandle thr
 	// This is a little racy, ok.
 
 	if (this_obj->name.chars) {
-
 		LOCK_THREAD (this_obj);
 
 		if (this_obj->name.chars)
