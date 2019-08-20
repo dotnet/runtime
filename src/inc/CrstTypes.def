@@ -499,7 +499,7 @@ End
 // new functions to rejit tables, or request Reverts on existing functions in the rejit
 // tables.  One of these crsts exist per runtime.
 Crst ReJITGlobalRequest
-    AcquiredBefore ThreadStore ReJITDomainTable SystemDomain
+    AcquiredBefore ThreadStore ReJITDomainTable SystemDomain JitInlineTrackingMap
 End
 
 // ETW infrastructure uses this crst to protect a hash table of TypeHandles which is
