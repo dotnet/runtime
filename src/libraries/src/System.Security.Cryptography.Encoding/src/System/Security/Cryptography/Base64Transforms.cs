@@ -120,13 +120,13 @@ namespace System.Security.Cryptography
             _whitespaces = whitespaces;
         }
 
-        // Converting from Base64 generates 3 bytes output from each 4 bytes input block
-        private const int Base64InputBlockSize = 4;
         // A buffer with size 32 is stack allocated, to cover common cases and benefit from JIT's optimizations.
         private const int StackAllocSize = 32;
-        public int InputBlockSize => 1;
+
+        // Converting from Base64 generates 3 bytes output from each 4 bytes input block
+        public int InputBlockSize => 4;
         public int OutputBlockSize => 3;
-        public bool CanTransformMultipleBlocks => false;
+        public bool CanTransformMultipleBlocks => true;
         public virtual bool CanReuseTransform => true;
 
         public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset)
@@ -152,7 +152,7 @@ namespace System.Security.Cryptography
             int bytesToTransform = _inputIndex + tmpBuffer.Length;
 
             // Too little data to decode: save data to _inputBuffer, so it can be transformed later
-            if (bytesToTransform < Base64InputBlockSize)
+            if (bytesToTransform < InputBlockSize)
             {
                 tmpBuffer.CopyTo(_inputBuffer.AsSpan(_inputIndex));
 
@@ -197,7 +197,7 @@ namespace System.Security.Cryptography
             int bytesToTransform = _inputIndex + tmpBuffer.Length;
 
             // Too little data to decode
-            if (bytesToTransform < Base64InputBlockSize)
+            if (bytesToTransform < InputBlockSize)
             {
                 // reinitialize the transform
                 Reset();
