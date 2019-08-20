@@ -13,6 +13,7 @@ parameters:
   displayNameArgs: ''
   runInUnloadableContext: false
   publishTestArtifacts: false
+  condition: true
 
 ### Test job
 
@@ -92,9 +93,9 @@ jobs:
         - name: testhostArg
           value: 'buildtesthostonly'
 
-    # FreeBSD test jobs are disabled since we don't have any FreeBSD helix queues.
-    ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
-      condition: false
+    # Since the condition is being altered, merge the default with the additional conditions.
+    # See https://docs.microsoft.com/azure/devops/pipelines/process/conditions
+    condition: and(succeeded(), ${{ parameters.condition }})
 
     # Test job depends on the corresponding build job
     dependsOn: ${{ format('build_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}

@@ -22,11 +22,6 @@ jobs:
     name: ${{ format('build_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
     displayName: ${{ format('Build {0} {1} {2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
 
-    # FreeBSD builds are disabled in the public project because we
-    # don't have any FreeBSD agents in the public pool.
-    ${{ if and(eq(parameters.osGroup, 'FreeBSD'), eq(variables['System.TeamProject'], 'public')) }}:
-      condition: false
-
     # Run all steps in the container.
     # Note that the containers are defined in platform-matrix.yml
     container: ${{ parameters.container }}
