@@ -250,7 +250,7 @@ namespace System.Threading.Tasks
         // An AppDomain-wide default manager.
         private static readonly TaskScheduler s_defaultTaskScheduler = new ThreadPoolTaskScheduler();
 
-        //static counter used to generate unique TaskScheduler IDs
+        // static counter used to generate unique TaskScheduler IDs
         internal static int s_taskSchedulerIdCounter;
 
         // this TaskScheduler's unique ID

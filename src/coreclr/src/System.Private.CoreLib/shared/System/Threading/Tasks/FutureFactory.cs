@@ -772,7 +772,7 @@ namespace System.Threading.Tasks
 
             try
             {
-                //if we don't require synchronization, a faster set result path is taken
+                // if we don't require synchronization, a faster set result path is taken
                 IAsyncResult asyncResult = beginMethod(iar =>
                 {
                     if (!iar.CompletedSynchronously)
@@ -889,7 +889,7 @@ namespace System.Threading.Tasks
 
             try
             {
-                //if we don't require synchronization, a faster set result path is taken
+                // if we don't require synchronization, a faster set result path is taken
                 IAsyncResult asyncResult = beginMethod(arg1, iar =>
                 {
                     if (!iar.CompletedSynchronously)
@@ -1014,7 +1014,7 @@ namespace System.Threading.Tasks
 
             try
             {
-                //if we don't require synchronization, a faster set result path is taken
+                // if we don't require synchronization, a faster set result path is taken
                 IAsyncResult asyncResult = beginMethod(arg1, arg2, iar =>
                 {
                     if (!iar.CompletedSynchronously)
@@ -1147,7 +1147,7 @@ namespace System.Threading.Tasks
 
             try
             {
-                //if we don't require synchronization, a faster set result path is taken
+                // if we don't require synchronization, a faster set result path is taken
                 IAsyncResult asyncResult = beginMethod(arg1, arg2, arg3, iar =>
                 {
                     if (!iar.CompletedSynchronously)
@@ -1606,7 +1606,7 @@ namespace System.Threading.Tasks
             // check arguments
             TaskFactory.CheckMultiTaskContinuationOptions(continuationOptions);
             if (tasks == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
-            //ArgumentNullException of continuationFunction or continuationAction is checked by the caller
+            // ArgumentNullException of continuationFunction or continuationAction is checked by the caller
             Debug.Assert((continuationFunction != null) != (continuationAction != null), "Expected exactly one of endFunction/endAction to be non-null");
             if (scheduler == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.scheduler);
 
@@ -1652,7 +1652,7 @@ namespace System.Threading.Tasks
             // check arguments
             TaskFactory.CheckMultiTaskContinuationOptions(continuationOptions);
             if (tasks == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
-            //ArgumentNullException of continuationFunction or continuationAction is checked by the caller
+            // ArgumentNullException of continuationFunction or continuationAction is checked by the caller
             Debug.Assert((continuationFunction != null) != (continuationAction != null), "Expected exactly one of endFunction/endAction to be non-null");
             if (scheduler == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.scheduler);
 
@@ -1674,9 +1674,9 @@ namespace System.Threading.Tasks
             if (continuationFunction != null)
             {
                 return starter.ContinueWith(
-                    //the following delegate avoids closure capture as much as possible
-                    //completedTasks.Result == tasksCopy;
-                    //state == continuationFunction
+                    // the following delegate avoids closure capture as much as possible
+                    // completedTasks.Result == tasksCopy;
+                    // state == continuationFunction
                     (completedTasks, state) =>
                     {
                         completedTasks.NotifyDebuggerOfWaitCompletionIfNecessary();
@@ -1689,9 +1689,9 @@ namespace System.Threading.Tasks
             {
                 Debug.Assert(continuationAction != null);
                 return starter.ContinueWith<TResult>(
-                   //the following delegate avoids closure capture as much as possible
-                   //completedTasks.Result == tasksCopy;
-                   //state == continuationAction
+                   // the following delegate avoids closure capture as much as possible
+                   // completedTasks.Result == tasksCopy;
+                   // state == continuationAction
                    (completedTasks, state) =>
                    {
                        completedTasks.NotifyDebuggerOfWaitCompletionIfNecessary();
@@ -1983,7 +1983,7 @@ namespace System.Threading.Tasks
             if (tasks == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
             if (tasks.Length == 0) ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_EmptyTaskList, ExceptionArgument.tasks);
 
-            //ArgumentNullException of continuationFunction or continuationAction is checked by the caller
+            // ArgumentNullException of continuationFunction or continuationAction is checked by the caller
             Debug.Assert((continuationFunction != null) != (continuationAction != null), "Expected exactly one of endFunction/endAction to be non-null");
             if (scheduler == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.scheduler);
 
@@ -2002,8 +2002,8 @@ namespace System.Threading.Tasks
             if (continuationFunction != null)
             {
                 return starter.ContinueWith(
-                     //the following delegate avoids closure capture as much as possible
-                     //completedTask.Result is the winning task; state == continuationAction
+                     // the following delegate avoids closure capture as much as possible
+                     // completedTask.Result is the winning task; state == continuationAction
                      (completedTask, state) =>
                      {
                          Debug.Assert(state is Func<Task, TResult>);
@@ -2015,8 +2015,8 @@ namespace System.Threading.Tasks
             {
                 Debug.Assert(continuationAction != null);
                 return starter.ContinueWith<TResult>(
-                    //the following delegate avoids closure capture as much as possible
-                    //completedTask.Result is the winning task; state == continuationAction
+                    // the following delegate avoids closure capture as much as possible
+                    // completedTask.Result is the winning task; state == continuationAction
                     (completedTask, state) =>
                     {
                         Debug.Assert(state is Action<Task>);
@@ -2038,7 +2038,7 @@ namespace System.Threading.Tasks
             TaskFactory.CheckMultiTaskContinuationOptions(continuationOptions);
             if (tasks == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
             if (tasks.Length == 0) ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_EmptyTaskList, ExceptionArgument.tasks);
-            //ArgumentNullException of continuationFunction or continuationAction is checked by the caller
+            // ArgumentNullException of continuationFunction or continuationAction is checked by the caller
             Debug.Assert((continuationFunction != null) != (continuationAction != null), "Expected exactly one of endFunction/endAction to be non-null");
             if (scheduler == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.scheduler);
 

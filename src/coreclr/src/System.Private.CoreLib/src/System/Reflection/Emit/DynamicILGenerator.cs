@@ -589,7 +589,7 @@ namespace System.Reflection.Emit
             m_code = dynamicILInfo.Code;
             m_localSignature = dynamicILInfo.LocalSignature;
             m_exceptionHeader = dynamicILInfo.Exceptions;
-            //m_exceptions = dynamicILInfo.Exceptions;
+            // m_exceptions = dynamicILInfo.Exceptions;
             m_scope = dynamicILInfo.DynamicScope;
 
             m_method = dynamicILInfo.DynamicMethod;

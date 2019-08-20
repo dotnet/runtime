@@ -49,7 +49,7 @@ namespace System.Reflection
 
         public virtual IEnumerable<Type> ImplementedInterfaces => GetInterfaces();
 
-        //a re-implementation of ISAF from Type, skipping the use of UnderlyingType
+        // a re-implementation of ISAF from Type, skipping the use of UnderlyingType
         public virtual bool IsAssignableFrom(TypeInfo? typeInfo)
         {
             if (typeInfo == null)

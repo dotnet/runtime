@@ -74,7 +74,7 @@ namespace System.Threading
                     ExecutionContext.RunInternal(helper._executionContext, _ccb, helper);
                 }
 
-                //Quickly check the VM again, to see if a packet has arrived.
+                // Quickly check the VM again, to see if a packet has arrived.
                 OverlappedData.CheckVMForIOPacket(out pNativeOverlapped, out errorCode, out numBytes);
             } while (pNativeOverlapped != null);
         }

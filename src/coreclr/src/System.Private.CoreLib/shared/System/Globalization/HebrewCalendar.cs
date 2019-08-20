@@ -63,7 +63,7 @@ namespace System.Globalization
         private const int DatePartMonth = 2;
         private const int DatePartDay = 3;
 
-        //  Hebrew Translation Table.
+        // Hebrew Translation Table.
         //
         //  This table is used to get the following Hebrew calendar information for a
         //  given Gregorian year:
@@ -258,8 +258,8 @@ namespace System.Globalization
 
         private const int MaxMonthPlusOne = 14;
 
-        //  The lunar calendar has 6 different variations of month lengths
-        //  within a year.
+        // The lunar calendar has 6 different variations of month lengths
+        // within a year.
         private static ReadOnlySpan<byte> LunarMonthLen => new byte[] // rely on C# compiler optimization to reference static data
         {
             0, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0,
@@ -387,7 +387,7 @@ namespace System.Globalization
         /// </returns>
         internal static int GetLunarMonthDay(int gregorianYear, DateBuffer lunarDate)
         {
-            //  Get the offset into the LunarMonthLen array and the lunar day
+            // Get the offset into the LunarMonthLen array and the lunar day
             //  for January 1st.
             int index = gregorianYear - FirstGregorianTableYear;
             if (index < 0 || index > TableSize)
@@ -401,7 +401,7 @@ namespace System.Globalization
             // Get the type of the year. The value is from 1 to 6
             int lunarYearType = HebrewTable[index + 1];
 
-            //  Get the Lunar Month.
+            // Get the Lunar Month.
             switch (lunarDate.day)
             {
                 case 0:                   // 1/1 is on Shvat 1
@@ -461,15 +461,15 @@ namespace System.Globalization
             // This is the buffer used to store the result Hebrew date.
             DateBuffer result = new DateBuffer();
 
-            //  Store the values for the start of the new year - 1/1.
+            // Store the values for the start of the new year - 1/1.
             result.year = lunarDate.year;
             result.month = lunarDate.month;
             result.day = lunarDate.day;
 
-            //  Get the absolute date from 1/1/1600.
+            // Get the absolute date from 1/1/1600.
             AbsoluteDate = GregorianCalendar.GetAbsoluteDate(gregorianYear, gregorianMonth, gregorianDay);
 
-            //  If the requested date was 1/1, then we're done.
+            // If the requested date was 1/1, then we're done.
             if ((gregorianMonth == 1) && (gregorianDay == 1))
             {
                 return GetResult(result, part);

@@ -160,7 +160,7 @@ namespace System.Runtime
                 throw new InsufficientMemoryException(SR.InsufficientMemory_MemFailPoint_TooBig);
 
             ulong requestedSizeRounded = (ulong)(Math.Ceiling((double)sizeInMegabytes / MemoryCheckGranularity) * MemoryCheckGranularity);
-            //re-convert into bytes
+            // re-convert into bytes
             requestedSizeRounded <<= 20;
 
             ulong availPageFile = 0;  // available VM (physical + page file)

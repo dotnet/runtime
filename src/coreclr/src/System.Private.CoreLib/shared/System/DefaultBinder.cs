@@ -868,7 +868,7 @@ namespace System
 
                 Type c1, c2;
 
-                //  If a param array is present, then either
+                // If a param array is present, then either
                 //      the user re-ordered the parameters in which case
                 //          the argument to the param array is either an array
                 //              in which case the params is conceptually ignored and so paramArrayType1 == null

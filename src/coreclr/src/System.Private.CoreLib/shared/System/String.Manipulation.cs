@@ -1083,13 +1083,13 @@ namespace System
                     {
                         int copyLength = Length - remainingLength;
 
-                        //Copy the characters already proven not to match.
+                        // Copy the characters already proven not to match.
                         if (copyLength > 0)
                         {
                             wstrcpy(pResult, pChars, copyLength);
                         }
 
-                        //Copy the remaining characters, doing the replacement as we go.
+                        // Copy the remaining characters, doing the replacement as we go.
                         char* pSrc = pChars + copyLength;
                         char* pDst = pResult + copyLength;
 
@@ -1410,8 +1410,8 @@ namespace System
             count--;
             int numActualReplaces = (sepList.Length < count) ? sepList.Length : count;
 
-            //Allocate space for the new array.
-            //+1 for the string from the end of the last replace to the end of the string.
+            // Allocate space for the new array.
+            // +1 for the string from the end of the last replace to the end of the string.
             string[] splitStrings = new string[numActualReplaces + 1];
 
             for (int i = 0; i < numActualReplaces && currIndex < Length; i++)
@@ -1420,15 +1420,15 @@ namespace System
                 currIndex = sepList[i] + (lengthList.IsEmpty ? defaultLength : lengthList[i]);
             }
 
-            //Handle the last string at the end of the array if there is one.
+            // Handle the last string at the end of the array if there is one.
             if (currIndex < Length && numActualReplaces >= 0)
             {
                 splitStrings[arrIndex] = Substring(currIndex);
             }
             else if (arrIndex == numActualReplaces)
             {
-                //We had a separator character at the end of a string.  Rather than just allowing
-                //a null character, we'll replace the last element in the array with an empty string.
+                // We had a separator character at the end of a string.  Rather than just allowing
+                // a null character, we'll replace the last element in the array with an empty string.
                 splitStrings[arrIndex] = string.Empty;
             }
 
@@ -1473,7 +1473,7 @@ namespace System
             // we must have at least one slot left to fill in the last string.
             Debug.Assert(arrIndex < maxItems);
 
-            //Handle the last string at the end of the array if there is one.
+            // Handle the last string at the end of the array if there is one.
             if (currIndex < Length)
             {
                 splitStrings[arrIndex++] = Substring(currIndex);
@@ -1713,7 +1713,7 @@ namespace System
             return cult.TextInfo.ToUpper(this);
         }
 
-        //Creates a copy of this string in upper case based on invariant culture.
+        // Creates a copy of this string in upper case based on invariant culture.
         public string ToUpperInvariant()
         {
             return CultureInfo.InvariantCulture.TextInfo.ToUpper(this);

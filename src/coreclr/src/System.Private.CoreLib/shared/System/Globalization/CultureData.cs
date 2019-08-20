@@ -2196,7 +2196,7 @@ namespace System.Globalization
         /// </summary>
         private static string GetTimeSeparator(string format)
         {
-            //  Find the time separator so that we can pretend we know TimeSeparator.
+            // Find the time separator so that we can pretend we know TimeSeparator.
             return GetSeparator(format, "Hhms");
         }
 
@@ -2206,7 +2206,7 @@ namespace System.Globalization
         /// </summary>
         private static string GetDateSeparator(string format)
         {
-            //  Find the date separator so that we can pretend we know DateSeparator.
+            // Find the date separator so that we can pretend we know DateSeparator.
             return GetSeparator(format, "dyM");
         }
 
@@ -2265,7 +2265,7 @@ namespace System.Globalization
                                 case '\\':
                                     break;
                                 default:
-                                    --i; //backup since we will move over this next
+                                    --i; // backup since we will move over this next
                                     break;
                             }
                         }

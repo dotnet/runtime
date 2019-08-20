@@ -648,8 +648,8 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static long TimeToTicks(int hour, int minute, int second)
         {
-            //TimeSpan.TimeToTicks is a family access function which does no error checking, so
-            //we need to put some error checking out here.
+            // TimeSpan.TimeToTicks is a family access function which does no error checking, so
+            // we need to put some error checking out here.
             if ((uint)hour >= 24 || (uint)minute >= 60 || (uint)second >= 60)
             {
                 ThrowHelper.ThrowArgumentOutOfRange_BadHourMinuteSecond();

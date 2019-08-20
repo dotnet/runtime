@@ -4,7 +4,7 @@
 
 namespace System.Runtime.CompilerServices
 {
-    //=========================================================================================
+    // =========================================================================================
     // This struct collects all operations on native DependentHandles. The DependentHandle
     // merely wraps an IntPtr so this struct serves mainly as a "managed typedef."
     //
@@ -27,7 +27,7 @@ namespace System.Runtime.CompilerServices
     //
     // This struct intentionally does no self-synchronization. It's up to the caller to
     // to use DependentHandles in a thread-safe way.
-    //=========================================================================================
+    // =========================================================================================
     internal struct DependentHandle
     {
         private IntPtr _handle;

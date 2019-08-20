@@ -21,10 +21,10 @@ namespace System.Threading.Tasks
 
         internal static bool LoggingOn => f_LoggingOn != 0;
 
-        //s_PlatformId = {4B0171A6-F3D0-41A0-9B33-02550652B995}
+        // s_PlatformId = {4B0171A6-F3D0-41A0-9B33-02550652B995}
         private static readonly Guid s_PlatformId = new Guid(0x4B0171A6, 0xF3D0, 0x41A0, 0x9B, 0x33, 0x02, 0x55, 0x06, 0x52, 0xB9, 0x95);
 
-        //Indicates this information comes from the BCL Library
+        // Indicates this information comes from the BCL Library
         private const WFD.CausalitySource s_CausalitySource = WFD.CausalitySource.Library;
 
         private static readonly WFD.IAsyncCausalityTracerStatics s_TracerFactory = null!;
@@ -38,8 +38,8 @@ namespace System.Threading.Tasks
         }
 
 
-        //We receive the actual value for these as a callback
-        private static Loggers f_LoggingOn; //assumes false by default
+        // We receive the actual value for these as a callback
+        private static Loggers f_LoggingOn; // assumes false by default
 
         // The precise static constructor will run first time somebody attempts to access this class
 #pragma warning disable CA1810
@@ -48,10 +48,10 @@ namespace System.Threading.Tasks
         {
             if (!Environment.IsWinRTSupported) return;
 
-            //COM Class Id
+            // COM Class Id
             string ClassId = "Windows.Foundation.Diagnostics.AsyncCausalityTracer";
 
-            //COM Interface GUID  {50850B26-267E-451B-A890-AB6A370245EE}
+            // COM Interface GUID  {50850B26-267E-451B-A890-AB6A370245EE}
             Guid guid = new Guid(0x50850B26, 0x267E, 0x451B, 0xA8, 0x90, 0XAB, 0x6A, 0x37, 0x02, 0x45, 0xEE);
 
             object? factory = null;
@@ -60,7 +60,7 @@ namespace System.Threading.Tasks
             {
                 int hresult = Microsoft.Win32.UnsafeNativeMethods.RoGetActivationFactory(ClassId, ref guid, out factory);
 
-                if (hresult < 0 || factory == null) return; //This prevents having an exception thrown in case IAsyncCausalityTracerStatics isn't registered.
+                if (hresult < 0 || factory == null) return; // This prevents having an exception thrown in case IAsyncCausalityTracerStatics isn't registered.
 
                 s_TracerFactory = (WFD.IAsyncCausalityTracerStatics)factory;
 
@@ -100,7 +100,7 @@ namespace System.Threading.Tasks
             }
             catch (Exception ex)
             {
-                //view function comment
+                // view function comment
                 LogAndDisable(ex);
             }
         }
@@ -118,7 +118,7 @@ namespace System.Threading.Tasks
             }
             catch (Exception ex)
             {
-                //view function comment
+                // view function comment
                 LogAndDisable(ex);
             }
         }
@@ -136,7 +136,7 @@ namespace System.Threading.Tasks
             }
             catch (Exception ex)
             {
-                //view function comment
+                // view function comment
                 LogAndDisable(ex);
             }
         }
@@ -154,7 +154,7 @@ namespace System.Threading.Tasks
             }
             catch (Exception ex)
             {
-                //view function comment
+                // view function comment
                 LogAndDisable(ex);
             }
         }
@@ -171,13 +171,13 @@ namespace System.Threading.Tasks
             }
             catch (Exception ex)
             {
-                //view function comment
+                // view function comment
                 LogAndDisable(ex);
             }
         }
 
-        //fix for 796185: leaking internal exceptions to customers,
-        //we should catch and log exceptions but never propagate them.
+        // fix for 796185: leaking internal exceptions to customers,
+        // we should catch and log exceptions but never propagate them.
         private static void LogAndDisable(Exception ex)
         {
             f_LoggingOn = 0;

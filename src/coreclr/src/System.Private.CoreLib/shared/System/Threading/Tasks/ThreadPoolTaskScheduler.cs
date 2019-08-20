@@ -78,7 +78,7 @@ namespace System.Threading.Tasks
             }
             finally
             {
-                //   Only call NWIP() if task was previously queued
+                // Only call NWIP() if task was previously queued
                 if (taskWasPreviouslyQueued) NotifyWorkItemProgress();
             }
 
