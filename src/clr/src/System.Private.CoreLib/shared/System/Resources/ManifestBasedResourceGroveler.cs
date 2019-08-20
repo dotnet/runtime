@@ -281,7 +281,7 @@ namespace System.Resources
 
             if (_mediator.UserResourceSet == null)
             {
-                return new RuntimeResourceSet(store, permitDeserialization:true);
+                return new RuntimeResourceSet(store, permitDeserialization: true);
             }
             else
             {
