@@ -53,11 +53,11 @@ namespace System
         [CLSCompliant(false)]
         public TypedReference GetNextArg()
         {
-            TypedReference result = new TypedReference ();
+            TypedReference result = new TypedReference();
             // reference to TypedReference is banned, so have to pass result as pointer
             unsafe
             {
-                FCallGetNextArg (&result);
+                FCallGetNextArg(&result);
             }
             return result;
         }
@@ -87,7 +87,7 @@ namespace System
                 if (ArgPtr == IntPtr.Zero)
                     throw new ArgumentNullException();
 
-                TypedReference result = new TypedReference ();
+                TypedReference result = new TypedReference();
                 // reference to TypedReference is banned, so have to pass result as pointer
                 unsafe
                 {
