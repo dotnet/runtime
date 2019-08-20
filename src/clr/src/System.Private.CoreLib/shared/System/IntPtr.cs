@@ -141,7 +141,7 @@ namespace System
         [CLSCompliant(false)]
         [Intrinsic]
         [NonVersionable]
-        public static unsafe explicit operator void* (IntPtr value)
+        public static unsafe explicit operator void*(IntPtr value)
         {
             return value._value;
         }

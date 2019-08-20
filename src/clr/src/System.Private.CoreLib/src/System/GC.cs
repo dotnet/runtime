@@ -626,7 +626,7 @@ namespace System
 
             lock (s_notifications)
             {
-                s_notifications.Add (new MemoryLoadChangeNotification(lowMemoryPercent, highMemoryPercent, notification));
+                s_notifications.Add(new MemoryLoadChangeNotification(lowMemoryPercent, highMemoryPercent, notification));
 
                 if (s_notifications.Count == 1)
                 {

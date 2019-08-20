@@ -155,7 +155,7 @@ namespace System
                 return unchecked((int)((long)this._methodPtrAux));
             */
             if (_methodPtrAux == IntPtr.Zero)
-                return ( _target != null ? RuntimeHelpers.GetHashCode(_target) * 33 : 0) + GetType().GetHashCode();
+                return (_target != null ? RuntimeHelpers.GetHashCode(_target) * 33 : 0) + GetType().GetHashCode();
             else
                 return GetType().GetHashCode();
         }

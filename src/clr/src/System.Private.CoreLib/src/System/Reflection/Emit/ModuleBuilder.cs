@@ -1171,7 +1171,7 @@ namespace System.Reflection.Emit
             {
                 return new MethodToken(GetMemberRefToken(method, null));
             }
-            else if ( method is SymbolMethod symMethod)
+            else if (method is SymbolMethod symMethod)
             {
                 if (symMethod.GetModule() == this)
                     return symMethod.GetToken();
