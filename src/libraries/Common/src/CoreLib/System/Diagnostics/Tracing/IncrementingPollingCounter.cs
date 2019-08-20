@@ -35,6 +35,7 @@ namespace System.Diagnostics.Tracing
                 throw new ArgumentNullException(nameof(totalValueProvider));
 
             _totalValueProvider = totalValueProvider;
+            Publish();
         }
 
         public override string ToString() => $"IncrementingPollingCounter '{Name}' Increment {_increment}";
