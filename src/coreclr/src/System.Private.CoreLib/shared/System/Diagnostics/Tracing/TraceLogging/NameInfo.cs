@@ -27,7 +27,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         internal static void ReserveEventIDsBelow(int eventId)
         {
-            for (;;)
+            while (true)
             {
                 int snapshot = lastIdentity;
                 int newIdentity = (lastIdentity & ~0xFFFFFF) + eventId;

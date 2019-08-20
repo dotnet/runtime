@@ -210,7 +210,7 @@ namespace System.Buffers.Text
                 return false;
             }
 
-            source = source.Slice(5);// justConsumed + 1 for delimiter
+            source = source.Slice(5); // justConsumed + 1 for delimiter
 
             if (!TryParseUInt64X(source, out ulong i5, out justConsumed))
             {

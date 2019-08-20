@@ -45,11 +45,11 @@ namespace System.Threading
         private volatile int m_combinedState; //ie a uint. Used for the state items listed below.
 
         //1-bit for  signalled state
-        private const int SignalledState_BitMask = unchecked((int)0x80000000);//1000 0000 0000 0000 0000 0000 0000 0000
+        private const int SignalledState_BitMask = unchecked((int)0x80000000); //1000 0000 0000 0000 0000 0000 0000 0000
         private const int SignalledState_ShiftCount = 31;
 
         //1-bit for disposed state
-        private const int Dispose_BitMask = unchecked((int)0x40000000);//0100 0000 0000 0000 0000 0000 0000 0000
+        private const int Dispose_BitMask = unchecked((int)0x40000000); //0100 0000 0000 0000 0000 0000 0000 0000
 
         //11-bits for m_spinCount
         private const int SpinCountState_BitMask = unchecked((int)0x3FF80000); //0011 1111 1111 1000 0000 0000 0000 0000

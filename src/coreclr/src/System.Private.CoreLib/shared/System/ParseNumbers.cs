@@ -507,7 +507,7 @@ namespace System
         private static void EatWhiteSpace(ReadOnlySpan<char> s, ref int i)
         {
             int localIndex = i;
-            for (; localIndex < s.Length && char.IsWhiteSpace(s[localIndex]); localIndex++);
+            for (; localIndex < s.Length && char.IsWhiteSpace(s[localIndex]); localIndex++) ;
             i = localIndex;
         }
 

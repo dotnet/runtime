@@ -1509,8 +1509,8 @@ namespace System.Text
                                     "[UnicodeEncoding.GetChars]Expected bytes to have advanced or no output (bad surrogate)");
                                 bytes -= 2;                                       // didn't use these 2 bytes
                                 fallbackBuffer.InternalReset();
-                                ThrowCharsOverflow(decoder, chars == charStart);// Might throw, if no chars output
-                                break;                                          // couldn't fallback but didn't throw
+                                ThrowCharsOverflow(decoder, chars == charStart); // Might throw, if no chars output
+                                break;                                           // couldn't fallback but didn't throw
                             }
                         }
 
@@ -1561,8 +1561,8 @@ namespace System.Text
                                 "[UnicodeEncoding.GetChars]Expected bytes to have advanced or no output (lonely surrogate)");
                             bytes -= 2;                                       // didn't use these 2 bytes
                             fallbackBuffer.InternalReset();
-                            ThrowCharsOverflow(decoder, chars == charStart);// Might throw, if no chars output
-                            break;                                          // couldn't fallback but didn't throw
+                            ThrowCharsOverflow(decoder, chars == charStart);  // Might throw, if no chars output
+                            break;                                            // couldn't fallback but didn't throw
                         }
 
                         // Didn't throw, ignore this one (we already did its fallback)
@@ -1577,9 +1577,9 @@ namespace System.Text
                         Debug.Assert(bytes >= byteStart + 2 || chars == charStart,
                             "[UnicodeEncoding.GetChars]Expected bytes to have advanced or no output (surrogate pair)");
                         bytes -= 2;                                       // didn't use these 2 bytes
-                        ThrowCharsOverflow(decoder, chars == charStart);// Might throw, if no chars output
+                        ThrowCharsOverflow(decoder, chars == charStart); // Might throw, if no chars output
                         // Leave lastChar for next call to Convert()
-                        break;                                          // couldn't fallback but didn't throw
+                        break;                                           // couldn't fallback but didn't throw
                     }
 
                     *chars++ = lastChar;
@@ -1623,8 +1623,8 @@ namespace System.Text
                             "[UnicodeEncoding.GetChars]Expected bytes to have advanced or no output (no low surrogate)");
                         bytes -= 2;                                       // didn't use these 2 bytes
                         fallbackBuffer.InternalReset();
-                        ThrowCharsOverflow(decoder, chars == charStart);// Might throw, if no chars output
-                        break;                                          // couldn't fallback but didn't throw
+                        ThrowCharsOverflow(decoder, chars == charStart); // Might throw, if no chars output
+                        break;                                           // couldn't fallback but didn't throw
                     }
 
                     // Not left over now, clear previous high surrogate and continue to add current char
@@ -1639,8 +1639,8 @@ namespace System.Text
                     Debug.Assert(bytes >= byteStart + 2 || chars == charStart,
                         "[UnicodeEncoding.GetChars]Expected bytes to have advanced or no output (normal)");
                     bytes -= 2;                                       // didn't use these bytes
-                    ThrowCharsOverflow(decoder, chars == charStart);// Might throw, if no chars output
-                    break;                                          // couldn't fallback but didn't throw
+                    ThrowCharsOverflow(decoder, chars == charStart); // Might throw, if no chars output
+                    break;                                           // couldn't fallback but didn't throw
                 }
 
                 // add it
@@ -1690,7 +1690,7 @@ namespace System.Text
                         if (lastByte >= 0)
                             bytes--;                                    // had an extra last byte hanging around
                         fallbackBuffer.InternalReset();
-                        ThrowCharsOverflow(decoder, chars == charStart);// Might throw, if no chars output
+                        ThrowCharsOverflow(decoder, chars == charStart); // Might throw, if no chars output
                         // We'll remember these in our decoder though
                         bytes += 2;
                         if (lastByte >= 0)
@@ -1725,7 +1725,7 @@ namespace System.Text
                         // odd byte couldn't fall back
                         bytes--;                                        // didn't use this byte
                         fallbackBuffer.InternalReset();
-                        ThrowCharsOverflow(decoder, chars == charStart);// Might throw, if no chars output
+                        ThrowCharsOverflow(decoder, chars == charStart); // Might throw, if no chars output
                         // didn't throw, but we'll remember it in the decoder
                         bytes++;
                         goto End;

@@ -271,7 +271,7 @@ namespace System.Text
 
             StringBuilder currentBlock = this;
             int maxCapacity = this.m_MaxCapacity;
-            for (;;)
+            while (true)
             {
                 // All blocks have the same max capacity.
                 Debug.Assert(currentBlock.m_MaxCapacity == maxCapacity);
@@ -510,7 +510,7 @@ namespace System.Text
             get
             {
                 StringBuilder? chunk = this;
-                for (;;)
+                while (true)
                 {
                     int indexInBlock = index - chunk.m_ChunkOffset;
                     if (indexInBlock >= 0)
@@ -531,7 +531,7 @@ namespace System.Text
             set
             {
                 StringBuilder? chunk = this;
-                for (;;)
+                while (true)
                 {
                     int indexInBlock = index - chunk.m_ChunkOffset;
                     if (indexInBlock >= 0)
@@ -1849,7 +1849,7 @@ namespace System.Text
             int thisChunkIndex = thisChunk.m_ChunkLength;
             StringBuilder? sbChunk = sb;
             int sbChunkIndex = sbChunk.m_ChunkLength;
-            for (;;)
+            while (true)
             {
                 --thisChunkIndex;
                 --sbChunkIndex;
@@ -2048,7 +2048,7 @@ namespace System.Text
             int endIndex = startIndex + count;
             StringBuilder chunk = this;
 
-            for (;;)
+            while (true)
             {
                 int endIndexInChunk = endIndex - chunk.m_ChunkOffset;
                 int startIndexInChunk = startIndex - chunk.m_ChunkOffset;
@@ -2192,7 +2192,7 @@ namespace System.Text
 
                     // We made certain that characters after the insertion point are not moved,
                     int i = 0;
-                    for (;;)
+                    while (true)
                     {
                         // Copy in the new string for the ith replacement
                         ReplaceInPlaceAtChunk(ref targetChunk!, ref targetIndexInChunk, valuePtr, value.Length);
@@ -2285,7 +2285,7 @@ namespace System.Text
         {
             if (count != 0)
             {
-                for (;;)
+                while (true)
                 {
                     Debug.Assert(chunk != null, "chunk should not be null at this point");
                     int lengthInChunk = chunk.m_ChunkLength - indexInChunk;
@@ -2622,7 +2622,7 @@ namespace System.Text
             chunk = this;
             StringBuilder? endChunk = null;
             int endIndexInChunk = 0;
-            for (;;)
+            while (true)
             {
                 if (endIndex - chunk.m_ChunkOffset >= 0)
                 {
