@@ -673,7 +673,7 @@ void Compiler::fgDispDebugScopes()
  * Mark variables live across their entire scope.
  */
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
 
 void Compiler::fgExtendDbgScopes()
 {
@@ -1113,7 +1113,7 @@ VARSET_VALRET_TP Compiler::fgGetHandlerLiveVars(BasicBlock* block)
         if (HBtab->HasFilter())
         {
             VarSetOps::UnionD(this, liveVars, HBtab->ebdFilter->bbLiveIn);
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
             // The EH subsystem can trigger a stack walk after the filter
             // has returned, but before invoking the handler, and the only
             // IP address reported from this method will be the original
@@ -2059,7 +2059,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             case GT_START_NONGC:
             case GT_START_PREEMPTGC:
             case GT_PROF_HOOK:
-#if !FEATURE_EH_FUNCLETS
+#if !defined(FEATURE_EH_FUNCLETS)
             case GT_END_LFIN:
 #endif // !FEATURE_EH_FUNCLETS
             case GT_SWITCH_TABLE:
@@ -2482,7 +2482,7 @@ void Compiler::fgInterBlockLocalVarLiveness()
 
             VarSetOps::UnionD(this, finallyVars, block->bbLiveOut);
         }
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
         // Funclets are called and returned from, as such we can only count on the frame
         // pointer being restored, and thus everything live in or live out must be on the
         // stack

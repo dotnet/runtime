@@ -415,7 +415,7 @@ void ValidateWriteBarrierHelpers();
 
 extern "C"
 {
-#ifndef WIN64EXCEPTIONS
+#ifndef FEATURE_EH_FUNCLETS
     void STDCALL JIT_EndCatch();               // JIThelp.asm/JIThelp.s
 #endif // _TARGET_X86_
 
@@ -1360,14 +1360,14 @@ public:
         m_iNativeVarInfo = 0;
         m_pNativeVarInfo = NULL;
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
         m_moduleBase = NULL;
         m_totalUnwindSize = 0;
         m_usedUnwindSize = 0;
         m_theUnwindBlock = NULL;
         m_totalUnwindInfos = 0;
         m_usedUnwindInfos = 0;
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
     }
 
 #ifdef _TARGET_AMD64_
@@ -1428,7 +1428,7 @@ public:
           m_jitManager(jm),
           m_CodeHeader(NULL),
           m_ILHeader(header),
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
           m_moduleBase(NULL),
           m_totalUnwindSize(0),
           m_usedUnwindSize(0),
@@ -1514,7 +1514,7 @@ protected :
     EEJitManager*           m_jitManager;   // responsible for allocating memory
     CodeHeader*             m_CodeHeader;   // descriptor for JITTED code
     COR_ILMETHOD_DECODER *  m_ILHeader;     // the code header as exist in the file
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     TADDR                   m_moduleBase;       // Base for unwind Infos
     ULONG                   m_totalUnwindSize;  // Total reserved unwind space
     ULONG                   m_usedUnwindSize;   // used space in m_theUnwindBlock

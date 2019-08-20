@@ -51,7 +51,7 @@
 
 GTSTRUCT_0(UnOp        , GT_OP)
 GTSTRUCT_0(Op          , GT_OP)
-#if !FEATURE_EH_FUNCLETS
+#if !defined(FEATURE_EH_FUNCLETS)
 GTSTRUCT_2(Val         , GT_END_LFIN, GT_JMP)
 #else
 GTSTRUCT_1(Val         , GT_JMP)

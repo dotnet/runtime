@@ -16,7 +16,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
 
 //------------------------------------------------------------------------
 // Compiler::unwindGetFuncLocations: Get the start/end emitter locations for this
@@ -166,7 +166,7 @@ void Compiler::unwindBegPrologCFI()
 {
     assert(compGeneratingProlog);
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
     FuncInfoDsc* func = funCurrentFunc();
 
     // There is only one prolog for a function/funclet, and it comes first. So now is

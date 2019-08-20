@@ -51,10 +51,10 @@ public:
         m_pDebuggerContext = NULL;
         m_pDebuggerInterceptNativeOffset = 0;
 
-  #ifndef WIN64EXCEPTIONS
+  #ifndef FEATURE_EH_FUNCLETS
         // x86-specific fields
         m_pDebuggerInterceptFrame = EXCEPTION_CHAIN_END;
-  #endif // !WIN64EXCEPTIONS
+  #endif // !FEATURE_EH_FUNCLETS
         m_dDebuggerInterceptHandlerDepth  = 0;
     }
     
@@ -133,9 +133,9 @@ public:
     //
 
     void GetDebuggerInterceptInfo(
- #ifndef WIN64EXCEPTIONS
+ #ifndef FEATURE_EH_FUNCLETS
                                   PEXCEPTION_REGISTRATION_RECORD *pEstablisherFrame,
- #endif // !WIN64EXCEPTIONS
+ #endif // !FEATURE_EH_FUNCLETS
                                   MethodDesc **ppFunc,
                                   int *pdHandler,
                                   BYTE **ppStack,
@@ -144,12 +144,12 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
   
-#ifndef WIN64EXCEPTIONS
+#ifndef FEATURE_EH_FUNCLETS
         if (pEstablisherFrame != NULL)
         {
             *pEstablisherFrame = m_pDebuggerInterceptFrame;
         }
-#endif // !WIN64EXCEPTIONS
+#endif // !FEATURE_EH_FUNCLETS
 
         if (ppFunc != NULL)
         {
@@ -195,10 +195,10 @@ private:
     ULONG_PTR       m_pDebuggerInterceptNativeOffset;
 
     // The remaining fields are only used on x86.
-#ifndef WIN64EXCEPTIONS
+#ifndef FEATURE_EH_FUNCLETS
     // the exception registration record covering the stack range containing the interception point
     PEXCEPTION_REGISTRATION_RECORD m_pDebuggerInterceptFrame;
-#endif // !WIN64EXCEPTIONS
+#endif // !FEATURE_EH_FUNCLETS
 
     // the nesting level at which we want to resume execution
     int             m_dDebuggerInterceptHandlerDepth;
@@ -298,7 +298,7 @@ public:
         Init();
     }
 
-#if defined(WIN64EXCEPTIONS)
+#if defined(FEATURE_EH_FUNCLETS)
     ExceptionFlags(bool fReadOnly)
     {
         Init();
@@ -310,18 +310,18 @@ public:
         }
 #endif // _DEBUG        
     }
-#endif // defined(WIN64EXCEPTIONS)
+#endif // defined(FEATURE_EH_FUNCLETS)
 
     void AssertIfReadOnly()
     {
         SUPPORTS_DAC;
 
-#if defined(WIN64EXCEPTIONS) && defined(_DEBUG)
+#if defined(FEATURE_EH_FUNCLETS) && defined(_DEBUG)
         if ((m_flags & Ex_FlagsAreReadOnly) || (m_debugFlags & Ex_FlagsAreReadOnly))
         {
             _ASSERTE(!"Tried to update read-only flags!");
         }
-#endif // defined(WIN64EXCEPTIONS) && defined(_DEBUG)
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(_DEBUG)
     }
 
     void Init()
@@ -412,9 +412,9 @@ private:
 
         Ex_GotWatsonBucketInfo          = 0x00004000,
 
-#if defined(WIN64EXCEPTIONS) && defined(_DEBUG)
+#if defined(FEATURE_EH_FUNCLETS) && defined(_DEBUG)
         Ex_FlagsAreReadOnly             = 0x80000000
-#endif // defined(WIN64EXCEPTIONS) && defined(_DEBUG) 
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(_DEBUG) 
 
     };
 

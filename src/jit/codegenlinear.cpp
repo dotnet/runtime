@@ -300,7 +300,7 @@ void CodeGen::genCodeForBBlist()
             }
         }
 
-#if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
         genInsertNopForUnwinder(block);
 #endif
 
@@ -371,7 +371,7 @@ void CodeGen::genCodeForBBlist()
 
         bool firstMapping = true;
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
         if (block->bbFlags & BBF_FUNCLET_BEG)
         {
             genReserveFuncletProlog(block);
@@ -698,7 +698,7 @@ void CodeGen::genCodeForBBlist()
                 block = genCallFinally(block);
                 break;
 
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
 
             case BBJ_EHCATCHRET:
                 genEHCatchRet(block);

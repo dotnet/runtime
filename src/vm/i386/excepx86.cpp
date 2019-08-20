@@ -33,7 +33,7 @@
 #include "asmconstants.h"
 #include "virtualcallstub.h"
 
-#ifndef WIN64EXCEPTIONS
+#ifndef FEATURE_EH_FUNCLETS
 MethodDesc * GetUserMethodForILStub(Thread * pThread, UINT_PTR uStubSP, MethodDesc * pILStubMD, Frame ** ppFrameOut);
 
 #if !defined(DACCESS_COMPILE)
@@ -3576,7 +3576,7 @@ EXCEPTION_HANDLER_IMPL(COMPlusFrameHandlerRevCom)
 }
 #endif // FEATURE_COMINTEROP
 #endif // !DACCESS_COMPILE
-#endif // !WIN64EXCEPTIONS
+#endif // !FEATURE_EH_FUNCLETS
 
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(CONTEXT * pContext)
 {
@@ -3590,7 +3590,7 @@ PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(CONTEXT * pContext)
 #ifndef DACCESS_COMPILE
 LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv)
 {
-#ifndef WIN64EXCEPTIONS
+#ifndef FEATURE_EH_FUNCLETS
     WRAPPER_NO_CONTRACT;
     STATIC_CONTRACT_ENTRY_POINT;
 
@@ -3609,9 +3609,9 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv)
     //END_ENTRYPOINT_VOIDRET;
 
     return result;
-#else  // !WIN64EXCEPTIONS
+#else  // !FEATURE_EH_FUNCLETS
     return EXCEPTION_CONTINUE_SEARCH;
-#endif // !WIN64EXCEPTIONS
+#endif // !FEATURE_EH_FUNCLETS
 }
 #endif // !DACCESS_COMPILE
 

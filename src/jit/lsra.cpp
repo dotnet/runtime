@@ -1334,7 +1334,7 @@ void LinearScan::identifyCandidatesExceptionDataflow()
             // live on exit from finally
             VarSetOps::UnionD(compiler, finallyVars, block->bbLiveOut);
         }
-#if FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_FUNCLETS)
         // Funclets are called and returned from, as such we can only count on the frame
         // pointer being restored, and thus everything live in or live out must be on the
         // stack

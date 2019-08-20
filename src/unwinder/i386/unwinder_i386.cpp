@@ -7,7 +7,7 @@
 #include "stdafx.h"
 #include "unwinder_i386.h"
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
 BOOL OOPStackUnwinderX86::Unwind(T_CONTEXT* pContextRecord, T_KNONVOLATILE_CONTEXT_POINTERS* pContextPointers)
 {
     REGDISPLAY rd;
@@ -218,4 +218,4 @@ RtlVirtualUnwind (
 
     return handlerRoutine;
 }
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS

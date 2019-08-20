@@ -45,7 +45,7 @@ class AppDomain;
  #endif 
 #endif // _TARGET_X86_ && !FEATURE_PAL
 
-#if defined(WIN64EXCEPTIONS)
+#if defined(FEATURE_EH_FUNCLETS)
 #define RECORD_RESUMABLE_FRAME_SP
 #endif
 
@@ -289,12 +289,12 @@ public:
             }
         }
 
-#if defined(WIN64EXCEPTIONS)
+#if defined(FEATURE_EH_FUNCLETS)
         if (ShouldParentToFuncletSkipReportingGCReferences())
         {
             flags |= ParentOfFuncletStackFrame;
         }
-#endif // defined(WIN64EXCEPTIONS)
+#endif // defined(FEATURE_EH_FUNCLETS)
 
         return flags;
     }
@@ -391,7 +391,7 @@ public:
 
     void CheckGSCookies();
 
-#if defined(WIN64EXCEPTIONS)
+#if defined(FEATURE_EH_FUNCLETS)
     bool IsFunclet()
     {
         WRAPPER_NO_CONTRACT;
@@ -432,7 +432,7 @@ public:
         return ehClauseForCatch;
     }
 
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
 protected:
     // CrawlFrames are temporarily created by the enumerator.
@@ -446,9 +446,9 @@ private:
     friend class Thread;
     friend class EECodeManager;
     friend class StackFrameIterator;
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     friend class ExceptionTracker;
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
     CodeManState      codeManState;
 
@@ -473,14 +473,14 @@ private:
     PREGDISPLAY       pRD; // "thread context"/"virtual register set"
 
     EECodeInfo        codeInfo;
-#if defined(WIN64EXCEPTIONS)
+#if defined(FEATURE_EH_FUNCLETS)
     bool              isFilterFunclet;
     bool              isFilterFuncletCached;
     bool              fShouldParentToFuncletSkipReportingGCReferences;
     bool              fShouldCrawlframeReportGCReferences;
     bool              fShouldParentFrameUseUnwindTargetPCforGCReporting;
     EE_ILEXCEPTION_CLAUSE ehClauseForCatch;
-#endif //WIN64EXCEPTIONS
+#endif //FEATURE_EH_FUNCLETS
     Thread*           pThread;
 
     // fields used for stackwalk cache
@@ -660,7 +660,7 @@ private:
     // the CONTEXT stored in the ExInfo and updating the REGDISPLAY to the faulting managed stack frame.
     void PostProcessingForNoFrameTransition(void);
 
-#if defined(WIN64EXCEPTIONS)    
+#if defined(FEATURE_EH_FUNCLETS)    
     void ResetGCRefReportingState(bool ResetOnlyIntermediaryState = false)
     {
         LIMITED_METHOD_CONTRACT;
@@ -674,7 +674,7 @@ private:
         m_sfIntermediaryFuncletParent = StackFrame();
         m_fProcessIntermediaryNonFilterFunclet = false;
     }
-#endif // defined(WIN64EXCEPTIONS)    
+#endif // defined(FEATURE_EH_FUNCLETS)    
 
     // Iteration state.
     FrameState m_frameState;
@@ -702,7 +702,7 @@ private:
     ExInfoWalker m_exInfoWalk;
 #endif // ELIMINATE_FEF
 
-#if defined(WIN64EXCEPTIONS)
+#if defined(FEATURE_EH_FUNCLETS)
     // used in funclet-skipping
     StackFrame    m_sfParent;
     
@@ -712,7 +712,7 @@ private:
     StackFrame    m_sfIntermediaryFuncletParent;
     bool          m_fProcessIntermediaryNonFilterFunclet;
     bool          m_fDidFuncletReportGCReferences;
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
 #if defined(RECORD_RESUMABLE_FRAME_SP)
     LPVOID m_pvResumableFrameTargetSP;

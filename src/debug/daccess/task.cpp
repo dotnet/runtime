@@ -4976,11 +4976,11 @@ ClrDataExceptionState::NewFromThread(ClrDataAccess* dac,
     ClrDataExStateType* exState;
     ClrDataExceptionState* exIf;
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     exState = thread->GetExceptionState()->m_pCurrentTracker;
 #else
     exState = &(thread->GetExceptionState()->m_currentExInfo);
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
             
     exIf = new (nothrow)
         ClrDataExceptionState(dac,
@@ -5014,11 +5014,11 @@ ClrDataExceptionState::GetCurrentExceptionRecord()
 {
     PTR_EXCEPTION_RECORD pExRecord = NULL;
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     pExRecord = m_exInfo->m_ptrs.ExceptionRecord;
-#else // WIN64EXCEPTIONS
+#else // FEATURE_EH_FUNCLETS
     pExRecord = m_exInfo->m_pExceptionRecord;
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
     return pExRecord;
 }
@@ -5028,11 +5028,11 @@ ClrDataExceptionState::GetCurrentContextRecord()
 {
     PTR_CONTEXT pContext = NULL;
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     pContext = m_exInfo->m_ptrs.ContextRecord;
-#else // WIN64EXCEPTIONS
+#else // FEATURE_EH_FUNCLETS
     pContext = m_exInfo->m_pContext;
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
     return pContext;
 }

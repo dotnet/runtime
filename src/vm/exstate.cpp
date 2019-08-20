@@ -18,24 +18,24 @@ OBJECTHANDLE ThreadExceptionState::GetThrowableAsHandle()
 {
     WRAPPER_NO_CONTRACT;
     
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     if (m_pCurrentTracker)
     {
         return m_pCurrentTracker->m_hThrowable;
     }
 
     return NULL;
-#else // WIN64EXCEPTIONS
+#else // FEATURE_EH_FUNCLETS
     return m_currentExInfo.m_hThrowable;
-#endif // WIN64EXCEPTIONS    
+#endif // FEATURE_EH_FUNCLETS    
 }
 
 
 ThreadExceptionState::ThreadExceptionState()
 {
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     m_pCurrentTracker = NULL;
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
     m_flag = TEF_None;
 
@@ -64,15 +64,15 @@ ThreadExceptionState::~ThreadExceptionState()
 void ThreadExceptionState::AssertStackTraceInfo(StackTraceInfo *pSTI)
 {
     LIMITED_METHOD_CONTRACT;
-#if defined(WIN64EXCEPTIONS)
+#if defined(FEATURE_EH_FUNCLETS)
 
     _ASSERTE(pSTI == &(m_pCurrentTracker->m_StackTraceInfo) || pSTI == &(m_OOMTracker.m_StackTraceInfo));
 
-#else  // win64exceptions
+#else  // !FEATURE_EH_FUNCLETS
 
     _ASSERTE(pSTI == &(m_currentExInfo.m_StackTraceInfo));
 
-#endif // win64exceptions
+#endif // !FEATURE_EH_FUNCLETS
 } // void ThreadExceptionState::AssertStackTraceInfo()
 #endif // _debug
 
@@ -88,11 +88,11 @@ void ThreadExceptionState::FreeAllStackTraces()
 {
     WRAPPER_NO_CONTRACT;
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     ExceptionTracker* pNode = m_pCurrentTracker;
-#else // WIN64EXCEPTIONS
+#else // FEATURE_EH_FUNCLETS
     ExInfo*           pNode = &m_currentExInfo;
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
     for ( ;
           pNode != NULL;
@@ -106,11 +106,11 @@ void ThreadExceptionState::ClearThrowablesForUnload(IGCHandleStore* handleStore)
 {
     WRAPPER_NO_CONTRACT;
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     ExceptionTracker* pNode = m_pCurrentTracker;
-#else // WIN64EXCEPTIONS
+#else // FEATURE_EH_FUNCLETS
     ExInfo*           pNode = &m_currentExInfo;
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
     for ( ;
           pNode != NULL;
@@ -129,7 +129,7 @@ void ThreadExceptionState::ClearExceptionStateAfterSO(void* pStackFrameSP)
 {
     WRAPPER_NO_CONTRACT;
 
-    #if defined(WIN64EXCEPTIONS)
+    #if defined(FEATURE_EH_FUNCLETS)
         ExceptionTracker::PopTrackers(pStackFrameSP);
     #else
         // After unwinding from an SO, there may be stale exception state.  We need to
@@ -154,17 +154,17 @@ OBJECTREF ThreadExceptionState::GetThrowable()
     }
     CONTRACTL_END;
     
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     if (m_pCurrentTracker && m_pCurrentTracker->m_hThrowable)
     {
         return ObjectFromHandle(m_pCurrentTracker->m_hThrowable);
     }
-#else // WIN64EXCEPTIONS
+#else // FEATURE_EH_FUNCLETS
     if (m_currentExInfo.m_hThrowable)
     {
         return ObjectFromHandle(m_currentExInfo.m_hThrowable);
     }
-#endif // WIN64EXCEPTIONS    
+#endif // FEATURE_EH_FUNCLETS    
 
     return NULL;
 }
@@ -179,14 +179,14 @@ void ThreadExceptionState::SetThrowable(OBJECTREF throwable DEBUG_ARG(SetThrowab
     }
     CONTRACTL_END;
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     if (m_pCurrentTracker)
     {
         m_pCurrentTracker->DestroyExceptionHandle();
     }
-#else // WIN64EXCEPTIONS
+#else // FEATURE_EH_FUNCLETS
     m_currentExInfo.DestroyExceptionHandle();
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
     
     if (throwable != NULL)
     {
@@ -210,7 +210,7 @@ void ThreadExceptionState::SetThrowable(OBJECTREF throwable DEBUG_ARG(SetThrowab
             hNewThrowable = pDomain->CreateHandle(throwable);
         }
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
 #ifdef _DEBUG
         //
         // Fatal stack overflow policy ends up short-circuiting the normal exception handling
@@ -233,9 +233,9 @@ void ThreadExceptionState::SetThrowable(OBJECTREF throwable DEBUG_ARG(SetThrowab
         {
             m_pCurrentTracker->m_hThrowable = hNewThrowable; 
         }
-#else // WIN64EXCEPTIONS
+#else // FEATURE_EH_FUNCLETS
         m_currentExInfo.m_hThrowable = hNewThrowable;
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
     }
 }
 
@@ -243,12 +243,12 @@ DWORD ThreadExceptionState::GetExceptionCode()
 {
     LIMITED_METHOD_CONTRACT;
     
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     _ASSERTE(m_pCurrentTracker);
     return m_pCurrentTracker->m_ExceptionCode;
-#else // WIN64EXCEPTIONS
+#else // FEATURE_EH_FUNCLETS
     return m_currentExInfo.m_ExceptionCode;
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 }
 
 BOOL ThreadExceptionState::IsComPlusException()
@@ -276,11 +276,11 @@ BOOL ThreadExceptionState::IsExceptionInProgress()
 {
     LIMITED_METHOD_DAC_CONTRACT;
     
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     return (m_pCurrentTracker != NULL);
-#else // WIN64EXCEPTIONS
+#else // FEATURE_EH_FUNCLETS
     return (m_currentExInfo.m_pBottomMostHandler != NULL);
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 }
 
 #if !defined(DACCESS_COMPILE)
@@ -289,7 +289,7 @@ void ThreadExceptionState::GetLeafFrameInfo(StackTraceElement* pStackTraceElemen
 {
     WRAPPER_NO_CONTRACT;
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     m_pCurrentTracker->m_StackTraceInfo.GetLeafFrameInfo(pStackTraceElement);
 #else
     m_currentExInfo.m_StackTraceInfo.GetLeafFrameInfo(pStackTraceElement);
@@ -300,7 +300,7 @@ EXCEPTION_POINTERS* ThreadExceptionState::GetExceptionPointers()
 {
     LIMITED_METHOD_CONTRACT;
     
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     if (m_pCurrentTracker)
     {
         return (EXCEPTION_POINTERS*)&(m_pCurrentTracker->m_ptrs);
@@ -309,9 +309,9 @@ EXCEPTION_POINTERS* ThreadExceptionState::GetExceptionPointers()
     {
         return NULL;
     }
-#else // WIN64EXCEPTIONS
+#else // FEATURE_EH_FUNCLETS
     return m_currentExInfo.m_pExceptionPointers;
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 }
 
 //-----------------------------------------------------------------------------
@@ -320,7 +320,7 @@ EXCEPTION_POINTERS* ThreadExceptionState::GetExceptionPointers()
 //
 //  only x86
 //
-#if !defined(WIN64EXCEPTIONS)
+#if !defined(FEATURE_EH_FUNCLETS)
 void ThreadExceptionState::SetExceptionPointers(
     EXCEPTION_POINTERS *pExceptionPointers) // Value to set
 {
@@ -334,7 +334,7 @@ PTR_EXCEPTION_RECORD ThreadExceptionState::GetExceptionRecord()
 {
     LIMITED_METHOD_DAC_CONTRACT;
     
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     if (m_pCurrentTracker)
     {
         return m_pCurrentTracker->m_ptrs.ExceptionRecord;
@@ -343,16 +343,16 @@ PTR_EXCEPTION_RECORD ThreadExceptionState::GetExceptionRecord()
     {
         return NULL;
     }
-#else // WIN64EXCEPTIONS
+#else // FEATURE_EH_FUNCLETS
     return m_currentExInfo.m_pExceptionRecord;
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 }
 
 PTR_CONTEXT ThreadExceptionState::GetContextRecord()
 {
     LIMITED_METHOD_DAC_CONTRACT;
     
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     if (m_pCurrentTracker)
     {
         return m_pCurrentTracker->m_ptrs.ContextRecord;
@@ -361,14 +361,14 @@ PTR_CONTEXT ThreadExceptionState::GetContextRecord()
     {
         return NULL;
     }
-#else // WIN64EXCEPTIONS
+#else // FEATURE_EH_FUNCLETS
     return m_currentExInfo.m_pContext;
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 }
 
 ExceptionFlags* ThreadExceptionState::GetFlags()
 {
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
 
     if (m_pCurrentTracker)
     {
@@ -380,11 +380,11 @@ ExceptionFlags* ThreadExceptionState::GetFlags()
         return NULL;
     }
 
-#else // WIN64EXCEPTIONS
+#else // FEATURE_EH_FUNCLETS
 
     return &(m_currentExInfo.m_ExceptionFlags);
 
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 }
 
 #if !defined(DACCESS_COMPILE)
@@ -392,7 +392,7 @@ ExceptionFlags* ThreadExceptionState::GetFlags()
 #ifdef DEBUGGING_SUPPORTED    
 DebuggerExState*    ThreadExceptionState::GetDebuggerState()
 {
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     if (m_pCurrentTracker)
     {
         return &(m_pCurrentTracker->m_DebuggerExState);
@@ -410,9 +410,9 @@ DebuggerExState*    ThreadExceptionState::GetDebuggerState()
 #endif
         return &m_emptyDebuggerExState;
     }
-#else // WIN64EXCEPTIONS
+#else // FEATURE_EH_FUNCLETS
     return &(m_currentExInfo.m_DebuggerExState);
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 }
 
 BOOL ThreadExceptionState::IsDebuggerInterceptable()
@@ -492,7 +492,7 @@ BOOL DebuggerExState::SetDebuggerInterceptInfo(IJitManager *pJitManager,
 
     int nestingLevel = 0;
     
-#ifndef WIN64EXCEPTIONS
+#ifndef FEATURE_EH_FUNCLETS
     //
     // Get the SEH frame that covers this location on the stack. Note: we pass a skip count of 1. We know that when
     // this is called, there is a nested exception handler on pThread's stack that is only there during exception
@@ -511,7 +511,7 @@ BOOL DebuggerExState::SetDebuggerInterceptInfo(IJitManager *pJitManager,
     nestingLevel = ComputeEnclosingHandlerNestingLevel(pJitManager,
                                                            methodToken,
                                                            natOffset);
-#endif // !WIN64EXCEPTIONS
+#endif // !FEATURE_EH_FUNCLETS
 
     //
     // These values will override the normal information used by the EH subsystem to handle the exception.
@@ -532,7 +532,7 @@ BOOL DebuggerExState::SetDebuggerInterceptInfo(IJitManager *pJitManager,
 
 EHClauseInfo* ThreadExceptionState::GetCurrentEHClauseInfo()
 {
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     if (m_pCurrentTracker)
     {
         return &(m_pCurrentTracker->m_EHClauseInfo);
@@ -552,9 +552,9 @@ EHClauseInfo* ThreadExceptionState::GetCurrentEHClauseInfo()
 
         return &m_emptyEHClauseInfo;
     }
-#else // WIN64EXCEPTIONS
+#else // FEATURE_EH_FUNCLETS
     return &(m_currentExInfo.m_EHClauseInfo);
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 }
 
 void ThreadExceptionState::SetThreadExceptionFlag(ThreadExceptionFlag flag)
@@ -604,7 +604,7 @@ ThreadExceptionFlagHolder::~ThreadExceptionFlagHolder()
 void
 ThreadExceptionState::EnumChainMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     ExceptionTracker* head = m_pCurrentTracker;
 
     if (head == NULL)
@@ -612,9 +612,9 @@ ThreadExceptionState::EnumChainMemoryRegions(CLRDataEnumMemoryFlags flags)
         return;
     }
     
-#else // WIN64EXCEPTIONS
+#else // FEATURE_EH_FUNCLETS
     ExInfo*           head = &m_currentExInfo;
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
     
     for (;;)
     {

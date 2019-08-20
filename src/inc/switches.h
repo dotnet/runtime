@@ -34,10 +34,6 @@
     #define LOGGING
 #endif
 
-#if !defined(_TARGET_X86_) || defined(FEATURE_PAL)
-#define WIN64EXCEPTIONS
-#endif
-
 #if !defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
 // Failpoint support
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE) && !defined(FEATURE_PAL)

@@ -8,7 +8,7 @@
 #ifndef __EXCEPTION_HANDLING_h__
 #define __EXCEPTION_HANDLING_h__
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
 
 #include "eexcp.h"
 #include "exstatecommon.h"
@@ -819,6 +819,6 @@ private:
     Crst* m_pCrst;
 };
 
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
 #endif  // __EXCEPTION_HANDLING_h__

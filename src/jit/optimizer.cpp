@@ -1751,7 +1751,7 @@ public:
             return false;
         }
 
-#if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
         // Disqualify loops where the first block of the loop is a finally target.
         // The main problem is when multiple loops share a 'first' block that is a finally
         // target and we canonicalize the loops by adding a new loop head. In that case, we
@@ -1766,7 +1766,7 @@ public:
             JITDUMP("Loop 'first' " FMT_BB " is a finally target. Rejecting loop.\n", first->bbNum);
             return false;
         }
-#endif // FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
 
         // Compact the loop (sweep through it and move out any blocks that aren't part of the
         // flow cycle), and find the exits.

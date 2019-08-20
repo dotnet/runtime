@@ -38,7 +38,7 @@ ZapInfo::ZapInfo(ZapImage * pImage, mdMethodDef md, CORINFO_METHOD_HANDLE handle
     m_pCode(NULL),
     m_pColdCode(NULL),
     m_pROData(NULL),
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     // Unwind info of the main method body. It will get merged with GC info.
     m_pMainUnwindInfo(NULL),
     m_cbMainUnwindInfo(0),
@@ -48,7 +48,7 @@ ZapInfo::ZapInfo(ZapImage * pImage, mdMethodDef md, CORINFO_METHOD_HANDLE handle
 #if defined(_TARGET_AMD64_)
     m_pChainedColdUnwindInfo(NULL),
 #endif
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
     m_pExceptionInfo(NULL),
     m_pProfileData(NULL),
     m_pProfilingHandle(NULL),
@@ -72,7 +72,7 @@ ZapInfo::~ZapInfo()
     delete [] m_pOffsetMapping;
 
     delete [] m_pGCInfo;
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     delete [] m_pMainUnwindInfo;
 #endif
 }
@@ -96,12 +96,12 @@ void ZapInfo::ResetForJitRetry()
 
     m_cbGCInfo = 0;
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     delete [] m_pMainUnwindInfo;
     m_pMainUnwindInfo = NULL;
 
     m_cbMainUnwindInfo = 0;
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
     // The rest of these pointers are in the ZapWriter's ZapHeap, and will go away when the ZapWriter
     // goes away. That's ok for altjit fallback; we'll use extra memory until the ZapWriter goes away,
@@ -111,13 +111,13 @@ void ZapInfo::ResetForJitRetry()
     m_pColdCode = NULL;
     m_pROData = NULL;
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     m_pUnwindInfoFragments = NULL;
     m_pUnwindInfo = NULL;
 #if defined(_TARGET_AMD64_)
     m_pChainedColdUnwindInfo = NULL;
 #endif
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
     m_pExceptionInfo = NULL;
     m_pProfileData = NULL;
@@ -240,11 +240,11 @@ ZapGCInfo * ZapInfo::EmitGCInfo()
 {    
     _ASSERTE(m_pGCInfo != NULL);
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     return m_pImage->m_pGCInfoTable->GetGCInfo(m_pGCInfo, m_cbGCInfo, m_pMainUnwindInfo, m_cbMainUnwindInfo);
 #else
     return m_pImage->m_pGCInfoTable->GetGCInfo(m_pGCInfo, m_cbGCInfo);
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 }
 
 ZapImport ** ZapInfo::EmitFixupList()
@@ -697,7 +697,7 @@ public:
         if (!UnwindInfoEquals(k1->m_pColdUnwindInfo, k2->m_pColdUnwindInfo, equivalentNodes))
             return FALSE;
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
         if (!UnwindInfoFragmentsEquals(k1->m_pUnwindInfoFragments, k2->m_pUnwindInfoFragments, equivalentNodes))
             return FALSE;
 #endif
@@ -812,7 +812,7 @@ void ZapInfo::PublishCompiledMethod()
     pMethod->m_pDebugInfo = EmitDebugInfo();
     pMethod->m_pGCInfo = EmitGCInfo();
 
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     pMethod->m_pUnwindInfoFragments = m_pUnwindInfoFragments;
 
     // Set the combined GCInfo + UnwindInfo blob
@@ -826,7 +826,7 @@ void ZapInfo::PublishCompiledMethod()
     }
 #endif // _TARGET_AMD64_
 
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 
 #ifndef FEATURE_FULL_NGEN
     //
@@ -1335,7 +1335,7 @@ void ZapInfo::allocUnwindInfo (
         CorJitFuncKind      funcKind               /* IN */
         )
 {
-#ifdef WIN64EXCEPTIONS
+#ifdef FEATURE_EH_FUNCLETS
     _ASSERTE(pHotCode == m_pCode->GetData());
     _ASSERTE(pColdCode == NULL || pColdCode == m_pColdCode->GetData());
 
@@ -1391,7 +1391,7 @@ void ZapInfo::allocUnwindInfo (
         ZapUnwindData * pUnwindData = m_pImage->m_pUnwindDataTable->GetUnwindData(pUnwindBlock, unwindSize, funcKind == CORJIT_FUNC_FILTER);
         pUnwindInfo->SetUnwindData(pUnwindData);
     }     
-#endif // WIN64EXCEPTIONS
+#endif // FEATURE_EH_FUNCLETS
 }
 
 BOOL ZapInfo::logMsg(unsigned level, const char *fmt, va_list args)
