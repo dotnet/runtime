@@ -1846,48 +1846,36 @@ namespace System.Text.Json
             }
             else if (_tokenType == JsonTokenType.StartObject)
             {
-                if (first == JsonConstants.CloseBrace)
+                Debug.Assert(first != JsonConstants.CloseBrace);
+                if (first != JsonConstants.Quote)
                 {
-                    EndObject();
+                    ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedStartOfPropertyNotFound, first);
                 }
-                else
-                {
-                    if (first != JsonConstants.Quote)
-                    {
-                        ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedStartOfPropertyNotFound, first);
-                    }
 
-                    long prevTotalConsumed = _totalConsumed;
-                    int prevConsumed = _consumed;
-                    long prevPosition = _bytePositionInLine;
-                    long prevLineNumber = _lineNumber;
-                    if (!ConsumePropertyNameMultiSegment())
-                    {
-                        // roll back potential changes
-                        _consumed = prevConsumed;
-                        _tokenType = JsonTokenType.StartObject;
-                        _bytePositionInLine = prevPosition;
-                        _lineNumber = prevLineNumber;
-                        _totalConsumed = prevTotalConsumed;
-                        goto RollBack;
-                    }
-                    goto Done;
+                long prevTotalConsumed = _totalConsumed;
+                int prevConsumed = _consumed;
+                long prevPosition = _bytePositionInLine;
+                long prevLineNumber = _lineNumber;
+                if (!ConsumePropertyNameMultiSegment())
+                {
+                    // roll back potential changes
+                    _consumed = prevConsumed;
+                    _tokenType = JsonTokenType.StartObject;
+                    _bytePositionInLine = prevPosition;
+                    _lineNumber = prevLineNumber;
+                    _totalConsumed = prevTotalConsumed;
+                    goto RollBack;
                 }
+                goto Done;
             }
             else if (_tokenType == JsonTokenType.StartArray)
             {
-                if (first == JsonConstants.CloseBracket)
+                Debug.Assert(first != JsonConstants.CloseBracket);
+                if (!ConsumeValueMultiSegment(first))
                 {
-                    EndArray();
+                    goto RollBack;
                 }
-                else
-                {
-                    if (!ConsumeValueMultiSegment(first))
-                    {
-                        goto RollBack;
-                    }
-                    goto Done;
-                }
+                goto Done;
             }
             else if (_tokenType == JsonTokenType.PropertyName)
             {
@@ -1899,7 +1887,37 @@ namespace System.Text.Json
             }
             else
             {
-                goto RollBack;
+                Debug.Assert(_tokenType == JsonTokenType.EndArray || _tokenType == JsonTokenType.EndObject);
+                if (_inObject)
+                {
+                    Debug.Assert(first != JsonConstants.CloseBracket);
+                    if (first != JsonConstants.Quote)
+                    {
+                        ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedStartOfPropertyNotFound, first);
+                    }
+
+                    if (ConsumePropertyNameMultiSegment())
+                    {
+                        goto Done;
+                    }
+                    else
+                    {
+                        goto RollBack;
+                    }
+                }
+                else
+                {
+                    Debug.Assert(first != JsonConstants.CloseBracket);
+
+                    if (ConsumeValueMultiSegment(first))
+                    {
+                        goto Done;
+                    }
+                    else
+                    {
+                        goto RollBack;
+                    }
+                }
             }
 
         Done:
