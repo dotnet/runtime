@@ -158,7 +158,7 @@ namespace System
 
             // Used to fill uninitialized stack variables with non-zero pattern in debug builds
             [Conditional("DEBUG")]
-            private static unsafe void DebugPoison<T>(ref T s) where T: unmanaged
+            private static unsafe void DebugPoison<T>(ref T s) where T : unmanaged
             {
                 MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref s, 1)).Fill(0xCD);
             }
