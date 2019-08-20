@@ -5780,7 +5780,7 @@ namespace System.Diagnostics.Tracing
                             if (constantValObj is ulong)
                                 hexValue = (ulong)constantValObj;    // This is the only integer type that can't be represented by a long.
                             else
-                                hexValue = (ulong) Convert.ToInt64(constantValObj); // Handles all integer types except ulong.
+                                hexValue = (ulong)Convert.ToInt64(constantValObj); // Handles all integer types except ulong.
 
                             // ETW requires all bitmap values to be powers of 2.  Skip the ones that are not.
                             // TODO: Warn people about the dropping of values.

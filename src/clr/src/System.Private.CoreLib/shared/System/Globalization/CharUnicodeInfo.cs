@@ -284,7 +284,7 @@ namespace System.Globalization
                 throw new ArgumentOutOfRangeException(nameof(index));
             }
 
-            return ((BidiCategory) InternalGetCategoryValue(InternalConvertToUtf32(s, index), BIDI_CATEGORY_OFFSET));
+            return ((BidiCategory)InternalGetCategoryValue(InternalConvertToUtf32(s, index), BIDI_CATEGORY_OFFSET));
         }
 
         internal static BidiCategory GetBidiCategory(StringBuilder s, int index)
@@ -292,7 +292,7 @@ namespace System.Globalization
             Debug.Assert(s != null, "s can not be null");
             Debug.Assert(index >= 0 && index < s.Length, "invalid index"); ;
 
-            return ((BidiCategory) InternalGetCategoryValue(InternalConvertToUtf32(s, index), BIDI_CATEGORY_OFFSET));
+            return ((BidiCategory)InternalGetCategoryValue(InternalConvertToUtf32(s, index), BIDI_CATEGORY_OFFSET));
         }
 
         /// <summary>
