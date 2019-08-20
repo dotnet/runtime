@@ -53,6 +53,7 @@ stages:
         helixQueueGroup: all
         jobParameters:
           testGroup: outerloop
+          condition: ne(variables['_BypassTesting'], 'true')
 
     #
     # ReadyToRun test builds
@@ -67,6 +68,7 @@ stages:
           testGroup: outerloop
           readyToRun: true
           displayNameArgs: R2R
+          condition: ne(variables['_BypassTesting'], 'true')
 
     #
     # Publish build information to Build Assets Registry
