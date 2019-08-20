@@ -50,7 +50,7 @@ namespace System.Runtime.InteropServices
             public const int Disposed = 0b10;
             public const int RefCount = unchecked(~0b11); // 2 bits reserved for closed/disposed; ref count gets 30 bits
             public const int RefCountOne = 1 << 2;
-        };
+        }
 
         /// <summary>Creates a SafeHandle class.</summary>
         protected SafeHandle(IntPtr invalidHandleValue, bool ownsHandle)

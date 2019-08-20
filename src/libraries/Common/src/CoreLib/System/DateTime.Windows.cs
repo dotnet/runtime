@@ -110,7 +110,7 @@ namespace System
                 systemTime.Milliseconds = (ushort)dt.Millisecond;
                 hundredNanoSecond = 0;
             }
-        };
+        }
 
 #if !CORECLR
         internal static readonly bool s_systemSupportsPreciseSystemTime = SystemSupportsPreciseSystemTime();

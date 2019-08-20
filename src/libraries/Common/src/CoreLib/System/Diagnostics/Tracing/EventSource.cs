@@ -2491,7 +2491,7 @@ namespace System.Diagnostics.Tracing
 #if ES_BUILD_PN
             public EventParameterType[] ParameterTypes;
 #endif
-        };
+        }
 
 #if !ES_BUILD_PN
         private int GetParameterCount(EventMetadata eventData)
@@ -5189,7 +5189,7 @@ namespace System.Diagnostics.Tracing
         /// Disable event
         /// </summary>
         Disable = -3
-    };
+    }
 
 
 #region private classes
@@ -6290,7 +6290,7 @@ namespace System.Diagnostics.Tracing
         public ushort TotalChunks;
         public ushort ChunkNumber;
 #endif
-    };
+    }
 
 #endregion
 }

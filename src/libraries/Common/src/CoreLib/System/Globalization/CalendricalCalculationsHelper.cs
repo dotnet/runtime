@@ -95,7 +95,7 @@ namespace System.Globalization
 
             internal int _lowestYear;
             internal CorrectionAlgorithm _algorithm;
-        };
+        }
 
         private static readonly EphemerisCorrectionAlgorithmMap[] s_ephemerisCorrectionTable = new EphemerisCorrectionAlgorithmMap[]
         {

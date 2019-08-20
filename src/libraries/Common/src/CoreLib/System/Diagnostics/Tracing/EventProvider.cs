@@ -32,7 +32,7 @@ namespace System.Diagnostics.Tracing
         None = 0,
         ETW,
         EventPipe
-    };
+    }
 
     // New in CLR4.0
     internal enum ControllerCommand
@@ -43,7 +43,7 @@ namespace System.Diagnostics.Tracing
         SendManifest = -1,
         Enable = -2,
         Disable = -3,
-    };
+    }
 
     /// <summary>
     /// Only here because System.Diagnostics.EventProvider needs one more extensibility hook (when it gets a
@@ -111,7 +111,7 @@ namespace System.Diagnostics.Tracing
             NullInput = 3,
             TooManyArgs = 4,
             Other = 5,
-        };
+        }
 
         // Because callbacks happen on registration, and we need the callbacks for those setup
         // we can't call Register in the constructor.
