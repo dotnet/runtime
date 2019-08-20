@@ -4,7 +4,6 @@
 
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Threading;
 
 namespace System.Runtime.InteropServices
 {

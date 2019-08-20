@@ -2,15 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#if ES_BUILD_STANDALONE
 using System;
 using System.Diagnostics;
-using System.Collections;
+#endif
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
-#if ES_BUILD_PCL
-    using System.Threading.Tasks;
-#endif
 
 #if ES_BUILD_STANDALONE
 namespace Microsoft.Diagnostics.Tracing

@@ -8,7 +8,6 @@ using Microsoft.Win32.SafeHandles;
 #else
 using Internal.Win32.SafeHandles;
 #endif
-using System;
 using System.Runtime.InteropServices;
 
 internal partial class Interop

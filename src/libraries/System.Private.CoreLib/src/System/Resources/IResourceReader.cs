@@ -13,7 +13,6 @@
 **
 ===========================================================*/
 
-using System;
 using System.Collections;
 
 namespace System.Resources
