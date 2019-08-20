@@ -82,13 +82,13 @@ namespace System
 
             internal FullSystemTime(int year, int month, DayOfWeek dayOfWeek, int day, int hour, int minute, int second)
             {
-                systemTime.Year = (ushort) year;
-                systemTime.Month = (ushort) month;
-                systemTime.DayOfWeek = (ushort) dayOfWeek;
-                systemTime.Day = (ushort) day;
-                systemTime.Hour = (ushort) hour;
-                systemTime.Minute = (ushort) minute;
-                systemTime.Second = (ushort) second;
+                systemTime.Year = (ushort)year;
+                systemTime.Month = (ushort)month;
+                systemTime.DayOfWeek = (ushort)dayOfWeek;
+                systemTime.Day = (ushort)day;
+                systemTime.Hour = (ushort)hour;
+                systemTime.Minute = (ushort)minute;
+                systemTime.Second = (ushort)second;
                 systemTime.Milliseconds = 0;
                 hundredNanoSecond = 0;
             }
@@ -100,14 +100,14 @@ namespace System
                 int year, month, day;
                 dt.GetDatePart(out year, out month, out day);
 
-                systemTime.Year = (ushort) year;
-                systemTime.Month = (ushort) month;
-                systemTime.DayOfWeek = (ushort) dt.DayOfWeek;
-                systemTime.Day = (ushort) day;
-                systemTime.Hour = (ushort) dt.Hour;
-                systemTime.Minute = (ushort) dt.Minute;
-                systemTime.Second = (ushort) dt.Second;
-                systemTime.Milliseconds = (ushort) dt.Millisecond;
+                systemTime.Year = (ushort)year;
+                systemTime.Month = (ushort)month;
+                systemTime.DayOfWeek = (ushort)dt.DayOfWeek;
+                systemTime.Day = (ushort)day;
+                systemTime.Hour = (ushort)dt.Hour;
+                systemTime.Minute = (ushort)dt.Minute;
+                systemTime.Second = (ushort)dt.Second;
+                systemTime.Milliseconds = (ushort)dt.Millisecond;
                 hundredNanoSecond = 0;
             }
         };

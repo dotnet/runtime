@@ -170,7 +170,7 @@ namespace System.Globalization
         {
             field |= Interop.Kernel32.LOCALE_RETURN_NUMBER;
             int value = 0;
-            GetLocaleInfoEx(localeName, field, (char*) &value, sizeof(int));
+            GetLocaleInfoEx(localeName, field, (char*)&value, sizeof(int));
             return value;
         }
 
@@ -731,7 +731,7 @@ namespace System.Globalization
                     Interop.Kernel32.EnumSystemLocalesEx(EnumAllSystemLocalesProc, Interop.Kernel32.LOCALE_REPLACEMENT, Unsafe.AsPointer(ref context), IntPtr.Zero);
                 }
 
-                for (int i=0; i<context.strings.Count; i++)
+                for (int i = 0; i < context.strings.Count; i++)
                 {
                     if (string.Compare(context.strings[i], _sWindowsName, StringComparison.OrdinalIgnoreCase) == 0)
                         return true;

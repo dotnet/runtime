@@ -230,7 +230,7 @@ namespace System.Diagnostics.Tracing
                     m_current = new AsyncLocal<ActivityInfo?>(ActivityChanging);
                 }
                 catch (NotImplementedException) {
-#if (!ES_BUILD_PCL && ! ES_BUILD_PN)
+#if (!ES_BUILD_PCL && !ES_BUILD_PN)
                     // send message to debugger without delay
                     System.Diagnostics.Debugger.Log(0, null, "Activity Enabled() called but AsyncLocals Not Supported (pre V4.6).  Ignoring Enable");
 #endif

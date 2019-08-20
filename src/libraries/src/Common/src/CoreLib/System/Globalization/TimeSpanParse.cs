@@ -115,7 +115,7 @@ namespace System.Globalization
                 if (_zeroes == 0 && _num > MaxFraction)
                     return false;
 
-                int totalDigitsCount = ((int) Math.Floor(Math.Log10(_num))) + 1 + _zeroes;
+                int totalDigitsCount = ((int)Math.Floor(Math.Log10(_num))) + 1 + _zeroes;
 
                 if (totalDigitsCount == MaxFractionDigits)
                 {
@@ -133,7 +133,7 @@ namespace System.Globalization
                     // .000001  normalize to 10 ticks
                     // .1       normalize to 1,000,000 ticks
 
-                    _num *= (int) Pow10(MaxFractionDigits - totalDigitsCount);
+                    _num *= (int)Pow10(MaxFractionDigits - totalDigitsCount);
                     return true;
                 }
 
@@ -144,7 +144,7 @@ namespace System.Globalization
                 // .099999999   normalize to 1,000,000 ticks
 
                 Debug.Assert(_zeroes > 0); // Already validated that in the condition _zeroes == 0 && _num > MaxFraction
-                _num = (int) Math.Round((double)_num / Pow10(totalDigitsCount - MaxFractionDigits), MidpointRounding.AwayFromZero);
+                _num = (int)Math.Round((double)_num / Pow10(totalDigitsCount - MaxFractionDigits), MidpointRounding.AwayFromZero);
                 Debug.Assert(_num < MaxFraction);
 
                 return true;

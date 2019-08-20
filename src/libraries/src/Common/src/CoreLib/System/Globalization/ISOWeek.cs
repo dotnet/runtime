@@ -156,7 +156,7 @@ namespace System.Globalization
         // This matches the underlying values of the DayOfWeek enum, except for Sunday, which needs to be converted.
         private static int GetWeekday(DayOfWeek dayOfWeek)
         {
-            return dayOfWeek == DayOfWeek.Sunday ? 7 : (int) dayOfWeek;
+            return dayOfWeek == DayOfWeek.Sunday ? 7 : (int)dayOfWeek;
         }
     }
 }
