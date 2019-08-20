@@ -114,11 +114,11 @@ namespace System.Diagnostics.Tracing
                     // NOTE: we do this by hand instead of using IndexOf because payload may be unaligned due to
                     // mixture of different types being stored in the same buffer. (see eventpipe.cpp:CopyData)
                     int byteCount = -1;
-                    for (int j = 1; j < payload.Length; j+=2)
+                    for (int j = 1; j < payload.Length; j += 2)
                     {
-                        if (payload[j-1] == (byte)(0) && payload[j] == (byte)(0))
+                        if (payload[j - 1] == (byte)(0) && payload[j] == (byte)(0))
                         {
-                            byteCount = j+1;
+                            byteCount = j + 1;
                             break;
                         }
                     }
@@ -131,7 +131,7 @@ namespace System.Diagnostics.Tracing
                     }
                     else
                     {
-                        charPayload = MemoryMarshal.Cast<byte, char>(payload.Slice(0, byteCount-2));
+                        charPayload = MemoryMarshal.Cast<byte, char>(payload.Slice(0, byteCount - 2));
                         payload = payload.Slice(byteCount);
                     }
                     decodedFields[i] = BitConverter.IsLittleEndian ? new string(charPayload) : Encoding.Unicode.GetString(MemoryMarshal.Cast<char, byte>(charPayload));

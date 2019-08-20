@@ -766,14 +766,14 @@ namespace System.Text
                     if (_bigEndian)
                     {
                         fallbackBytes = new byte[] {
-                            unchecked((byte)(iChar>>24)), unchecked((byte)(iChar>>16)),
-                            unchecked((byte)(iChar>>8)), unchecked((byte)(iChar)) };
+                            unchecked((byte)(iChar >> 24)), unchecked((byte)(iChar >> 16)),
+                            unchecked((byte)(iChar >> 8)), unchecked((byte)(iChar)) };
                     }
                     else
                     {
                         fallbackBytes = new byte[] {
-                            unchecked((byte)(iChar)), unchecked((byte)(iChar>>8)),
-                            unchecked((byte)(iChar>>16)), unchecked((byte)(iChar>>24)) };
+                            unchecked((byte)(iChar)), unchecked((byte)(iChar >> 8)),
+                            unchecked((byte)(iChar >> 16)), unchecked((byte)(iChar >> 24)) };
                     }
 
                     charCount += fallbackBuffer.InternalFallback(fallbackBytes, bytes);
@@ -915,14 +915,14 @@ namespace System.Text
                     if (_bigEndian)
                     {
                         fallbackBytes = new byte[] {
-                            unchecked((byte)(iChar>>24)), unchecked((byte)(iChar>>16)),
-                            unchecked((byte)(iChar>>8)), unchecked((byte)(iChar)) };
+                            unchecked((byte)(iChar >> 24)), unchecked((byte)(iChar >> 16)),
+                            unchecked((byte)(iChar >> 8)), unchecked((byte)(iChar)) };
                     }
                     else
                     {
                         fallbackBytes = new byte[] {
-                            unchecked((byte)(iChar)), unchecked((byte)(iChar>>8)),
-                            unchecked((byte)(iChar>>16)), unchecked((byte)(iChar>>24)) };
+                            unchecked((byte)(iChar)), unchecked((byte)(iChar >> 8)),
+                            unchecked((byte)(iChar >> 16)), unchecked((byte)(iChar >> 24)) };
                     }
 
                     // Chars won't be updated unless this works.

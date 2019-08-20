@@ -714,9 +714,9 @@ namespace System.Diagnostics.Tracing
         {
             EventWrittenEventArgs eventCallbackArgs = new EventWrittenEventArgs(this);
             eventCallbackArgs.EventName = eventName;
-            eventCallbackArgs.m_level = (EventLevel) eventDescriptor.Level;
-            eventCallbackArgs.m_keywords = (EventKeywords) eventDescriptor.Keywords;
-            eventCallbackArgs.m_opcode = (EventOpcode) eventDescriptor.Opcode;
+            eventCallbackArgs.m_level = (EventLevel)eventDescriptor.Level;
+            eventCallbackArgs.m_keywords = (EventKeywords)eventDescriptor.Keywords;
+            eventCallbackArgs.m_opcode = (EventOpcode)eventDescriptor.Opcode;
             eventCallbackArgs.m_tags = tags;
 
             // Self described events do not have an id attached. We mark it internally with -1.
