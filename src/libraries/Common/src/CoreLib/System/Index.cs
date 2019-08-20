@@ -121,7 +121,7 @@ namespace System
 
         /// <summary>Indicates whether the current Index object is equal to another Index object.</summary>
         /// <param name="other">An object to compare with this object</param>
-        public bool Equals (Index other) => _value == other._value;
+        public bool Equals(Index other) => _value == other._value;
 
         /// <summary>Returns the hash code for this instance.</summary>
         public override int GetHashCode() => _value;

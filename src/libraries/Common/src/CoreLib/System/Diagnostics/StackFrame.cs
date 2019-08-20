@@ -111,7 +111,7 @@ namespace System.Diagnostics
         /// use the debugger's line mapping logic.
         /// </summary>
         public StackFrame(string? fileName, int lineNumber, int colNumber)
-            : this (fileName, lineNumber)
+            : this(fileName, lineNumber)
         {
             _columnNumber = colNumber;
         }
