@@ -252,33 +252,33 @@ namespace System.Globalization
         // The value is -1 if the Hebrew character does not have a associated value.
         //
         private static readonly HebrewValue[] s_hebrewValues = {
-            new HebrewValue(HebrewToken.Digit1, 1) , // '\x05d0
-            new HebrewValue(HebrewToken.Digit1, 2) , // '\x05d1
-            new HebrewValue(HebrewToken.Digit1, 3) , // '\x05d2
-            new HebrewValue(HebrewToken.Digit1, 4) , // '\x05d3
-            new HebrewValue(HebrewToken.Digit1, 5) , // '\x05d4
-            new HebrewValue(HebrewToken.Digit6_7,6) , // '\x05d5
-            new HebrewValue(HebrewToken.Digit6_7,7) , // '\x05d6
-            new HebrewValue(HebrewToken.Digit1, 8) , // '\x05d7
-            new HebrewValue(HebrewToken.Digit9, 9) , // '\x05d8
-            new HebrewValue(HebrewToken.Digit10, 10) , // '\x05d9;          // Hebrew Letter Yod
-            new HebrewValue(HebrewToken.Invalid, -1) , // '\x05da;
-            new HebrewValue(HebrewToken.Digit10, 20) , // '\x05db;          // Hebrew Letter Kaf
-            new HebrewValue(HebrewToken.Digit10, 30) , // '\x05dc;          // Hebrew Letter Lamed
-            new HebrewValue(HebrewToken.Invalid, -1) , // '\x05dd;
-            new HebrewValue(HebrewToken.Digit10, 40) , // '\x05de;          // Hebrew Letter Mem
-            new HebrewValue(HebrewToken.Invalid, -1) , // '\x05df;
-            new HebrewValue(HebrewToken.Digit10, 50) , // '\x05e0;          // Hebrew Letter Nun
-            new HebrewValue(HebrewToken.Digit10, 60) , // '\x05e1;          // Hebrew Letter Samekh
-            new HebrewValue(HebrewToken.Digit10, 70) , // '\x05e2;          // Hebrew Letter Ayin
-            new HebrewValue(HebrewToken.Invalid, -1) , // '\x05e3;
-            new HebrewValue(HebrewToken.Digit10, 80) , // '\x05e4;          // Hebrew Letter Pe
-            new HebrewValue(HebrewToken.Invalid, -1) , // '\x05e5;
-            new HebrewValue(HebrewToken.Digit10, 90) , // '\x05e6;          // Hebrew Letter Tsadi
-            new HebrewValue(HebrewToken.Digit100, 100) , // '\x05e7;
-            new HebrewValue(HebrewToken.Digit200_300, 200) , // '\x05e8;
-            new HebrewValue(HebrewToken.Digit200_300, 300) , // '\x05e9;
-            new HebrewValue(HebrewToken.Digit400, 400) , // '\x05ea;
+            new HebrewValue(HebrewToken.Digit1, 1), // '\x05d0
+            new HebrewValue(HebrewToken.Digit1, 2), // '\x05d1
+            new HebrewValue(HebrewToken.Digit1, 3), // '\x05d2
+            new HebrewValue(HebrewToken.Digit1, 4), // '\x05d3
+            new HebrewValue(HebrewToken.Digit1, 5), // '\x05d4
+            new HebrewValue(HebrewToken.Digit6_7, 6), // '\x05d5
+            new HebrewValue(HebrewToken.Digit6_7, 7), // '\x05d6
+            new HebrewValue(HebrewToken.Digit1, 8), // '\x05d7
+            new HebrewValue(HebrewToken.Digit9, 9), // '\x05d8
+            new HebrewValue(HebrewToken.Digit10, 10), // '\x05d9; // Hebrew Letter Yod
+            new HebrewValue(HebrewToken.Invalid, -1), // '\x05da;
+            new HebrewValue(HebrewToken.Digit10, 20), // '\x05db; // Hebrew Letter Kaf
+            new HebrewValue(HebrewToken.Digit10, 30), // '\x05dc; // Hebrew Letter Lamed
+            new HebrewValue(HebrewToken.Invalid, -1), // '\x05dd;
+            new HebrewValue(HebrewToken.Digit10, 40), // '\x05de; // Hebrew Letter Mem
+            new HebrewValue(HebrewToken.Invalid, -1), // '\x05df;
+            new HebrewValue(HebrewToken.Digit10, 50), // '\x05e0; // Hebrew Letter Nun
+            new HebrewValue(HebrewToken.Digit10, 60), // '\x05e1; // Hebrew Letter Samekh
+            new HebrewValue(HebrewToken.Digit10, 70), // '\x05e2; // Hebrew Letter Ayin
+            new HebrewValue(HebrewToken.Invalid, -1), // '\x05e3;
+            new HebrewValue(HebrewToken.Digit10, 80), // '\x05e4; // Hebrew Letter Pe
+            new HebrewValue(HebrewToken.Invalid, -1), // '\x05e5;
+            new HebrewValue(HebrewToken.Digit10, 90), // '\x05e6; // Hebrew Letter Tsadi
+            new HebrewValue(HebrewToken.Digit100, 100), // '\x05e7;
+            new HebrewValue(HebrewToken.Digit200_300, 200), // '\x05e8;
+            new HebrewValue(HebrewToken.Digit200_300, 300), // '\x05e9;
+            new HebrewValue(HebrewToken.Digit400, 400), // '\x05ea;
         };
 
         private const int minHebrewNumberCh = 0x05d0;
@@ -322,39 +322,39 @@ namespace System.Globalization
         {
             // 400            300/200         100             90~10           8~1      6,       7,       9,          '           "
             /* 0 */
-                             HS.S400,       HS.X00,         HS.X00,         HS.X0,          HS.X,    HS.X,    HS.X,    HS.S9,      HS._err,    HS._err,
+                             HS.S400,       HS.X00,         HS.X00,          HS.X0,          HS.X,    HS.X,    HS.X,    HS.S9,      HS._err,    HS._err,
             /* 1: S400 */
-                             HS.S400_400,   HS.S400_X00,    HS.S400_X00,    HS.S400_X0,     HS._err, HS._err, HS._err, HS.X00_S9  ,HS.END,     HS.S400_DQ,
+                             HS.S400_400,   HS.S400_X00,    HS.S400_X00,     HS.S400_X0,     HS._err, HS._err, HS._err, HS.X00_S9, HS.END,     HS.S400_DQ,
             /* 2: S400_400 */
-                             HS._err,       HS._err,        HS.S400_400_100,HS.S400_X0,     HS._err, HS._err, HS._err, HS.X00_S9  ,HS._err,    HS.S400_400_DQ,
+                             HS._err,       HS._err,        HS.S400_400_100, HS.S400_X0,     HS._err, HS._err, HS._err, HS.X00_S9, HS._err,    HS.S400_400_DQ,
             /* 3: S400_X00 */
-                             HS._err,       HS._err,        HS._err,        HS.S400_X00_X0, HS._err, HS._err, HS._err, HS.X00_S9  ,HS._err,    HS.X00_DQ,
+                             HS._err,       HS._err,        HS._err,         HS.S400_X00_X0, HS._err, HS._err, HS._err, HS.X00_S9, HS._err,    HS.X00_DQ,
             /* 4: S400_X0 */
-                             HS._err,       HS._err,        HS._err,        HS._err,        HS._err, HS._err, HS._err, HS._err,    HS._err,    HS.X0_DQ,
+                             HS._err,       HS._err,        HS._err,         HS._err,        HS._err, HS._err, HS._err, HS._err,    HS._err,    HS.X0_DQ,
             /* 5: X00_DQ */
-                             HS._err,       HS._err,        HS._err,        HS.END,         HS.END,  HS.END,  HS.END,  HS.END,     HS._err,    HS._err,
+                             HS._err,       HS._err,        HS._err,         HS.END,         HS.END,  HS.END,  HS.END,  HS.END,     HS._err,    HS._err,
             /* 6: S400_X00_X0 */
-                             HS._err,       HS._err,        HS._err,        HS._err,        HS._err, HS._err, HS._err, HS._err,    HS._err,    HS.X0_DQ,
+                             HS._err,       HS._err,        HS._err,         HS._err,        HS._err, HS._err, HS._err, HS._err,    HS._err,    HS.X0_DQ,
             /* 7: X0_DQ */
-                             HS._err,       HS._err,        HS._err,        HS._err,        HS.END,  HS.END,  HS.END,  HS.END,     HS._err,    HS._err,
+                             HS._err,       HS._err,        HS._err,         HS._err,        HS.END,  HS.END,  HS.END,  HS.END,     HS._err,    HS._err,
             /* 8: X */
-                             HS._err,       HS._err,        HS._err,        HS._err,        HS._err, HS._err, HS._err, HS._err,    HS.END,     HS._err,
+                             HS._err,       HS._err,        HS._err,         HS._err,        HS._err, HS._err, HS._err, HS._err,    HS.END,     HS._err,
             /* 9: X0 */
-                             HS._err,       HS._err,        HS._err,        HS._err,        HS._err, HS._err, HS._err, HS._err,    HS.END,     HS.X0_DQ,
+                             HS._err,       HS._err,        HS._err,         HS._err,        HS._err, HS._err, HS._err, HS._err,    HS.END,     HS.X0_DQ,
             /* 10: X00 */
-                             HS._err,       HS._err,        HS._err,        HS.S400_X0,     HS._err, HS._err, HS._err, HS.X00_S9,  HS.END,     HS.X00_DQ,
+                             HS._err,       HS._err,        HS._err,         HS.S400_X0,     HS._err, HS._err, HS._err, HS.X00_S9,  HS.END,     HS.X00_DQ,
             /* 11: S400_DQ */
-                             HS.END,        HS.END,         HS.END,         HS.END,         HS.END,  HS.END,  HS.END,  HS.END,     HS._err,    HS._err,
+                             HS.END,        HS.END,         HS.END,          HS.END,         HS.END,  HS.END,  HS.END,  HS.END,     HS._err,    HS._err,
             /* 12: S400_400_DQ*/
-                             HS._err,       HS._err,        HS.END,         HS.END,         HS.END,  HS.END,  HS.END,  HS.END,     HS._err,    HS._err,
+                             HS._err,       HS._err,        HS.END,          HS.END,         HS.END,  HS.END,  HS.END,  HS.END,     HS._err,    HS._err,
             /* 13: S400_400_100*/
-                             HS._err,       HS._err,        HS._err,        HS.S400_X00_X0, HS._err, HS._err, HS._err, HS.X00_S9,  HS._err,    HS.X00_DQ,
+                             HS._err,       HS._err,        HS._err,         HS.S400_X00_X0, HS._err, HS._err, HS._err, HS.X00_S9,  HS._err,    HS.X00_DQ,
             /* 14: S9 */
-                             HS._err,       HS._err,        HS._err,        HS._err,        HS._err, HS._err, HS._err, HS._err,    HS.END,     HS.S9_DQ,
+                             HS._err,       HS._err,        HS._err,         HS._err,        HS._err, HS._err, HS._err, HS._err,    HS.END,     HS.S9_DQ,
             /* 15: X00_S9 */
-                             HS._err,       HS._err,        HS._err,        HS._err,        HS._err, HS._err, HS._err, HS._err,    HS._err,    HS.S9_DQ,
+                             HS._err,       HS._err,        HS._err,         HS._err,        HS._err, HS._err, HS._err, HS._err,    HS._err,    HS.S9_DQ,
             /* 16: S9_DQ */
-                             HS._err,       HS._err,        HS._err,        HS._err,        HS._err, HS.END,  HS.END,  HS._err,    HS._err,    HS._err
+                             HS._err,       HS._err,        HS._err,         HS._err,        HS._err, HS.END,  HS.END,  HS._err,    HS._err,    HS._err
         };
 
         // Count of valid HebrewToken, column count in the NumberPasingState array
