@@ -601,7 +601,7 @@ namespace ABIStress
 
                 if (s_delegateTypesModule == null)
                 {
-                    AssemblyBuilder delegates = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("ABIStress_Delegates"), AssemblyBuilderAccess.Run);
+                    AssemblyBuilder delegates = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("ABIStress_Delegates"), AssemblyBuilderAccess.RunAndCollect);
                     s_delegateTypesModule = delegates.DefineDynamicModule("ABIStress_Delegates");
                 }
 
