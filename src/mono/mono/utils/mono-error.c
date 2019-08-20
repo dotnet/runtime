@@ -120,7 +120,7 @@ void
 mono_error_init_flags (MonoError *oerror, guint16 flags)
 {
 	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
-	g_assert (sizeof (MonoError) == sizeof (MonoErrorInternal));
+	g_static_assert (sizeof (MonoErrorExternal) >= sizeof (MonoErrorInternal));
 
 	error->error_code = MONO_ERROR_NONE;
 	error->flags = flags;

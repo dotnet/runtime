@@ -9,33 +9,38 @@
 #include "mono/utils/mono-compiler.h"
 
 /*Keep in sync with MonoError*/
-typedef struct {
-	// Written by JITted code
-	guint16 error_code;
-	guint16 flags;
+typedef union _MonoErrorInternal {
+	// Merge two uint16 into one uint32 so it can be initialized
+	// with one instruction instead of two.
+	guint32 init; // Written by JITted code
+	struct {
+		guint16 error_code;
+		guint16 flags;
 
-	/*These name are suggestions of their content. MonoError internals might use them for something else.*/
-	// type_name must be right after error_code and flags, see mono_error_init_deferred.
-	const char *type_name;
-	const char *assembly_name;
-	const char *member_name;
-	const char *exception_name_space;
-	const char *exception_name;
-	union {
-		/* Valid if error_code != MONO_ERROR_EXCEPTION_INSTANCE.
-		 * Used by type or field load errors and generic error specified by class.
-		 */
-		MonoClass *klass;
-		/* Valid if error_code == MONO_ERROR_EXCEPTION_INSTANCE.
-		 * Generic error specified by a managed instance.
-		 */
-		uint32_t instance_handle;
-	} exn;
-	const char *full_message;
-	const char *full_message_with_fields;
-	const char *first_argument;
+		/*These name are suggestions of their content. MonoError internals might use them for something else.*/
+		// type_name must be right after error_code and flags, see mono_error_init_deferred.
+		const char *type_name;
+		const char *assembly_name;
+		const char *member_name;
+		const char *exception_name_space;
+		const char *exception_name;
+		union {
+			/* Valid if error_code != MONO_ERROR_EXCEPTION_INSTANCE.
+			 * Used by type or field load errors and generic error specified by class.
+			 */
+			MonoClass *klass;
+			/* Valid if error_code == MONO_ERROR_EXCEPTION_INSTANCE.
+			 * Generic error specified by a managed instance.
+			 */
+			uint32_t instance_handle;
+		} exn;
+		const char *full_message;
+		const char *full_message_with_fields;
+		const char *first_argument;
 
-	void *padding [3];
+		// MonoErrorExternal:
+		//void *padding [3];
+	};
 } MonoErrorInternal;
 
 /* Invariant: the error strings are allocated in the mempool of the given image */
