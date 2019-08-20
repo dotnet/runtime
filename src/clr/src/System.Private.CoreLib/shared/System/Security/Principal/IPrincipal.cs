@@ -6,8 +6,6 @@
 // All roles will implement this interface
 //
 
-using System;
-
 namespace System.Security.Principal
 {
     public interface IPrincipal

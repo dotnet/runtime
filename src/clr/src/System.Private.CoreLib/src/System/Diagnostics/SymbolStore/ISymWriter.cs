@@ -13,7 +13,6 @@
 ===========================================================*/
 
 using System.Reflection;
-using System.Runtime.InteropServices;
 
 namespace System.Diagnostics.SymbolStore
 {

@@ -6,8 +6,6 @@
 // All identities will implement this interface
 //
 
-using System;
-
 namespace System.Security.Principal
 {
     public interface IIdentity

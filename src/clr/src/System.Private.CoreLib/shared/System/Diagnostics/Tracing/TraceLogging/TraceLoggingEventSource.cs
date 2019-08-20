@@ -15,26 +15,15 @@
 #endif
 
 #if ES_BUILD_STANDALONE
+using System;
+using System.Diagnostics;
 using Environment = Microsoft.Diagnostics.Tracing.Internal.Environment;
 using EventDescriptor = Microsoft.Diagnostics.Tracing.EventDescriptor;
 #endif
-
-using System;
-using System.Diagnostics;
-using System.Resources;
-using System.Runtime.InteropServices;
-using System.Security;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
-
-#if !ES_BUILD_AGAINST_DOTNET_V35
-using Contract = System.Diagnostics.Contracts.Contract;
-using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Text;
-#else
-using Contract = Microsoft.Diagnostics.Contracts.Internal.Contract;
-using System.Collections.Generic;
-using System.Text;
-#endif
 
 #if ES_BUILD_STANDALONE
 namespace Microsoft.Diagnostics.Tracing

@@ -2,14 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#if ES_BUILD_STANDALONE
 using System;
 using System.Diagnostics;
+#endif
 using System.Collections;
 using System.Collections.Generic;
-using System.Threading;
-#if ES_BUILD_PCL
-    using System.Threading.Tasks;
-#endif
 
 #if ES_BUILD_STANDALONE
 namespace Microsoft.Diagnostics.Tracing
@@ -44,7 +42,7 @@ namespace System.Diagnostics.Tracing
 
         public string? DisplayUnits { get; set; }
 
-        #region Implementation of the IEnumerable interface
+#region Implementation of the IEnumerable interface
 
         public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
         {
@@ -75,7 +73,7 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        #endregion // Implementation of the IEnumerable interface
+#endregion // Implementation of the IEnumerable interface
     }
 
     [EventData]
@@ -99,7 +97,7 @@ namespace System.Diagnostics.Tracing
 
         public string? DisplayUnits { get; set; }
 
-        #region Implementation of the IEnumerable interface
+#region Implementation of the IEnumerable interface
 
         public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
         {
@@ -127,6 +125,6 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        #endregion // Implementation of the IEnumerable interface
+#endregion // Implementation of the IEnumerable interface
     }
 }
