@@ -111,7 +111,7 @@ namespace System.Globalization
             m_Cal = cal;
             m_EraInfo = eraInfo;
             m_maxYear = m_EraInfo[0].maxEraYear;
-            m_minYear = m_EraInfo[0].minEraYear; ;
+            m_minYear = m_EraInfo[0].minEraYear;
         }
 
         // EraInfo.yearOffset:  The offset to Gregorian year when the era starts. Gregorian Year = Era Year + yearOffset
@@ -319,7 +319,7 @@ namespace System.Globalization
                                     0,
                                     MillisPerSecond - 1));
                 }
-                return (InternalGlobalizationHelper.TimeToTicks(hour, minute, second) + millisecond * TicksPerMillisecond); ;
+                return (InternalGlobalizationHelper.TimeToTicks(hour, minute, second) + millisecond * TicksPerMillisecond);
             }
             throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadHourMinuteSecond);
         }

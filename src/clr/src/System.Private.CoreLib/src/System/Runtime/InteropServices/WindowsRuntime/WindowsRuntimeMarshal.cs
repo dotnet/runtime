@@ -1010,7 +1010,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                     Debug.Assert(myLock != 0, "Exiting spin lock that is not held");
                     myLock = 0;
                 }
-            };
+            }
         }
 
         //

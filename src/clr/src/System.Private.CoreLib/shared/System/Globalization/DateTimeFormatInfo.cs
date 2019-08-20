@@ -2635,7 +2635,7 @@ namespace System.Globalization
             TokenHashValue previousNode = hashTable[hashcode];
 
             // Insert the new node into the current slot.
-            hashTable[hashcode] = new TokenHashValue(str, tokenType, tokenValue); ;
+            hashTable[hashcode] = new TokenHashValue(str, tokenType, tokenValue);
 
             while (++pos < TOKEN_HASH_SIZE)
             {
@@ -2656,7 +2656,7 @@ namespace System.Globalization
                     return;
                 }
                 previousNode = temp;
-            };
+            }
             Debug.Fail("The hashtable is full.  This should not happen.");
         }
 

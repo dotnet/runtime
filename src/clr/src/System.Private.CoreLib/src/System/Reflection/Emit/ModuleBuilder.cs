@@ -807,7 +807,7 @@ namespace System.Reflection.Emit
 
         private TypeBuilder DefineTypeNoLock(string name, TypeAttributes attr, Type? parent, Type[]? interfaces, PackingSize packingSize, int typesize)
         {
-            return new TypeBuilder(name, attr, parent, interfaces, this, packingSize, typesize, null); ;
+            return new TypeBuilder(name, attr, parent, interfaces, this, packingSize, typesize, null);
         }
 
         public TypeBuilder DefineType(string name, TypeAttributes attr, Type? parent, PackingSize packsize)
