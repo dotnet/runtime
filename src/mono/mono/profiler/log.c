@@ -2947,7 +2947,7 @@ signal_helper_thread (char c)
 			}
 		}
 
-		close_socket_fd (client_socket);
+		mono_profhelper_close_socket_fd (client_socket);
 	}
 #endif
 }
