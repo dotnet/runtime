@@ -1306,7 +1306,7 @@ namespace System.Globalization
             }
         }
 
-        internal bool HasSpacesInMonthNames =>(FormatFlags & DateTimeFormatFlags.UseSpacesInMonthNames) != 0;
+        internal bool HasSpacesInMonthNames => (FormatFlags & DateTimeFormatFlags.UseSpacesInMonthNames) != 0;
 
         internal bool HasSpacesInDayNames => (FormatFlags & DateTimeFormatFlags.UseSpacesInDayNames) != 0;
 
