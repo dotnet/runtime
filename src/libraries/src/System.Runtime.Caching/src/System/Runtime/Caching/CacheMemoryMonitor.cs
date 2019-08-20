@@ -235,28 +235,10 @@ namespace System.Runtime.Caching
 
         internal void SetLimit(int cacheMemoryLimitMegabytes)
         {
-            long cacheMemoryLimit = cacheMemoryLimitMegabytes;
-            cacheMemoryLimit = cacheMemoryLimit << MEGABYTE_SHIFT;
-
-            _memoryLimit = 0;
-
-            // never override what the user specifies as the limit;
-            // only call AutoPrivateBytesLimit when the user does not specify one.
-            if (cacheMemoryLimit == 0 && _memoryLimit == 0)
-            {
-                // Zero means we impose a limit
-                _memoryLimit = EffectiveProcessMemoryLimit;
-            }
-            else if (cacheMemoryLimit != 0 && _memoryLimit != 0)
-            {
-                // Take the min of "cache memory limit" and the host's "process memory limit".
-                _memoryLimit = Math.Min(_memoryLimit, cacheMemoryLimit);
-            }
-            else if (cacheMemoryLimit != 0)
-            {
-                // _memoryLimit is 0, but "cache memory limit" is non-zero, so use it as the limit
-                _memoryLimit = cacheMemoryLimit;
-            }
+            long cacheMemoryLimit = cacheMemoryLimitMegabytes << MEGABYTE_SHIFT;
+            _memoryLimit = cacheMemoryLimit != 0 ?
+                cacheMemoryLimit :
+                EffectiveProcessMemoryLimit;
 
             Dbg.Trace("MemoryCacheStats", "CacheMemoryMonitor.SetLimit: _memoryLimit=" + (_memoryLimit >> MEGABYTE_SHIFT) + "Mb");
 
