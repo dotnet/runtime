@@ -4627,6 +4627,10 @@ main_loop:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_NEWOBJ_FAST) {
+
+			MonoVTable *vtable = (MonoVTable*) imethod->data_items [*(guint16*)(ip + 3)];
+			INIT_VTABLE (vtable);
+
 			MonoObject* o = NULL; // See the comment about GC safety above.
 			guint16 param_count;
 			guint16 imethod_index = *(guint16*) (ip + 1);
@@ -4639,9 +4643,6 @@ main_loop:
 				sp -= param_count;
 				memmove (sp + 1 + is_inlined, sp, param_count * sizeof (stackval));
 			}
-
-			MonoVTable *vtable = (MonoVTable*) imethod->data_items [*(guint16*)(ip + 3)];
-			INIT_VTABLE (vtable);
 
 			frame_objref (frame) = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
 			if (G_UNLIKELY (!frame_objref (frame))) {
@@ -5097,11 +5098,11 @@ main_loop:
 
 		MINT_IN_CASE(MINT_LDSFLD_VT) {
 			MonoVTable *vtable = (MonoVTable*) imethod->data_items [*(guint16*)(ip + 1)];
-			gpointer addr = imethod->data_items [*(guint16*)(ip + 2)];
-			int const i32 = READ32 (ip + 3);
 			INIT_VTABLE (vtable);
 			sp->data.p = vt_sp;
 
+			gpointer addr = imethod->data_items [*(guint16*)(ip + 2)];
+			int const i32 = READ32 (ip + 3);
 			memcpy (vt_sp, addr, i32);
 			vt_sp += ALIGN_TO (i32, MINT_VT_ALIGNMENT);
 			ip += 5;
@@ -5170,9 +5171,9 @@ main_loop:
 
 		MINT_IN_CASE(MINT_STSFLD_VT) {
 			MonoVTable *vtable = (MonoVTable*) imethod->data_items [*(guint16*)(ip + 1)];
-			gpointer addr = imethod->data_items [*(guint16*)(ip + 2)];
-			int const i32 = READ32 (ip + 3);
 			INIT_VTABLE (vtable);
+			int const i32 = READ32 (ip + 3);
+			gpointer addr = imethod->data_items [*(guint16*)(ip + 2)];
 
 			memcpy (addr, sp [-1].data.vt, i32);
 			vt_sp -= ALIGN_TO (i32, MINT_VT_ALIGNMENT);
@@ -5433,13 +5434,12 @@ main_loop:
 		}
 		MINT_IN_CASE(MINT_LDELEMA_FAST) {
 			/* No bounds, one direction */
-			gint32 size = READ32 (ip + 1);
-			gint32 index = sp [-1].data.i;
-
 			MonoArray *ao = (MonoArray*)sp [-2].data.o;
 			NULL_CHECK (ao);
+			gint32 const index = sp [-1].data.i;
 			if (index >= ao->max_length)
 				THROW_EX (mono_get_exception_index_out_of_range (), ip);
+			gint32 const size = READ32 (ip + 1);
 			sp [-2].data.p = mono_array_addr_with_size_fast (ao, size, index);
 			ip += 3;
 			sp --;
