@@ -477,7 +477,7 @@ namespace System
                     //
                     prod1 = bufDen.Low64;
 
-                    for (;;)
+                    while (true)
                     {
                         quo--;
                         num += prod1;
@@ -593,7 +593,7 @@ PosRem:
                     uint sticky = 0;
                     uint quotient, remainder = 0;
 
-                    for (;;)
+                    while (true)
                     {
                         sticky |= remainder; // record remainder as sticky bit
 
@@ -1945,7 +1945,7 @@ ReturnZero:
                     bufQuo.U2 = d1.High;
                     uint remainder = Div96By32(ref bufQuo, den);
 
-                    for (;;)
+                    while (true)
                     {
                         if (remainder == 0)
                         {
@@ -2042,7 +2042,7 @@ ReturnZero:
                         bufQuo.U1 = Div96By64(ref *(Buf12*)&bufRem.U1, divisor);
                         bufQuo.U0 = Div96By64(ref *(Buf12*)&bufRem, divisor);
 
-                        for (;;)
+                        while (true)
                         {
                             if (bufRem.Low64 == 0)
                             {
@@ -2106,7 +2106,7 @@ ReturnZero:
                         bufQuo.Low64 = Div128By96(ref bufRem, ref bufDivisor);
                         bufQuo.U2 = 0;
 
-                        for (;;)
+                        while (true)
                         {
                             if ((bufRem.Low64 | bufRem.U2) == 0)
                             {
