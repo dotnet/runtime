@@ -1729,6 +1729,10 @@ namespace System.Text.Json.Tests
         }
 
         [Theory]
+        [InlineData("{]")]
+        [InlineData("[}")]
+        [InlineData("{// comment\n]")]
+        [InlineData("[// comment\n}")]
         [InlineData("{,}")]
         [InlineData("[,]")]
         [InlineData("{// comment\n,}")]
