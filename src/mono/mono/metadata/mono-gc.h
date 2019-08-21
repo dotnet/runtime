@@ -119,6 +119,12 @@ MONO_API int    mono_gc_invoke_finalizers (void);
 /* heap walking is only valid in the pre-stop-world event callback */
 MONO_API int    mono_gc_walk_heap        (int flags, MonoGCReferences callback, void *data);
 
+/*
+ * Only supported under SGen.   These two with Sgen will take and release the LOCK_GC
+ */
+void mono_gc_stop_world (void);
+void mono_gc_restart_world (void);
+	
 MONO_END_DECLS
 
 #endif /* __METADATA_MONO_GC_H__ */
