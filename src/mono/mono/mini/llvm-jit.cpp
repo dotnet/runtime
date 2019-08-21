@@ -281,37 +281,17 @@ public:
 		// Initialize passes (copied from https://github.com/mono/llvm/blob/release_60/tools/opt/opt.cpp#L379)
 		PassRegistry &registry = *PassRegistry::getPassRegistry();
 		initializeCore(registry);
-		//initializeCoroutines(registry);
 		initializeScalarOpts(registry);
-		//initializeObjCARCOpts(registry);
-		//initializeVectorization(registry);
-		//initializeIPO(registry);
-		initializeAnalysis(registry);
-		initializeTransformUtils(registry);
 		initializeInstCombine(registry);
-		//initializeInstrumentation(registry);
 		initializeTarget(registry);
-		//initializeExpandMemCmpPassPass(registry);
-		//initializeScalarizeMaskedMemIntrinPass(registry);
-		//initializeCodeGenPreparePass(registry);
-		//initializeAtomicExpandPass(registry);
-		//initializeRewriteSymbolsLegacyPassPass(registry);
-		//initializeWinEHPreparePass(registry);
-		//initializeDwarfEHPreparePass(registry);
-		//initializeSafeStackLegacyPassPass(registry);
-		//initializeSjLjEHPreparePass(registry);
-		//initializePreISelIntrinsicLoweringLegacyPassPass(registry);
-		//initializeGlobalMergePass(registry);
-		//initializeIndirectBrExpandPassPass(registry);
-		//initializeInterleavedAccessPass(registry);
-		//initializeEntryExitInstrumenterPass(registry);
-		//initializePostInlineEntryExitInstrumenterPass(registry);
-		//initializeUnreachableBlockElimLegacyPassPass(registry);
-		//initializeExpandReductionsPass(registry);
-		//initializeWriteBitcodePassPass(registry);
 
-		// FIXME: find optimal mono specific order of passes, see https://llvm.org/docs/Frontend/PerformanceTips.html#pass-ordering
-		const char *opts = "opt -simplifycfg -sroa -instcombine -early-cse-memssa -instcombine -gvn";
+		char *opts = g_getenv ("MONO_LLVM_OPT");
+		if (opts == NULL) {
+			// FIXME: find optimal mono specific order of passes
+			// see https://llvm.org/docs/Frontend/PerformanceTips.html#pass-ordering
+			opts = " -simplifycfg -sroa -instcombine -gvn";
+		}
+
 		char **args = g_strsplit (opts, " ", -1);
 		llvm::cl::ParseCommandLineOptions (g_strv_length (args), args, "");
 
@@ -320,7 +300,7 @@ public:
 			if (pass->getPassKind () == llvm::PT_Function || pass->getPassKind () == llvm::PT_Loop) {
 				fpm.add (pass);
 			} else {
-				printf("Opt pass is not supported: %s\n", args[i + 1]);
+				printf("Opt pass is ignored: %s\n", args[i + 1]);
 			}
 		}
 		g_strfreev (args);
