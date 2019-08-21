@@ -217,7 +217,7 @@ namespace System.Globalization
                 throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
             }
 
-            byte [] keyData;
+            byte[] keyData;
             if (source.Length == 0)
             {
                 keyData = Array.Empty<byte>();
@@ -231,7 +231,7 @@ namespace System.Globalization
                 {
                     if ((options & (CompareOptions.IgnoreCase | CompareOptions.OrdinalIgnoreCase)) != 0)
                     {
-                        short *pShort = (short *)pByte;
+                        short* pShort = (short*)pByte;
                         for (int i = 0; i < source.Length; i++)
                         {
                             pShort[i] = (short)InvariantToUpper(source[i]);

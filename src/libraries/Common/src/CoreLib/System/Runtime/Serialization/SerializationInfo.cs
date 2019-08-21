@@ -144,7 +144,7 @@ namespace System.Runtime.Serialization
 #else
                 DeserializationTracker tracker = GetThreadDeserializationTracker();
 #endif
-                if  (!tracker.DeserializationInProgress)
+                if (!tracker.DeserializationInProgress)
                 {
                     lock (tracker)
                     {

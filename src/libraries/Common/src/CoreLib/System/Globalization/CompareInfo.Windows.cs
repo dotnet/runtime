@@ -490,7 +490,7 @@ namespace System.Globalization
                 throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
             }
 
-            byte [] keyData;
+            byte[] keyData;
             if (source.Length == 0)
             {
                 keyData = Array.Empty<byte>();
@@ -499,7 +499,7 @@ namespace System.Globalization
             {
                 uint flags = LCMAP_SORTKEY | (uint)GetNativeCompareFlags(options);
 
-                fixed (char *pSource = source)
+                fixed (char* pSource = source)
                 {
                     int sortKeyLength = Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
                                                 flags,
@@ -513,7 +513,7 @@ namespace System.Globalization
 
                     keyData = new byte[sortKeyLength];
 
-                    fixed (byte* pBytes =  keyData)
+                    fixed (byte* pBytes = keyData)
                     {
                         if (Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
                                                 flags,

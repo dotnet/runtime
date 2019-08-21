@@ -193,7 +193,7 @@ namespace System.IO
 
                         i += 2;
                         continue;
-                   }
+                    }
                 }
 
                 // Normalize the directory separator if needed

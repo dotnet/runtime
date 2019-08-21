@@ -140,7 +140,7 @@ namespace System.Globalization
                 return true;
             }
 
-            char *pChar = &ch;
+            char* pChar = &ch;
             return IsSortable(pChar, 1);
         }
 
@@ -161,7 +161,7 @@ namespace System.Globalization
                 return true;
             }
 
-            fixed (char *pChar = text)
+            fixed (char* pChar = text)
             {
                 return IsSortable(pChar, text.Length);
             }
@@ -1448,9 +1448,9 @@ namespace System.Globalization
                     {
                         m_SortVersion = new SortVersion(0, CultureInfo.LOCALE_INVARIANT, new Guid(0, 0, 0, 0, 0, 0, 0,
                                                                         (byte)(CultureInfo.LOCALE_INVARIANT >> 24),
-                                                                        (byte)((CultureInfo.LOCALE_INVARIANT  & 0x00FF0000) >> 16),
-                                                                        (byte)((CultureInfo.LOCALE_INVARIANT  & 0x0000FF00) >> 8),
-                                                                        (byte)(CultureInfo.LOCALE_INVARIANT  & 0xFF)));
+                                                                        (byte)((CultureInfo.LOCALE_INVARIANT & 0x00FF0000) >> 16),
+                                                                        (byte)((CultureInfo.LOCALE_INVARIANT & 0x0000FF00) >> 8),
+                                                                        (byte)(CultureInfo.LOCALE_INVARIANT & 0xFF)));
                     }
                     else
                     {
