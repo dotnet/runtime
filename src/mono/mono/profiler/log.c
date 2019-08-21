@@ -46,6 +46,7 @@
 #include <mono/utils/mono-threads-api.h>
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-error-internals.h>
+#include <mono/utils/mono-publib.h>
 #include <mono/utils/os-event.h>
 #include "log.h"
 #include "helper.h"
@@ -2946,7 +2947,7 @@ signal_helper_thread (char c)
 			}
 		}
 
-		close_socket_fd (client_socket);
+		mono_profhelper_close_socket_fd (client_socket);
 	}
 #endif
 }
@@ -3217,14 +3218,14 @@ helper_thread (void *arg)
 
 		FD_ZERO (&rfds);
 
-		add_to_fd_set (&rfds, log_profiler.server_socket, &max_fd);
+		mono_profhelper_add_to_fd_set (&rfds, log_profiler.server_socket, &max_fd);
 
 #ifdef HAVE_COMMAND_PIPES
-		add_to_fd_set (&rfds, log_profiler.pipes [0], &max_fd);
+		mono_profhelper_add_to_fd_set (&rfds, log_profiler.pipes [0], &max_fd);
 #endif
 
 		for (gint i = 0; i < command_sockets->len; i++)
-			add_to_fd_set (&rfds, g_array_index (command_sockets, int, i), &max_fd);
+			mono_profhelper_add_to_fd_set (&rfds, g_array_index (command_sockets, int, i), &max_fd);
 
 		struct timeval tv = { .tv_sec = 1, .tv_usec = 0 };
 
@@ -3284,7 +3285,7 @@ helper_thread (void *arg)
 			if (!len) {
 				// The other end disconnected.
 				g_array_remove_index (command_sockets, i);
-				close_socket_fd (fd);
+				mono_profhelper_close_socket_fd (fd);
 
 				continue;
 			}
@@ -3300,7 +3301,7 @@ helper_thread (void *arg)
 
 			if (fd != -1) {
 				if (fd >= FD_SETSIZE)
-					close_socket_fd (fd);
+					mono_profhelper_close_socket_fd (fd);
 				else
 					g_array_append_val (command_sockets, fd);
 			}
@@ -3310,7 +3311,7 @@ helper_thread (void *arg)
 	}
 
 	for (gint i = 0; i < command_sockets->len; i++)
-		close_socket_fd (g_array_index (command_sockets, int, i));
+		mono_profhelper_close_socket_fd (g_array_index (command_sockets, int, i));
 
 	g_array_free (command_sockets, TRUE);
 
@@ -3329,11 +3330,11 @@ start_helper_thread (void)
 	}
 #endif
 
-	setup_command_server (&log_profiler.server_socket, &log_profiler.command_port, "log");
+	mono_profhelper_setup_command_server (&log_profiler.server_socket, &log_profiler.command_port, "log");
 
 	if (!mono_native_thread_create (&log_profiler.helper_thread, helper_thread, NULL)) {
 		mono_profiler_printf_err ("Could not start log profiler helper thread");
-		close_socket_fd (log_profiler.server_socket);
+		mono_profhelper_close_socket_fd (log_profiler.server_socket);
 		exit (1);
 	}
 }

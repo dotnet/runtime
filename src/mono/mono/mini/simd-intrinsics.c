@@ -13,9 +13,10 @@
 
 #include "mini.h"
 #include "ir-emit.h"
-#include "mono/utils/bsearch.h"
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/reflection-internals.h>
+#include <mono/utils/mono-compiler.h>
+#include <mono/utils/bsearch.h>
 
 /*
 General notes on SIMD intrinsics
@@ -63,7 +64,7 @@ The advantage of this change is that it could have a _membase version and promot
 without a OP_LDADDR.
 */
 
-#if defined (MONO_ARCH_SIMD_INTRINSICS)
+#if defined (MONO_ARCH_SIMD_INTRINSICS) && !defined(ENABLE_NETCORE)
 
 #if defined (DISABLE_JIT)
 

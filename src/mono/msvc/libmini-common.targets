@@ -43,10 +43,12 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\branch-opts.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-generic-sharing.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\mini\simd-methods.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\simd-methods-netcore.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\tasklets.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\mini\tasklets.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-native-types.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\simd-intrinsics.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\simd-intrinsics-netcore.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\mini\mini-unwind.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\unwind.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\mini\image-writer.h" />

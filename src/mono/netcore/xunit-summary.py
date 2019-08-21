@@ -49,7 +49,7 @@ for t in tests:
 print("=" * 105)
 
 print("")
-print("Total test suits:     %d" % len(tests))
+print("Total test suites:    %d" % len(tests))
 print("Total tests run:      %d" % sum(x.total for x in tests))
 print("Total tests passed:   %d" % sum(x.passed for x in tests))
 print("Total tests failed:   %d" % sum(x.failed for x in tests))

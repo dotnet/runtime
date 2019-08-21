@@ -135,43 +135,6 @@ namespace System.Runtime.Loader
 			return ResolveSatelliteAssembly (gchALC, new AssemblyName (assemblyName));
 		}
 
-#region Copied from AssemblyLoadContext.CoreCLR.cs
-		// This method is called by the VM. TODO: wire up to Mono
-		private static RuntimeAssembly? OnResourceResolve(RuntimeAssembly assembly, string resourceName)
-		{
-			return InvokeResolveEvent(ResourceResolve, assembly, resourceName);
-		}
-
-		// This method is called by the VM. TODO: wire up to Mono
-		private static RuntimeAssembly? OnTypeResolve(RuntimeAssembly assembly, string typeName)
-		{
-			return InvokeResolveEvent(TypeResolve, assembly, typeName);
-		}
-
-		// This method is called by the VM.
-		private static RuntimeAssembly? OnAssemblyResolve(RuntimeAssembly assembly, string assemblyFullName)
-		{
-			return InvokeResolveEvent(AssemblyResolve, assembly, assemblyFullName);
-		}
-
-		private static RuntimeAssembly? InvokeResolveEvent(ResolveEventHandler? eventHandler, RuntimeAssembly assembly, string name)
-		{
-			if (eventHandler == null)
-				return null;
-
-			var args = new ResolveEventArgs(name, assembly);
-
-			foreach (ResolveEventHandler handler in eventHandler.GetInvocationList())
-			{
-				Assembly? asm = handler(AppDomain.CurrentDomain, args);
-				RuntimeAssembly? ret = GetRuntimeAssembly(asm);
-				if (ret != null)
-					return ret;
-			}
-
-			return null;
-		}
-#endregion
 #region Copied from AssemblyLoadContext.CoreCLR.cs, modified until our AssemblyBuilder implementation is functional
 		private static RuntimeAssembly? GetRuntimeAssembly(Assembly? asm)
 		{

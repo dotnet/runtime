@@ -30,7 +30,7 @@
 #include "helper.h"
 
 void
-close_socket_fd (int fd)
+mono_profhelper_close_socket_fd (int fd)
 {
 #ifdef HOST_WIN32
 	closesocket (fd);
@@ -40,7 +40,7 @@ close_socket_fd (int fd)
 }
 
 void
-setup_command_server (int *server_socket, int *command_port, const char* profiler_name)
+mono_profhelper_setup_command_server (int *server_socket, int *command_port, const char* profiler_name)
 {
 	*server_socket = socket (PF_INET, SOCK_STREAM, 0);
 
@@ -58,13 +58,13 @@ setup_command_server (int *server_socket, int *command_port, const char* profile
 
 	if (bind (*server_socket, (struct sockaddr *) &server_address, sizeof (server_address)) == -1) {
 		mono_profiler_printf_err ("Could not bind %s profiler server socket on port %d: %s", profiler_name, *command_port, g_strerror (errno));
-		close_socket_fd (*server_socket);
+		mono_profhelper_close_socket_fd (*server_socket);
 		exit (1);
 	}
 
 	if (listen (*server_socket, 1) == -1) {
 		mono_profiler_printf_err ("Could not listen on %s profiler server socket: %s", profiler_name, g_strerror (errno));
-		close_socket_fd (*server_socket);
+		mono_profhelper_close_socket_fd (*server_socket);
 		exit (1);
 	}
 
@@ -72,7 +72,7 @@ setup_command_server (int *server_socket, int *command_port, const char* profile
 
 	if (getsockname (*server_socket, (struct sockaddr *) &server_address, &slen)) {
 		mono_profiler_printf_err ("Could not retrieve assigned port for %s profiler server socket: %s", profiler_name, g_strerror (errno));
-		close_socket_fd (*server_socket);
+		mono_profhelper_close_socket_fd (*server_socket);
 		exit (1);
 	}
 
@@ -80,7 +80,7 @@ setup_command_server (int *server_socket, int *command_port, const char* profile
 }
 
 void
-add_to_fd_set (fd_set *set, int fd, int *max_fd)
+mono_profhelper_add_to_fd_set (fd_set *set, int fd, int *max_fd)
 {
 	/*
 	 * This should only trigger for the basic FDs (server socket, pipes) at

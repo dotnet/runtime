@@ -183,14 +183,27 @@ corefx/.stamp-dl-corefx-tests-$(NETCORETESTS_VERSION):
 #
 
 run-tests-corefx: update-tests-corefx
+	@rm -f .failures; \
+	counter=0; \
+	tests_count=$(words $(dir $(wildcard corefx/tests/extracted/*/))); \
 	for testdir in corefx/tests/extracted/*; do \
-		$(MAKE) run-tests-corefx-$$(basename $${testdir}) || true; \
+		counter=$$((counter+1)); \
+		testname=$$(basename $$testdir); \
+		if [ -n "$$USE_TIMEOUT" ]; then timeoutcmd="../scripts/ci/run-step.sh --label=$$testname --timeout=10m --fatal"; fi; \
+		$$timeoutcmd $(MAKE) run-tests-corefx-$$testname TEST_COUNTER="($$counter / $$tests_count) " || echo $$testname >> .failures; \
 	done; \
-	$(MAKE) xunit-summary
+	$(MAKE) xunit-summary; \
+	if [ -e ".failures" ]; then \
+		echo ""; \
+		echo "Failures in test suites:"; \
+		cat .failures; \
+		echo ""; \
+ 		exit 1; \
+	fi
 
 run-tests-corefx-%: prepare update-tests-corefx
 	@echo ""
-	@echo "***************** $* *********************"
+	@echo "***************** $* $${TEST_COUNTER}*********************"
 	@cp corefx/restore/corefx-restore.deps.json corefx/tests/extracted/$*/xunit.console.deps.json
 	@cp corefx/restore/corefx-restore.deps.json corefx/tests/extracted/$*/Microsoft.DotNet.RemoteExecutorHost.deps.json
 	@cp corefx/restore/corefx-restore.runtimeconfig.dev.json corefx/tests/extracted/$*/$*.runtimeconfig.dev.json
