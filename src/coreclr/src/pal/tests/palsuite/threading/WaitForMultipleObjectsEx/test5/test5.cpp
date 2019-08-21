@@ -479,7 +479,7 @@ int __cdecl main(int argc, char *argv[])
             MaxNumHelperProcess = MAX_HELPER_PROCESS;
             break;
         case 2:
-            MaxNumHelperProcess = atol(argv[1]);
+            MaxNumHelperProcess = atoi(argv[1]);
             break;
         default:
             Fail("Invalid number of arguments\n");

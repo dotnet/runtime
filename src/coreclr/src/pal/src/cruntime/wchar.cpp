@@ -245,128 +245,6 @@ _wcslwr(
 
 /*++
 Function:
-  PAL_wcstol
-
-Convert string to a long-integer value.
-
-Return Value
-
-wcstol returns the value represented in the string nptr, except when
-the representation would cause an overflow, in which case it returns
-LONG_MAX or LONG_MIN. strtol returns 0 if no conversion can be
-performed. errno is set to ERANGE if overflow or underflow occurs.
-
-Parameters
-
-nptr    Null-terminated string to convert 
-endptr  Pointer to character that stops scan
-base    Number base to use
-
-Remarks
-
-The wcstol function converts nptr to a long. It stops reading the
-string nptr at the first character it cannot recognize as part of a
-number. This may be the terminating null character, or it may be the
-first numeric character greater than or equal to base.
-
-Notes :
-    MSDN states that only space and tab are accepted as leading whitespace, but
-    tests indicate that other whitespace characters (newline, carriage return,
-    etc) are also accepted. This matches the behavior on Unix systems.
-
-    For wcstol and wcstoul, we need to check if the value to be returned 
-    is outside the 32 bit range. If so, the returned value needs to be set  
-    as appropriate, according to the MSDN pages for wcstol and wcstoul,
-    and in all instances errno must be set to ERANGE (The one exception
-    is converting a string representing a negative value to unsigned long).
-    Note that on 64 bit Windows, long's are still 32 bit. Thus, to match
-    Windows behavior, we must return long's in the 32 bit range.  
---*/
-
-/* The use of LONG is by design, to ensure that a 32 bit value is always 
-returned from this function. If "long" is used instead of LONG, then a 64 bit 
-value could be returned on 64 bit platforms like HP-UX, thus breaking 
-Windows behavior. */
-LONG
-__cdecl
-PAL_wcstol(
-        const wchar_16 *nptr,
-        wchar_16 **endptr,
-        int base)
-{
-    char *s_nptr = 0;
-    char *s_endptr = 0;
-    long res;
-    int size;
-    DWORD dwLastError = 0;
-
-    PERF_ENTRY(wcstol);
-    ENTRY("wcstol (nptr=%p (%S), endptr=%p, base=%d)\n", nptr?nptr:W16_NULLSTRING, nptr?nptr:W16_NULLSTRING,
-          endptr, base);
-
-    size = WideCharToMultiByte(CP_ACP, 0, nptr, -1, NULL, 0, NULL, NULL);
-    if (!size)
-    {
-        dwLastError = GetLastError();
-        ASSERT("WideCharToMultiByte failed.  Error is %d\n", dwLastError);
-        SetLastError(ERROR_INVALID_PARAMETER);
-        res = 0;
-        goto PAL_wcstolExit;
-    }
-    s_nptr = (char *)PAL_malloc(size);
-    if (!s_nptr)
-    {
-        ERROR("PAL_malloc failed\n");
-        SetLastError(ERROR_NOT_ENOUGH_MEMORY);
-        res = 0;
-        goto PAL_wcstolExit;
-    }
-    size = WideCharToMultiByte(CP_ACP, 0, nptr, -1, s_nptr, size, NULL, NULL);
-    if( size==0 )
-    {
-        dwLastError = GetLastError();
-        ASSERT("WideCharToMultiByte failed.  Error is %d\n", dwLastError);
-        SetLastError(ERROR_INVALID_PARAMETER);
-        res = 0;
-        goto PAL_wcstolExit;
-    }
-
-    res = strtol(s_nptr, &s_endptr, base);
-
-#ifdef BIT64
-    if (res > _I32_MAX)
-    {
-        res = _I32_MAX;
-        errno = ERANGE;
-    }
-    else if (res < _I32_MIN)
-    {
-        res = _I32_MIN;
-        errno = ERANGE;
-    }
-#endif
-
-    /* only ASCII characters will be accepted by strtol, and those always get
-       mapped to single-byte characters, so the first rejected character will
-       have the same index in the multibyte and widechar strings */
-    if( endptr )
-    {
-        size = s_endptr - s_nptr;
-        *endptr = (wchar_16 *)&nptr[size];
-    }
-
-PAL_wcstolExit:
-    PAL_free(s_nptr);
-    LOGEXIT("wcstol returning long %ld\n", res);
-    PERF_EXIT(wcstol);
-    /* This explicit cast to LONG is used to silence any potential warnings
-    due to implicitly casting the native long res to LONG when returning. */
-    return (LONG)res;
-}
-
-
-/*++
-Function:
   PAL_wcstoul
 
 Convert string to an unsigned long-integer value.
@@ -566,6 +444,8 @@ PAL__wcstoui64Exit:
 
     return res;
 }
+
+WCHAR * __cdecl PAL_wcsncat(WCHAR *, const WCHAR *, size_t);
 
 /*++
 Function:
@@ -812,21 +692,6 @@ PAL_wcsrchr(
     LOGEXIT("wcsrchr returning wchar_t %p (%S)\n", last?last:W16_NULLSTRING, last?last:W16_NULLSTRING);
     PERF_EXIT(wcsrchr);
     return (wchar_16 *)last;
-}
-
-
-/*++
-Function:
-  PAL_wcsspn
-
-See MSDN or man page for wcspbrk.
---*/
-size_t
-__cdecl
-PAL_wcsspn (const wchar_16 *string, const wchar_16 *stringCharSet)
-{
-    ASSERT(0);
-    return 0;
 }
 
 

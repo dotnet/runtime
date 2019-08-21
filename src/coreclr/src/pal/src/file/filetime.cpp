@@ -246,57 +246,6 @@ FILETIME FILEUnixTimeToFileTime( time_t sec, long nsec )
 }
 
 
-/*++
-Function:
-  FILEFileTimeToUnixTime
-
-See FILEUnixTimeToFileTime above.
-
-This function takes a win32 FILETIME structures, returns the equivalent
-time_t value, and, if the nsec parameter is non-null, also returns the
-nanoseconds.
-
-NOTE: a 32-bit time_t is only capable of representing dates between
-13 December 1901 and 19 January 2038. This function will calculate the
-number of seconds (positive or negative) since the Unix epoch, however if
-this value is outside of the range of 32-bit numbers, the result will be
-truncated on systems with a 32-bit time_t.
---*/
-time_t FILEFileTimeToUnixTime( FILETIME FileTime, long *nsec )
-{
-    __int64 UnixTime;
-
-    /* get the full win32 value, in 100ns */
-    UnixTime = ((__int64)FileTime.dwHighDateTime << 32) + 
-        FileTime.dwLowDateTime;
-
-    /* convert to the Unix epoch */
-    UnixTime -= (SECS_BETWEEN_1601_AND_1970_EPOCHS * SECS_TO_100NS);
-
-    TRACE("nsec=%p\n", nsec);
-
-    if ( nsec )
-    {
-        /* get the number of 100ns, convert to ns */
-        *nsec = (UnixTime % SECS_TO_100NS) * 100;
-    }
-
-    UnixTime /= SECS_TO_100NS; /* now convert to seconds */
-
-    if ( (time_t)UnixTime != UnixTime )
-    {
-        WARN("Resulting value is too big for a time_t value\n");
-    }
-
-    TRACE("Win32 FILETIME = [%#x:%#x] converts to Unix time = [%ld.%09ld]\n", 
-          FileTime.dwHighDateTime, FileTime.dwLowDateTime ,(long) UnixTime,
-          nsec?*nsec:0L);
-
-    return (time_t)UnixTime;
-}
-
-
-
 /**
 Function 
 

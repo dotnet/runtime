@@ -136,15 +136,6 @@ namespace CorUnix
         );
 
     /*++
-    InternalMkstemp
-    Wraps mkstemp
-    --*/
-    int 
-    InternalMkstemp(
-        char *szNameTemplate
-        );
-
-    /*++
     InternalFgets
     Wraps fgets
     --*/
@@ -223,33 +214,6 @@ FILEDosToUnixPathA(LPSTR lpPath);
 
 /*++
 Function:
-  FileDosToUnixPathW
-
-Abstract:
-  Change a DOS path to a Unix path. Replace '\' by '/'.
-
-Parameter:
-  IN/OUT lpPath: path to be modified
-  --*/
-void
-FILEDosToUnixPathW(LPWSTR lpPath);
-
-/*++
-Function:
-  FileUnixToDosPathA
-
-Abstract:
-  Change a Unix path to a DOS path. Replace '/' by '\'.
-
-Parameter:
-  IN/OUT lpPath: path to be modified
---*/
-void 
-FILEUnixToDosPathA(LPSTR lpPath);
-
-
-/*++
-Function:
   FILEGetDirectoryFromFullPathA
 
 Parse the given path. If it contains a directory part and a file part,
@@ -261,14 +225,6 @@ there is no directory part in the path, return 0.
 DWORD FILEGetDirectoryFromFullPathA( LPCSTR lpFullPath,
                      DWORD  nBufferLength,
                      LPSTR  lpBuffer );
-
-/*++
-Function:
-  FILEGetFileNameFromFullPath
-
-Given a full path, return a pointer to the first char of the filename part.
---*/
-LPCSTR FILEGetFileNameFromFullPathA( LPCSTR lpFullPath );
 
 /*++
 Function:

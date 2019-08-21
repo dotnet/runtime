@@ -200,68 +200,6 @@ LEADINGWHITE:
 }
 
 
-// Function to parse apart a command line and return the 
-// arguments just like argv and argc
-// This function is a little funky because of the pointer work
-// but it is neat because it allows the recipient of the char**
-// to only have to do a single delete []
-LPWSTR* CommandLineToArgvW(__in LPWSTR lpCmdLine, DWORD *pNumArgs)
-{
-
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        INJECT_FAULT(return NULL;); 
-    }
-    CONTRACTL_END
-
-    DWORD argcount = 0;
-    LPWSTR retval = NULL;
-    LPWSTR *pslot;
-    // First we need to find out how many strings there are in the command line
-    _ASSERTE(lpCmdLine);
-    _ASSERTE(pNumArgs);
-
-    LPWSTR pdst = NULL;
-    argcount = ParseCommandLine(lpCmdLine, &pdst);
-
-    // This check is because on WinCE the Application Name is not passed in as an argument to the app!
-    if (argcount == 0)
-    {
-        *pNumArgs = 0;
-        return NULL;
-    }
-
-    // Now we need alloc a buffer the size of the command line + the number of strings * DWORD
-    retval = new (nothrow) WCHAR[(argcount*sizeof(WCHAR*))/sizeof(WCHAR) + (pdst - (LPWSTR)NULL)];
-    if(!retval)
-        return NULL;
-
-    pdst = (LPWSTR)( argcount*sizeof(LPWSTR*) + (BYTE*)retval );
-    ParseCommandLine(lpCmdLine, &pdst);
-    pdst = (LPWSTR)( argcount*sizeof(LPWSTR*) + (BYTE*)retval );
-    pslot = (LPWSTR*)retval;
-    for (DWORD i = 0; i < argcount; i++)
-    {
-        *(pslot++) = pdst;
-        while (*pdst != W('\0'))
-        {
-            pdst++;
-        }
-        pdst++;
-    }
-
-    
-
-    *pNumArgs = argcount;
-    return (LPWSTR*)retval;
-
-}
-
-
-
-
 //************************************************************************
 // CQuickHeap
 //
