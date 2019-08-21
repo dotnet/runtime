@@ -245,7 +245,7 @@ namespace System.Collections.ObjectModel
             {
                 ThrowHelper.IfNullAndNullsAreIllegalThenThrow<T>(value, ExceptionArgument.value);
 
-                T item = default(T)!;
+                T item = default!;
 
                 try
                 {
@@ -286,7 +286,7 @@ namespace System.Collections.ObjectModel
             }
             ThrowHelper.IfNullAndNullsAreIllegalThenThrow<T>(value, ExceptionArgument.value);
 
-            T item = default(T)!;
+            T item = default!;
 
             try
             {
@@ -328,7 +328,7 @@ namespace System.Collections.ObjectModel
             }
             ThrowHelper.IfNullAndNullsAreIllegalThenThrow<T>(value, ExceptionArgument.value);
 
-            T item = default(T)!;
+            T item = default!;
 
             try
             {
