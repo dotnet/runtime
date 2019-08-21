@@ -2502,7 +2502,7 @@ mono_gc_get_los_limit (void)
 void
 sgen_set_total_bytes_allocated(guint64 bytes)
 {
-	total_bytes_allocated += total_bytes_allocated;
+	total_bytes_allocated = bytes;
 }
 
 guint64
