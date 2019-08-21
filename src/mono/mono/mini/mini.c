@@ -3363,7 +3363,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 		for (i = 0; verbose_method_names [i] != NULL; i++){
 			const char *name = verbose_method_names [i];
 
-			if ((strchr (name, '.') > name) || strchr (name, ':')) {
+			if (name && *name == '*') {
+				cfg->verbose_level = 4;
+			} if ((strchr (name, '.') > name) || strchr (name, ':')) {
 				MonoMethodDesc *desc;
 				
 				desc = mono_method_desc_new (name, TRUE);
@@ -3863,7 +3865,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 
 	if (cfg->verbose_level >= 2) {
 		char *id =  mono_method_full_name (cfg->method, FALSE);
+		g_print ("\n*** ASM for %s ***\n", id);
 		mono_disassemble_code (cfg, cfg->native_code, cfg->code_len, id + 3);
+		g_print ("***\n\n", id);
 		g_free (id);
 	}
 
