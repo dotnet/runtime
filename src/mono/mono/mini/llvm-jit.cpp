@@ -385,11 +385,7 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
 	EnableMonoEH = true;
 	MonoEHFrameSymbol = "mono_eh_frame";
 
-	EngineBuilder EB;
 	TargetOptions opts;
-	EB.setOptLevel(CodeGenOpt::Aggressive);
-	EB.setMCPU(sys::getHostCPUName());
-
 	if (mono_use_fast_math) {
 		opts.NoInfsFPMath = true;
 		opts.NoNaNsFPMath = true;
@@ -399,6 +395,9 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
 		opts.AllowFPOpFusion = FPOpFusion::Fast;
 	}
 
+	EngineBuilder EB;
+	EB.setOptLevel(CodeGenOpt::Aggressive);
+	EB.setMCPU(sys::getHostCPUName());
 	EB.setTargetOptions (opts);
 	auto TM = EB.selectTarget ();
 	assert (TM);
