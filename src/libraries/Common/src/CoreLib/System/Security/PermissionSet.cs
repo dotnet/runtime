@@ -18,7 +18,7 @@ namespace System.Security
         public virtual bool IsSynchronized => false;
         public virtual object SyncRoot => this;
         public IPermission? AddPermission(IPermission? perm) { return AddPermissionImpl(perm); }
-        protected virtual IPermission? AddPermissionImpl(IPermission? perm) { return default(IPermission); }
+        protected virtual IPermission? AddPermissionImpl(IPermission? perm) { return default; }
         public void Assert() { }
         public bool ContainsNonCodeAccessPermissions() { return false; }
         [Obsolete]
@@ -34,20 +34,20 @@ namespace System.Security
         protected virtual IEnumerator GetEnumeratorImpl() { return Array.Empty<object>().GetEnumerator(); }
         public override int GetHashCode() => base.GetHashCode();
         public IPermission? GetPermission(Type? permClass) { return GetPermissionImpl(permClass); }
-        protected virtual IPermission? GetPermissionImpl(Type? permClass) { return default(IPermission); }
-        public PermissionSet? Intersect(PermissionSet? other) { return default(PermissionSet); }
+        protected virtual IPermission? GetPermissionImpl(Type? permClass) { return default; }
+        public PermissionSet? Intersect(PermissionSet? other) { return default; }
         public bool IsEmpty() { return false; }
         public bool IsSubsetOf(PermissionSet? target) { return false; }
         public bool IsUnrestricted() { return false; }
         public void PermitOnly() { throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); }
         public IPermission? RemovePermission(Type? permClass) { return RemovePermissionImpl(permClass); }
-        protected virtual IPermission? RemovePermissionImpl(Type? permClass) { return default(IPermission); }
+        protected virtual IPermission? RemovePermissionImpl(Type? permClass) { return default; }
         public static void RevertAssert() { }
         public IPermission? SetPermission(IPermission? perm) { return SetPermissionImpl(perm); }
-        protected virtual IPermission? SetPermissionImpl(IPermission? perm) { return default(IPermission); }
+        protected virtual IPermission? SetPermissionImpl(IPermission? perm) { return default; }
         void IDeserializationCallback.OnDeserialization(object? sender) { }
         public override string ToString() => base.ToString()!;
-        public virtual SecurityElement? ToXml() { return default(SecurityElement); }
-        public PermissionSet? Union(PermissionSet? other) { return default(PermissionSet); }
+        public virtual SecurityElement? ToXml() { return default; }
+        public PermissionSet? Union(PermissionSet? other) { return default; }
     }
 }
