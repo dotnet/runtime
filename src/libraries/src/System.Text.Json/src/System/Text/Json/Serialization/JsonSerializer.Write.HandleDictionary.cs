@@ -26,8 +26,9 @@ namespace System.Text.Json
                 if (enumerable == null)
                 {
                     // If applicable, we only want to ignore object properties.
-                    if (state.Current.JsonClassInfo.ClassType != ClassType.Object ||
-                        !state.Current.JsonPropertyInfo.IgnoreNullValues)
+                    if (state.Current.ExtensionDataStatus != ExtensionDataWriteStatus.Writing &&
+                        (state.Current.JsonClassInfo.ClassType != ClassType.Object ||
+                        !state.Current.JsonPropertyInfo.IgnoreNullValues))
                     {
                         // Write a null object or enumerable.
                         state.Current.WriteObjectOrArrayStart(ClassType.Dictionary, writer, writeNull: true);
