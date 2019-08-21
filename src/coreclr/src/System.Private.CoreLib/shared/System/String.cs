@@ -199,7 +199,7 @@ namespace System
         }
 
         // Encoder for String..ctor(sbyte*) and String..ctor(sbyte*, int, int)
-        private static unsafe string CreateStringForSByteConstructor(byte *pb, int numBytes)
+        private static unsafe string CreateStringForSByteConstructor(byte* pb, int numBytes)
         {
             Debug.Assert(numBytes >= 0);
             Debug.Assert(pb <= (pb + numBytes));
@@ -213,7 +213,7 @@ namespace System
                 throw new ArgumentException(SR.Arg_InvalidANSIString);
 
             string newString = FastAllocateString(numCharsRequired);
-            fixed (char *pFirstChar = &newString._firstChar)
+            fixed (char* pFirstChar = &newString._firstChar)
             {
                 numCharsRequired = Interop.Kernel32.MultiByteToWideChar(Interop.Kernel32.CP_ACP, Interop.Kernel32.MB_PRECOMPOSED, pb, numBytes, pFirstChar, numCharsRequired);
             }

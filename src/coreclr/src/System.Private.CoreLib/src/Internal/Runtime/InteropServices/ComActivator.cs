@@ -341,7 +341,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
             // [TODO] Use FrameworkEventSource in release builds
 
             Debug.WriteLine(fmt, args);
-         }
+        }
 
         private static Type FindClassType(Guid clsid, string assemblyPath, string assemblyName, string typeName)
         {

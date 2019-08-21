@@ -26,7 +26,7 @@ namespace System.Runtime.InteropServices.CustomMarshalers
             Variant result;
             unsafe
             {
-                void *resultLocal = &result;
+                void* resultLocal = &result;
                 DISPPARAMS dispParams = new DISPPARAMS();
                 Guid guid = Guid.Empty;
                 Dispatch.Invoke(

@@ -13,7 +13,7 @@ namespace System.Globalization
         private int _index;
         private readonly int _startIndex;
 
-                // This is the length of the total string, counting from the beginning of string.
+        // This is the length of the total string, counting from the beginning of string.
         private readonly int _strLen;
 
         // The current text element lenght after MoveNext() is called.

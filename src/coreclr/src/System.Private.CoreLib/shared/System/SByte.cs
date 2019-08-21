@@ -10,7 +10,8 @@ using System.Runtime.Versioning;
 namespace System
 {
     [Serializable]
-    [CLSCompliant(false)]    [StructLayout(LayoutKind.Sequential)]
+    [CLSCompliant(false)]
+    [StructLayout(LayoutKind.Sequential)]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public readonly struct SByte : IComparable, IConvertible, IFormattable, IComparable<sbyte>, IEquatable<sbyte>, ISpanFormattable
     {

@@ -91,7 +91,7 @@ namespace System
 
             if (GetData(switchName) is string value && bool.TryParse(value, out isEnabled))
             {
-               return true;
+                return true;
             }
 
             isEnabled = false;

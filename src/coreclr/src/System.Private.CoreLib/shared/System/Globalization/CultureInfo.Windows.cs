@@ -99,7 +99,7 @@ namespace System.Globalization
             }
             finally
             {
-               ts_IsDoingAppXCultureInfoLookup = false;
+                ts_IsDoingAppXCultureInfoLookup = false;
             }
 
             return toReturn;

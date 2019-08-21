@@ -690,7 +690,7 @@ PosRem:
                         }
 
                         break;
-                    } // for (;;)
+                    } // while (true)
                 }
                 return scale;
 
@@ -2005,7 +2005,7 @@ ReturnZero:
                             scale = OverflowUnscale(ref bufQuo, scale, remainder != 0);
                             break;
                         }
-                    } // for (;;)
+                    } // while (true)
                 }
                 else
                 {
@@ -2086,7 +2086,7 @@ ReturnZero:
                                 scale = OverflowUnscale(ref bufQuo, scale, bufRem.Low64 != 0);
                                 break;
                             }
-                        } // for (;;)
+                        } // while (true)
                     }
                     else
                     {
@@ -2159,7 +2159,7 @@ ReturnZero:
                                 scale = OverflowUnscale(ref bufQuo, scale, (bufRem.Low64 | bufRem.High64) != 0);
                                 break;
                             }
-                        } // for (;;)
+                        } // while (true)
                     }
                 }
 
