@@ -1077,6 +1077,7 @@ typedef enum {
 } SgenAllocatorType;
 
 void sgen_clear_tlabs (void);
+void sgen_update_allocation_count (void);
 
 GCObject* sgen_alloc_obj (GCVTable vtable, size_t size)
 	MONO_PERMIT (need (sgen_lock_gc, sgen_stop_world));

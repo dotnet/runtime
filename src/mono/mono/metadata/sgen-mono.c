@@ -2535,12 +2535,11 @@ mono_gc_get_total_allocated_bytes(MonoBoolean precise)
 	if (precise) 
 	{
 		mono_threads_begin_global_suspend();
-		guint64 count = sgen_updated_allocation_count();
+		sgen_update_allocation_count();
 		mono_threads_end_global_suspend();
-		return count;
 	}
 	
-	return total_bytes_allocated
+	return total_bytes_allocated;
 }
 
 

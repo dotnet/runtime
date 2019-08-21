@@ -3917,9 +3917,4 @@ sgen_check_canary_for_object (gpointer addr)
 	}
 }
 
-guint64 sgen_get_precise_allocation_count (void)
-{
-	
-}
-
 #endif /* HAVE_SGEN_GC */
