@@ -1218,7 +1218,7 @@ namespace System
         {
             if (date.IsEmpty)
             {
-                return default(TransitionTime);
+                return default;
             }
 
             if (date[0] == 'M')

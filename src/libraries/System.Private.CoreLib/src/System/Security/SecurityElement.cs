@@ -642,7 +642,7 @@ namespace System.Security
             if (xml == null)
                 throw new ArgumentNullException(nameof(xml));
 
-            return default(SecurityElement);
+            return default;
         }
 
         //--------------- ISecurityElementFactory implementation -----------------
