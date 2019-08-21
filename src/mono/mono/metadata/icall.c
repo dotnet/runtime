@@ -9326,7 +9326,7 @@ ves_icall_System_GC_GetAllocatedBytesForCurrentThread (void)
 	return mono_gc_get_allocated_bytes_for_current_thread ();
 }
 
-gint64
+guint64
 ves_icall_System_GC_GetTotalAllocatedBytes (MonoBoolean precise, MonoError* error)
 {
 	return mono_gc_get_total_allocated_bytes (precise);

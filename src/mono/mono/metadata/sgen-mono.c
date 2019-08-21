@@ -58,7 +58,7 @@ static MonoGCCallbacks gc_callbacks;
 
 /* The total number of bytes allocated so far in program exection.
  * This is not constantly syncrhonized, but only updated on each GC. */
-static gint64 total_bytes_allocated = 0;
+static guint64 total_bytes_allocated = 0;
 
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \
 	a = i,
