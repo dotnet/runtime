@@ -38,5 +38,5 @@ namespace System.Diagnostics.Tracing
                 childActivityID: &childActivityId,
                 args: decodedPayloadFields);
         }
-   }
+    }
 }

@@ -66,7 +66,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static DateTime CreateDateTimeFromSystemTime(in FullSystemTime time)
         {
-            long ticks  = DateToTicks(time.systemTime.Year, time.systemTime.Month, time.systemTime.Day);
+            long ticks = DateToTicks(time.systemTime.Year, time.systemTime.Month, time.systemTime.Day);
             ticks += TimeToTicks(time.systemTime.Hour, time.systemTime.Minute, time.systemTime.Second);
             ticks += time.systemTime.Milliseconds * TicksPerMillisecond;
             ticks += time.hundredNanoSecond;

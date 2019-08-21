@@ -137,37 +137,37 @@ namespace System.Diagnostics.Tracing
 
         // Copy src to buffer and modify the offset.
         // Note: We know the buffer size ahead of time to make sure no buffer overflow.
-        internal static unsafe void WriteToBuffer(byte *buffer, uint bufferLength, ref uint offset, byte *src, uint srcLength)
+        internal static unsafe void WriteToBuffer(byte* buffer, uint bufferLength, ref uint offset, byte* src, uint srcLength)
         {
             Debug.Assert(bufferLength >= (offset + srcLength));
             for (int i = 0; i < srcLength; i++)
             {
-                *(byte *)(buffer + offset + i) = *(byte *)(src + i);
+                *(byte*)(buffer + offset + i) = *(byte*)(src + i);
             }
             offset += srcLength;
         }
 
         // Copy uint value to buffer.
-        internal static unsafe void WriteToBuffer(byte *buffer, uint bufferLength, ref uint offset, uint value)
+        internal static unsafe void WriteToBuffer(byte* buffer, uint bufferLength, ref uint offset, uint value)
         {
             Debug.Assert(bufferLength >= (offset + 4));
-            *(uint *)(buffer + offset) = value;
+            *(uint*)(buffer + offset) = value;
             offset += 4;
         }
 
         // Copy long value to buffer.
-        internal static unsafe void WriteToBuffer(byte *buffer, uint bufferLength, ref uint offset, long value)
+        internal static unsafe void WriteToBuffer(byte* buffer, uint bufferLength, ref uint offset, long value)
         {
             Debug.Assert(bufferLength >= (offset + 8));
-            *(long *)(buffer + offset) = value;
+            *(long*)(buffer + offset) = value;
             offset += 8;
         }
 
         // Copy char value to buffer.
-        internal static unsafe void WriteToBuffer(byte *buffer, uint bufferLength, ref uint offset, char value)
+        internal static unsafe void WriteToBuffer(byte* buffer, uint bufferLength, ref uint offset, char value)
         {
             Debug.Assert(bufferLength >= (offset + 2));
-            *(char *)(buffer + offset) = value;
+            *(char*)(buffer + offset) = value;
             offset += 2;
         }
     }
@@ -233,9 +233,9 @@ namespace System.Diagnostics.Tracing
                 EventPipeMetadataGenerator.WriteToBuffer(pMetadataBlob, blobSize, ref offset, (uint)typeCode);
 
                 // Write parameter name.
-                fixed (char *pParameterName = ParameterName)
+                fixed (char* pParameterName = ParameterName)
                 {
-                    EventPipeMetadataGenerator.WriteToBuffer(pMetadataBlob, blobSize, ref offset, (byte *)pParameterName, ((uint)ParameterName.Length + 1) * 2);
+                    EventPipeMetadataGenerator.WriteToBuffer(pMetadataBlob, blobSize, ref offset, (byte*)pParameterName, ((uint)ParameterName.Length + 1) * 2);
                 }
             }
             return true;
@@ -278,9 +278,9 @@ namespace System.Diagnostics.Tracing
                 }
 
                 // Write the property name.
-                fixed (char *pPropertyName = property.name)
+                fixed (char* pPropertyName = property.name)
                 {
-                    EventPipeMetadataGenerator.WriteToBuffer(pMetadataBlob, blobSize, ref offset, (byte *)pPropertyName, ((uint)property.name.Length + 1) * 2);
+                    EventPipeMetadataGenerator.WriteToBuffer(pMetadataBlob, blobSize, ref offset, (byte*)pPropertyName, ((uint)property.name.Length + 1) * 2);
                 }
             }
             else
@@ -300,9 +300,9 @@ namespace System.Diagnostics.Tracing
                 EventPipeMetadataGenerator.WriteToBuffer(pMetadataBlob, blobSize, ref offset, (uint)typeCode);
 
                 // Write the property name.
-                fixed (char *pPropertyName = property.name)
+                fixed (char* pPropertyName = property.name)
                 {
-                    EventPipeMetadataGenerator.WriteToBuffer(pMetadataBlob, blobSize, ref offset, (byte *)pPropertyName, ((uint)property.name.Length + 1) * 2);
+                    EventPipeMetadataGenerator.WriteToBuffer(pMetadataBlob, blobSize, ref offset, (byte*)pPropertyName, ((uint)property.name.Length + 1) * 2);
                 }
             }
             return true;

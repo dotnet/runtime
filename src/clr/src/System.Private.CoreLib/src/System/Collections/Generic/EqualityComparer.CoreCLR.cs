@@ -175,14 +175,14 @@ namespace System.Collections.Generic
 #if DEBUG
         internal override int IndexOf(byte[] array, byte value, int startIndex, int count)
         {
-             Debug.Fail("Should not get here.");
-             return -1;
+            Debug.Fail("Should not get here.");
+            return -1;
         }
 
         internal override int LastIndexOf(byte[] array, byte value, int startIndex, int count)
         {
-             Debug.Fail("Should not get here.");
-             return -1;
+            Debug.Fail("Should not get here.");
+            return -1;
         }
 #endif
     }

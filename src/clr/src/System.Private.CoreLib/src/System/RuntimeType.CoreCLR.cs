@@ -4274,11 +4274,11 @@ namespace System
                     ConstructorInfo wrapperCons;
                     if (isString)
                     {
-                         wrapperCons = wrapperType.GetConstructor(new Type[] { typeof(string) })!;
+                        wrapperCons = wrapperType.GetConstructor(new Type[] { typeof(string) })!;
                     }
                     else
                     {
-                         wrapperCons = wrapperType.GetConstructor(new Type[] { typeof(object) })!;
+                        wrapperCons = wrapperType.GetConstructor(new Type[] { typeof(object) })!;
                     }
 
                     // Wrap each of the elements of the array.
@@ -4335,13 +4335,13 @@ namespace System
         private enum DispatchWrapperType : int
         {
             // This enum must stay in sync with the DispatchWrapperType enum defined in MLInfo.h
-            Unknown         = 0x00000001,
-            Dispatch        = 0x00000002,
+            Unknown = 0x00000001,
+            Dispatch = 0x00000002,
             // Record          = 0x00000004,
-            Error           = 0x00000008,
-            Currency        = 0x00000010,
-            BStr            = 0x00000020,
-            SafeArray       = 0x00010000
+            Error = 0x00000008,
+            Currency = 0x00000010,
+            BStr = 0x00000020,
+            SafeArray = 0x00010000
         }
 
 #endif // FEATURE_COMINTEROP

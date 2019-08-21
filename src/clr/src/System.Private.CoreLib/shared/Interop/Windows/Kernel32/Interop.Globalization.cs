@@ -33,7 +33,7 @@ internal static partial class Interop
 
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
-        internal static extern unsafe int LCIDToLocaleName(int locale, char *pLocaleName, int cchName, uint dwFlags);
+        internal static extern unsafe int LCIDToLocaleName(int locale, char* pLocaleName, int cchName, uint dwFlags);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
         internal static extern int LocaleNameToLCID(string lpName, uint dwFlags);
@@ -94,7 +94,7 @@ internal static partial class Interop
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
         internal static extern unsafe bool IsNLSDefinedString(
-                    int  Function,
+                    int Function,
                     uint dwFlags,
                     IntPtr lpVersionInformation,
                     char* lpString,

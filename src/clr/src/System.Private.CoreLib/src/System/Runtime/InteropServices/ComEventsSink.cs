@@ -130,7 +130,7 @@ namespace System.Runtime.InteropServices
                 Span<Variant> pByRefVariant = new Span<Variant>(pSrc.AsByRefVariant.ToPointer(), 1);
                 if ((pByRefVariant[0].VariantType & VT_BYREF_TYPEMASK) == VT_BYREF_VARIANT)
                 {
-                   return ref pByRefVariant[0];
+                    return ref pByRefVariant[0];
                 }
             }
 
@@ -158,8 +158,8 @@ namespace System.Runtime.InteropServices
 
             const int InvalidIdx = -1;
             object[] args = new object[pDispParams.cArgs];
-            int [] byrefsMap = new int[pDispParams.cArgs];
-            bool [] usedArgs = new bool[pDispParams.cArgs];
+            int[] byrefsMap = new int[pDispParams.cArgs];
+            bool[] usedArgs = new bool[pDispParams.cArgs];
 
             int totalCount = pDispParams.cNamedArgs + pDispParams.cArgs;
             var vars = new Span<Variant>(pDispParams.rgvarg.ToPointer(), totalCount);
