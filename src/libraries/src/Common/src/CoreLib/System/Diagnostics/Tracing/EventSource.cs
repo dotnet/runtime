@@ -699,7 +699,7 @@ namespace System.Diagnostics.Tracing
                 uint eventVersion = m_eventData[i].Descriptor.Version;
                 uint level = m_eventData[i].Descriptor.Level;
 
-                fixed (byte *pMetadata = metadata)
+                fixed (byte* pMetadata = metadata)
                 {
                     IntPtr eventHandle = m_eventPipeProvider.m_eventProvider.DefineEventHandle(
                         eventID,
@@ -1864,7 +1864,7 @@ namespace System.Diagnostics.Tracing
                         return null;
                     }
 
-                    return new string((char *)dataPointer);
+                    return new string((char*)dataPointer);
                 }
                 finally
                 {
@@ -1977,7 +1977,7 @@ namespace System.Diagnostics.Tracing
                         }
                     }
 #endif // FEATURE_MANAGED_ETW
-                            if (m_Dispatchers != null && m_eventData[eventId].EnabledForAnyListener)
+                    if (m_Dispatchers != null && m_eventData[eventId].EnabledForAnyListener)
                     {
 #if !ES_BUILD_STANDALONE
                         // Maintain old behavior - object identity is preserved

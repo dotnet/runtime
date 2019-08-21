@@ -1898,7 +1898,7 @@ namespace System
 
                 // Avoid using multiple Utc objects to ensure consistency and correctness as we have some code
                 // uses reference equality with the Utc object.
-                if (!id.Equals(UtcId,  StringComparison.OrdinalIgnoreCase))
+                if (!id.Equals(UtcId, StringComparison.OrdinalIgnoreCase))
                 {
                     cachedData._systemTimeZones.Add(id, match!);
                 }

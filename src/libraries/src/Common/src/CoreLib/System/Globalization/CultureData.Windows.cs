@@ -614,7 +614,7 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
-            char *pBuffer = stackalloc char[Interop.Kernel32.LOCALE_NAME_MAX_LENGTH + 1]; // +1 for the null termination
+            char* pBuffer = stackalloc char[Interop.Kernel32.LOCALE_NAME_MAX_LENGTH + 1]; // +1 for the null termination
             int length = Interop.Kernel32.LCIDToLocaleName(culture, pBuffer, Interop.Kernel32.LOCALE_NAME_MAX_LENGTH + 1, Interop.Kernel32.LOCALE_ALLOW_NEUTRAL_NAMES);
 
             if (length > 0)
@@ -701,7 +701,7 @@ namespace System.Globalization
                 Interop.Kernel32.EnumSystemLocalesEx(EnumAllSystemLocalesProc, flags, Unsafe.AsPointer(ref context), IntPtr.Zero);
             }
 
-            CultureInfo [] cultures = new CultureInfo[context.strings.Count];
+            CultureInfo[] cultures = new CultureInfo[context.strings.Count];
             for (int i = 0; i < cultures.Length; i++)
             {
                 cultures[i] = new CultureInfo(context.strings[i]);

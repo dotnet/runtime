@@ -134,7 +134,7 @@ namespace System.IO
             if (end <= rootLength)
                 return -1;
 
-            while (end > rootLength && !PathInternal.IsDirectorySeparator(path[--end]));
+            while (end > rootLength && !PathInternal.IsDirectorySeparator(path[--end])) ;
 
             // Trim off any remaining separators (to deal with C:\foo\\bar)
             while (end > rootLength && PathInternal.IsDirectorySeparator(path[end - 1]))
@@ -256,9 +256,9 @@ namespace System.IO
             Interop.GetRandomBytes(pKey, KeyLength);
 
 #if MS_IO_REDIST
-                return StringExtensions.Create(
+            return StringExtensions.Create(
 #else
-                return string.Create(
+            return string.Create(
 #endif
                     12, (IntPtr)pKey, (span, key) => // 12 == 8 + 1 (for period) + 3
                          Populate83FileNameFromRandomBytes((byte*)key, KeyLength, span));

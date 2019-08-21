@@ -1687,7 +1687,7 @@ namespace System.Threading.Tasks
                    (completedTasks, state) =>
                    {
                        completedTasks.NotifyDebuggerOfWaitCompletionIfNecessary();
-                        Debug.Assert(state is Action<Task[]>);
+                       Debug.Assert(state is Action<Task[]>);
                        ((Action<Task[]>)state)(completedTasks.Result); return default!;
                    },
                    continuationAction, scheduler, cancellationToken, continuationOptions);

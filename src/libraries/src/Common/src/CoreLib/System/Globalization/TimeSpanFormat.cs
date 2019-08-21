@@ -87,7 +87,7 @@ namespace System.Globalization
                         c == 'g' ? StandardFormat.g :
                         c == 'G' ? StandardFormat.G :
                         throw new FormatException(SR.Format_InvalidString);
-                   return TryFormatStandard(value, sf, DateTimeFormatInfo.GetInstance(formatProvider).DecimalSeparator, destination, out charsWritten);
+                    return TryFormatStandard(value, sf, DateTimeFormatInfo.GetInstance(formatProvider).DecimalSeparator, destination, out charsWritten);
                 }
             }
 
