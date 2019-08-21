@@ -1334,9 +1334,9 @@ namespace System.Reflection.Emit
             }
             if (type == Filter)
             {
-                m_type[currentCatch ] = type;
-                m_filterAddr[currentCatch ] = catchorfilterAddr;
-                m_catchAddr[currentCatch ] = -1;
+                m_type[currentCatch] = type;
+                m_filterAddr[currentCatch] = catchorfilterAddr;
+                m_catchAddr[currentCatch] = -1;
                 if (currentCatch > 0)
                 {
                     Debug.Assert(m_catchEndAddr[currentCatch - 1] == -1, "m_catchEndAddr[m_currentCatch-1] == -1");
@@ -1349,18 +1349,18 @@ namespace System.Reflection.Emit
                 m_catchClass[currentCatch] = catchClass!;
                 if (m_type[currentCatch] != Filter)
                 {
-                    m_type[currentCatch ] = type;
+                    m_type[currentCatch] = type;
                 }
-                m_catchAddr[currentCatch ] = catchorfilterAddr;
+                m_catchAddr[currentCatch] = catchorfilterAddr;
                 if (currentCatch > 0)
                 {
-                    if (m_type[currentCatch ] != Filter)
+                    if (m_type[currentCatch] != Filter)
                     {
                         Debug.Assert(m_catchEndAddr[currentCatch - 1] == -1, "m_catchEndAddr[m_currentCatch-1] == -1");
                         m_catchEndAddr[currentCatch - 1] = catchEndAddr;
                     }
                 }
-                m_catchEndAddr[currentCatch ] = -1;
+                m_catchEndAddr[currentCatch] = -1;
                 m_currentCatch++;
             }
 

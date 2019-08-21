@@ -14,14 +14,14 @@ namespace System.Threading
 
         internal static unsafe int WaitMultipleIgnoringSyncContext(Span<IntPtr> waitHandles, bool waitAll, int millisecondsTimeout)
         {
-            fixed (IntPtr *pWaitHandles = &MemoryMarshal.GetReference(waitHandles))
+            fixed (IntPtr* pWaitHandles = &MemoryMarshal.GetReference(waitHandles))
             {
                 return WaitMultipleIgnoringSyncContext(pWaitHandles, waitHandles.Length, waitAll, millisecondsTimeout);
             }
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe int WaitMultipleIgnoringSyncContext(IntPtr *waitHandles, int numHandles, bool waitAll, int millisecondsTimeout);
+        private static extern unsafe int WaitMultipleIgnoringSyncContext(IntPtr* waitHandles, int numHandles, bool waitAll, int millisecondsTimeout);
 
         private static int SignalAndWaitCore(IntPtr waitHandleToSignal, IntPtr waitHandleToWaitOn, int millisecondsTimeout)
         {

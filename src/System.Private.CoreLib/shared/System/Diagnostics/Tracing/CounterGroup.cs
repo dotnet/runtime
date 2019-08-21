@@ -19,7 +19,7 @@ namespace System.Diagnostics.Tracing
     {
         private readonly EventSource _eventSource;
         private readonly List<DiagnosticCounter> _counters;
-        private static readonly object s_counterGroupLock  = new object();
+        private static readonly object s_counterGroupLock = new object();
 
         internal CounterGroup(EventSource eventSource)
         {

@@ -107,7 +107,7 @@ namespace System.Runtime.Loader
             if (dllResolveHandler != null)
             {
                 // Loop through the event subscribers and return the first non-null native library handle
-                foreach (Func<Assembly, string, IntPtr>  handler in dllResolveHandler.GetInvocationList())
+                foreach (Func<Assembly, string, IntPtr> handler in dllResolveHandler.GetInvocationList())
                 {
                     resolvedDll = handler(assembly, unmanagedDllName);
                     if (resolvedDll != IntPtr.Zero)

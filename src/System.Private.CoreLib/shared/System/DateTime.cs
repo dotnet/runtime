@@ -441,7 +441,7 @@ namespace System
             double millis_double = value * (double)scale + (value >= 0 ? 0.5 : -0.5);
 
             if (millis_double <= (double)-MaxMillis || millis_double >= (double)MaxMillis)
-                 throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_AddValue);
+                throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_AddValue);
 
             return AddTicks((long)millis_double * TicksPerMillisecond);
         }

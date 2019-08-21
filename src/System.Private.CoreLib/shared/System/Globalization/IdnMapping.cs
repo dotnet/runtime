@@ -231,7 +231,7 @@ namespace System.Globalization
                 // Aren't allowing control chars (or 7f, but idn tables catch that, they don't catch \0 at end though)
                 if (unicode[i] <= 0x1f)
                 {
-                    throw new ArgumentException(SR.Format(SR.Argument_InvalidCharSequence, i ), nameof(unicode));
+                    throw new ArgumentException(SR.Format(SR.Argument_InvalidCharSequence, i), nameof(unicode));
                 }
 
                 // If its Unicode or a control character, return false (non-ascii)
@@ -452,7 +452,7 @@ namespace System.Globalization
                         Debug.Assert(delta > 0, "[IdnMapping.cs]1 punycode_encode - delta overflowed int");
                         n = m;
 
-                        for (j = iAfterLastDot;  j < iNextDot;  j += IsSupplementary(test) ? 2 : 1)
+                        for (j = iAfterLastDot; j < iNextDot; j += IsSupplementary(test) ? 2 : 1)
                         {
                             // Make sure we're aware of surrogates
                             test = char.ConvertToUtf32(unicode, j);
@@ -470,7 +470,7 @@ namespace System.Globalization
                             {
                                 // Represent delta as a generalized variable-length integer:
                                 int q, k;
-                                for (q = delta, k = c_punycodeBase;  ; k += c_punycodeBase)
+                                for (q = delta, k = c_punycodeBase; ; k += c_punycodeBase)
                                 {
                                     int t = k <= bias ? c_tmin : k >= bias + c_tmax ? c_tmax : k - bias;
                                     if (q < t) break;
@@ -544,7 +544,7 @@ namespace System.Globalization
             if ((c <= ',' || c == '/' || (c >= ':' && c <= '@') ||      // Lots of characters not allowed
                 (c >= '[' && c <= '`') || (c >= '{' && c <= (char)0x7F)) ||
                 (c == '-' && bNextToDot))
-                    throw new ArgumentException(SR.Format(SR.Argument_IdnBadStd3, c), nameof(c));
+                throw new ArgumentException(SR.Format(SR.Argument_IdnBadStd3, c), nameof(c));
         }
 
         private string GetUnicodeInvariant(string ascii, int index, int count)
@@ -690,7 +690,7 @@ namespace System.Globalization
                         /* value at the end to obtain delta.                         */
                         int oldi = i;
 
-                        for (w = 1, k = c_punycodeBase;  ;  k += c_punycodeBase)
+                        for (w = 1, k = c_punycodeBase; ; k += c_punycodeBase)
                         {
                             // Check to make sure we aren't overrunning our ascii string
                             if (asciiIndex >= iNextDot)
@@ -844,9 +844,9 @@ namespace System.Globalization
             Debug.Assert(numpoints != 0, "[IdnMapping.adapt]Expected non-zero numpoints.");
             delta += delta / numpoints;
 
-            for (k = 0;  delta > ((c_punycodeBase - c_tmin) * c_tmax) / 2;  k += c_punycodeBase)
+            for (k = 0; delta > ((c_punycodeBase - c_tmin) * c_tmax) / 2; k += c_punycodeBase)
             {
-              delta /= c_punycodeBase - c_tmin;
+                delta /= c_punycodeBase - c_tmin;
             }
 
             Debug.Assert(delta + c_skew != 0, "[IdnMapping.adapt]Expected non-zero delta+skew.");
