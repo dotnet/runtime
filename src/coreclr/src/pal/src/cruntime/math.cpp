@@ -45,34 +45,6 @@ SET_DEFAULT_DEBUG_CHANNEL(CRT);
 
 /*++
 Function:
-  _signbit
-
-Determines whether given double-precision floating point value has a negative sign.
-
-Return Value
-
-_signbit returns a nonzero value (TRUE) if the sign of its argument x is negative.
-
-Parameter
-
-x  Double-precision floating-point value
-
---*/
-int __cdecl _signbit(double x)
-{
-    int ret;
-    PERF_ENTRY(_signbit);
-    ENTRY("_signbit (x=%f)\n", x);
-
-    ret = signbit(x);
-
-    LOGEXIT("_signbit returns int %d\n", ret);
-    PERF_EXIT(_signbit);
-    return ret;
-}
-
-/*++
-Function:
   _finite
 
 Determines whether given double-precision floating point value is finite.
@@ -367,25 +339,6 @@ PALIMPORT int __cdecl PAL_ilogb(double x)
 
 /*++
 Function:
-    labs
-
-See MSDN.
---*/
-PALIMPORT LONG __cdecl PAL_labs(LONG l)
-{
-    long lRet;
-    PERF_ENTRY(labs);
-    ENTRY("labs (l=%ld)\n", l);
-    
-    lRet = labs(l);    
-
-    LOGEXIT("labs returns long %ld\n", lRet);
-    PERF_EXIT(labs);
-    return (LONG)lRet; // This explicit cast to LONG is used to silence any potential warnings due to implicitly casting the native long lRet to LONG when returning.
-}
-
-/*++
-Function:
     log
 
 See MSDN.
@@ -572,34 +525,6 @@ PALIMPORT double __cdecl PAL_scalbn(double x, int n)
 
     LOGEXIT("scalbn returns double %f\n", ret);
     PERF_EXIT(scalbn);
-    return ret;
-}
-
-/*++
-Function:
-  _signbitf
-
-Determines whether given single-precision floating point value has a negative sign.
-
-Return Value
-
-_signbitf returns a nonzero value (TRUE) if the sign of its argument x is negative.
-
-Parameter
-
-x  Single-precision floating-point value
-
---*/
-int __cdecl _signbitf(float x)
-{
-    int ret;
-    PERF_ENTRY(_signbitf);
-    ENTRY("_signbitf (x=%f)\n", x);
-
-    ret = signbit(x);
-
-    LOGEXIT("_signbitf returns int %d\n", ret);
-    PERF_EXIT(_signbitf);
     return ret;
 }
 

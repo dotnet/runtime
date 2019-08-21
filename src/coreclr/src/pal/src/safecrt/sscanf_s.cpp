@@ -203,21 +203,6 @@ DLLEXPORT int __cdecl sscanf_s (
         return ret;
 }
 
-int __cdecl _snscanf_s (
-        const char *string,
-        size_t count,
-        const char *format,
-        ...
-        )
-{
-        int ret;
-        va_list arglist;
-        va_start(arglist, format);
-        ret = vnscan_fn(__tinput_s, string, count, format, arglist);
-        va_end(arglist);
-        return ret;
-}
-
 int __cdecl swscanf_s (
         const wchar_t *string,
         const wchar_t *format,
@@ -231,19 +216,3 @@ int __cdecl swscanf_s (
         va_end(arglist);
         return ret;
 }
-
-int __cdecl _snwscanf_s (
-        const wchar_t *string,
-        size_t count,
-        const wchar_t *format,
-        ...
-        )
-{
-        int ret;
-        va_list arglist;
-        va_start(arglist, format);
-        ret = vnwscan_fn(__twinput_s, string, count, format, arglist);
-        va_end(arglist);
-        return ret;
-}
-

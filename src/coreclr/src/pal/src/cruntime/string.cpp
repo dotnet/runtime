@@ -108,51 +108,6 @@ _stricmp(
 
 /*++
 Function:
-  _strlwr
-
-Convert a string to lowercase.
-
-
-This function returns a pointer to the converted string. Because the
-modification is done in place, the pointer returned is the same as the
-pointer passed as the input argument. No return value is reserved to
-indicate an error.
-
-Parameter
-
-string  Null-terminated string to convert to lowercase
-
-Remarks
-
-The _strlwr function converts any uppercase letters in string to
-lowercase as determined by the LC_CTYPE category setting of the
-current locale. Other characters are not affected. For more
-information on LC_CTYPE, see setlocale.
-
---*/
-char *  
-__cdecl
-_strlwr(
-        char *str)
-{
-    char *orig = str;
-
-    PERF_ENTRY(_strlwr);
-    ENTRY("_strlwr (str=%p (%s))\n", str?str:"NULL", str?str:"NULL");
-
-    while (*str)
-    {
-        *str = tolower(*str);
-        str++;
-    } 
-   
-    LOGEXIT("_strlwr returning char* %p (%s)\n", orig?orig:"NULL", orig?orig:"NULL");
-    PERF_EXIT(_strlwr);
-    return orig;
-}
-
-/*++
-Function:
   PAL_strtoul
 
 Convert string to an unsigned long-integer value.
@@ -248,46 +203,3 @@ PAL_strtoul(const char *szNumber, char **pszEnd, int nBase)
     return (ULONG)ulResult;
     
 }
-
-
-/*++
-Function:
-  PAL_atol
-
-Convert string to a long value.
-
-Return Value
-
-atol returns the converted value, if any. In the case of overflow, 
-the return value is undefined.
-
-Parameters
-
-szNumber  Null-terminated string to convert to a LONG
---*/
-
-/* The use of LONG is by design, to ensure that a 32 bit value is always 
-returned from this function. If "long" is used instead of LONG, then a 64 bit 
-value could be returned on 64 bit platforms like HP-UX, thus breaking 
-Windows behavior. */
-LONG 
-__cdecl
-PAL_atol(const char *szNumber)
-{
-    long lResult;
-
-    PERF_ENTRY(atol);
-    ENTRY("atol (szNumber=%p (%s))\n", 
-        szNumber, szNumber?szNumber:"NULL"
-        );
-    
-    lResult = atol(szNumber);
-
-    LOGEXIT("atol returning long %ld\n", (LONG)lResult);
-    PERF_EXIT(atol);
-    /* This explicit cast to LONG is used to silence any potential warnings
-        due to implicitly casting the native long lResult to LONG when returning. */
-    return (LONG)lResult;
-    
-}
-

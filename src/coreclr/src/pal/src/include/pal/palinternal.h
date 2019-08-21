@@ -412,7 +412,6 @@ function_name() to call the system's implementation
 #undef towlower
 #undef wint_t
 #undef atoi
-#undef atol
 #undef atof
 #undef malloc
 #undef realloc
@@ -423,30 +422,20 @@ function_name() to call the system's implementation
 #undef tm
 #undef FILE
 #undef fclose
-#undef setbuf
 #undef fopen
 #undef fread
-#undef feof
 #undef ferror
 #undef ftell
 #undef fflush
 #undef fwrite
 #undef fgets
-#undef fgetws
-#undef fputc
-#undef putchar
 #undef fputs
 #undef fseek
 #undef fgetpos
 #undef fsetpos
 #undef getcwd
-#undef getc
-#undef fgetc
-#undef ungetc
 #undef _flushall
 #undef setvbuf
-#undef mkstemp
-#undef rename
 #undef unlink
 #undef size_t
 #undef time_t
@@ -458,7 +447,6 @@ function_name() to call the system's implementation
 #undef stdout
 #undef stderr
 #undef abs
-#undef labs
 #undef llabs
 #undef acos
 #undef acosh
@@ -520,7 +508,6 @@ function_name() to call the system's implementation
 #undef srand
 #undef errno
 #undef getenv 
-#undef wcsspn
 #undef open
 #undef glob
 
@@ -539,7 +526,6 @@ function_name() to call the system's implementation
 #undef vprintf
 #undef wprintf
 #undef wcstod
-#undef wcstol
 #undef wcstoul
 #undef _wcstoui64
 #undef wcscat
@@ -552,7 +538,6 @@ function_name() to call the system's implementation
 #undef wcspbrk
 #undef wcsstr
 #undef wcscmp
-#undef wcsncat
 #undef wcsncpy
 #undef wcstok
 #undef wcscspn
