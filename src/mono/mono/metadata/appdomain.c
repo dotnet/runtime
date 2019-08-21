@@ -2467,9 +2467,14 @@ ves_icall_System_Reflection_Assembly_InternalLoad (MonoStringHandle name_handle,
 	gboolean parsed;
 	char *name;
 
+	MonoAssembly *requesting_assembly = mono_runtime_get_caller_from_stack_mark (stack_mark);
 	MonoAssemblyLoadContext *alc = (MonoAssemblyLoadContext *)load_Context;
+
 	if (!alc)
-		alc = mono_domain_default_alc (mono_domain_get ());
+		alc = mono_assembly_get_alc (requesting_assembly);
+	if (!alc)
+		g_assert_not_reached ();
+	
 	MonoDomain *domain = mono_alc_domain (alc);
 	g_assert (alc);
 	asmctx = MONO_ASMCTX_DEFAULT;
@@ -2480,7 +2485,7 @@ ves_icall_System_Reflection_Assembly_InternalLoad (MonoStringHandle name_handle,
 	 * other than for corlib satellite assemblies (which I've dealt with further down the call stack).
 	 */
 	//req.no_postload_search = TRUE;
-	req.requesting_assembly = mono_runtime_get_caller_from_stack_mark (stack_mark);
+	req.requesting_assembly = requesting_assembly;
 
 	name = mono_string_handle_to_utf8 (name_handle, error);
 	goto_if_nok (error, fail);
