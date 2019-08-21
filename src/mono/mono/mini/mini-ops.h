@@ -1354,3 +1354,27 @@ MINI_OP(OP_GET_LAST_ERROR, "get_last_error", IREG, NONE, NONE)
  * should be enough to locate arguments and variables.
  */
 MINI_OP(OP_FILL_PROF_CALL_CTX, "fill_prof_call_ctx", NONE, IREG, NONE)
+
+/* LLVM only, compare 2 vectors for equality, set dreg to 1/0 */
+MINI_OP(OP_XEQUAL, "xequal", IREG, XREG, XREG)
+/* Per element compate, inst_c0 contains a CompRelation */
+MINI_OP(OP_XCOMPARE, "xcompare", XREG, XREG, XREG)
+MINI_OP(OP_XCOMPARE_FP, "xcompare_fp", XREG, XREG, XREG)
+/* Binary op, inst_c0 contains the operation */
+MINI_OP(OP_XBINOP, "xbinop", XREG, XREG, XREG)
+
+MINI_OP(OP_LZCNT32, "lzcnt32", IREG, IREG, NONE)
+MINI_OP(OP_LZCNT64, "lzcnt64", LREG, LREG, NONE)
+MINI_OP(OP_POPCNT32, "popcnt32", IREG, IREG, NONE)
+MINI_OP(OP_POPCNT64, "popcnt64", LREG, LREG, NONE)
+
+/* Count trailing zeroes, return 32/64 if the input is 0 */
+MINI_OP(OP_CTTZ32, "cttz32", IREG, IREG, NONE)
+MINI_OP(OP_CTTZ64, "cttz64", LREG, LREG, NONE)
+/* Intel BMI2 PEXT */
+MINI_OP(OP_PEXT32, "pext32", IREG, IREG, IREG)
+MINI_OP(OP_PEXT64, "pext64", LREG, LREG, LREG)
+/* Intel BMI2 PDEP */
+MINI_OP(OP_PDEP32, "pdep32", IREG, IREG, IREG)
+MINI_OP(OP_PDEP64, "pdep64", LREG, LREG, LREG)
+

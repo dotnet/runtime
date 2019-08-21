@@ -6,9 +6,6 @@
 //
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
-// Mono's internal header files are not C++ clean, so avoid including them if 
-// possible
-//
 
 #include "config.h"
 
@@ -41,6 +38,8 @@ using namespace llvm::orc;
 
 extern cl::opt<bool> EnableMonoEH;
 extern cl::opt<std::string> MonoEHFrameSymbol;
+
+static MonoCPUFeatures cpu_features;
 
 void
 mono_llvm_set_unhandled_exception_handler (void)
@@ -92,9 +91,20 @@ MonoJitMemoryManager::allocateDataSection(uintptr_t Size,
 										  unsigned Alignment,
 										  unsigned SectionID,
 										  StringRef SectionName,
-										  bool IsReadOnly) {
-	uint8_t *res = (uint8_t*)malloc (Size);
+										  bool IsReadOnly)
+{
+	uint8_t *res;
+
+	// FIXME: Use a mempool
+	if (Alignment == 32) {
+		/* Used for SIMD */
+		res = (uint8_t*)malloc (Size + 32);
+		res += (GPOINTER_TO_UINT (res) % 32);
+	} else {
+		res = (uint8_t*)malloc (Size);
+	}
 	assert (res);
+	g_assert (GPOINTER_TO_UINT (res) % Alignment == 0);
 	memset (res, 0, Size);
 	return res;
 }
@@ -375,7 +385,6 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
 	MonoEHFrameSymbol = "mono_eh_frame";
 
 	EngineBuilder EB;
-	
 	EB.setOptLevel(CodeGenOpt::Aggressive);
 	EB.setMCPU(sys::getHostCPUName());
 
@@ -405,6 +414,37 @@ mono_llvm_dispose_ee (MonoEERef *eeref)
 {
 }
 
+MonoCPUFeatures
+mono_llvm_get_cpu_features (void)
+{
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
+	if (cpu_features == 0) {
+		uint64_t f = 0;
+		llvm::StringMap<bool> HostFeatures;
+		if (llvm::sys::getHostCPUFeatures(HostFeatures)) {
+			if (HostFeatures ["popcnt"])
+				f |= MONO_CPU_X86_POPCNT;
+			if (HostFeatures ["avx"])
+				f |= MONO_CPU_X86_AVX;
+			if (HostFeatures ["bmi"])
+				f |= MONO_CPU_X86_BMI1;
+			if (HostFeatures ["bmi2"])
+				f |= MONO_CPU_X86_BMI2;
+			/*
+			for (auto &F : HostFeatures)
+				if (F.second)
+					outs () << "X: " << F.first () << "\n";
+			*/
+		}
+		f |= MONO_CPU_INITED;
+		mono_memory_barrier ();
+		cpu_features = (MonoCPUFeatures)f;
+	}
+#endif
+
+	return cpu_features;
+}
+
 #else /* MONO_CROSS_COMPILE or LLVM_API_VERSION < 600 */
 
 void
@@ -430,6 +470,12 @@ void
 mono_llvm_dispose_ee (MonoEERef *eeref)
 {
 	g_assert_not_reached ();
+}
+
+MonoCPUFeatures
+mono_llvm_get_cpu_features (void)
+{
+	return (MonoCPUFeatures)0;
 }
 
 #endif /* !MONO_CROSS_COMPILE */

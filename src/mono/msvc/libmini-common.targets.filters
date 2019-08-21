@@ -127,6 +127,9 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\mini\simd-methods.h">
       <Filter>Header Files$(MonoMiniFilterSubFolder)\common</Filter>
     </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\simd-methods-netcore.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClInclude>
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\tasklets.c">
       <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
     </ClCompile>
@@ -137,6 +140,9 @@
       <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\simd-intrinsics.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\simd-intrinsics-netcore.c">
       <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
     </ClCompile>
     <ClInclude Include="$(MonoSourceLocation)\mono\mini\mini-unwind.h">

@@ -3765,7 +3765,8 @@ method_does_not_return (MonoMethod *method)
 	// FIXME: Under netcore, these are decorated with the [DoesNotReturn] attribute
 	return m_class_get_image (method->klass) == mono_defaults.corlib &&
 		!strcmp (m_class_get_name (method->klass), "ThrowHelper") &&
-		strstr (method->name, "Throw") == method->name;
+		strstr (method->name, "Throw") == method->name &&
+		!method->is_inflated;
 }
 
 static int inline_limit, llvm_jit_inline_limit;
@@ -4938,6 +4939,7 @@ il_read_branch_and_target (guchar *ip, guchar *end, guchar first_byte, MonoOpcod
 #define il_read_callvirt(ip, end, token)	(il_read_op_and_token 	   (ip, end, CEE_CALLVIRT, MONO_CEE_CALLVIRT, token))
 #define il_read_initobj(ip, end, token)         (il_read_op_and_token 	   (ip, end, CEE_PREFIX1, MONO_CEE_INITOBJ, token))
 #define il_read_constrained(ip, end, token)     (il_read_op_and_token      (ip, end, CEE_PREFIX1, MONO_CEE_CONSTRAINED_, token))
+#define il_read_unbox_any(ip, end, token)     (il_read_op_and_token      (ip, end, CEE_UNBOX_ANY, MONO_CEE_UNBOX_ANY, token))
 
 /*
  * Check that the IL instructions at ip are the array initialization
@@ -7008,6 +7010,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			cmethod = mini_get_method (cfg, method, token, NULL, generic_context);
 			CHECK_CFG_ERROR;
 
+			if (cfg->verbose_level > 3)
+				printf ("cmethod = %s\n", mono_method_get_full_name (cmethod));
+
 			MonoMethod *cil_method; cil_method = cmethod;
 				
 			if (constrained_class) {
@@ -7873,6 +7878,8 @@ calli_end:
 		}
 		case MONO_CEE_RET:
 			mini_profiler_emit_leave (cfg, sig->ret->type != MONO_TYPE_VOID ? sp [-1] : NULL);
+
+			g_assert (!method_does_not_return (method));
 
 			if (cfg->method != method) {
 				/* return from inlined method */
@@ -8860,6 +8867,25 @@ calli_end:
 					enum_flag = sp [1];
 
 					*sp++ = mini_handle_enum_has_flag (cfg, klass, enum_this, -1, enum_flag);
+					break;
+				}
+			}
+
+			guint32 unbox_any_token;
+
+			/*
+			 * Common in generic code:
+			 * box T1, unbox.any T2.
+			 */
+			if ((cfg->opt & MONO_OPT_INTRINS) &&
+			    next_ip < end && ip_in_bb (cfg, cfg->cbb, next_ip) &&
+			    (ip = il_read_unbox_any (next_ip, end, &unbox_any_token))) {
+				MonoClass *unbox_klass = mini_get_class (method, unbox_any_token, generic_context);
+				CHECK_TYPELOAD (unbox_klass);
+
+				if (klass == unbox_klass) {
+					next_ip = ip;
+					*sp++ = val;
 					break;
 				}
 			}
