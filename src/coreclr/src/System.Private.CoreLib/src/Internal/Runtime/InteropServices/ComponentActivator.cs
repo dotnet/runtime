@@ -57,8 +57,8 @@ namespace Internal.Runtime.InteropServices
             try
             {
                 string assemblyPath = MarshalToString(assemblyPathNative, nameof(assemblyPathNative));
-                string typeName     = MarshalToString(typeNameNative, nameof(typeNameNative));
-                string methodName   = MarshalToString(methodNameNative, nameof(methodNameNative));
+                string typeName = MarshalToString(typeNameNative, nameof(typeNameNative));
+                string methodName = MarshalToString(methodNameNative, nameof(methodNameNative));
 
                 string delegateType;
                 if (delegateTypeNative == IntPtr.Zero)

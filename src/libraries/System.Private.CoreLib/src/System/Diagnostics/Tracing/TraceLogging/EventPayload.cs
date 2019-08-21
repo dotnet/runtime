@@ -135,7 +135,7 @@ namespace System.Diagnostics.Tracing
             {
                 if (name == key)
                 {
-                    value =  m_values[position];
+                    value = m_values[position];
                     return true;
                 }
                 position++;

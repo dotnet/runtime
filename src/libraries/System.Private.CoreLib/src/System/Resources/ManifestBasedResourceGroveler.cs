@@ -463,7 +463,7 @@ namespace System.Resources
             try
             {
                 string postfix = "\"";
-                string [] resourceSetNames = assembly.GetManifestResourceNames();
+                string[] resourceSetNames = assembly.GetManifestResourceNames();
 
                 // If we have more than 10 resource sets, we just print the first 10 for the sake of the exception message readability.
                 if (resourceSetNames.Length > 10)
