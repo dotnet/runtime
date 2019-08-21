@@ -171,24 +171,12 @@ stages:
           name: NetCoreInternal-Pool
           queue: buildpool.windows.10.amd64.vs2017
 
-  # Stages-based publishing entry point
-  - template: eng\common\templates\post-build\post-build.yml
+  - template: /eng/stages/publish.yml
     parameters:
-      dependsOn: [PrepareForPublish]
-      # Symbol validation is not ready yet. https://github.com/dotnet/arcade/issues/2871
-      enableSymbolValidation: false
-      # Doesn't work yet, not fully configured. https://github.com/dotnet/core-setup/issues/5254
-      enableSigningValidation: false
-      # SourceLink validation doesn't work in dev builds: tries to pull from GitHub. https://github.com/dotnet/arcade/issues/3604
-      enableSourceLinkValidation: false
-      # Allow symbol publish to emit expected warnings without failing the build. Include single
-      # quotes inside the string so that it passes through to MSBuild without script interference.
-      symbolPublishingAdditionalParameters: "'-warnAsError:$false'"
-
-  - template: /eng/stages/custom-publish.yml
-    parameters:
-      # Custom publish stage dependency configuration.
-      # - dependsOn: <ID of the Arcade stage that custom publish should run after>
+      # Publish channel configuration. The publish template wraps Arcade publishing and adds some
+      # extras that aren't implemented in Arcade yet.
+      #
+      # - dependsOn: <ID of the Arcade stage that finalization should run after>
       #   channel:
       #     name: <Name of this channel, for logging and readability>
       #     bar: <Name of the Arcade variable that contains the ID of this channel in BAR>
