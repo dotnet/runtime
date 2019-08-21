@@ -562,7 +562,7 @@ namespace System
             long ticks = InternalTicks;
             if (value > MaxTicks - ticks || value < MinTicks - ticks)
             {
-                result = default(DateTime);
+                result = default;
                 return false;
             }
             result = new DateTime((ulong)(ticks + value) | InternalKind);
