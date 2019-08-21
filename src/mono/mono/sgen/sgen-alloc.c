@@ -523,6 +523,19 @@ sgen_clear_tlabs (void)
 	sgen_set_total_bytes_allocated(total_bytes_allocated_globally);
 } 
 
+void sgen_update_allocation_count (void)
+{
+	guint64 total_bytes_allocated_globally = 0;
+
+	FOREACH_THREAD_ALL (info) {
+		total_bytes_allocated_globally += info->tlab_next - info->tlab_start;
+		total_bytes_allocated_globally += info->total_bytes_allocated;
+	} FOREACH_THREAD_END
+
+	sgen_set_total_bytes_allocated(total_bytes_allocated_globally);
+}
+
+
 void
 sgen_init_allocator (void)
 {

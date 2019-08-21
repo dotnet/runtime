@@ -1144,6 +1144,8 @@ gboolean sgen_nursery_canaries_enabled (void);
 void
 sgen_check_canary_for_object (gpointer addr);
 
+guint64 sgen_get_precise_allocation_count (void);
+
 #define CHECK_CANARY_FOR_OBJECT(addr, ignored) \
 	(sgen_nursery_canaries_enabled () ? sgen_check_canary_for_object (addr) : (void)0)
 

@@ -2518,8 +2518,19 @@ mono_gc_get_allocated_bytes_for_current_thread (void)
 guint64
 mono_gc_get_total_allocated_bytes(MonoBoolean precise)
 {
-	return total_bytes_allocated;
+	if (precise) 
+	{
+		mono_threads_begin_global_suspend();
+		guint64 count = sgen_updated_allocation_count();
+		mono_threads_end_global_suspend();
+		return count;
+	}
+	
+	return total_bytes_allocated
 }
+
+
+
 
 gpointer
 sgen_client_default_metadata (void)
