@@ -2533,10 +2533,9 @@ guint64
 mono_gc_get_total_allocated_bytes(MonoBoolean precise)
 {
 	if (precise) 
-	{
-		mono_threads_begin_global_suspend();
+	{	mono_gc_stop_world();
 		sgen_update_allocation_count();
-		mono_threads_end_global_suspend();
+		mono_gc_restart_world();
 	}
 	
 	return total_bytes_allocated;
