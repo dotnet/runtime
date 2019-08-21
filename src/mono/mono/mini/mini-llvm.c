@@ -8205,10 +8205,9 @@ after_codegen:
 	}
 
 	if (cfg->verbose_level > 1) {
-		char *id =  mono_method_full_name (cfg->method, FALSE);
-		g_print ("\n*** LLVM IR for %s ***\n", id);
+		g_print ("\n*** LLVM IR for %s ***\n", mono_method_full_name (cfg->method, FALSE));
 		mono_llvm_dump_value (method);
-		g_print ("***\n\n", id);
+		g_print ("***\n\n");
 	}
 
 	if (cfg->compile_aot && !cfg->llvm_only)
