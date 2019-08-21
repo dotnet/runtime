@@ -390,25 +390,6 @@ _wfopen(
 }
 
 /*++
-Function:
-_wfsopen
-
-see MSDN doc.
-
---*/
-PAL_FILE *
-__cdecl
-_wfsopen(
-    const wchar_16 *fileName,
-    const wchar_16 *mode,
-    int shflag)
-{
-    // UNIXTODO: Implement this.
-    ERROR("Needs Implementation!!!");
-    return NULL;
-}
-
-/*++
 Function
     PAL_get_stdout.
 
@@ -488,19 +469,12 @@ int __cdecl PAL__close(int handle)
     return nRetVal;
 }
 
- int __cdecl PAL__flushall()
- {
-    return fflush(NULL);
- }
- 
-wchar_16 *
-__cdecl
-PAL_fgetws(wchar_16 *s, int n, PAL_FILE *f)
+int __cdecl PAL__flushall()
 {
-    ASSERT (0);
-    return NULL;
+    return fflush(NULL);
 }
 
+int __cdecl PAL_getc(PAL_FILE *stream);
 
 /*++
 Function :
@@ -626,28 +600,6 @@ PAL_fclose(PAL_FILE * f)
 /*++
 Function :
 
-    setbuf
-
-    See MSDN for more details.
---*/
-void
-_cdecl
-PAL_setbuf(PAL_FILE * f, char * buffer)
-{
-    PERF_ENTRY(setbuf);
-    ENTRY( "setbuf( %p, %p )\n", f, buffer );
-    
-    _ASSERTE(f != NULL);
-
-    setbuf( f->bsdFilePtr, buffer );
-    
-    LOGEXIT( "setbuf\n" );
-    PERF_EXIT(setbuf);
-}
-
-/*++
-Function :
-
     fputs
 
     See MSDN for more details.
@@ -670,56 +622,6 @@ PAL_fputs(const char * str,  PAL_FILE * f)
 
     LOGEXIT( "fputs returning %d\n", nRetVal );
     PERF_EXIT(fputs);
-    return nRetVal;
-}
-
-/*--
-Function :
-
-    fputc
-
-    See MSDN for more details.
---*/
-int
-_cdecl
-PAL_fputc(int c,  PAL_FILE * f)
-{
-    INT nRetVal = 0;
-
-    PERF_ENTRY(fputc);
-    ENTRY( "fputc( 0x%x (%c), %p )\n", c, c, f);
-
-    _ASSERTE(f != NULL);
-
-    CLEARERR(f);
-
-    nRetVal = fputc( c, f->bsdFilePtr );
-
-    LOGEXIT( "fputc returning %d\n", nRetVal );
-    PERF_EXIT(fputc);
-    return nRetVal;
-}
-
-/*--
-Function :
-
-    putchar
-
-    See MSDN for more details.
---*/
-int
-_cdecl
-PAL_putchar( int c )
-{
-    INT nRetVal = 0;
-
-    PERF_ENTRY(putchar);
-    ENTRY( "putchar( 0x%x (%c) )\n", c, c);
-
-    nRetVal = putchar( c );
-
-    LOGEXIT( "putchar returning %d\n", nRetVal );
-    PERF_EXIT(putchar);
     return nRetVal;
 }
 
@@ -760,31 +662,6 @@ PAL_ftell(PAL_FILE * f)
 
 /*++
 Function :
-
-    feof
-
-    See MSDN for more details.
---*/
-int
-_cdecl
-PAL_feof(PAL_FILE * f)
-{
-    INT nRetVal = 0;
-
-    PERF_ENTRY(feof);
-    ENTRY( "feof( %p )\n", f );
-
-    _ASSERTE(f != NULL);
-    nRetVal = feof( f->bsdFilePtr );
-
-    LOGEXIT( "feof returning %d\n", nRetVal );
-    PERF_EXIT(feof);
-    return nRetVal;
-}
-
-/*++
-Function :
-
     getc
 
     See MSDN for more details.
@@ -821,46 +698,6 @@ PAL_getc(PAL_FILE * f)
     PERF_EXIT(getc);
     return nRetVal;
 }
-
-/*++
-Function :
-
-    ungetc
-
-    See MSDN for more details.
---*/
-int
-_cdecl
-PAL_ungetc(int c, PAL_FILE * f)
-{
-    INT nRetVal = 0;
-
-    PERF_ENTRY(ungetc);
-    ENTRY( "ungetc( %c, %p )\n", c, f );
-
-    _ASSERTE(f != NULL);
-
-#if UNGETC_NOT_RETURN_EOF
-    /* On some Unix platform such as Solaris, ungetc does not return EOF
-       on write-only file. */
-    if (f->bWriteOnlyMode)
-    {
-        nRetVal = EOF;
-    }
-    else
-#endif //UNGETC_NOT_RETURN_EOF
-    {
-        CLEARERR(f);
-
-        nRetVal = ungetc( c, f->bsdFilePtr );
-    }
-
-    LOGEXIT( "ungetc returning %d\n", nRetVal );
-    PERF_EXIT(ungetc);
-    return nRetVal;
-}
-
-
 
 /*++
 Function :

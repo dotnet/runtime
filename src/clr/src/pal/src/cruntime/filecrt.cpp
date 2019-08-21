@@ -186,52 +186,6 @@ PAL__getcwd(
 
 
 /*++
-PAL_mkstemp
-
-Wrapper function for InternalMkstemp.
-
-Input parameters:
-
-szNameTemplate = template to follow when naming the created file
-
-Return value:
-    Open file descriptor on success, -1 if file could not be created
---*/
-int 
-__cdecl 
-PAL_mkstemp(char *szNameTemplate)
-{
-    return InternalMkstemp(szNameTemplate);
-}
-
-/*++
-InternalMkstemp
-
-Wrapper for mkstemp.
-
-Input parameters:
-
-szNameTemplate = template to follow when naming the created file
-
-Return value:
-    Open file descriptor on success, -1 if file could not be created
---*/
-int 
-CorUnix::InternalMkstemp(
-    char *szNameTemplate
-    )
-{
-    int nRet = -1;
-#if MKSTEMP64_IS_USED_INSTEAD_OF_MKSTEMP
-    nRet = mkstemp64(szNameTemplate);
-#else
-    nRet = mkstemp(szNameTemplate);
-#endif
-    return nRet;
-}
-
-
-/*++
 PAL__open
 
 Wrapper function for InternalOpen.
@@ -308,30 +262,6 @@ CorUnix::InternalOpen(
         nRet = open(szPath, nFlags, mode);
 #endif
     return nRet;
-}
-
-
-/*++
-PAL_rename
-
-Wrapper function for rename.
-
-Input parameters:
-
-szOldName = pointer to the pathname of the file to be renamed
-szNewName = pointer to the new pathname of the file
-
-Return value:
-    Returns 0 on success and -1 on failure
---*/
-int
-__cdecl
-PAL_rename(
-    const char *szOldName, 
-    const char *szNewName
-    )
-{
-    return rename(szOldName, szNewName);
 }
 
 

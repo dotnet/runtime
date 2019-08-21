@@ -15,7 +15,6 @@ c_runtime/atanh/test1/paltest_atanh_test1
 c_runtime/atanhf/test1/paltest_atanhf_test1
 c_runtime/atof/test1/paltest_atof_test1
 c_runtime/atoi/test1/paltest_atoi_test1
-c_runtime/atol/test1/paltest_atol_test1
 c_runtime/bsearch/test1/paltest_bsearch_test1
 c_runtime/bsearch/test2/paltest_bsearch_test2
 c_runtime/cbrt/test1/paltest_cbrt_test1
@@ -91,7 +90,6 @@ c_runtime/fwprintf/test6/paltest_fwprintf_test6
 c_runtime/fwprintf/test8/paltest_fwprintf_test8
 c_runtime/fwprintf/test9/paltest_fwprintf_test9
 c_runtime/fwrite/test1/paltest_fwrite_test1
-c_runtime/getc/test1/paltest_getc_test1
 c_runtime/getenv/test1/paltest_getenv_test1
 c_runtime/getenv/test2/paltest_getenv_test2
 c_runtime/getenv/test3/paltest_getenv_test3
@@ -110,7 +108,6 @@ c_runtime/iswspace/test1/paltest_iswspace_test1
 c_runtime/iswupper/test1/paltest_iswupper_test1
 c_runtime/iswxdigit/test1/paltest_iswxdigit_test1
 c_runtime/isxdigit/test1/paltest_isxdigit_test1
-c_runtime/labs/test1/paltest_labs_test1
 c_runtime/llabs/test1/paltest_llabs_test1
 c_runtime/log/test1/paltest_log_test1
 c_runtime/log2/test1/paltest_log2_test1
@@ -254,7 +251,6 @@ c_runtime/tolower/test1/paltest_tolower_test1
 c_runtime/toupper/test1/paltest_toupper_test1
 c_runtime/towlower/test1/paltest_towlower_test1
 c_runtime/towupper/test1/paltest_towupper_test1
-c_runtime/ungetc/test1/paltest_ungetc_test1
 c_runtime/vfprintf/test1/paltest_vfprintf_test1
 c_runtime/vfprintf/test10/paltest_vfprintf_test10
 c_runtime/vfprintf/test11/paltest_vfprintf_test11
@@ -331,7 +327,6 @@ c_runtime/wcschr/test1/paltest_wcschr_test1
 c_runtime/wcscmp/test1/paltest_wcscmp_test1
 c_runtime/wcscpy/test1/paltest_wcscpy_test1
 c_runtime/wcslen/test1/paltest_wcslen_test1
-c_runtime/wcsncat/test1/paltest_wcsncat_test1
 c_runtime/wcsncmp/test1/paltest_wcsncmp_test1
 c_runtime/wcsncpy/test1/paltest_wcsncpy_test1
 c_runtime/wcspbrk/test1/paltest_wcspbrk_test1
@@ -340,12 +335,6 @@ c_runtime/wcsstr/test1/paltest_wcsstr_test1
 c_runtime/wcstod/test1/paltest_wcstod_test1
 c_runtime/wcstod/test2/paltest_wcstod_test2
 c_runtime/wcstok/test1/paltest_wcstok_test1
-c_runtime/wcstol/test1/paltest_wcstol_test1
-c_runtime/wcstol/test2/paltest_wcstol_test2
-c_runtime/wcstol/test3/paltest_wcstol_test3
-c_runtime/wcstol/test4/paltest_wcstol_test4
-c_runtime/wcstol/test5/paltest_wcstol_test5
-c_runtime/wcstol/test6/paltest_wcstol_test6
 c_runtime/wcstoul/test1/paltest_wcstoul_test1
 c_runtime/wcstoul/test2/paltest_wcstoul_test2
 c_runtime/wcstoul/test3/paltest_wcstoul_test3
@@ -407,7 +396,6 @@ c_runtime/_snwprintf_s/test6/paltest_snwprintf_test6
 c_runtime/_snwprintf_s/test8/paltest_snwprintf_test8
 c_runtime/_snwprintf_s/test9/paltest_snwprintf_test9
 c_runtime/_stricmp/test1/paltest_stricmp_test1
-c_runtime/_strlwr/test1/paltest_strlwr_test1
 c_runtime/_strnicmp/test1/paltest_strnicmp_test1
 c_runtime/_vsnprintf_s/test1/paltest_vsnprintf_test1
 c_runtime/_vsnprintf_s/test10/paltest_vsnprintf_test10

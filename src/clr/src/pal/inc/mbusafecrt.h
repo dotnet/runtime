@@ -76,11 +76,7 @@ extern errno_t _ltow_s( long inValue, WCHAR* outBuffer, size_t inDestBufferSize,
 extern errno_t _ultoa_s( unsigned long inValue, char* outBuffer, size_t inDestBufferSize, int inRadix );
 extern errno_t _ultow_s( unsigned long inValue, WCHAR* outBuffer, size_t inDestBufferSize, int inRadix );
 
-extern errno_t _i64toa_s( long long inValue, char* outBuffer, size_t inDestBufferSize, int inRadix );
 extern errno_t _i64tow_s( long long inValue, WCHAR* outBuffer, size_t inDestBufferSize, int inRadix );
-
-extern errno_t _ui64toa_s( unsigned long long inValue, char* outBuffer, size_t inDestBufferSize, int inRadix );
-extern errno_t _ui64tow_s( unsigned long long inValue, WCHAR* outBuffer, size_t inDestBufferSize, int inRadix );
 
 extern errno_t _makepath_s( char* outDest, size_t inDestBufferSize, const char* inDrive, const char* inDirectory, const char* inFilename, const char* inExtension );
 extern errno_t _wmakepath_s( WCHAR* outDest, size_t inDestBufferSize, const WCHAR* inDrive, const WCHAR* inDirectory, const WCHAR* inFilename, const WCHAR* inExtension );
@@ -102,9 +98,6 @@ extern int _vsnwprintf_s( WCHAR* string, size_t sizeInWords, size_t count, const
 
 extern int sscanf_s( const char *string, const char *format, ... );
 extern int swscanf_s( const WCHAR *string, const WCHAR *format, ... );
-
-extern int _snscanf_s( const char *string, size_t count, const char *format, ... );
-extern int _snwscanf_s( const WCHAR *string, size_t count, const WCHAR *format, ... );
 
 extern errno_t memcpy_s( void * dst, size_t sizeInBytes, const void * src, size_t count ) THROW_DECL;
 extern errno_t memmove_s( void * dst, size_t sizeInBytes, const void * src, size_t count );

@@ -87,7 +87,7 @@ int __cdecl main(int argc, char *argv[]) {
         Actual += (Time2 - Time1) * 100;
     }
 
-    if(labs(Expected - Actual) > Delta)
+    if(llabs(Expected - Actual) > Delta)
     {
         Fail("ERROR: The measured time (%llu millisecs) was not within Delta %llu "
             "of the expected time (%llu millisecs).\n",
