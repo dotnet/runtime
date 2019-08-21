@@ -278,7 +278,6 @@ public:
 	}
 
 	void initPassManager () {
-		// Initialize passes (copied from https://github.com/mono/llvm/blob/release_60/tools/opt/opt.cpp#L379)
 		PassRegistry &registry = *PassRegistry::getPassRegistry();
 		initializeCore(registry);
 		initializeScalarOpts(registry);
