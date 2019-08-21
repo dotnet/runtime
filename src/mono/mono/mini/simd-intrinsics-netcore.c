@@ -239,6 +239,7 @@ emit_xcompare (MonoCompile *cfg, MonoClass *klass, MonoType *etype, MonoInst *ar
 
 	ins = emit_simd_ins (cfg, klass, is_fp ? OP_XCOMPARE_FP : OP_XCOMPARE, arg1->dreg, arg2->dreg);
 	ins->inst_c0 = CMP_EQ;
+	ins->inst_c1 = etype->type;
 	return ins;
 }
 
