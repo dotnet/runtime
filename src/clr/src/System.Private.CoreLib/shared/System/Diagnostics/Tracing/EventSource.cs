@@ -3003,7 +3003,7 @@ namespace System.Diagnostics.Tracing
                             {
                                 if (envelope.ChunkNumber == 0 && chunkSize > 256)
                                 {
-                                    chunkSize = chunkSize / 2;
+                                    chunkSize /= 2;
                                     goto TRY_AGAIN_WITH_SMALLER_CHUNK_SIZE;
                                 }
                             }
