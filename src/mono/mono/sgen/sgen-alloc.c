@@ -406,9 +406,6 @@ sgen_try_alloc_obj_nolock (GCVTable vtable, size_t size)
 	return (GCObject*)p;
 }
 
-
-gboolean sgen_debug_null = 0;
-
 GCObject*
 sgen_alloc_obj (GCVTable vtable, size_t size)
 {
@@ -450,10 +447,6 @@ sgen_alloc_obj (GCVTable vtable, size_t size)
 	res = sgen_alloc_obj_nolock (vtable, size);
 	UNLOCK_GC;
 
-	if (! res)
-	{
-		sgen_debug_null = 1;
-	}
 	return res;
 }
 
