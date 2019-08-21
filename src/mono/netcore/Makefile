@@ -133,6 +133,8 @@ System.Private.CoreLib/src/System/Environment.Mono.cs: System.Private.CoreLib/sr
 	test -n '$(MONO_CORLIB_VERSION)'
 	sed -e 's,@''MONO_CORLIB_VERSION@,$(MONO_CORLIB_VERSION),' $< > $@
 
+CORLIB_BUILD_FLAGS?=-c Release
+
 bcl: update-roslyn System.Private.CoreLib/src/System/Environment.Mono.cs
 	$(DOTNET) build $(CORETARGETS) $(CORLIB_BUILD_FLAGS) -p:BuildArch=$(COREARCH) \
 	-p:OutputPath=bin/$(COREARCH) \
