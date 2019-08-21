@@ -11,9 +11,6 @@
 #include "mono/utils/mono-error-internals.h"
 #include "mono/utils/mono-logger-internals.h"
 
-static
-GENERATE_GET_CLASS_WITH_CACHE_DECL (assembly_load_context);
-
 GENERATE_GET_CLASS_WITH_CACHE (assembly_load_context, "System.Runtime.Loader", "AssemblyLoadContext");
 
 void
@@ -127,12 +124,13 @@ invoke_resolve_method (MonoMethod *resolve_method, MonoAssemblyLoadContext *alc,
 
 	aname_str = mono_stringify_assembly_name (aname);
 
-	MonoStringHandle aname_obj = mono_string_new_handle (mono_domain_get (), aname_str, error);
+	MonoStringHandle aname_obj = mono_string_new_handle (mono_alc_domain (alc), aname_str, error);
 	goto_if_nok (error, leave);
 
 	MonoReflectionAssemblyHandle assm;
+	gpointer gchandle = GUINT_TO_POINTER (alc->gchandle);
 	gpointer args [2];
-	args [0] = GUINT_TO_POINTER (alc->gchandle);
+	args [0] = &gchandle;
 	args [1] = MONO_HANDLE_RAW (aname_obj);
 	assm = MONO_HANDLE_CAST (MonoReflectionAssembly, mono_runtime_try_invoke_handle (resolve_method, NULL_HANDLE, args, error));
 	goto_if_nok (error, leave);

@@ -5,6 +5,19 @@
  *
  */
 
+// Embedders do not have the luxury of our config.h, so skip it here.
+//#include "config.h"
+
+// But we need MONO_INSIDE_RUNTIME to get MonoError mangled correctly
+// because we also test unexported functions (mono_class_from_name_checked).
+#define MONO_INSIDE_RUNTIME 1
+
+#include "mono/utils/mono-publib.h"
+
+// Allow to test external_only w/o deprecation error.
+#undef MONO_RT_EXTERNAL_ONLY
+#define MONO_RT_EXTERNAL_ONLY /* nothing */
+
 #include <glib.h>
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/callspec.h>

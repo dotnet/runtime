@@ -16,6 +16,8 @@
 #include "llvm-c/Core.h"
 #include "llvm-c/ExecutionEngine.h"
 
+#include "mini.h"
+
 #ifdef HAVE_UNWIND_H
 #include <unwind.h>
 #endif
@@ -46,6 +48,9 @@ mono_llvm_compile_method (MonoEERef mono_ee, LLVMValueRef method, int nvars, LLV
 
 void
 mono_llvm_set_unhandled_exception_handler (void);
+
+MonoCPUFeatures
+mono_llvm_get_cpu_features (void);
 
 G_END_DECLS
 

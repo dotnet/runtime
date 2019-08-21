@@ -377,14 +377,6 @@
 -nomethod System.Reflection.Tests.MemberInfoNetCoreAppTests.HasSameMetadataDefinitionAs_GenericTypeParameters
 
 ####################################################################
-##  System.Resources.ResourceManager.Tests
-####################################################################
-
-# TODO: Missing assembly resolve events on AppDomain and AssemblyLoadContext
-# https://github.com/mono/mono/issues/15081
--nomethod System.Resources.Tests.ResourceManagerTests.GetString_ExpectEvents
-
-####################################################################
 ##  System.Runtime.InteropServices.Tests
 ####################################################################
 
@@ -823,6 +815,7 @@
 -nomethod System.Tests.EnvironmentStackTrace.StackTraceTest
 
 # These events are not wired up in mono
+# https://github.com/mono/mono/issues/16246
 -nomethod System.Tests.AppDomainTests.TypeResolve
 -nomethod System.Tests.AppDomainTests.ResourceResolve
 -nomethod System.Tests.AppDomainTests.AssemblyLoad
@@ -897,17 +890,11 @@
 # NOTE: Not run (relies on collectible ALCs)
 -nomethod System.Runtime.Loader.Tests.ContextualReflectionTest.*
 
-# relies on AssemblyLoadContext 
--nomethod System.Runtime.Loader.Tests.AssemblyLoadContextTest.GetLoadContextTest_ValidUserAssembly
--nomethod System.Runtime.Loader.Tests.AssemblyLoadContextTest.LoadAssemblyByPath_ValidUserAssembly
--nomethod System.Runtime.Loader.Tests.AssemblyLoadContextTest.Unsupported_FixedAddressValueType
--nomethod System.Runtime.Loader.Tests.AssemblyLoadContextTest.LoadAssemblyByStream_ValidUserAssembly
--nomethod System.Runtime.Loader.Tests.AssemblyLoadContextTest.LoadFromAssemblyName_ValidTrustedPlatformAssembly
-
 # relies on collectible AssemblyLoadContext
 -nomethod System.Runtime.Loader.Tests.AssemblyLoadContextTest.Unload_*
 -nomethod System.Runtime.Loader.Tests.AssemblyLoadContextTest.Finalizer_CollectibleWithNoAssemblyLoaded
 -nomethod System.Runtime.Loader.Tests.AssemblyLoadContextTest.PublicConstructor_Theory
+-nomethod System.Runtime.Loader.Tests.AssemblyLoadContextTest.Unsupported_FixedAddressValueType
 
 ####################################################################
 ##  System.Reflection.MetadataLoadContext.Tests

@@ -400,7 +400,7 @@ typedef union MonoInstSpec { // instruction specification
 	char bytes[MONO_INST_MAX];
 } MonoInstSpec;
 
-extern const char mini_ins_info[];
+extern const char mini_ins_info[] MONO_LLVM_INTERNAL;
 extern const gint8 mini_ins_sreg_counts [];
 
 #ifndef DISABLE_JIT
@@ -2782,8 +2782,20 @@ enum {
 	/* this value marks the end of the bit indexes used in 
 	 * this emum.
 	 */
-	SIMD_VERSION_INDEX_END = 6 
+	SIMD_VERSION_INDEX_END = 6
 };
+
+typedef enum {
+	/* Used for lazy initialization */
+	MONO_CPU_INITED = 1 << 0,
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+	MONO_CPU_X86_POPCNT = 1 << 1,
+	MONO_CPU_X86_LZCNT = 1 << 2,
+	MONO_CPU_X86_AVX = 1 << 3,
+	MONO_CPU_X86_BMI1 = 1 << 4,
+	MONO_CPU_X86_BMI2 = 1 << 5,
+#endif
+} MonoCPUFeatures;
 
 enum {
 	SIMD_COMP_EQ,

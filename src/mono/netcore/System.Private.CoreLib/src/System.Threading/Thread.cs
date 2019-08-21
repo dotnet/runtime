@@ -295,7 +295,13 @@ namespace System.Threading
 		extern static string GetName (Thread thread);
 
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
-		extern static void SetName (Thread thread, String name);
+		private static unsafe extern void SetName_icall (Thread thread, char *name, int nameLength);
+
+		static unsafe void SetName (Thread thread, String name)
+		{
+			fixed (char* fixed_name = name)
+				SetName_icall (thread, fixed_name, name?.Length ?? 0);
+		}
 
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
 		extern static bool YieldInternal ();

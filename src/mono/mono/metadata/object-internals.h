@@ -556,8 +556,8 @@ typedef enum {
 struct _MonoThreadInfo;
 
 typedef struct MonoThreadName {
-	char* chars;
-	volatile gsize generation;
+	char* volatile chars;      // null check outside of lock
+	gsize volatile generation; // read outside of lock
 	gint32 free;
 	gint32 length;
 } MonoThreadName;
@@ -2229,7 +2229,7 @@ MonoArray*
 ves_icall_CustomAttributeBuilder_GetBlob (MonoReflectionAssembly *assembly, MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *propValues, MonoArray *fields, MonoArray* fieldValues);
 
 MonoAssembly*
-mono_try_assembly_resolve_handle (MonoDomain *domain, MonoStringHandle fname, MonoAssembly *requesting, gboolean refonly, MonoError *error);
+mono_try_assembly_resolve_handle (MonoAssemblyLoadContext *alc, MonoStringHandle fname, MonoAssembly *requesting, gboolean refonly, MonoError *error);
 
 gboolean
 mono_runtime_object_init_handle (MonoObjectHandle this_obj, MonoError *error);

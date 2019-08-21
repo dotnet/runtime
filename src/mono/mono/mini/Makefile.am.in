@@ -81,7 +81,7 @@ AM_CFLAGS = \
 	$(JEMALLOC_CFLAGS)	\
 	$(PLATFORM_CFLAGS) $(ARCH_CFLAGS) $(SHARED_CFLAGS)
 
-AM_CXXFLAGS = $(LLVM_CXXFLAGS) $(GLIB_CFLAGS)
+AM_CXXFLAGS = -I$(top_srcdir) $(LLVM_CXXFLAGS) $(GLIB_CFLAGS)
 
 if HOST_WIN32
 export HOST_CC
@@ -483,9 +483,11 @@ common_sources = \
 	branch-opts.c		\
 	mini-generic-sharing.c	\
 	simd-methods.h		\
+	simd-methods-netcore.h	\
 	tasklets.c		\
 	tasklets.h		\
 	simd-intrinsics.c	\
+	simd-intrinsics-netcore.c	\
 	mini-native-types.c \
 	mini-unwind.h		\
 	unwind.c		\

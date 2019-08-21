@@ -325,13 +325,11 @@ selector_thread_interrupt (gpointer unused)
 static gsize WINAPI
 selector_thread (gpointer data)
 {
-	ERROR_DECL (error);
 	MonoGHashTable *states;
 
-	MonoString *thread_name = mono_string_new_checked (mono_get_root_domain (), "Thread Pool I/O Selector", error);
-	mono_error_assert_ok (error);
-	mono_thread_set_name (mono_thread_internal_current (), thread_name, MonoSetThreadNameFlag_Reset, error);
-	mono_error_assert_ok (error);
+	mono_thread_set_name_constant_ignore_error (mono_thread_internal_current (), "Thread Pool I/O Selector", MonoSetThreadNameFlag_Reset);
+
+	ERROR_DECL (error);
 
 	if (mono_runtime_is_shutting_down ()) {
 		io_selector_running = FALSE;

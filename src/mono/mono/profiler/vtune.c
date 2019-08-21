@@ -33,6 +33,7 @@
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/debug-internals.h>
 #include <mono/metadata/class-internals.h>
+#include <mono/utils/mono-publib.h>
 #include <string.h>
 #include <glib.h>
 
@@ -159,6 +160,9 @@ code_buffer_new (MonoProfiler *prof, void *buffer, int size, MonoProfilerCodeBuf
 		g_free (name);
 	}
 }
+
+MONO_API void
+mono_profiler_init_vtune (const char *desc);
 
 /* the entry point */
 void
