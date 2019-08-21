@@ -41,6 +41,9 @@ cross/android-rootfs/
 # Visual Studio
 .vs/
 
+# Ionide
+.ionide/
+
 # MSTest test Results
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*
