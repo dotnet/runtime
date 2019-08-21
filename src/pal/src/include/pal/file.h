@@ -75,32 +75,6 @@ FILEDosToUnixPathA(LPSTR lpPath);
 
 /*++
 Function:
-  FileDosToUnixPathW
-
-Abstract:
-  Change a DOS path to a Unix path. Replace '\' by '/'.
-
-Parameter:
-  IN/OUT lpPath: path to be modified
-  --*/
-void
-FILEDosToUnixPathW(LPWSTR lpPath);
-
-/*++
-Function:
-  FileUnixToDosPathA
-
-Abstract:
-  Change a Unix path to a DOS path. Replace '/' by '\'.
-
-Parameter:
-  IN/OUT lpPath: path to be modified
---*/
-void 
-FILEUnixToDosPathA(LPSTR lpPath);
-
-/*++
-Function:
   FILEGetDirectoryFromFullPathA
 
 Parse the given path. If it contains a directory part and a file part,
@@ -112,14 +86,6 @@ there is no directory part in the path, return 0.
 DWORD FILEGetDirectoryFromFullPathA( LPCSTR lpFullPath,
                      DWORD  nBufferLength,
                      LPSTR  lpBuffer );
-
-/*++
-Function:
-  FILEGetFileNameFromFullPath
-
-Given a full path, return a pointer to the first char of the filename part.
---*/
-LPCSTR FILEGetFileNameFromFullPathA( LPCSTR lpFullPath );
 
 /*++
 Function:
@@ -200,35 +166,6 @@ Return value:
     0 is returned on success, otherwise EOF is returned.
 --*/
 int _cdecl PAL_fflush( PAL_FILE *stream );
-
-/*++
-PAL_mkstemp
-    
-Calls InternalMkstemp to call mkstemp
-
-Input parameters:
-
-char *szNameTemplate = the pattern to follow when creating a new file.
-
-Return value:
-    file descriptor of opened file on success, -1 on failure.
---*/
-int __cdecl PAL_mkstemp(char *szNameTemplate);
-
-/*++
-PAL_rename
-
-Calls rename
-
-Input parameters:
-
-szOldName = pointer to the pathname of the file to be renamed
-szNewName = pointer to the new pathname of the file
-
-Return value:
-    Returns 0 on success and -1 on failure
---*/
-int __cdecl PAL_rename(const char *szOldName, const char *szNewName);
 
 /*++
 PAL_fgets
