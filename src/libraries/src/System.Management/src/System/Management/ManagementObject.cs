@@ -772,7 +772,7 @@ namespace System.Management
         {
             IWbemClassObjectFreeThreaded tempObj = null;
 
-            Initialize ( false ) ; // this may throw
+            Initialize ( false ); // this may throw
 
             if ((null == path) || (path.Path.Length==0))
                 throw new InvalidOperationException();
@@ -894,7 +894,7 @@ namespace System.Management
         /// </example>
         public void Get(ManagementOperationObserver watcher)
         {
-            Initialize ( false ) ;
+            Initialize ( false );
 
             if ((null == path) || (path.Path.Length==0))
                 throw new InvalidOperationException();
@@ -1035,7 +1035,7 @@ namespace System.Management
             if ((null == path) || (path.Path.Length==0))
                 throw new InvalidOperationException();
 
-            Initialize ( false ) ;
+            Initialize ( false );
 
             IEnumWbemClassObject enumWbem = null;
             EnumerationOptions o = (null != options) ? options : new EnumerationOptions();
@@ -1152,7 +1152,7 @@ namespace System.Management
             if ((null == path) || (path.Path.Length==0))
                 throw new InvalidOperationException();
 
-            Initialize ( true ) ;
+            Initialize ( true );
 
             if (null == watcher)
                 throw new ArgumentNullException(nameof(watcher));
@@ -1273,7 +1273,7 @@ namespace System.Management
             if ((null == path) || (path.Path.Length==0))
                 throw new InvalidOperationException();
 
-            Initialize ( false ) ;
+            Initialize ( false );
 
             IEnumWbemClassObject enumWbem = null;
             EnumerationOptions o =
@@ -1384,7 +1384,7 @@ namespace System.Management
                 throw new ArgumentNullException(nameof(watcher));
             else
             {
-                Initialize ( false ) ;
+                Initialize ( false );
 
                 // Ensure we switch off ReturnImmediately as this is invalid for async calls
                 EnumerationOptions o =
@@ -1464,7 +1464,7 @@ namespace System.Management
         public ManagementPath Put(PutOptions options)
         {
             ManagementPath newPath = null;
-            Initialize ( true ) ;
+            Initialize ( true );
             PutOptions o = (null != options) ? options : new PutOptions();
 
             IWbemServices wbemServices = scope.GetIWbemServices();
@@ -1627,7 +1627,7 @@ namespace System.Management
                 throw new ArgumentNullException(nameof(watcher));
             else
             {
-                Initialize ( false ) ;
+                Initialize ( false );
 
                 PutOptions o = (null == options) ?
                     new PutOptions() : (PutOptions)options.Clone();
@@ -1753,7 +1753,7 @@ namespace System.Management
         /// </returns>
         public ManagementPath CopyTo(ManagementPath path, PutOptions options)
         {
-            Initialize ( false ) ;
+            Initialize ( false );
 
             ManagementScope destinationScope = null;
 
@@ -1888,7 +1888,7 @@ namespace System.Management
                 throw new ArgumentNullException(nameof(watcher));
             else
             {
-                Initialize ( false ) ;
+                Initialize ( false );
                 ManagementScope destinationScope = null;
 
                 destinationScope = new ManagementScope(path, scope);
@@ -1965,7 +1965,7 @@ namespace System.Management
             if ((null == path) || (path.Path.Length==0))
                 throw new InvalidOperationException();
 
-            Initialize ( false ) ;
+            Initialize ( false );
             DeleteOptions o = (null != options) ? options : new DeleteOptions();
             IWbemServices wbemServices = scope.GetIWbemServices();
 
@@ -2032,7 +2032,7 @@ namespace System.Management
                 throw new ArgumentNullException(nameof(watcher));
             else
             {
-                Initialize ( false ) ;
+                Initialize ( false );
                 DeleteOptions o = (null != options) ? (DeleteOptions) options.Clone() : new DeleteOptions();
 
                 // If someone has registered for progress, make sure we flag it
@@ -2156,7 +2156,7 @@ namespace System.Management
                 throw new ArgumentNullException(nameof(methodName));
             else
             {
-                Initialize ( false ) ;
+                Initialize ( false );
 
                 // Map args into a inparams structure
                 ManagementBaseObject inParameters;
@@ -2203,7 +2203,7 @@ namespace System.Management
                 throw new ArgumentNullException(nameof(methodName));
             else
             {
-                Initialize ( false ) ;
+                Initialize ( false );
 
                 // Map args into a inparams structure
                 ManagementBaseObject inParameters;
@@ -2302,7 +2302,7 @@ namespace System.Management
                 throw new ArgumentNullException(nameof(methodName));
             else
             {
-                Initialize ( false ) ;
+                Initialize ( false );
                 InvokeMethodOptions o = (null != options) ? options : new InvokeMethodOptions();
                 IWbemServices wbemServices = scope.GetIWbemServices();
 
@@ -2372,7 +2372,7 @@ namespace System.Management
                 throw new ArgumentNullException(nameof(methodName));
             else
             {
-                Initialize ( false ) ;
+                Initialize ( false );
                 InvokeMethodOptions o = (null != options) ?
                     (InvokeMethodOptions) options.Clone() : new InvokeMethodOptions();
 
@@ -2454,7 +2454,7 @@ namespace System.Management
                 throw new ArgumentNullException(nameof(methodName));
             else
             {
-                Initialize ( false ) ;
+                Initialize ( false );
 
                 // Do we have the class?
                 if (null == wmiClass)

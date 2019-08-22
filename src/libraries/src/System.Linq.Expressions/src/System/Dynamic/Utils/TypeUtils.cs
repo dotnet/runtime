@@ -296,7 +296,7 @@ namespace System.Dynamic.Utils
             // This method catches the cases that were incorrectly disallowed, but when it needs to
             // examine possible conversions of element or type parameters it applies stricter rules.
 
-            for (;;)
+            while (true)
             {
                 if (!skipNonArray) // Skip if we just came from HasReferenceConversionTo and have just tested these
                 {

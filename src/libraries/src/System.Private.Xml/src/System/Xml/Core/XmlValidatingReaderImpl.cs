@@ -954,7 +954,7 @@ namespace System.Xml
                     {
                         if (!_outerReader.IsEmptyElement)
                         {
-                            for (;;)
+                            while (true)
                             {
                                 if (!_outerReader.Read())
                                 {

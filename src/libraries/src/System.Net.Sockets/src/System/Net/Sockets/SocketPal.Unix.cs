@@ -703,7 +703,7 @@ namespace System.Net.Sockets
         public static bool TryCompleteSendTo(SafeSocketHandle socket, ReadOnlySpan<byte> buffer, IList<ArraySegment<byte>> buffers, ref int bufferIndex, ref int offset, ref int count, SocketFlags flags, byte[] socketAddress, int socketAddressLen, ref int bytesSent, out SocketError errorCode)
         {
             bool successfulSend = false;
-            for (;;)
+            while (true)
             {
                 int sent;
                 Interop.Error errno;
@@ -748,7 +748,7 @@ namespace System.Net.Sockets
 
         public static bool TryCompleteSendFile(SafeSocketHandle socket, SafeFileHandle handle, ref long offset, ref long count, ref long bytesSent, out SocketError errorCode)
         {
-            for (;;)
+            while (true)
             {
                 long sent;
                 Interop.Error errno;

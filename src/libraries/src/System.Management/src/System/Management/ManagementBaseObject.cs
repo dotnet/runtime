@@ -213,7 +213,7 @@ namespace System.Management
             }
         }
 
-        internal IWbemClassObjectFreeThreaded _wbemObject ;
+        internal IWbemClassObjectFreeThreaded _wbemObject;
 
         private PropertyDataCollection properties;
         private PropertyDataCollection systemProperties;
@@ -342,7 +342,7 @@ namespace System.Management
         {
             get
             {
-                Initialize ( true ) ;
+                Initialize ( true );
 
                 if (properties == null)
                     properties = new PropertyDataCollection(this, false);
@@ -364,7 +364,7 @@ namespace System.Management
         {
             get
             {
-                Initialize ( false ) ;
+                Initialize ( false );
 
                 if (systemProperties == null)
                     systemProperties = new PropertyDataCollection(this, true);
@@ -387,7 +387,7 @@ namespace System.Management
         {
             get
             {
-                Initialize ( true ) ;
+                Initialize ( true );
 
                 if (qualifiers == null)
                     qualifiers = new QualifierDataCollection(this);
@@ -479,7 +479,7 @@ namespace System.Management
             get { return GetPropertyValue(propertyName); }
             set
             {
-                Initialize ( true ) ;
+                Initialize ( true );
                 try
                 {
                     SetPropertyValue (propertyName, value);

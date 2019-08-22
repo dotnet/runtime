@@ -1941,7 +1941,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (serverName.EndsWith("]"))
                 {
                     //[IPv6]
-                    serverName = serverName.Substring(1, serverName.Length - 2);//2 for []
+                    serverName = serverName.Substring(1, serverName.Length - 2); //2 for []
                     return serverName;
                 }
                 int closingBrace = serverName.LastIndexOf("]:");

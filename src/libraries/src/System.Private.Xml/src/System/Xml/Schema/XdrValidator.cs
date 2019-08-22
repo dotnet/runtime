@@ -338,7 +338,7 @@ namespace System.Xml.Schema
                 Parser parser = new Parser(SchemaType.XDR, NameTable, SchemaNames, EventHandler);
                 parser.XmlResolver = this.XmlResolver;
                 parser.Parse(reader, uri);
-                while (reader.Read()) ;// wellformness check
+                while (reader.Read()) ; // wellformness check
                 xdrSchema = parser.XdrSchema;
             }
             catch (XmlSchemaException e)

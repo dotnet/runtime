@@ -22,7 +22,7 @@ namespace System.Reflection.TypeLoading
         private volatile ConstructorInfo _lazyConstructorInfo;
 
         public abstract override IList<CustomAttributeTypedArgument> ConstructorArguments { get; }
-        public abstract override IList<CustomAttributeNamedArgument> NamedArguments { get;}
+        public abstract override IList<CustomAttributeNamedArgument> NamedArguments { get; }
         public sealed override string ToString() => GetType().ToString();  // Does not match NETFX output - however, doing so can prematurely
                                                                            // trigger resolve handlers. Too impactful for ToString().
     }

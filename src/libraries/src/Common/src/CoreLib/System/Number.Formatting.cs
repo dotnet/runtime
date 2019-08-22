@@ -2455,7 +2455,7 @@ namespace System
             fixed (char* pFormat = &MemoryMarshal.GetReference(format))
             {
                 src = 0;
-                for (; ; )
+                while (true)
                 {
                     if (src >= format.Length)
                     {

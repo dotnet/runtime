@@ -670,7 +670,7 @@ namespace System.Xml
                 char* pDst = pDstBegin + bufPos;
 
                 int ch = 0;
-                for (;;)
+                while (true)
                 {
                     char* pDstEnd = pDst + (pSrcEnd - pSrc);
                     if (pDstEnd > pDstBegin + bufLen)
@@ -874,7 +874,7 @@ namespace System.Xml
                 char* pDst = pDstBegin + bufPos;
 
                 int ch = 0;
-                for (;;)
+                while (true)
                 {
                     char* pDstEnd = pDst + (pSrcEnd - pSrc);
                     if (pDstEnd > pDstBegin + bufLen)
@@ -1114,7 +1114,7 @@ namespace System.Xml
                 char* pSrc = pSrcBegin;
 
                 int ch = 0;
-                for (;;)
+                while (true)
                 {
                     char* pDstEnd = pDst + (pSrcEnd - pSrc);
                     if (pDstEnd > pDstBegin + bufLen)
@@ -1289,7 +1289,7 @@ namespace System.Xml
                 char* pDst = pDstBegin + bufPos;
 
                 int ch = 0;
-                for (;;)
+                while (true)
                 {
                     char* pDstEnd = pDst + (pSrcEnd - pSrc);
                     if (pDstEnd > pDstBegin + bufLen)
@@ -1491,7 +1491,7 @@ namespace System.Xml
                     char* pDst = pDstBegin + bufPos;
 
                     int ch = 0;
-                    for (;;)
+                    while (true)
                     {
                         char* pDstEnd = pDst + (pSrcEnd - pSrc);
                         if (pDstEnd > pDstBegin + bufLen)
@@ -1681,7 +1681,7 @@ namespace System.Xml
                     char* pDst = pDstBegin + bufPos;
 
                     int ch = 0;
-                    for (;;)
+                    while (true)
                     {
                         char* pDstEnd = pDst + (pSrcEnd - pSrc);
                         if (pDstEnd > pDstBegin + bufLen)

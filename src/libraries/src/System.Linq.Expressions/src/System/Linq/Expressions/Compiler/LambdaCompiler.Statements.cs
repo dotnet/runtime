@@ -529,7 +529,7 @@ namespace System.Linq.Expressions.Compiler
 
         private void EmitSwitchBuckets(SwitchInfo info, List<List<SwitchLabel>> buckets, int first, int last)
         {
-            for (;;)
+            while (true)
             {
                 if (first == last)
                 {

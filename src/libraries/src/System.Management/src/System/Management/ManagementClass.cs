@@ -382,7 +382,7 @@ namespace System.Management
         {
             get
             {
-                Initialize ( true ) ;
+                Initialize ( true );
 
                 if (methods == null)
                     methods = new MethodDataCollection(this);
@@ -585,7 +585,7 @@ namespace System.Management
             if ((null == Path) || (null == Path.Path) || (0 == Path.Path.Length))
                 throw new InvalidOperationException();
 
-            Initialize ( false ) ;
+            Initialize ( false );
 
             EnumerationOptions o = (null == options) ? new EnumerationOptions() : (EnumerationOptions)options.Clone();
 
@@ -682,7 +682,7 @@ namespace System.Management
             if (null == Path)
                 throw new InvalidOperationException();
 
-            Initialize ( false ) ;
+            Initialize ( false );
             IEnumWbemClassObject enumWbem = null;
 
             EnumerationOptions o = (null == options) ? new EnumerationOptions() : (EnumerationOptions)options.Clone();
@@ -743,7 +743,7 @@ namespace System.Management
             if (null == Path)
                 throw new InvalidOperationException();
 
-            Initialize ( false ) ;
+            Initialize ( false );
 
             EnumerationOptions o = (null == options) ? new EnumerationOptions() :
                                       (EnumerationOptions)options.Clone();
@@ -1032,7 +1032,7 @@ namespace System.Management
             if ((null == Path) || (null == Path.Path) || (0 == Path.Path.Length))
                 throw new InvalidOperationException();
 
-            Initialize ( false ) ;
+            Initialize ( false );
 
             IEnumWbemClassObject enumWbem = null;
 
@@ -1130,7 +1130,7 @@ namespace System.Management
             if ((null == Path) || (null == Path.Path) || (0 == Path.Path.Length))
                 throw new InvalidOperationException();
 
-            Initialize ( true ) ;
+            Initialize ( true );
 
             if (null == watcher)
                 throw new ArgumentNullException(nameof(watcher));
@@ -1241,7 +1241,7 @@ namespace System.Management
             if ((null == Path) || (null == Path.Path) || (0 == Path.Path.Length))
                 throw new InvalidOperationException();
 
-            Initialize ( false ) ;
+            Initialize ( false );
 
             IEnumWbemClassObject enumWbem = null;
 
@@ -1334,7 +1334,7 @@ namespace System.Management
                 throw new ArgumentNullException(nameof(watcher));
             else
             {
-                Initialize ( true ) ;
+                Initialize ( true );
 
                 EnumerationOptions o =
                         (null != options) ? (EnumerationOptions)options.Clone() : new EnumerationOptions();

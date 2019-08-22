@@ -102,7 +102,7 @@ namespace System.Management
         {
             if (!isDisposed)
             {
-                Dispose ( true ) ;
+                Dispose ( true );
             }
         }
 
@@ -145,12 +145,12 @@ namespace System.Management
                 //
                 int count = 0;
 
-                IEnumerator enumCol = this.GetEnumerator ( ) ;
+                IEnumerator enumCol = this.GetEnumerator ( );
                 while ( enumCol.MoveNext() == true )
                 {
-                    count++ ;
+                    count++;
                 }
-                return count ;
+                return count;
             }
         }
 

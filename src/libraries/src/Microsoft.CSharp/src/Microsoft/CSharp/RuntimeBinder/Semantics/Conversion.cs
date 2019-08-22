@@ -1033,7 +1033,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private static void MarkAsIntermediateConversion(Expr pExpr)
         {
-            for (;;)
+            while (true)
             {
                 Debug.Assert(pExpr != null);
                 if (pExpr is ExprCall call)

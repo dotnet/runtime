@@ -127,7 +127,7 @@ namespace System.Text.RegularExpressions
 
             StartTimeoutWatch();
 
-            for (; ;)
+            while (true)
             {
 #if DEBUG
                 if (runregex.Debug)

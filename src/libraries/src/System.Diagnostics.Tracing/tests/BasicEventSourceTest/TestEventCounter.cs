@@ -259,7 +259,7 @@ namespace BasicEventSourceTests
         private static void Sleep(int minMSec)
         {
             var startTime = DateTime.UtcNow;
-            for (; ; )
+            while (true)
             {
                 DateTime endTime = DateTime.UtcNow;
                 double delta = (endTime - startTime).TotalMilliseconds;

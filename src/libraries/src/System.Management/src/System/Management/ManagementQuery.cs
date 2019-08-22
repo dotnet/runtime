@@ -75,7 +75,7 @@ namespace System.Management
         /// </value>
         public virtual string QueryString
         {
-            get {return (null != queryString) ? queryString : string.Empty;}
+            get {return (null != queryString) ? queryString : string.Empty; }
             set {
                 if (queryString != value) {
                     ParseQuery (value); // this may throw
@@ -95,7 +95,7 @@ namespace System.Management
         /// </value>
         public virtual string QueryLanguage
         {
-            get {return (null != queryLanguage) ? queryLanguage : string.Empty;}
+            get {return (null != queryLanguage) ? queryLanguage : string.Empty; }
             set {
                 if (queryLanguage != value) {
                     queryLanguage = value;
@@ -538,7 +538,7 @@ namespace System.Management
         public override string QueryLanguage
         {
             get
-            {return base.QueryLanguage;}
+            {return base.QueryLanguage; }
         }
 
         //ICloneable
@@ -782,7 +782,7 @@ namespace System.Management
                 // We need to force a rebuild as we may not have detected
                 // a change to selected properties
                 BuildQuery ();
-                return base.QueryString;}
+                return base.QueryString; }
             set {
                 base.QueryString = value;
             }
@@ -2699,7 +2699,7 @@ namespace System.Management
         public override string QueryLanguage
         {
             get
-            {return base.QueryLanguage;}
+            {return base.QueryLanguage; }
         }
 
         /// <summary>

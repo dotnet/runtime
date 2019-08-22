@@ -224,7 +224,7 @@ internal static Type GetContractTypeFromImport(this IAttributedImport import, Im
                 bool hasConstraints = false;
                 object[] genericParameterConstraints = new object[genericArguments.Length];
                 GenericParameterAttributes[] genericParameterAttributes = new GenericParameterAttributes[genericArguments.Length];
-                for (int i=0; i< genericArguments.Length ; i++)
+                for (int i=0; i< genericArguments.Length; i++)
                 {
                     Type genericArgument = genericArguments[i];
 

@@ -111,7 +111,7 @@ namespace System.Dynamic
             rule = null;
             var args = new object[] { arg0 };
 
-            for (; ; )
+            while (true)
             {
                 @this.Target = originalRule;
                 rule = @this.Target = @this.Binder.BindCore(@this, args);
@@ -257,7 +257,7 @@ namespace System.Dynamic
             rule = null;
             var args = new object[] { arg0, arg1 };
 
-            for (; ; )
+            while (true)
             {
                 @this.Target = originalRule;
                 rule = @this.Target = @this.Binder.BindCore(@this, args);
@@ -403,7 +403,7 @@ namespace System.Dynamic
             rule = null;
             var args = new object[] { arg0, arg1, arg2 };
 
-            for (; ; )
+            while (true)
             {
                 @this.Target = originalRule;
                 rule = @this.Target = @this.Binder.BindCore(@this, args);
@@ -549,7 +549,7 @@ namespace System.Dynamic
             rule = null;
             var args = new object[] { arg0, arg1, arg2, arg3 };
 
-            for (; ; )
+            while (true)
             {
                 @this.Target = originalRule;
                 rule = @this.Target = @this.Binder.BindCore(@this, args);
@@ -695,7 +695,7 @@ namespace System.Dynamic
             rule = null;
             var args = new object[] { arg0, arg1, arg2, arg3, arg4 };
 
-            for (; ; )
+            while (true)
             {
                 @this.Target = originalRule;
                 rule = @this.Target = @this.Binder.BindCore(@this, args);
@@ -841,7 +841,7 @@ namespace System.Dynamic
             rule = null;
             var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5 };
 
-            for (; ; )
+            while (true)
             {
                 @this.Target = originalRule;
                 rule = @this.Target = @this.Binder.BindCore(@this, args);
@@ -987,7 +987,7 @@ namespace System.Dynamic
             rule = null;
             var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5, arg6 };
 
-            for (; ; )
+            while (true)
             {
                 @this.Target = originalRule;
                 rule = @this.Target = @this.Binder.BindCore(@this, args);
@@ -1133,7 +1133,7 @@ namespace System.Dynamic
             rule = null;
             var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 };
 
-            for (; ; )
+            while (true)
             {
                 @this.Target = originalRule;
                 rule = @this.Target = @this.Binder.BindCore(@this, args);
@@ -1279,7 +1279,7 @@ namespace System.Dynamic
             rule = null;
             var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 };
 
-            for (; ; )
+            while (true)
             {
                 @this.Target = originalRule;
                 rule = @this.Target = @this.Binder.BindCore(@this, args);
@@ -1425,7 +1425,7 @@ namespace System.Dynamic
             rule = null;
             var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9 };
 
-            for (; ; )
+            while (true)
             {
                 @this.Target = originalRule;
                 rule = @this.Target = @this.Binder.BindCore(@this, args);
@@ -1570,7 +1570,7 @@ namespace System.Dynamic
             rule = null;
             var args = new object[] { arg0 };
 
-            for (; ; )
+            while (true)
             {
                 @this.Target = originalRule;
                 rule = @this.Target = @this.Binder.BindCore(@this, args);
@@ -1715,7 +1715,7 @@ namespace System.Dynamic
             rule = null;
             var args = new object[] { arg0, arg1 };
 
-            for (; ; )
+            while (true)
             {
                 @this.Target = originalRule;
                 rule = @this.Target = @this.Binder.BindCore(@this, args);
@@ -1860,7 +1860,7 @@ namespace System.Dynamic
             rule = null;
             var args = new object[] { arg0, arg1, arg2 };
 
-            for (; ; )
+            while (true)
             {
                 @this.Target = originalRule;
                 rule = @this.Target = @this.Binder.BindCore(@this, args);
@@ -2005,7 +2005,7 @@ namespace System.Dynamic
             rule = null;
             var args = new object[] { arg0, arg1, arg2, arg3 };
 
-            for (; ; )
+            while (true)
             {
                 @this.Target = originalRule;
                 rule = @this.Target = @this.Binder.BindCore(@this, args);
@@ -2150,7 +2150,7 @@ namespace System.Dynamic
             rule = null;
             var args = new object[] { arg0, arg1, arg2, arg3, arg4 };
 
-            for (; ; )
+            while (true)
             {
                 @this.Target = originalRule;
                 rule = @this.Target = @this.Binder.BindCore(@this, args);
@@ -2295,7 +2295,7 @@ namespace System.Dynamic
             rule = null;
             var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5 };
 
-            for (; ; )
+            while (true)
             {
                 @this.Target = originalRule;
                 rule = @this.Target = @this.Binder.BindCore(@this, args);
@@ -2440,7 +2440,7 @@ namespace System.Dynamic
             rule = null;
             var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5, arg6 };
 
-            for (; ; )
+            while (true)
             {
                 @this.Target = originalRule;
                 rule = @this.Target = @this.Binder.BindCore(@this, args);
@@ -2585,7 +2585,7 @@ namespace System.Dynamic
             rule = null;
             var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 };
 
-            for (; ; )
+            while (true)
             {
                 @this.Target = originalRule;
                 rule = @this.Target = @this.Binder.BindCore(@this, args);
@@ -2730,7 +2730,7 @@ namespace System.Dynamic
             rule = null;
             var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 };
 
-            for (; ; )
+            while (true)
             {
                 @this.Target = originalRule;
                 rule = @this.Target = @this.Binder.BindCore(@this, args);
@@ -2875,7 +2875,7 @@ namespace System.Dynamic
             rule = null;
             var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9 };
 
-            for (; ; )
+            while (true)
             {
                 @this.Target = originalRule;
                 rule = @this.Target = @this.Binder.BindCore(@this, args);

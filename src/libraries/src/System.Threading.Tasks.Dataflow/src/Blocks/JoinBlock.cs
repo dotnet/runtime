@@ -638,7 +638,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
             // We'll bail out of this loop either when we have reserved a message (true)
             // or when we have exhausted the list of postponed messages (false)
-            for (; ;)
+            while (true)
             {
                 // Try to reserve the popped message
                 if (next.Key.ReserveMessage(next.Value, this))

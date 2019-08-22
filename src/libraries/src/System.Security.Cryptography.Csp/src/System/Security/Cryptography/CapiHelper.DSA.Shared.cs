@@ -13,10 +13,10 @@ namespace Internal.NativeCrypto
     {
         private const int DSS_Q_LEN = 20;
 
-        internal const int DSS_MAGIC = 0x31535344;          // Encoding of "DSS1"
-        internal const int DSS_PRIVATE_MAGIC = 0x32535344;  // Encoding of "DSS2"
-        internal const int DSS_PUB_MAGIC_VER3 = 0x33535344; // Encoding of "DSS3"
-        internal const int DSS_PRIV_MAGIC_VER3 = 0x34535344;// Encoding of "DSS4"
+        internal const int DSS_MAGIC = 0x31535344;           // Encoding of "DSS1"
+        internal const int DSS_PRIVATE_MAGIC = 0x32535344;   // Encoding of "DSS2"
+        internal const int DSS_PUB_MAGIC_VER3 = 0x33535344;  // Encoding of "DSS3"
+        internal const int DSS_PRIV_MAGIC_VER3 = 0x34535344; // Encoding of "DSS4"
 
         /// <summary>
         /// Helper for DsaCryptoServiceProvider.ImportParameters()

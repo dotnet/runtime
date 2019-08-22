@@ -438,7 +438,7 @@ namespace System
             int valueTailLength = valueLength - 1;
 
             int offset = 0;
-            for (; ; )
+            while (true)
             {
                 Debug.Assert(0 <= offset && offset <= searchSpaceLength); // Ensures no deceptive underflows in the computation of "remainingSearchSpaceLength".
                 int remainingSearchSpaceLength = searchSpaceLength - offset - valueTailLength;

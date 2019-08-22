@@ -191,7 +191,7 @@ namespace System.Management
         {
             get {
                 RefreshPropertyInfo();
-                return ((propertyFlavor & (int)tag_WBEM_FLAVOR_TYPE.WBEM_FLAVOR_ORIGIN_PROPAGATED) != 0) ? false : true ; }
+                return ((propertyFlavor & (int)tag_WBEM_FLAVOR_TYPE.WBEM_FLAVOR_ORIGIN_PROPAGATED) != 0) ? false : true; }
         }
 
         /// <summary>
@@ -204,7 +204,7 @@ namespace System.Management
         {
             get {
                 RefreshPropertyInfo();
-                return ((propertyType & (int)tag_CIMTYPE_ENUMERATION.CIM_FLAG_ARRAY) != 0);}
+                return ((propertyType & (int)tag_CIMTYPE_ENUMERATION.CIM_FLAG_ARRAY) != 0); }
         }
 
         /// <summary>

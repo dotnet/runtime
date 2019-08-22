@@ -440,7 +440,7 @@ namespace System.Diagnostics
 
                 // Points just beyond the last point in the string that has yet to be parsed.   Thus we start with the whole string.
                 int endIdx = filterAndPayloadSpecs.Length;
-                for (;;)
+                while (true)
                 {
                     // Skip trailing whitespace.
                     while (0 < endIdx && char.IsWhiteSpace(filterAndPayloadSpecs[endIdx - 1]))
@@ -536,7 +536,7 @@ namespace System.Diagnostics
                 // Parse all the explicit transforms, if present
                 if (startTransformIdx < endIdx)
                 {
-                    for (;;)
+                    while (true)
                     {
                         int specStartIdx = startTransformIdx;
                         int semiColonIdx = filterAndPayloadSpec.LastIndexOf(';', endIdx - 1, endIdx - startTransformIdx);

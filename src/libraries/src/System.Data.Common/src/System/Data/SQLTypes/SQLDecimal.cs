@@ -930,7 +930,7 @@ namespace System.Data.SqlTypes
                                                                      //the decimal digits, from the
                                                                      //lowest significant to highest significant
 
-            int iDigits = 0;//Number of significant digits
+            int iDigits = 0; //Number of significant digits
             uint ulRem; //Remainder of a division by x_ulBase10, i.e.,least significant digit
 
             // Build the final numeric string by inserting the sign, reversing
@@ -1445,7 +1445,7 @@ namespace System.Data.SqlTypes
 
             lScaleAdjust = ResScale - ActualScale;
 
-            fResPositive = (x.IsPositive == y.IsPositive);//positive if both signs same.
+            fResPositive = (x.IsPositive == y.IsPositive); //positive if both signs same.
 
             // II) Perform multiplication
 
@@ -1484,7 +1484,7 @@ namespace System.Data.SqlTypes
                         dwlNextAccum = 0;
 
                     // Update result and accum
-                    rgulRes[idRes++] = unchecked((uint)dwlAccum);// & x_ulInt32BaseForMod); // equiv to mod x_lInt32Base
+                    rgulRes[idRes++] = unchecked((uint)dwlAccum); // & x_ulInt32BaseForMod); // equiv to mod x_lInt32Base
                     dwlAccum = (dwlAccum >> 32) + dwlNextAccum; // equiv to div BaseUI4 + dwlNAccum
 
                     // dwlNextAccum can't overflow next iteration
@@ -1654,7 +1654,7 @@ namespace System.Data.SqlTypes
                 throw new DivideByZeroException(SQLResource.DivideByZeroMessage);
 
             // 1) Figure out result prec,scale,sign..
-            fResSignPos = (x.IsPositive == y.IsPositive);//sign of result
+            fResSignPos = (x.IsPositive == y.IsPositive); //sign of result
 
             //scale = max(s1 + p2 + 1, x_cNumeDivScaleMin);
             //precision = max(s1 + p2 + 1, x_cNumeDivScaleMin) + p1 + p2 + 1;
@@ -2354,7 +2354,7 @@ namespace System.Data.SqlTypes
 
             SqlDecimal ret = n;
 
-            int lScaleAdjust = scale - ret._bScale;//Adjustment to scale
+            int lScaleAdjust = scale - ret._bScale; //Adjustment to scale
 
             //Adjust scale
             ret.AdjustScale(lScaleAdjust, true);

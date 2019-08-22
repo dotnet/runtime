@@ -79,7 +79,7 @@ namespace System.Text.RegularExpressions
             RegexNode concatNode = null;
             int nextChild = 0;
 
-            for (; ;)
+            while (true)
             {
                 switch (curNode.NType)
                 {
@@ -160,7 +160,7 @@ namespace System.Text.RegularExpressions
 
             curNode = tree.Root;
 
-            for (; ;)
+            while (true)
             {
                 switch (curNode.NType)
                 {
@@ -312,7 +312,7 @@ namespace System.Text.RegularExpressions
             RegexNode curNode = tree.Root;
             int curChild = 0;
 
-            for (; ;)
+            while (true)
             {
                 if (curNode.Children == null)
                 {

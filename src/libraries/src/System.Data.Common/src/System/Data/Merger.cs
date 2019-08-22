@@ -48,7 +48,7 @@ namespace System.Data
             _IgnoreNSforTableLookup = (_dataSet._namespaceURI != source._namespaceURI); // if two DataSets have different
             // Namespaces, ignore NS for table lookups as we won't be able to find the right tables which inherits its NS
 
-            List<DataColumn> existingColumns = null;// need to cache existing columns
+            List<DataColumn> existingColumns = null; // need to cache existing columns
 
             if (MissingSchemaAction.Add == _missingSchemaAction)
             {
@@ -93,7 +93,7 @@ namespace System.Data
                     }
                     else
                     {
-                        targetTable = _dataSet.Tables[sourceTable.TableName, sourceTable.Namespace];// we know that target table won't be null since MissingSchemaAction is Add , we have already added it!
+                        targetTable = _dataSet.Tables[sourceTable.TableName, sourceTable.Namespace]; // we know that target table won't be null since MissingSchemaAction is Add , we have already added it!
                     }
 
                     foreach (DataColumn dc in sourceTable.Columns)

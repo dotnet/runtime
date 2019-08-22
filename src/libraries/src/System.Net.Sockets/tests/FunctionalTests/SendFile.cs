@@ -141,7 +141,7 @@ namespace System.Net.Sockets.Tests
                     using (remote)
                     {
                         var recvBuffer = new byte[256];
-                        for (; ; )
+                        while (true)
                         {
                             int received = remote.Receive(recvBuffer, 0, recvBuffer.Length, SocketFlags.None);
                             if (received == 0)

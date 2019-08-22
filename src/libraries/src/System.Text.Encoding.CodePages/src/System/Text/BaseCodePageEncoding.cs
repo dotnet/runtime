@@ -129,7 +129,7 @@ namespace System.Text
             [FieldOffset(0x22)]
             internal ushort VersionMinor;   // WORD
             [FieldOffset(0x24)]
-            internal ushort VersionRevision;// WORD
+            internal ushort VersionRevision; // WORD
             [FieldOffset(0x26)]
             internal ushort VersionBuild;   // WORD
             [FieldOffset(0x28)]

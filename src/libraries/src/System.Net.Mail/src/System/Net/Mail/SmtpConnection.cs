@@ -820,7 +820,7 @@ namespace System.Net.Mail
 
             private bool AuthenticateContinue()
             {
-                for (;;)
+                while (true)
                 {
                     // We don't need credential on the continued auth assuming they were captured on the first call.
                     // That should always work, otherwise what if a new credential has been returned?

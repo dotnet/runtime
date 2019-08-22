@@ -850,7 +850,7 @@ namespace System.Xml.Schema
                         {
                             //more than one consecutive text nodes probably with PI in between
                             xse.SchemaTypeName = ST_string;
-                            xse.LineNumber = TF_string;// we use LineNumber to store flags of valid types
+                            xse.LineNumber = TF_string; // we use LineNumber to store flags of valid types
                         }
                         else
                         {
@@ -864,7 +864,7 @@ namespace System.Xml.Schema
                                 else
                                 {
                                     xse.SchemaTypeName = ST_string;
-                                    xse.LineNumber = TF_string;// we use LineNumber to store flags of valid types
+                                    xse.LineNumber = TF_string; // we use LineNumber to store flags of valid types
                                 }
                             else if (_xtr.NodeType == XmlNodeType.Text)
                             {
@@ -887,7 +887,7 @@ namespace System.Xml.Schema
                             else
                             {
                                 xse.SchemaTypeName = ST_string;
-                                xse.LineNumber = TF_string;// we use LineNumber to store flags of valid types
+                                xse.LineNumber = TF_string; // we use LineNumber to store flags of valid types
                             }
                         }
                     }

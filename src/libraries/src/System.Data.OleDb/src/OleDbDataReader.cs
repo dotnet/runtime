@@ -1337,7 +1337,7 @@ namespace System.Data.OleDb
                 DisposeOpenResults();
                 _hasRows = false;
 
-                for (; ; )
+                while (true)
                 {
                     Debug.Assert(null == _irow, "NextResult: row loop check");
                     Debug.Assert(null == _irowset, "NextResult: rowset loop check");

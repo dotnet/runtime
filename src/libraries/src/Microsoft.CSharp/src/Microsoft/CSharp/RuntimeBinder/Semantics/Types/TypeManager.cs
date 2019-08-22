@@ -608,7 +608,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             if (typeSrc is AggregateType aggSrc)
             {
-                for (;;)
+                while (true)
                 {
                     if ((aggSrc.IsInterfaceType || aggSrc.IsDelegateType) && TryVarianceAdjustmentToGetAccessibleType(context, aggSrc, out CType typeDst))
                     {

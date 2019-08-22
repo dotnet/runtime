@@ -1127,7 +1127,7 @@ namespace System.Data
                         ForeignKeyConstraint foreign = constraints[j] as ForeignKeyConstraint;
                         if (foreign.Table == foreign.RelatedTable)
                         {
-                            continue;// we have already added this foreign key in while cloning the datatable
+                            continue; // we have already added this foreign key in while cloning the datatable
                         }
 
                         ds.Tables[i].Constraints.Add(constraints[j].Clone(ds));

@@ -532,7 +532,7 @@ namespace System.Data
             if (items == null)
                 return false; // empty element, threat it as table
 
-            bool isChoice = FromInference && (pt is XmlSchemaChoice);// currently we add this support for choice, just for inference
+            bool isChoice = FromInference && (pt is XmlSchemaChoice); // currently we add this support for choice, just for inference
 
 
             foreach (XmlSchemaAnnotated el in items)
@@ -952,7 +952,7 @@ namespace System.Data
 
                         if (relation == null)
                         {
-                            tableChildren.Add(child);// how about prefix for this?
+                            tableChildren.Add(child); // how about prefix for this?
                             if (FromInference && table.UKColumnPositionForInference == -1)
                             { // this is done for Inference
                                 int ukColumnPosition = -1;
@@ -1709,7 +1709,7 @@ namespace System.Data
                 DataColumn parentKey;
                 if (FromInference)
                 {
-                    int position = table.UKColumnPositionForInference;// we keep posiotion of unique key column here, for inference
+                    int position = table.UKColumnPositionForInference; // we keep posiotion of unique key column here, for inference
                     if (position == -1)
                         foreach (DataColumn dc in table.Columns)
                         {
@@ -2203,7 +2203,7 @@ namespace System.Data
                 {
                     // this means UDSimpleType
                     strType = node.QualifiedName.ToString(); // use qualifed name
-                    type = ParseDataType(node.QualifiedName.ToString());// search with QName
+                    type = ParseDataType(node.QualifiedName.ToString()); // search with QName
                 }
                 else
                 {
@@ -2435,7 +2435,7 @@ namespace System.Data
                     {
                         return; // backward compatability
                     }
-                    column = new DataColumn(columnName, type, null, MappingType.Element);// this is to fix issue with Exception we used to throw for old inference engine if column
+                    column = new DataColumn(columnName, type, null, MappingType.Element); // this is to fix issue with Exception we used to throw for old inference engine if column
                     //exists with different namespace; while adding it to columncollection
                     isToAdd = true;
                 }
