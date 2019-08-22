@@ -3254,7 +3254,7 @@ namespace System
         }
 
         // Cut trailing spaces
-        private void GetLengthWithoutTrailingSpaces(string str, ref ushort length ,int idx)
+        private void GetLengthWithoutTrailingSpaces(string str, ref ushort length, int idx)
         {
             // to avoid dereferencing ref length parameter for every update
             ushort local = length;

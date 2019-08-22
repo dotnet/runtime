@@ -37,7 +37,7 @@ namespace System.DirectoryServices
         private void CheckIsContainer()
         {
             if (!_container.IsContainer)
-                throw new InvalidOperationException(SR.Format(SR.DSNotAContainer , _container.Path));
+                throw new InvalidOperationException(SR.Format(SR.DSNotAContainer, _container.Path));
         }
 
         /// <devdoc>

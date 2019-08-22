@@ -13,9 +13,11 @@ namespace System.Drawing
 #endif
 
     public sealed class SolidBrush : Brush
+#pragma warning disable SA1001
 #if FEATURE_SYSTEM_EVENTS
         , ISystemColorTracker
 #endif
+#pragma warning restore SA1001
     {
         // GDI+ doesn't understand system colors, so we need to cache the value here.
         private Color _color = Color.Empty;

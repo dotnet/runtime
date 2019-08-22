@@ -188,7 +188,7 @@ namespace System.Management
                 context.IdentifierChanged += new IdentifierChangedEventHandler(HandleIdentifierChange);
 
                 //the context property has changed so act like we fired the event
-                HandleIdentifierChange(this,null);
+                HandleIdentifierChange(this, null);
             }
         }
 

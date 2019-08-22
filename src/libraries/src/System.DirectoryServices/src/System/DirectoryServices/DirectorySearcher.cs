@@ -627,7 +627,7 @@ namespace System.DirectoryServices
 
             UnsafeNativeMethods.IAds adsObject = clonedRoot.AdsObject;
             if (!(adsObject is UnsafeNativeMethods.IDirectorySearch))
-                throw new NotSupportedException(SR.Format(SR.DSSearchUnsupported , SearchRoot.Path));
+                throw new NotSupportedException(SR.Format(SR.DSSearchUnsupported, SearchRoot.Path));
 
             // this is a little bit hacky, but we need to perform a bind here, so we make sure the LDAP connection that we hold has more than
             // one reference count, one by SearchResultCollection object, one by DirectorySearcher object. In this way, when user calls

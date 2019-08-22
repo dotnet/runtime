@@ -77,7 +77,7 @@ namespace System.Linq.Parallel
         //
 
         private void WrapPartitionedStreamHelper<TLeftKey, TRightKey>(
-            PartitionedStream<Pair<TInputOutput,NoKeyMemoizationRequired>, TLeftKey> leftHashStream, PartitionedStream<TInputOutput, TRightKey> rightPartitionedStream,
+            PartitionedStream<Pair<TInputOutput, NoKeyMemoizationRequired>, TLeftKey> leftHashStream, PartitionedStream<TInputOutput, TRightKey> rightPartitionedStream,
             IPartitionedStreamRecipient<TInputOutput> outputRecipient, CancellationToken cancellationToken)
         {
             int partitionCount = leftHashStream.PartitionCount;
@@ -309,7 +309,7 @@ namespace System.Linq.Parallel
 
                 if (_outputEnumerator.MoveNext())
                 {
-                    Pair<TInputOutput,TLeftKey> currentPair = _outputEnumerator.Current.Value;
+                    Pair<TInputOutput, TLeftKey> currentPair = _outputEnumerator.Current.Value;
                     currentElement = currentPair.First;
                     currentKey = currentPair.Second;
                     return true;

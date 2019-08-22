@@ -300,7 +300,7 @@ namespace System.Management
                             val = new ulong [length];
 
                             for (int i = 0; i < length; i++)
-                                ((ulong[])val) [i] = Convert.ToUInt64((string)(wmiValueArray.GetValue(i)),(IFormatProvider)CultureInfo.CurrentCulture.GetFormat(typeof(ulong)));
+                                ((ulong[])val) [i] = Convert.ToUInt64((string)(wmiValueArray.GetValue(i)), (IFormatProvider)CultureInfo.CurrentCulture.GetFormat(typeof(ulong)));
                             break;
 
                         case CimType.SInt8:
@@ -314,7 +314,7 @@ namespace System.Management
                             val = new long [length];
 
                             for (int i = 0; i < length; i++)
-                                ((long[])val) [i] = Convert.ToInt64((string)(wmiValueArray.GetValue(i)),(IFormatProvider)CultureInfo.CurrentCulture.GetFormat(typeof(long)));
+                                ((long[])val) [i] = Convert.ToInt64((string)(wmiValueArray.GetValue(i)), (IFormatProvider)CultureInfo.CurrentCulture.GetFormat(typeof(long)));
                             break;
 
                         case CimType.Char16:
@@ -377,7 +377,7 @@ namespace System.Management
                         case CimType.SInt8:
                             wmiValue = new short [length];
                             for (int i = 0; i < length; i++)
-                                ((short[])(wmiValue))[i] = (short)Convert.ToSByte(valArray.GetValue(i),(IFormatProvider)culInfo.GetFormat(typeof(sbyte)));
+                                ((short[])(wmiValue))[i] = (short)Convert.ToSByte(valArray.GetValue(i), (IFormatProvider)culInfo.GetFormat(typeof(sbyte)));
                             break;
 
                         case CimType.UInt8:
@@ -387,7 +387,7 @@ namespace System.Management
                             {
                                 wmiValue = new byte [length];
                                 for (int i = 0; i < length; i++)
-                                    ((byte[])wmiValue)[i] = Convert.ToByte(valArray.GetValue(i),(IFormatProvider)culInfo.GetFormat(typeof(byte)));
+                                    ((byte[])wmiValue)[i] = Convert.ToByte(valArray.GetValue(i), (IFormatProvider)culInfo.GetFormat(typeof(byte)));
                             }
                             break;
 
@@ -398,14 +398,14 @@ namespace System.Management
                             {
                                 wmiValue = new short [length];
                                 for (int i = 0; i < length; i++)
-                                    ((short[])(wmiValue))[i] = Convert.ToInt16(valArray.GetValue(i),(IFormatProvider)culInfo.GetFormat(typeof(short)));
+                                    ((short[])(wmiValue))[i] = Convert.ToInt16(valArray.GetValue(i), (IFormatProvider)culInfo.GetFormat(typeof(short)));
                             }
                             break;
 
                         case CimType.UInt16:
                             wmiValue = new int [length];
                             for (int i = 0; i < length; i++)
-                                ((int[])(wmiValue))[i] = (int)(Convert.ToUInt16(valArray.GetValue(i),(IFormatProvider)culInfo.GetFormat(typeof(ushort))));
+                                ((int[])(wmiValue))[i] = (int)(Convert.ToUInt16(valArray.GetValue(i), (IFormatProvider)culInfo.GetFormat(typeof(ushort))));
                             break;
 
                         case CimType.SInt32:
@@ -415,26 +415,26 @@ namespace System.Management
                             {
                                 wmiValue = new int [length];
                                 for (int i = 0; i < length; i++)
-                                    ((int[])(wmiValue))[i] = Convert.ToInt32(valArray.GetValue(i),(IFormatProvider)culInfo.GetFormat(typeof(int)));
+                                    ((int[])(wmiValue))[i] = Convert.ToInt32(valArray.GetValue(i), (IFormatProvider)culInfo.GetFormat(typeof(int)));
                             }
                             break;
 
                         case CimType.UInt32:
                             wmiValue = new int [length];
                             for (int i = 0; i < length; i++)
-                                ((int[])(wmiValue))[i] = (int)(Convert.ToUInt32(valArray.GetValue(i),(IFormatProvider)culInfo.GetFormat(typeof(uint))));
+                                ((int[])(wmiValue))[i] = (int)(Convert.ToUInt32(valArray.GetValue(i), (IFormatProvider)culInfo.GetFormat(typeof(uint))));
                             break;
 
                         case CimType.SInt64:
                             wmiValue = new string [length];
                             for (int i = 0; i < length; i++)
-                                ((string[])(wmiValue))[i] = (Convert.ToInt64(valArray.GetValue(i),(IFormatProvider)culInfo.GetFormat(typeof(long)))).ToString((IFormatProvider)culInfo.GetFormat(typeof(long)));
+                                ((string[])(wmiValue))[i] = (Convert.ToInt64(valArray.GetValue(i), (IFormatProvider)culInfo.GetFormat(typeof(long)))).ToString((IFormatProvider)culInfo.GetFormat(typeof(long)));
                             break;
 
                         case CimType.UInt64:
                             wmiValue = new string [length];
                             for (int i = 0; i < length; i++)
-                                ((string[])(wmiValue))[i] = (Convert.ToUInt64(valArray.GetValue(i),(IFormatProvider)culInfo.GetFormat(typeof(ulong)))).ToString((IFormatProvider)culInfo.GetFormat(typeof(ulong)));
+                                ((string[])(wmiValue))[i] = (Convert.ToUInt64(valArray.GetValue(i), (IFormatProvider)culInfo.GetFormat(typeof(ulong)))).ToString((IFormatProvider)culInfo.GetFormat(typeof(ulong)));
                             break;
 
                         case CimType.Real32:
@@ -444,7 +444,7 @@ namespace System.Management
                             {
                                 wmiValue = new float [length];
                                 for (int i = 0; i < length; i++)
-                                    ((float[])(wmiValue))[i] = Convert.ToSingle(valArray.GetValue(i),(IFormatProvider)culInfo.GetFormat(typeof(float)));
+                                    ((float[])(wmiValue))[i] = Convert.ToSingle(valArray.GetValue(i), (IFormatProvider)culInfo.GetFormat(typeof(float)));
                             }
                             break;
 
@@ -455,14 +455,14 @@ namespace System.Management
                             {
                                 wmiValue = new double [length];
                                 for (int i = 0; i < length; i++)
-                                    ((double[])(wmiValue))[i] = Convert.ToDouble(valArray.GetValue(i),(IFormatProvider)culInfo.GetFormat(typeof(double)));
+                                    ((double[])(wmiValue))[i] = Convert.ToDouble(valArray.GetValue(i), (IFormatProvider)culInfo.GetFormat(typeof(double)));
                             }
                             break;
 
                         case CimType.Char16:
                             wmiValue = new short [length];
                             for (int i = 0; i < length; i++)
-                                ((short[])(wmiValue))[i] = (short)Convert.ToChar(valArray.GetValue(i),(IFormatProvider)culInfo.GetFormat(typeof(char)));
+                                ((short[])(wmiValue))[i] = (short)Convert.ToChar(valArray.GetValue(i), (IFormatProvider)culInfo.GetFormat(typeof(char)));
                             break;
 
                         case CimType.String:
@@ -485,7 +485,7 @@ namespace System.Management
                             {
                                 wmiValue = new bool [length];
                                 for (int i = 0; i < length; i++)
-                                    ((bool[])(wmiValue))[i] = Convert.ToBoolean(valArray.GetValue(i),(IFormatProvider)culInfo.GetFormat(typeof(bool)));
+                                    ((bool[])(wmiValue))[i] = Convert.ToBoolean(valArray.GetValue(i), (IFormatProvider)culInfo.GetFormat(typeof(bool)));
                             }
                             break;
 
@@ -508,47 +508,47 @@ namespace System.Management
                     switch (type)
                     {
                         case CimType.SInt8:
-                            wmiValue = (short)Convert.ToSByte(val,(IFormatProvider)culInfo.GetFormat(typeof(short)));
+                            wmiValue = (short)Convert.ToSByte(val, (IFormatProvider)culInfo.GetFormat(typeof(short)));
                             break;
 
                         case CimType.UInt8:
-                            wmiValue = Convert.ToByte(val,(IFormatProvider)culInfo.GetFormat(typeof(byte)));
+                            wmiValue = Convert.ToByte(val, (IFormatProvider)culInfo.GetFormat(typeof(byte)));
                             break;
 
                         case CimType.SInt16:
-                            wmiValue = Convert.ToInt16(val,(IFormatProvider)culInfo.GetFormat(typeof(short)));
+                            wmiValue = Convert.ToInt16(val, (IFormatProvider)culInfo.GetFormat(typeof(short)));
                             break;
 
                         case CimType.UInt16:
-                            wmiValue = (int)(Convert.ToUInt16(val,(IFormatProvider)culInfo.GetFormat(typeof(ushort))));
+                            wmiValue = (int)(Convert.ToUInt16(val, (IFormatProvider)culInfo.GetFormat(typeof(ushort))));
                             break;
 
                         case CimType.SInt32:
-                            wmiValue = Convert.ToInt32(val,(IFormatProvider)culInfo.GetFormat(typeof(int)));
+                            wmiValue = Convert.ToInt32(val, (IFormatProvider)culInfo.GetFormat(typeof(int)));
                             break;
 
                         case CimType.UInt32:
-                            wmiValue = (int)Convert.ToUInt32(val,(IFormatProvider)culInfo.GetFormat(typeof(uint)));
+                            wmiValue = (int)Convert.ToUInt32(val, (IFormatProvider)culInfo.GetFormat(typeof(uint)));
                             break;
 
                         case CimType.SInt64:
-                            wmiValue = (Convert.ToInt64(val,(IFormatProvider)culInfo.GetFormat(typeof(long)))).ToString((IFormatProvider)culInfo.GetFormat(typeof(long)));
+                            wmiValue = (Convert.ToInt64(val, (IFormatProvider)culInfo.GetFormat(typeof(long)))).ToString((IFormatProvider)culInfo.GetFormat(typeof(long)));
                             break;
 
                         case CimType.UInt64:
-                            wmiValue = (Convert.ToUInt64(val,(IFormatProvider)culInfo.GetFormat(typeof(ulong)))).ToString((IFormatProvider)culInfo.GetFormat(typeof(ulong)));
+                            wmiValue = (Convert.ToUInt64(val, (IFormatProvider)culInfo.GetFormat(typeof(ulong)))).ToString((IFormatProvider)culInfo.GetFormat(typeof(ulong)));
                             break;
 
                         case CimType.Real32:
-                            wmiValue = Convert.ToSingle(val,(IFormatProvider)culInfo.GetFormat(typeof(float)));
+                            wmiValue = Convert.ToSingle(val, (IFormatProvider)culInfo.GetFormat(typeof(float)));
                             break;
 
                         case CimType.Real64:
-                            wmiValue = Convert.ToDouble(val,(IFormatProvider)culInfo.GetFormat(typeof(double)));
+                            wmiValue = Convert.ToDouble(val, (IFormatProvider)culInfo.GetFormat(typeof(double)));
                             break;
 
                         case CimType.Char16:
-                            wmiValue = (short)Convert.ToChar(val,(IFormatProvider)culInfo.GetFormat(typeof(char)));
+                            wmiValue = (short)Convert.ToChar(val, (IFormatProvider)culInfo.GetFormat(typeof(char)));
                             break;
 
                         case CimType.String:
@@ -558,7 +558,7 @@ namespace System.Management
                             break;
 
                         case CimType.Boolean:
-                            wmiValue = Convert.ToBoolean(val,(IFormatProvider)culInfo.GetFormat(typeof(bool)));
+                            wmiValue = Convert.ToBoolean(val, (IFormatProvider)culInfo.GetFormat(typeof(bool)));
                             break;
 
                         case CimType.Object:
@@ -734,9 +734,9 @@ namespace System.Management
                     {
                         type = CimType.UInt32;
                         if (((uint)val & 0x80000000) != 0)
-                            wmiValue = Convert.ToString(val,(IFormatProvider)culInfo.GetFormat(typeof(uint)));
+                            wmiValue = Convert.ToString(val, (IFormatProvider)culInfo.GetFormat(typeof(uint)));
                         else
-                            wmiValue = Convert.ToInt32(val,(IFormatProvider)culInfo.GetFormat(typeof(int)));
+                            wmiValue = Convert.ToInt32(val, (IFormatProvider)culInfo.GetFormat(typeof(int)));
                     }
                     else if (valueType == typeof(ulong))
                     {

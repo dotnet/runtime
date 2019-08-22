@@ -224,10 +224,10 @@ namespace System.DirectoryServices.Interop
                 case AdsType.ADSTYPE_TYPEDNAME:
                 case AdsType.ADSTYPE_REPLICAPOINTER:
                 case AdsType.ADSTYPE_UNKNOWN:
-                    return new NotImplementedException(SR.Format(SR.DSAdsvalueTypeNYI , "0x" + Convert.ToString(adsvalue.dwType, 16)));
+                    return new NotImplementedException(SR.Format(SR.DSAdsvalueTypeNYI, "0x" + Convert.ToString(adsvalue.dwType, 16)));
 
                 default:
-                    return new ArgumentException(SR.Format(SR.DSConvertFailed , "0x" + Convert.ToString(LowInt64, 16), "0x" + Convert.ToString(adsvalue.dwType, 16)));
+                    return new ArgumentException(SR.Format(SR.DSConvertFailed, "0x" + Convert.ToString(LowInt64, 16), "0x" + Convert.ToString(adsvalue.dwType, 16)));
             }
         }
 
@@ -284,7 +284,7 @@ namespace System.DirectoryServices.Interop
                     adsvalue.octetString.value = _pinnedHandle.AddrOfPinnedObject();
                     break;
                 default:
-                    throw new NotImplementedException(SR.Format(SR.DSAdsvalueTypeNYI , "0x" + Convert.ToString((int)adsType, 16)));
+                    throw new NotImplementedException(SR.Format(SR.DSAdsvalueTypeNYI, "0x" + Convert.ToString((int)adsType, 16)));
             }
         }
     }

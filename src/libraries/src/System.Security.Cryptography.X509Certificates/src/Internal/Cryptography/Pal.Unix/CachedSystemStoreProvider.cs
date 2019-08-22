@@ -34,7 +34,7 @@ namespace Internal.Cryptography.Pal
         private static readonly FileInfo s_rootStoreFileInfo = SafeOpenRootFileInfo();
 
         // Use non-Value-Tuple so that it's an atomic update.
-        private static Tuple<SafeX509StackHandle,SafeX509StackHandle> s_nativeCollections;
+        private static Tuple<SafeX509StackHandle, SafeX509StackHandle> s_nativeCollections;
         private static DateTime s_directoryCertsLastWrite;
         private static DateTime s_fileCertsLastWrite;
 

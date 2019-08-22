@@ -32,12 +32,12 @@ namespace System.DirectoryServices.ActiveDirectory
                     throw new ArgumentNullException(nameof(value));
 
                 if (!site.existing)
-                    throw new InvalidOperationException(SR.Format(SR.SiteNotCommitted , site.Name));
+                    throw new InvalidOperationException(SR.Format(SR.SiteNotCommitted, site.Name));
 
                 if (!Contains(site))
                     List[index] = site;
                 else
-                    throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection , site), nameof(value));
+                    throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection, site), nameof(value));
             }
         }
 
@@ -47,12 +47,12 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException(nameof(site));
 
             if (!site.existing)
-                throw new InvalidOperationException(SR.Format(SR.SiteNotCommitted , site.Name));
+                throw new InvalidOperationException(SR.Format(SR.SiteNotCommitted, site.Name));
 
             if (!Contains(site))
                 return List.Add(site);
             else
-                throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection , site), nameof(site));
+                throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection, site), nameof(site));
         }
 
         public void AddRange(ActiveDirectorySite[] sites)
@@ -80,7 +80,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException(nameof(site));
 
             if (!site.existing)
-                throw new InvalidOperationException(SR.Format(SR.SiteNotCommitted , site.Name));
+                throw new InvalidOperationException(SR.Format(SR.SiteNotCommitted, site.Name));
 
             string dn = (string)PropertyManager.GetPropertyValue(site.context, site.cachedEntry, PropertyManager.DistinguishedName);
 
@@ -108,7 +108,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException(nameof(site));
 
             if (!site.existing)
-                throw new InvalidOperationException(SR.Format(SR.SiteNotCommitted , site.Name));
+                throw new InvalidOperationException(SR.Format(SR.SiteNotCommitted, site.Name));
 
             string dn = (string)PropertyManager.GetPropertyValue(site.context, site.cachedEntry, PropertyManager.DistinguishedName);
 
@@ -131,12 +131,12 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException(nameof(site));
 
             if (!site.existing)
-                throw new InvalidOperationException(SR.Format(SR.SiteNotCommitted , site.Name));
+                throw new InvalidOperationException(SR.Format(SR.SiteNotCommitted, site.Name));
 
             if (!Contains(site))
                 List.Insert(index, site);
             else
-                throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection , site), nameof(site));
+                throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection, site), nameof(site));
         }
 
         public void Remove(ActiveDirectorySite site)
@@ -145,7 +145,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException(nameof(site));
 
             if (!site.existing)
-                throw new InvalidOperationException(SR.Format(SR.SiteNotCommitted , site.Name));
+                throw new InvalidOperationException(SR.Format(SR.SiteNotCommitted, site.Name));
 
             string dn = (string)PropertyManager.GetPropertyValue(site.context, site.cachedEntry, PropertyManager.DistinguishedName);
 
@@ -162,7 +162,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
 
             // something that does not exist in the collectio
-            throw new ArgumentException(SR.Format(SR.NotFoundInCollection , site), nameof(site));
+            throw new ArgumentException(SR.Format(SR.NotFoundInCollection, site), nameof(site));
         }
 
         protected override void OnClearComplete()
@@ -235,7 +235,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentException(nameof(value));
 
             if (!((ActiveDirectorySite)value).existing)
-                throw new InvalidOperationException(SR.Format(SR.SiteNotCommitted , ((ActiveDirectorySite)value).Name));
+                throw new InvalidOperationException(SR.Format(SR.SiteNotCommitted, ((ActiveDirectorySite)value).Name));
         }
     }
 }

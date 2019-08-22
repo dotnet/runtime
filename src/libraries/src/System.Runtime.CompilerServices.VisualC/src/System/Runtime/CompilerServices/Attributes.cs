@@ -121,7 +121,7 @@ namespace System.Runtime.CompilerServices
         public NativeCppClassAttribute() { }
     }
 
-    [AttributeUsage (AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Enum | AttributeTargets.Interface,AllowMultiple=true, Inherited=false)]
+    [AttributeUsage (AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Enum | AttributeTargets.Interface, AllowMultiple=true, Inherited=false)]
     public sealed class RequiredAttributeAttribute : Attribute
     {
         public RequiredAttributeAttribute(Type requiredContract) => RequiredContract = requiredContract;

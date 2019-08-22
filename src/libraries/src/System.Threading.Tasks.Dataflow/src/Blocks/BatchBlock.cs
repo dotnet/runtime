@@ -765,7 +765,7 @@ namespace System.Threading.Tasks.Dataflow
                 // Shortcuts just to keep the code cleaner
                 QueuedMap<ISourceBlock<T>, DataflowMessageHeader> postponed = _nonGreedyState.PostponedMessages;
                 KeyValuePair<ISourceBlock<T>, DataflowMessageHeader>[] postponedTemp = _nonGreedyState.PostponedMessagesTemp;
-                List<KeyValuePair<ISourceBlock<T>, KeyValuePair<DataflowMessageHeader,T>>> reserved = _nonGreedyState.ReservedSourcesTemp;
+                List<KeyValuePair<ISourceBlock<T>, KeyValuePair<DataflowMessageHeader, T>>> reserved = _nonGreedyState.ReservedSourcesTemp;
 
                 // Clear the temporary buffer.  This is safe to do without a lock because
                 // it is only accessed by the serial message loop.

@@ -3336,7 +3336,7 @@ namespace System.Data.SqlClient
                                     parts[1] != null // server should not be null or we don't need to remove it
                                 )
                                 {
-                                    parameter.TypeName = QuoteIdentifier(parts.AsSpan(2,2));
+                                    parameter.TypeName = QuoteIdentifier(parts.AsSpan(2, 2));
                                 }
                             }
                         }

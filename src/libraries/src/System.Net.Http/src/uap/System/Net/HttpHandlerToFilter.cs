@@ -428,7 +428,7 @@ namespace System.Net.Http
             }
             else
             {
-                response.Version = new Version(0,0);
+                response.Version = new Version(0, 0);
             }
 
             bool success;

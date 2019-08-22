@@ -326,7 +326,7 @@ namespace System.Net.Sockets
             else
             {
                 // If not, fall-back to old IPv4.
-                listener = new TcpListener(IPAddress.Any , port);
+                listener = new TcpListener(IPAddress.Any, port);
             }
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(null, port);

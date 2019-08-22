@@ -302,7 +302,7 @@ namespace System.Net.WebSockets
                 lock (ReceiveAsyncLock) // synchronize with receives in CloseAsync
                 {
                     ThrowIfOperationInProgress(_lastReceiveAsync.IsCompleted);
-                    Task<WebSocketReceiveResult> t = ReceiveAsyncPrivate<WebSocketReceiveResultGetter,WebSocketReceiveResult>(buffer, cancellationToken).AsTask();
+                    Task<WebSocketReceiveResult> t = ReceiveAsyncPrivate<WebSocketReceiveResultGetter, WebSocketReceiveResult>(buffer, cancellationToken).AsTask();
                     _lastReceiveAsync = t;
                     return t;
                 }

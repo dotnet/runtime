@@ -147,7 +147,7 @@ namespace System.Management
             if (status >= 0)
             {
                 if ((index + nameArray.Length) > array.Length)
-                    throw new ArgumentException(null,nameof(index));
+                    throw new ArgumentException(null, nameof(index));
 
                 foreach (string propertyName in nameArray)
                     array.SetValue(new PropertyData(parent, propertyName), index++);

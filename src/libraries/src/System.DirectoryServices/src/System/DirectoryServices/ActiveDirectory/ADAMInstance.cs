@@ -128,7 +128,7 @@ namespace System.DirectoryServices.ActiveDirectory
             // target must be a server
             if ((!context.isServer()))
             {
-                throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.AINotFound , context.Name), typeof(AdamInstance), context.Name);
+                throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.AINotFound, context.Name), typeof(AdamInstance), context.Name);
             }
 
             //  work with copy of the context
@@ -143,7 +143,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 // This will ensure that we are talking to ADAM instance only
                 if (!Utils.CheckCapability(rootDSE, Capability.ActiveDirectoryApplicationMode))
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.AINotFound , context.Name), typeof(AdamInstance), context.Name);
+                    throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.AINotFound, context.Name), typeof(AdamInstance), context.Name);
                 }
                 dnsHostName = (string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.DnsHostName);
             }
@@ -153,7 +153,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 if (errorCode == unchecked((int)0x8007203a))
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.AINotFound , context.Name), typeof(AdamInstance), context.Name);
+                    throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.AINotFound, context.Name), typeof(AdamInstance), context.Name);
                 }
                 else
                 {
@@ -660,7 +660,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     // this adam instance
                     if (!Partitions.Contains(value))
                     {
-                        throw new ArgumentException(SR.Format(SR.ServerNotAReplica , value), nameof(value));
+                        throw new ArgumentException(SR.Format(SR.ServerNotAReplica, value), nameof(value));
                     }
                     ntdsaEntry.Properties[PropertyManager.MsDSDefaultNamingContext].Value = value;
                 }

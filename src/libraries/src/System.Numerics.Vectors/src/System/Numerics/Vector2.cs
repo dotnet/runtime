@@ -265,7 +265,7 @@ namespace System.Numerics
             y = (min.Y > y) ? min.Y : y;  // max(y, miny)
             y = (max.Y < y) ? max.Y : y;  // min(y, maxy)
 
-            return new Vector2(x,y);
+            return new Vector2(x, y);
         }
 
         /// <summary>

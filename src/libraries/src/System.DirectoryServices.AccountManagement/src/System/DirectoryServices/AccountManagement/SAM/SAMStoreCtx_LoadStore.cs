@@ -658,7 +658,7 @@ namespace System.DirectoryServices.AccountManagement
 
 
             //
-            {PropertyNames.AuthenticablePrincipalEnabled ,     typeof(UserPrincipal),  "UserFlags",     new FromWinNTConverterDelegate(UserFlagsFromWinNTConverter),  new ToWinNTConverterDelegate(UserFlagsToWinNTConverter)},
+            {PropertyNames.AuthenticablePrincipalEnabled,     typeof(UserPrincipal),  "UserFlags",     new FromWinNTConverterDelegate(UserFlagsFromWinNTConverter),  new ToWinNTConverterDelegate(UserFlagsToWinNTConverter)},
             {PropertyNames.AuthenticablePrincipalCertificates, typeof(UserPrincipal),  "*******",       new FromWinNTConverterDelegate(CertFromWinNTConverter),       new ToWinNTConverterDelegate(CertToWinNT)},
 
             //
@@ -666,7 +666,7 @@ namespace System.DirectoryServices.AccountManagement
             {PropertyNames.GroupGroupScope,  typeof(GroupPrincipal), "groupType",  new FromWinNTConverterDelegate(GroupTypeFromWinNTConverter), new ToWinNTConverterDelegate(GroupTypeToWinNTConverter)},
 
             //
-            {PropertyNames.UserEmailAddress, typeof(UserPrincipal),  "*******" ,  new FromWinNTConverterDelegate(EmailFromWinNTConverter),    new ToWinNTConverterDelegate(EmailToWinNTConverter)},
+            {PropertyNames.UserEmailAddress, typeof(UserPrincipal),  "*******",  new FromWinNTConverterDelegate(EmailFromWinNTConverter),    new ToWinNTConverterDelegate(EmailToWinNTConverter)},
 
             //
             {PropertyNames.AcctInfoLastLogon,             typeof(UserPrincipal), "LastLogin",              new FromWinNTConverterDelegate(DateFromWinNTConverter),            null},

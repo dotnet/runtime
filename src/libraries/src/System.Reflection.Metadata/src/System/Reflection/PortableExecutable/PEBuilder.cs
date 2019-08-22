@@ -398,7 +398,7 @@ namespace System.Reflection.PortableExecutable
             return -1;
         }
 
-        private static int SumRawDataSizes(ImmutableArray<SerializedSection> sections,SectionCharacteristics characteristics)
+        private static int SumRawDataSizes(ImmutableArray<SerializedSection> sections, SectionCharacteristics characteristics)
         {
             int result = 0;
             for (int i = 0; i < sections.Length; i++)

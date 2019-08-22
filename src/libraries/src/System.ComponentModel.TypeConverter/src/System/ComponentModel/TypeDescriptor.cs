@@ -2604,7 +2604,7 @@ namespace System.ComponentModel
 
                 if (!objectType.IsInstanceOfType(instance))
                 {
-                    throw new ArgumentException(SR.Format(SR.ConvertToException, nameof(objectType), instance.GetType()) , nameof(instance));
+                    throw new ArgumentException(SR.Format(SR.ConvertToException, nameof(objectType), instance.GetType()), nameof(instance));
                 }
 
                 return new ComNativeTypeDescriptor(Handler, instance);

@@ -1783,51 +1783,50 @@ namespace System.Data
         //    April: http://www.w3.org/TR/2000/WD-xmlschema-2-20000407/datatypes.html
         //    Fabr:  http://www.w3.org/TR/2000/WD-xmlschema-2-20000225/
         private static readonly NameType[] s_mapNameTypeXsd = {
-            new NameType("ENTITIES"            , typeof(string)  ), /* XSD Apr */
-            new NameType("ENTITY"              , typeof(string)  ), /* XSD Apr */
-            new NameType("ID"                  , typeof(string)  ), /* XSD Apr */
-            new NameType("IDREF"               , typeof(string)  ), /* XSD Apr */
-            new NameType("IDREFS"              , typeof(string)  ), /* XSD Apr */
-            new NameType("NCName"              , typeof(string)  ), /* XSD Apr */
-            new NameType("NMTOKEN"             , typeof(string)  ), /* XSD Apr */
-            new NameType("NMTOKENS"            , typeof(string)  ), /* XSD Apr */
-            new NameType("NOTATION"            , typeof(string)  ), /* XSD Apr */
-            new NameType("Name"                , typeof(string)  ), /* XSD Apr */
-            new NameType("QName"               , typeof(string)  ), /* XSD Apr */
-
-            new NameType("anyType"             , typeof(object)  ), /* XSD Apr */
-            new NameType("anyURI"              , typeof(System.Uri)  ), /* XSD Apr */
-            new NameType("base64Binary"        , typeof(byte[])  ), /* XSD Apr : abstruct */
-            new NameType("boolean"             , typeof(bool)    ), /* XSD Apr */
-            new NameType("byte"                , typeof(sbyte)   ), /* XSD Apr */
-            new NameType("date"                , typeof(DateTime)), /* XSD Apr */
-            new NameType("dateTime"            , typeof(DateTime)), /* XSD Apr */
-            new NameType("decimal"              , typeof(decimal) ), /* XSD 2001 March */
-            new NameType("double"              , typeof(double)  ), /* XSD Apr */
-            new NameType("duration"            , typeof(TimeSpan)), /* XSD Apr */
-            new NameType("float"               , typeof(float)  ), /* XSD Apr */
-            new NameType("gDay"                , typeof(DateTime)), /* XSD Apr */
-            new NameType("gMonth"              , typeof(DateTime)), /* XSD Apr */
-            new NameType("gMonthDay"           , typeof(DateTime)), /* XSD Apr */
-            new NameType("gYear"               , typeof(DateTime)), /* XSD Apr */
-            new NameType("gYearMonth"          , typeof(DateTime)), /* XSD Apr */
-            new NameType("hexBinary"           , typeof(byte[])  ), /* XSD Apr : abstruct */
-            new NameType("int"                 , typeof(int)   ), /* XSD Apr */
-            new NameType("integer"             , typeof(long)   ), /* XSD Apr */ // <xs:element name="" msdata:DataType="System.Numerics.BigInteger" type="xs:integer" minOccurs="0" />
-            new NameType("language"            , typeof(string)  ), /* XSD Apr */
-            new NameType("long"                , typeof(long)   ), /* XSD Apr */
-            new NameType("negativeInteger"     , typeof(long)   ), /* XSD Apr */
-            new NameType("nonNegativeInteger"  , typeof(ulong)  ), /* XSD Apr */
-            new NameType("nonPositiveInteger"  , typeof(long)   ), /* XSD Apr */
-            new NameType("normalizedString"    , typeof(string)  ), /* XSD Apr */
-            new NameType("positiveInteger"     , typeof(ulong)  ), /* XSD Apr */
-            new NameType("short"               , typeof(short)   ), /* XSD Apr */
-            new NameType("string"              , typeof(string)  ), /* XSD Apr */
-            new NameType("time"                , typeof(DateTime)), /* XSD Apr */
-            new NameType("unsignedByte"        , typeof(byte)    ), /* XSD Apr */
-            new NameType("unsignedInt"         , typeof(uint)  ), /* XSD Apr */
-            new NameType("unsignedLong"        , typeof(ulong)  ), /* XSD Apr */
-            new NameType("unsignedShort"       , typeof(ushort)  ), /* XSD Apr */
+            new NameType("ENTITIES",           typeof(string)     ), /* XSD Apr */
+            new NameType("ENTITY",             typeof(string)     ), /* XSD Apr */
+            new NameType("ID",                 typeof(string)     ), /* XSD Apr */
+            new NameType("IDREF",              typeof(string)     ), /* XSD Apr */
+            new NameType("IDREFS",             typeof(string)     ), /* XSD Apr */
+            new NameType("NCName",             typeof(string)     ), /* XSD Apr */
+            new NameType("NMTOKEN",            typeof(string)     ), /* XSD Apr */
+            new NameType("NMTOKENS",           typeof(string)     ), /* XSD Apr */
+            new NameType("NOTATION",           typeof(string)     ), /* XSD Apr */
+            new NameType("Name",               typeof(string)     ), /* XSD Apr */
+            new NameType("QName",              typeof(string)     ), /* XSD Apr */
+            new NameType("anyType",            typeof(object)     ), /* XSD Apr */
+            new NameType("anyURI",             typeof(System.Uri) ), /* XSD Apr */
+            new NameType("base64Binary",       typeof(byte[])     ), /* XSD Apr : abstruct */
+            new NameType("boolean",            typeof(bool)       ), /* XSD Apr */
+            new NameType("byte",               typeof(sbyte)      ), /* XSD Apr */
+            new NameType("date",               typeof(DateTime)   ), /* XSD Apr */
+            new NameType("dateTime",           typeof(DateTime)   ), /* XSD Apr */
+            new NameType("decimal",            typeof(decimal)    ), /* XSD 2001 March */
+            new NameType("double",             typeof(double)     ), /* XSD Apr */
+            new NameType("duration",           typeof(TimeSpan)   ), /* XSD Apr */
+            new NameType("float",              typeof(float)      ), /* XSD Apr */
+            new NameType("gDay",               typeof(DateTime)   ), /* XSD Apr */
+            new NameType("gMonth",             typeof(DateTime)   ), /* XSD Apr */
+            new NameType("gMonthDay",          typeof(DateTime)   ), /* XSD Apr */
+            new NameType("gYear",              typeof(DateTime)   ), /* XSD Apr */
+            new NameType("gYearMonth",         typeof(DateTime)   ), /* XSD Apr */
+            new NameType("hexBinary",          typeof(byte[])     ), /* XSD Apr : abstruct */
+            new NameType("int",                typeof(int)        ), /* XSD Apr */
+            new NameType("integer",            typeof(long)       ), /* XSD Apr */ // <xs:element name="" msdata:DataType="System.Numerics.BigInteger" type="xs:integer" minOccurs="0" />
+            new NameType("language",           typeof(string)     ), /* XSD Apr */
+            new NameType("long",               typeof(long)       ), /* XSD Apr */
+            new NameType("negativeInteger",    typeof(long)       ), /* XSD Apr */
+            new NameType("nonNegativeInteger", typeof(ulong)      ), /* XSD Apr */
+            new NameType("nonPositiveInteger", typeof(long)       ), /* XSD Apr */
+            new NameType("normalizedString",   typeof(string)     ), /* XSD Apr */
+            new NameType("positiveInteger",    typeof(ulong)      ), /* XSD Apr */
+            new NameType("short",              typeof(short)      ), /* XSD Apr */
+            new NameType("string",             typeof(string)     ), /* XSD Apr */
+            new NameType("time",               typeof(DateTime)   ), /* XSD Apr */
+            new NameType("unsignedByte",       typeof(byte)       ), /* XSD Apr */
+            new NameType("unsignedInt",        typeof(uint)       ), /* XSD Apr */
+            new NameType("unsignedLong",       typeof(ulong)      ), /* XSD Apr */
+            new NameType("unsignedShort",      typeof(ushort)     ), /* XSD Apr */
         };
 
         private static NameType FindNameType(string name)

@@ -32,7 +32,7 @@ namespace System.Linq.Parallel
     /// <typeparam name="TInputOutput"></typeparam>
     /// <typeparam name="THashKey"></typeparam>
     /// <typeparam name="TOrderKey"></typeparam>
-    internal abstract class HashRepartitionStream<TInputOutput, THashKey, TOrderKey> : PartitionedStream<Pair<TInputOutput,THashKey>, TOrderKey>
+    internal abstract class HashRepartitionStream<TInputOutput, THashKey, TOrderKey> : PartitionedStream<Pair<TInputOutput, THashKey>, TOrderKey>
     {
         private readonly IEqualityComparer<THashKey> _keyComparer; // The optional key comparison routine.
         private readonly IEqualityComparer<TInputOutput> _elementComparer; // The optional element comparison routine.

@@ -621,10 +621,10 @@ namespace System.Data
             return x;
         }
 
-        internal delegate int ComparisonBySelector<TKey,TRow>(TKey key, TRow row) where TRow:DataRow;
+        internal delegate int ComparisonBySelector<TKey, TRow>(TKey key, TRow row) where TRow:DataRow;
 
         /// <summary>This method exists for LinqDataView to keep a level of abstraction away from the RBTree</summary>
-        internal Range FindRecords<TKey,TRow>(ComparisonBySelector<TKey,TRow> comparison, TKey key) where TRow:DataRow
+        internal Range FindRecords<TKey, TRow>(ComparisonBySelector<TKey, TRow> comparison, TKey key) where TRow:DataRow
         {
             int x = _records.root;
             while (IndexTree.NIL != x)

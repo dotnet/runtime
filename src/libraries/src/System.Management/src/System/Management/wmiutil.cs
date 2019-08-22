@@ -16,7 +16,7 @@ namespace System.Management
         void SetStatus(
             int lFlags,
             int hResult,
-            [MarshalAs(UnmanagedType.BStr)] string strParam ,
+            [MarshalAs(UnmanagedType.BStr)] string strParam,
             IntPtr pObjParam
         );
     }
