@@ -70,7 +70,7 @@
 -nomethod System.IO.Tests.Directory_SetCurrentDirectory+Directory_SetCurrentDirectory_SymLink.SetToPathContainingSymLink
 
 # flaky test (The process cannot access the file ...)
--nomethod System.IO.Tests.File_Copy_str_str.CopyFileWithData_MemberData
+-nomethod System.IO.Tests.*.CopyFileWithData_MemberData
 
 ####################################################################
 ##  System.Linq.Expressions.Tests
