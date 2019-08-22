@@ -90,6 +90,13 @@
 #define CALL_COST 10
 /* Used for the JIT */
 #define INLINE_LENGTH_LIMIT 20
+/*
+ * The aot and jit inline limits should be different,
+ * since aot sees the whole program so we can let opt inline methods for us,
+ * while the jit only sees one method, so we have to inline things ourselves.
+ */
+/* Used by LLVM AOT */
+#define LLVM_AOT_INLINE_LENGTH_LIMIT 30
 /* Used to LLVM JIT */
 #define LLVM_JIT_INLINE_LENGTH_LIMIT 100
 
@@ -3769,7 +3776,7 @@ method_does_not_return (MonoMethod *method)
 		!method->is_inflated;
 }
 
-static int inline_limit, llvm_jit_inline_limit;
+static int inline_limit, llvm_jit_inline_limit, llvm_aot_inline_limit;
 static gboolean inline_limit_inited;
 
 static gboolean
@@ -3812,18 +3819,31 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 		if ((inlinelimit = g_getenv ("MONO_INLINELIMIT"))) {
 			inline_limit = atoi (inlinelimit);
 			llvm_jit_inline_limit = inline_limit;
+			llvm_aot_inline_limit = inline_limit;
 			g_free (inlinelimit);
 		} else {
 			inline_limit = INLINE_LENGTH_LIMIT;
 			llvm_jit_inline_limit = LLVM_JIT_INLINE_LENGTH_LIMIT;
+			llvm_aot_inline_limit = LLVM_AOT_INLINE_LENGTH_LIMIT;
 		}
 		inline_limit_inited = TRUE;
 	}
 
+#ifdef ENABLE_NETCORE
+	if (COMPILE_LLVM (cfg)) {
+		if (cfg->compile_aot)
+			limit = llvm_aot_inline_limit;
+		else
+			limit = llvm_jit_inline_limit;
+	} else {
+		limit = inline_limit;
+	}
+#else
 	if (COMPILE_LLVM (cfg) && !cfg->compile_aot)
 		limit = llvm_jit_inline_limit;
 	else
 		limit = inline_limit;
+#endif
 	if (header.code_size >= limit && !(method->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING))
 		return FALSE;
 
