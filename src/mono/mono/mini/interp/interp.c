@@ -3451,14 +3451,12 @@ main_loop:
 		}
 		MINT_IN_CASE(MINT_CALLI) {
 			MonoMethodSignature *csignature;
-			stackval *endsp = sp;
 
 			frame->ip = ip;
 			
 			csignature = (MonoMethodSignature*)imethod->data_items [* (guint16 *)(ip + 1)];
 			ip += 2;
 			--sp;
-			--endsp;
 			child_frame.imethod = (InterpMethod*)sp->data.p;
 
 			sp->data.p = vt_sp;
@@ -3489,7 +3487,7 @@ main_loop:
 
 			/* need to handle typedbyref ... */
 			if (csignature->ret->type != MONO_TYPE_VOID) {
-				*sp = *endsp;
+				*sp = *child_frame.retval;
 				sp++;
 			}
 			MINT_IN_BREAK;
@@ -3511,14 +3509,12 @@ main_loop:
 		}
 		MINT_IN_CASE(MINT_CALLI_NAT) {
 
-			stackval *endsp = sp;
 			frame->ip = ip;
 
 			MonoMethodSignature* csignature = (MonoMethodSignature*)imethod->data_items [* (guint16 *)(ip + 1)];
 
 			ip += 3;
 			--sp;
-			--endsp;
 			guchar* const code = (guchar*)sp->data.p;
 			child_frame.imethod = NULL;
 
@@ -3541,7 +3537,7 @@ main_loop:
 
 			/* need to handle typedbyref ... */
 			if (csignature->ret->type != MONO_TYPE_VOID) {
-				*sp = *endsp;
+				*sp = *child_frame.retval;
 				sp++;
 			}
 			MINT_IN_BREAK;
@@ -3550,7 +3546,6 @@ main_loop:
 		MINT_IN_CASE(MINT_VCALLVIRT_FAST) {
 			MonoObject *this_arg;
 			InterpMethod *target_imethod;
-			stackval *endsp = sp;
 			int slot;
 
 			// FIXME Have it handle also remoting calls and use a single opcode for virtual calls
@@ -3583,13 +3578,12 @@ main_loop:
 			const gboolean is_void = ip [-3] == MINT_VCALLVIRT_FAST;
 			if (!is_void) {
 				/* need to handle typedbyref ... */
-				*sp = *endsp;
+				*sp = *child_frame.retval;
 				sp++;
 			}
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CALL_VARARG) {
-			stackval *endsp = sp;
 			int num_varargs = 0;
 			MonoMethodSignature *csig;
 
@@ -3616,7 +3610,7 @@ main_loop:
 			CHECK_RESUME_STATE (context);
 
 			if (csig->ret->type != MONO_TYPE_VOID) {
-				*sp = *endsp;
+				*sp = *child_frame.retval;
 				sp++;
 			}
 			MINT_IN_BREAK;
@@ -3625,7 +3619,6 @@ main_loop:
 		MINT_IN_CASE(MINT_VCALL)
 		MINT_IN_CASE(MINT_CALLVIRT)
 		MINT_IN_CASE(MINT_VCALLVIRT) {
-			stackval *endsp = sp;
 
 			frame->ip = ip;
 
@@ -3657,7 +3650,7 @@ main_loop:
 			const gboolean is_void = ip [-2] == MINT_VCALL || ip [-2] == MINT_VCALLVIRT;
 			if (!is_void) {
 				/* need to handle typedbyref ... */
-				*sp = *endsp;
+				*sp = *child_frame.retval;
 				sp++;
 			}
 			MINT_IN_BREAK;
