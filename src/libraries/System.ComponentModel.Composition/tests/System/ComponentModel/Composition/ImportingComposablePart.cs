@@ -109,7 +109,7 @@ namespace System.ComponentModel.Composition
 
         public override void SetImport(ImportDefinition definition, IEnumerable<Export> exports)
         {
-            Assert.True(_importDefinitions.Contains(definition));
+            Assert.Contains(definition, _importDefinitions);
 
             ImportSatisfiedCount++;
 
@@ -118,7 +118,7 @@ namespace System.ComponentModel.Composition
 
         public void ResetImport(ImportDefinition definition)
         {
-            Assert.True(_importDefinitions.Contains(definition));
+            Assert.Contains(definition, _importDefinitions);
             _importValues[definition] = null;
         }
 

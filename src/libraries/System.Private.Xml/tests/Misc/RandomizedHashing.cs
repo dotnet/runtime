@@ -50,7 +50,7 @@ namespace System.Xml.Tests
         public void StringsDontHashToAnyKnownNonRandomizedSets()
         {
             var setOfHashes = new Tuple<int, int, int>(_strings[0].GetHashCode(), _strings[1].GetHashCode(), _strings[2].GetHashCode());
-            Assert.False(_knownNonRandomizedHashesOfStrings.Contains(setOfHashes));
+            Assert.DoesNotContain(setOfHashes, _knownNonRandomizedHashesOfStrings);
         }
 
         [Fact]

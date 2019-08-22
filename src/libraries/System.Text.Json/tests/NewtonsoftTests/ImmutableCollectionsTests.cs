@@ -257,9 +257,9 @@ namespace System.Text.Json.Tests
 
             ImmutableHashSet<string> a = JsonSerializer.Deserialize<ImmutableHashSet<string>>(json);
             Assert.Equal(3, a.Count);
-            Assert.True(a.Contains("One"));
-            Assert.True(a.Contains("II"));
-            Assert.True(a.Contains("3"));
+            Assert.Contains("One", a);
+            Assert.Contains("II", a);
+            Assert.Contains("3", a);
         }
 
         [Fact]
@@ -274,9 +274,9 @@ namespace System.Text.Json.Tests
             ImmutableHashSet<string> data = JsonSerializer.Deserialize<ImmutableHashSet<string>>(json);
 
             Assert.Equal(3, data.Count);
-            Assert.True(data.Contains("3"));
-            Assert.True(data.Contains("II"));
-            Assert.True(data.Contains("One"));
+            Assert.Contains("3", data);
+            Assert.Contains("II", data);
+            Assert.Contains("One", data);
         }
 
         [Fact]
@@ -324,9 +324,9 @@ namespace System.Text.Json.Tests
             ImmutableSortedSet<string> data = JsonSerializer.Deserialize<ImmutableSortedSet<string>>(json);
 
             Assert.Equal(3, data.Count);
-            Assert.True(data.Contains("3"));
-            Assert.True(data.Contains("II"));
-            Assert.True(data.Contains("One"));
+            Assert.Contains("3", data);
+            Assert.Contains("II", data);
+            Assert.Contains("One", data);
         }
         #endregion
 

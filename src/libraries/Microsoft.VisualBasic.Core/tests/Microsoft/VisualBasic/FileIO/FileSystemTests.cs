@@ -409,7 +409,7 @@ namespace Microsoft.VisualBasic.FileIO.Tests
             Assert.Equal(6, DirectoryList.Count);
             for (int i = 0; i < 6; i++)
             {
-                Assert.True(DirectoryList.Contains(System.IO.Path.Combine(TestDirectory, $"GetDirectories_DirectoryNewSubDirectory{i}")));
+                Assert.Contains(System.IO.Path.Combine(TestDirectory, $"GetDirectories_DirectoryNewSubDirectory{i}"), DirectoryList);
             }
             System.IO.Directory.CreateDirectory(System.IO.Path.Combine(TestDirectory, $"GetDirectories_DirectoryNewSubDirectory0", $"NewSubSubDirectory"));
             DirectoryList = FileIO.FileSystem.GetDirectories(TestDirectory);
@@ -429,7 +429,7 @@ namespace Microsoft.VisualBasic.FileIO.Tests
             Assert.Equal(6, DirectoryList.Count);
             for (int i = 0; i < 6; i++)
             {
-                Assert.True(DirectoryList.Contains(System.IO.Path.Combine(TestDirectory, $"GetDirectories_Directory_SearchOptionNewSubDirectory{i}")));
+                Assert.Contains(System.IO.Path.Combine(TestDirectory, $"GetDirectories_Directory_SearchOptionNewSubDirectory{i}"), DirectoryList);
             }
             System.IO.Directory.CreateDirectory(System.IO.Path.Combine(TestDirectory, $"GetDirectories_Directory_SearchOptionNewSubDirectory0", $"NewSubSubDirectory"));
             DirectoryList = FileIO.FileSystem.GetDirectories(TestDirectory, SearchOption.SearchTopLevelOnly);
@@ -526,7 +526,7 @@ namespace Microsoft.VisualBasic.FileIO.Tests
             Assert.Equal(6, FileList.Count);
             for (int i = 0; i < 6; i++)
             {
-                Assert.True(FileList.Contains(System.IO.Path.Combine(TestDirectory, $"NewFile{i}")));
+                Assert.Contains(System.IO.Path.Combine(TestDirectory, $"NewFile{i}"), FileList);
             }
             System.IO.Directory.CreateDirectory(System.IO.Path.Combine(TestDirectory, "GetFiles_DirectoryNewSubDirectory"));
             CreateTestFile(SourceData, PathFromBase: "GetFiles_DirectoryNewSubDirectory", TestFileName: "NewFile");
@@ -551,7 +551,7 @@ namespace Microsoft.VisualBasic.FileIO.Tests
             Assert.Equal(6, FileList.Count);
             for (int i = 0; i < 6; i++)
             {
-                Assert.True(FileList.Contains(System.IO.Path.Combine(TestDirectory, $"NewFile{i}")));
+                Assert.Contains(System.IO.Path.Combine(TestDirectory, $"NewFile{i}"), FileList);
             }
             FileList = FileIO.FileSystem.GetFiles(TestDirectory, SearchOption.SearchAllSubDirectories);
             Assert.Equal(8, FileList.Count);
@@ -575,7 +575,7 @@ namespace Microsoft.VisualBasic.FileIO.Tests
             Assert.Equal(3, FileList.Count);
             for (int i = 0; i < 3; i++)
             {
-                Assert.True(TestFileList.Contains(FileList[i]));
+                Assert.Contains(FileList[i], TestFileList);
             }
             var NewSubDirectoryPath = System.IO.Path.Combine(TestDirectory, "GetFiles_Directory_SearchOption_WildcardsNewSubDirectory");
             System.IO.Directory.CreateDirectory(NewSubDirectoryPath);

@@ -57,8 +57,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
                         } while (reader.NextResult());
 
-                        Assert.True(columnNames.Contains("ColInteger"));
-                        Assert.True(columnNames.Contains("ColString"));
+                        Assert.Contains("ColInteger", columnNames);
+                        Assert.Contains("ColString", columnNames);
                     }
                 }
             }

@@ -445,9 +445,9 @@ namespace System.Diagnostics.Tests
                 string[] correlationContext = thisRequest.Headers["Correlation-Context"].Split(',');
 
                 Assert.Equal(3, correlationContext.Length);
-                Assert.True(correlationContext.Contains("key=value"));
-                Assert.True(correlationContext.Contains("bad%2Fkey=value"));
-                Assert.True(correlationContext.Contains("goodkey=bad%2Fvalue"));
+                Assert.Contains("key=value", correlationContext);
+                Assert.Contains("bad%2Fkey=value", correlationContext);
+                Assert.Contains("goodkey=bad%2Fvalue", correlationContext);
             }
             parentActivity.Stop();
         }

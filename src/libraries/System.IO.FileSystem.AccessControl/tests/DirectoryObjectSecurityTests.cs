@@ -183,7 +183,7 @@ namespace System.Security.AccessControl
                .GetAuditRules(true, true, typeof(System.Security.Principal.NTAccount));
 
             List<CustomAuditRule> existingRules = ruleCollection.Cast<CustomAuditRule>().ToList();
-            Assert.False(existingRules.Contains(customAuditRuleReadWrite));
+            Assert.DoesNotContain(customAuditRuleReadWrite, existingRules);
         }
 
 
@@ -415,7 +415,7 @@ namespace System.Security.AccessControl
                .GetAccessRules(true, true, typeof(System.Security.Principal.NTAccount));
 
             List<CustomAccessRule> existingRules = ruleCollection.Cast<CustomAccessRule>().ToList();
-            Assert.False(existingRules.Contains(customAccessRuleReadWrite));
+            Assert.DoesNotContain(customAccessRuleReadWrite, existingRules);
         }
 
         [Fact]
@@ -475,8 +475,8 @@ namespace System.Security.AccessControl
 
             List<CustomAccessRule> existingRules = ruleCollection.Cast<CustomAccessRule>().ToList();
 
-            Assert.False(existingRules.Contains(customAccessRuleReadWrite));
-            Assert.False(existingRules.Contains(customAccessRuleSynchronize));
+            Assert.DoesNotContain(customAccessRuleReadWrite, existingRules);
+            Assert.DoesNotContain(customAccessRuleSynchronize, existingRules);
         }
 
         [Fact]
@@ -521,8 +521,8 @@ namespace System.Security.AccessControl
                .GetAccessRules(true, true, typeof(System.Security.Principal.NTAccount));
 
             List<CustomAccessRule> existingRules = ruleCollection.Cast<CustomAccessRule>().ToList();
-            Assert.False(existingRules.Contains(customAccessRuleReadWrite));
-            Assert.False(existingRules.Contains(customAccessRuleSynchronize));
+            Assert.DoesNotContain(customAccessRuleReadWrite, existingRules);
+            Assert.DoesNotContain(customAccessRuleSynchronize, existingRules);
         }
 
 

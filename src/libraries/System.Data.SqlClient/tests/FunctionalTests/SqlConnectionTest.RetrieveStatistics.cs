@@ -307,7 +307,7 @@ namespace System.Data.SqlClient.Tests
                     Assert.Same(e.Key, e.Entry.Key);
                     Assert.Same(e.Value, e.Entry.Value);
 
-                    Assert.True(s_retrieveStatisticsKeys.Contains(e.Entry.Key));
+                    Assert.Contains(e.Entry.Key, s_retrieveStatisticsKeys);
                 }
 
                 Assert.False(e.MoveNext());
@@ -352,7 +352,7 @@ namespace System.Data.SqlClient.Tests
                     Assert.NotNull(entry.Value);
                     Assert.IsType<long>(entry.Value);
 
-                    Assert.True(s_retrieveStatisticsKeys.Contains(entry.Key));
+                    Assert.Contains(entry.Key, s_retrieveStatisticsKeys);
                 }
 
                 Assert.False(e.MoveNext());
@@ -461,7 +461,7 @@ namespace System.Data.SqlClient.Tests
                 {
                     Assert.True(e.MoveNext());
                     Assert.NotNull(e.Current);
-                    Assert.True(s_retrieveStatisticsKeys.Contains(e.Current));
+                    Assert.Contains(e.Current, s_retrieveStatisticsKeys);
                 }
 
                 Assert.False(e.MoveNext());

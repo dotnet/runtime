@@ -124,7 +124,7 @@ namespace System.Globalization.Tests
         public void CurrencySymbol(string name, string[] expected)
         {
             string result = new RegionInfo(name).CurrencySymbol;
-            Assert.True(expected.Contains(result));
+            Assert.Contains(result, expected);
         }
 
         [Theory]

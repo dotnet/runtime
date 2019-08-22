@@ -287,12 +287,12 @@ namespace Tests.Integration
 
             public void AssertLoaded(Type type)
             {
-                Assert.True(this.LoadedTypes.Contains(type));
+                Assert.Contains(type, this.LoadedTypes);
             }
 
             public void AssertNotLoaded(Type type)
             {
-                Assert.False(this.LoadedTypes.Contains(type));
+                Assert.DoesNotContain(type, this.LoadedTypes);
             }
 
         }
