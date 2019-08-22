@@ -93,6 +93,7 @@ typedef struct {
 	LLVMValueRef inited_var;
 	LLVMValueRef unbox_tramp_indexes;
 	LLVMValueRef unbox_trampolines;
+	LLVMValueRef gc_poll_cold_wrapper;
 	int max_inited_idx, max_method_idx;
 	gboolean has_jitted_code;
 	gboolean static_link;
@@ -3067,7 +3068,7 @@ emit_icall_cold_wrapper (MonoLLVMModule *module, MonoJitICallId icall_id)
 	LLVMTypeRef sig;
 	char *name;
 
-	name = g_strdup_printf ("icall_cold_wrapper_%d", icall_id);
+	name = g_strdup_printf ("%s_icall_cold_wrapper_%d", module->global_prefix, icall_id);
 
 	func = LLVMAddFunction (lmodule, name, LLVMFunctionType (LLVMVoidType (), NULL, 0, FALSE));
 	sig = LLVMFunctionType (LLVMVoidType (), NULL, 0, FALSE);
@@ -3130,6 +3131,7 @@ emit_gc_safepoint_poll (MonoLLVMModule *module)
 	LLVMTypeRef sig;
 
 	icall_wrapper = emit_icall_cold_wrapper (module, MONO_JIT_ICALL_mono_threads_state_poll);
+	module->gc_poll_cold_wrapper = icall_wrapper;
 
 	sig = LLVMFunctionType0 (LLVMVoidType (), FALSE);
 	func = mono_llvm_get_or_insert_gc_safepoint_poll (lmodule);
@@ -7722,6 +7724,22 @@ emit_method_inner (EmitContext *ctx)
 
 			const char *init_name = mono_marshal_get_aot_init_wrapper_name (info->d.aot_init.subtype);
 			ctx->method_name = g_strdup_printf ("%s%s", ctx->module->global_prefix, init_name);
+			ctx->cfg->asm_symbol = g_strdup (ctx->method_name);
+
+			if (!cfg->llvm_only && ctx->module->external_symbols) {
+				LLVMSetLinkage (method, LLVMExternalLinkage);
+				LLVMSetVisibility (method, LLVMHiddenVisibility);
+			}
+
+			goto after_codegen;
+		} else if (info->subtype == WRAPPER_SUBTYPE_LLVM_FUNC) {
+			g_assert (info->d.llvm_func.subtype == LLVM_FUNC_WRAPPER_GC_POLL);
+			method = ctx->module->gc_poll_cold_wrapper;
+			g_assert (method);
+			ctx->lmethod = method;
+			ctx->module->max_method_idx = MAX (ctx->module->max_method_idx, cfg->method_index);
+
+			ctx->method_name = g_strdup (LLVMGetValueName (method)); //g_strdup_printf ("%s_%s", ctx->module->global_prefix, LLVMGetValueName (method));
 			ctx->cfg->asm_symbol = g_strdup (ctx->method_name);
 
 			if (!cfg->llvm_only && ctx->module->external_symbols) {

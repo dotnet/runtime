@@ -1103,6 +1103,9 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			} else if (subtype == WRAPPER_SUBTYPE_AOT_INIT) {
 				guint32 init_type = decode_value (p, &p);
 				ref->method = mono_marshal_get_aot_init_wrapper ((MonoAotInitSubtype) init_type);
+			} else if (subtype == WRAPPER_SUBTYPE_LLVM_FUNC) {
+				guint32 init_type = decode_value (p, &p);
+				ref->method = mono_marshal_get_llvm_func_wrapper ((MonoLLVMFuncWrapperSubtype) init_type);
 			} else {
 				mono_error_set_bad_image_by_name (error, module->aot_name, "Invalid UNKNOWN wrapper subtype %d", subtype);
 				return FALSE;

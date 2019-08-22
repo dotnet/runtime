@@ -3030,6 +3030,41 @@ mono_marshal_get_aot_init_wrapper (MonoAotInitSubtype subtype)
 	return res;
 }
 
+/*
+ * mono_marshal_get_llvm_func_wrapper:
+ *
+ *   Return a dummy wrapper which represents an LLVM function to the
+ * rest of the runtime for EH etc. purposes. The body of the method is
+ * LLVM code.
+ */
+MonoMethod *
+mono_marshal_get_llvm_func_wrapper (MonoLLVMFuncWrapperSubtype subtype)
+{
+	MonoMethodBuilder *mb;
+	MonoMethod *res;
+	WrapperInfo *info;
+	MonoMethodSignature *csig = NULL;
+	MonoType *void_type = mono_get_void_type ();
+	MonoType *int_type = mono_get_int_type ();
+	char *name = g_strdup_printf ("llvm_func_wrapper_%d", subtype);
+
+	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
+	csig->ret = void_type;
+
+	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_OTHER);
+
+	// Just stub out the method with a "CEE_RET"
+	// Our codegen backend generates other code here
+	get_marshal_cb ()->emit_return (mb);
+
+	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_LLVM_FUNC);
+	info->d.llvm_func.subtype = subtype;
+	res = mono_mb_create (mb, csig, csig->param_count + 16, info);
+	mono_mb_free (mb);
+
+	return res;
+}
+
 #ifndef ENABLE_ILGEN
 static int
 emit_marshal_custom_noilgen (EmitMarshalContext *m, int argnum, MonoType *t,
