@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks.Sources.Tests;
 using Xunit;
@@ -11,68 +12,75 @@ namespace System.Threading.Tasks.Tests
     public class AsyncValueTaskMethodBuilderTests
     {
         [Fact]
-        public void NonGeneric_Create_ReturnsDefaultInstance()
+        public void Create_ReturnsDefaultInstance() // implementation detail being verified
         {
-            AsyncValueTaskMethodBuilder b = default;
-            Assert.Equal(default, b); // implementation detail being verified
-        }
-
-        [Fact]
-        public void Generic_Create_ReturnsDefaultInstance()
-        {
-            AsyncValueTaskMethodBuilder<int> b = default;
-            Assert.Equal(default, b); // implementation detail being verified
+            Assert.Equal(default, AsyncValueTaskMethodBuilder.Create()); 
+            Assert.Equal(default, AsyncValueTaskMethodBuilder<int>.Create());
         }
 
         [Fact]
         public void NonGeneric_SetResult_BeforeAccessTask_ValueTaskIsDefault()
         {
-            AsyncValueTaskMethodBuilder b = default;
+            AsyncValueTaskMethodBuilder b = AsyncValueTaskMethodBuilder.Create();
+
             b.SetResult();
-            ValueTask vt = b.Task;
-            Assert.True(vt == default);
+            
+            Assert.Equal(default, b.Task);
         }
 
         [Fact]
         public void Generic_SetResult_BeforeAccessTask_ValueTaskContainsValue()
         {
-            AsyncValueTaskMethodBuilder<int> b = default;
+            AsyncValueTaskMethodBuilder<int> b = AsyncValueTaskMethodBuilder<int>.Create();
+            
             b.SetResult(42);
+
             ValueTask<int> vt = b.Task;
-            Assert.True(vt.IsCompletedSuccessfully);
-            Assert.False(WrapsTask(vt));
-            Assert.Equal(42, vt.Result);
+            Assert.Equal(vt, b.Task);
+            Assert.Equal(new ValueTask<int>(42), vt);
         }
 
         [Fact]
         public void NonGeneric_SetResult_AfterAccessTask_ValueTaskContainsValue()
         {
-            AsyncValueTaskMethodBuilder b = default;
+            AsyncValueTaskMethodBuilder b = AsyncValueTaskMethodBuilder.Create();
+
             ValueTask vt = b.Task;
+            Assert.NotEqual(default, vt);
+            Assert.Equal(vt, b.Task);
+
             b.SetResult();
-            Assert.False(vt == default);
+            
+            Assert.Equal(vt, b.Task);
             Assert.True(vt.IsCompletedSuccessfully);
-            Assert.True(WrapsTask(vt));
         }
 
         [Fact]
         public void Generic_SetResult_AfterAccessTask_ValueTaskContainsValue()
         {
-            AsyncValueTaskMethodBuilder<int> b = default;
+            AsyncValueTaskMethodBuilder<int> b = AsyncValueTaskMethodBuilder<int>.Create();
+
             ValueTask<int> vt = b.Task;
+            Assert.NotEqual(default, vt);
+            Assert.Equal(vt, b.Task);
+            
             b.SetResult(42);
+            
+            Assert.Equal(vt, b.Task);
             Assert.True(vt.IsCompletedSuccessfully);
-            Assert.True(WrapsTask(vt));
             Assert.Equal(42, vt.Result);
         }
 
         [Fact]
         public void NonGeneric_SetException_BeforeAccessTask_FaultsTask()
         {
-            AsyncValueTaskMethodBuilder b = default;
+            AsyncValueTaskMethodBuilder b = AsyncValueTaskMethodBuilder.Create();
+            
             var e = new FormatException();
             b.SetException(e);
+
             ValueTask vt = b.Task;
+            Assert.Equal(vt, b.Task);
             Assert.True(vt.IsFaulted);
             Assert.Same(e, Assert.Throws<FormatException>(() => vt.GetAwaiter().GetResult()));
         }
@@ -80,10 +88,13 @@ namespace System.Threading.Tasks.Tests
         [Fact]
         public void Generic_SetException_BeforeAccessTask_FaultsTask()
         {
-            AsyncValueTaskMethodBuilder<int> b = default;
+            AsyncValueTaskMethodBuilder<int> b = AsyncValueTaskMethodBuilder<int>.Create();
+
             var e = new FormatException();
             b.SetException(e);
+
             ValueTask<int> vt = b.Task;
+            Assert.Equal(vt, b.Task);
             Assert.True(vt.IsFaulted);
             Assert.Same(e, Assert.Throws<FormatException>(() => vt.GetAwaiter().GetResult()));
         }
@@ -91,10 +102,15 @@ namespace System.Threading.Tasks.Tests
         [Fact]
         public void NonGeneric_SetException_AfterAccessTask_FaultsTask()
         {
-            AsyncValueTaskMethodBuilder b = default;
-            var e = new FormatException();
+            AsyncValueTaskMethodBuilder b = AsyncValueTaskMethodBuilder.Create();
+
             ValueTask vt = b.Task;
+            Assert.Equal(vt, b.Task);
+
+            var e = new FormatException();
             b.SetException(e);
+
+            Assert.Equal(vt, b.Task);
             Assert.True(vt.IsFaulted);
             Assert.Same(e, Assert.Throws<FormatException>(() => vt.GetAwaiter().GetResult()));
         }
@@ -102,10 +118,15 @@ namespace System.Threading.Tasks.Tests
         [Fact]
         public void Generic_SetException_AfterAccessTask_FaultsTask()
         {
-            AsyncValueTaskMethodBuilder<int> b = default;
-            var e = new FormatException();
+            AsyncValueTaskMethodBuilder<int> b = AsyncValueTaskMethodBuilder<int>.Create();
+
             ValueTask<int> vt = b.Task;
+            Assert.Equal(vt, b.Task);
+
+            var e = new FormatException();
             b.SetException(e);
+
+            Assert.Equal(vt, b.Task);
             Assert.True(vt.IsFaulted);
             Assert.Same(e, Assert.Throws<FormatException>(() => vt.GetAwaiter().GetResult()));
         }
@@ -113,10 +134,15 @@ namespace System.Threading.Tasks.Tests
         [Fact]
         public void NonGeneric_SetException_OperationCanceledException_CancelsTask()
         {
-            AsyncValueTaskMethodBuilder b = default;
-            var e = new OperationCanceledException();
+            AsyncValueTaskMethodBuilder b = AsyncValueTaskMethodBuilder.Create();
+
             ValueTask vt = b.Task;
+            Assert.Equal(vt, b.Task);
+
+            var e = new OperationCanceledException();
             b.SetException(e);
+            
+            Assert.Equal(vt, b.Task);
             Assert.True(vt.IsCanceled);
             Assert.Same(e, Assert.Throws<OperationCanceledException>(() => vt.GetAwaiter().GetResult()));
         }
@@ -124,31 +150,54 @@ namespace System.Threading.Tasks.Tests
         [Fact]
         public void Generic_SetException_OperationCanceledException_CancelsTask()
         {
-            AsyncValueTaskMethodBuilder<int> b = default;
-            var e = new OperationCanceledException();
+            AsyncValueTaskMethodBuilder<int> b = AsyncValueTaskMethodBuilder<int>.Create();
+
             ValueTask<int> vt = b.Task;
+            Assert.Equal(vt, b.Task);
+
+            var e = new OperationCanceledException();
             b.SetException(e);
+            
+            Assert.Equal(vt, b.Task);
             Assert.True(vt.IsCanceled);
             Assert.Same(e, Assert.Throws<OperationCanceledException>(() => vt.GetAwaiter().GetResult()));
         }
 
         [Fact]
+        public void NonGeneric_SetExceptionWithNullException_Throws()
+        {
+            AsyncValueTaskMethodBuilder b = AsyncValueTaskMethodBuilder.Create();
+            AssertExtensions.Throws<ArgumentNullException>("exception", () => b.SetException(null));
+        }
+
+        [Fact]
+        public void Generic_SetExceptionWithNullException_Throws()
+        {
+            AsyncValueTaskMethodBuilder<int> b = AsyncValueTaskMethodBuilder<int>.Create();
+            AssertExtensions.Throws<ArgumentNullException>("exception", () => b.SetException(null));
+        }
+
+        [Fact]
         public void NonGeneric_Start_InvokesMoveNext()
         {
-            AsyncValueTaskMethodBuilder b = default;
+            AsyncValueTaskMethodBuilder b = AsyncValueTaskMethodBuilder.Create();
+
             int invokes = 0;
             var dsm = new DelegateStateMachine { MoveNextDelegate = () => invokes++ };
             b.Start(ref dsm);
+            
             Assert.Equal(1, invokes);
         }
 
         [Fact]
         public void Generic_Start_InvokesMoveNext()
         {
-            AsyncValueTaskMethodBuilder<int> b = default;
+            AsyncValueTaskMethodBuilder<int> b = AsyncValueTaskMethodBuilder<int>.Create();
+
             int invokes = 0;
             var dsm = new DelegateStateMachine { MoveNextDelegate = () => invokes++ };
             b.Start(ref dsm);
+            
             Assert.Equal(1, invokes);
         }
 
@@ -159,7 +208,7 @@ namespace System.Threading.Tasks.Tests
         [InlineData(2, true)]
         public void NonGeneric_AwaitOnCompleted_ForcesTaskCreation(int numAwaits, bool awaitUnsafe)
         {
-            AsyncValueTaskMethodBuilder b = default;
+            AsyncValueTaskMethodBuilder b = AsyncValueTaskMethodBuilder.Create();
 
             var dsm = new DelegateStateMachine();
             TaskAwaiter<int> t = new TaskCompletionSource<int>().Task.GetAwaiter();
@@ -179,8 +228,9 @@ namespace System.Threading.Tasks.Tests
 
             b.SetResult();
 
-            Assert.True(WrapsTask(b.Task));
-            Assert.True(b.Task.IsCompletedSuccessfully);
+            ValueTask vt = b.Task;
+            Assert.NotEqual(default, vt);
+            Assert.True(vt.IsCompletedSuccessfully);
         }
 
         [Theory]
@@ -190,7 +240,7 @@ namespace System.Threading.Tasks.Tests
         [InlineData(2, true)]
         public void Generic_AwaitOnCompleted_ForcesTaskCreation(int numAwaits, bool awaitUnsafe)
         {
-            AsyncValueTaskMethodBuilder<int> b = default;
+            AsyncValueTaskMethodBuilder<int> b = AsyncValueTaskMethodBuilder<int>.Create();
 
             var dsm = new DelegateStateMachine();
             TaskAwaiter<int> t = new TaskCompletionSource<int>().Task.GetAwaiter();
@@ -210,21 +260,23 @@ namespace System.Threading.Tasks.Tests
 
             b.SetResult(42);
 
-            Assert.True(WrapsTask(b.Task));
-            Assert.Equal(42, b.Task.Result);
+            ValueTask<int> vt = b.Task;
+            Assert.NotEqual(default, vt);
+            Assert.True(vt.IsCompletedSuccessfully);
+            Assert.Equal(42, vt.Result);
         }
 
         [Fact]
         public void NonGeneric_SetStateMachine_InvalidArgument_ThrowsException()
         {
-            AsyncValueTaskMethodBuilder b = default;
+            AsyncValueTaskMethodBuilder b = AsyncValueTaskMethodBuilder.Create();
             AssertExtensions.Throws<ArgumentNullException>("stateMachine", () => b.SetStateMachine(null));
         }
 
         [Fact]
         public void Generic_SetStateMachine_InvalidArgument_ThrowsException()
         {
-            AsyncValueTaskMethodBuilder<int> b = default;
+            AsyncValueTaskMethodBuilder<int> b = AsyncValueTaskMethodBuilder<int>.Create();
             AssertExtensions.Throws<ArgumentNullException>("stateMachine", () => b.SetStateMachine(null));
         }
 
@@ -251,15 +303,14 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(2, al.Value);
             Assert.Equal(2, calls);
 
-            AsyncValueTaskMethodBuilder b = default;
+            AsyncValueTaskMethodBuilder b = AsyncValueTaskMethodBuilder.Create();
             b.Start(ref dsm);
             Assert.Equal(2, al.Value); // change should not be visible
             Assert.Equal(3, calls);
 
             // Make sure we've not caused the Task to be allocated
             b.SetResult();
-            ValueTask vt = b.Task;
-            Assert.False(WrapsTask(vt));
+            Assert.Equal(default, b.Task);
         }
 
         [Fact]
@@ -285,15 +336,14 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(2, al.Value);
             Assert.Equal(2, calls);
 
-            AsyncValueTaskMethodBuilder<int> b = default;
+            AsyncValueTaskMethodBuilder<int> b = AsyncValueTaskMethodBuilder<int>.Create();
             b.Start(ref dsm);
             Assert.Equal(2, al.Value); // change should not be visible
             Assert.Equal(3, calls);
 
             // Make sure we've not caused the Task to be allocated
             b.SetResult(42);
-            ValueTask<int> vt = b.Task;
-            Assert.False(WrapsTask(vt));
+            Assert.Equal(new ValueTask<int>(42), b.Task);
         }
 
         [Theory]
@@ -303,14 +353,24 @@ namespace System.Threading.Tasks.Tests
         [InlineData(10)]
         public static async Task NonGeneric_UsedWithAsyncMethod_CompletesSuccessfully(int yields)
         {
-            await ValueTaskReturningAsyncMethod(42);
+            StrongBox<int> result;
 
-            ValueTask vt = ValueTaskReturningAsyncMethod(84);
-            Assert.Equal(yields > 0, WrapsTask(vt));
+            result = new StrongBox<int>();
+            await ValueTaskReturningAsyncMethod(42, result);
+            Assert.Equal(42 + yields, result.Value);
 
-            async ValueTask ValueTaskReturningAsyncMethod(int result)
+            result = new StrongBox<int>();
+            await ValueTaskReturningAsyncMethod(84, result);
+            Assert.Equal(84 + yields, result.Value);
+
+            async ValueTask ValueTaskReturningAsyncMethod(int result, StrongBox<int> output)
             {
-                for (int i = 0; i < yields; i++) await Task.Yield();
+                for (int i = 0; i < yields; i++)
+                {
+                    await Task.Yield();
+                    result++;
+                }
+                output.Value = result;
             }
         }
 
@@ -321,15 +381,16 @@ namespace System.Threading.Tasks.Tests
         [InlineData(10)]
         public static async Task Generic_UsedWithAsyncMethod_CompletesSuccessfully(int yields)
         {
-            Assert.Equal(42, await ValueTaskReturningAsyncMethod(42));
-
-            ValueTask<int> vt = ValueTaskReturningAsyncMethod(84);
-            Assert.Equal(yields > 0, WrapsTask(vt));
-            Assert.Equal(84, await vt);
+            Assert.Equal(42 + yields, await ValueTaskReturningAsyncMethod(42));
+            Assert.Equal(84 + yields, await ValueTaskReturningAsyncMethod(84));
 
             async ValueTask<int> ValueTaskReturningAsyncMethod(int result)
             {
-                for (int i = 0; i < yields; i++) await Task.Yield();
+                for (int i = 0; i < yields; i++)
+                {
+                    await Task.Yield();
+                    result++;
+                }
                 return result;
             }
         }
@@ -456,8 +517,40 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        private static bool WrapsTask(ValueTask vt) => vt != default;
-        private static bool WrapsTask<T>(ValueTask<T> vt) => ReferenceEquals(vt.AsTask(), vt.AsTask());
+        [Fact]
+        public async Task NonGeneric_ConcurrentBuilders_WorkCorrectly()
+        {
+            await Task.WhenAll(Enumerable.Range(0, Environment.ProcessorCount).Select(async _ =>
+            {
+                for (int i = 0; i < 10; i++)
+                {
+                    await ValueTaskAsync();
+
+                    static async ValueTask ValueTaskAsync()
+                    {
+                        await Task.Delay(1);
+                    }
+                }
+            }));
+        }
+
+        [Fact]
+        public async Task Generic_ConcurrentBuilders_WorkCorrectly()
+        {
+            await Task.WhenAll(Enumerable.Range(0, Environment.ProcessorCount).Select(async _ =>
+            {
+                for (int i = 0; i < 10; i++)
+                {
+                    Assert.Equal(42 + i, await ValueTaskAsync(i));
+
+                    static async ValueTask<int> ValueTaskAsync(int i)
+                    {
+                        await Task.Delay(1);
+                        return 42 + i;
+                    }
+                }
+            }));
+        }
 
         private struct DelegateStateMachine : IAsyncStateMachine
         {
