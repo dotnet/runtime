@@ -25,7 +25,7 @@ namespace System.Configuration
             }
             set
             {
-                for (;;)
+                while (true)
                 {
                     int oldData = _data;
                     int newData;

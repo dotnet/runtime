@@ -1444,7 +1444,7 @@ namespace System.Xml
 
             int i = 0;
             int len = data.Length;
-            for (;;)
+            while (true)
             {
                 while (i < len && s_xmlCharType.IsCharData(data[i]))
                 {
@@ -1486,7 +1486,7 @@ namespace System.Xml
 
             int i = offset;
             int endPos = offset + len;
-            for (;;)
+            while (true)
             {
                 while (i < endPos && s_xmlCharType.IsCharData(data[i]))
                 {

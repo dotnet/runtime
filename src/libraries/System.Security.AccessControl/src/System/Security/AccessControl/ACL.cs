@@ -649,19 +649,19 @@ nameof(binaryForm));
             // Important: Not all combinations of inheritance bits are valid
             //
 
-            afToPm[( int )(   0   |   0   |   0   |   0   )] = PM.F |   0   |   0   |   0   |   0   ;
-            afToPm[( int )(   0   | AF.OI |   0   |   0   )] = PM.F |   0   | PM.CO |   0   | PM.GO ;
-            afToPm[( int )(   0   | AF.OI |   0   | AF.NP )] = PM.F |   0   | PM.CO |   0   |   0   ;
-            afToPm[( int )(   0   | AF.OI | AF.IO |   0   )] =   0  |   0   | PM.CO |   0   | PM.GO ;
-            afToPm[( int )(   0   | AF.OI | AF.IO | AF.NP )] =   0  |   0   | PM.CO |   0   |   0   ;
-            afToPm[( int )( AF.CI |   0   |   0   |   0   )] = PM.F | PM.CF |   0   | PM.GF |   0   ;
-            afToPm[( int )( AF.CI |   0   |   0   | AF.NP )] = PM.F | PM.CF |   0   |   0   |   0   ;
-            afToPm[( int )( AF.CI |   0   | AF.IO |   0   )] =   0  | PM.CF |   0   | PM.GF |   0   ;
-            afToPm[( int )( AF.CI |   0   | AF.IO | AF.NP )] =   0  | PM.CF |   0   |   0   |   0   ;
-            afToPm[( int )( AF.CI | AF.OI |   0   |   0   )] = PM.F | PM.CF | PM.CO | PM.GF | PM.GO ;
-            afToPm[( int )( AF.CI | AF.OI |   0   | AF.NP )] = PM.F | PM.CF | PM.CO |   0   |   0   ;
-            afToPm[( int )( AF.CI | AF.OI | AF.IO |   0   )] =   0  | PM.CF | PM.CO | PM.GF | PM.GO ;
-            afToPm[( int )( AF.CI | AF.OI | AF.IO | AF.NP )] =   0  | PM.CF | PM.CO |   0   |   0   ;
+            afToPm[( int )(   0   |   0   |   0   |   0   )] = PM.F |   0   |   0   |   0   |     0;
+            afToPm[( int )(   0   | AF.OI |   0   |   0   )] = PM.F |   0   | PM.CO |   0   | PM.GO;
+            afToPm[( int )(   0   | AF.OI |   0   | AF.NP )] = PM.F |   0   | PM.CO |   0   |     0;
+            afToPm[( int )(   0   | AF.OI | AF.IO |   0   )] =   0  |   0   | PM.CO |   0   | PM.GO;
+            afToPm[( int )(   0   | AF.OI | AF.IO | AF.NP )] =   0  |   0   | PM.CO |   0   |     0;
+            afToPm[( int )( AF.CI |   0   |   0   |   0   )] = PM.F | PM.CF |   0   | PM.GF |     0;
+            afToPm[( int )( AF.CI |   0   |   0   | AF.NP )] = PM.F | PM.CF |   0   |   0   |     0;
+            afToPm[( int )( AF.CI |   0   | AF.IO |   0   )] =   0  | PM.CF |   0   | PM.GF |     0;
+            afToPm[( int )( AF.CI |   0   | AF.IO | AF.NP )] =   0  | PM.CF |   0   |   0   |     0;
+            afToPm[( int )( AF.CI | AF.OI |   0   |   0   )] = PM.F | PM.CF | PM.CO | PM.GF | PM.GO;
+            afToPm[( int )( AF.CI | AF.OI |   0   | AF.NP )] = PM.F | PM.CF | PM.CO |   0   |     0;
+            afToPm[( int )( AF.CI | AF.OI | AF.IO |   0   )] =   0  | PM.CF | PM.CO | PM.GF | PM.GO;
+            afToPm[( int )( AF.CI | AF.OI | AF.IO | AF.NP )] =   0  | PM.CF | PM.CO |   0   |     0;
 
             return afToPm;
         }
@@ -682,19 +682,19 @@ nameof(binaryForm));
             // the four ACE inheritance bits
             //
 
-            pmToAf[( int )( PM.F |   0   |   0   |   0   |   0   )] =    0   |   0   |   0   |   0   ;
-            pmToAf[( int )( PM.F |   0   | PM.CO |   0   | PM.GO )] =    0   | AF.OI |   0   |   0   ;
-            pmToAf[( int )( PM.F |   0   | PM.CO |   0   |   0   )] =    0   | AF.OI |   0   | AF.NP ;
-            pmToAf[( int )(   0  |   0   | PM.CO |   0   | PM.GO )] =    0   | AF.OI | AF.IO |   0   ;
-            pmToAf[( int )(   0  |   0   | PM.CO |   0   |   0   )] =    0   | AF.OI | AF.IO | AF.NP ;
-            pmToAf[( int )( PM.F | PM.CF |   0   | PM.GF |   0   )] =  AF.CI |   0   |   0   |   0   ;
-            pmToAf[( int )( PM.F | PM.CF |   0   |   0   |   0   )] =  AF.CI |   0   |   0   | AF.NP ;
-            pmToAf[( int )(   0  | PM.CF |   0   | PM.GF |   0   )] =  AF.CI |   0   | AF.IO |   0   ;
-            pmToAf[( int )(   0  | PM.CF |   0   |   0   |   0   )] =  AF.CI |   0   | AF.IO | AF.NP ;
-            pmToAf[( int )( PM.F | PM.CF | PM.CO | PM.GF | PM.GO )] =  AF.CI | AF.OI |   0   |   0   ;
-            pmToAf[( int )( PM.F | PM.CF | PM.CO |   0   |   0   )] =  AF.CI | AF.OI |   0   | AF.NP ;
-            pmToAf[( int )(   0  | PM.CF | PM.CO | PM.GF | PM.GO )] =  AF.CI | AF.OI | AF.IO |   0   ;
-            pmToAf[( int )(   0  | PM.CF | PM.CO |   0   |   0   )] =  AF.CI | AF.OI | AF.IO | AF.NP ;
+            pmToAf[( int )( PM.F |   0   |   0   |   0   |   0   )] =    0   |   0   |   0   |     0;
+            pmToAf[( int )( PM.F |   0   | PM.CO |   0   | PM.GO )] =    0   | AF.OI |   0   |     0;
+            pmToAf[( int )( PM.F |   0   | PM.CO |   0   |   0   )] =    0   | AF.OI |   0   | AF.NP;
+            pmToAf[( int )(   0  |   0   | PM.CO |   0   | PM.GO )] =    0   | AF.OI | AF.IO |     0;
+            pmToAf[( int )(   0  |   0   | PM.CO |   0   |   0   )] =    0   | AF.OI | AF.IO | AF.NP;
+            pmToAf[( int )( PM.F | PM.CF |   0   | PM.GF |   0   )] =  AF.CI |   0   |   0   |     0;
+            pmToAf[( int )( PM.F | PM.CF |   0   |   0   |   0   )] =  AF.CI |   0   |   0   | AF.NP;
+            pmToAf[( int )(   0  | PM.CF |   0   | PM.GF |   0   )] =  AF.CI |   0   | AF.IO |     0;
+            pmToAf[( int )(   0  | PM.CF |   0   |   0   |   0   )] =  AF.CI |   0   | AF.IO | AF.NP;
+            pmToAf[( int )( PM.F | PM.CF | PM.CO | PM.GF | PM.GO )] =  AF.CI | AF.OI |   0   |     0;
+            pmToAf[( int )( PM.F | PM.CF | PM.CO |   0   |   0   )] =  AF.CI | AF.OI |   0   | AF.NP;
+            pmToAf[( int )(   0  | PM.CF | PM.CO | PM.GF | PM.GO )] =  AF.CI | AF.OI | AF.IO |     0;
+            pmToAf[( int )(   0  | PM.CF | PM.CO |   0   |   0   )] =  AF.CI | AF.OI | AF.IO | AF.NP;
 
             return pmToAf;
         }

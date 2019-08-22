@@ -79,11 +79,11 @@ namespace System.Text.RegularExpressions
             int scan;
             int match;
 
-            for (; ;)
+            while (true)
             {
                 // find an internal char (examine) that matches the tail
 
-                for (; ;)
+                while (true)
                 {
                     if (examine == beforefirst)
                         goto OuterloopBreak;
@@ -97,7 +97,7 @@ namespace System.Text.RegularExpressions
 
                 // find the length of the match
 
-                for (; ;)
+                while (true)
                 {
                     if (scan == beforefirst || pattern[match] != pattern[scan])
                     {
@@ -283,7 +283,7 @@ namespace System.Text.RegularExpressions
             int advance;
             int[] unicodeLookup;
 
-            for (; ;)
+            while (true)
             {
                 if (test >= endlimit || test < beglimit)
                     return -1;
@@ -309,7 +309,7 @@ namespace System.Text.RegularExpressions
                     test2 = test;
                     match = startmatch;
 
-                    for (; ;)
+                    while (true)
                     {
                         if (match == endmatch)
                             return (RightToLeft ? test2 + 1 : test2);

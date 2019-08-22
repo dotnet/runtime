@@ -139,7 +139,7 @@ namespace System.Data.Common
                         {
                             return _values[records[0]];
                         }
-                        return null;// no data => null
+                        return null; // no data => null
 
                     case AggregateType.Count:
                         count = 0;

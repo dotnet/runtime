@@ -541,7 +541,7 @@ namespace System.Xml
                 byte* pDst = pDstBegin + bufPos;
 
                 char ch = (char)0;
-                for (;;)
+                while (true)
                 {
                     byte* pDstEnd = pDst + (pSrcEnd - pSrc);
                     if (pDstEnd > pDstBegin + bufLen)
@@ -629,7 +629,7 @@ namespace System.Xml
                 byte* pDst = pDstBegin + bufPos;
 
                 char ch = (char)0;
-                for (;;)
+                while (true)
                 {
                     byte* pDstEnd = pDst + (pSrcEnd - pSrc);
                     if (pDstEnd > pDstBegin + bufLen)

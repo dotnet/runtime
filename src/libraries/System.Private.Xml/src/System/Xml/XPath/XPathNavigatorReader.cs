@@ -658,7 +658,7 @@ namespace System.Xml.XPath
                         else
                         {
                             XPathNavigator prev = nav.Clone();
-                            for (;;)
+                            while (true)
                             {
                                 if (!nav.MoveToNextNamespace(XPathNamespaceScope.Local))
                                 {

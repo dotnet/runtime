@@ -95,7 +95,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             }
             string name = member.Name;
             TypeInfo typeInfo = member.DeclaringType.GetTypeInfo();
-            for (;;)
+            while (true)
             {
                 Type baseType = typeInfo.BaseType;
                 if (baseType == null)

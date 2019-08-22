@@ -103,7 +103,7 @@ namespace System.Text.RegularExpressions
 
             Emit(RegexCode.Lazybranch, 0);
 
-            for (; ; )
+            while (true)
             {
                 if (curNode.Children == null)
                 {

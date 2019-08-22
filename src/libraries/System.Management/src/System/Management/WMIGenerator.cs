@@ -560,7 +560,7 @@ namespace System.Management
                     bool bStart = false;
                     int Len = OriginalNamespace.Length;
                     OriginalNamespace = string.Empty;
-                    for (int i = 2 ; i < Len ; i++)
+                    for (int i = 2; i < Len; i++)
                     {
                         if (bStart == true)
                         {
@@ -931,7 +931,7 @@ namespace System.Management
         {
             cmp = new CodeMemberProperty ();
             cmp.Name = propName;
-            cmp.Attributes = MemberAttributes.Public | MemberAttributes.Final ;
+            cmp.Attributes = MemberAttributes.Public | MemberAttributes.Final;
             cmp.Type = new CodeTypeReference(propType);
 
             caa = new CodeAttributeArgument();
@@ -1100,7 +1100,7 @@ namespace System.Management
             SysPropsClass.Members.Add(cctor);
 
             caa = new CodeAttributeArgument();
-            caa.Value = new CodeTypeOfExpression (typeof(System.ComponentModel.ExpandableObjectConverter)) ;
+            caa.Value = new CodeTypeOfExpression (typeof(System.ComponentModel.ExpandableObjectConverter));
             cad = new CodeAttributeDeclaration();
             cad.Name = PublicNamesUsed["TypeConverter"].ToString();
             cad.Arguments.Add(caa);
@@ -1124,7 +1124,7 @@ namespace System.Management
 
                 //Now we will have to find the occurrence of the first character and trim all the characters before that
                 strPropTemp = prop.Name.ToCharArray();
-                for (i=0;i < strPropTemp.Length;i++)
+                for (i=0; i < strPropTemp.Length; i++)
                 {
                     if (char.IsLetterOrDigit(strPropTemp[i]) == true)
                     {
@@ -1136,7 +1136,7 @@ namespace System.Management
                     i = 0;
                 }
                 strPropName = new char[strPropTemp.Length - i];
-                for (int j=i;j < strPropTemp.Length;j++)
+                for (int j=i; j < strPropTemp.Length; j++)
                 {
                     strPropName[j - i] = strPropTemp[j];
                 }
@@ -1155,7 +1155,7 @@ namespace System.Management
             //private WmiObject _privObject
             cf = new CodeMemberField();
             cf.Name = PrivateNamesUsed["LateBoundObject"].ToString();
-            cf.Attributes = MemberAttributes.Private | MemberAttributes.Final ;
+            cf.Attributes = MemberAttributes.Private | MemberAttributes.Final;
             cf.Type = new CodeTypeReference(PublicNamesUsed["BaseObjClass"].ToString());
             SysPropsClass.Members.Add(cf);
 
@@ -1179,7 +1179,7 @@ namespace System.Management
             string IsValidPropName = string.Empty;
             bool bDateIsTimeInterval = false;
 
-            for (int i=0;i< PublicProperties.Count;i++)
+            for (int i=0; i< PublicProperties.Count; i++)
             {
                 bDateIsTimeInterval = false;
                 PropertyData prop = classobj.Properties[PublicProperties.GetKey(i).ToString()];
@@ -1307,7 +1307,7 @@ namespace System.Management
 
                         // Adding TypeConverter Attribute
                         caa = new CodeAttributeArgument();
-                        caa.Value = new CodeTypeOfExpression (PrivateNamesUsed["ConverterClass"].ToString()) ;
+                        caa.Value = new CodeTypeOfExpression (PrivateNamesUsed["ConverterClass"].ToString());
                         cad = new CodeAttributeDeclaration();
                         cad.Name = PublicNamesUsed["TypeConverter"].ToString();
                         cad.Arguments.Add(caa);
@@ -1645,7 +1645,7 @@ namespace System.Management
                             if (q.Value != null)
                             {
                                 string [] strArray = (string [])q.Value;
-                                for (int i=0;i < strArray.Length ;i++)
+                                for (int i=0; i < strArray.Length; i++)
                                 {
                                     try
                                     {
@@ -1681,7 +1681,7 @@ namespace System.Management
                             {
                                 ArrayList arTemp = new ArrayList(5);
                                 string [] strArray = (string[])q.Value;
-                                for (int i=0;i < strArray.Length;i++)
+                                for (int i=0; i < strArray.Length; i++)
                                 {
                                     if (strArray[i].Length == 0)
                                     {
@@ -1713,7 +1713,7 @@ namespace System.Management
                             if (q.Value != null)
                             {
                                 string [] strArray = (string [])q.Value;
-                                for (int i=0;i < strArray.Length;i++)
+                                for (int i=0; i < strArray.Length; i++)
                                 {
                                     BitMap.Add(ConvertBitMapValueToInt32(strArray[i]));
                                 }
@@ -1743,7 +1743,7 @@ namespace System.Management
                             {
                                 ArrayList arTemp = new ArrayList(5);
                                 string [] strArray = (string [])q.Value;
-                                for (int i=0;i < strArray.Length;i++)
+                                for (int i=0; i < strArray.Length; i++)
                                 {
                                     if (strArray[i].Length == 0)
                                     {
@@ -2039,7 +2039,7 @@ namespace System.Management
             cmm.Attributes = MemberAttributes.Private | MemberAttributes.Static | MemberAttributes.Final;
             cmm.ReturnType = new CodeTypeReference("System.String");
 
-            for (int i=0; i < arrKeys.Count;i++)
+            for (int i=0; i < arrKeys.Count; i++)
             {
                 strType = ((CodeTypeReference)arrKeyType[i]).BaseType;
                 cmm.Parameters.Add(new CodeParameterDeclarationExpression(strType,
@@ -2059,7 +2059,7 @@ namespace System.Management
                 cmm.Statements.Add(new CodeVariableDeclarationStatement("System.String", strPathObject, new CodePrimitiveExpression(strPath)));
                 CodeMethodInvokeExpression cmietoAdd;
 
-                for (int i=0; i < arrKeys.Count;i++)
+                for (int i=0; i < arrKeys.Count; i++)
                 {
                     if (((CodeTypeReference)arrKeyType[i]).BaseType == "System.String")
                     {
@@ -2147,7 +2147,7 @@ namespace System.Management
                 cmieInit.Method.MethodName = PrivateNamesUsed["InitialObjectFunc"].ToString();
                 cmieInit.Method.TargetObject = new CodeThisReferenceExpression();
 
-                for (int i=0; i < arrKeys.Count;i++)
+                for (int i=0; i < arrKeys.Count; i++)
                 {
                     cpde = new CodeParameterDeclarationExpression();
                     cpde.Type = new CodeTypeReference(((CodeTypeReference)arrKeyType[i]).BaseType);
@@ -2172,7 +2172,7 @@ namespace System.Management
                 cmie.Method.TargetObject = new CodeTypeReferenceExpression(PrivateNamesUsed["GeneratedClassName"].ToString());
                 cmie.Method.MethodName = PublicNamesUsed["ConstructPathFunction"].ToString();
 
-                for (int i=0; i < arrKeys.Count;i++)
+                for (int i=0; i < arrKeys.Count; i++)
                 {
                     cmie.Parameters.Add(new CodeVariableReferenceExpression("key"+arrKeys[i]));
                 }
@@ -2206,7 +2206,7 @@ namespace System.Management
 
             if (arrKeyType.Count > 0)
             {
-                for (int i=0; i < arrKeys.Count;i++)
+                for (int i=0; i < arrKeys.Count; i++)
                 {
                     cpde = new CodeParameterDeclarationExpression();
                     cpde.Type = new CodeTypeReference(((CodeTypeReference)arrKeyType[i]).BaseType);
@@ -2233,7 +2233,7 @@ namespace System.Management
                 cmie.Method.TargetObject = new CodeTypeReferenceExpression(PrivateNamesUsed["GeneratedClassName"].ToString());
                 cmie.Method.MethodName = PublicNamesUsed["ConstructPathFunction"].ToString();
 
-                for (int i=0; i < arrKeys.Count;i++)
+                for (int i=0; i < arrKeys.Count; i++)
                 {
                     cmie.Parameters.Add(new CodeVariableReferenceExpression("key"+arrKeys[i]));
                 }
@@ -2789,7 +2789,7 @@ namespace System.Management
             ArrayList outParamsName = new ArrayList(5);
             ArrayList inoutParams = new ArrayList(5);
             ArrayList inoutParamsType = new ArrayList(5);
-            for (int k=0;k< PublicMethods.Count;k++)
+            for (int k=0; k< PublicMethods.Count; k++)
             {
 
                 bStatic = false;
@@ -2929,7 +2929,7 @@ namespace System.Management
                             }
 
                             //Find out whether it is a in/out Parameter
-                            for (int i=0; i < outParamsName.Count;i++)
+                            for (int i=0; i < outParamsName.Count; i++)
                             {
                                 if (string.Equals(prop.Name, outParamsName[i].ToString(), StringComparison.OrdinalIgnoreCase))
                                 {
@@ -3017,7 +3017,7 @@ namespace System.Management
                             }
 
                             bInOut = false;
-                            for (int i=0; i < inoutParams.Count;i++)
+                            for (int i=0; i < inoutParams.Count; i++)
                             {
                                 if (string.Equals(prop.Name, inoutParams[i].ToString(), StringComparison.OrdinalIgnoreCase))
                                 {
@@ -3167,7 +3167,7 @@ namespace System.Management
 
                 //Now for each in/out params generate the statement
                 //    <inoutParam> = outParams.Properties["<inoutParam>"];
-                for (int i=0;i < inoutParams.Count;i++)
+                for (int i=0; i < inoutParams.Count; i++)
                 {
                     cpre = new CodePropertyReferenceExpression(new CodeVariableReferenceExpression(strOutParams), "Properties");
                     cie = new CodeIndexerExpression(cpre, new CodePrimitiveExpression(inoutParams[i].ToString()));
@@ -3278,7 +3278,7 @@ namespace System.Management
         {
             cmm = new CodeMemberMethod();
 
-            cmm.Attributes = MemberAttributes.Public | MemberAttributes.Final | MemberAttributes.Static ;
+            cmm.Attributes = MemberAttributes.Public | MemberAttributes.Final | MemberAttributes.Static;
             cmm.Name = PublicNamesUsed["FilterFunction"].ToString();
             cmm.ReturnType = new CodeTypeReference(PrivateNamesUsed["CollectionClass"].ToString());
 
@@ -3308,7 +3308,7 @@ namespace System.Management
             string strCondition = "condition";
             cmm = new CodeMemberMethod();
 
-            cmm.Attributes = MemberAttributes.Public | MemberAttributes.Final | MemberAttributes.Static ;
+            cmm.Attributes = MemberAttributes.Public | MemberAttributes.Final | MemberAttributes.Static;
             cmm.Name = PublicNamesUsed["FilterFunction"].ToString();
             cmm.ReturnType = new CodeTypeReference(PrivateNamesUsed["CollectionClass"].ToString());
             cmm.Parameters.Add(new CodeParameterDeclarationExpression("System.String", strCondition));
@@ -3339,7 +3339,7 @@ namespace System.Management
             string strSelectedProperties = "selectedProperties";
             cmm = new CodeMemberMethod();
 
-            cmm.Attributes = MemberAttributes.Public | MemberAttributes.Final | MemberAttributes.Static ;
+            cmm.Attributes = MemberAttributes.Public | MemberAttributes.Final | MemberAttributes.Static;
             cmm.Name = PublicNamesUsed["FilterFunction"].ToString();
             cmm.ReturnType = new CodeTypeReference(PrivateNamesUsed["CollectionClass"].ToString());
             cmm.Parameters.Add(new CodeParameterDeclarationExpression("System.String []", strSelectedProperties));
@@ -3370,7 +3370,7 @@ namespace System.Management
             string strCondition = "condition";
             cmm = new CodeMemberMethod();
 
-            cmm.Attributes = MemberAttributes.Public | MemberAttributes.Final | MemberAttributes.Static ;
+            cmm.Attributes = MemberAttributes.Public | MemberAttributes.Final | MemberAttributes.Static;
             cmm.Name = PublicNamesUsed["FilterFunction"].ToString();
             cmm.ReturnType = new CodeTypeReference(PrivateNamesUsed["CollectionClass"].ToString());
             cmm.Parameters.Add(new CodeParameterDeclarationExpression("System.String", strCondition));
@@ -3417,7 +3417,7 @@ namespace System.Management
         {
             cmm = new CodeMemberMethod();
 
-            cmm.Attributes = MemberAttributes.Public | MemberAttributes.Final | MemberAttributes.Static ;
+            cmm.Attributes = MemberAttributes.Public | MemberAttributes.Final | MemberAttributes.Static;
             cmm.Name = PublicNamesUsed["FilterFunction"].ToString();
             cmm.ReturnType = new CodeTypeReference(PrivateNamesUsed["CollectionClass"].ToString());
             cmm.Parameters.Add(new CodeParameterDeclarationExpression(new CodeTypeReference(PublicNamesUsed["ScopeClass"].ToString()), PrivateNamesUsed["ScopeParam"].ToString()));
@@ -3528,7 +3528,7 @@ namespace System.Management
             string strCondition = "condition";
             cmm = new CodeMemberMethod();
 
-            cmm.Attributes = MemberAttributes.Public | MemberAttributes.Final | MemberAttributes.Static ;
+            cmm.Attributes = MemberAttributes.Public | MemberAttributes.Final | MemberAttributes.Static;
             cmm.Name = PublicNamesUsed["FilterFunction"].ToString();
             cmm.ReturnType = new CodeTypeReference(PrivateNamesUsed["CollectionClass"].ToString());
             cmm.Parameters.Add(new CodeParameterDeclarationExpression(new CodeTypeReference(PublicNamesUsed["ScopeClass"].ToString()), PrivateNamesUsed["ScopeParam"].ToString()));
@@ -3559,7 +3559,7 @@ namespace System.Management
             string strSelectedProperties = "selectedProperties";
             cmm = new CodeMemberMethod();
 
-            cmm.Attributes = MemberAttributes.Public | MemberAttributes.Final | MemberAttributes.Static ;
+            cmm.Attributes = MemberAttributes.Public | MemberAttributes.Final | MemberAttributes.Static;
             cmm.Name = PublicNamesUsed["FilterFunction"].ToString();
             cmm.ReturnType = new CodeTypeReference(PrivateNamesUsed["CollectionClass"].ToString());
             cmm.Parameters.Add(new CodeParameterDeclarationExpression(PublicNamesUsed["ScopeClass"].ToString(), PrivateNamesUsed["ScopeParam"].ToString()));
@@ -3600,7 +3600,7 @@ namespace System.Management
             string strObjectSearcher = "ObjectSearcher";
 
             cmm = new CodeMemberMethod();
-            cmm.Attributes = MemberAttributes.Public | MemberAttributes.Final | MemberAttributes.Static ;
+            cmm.Attributes = MemberAttributes.Public | MemberAttributes.Final | MemberAttributes.Static;
             cmm.Name = PublicNamesUsed["FilterFunction"].ToString();
             cmm.ReturnType = new CodeTypeReference(PrivateNamesUsed["CollectionClass"].ToString());
 
@@ -3699,7 +3699,7 @@ namespace System.Management
         {
             cf = new CodeMemberField();
             cf.Name = memberName;
-            cf.Attributes = MemberAttributes.Private | MemberAttributes.Final ;
+            cf.Attributes = MemberAttributes.Private | MemberAttributes.Final;
             if (isStatic == true)
             {
                 cf.Attributes = cf.Attributes | MemberAttributes.Static;
@@ -3751,14 +3751,14 @@ namespace System.Management
             */
             cf = new CodeMemberField();
             cf.Name = baseTypeMemberVariable;
-            cf.Attributes = MemberAttributes.Private | MemberAttributes.Final ;
+            cf.Attributes = MemberAttributes.Private | MemberAttributes.Final;
             cf.Type = new CodeTypeReference(PublicNamesUsed["TypeConverter"].ToString());
 
             CodeConvertorClass.Members.Add(cf);
 
             cf = new CodeMemberField();
             cf.Name = typeMemberVariable;
-            cf.Attributes = MemberAttributes.Private | MemberAttributes.Final ;
+            cf.Attributes = MemberAttributes.Private | MemberAttributes.Final;
             cf.Type = new CodeTypeReference(PublicNamesUsed["Type"].ToString());
 
             CodeConvertorClass.Members.Add(cf);
@@ -3771,7 +3771,7 @@ namespace System.Management
                 }
             */
             cctor = new CodeConstructor();
-            cctor.Attributes = MemberAttributes.Public ;
+            cctor.Attributes = MemberAttributes.Public;
             cpde = new CodeParameterDeclarationExpression();
             cpde.Name = baseTypeParam;
             cpde.Type = new CodeTypeReference("System.Type");
@@ -4247,7 +4247,7 @@ namespace System.Management
 
             ccc.BaseTypes.Add("System.Object");
             ccc.BaseTypes.Add("ICollection");
-            ccc.TypeAttributes =TypeAttributes.NestedPublic ;
+            ccc.TypeAttributes =TypeAttributes.NestedPublic;
 
             cf = new CodeMemberField();
             cf.Name = strObjectCollection;
@@ -4431,7 +4431,7 @@ namespace System.Management
             //private ManagementObjectCollection.ManagementObjectEnumerator ObjectEnumerator;
             cf = new CodeMemberField();
             cf.Name = strObjectEnumerator;
-            cf.Attributes = MemberAttributes.Private | MemberAttributes.Final ;
+            cf.Attributes = MemberAttributes.Private | MemberAttributes.Final;
             cf.Type = new CodeTypeReference(strManagementObjectCollectionType+"."+
                 strManagementObjectEnumeratorType);
             ecc.Members.Add(cf);
@@ -4738,7 +4738,7 @@ namespace System.Management
                 strToAdd = "l";
             }
 
-            for (int i=0;i < str.Length;i++)
+            for (int i=0; i < str.Length; i++)
             {
                 bAdd = true;
                 if (char.IsLetterOrDigit(arrString[i]) == false)
@@ -4778,7 +4778,7 @@ namespace System.Management
             string strToAdd = string.Empty;
             IFormatProvider formatProv = (IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(int));
 
-            for ( int i = 0 ; i < arrIn.Count ; i++)
+            for ( int i = 0; i < arrIn.Count; i++)
             {
                 strToAdd = arrIn[i].ToString();
                 strToAdd = ResolveCollision(strToAdd, true);
@@ -4842,7 +4842,7 @@ namespace System.Management
 
                     case CodeLanguage.CSharp:
                         strProvider = "C#.";
-                        cp= new CSharpCodeProvider() ;
+                        cp= new CSharpCodeProvider();
                         break;
 
                     case CodeLanguage.VJSharp:
@@ -5011,7 +5011,7 @@ namespace System.Management
                 strTemp = string.Empty;
                 char[] arrString = bitMap.ToCharArray();
                 int Len = bitMap.Length;
-                for (int i = 2 ; i < Len ; i++)
+                for (int i = 2; i < Len; i++)
                 {
                     strTemp = strTemp + arrString[i];
                 }
@@ -5317,7 +5317,7 @@ namespace System.Management
             string strRetVar = "strRet";
             cmp = new CodeMemberProperty ();
             cmp.Name = PublicNamesUsed["ClassNameProperty"].ToString();
-            cmp.Attributes = MemberAttributes.Public | MemberAttributes.Final ;
+            cmp.Attributes = MemberAttributes.Public | MemberAttributes.Final;
             cmp.Type = new CodeTypeReference("System.String");
 
             caa = new CodeAttributeArgument();
@@ -5403,7 +5403,7 @@ namespace System.Management
 
             cmm = new CodeMemberMethod ();
             cmm.Name = PrivateNamesUsed["ClassNameCheckFunc"].ToString();
-            cmm.Attributes = MemberAttributes.Private | MemberAttributes.Final ;
+            cmm.Attributes = MemberAttributes.Private | MemberAttributes.Final;
             cmm.ReturnType = new CodeTypeReference("System.Boolean");
 
             cmm.Parameters.Add(new CodeParameterDeclarationExpression(new CodeTypeReference(PublicNamesUsed["ScopeClass"].ToString()), PrivateNamesUsed["ScopeParam"].ToString()));
@@ -5475,7 +5475,7 @@ namespace System.Management
 
             cmm = new CodeMemberMethod ();
             cmm.Name = PrivateNamesUsed["ClassNameCheckFunc"].ToString();
-            cmm.Attributes = MemberAttributes.Private | MemberAttributes.Final ;
+            cmm.Attributes = MemberAttributes.Private | MemberAttributes.Final;
             cmm.ReturnType = new CodeTypeReference("System.Boolean");
 
             cmm.Parameters.Add(new CodeParameterDeclarationExpression(new CodeTypeReference(PublicNamesUsed["BaseObjClass"].ToString()), strTempObj));
@@ -6185,7 +6185,7 @@ namespace System.Management
             string strScope = "mgmtScope";
             string strPath = "mgmtPath";
 
-            cmm.Attributes = MemberAttributes.Public | MemberAttributes.Final | MemberAttributes.Static ;
+            cmm.Attributes = MemberAttributes.Public | MemberAttributes.Final | MemberAttributes.Static;
             cmm.Name = PublicNamesUsed["CreateInst"].ToString();
             cmm.ReturnType = new CodeTypeReference(PrivateNamesUsed["GeneratedClassName"].ToString());
 
@@ -6265,7 +6265,7 @@ namespace System.Management
         {
             cmm = new CodeMemberMethod();
 
-            cmm.Attributes = MemberAttributes.Public | MemberAttributes.Final ;
+            cmm.Attributes = MemberAttributes.Public | MemberAttributes.Final;
             cmm.Name = PublicNamesUsed["DeleteInst"].ToString();
 
             caa = new CodeAttributeArgument();

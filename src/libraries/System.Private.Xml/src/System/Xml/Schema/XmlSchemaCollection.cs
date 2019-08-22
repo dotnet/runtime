@@ -107,7 +107,7 @@ namespace System.Xml.Schema
             try
             {
                 schema = Add(ns, reader, _xmlResolver);
-                while (reader.Read()) ;// wellformness check
+                while (reader.Read()) ; // wellformness check
             }
             finally
             {

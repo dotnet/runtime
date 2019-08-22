@@ -270,7 +270,7 @@ namespace System.Xml
             _nsTop = -1;
             // element stack
             _stack = new TagInfo[10];
-            _top = 0;// 0 is an empty sentanial element
+            _top = 0; // 0 is an empty sentanial element
             _stack[_top].Init(-1);
             _quoteChar = '"';
 

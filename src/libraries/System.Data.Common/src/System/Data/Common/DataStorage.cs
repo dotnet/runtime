@@ -277,7 +277,7 @@ namespace System.Data.Common
         public abstract string ConvertObjectToXml(object value);
         public virtual void ConvertObjectToXml(object value, XmlWriter xmlWriter, XmlRootAttribute xmlAttrib)
         {
-            xmlWriter.WriteString(ConvertObjectToXml(value));// should it be NO OP?
+            xmlWriter.WriteString(ConvertObjectToXml(value)); // should it be NO OP?
         }
 
         public static DataStorage CreateStorage(DataColumn column, Type dataType, StorageType typeCode)

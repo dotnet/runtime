@@ -303,7 +303,7 @@ namespace System.Xml.Schema
                     try
                     {
                         schema = Add(targetNamespace, ParseSchema(targetNamespace, reader));
-                        while (reader.Read()) ;// wellformness check;
+                        while (reader.Read()) ; // wellformness check;
                     }
                     finally
                     {

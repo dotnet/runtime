@@ -2778,7 +2778,7 @@ namespace System.Xml
 
         private void FinishCDATA()
         {
-            for (;;)
+            while (true)
             {
                 switch (PeekToken())
                 {
@@ -3503,7 +3503,7 @@ namespace System.Xml
                 if (!attr)
                 {
                     // scan if this is whitespace
-                    for (;;)
+                    while (true)
                     {
                         int posNext = pos + 2;
                         if (posNext > end)
@@ -3514,10 +3514,10 @@ namespace System.Xml
                     }
                 }
 
-                for (;;)
+                while (true)
                 {
                     char ch;
-                    for (;;)
+                    while (true)
                     {
                         int posNext = pos + 2;
                         if (posNext > end)

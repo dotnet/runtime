@@ -530,7 +530,7 @@ namespace System.Xml
         private void ParseSubset()
         {
             int startTagEntityId;
-            for (;;)
+            while (true)
             {
                 Token token = GetToken(false);
                 startTagEntityId = _currentEntityId;
@@ -667,7 +667,7 @@ namespace System.Xml
             }
 
             SchemaAttDef attrDef = null;
-            for (;;)
+            while (true)
             {
                 switch (GetToken(false))
                 {
@@ -800,7 +800,7 @@ namespace System.Xml
                             elementDecl.ContentValidator.ContentType == XmlSchemaContentType.Empty &&
                             !ignoreErrors)
                         {
-                            SendValidationEvent(_curPos - 8, XmlSeverityType.Error, SR.Sch_NotationAttributeOnEmptyElement, elementDecl.Name.ToString());// 8 == strlen("NOTATION")
+                            SendValidationEvent(_curPos - 8, XmlSeverityType.Error, SR.Sch_NotationAttributeOnEmptyElement, elementDecl.Name.ToString()); // 8 == strlen("NOTATION")
                         }
                         elementDecl.IsNotationDeclared = true;
                     }
@@ -816,7 +816,7 @@ namespace System.Xml
                 {
                     goto UnexpectedError;
                 }
-                for (;;)
+                while (true)
                 {
                     string notationName = GetNameString();
                     if (!_schemaInfo.Notations.ContainsKey(notationName))
@@ -854,7 +854,7 @@ namespace System.Xml
                     goto UnexpectedError;
                 attrDef.AddValue(GetNameString());
 
-                for (;;)
+                while (true)
                 {
                     switch (GetToken(false))
                     {
@@ -1145,7 +1145,7 @@ namespace System.Xml
             int connectorEntityId = -1;
             int contentEntityId = _currentEntityId;
 
-            for (;;)
+            while (true)
             {
                 switch (GetToken(false))
                 {
@@ -1562,7 +1562,7 @@ namespace System.Xml
         private Token GetToken(bool needWhiteSpace)
         {
             _whitespaceSeen = false;
-            for (;;)
+            while (true)
             {
                 switch (_chars[_curPos])
                 {
@@ -1696,7 +1696,7 @@ namespace System.Xml
 
         private Token ScanSubsetContent()
         {
-            for (;;)
+            while (true)
             {
                 switch (_chars[_curPos])
                 {
@@ -1945,7 +1945,7 @@ namespace System.Xml
 
         private Token ScanElement1()
         {
-            for (;;)
+            while (true)
             {
                 switch (_chars[_curPos])
                 {
@@ -2141,7 +2141,7 @@ namespace System.Xml
 
         private Token ScanAttlist2()
         {
-            for (;;)
+            while (true)
             {
                 switch (_chars[_curPos])
                 {
@@ -2327,7 +2327,7 @@ namespace System.Xml
 
         private Token ScanAttlist6()
         {
-            for (;;)
+            while (true)
             {
                 switch (_chars[_curPos])
                 {
@@ -2422,7 +2422,7 @@ namespace System.Xml
 
             _stringBuilder.Length = 0;
 
-            for (;;)
+            while (true)
             {
                 while (_xmlCharType.IsAttributeValueChar(_chars[_curPos]) && _chars[_curPos] != '%')
                 {
@@ -2808,7 +2808,7 @@ namespace System.Xml
             }
             _curPos++;
 
-            for (;;)
+            while (true)
             {
                 if (_charsUsed - _curPos < 5)
                 {
@@ -2878,7 +2878,7 @@ namespace System.Xml
             int ignoreSectionDepth = 0;
 
             // skip ignored part
-            for (;;)
+            while (true)
             {
                 while (_xmlCharType.IsTextChar(_chars[_curPos]) && _chars[_curPos] != ']')
                 {
@@ -3005,7 +3005,7 @@ namespace System.Xml
             _tokenStartPos = _curPos;
             int colonOffset = -1;
 
-            for (;;)
+            while (true)
             {
                 unsafe
                 {
@@ -3039,7 +3039,7 @@ namespace System.Xml
 
                 unsafe
                 {
-                    for (;;)
+                    while (true)
                     {
                         if (_xmlCharType.IsNCNameSingleChar(_chars[_curPos]))
                         {
@@ -3111,11 +3111,11 @@ namespace System.Xml
         {
             _tokenStartPos = _curPos;
 
-            for (;;)
+            while (true)
             {
                 unsafe
                 {
-                    for (;;)
+                    while (true)
                     {
                         if (_xmlCharType.IsNCNameSingleChar(_chars[_curPos]) || _chars[_curPos] == ':')
                         {
@@ -3573,7 +3573,7 @@ namespace System.Xml
                 )
             { // postpone the proper surrogate checking to the loop below
                 int endPos = startPos;
-                for (;;)
+                while (true)
                 {
                     if (_xmlCharType.IsNCNameSingleChar(_chars[endPos]))
                     {

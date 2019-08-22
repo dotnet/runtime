@@ -485,7 +485,7 @@ namespace System.Runtime.Caching
             int pageIndexNext;
             ExpiresEntry[] entries;
 
-            for (; ;)
+            while (true)
             {
                 pageIndexNext = (_pages[(pageIndexCurrent)]._pageNext);
 
@@ -506,7 +506,7 @@ namespace System.Runtime.Caching
                 pageIndexCurrent = pageIndexNext;
             }
 
-            for (; ;)
+            while (true)
             {
                 if (_freeEntryList._tail == -1)
                     break;

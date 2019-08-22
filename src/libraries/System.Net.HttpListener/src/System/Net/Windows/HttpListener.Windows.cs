@@ -577,9 +577,9 @@ namespace System.Net
                 uint size = 4096;
                 ulong requestId = 0;
                 memoryBlob = new SyncRequestContext((int)size);
-                for (;;)
+                while (true)
                 {
-                    for (;;)
+                    while (true)
                     {
                         if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Calling Interop.HttpApi.HttpReceiveHttpRequest RequestId: {requestId}");
                         uint bytesTransferred = 0;

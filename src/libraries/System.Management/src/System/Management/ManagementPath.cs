@@ -249,7 +249,7 @@ namespace System.Management
 
         private IWbemPath CreateWbemPath(string path)
         {
-            IWbemPath wbemPath = (IWbemPath)MTAHelper.CreateInMTA(typeof(WbemDefPath));//new WbemDefPath();
+            IWbemPath wbemPath = (IWbemPath)MTAHelper.CreateInMTA(typeof(WbemDefPath)); //new WbemDefPath();
             SetWbemPath(wbemPath, path);
             return wbemPath;
         }
@@ -388,7 +388,7 @@ namespace System.Management
         {
             get
             {
-                return (Path.Length == 0 ) ;
+                return (Path.Length == 0 );
             }
         }
 
@@ -638,7 +638,7 @@ namespace System.Management
                 if (0 != string.Compare(oldValue, value, StringComparison.OrdinalIgnoreCase))
                 {
                     if (null == wmiPath)
-                        wmiPath = (IWbemPath)MTAHelper.CreateInMTA(typeof(WbemDefPath));//new WbemDefPath ();
+                        wmiPath = (IWbemPath)MTAHelper.CreateInMTA(typeof(WbemDefPath)); //new WbemDefPath ();
                     else if (isWbemPathShared)
                     {
                         // Check if this IWbemPath is shared among multiple managed objects.
@@ -727,7 +727,7 @@ namespace System.Management
                     }
                 }
             }
-            else {;}    // Continue on. Could have different server name, same ns specified.
+            else {; }    // Continue on. Could have different server name, same ns specified.
 
             //
             // Update Server property if specified in the namespace.
@@ -928,7 +928,7 @@ namespace System.Management
                 int status = (int)ManagementStatus.NoError;
 
                 if (wmiPath == null)
-                    wmiPath = (IWbemPath)MTAHelper.CreateInMTA(typeof(WbemDefPath));//new WbemDefPath();
+                    wmiPath = (IWbemPath)MTAHelper.CreateInMTA(typeof(WbemDefPath)); //new WbemDefPath();
                 else if (isWbemPathShared)
                 {
                     // Check if this IWbemPath is shared among multiple managed objects.

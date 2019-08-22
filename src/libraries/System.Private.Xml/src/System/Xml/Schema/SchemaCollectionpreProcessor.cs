@@ -230,7 +230,7 @@ namespace System.Xml.Schema
                         {
                             Parser parser = new Parser(SchemaType.XSD, NameTable, SchemaNames, EventHandler);
                             parser.Parse(reader, null);
-                            while (reader.Read()) ;// wellformness check
+                            while (reader.Read()) ; // wellformness check
                             include.Schema = parser.XmlSchema;
                             LoadExternals(include.Schema, xsc);
                         }

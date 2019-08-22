@@ -451,7 +451,7 @@ namespace System.Text.RegularExpressions
             Goto(0);
 
             int advance = -1;
-            for (; ;)
+            while (true)
             {
                 if (advance >= 0)
                 {

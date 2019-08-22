@@ -246,7 +246,7 @@ namespace System.Text.RegularExpressions
             int min = M;
             int max = N;
 
-            for (; ;)
+            while (true)
             {
                 if (u.ChildCount() == 0)
                     break;
@@ -337,7 +337,7 @@ namespace System.Text.RegularExpressions
                 if (j < i)
                     Children[j] = at;
 
-                for (; ;)
+                while (true)
                 {
                     if (at.NType == Alternate)
                     {
@@ -649,7 +649,7 @@ namespace System.Text.RegularExpressions
 
             Debug.WriteLine(CurNode.Description());
 
-            for (; ;)
+            while (true)
             {
                 if (CurNode.Children != null && CurChild < CurNode.Children.Count)
                 {

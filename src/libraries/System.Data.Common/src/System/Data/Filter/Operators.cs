@@ -27,7 +27,7 @@ namespace System.Data
         internal const int EqualTo = 7;     // =
         internal const int GreaterThen = 8; // >
         internal const int LessThen = 9;        // <
-        internal const int GreaterOrEqual = 10;// >=
+        internal const int GreaterOrEqual = 10; // >=
         internal const int LessOrEqual = 11;    // <=
         internal const int NotEqual = 12;       // <>
         /* End of Comparison (relational) operators */

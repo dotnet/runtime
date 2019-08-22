@@ -52,8 +52,8 @@ namespace System.Data
         private static readonly object s_dllLock = new object();
 
 
-        private const uint const_LOCALDB_TRUNCATE_ERR_MESSAGE = 1;// flag for LocalDBFormatMessage that indicates that message can be truncated if it does not fit in the buffer
-        private const int const_ErrorMessageBufferSize = 1024;      // Buffer size for Local DB error message 1K will be enough for all messages
+        private const uint const_LOCALDB_TRUNCATE_ERR_MESSAGE = 1; // flag for LocalDBFormatMessage that indicates that message can be truncated if it does not fit in the buffer
+        private const int const_ErrorMessageBufferSize = 1024;     // Buffer size for Local DB error message 1K will be enough for all messages
 
 
         internal static string GetLocalDBMessage(int hrCode)

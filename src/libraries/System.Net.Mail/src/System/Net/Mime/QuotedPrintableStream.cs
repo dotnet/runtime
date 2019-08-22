@@ -347,7 +347,7 @@ namespace System.Net.Mime
             }
 
             int written = 0;
-            for (;;)
+            while (true)
             {
                 written += EncodeBytes(buffer, offset + written, count - written);
                 if (written < count)
@@ -416,7 +416,7 @@ namespace System.Net.Mime
 
             internal void Write()
             {
-                for (;;)
+                while (true)
                 {
                     _written += _parent.EncodeBytes(_buffer, _offset + _written, _count - _written);
                     if (_written < _count)

@@ -325,7 +325,7 @@ namespace System.ComponentModel.Composition.Hosting
                             disposableRootProvider = _disposableRootProvider;
                             _disposableRootProvider = null;
 
-                            disposableLocalExportProvider = _disposableLocalExportProvider ;
+                            disposableLocalExportProvider = _disposableLocalExportProvider;
                             _disposableLocalExportProvider = null;
                             _localExportProvider = null;
 

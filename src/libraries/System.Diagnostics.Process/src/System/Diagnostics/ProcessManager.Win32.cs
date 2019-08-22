@@ -79,7 +79,7 @@ namespace System.Diagnostics
                 IntPtr[] moduleHandles = new IntPtr[64];
                 GCHandle moduleHandlesArrayHandle = new GCHandle();
                 int moduleCount = 0;
-                for (;;)
+                while (true)
                 {
                     bool enumResult = false;
                     try

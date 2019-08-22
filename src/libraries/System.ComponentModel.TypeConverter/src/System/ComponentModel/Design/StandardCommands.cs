@@ -486,7 +486,7 @@ namespace System.ComponentModel.Design
             internal const int cmdidObjectVerbList6 = 143;
             internal const int cmdidObjectVerbList7 = 144;
             internal const int cmdidObjectVerbList8 = 145;
-            internal const int cmdidObjectVerbList9 = 146;// Unused on purpose!
+            internal const int cmdidObjectVerbList9 = 146; // Unused on purpose!
 
             internal const int cmdidConvertObject = 147;
             internal const int cmdidCustomControl = 148;
@@ -515,49 +515,49 @@ namespace System.ComponentModel.Design
             internal const int cmdidRemove = 168;
             internal const int cmdidJoinLeftAll = 169;
             internal const int cmdidJoinRightAll = 170;
-            internal const int cmdidAddToOutput = 171;// Add selected fields to query output
-            internal const int cmdidOtherQuery = 172;// change query type to 'other'
+            internal const int cmdidAddToOutput = 171; // Add selected fields to query output
+            internal const int cmdidOtherQuery = 172; // change query type to 'other'
             internal const int cmdidGenerateChangeScript = 173;
-            internal const int cmdidSaveSelection = 174;// Save current selection
-            internal const int cmdidAutojoinCurrent = 175;// Autojoin current tables
-            internal const int cmdidAutojoinAlways = 176;// Toggle Autojoin state
-            internal const int cmdidEditPage = 177;// Launch editor for url
-            internal const int cmdidViewLinks = 178;// Launch new webscope for url
-            internal const int cmdidStop = 179;// Stope webscope rendering
-            internal const int cmdidPause = 180;// Pause webscope rendering
-            internal const int cmdidResume = 181;// Resume webscope rendering
-            internal const int cmdidFilterDiagram = 182;// Filter webscope diagram
-            internal const int cmdidShowAllObjects = 183;// Show All objects in webscope diagram
-            internal const int cmdidShowApplications = 184;// Show Application objects in webscope diagram
-            internal const int cmdidShowOtherObjects = 185;// Show other objects in webscope diagram
-            internal const int cmdidShowPrimRelationships = 186;// Show primary relationships
-            internal const int cmdidExpand = 187;// Expand links
-            internal const int cmdidCollapse = 188;// Collapse links
-            internal const int cmdidRefresh = 189;// Refresh Webscope diagram
-            internal const int cmdidLayout = 190;// Layout websope diagram
-            internal const int cmdidShowResources = 191;// Show resouce objects in webscope diagram
-            internal const int cmdidInsertHTMLWizard = 192;// Insert HTML using a Wizard
-            internal const int cmdidShowDownloads = 193;// Show download objects in webscope diagram
-            internal const int cmdidShowExternals = 194;// Show external objects in webscope diagram
-            internal const int cmdidShowInBoundLinks = 195;// Show inbound links in webscope diagram
-            internal const int cmdidShowOutBoundLinks = 196;// Show out bound links in webscope diagram
-            internal const int cmdidShowInAndOutBoundLinks = 197;// Show in and out bound links in webscope diagram
-            internal const int cmdidPreview = 198;// Preview page
-            internal const int cmdidOpen = 261;// Open
-            internal const int cmdidOpenWith = 199;// Open with
-            internal const int cmdidShowPages = 200;// Show HTML pages
-            internal const int cmdidRunQuery = 201;// Runs a query
-            internal const int cmdidClearQuery = 202;// Clears the query's associated cursor
-            internal const int cmdidRecordFirst = 203;// Go to first record in set
-            internal const int cmdidRecordLast = 204;// Go to last record in set
-            internal const int cmdidRecordNext = 205;// Go to next record in set
-            internal const int cmdidRecordPrevious = 206;// Go to previous record in set
-            internal const int cmdidRecordGoto = 207;// Go to record via dialog
-            internal const int cmdidRecordNew = 208;// Add a record to set
+            internal const int cmdidSaveSelection = 174; // Save current selection
+            internal const int cmdidAutojoinCurrent = 175; // Autojoin current tables
+            internal const int cmdidAutojoinAlways = 176; // Toggle Autojoin state
+            internal const int cmdidEditPage = 177; // Launch editor for url
+            internal const int cmdidViewLinks = 178; // Launch new webscope for url
+            internal const int cmdidStop = 179; // Stope webscope rendering
+            internal const int cmdidPause = 180; // Pause webscope rendering
+            internal const int cmdidResume = 181; // Resume webscope rendering
+            internal const int cmdidFilterDiagram = 182; // Filter webscope diagram
+            internal const int cmdidShowAllObjects = 183; // Show All objects in webscope diagram
+            internal const int cmdidShowApplications = 184; // Show Application objects in webscope diagram
+            internal const int cmdidShowOtherObjects = 185; // Show other objects in webscope diagram
+            internal const int cmdidShowPrimRelationships = 186; // Show primary relationships
+            internal const int cmdidExpand = 187; // Expand links
+            internal const int cmdidCollapse = 188; // Collapse links
+            internal const int cmdidRefresh = 189; // Refresh Webscope diagram
+            internal const int cmdidLayout = 190; // Layout websope diagram
+            internal const int cmdidShowResources = 191; // Show resouce objects in webscope diagram
+            internal const int cmdidInsertHTMLWizard = 192; // Insert HTML using a Wizard
+            internal const int cmdidShowDownloads = 193; // Show download objects in webscope diagram
+            internal const int cmdidShowExternals = 194; // Show external objects in webscope diagram
+            internal const int cmdidShowInBoundLinks = 195; // Show inbound links in webscope diagram
+            internal const int cmdidShowOutBoundLinks = 196; // Show out bound links in webscope diagram
+            internal const int cmdidShowInAndOutBoundLinks = 197; // Show in and out bound links in webscope diagram
+            internal const int cmdidPreview = 198; // Preview page
+            internal const int cmdidOpen = 261; // Open
+            internal const int cmdidOpenWith = 199; // Open with
+            internal const int cmdidShowPages = 200; // Show HTML pages
+            internal const int cmdidRunQuery = 201; // Runs a query
+            internal const int cmdidClearQuery = 202; // Clears the query's associated cursor
+            internal const int cmdidRecordFirst = 203; // Go to first record in set
+            internal const int cmdidRecordLast = 204; // Go to last record in set
+            internal const int cmdidRecordNext = 205; // Go to next record in set
+            internal const int cmdidRecordPrevious = 206; // Go to previous record in set
+            internal const int cmdidRecordGoto = 207; // Go to record via dialog
+            internal const int cmdidRecordNew = 208; // Add a record to set
 
-            internal const int cmdidInsertNewMenu = 209;// menu designer
-            internal const int cmdidInsertSeparator = 210;// menu designer
-            internal const int cmdidEditMenuNames = 211;// menu designer
+            internal const int cmdidInsertNewMenu = 209; // menu designer
+            internal const int cmdidInsertSeparator = 210; // menu designer
+            internal const int cmdidEditMenuNames = 211; // menu designer
 
             internal const int cmdidDebugExplorer = 212;
             internal const int cmdidDebugProcesses = 213;
@@ -669,7 +669,7 @@ namespace System.ComponentModel.Design
             internal const int cmdidDockingViewFloater = 291;
             internal const int cmdidAutoHideWindow = 292;
             internal const int cmdidMoveToDropdownBar = 293;
-            internal const int cmdidFindCmd = 294;// internal Find commands
+            internal const int cmdidFindCmd = 294; // internal Find commands
             internal const int cmdidStart = 295;
             internal const int cmdidRestart = 296;
 
@@ -754,8 +754,8 @@ namespace System.ComponentModel.Design
             internal const int cmdidFindHelp = 356;
             internal const int cmdidFindInFiles = 277;
             internal const int cmdidReplaceInFiles = 278;
-            internal const int cmdidNextLocation = 279;// next item in task list, find in files results, etc.
-            internal const int cmdidPreviousLocation = 280;// prev item "
+            internal const int cmdidNextLocation = 279; // next item in task list, find in files results, etc.
+            internal const int cmdidPreviousLocation = 280; // prev item "
 
             internal const int cmdidTaskListNextError = 357;
             internal const int cmdidTaskListPrevError = 358;
@@ -799,7 +799,7 @@ namespace System.ComponentModel.Design
             internal const int cmdidMarkerCmd8 = 408;
             internal const int cmdidMarkerCmd9 = 409;
             internal const int cmdidMarkerLast = 409;
-            internal const int cmdidMarkerEnd = 410;// list terminator reserved
+            internal const int cmdidMarkerEnd = 410; // list terminator reserved
 
             // user-invoked project reload and unload
             internal const int cmdidReloadProject = 412;
@@ -848,7 +848,7 @@ namespace System.ComponentModel.Design
             internal const int cmdidWindow22 = 591;
             internal const int cmdidWindow23 = 592;
             internal const int cmdidWindow24 = 593;
-            internal const int cmdidWindow25 = 594;// note cmdidWindow25 is unused on purpose!
+            internal const int cmdidWindow25 = 594; // note cmdidWindow25 is unused on purpose!
             internal const int cmdidMoreWindows = 595;
 
             //internal const int    = 597;//UNUSED
@@ -880,7 +880,7 @@ namespace System.ComponentModel.Design
             internal const int cmdidMRUProj22 = 621;
             internal const int cmdidMRUProj23 = 622;
             internal const int cmdidMRUProj24 = 623;
-            internal const int cmdidMRUProj25 = 624;// note cmdidMRUProj25 is unused on purpose!
+            internal const int cmdidMRUProj25 = 624; // note cmdidMRUProj25 is unused on purpose!
 
             internal const int cmdidSplitNext = 625;
             internal const int cmdidSplitPrev = 626;
@@ -889,8 +889,8 @@ namespace System.ComponentModel.Design
             internal const int cmdidNextDocument = 628;
             internal const int cmdidPrevDocument = 629;
 
-            internal const int cmdidTool1 = 630;// note cmdidTool1 - cmdidTool24 must be
-            internal const int cmdidTool2 = 631;// consecutive
+            internal const int cmdidTool1 = 630; // note cmdidTool1 - cmdidTool24 must be
+            internal const int cmdidTool2 = 631; // consecutive
             internal const int cmdidTool3 = 632;
             internal const int cmdidTool4 = 633;
             internal const int cmdidTool5 = 634;
@@ -921,30 +921,30 @@ namespace System.ComponentModel.Design
             internal const int cmdidCloseDocument = 658;
             internal const int cmdidToolboxSortItems = 659;
 
-            internal const int cmdidViewBarView1 = 660;//UNUSED
-            internal const int cmdidViewBarView2 = 661;//UNUSED
-            internal const int cmdidViewBarView3 = 662;//UNUSED
-            internal const int cmdidViewBarView4 = 663;//UNUSED
-            internal const int cmdidViewBarView5 = 664;//UNUSED
-            internal const int cmdidViewBarView6 = 665;//UNUSED
-            internal const int cmdidViewBarView7 = 666;//UNUSED
-            internal const int cmdidViewBarView8 = 667;//UNUSED
-            internal const int cmdidViewBarView9 = 668;//UNUSED
-            internal const int cmdidViewBarView10 = 669;//UNUSED
-            internal const int cmdidViewBarView11 = 670;//UNUSED
-            internal const int cmdidViewBarView12 = 671;//UNUSED
-            internal const int cmdidViewBarView13 = 672;//UNUSED
-            internal const int cmdidViewBarView14 = 673;//UNUSED
-            internal const int cmdidViewBarView15 = 674;//UNUSED
-            internal const int cmdidViewBarView16 = 675;//UNUSED
-            internal const int cmdidViewBarView17 = 676;//UNUSED
-            internal const int cmdidViewBarView18 = 677;//UNUSED
-            internal const int cmdidViewBarView19 = 678;//UNUSED
-            internal const int cmdidViewBarView20 = 679;//UNUSED
-            internal const int cmdidViewBarView21 = 680;//UNUSED
-            internal const int cmdidViewBarView22 = 681;//UNUSED
-            internal const int cmdidViewBarView23 = 682;//UNUSED
-            internal const int cmdidViewBarView24 = 683;//UNUSED
+            internal const int cmdidViewBarView1 = 660; //UNUSED
+            internal const int cmdidViewBarView2 = 661; //UNUSED
+            internal const int cmdidViewBarView3 = 662; //UNUSED
+            internal const int cmdidViewBarView4 = 663; //UNUSED
+            internal const int cmdidViewBarView5 = 664; //UNUSED
+            internal const int cmdidViewBarView6 = 665; //UNUSED
+            internal const int cmdidViewBarView7 = 666; //UNUSED
+            internal const int cmdidViewBarView8 = 667; //UNUSED
+            internal const int cmdidViewBarView9 = 668; //UNUSED
+            internal const int cmdidViewBarView10 = 669; //UNUSED
+            internal const int cmdidViewBarView11 = 670; //UNUSED
+            internal const int cmdidViewBarView12 = 671; //UNUSED
+            internal const int cmdidViewBarView13 = 672; //UNUSED
+            internal const int cmdidViewBarView14 = 673; //UNUSED
+            internal const int cmdidViewBarView15 = 674; //UNUSED
+            internal const int cmdidViewBarView16 = 675; //UNUSED
+            internal const int cmdidViewBarView17 = 676; //UNUSED
+            internal const int cmdidViewBarView18 = 677; //UNUSED
+            internal const int cmdidViewBarView19 = 678; //UNUSED
+            internal const int cmdidViewBarView20 = 679; //UNUSED
+            internal const int cmdidViewBarView21 = 680; //UNUSED
+            internal const int cmdidViewBarView22 = 681; //UNUSED
+            internal const int cmdidViewBarView23 = 682; //UNUSED
+            internal const int cmdidViewBarView24 = 683; //UNUSED
 
             internal const int cmdidSolutionCfg = 684;
             internal const int cmdidSolutionCfgGetList = 685;
@@ -1006,7 +1006,7 @@ namespace System.ComponentModel.Design
             internal const int cmdidTaskListCustomView47 = 724;
             internal const int cmdidTaskListCustomView48 = 725;
             internal const int cmdidTaskListCustomView49 = 726;
-            internal const int cmdidTaskListCustomView50 = 727;//not used on purpose, ends the list
+            internal const int cmdidTaskListCustomView50 = 727; //not used on purpose, ends the list
 
             internal const int cmdidObjectSearch = 728;
 
@@ -1059,7 +1059,7 @@ namespace System.ComponentModel.Design
             internal const int cmdidTaggedExp8 = 767;
             internal const int cmdidTaggedExp9 = 768;
 
-            internal const int cmdidEditorWidgetClick = 769;// param    = 0;is the moniker as VT_BSTR, param    = 1;is the buffer line as VT_I4, and param    = 2;is the buffer index as VT_I4
+            internal const int cmdidEditorWidgetClick = 769; // param    = 0;is the moniker as VT_BSTR, param    = 1;is the buffer line as VT_I4, and param    = 2;is the buffer index as VT_I4
             internal const int cmdidCmdWinUpdateAC = 770;
 
             internal const int cmdidSlnCfgMgr = 771;
@@ -1101,7 +1101,7 @@ namespace System.ComponentModel.Design
             internal const int cmdidAutoHideContext30 = 805;
             internal const int cmdidAutoHideContext31 = 806;
             internal const int cmdidAutoHideContext32 = 807;
-            internal const int cmdidAutoHideContext33 = 808;// must remain unused
+            internal const int cmdidAutoHideContext33 = 808; // must remain unused
 
             internal const int cmdidShellNavBackward = 809;
             internal const int cmdidShellNavForward = 810;
@@ -1138,7 +1138,7 @@ namespace System.ComponentModel.Design
             internal const int cmdidShellNavigate30 = 840;
             internal const int cmdidShellNavigate31 = 841;
             internal const int cmdidShellNavigate32 = 842;
-            internal const int cmdidShellNavigate33 = 843;// must remain unused
+            internal const int cmdidShellNavigate33 = 843; // must remain unused
 
             internal const int cmdidShellWindowNavigate1 = 844;
             internal const int cmdidShellWindowNavigate2 = 845;
@@ -1172,7 +1172,7 @@ namespace System.ComponentModel.Design
             internal const int cmdidShellWindowNavigate30 = 873;
             internal const int cmdidShellWindowNavigate31 = 874;
             internal const int cmdidShellWindowNavigate32 = 875;
-            internal const int cmdidShellWindowNavigate33 = 876;// must remain unused
+            internal const int cmdidShellWindowNavigate33 = 876; // must remain unused
 
             // ObjectSearch cmds
             internal const int cmdidOBSDoFind = 877;
@@ -1226,7 +1226,7 @@ namespace System.ComponentModel.Design
             internal const int cmdidMRUFile22 = 921;
             internal const int cmdidMRUFile23 = 922;
             internal const int cmdidMRUFile24 = 923;
-            internal const int cmdidMRUFile25 = 924;// note cmdidMRUFile25 is unused on purpose!
+            internal const int cmdidMRUFile25 = 924; // note cmdidMRUFile25 is unused on purpose!
 
             // Object Browsing & ClassView cmds
             // Shared shell cmds (for accessing Object Browsing functionality)
@@ -1250,7 +1250,7 @@ namespace System.ComponentModel.Design
             internal const int cmdidCVShowPackages = 953;
             internal const int cmdidQryManageIndexes = 954;
             internal const int cmdidBrowseComponent = 955;
-            internal const int cmdidPrintDefault = 956;// quick print
+            internal const int cmdidPrintDefault = 956; // quick print
 
             internal const int cmdidBrowseDoc = 957;
 

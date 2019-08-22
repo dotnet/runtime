@@ -927,7 +927,7 @@ namespace System.Data
             {
                 xmlWriter.Flush();
             }
-            return;// rootSchema;
+            return; // rootSchema;
         }
 
         internal XmlElement SchemaTree(XmlDocument xd, DataTable dt)

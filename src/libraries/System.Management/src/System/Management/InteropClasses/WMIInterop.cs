@@ -138,7 +138,7 @@ namespace System.Management
                 ppQualSet = null;
             else
                 ppQualSet = new IWbemQualifierSetFreeThreaded(pQualSet);
-            GC.KeepAlive ( this ) ;
+            GC.KeepAlive(this);
             return hResult;
         }
         public int Get_(string wszName, int lFlags, ref object pVal, ref int pType, ref int plFlavor)
@@ -160,7 +160,7 @@ namespace System.Management
                     pVal = DBNull.Value;
                 }
             }
-            GC.KeepAlive ( this ) ;
+            GC.KeepAlive(this);
             return hr;
         }
         public int Put_(string wszName, int lFlags, ref object pVal, int Type)
@@ -168,24 +168,24 @@ namespace System.Management
             if (pWbemClassObject == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res = WmiNetUtilsHelper.Put_f(5, pWbemClassObject, wszName, lFlags, ref pVal, Type);
-            GC.KeepAlive ( this ) ;
-            return res ;
+            GC.KeepAlive(this);
+            return res;
         }
         public int Delete_(string wszName)
         {
             if (pWbemClassObject == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res = WmiNetUtilsHelper.Delete_f(6, pWbemClassObject, wszName);
-            GC.KeepAlive ( this ) ;
-            return res ;
+            GC.KeepAlive(this);
+            return res;
         }
         public int GetNames_(string wszQualifierName, int lFlags, ref object pQualifierVal, out string[] pNames)
         {
             if (pWbemClassObject == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res = WmiNetUtilsHelper.GetNames_f(7, pWbemClassObject, wszQualifierName, lFlags, ref pQualifierVal, out pNames);
-            GC.KeepAlive ( this ) ;
-            return res ;
+            GC.KeepAlive(this);
+            return res;
 
         }
         public int BeginEnumeration_(int lEnumFlags)
@@ -193,8 +193,8 @@ namespace System.Management
             if (pWbemClassObject == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res = WmiNetUtilsHelper.BeginEnumeration_f(8, pWbemClassObject, lEnumFlags);
-            GC.KeepAlive ( this ) ;
-            return res ;
+            GC.KeepAlive(this);
+            return res;
         }
         public int Next_(int lFlags, ref string strName, ref object pVal, ref int pType, ref int plFlavor)
         {
@@ -203,16 +203,16 @@ namespace System.Management
             pVal = null;
             strName = null;
             int res = WmiNetUtilsHelper.Next_f(9, pWbemClassObject, lFlags, ref strName, ref pVal, ref pType, ref plFlavor);
-            GC.KeepAlive ( this ) ;
-            return res ;
+            GC.KeepAlive(this);
+            return res;
         }
         public int EndEnumeration_()
         {
             if (pWbemClassObject == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res = WmiNetUtilsHelper.EndEnumeration_f(10, pWbemClassObject);
-            GC.KeepAlive ( this ) ;
-            return res ;
+            GC.KeepAlive(this);
+            return res;
         }
         public int GetPropertyQualifierSet_(string wszProperty, out IWbemQualifierSetFreeThreaded ppQualSet)
         {
@@ -225,7 +225,7 @@ namespace System.Management
             else
                 ppQualSet = new IWbemQualifierSetFreeThreaded(pQualSet);
 
-            GC.KeepAlive ( this ) ;
+            GC.KeepAlive(this);
             return hResult;
         }
         public int Clone_(out IWbemClassObjectFreeThreaded ppCopy)
@@ -239,7 +239,7 @@ namespace System.Management
             else
                 ppCopy = new IWbemClassObjectFreeThreaded(pWbemClassObjectNew);
 
-            GC.KeepAlive ( this ) ;
+            GC.KeepAlive(this);
             return hResult;
         }
         public int GetObjectText_(int lFlags, out string pstrObjectText)
@@ -247,8 +247,8 @@ namespace System.Management
             if (pWbemClassObject == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res = WmiNetUtilsHelper.GetObjectText_f(13, pWbemClassObject, lFlags, out pstrObjectText);
-            GC.KeepAlive ( this ) ;
-            return res ;
+            GC.KeepAlive(this);
+            return res;
         }
         public int SpawnDerivedClass_(int lFlags, out IWbemClassObjectFreeThreaded ppNewClass)
         {
@@ -261,7 +261,7 @@ namespace System.Management
             else
                 ppNewClass = new IWbemClassObjectFreeThreaded(pWbemClassObjectNew);
 
-            GC.KeepAlive ( this ) ;
+            GC.KeepAlive(this);
             return hResult;
         }
         public int SpawnInstance_(int lFlags, out IWbemClassObjectFreeThreaded ppNewInstance)
@@ -275,7 +275,7 @@ namespace System.Management
             else
                 ppNewInstance = new IWbemClassObjectFreeThreaded(pWbemClassObjectNew);
 
-            GC.KeepAlive ( this ) ;
+            GC.KeepAlive(this);
             return hResult;
         }
         public int CompareTo_(int lFlags, IWbemClassObjectFreeThreaded pCompareTo)
@@ -283,24 +283,24 @@ namespace System.Management
             if (pWbemClassObject == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res = WmiNetUtilsHelper.CompareTo_f(16, pWbemClassObject, lFlags, pCompareTo.pWbemClassObject);
-            GC.KeepAlive ( this ) ;
-            return res ;
+            GC.KeepAlive(this);
+            return res;
         }
         public int GetPropertyOrigin_(string wszName, out string pstrClassName)
         {
             if (pWbemClassObject == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res = WmiNetUtilsHelper.GetPropertyOrigin_f(17, pWbemClassObject, wszName, out pstrClassName);
-            GC.KeepAlive ( this ) ;
-            return res ;
+            GC.KeepAlive(this);
+            return res;
         }
         public int InheritsFrom_(string strAncestor)
         {
             if (pWbemClassObject == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res = WmiNetUtilsHelper.InheritsFrom_f(18, pWbemClassObject, strAncestor);
-            GC.KeepAlive ( this ) ;
-            return res ;
+            GC.KeepAlive(this);
+            return res;
         }
         public int GetMethod_(string wszName, int lFlags, out IWbemClassObjectFreeThreaded ppInSignature, out IWbemClassObjectFreeThreaded ppOutSignature)
         {
@@ -320,7 +320,7 @@ namespace System.Management
                     ppOutSignature = new IWbemClassObjectFreeThreaded(pOutSignature);
             }
 
-            GC.KeepAlive ( this ) ;
+            GC.KeepAlive(this);
             return hResult;
         }
         public int PutMethod_(string wszName, int lFlags, IWbemClassObjectFreeThreaded pInSignature, IWbemClassObjectFreeThreaded pOutSignature)
@@ -328,24 +328,24 @@ namespace System.Management
             if (pWbemClassObject == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res = WmiNetUtilsHelper.PutMethod_f(20, pWbemClassObject, wszName, lFlags, pInSignature, pOutSignature);
-            GC.KeepAlive ( this ) ;
-            return res ;
+            GC.KeepAlive(this);
+            return res;
         }
         public int DeleteMethod_(string wszName)
         {
             if (pWbemClassObject == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res = WmiNetUtilsHelper.DeleteMethod_f(21, pWbemClassObject, wszName);
-            GC.KeepAlive ( this ) ;
-            return res ;
+            GC.KeepAlive(this);
+            return res;
         }
         public int BeginMethodEnumeration_(int lEnumFlags)
         {
             if (pWbemClassObject == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res =  WmiNetUtilsHelper.BeginMethodEnumeration_f(22, pWbemClassObject, lEnumFlags);
-            GC.KeepAlive ( this ) ;
-            return res ;
+            GC.KeepAlive(this);
+            return res;
         }
         public int NextMethod_(int lFlags, out string pstrName, out IWbemClassObjectFreeThreaded ppInSignature, out IWbemClassObjectFreeThreaded ppOutSignature)
         {
@@ -365,7 +365,7 @@ namespace System.Management
                 if (pOutSignature != IntPtr.Zero)
                     ppOutSignature = new IWbemClassObjectFreeThreaded(pOutSignature);
             }
-            GC.KeepAlive ( this ) ;
+            GC.KeepAlive(this);
             return hResult;
         }
         public int EndMethodEnumeration_()
@@ -373,8 +373,8 @@ namespace System.Management
             if (pWbemClassObject == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res = WmiNetUtilsHelper.EndMethodEnumeration_f(24, pWbemClassObject);
-            GC.KeepAlive ( this ) ;
-            return res ;
+            GC.KeepAlive(this);
+            return res;
         }
         public int GetMethodQualifierSet_(string wszMethod, out IWbemQualifierSetFreeThreaded ppQualSet)
         {
@@ -386,7 +386,7 @@ namespace System.Management
                 ppQualSet = null;
             else
                 ppQualSet = new IWbemQualifierSetFreeThreaded(pQualSet);
-            GC.KeepAlive ( this ) ;
+            GC.KeepAlive(this);
             return hResult;
         }
         public int GetMethodOrigin_(string wszMethodName, out string pstrClassName)
@@ -394,8 +394,8 @@ namespace System.Management
             if (pWbemClassObject == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res = WmiNetUtilsHelper.GetMethodOrigin_f(26, pWbemClassObject, wszMethodName, out pstrClassName);
-            GC.KeepAlive ( this ) ;
-            return res ;
+            GC.KeepAlive(this);
+            return res;
         }
 
         private enum STATFLAG
@@ -435,7 +435,7 @@ namespace System.Management
 
         public void Dispose()
         {
-            Dispose_(false) ;
+            Dispose_(false);
         }
 
         private void Dispose_( bool finalization )
@@ -463,8 +463,8 @@ namespace System.Management
             if (pWbemQualifierSet == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res = WmiNetUtilsHelper.QualifierGet_f(3, pWbemQualifierSet, wszName, lFlags, ref pVal, ref plFlavor);
-            GC.KeepAlive ( this ) ;
-            return res ;
+            GC.KeepAlive(this);
+            return res;
 
         }
         public int Put_(string wszName, ref object pVal, int lFlavor)
@@ -472,48 +472,48 @@ namespace System.Management
             if (pWbemQualifierSet == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res =  WmiNetUtilsHelper.QualifierPut_f(4, pWbemQualifierSet, wszName, ref pVal, lFlavor);
-            GC.KeepAlive ( this ) ;
-            return res ;
+            GC.KeepAlive(this);
+            return res;
         }
         public int Delete_(string wszName)
         {
             if (pWbemQualifierSet == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res = WmiNetUtilsHelper.QualifierDelete_f(5, pWbemQualifierSet, wszName);
-            GC.KeepAlive ( this ) ;
-            return res ;
+            GC.KeepAlive(this);
+            return res;
         }
         public int GetNames_(int lFlags, out string[] pNames)
         {
             if (pWbemQualifierSet == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res = WmiNetUtilsHelper.QualifierGetNames_f(6, pWbemQualifierSet, lFlags, out pNames);
-            GC.KeepAlive ( this ) ;
-            return res ;
+            GC.KeepAlive(this);
+            return res;
         }
         public int BeginEnumeration_(int lFlags)
         {
             if (pWbemQualifierSet == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res = WmiNetUtilsHelper.QualifierBeginEnumeration_f(7, pWbemQualifierSet, lFlags);
-            GC.KeepAlive ( this ) ;
-            return res ;
+            GC.KeepAlive(this);
+            return res;
         }
         public int Next_(int lFlags, out string pstrName, out object pVal, out int plFlavor)
         {
             if (pWbemQualifierSet == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res = WmiNetUtilsHelper.QualifierNext_f(8, pWbemQualifierSet, lFlags, out pstrName, out pVal, out plFlavor);
-            GC.KeepAlive ( this ) ;
-            return res ;
+            GC.KeepAlive(this);
+            return res;
         }
         public int EndEnumeration_()
         {
             if (pWbemQualifierSet == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
             int res = WmiNetUtilsHelper.QualifierEndEnumeration_f(9, pWbemQualifierSet);
-            GC.KeepAlive ( this ) ;
-            return res ;
+            GC.KeepAlive(this);
+            return res;
         }
     }
 
@@ -1648,16 +1648,16 @@ namespace System.Management
     internal class ThreadDispatch
     {
         #region Private fields
-        private     Thread                                  thread ;
-        private     Exception                               exception ;                                 // Exception thrown from worker method (if any). Exposed as property.
-        private     ThreadWorkerMethodWithReturn            threadWorkerMethodWithReturn ;              // Delegate to be called for worker method with return value
-        private     ThreadWorkerMethodWithReturnAndParam    threadWorkerMethodWithReturnAndParam ;      // Delegate to be called for worker method with return value and parameter
-        private     ThreadWorkerMethod                      threadWorkerMethod ;                        // Delegate to be called for worker method
-        private     ThreadWorkerMethodWithParam             threadWorkerMethodWithParam ;               // Delegate to be called for worker method with parameter
-        private     object                                  threadReturn ;                              // Return data from worker method.
-        private     object                                  threadParams ;                              // Parameters to be passed to worker method
-        private     bool                                    backgroundThread ;                          // Is this a background thread?
-        private     ApartmentState                          apartmentType ;                             // Apartment type of thread
+        private     Thread                                  thread;
+        private     Exception                               exception;                                 // Exception thrown from worker method (if any). Exposed as property.
+        private     ThreadWorkerMethodWithReturn            threadWorkerMethodWithReturn;              // Delegate to be called for worker method with return value
+        private     ThreadWorkerMethodWithReturnAndParam    threadWorkerMethodWithReturnAndParam;      // Delegate to be called for worker method with return value and parameter
+        private     ThreadWorkerMethod                      threadWorkerMethod;                        // Delegate to be called for worker method
+        private     ThreadWorkerMethodWithParam             threadWorkerMethodWithParam;               // Delegate to be called for worker method with parameter
+        private     object                                  threadReturn;                              // Return data from worker method.
+        private     object                                  threadParams;                              // Parameters to be passed to worker method
+        private     bool                                    backgroundThread;                          // Is this a background thread?
+        private     ApartmentState                          apartmentType;                             // Apartment type of thread
         #endregion
 
         #region Properties
@@ -1669,7 +1669,7 @@ namespace System.Management
         {
             get
             {
-                return this.exception ;
+                return this.exception;
             }
         }
 
@@ -1680,11 +1680,11 @@ namespace System.Management
         {
             get
             {
-                return this.threadParams ;
+                return this.threadParams;
             }
             set
             {
-                this.threadParams = value ;
+                this.threadParams = value;
             }
         }
 
@@ -1695,11 +1695,11 @@ namespace System.Management
         {
             get
             {
-                return this.backgroundThread ;
+                return this.backgroundThread;
             }
             set
             {
-                this.backgroundThread = value ;
+                this.backgroundThread = value;
             }
         }
 
@@ -1710,7 +1710,7 @@ namespace System.Management
         {
             get
             {
-                return this.threadReturn ;
+                return this.threadReturn;
             }
         }
 
@@ -1722,11 +1722,11 @@ namespace System.Management
         {
             get
             {
-                return this.apartmentType ;
+                return this.apartmentType;
             }
             set
             {
-                this.apartmentType = value ;
+                this.apartmentType = value;
             }
         }
         #endregion
@@ -1735,22 +1735,22 @@ namespace System.Management
         /// <summary>
         /// Delegate declaration representing signature of worker method with return value.
         /// </summary>
-        public delegate object  ThreadWorkerMethodWithReturn (  ) ;
+        public delegate object  ThreadWorkerMethodWithReturn (  );
 
         /// <summary>
         /// Delegate declaration representing signature of worker method with return value and parameter.
         /// </summary>
-        public delegate object  ThreadWorkerMethodWithReturnAndParam ( object param ) ;
+        public delegate object  ThreadWorkerMethodWithReturnAndParam ( object param );
 
         /// <summary>
         /// Delegate declaration representing signature of worker method with no return value and no parameter
         /// </summary>
-        public delegate void    ThreadWorkerMethod (  ) ;
+        public delegate void    ThreadWorkerMethod (  );
 
         /// <summary>
         /// Delegate declaration representing signature of worker method with parameter.
         /// </summary>
-        public delegate void    ThreadWorkerMethodWithParam ( object param ) ;
+        public delegate void    ThreadWorkerMethodWithParam ( object param );
         #endregion
 
         #region Public methods
@@ -1764,7 +1764,7 @@ namespace System.Management
         /// <param name="workerMethod">Delegate to be called to perform the work</param>
         public ThreadDispatch ( ThreadWorkerMethodWithReturn workerMethod ) : this ( )
         {
-            InitializeThreadState ( null, workerMethod, ApartmentState.MTA, false ) ;
+            InitializeThreadState ( null, workerMethod, ApartmentState.MTA, false );
         }
 
         /// <summary>
@@ -1777,7 +1777,7 @@ namespace System.Management
         /// <param name="workerMethod">Delegate to be called to perform the work</param>
         public ThreadDispatch ( ThreadWorkerMethodWithReturnAndParam workerMethod ) : this ( )
         {
-            InitializeThreadState ( null, workerMethod, ApartmentState.MTA, false ) ;
+            InitializeThreadState ( null, workerMethod, ApartmentState.MTA, false );
         }
 
         /// <summary>
@@ -1790,7 +1790,7 @@ namespace System.Management
         /// <param name="workerMethod">Delegate to be called to perform the work</param>
         public ThreadDispatch ( ThreadWorkerMethodWithParam workerMethod ) : this ( )
         {
-            InitializeThreadState ( null, workerMethod, ApartmentState.MTA, false ) ;
+            InitializeThreadState ( null, workerMethod, ApartmentState.MTA, false );
         }
 
         /// <summary>
@@ -1803,7 +1803,7 @@ namespace System.Management
         /// <param name="workerMethod">Delegate to be called to perform the work</param>
         public ThreadDispatch ( ThreadWorkerMethod workerMethod ) : this ( )
         {
-            InitializeThreadState ( null, workerMethod, ApartmentState.MTA, false ) ;
+            InitializeThreadState ( null, workerMethod, ApartmentState.MTA, false );
         }
 
         /// <summary>
@@ -1812,11 +1812,11 @@ namespace System.Management
         /// </summary>
         public void Start ( )
         {
-            this.exception = null ;
-            DispatchThread ( ) ;
+            this.exception = null;
+            DispatchThread();
             if ( this.Exception != null )
             {
-                throw this.Exception ;
+                throw this.Exception;
             }
         }
         #endregion
@@ -1828,16 +1828,16 @@ namespace System.Management
         /// </summary>
         private ThreadDispatch ( )
         {
-            this.thread                                 = null ;
-            this.exception                              = null ;
-            this.threadParams                           = null ;
-            this.threadWorkerMethodWithReturn           = null ;
-            this.threadWorkerMethodWithReturnAndParam   = null ;
-            this.threadWorkerMethod                     = null ;
-            this.threadWorkerMethodWithParam            = null;
-            this.threadReturn                           = null ;
-            this.backgroundThread                       = false ;
-            this.apartmentType                          = ApartmentState.MTA ;
+            this.thread                               = null;
+            this.exception                            = null;
+            this.threadParams                         = null;
+            this.threadWorkerMethodWithReturn         = null;
+            this.threadWorkerMethodWithReturnAndParam = null;
+            this.threadWorkerMethod                   = null;
+            this.threadWorkerMethodWithParam          = null;
+            this.threadReturn                         = null;
+            this.backgroundThread                     = false;
+            this.apartmentType                        = ApartmentState.MTA;
         }
 
         /// <summary>
@@ -1849,11 +1849,11 @@ namespace System.Management
         /// <param name="background">Thread is created as a background or not</param>
         private void InitializeThreadState ( object threadParams, ThreadWorkerMethodWithReturn workerMethod, ApartmentState aptState, bool background )
         {
-            this.threadParams = threadParams ;
-            this.threadWorkerMethodWithReturn  = workerMethod ;
-            this.thread = new Thread ( new ThreadStart ( ThreadEntryPointMethodWithReturn ) ) ;
-            this.thread.SetApartmentState(aptState) ;
-            this.backgroundThread = background ;
+            this.threadParams = threadParams;
+            this.threadWorkerMethodWithReturn  = workerMethod;
+            this.thread = new Thread ( new ThreadStart ( ThreadEntryPointMethodWithReturn ) );
+            this.thread.SetApartmentState(aptState);
+            this.backgroundThread = background;
         }
 
         /// <summary>
@@ -1865,11 +1865,11 @@ namespace System.Management
         /// <param name="background">Thread is created as a background or not</param>
         private void InitializeThreadState ( object threadParams, ThreadWorkerMethodWithReturnAndParam workerMethod, ApartmentState aptState, bool background )
         {
-            this.threadParams = threadParams ;
-            this.threadWorkerMethodWithReturnAndParam = workerMethod ;
-            this.thread = new Thread ( new ThreadStart ( ThreadEntryPointMethodWithReturnAndParam ) ) ;
+            this.threadParams = threadParams;
+            this.threadWorkerMethodWithReturnAndParam = workerMethod;
+            this.thread = new Thread ( new ThreadStart ( ThreadEntryPointMethodWithReturnAndParam ) );
             this.thread.SetApartmentState(aptState);
-            this.backgroundThread = background ;
+            this.backgroundThread = background;
         }
 
         /// <summary>
@@ -1881,11 +1881,11 @@ namespace System.Management
         /// <param name="background">Thread is created as a background or not</param>
         private void InitializeThreadState ( object threadParams, ThreadWorkerMethod workerMethod, ApartmentState aptState, bool background )
         {
-            this.threadParams = threadParams ;
-            this.threadWorkerMethod  = workerMethod ;
-            this.thread = new Thread ( new ThreadStart ( ThreadEntryPoint ) ) ;
+            this.threadParams = threadParams;
+            this.threadWorkerMethod  = workerMethod;
+            this.thread = new Thread ( new ThreadStart ( ThreadEntryPoint ) );
             this.thread.SetApartmentState(aptState );
-            this.backgroundThread = background ;
+            this.backgroundThread = background;
         }
 
         /// <summary>
@@ -1897,11 +1897,11 @@ namespace System.Management
         /// <param name="background">Thread is created as a background or not</param>
         private void InitializeThreadState ( object threadParams, ThreadWorkerMethodWithParam workerMethod, ApartmentState aptState, bool background )
         {
-            this.threadParams = threadParams ;
-            this.threadWorkerMethodWithParam = workerMethod ;
-            this.thread = new Thread ( new ThreadStart ( ThreadEntryPointMethodWithParam ) ) ;
+            this.threadParams = threadParams;
+            this.threadWorkerMethodWithParam = workerMethod;
+            this.thread = new Thread ( new ThreadStart ( ThreadEntryPointMethodWithParam ) );
             this.thread.SetApartmentState( aptState );
-            this.backgroundThread = background ;
+            this.backgroundThread = background;
         }
 
 
@@ -1910,8 +1910,8 @@ namespace System.Management
         /// </summary>
         private void DispatchThread ( )
         {
-            this.thread.Start ( ) ;
-            this.thread.Join ( ) ;
+            this.thread.Start();
+            this.thread.Join();
         }
 
         /// <summary>
@@ -1923,11 +1923,11 @@ namespace System.Management
         {
             try
             {
-                this.threadWorkerMethod ( ) ;
+                this.threadWorkerMethod();
             }
-            catch ( Exception e )
+            catch (Exception e)
             {
-                this.exception = e ;
+                this.exception = e;
             }
         }
 
@@ -1941,11 +1941,11 @@ namespace System.Management
         {
             try
             {
-                this.threadWorkerMethodWithParam ( this.threadParams ) ;
+                this.threadWorkerMethodWithParam ( this.threadParams );
             }
-            catch ( Exception e )
+            catch (Exception e)
             {
-                this.exception = e ;
+                this.exception = e;
             }
         }
 
@@ -1959,11 +1959,11 @@ namespace System.Management
         {
             try
             {
-                this.threadReturn = this.threadWorkerMethodWithReturn ( ) ;
+                this.threadReturn = this.threadWorkerMethodWithReturn();
             }
-            catch ( Exception e )
+            catch (Exception e)
             {
-                this.exception = e ;
+                this.exception = e;
             }
         }
 
@@ -1977,11 +1977,11 @@ namespace System.Management
         {
             try
             {
-                this.threadReturn = this.threadWorkerMethodWithReturnAndParam ( this.threadParams) ;
+                this.threadReturn = this.threadWorkerMethodWithReturnAndParam(this.threadParams);
             }
-            catch ( Exception e )
+            catch (Exception e)
             {
-                this.exception = e ;
+                this.exception = e;
             }
         }
         #endregion

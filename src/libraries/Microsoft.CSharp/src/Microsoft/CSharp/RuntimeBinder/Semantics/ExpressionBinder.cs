@@ -594,7 +594,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             MethodSymbol methCur = null;
             AggregateType atsCur = (AggregateType)typeSrc;
 
-            for (;;)
+            while (true)
             {
                 // Find the next operator.
                 methCur = (methCur == null

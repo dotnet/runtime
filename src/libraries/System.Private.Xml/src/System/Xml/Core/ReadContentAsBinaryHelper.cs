@@ -389,12 +389,12 @@ namespace System.Xml
             }
             _decoder.SetNextOutputBuffer(buffer, index, count);
 
-            for (;;)
+            while (true)
             {
                 // use streaming ReadValueChunk if the reader supports it
                 if (_canReadValueChunk)
                 {
-                    for (;;)
+                    while (true)
                     {
                         if (_valueOffset < _valueChunkLength)
                         {

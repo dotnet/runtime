@@ -957,9 +957,9 @@ namespace System.Management
                             //
                             // Ensure we are able to trap exceptions from worker thread.
                             //
-                            ThreadDispatch disp = new ThreadDispatch ( new ThreadDispatch.ThreadWorkerMethodWithParam ( InitializeGuts ) ) ;
-                            disp.Parameter = this ;
-                            disp.Start ( ) ;
+                            ThreadDispatch disp = new ThreadDispatch ( new ThreadDispatch.ThreadWorkerMethodWithParam ( InitializeGuts ) );
+                            disp.Parameter = this;
+                            disp.Start ( );
                         }
                         else
                             InitializeGuts(this);
@@ -970,7 +970,7 @@ namespace System.Management
 
         private void InitializeGuts(object o)
         {
-            ManagementScope threadParam = (ManagementScope) o ;
+            ManagementScope threadParam = (ManagementScope) o;
             IWbemLocator loc = (IWbemLocator) new WbemLocator();
             IntPtr punk = IntPtr.Zero;
 

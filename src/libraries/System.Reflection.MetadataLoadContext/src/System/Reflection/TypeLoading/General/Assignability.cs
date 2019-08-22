@@ -164,7 +164,7 @@ namespace System.Reflection.TypeLoading
                     return true;
 
                 Type walk = fromTypeInfo;
-                for (;;)
+                while (true)
                 {
                     Type baseType = walk.BaseType;
                     if (baseType == null)

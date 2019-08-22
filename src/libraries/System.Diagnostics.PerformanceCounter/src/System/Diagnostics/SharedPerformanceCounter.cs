@@ -901,7 +901,7 @@ namespace System.Diagnostics
             CategoryEntry* currentCategoryPointer = firstCategoryPointer;
             CategoryEntry* previousCategoryPointer = firstCategoryPointer;
 
-            for (; ; )
+            while (true)
             {
                 if (currentCategoryPointer->IsConsistent == 0)
                     Verify(currentCategoryPointer);
@@ -930,7 +930,7 @@ namespace System.Diagnostics
         {
             CounterEntry* currentCounterPointer = (CounterEntry*)(ResolveOffset(instancePointer->FirstCounterOffset, s_counterEntrySize));
             CounterEntry* previousCounterPointer = currentCounterPointer;
-            for (; ; )
+            while (true)
             {
                 if (currentCounterPointer->CounterNameHashCode == counterNameHashCode)
                 {
@@ -1006,7 +1006,7 @@ namespace System.Diagnostics
 
             try
             {
-                for (; ; )
+                while (true)
                 {
                     bool verifiedLifetimeOfThisInstance = false;
                     if (verifyLifeTime && (currentInstancePointer->RefCount != 0))
@@ -1116,7 +1116,7 @@ namespace System.Diagnostics
             // 2nd pass find a free instance slot
             InstanceEntry* currentInstancePointer = (InstanceEntry*)(ResolveOffset(categoryPointer->FirstInstanceOffset, s_instanceEntrySize));
             InstanceEntry* previousInstancePointer = currentInstancePointer;
-            for (; ; )
+            while (true)
             {
                 if (currentInstancePointer->RefCount == 0)
                 {
@@ -1404,7 +1404,7 @@ namespace System.Diagnostics
             try
             {
                 NetFrameworkUtils.EnterMutexWithoutGlobal(_categoryData.MutexName, ref mutex);
-                for (; ; )
+                while (true)
                 {
                     RemoveOneInstance(instancePointer, true);
 

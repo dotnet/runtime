@@ -1391,8 +1391,8 @@ namespace System.Drawing
             // dealing with function *'s and what not - so we make explicit calls
             // to gdi+ after the fact, via the GdiplusNotificationHook and
             // GdiplusNotificationUnhook methods.
-            public IntPtr hook;//not used
-            public IntPtr unhook;//not used.
+            public IntPtr hook; //not used
+            public IntPtr unhook; //not used.
         }
     }
 }

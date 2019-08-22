@@ -152,7 +152,7 @@ namespace System.Drawing.Printing
         private bool PrintLoop(PrintDocument document)
         {
             QueryPageSettingsEventArgs queryEvent = new QueryPageSettingsEventArgs((PageSettings)document.DefaultPageSettings.Clone());
-            for (;;)
+            while (true)
             {
                 document._OnQueryPageSettings(queryEvent);
                 if (queryEvent.Cancel)
@@ -194,7 +194,7 @@ namespace System.Drawing.Printing
             PrintPageEventArgs pageEvent = null;
             PageSettings documentPageSettings = (PageSettings)document.DefaultPageSettings.Clone();
             QueryPageSettingsEventArgs queryEvent = new QueryPageSettingsEventArgs(documentPageSettings);
-            for (;;)
+            while (true)
             {
                 queryEvent.PageSettingsChanged = false;
                 document._OnQueryPageSettings(queryEvent);

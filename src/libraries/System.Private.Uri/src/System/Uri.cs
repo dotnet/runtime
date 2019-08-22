@@ -4076,7 +4076,7 @@ namespace System
 
                 if (hasUnicode && iriParsing && hostNotUnicodeNormalized)
                 {
-                    flags |= Flags.HostUnicodeNormalized;// no host
+                    flags |= Flags.HostUnicodeNormalized; // no host
                 }
 
                 return idx;

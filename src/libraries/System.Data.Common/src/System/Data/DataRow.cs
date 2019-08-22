@@ -889,7 +889,7 @@ namespace System.Data
                     return row;
                 }
             }
-            return null;// Rule 1: At all times, only ONE FK  "(in a row) can be non-Null
+            return null; // Rule 1: At all times, only ONE FK  "(in a row) can be non-Null
         }
         // No Nested in 1-many
 

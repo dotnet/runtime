@@ -26,7 +26,7 @@ namespace System.Data.SqlClient
         private readonly TdsParserStateObject _stateObj;      // target to write to
         private readonly SmiMetaData _metaData;      // metadata describing value
         private readonly bool _isPlp;         // should this column be sent in PLP format?
-        private bool _plpUnknownSent;// did we send initial UNKNOWN_LENGTH marker?
+        private bool _plpUnknownSent; // did we send initial UNKNOWN_LENGTH marker?
         private Encoder _encoder;       // required for chunking character type data
         private SmiMetaData _variantType;   // required for sql_variant
 #if DEBUG

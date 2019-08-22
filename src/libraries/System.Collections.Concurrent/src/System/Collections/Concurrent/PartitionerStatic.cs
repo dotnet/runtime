@@ -553,7 +553,7 @@ namespace System.Collections.Concurrent
             {
                 //reader through which we access the source data
                 private readonly IEnumerator<TSource> _sharedReader;
-                private readonly SharedLong _sharedIndex;//initial value -1
+                private readonly SharedLong _sharedIndex; //initial value -1
 
                 private volatile KeyValuePair<long, TSource>[]? _fillBuffer;  // intermediate buffer to reduce locking
                 private volatile int _fillBufferSize;               // actual number of elements in _FillBuffer. Will start
@@ -566,7 +566,7 @@ namespace System.Collections.Concurrent
                 private readonly SharedBool _sourceDepleted;    // no elements left in the enumerator, but there may be elements in the Fill Buffer
 
                 //shared synchronization lock, created by this Enumerable
-                private readonly object _sharedLock;//deferring allocation by enumerator
+                private readonly object _sharedLock; //deferring allocation by enumerator
 
                 private bool _disposed;
 

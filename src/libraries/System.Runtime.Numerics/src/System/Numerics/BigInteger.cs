@@ -483,7 +483,7 @@ namespace System.Numerics
 
             // Try to conserve space as much as possible by checking for wasted leading uint[] entries
             // sometimes the uint[] has leading zeros from bit manipulation operations & and ^
-            for (len = value.Length; len > 0 && value[len - 1] == 0; len--) ;
+            for (len = value.Length; len > 0 && value[len - 1] == 0; len--);
 
             if (len == 0)
                 this = s_bnZeroInt;

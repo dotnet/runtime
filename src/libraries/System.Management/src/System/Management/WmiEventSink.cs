@@ -49,8 +49,8 @@ internal class WmiEventSink : IWmiEventSource
         //
         // Ensure we are able to trap exceptions from worker thread.
         //
-        ThreadDispatch disp = new ThreadDispatch ( new ThreadDispatch.ThreadWorkerMethod ( HackToCreateWmiEventSink ) ) ;
-        disp.Start ( ) ;
+        ThreadDispatch disp = new ThreadDispatch ( new ThreadDispatch.ThreadWorkerMethod ( HackToCreateWmiEventSink ) );
+        disp.Start ( );
 
         return wmiEventSinkNew;
     }
@@ -163,7 +163,7 @@ internal class WmiEventSink : IWmiEventSource
                 }
 
                 // Fire Completed event
-                CompletedEventArgs args2 = null ;
+                CompletedEventArgs args2 = null;
                 if ( errObj != null )
                     {
                         args2 = new CompletedEventArgs (context, hResult,
@@ -246,8 +246,8 @@ internal class WmiGetEventSink : WmiEventSink
         //
         // Ensure we are able to trap exceptions from worker thread.
         //
-        ThreadDispatch disp = new ThreadDispatch ( new ThreadDispatch.ThreadWorkerMethod ( HackToCreateWmiGetEventSink ) ) ;
-        disp.Start ( ) ;
+        ThreadDispatch disp = new ThreadDispatch ( new ThreadDispatch.ThreadWorkerMethod ( HackToCreateWmiGetEventSink ) );
+        disp.Start ( );
 
         return wmiGetEventSinkNew;
     }

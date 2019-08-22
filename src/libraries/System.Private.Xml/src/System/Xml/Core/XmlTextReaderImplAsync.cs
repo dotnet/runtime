@@ -160,7 +160,7 @@ namespace System.Xml
                 return FinishInitAsync().CallBoolTaskFuncWhenFinishAsync(thisRef => thisRef.ReadAsync(), this);
             }
 
-            for (;;)
+            while (true)
             {
                 switch (_parsingFunction)
                 {
@@ -1269,7 +1269,7 @@ namespace System.Xml
             int xmlDeclState = 0;   // <?xml (0) version='1.0' (1) encoding='__' (2) standalone='__' (3) ?>
             Encoding encoding = null;
 
-            for (;;)
+            while (true)
             {
                 int originalSbLen = sb.Length;
                 int wsCount = await EatWhitespacesAsync(xmlDeclState == 0 ? null : sb).ConfigureAwait(false);
@@ -1553,7 +1553,7 @@ namespace System.Xml
         // Parses the document content, no async keyword for perf optimize
         private Task<bool> ParseDocumentContentAsync()
         {
-            for (;;)
+            while (true)
             {
                 bool needMoreChars = false;
                 int pos = _ps.charPos;
@@ -1813,7 +1813,7 @@ namespace System.Xml
         // Parses element content
         private Task<bool> ParseElementContentAsync()
         {
-            for (;;)
+            while (true)
             {
                 int pos = _ps.charPos;
                 char[] chars = _ps.chars;
@@ -1972,7 +1972,7 @@ namespace System.Xml
             unsafe
             {
                 // parse element name
-                for (;;)
+                while (true)
                 {
                     if (_xmlCharType.IsNCNameSingleChar(chars[pos]))
                     {
@@ -2285,7 +2285,7 @@ namespace System.Xml
         {
             int pos;
             char[] chars;
-            for (;;)
+            while (true)
             {
                 pos = _ps.charPos + nameLen;
                 chars = _ps.chars;
@@ -2422,7 +2422,7 @@ namespace System.Xml
 
             Debug.Assert(_attrCount == 0);
 
-            for (;;)
+            while (true)
             {
                 // eat whitespace
                 int lineNoDelta = 0;
@@ -2540,7 +2540,7 @@ namespace System.Xml
 
                 unsafe
                 {
-                    for (;;)
+                    while (true)
                     {
                         if (_xmlCharType.IsNCNameSingleChar(tmpch2 = chars[pos]))
                         {
@@ -2749,7 +2749,7 @@ namespace System.Xml
 
             Debug.Assert(_stringBuilder.Length == 0);
 
-            for (;;)
+            while (true)
             {
                 // parse the rest of the attribute value
                 while (_xmlCharType.IsAttributeValueChar(chars[pos]))
@@ -3383,7 +3383,7 @@ namespace System.Xml
 
         private Task<ValueTuple<int, int, int, bool>> ParseTextAsync(int outOrChars, char[] chars, int pos, int rcount, int rpos, int orChars, char c)
         {
-            for (;;)
+            while (true)
             {
                 // parse text content
                 while (_xmlCharType.IsTextChar(c = chars[pos]))
@@ -4179,7 +4179,7 @@ namespace System.Xml
             int rcount = 0;
             int rpos = -1;
 
-            for (;;)
+            while (true)
             {
                 char tmpch;
 
@@ -4407,7 +4407,7 @@ namespace System.Xml
             int rpos = -1;
             char stopChar = (type == XmlNodeType.Comment) ? '-' : ']';
 
-            for (;;)
+            while (true)
             {
                 char tmpch;
                 while (_xmlCharType.IsTextChar(tmpch = chars[pos]) && tmpch != stopChar)
@@ -4761,7 +4761,7 @@ namespace System.Xml
             char[] chars = _ps.chars;
             int pos = _ps.charPos;
 
-            for (;;)
+            while (true)
             {
                 char ch;
 
@@ -4956,9 +4956,9 @@ namespace System.Xml
             int wsCount = 0;
             char[] chars = _ps.chars;
 
-            for (;;)
+            while (true)
             {
-                for (;;)
+                while (true)
                 {
                     switch (chars[pos])
                     {
@@ -5061,7 +5061,7 @@ namespace System.Xml
         {
             EntityType entityType;
 
-            for (;;)
+            while (true)
             {
                 int newPos;
                 int charCount;
@@ -5094,7 +5094,7 @@ namespace System.Xml
         //      - if (expand == true) then ps.charPos is changed to point to the replaced character
         private async Task<int> ParseNamedCharRefAsync(bool expand, StringBuilder internalSubsetBuilder)
         {
-            for (;;)
+            while (true)
             {
                 int newPos;
                 switch (newPos = ParseNamedCharRefInline(_ps.charPos, expand, internalSubsetBuilder))
@@ -5184,7 +5184,7 @@ namespace System.Xml
             // parse name
             unsafe
             {
-                for (;;)
+                while (true)
                 {
                     if (_xmlCharType.IsNCNameSingleChar(chars[pos]))
                     {
@@ -5549,7 +5549,7 @@ namespace System.Xml
 
             _incReadDecoder.SetNextOutputBuffer(buffer, index, count);
 
-            for (;;)
+            while (true)
             {
                 // read what is already cached in curNode
                 int charsRead = 0;

@@ -32,7 +32,7 @@ namespace System.Drawing
         [StructLayout(LayoutKind.Sequential)]
         internal struct BITMAPINFO_FLAT
         {
-            public int bmiHeader_biSize;// = Marshal.SizeOf(typeof(BITMAPINFOHEADER));
+            public int bmiHeader_biSize; // = Marshal.SizeOf(typeof(BITMAPINFOHEADER));
             public int bmiHeader_biWidth;
             public int bmiHeader_biHeight;
             public short bmiHeader_biPlanes;

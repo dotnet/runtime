@@ -350,7 +350,7 @@ namespace System.Net
             if (offset + count > buffer.Length)
                 throw new ArgumentOutOfRangeException(nameof(count));
 
-            for (;;)
+            while (true)
             {
                 // read data from the underlying stream
                 int read = base.Read(buffer, offset, count);
@@ -392,7 +392,7 @@ namespace System.Net
 
             // do not append a space when writing from a stream since this means
             // it's writing the email body
-            for (;;)
+            while (true)
             {
                 written += EncodeBytes(buffer, offset + written, count - written, false, false);
                 if (written < count)
@@ -451,7 +451,7 @@ namespace System.Net
 
             internal void Read()
             {
-                for (;;)
+                while (true)
                 {
                     IAsyncResult result = _parent.BaseStream.BeginRead(_buffer, _offset, _count, s_onRead, this);
                     if (!result.CompletedSynchronously || CompleteRead(result))
@@ -512,7 +512,7 @@ namespace System.Net
 
             internal void Write()
             {
-                for (;;)
+                while (true)
                 {
                     // do not append a space when writing from a stream since this means
                     // it's writing the email body
