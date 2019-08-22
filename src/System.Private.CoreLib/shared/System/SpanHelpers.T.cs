@@ -27,7 +27,7 @@ namespace System
             int valueTailLength = valueLength - 1;
 
             int index = 0;
-            for (; ; )
+            while (true)
             {
                 Debug.Assert(0 <= index && index <= searchSpaceLength); // Ensures no deceptive underflows in the computation of "remainingSearchSpaceLength".
                 int remainingSearchSpaceLength = searchSpaceLength - index - valueTailLength;
@@ -470,7 +470,7 @@ namespace System
             int valueTailLength = valueLength - 1;
 
             int index = 0;
-            for (; ; )
+            while (true)
             {
                 Debug.Assert(0 <= index && index <= searchSpaceLength); // Ensures no deceptive underflows in the computation of "remainingSearchSpaceLength".
                 int remainingSearchSpaceLength = searchSpaceLength - index - valueTailLength;

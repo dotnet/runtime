@@ -150,7 +150,7 @@ namespace System.Diagnostics.Tracing
                 log.DebugFacilityMessage("OnStopEnterActivityState", ActivityInfo.LiveActivities(m_current.Value));
             }
 
-            for (; ; ) // This is a retry loop.
+            while (true) // This is a retry loop.
             {
                 ActivityInfo? currentActivity = m_current.Value;
                 ActivityInfo? newCurrentActivity = null;               // if we have seen any live activities (orphans), at he first one we have seen.

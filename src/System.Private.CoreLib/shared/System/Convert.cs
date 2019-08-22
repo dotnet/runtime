@@ -2656,7 +2656,7 @@ namespace System
                     // If we got here, the very first character not consumed was a whitespace. We can skip past any consecutive whitespace, then continue decoding.
 
                     int indexOfFirstNonSpace = 1;
-                    for (; ; )
+                    while (true)
                     {
                         if (indexOfFirstNonSpace == chars.Length)
                             break;
