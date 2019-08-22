@@ -90,6 +90,11 @@
 #define CALL_COST 10
 /* Used for the JIT */
 #define INLINE_LENGTH_LIMIT 20
+/*
+ * The aot and jit inline limits should be different,
+ * since aot sees the whole program so we can let opt inline methods for us,
+ * while the jit only sees one method, so we have to inline things ourselves.
+ */
 /* Used by LLVM AOT */
 #define LLVM_AOT_INLINE_LENGTH_LIMIT 30
 /* Used to LLVM JIT */
