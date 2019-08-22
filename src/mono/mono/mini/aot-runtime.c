@@ -299,9 +299,7 @@ load_image (MonoAotModule *amodule, int index, MonoError *error)
 	 * current AOT module matches the wanted name and guid and just return
 	 * the AOT module's assembly.
 	 */
-	if (mono_asmctx_get_kind (&amodule->assembly->context) == MONO_ASMCTX_INDIVIDUAL &&
-	    !strcmp (amodule->assembly->image->guid, amodule->image_guids [index]) &&
-	    mono_assembly_names_equal (&amodule->image_names [index], &amodule->assembly->aname))
+	if (!strcmp (amodule->assembly->image->guid, amodule->image_guids [index]))
 		assembly = amodule->assembly;
 	else
 		assembly = mono_assembly_load (&amodule->image_names [index], amodule->assembly->basedir, &status);
