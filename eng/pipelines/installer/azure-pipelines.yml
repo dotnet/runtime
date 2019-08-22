@@ -166,6 +166,7 @@ stages:
     # Publish to Build Asset Registry in order to generate the ReleaseConfigs artifact.
     - template: /eng/common/templates/job/publish-build-assets.yml
       parameters:
+        publishUsingPipelines: true
         dependsOn: PrepareSignedArtifacts
         pool:
           name: NetCoreInternal-Pool
