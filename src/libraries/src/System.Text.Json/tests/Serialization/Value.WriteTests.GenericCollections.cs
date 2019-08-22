@@ -891,6 +891,17 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(SimpleTestClassWithStringToStringIReadOnlyDictionaryWrapper.s_json.StripWhitespace(), JsonSerializer.Serialize<object>(obj5));
         }
 
+        [Fact]
+        // Regression test for https://github.com/dotnet/corefx/issues/39770.
+        public static void ConvertIEnumerableValueTypesThenSerialize()
+        {
+            IEnumerable<ValueA> valueAs = Enumerable.Range(0, 5).Select(x => new ValueA { Value = x }).ToList();
+            IEnumerable<ValueB> valueBs = valueAs.Select(x => new ValueB { Value = x.Value });
+
+            string expectedJson = @"[{""Value"":0},{""Value"":1},{""Value"":2},{""Value"":3},{""Value"":4}]";
+            Assert.Equal(expectedJson, JsonSerializer.Serialize<IEnumerable<ValueB>>(valueBs));
+        }
+
         public class SimpleClassWithKeyValuePairs
         {
             public KeyValuePair<string, string> KvpWStrVal { get; set; }
@@ -899,6 +910,16 @@ namespace System.Text.Json.Serialization.Tests
             public KeyValuePair<string, KeyValuePair<string, string>> KvpWStrKvpVal { get; set; }
             public KeyValuePair<string, KeyValuePair<string, object>> KvpWObjKvpVal { get; set; }
             public KeyValuePair<string, KeyValuePair<string, SimpleClassWithKeyValuePairs>> KvpWClassKvpVal { get; set; }
+        }
+
+        public class ValueA
+        {
+            public int Value { get; set; }
+        }
+
+        public class ValueB
+        {
+            public int Value { get; set; }
         }
     }
 }
