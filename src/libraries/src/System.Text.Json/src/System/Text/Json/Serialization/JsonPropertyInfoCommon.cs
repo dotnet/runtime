@@ -125,21 +125,27 @@ namespace System.Text.Json
         {
             object instance = collectionPropertyInfo.DeclaredTypeClassInfo.CreateObject();
 
-            if (instance is IList instanceOfIList && !instanceOfIList.IsReadOnly)
+            if (instance is IList instanceOfIList)
             {
-                foreach (object item in sourceList)
+                if (!instanceOfIList.IsReadOnly)
                 {
-                    instanceOfIList.Add(item);
+                    foreach (object item in sourceList)
+                    {
+                        instanceOfIList.Add(item);
+                    }
+                    return instanceOfIList;
                 }
-                return instanceOfIList;
             }
-            else if (instance is ICollection<TRuntimeProperty> instanceOfICollection && !instanceOfICollection.IsReadOnly)
+            else if (instance is ICollection<TRuntimeProperty> instanceOfICollection)
             {
-                foreach (TRuntimeProperty item in sourceList)
+                if (!instanceOfICollection.IsReadOnly)
                 {
-                    instanceOfICollection.Add(item);
+                    foreach (TRuntimeProperty item in sourceList)
+                    {
+                        instanceOfICollection.Add(item);
+                    }
+                    return instanceOfICollection;
                 }
-                return instanceOfICollection;
             }
             else if (instance is Stack<TRuntimeProperty> instanceOfStack)
             {
@@ -170,21 +176,27 @@ namespace System.Text.Json
         {
             object instance = collectionPropertyInfo.DeclaredTypeClassInfo.CreateObject();
 
-            if (instance is IDictionary instanceOfIDictionary && !instanceOfIDictionary.IsReadOnly)
+            if (instance is IDictionary instanceOfIDictionary)
             {
-                foreach (DictionaryEntry entry in sourceDictionary)
+                if (!instanceOfIDictionary.IsReadOnly)
                 {
-                    instanceOfIDictionary.Add((string)entry.Key, entry.Value);
+                    foreach (DictionaryEntry entry in sourceDictionary)
+                    {
+                        instanceOfIDictionary.Add((string)entry.Key, entry.Value);
+                    }
+                    return instanceOfIDictionary;
                 }
-                return instanceOfIDictionary;
             }
-            else if (instance is IDictionary<string, TRuntimeProperty> instanceOfGenericIDictionary && !instanceOfGenericIDictionary.IsReadOnly)
+            else if (instance is IDictionary<string, TRuntimeProperty> instanceOfGenericIDictionary)
             {
-                foreach (DictionaryEntry entry in sourceDictionary)
+                if (!instanceOfGenericIDictionary.IsReadOnly)
                 {
-                    instanceOfGenericIDictionary.Add((string)entry.Key, (TRuntimeProperty)entry.Value);
+                    foreach (DictionaryEntry entry in sourceDictionary)
+                    {
+                        instanceOfGenericIDictionary.Add((string)entry.Key, (TRuntimeProperty)entry.Value);
+                    }
+                    return instanceOfGenericIDictionary;
                 }
-                return instanceOfGenericIDictionary;
             }
 
             // TODO: Use reflection to support types implementing SortedList and maybe immutable dictionaries.
