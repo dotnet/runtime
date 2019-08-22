@@ -459,7 +459,7 @@ namespace System.Diagnostics.Tracing
 #if (PLATFORM_WINDOWS && (ES_SESSION_INFO || !ES_BUILD_STANDALONE))
             int buffSize = 256;     // An initial guess that probably works most of the time.
             byte* buffer;
-            for (; ; )
+            while (true)
             {
                 byte* space = stackalloc byte[buffSize];
                 buffer = space;
