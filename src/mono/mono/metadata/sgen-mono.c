@@ -827,20 +827,6 @@ sgen_finish_concurrent_work (const char *reason, gboolean stw)
 	sgen_major_collector.finish_sweeping ();
 }
 
-void
-mono_gc_stop_world ()
-{
-	LOCK_GC;
-	sgen_stop_world (0, FALSE);
-}
-
-void 
-mono_gc_restart_world ()
-{
-	sgen_restart_world (0, FALSE);
-	UNLOCK_GC;
-}
-
 /*
  * When appdomains are unloaded we can easily remove objects that have finalizers,
  * but all the others could still be present in random places on the heap.
@@ -2538,9 +2524,14 @@ guint64
 mono_gc_get_total_allocated_bytes(MonoBoolean precise)
 {
 	if (precise) 
-	{	mono_gc_stop_world();
+	{	
+		LOCK_GC;
+		sgen_stop_world (0, FALSE);
+
 		sgen_update_allocation_count();
-		mono_gc_restart_world();
+		
+		sgen_restart_world (0, FALSE);
+		UNLOCK_GC;
 	}
 	
 	return bytes_allocated_attached + bytes_allocated_detached;
