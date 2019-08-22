@@ -41,11 +41,18 @@ public:
     BinStr* Bounds() { return m_pbsBounds; };
     LPCWSTR Name() { return m_wzName; };
     DWORD   Attrs() { return m_dwAttrs; };
+    mdToken Token() { return m_token; };
+    void    Token(mdToken value)
+    {
+        m_token = value;
+     };
     CustomDescrList* CAList() { return &m_lstCA; };
+
 private:
     BinStr* m_pbsBounds;
     LPCWSTR m_wzName;
     DWORD   m_dwAttrs;
+    mdToken m_token;
     CustomDescrList m_lstCA;
 };
 

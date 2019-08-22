@@ -114,13 +114,95 @@ struct CustomDescr
     mdToken tkOwner;
     mdToken tkInterfacePair; // Needed for InterfaceImpl CA's
     BinStr* pBlob;
-    CustomDescr(mdToken tko, mdToken tk, BinStr* pblob) { tkType = tk; pBlob = pblob; tkOwner = tko; tkInterfacePair = 0; };
-    CustomDescr(mdToken tk, BinStr* pblob) { tkType = tk; pBlob = pblob; tkOwner = 0; tkInterfacePair = 0;};
-    CustomDescr(CustomDescr* pOrig) { tkType = pOrig->tkType; pBlob = new BinStr(); pBlob->append(pOrig->pBlob); tkOwner = pOrig->tkOwner; tkInterfacePair = pOrig->tkInterfacePair; };
-    ~CustomDescr() { if(pBlob) delete pBlob; };
+
+    CustomDescr(mdToken tko, mdToken tk, BinStr* pblob)
+    {
+        tkType = tk; 
+        pBlob = pblob; 
+        tkOwner = tko; 
+        tkInterfacePair = 0; 
+    };
+    CustomDescr(mdToken tk, BinStr* pblob)
+    {
+        tkType = tk;
+        pBlob = pblob;
+        tkOwner = 0;
+        tkInterfacePair = 0;
+    };
+    CustomDescr(CustomDescr* pOrig)
+    {
+        tkType = pOrig->tkType;
+        pBlob = new BinStr();
+        pBlob->append(pOrig->pBlob);
+        tkOwner = pOrig->tkOwner;
+        tkInterfacePair = pOrig->tkInterfacePair;
+    };
+    ~CustomDescr()
+    {
+        if(pBlob)
+            delete pBlob;
+    };
 };
 typedef FIFO<CustomDescr> CustomDescrList;
 typedef LIFO<CustomDescrList> CustomDescrListStack;
+
+class GenericParamConstraintDescriptor
+{
+public:
+    GenericParamConstraintDescriptor()
+    {
+        m_tk = mdTokenNil;
+        m_tkOwner = mdTokenNil;
+        m_iGenericParamIndex = -1;
+        m_tkTypeConstraint = mdTokenNil;
+    };
+    ~GenericParamConstraintDescriptor()
+    {
+        m_lstCA.RESET(true);
+    };
+    void Init(int index, mdToken typeConstraint)
+    {
+        m_iGenericParamIndex = index;
+        m_tkTypeConstraint = typeConstraint;
+    };
+    void Token(mdToken tk)
+    {
+        m_tk = tk;
+    };
+    mdToken Token()
+    {
+        return m_tk;
+    };
+    void SetOwner(mdToken tk)
+    {
+        m_tkOwner = tk;
+    };
+    mdToken GetOwner()
+    {
+        return m_tkOwner;
+    };
+    int GetParamIndex()
+    {
+        return m_iGenericParamIndex;
+    };
+    mdToken GetTypeConstraint()
+    {
+        return m_tkTypeConstraint;
+    };
+    CustomDescrList* CAList()
+    {
+        return &m_lstCA;
+    };
+
+private:
+    mdGenericParamConstraint m_tk;
+    mdToken m_tkOwner;
+    int m_iGenericParamIndex;
+    mdToken m_tkTypeConstraint;
+ 
+    CustomDescrList m_lstCA;
+};
+typedef FIFO<GenericParamConstraintDescriptor> GenericParamConstraintList;
 /**************************************************************************/
 #include "typar.hpp"
 #include "method.hpp"
@@ -1100,7 +1182,6 @@ public:
             DefineCV(pCD);
         }
     };
-
     void EmitUnresolvedCustomAttributes(); // implementation: writer.cpp
     // VTable blob (if any)
 public:
@@ -1185,6 +1266,16 @@ public:
     unsigned NumTypeDefs() {return m_TypeDefDList.COUNT();};
 private:
     HRESULT GetCAName(mdToken tkCA, __out LPWSTR *ppszName);
+
+public:
+    void RecordTypeConstraints(GenericParamConstraintList* pGPCList, int numTyPars, TyParDescr* tyPars);
+
+    void AddGenericParamConstraint(int index, char * pStrGenericParam, mdToken tkTypeConstraint);
+
+    bool CheckAddGenericParamConstraint(GenericParamConstraintList* pGPCList, int index, mdToken tkTypeConstraint);
+
+    void EmitGenericParamConstraints(int numTyPars, TyParDescr* pTyPars, mdToken tkOwner, GenericParamConstraintList* pGPCL);
+
 };
 
 #endif  // Assember_h
