@@ -1689,6 +1689,15 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		}
 	}
 
+	/* Workaround for the compiler server IsMemoryAvailable. */
+	if (!strcmp ("Microsoft.CodeAnalysis.CompilerServer", cmethod_klass_name_space) && !strcmp ("MemoryHelper", cmethod_klass_name)) {
+		if (!strcmp (cmethod->name, "IsMemoryAvailable")) {
+			EMIT_NEW_ICONST (cfg, ins, 1);
+			ins->type = STACK_I4;
+			return ins;
+		}
+	}
+
 #ifdef ENABLE_NETCORE
 	// Return false for IsSupported for all types in System.Runtime.Intrinsics.X86 
 	// as we don't support them now
