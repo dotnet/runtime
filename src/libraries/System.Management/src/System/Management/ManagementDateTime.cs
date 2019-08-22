@@ -145,43 +145,43 @@ namespace System.Management
                 var tempString = dmtf.Substring(0, 4);
                 if (("****" != tempString))
                 {
-                    year = int.Parse(tempString,frmInt32);
+                    year = int.Parse(tempString, frmInt32);
                 }
                 tempString = dmtf.Substring(4, 2);
                 if (("**" != tempString))
                 {
-                    month = int.Parse(tempString,frmInt32);
+                    month = int.Parse(tempString, frmInt32);
                 }
                 tempString = dmtf.Substring(6, 2);
                 if (("**" != tempString))
                 {
-                    day = int.Parse(tempString,frmInt32);
+                    day = int.Parse(tempString, frmInt32);
                 }
                 tempString = dmtf.Substring(8, 2);
                 if (("**" != tempString))
                 {
-                    hour = int.Parse(tempString,frmInt32);
+                    hour = int.Parse(tempString, frmInt32);
                 }
                 tempString = dmtf.Substring(10, 2);
                 if (("**" != tempString))
                 {
-                    minute = int.Parse(tempString,frmInt32);
+                    minute = int.Parse(tempString, frmInt32);
                 }
                 tempString = dmtf.Substring(12, 2);
                 if (("**" != tempString))
                 {
-                    second = int.Parse(tempString,frmInt32);
+                    second = int.Parse(tempString, frmInt32);
                 }
                 tempString = dmtf.Substring(15, 6);
                 if (("******" != tempString))
                 {
-                    ticks = (long.Parse(tempString,(IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(long)))) * (TimeSpan.TicksPerMillisecond/1000);
+                    ticks = (long.Parse(tempString, (IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(long)))) * (TimeSpan.TicksPerMillisecond/1000);
                 }
                 tempString = dmtf.Substring(22, 3);
                 if (("***" != tempString))
                 {
                     tempString = dmtf.Substring(21, 4);
-                    utcOffset = int.Parse(tempString,frmInt32);
+                    utcOffset = int.Parse(tempString, frmInt32);
                 }
 
                 if ( year < 0 || month < 0 || day < 0 || hour < 0 || minute < 0 || second < 0 || ticks < 0)
@@ -251,15 +251,15 @@ namespace System.Management
             else
             if ((tickOffset.Ticks >= 0))
             {
-                UtcString = "+" + ((tickOffset.Ticks / System.TimeSpan.TicksPerMinute)).ToString(frmInt32).PadLeft(3,'0');
+                UtcString = "+" + ((tickOffset.Ticks / System.TimeSpan.TicksPerMinute)).ToString(frmInt32).PadLeft(3, '0');
             }
             else
             {
                 string strTemp = OffsetMins.ToString(frmInt32);
-                UtcString = "-" + strTemp.Substring(1, strTemp.Length-1).PadLeft(3,'0');
+                UtcString = "-" + strTemp.Substring(1, strTemp.Length-1).PadLeft(3, '0');
             }
 
-            string dmtfDateTime = date.Year.ToString(frmInt32).PadLeft(4,'0');
+            string dmtfDateTime = date.Year.ToString(frmInt32).PadLeft(4, '0');
 
             dmtfDateTime = (dmtfDateTime + date.Month.ToString(frmInt32).PadLeft(2, '0'));
             dmtfDateTime = (dmtfDateTime + date.Day.ToString(frmInt32).PadLeft(2, '0'));
@@ -270,16 +270,16 @@ namespace System.Management
 
             // Construct a DateTime with the precision to Second as same as the passed DateTime and so get
             // the ticks difference so that the microseconds can be calculated
-            DateTime dtTemp = new DateTime(date.Year ,date.Month,date.Day ,date.Hour ,date.Minute ,date.Second,0);
+            DateTime dtTemp = new DateTime(date.Year, date.Month, date.Day, date.Hour, date.Minute, date.Second, 0);
             long microsec = ((date.Ticks-dtTemp.Ticks) * 1000) / System.TimeSpan.TicksPerMillisecond;
 
             // fill the microseconds field
             string strMicrosec = microsec.ToString((IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(long)));
             if (strMicrosec.Length > 6)
             {
-                strMicrosec = strMicrosec.Substring(0,6);
+                strMicrosec = strMicrosec.Substring(0, 6);
             }
-            dmtfDateTime = dmtfDateTime + strMicrosec.PadLeft(6,'0');
+            dmtfDateTime = dmtfDateTime + strMicrosec.PadLeft(6, '0');
             // adding the UTC offset
             dmtfDateTime = dmtfDateTime + UtcString;
 
@@ -331,7 +331,7 @@ namespace System.Management
             {
                 throw new System.ArgumentOutOfRangeException(nameof(dmtfTimespan));
             }
-            if (dmtfts.Substring(21,4) != ":000")
+            if (dmtfts.Substring(21, 4) != ":000")
             {
                 throw new System.ArgumentOutOfRangeException(nameof(dmtfTimespan));
             }
@@ -342,19 +342,19 @@ namespace System.Management
                 string tempString = string.Empty;
 
                 tempString = dmtfts.Substring(0, 8);
-                days = int.Parse(tempString,frmInt32);
+                days = int.Parse(tempString, frmInt32);
 
                 tempString = dmtfts.Substring(8, 2);
-                hours = int.Parse(tempString,frmInt32);
+                hours = int.Parse(tempString, frmInt32);
 
                 tempString = dmtfts.Substring(10, 2);
-                minutes = int.Parse(tempString,frmInt32);
+                minutes = int.Parse(tempString, frmInt32);
 
                 tempString = dmtfts.Substring(12, 2);
-                seconds = int.Parse(tempString,frmInt32);
+                seconds = int.Parse(tempString, frmInt32);
 
                 tempString = dmtfts.Substring(15, 6);
-                ticks = (long.Parse(tempString,(IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(long)))) * (System.TimeSpan.TicksPerMillisecond/1000);
+                ticks = (long.Parse(tempString, (IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(long)))) * (System.TimeSpan.TicksPerMillisecond/1000);
 
             }
             catch
@@ -407,7 +407,7 @@ namespace System.Management
         public static string ToDmtfTimeInterval(TimeSpan timespan)
         {
 
-            string dmtftimespan = timespan.Days.ToString((IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(int))).PadLeft(8,'0');
+            string dmtftimespan = timespan.Days.ToString((IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(int))).PadLeft(8, '0');
             IFormatProvider frmInt32 = (IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(int));
 
             // Days that can be represented is more than what can be represented
@@ -425,16 +425,16 @@ namespace System.Management
 
             // Construct a DateTime with the precision to Second as same as the passed DateTime and so get
             // the ticks difference so that the microseconds can be calculated
-            TimeSpan tsTemp = new TimeSpan(timespan.Days ,timespan.Hours,timespan.Minutes ,timespan.Seconds ,0);
+            TimeSpan tsTemp = new TimeSpan(timespan.Days, timespan.Hours, timespan.Minutes, timespan.Seconds, 0);
             long microsec = ((timespan.Ticks-tsTemp.Ticks) * 1000) / System.TimeSpan.TicksPerMillisecond;
 
             // fill the microseconds field
             string strMicrosec = microsec.ToString((IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(long)));
             if (strMicrosec.Length > 6)
             {
-                strMicrosec = strMicrosec.Substring(0,6);
+                strMicrosec = strMicrosec.Substring(0, 6);
             }
-            dmtftimespan = dmtftimespan + strMicrosec.PadLeft(6,'0');
+            dmtftimespan = dmtftimespan + strMicrosec.PadLeft(6, '0');
 
             dmtftimespan = dmtftimespan + ":000";
 

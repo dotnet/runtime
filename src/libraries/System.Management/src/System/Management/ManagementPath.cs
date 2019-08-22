@@ -635,7 +635,7 @@ namespace System.Management
                 string oldValue = Server;
 
                 // Only set if changed
-                if (0 != string.Compare(oldValue,value,StringComparison.OrdinalIgnoreCase))
+                if (0 != string.Compare(oldValue, value, StringComparison.OrdinalIgnoreCase))
                 {
                     if (null == wmiPath)
                         wmiPath = (IWbemPath)MTAHelper.CreateInMTA(typeof(WbemDefPath));//new WbemDefPath ();
@@ -889,7 +889,7 @@ namespace System.Management
                 string oldValue = ClassName;
 
                 // Only set if changed
-                if (0 != string.Compare(oldValue,value,StringComparison.OrdinalIgnoreCase))
+                if (0 != string.Compare(oldValue, value, StringComparison.OrdinalIgnoreCase))
                 {
                     // isWbemPathShared handled in internal className property accessor.
                     internalClassName = value;
@@ -1064,7 +1064,7 @@ namespace System.Management
             {
                 return true;
             }
-            return base.CanConvertFrom(context,sourceType);
+            return base.CanConvertFrom(context, sourceType);
         }
 
         /// <summary>
@@ -1081,7 +1081,7 @@ namespace System.Management
             {
                 return true;
             }
-            return base.CanConvertTo(context,destinationType);
+            return base.CanConvertTo(context, destinationType);
         }
 
         /// <summary>
@@ -1113,7 +1113,7 @@ namespace System.Management
                     return new InstanceDescriptor(ctor, new object[] {obj.Path});
                 }
             }
-            return base.ConvertTo(context,culture,value,destinationType);
+            return base.ConvertTo(context, culture, value, destinationType);
         }
     }
 }

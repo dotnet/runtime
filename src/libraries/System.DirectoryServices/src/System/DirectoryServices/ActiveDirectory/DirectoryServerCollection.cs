@@ -56,7 +56,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (!Contains(server))
                     List[index] = server;
                 else
-                    throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection , server), nameof(value));
+                    throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection, server), nameof(value));
             }
         }
 
@@ -87,7 +87,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 else
                 {
-                    throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection , server), nameof(server));
+                    throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection, server), nameof(server));
                 }
             }
             else
@@ -102,7 +102,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (!Contains(server))
                     return List.Add(server);
                 else
-                    throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection , server), nameof(server));
+                    throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection, server), nameof(server));
             }
         }
 
@@ -188,7 +188,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 else
                 {
-                    throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection , server), nameof(server));
+                    throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection, server), nameof(server));
                 }
             }
             else
@@ -204,7 +204,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (!Contains(server))
                     List.Insert(index, server);
                 else
-                    throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection , server));
+                    throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection, server));
             }
         }
 
@@ -225,7 +225,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
 
             // something that does not exist in the collection
-            throw new ArgumentException(SR.Format(SR.NotFoundInCollection , server), nameof(server));
+            throw new ArgumentException(SR.Format(SR.NotFoundInCollection, server), nameof(server));
         }
 
         protected override void OnClear()

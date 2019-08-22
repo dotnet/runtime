@@ -1438,7 +1438,7 @@ namespace System.Management
             // Ensure that the object is valid
             Get();
             ManagementClassGenerator classGen = new ManagementClassGenerator(this);
-            return classGen.GenerateCode(includeSystemClassInClassDef,systemPropertyClass);
+            return classGen.GenerateCode(includeSystemClassInClassDef, systemPropertyClass);
         }
 
 
@@ -1461,12 +1461,12 @@ namespace System.Management
         /// cls.GetStronglyTypedClassCode(CodeLanguage.CSharp,"C:\temp\Logicaldisk.cs",String.Empty);
         ///    </code>
         /// </example>
-        public bool GetStronglyTypedClassCode(CodeLanguage lang, string filePath,string classNamespace)
+        public bool GetStronglyTypedClassCode(CodeLanguage lang, string filePath, string classNamespace)
         {
             // Ensure that the object is valid
             Get();
             ManagementClassGenerator classGen = new ManagementClassGenerator(this);
-            return classGen.GenerateCode(lang , filePath,classNamespace);
+            return classGen.GenerateCode(lang, filePath, classNamespace);
         }
 
     }//ManagementClass

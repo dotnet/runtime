@@ -26,12 +26,12 @@ namespace System.DirectoryServices.ActiveDirectory
                     throw new ArgumentNullException(nameof(value));
 
                 if (!link.existing)
-                    throw new InvalidOperationException(SR.Format(SR.SiteLinkNotCommitted , link.Name));
+                    throw new InvalidOperationException(SR.Format(SR.SiteLinkNotCommitted, link.Name));
 
                 if (!Contains(link))
                     List[index] = link;
                 else
-                    throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection , link), nameof(value));
+                    throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection, link), nameof(value));
             }
         }
 
@@ -41,12 +41,12 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException(nameof(link));
 
             if (!link.existing)
-                throw new InvalidOperationException(SR.Format(SR.SiteLinkNotCommitted , link.Name));
+                throw new InvalidOperationException(SR.Format(SR.SiteLinkNotCommitted, link.Name));
 
             if (!Contains(link))
                 return List.Add(link);
             else
-                throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection , link), nameof(link));
+                throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection, link), nameof(link));
         }
 
         public void AddRange(ActiveDirectorySiteLink[] links)
@@ -74,7 +74,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException(nameof(link));
 
             if (!link.existing)
-                throw new InvalidOperationException(SR.Format(SR.SiteLinkNotCommitted , link.Name));
+                throw new InvalidOperationException(SR.Format(SR.SiteLinkNotCommitted, link.Name));
 
             string dn = (string)PropertyManager.GetPropertyValue(link.context, link.cachedEntry, PropertyManager.DistinguishedName);
 
@@ -102,7 +102,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException(nameof(link));
 
             if (!link.existing)
-                throw new InvalidOperationException(SR.Format(SR.SiteLinkNotCommitted , link.Name));
+                throw new InvalidOperationException(SR.Format(SR.SiteLinkNotCommitted, link.Name));
 
             string dn = (string)PropertyManager.GetPropertyValue(link.context, link.cachedEntry, PropertyManager.DistinguishedName);
 
@@ -125,12 +125,12 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("value");
 
             if (!link.existing)
-                throw new InvalidOperationException(SR.Format(SR.SiteLinkNotCommitted , link.Name));
+                throw new InvalidOperationException(SR.Format(SR.SiteLinkNotCommitted, link.Name));
 
             if (!Contains(link))
                 List.Insert(index, link);
             else
-                throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection , link), nameof(link));
+                throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection, link), nameof(link));
         }
 
         public void Remove(ActiveDirectorySiteLink link)
@@ -139,7 +139,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException(nameof(link));
 
             if (!link.existing)
-                throw new InvalidOperationException(SR.Format(SR.SiteLinkNotCommitted , link.Name));
+                throw new InvalidOperationException(SR.Format(SR.SiteLinkNotCommitted, link.Name));
 
             string dn = (string)PropertyManager.GetPropertyValue(link.context, link.cachedEntry, PropertyManager.DistinguishedName);
 
@@ -156,7 +156,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
 
             // something that does not exist in the collectio
-            throw new ArgumentException(SR.Format(SR.NotFoundInCollection , link), nameof(link));
+            throw new ArgumentException(SR.Format(SR.NotFoundInCollection, link), nameof(link));
         }
 
         protected override void OnClearComplete()
@@ -229,7 +229,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentException(nameof(value));
 
             if (!((ActiveDirectorySiteLink)value).existing)
-                throw new InvalidOperationException(SR.Format(SR.SiteLinkNotCommitted , ((ActiveDirectorySiteLink)value).Name));
+                throw new InvalidOperationException(SR.Format(SR.SiteLinkNotCommitted, ((ActiveDirectorySiteLink)value).Name));
         }
     }
 }

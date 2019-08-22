@@ -109,21 +109,21 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private static readonly byte[][] s_simpleTypeConversions =
         {
-            //        to: BYTE  I2    I4    I8    FLT   DBL   DEC  CHAR  BOOL SBYTE U2    U4    U8
+            // to:                   BYTE I2   I4   I8   FLT  DBL  DEC  CHAR BOOL SBYTE U2   U4   U8
             /* from */
-             new byte[]   /* BYTE */ {  ID  , IMP , IMP , IMP , IMP , IMP , IUD, EXP , NO , EXP , IMP , IMP , IMP },
-             new byte[]   /*   I2 */ {  EXP , ID  , IMP , IMP , IMP , IMP , IUD, EXP , NO , EXP , EXP , EXP , EXP },
-             new byte[]   /*   I4 */ {  EXP , EXP , ID  , IMP , IMP , IMP , IUD, EXP , NO , EXP , EXP , EXP , EXP },
-             new byte[]   /*   I8 */ {  EXP , EXP , EXP , ID  , IMP , IMP , IUD, EXP , NO , EXP , EXP , EXP , EXP },
-             new byte[]   /*  FLT */ {  EXP , EXP , EXP , EXP , ID  , IMP , XUD, EXP , NO , EXP , EXP , EXP , EXP },
-             new byte[]   /*  DBL */ {  EXP , EXP , EXP , EXP , EXP , ID  , XUD, EXP , NO , EXP , EXP , EXP , EXP },
-             new byte[]   /*  DEC */ {  XUD , XUD , XUD , XUD , XUD , XUD , ID , XUD , NO , XUD , XUD , XUD , XUD },
-             new byte[]   /* CHAR */ {  EXP , EXP , IMP , IMP , IMP , IMP , IUD, ID  , NO , EXP , IMP , IMP , IMP },
-             new byte[]   /* BOOL */ {  NO  , NO  , NO  , NO  , NO  , NO  , NO , NO  , ID , NO  , NO  , NO  , NO  },
-             new byte[]   /*SBYTE */ {  EXP , IMP , IMP , IMP , IMP , IMP , IUD, EXP , NO , ID  , EXP , EXP , EXP },
-             new byte[]   /*   U2 */ {  EXP , EXP , IMP , IMP , IMP , IMP , IUD, EXP , NO , EXP , ID  , IMP , IMP },
-             new byte[]   /*   U4 */ {  EXP , EXP , EXP , IMP , IMP , IMP , IUD, EXP , NO , EXP , EXP , ID  , IMP },
-             new byte[]   /*   U8 */ {  EXP , EXP , EXP , EXP , IMP , IMP , IUD, EXP , NO , EXP , EXP , EXP , ID  },
+             new byte[] /* BYTE */ { ID,  IMP, IMP, IMP, IMP, IMP, IUD, EXP, NO,  EXP,  IMP, IMP, IMP },
+             new byte[] /*   I2 */ { EXP, ID,  IMP, IMP, IMP, IMP, IUD, EXP, NO,  EXP,  EXP, EXP, EXP },
+             new byte[] /*   I4 */ { EXP, EXP, ID,  IMP, IMP, IMP, IUD, EXP, NO,  EXP,  EXP, EXP, EXP },
+             new byte[] /*   I8 */ { EXP, EXP, EXP, ID,  IMP, IMP, IUD, EXP, NO,  EXP,  EXP, EXP, EXP },
+             new byte[] /*  FLT */ { EXP, EXP, EXP, EXP, ID,  IMP, XUD, EXP, NO,  EXP,  EXP, EXP, EXP },
+             new byte[] /*  DBL */ { EXP, EXP, EXP, EXP, EXP, ID,  XUD, EXP, NO,  EXP,  EXP, EXP, EXP },
+             new byte[] /*  DEC */ { XUD, XUD, XUD, XUD, XUD, XUD, ID,  XUD, NO,  XUD,  XUD, XUD, XUD },
+             new byte[] /* CHAR */ { EXP, EXP, IMP, IMP, IMP, IMP, IUD, ID,  NO,  EXP,  IMP, IMP, IMP },
+             new byte[] /* BOOL */ { NO,  NO,  NO,  NO,  NO,  NO,  NO,  NO,  ID,  NO,   NO,  NO,  NO  },
+             new byte[] /*SBYTE */ { EXP, IMP, IMP, IMP, IMP, IMP, IUD, EXP, NO,  ID,   EXP, EXP, EXP },
+             new byte[] /*   U2 */ { EXP, EXP, IMP, IMP, IMP, IMP, IUD, EXP, NO,  EXP,  ID,  IMP, IMP },
+             new byte[] /*   U4 */ { EXP, EXP, EXP, IMP, IMP, IMP, IUD, EXP, NO,  EXP,  EXP, ID,  IMP },
+             new byte[] /*   U8 */ { EXP, EXP, EXP, EXP, IMP, IMP, IUD, EXP, NO,  EXP,  EXP, EXP, ID  },
         };
 
         private const int NUM_SIMPLE_TYPES = (int)PredefinedType.PT_ULONG + 1;
@@ -189,23 +189,23 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private static readonly byte[][] s_simpleTypeBetter =
         {
-            //           BYTE    SHORT   INT     LONG    FLOAT   DOUBLE  DECIMAL CHAR    BOOL    SBYTE   USHORT  UINT    ULONG   IPTR    UIPTR   OBJECT
-            new byte[]  /* BYTE   */{same   ,left   ,left   ,left   ,left   ,left   ,left   ,neither,neither,right  ,left   ,left   ,left   ,neither,neither,left   },
-              new byte[]  /* SHORT  */{right  ,same   ,left   ,left   ,left   ,left   ,left   ,neither,neither,right  ,left   ,left   ,left   ,neither,neither,left   },
-              new byte[]  /* INT    */{right  ,right  ,same   ,left   ,left   ,left   ,left   ,right  ,neither,right  ,right  ,left   ,left   ,neither,neither,left   },
-              new byte[]  /* LONG   */{right  ,right  ,right  ,same   ,left   ,left   ,left   ,right  ,neither,right  ,right  ,right  ,left   ,neither,neither,left   },
-              new byte[]  /* FLOAT  */{right  ,right  ,right  ,right  ,same   ,left   ,neither,right  ,neither,right  ,right  ,right  ,right  ,neither,neither,left   },
-              new byte[]  /* DOUBLE */{right  ,right  ,right  ,right  ,right  ,same   ,neither,right  ,neither,right  ,right  ,right  ,right  ,neither,neither,left   },
-              new byte[]  /* DECIMAL*/{right  ,right  ,right  ,right  ,neither,neither,same   ,right  ,neither,right  ,right  ,right  ,right  ,neither,neither,left   },
-              new byte[]  /* CHAR   */{neither,neither,left   ,left   ,left   ,left   ,left   ,same   ,neither,neither,left   ,left   ,left   ,neither,neither,left   },
-              new byte[]  /* BOOL   */{neither,neither,neither,neither,neither,neither,neither,neither,same   ,neither,neither,neither,neither,neither,neither,left   },
-              new byte[]  /* SBYTE  */{left   ,left   ,left   ,left   ,left   ,left   ,left   ,neither,neither,same   ,left   ,left   ,left   ,neither,neither,left   },
-              new byte[]  /* USHORT */{right  ,right  ,left   ,left   ,left   ,left   ,left   ,right  ,neither,right  ,same   ,left   ,left   ,neither,neither,left   },
-              new byte[]  /* UINT   */{right  ,right  ,right  ,left   ,left   ,left   ,left   ,right  ,neither,right  ,right  ,same   ,left   ,neither,neither,left   },
-              new byte[]  /* ULONG  */{right  ,right  ,right  ,right  ,left   ,left   ,left   ,right  ,neither,right  ,right  ,right  ,same   ,neither,neither,left   },
-              new byte[]  /* IPTR   */{neither,neither,neither,neither,neither,neither,neither,neither,neither,neither,neither,neither,neither,same   ,neither,left   },
-              new byte[]  /* UIPTR  */{neither,neither,neither,neither,neither,neither,neither,neither,neither,neither,neither,neither,neither,neither,same   ,left   },
-              new byte[]  /* OBJECT */{right  ,right  ,right  ,right  ,right  ,right  ,right  ,right  ,right  ,right  ,right  ,right  ,right  ,right  ,right  ,same   }
+            //                        BYTE     SHORT    INT      LONG     FLOAT    DOUBLE   DECIMAL  CHAR     BOOL     SBYTE    USHORT   UINT     ULONG    IPTR     UIPTR    OBJECT
+            new byte[] /* BYTE   */ { same,    left,    left,    left,    left,    left,    left,    neither, neither, right,   left,    left,    left,    neither, neither, left },
+            new byte[] /* SHORT  */ { right,   same,    left,    left,    left,    left,    left,    neither, neither, right,   left,    left,    left,    neither, neither, left },
+            new byte[] /* INT    */ { right,   right,   same,    left,    left,    left,    left,    right,   neither, right,   right,   left,    left,    neither, neither, left },
+            new byte[] /* LONG   */ { right,   right,   right,   same,    left,    left,    left,    right,   neither, right,   right,   right,   left,    neither, neither, left },
+            new byte[] /* FLOAT  */ { right,   right,   right,   right,   same,    left,    neither, right,   neither, right,   right,   right,   right,   neither, neither, left },
+            new byte[] /* DOUBLE */ { right,   right,   right,   right,   right,   same,    neither, right,   neither, right,   right,   right,   right,   neither, neither, left },
+            new byte[] /* DECIMAL*/ { right,   right,   right,   right,   neither, neither, same,    right,   neither, right,   right,   right,   right,   neither, neither, left },
+            new byte[] /* CHAR   */ { neither, neither, left,    left,    left,    left,    left,    same,    neither, neither, left,    left,    left,    neither, neither, left },
+            new byte[] /* BOOL   */ { neither, neither, neither, neither, neither, neither, neither, neither, same,    neither, neither, neither, neither, neither, neither, left },
+            new byte[] /* SBYTE  */ { left,    left,    left,    left,    left,    left,    left,    neither, neither, same,    left,    left,    left,    neither, neither, left },
+            new byte[] /* USHORT */ { right,   right,   left,    left,    left,    left,    left,    right,   neither, right,   same,    left,    left,    neither, neither, left },
+            new byte[] /* UINT   */ { right,   right,   right,   left,    left,    left,    left,    right,   neither, right,   right,   same,    left,    neither, neither, left },
+            new byte[] /* ULONG  */ { right,   right,   right,   right,   left,    left,    left,    right,   neither, right,   right,   right,   same,    neither, neither, left },
+            new byte[] /* IPTR   */ { neither, neither, neither, neither, neither, neither, neither, neither, neither, neither, neither, neither, neither, same,    neither, left },
+            new byte[] /* UIPTR  */ { neither, neither, neither, neither, neither, neither, neither, neither, neither, neither, neither, neither, neither, neither, same,    left },
+            new byte[] /* OBJECT */ { right,   right,   right,   right,   right,   right,   right,   right,   right,   right,   right,   right,   right,   right,   right,   same }
         };
 #if DEBUG
         private static volatile bool s_fCheckedBetter = false;

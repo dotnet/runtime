@@ -5401,7 +5401,7 @@ namespace System.Data
                         else
                         {
                             XmlDataTreeWriter xmldataWriter = new XmlDataTreeWriter(this, writeHierarchy);
-                            xmldataWriter.Save(writer,/*mode == XmlWriteMode.WriteSchema*/ false);
+                            xmldataWriter.Save(writer, /*mode == XmlWriteMode.WriteSchema*/ false);
                         }
                     }
                 }

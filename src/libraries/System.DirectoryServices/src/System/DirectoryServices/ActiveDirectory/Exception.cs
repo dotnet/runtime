@@ -131,7 +131,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 string s = base.Message;
                 if (!((Name == null) ||
                        (Name.Length == 0)))
-                    return s + Environment.NewLine + SR.Format(SR.Name , Name) + Environment.NewLine;
+                    return s + Environment.NewLine + SR.Format(SR.Name, Name) + Environment.NewLine;
                 else
                     return s;
             }

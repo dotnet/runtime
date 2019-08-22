@@ -43,8 +43,7 @@ using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing
 {
-    public sealed partial class Graphics : MarshalByRefObject, IDisposable
-    , IDeviceContext
+    public sealed partial class Graphics : MarshalByRefObject, IDisposable, IDeviceContext
     {
         internal IMacContext maccontext;
         private bool disposed = false;

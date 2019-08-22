@@ -538,7 +538,7 @@ namespace System.Management
                     //counterparts afterwards.
                     IWbemClassObject_DoNotMarshal[] tempArray = new IWbemClassObject_DoNotMarshal[collectionObject.options.BlockSize];
 
-                    int status = collectionObject.scope.GetSecuredIEnumWbemClassObjectHandler(enumWbem ).Next_(timeout, (uint)collectionObject.options.BlockSize,tempArray, ref cachedCount);
+                    int status = collectionObject.scope.GetSecuredIEnumWbemClassObjectHandler(enumWbem ).Next_(timeout, (uint)collectionObject.options.BlockSize, tempArray, ref cachedCount);
 
                     securityHandler.Reset();
 

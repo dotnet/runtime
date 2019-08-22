@@ -299,14 +299,14 @@ namespace System.DirectoryServices.AccountManagement
             {typeof(EmployeeIDFilter),                          "employeeID",           new FilterConverterDelegate(StringConverter)},
             {typeof(GroupIsSecurityGroupFilter),                        "groupType",            new FilterConverterDelegate(GroupTypeConverter)},
             {typeof(GroupScopeFilter),                          "groupType",            new FilterConverterDelegate(GroupTypeConverter)},
-            {typeof(ServicePrincipalNameFilter),                "servicePrincipalName",new FilterConverterDelegate(StringConverter)},
-            {typeof(ExtensionCacheFilter),                null ,new FilterConverterDelegate(ExtensionCacheConverter)},
-            {typeof(BadPasswordAttemptFilter),                "badPasswordTime",new FilterConverterDelegate(DefaultValutMatchingDateTimeConverter)},
-            {typeof(ExpiredAccountFilter),                "accountExpires",new FilterConverterDelegate(MatchingDateTimeConverter)},
-            {typeof(LastLogonTimeFilter),                "lastLogon",new FilterConverterDelegate(LastLogonConverter)},
-            {typeof(LockoutTimeFilter),                "lockoutTime",new FilterConverterDelegate(MatchingDateTimeConverter)},
-            {typeof(PasswordSetTimeFilter),                "pwdLastSet",new FilterConverterDelegate(DefaultValutMatchingDateTimeConverter)},
-            {typeof(BadLogonCountFilter),                "badPwdCount",new FilterConverterDelegate(MatchingIntConverter)}
+            {typeof(ServicePrincipalNameFilter),                "servicePrincipalName", new FilterConverterDelegate(StringConverter)},
+            {typeof(ExtensionCacheFilter),                null, new FilterConverterDelegate(ExtensionCacheConverter)},
+            {typeof(BadPasswordAttemptFilter),                "badPasswordTime", new FilterConverterDelegate(DefaultValutMatchingDateTimeConverter)},
+            {typeof(ExpiredAccountFilter),                "accountExpires", new FilterConverterDelegate(MatchingDateTimeConverter)},
+            {typeof(LastLogonTimeFilter),                "lastLogon", new FilterConverterDelegate(LastLogonConverter)},
+            {typeof(LockoutTimeFilter),                "lockoutTime", new FilterConverterDelegate(MatchingDateTimeConverter)},
+            {typeof(PasswordSetTimeFilter),                "pwdLastSet", new FilterConverterDelegate(DefaultValutMatchingDateTimeConverter)},
+            {typeof(BadLogonCountFilter),                "badPwdCount", new FilterConverterDelegate(MatchingIntConverter)}
         };
 
         private static Hashtable s_filterPropertiesTable = null;

@@ -682,7 +682,7 @@ namespace System.DirectoryServices
         public DirectoryEntry CopyTo(DirectoryEntry newParent, string newName)
         {
             if (!newParent.IsContainer)
-                throw new InvalidOperationException(SR.Format(SR.DSNotAContainer , newParent.Path));
+                throw new InvalidOperationException(SR.Format(SR.DSNotAContainer, newParent.Path));
 
             object copy = null;
             try
@@ -902,7 +902,7 @@ namespace System.DirectoryServices
         {
             object newEntry = null;
             if (!(newParent.AdsObject is UnsafeNativeMethods.IAdsContainer))
-                throw new InvalidOperationException(SR.Format(SR.DSNotAContainer , newParent.Path));
+                throw new InvalidOperationException(SR.Format(SR.DSNotAContainer, newParent.Path));
             try
             {
                 if (AdsObject.ADsPath.StartsWith("WinNT:", StringComparison.Ordinal))

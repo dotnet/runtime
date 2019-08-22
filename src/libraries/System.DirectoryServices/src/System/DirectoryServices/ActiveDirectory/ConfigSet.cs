@@ -93,7 +93,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 else
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.AINotFound , context.Name), typeof(ConfigurationSet), null);
+                    throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.AINotFound, context.Name), typeof(ConfigurationSet), null);
                 }
             }
 
@@ -112,7 +112,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 rootDSE = directoryEntryMgr.GetCachedDirectoryEntry(WellKnownDN.RootDSE);
                 if ((context.isServer()) && (!Utils.CheckCapability(rootDSE, Capability.ActiveDirectoryApplicationMode)))
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.AINotFound , context.Name), typeof(ConfigurationSet), null);
+                    throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.AINotFound, context.Name), typeof(ConfigurationSet), null);
                 }
 
                 configSetName = (string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.ConfigurationNamingContext);
@@ -129,7 +129,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
                     else
                     {
-                        throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.AINotFound , context.Name), typeof(ConfigurationSet), null);
+                        throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.AINotFound, context.Name), typeof(ConfigurationSet), null);
                     }
                 }
                 else
@@ -592,7 +592,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     {
                         // if we are passed the timeout period, we should throw, else do nothing
                         if (DateTime.UtcNow.Subtract(startTime) > s_locationTimeout)
-                            throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.ADAMInstanceNotFoundInConfigSet , (configSetName != null) ? configSetName : context.Name), typeof(AdamInstance), null);
+                            throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.ADAMInstanceNotFoundInConfigSet, (configSetName != null) ? configSetName : context.Name), typeof(AdamInstance), null);
                     }
                     else
                         throw ExceptionHelper.GetExceptionFromCOMException(context, e);
@@ -605,7 +605,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
 
             // if we reach here, we haven't found an adam instance
-            throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.ADAMInstanceNotFoundInConfigSet , (configSetName != null) ? configSetName : context.Name), typeof(AdamInstance), null);
+            throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.ADAMInstanceNotFoundInConfigSet, (configSetName != null) ? configSetName : context.Name), typeof(AdamInstance), null);
         }
 
         /// <returns>Returns a DomainController object for the DC that holds the specified FSMO role</returns>

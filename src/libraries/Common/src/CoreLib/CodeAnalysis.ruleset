@@ -75,7 +75,6 @@
   <Rules AnalyzerId="StyleCop.Analyzers" RuleNamespace="StyleCop.Analyzers">
     <Rule Id="AD0001" Action="None" /> <!-- Analyzer threw an exception -->
     <Rule Id="SA0001" Action="None" /> <!-- XML comments -->
-    <Rule Id="SA1001" Action="None" /> <!-- Commas should be followed by whitespace -->
     <Rule Id="SA1002" Action="None" /> <!-- Semicolons should not be preceded by a space -->
     <Rule Id="SA1003" Action="None" /> <!-- Operator should not appear at the end of a line -->
     <Rule Id="SA1004" Action="None" /> <!-- Documentation line should begin with a space -->

@@ -39,16 +39,16 @@ namespace System.Data.OleDb
         {
             // set up the colletion mane schema rowset guid mapping
             _schemaMapping = new SchemaRowsetName[] {
-                 new SchemaRowsetName(DbMetaDataCollectionNames.DataTypes,OleDbSchemaGuid.Provider_Types),
-                 new SchemaRowsetName(OleDbMetaDataCollectionNames.Catalogs,OleDbSchemaGuid.Catalogs),
-                 new SchemaRowsetName(OleDbMetaDataCollectionNames.Collations,OleDbSchemaGuid.Collations),
-                 new SchemaRowsetName(OleDbMetaDataCollectionNames.Columns,OleDbSchemaGuid.Columns),
-                 new SchemaRowsetName(OleDbMetaDataCollectionNames.Indexes,OleDbSchemaGuid.Indexes),
-                 new SchemaRowsetName(OleDbMetaDataCollectionNames.Procedures,OleDbSchemaGuid.Procedures),
-                 new SchemaRowsetName(OleDbMetaDataCollectionNames.ProcedureColumns,OleDbSchemaGuid.Procedure_Columns),
-                 new SchemaRowsetName(OleDbMetaDataCollectionNames.ProcedureParameters,OleDbSchemaGuid.Procedure_Parameters),
-                 new SchemaRowsetName(OleDbMetaDataCollectionNames.Tables,OleDbSchemaGuid.Tables),
-                 new SchemaRowsetName(OleDbMetaDataCollectionNames.Views,OleDbSchemaGuid.Views)};
+                 new SchemaRowsetName(DbMetaDataCollectionNames.DataTypes, OleDbSchemaGuid.Provider_Types),
+                 new SchemaRowsetName(OleDbMetaDataCollectionNames.Catalogs, OleDbSchemaGuid.Catalogs),
+                 new SchemaRowsetName(OleDbMetaDataCollectionNames.Collations, OleDbSchemaGuid.Collations),
+                 new SchemaRowsetName(OleDbMetaDataCollectionNames.Columns, OleDbSchemaGuid.Columns),
+                 new SchemaRowsetName(OleDbMetaDataCollectionNames.Indexes, OleDbSchemaGuid.Indexes),
+                 new SchemaRowsetName(OleDbMetaDataCollectionNames.Procedures, OleDbSchemaGuid.Procedures),
+                 new SchemaRowsetName(OleDbMetaDataCollectionNames.ProcedureColumns, OleDbSchemaGuid.Procedure_Columns),
+                 new SchemaRowsetName(OleDbMetaDataCollectionNames.ProcedureParameters, OleDbSchemaGuid.Procedure_Parameters),
+                 new SchemaRowsetName(OleDbMetaDataCollectionNames.Tables, OleDbSchemaGuid.Tables),
+                 new SchemaRowsetName(OleDbMetaDataCollectionNames.Views, OleDbSchemaGuid.Views)};
 
             // verify the existance of the table in the data set
             DataTable metaDataCollectionsTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.MetaDataCollections];

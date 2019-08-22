@@ -85,7 +85,7 @@ namespace System.DirectoryServices.ActiveDirectory
             catch (ActiveDirectoryObjectNotFoundException)
             {
                 // this is the case where the context is a config set and we could not find an ADAM instance in that config set
-                throw new ActiveDirectoryOperationException(SR.Format(SR.ADAMInstanceNotFoundInConfigSet , context.Name));
+                throw new ActiveDirectoryOperationException(SR.Format(SR.ADAMInstanceNotFoundInConfigSet, context.Name));
             }
 
             try
@@ -156,7 +156,7 @@ namespace System.DirectoryServices.ActiveDirectory
             catch (ActiveDirectoryObjectNotFoundException)
             {
                 // this is the case where the context is a config set and we could not find an ADAM instance in that config set
-                throw new ActiveDirectoryOperationException(SR.Format(SR.ADAMInstanceNotFoundInConfigSet , context.Name));
+                throw new ActiveDirectoryOperationException(SR.Format(SR.ADAMInstanceNotFoundInConfigSet, context.Name));
             }
             finally
             {
@@ -700,7 +700,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     {
                         if (e.ErrorCode == unchecked((int)0x80072030))
                         {
-                            string message = SR.Format(SR.NTDSSiteSetting , _name);
+                            string message = SR.Format(SR.NTDSSiteSetting, _name);
                             throw new ActiveDirectoryOperationException(message, e, 0x2030);
                         }
                         throw ExceptionHelper.GetExceptionFromCOMException(context, e);
@@ -1215,7 +1215,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     else
                     {
                         // should not happen
-                        string message = SR.Format(SR.UnknownTransport , transportName);
+                        string message = SR.Format(SR.UnknownTransport, transportName);
                         throw new ActiveDirectoryOperationException(message);
                     }
 
@@ -1282,7 +1282,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     else
                     {
                         // should not happen
-                        string message = SR.Format(SR.UnknownTransport , transport);
+                        string message = SR.Format(SR.UnknownTransport, transport);
                         throw new ActiveDirectoryOperationException(message);
                     }
 

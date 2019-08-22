@@ -1877,8 +1877,12 @@ namespace System.Data.SqlTypes
         // The array in Shiloh. Listed here for comparison.
         //private static readonly byte[] rgCLenFromPrec = new byte[] {5,5,5,5,5,5,5,5,5,9,9,9,9,9,
         //    9,9,9,9,9,13,13,13,13,13,13,13,13,13,17,17,17,17,17,17,17,17,17,17};
-        private static readonly byte[] s_rgCLenFromPrec = new byte[] {1,1,1,1,1,1,1,1,1,2,2,2,2,2,
-            2,2,2,2,2,3,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4};
+        private static readonly byte[] s_rgCLenFromPrec = new byte[]
+        {
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2,
+            2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4,
+            4, 4, 4, 4, 4, 4
+        };
 
         private static byte CLenFromPrec(byte bPrec)
         {

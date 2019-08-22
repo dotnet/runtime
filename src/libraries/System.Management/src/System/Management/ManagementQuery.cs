@@ -673,7 +673,7 @@ namespace System.Management
                     if (p.IsClass && (p.NamespacePath.Length==0))
                         ClassName = queryOrClassName;
                     else
-                        throw new ArgumentException (SR.InvalidQuery,nameof(queryOrClassName));
+                        throw new ArgumentException (SR.InvalidQuery, nameof(queryOrClassName));
 
                 }
             }
@@ -1032,13 +1032,13 @@ namespace System.Management
                 // Should start with "select"
                 if ((q.Length < keyword.Length) ||
                     (0 != string.Compare (q, 0, keyword, 0, keyword.Length, StringComparison.OrdinalIgnoreCase)))
-                    throw new ArgumentException (SR.InvalidQuery,"select");
+                    throw new ArgumentException (SR.InvalidQuery, "select");
 
                 q = q.Remove (0, keyword.Length).TrimStart (null);
 
                 // Next should be a '*'
                 if (0 != q.IndexOf ('*', 0))
-                    throw new ArgumentException (SR.InvalidQuery,"*");
+                    throw new ArgumentException (SR.InvalidQuery, "*");
 
                 q = q.Remove (0, 1).TrimStart (null);
 
@@ -1047,7 +1047,7 @@ namespace System.Management
 
                 if ((q.Length < keyword.Length) ||
                     (0 != string.Compare (q, 0, keyword, 0, keyword.Length, StringComparison.OrdinalIgnoreCase)))
-                    throw new ArgumentException (SR.InvalidQuery,"from");
+                    throw new ArgumentException (SR.InvalidQuery, "from");
 
                 q = q.Remove (0, keyword.Length).TrimStart (null);
 
@@ -1056,7 +1056,7 @@ namespace System.Management
 
                 if ((q.Length < keyword.Length) ||
                     (0 != string.Compare (q, 0, keyword, 0, keyword.Length, StringComparison.OrdinalIgnoreCase)))
-                    throw new ArgumentException (SR.InvalidQuery,"meta_class");
+                    throw new ArgumentException (SR.InvalidQuery, "meta_class");
 
                 q = q.Remove (0, keyword.Length).TrimStart (null);
 
@@ -1068,7 +1068,7 @@ namespace System.Management
 
                     if ((q.Length < keyword.Length) ||
                         (0 != string.Compare (q, 0, keyword, 0, keyword.Length, StringComparison.OrdinalIgnoreCase)))
-                        throw new ArgumentException (SR.InvalidQuery,"where");
+                        throw new ArgumentException (SR.InvalidQuery, "where");
 
                     q = q.Remove (0, keyword.Length);
 
@@ -1272,7 +1272,7 @@ namespace System.Management
                         isSchemaQuery = false;
                     }
                     else
-                        throw new ArgumentException (SR.InvalidQuery,nameof(queryOrSourceObject));
+                        throw new ArgumentException (SR.InvalidQuery, nameof(queryOrSourceObject));
                 }
             }
         }
@@ -1641,7 +1641,7 @@ namespace System.Management
 
             //Find "associators" clause
             if (0 != string.Compare(q, 0, TokenAssociators, 0, TokenAssociators.Length, StringComparison.OrdinalIgnoreCase))
-                throw new ArgumentException(SR.InvalidQuery,"associators");    // Invalid query
+                throw new ArgumentException(SR.InvalidQuery, "associators");    // Invalid query
 
             // Strip off the clause
             q = q.Remove(0, TokenAssociators.Length);
@@ -1654,7 +1654,7 @@ namespace System.Management
 
             // Next token should be "of"
             if (0 != string.Compare(q, 0, TokenOf, 0, TokenOf.Length, StringComparison.OrdinalIgnoreCase))
-                throw new ArgumentException(SR.InvalidQuery,"of");    // Invalid query
+                throw new ArgumentException(SR.InvalidQuery, "of");    // Invalid query
 
             // Strip off the clause and leading WS
             q = q.Remove(0, TokenOf.Length).TrimStart (null);
@@ -1678,7 +1678,7 @@ namespace System.Management
             {
                 // Next should be the "where" clause
                 if (0 != string.Compare (q, 0, TokenWhere, 0, TokenWhere.Length, StringComparison.OrdinalIgnoreCase))
-                    throw new ArgumentException(SR.InvalidQuery,"where");    // Invalid query
+                    throw new ArgumentException(SR.InvalidQuery, "where");    // Invalid query
 
                 q = q.Remove (0, TokenWhere.Length);
 
@@ -1898,7 +1898,7 @@ namespace System.Management
                         isSchemaQuery = false;
                     }
                     else
-                        throw new ArgumentException (SR.InvalidQuery,nameof(queryOrSourceObject));
+                        throw new ArgumentException (SR.InvalidQuery, nameof(queryOrSourceObject));
 
                 }
             }
@@ -2156,7 +2156,7 @@ namespace System.Management
 
             //Find "references" clause
             if (0 != string.Compare(q, 0, TokenReferences, 0, TokenReferences.Length, StringComparison.OrdinalIgnoreCase))
-                throw new ArgumentException(SR.InvalidQuery,"references");    // Invalid query
+                throw new ArgumentException(SR.InvalidQuery, "references");    // Invalid query
 
             // Strip off the clause
             q = q.Remove(0, TokenReferences.Length);
@@ -2169,7 +2169,7 @@ namespace System.Management
 
             // Next token should be "of"
             if (0 != string.Compare(q, 0, TokenOf, 0, TokenOf.Length, StringComparison.OrdinalIgnoreCase))
-                throw new ArgumentException(SR.InvalidQuery,"of");    // Invalid query
+                throw new ArgumentException(SR.InvalidQuery, "of");    // Invalid query
 
             // Strip off the clause and leading WS
             q = q.Remove(0, TokenOf.Length).TrimStart (null);
@@ -2193,7 +2193,7 @@ namespace System.Management
             {
                 // Next should be the "where" clause
                 if (0 != string.Compare (q, 0, TokenWhere, 0, TokenWhere.Length, StringComparison.OrdinalIgnoreCase))
-                    throw new ArgumentException(SR.InvalidQuery,"where");    // Invalid query
+                    throw new ArgumentException(SR.InvalidQuery, "where");    // Invalid query
 
                 q = q.Remove (0, TokenWhere.Length);
 
@@ -2483,7 +2483,7 @@ namespace System.Management
                         EventClassName = queryOrEventClassName;
                     }
                     else
-                        throw new ArgumentException (SR.InvalidQuery,nameof(queryOrEventClassName));
+                        throw new ArgumentException (SR.InvalidQuery, nameof(queryOrEventClassName));
                 }
             }
         }
@@ -3027,13 +3027,13 @@ namespace System.Management
             q =    q.Remove(0, keyword.Length).TrimStart(null);
 
             if (!q.StartsWith("*", StringComparison.Ordinal))
-                    throw new ArgumentException(SR.InvalidQuery,"*");
+                    throw new ArgumentException(SR.InvalidQuery, "*");
             q = q.Remove(0, 1).TrimStart(null);
 
             //Find "from" clause
             keyword = "from ";
             if ((q.Length < keyword.Length) || (0 != string.Compare (q, 0, keyword, 0, keyword.Length, StringComparison.OrdinalIgnoreCase)))
-                throw new ArgumentException(SR.InvalidQuery,"from");
+                throw new ArgumentException(SR.InvalidQuery, "from");
             ParseToken(ref q, keyword, null, ref bFound, ref eventClassName);
 
             //Find "within" clause
@@ -3103,7 +3103,7 @@ namespace System.Management
                     q = q.Remove(0, keyword.Length);
 
                     if (q.Length == 0) //bad query
-                        throw new ArgumentException(SR.InvalidQuery,"having");
+                        throw new ArgumentException(SR.InvalidQuery, "having");
 
                     havingCondition = q;
                 }
@@ -3171,7 +3171,7 @@ namespace System.Management
             {
                 return true;
             }
-            return base.CanConvertFrom(context,sourceType);
+            return base.CanConvertFrom(context, sourceType);
         }
 
         /// <summary>
@@ -3188,7 +3188,7 @@ namespace System.Management
             {
                 return true;
             }
-            return base.CanConvertTo(context,destinationType);
+            return base.CanConvertTo(context, destinationType);
         }
 
         /// <summary>
@@ -3230,7 +3230,7 @@ namespace System.Management
                     return new InstanceDescriptor(ctor, new object[] {obj.QueryString});
                 }
             }
-            return base.ConvertTo(context,culture,value,destinationType);
+            return base.ConvertTo(context, culture, value, destinationType);
         }
     }
 }

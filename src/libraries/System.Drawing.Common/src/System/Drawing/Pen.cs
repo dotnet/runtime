@@ -16,12 +16,14 @@ namespace System.Drawing
     /// Defines an object used to draw lines and curves.
     /// </summary>
     public sealed partial class Pen : MarshalByRefObject, ICloneable, IDisposable
+#pragma warning disable SA1001
 #if FEATURE_SYSTEM_EVENTS
         , ISystemColorTracker
 #endif
+#pragma warning restore SA1001
     {
 #if FINALIZATION_WATCH
-        private string allocationSite = Graphics.GetAllocationStack();
+        private string _allocationSite = Graphics.GetAllocationStack();
 #endif
 
         // Handle to native GDI+ pen object.
@@ -135,7 +137,7 @@ namespace System.Drawing
 #if FINALIZATION_WATCH
             if (!disposing && nativePen != IntPtr.Zero)
             {
-                Debug.WriteLine("**********************\nDisposed through finalization:\n" + allocationSite);
+                Debug.WriteLine("**********************\nDisposed through finalization:\n" + _allocationSite);
             }
 #endif
 

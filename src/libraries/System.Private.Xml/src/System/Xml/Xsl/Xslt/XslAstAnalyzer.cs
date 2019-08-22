@@ -1093,12 +1093,12 @@ namespace System.Xml.Xsl.Xslt
                 /*Le        */ XslFlags.Boolean,
                 /*Gt        */ XslFlags.Boolean,
                 /*Ge        */ XslFlags.Boolean,
-                /*Plus      */ XslFlags.Number ,
-                /*Minus     */ XslFlags.Number ,
-                /*Multiply  */ XslFlags.Number ,
-                /*Divide    */ XslFlags.Number ,
-                /*Modulo    */ XslFlags.Number ,
-                /*UnaryMinus*/ XslFlags.Number ,
+                /*Plus      */ XslFlags.Number,
+                /*Minus     */ XslFlags.Number,
+                /*Multiply  */ XslFlags.Number,
+                /*Divide    */ XslFlags.Number,
+                /*Modulo    */ XslFlags.Number,
+                /*UnaryMinus*/ XslFlags.Number,
                 /*Union     */ XslFlags.Nodeset,
             };
 

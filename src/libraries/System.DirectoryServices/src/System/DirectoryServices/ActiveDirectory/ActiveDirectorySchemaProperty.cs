@@ -182,7 +182,7 @@ namespace System.DirectoryServices.ActiveDirectory
             catch (ActiveDirectoryObjectNotFoundException)
             {
                 // this is the case where the context is a config set and we could not find an ADAM instance in that config set
-                throw new ActiveDirectoryOperationException(SR.Format(SR.ADAMInstanceNotFoundInConfigSet , context.Name));
+                throw new ActiveDirectoryOperationException(SR.Format(SR.ADAMInstanceNotFoundInConfigSet, context.Name));
             }
 
             // set the bind flag
@@ -347,7 +347,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 catch (ActiveDirectoryObjectNotFoundException)
                 {
                     // this is the case where the context is a config set and we could not find an ADAM instance in that config set
-                    throw new ActiveDirectoryOperationException(SR.Format(SR.ADAMInstanceNotFoundInConfigSet , _context.Name));
+                    throw new ActiveDirectoryOperationException(SR.Format(SR.ADAMInstanceNotFoundInConfigSet, _context.Name));
                 }
 
                 // set the ldap display name property
@@ -1011,7 +1011,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                                 if (linkedProperties.Count != 1)
                                 {
-                                    throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.LinkedPropertyNotFound , linkIdToSearch), typeof(ActiveDirectorySchemaProperty), null);
+                                    throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.LinkedPropertyNotFound, linkIdToSearch), typeof(ActiveDirectorySchemaProperty), null);
                                 }
 
                                 _linkedProperty = linkedProperties[0];
@@ -1148,7 +1148,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     if (mustExist)
                     {
-                        throw new ActiveDirectoryOperationException(SR.Format(SR.PropertyNotFound , propertyName));
+                        throw new ActiveDirectoryOperationException(SR.Format(SR.PropertyNotFound, propertyName));
                     }
                 }
                 else
@@ -1416,7 +1416,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     return (ActiveDirectorySyntax)i;
                 }
             }
-            throw new ActiveDirectoryOperationException(SR.Format(SR.UnknownSyntax , _ldapDisplayName));
+            throw new ActiveDirectoryOperationException(SR.Format(SR.UnknownSyntax, _ldapDisplayName));
         }
 
         private void SetSyntax(ActiveDirectorySyntax syntax)

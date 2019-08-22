@@ -12,7 +12,7 @@ using Microsoft.Internal.Collections;
 
 namespace System.ComponentModel.Composition.Hosting
 {
-    public class AggregateExportProvider : ExportProvider , IDisposable
+    public class AggregateExportProvider : ExportProvider, IDisposable
     {
         private readonly ReadOnlyCollection<ExportProvider> _readOnlyProviders;
         private readonly ExportProvider[] _providers;

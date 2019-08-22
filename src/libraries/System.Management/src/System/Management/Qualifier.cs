@@ -109,13 +109,13 @@ namespace System.Management
                         {
                             wmiValue = new int [length];
                             for (int i = 0; i < length; i++)
-                                ((int[])(wmiValue))[i] = Convert.ToInt32(valArray.GetValue(i),(IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(int)));
+                                ((int[])(wmiValue))[i] = Convert.ToInt32(valArray.GetValue(i), (IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(int)));
                         }
                         else if (elementType == typeof(double))
                         {
                             wmiValue = new double [length];
                             for (int i = 0; i < length; i++)
-                                ((double[])(wmiValue))[i] = Convert.ToDouble(valArray.GetValue(i),(IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(double)));
+                                ((double[])(wmiValue))[i] = Convert.ToDouble(valArray.GetValue(i), (IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(double)));
                         }
                         else if (elementType == typeof(string))
                         {
@@ -127,7 +127,7 @@ namespace System.Management
                         {
                             wmiValue = new bool [length];
                             for (int i = 0; i < length; i++)
-                                ((bool[])(wmiValue))[i] = Convert.ToBoolean(valArray.GetValue(i),(IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(bool)));
+                                ((bool[])(wmiValue))[i] = Convert.ToBoolean(valArray.GetValue(i), (IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(bool)));
                         }
                         else
                             wmiValue = valArray; //should this throw ?
