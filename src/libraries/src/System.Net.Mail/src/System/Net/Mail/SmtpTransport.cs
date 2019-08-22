@@ -277,7 +277,7 @@ namespace System.Net.Mail
             }
 
             DataCommand.Send(_connection);
-            return new MailWriter(_connection.GetClosableStream());
+            return new MailWriter(_connection.GetClosableStream(), encodeForTransport: true);
         }
     }
 
@@ -326,7 +326,7 @@ namespace System.Net.Mail
                 ExceptionDispatchInfo.Throw(e);
             }
 
-            return new MailWriter(thisPtr._stream);
+            return new MailWriter(thisPtr._stream, encodeForTransport: true);
         }
         private void SendMailFrom()
         {

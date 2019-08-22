@@ -15,8 +15,9 @@ namespace System.Net.Mail
         /// ctor.
         /// </summary>
         /// <param name="stream">Underlying stream</param>
-        internal MailWriter(Stream stream)
-            : base(stream, true)
+        /// <param name="encodeForTransport">Specifies whether the data should be encoded for transport over SMTP</param>
+        internal MailWriter(Stream stream, bool encodeForTransport)
+            : base(stream, encodeForTransport)
         // This is the only stream that should encoding leading dots on a line.
         // This way it is done message wide and only once.
         {
