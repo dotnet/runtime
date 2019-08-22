@@ -7638,7 +7638,7 @@ getMethodInfoHelper(
 
         MethodTable * pMT  = ftn->GetMethodTable();
 
-        if (pMT->GetModule()->IsSystem())
+        if (ftn->IsJitIntrinsic())
         {
             if (MscorlibBinder::IsClass(pMT, CLASS__JIT_HELPERS))
             {

@@ -136,6 +136,7 @@ namespace System
             return o != null ? new ObjectHandle(o) : null;
         }
 
+        [System.Runtime.CompilerServices.Intrinsic]
         public static T CreateInstance<T>()
         {
             return (T)((RuntimeType)typeof(T)).CreateInstanceDefaultCtor(publicOnly: true, skipCheckThis: true, fillCache: true, wrapExceptions: true);
