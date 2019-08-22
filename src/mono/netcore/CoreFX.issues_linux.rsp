@@ -30,5 +30,5 @@
 -noclass SafeHandle_4000_Tests
 -noclass CriticalHandle_4000_Tests
 
-# TODO: gihub issue link
+# Requires precise GC (should be ignored in dotnet/corefx for mono)
 -nomethod System.Collections.Concurrent.Tests.ConcurrentQueueTests.ReferenceTypes_NulledAfterDequeue
