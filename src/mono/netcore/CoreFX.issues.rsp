@@ -1006,3 +1006,6 @@
 -nomethod System.IO.Tests.FileStream_Dispose.Dispose_CallsVirtualDispose_TrueArg
 -nomethod System.Net.Sockets.Tests.DisposedSocket.NonDisposedSocket_SafeHandlesCollected
 -nomethod System.Diagnostics.TraceSourceTests.SwitchClassTests.PruneTest
+
+# Flaky test (FileSystemWatcher)
+-nomethod System.IO.Tests.Directory_NotifyFilter_Tests.FileSystemWatcher_Directory_NotifyFilter_LastWriteTime
