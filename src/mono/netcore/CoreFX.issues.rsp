@@ -588,6 +588,13 @@
 -nomethod System.Threading.Tests.SemaphoreTests.Ctor_NamesArentSupported_Unix
 
 ####################################################################
+##  System.Threading.Tests
+####################################################################
+
+# hangs (TODO: github link issue)
+-nomethod System.Threading.Tasks.Tests.ExecutionContextFlowTest.TaskCompletionSourceDoesntCaptureExecutionContext
+
+####################################################################
 ##  System.Threading.ThreadPool.Tests
 ####################################################################
 

@@ -29,3 +29,6 @@
 -noclass SafeWaitHandle_4000_Tests
 -noclass SafeHandle_4000_Tests
 -noclass CriticalHandle_4000_Tests
+
+# TODO: gihub issue link
+-nomethod System.Collections.Concurrent.Tests.ConcurrentQueueTests.ReferenceTypes_NulledAfterDequeue
