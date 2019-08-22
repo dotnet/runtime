@@ -62,7 +62,7 @@ void Compiler::optDumpCopyPropStack(LclNumToGenTreePtrStack* curSsaName)
     JITDUMP("{ ");
     for (LclNumToGenTreePtrStack::KeyIterator iter = curSsaName->Begin(); !iter.Equal(curSsaName->End()); ++iter)
     {
-        GenTree* node = iter.GetValue()->Index(0);
+        GenTree* node = iter.GetValue()->Top();
         JITDUMP("%d-[%06d]:V%02u ", iter.Get(), dspTreeID(node), node->AsLclVarCommon()->gtLclNum);
     }
     JITDUMP("}\n\n");
@@ -165,7 +165,7 @@ void Compiler::optCopyProp(BasicBlock* block, GenTreeStmt* stmt, GenTree* tree, 
     {
         unsigned newLclNum = iter.Get();
 
-        GenTree* op = iter.GetValue()->Index(0);
+        GenTree* op = iter.GetValue()->Top();
 
         // Nothing to do if same.
         if (lclNum == newLclNum)
