@@ -788,6 +788,10 @@ mono_thread_internal_set_priority (MonoInternalThread *internal, MonoThreadPrior
 #endif
 	MONO_EXIT_GC_SAFE;
 
+	/* Not tunable. Bail out */
+	if ((min == -1) || (max == -1))
+		return;
+
 	if (max > 0 && min >= 0 && max > min) {
 		double srange, drange, sposition, dposition;
 		srange = MONO_THREAD_PRIORITY_HIGHEST - MONO_THREAD_PRIORITY_LOWEST;
