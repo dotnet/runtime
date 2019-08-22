@@ -333,7 +333,7 @@ def baseline_build():
         if Is_windows:
             command = 'set __TestIntermediateDir=int&&build.cmd %s checked skiptests skipbuildpackages' % arch
         else:
-            command = '%s%s/build.sh %s checked skiptests skipbuildpackages %s' % (dockerCmd, scriptPath, arch, buildOpts)
+            command = '%s%s/build.sh %s checked skipbuildpackages %s' % (dockerCmd, scriptPath, arch, buildOpts)
         log(command)
         returncode = 0 if testing else os.system(command)
         if returncode != 0:
