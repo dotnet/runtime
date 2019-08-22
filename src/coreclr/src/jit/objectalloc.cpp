@@ -171,7 +171,7 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
             if ((tree->OperGet() == GT_LCL_VAR) && (type == TYP_REF || type == TYP_BYREF || type == TYP_I_IMPL))
             {
                 unsigned int lclNum = tree->AsLclVar()->GetLclNum();
-                assert(tree == m_ancestors.Index(0));
+                assert(tree == m_ancestors.Top());
 
                 if (m_allocator->CanLclVarEscapeViaParentStack(&m_ancestors, lclNum))
                 {
@@ -588,8 +588,8 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
         }
 
         canLclVarEscapeViaParentStack = true;
-        GenTree* tree                 = parentStack->Index(parentIndex - 1);
-        GenTree* parent               = parentStack->Index(parentIndex);
+        GenTree* tree                 = parentStack->Top(parentIndex - 1);
+        GenTree* parent               = parentStack->Top(parentIndex);
         keepChecking                  = false;
 
         switch (parent->OperGet())
@@ -643,7 +643,7 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                 break;
 
             case GT_COMMA:
-                if (parent->AsOp()->gtGetOp1() == parentStack->Index(parentIndex - 1))
+                if (parent->AsOp()->gtGetOp1() == parentStack->Top(parentIndex - 1))
                 {
                     // Left child of GT_COMMA, it will be discarded
                     canLclVarEscapeViaParentStack = false;
@@ -663,7 +663,7 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
             {
                 int grandParentIndex = parentIndex + 1;
                 if ((parentStack->Height() > grandParentIndex) &&
-                    (parentStack->Index(grandParentIndex)->OperGet() == GT_ADDR))
+                    (parentStack->Top(grandParentIndex)->OperGet() == GT_ADDR))
                 {
                     // Check if the address of the field/ind escapes.
                     parentIndex += 2;
@@ -727,7 +727,7 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
 
     while (keepChecking && (parentStack->Height() > parentIndex))
     {
-        GenTree* parent = parentStack->Index(parentIndex);
+        GenTree* parent = parentStack->Top(parentIndex);
         keepChecking    = false;
 
         switch (parent->OperGet())
@@ -750,7 +750,7 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
                 break;
 
             case GT_COMMA:
-                if (parent->AsOp()->gtGetOp1() == parentStack->Index(parentIndex - 1))
+                if (parent->AsOp()->gtGetOp1() == parentStack->Top(parentIndex - 1))
                 {
                     // Left child of GT_COMMA, it will be discarded
                     break;
@@ -787,7 +787,7 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
 
                 if (parentStack->Height() > grandParentIndex)
                 {
-                    GenTree* grandParent = parentStack->Index(grandParentIndex);
+                    GenTree* grandParent = parentStack->Top(grandParentIndex);
                     if (grandParent->OperGet() == GT_ADDR)
                     {
                         if (grandParent->TypeGet() == TYP_REF)
@@ -807,7 +807,7 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
 
         if (keepChecking)
         {
-            tree = parentStack->Index(parentIndex - 1);
+            tree = parentStack->Top(parentIndex - 1);
         }
     }
 
