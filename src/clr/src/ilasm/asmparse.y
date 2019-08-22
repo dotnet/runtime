@@ -123,8 +123,10 @@
 %token MARSHAL_ CUSTOM_ SYSSTRING_ FIXED_ VARIANT_ CURRENCY_ SYSCHAR_ DECIMAL_ DATE_ BSTR_ TBSTR_ LPSTR_
 %token LPWSTR_ LPTSTR_ OBJECTREF_ IUNKNOWN_ IDISPATCH_ STRUCT_ SAFEARRAY_ BYVALSTR_ LPVOID_ ANY_ ARRAY_ LPSTRUCT_
 %token IIDPARAM_
-        /* parameter attributes */
-%token IN_ OUT_ OPT_ PARAM_
+        /* parameter keywords */
+%token IN_ OUT_ OPT_
+        /* .param directive */
+%token _PARAM
                 /* method implementations */
 %token _OVERRIDE WITH_
                 /* variant type specifics */
@@ -138,6 +140,9 @@
 
         /* compilation control directives */
 %token P_DEFINE P_UNDEF P_IFDEF P_IFNDEF P_ELSE P_ENDIF P_INCLUDE
+
+        /* newly added tokens go here */
+%token  CONSTRAINT_
 
         /* nonTerminals */
 %type <string> dottedName id methodName atOpt slashedName
@@ -540,18 +545,20 @@ classDecl               : methodHead  methodDecls '}'       { if(PASM->m_pCurMet
                                                                  }
                         | languageDecl
                         | compControl
-                        | PARAM_ TYPE_ '[' int32 ']'        { if(($4 > 0) && ($4 <= (int)PASM->m_pCurClass->m_NumTyPars))
+                        | _PARAM TYPE_ '[' int32 ']'        { if(($4 > 0) && ($4 <= (int)PASM->m_pCurClass->m_NumTyPars))
                                                                 PASM->m_pCustomDescrList = PASM->m_pCurClass->m_TyPars[$4-1].CAList();
                                                               else
                                                                 PASM->report->error("Type parameter index out of range\n");
                                                             }
-                        | PARAM_ TYPE_ dottedName           { int n = PASM->m_pCurClass->FindTyPar($3);
+                        | _PARAM TYPE_ dottedName           { int n = PASM->m_pCurClass->FindTyPar($3);
                                                               if(n >= 0)
                                                                 PASM->m_pCustomDescrList = PASM->m_pCurClass->m_TyPars[n].CAList();
                                                               else
                                                                 PASM->report->error("Type parameter '%s' undefined\n",$3);
                                                             }
-                        | _INTERFACEIMPL TYPE_ typeSpec customDescr   { $4->tkInterfacePair = $3;     
+                        | _PARAM CONSTRAINT_ '[' int32 ']' ',' typeSpec { PASM->AddGenericParamConstraint($4, 0, $7); }
+                        | _PARAM CONSTRAINT_ dottedName ',' typeSpec    { PASM->AddGenericParamConstraint(0, $3, $5); }
+                        | _INTERFACEIMPL TYPE_ typeSpec customDescr   { $4->tkInterfacePair = $3;
                                                                         if(PASM->m_pCustomDescrList)
                                                                             PASM->m_pCustomDescrList->PUSH($4);
                                                                       }
@@ -917,18 +924,21 @@ methodDecl              : _EMITBYTE int32                   { PASM->EmitByte($2)
                                                               PASM->ResetArgNameList();
                                                             }
                         | scopeBlock
-                        | PARAM_ TYPE_ '[' int32 ']'        { if(($4 > 0) && ($4 <= (int)PASM->m_pCurMethod->m_NumTyPars))
+                        | _PARAM TYPE_ '[' int32 ']'        { if(($4 > 0) && ($4 <= (int)PASM->m_pCurMethod->m_NumTyPars))
                                                                 PASM->m_pCustomDescrList = PASM->m_pCurMethod->m_TyPars[$4-1].CAList();
                                                               else
                                                                 PASM->report->error("Type parameter index out of range\n");
                                                             }
-                        | PARAM_ TYPE_ dottedName           { int n = PASM->m_pCurMethod->FindTyPar($3);
+                        | _PARAM TYPE_ dottedName           { int n = PASM->m_pCurMethod->FindTyPar($3);
                                                               if(n >= 0)
                                                                 PASM->m_pCustomDescrList = PASM->m_pCurMethod->m_TyPars[n].CAList();
                                                               else
                                                                 PASM->report->error("Type parameter '%s' undefined\n",$3);
                                                             }
-                        | PARAM_ '[' int32 ']' initOpt                            
+                        | _PARAM CONSTRAINT_ '[' int32 ']' ',' typeSpec { PASM->m_pCurMethod->AddGenericParamConstraint($4, 0, $7); }
+                        | _PARAM CONSTRAINT_ dottedName ',' typeSpec    { PASM->m_pCurMethod->AddGenericParamConstraint(0, $3, $5); }
+
+                        | _PARAM '[' int32 ']' initOpt                            
                                                             { if( $3 ) {
                                                                 ARG_NAME_LIST* pAN=PASM->findArg(PASM->m_pCurMethod->m_firstArgName, $3 - 1);
                                                                 if(pAN)
@@ -2047,7 +2057,6 @@ manifestResDecl         : _FILE dottedName AT_ int32          { PASMM->SetManife
                         | customAttrDecl
                         | compControl
                         ;
-
 
 %%
 

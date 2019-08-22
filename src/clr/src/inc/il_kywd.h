@@ -142,6 +142,7 @@
     KYWD( ".entrypoint",    _ENTRYPOINT,        NO_VALUE )
     KYWD( ".zeroinit",      _ZEROINIT,          NO_VALUE )
     KYWD( ".data",          _DATA,              NO_VALUE )
+    KYWD( ".param",         _PARAM,             NO_VALUE )
 
     KYWD( ".event",         _EVENT,             NO_VALUE )
     KYWD( ".addon",         _ADDON,             NO_VALUE )
@@ -244,7 +245,6 @@
     KYWD( "in",             IN_,                NO_VALUE )
     KYWD( "out",            OUT_,               NO_VALUE )
     KYWD( "opt",            OPT_,               NO_VALUE )
-    KYWD( ".param",         PARAM_,             NO_VALUE )
         /* Method implementations */
     KYWD( ".override",      _OVERRIDE,          NO_VALUE )
     KYWD( "with",           WITH_,              NO_VALUE )
@@ -294,6 +294,8 @@
     KYWD( "#else",          P_ELSE,             NO_VALUE )
     KYWD( "#endif",         P_ENDIF,            NO_VALUE )
     KYWD( "#include",       P_INCLUDE,          NO_VALUE )
+
+    KYWD( "constraint",     CONSTRAINT_,        NO_VALUE )
 
 
     /* Deprecated keywords */

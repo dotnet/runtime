@@ -3058,7 +3058,9 @@ char *DumpGenericPars(__inout_ecount(SZSTRING_SIZE) char* szString, mdToken tok,
     DWORD           NumTyPars;
     DWORD           NumConstrs;
     mdGenericParam  tkTyPar;
+    ULONG           ulSequence;
     DWORD           attr;
+    mdToken         tkOwner;
     HCORENUM        hEnumTyPar = NULL;
     HCORENUM        hEnumTyParConstr = NULL;
     char*           szptr = &szString[strlen(szString)];
@@ -3074,7 +3076,7 @@ char *DumpGenericPars(__inout_ecount(SZSTRING_SIZE) char* szString, mdToken tok,
       
       for (i = 1; NumTyPars != 0; i++)
       {
-        g_pPubImport->GetGenericParamProps(tkTyPar, NULL, &attr, NULL, NULL, wzArgName, UNIBUF_SIZE/2, &chName);
+        g_pPubImport->GetGenericParamProps(tkTyPar, &ulSequence, &attr, &tkOwner, NULL, wzArgName, UNIBUF_SIZE/2, &chName);
         //if(wcslen(wzArgName) >= MAX_CLASSNAME_LENGTH)
         //    wzArgName[MAX_CLASSNAME_LENGTH-1] = 0;
         hEnumTyParConstr = NULL;
@@ -3203,12 +3205,95 @@ void DumpGenericParsCA(mdToken tok, void* GUICookie/*=NULL*/)
                     szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),"[%d] ",i+1);
                 if(g_fDumpTokens) szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),COMMENT("/*%08X*/ "),tkTyPar);
                 printLine(GUICookie, szString);
+
+                strcat_s(g_szAsmCodeIndent, MAX_MEMBER_LENGTH, "  ");
                 while(g_pImport->EnumNext(&hEnum,&tkCA) && RidFromToken(tkCA))
                 {
                     DumpCustomAttribute(tkCA,GUICookie,false);
                 }
+                g_szAsmCodeIndent[strlen(g_szAsmCodeIndent) - 2] = 0;
             }
-            g_pImport->EnumClose( &hEnum);
+            g_pImport->EnumClose( &hEnum);  // mdtCustomAttribute
+
+            ULONG    ulSequence;
+            DWORD    attr;
+            mdToken  tkOwner;
+            HCORENUM hEnumTyParConstraint;
+            mdToken  tkConstraint[2048];
+            DWORD    NumConstraints;
+
+            g_pPubImport->GetGenericParamProps(tkTyPar, &ulSequence, &attr, &tkOwner, NULL, wzArgName, UNIBUF_SIZE / 2, &chName);
+            hEnumTyParConstraint = NULL;
+            if (FAILED(g_pPubImport->EnumGenericParamConstraints(&hEnumTyParConstraint, tkTyPar, tkConstraint, 2048, &NumConstraints)))
+            {
+                g_pPubImport->CloseEnum(hEnumTyPar);
+                return;
+            }
+            if (NumConstraints > 0)
+            {
+                CQuickBytes out;
+                mdToken tkConstraintType;
+                mdToken tkGenericParam;
+                ULONG ulSequence;
+
+                for (DWORD ix = 0; ix < NumConstraints; ix++)
+                {
+                    mdGenericParamConstraint  tkParamConstraint = tkConstraint[ix];
+                    if (FAILED(g_pPubImport->GetGenericParamConstraintProps(tkParamConstraint, &tkGenericParam, &tkConstraintType)))
+                    {
+                        sprintf_s(szString, SZSTRING_SIZE, "%sERROR: MetaData error in GetGenericParamConstraintProps for %08X", g_szAsmCodeIndent, tkParamConstraint);
+                        return;
+                    }
+                    if (FAILED(g_pImport->EnumInit(mdtCustomAttribute, tkParamConstraint, &hEnum)))
+                    {
+                        sprintf_s(szString, SZSTRING_SIZE, "%sERROR: MetaData error enumerating CustomAttribute for mdGenericParamConstraint %08X", g_szAsmCodeIndent, tkParamConstraint);
+                        printLine(GUICookie, szString);
+                        return;
+                    }
+
+                    ulCAs = g_pImport->EnumGetCount(&hEnum);
+                    if (ulCAs)
+                    {
+                        char    *szptr = &szString[0];
+                        szptr += sprintf_s(szptr, SZSTRING_SIZE, "%s%s ", g_szAsmCodeIndent, KEYWORD(".param constraint"));
+
+                        if (FAILED(g_pPubImport->GetGenericParamProps(tkGenericParam, &ulSequence, &attr, NULL, NULL, wzArgName, UNIBUF_SIZE / 2, &chName)))
+                        {
+                            sprintf_s(szString, SZSTRING_SIZE, "%sERROR: MetaData error in GetGenericParamProps for %08X", g_szAsmCodeIndent, tkGenericParam);
+                            printLine(GUICookie, szString);
+                            return;
+                        }
+                        if (chName > 0)
+                        {
+                            char* sz = (char*)(&wzUniBuf[UNIBUF_SIZE / 2]);
+                            WszWideCharToMultiByte(CP_UTF8, 0, wzArgName, -1, sz, UNIBUF_SIZE, NULL, NULL);
+                            szptr += sprintf_s(szptr, SZSTRING_REMAINING_SIZE(szptr), "  %s", ProperName(sz));
+                        }
+                        else
+                        {
+                            szptr += sprintf_s(szptr, SZSTRING_REMAINING_SIZE(szptr), "  [%d]", ulSequence + 1);
+                        }
+                        if (g_fDumpTokens)
+                        {
+                            szptr += sprintf_s(szptr, SZSTRING_REMAINING_SIZE(szptr), COMMENT("/*%08X*/ "), tkGenericParam);
+                        }
+
+                        szptr += sprintf_s(szptr, SZSTRING_REMAINING_SIZE(szptr), ", ");
+
+                        out.Shrink(0);
+                        szptr += sprintf_s(szptr, SZSTRING_REMAINING_SIZE(szptr), "%s", PrettyPrintClass(&out, tkConstraintType, g_pImport));
+                        printLine(GUICookie, szString);
+
+                        strcat_s(g_szAsmCodeIndent, MAX_MEMBER_LENGTH, "  ");
+                        while (g_pImport->EnumNext(&hEnum, &tkCA) && RidFromToken(tkCA))
+                        {
+                            DumpCustomAttribute(tkCA, GUICookie, false);
+                        }
+                        g_szAsmCodeIndent[strlen(g_szAsmCodeIndent) - 2] = 0;
+                    }
+                    g_pImport->EnumClose(&hEnum);  // mdtCustomAttribute
+                }
+            }
         } //end for(i=0;...
     } //end if(g_fShowCA)
 }
@@ -7670,5 +7755,3 @@ exit:
 #ifdef _MSC_VER
 #pragma warning(default : 4640)
 #endif
-
-

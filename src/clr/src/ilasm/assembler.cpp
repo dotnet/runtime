@@ -471,10 +471,10 @@ void Assembler::StartClass(__in __nullterminated char* name, DWORD attr, TyParLi
 
         if (m_TyParList)
         {
-            //m_pCurClass->m_NumTyPars = m_TyParList->ToArray(&m_pCurClass->m_TyParBounds, &m_pCurClass->m_TyParNames, &m_pCurClass->m_TyParAttrs);
             m_pCurClass->m_NumTyPars = m_TyParList->ToArray(&(m_pCurClass->m_TyPars));
             delete m_TyParList;
             m_TyParList = NULL;
+            RecordTypeConstraints(&m_pCurClass->m_GPCList, m_pCurClass->m_NumTyPars, m_pCurClass->m_TyPars);
         }
         else m_pCurClass->m_NumTyPars = 0;
         m_pCurClass->m_pEncloser = pEnclosingClass;
@@ -769,11 +769,10 @@ void Assembler::StartMethod(__in __nullterminated char* name, BinStr* sig, CorMe
             m_pCurMethod->m_MainScope.dwStart = m_CurPC;
             if (typars)
             {
-                //m_pCurMethod->m_NumTyPars = typars->ToArray(&m_pCurMethod->m_TyParBounds,
-                //&m_pCurMethod->m_TyParNames, NULL);
                 m_pCurMethod->m_NumTyPars = typars->ToArray(&(m_pCurMethod->m_TyPars));
                 delete typars;
                 m_TyParList = NULL;
+                RecordTypeConstraints(&m_pCurMethod->m_GPCList, m_pCurMethod->m_NumTyPars, m_pCurMethod->m_TyPars);
             }
             else m_pCurMethod->m_NumTyPars = 0;
         }
@@ -2430,5 +2429,276 @@ void Assembler::SetSourceFileName(BinStr* pbsName)
         memcpy(sz,pbsName->ptr(),L+1);
         SetSourceFileName(sz);
         delete pbsName;
+    }
+}
+
+void Assembler::RecordTypeConstraints(GenericParamConstraintList* pGPCList, int numTyPars, TyParDescr* tyPars)
+{
+    if (numTyPars > 0)
+    {
+        for (int i = 0; i < numTyPars; i++)
+        {
+            // Decode any type constraints held by tyPars[i].Bounds()
+            BinStr* typeConstraints = tyPars[i].Bounds();
+            _ASSERTE((typeConstraints->length() % 4) == 0);
+            int numConstraints = (typeConstraints->length() / 4) - 1;
+            if (numConstraints > 0)
+            {
+                mdToken* ptk = (mdToken*)typeConstraints->ptr();
+                for (int j = 0; j < numConstraints; j++)
+                {
+                    mdToken tkTypeConstraint = ptk[j];
+                    CheckAddGenericParamConstraint(pGPCList, i, tkTypeConstraint);
+                }
+            }
+        }
+        m_pCustomDescrList = NULL;
+    }
+}
+
+void Assembler::AddGenericParamConstraint(int index, char * pStrGenericParam, mdToken tkTypeConstraint)
+{
+    if (!m_pCurClass)
+    {
+        report->error(".parm constraint directive outside class scope");
+        return;
+    }
+    if (index > 0)
+    {
+        if (pStrGenericParam != 0)
+        {
+            report->error("LOGIC ERROR - we have both an index and a pStrGenericParam");
+            return;
+        }
+        if (index > (int)m_pCurClass->m_NumTyPars)
+        {
+            report->error("Type parameter index out of range\n");
+            return;
+        }
+        index = index - 1;
+    }
+    else  // index was 0, so a name must be supplied by pStrGenericParam
+    {
+        if (pStrGenericParam == 0)
+        {
+            report->error("LOGIC ERROR - we have neither an index or a pStrGenericParam");
+            return;
+        }
+        index = m_pCurClass->FindTyPar(pStrGenericParam);
+        if (index == -1)
+        {
+            report->error("Type parameter '%s' undefined\n", pStrGenericParam);
+            return;
+        }
+    }
+    bool newlyAdded = CheckAddGenericParamConstraint(&m_pCurClass->m_GPCList, index, tkTypeConstraint);
+}
+
+// returns true if we create a new GenericParamConstraintDescriptor
+// reurns false if we return an already existing GenericParamConstraintDescriptor
+//
+bool Assembler::CheckAddGenericParamConstraint(GenericParamConstraintList* pGPCList, int index, mdToken tkTypeConstraint)
+{
+    _ASSERTE(tkTypeConstraint != 0);
+    _ASSERTE(index >= 0);
+
+    // Look for an existing match in m_pCurClass->m_GPCList
+    //
+    // Iterate the GenericParamConstraints list 
+    //
+    bool match = false;
+    GenericParamConstraintDescriptor *pGPC = nullptr;
+    for (int listIndex = 0; (pGPC = pGPCList->PEEK(listIndex)) != nullptr; listIndex++)
+    {
+        int curParamIndex = pGPC->GetParamIndex();
+        if (curParamIndex == index)
+        {
+            mdToken curTypeConstraint = pGPC->GetTypeConstraint();
+            if (curTypeConstraint == tkTypeConstraint)
+            {
+                match = true;
+                break;
+            }
+        }
+    }
+
+    if (match)
+    {
+        m_pCustomDescrList = pGPC->CAList();
+        return false;
+    }
+    else
+    {
+        // not found add it to our list
+        //
+        GenericParamConstraintDescriptor* pNewGPCDescr = new GenericParamConstraintDescriptor();
+        pNewGPCDescr->Init(index, tkTypeConstraint);
+        pGPCList->PUSH(pNewGPCDescr);
+        m_pCustomDescrList = pNewGPCDescr->CAList();
+        return true;
+    }
+}
+
+// Emit the proper metadata for the generic parameter type constraints 
+// This will create one GenericParamConstraint tokens for each type constraint.
+// Finally associate any custom attributes with their GenericParamConstraint
+// and emit them as well
+//
+void Assembler::EmitGenericParamConstraints(int numTyPars, TyParDescr* pTyPars, mdToken tkOwner, GenericParamConstraintList* pGPCL)
+{
+    // If we haver no generic parameters, or a null or empty list of generic param constraints 
+    // then we can early out and just return.
+    //
+    if ((numTyPars == 0) || (pGPCL == NULL) || (pGPCL->COUNT() == 0))
+    {
+        return;
+    }
+
+    int* nConstraintsArr = new int[numTyPars];
+    int* nConstraintIndexArr = new int[numTyPars];
+    mdToken** pConstraintsArr = new mdToken*[numTyPars];
+    mdGenericParamConstraint** pGPConstraintsArr = new mdToken*[numTyPars];
+
+    // Zero initialize the arrays that we just created
+    int paramIndex;
+    for (paramIndex = 0; paramIndex < numTyPars; paramIndex++)
+    {
+        nConstraintsArr[paramIndex] = 0;
+        nConstraintIndexArr[paramIndex] = 0;
+        pConstraintsArr[paramIndex] = nullptr;
+        pGPConstraintsArr[paramIndex] = nullptr;
+    }
+
+    // Set all the owner tokens and calculate the number of constraints for each type parameter
+    GenericParamConstraintDescriptor *pGPC;
+    int listIndex;
+    for (listIndex = 0; (pGPC = pGPCL->PEEK(listIndex)) != nullptr; listIndex++)
+    {
+        pGPC->SetOwner(tkOwner);
+        paramIndex = pGPC->GetParamIndex();
+        nConstraintsArr[paramIndex]++;
+    }
+
+    // Allocate an appropriately sized array of type constraints for each generic type param
+    // If the generic type param has no type constraints we will just leave the value
+    // of pConstraintsArr[paramIndex] (and pGPConstraintsArr[]) as nullptr
+    for (paramIndex = 0; paramIndex < numTyPars; paramIndex++)
+    {
+        // How many constraints are there for this generic parameter?
+        int currNumConstraints = nConstraintsArr[paramIndex];
+        if (currNumConstraints > 0)
+        {
+            // We are required to have an extra mdTokenNil as the last element in the array
+            int currConstraintArraySize = currNumConstraints + 1;
+
+            mdToken* currConstraintsArr   = new mdToken[currConstraintArraySize];
+            mdToken* currGPConstraintsArr = new mdToken[currConstraintArraySize];
+
+            // initialize this new array to all mdTokenNil
+            for (int i = 0; i < currConstraintArraySize; i++)
+            {
+                currConstraintsArr[i] = mdTokenNil;
+                currGPConstraintsArr[i] = mdTokenNil;
+            }
+
+            // Assign these empty arrays to the proper elements of pConstraintsArr[] and pConstraintsArr[]
+            pConstraintsArr[paramIndex] = currConstraintsArr;
+            pGPConstraintsArr[paramIndex] = currGPConstraintsArr;
+        }
+    }
+
+    // Iterate the GenericParamConstraints list again and 
+    // record the type constraints in the pConstraintsArr[][]
+    for (listIndex = 0; (pGPC = pGPCL->PEEK(listIndex)) != nullptr; listIndex++)
+    {
+        paramIndex = pGPC->GetParamIndex();
+
+        mdToken currTypeConstraint = pGPC->GetTypeConstraint();
+        mdToken* currConstraintArr = pConstraintsArr[paramIndex];
+        _ASSERTE(currConstraintArr != nullptr);
+        int constraintArrayLast = nConstraintsArr[paramIndex];
+        int currConstraintArrIndex = nConstraintIndexArr[paramIndex];
+        _ASSERTE(currConstraintArrIndex < constraintArrayLast);
+
+        currConstraintArr[currConstraintArrIndex++] = currTypeConstraint;
+        _ASSERTE(currConstraintArr[currConstraintArrIndex] == mdTokenNil);   // the last element must be mdTokenNil
+        nConstraintIndexArr[paramIndex] = currConstraintArrIndex;
+    }
+
+    // Next emit the metadata for the Generic parameter type constraints 
+    //
+    for (paramIndex = 0; paramIndex < numTyPars; paramIndex++)
+    {
+        int currParamNumConstraints = nConstraintIndexArr[paramIndex];
+
+        if (currParamNumConstraints > 0)
+        {
+            mdGenericParam tkGenericParam = pTyPars[paramIndex].Token();
+            ULONG currNumConstraints      = (ULONG) nConstraintsArr[paramIndex];
+            mdToken* currConstraintArr    = pConstraintsArr[paramIndex];
+            mdGenericParamConstraint* currGPConstraintArr = pGPConstraintsArr[paramIndex];
+
+            // call SetGenericParamProps for each generic parameter that has a non-zero count of constraints
+            // to record each generic parameters tyupe constraints.
+            //
+            // This Metadata operation will also create a new GenericParamConstraint token
+            // for each of the generic parameters type constraints.
+            //
+            if (FAILED(m_pEmitter->SetGenericParamProps(tkGenericParam, 0, NULL, 0, currConstraintArr)))
+            {
+                report->error("Failed in SetGenericParamProp");
+            }
+            else
+            {
+                // We now need to fetch the values of the new GenericParamConstraint tokens
+                // that were created by the call to SetGenericParamProps
+                //
+                // These tokens are the token owners for the custom attributes 
+                // such as NulableAttribute and TupleElementNamesAttribute
+                //
+                HCORENUM hEnum = NULL;
+                ULONG uCount = 0;
+                if (FAILED(m_pImporter->EnumGenericParamConstraints(&hEnum, tkGenericParam, currGPConstraintArr, (ULONG)currNumConstraints, &uCount)))
+                {
+                    report->error("Failed in EnumGenericParamConstraints");
+                }
+                else
+                {
+                    _ASSERTE(uCount == currNumConstraints);
+                    m_pImporter->CloseEnum(hEnum);
+                }
+            }
+        }
+    }
+
+    // Emit any Custom Attributes associated with these Generic Paaram Constraints
+    //
+    while ((pGPC = pGPCL->POP()))
+    {
+        paramIndex = pGPC->GetParamIndex();
+
+        mdToken tkTypeConstraint = pGPC->GetTypeConstraint();
+        int currNumConstraints = nConstraintsArr[paramIndex];
+        mdToken* currConstraintArr = pConstraintsArr[paramIndex];
+        mdGenericParamConstraint* currGPConstraintArr = pGPConstraintsArr[paramIndex];
+        mdGenericParamConstraint  tkOwnerOfCA = mdTokenNil;
+
+        // find the matching type constraint and fetch the GenericParamConstraint
+        //
+        for (int i = 0; i < currNumConstraints; i++)
+        {
+            if (currConstraintArr[i] == tkTypeConstraint)
+            {
+                tkOwnerOfCA = currGPConstraintArr[i];
+                break;
+            }
+        }
+        _ASSERTE(tkOwnerOfCA != mdTokenNil);
+
+        // Record the Generic Param Constraint token 
+        // and supply it as the owner for the list of Custom attributes.
+        //
+        pGPC->Token(tkOwnerOfCA);
+        EmitCustomAttributes(tkOwnerOfCA, pGPC->CAList());
     }
 }
