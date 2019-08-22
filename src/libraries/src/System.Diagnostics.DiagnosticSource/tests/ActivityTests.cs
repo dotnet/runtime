@@ -211,7 +211,7 @@ namespace System.Diagnostics.Tests
 
             // With probability 1/MaxLong, Activity.Id length may be expectedIdLength + 1
             Assert.InRange(activity.Id.Length, expectedIdLength, expectedIdLength + 1);
-            Assert.False(activity.Id.Contains('#'));
+            Assert.DoesNotContain('#', activity.Id);
         }
 
         /// <summary>

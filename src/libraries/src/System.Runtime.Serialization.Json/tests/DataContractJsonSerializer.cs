@@ -682,7 +682,7 @@ public static partial class DataContractJsonSerializerTests
 
         foreach (var item in x)
         {
-            Assert.True(y.Contains(item));
+            Assert.Contains(item, y);
         }
     }
 

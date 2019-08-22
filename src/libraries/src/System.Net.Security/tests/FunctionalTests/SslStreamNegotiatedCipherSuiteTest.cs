@@ -398,7 +398,7 @@ namespace System.Net.Security.Tests
 
                 foreach (var cs in csp.AllowedCipherSuites)
                 {
-                    Assert.True(cipherSuites.Contains(cs));
+                    Assert.Contains(cs, cipherSuites);
                 }
             }
         }

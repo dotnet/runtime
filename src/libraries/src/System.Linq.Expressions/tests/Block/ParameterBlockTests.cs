@@ -226,7 +226,7 @@ namespace System.Linq.Expressions.Tests
             BlockExpression block = Expression.Block(SingleParameter, expressions);
 
             Assert.Equal(-1, block.Expressions.IndexOf(Expression.Default(typeof(long))));
-            Assert.False(block.Expressions.Contains(null));
+            Assert.DoesNotContain(null, block.Expressions);
         }
 
         [Theory]

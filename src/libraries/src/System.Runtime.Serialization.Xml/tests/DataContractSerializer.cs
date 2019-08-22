@@ -559,7 +559,7 @@ public static partial class DataContractSerializerTests
         Assert.True(y.Count == 2);
         foreach (var item in x)
         {
-            Assert.True(y.Contains(item));
+            Assert.Contains(item, y);
         }
     }
 
@@ -1227,9 +1227,9 @@ public static partial class DataContractSerializerTests
         var actual = DataContractSerializerHelper.SerializeAndDeserialize<SimpleCDC>(value, @"<SimpleCDC xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><Item>One</Item><Item>Two</Item><Item>Three</Item></SimpleCDC>");
 
         Assert.True(actual.Count == 3);
-        Assert.True(actual.Contains("One"));
-        Assert.True(actual.Contains("Two"));
-        Assert.True(actual.Contains("Three"));
+        Assert.Contains("One", actual);
+        Assert.Contains("Two", actual);
+        Assert.Contains("Three", actual);
     }
 
     [Fact]

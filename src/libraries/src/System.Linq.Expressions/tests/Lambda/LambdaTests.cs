@@ -757,7 +757,7 @@ namespace System.Linq.Expressions.Tests
                     Assert.Same(pars[i], en.Current);
                     Assert.Same(pars[i], nonGenEn.Current);
                     Assert.Equal(i, parameters.IndexOf(pars[i]));
-                    Assert.True(parameters.Contains(pars[i]));
+                    Assert.Contains(pars[i], parameters);
                 }
 
                 Assert.False(en.MoveNext());
@@ -776,7 +776,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => parameters[-1]);
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => parameters[parCount]);
             Assert.Equal(-1, parameters.IndexOf(Expression.Parameter(typeof(int))));
-            Assert.False(parameters.Contains(Expression.Parameter(typeof(int))));
+            Assert.DoesNotContain(Expression.Parameter(typeof(int)), parameters);
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
