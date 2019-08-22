@@ -303,6 +303,9 @@
     <Compile Include="..\..\src\System\Net\Http\CurlHandler\CurlResponseHeaderReader.cs">
       <Link>ProductionCode\System\Net\Http\CurlResponseHeaderReader.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\ArrayBuffer.cs">
+      <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\ArrayBuffer.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.cs">
       <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.cs</Link>
     </Compile>
@@ -416,6 +419,7 @@
     <Compile Include="HPack\DynamicTableTest.cs" />
     <Compile Include="HPack\HPackDecoderTest.cs" />
     <Compile Include="HPack\HPackIntegerTest.cs" />
+    <Compile Include="HPack\HPackRoundtripTests.cs" />
     <Compile Include="HPack\HuffmanDecodingTests.cs" />
     <Compile Include="HttpContentTest.cs" />
     <Compile Include="HttpRuleParserTest.cs" />
