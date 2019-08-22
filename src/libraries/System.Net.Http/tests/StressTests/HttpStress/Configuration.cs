@@ -27,10 +27,13 @@ namespace HttpStress
         public bool ListOperations { get; set; }
 
         public Version HttpVersion { get; set; }
+        public bool UseWinHttpHandler { get; set; }
         public int ConcurrentRequests { get; set; }
         public int RandomSeed { get; set; }
         public int MaxContentLength { get; set; }
         public int MaxRequestUriSize { get; set; }
+        public int MaxRequestHeaderCount { get; set; }
+        public int MaxRequestHeaderTotalSize { get; set; }
         public int MaxParameters { get; set; }
         public int[] OpIndices { get; set; }
         public int[] ExcludedOpIndices { get; set; }
