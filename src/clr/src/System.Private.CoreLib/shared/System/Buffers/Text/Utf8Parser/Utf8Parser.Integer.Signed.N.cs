@@ -41,7 +41,7 @@ namespace System.Buffers.Text
                 goto FalseExit;
             answer = c - '0';
 
-            for (; ; )
+            while (true)
             {
                 index++;
                 if ((uint)index >= (uint)source.Length)
@@ -133,7 +133,7 @@ namespace System.Buffers.Text
                 goto FalseExit;
             answer = c - '0';
 
-            for (; ; )
+            while (true)
             {
                 index++;
                 if ((uint)index >= (uint)source.Length)
@@ -225,7 +225,7 @@ namespace System.Buffers.Text
                 goto FalseExit;
             answer = c - '0';
 
-            for (; ; )
+            while (true)
             {
                 index++;
                 if ((uint)index >= (uint)source.Length)
@@ -320,7 +320,7 @@ namespace System.Buffers.Text
                 goto FalseExit;
             answer = c - '0';
 
-            for (; ; )
+            while (true)
             {
                 index++;
                 if ((uint)index >= (uint)source.Length)
