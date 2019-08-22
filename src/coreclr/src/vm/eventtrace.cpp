@@ -4269,6 +4269,12 @@ VOID EtwCallbackCommon(
 #endif // !defined(FEATURE_PAL)
         ETW::GCLog::ForceGC(l64ClientSequenceNumber);
     }
+    // TypeSystemLog needs a notification when certain keywords are modified, so
+    // give it a hook here.
+    if (g_fEEStarted && !g_fEEShutDown && bIsPublicTraceHandle)
+    {
+        ETW::TypeSystemLog::OnKeywordsChanged();
+    }
 }
 
 // Individual callbacks for each EventPipe provider.
@@ -4487,13 +4493,6 @@ extern "C"
         }
 
         EtwCallbackCommon(providerIndex, ControlCode, Level, MatchAnyKeyword, FilterData, false);
-
-        // TypeSystemLog needs a notification when certain keywords are modified, so
-        // give it a hook here.
-        if (g_fEEStarted && !g_fEEShutDown && bIsPublicTraceHandle)
-        {
-            ETW::TypeSystemLog::OnKeywordsChanged();
-        }
 
         // A manifest based provider can be enabled to multiple event tracing sessions
         // As long as there is atleast 1 enabled session, IsEnabled will be TRUE
