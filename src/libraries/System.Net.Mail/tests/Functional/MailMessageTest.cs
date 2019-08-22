@@ -177,7 +177,7 @@ namespace System.Net.Mail.Tests
                                 type: mailWriterType,
                                 bindingAttr: BindingFlags.Instance | BindingFlags.NonPublic,
                                 binder: null,
-                                args: new object[] { stream },
+                                args: new object[] { stream, true },    // true to encode message for transport
                                 culture: null,
                                 activationAttributes: null);
 

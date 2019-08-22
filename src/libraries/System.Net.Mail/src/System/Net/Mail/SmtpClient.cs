@@ -404,7 +404,7 @@ namespace System.Net.Mail
             }
 
             FileStream fileStream = new FileStream(pathAndFilename, FileMode.CreateNew);
-            return new MailWriter(fileStream);
+            return new MailWriter(fileStream, encodeForTransport: false);
         }
 
         protected void OnSendCompleted(AsyncCompletedEventArgs e)
