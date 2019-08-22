@@ -233,7 +233,7 @@ typedef struct {
 	// We emit this code when we init the module,
 	// and later match up the native code with this method
 	// using the name.
-	MonoAotInitSubtype subtype;
+	MonoLLVMFuncWrapperSubtype subtype;
 } LLVMFuncWrapperInfo;
 
 /*
