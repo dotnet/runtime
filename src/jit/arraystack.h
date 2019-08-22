@@ -71,30 +71,25 @@ public:
         return data[tosIndex];
     }
 
-    T Top()
+    // Pop `count` elements from the stack
+    void Pop(int count)
     {
-        assert(tosIndex > 0);
-        return data[tosIndex - 1];
+        assert(tosIndex >= count);
+        tosIndex -= count;
     }
 
-    T& TopRef()
+    // Return the i'th element from the top
+    T Top(int i = 0)
     {
-        assert(tosIndex > 0);
-        return data[tosIndex - 1];
+        assert(tosIndex > i);
+        return data[tosIndex - 1 - i];
     }
 
-    // return the i'th from the top
-    T Index(int idx)
+    // Return a reference to the i'th element from the top
+    T& TopRef(int i = 0)
     {
-        assert(tosIndex > idx);
-        return data[tosIndex - 1 - idx];
-    }
-
-    // return a reference to the i'th from the top
-    T& IndexRef(int idx)
-    {
-        assert(tosIndex > idx);
-        return data[tosIndex - 1 - idx];
+        assert(tosIndex > i);
+        return data[tosIndex - 1 - i];
     }
 
     int Height()
@@ -107,25 +102,18 @@ public:
         return tosIndex == 0;
     }
 
-    // return the bottom of the stack
-    T Bottom()
+    // Return the i'th element from the bottom
+    T Bottom(int i = 0)
     {
-        assert(tosIndex > 0);
-        return data[0];
+        assert(tosIndex > i);
+        return data[i];
     }
 
-    // return the i'th from the bottom
-    T Bottom(int indx)
+    // Return a reference to the i'th element from the bottom
+    T& BottomRef(int i = 0)
     {
-        assert(tosIndex > indx);
-        return data[indx];
-    }
-
-    // return a reference to the i'th from the bottom
-    T& BottomRef(int indx)
-    {
-        assert(tosIndex > indx);
-        return data[indx];
+        assert(tosIndex > i);
+        return data[i];
     }
 
     void Reset()

@@ -699,7 +699,7 @@ void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta
             stackDelta = spDelta;
         }
 
-        RegPair regPair = regStack.Index(i);
+        RegPair regPair = regStack.Top(i);
         if (regPair.reg2 != REG_NA)
         {
             spOffset -= 2 * slotSize;

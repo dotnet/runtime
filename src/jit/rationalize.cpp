@@ -165,7 +165,7 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
     // Replace "tree" with "call"
     if (parents.Height() > 1)
     {
-        parents.Index(1)->ReplaceOperand(use, call);
+        parents.Top(1)->ReplaceOperand(use, call);
     }
     else
     {
@@ -181,7 +181,7 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
     // 0 is current node, so start at 1
     for (int i = 1; i < parents.Height(); i++)
     {
-        parents.Index(i)->gtFlags |= (call->gtFlags & GTF_ALL_EFFECT) | GTF_CALL;
+        parents.Top(i)->gtFlags |= (call->gtFlags & GTF_ALL_EFFECT) | GTF_CALL;
     }
 
     // Since "tree" is replaced with "call", pop "tree" node (i.e the current node)
@@ -593,7 +593,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
     }
     else
     {
-        use = LIR::Use(BlockRange(), useEdge, parentStack.Index(1));
+        use = LIR::Use(BlockRange(), useEdge, parentStack.Top(1));
     }
 
     assert(node == use.Def());

@@ -2113,9 +2113,6 @@ private:
 public:
     bool Precedes(GenTree* other);
 
-    // The maximum possible # of children of any node.
-    static const int MAX_CHILDREN = 6;
-
     bool IsReuseRegVal() const
     {
         // This can be extended to non-constant nodes, but not to local or indir nodes.

@@ -5686,24 +5686,10 @@ protected:
     // Hoist all expressions in "blk" that are invariant in loop "lnum" (an index into the optLoopTable)
     // outside of that loop.  Exempt expressions whose value number is in "m_hoistedInParentLoops"; add VN's of hoisted
     // expressions to "hoistInLoop".
-    void optHoistLoopExprsForBlock(BasicBlock* blk, unsigned lnum, LoopHoistContext* hoistCtxt);
+    void optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blocks, LoopHoistContext* hoistContext);
 
     // Return true if the tree looks profitable to hoist out of loop 'lnum'.
     bool optIsProfitableToHoistableTree(GenTree* tree, unsigned lnum);
-
-    // Hoist all proper sub-expressions of "tree" (which occurs in "stmt", which occurs in "blk")
-    // that are invariant in loop "lnum" (an index into the optLoopTable)
-    // outside of that loop.  Exempt expressions whose value number is in "hoistedInParents"; add VN's of hoisted
-    // expressions to "hoistInLoop".
-    // Returns "true" iff "tree" is loop-invariant (wrt "lnum").
-    // Assumes that the value of "*firstBlockAndBeforeSideEffect" indicates that we're in the first block, and before
-    // any possible globally visible side effects.  Assume is called in evaluation order, and updates this.
-    bool optHoistLoopExprsForTree(GenTree*          tree,
-                                  unsigned          lnum,
-                                  LoopHoistContext* hoistCtxt,
-                                  bool*             firstBlockAndBeforeSideEffect,
-                                  bool*             pHoistable,
-                                  bool*             pCctorDependent);
 
     // Performs the hoisting 'tree' into the PreHeader for loop 'lnum'
     void optHoistCandidate(GenTree* tree, unsigned lnum, LoopHoistContext* hoistCtxt);
@@ -5712,12 +5698,6 @@ protected:
     //   Constants and init values are always loop invariant.
     //   VNPhi's connect VN's to the SSA definition, so we can know if the SSA def occurs in the loop.
     bool optVNIsLoopInvariant(ValueNum vn, unsigned lnum, VNToBoolMap* recordedVNs);
-
-    // Returns "true" iff "tree" is valid at the head of loop "lnum", in the context of the hoist substitution
-    // "subst".  If "tree" is a local SSA var, it is valid if its SSA definition occurs outside of the loop, or
-    // if it is in the domain of "subst" (meaning that it's definition has been previously hoisted, with a "standin"
-    // local.)  If tree is a constant, it is valid.  Otherwise, if it is an operator, it is valid iff its children are.
-    bool optTreeIsValidAtLoopHead(GenTree* tree, unsigned lnum);
 
     // If "blk" is the entry block of a natural loop, returns true and sets "*pLnum" to the index of the loop
     // in the loop table.
