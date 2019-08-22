@@ -505,9 +505,10 @@ namespace System.Globalization
         }
 
         // Returns the number of months in the specified year and era.
+        // Always return 12.
         public int GetMonthsInYear(int year, int era)
         {
-            GetGregorianYear(year, era);
+            ValidateYearInEra(year, era);
             return 12;
         }
 
@@ -578,21 +579,23 @@ namespace System.Globalization
             return (false);
         }
 
-        // Returns  the leap month in a calendar year of the specified era. This method returns 0
-        // if this calendar does not have leap month, or this year is not a leap year.
-        //
+        // Giving the calendar year and era, ValidateYearInEra will validate the existence of the input year in the input era.
+        // This method will throw if the year or the era is invalid.
+        public void ValidateYearInEra(int year, int era) => GetYearOffset(year, era, throwOnError: true);
+
+        // Returns the leap month in a calendar year of the specified era.
+        // This method always returns 0 as all calendars using this method don't have leap months.
         public int GetLeapMonth(int year, int era)
         {
-            GetGregorianYear(year, era);
+            ValidateYearInEra(year, era);
             return 0;
         }
 
-        // Checks whether a given month in the specified era is a leap month. This method returns true if
-        // month is a leap month, or false if not.
-        //
+        // Checks whether a given month in the specified era is a leap month.
+        // This method always returns false as all calendars using this method don't have leap months.
         public bool IsLeapMonth(int year, int month, int era)
         {
-            year = GetGregorianYear(year, era);
+            ValidateYearInEra(year, era);
             if (month < 1 || month > 12)
             {
                 throw new ArgumentOutOfRangeException(
