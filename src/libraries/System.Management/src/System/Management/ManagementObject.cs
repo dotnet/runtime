@@ -1715,7 +1715,7 @@ namespace System.Management
         /// </returns>
         public ManagementPath CopyTo(ManagementPath path)
         {
-            return CopyTo(path,(PutOptions)null);
+            return CopyTo(path, (PutOptions)null);
         }
 
         /// <summary>

@@ -434,7 +434,7 @@ namespace System.DirectoryServices.AccountManagement
             {PropertyNames.PwdInfoLastBadPasswordAttempt, "badPasswordTime",      new FromLdapConverterDelegate(GenericDateTimeFromLdapConverter),     null},
             {PropertyNames.PwdInfoPasswordNotRequired,    "ms-DS-UserPasswordNotRequired",   new FromLdapConverterDelegate(BoolFromLdapConverter),                 new ToLdapConverterDelegate(BoolToLdapConverter)},
             {PropertyNames.PwdInfoPasswordNeverExpires,   "msDS-UserDontExpirePassword",   new FromLdapConverterDelegate(BoolFromLdapConverter),                 new ToLdapConverterDelegate(BoolToLdapConverter)},
-            {PropertyNames.PwdInfoCannotChangePassword,   "ntSecurityDescriptor", null ,     new ToLdapConverterDelegate(CannotChangePwdToLdapConverter)},
+            {PropertyNames.PwdInfoCannotChangePassword,   "ntSecurityDescriptor", null,     new ToLdapConverterDelegate(CannotChangePwdToLdapConverter)},
             {PropertyNames.PwdInfoAllowReversiblePasswordEncryption,     "ms-DS-UserEncryptedTextPasswordAllowed",    new FromLdapConverterDelegate(BoolFromLdapConverter), new ToLdapConverterDelegate(BoolToLdapConverter)}
         };
 
@@ -461,15 +461,15 @@ namespace System.DirectoryServices.AccountManagement
             {typeof(PermittedWorkstationFilter),                "userWorkstations",     new FilterConverterDelegate(StringConverter)},
             {typeof(PermittedLogonTimesFilter),                 "logonHours",           new FilterConverterDelegate(BinaryConverter)},
             {typeof(ExpirationDateFilter),                      "accountExpires",       new FilterConverterDelegate(ExpirationDateConverter)},
-            {typeof(SmartcardLogonRequiredFilter),              "userAccountControl",   new FilterConverterDelegate(UserAccountControlConverter)},/*##*/
-            {typeof(DelegationPermittedFilter),                 "userAccountControl",   new FilterConverterDelegate(UserAccountControlConverter)},/*##*/
+            {typeof(SmartcardLogonRequiredFilter),              "userAccountControl",   new FilterConverterDelegate(UserAccountControlConverter)}, /*##*/
+            {typeof(DelegationPermittedFilter),                 "userAccountControl",   new FilterConverterDelegate(UserAccountControlConverter)}, /*##*/
             {typeof(HomeDirectoryFilter),                       "homeDirectory",        new FilterConverterDelegate(StringConverter)},
             {typeof(HomeDriveFilter),                           "homeDrive",            new FilterConverterDelegate(StringConverter)},
             {typeof(ScriptPathFilter),                          "scriptPath",           new FilterConverterDelegate(StringConverter)},
-            {typeof(PasswordNotRequiredFilter),                 "ms-DS-UserPasswordNotRequired",   new FilterConverterDelegate(DefaultValueBoolConverter)},/*##*/
-            {typeof(PasswordNeverExpiresFilter),                "msDS-UserDontExpirePassword",   new FilterConverterDelegate(DefaultValueBoolConverter)},/*##*/
-            {typeof(CannotChangePasswordFilter),                "userAccountControl",   new FilterConverterDelegate(UserAccountControlConverter)},/*##*/
-            {typeof(AllowReversiblePasswordEncryptionFilter),   "ms-DS-UserEncryptedTextPasswordAllowed",   new FilterConverterDelegate(DefaultValueBoolConverter)},/*##*/
+            {typeof(PasswordNotRequiredFilter),                 "ms-DS-UserPasswordNotRequired",   new FilterConverterDelegate(DefaultValueBoolConverter)}, /*##*/
+            {typeof(PasswordNeverExpiresFilter),                "msDS-UserDontExpirePassword",   new FilterConverterDelegate(DefaultValueBoolConverter)}, /*##*/
+            {typeof(CannotChangePasswordFilter),                "userAccountControl",   new FilterConverterDelegate(UserAccountControlConverter)}, /*##*/
+            {typeof(AllowReversiblePasswordEncryptionFilter),   "ms-DS-UserEncryptedTextPasswordAllowed",   new FilterConverterDelegate(DefaultValueBoolConverter)}, /*##*/
             {typeof(GivenNameFilter),                           "givenName",            new FilterConverterDelegate(StringConverter)},
             {typeof(MiddleNameFilter),                          "middleName",           new FilterConverterDelegate(StringConverter)},
             {typeof(SurnameFilter),                             "sn",                   new FilterConverterDelegate(StringConverter)},
@@ -478,13 +478,13 @@ namespace System.DirectoryServices.AccountManagement
             {typeof(EmployeeIDFilter),                          "employeeID",           new FilterConverterDelegate(StringConverter)},
             {typeof(GroupIsSecurityGroupFilter),                        "groupType",            new FilterConverterDelegate(GroupTypeConverter)},
             {typeof(GroupScopeFilter),                          "groupType",            new FilterConverterDelegate(GroupTypeConverter)},
-            {typeof(ServicePrincipalNameFilter),                "servicePrincipalName",new FilterConverterDelegate(StringConverter)},
-            {typeof(ExtensionCacheFilter),                null ,new FilterConverterDelegate(ExtensionCacheConverter)},
-            {typeof(BadPasswordAttemptFilter),                "badPasswordTime",new FilterConverterDelegate(DefaultValutMatchingDateTimeConverter)},
-            {typeof(ExpiredAccountFilter),                "accountExpires",new FilterConverterDelegate(MatchingDateTimeConverter)},
-            {typeof(LastLogonTimeFilter),                "lastLogonTimestamp",new FilterConverterDelegate(DefaultValutMatchingDateTimeConverter)},
-            {typeof(LockoutTimeFilter),                "lockoutTime",new FilterConverterDelegate(DefaultValutMatchingDateTimeConverter)},
-            {typeof(PasswordSetTimeFilter),                "pwdLastSet",new FilterConverterDelegate(DefaultValutMatchingDateTimeConverter)}
+            {typeof(ServicePrincipalNameFilter),                "servicePrincipalName", new FilterConverterDelegate(StringConverter)},
+            {typeof(ExtensionCacheFilter),                null, new FilterConverterDelegate(ExtensionCacheConverter)},
+            {typeof(BadPasswordAttemptFilter),                "badPasswordTime", new FilterConverterDelegate(DefaultValutMatchingDateTimeConverter)},
+            {typeof(ExpiredAccountFilter),                "accountExpires", new FilterConverterDelegate(MatchingDateTimeConverter)},
+            {typeof(LastLogonTimeFilter),                "lastLogonTimestamp", new FilterConverterDelegate(DefaultValutMatchingDateTimeConverter)},
+            {typeof(LockoutTimeFilter),                "lockoutTime", new FilterConverterDelegate(DefaultValutMatchingDateTimeConverter)},
+            {typeof(PasswordSetTimeFilter),                "pwdLastSet", new FilterConverterDelegate(DefaultValutMatchingDateTimeConverter)}
         };
     }
 }

@@ -598,8 +598,12 @@ namespace Microsoft.SqlServer.Server
         }
 
 
-        private static readonly byte[] s_maxLenFromPrecision = new byte[] {5,5,5,5,5,5,5,5,5,9,9,9,9,9,
-        9,9,9,9,9,13,13,13,13,13,13,13,13,13,17,17,17,17,17,17,17,17,17,17};
+        private static readonly byte[] s_maxLenFromPrecision = new byte[]
+        {
+            5, 5, 5, 5, 5, 5, 5, 5, 5, 9, 9, 9, 9, 9, 9, 9,
+            9, 9, 9, 13, 13, 13, 13, 13, 13, 13, 13, 13, 17,
+            17, 17, 17, 17, 17, 17, 17, 17, 17
+        };
 
         private const byte MaxTimeScale = 7;
 
@@ -1725,7 +1729,7 @@ namespace Microsoft.SqlServer.Server
             new SqlMetaData("table", SqlDbType.Structured,
                     0, 0, 0, 0, SqlCompareOptions.None, false),                // SqlDbType.Structured
             new SqlMetaData("date", SqlDbType.Date,
-                    3, 10,0, 0, SqlCompareOptions.None, false),                // SqlDbType.Date
+                    3, 10, 0, 0, SqlCompareOptions.None, false),                // SqlDbType.Date
             new SqlMetaData("time", SqlDbType.Time,
                     5, 0, 7, 0, SqlCompareOptions.None, false),                // SqlDbType.Time
             new SqlMetaData("datetime2", SqlDbType.DateTime2,

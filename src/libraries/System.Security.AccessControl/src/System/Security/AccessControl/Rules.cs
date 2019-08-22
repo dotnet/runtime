@@ -256,15 +256,11 @@ nameof(propagationFlags),
         {
             if ( auditFlags == AuditFlags.None )
             {
-                throw new ArgumentException(
-                     SR.Arg_EnumAtLeastOneFlag ,
-nameof(auditFlags));
+                throw new ArgumentException(SR.Arg_EnumAtLeastOneFlag, nameof(auditFlags));
             }
             else if (( auditFlags & ~( AuditFlags.Success | AuditFlags.Failure )) != 0 )
             {
-                throw new ArgumentOutOfRangeException(
-nameof(auditFlags),
-                     SR.ArgumentOutOfRange_Enum );
+                throw new ArgumentOutOfRangeException(nameof(auditFlags), SR.ArgumentOutOfRange_Enum );
             }
 
             _flags = auditFlags;

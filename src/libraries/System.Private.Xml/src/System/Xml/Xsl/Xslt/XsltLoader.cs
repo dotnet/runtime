@@ -337,10 +337,10 @@ namespace System.Xml.Xsl.Xslt
         }
 
         private readonly XsltAttribute[] _stylesheetAttributes = {
-            new XsltAttribute("version"               , V1Req | V2Req),
-            new XsltAttribute("id"                    , V1Opt | V2Opt),
-            new XsltAttribute("default-validation"    ,         V2Opt),
-            new XsltAttribute("input-type-annotations",         V2Opt),
+            new XsltAttribute("version",                V1Req | V2Req),
+            new XsltAttribute("id",                     V1Opt | V2Opt),
+            new XsltAttribute("default-validation",     V2Opt),
+            new XsltAttribute("input-type-annotations", V2Opt),
         };
         private void LoadRealStylesheet()
         {
@@ -550,23 +550,23 @@ namespace System.Xml.Xsl.Xslt
         }
 
         private readonly XsltAttribute[] _outputAttributes = {
-            new XsltAttribute("name"                  ,         V2Opt),
-            new XsltAttribute("method"                , V1Opt | V2Opt),
-            new XsltAttribute("byte-order-mark"       ,         V2Opt),
+            new XsltAttribute("name",                   V2Opt),
+            new XsltAttribute("method",                 V1Opt | V2Opt),
+            new XsltAttribute("byte-order-mark",        V2Opt),
             new XsltAttribute("cdata-section-elements", V1Opt | V2Opt),
-            new XsltAttribute("doctype-public"        , V1Opt | V2Opt),
-            new XsltAttribute("doctype-system"        , V1Opt | V2Opt),
-            new XsltAttribute("encoding"              , V1Opt | V2Opt),
-            new XsltAttribute("escape-uri-attributes" ,         V2Opt),
-            new XsltAttribute("include-content-type"  ,         V2Opt),
-            new XsltAttribute("indent"                , V1Opt | V2Opt),
-            new XsltAttribute("media-type"            , V1Opt | V2Opt),
-            new XsltAttribute("normalization-form"    ,         V2Opt),
-            new XsltAttribute("omit-xml-declaration"  , V1Opt | V2Opt),
-            new XsltAttribute("standalone"            , V1Opt | V2Opt),
-            new XsltAttribute("undeclare-prefixes"    ,         V2Opt),
-            new XsltAttribute("use-character-maps"    ,         V2Opt),
-            new XsltAttribute("version"               , V1Opt | V2Opt)
+            new XsltAttribute("doctype-public",         V1Opt | V2Opt),
+            new XsltAttribute("doctype-system",         V1Opt | V2Opt),
+            new XsltAttribute("encoding",               V1Opt | V2Opt),
+            new XsltAttribute("escape-uri-attributes",  V2Opt),
+            new XsltAttribute("include-content-type",   V2Opt),
+            new XsltAttribute("indent",                 V1Opt | V2Opt),
+            new XsltAttribute("media-type",             V1Opt | V2Opt),
+            new XsltAttribute("normalization-form",     V2Opt),
+            new XsltAttribute("omit-xml-declaration",   V1Opt | V2Opt),
+            new XsltAttribute("standalone",             V1Opt | V2Opt),
+            new XsltAttribute("undeclare-prefixes",     V2Opt),
+            new XsltAttribute("use-character-maps",     V2Opt),
+            new XsltAttribute("version",                V1Opt | V2Opt)
         };
         private void LoadOutput()
         {
@@ -833,10 +833,10 @@ namespace System.Xml.Xsl.Xslt
         }
 
         private readonly XsltAttribute[] _keyAttributes = {
-            new XsltAttribute("name"     , V1Req | V2Req),
-            new XsltAttribute("match"    , V1Req | V2Req),
-            new XsltAttribute("use"      , V1Req | V2Opt),
-            new XsltAttribute("collation",         V2Opt)
+            new XsltAttribute("name",      V1Req | V2Req),
+            new XsltAttribute("match",     V1Req | V2Req),
+            new XsltAttribute("use",       V1Req | V2Opt),
+            new XsltAttribute("collation", V2Opt)
         };
         private void LoadKey(NsDecl stylesheetNsList)
         {
@@ -898,17 +898,17 @@ namespace System.Xml.Xsl.Xslt
         }
 
         private readonly XsltAttribute[] _decimalFormatAttributes = {
-            new XsltAttribute("name"              , V1Opt | V2Opt),
-            new XsltAttribute("infinity"          , V1Opt | V2Opt),
-            new XsltAttribute("NaN"               , V1Opt | V2Opt),
-            new XsltAttribute("decimal-separator" , V1Opt | V2Opt),
+            new XsltAttribute("name",               V1Opt | V2Opt),
+            new XsltAttribute("infinity",           V1Opt | V2Opt),
+            new XsltAttribute("NaN",                V1Opt | V2Opt),
+            new XsltAttribute("decimal-separator",  V1Opt | V2Opt),
             new XsltAttribute("grouping-separator", V1Opt | V2Opt),
-            new XsltAttribute("percent"           , V1Opt | V2Opt),
-            new XsltAttribute("per-mille"         , V1Opt | V2Opt),
-            new XsltAttribute("zero-digit"        , V1Opt | V2Opt),
-            new XsltAttribute("digit"             , V1Opt | V2Opt),
-            new XsltAttribute("pattern-separator" , V1Opt | V2Opt),
-            new XsltAttribute("minus-sign"        , V1Opt | V2Opt)
+            new XsltAttribute("percent",            V1Opt | V2Opt),
+            new XsltAttribute("per-mille",          V1Opt | V2Opt),
+            new XsltAttribute("zero-digit",         V1Opt | V2Opt),
+            new XsltAttribute("digit",              V1Opt | V2Opt),
+            new XsltAttribute("pattern-separator",  V1Opt | V2Opt),
+            new XsltAttribute("minus-sign",         V1Opt | V2Opt)
         };
         private void LoadDecimalFormat(NsDecl stylesheetNsList)
         {
@@ -995,7 +995,7 @@ namespace System.Xml.Xsl.Xslt
 
         private readonly XsltAttribute[] _namespaceAliasAttributes = {
             new XsltAttribute("stylesheet-prefix", V1Req | V2Req),
-            new XsltAttribute("result-prefix"    , V1Req | V2Req)
+            new XsltAttribute("result-prefix",     V1Req | V2Req)
         };
         private void LoadNamespaceAlias(NsDecl stylesheetNsList)
         {
@@ -1047,7 +1047,7 @@ namespace System.Xml.Xsl.Xslt
         }
 
         private readonly XsltAttribute[] _attributeSetAttributes = {
-            new XsltAttribute("name"            , V1Req | V2Req),
+            new XsltAttribute("name",               V1Req | V2Req),
             new XsltAttribute("use-attribute-sets", V1Opt | V2Opt)
         };
         private void LoadAttributeSet(NsDecl stylesheetNsList)
@@ -1122,11 +1122,11 @@ namespace System.Xml.Xsl.Xslt
 
         //: http://www.w3.org/TR/xslt#section-Defining-Template-Rules
         private readonly XsltAttribute[] _templateAttributes = {
-            new XsltAttribute("match"   , V1Opt | V2Opt),
-            new XsltAttribute("name"    , V1Opt | V2Opt),
+            new XsltAttribute("match",    V1Opt | V2Opt),
+            new XsltAttribute("name",     V1Opt | V2Opt),
             new XsltAttribute("priority", V1Opt | V2Opt),
-            new XsltAttribute("mode"    , V1Opt | V2Opt),
-            new XsltAttribute("as"      ,         V2Opt)
+            new XsltAttribute("mode",     V1Opt | V2Opt),
+            new XsltAttribute("as",       V2Opt)
         };
         private void LoadTemplate(NsDecl stylesheetNsList)
         {
@@ -1272,7 +1272,7 @@ namespace System.Xml.Xsl.Xslt
 
         private readonly XsltAttribute[] _scriptAttributes = {
             new XsltAttribute("implements-prefix", V1Req | V2Req),
-            new XsltAttribute("language"         , V1Opt | V2Opt)
+            new XsltAttribute("language",          V1Opt | V2Opt)
         };
         private void LoadMsScript(NsDecl stylesheetNsList)
         {
@@ -1551,7 +1551,7 @@ namespace System.Xml.Xsl.Xslt
         // http://www.w3.org/TR/xslt#section-Applying-Template-Rules
         private readonly XsltAttribute[] _applyTemplatesAttributes = {
             new XsltAttribute("select", V1Opt | V2Opt),
-            new XsltAttribute("mode"  , V1Opt | V2Opt)
+            new XsltAttribute("mode",   V1Opt | V2Opt)
         };
         private XslNode XslApplyTemplates()
         {
@@ -1589,11 +1589,11 @@ namespace System.Xml.Xsl.Xslt
         // http://www.w3.org/TR/xslt#copying
         // http://www.w3.org/TR/xslt20/#element-copy
         private readonly XsltAttribute[] _copyAttributes = {
-            new XsltAttribute("copy-namespaces"   ,         V2Opt),
-            new XsltAttribute("inherit-namespaces",         V2Opt),
+            new XsltAttribute("copy-namespaces",    V2Opt),
+            new XsltAttribute("inherit-namespaces", V2Opt),
             new XsltAttribute("use-attribute-sets", V1Opt | V2Opt),
-            new XsltAttribute("type"              ,         V2Opt),
-            new XsltAttribute("validation"        ,         V2Opt)
+            new XsltAttribute("type",               V2Opt),
+            new XsltAttribute("validation",         V2Opt)
         };
         private XslNode XslCopy()
         {
@@ -1617,10 +1617,10 @@ namespace System.Xml.Xsl.Xslt
         }
 
         private readonly XsltAttribute[] _copyOfAttributes = {
-            new XsltAttribute("select"         , V1Req | V2Req),
-            new XsltAttribute("copy-namespaces",         V2Opt),
-            new XsltAttribute("type"           ,         V2Opt),
-            new XsltAttribute("validation"     ,         V2Opt)
+            new XsltAttribute("select",          V1Req | V2Req),
+            new XsltAttribute("copy-namespaces", V2Opt),
+            new XsltAttribute("type",            V2Opt),
+            new XsltAttribute("validation",      V2Opt)
         };
         private XslNode XslCopyOf()
         {
@@ -1753,7 +1753,7 @@ namespace System.Xml.Xsl.Xslt
         // http://www.w3.org/TR/xslt#message
         // http://www.w3.org/TR/xslt20/#element-message
         private readonly XsltAttribute[] _messageAttributes = {
-            new XsltAttribute("select"   ,         V2Opt),
+            new XsltAttribute("select",    V2Opt),
             new XsltAttribute("terminate", V1Opt | V2Opt)
         };
         private XslNode XslMessage()
@@ -1779,17 +1779,17 @@ namespace System.Xml.Xsl.Xslt
         // http://www.w3.org/TR/xslt#number
         // http://www.w3.org/TR/xslt20/#element-number
         private readonly XsltAttribute[] _numberAttributes = {
-            new XsltAttribute("value"             , V1Opt | V2Opt),
-            new XsltAttribute("select"            ,         V2Opt),
-            new XsltAttribute("level"             , V1Opt | V2Opt),
-            new XsltAttribute("count"             , V1Opt | V2Opt),
-            new XsltAttribute("from"              , V1Opt | V2Opt),
-            new XsltAttribute("format"            , V1Opt | V2Opt),
-            new XsltAttribute("lang"              , V1Opt | V2Opt),
-            new XsltAttribute("letter-value"      , V1Opt | V2Opt),
-            new XsltAttribute("ordinal"           ,         V2Opt),
+            new XsltAttribute("value",              V1Opt | V2Opt),
+            new XsltAttribute("select",             V2Opt),
+            new XsltAttribute("level",              V1Opt | V2Opt),
+            new XsltAttribute("count",              V1Opt | V2Opt),
+            new XsltAttribute("from",               V1Opt | V2Opt),
+            new XsltAttribute("format",             V1Opt | V2Opt),
+            new XsltAttribute("lang",               V1Opt | V2Opt),
+            new XsltAttribute("letter-value",       V1Opt | V2Opt),
+            new XsltAttribute("ordinal",            V2Opt),
             new XsltAttribute("grouping-separator", V1Opt | V2Opt),
-            new XsltAttribute("grouping-size"     , V1Opt | V2Opt)
+            new XsltAttribute("grouping-size",      V1Opt | V2Opt)
         };
         private XslNode XslNumber()
         {
@@ -1842,8 +1842,8 @@ namespace System.Xml.Xsl.Xslt
 
         // http://www.w3.org/TR/xslt#value-of
         private readonly XsltAttribute[] _valueOfAttributes = {
-            new XsltAttribute("select"                 , V1Req | V2Opt),
-            new XsltAttribute("separator"              ,         V2Opt),
+            new XsltAttribute("select",                  V1Req | V2Opt),
+            new XsltAttribute("separator",               V2Opt),
             new XsltAttribute("disable-output-escaping", V1Opt | V2Opt)
         };
         private XslNode XslValueOf()
@@ -1903,25 +1903,25 @@ namespace System.Xml.Xsl.Xslt
         // xsl:param        http://www.w3.org/TR/xslt#element-param
         // xsl:with-param   http://www.w3.org/TR/xslt#element-with-param
         private readonly XsltAttribute[] _variableAttributes = {
-            new XsltAttribute("name"    , V1Req | V2Req),
-            new XsltAttribute("select"  , V1Opt | V2Opt),
-            new XsltAttribute("as"      ,         V2Opt),
-            new XsltAttribute("required",             0),
-            new XsltAttribute("tunnel"  ,             0)
+            new XsltAttribute("name",     V1Req | V2Req),
+            new XsltAttribute("select",   V1Opt | V2Opt),
+            new XsltAttribute("as",       V2Opt),
+            new XsltAttribute("required", 0),
+            new XsltAttribute("tunnel",   0)
         };
         private readonly XsltAttribute[] _paramAttributes = {
-            new XsltAttribute("name"    , V1Req | V2Req),
-            new XsltAttribute("select"  , V1Opt | V2Opt),
-            new XsltAttribute("as"      ,         V2Opt),
-            new XsltAttribute("required",         V2Opt),
-            new XsltAttribute("tunnel"  ,         V2Opt)
+            new XsltAttribute("name",     V1Req | V2Req),
+            new XsltAttribute("select",   V1Opt | V2Opt),
+            new XsltAttribute("as",       V2Opt),
+            new XsltAttribute("required", V2Opt),
+            new XsltAttribute("tunnel",   V2Opt)
         };
         private readonly XsltAttribute[] _withParamAttributes = {
-            new XsltAttribute("name"    , V1Req | V2Req),
-            new XsltAttribute("select"  , V1Opt | V2Opt),
-            new XsltAttribute("as"      ,         V2Opt),
-            new XsltAttribute("required",             0),
-            new XsltAttribute("tunnel"  ,         V2Opt)
+            new XsltAttribute("name",    V1Req | V2Req),
+            new XsltAttribute("select",  V1Opt | V2Opt),
+            new XsltAttribute("as",      V2Opt),
+            new XsltAttribute("required", 0),
+            new XsltAttribute("tunnel",   V2Opt)
         };
         private VarPar XslVarPar()
         {
@@ -2016,8 +2016,8 @@ namespace System.Xml.Xsl.Xslt
         // http://www.w3.org/TR/xslt#section-Creating-Processing-Instructions
         // http://www.w3.org/TR/xslt20/#element-processing-instruction
         private readonly XsltAttribute[] _processingInstructionAttributes = {
-            new XsltAttribute("name"  , V1Req | V2Req),
-            new XsltAttribute("select",         V2Opt)
+            new XsltAttribute("name",   V1Req | V2Req),
+            new XsltAttribute("select", V2Opt)
         };
         private XslNode XslProcessingInstruction()
         {
@@ -2072,12 +2072,12 @@ namespace System.Xml.Xsl.Xslt
         // http://www.w3.org/TR/xslt#section-Creating-Elements-with-xsl:element
         // http://www.w3.org/TR/xslt20/#element-element
         private readonly XsltAttribute[] _elementAttributes = {
-            new XsltAttribute("name"             , V1Req | V2Req),
-            new XsltAttribute("namespace"        , V1Opt | V2Opt),
-            new XsltAttribute("inherit-namespaces",         V2Opt),
-            new XsltAttribute("use-attribute-sets" , V1Opt | V2Opt),
-            new XsltAttribute("type"             ,         V2Opt),
-            new XsltAttribute("validation"       ,         V2Opt)
+            new XsltAttribute("name",               V1Req | V2Req),
+            new XsltAttribute("namespace",          V1Opt | V2Opt),
+            new XsltAttribute("inherit-namespaces", V2Opt),
+            new XsltAttribute("use-attribute-sets", V1Opt | V2Opt),
+            new XsltAttribute("type",               V2Opt),
+            new XsltAttribute("validation",         V2Opt)
         };
         private XslNode XslElement()
         {
@@ -2106,12 +2106,12 @@ namespace System.Xml.Xsl.Xslt
         // http://www.w3.org/TR/xslt#creating-attributes
         // http://www.w3.org/TR/xslt20#creating-attributes
         private readonly XsltAttribute[] _attributeAttributes = {
-            new XsltAttribute("name"      , V1Req | V2Req),
-            new XsltAttribute("namespace" , V1Opt | V2Opt),
-            new XsltAttribute("select"    ,         V2Opt),
-            new XsltAttribute("separator" ,         V2Opt),
-            new XsltAttribute("type"      ,         V2Opt),
-            new XsltAttribute("validation",         V2Opt)
+            new XsltAttribute("name",       V1Req | V2Req),
+            new XsltAttribute("namespace",  V1Opt | V2Opt),
+            new XsltAttribute("select",     V2Opt),
+            new XsltAttribute("separator",  V2Opt),
+            new XsltAttribute("type",       V2Opt),
+            new XsltAttribute("validation", V2Opt)
         };
         private XslNode XslAttribute()
         {
@@ -2136,13 +2136,13 @@ namespace System.Xml.Xsl.Xslt
         // http://www.w3.org/TR/xslt#sorting
         // http://www.w3.org/TR/xslt20/#element-sort
         private readonly XsltAttribute[] _sortAttributes = {
-            new XsltAttribute("select"    , V1Opt | V2Opt),
-            new XsltAttribute("lang"      , V1Opt | V2Opt),
-            new XsltAttribute("order"     , V1Opt | V2Opt),
-            new XsltAttribute("collation" , V1Opt | V2Opt),
-            new XsltAttribute("stable"    , V1Opt | V2Opt),
+            new XsltAttribute("select",     V1Opt | V2Opt),
+            new XsltAttribute("lang",       V1Opt | V2Opt),
+            new XsltAttribute("order",      V1Opt | V2Opt),
+            new XsltAttribute("collation",  V1Opt | V2Opt),
+            new XsltAttribute("stable",     V1Opt | V2Opt),
             new XsltAttribute("case-order", V1Opt | V2Opt),
-            new XsltAttribute("data-type" , V1Opt | V2Opt)
+            new XsltAttribute("data-type",  V1Opt | V2Opt)
         };
         private XslNode XslSort(int sortNumber)
         {

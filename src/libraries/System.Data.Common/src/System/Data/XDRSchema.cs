@@ -227,42 +227,42 @@ namespace System.Data
 
         // XDR spec: http://www.ltg.ed.ac.uk/~ht/XMLData-Reduced.htm
         private static readonly NameType[] s_mapNameTypeXdr = {
-            new NameType("bin.base64"          , typeof(byte[])  ), /* XDR */
-            new NameType("bin.hex"             , typeof(byte[])  ), /* XDR */
-            new NameType("boolean"             , typeof(bool)    ), /* XDR */
-            new NameType("byte"                , typeof(sbyte)   ), /* XDR */
-            new NameType("char"                , typeof(char)    ), /* XDR */
-            new NameType("date"                , typeof(DateTime)), /* XDR */
-            new NameType("dateTime"            , typeof(DateTime)), /* XDR */
-            new NameType("dateTime.tz"         , typeof(DateTime)), /* XDR */
-            new NameType("entities"            , typeof(string)  ), /* XDR */
-            new NameType("entity"              , typeof(string)  ), /* XDR */
-            new NameType("enumeration"         , typeof(string)  ), /* XDR */
-            new NameType("fixed.14.4"          , typeof(decimal) ), /* XDR */
-            new NameType("float"               , typeof(double)  ), /* XDR */
-            new NameType("i1"                  , typeof(sbyte)   ), /* XDR */
-            new NameType("i2"                  , typeof(short)   ), /* XDR */
-            new NameType("i4"                  , typeof(int)   ), /* XDR */
-            new NameType("i8"                  , typeof(long)   ), /* XDR */
-            new NameType("id"                  , typeof(string)  ), /* XDR */
-            new NameType("idref"               , typeof(string)  ), /* XDR */
-            new NameType("idrefs"              , typeof(string)  ), /* XDR */
-            new NameType("int"                 , typeof(int)   ), /* XDR */
-            new NameType("nmtoken"             , typeof(string)  ), /* XDR */
-            new NameType("nmtokens"            , typeof(string)  ), /* XDR */
-            new NameType("notation"            , typeof(string)  ), /* XDR */
-            new NameType("number"              , typeof(decimal) ), /* XDR */
-            new NameType("r4"                  , typeof(float)  ), /* XDR */
-            new NameType("r8"                  , typeof(double)  ), /* XDR */
-            new NameType("string"              , typeof(string)  ), /* XDR */
-            new NameType("time"                , typeof(DateTime)), /* XDR */
-            new NameType("time.tz"             , typeof(DateTime)), /* XDR */
-            new NameType("ui1"                 , typeof(byte)    ), /* XDR */
-            new NameType("ui2"                 , typeof(ushort)  ), /* XDR */
-            new NameType("ui4"                 , typeof(uint)  ), /* XDR */
-            new NameType("ui8"                 , typeof(ulong)  ), /* XDR */
-            new NameType("uri"                 , typeof(string)  ), /* XDR */
-            new NameType("uuid"                , typeof(Guid)    ), /* XDR */
+            new NameType("bin.base64",  typeof(byte[])  ),
+            new NameType("bin.hex",     typeof(byte[])  ),
+            new NameType("boolean",     typeof(bool)    ),
+            new NameType("byte",        typeof(sbyte)   ),
+            new NameType("char",        typeof(char)    ),
+            new NameType("date",        typeof(DateTime)),
+            new NameType("dateTime",    typeof(DateTime)),
+            new NameType("dateTime.tz", typeof(DateTime)),
+            new NameType("entities",    typeof(string)  ),
+            new NameType("entity",      typeof(string)  ),
+            new NameType("enumeration", typeof(string)  ),
+            new NameType("fixed.14.4",  typeof(decimal) ),
+            new NameType("float",       typeof(double)  ),
+            new NameType("i1",          typeof(sbyte)   ),
+            new NameType("i2",          typeof(short)   ),
+            new NameType("i4",          typeof(int)     ),
+            new NameType("i8",          typeof(long)    ),
+            new NameType("id",          typeof(string)  ),
+            new NameType("idref",       typeof(string)  ),
+            new NameType("idrefs",      typeof(string)  ),
+            new NameType("int",         typeof(int)     ),
+            new NameType("nmtoken",     typeof(string)  ),
+            new NameType("nmtokens",    typeof(string)  ),
+            new NameType("notation",    typeof(string)  ),
+            new NameType("number",      typeof(decimal) ),
+            new NameType("r4",          typeof(float)   ),
+            new NameType("r8",          typeof(double)  ),
+            new NameType("string",      typeof(string)  ),
+            new NameType("time",        typeof(DateTime)),
+            new NameType("time.tz",     typeof(DateTime)),
+            new NameType("ui1",         typeof(byte)    ),
+            new NameType("ui2",         typeof(ushort)  ),
+            new NameType("ui4",         typeof(uint)    ),
+            new NameType("ui8",         typeof(ulong)   ),
+            new NameType("uri",         typeof(string)  ),
+            new NameType("uuid",        typeof(Guid)    ),
         };
 
         private static NameType FindNameType(string name)

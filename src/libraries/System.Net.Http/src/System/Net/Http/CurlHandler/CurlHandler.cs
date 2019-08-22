@@ -104,11 +104,11 @@ namespace System.Net.Http
 
         #region Fields
 
-        private static readonly KeyValuePair<string,CURLAUTH>[] s_orderedAuthTypes = new KeyValuePair<string, CURLAUTH>[] {
-            new KeyValuePair<string,CURLAUTH>("Negotiate", CURLAUTH.Negotiate),
-            new KeyValuePair<string,CURLAUTH>("NTLM", CURLAUTH.NTLM),
-            new KeyValuePair<string,CURLAUTH>("Digest", CURLAUTH.Digest),
-            new KeyValuePair<string,CURLAUTH>("Basic", CURLAUTH.Basic),
+        private static readonly KeyValuePair<string, CURLAUTH>[] s_orderedAuthTypes = new KeyValuePair<string, CURLAUTH>[] {
+            new KeyValuePair<string, CURLAUTH>("Negotiate", CURLAUTH.Negotiate),
+            new KeyValuePair<string, CURLAUTH>("NTLM", CURLAUTH.NTLM),
+            new KeyValuePair<string, CURLAUTH>("Digest", CURLAUTH.Digest),
+            new KeyValuePair<string, CURLAUTH>("Basic", CURLAUTH.Basic),
         };
 
         private static readonly bool s_supportsAutomaticDecompression;

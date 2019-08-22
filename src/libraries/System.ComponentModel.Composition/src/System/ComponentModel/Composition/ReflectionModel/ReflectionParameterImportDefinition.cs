@@ -18,7 +18,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             Lazy<ParameterInfo> importingLazyParameter,
             string contractName,
             string requiredTypeIdentity,
-            IEnumerable<KeyValuePair<string,Type>> requiredMetadata,
+            IEnumerable<KeyValuePair<string, Type>> requiredMetadata,
             ImportCardinality cardinality,
             CreationPolicy requiredCreationPolicy,
             IDictionary<string, object> metadata,

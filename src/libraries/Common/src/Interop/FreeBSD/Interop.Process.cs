@@ -273,7 +273,7 @@ internal static partial class Interop
             if (ret  != 0 ) {
                 return null;
             }
-            return System.Text.Encoding.UTF8.GetString(pBuffer,(int)bytesLength-1);
+            return System.Text.Encoding.UTF8.GetString(pBuffer, (int)bytesLength-1);
         }
 
         /// <summary>

@@ -12,7 +12,7 @@ namespace System.Text.RegularExpressions
 
         public CompiledRegexRunner() { }
 
-        public void SetDelegates(Action<RegexRunner> go, Func<RegexRunner,bool> firstChar, Action<RegexRunner> trackCount)
+        public void SetDelegates(Action<RegexRunner> go, Func<RegexRunner, bool> firstChar, Action<RegexRunner> trackCount)
         {
             _goMethod = go;
             _findFirstCharMethod = firstChar;

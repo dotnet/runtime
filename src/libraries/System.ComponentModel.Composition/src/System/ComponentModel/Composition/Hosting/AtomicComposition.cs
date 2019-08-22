@@ -308,7 +308,7 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 if (_values[index].Key == key)
                 {
-                    _values[index] = new KeyValuePair<object,object>(key, value);
+                    _values[index] = new KeyValuePair<object, object>(key, value);
                     return;
                 }
             }

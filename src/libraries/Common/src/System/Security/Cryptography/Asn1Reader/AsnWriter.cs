@@ -20,7 +20,7 @@ namespace System.Security.Cryptography.Asn1
     {
         private byte[] _buffer;
         private int _offset;
-        private Stack<(Asn1Tag,int,UniversalTagNumber)> _nestingStack;
+        private Stack<(Asn1Tag, int, UniversalTagNumber)> _nestingStack;
 
         /// <summary>
         ///   The <see cref="AsnEncodingRules"/> in use by this writer.
@@ -410,7 +410,7 @@ namespace System.Security.Cryptography.Asn1
 
             if (_nestingStack == null)
             {
-                _nestingStack = new Stack<(Asn1Tag,int,UniversalTagNumber)>();
+                _nestingStack = new Stack<(Asn1Tag, int, UniversalTagNumber)>();
             }
 
             Debug.Assert(tag.IsConstructed);

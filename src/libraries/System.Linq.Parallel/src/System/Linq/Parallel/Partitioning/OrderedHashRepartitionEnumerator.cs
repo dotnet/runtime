@@ -22,7 +22,7 @@ namespace System.Linq.Parallel
     /// <typeparam name="TInputOutput">The kind of elements.</typeparam>
     /// <typeparam name="THashKey">The key used to distribute elements.</typeparam>
     /// <typeparam name="TOrderKey">The kind of keys found in the source.</typeparam>
-    internal class OrderedHashRepartitionEnumerator<TInputOutput, THashKey, TOrderKey> : QueryOperatorEnumerator<Pair<TInputOutput,THashKey>, TOrderKey>
+    internal class OrderedHashRepartitionEnumerator<TInputOutput, THashKey, TOrderKey> : QueryOperatorEnumerator<Pair<TInputOutput, THashKey>, TOrderKey>
     {
         private const int ENUMERATION_NOT_STARTED = -1; // Sentinel to note we haven't begun enumerating yet.
 
@@ -30,7 +30,7 @@ namespace System.Linq.Parallel
         private readonly int _partitionIndex; // Our unique partition index.
         private readonly Func<TInputOutput, THashKey> _keySelector; // A key-selector function.
         private readonly HashRepartitionStream<TInputOutput, THashKey, TOrderKey> _repartitionStream; // A repartitioning stream.
-        private readonly ListChunk<Pair<TInputOutput,THashKey>>[][] _valueExchangeMatrix; // Matrix to do inter-task communication of values.
+        private readonly ListChunk<Pair<TInputOutput, THashKey>>[][] _valueExchangeMatrix; // Matrix to do inter-task communication of values.
         private readonly ListChunk<TOrderKey>[][] _keyExchangeMatrix; // Matrix to do inter-task communication of order keys.
         private readonly QueryOperatorEnumerator<TInputOutput, TOrderKey> _source; // The immediate source of data.
         private CountdownEvent _barrier; // Used to signal and wait for repartitions to complete.

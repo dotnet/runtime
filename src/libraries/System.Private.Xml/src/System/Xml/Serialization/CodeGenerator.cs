@@ -688,25 +688,25 @@ namespace System.Xml.Serialization
         }
 
         private static readonly OpCode[] s_ldindOpCodes = new OpCode[] {
-            OpCodes.Nop,//Empty = 0,
-            OpCodes.Nop,//Object = 1,
-            OpCodes.Nop,//DBNull = 2,
-            OpCodes.Ldind_I1,//Boolean = 3,
-            OpCodes.Ldind_I2,//Char = 4,
-            OpCodes.Ldind_I1,//SByte = 5,
-            OpCodes.Ldind_U1,//Byte = 6,
-            OpCodes.Ldind_I2,//Int16 = 7,
-            OpCodes.Ldind_U2,//UInt16 = 8,
-            OpCodes.Ldind_I4,//Int32 = 9,
-            OpCodes.Ldind_U4,//UInt32 = 10,
-            OpCodes.Ldind_I8,//Int64 = 11,
-            OpCodes.Ldind_I8,//UInt64 = 12,
-            OpCodes.Ldind_R4,//Single = 13,
-            OpCodes.Ldind_R8,//Double = 14,
-            OpCodes.Nop,//Decimal = 15,
-            OpCodes.Nop,//DateTime = 16,
-            OpCodes.Nop,//17
-            OpCodes.Ldind_Ref,//String = 18,
+            OpCodes.Nop, //Empty = 0,
+            OpCodes.Nop, //Object = 1,
+            OpCodes.Nop, //DBNull = 2,
+            OpCodes.Ldind_I1, //Boolean = 3,
+            OpCodes.Ldind_I2, //Char = 4,
+            OpCodes.Ldind_I1, //SByte = 5,
+            OpCodes.Ldind_U1, //Byte = 6,
+            OpCodes.Ldind_I2, //Int16 = 7,
+            OpCodes.Ldind_U2, //UInt16 = 8,
+            OpCodes.Ldind_I4, //Int32 = 9,
+            OpCodes.Ldind_U4, //UInt32 = 10,
+            OpCodes.Ldind_I8, //Int64 = 11,
+            OpCodes.Ldind_I8, //UInt64 = 12,
+            OpCodes.Ldind_R4, //Single = 13,
+            OpCodes.Ldind_R8, //Double = 14,
+            OpCodes.Nop, //Decimal = 15,
+            OpCodes.Nop, //DateTime = 16,
+            OpCodes.Nop, //17
+            OpCodes.Ldind_Ref, //String = 18,
         };
 
 
@@ -1046,25 +1046,25 @@ namespace System.Xml.Serialization
         }
 
         private static readonly OpCode[] s_ldelemOpCodes = new OpCode[] {
-            OpCodes.Nop,//Empty = 0,
-            OpCodes.Ldelem_Ref,//Object = 1,
-            OpCodes.Ldelem_Ref,//DBNull = 2,
-            OpCodes.Ldelem_I1,//Boolean = 3,
-            OpCodes.Ldelem_I2,//Char = 4,
-            OpCodes.Ldelem_I1,//SByte = 5,
-            OpCodes.Ldelem_U1,//Byte = 6,
-            OpCodes.Ldelem_I2,//Int16 = 7,
-            OpCodes.Ldelem_U2,//UInt16 = 8,
-            OpCodes.Ldelem_I4,//Int32 = 9,
-            OpCodes.Ldelem_U4,//UInt32 = 10,
-            OpCodes.Ldelem_I8,//Int64 = 11,
-            OpCodes.Ldelem_I8,//UInt64 = 12,
-            OpCodes.Ldelem_R4,//Single = 13,
-            OpCodes.Ldelem_R8,//Double = 14,
-            OpCodes.Nop,//Decimal = 15,
-            OpCodes.Nop,//DateTime = 16,
-            OpCodes.Nop,//17
-            OpCodes.Ldelem_Ref,//String = 18,
+            OpCodes.Nop, //Empty = 0,
+            OpCodes.Ldelem_Ref, //Object = 1,
+            OpCodes.Ldelem_Ref, //DBNull = 2,
+            OpCodes.Ldelem_I1, //Boolean = 3,
+            OpCodes.Ldelem_I2, //Char = 4,
+            OpCodes.Ldelem_I1, //SByte = 5,
+            OpCodes.Ldelem_U1, //Byte = 6,
+            OpCodes.Ldelem_I2, //Int16 = 7,
+            OpCodes.Ldelem_U2, //UInt16 = 8,
+            OpCodes.Ldelem_I4, //Int32 = 9,
+            OpCodes.Ldelem_U4, //UInt32 = 10,
+            OpCodes.Ldelem_I8, //Int64 = 11,
+            OpCodes.Ldelem_I8, //UInt64 = 12,
+            OpCodes.Ldelem_R4, //Single = 13,
+            OpCodes.Ldelem_R8, //Double = 14,
+            OpCodes.Nop, //Decimal = 15,
+            OpCodes.Nop, //DateTime = 16,
+            OpCodes.Nop, //17
+            OpCodes.Ldelem_Ref, //String = 18,
         };
 
         private OpCode GetLdelemOpCode(TypeCode typeCode)
@@ -1094,25 +1094,25 @@ namespace System.Xml.Serialization
         }
 
         private static readonly OpCode[] s_stelemOpCodes = new OpCode[] {
-            OpCodes.Nop,//Empty = 0,
-            OpCodes.Stelem_Ref,//Object = 1,
-            OpCodes.Stelem_Ref,//DBNull = 2,
-            OpCodes.Stelem_I1,//Boolean = 3,
-            OpCodes.Stelem_I2,//Char = 4,
-            OpCodes.Stelem_I1,//SByte = 5,
-            OpCodes.Stelem_I1,//Byte = 6,
-            OpCodes.Stelem_I2,//Int16 = 7,
-            OpCodes.Stelem_I2,//UInt16 = 8,
-            OpCodes.Stelem_I4,//Int32 = 9,
-            OpCodes.Stelem_I4,//UInt32 = 10,
-            OpCodes.Stelem_I8,//Int64 = 11,
-            OpCodes.Stelem_I8,//UInt64 = 12,
-            OpCodes.Stelem_R4,//Single = 13,
-            OpCodes.Stelem_R8,//Double = 14,
-            OpCodes.Nop,//Decimal = 15,
-            OpCodes.Nop,//DateTime = 16,
-            OpCodes.Nop,//17
-            OpCodes.Stelem_Ref,//String = 18,
+            OpCodes.Nop, //Empty = 0,
+            OpCodes.Stelem_Ref, //Object = 1,
+            OpCodes.Stelem_Ref, //DBNull = 2,
+            OpCodes.Stelem_I1, //Boolean = 3,
+            OpCodes.Stelem_I2, //Char = 4,
+            OpCodes.Stelem_I1, //SByte = 5,
+            OpCodes.Stelem_I1, //Byte = 6,
+            OpCodes.Stelem_I2, //Int16 = 7,
+            OpCodes.Stelem_I2, //UInt16 = 8,
+            OpCodes.Stelem_I4, //Int32 = 9,
+            OpCodes.Stelem_I4, //UInt32 = 10,
+            OpCodes.Stelem_I8, //Int64 = 11,
+            OpCodes.Stelem_I8, //UInt64 = 12,
+            OpCodes.Stelem_R4, //Single = 13,
+            OpCodes.Stelem_R8, //Double = 14,
+            OpCodes.Nop, //Decimal = 15,
+            OpCodes.Nop, //DateTime = 16,
+            OpCodes.Nop, //17
+            OpCodes.Stelem_Ref, //String = 18,
         };
 
         private OpCode GetStelemOpCode(TypeCode typeCode)
@@ -1206,25 +1206,25 @@ namespace System.Xml.Serialization
         }
 
         private static readonly OpCode[] s_convOpCodes = new OpCode[] {
-            OpCodes.Nop,//Empty = 0,
-            OpCodes.Nop,//Object = 1,
-            OpCodes.Nop,//DBNull = 2,
-            OpCodes.Conv_I1,//Boolean = 3,
-            OpCodes.Conv_I2,//Char = 4,
-            OpCodes.Conv_I1,//SByte = 5,
-            OpCodes.Conv_U1,//Byte = 6,
-            OpCodes.Conv_I2,//Int16 = 7,
-            OpCodes.Conv_U2,//UInt16 = 8,
-            OpCodes.Conv_I4,//Int32 = 9,
-            OpCodes.Conv_U4,//UInt32 = 10,
-            OpCodes.Conv_I8,//Int64 = 11,
-            OpCodes.Conv_U8,//UInt64 = 12,
-            OpCodes.Conv_R4,//Single = 13,
-            OpCodes.Conv_R8,//Double = 14,
-            OpCodes.Nop,//Decimal = 15,
-            OpCodes.Nop,//DateTime = 16,
-            OpCodes.Nop,//17
-            OpCodes.Nop,//String = 18,
+            OpCodes.Nop, //Empty = 0,
+            OpCodes.Nop, //Object = 1,
+            OpCodes.Nop, //DBNull = 2,
+            OpCodes.Conv_I1, //Boolean = 3,
+            OpCodes.Conv_I2, //Char = 4,
+            OpCodes.Conv_I1, //SByte = 5,
+            OpCodes.Conv_U1, //Byte = 6,
+            OpCodes.Conv_I2, //Int16 = 7,
+            OpCodes.Conv_U2, //UInt16 = 8,
+            OpCodes.Conv_I4, //Int32 = 9,
+            OpCodes.Conv_U4, //UInt32 = 10,
+            OpCodes.Conv_I8, //Int64 = 11,
+            OpCodes.Conv_U8, //UInt64 = 12,
+            OpCodes.Conv_R4, //Single = 13,
+            OpCodes.Conv_R8, //Double = 14,
+            OpCodes.Nop, //Decimal = 15,
+            OpCodes.Nop, //DateTime = 16,
+            OpCodes.Nop, //17
+            OpCodes.Nop, //String = 18,
         };
 
         private OpCode GetConvOpCode(TypeCode typeCode)

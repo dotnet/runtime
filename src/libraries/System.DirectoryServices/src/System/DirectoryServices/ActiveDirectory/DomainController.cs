@@ -137,7 +137,7 @@ namespace System.DirectoryServices.ActiveDirectory
             // target should be a server
             if (!(context.isServer()))
             {
-                throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.DCNotFound , context.Name), typeof(DomainController), context.Name);
+                throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.DCNotFound, context.Name), typeof(DomainController), context.Name);
             }
 
             //  work with copy of the context
@@ -151,7 +151,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 DirectoryEntry rootDSE = directoryEntryMgr.GetCachedDirectoryEntry(WellKnownDN.RootDSE);
                 if (!Utils.CheckCapability(rootDSE, Capability.ActiveDirectory))
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.DCNotFound , context.Name), typeof(DomainController), context.Name);
+                    throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.DCNotFound, context.Name), typeof(DomainController), context.Name);
                 }
                 dcDnsName = (string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.DnsHostName);
             }
@@ -161,7 +161,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 if (errorCode == unchecked((int)0x8007203a))
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.DCNotFound , context.Name), typeof(DomainController), context.Name);
+                    throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.DCNotFound, context.Name), typeof(DomainController), context.Name);
                 }
                 else
                 {
@@ -777,7 +777,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 if (cachedSiteName == null)
                 {
-                    throw new ActiveDirectoryOperationException(SR.Format(SR.SiteNameNotFound , Name));
+                    throw new ActiveDirectoryOperationException(SR.Format(SR.SiteNameNotFound, Name));
                 }
 
                 return cachedSiteName;
@@ -795,7 +795,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 if (cachedSiteObjectName == null)
                 {
-                    throw new ActiveDirectoryOperationException(SR.Format(SR.SiteObjectNameNotFound , Name));
+                    throw new ActiveDirectoryOperationException(SR.Format(SR.SiteObjectNameNotFound, Name));
                 }
                 return cachedSiteObjectName;
             }
@@ -812,7 +812,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 if (_cachedComputerObjectName == null)
                 {
-                    throw new ActiveDirectoryOperationException(SR.Format(SR.ComputerObjectNameNotFound , Name));
+                    throw new ActiveDirectoryOperationException(SR.Format(SR.ComputerObjectNameNotFound, Name));
                 }
                 return _cachedComputerObjectName;
             }
@@ -829,7 +829,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 if (cachedServerObjectName == null)
                 {
-                    throw new ActiveDirectoryOperationException(SR.Format(SR.ServerObjectNameNotFound , Name));
+                    throw new ActiveDirectoryOperationException(SR.Format(SR.ServerObjectNameNotFound, Name));
                 }
                 return cachedServerObjectName;
             }
@@ -846,7 +846,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 if (cachedNtdsaObjectName == null)
                 {
-                    throw new ActiveDirectoryOperationException(SR.Format(SR.NtdsaObjectNameNotFound , Name));
+                    throw new ActiveDirectoryOperationException(SR.Format(SR.NtdsaObjectNameNotFound, Name));
                 }
                 return cachedNtdsaObjectName;
             }
@@ -863,7 +863,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 if (cachedNtdsaObjectGuid.Equals(Guid.Empty))
                 {
-                    throw new ActiveDirectoryOperationException(SR.Format(SR.NtdsaObjectGuidNotFound , Name));
+                    throw new ActiveDirectoryOperationException(SR.Format(SR.NtdsaObjectGuidNotFound, Name));
                 }
                 return cachedNtdsaObjectGuid;
             }
@@ -941,7 +941,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
                     else
                     {
-                        throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.DCNotFoundInDomain , context.Name), typeof(DomainController), null);
+                        throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.DCNotFoundInDomain, context.Name), typeof(DomainController), null);
                     }
                 }
                 else
@@ -971,7 +971,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     if (e.ErrorCode == unchecked((int)0x8007203a))
                     {
                         // server is down
-                        throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.DCNotFoundInDomain , context.Name), typeof(DomainController), null);
+                        throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.DCNotFoundInDomain, context.Name), typeof(DomainController), null);
                     }
                     else
                     {
@@ -1016,7 +1016,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (errorCode == NativeMethods.ERROR_NO_SUCH_DOMAIN)
             {
-                throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.DCNotFoundInDomain , domainName), typeof(DomainController), null);
+                throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.DCNotFoundInDomain, domainName), typeof(DomainController), null);
             }
             // this can only occur when flag is being explicitly passed (since the flags that we pass internally are valid)
             if (errorCode == NativeMethods.ERROR_INVALID_FLAGS)

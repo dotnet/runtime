@@ -395,7 +395,7 @@ namespace System.Runtime.Serialization
             { "System.Collections.Generic.Queue`1", new[] { "_syncRoot" } },
             { "System.Collections.Generic.Stack`1", new[] {"_syncRoot" } },
             { "System.Collections.ObjectModel.ReadOnlyCollection`1", new[] {"_syncRoot" } },
-            { "System.Collections.ObjectModel.ReadOnlyDictionary`2", new[] {"_syncRoot", "_keys","_values" } },
+            { "System.Collections.ObjectModel.ReadOnlyDictionary`2", new[] {"_syncRoot", "_keys", "_values" } },
             { "System.Tuple`1", Array.Empty<string>() },
             { "System.Tuple`2", Array.Empty<string>() },
             { "System.Tuple`3", Array.Empty<string>() },

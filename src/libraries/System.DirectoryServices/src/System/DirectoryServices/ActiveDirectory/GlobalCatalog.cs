@@ -45,7 +45,7 @@ namespace System.DirectoryServices.ActiveDirectory
             // target should be a server
             if (!(context.isServer()))
             {
-                throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.GCNotFound , context.Name), typeof(GlobalCatalog), context.Name);
+                throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.GCNotFound, context.Name), typeof(GlobalCatalog), context.Name);
             }
 
             //  work with copy of the context
@@ -60,14 +60,14 @@ namespace System.DirectoryServices.ActiveDirectory
                 DirectoryEntry rootDSE = DirectoryEntryManager.GetDirectoryEntry(context, WellKnownDN.RootDSE);
                 if (!Utils.CheckCapability(rootDSE, Capability.ActiveDirectory))
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.GCNotFound , context.Name), typeof(GlobalCatalog), context.Name);
+                    throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.GCNotFound, context.Name), typeof(GlobalCatalog), context.Name);
                 }
 
                 gcDnsName = (string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.DnsHostName);
                 isGlobalCatalog = (bool)bool.Parse((string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.IsGlobalCatalogReady));
                 if (!isGlobalCatalog)
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.GCNotFound , context.Name), typeof(GlobalCatalog), context.Name);
+                    throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.GCNotFound, context.Name), typeof(GlobalCatalog), context.Name);
                 }
             }
             catch (COMException e)
@@ -76,7 +76,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 if (errorCode == unchecked((int)0x8007203a))
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.GCNotFound , context.Name), typeof(GlobalCatalog), context.Name);
+                    throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.GCNotFound, context.Name), typeof(GlobalCatalog), context.Name);
                 }
                 else
                 {
@@ -318,7 +318,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
                     else
                     {
-                        throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.GCNotFoundInForest , context.Name), typeof(GlobalCatalog), null);
+                        throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.GCNotFoundInForest, context.Name), typeof(GlobalCatalog), null);
                     }
                 }
                 else
@@ -348,7 +348,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     if (e.ErrorCode == unchecked((int)0x8007203a))
                     {
                         // server is down
-                        throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.GCNotFoundInForest , context.Name), typeof(GlobalCatalog), null);
+                        throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.GCNotFoundInForest, context.Name), typeof(GlobalCatalog), null);
                     }
                     else
                     {
@@ -408,7 +408,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (errorCode == NativeMethods.ERROR_NO_SUCH_DOMAIN)
             {
-                throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.GCNotFoundInForest , forestName), typeof(GlobalCatalog), null);
+                throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.GCNotFoundInForest, forestName), typeof(GlobalCatalog), null);
             }
             // this can only occur when flag is being explicitly passed (since the flags that we pass internally are valid)
             if (errorCode == NativeMethods.ERROR_INVALID_FLAGS)

@@ -215,13 +215,13 @@ namespace System.Xml.Xsl
         /// </summary>
         private static readonly XmlQueryCardinality[,] s_cardinalityProduct = {
                           //   None  Zero  One         ZeroOrOne   More    NotOne  OneOrMore   ZeroOrMore
-            /* None       */ { None, Zero, None      , Zero      , None  , Zero  , None      , Zero       },
-            /* Zero       */ { Zero, Zero, Zero      , Zero      , Zero  , Zero  , Zero      , Zero       },
-            /* One        */ { None, Zero, One       , ZeroOrOne , More  , NotOne, OneOrMore , ZeroOrMore },
-            /* ZeroOrOne  */ { Zero, Zero, ZeroOrOne , ZeroOrOne , NotOne, NotOne, ZeroOrMore, ZeroOrMore },
-            /* More       */ { None, Zero, More      , NotOne    , More  , NotOne, More      , NotOne     },
-            /* NotOne     */ { Zero, Zero, NotOne    , NotOne    , NotOne, NotOne, NotOne    , NotOne     },
-            /* OneOrMore  */ { None, Zero, OneOrMore , ZeroOrMore, More  , NotOne, OneOrMore , ZeroOrMore },
+            /* None       */ { None, Zero, None,       Zero,       None,   Zero,   None,       Zero       },
+            /* Zero       */ { Zero, Zero, Zero,       Zero,       Zero,   Zero,   Zero,       Zero       },
+            /* One        */ { None, Zero, One,        ZeroOrOne,  More,   NotOne, OneOrMore,  ZeroOrMore },
+            /* ZeroOrOne  */ { Zero, Zero, ZeroOrOne,  ZeroOrOne,  NotOne, NotOne, ZeroOrMore, ZeroOrMore },
+            /* More       */ { None, Zero, More,       NotOne,     More,   NotOne, More,       NotOne     },
+            /* NotOne     */ { Zero, Zero, NotOne,     NotOne,     NotOne, NotOne, NotOne,     NotOne     },
+            /* OneOrMore  */ { None, Zero, OneOrMore,  ZeroOrMore, More,   NotOne, OneOrMore,  ZeroOrMore },
             /* ZeroOrMore */ { Zero, Zero, ZeroOrMore, ZeroOrMore, NotOne, NotOne, ZeroOrMore, ZeroOrMore }
         };
 
@@ -230,13 +230,13 @@ namespace System.Xml.Xsl
         /// </summary>
         private static readonly XmlQueryCardinality[,] s_cardinalitySum = {
                           //   None        Zero        One        ZeroOrOne   More  NotOne      OneOrMore  ZeroOrMore
-            /* None       */ { None      , Zero      , One      , ZeroOrOne , More, NotOne    , OneOrMore, ZeroOrMore},
-            /* Zero       */ { Zero      , Zero      , One      , ZeroOrOne , More, NotOne    , OneOrMore, ZeroOrMore},
-            /* One        */ { One       , One       , More     , OneOrMore , More, OneOrMore , More     , OneOrMore },
-            /* ZeroOrOne  */ { ZeroOrOne , ZeroOrOne , OneOrMore, ZeroOrMore, More, ZeroOrMore, OneOrMore, ZeroOrMore},
-            /* More       */ { More      , More      , More     , More      , More, More      , More     , More      },
-            /* NotOne     */ { NotOne    , NotOne    , OneOrMore, ZeroOrMore, More, NotOne    , OneOrMore, ZeroOrMore},
-            /* OneOrMore  */ { OneOrMore , OneOrMore , More     , OneOrMore , More, OneOrMore , More     , OneOrMore },
+            /* None       */ { None,       Zero,       One,       ZeroOrOne,  More, NotOne,     OneOrMore, ZeroOrMore},
+            /* Zero       */ { Zero,       Zero,       One,       ZeroOrOne,  More, NotOne,     OneOrMore, ZeroOrMore},
+            /* One        */ { One,        One,        More,      OneOrMore,  More, OneOrMore,  More,      OneOrMore },
+            /* ZeroOrOne  */ { ZeroOrOne,  ZeroOrOne,  OneOrMore, ZeroOrMore, More, ZeroOrMore, OneOrMore, ZeroOrMore},
+            /* More       */ { More,       More,       More,      More,       More, More,       More,      More      },
+            /* NotOne     */ { NotOne,     NotOne,     OneOrMore, ZeroOrMore, More, NotOne,     OneOrMore, ZeroOrMore},
+            /* OneOrMore  */ { OneOrMore,  OneOrMore,  More,      OneOrMore,  More, OneOrMore,  More,      OneOrMore },
             /* ZeroOrMore */ { ZeroOrMore, ZeroOrMore, OneOrMore, ZeroOrMore, More, ZeroOrMore, OneOrMore, ZeroOrMore}
         };
         #endregion
@@ -246,13 +246,13 @@ namespace System.Xml.Xsl
         /// String representation.
         /// </summary>
         private static readonly string[] s_toString = {
-            /* None       */ ""  ,
-            /* Zero       */ "?" ,
-            /* One        */ ""  ,
-            /* ZeroOrOne  */ "?" ,
-            /* More       */ "+" ,
-            /* NotOne     */ "*" ,
-            /* OneOrMore  */ "+" ,
+            /* None       */ "",
+            /* Zero       */ "?",
+            /* One        */ "",
+            /* ZeroOrOne  */ "?",
+            /* More       */ "+",
+            /* NotOne     */ "*",
+            /* OneOrMore  */ "+",
             /* ZeroOrMore */ "*"
         };
 

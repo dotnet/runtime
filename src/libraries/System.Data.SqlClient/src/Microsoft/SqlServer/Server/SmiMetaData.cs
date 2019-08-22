@@ -74,8 +74,12 @@ namespace Microsoft.SqlServer.Server
         private static readonly IList<SmiExtendedMetaData> s_emptyFieldList = new List<SmiExtendedMetaData>().AsReadOnly();
 
         // Precision to max length lookup table
-        private static readonly byte[] s_maxLenFromPrecision = new byte[] {5,5,5,5,5,5,5,5,5,9,9,9,9,9,
-            9,9,9,9,9,13,13,13,13,13,13,13,13,13,17,17,17,17,17,17,17,17,17,17};
+        private static readonly byte[] s_maxLenFromPrecision = new byte[]
+        {
+            5, 5, 5, 5, 5, 5, 5, 5, 5, 9, 9, 9, 9, 9, 9, 9,
+            9, 9, 9, 13, 13, 13, 13, 13, 13, 13, 13, 13, 17,
+            17, 17, 17, 17, 17, 17, 17, 17, 17
+        };
 
         // Scale offset to max length lookup table
         private static readonly byte[] s_maxVarTimeLenOffsetFromScale = new byte[] { 2, 2, 2, 1, 1, 0, 0, 0 };

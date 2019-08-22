@@ -279,15 +279,15 @@ namespace Microsoft.Win32
 
         internal enum EvtEventMetadataPropertyId
         {
-            EventMetadataEventID,       // EvtVarTypeUInt32
-            EventMetadataEventVersion,  // EvtVarTypeUInt32
-            EventMetadataEventChannel,  // EvtVarTypeUInt32
-            EventMetadataEventLevel,    // EvtVarTypeUInt32
-            EventMetadataEventOpcode,   // EvtVarTypeUInt32
-            EventMetadataEventTask,     // EvtVarTypeUInt32
-            EventMetadataEventKeyword,  // EvtVarTypeUInt64
-            EventMetadataEventMessageID,// EvtVarTypeUInt32
-            EventMetadataEventTemplate // EvtVarTypeString
+            EventMetadataEventID,        // EvtVarTypeUInt32
+            EventMetadataEventVersion,   // EvtVarTypeUInt32
+            EventMetadataEventChannel,   // EvtVarTypeUInt32
+            EventMetadataEventLevel,     // EvtVarTypeUInt32
+            EventMetadataEventOpcode,    // EvtVarTypeUInt32
+            EventMetadataEventTask,      // EvtVarTypeUInt32
+            EventMetadataEventKeyword,   // EvtVarTypeUInt64
+            EventMetadataEventMessageID, // EvtVarTypeUInt32
+            EventMetadataEventTemplate   // EvtVarTypeString
             // EvtEventMetadataPropertyIdEND
         }
 
@@ -663,7 +663,7 @@ namespace Microsoft.Win32
         [DllImport(WEVTAPI, CharSet = CharSet.Auto, SetLastError = true)]
         internal static extern EventLogHandle EvtCreateRenderContext(
                             int valuePathsCount,
-                            [MarshalAs(UnmanagedType.LPArray,ArraySubType = UnmanagedType.LPWStr)]
+                            [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr)]
                                 string[] valuePaths,
                             [MarshalAs(UnmanagedType.I4)]EvtRenderContextFlags flags
                                     );

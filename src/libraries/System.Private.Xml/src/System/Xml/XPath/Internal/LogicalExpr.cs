@@ -69,18 +69,20 @@ namespace MS.Internal.Xml.XPath
 
         private delegate bool cmpXslt(Operator.Op op, object val1, object val2);
 
-        //                              Number,                       String,                        Boolean,                     NodeSet,                      Navigator
-        private static readonly cmpXslt[][] s_CompXsltE = {
-            new cmpXslt[] { new cmpXslt(cmpNumberNumber), null                         , null                       , null                        , null                    },
-            new cmpXslt[] { new cmpXslt(cmpStringNumber), new cmpXslt(cmpStringStringE), null                       , null                        , null                    },
-            new cmpXslt[] { new cmpXslt(cmpBoolNumberE ), new cmpXslt(cmpBoolStringE  ), new cmpXslt(cmpBoolBoolE  ), null                        , null                    },
+        //                  Number,                       String,                        Boolean,                     NodeSet,                      Navigator
+        private static readonly cmpXslt[][] s_CompXsltE =
+        {
+            new cmpXslt[] { new cmpXslt(cmpNumberNumber), null,                          null,                        null,                         null                    },
+            new cmpXslt[] { new cmpXslt(cmpStringNumber), new cmpXslt(cmpStringStringE), null,                        null,                         null                    },
+            new cmpXslt[] { new cmpXslt(cmpBoolNumberE ), new cmpXslt(cmpBoolStringE  ), new cmpXslt(cmpBoolBoolE  ), null,                         null                    },
             new cmpXslt[] { new cmpXslt(cmpQueryNumber ), new cmpXslt(cmpQueryStringE ), new cmpXslt(cmpQueryBoolE ), new cmpXslt(cmpQueryQueryE ), null                    },
             new cmpXslt[] { new cmpXslt(cmpRtfNumber   ), new cmpXslt(cmpRtfStringE   ), new cmpXslt(cmpRtfBoolE   ), new cmpXslt(cmpRtfQueryE   ), new cmpXslt(cmpRtfRtfE) },
         };
-        private static readonly cmpXslt[][] s_CompXsltO = {
-            new cmpXslt[] { new cmpXslt(cmpNumberNumber), null                         , null                       , null                        , null                    },
-            new cmpXslt[] { new cmpXslt(cmpStringNumber), new cmpXslt(cmpStringStringO), null                       , null                        , null                    },
-            new cmpXslt[] { new cmpXslt(cmpBoolNumberO ), new cmpXslt(cmpBoolStringO  ), new cmpXslt(cmpBoolBoolO  ), null                        , null                    },
+        private static readonly cmpXslt[][] s_CompXsltO =
+        {
+            new cmpXslt[] { new cmpXslt(cmpNumberNumber), null,                          null,                        null,                         null                    },
+            new cmpXslt[] { new cmpXslt(cmpStringNumber), new cmpXslt(cmpStringStringO), null,                        null,                         null                    },
+            new cmpXslt[] { new cmpXslt(cmpBoolNumberO ), new cmpXslt(cmpBoolStringO  ), new cmpXslt(cmpBoolBoolO  ), null,                         null                    },
             new cmpXslt[] { new cmpXslt(cmpQueryNumber ), new cmpXslt(cmpQueryStringO ), new cmpXslt(cmpQueryBoolO ), new cmpXslt(cmpQueryQueryO ), null                    },
             new cmpXslt[] { new cmpXslt(cmpRtfNumber   ), new cmpXslt(cmpRtfStringO   ), new cmpXslt(cmpRtfBoolO   ), new cmpXslt(cmpRtfQueryO   ), new cmpXslt(cmpRtfRtfO) },
         };

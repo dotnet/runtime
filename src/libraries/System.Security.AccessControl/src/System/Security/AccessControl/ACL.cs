@@ -360,9 +360,7 @@ nameof(binaryForm),
                     // The ACE was too long - it would overflow the ACL maximum length
                     //
 
-                    throw new ArgumentException(
-                        SR.ArgumentException_InvalidAclBinaryForm ,
-nameof(binaryForm));
+                    throw new ArgumentException(SR.ArgumentException_InvalidAclBinaryForm, nameof(binaryForm));
                 }
 
                 _aces.Add( ace );
@@ -414,7 +412,7 @@ nameof(binaryForm));
         InvalidParameter:
 
             throw new ArgumentException(
-                SR.ArgumentException_InvalidAclBinaryForm ,
+                SR.ArgumentException_InvalidAclBinaryForm,
 nameof(binaryForm));
         }
 

@@ -310,7 +310,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 if (resCol.Count != 2)
                 {
-                    throw new ActiveDirectoryOperationException(SR.Format(SR.NoHostNameOrPortNumber , dn));
+                    throw new ActiveDirectoryOperationException(SR.Format(SR.NoHostNameOrPortNumber, dn));
                 }
 
                 foreach (SearchResult res in resCol)
@@ -336,7 +336,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if ((ldapPort == -1) || (dnsHostName == null))
             {
-                throw new ActiveDirectoryOperationException(SR.Format(SR.NoHostNameOrPortNumber , dn));
+                throw new ActiveDirectoryOperationException(SR.Format(SR.NoHostNameOrPortNumber, dn));
             }
 
             return dnsHostName + ":" + ldapPort;
@@ -369,7 +369,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 if (resCol.Count != 2)
                 {
-                    throw new ActiveDirectoryOperationException(SR.Format(SR.NoHostNameOrPortNumber , dn));
+                    throw new ActiveDirectoryOperationException(SR.Format(SR.NoHostNameOrPortNumber, dn));
                 }
 
                 foreach (SearchResult res in resCol)
@@ -396,7 +396,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if ((ldapPort == -1) || (sslPort == -1) || (dnsHostName == null))
             {
-                throw new ActiveDirectoryOperationException(SR.Format(SR.NoHostNameOrPortNumber , dn));
+                throw new ActiveDirectoryOperationException(SR.Format(SR.NoHostNameOrPortNumber, dn));
             }
 
             return dnsHostName + ":" + ldapPort + ":" + sslPort;
@@ -803,7 +803,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 return ActiveDirectoryTransportType.Smtp;
             else
             {
-                string message = SR.Format(SR.UnknownTransport , transportName);
+                string message = SR.Format(SR.UnknownTransport, transportName);
                 throw new ActiveDirectoryOperationException(message);
             }
         }
@@ -1735,11 +1735,11 @@ namespace System.DirectoryServices.ActiveDirectory
                     Debug.Fail($"ConfigurationSet::GetReplicaList - no dnsHostName information for replica {ntdsaName}");
                     if (isADAM)
                     {
-                        throw new ActiveDirectoryOperationException(SR.Format(SR.NoHostNameOrPortNumber , ntdsaName));
+                        throw new ActiveDirectoryOperationException(SR.Format(SR.NoHostNameOrPortNumber, ntdsaName));
                     }
                     else
                     {
-                        throw new ActiveDirectoryOperationException(SR.Format(SR.NoHostName , ntdsaName));
+                        throw new ActiveDirectoryOperationException(SR.Format(SR.NoHostName, ntdsaName));
                     }
                 }
 
@@ -1748,7 +1748,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     if (serverPorts[ntdsaName] == null)
                     {
                         Debug.Fail($"ConfigurationSet::GetReplicaList - no port number  information for replica {ntdsaName}");
-                        throw new ActiveDirectoryOperationException(SR.Format(SR.NoHostNameOrPortNumber , ntdsaName));
+                        throw new ActiveDirectoryOperationException(SR.Format(SR.NoHostNameOrPortNumber, ntdsaName));
                     }
                 }
 

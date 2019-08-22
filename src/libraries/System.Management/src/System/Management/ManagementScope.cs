@@ -133,7 +133,7 @@ namespace System.Management
          internal delegate int QualifierSet_EndEnumeration(int vFunc, IntPtr pWbemClassObject);
          internal delegate int GetCurrentApartmentType(int vFunc, IntPtr pComThreadingInfo, [Out] out APTTYPE aptType);
          internal delegate void VerifyClientKey();
-         internal delegate int  GetDemultiplexedStub([In,MarshalAs(UnmanagedType.IUnknown)]object pIUnknown, [In]bool isLocal, [Out,MarshalAs(UnmanagedType.IUnknown)]out object ppIUnknown);
+         internal delegate int  GetDemultiplexedStub([In, MarshalAs(UnmanagedType.IUnknown)]object pIUnknown, [In]bool isLocal, [Out, MarshalAs(UnmanagedType.IUnknown)]out object ppIUnknown);
          internal delegate int CreateInstanceEnumWmi([In][MarshalAs(UnmanagedType.BStr)]  string   strFilter,
                                                                                             [In] int lFlags,
                                                                                             [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx,
@@ -496,7 +496,7 @@ namespace System.Management
         private void FireIdentifierChanged()
         {
             if (IdentifierChanged != null)
-                IdentifierChanged(this,null);
+                IdentifierChanged(this, null);
         }
 
         //Called when IdentifierChanged() event fires
@@ -824,7 +824,7 @@ namespace System.Management
                     options = ConnectionOptions._Clone((ConnectionOptions)value, new IdentifierChangedEventHandler(HandleIdentifierChange));
 
                     //the options property has changed so act like we fired the event
-                    HandleIdentifierChange(this,null);
+                    HandleIdentifierChange(this, null);
                 }
                 else
                     throw new ArgumentNullException (nameof(value));
@@ -867,7 +867,7 @@ namespace System.Management
                     prvpath = ManagementPath._Clone((ManagementPath)value, new IdentifierChangedEventHandler(HandleIdentifierChange));
 
                     //the path property has changed so act like we fired the event
-                    HandleIdentifierChange(this,null);
+                    HandleIdentifierChange(this, null);
                 }
                 else
                     throw new ArgumentNullException (nameof(value));
@@ -1214,7 +1214,7 @@ namespace System.Management
          internal int PutClassAsync_(IWbemClassObjectFreeThreaded pObject, int lFlags, IWbemContext pCtx, IWbemObjectSink pResponseHandler)
         {
              int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
-             status = pWbemServiecsSecurityHelper.PutClassAsync_(pObject, lFlags,pCtx, pResponseHandler);
+             status = pWbemServiecsSecurityHelper.PutClassAsync_(pObject, lFlags, pCtx, pResponseHandler);
             return status;
         }
          internal int DeleteClass_( string strClass, int lFlags, IWbemContext pCtx, IntPtr ppCallResult)
@@ -1229,7 +1229,7 @@ namespace System.Management
          internal int DeleteClassAsync_(string strClass, int lFlags, IWbemContext pCtx, IWbemObjectSink pResponseHandler)
         {
              int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
-             status = pWbemServiecsSecurityHelper.DeleteClassAsync_(strClass, lFlags, pCtx,pResponseHandler);
+             status = pWbemServiecsSecurityHelper.DeleteClassAsync_(strClass, lFlags, pCtx, pResponseHandler);
             return status;
         }
          internal int CreateClassEnum_(string strSuperClass, int lFlags, IWbemContext pCtx, ref IEnumWbemClassObject ppEnum)
@@ -1503,7 +1503,7 @@ namespace System.Management
             {
                 return true;
             }
-            return base.CanConvertFrom(context,sourceType);
+            return base.CanConvertFrom(context, sourceType);
         }
 
         /// <summary>
@@ -1520,7 +1520,7 @@ namespace System.Management
             {
                 return true;
             }
-            return base.CanConvertTo(context,destinationType);
+            return base.CanConvertTo(context, destinationType);
         }
 
         /// <summary>
@@ -1552,7 +1552,7 @@ namespace System.Management
                     return new InstanceDescriptor(ctor, new object[] {obj.Path.Path});
                 }
             }
-            return base.ConvertTo(context,culture,value,destinationType);
+            return base.ConvertTo(context, culture, value, destinationType);
         }
     }
 }
