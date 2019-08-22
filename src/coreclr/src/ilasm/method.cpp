@@ -135,3 +135,38 @@ Label *Method::FindLabel(DWORD PC)
     return NULL;
 }
 
+void Method::AddGenericParamConstraint(int index, char * pStrGenericParam, mdToken tkTypeConstraint)
+{
+    if (index > 0)
+    {
+        if (pStrGenericParam != 0)
+        {
+            m_pAssembler->report->error("LOGIC ERROR - we have both an index and a pStrGenericParam");
+            return;
+        }
+        if (index > (int)m_NumTyPars)
+        {
+            m_pAssembler->report->error("Type parameter index out of range: 1.. %d\n", m_NumTyPars);
+            return;
+        }
+        index = index - 1;
+    }
+    else  // index was 0, so a name must be supplied by pStrGenericParam
+    {
+        if (pStrGenericParam == 0)
+        {
+            m_pAssembler->report->error("LOGIC ERROR - we have neither an index or a pStrGenericParam");
+            return;
+        }
+        index = FindTyPar(pStrGenericParam);
+        if (index == -1)
+        {
+            m_pAssembler->report->error("Type parameter '%s' undefined\n", pStrGenericParam);
+            return;
+        }
+    }
+    m_pAssembler->CheckAddGenericParamConstraint(&m_GPCList, index, tkTypeConstraint);
+}
+
+
+
