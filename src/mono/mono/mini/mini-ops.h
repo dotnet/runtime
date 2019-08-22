@@ -1362,6 +1362,7 @@ MINI_OP(OP_XCOMPARE, "xcompare", XREG, XREG, XREG)
 MINI_OP(OP_XCOMPARE_FP, "xcompare_fp", XREG, XREG, XREG)
 /* Binary op, inst_c0 contains the operation */
 MINI_OP(OP_XBINOP, "xbinop", XREG, XREG, XREG)
+MINI_OP(OP_XCAST, "xcast", XREG, XREG, NONE)
 
 MINI_OP(OP_LZCNT32, "lzcnt32", IREG, IREG, NONE)
 MINI_OP(OP_LZCNT64, "lzcnt64", LREG, LREG, NONE)

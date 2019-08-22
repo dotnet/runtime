@@ -284,7 +284,7 @@ public:
 		initializeInstCombine(registry);
 		initializeTarget(registry);
 
-		char *opts = g_getenv ("MONO_LLVM_OPT");
+		const char *opts = g_getenv ("MONO_LLVM_OPT");
 		if (opts == NULL) {
 			// FIXME: find optimal mono specific order of passes
 			// see https://llvm.org/docs/Frontend/PerformanceTips.html#pass-ordering
