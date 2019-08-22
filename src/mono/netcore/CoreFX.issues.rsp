@@ -628,6 +628,8 @@
 -nomethod System.ComponentModel.Composition.MetadataAttributeTests.StronglyTypedStructureTestWithTransparentViews
 -nomethod System.ComponentModel.Composition.MetadataViewProviderTests.GetMetadataView_IMetadataViewWithDefaultedInt64
 -nomethod System.ComponentModel.Composition.ExportCollectionTests.ImportCollectionsFromContainerOnly
+# disable the whole namespace, https://github.com/mono/mono/issues/16417
+-nonamespace System.ComponentModel.Composition
 
 ####################################################################
 ##  System.Composition.TypedParts.Tests
