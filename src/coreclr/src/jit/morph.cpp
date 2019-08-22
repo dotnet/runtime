@@ -2699,7 +2699,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         {
             for (int i = 0; i < args.Height(); i++)
             {
-                if (node == args.Index(i).node)
+                if (node == args.Top(i).node)
                 {
                     return i;
                 }
@@ -2725,7 +2725,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         {
             for (int i = 0; i < args.Height(); i++)
             {
-                NonStandardArg& nsa = args.IndexRef(i);
+                NonStandardArg& nsa = args.TopRef(i);
                 if (node == nsa.node)
                 {
                     *pReg = nsa.reg;
@@ -2749,7 +2749,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         //
         void Replace(int index, GenTree* node)
         {
-            args.IndexRef(index).node = node;
+            args.TopRef(index).node = node;
         }
 
     } nonStandardArgs(getAllocator(CMK_ArrayStack));
@@ -18309,7 +18309,7 @@ private:
 
     Value& TopValue(unsigned index)
     {
-        return m_valueStack.IndexRef(index);
+        return m_valueStack.TopRef(index);
     }
 
     void PopValue()
