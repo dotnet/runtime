@@ -187,6 +187,8 @@ public:
     //LPCWSTR *m_TyParNames;
     TyParDescr* m_TyPars;
     DWORD   m_NumTyPars;
+    GenericParamConstraintList m_GPCList;
+
     DWORD   m_SigInfoCount;
     USHORT  m_MaxStack;
     mdSignature  m_LocalsSig;
@@ -374,6 +376,8 @@ public:
         }
         else return -1;
     };
+
+    void AddGenericParamConstraint(int index, char * pStrGenericParam, mdToken tkTypeConstraint);
 };
 
 #endif /* _METHOD_HPP */

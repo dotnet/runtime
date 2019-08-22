@@ -26,6 +26,8 @@ public:
     mdTypeRef *m_crImplements;
     TyParDescr* m_TyPars;
     DWORD   m_NumTyPars;
+    GenericParamConstraintList m_GPCList;
+
     DWORD   m_Attr;
     DWORD   m_dwNumInterfaces;
     DWORD	m_dwNumFieldsWithOffset;
