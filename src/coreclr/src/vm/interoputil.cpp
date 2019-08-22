@@ -5811,6 +5811,7 @@ MethodDesc *WinRTInterfaceRedirector::GetStubMethodForRedirectedInterface(WinMDA
     // Verify that the signature of the stub method matches the corresponding interface method.
     MethodTable *pItfMT = NULL;
     Instantiation inst = pMD->GetMethodInstantiation();
+    TypeHandle thKvPair;
 
     if (interopKind == TypeHandle::Interop_NativeToManaged)
     {
@@ -5832,8 +5833,8 @@ MethodDesc *WinRTInterfaceRedirector::GetStubMethodForRedirectedInterface(WinMDA
 
                 if (interfaceIndex == WinMDAdapter::RedirectedTypeIndex_System_Collections_Generic_IDictionary ||
                     interfaceIndex == WinMDAdapter::RedirectedTypeIndex_System_Collections_Generic_IReadOnlyDictionary)
-                {                
-                    TypeHandle thKvPair = TypeHandle(MscorlibBinder::GetClass(CLASS__KEYVALUEPAIRGENERIC)).Instantiate(inst);
+                {
+                    thKvPair = TypeHandle(MscorlibBinder::GetClass(CLASS__KEYVALUEPAIRGENERIC)).Instantiate(inst);
                     inst = Instantiation(&thKvPair, 1);
                 }
             }
