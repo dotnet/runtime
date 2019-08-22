@@ -291,7 +291,6 @@ static int32_t CheckTrustSettings(SecCertificateRef cert)
 
     if (status == noErr)
     {
-        CFRelease(cert);
         return kErrorUserTrust;
     }
 
@@ -305,7 +304,6 @@ static int32_t CheckTrustSettings(SecCertificateRef cert)
 
     if (status == noErr)
     {
-        CFRelease(cert);
         return kErrorAdminTrust;
     }
 
@@ -455,9 +453,11 @@ AppleCryptoNative_X509StoreRemoveCertificate(CFTypeRef certOrIdentity, SecKeycha
     {
         if (!IsCertInKeychain(cert, keychain))
         {
+            CFRelease(cert);
             return 1;
         }
 
+        CFRelease(cert);
         return ret;
     }
 
