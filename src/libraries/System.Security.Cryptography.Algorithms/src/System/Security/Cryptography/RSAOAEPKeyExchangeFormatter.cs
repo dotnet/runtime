@@ -45,7 +45,7 @@ namespace System.Security.Cryptography
 
         public override string Parameters
         {
-            get {return null;}
+            get {return null; }
         }
 
         public RandomNumberGenerator Rng {

@@ -7548,7 +7548,7 @@ namespace System.Data.SqlClient
                     {
                         WriteUnsignedLong(TdsEnums.SQL_PLP_NULL, stateObj); // PLP Null.
                     }
-                    return null;//continue; // End of UDT - continue to next parameter.
+                    return null; //continue; // End of UDT - continue to next parameter.
                 }
                 else if (mt.IsPlp)
                 {

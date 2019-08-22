@@ -280,7 +280,7 @@ namespace System.Diagnostics
         {
             int[] processIds = new int[256];
             int size;
-            for (; ; )
+            while (true)
             {
                 if (!Interop.Kernel32.EnumProcesses(processIds, processIds.Length * 4, out size))
                     throw new Win32Exception();

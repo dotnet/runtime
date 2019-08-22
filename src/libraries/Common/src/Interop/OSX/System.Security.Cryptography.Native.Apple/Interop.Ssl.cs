@@ -341,7 +341,7 @@ internal static partial class Interop
             {
                 if (cfProtocolsArrayRef != null)
                 {
-                    for (int i = 0; i < cfProtocolsArrayRef.Length ; i++)
+                    for (int i = 0; i < cfProtocolsArrayRef.Length; i++)
                     {
                         cfProtocolsArrayRef[i]?.Dispose();
                     }

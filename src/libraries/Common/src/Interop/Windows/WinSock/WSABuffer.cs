@@ -10,6 +10,6 @@ namespace System.Net.Sockets
     internal struct WSABuffer
     {
         internal int Length; // Length of Buffer
-        internal IntPtr Pointer;// Pointer to Buffer
+        internal IntPtr Pointer; // Pointer to Buffer
     }
 }

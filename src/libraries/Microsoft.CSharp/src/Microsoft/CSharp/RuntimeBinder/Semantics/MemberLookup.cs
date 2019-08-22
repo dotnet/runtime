@@ -431,7 +431,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(typeCur != null);
 
             // Loop through the interfaces.
-            for (; ;)
+            while (true)
             {
                 Debug.Assert(typeCur != null && typeCur.IsInterfaceType);
 

@@ -75,7 +75,7 @@ namespace System.Drawing.Internal
 
             // Loop invariant: everything to the left of "left" is a valid reference,
             // and anything to the right of "right" is broken.
-            for (;;)
+            while (true)
             {
                 while (left < length && list[left].Target != null)
                     left++;

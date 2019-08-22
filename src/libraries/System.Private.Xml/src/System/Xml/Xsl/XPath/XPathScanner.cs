@@ -554,7 +554,7 @@ namespace System.Xml.Xsl.XPath
 #endif
                 );
             int start = _curIndex;
-            for (;;)
+            while (true)
             {
                 if (_xmlCharType.IsNCNameSingleChar(_curChar))
                 {

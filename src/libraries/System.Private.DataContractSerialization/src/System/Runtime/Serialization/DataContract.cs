@@ -2207,7 +2207,7 @@ namespace System.Runtime.Serialization
     internal class GenericNameProvider : IGenericNameProvider
     {
         private readonly string _genericTypeName;
-        private readonly object[] _genericParams;//Type or DataContract
+        private readonly object[] _genericParams; //Type or DataContract
         private readonly IList<int> _nestedParamCounts;
         internal GenericNameProvider(Type type)
             : this(DataContract.GetClrTypeFullName(type.GetGenericTypeDefinition()), type.GetGenericArguments())

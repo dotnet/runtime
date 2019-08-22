@@ -213,7 +213,7 @@ namespace System.Dynamic
                 // left most node each iteration.
                 var stack = new Stack<BindingRestrictions>();
                 BindingRestrictions top = this;
-                for (;;)
+                while (true)
                 {
                     var m = top as MergedRestriction;
                     if (m != null)
@@ -370,7 +370,7 @@ namespace System.Dynamic
                     // left most node each iteration.
                     var stack = new Stack<BindingRestrictions>();
                     BindingRestrictions top = _node;
-                    for (;;)
+                    while (true)
                     {
                         var m = top as MergedRestriction;
                         if (m != null)

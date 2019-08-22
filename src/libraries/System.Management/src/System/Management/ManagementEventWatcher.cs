@@ -614,7 +614,7 @@ namespace System.Management
         private int status;
         private readonly bool isLocal;
 
-        public int Status {get {return status;} set {status=value;}}
+        public int Status {get {return status; } set {status=value; }}
 
         public SinkForEventQuery (ManagementEventWatcher eventWatcher,
             object context,
@@ -640,16 +640,16 @@ namespace System.Management
                 //
                 // Ensure we are able to trap exceptions from worker thread.
                 //
-                ThreadDispatch disp = new ThreadDispatch ( new ThreadDispatch.ThreadWorkerMethodWithParam ( HackToCreateStubInMTA ) ) ;
-                disp.Parameter = this ;
-                disp.Start ( ) ;
+                ThreadDispatch disp = new ThreadDispatch ( new ThreadDispatch.ThreadWorkerMethodWithParam ( HackToCreateStubInMTA ) );
+                disp.Parameter = this;
+                disp.Start ( );
             }
 
         }
 
         private void HackToCreateStubInMTA(object param)
         {
-            SinkForEventQuery obj = (SinkForEventQuery) param ;
+            SinkForEventQuery obj = (SinkForEventQuery) param;
             object dmuxStub = null;
             obj.Status = WmiNetUtilsHelper.GetDemultiplexedStub_f (obj, obj.isLocal, out dmuxStub);
             obj.stub = (IWbemObjectSink) dmuxStub;

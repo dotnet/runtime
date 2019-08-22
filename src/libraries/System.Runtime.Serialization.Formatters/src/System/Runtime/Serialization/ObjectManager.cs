@@ -1575,7 +1575,7 @@ namespace System.Runtime.Serialization
             Debug.Assert(_startingVersion == _list.Version, "[ObjectHolderListEnumerator.MoveNext]m_startingVersion==m_list.Version");
             if (_isFixupEnumerator)
             {
-                while (++_currPos < _list.Count && _list._values[_currPos].CompletelyFixed) ;
+                while (++_currPos < _list.Count && _list._values[_currPos].CompletelyFixed);
                 return _currPos != _list.Count;
             }
             else

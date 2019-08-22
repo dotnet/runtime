@@ -586,7 +586,7 @@ namespace System.Xml.Schema
                 //Add to validator's SchemaInfo
                 SchemaInfo.Add(schemaInfo, EventHandler);
 
-                while (reader.Read()) ;// wellformness check
+                while (reader.Read()) ; // wellformness check
             }
             catch (XmlSchemaException e)
             {

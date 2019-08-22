@@ -1858,7 +1858,7 @@ namespace System.Xml.Schema
                 readerSettings.XmlResolver = _xmlResolver;
                 Reader = XmlReader.Create(stm, readerSettings, ruri.ToString());
                 _schemaSet.Add(uri, Reader, _validatedNamespaces);
-                while (Reader.Read()) ;// wellformness check
+                while (Reader.Read()) ; // wellformness check
             }
             catch (XmlSchemaException e)
             {

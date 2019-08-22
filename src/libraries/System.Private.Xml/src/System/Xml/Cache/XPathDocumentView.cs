@@ -598,7 +598,7 @@ namespace System.Xml.XPath.DataBinding
             XPathStep[] steps = new XPathStep[stepCount];
             pos = 0;
             int i = 0;
-            for (;;) {
+            while (true) {
                 if (pos >= xpath.Length)
                     throw new XmlException(SR.XmlDataBinding_XPathEnd, (string[])null);
                 if ('/' != xpath[pos])

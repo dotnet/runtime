@@ -1222,7 +1222,7 @@ namespace System.Globalization
                 fixed (char* pFormat = &MemoryMarshal.GetReference(format))
                 {
                     int src = 0;
-                    for (;;)
+                    while (true)
                     {
                         if (src >= format.Length)
                         {

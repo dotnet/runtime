@@ -24,7 +24,7 @@ namespace System.Runtime.Caching
             }
             set
             {
-                for (; ;)
+                while (true)
                 {
                     int oldData = _data;
                     int newData;
@@ -48,7 +48,7 @@ namespace System.Runtime.Caching
 
         internal bool ChangeValue(int bit, bool value)
         {
-            for (; ;)
+            while (true)
             {
                 int oldData = _data;
                 int newData;

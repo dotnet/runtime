@@ -707,7 +707,7 @@ namespace System.IO
                 cancellationToken.ThrowIfCancellationRequested();
                 buffer = ArrayPool<char>.Shared.Rent(sr.CurrentEncoding.GetMaxCharCount(DefaultBufferSize));
                 StringBuilder sb = new StringBuilder();
-                for (;;)
+                while (true)
                 {
 #if MS_IO_REDIST
                     int read = await sr.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);

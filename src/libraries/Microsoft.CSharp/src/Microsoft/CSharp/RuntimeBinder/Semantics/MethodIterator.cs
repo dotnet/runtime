@@ -121,7 +121,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             private bool FindNextMethod()
             {
-                for (;;)
+                while (true)
                 {
                     CurrentSymbol = (CurrentSymbol == null
                         ? SymbolLoader.LookupAggMember(_name, CurrentType.OwningAggregate, _mask)

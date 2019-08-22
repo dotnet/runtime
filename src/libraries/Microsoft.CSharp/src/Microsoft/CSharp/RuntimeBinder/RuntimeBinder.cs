@@ -964,7 +964,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         {
             if (pArg is ExprList list)
             {
-                for (;;)
+                while (true)
                 {
                     list.OptionalElement = StripNamedArgument(list.OptionalElement);
 

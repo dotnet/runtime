@@ -491,7 +491,7 @@ namespace System.Linq.Expressions.Tests
 
         bool ParseOptionalCustomModsOrConstraint()
         {
-            for (;;)
+            while (true)
             {
                 if (pbCur >= pbEnd)
                     return true;
@@ -517,7 +517,7 @@ namespace System.Linq.Expressions.Tests
 
         bool ParseOptionalCustomMods()
         {
-            for (;;)
+            while (true)
             {
                 if (pbCur >= pbEnd)
                     return true;

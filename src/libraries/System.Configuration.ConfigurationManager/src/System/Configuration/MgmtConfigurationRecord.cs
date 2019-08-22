@@ -614,7 +614,7 @@ namespace System.Configuration
                 if (reader.Name != name)
                     throw new ConfigurationErrorsException(SR.Format(SR.Config_unexpected_element_name, reader.Name));
 
-                for (;;)
+                while (true)
                 {
                     if (!reader.Read())
                     {

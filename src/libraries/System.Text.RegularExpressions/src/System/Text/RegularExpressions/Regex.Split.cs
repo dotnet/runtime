@@ -103,7 +103,7 @@ namespace System.Text.RegularExpressions
                 {
                     int prevat = 0;
 
-                    for (; ; )
+                    while (true)
                     {
                         al.Add(input.Substring(prevat, match.Index - prevat));
 
@@ -131,7 +131,7 @@ namespace System.Text.RegularExpressions
                 {
                     int prevat = input.Length;
 
-                    for (; ; )
+                    while (true)
                     {
                         al.Add(input.Substring(match.Index + match.Length, prevat - match.Index - match.Length));
 

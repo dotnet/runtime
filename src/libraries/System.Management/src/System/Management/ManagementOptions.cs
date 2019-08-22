@@ -427,7 +427,7 @@ namespace System.Management
             { return (((Flags & (int)tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_ENSURE_LOCATABLE) != 0) ? true : false); }
             set
             { Flags = (value == true) ? (Flags | (int)tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_ENSURE_LOCATABLE) :
-                      (Flags & (int)~tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_ENSURE_LOCATABLE) ; }
+                      (Flags & (int)~tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_ENSURE_LOCATABLE); }
         }
 
 
@@ -448,7 +448,7 @@ namespace System.Management
             { return (((Flags & (int)tag_WBEM_QUERY_FLAG_TYPE.WBEM_FLAG_PROTOTYPE) != 0) ? true : false); }
             set
             { Flags = (value == true) ? (Flags | (int)tag_WBEM_QUERY_FLAG_TYPE.WBEM_FLAG_PROTOTYPE) :
-                      (Flags & (int)~tag_WBEM_QUERY_FLAG_TYPE.WBEM_FLAG_PROTOTYPE) ; }
+                      (Flags & (int)~tag_WBEM_QUERY_FLAG_TYPE.WBEM_FLAG_PROTOTYPE); }
         }
 
         /// <summary>
@@ -467,7 +467,7 @@ namespace System.Management
             { return (((Flags & (int)tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_DIRECT_READ) != 0) ? true : false); }
             set
             { Flags = (value == true) ? (Flags | (int)tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_DIRECT_READ) :
-                      (Flags & (int)~tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_DIRECT_READ) ; }
+                      (Flags & (int)~tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_DIRECT_READ); }
         }
 
 
@@ -1330,7 +1330,7 @@ namespace System.Management
                     if (securePassword == null)
                     {
                         securePassword = new SecureString();
-                        for ( int i=0; i <value.Length;i++)
+                        for ( int i=0; i <value.Length; i++)
                         {
                             securePassword.AppendChar(value[i]);
                         }
@@ -1338,7 +1338,7 @@ namespace System.Management
                     else
                     {
                         SecureString tempStr = new SecureString();
-                        for ( int i=0; i <value.Length;i++)
+                        for ( int i=0; i <value.Length; i++)
                         {
                             tempStr.AppendChar(value[i]);
                         }
@@ -1561,7 +1561,7 @@ namespace System.Management
             if (password != null)
             {
                 this.securePassword = new SecureString();
-                for ( int i=0; i <password.Length;i++)
+                for ( int i=0; i <password.Length; i++)
                 {
                     securePassword.AppendChar(password[i]);
                 }

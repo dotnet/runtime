@@ -3582,7 +3582,7 @@ namespace System.Configuration
                 throw new ConfigurationErrorsException(SR.EncryptedNode_not_found, filename, lineNumber);
 
             // Find the <EncryptedData> node
-            for (;;)
+            while (true)
             {
                 clone.Read(); // Keep reading till we find a relavant node
 

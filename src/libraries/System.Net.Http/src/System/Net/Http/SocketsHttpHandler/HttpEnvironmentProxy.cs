@@ -96,9 +96,9 @@ namespace System.Net.Http
         private const string EnvNoProxyUC = "NO_PROXY";
         private const string EnvCGI = "GATEWAY_INTERFACE"; // Running in a CGI environment.
 
-        private readonly Uri _httpProxyUri;      // String URI for HTTP requests
-        private readonly Uri _httpsProxyUri;     // String URI for HTTPS requests
-        private readonly string[] _bypass = null;// list of domains not to proxy
+        private readonly Uri _httpProxyUri;       // String URI for HTTP requests
+        private readonly Uri _httpsProxyUri;      // String URI for HTTPS requests
+        private readonly string[] _bypass = null; // list of domains not to proxy
         private readonly ICredentials _credentials;
 
         private HttpEnvironmentProxy(Uri httpProxy, Uri httpsProxy, string bypassList)

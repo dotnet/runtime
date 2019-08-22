@@ -1191,7 +1191,7 @@ namespace System.Xml
                 FinishInit();
             }
 
-            for (;;)
+            while (true)
             {
                 switch (_parsingFunction)
                 {
@@ -3614,7 +3614,7 @@ namespace System.Xml
             int xmlDeclState = 0;   // <?xml (0) version='1.0' (1) encoding='__' (2) standalone='__' (3) ?>
             Encoding encoding = null;
 
-            for (;;)
+            while (true)
             {
                 int originalSbLen = sb.Length;
                 int wsCount = EatWhitespaces(xmlDeclState == 0 ? null : sb);
@@ -3906,7 +3906,7 @@ namespace System.Xml
             if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
                 mangoQuirks = true;
 #endif
-            for (;;)
+            while (true)
             {
                 bool needMoreChars = false;
                 int pos = _ps.charPos;
@@ -4141,7 +4141,7 @@ namespace System.Xml
         // Parses element content
         private bool ParseElementContent()
         {
-            for (;;)
+            while (true)
             {
                 int pos = _ps.charPos;
                 char[] chars = _ps.chars;
@@ -4347,7 +4347,7 @@ namespace System.Xml
             unsafe
             {
                 // parse element name
-                for (;;)
+                while (true)
                 {
                     if (_xmlCharType.IsNCNameSingleChar(chars[pos]))
                     {
@@ -4610,7 +4610,7 @@ namespace System.Xml
             LineInfo endTagLineInfo = new LineInfo(_ps.lineNo, _ps.LinePos);
 
             int pos;
-            for (;;)
+            while (true)
             {
                 pos = _ps.charPos + nameLen;
                 chars = _ps.chars;
@@ -4727,7 +4727,7 @@ namespace System.Xml
 
             Debug.Assert(_attrCount == 0);
 
-            for (;;)
+            while (true)
             {
                 // eat whitespace
                 int lineNoDelta = 0;
@@ -4848,7 +4848,7 @@ namespace System.Xml
 
                 unsafe
                 {
-                    for (;;)
+                    while (true)
                     {
                         if (_xmlCharType.IsNCNameSingleChar(tmpch2 = chars[pos]))
                         {
@@ -5179,7 +5179,7 @@ namespace System.Xml
 
             Debug.Assert(_stringBuilder.Length == 0);
 
-            for (;;)
+            while (true)
             {
                 // parse the rest of the attribute value
                 unsafe
@@ -5473,7 +5473,7 @@ namespace System.Xml
             // skip over the text if not in full parsing mode
             if (_parsingMode != ParsingMode.Full)
             {
-                while (!ParseText(out startPos, out endPos, ref orChars)) ;
+                while (!ParseText(out startPos, out endPos, ref orChars));
                 goto IgnoredNode;
             }
 
@@ -5565,7 +5565,7 @@ namespace System.Xml
                         _stringBuilder.Length = 0;
                         if (!fullValue)
                         {
-                            while (!ParseText(out startPos, out endPos, ref orChars)) ;
+                            while (!ParseText(out startPos, out endPos, ref orChars));
                         }
                         goto IgnoredNode;
                     }
@@ -5616,7 +5616,7 @@ namespace System.Xml
             int orChars = outOrChars;
             char c;
 
-            for (;;)
+            while (true)
             {
                 // parse text content
                 unsafe
@@ -5920,7 +5920,7 @@ namespace System.Xml
             int orChars = 0;
 
             _parsingFunction = _nextParsingFunction;
-            while (!ParseText(out startPos, out endPos, ref orChars)) ;
+            while (!ParseText(out startPos, out endPos, ref orChars));
         }
 
         private void FinishReadValueChunk()
@@ -5957,7 +5957,7 @@ namespace System.Xml
             }
             if (_incReadState != IncrementalReadState.ReadContentAsBinary_End)
             {
-                while (MoveToNextContentNode(true)) ;
+                while (MoveToNextContentNode(true));
             }
         }
 
@@ -6338,7 +6338,7 @@ namespace System.Xml
                 {
                     if (_ignorePIs || _parsingMode != ParsingMode.Full)
                     {
-                        while (!ParsePIValue(out startPos, out endPos)) ;
+                        while (!ParsePIValue(out startPos, out endPos));
                         return false;
                     }
                     sb = _stringBuilder;
@@ -6380,7 +6380,7 @@ namespace System.Xml
             int rcount = 0;
             int rpos = -1;
 
-            for (;;)
+            while (true)
             {
                 char tmpch;
                 unsafe
@@ -6564,7 +6564,7 @@ namespace System.Xml
             }
             else
             {
-                while (!ParseCDataOrComment(type, out startPos, out endPos)) ;
+                while (!ParseCDataOrComment(type, out startPos, out endPos));
             }
         }
 
@@ -6586,7 +6586,7 @@ namespace System.Xml
             int rpos = -1;
             char stopChar = (type == XmlNodeType.Comment) ? '-' : ']';
 
-            for (;;)
+            while (true)
             {
                 char tmpch;
                 unsafe
@@ -6935,7 +6935,7 @@ namespace System.Xml
             char[] chars = _ps.chars;
             int pos = _ps.charPos;
 
-            for (;;)
+            while (true)
             {
                 char ch;
 
@@ -7133,9 +7133,9 @@ namespace System.Xml
             int wsCount = 0;
             char[] chars = _ps.chars;
 
-            for (;;)
+            while (true)
             {
-                for (;;)
+                while (true)
                 {
                     switch (chars[pos])
                     {
@@ -7250,7 +7250,7 @@ namespace System.Xml
         //      - if (expand == true) then ps.charPos is changed to point to the replaced character
         private int ParseNumericCharRef(bool expand, StringBuilder internalSubsetBuilder, out EntityType entityType)
         {
-            for (;;)
+            while (true)
             {
                 int newPos;
                 int charCount;
@@ -7302,7 +7302,7 @@ namespace System.Xml
                     pos++;
                     digitPos = pos;
                     badDigitExceptionString = SR.Xml_BadHexEntity;
-                    for (;;)
+                    while (true)
                     {
                         char ch = chars[pos];
                         if (ch >= '0' && ch <= '9')
@@ -7418,7 +7418,7 @@ namespace System.Xml
         //      - if (expand == true) then ps.charPos is changed to point to the replaced character
         private int ParseNamedCharRef(bool expand, StringBuilder internalSubsetBuilder)
         {
-            for (;;)
+            while (true)
             {
                 int newPos;
                 switch (newPos = ParseNamedCharRefInline(_ps.charPos, expand, internalSubsetBuilder))
@@ -7626,7 +7626,7 @@ namespace System.Xml
             // parse name
             unsafe
             {
-                for (;;)
+                while (true)
                 {
                     if (_xmlCharType.IsNCNameSingleChar(chars[pos]))
                     {
@@ -8291,7 +8291,7 @@ namespace System.Xml
             int startPos = 0;
             int pos = 0;
 
-            for (;;)
+            while (true)
             {
                 switch (_incReadState)
                 {
@@ -8353,7 +8353,7 @@ namespace System.Xml
                 startPos = _ps.charPos;
                 pos = startPos;
 
-                for (;;)
+                while (true)
                 {
                     _incReadLineInfo.Set(_ps.LineNo, _ps.LinePos);
 
@@ -8451,7 +8451,7 @@ namespace System.Xml
                                     }
                                     else
                                     {
-                                        ;//Throw( );
+                                        ; //Throw( );
                                     }
                                     break;
                                 // end tag
@@ -8663,7 +8663,7 @@ namespace System.Xml
 
             Debug.Assert(_stringBuilder.Length == 0);
 
-            for (;;)
+            while (true)
             {
                 unsafe
                 {
@@ -9427,7 +9427,7 @@ namespace System.Xml
 
             _incReadDecoder.SetNextOutputBuffer(buffer, index, count);
 
-            for (;;)
+            while (true)
             {
                 // read what is already cached in curNode
                 int charsRead = 0;

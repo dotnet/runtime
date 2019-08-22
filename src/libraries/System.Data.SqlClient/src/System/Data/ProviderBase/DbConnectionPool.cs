@@ -604,7 +604,7 @@ namespace System.Data.ProviderBase
             // new stack to old stack.
             if (_waitHandles.PoolSemaphore.WaitOne(0))
             {
-                for (; ;)
+                while (true)
                 {
                     DbConnectionInternal obj;
 

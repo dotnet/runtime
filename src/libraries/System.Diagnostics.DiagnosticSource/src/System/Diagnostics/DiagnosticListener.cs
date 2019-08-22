@@ -297,7 +297,7 @@ namespace System.Diagnostics
             public void Dispose()
             {
                 // TO keep this lock free and easy to analyze, the linked list is READ ONLY.   Thus we copy
-                for (; ; )
+                while (true)
                 {
                     DiagnosticSubscription subscriptions = Owner._subscriptions;
                     DiagnosticSubscription newSubscriptions = Remove(subscriptions, this);    // Make a new list, with myself removed.

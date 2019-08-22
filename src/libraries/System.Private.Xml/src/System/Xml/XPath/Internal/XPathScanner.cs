@@ -346,7 +346,7 @@ namespace MS.Internal.Xml.XPath
             int start = _xpathExprIndex - 1;
             int len = 0;
 
-            for (;;)
+            while (true)
             {
                 if (_xmlCharType.IsNCNameSingleChar(this.CurrentChar))
                 {

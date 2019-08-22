@@ -199,7 +199,7 @@ namespace System.Xml
                                                                      //the decimal digits, from the
                                                                      //lowest significant to highest significant
 
-            int iDigits = 0;//Number of significant digits
+            int iDigits = 0; //Number of significant digits
             uint ulRem; //Remainder of a division by x_ulBase10, i.e.,least significant digit
 
             // Build the final numeric string by inserting the sign, reversing

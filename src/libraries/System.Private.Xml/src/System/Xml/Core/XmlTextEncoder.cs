@@ -140,7 +140,7 @@ namespace System.Xml
             int endPos = offset + count;
             int i = offset;
             char ch = (char)0;
-            for (;;)
+            while (true)
             {
                 int startPos = i;
                 unsafe
@@ -270,7 +270,7 @@ namespace System.Xml
             int i = 0;
             int startPos = 0;
             char ch = (char)0;
-            for (;;)
+            while (true)
             {
                 unsafe
                 {
@@ -306,7 +306,7 @@ namespace System.Xml
             }
 
             char[] helperBuffer = new char[256];
-            for (;;)
+            while (true)
             {
                 if (startPos < i)
                 {
@@ -412,7 +412,7 @@ namespace System.Xml
             int i = 0;
             char ch = (char)0;
 
-            for (;;)
+            while (true)
             {
                 unsafe
                 {

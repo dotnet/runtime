@@ -170,7 +170,7 @@ namespace System.Dynamic.Tests
             Assert.Equal(ExpressionType.AndAlso, vExp.NodeType);
 
             Stack<Expression> toSplit = new Stack<Expression>();
-            for (;;)
+            while (true)
             {
                 if (vExp.NodeType == ExpressionType.AndAlso)
                 {

@@ -734,7 +734,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 if ((pr._objectInfo != null) && pr._objectInfo._objectType != null && (pr._objectInfo._objectType.IsValueType))
                 {
                     pr._isValueTypeFixup = true; //Valuefixup
-                    ValueFixupStack.Push(new ValueFixup(objectPr._newObj, pr._name, objectPr._objectInfo));//valuefixup
+                    ValueFixupStack.Push(new ValueFixup(objectPr._newObj, pr._name, objectPr._objectInfo)); //valuefixup
                 }
                 else
                 {

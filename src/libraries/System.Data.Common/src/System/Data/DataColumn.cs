@@ -1280,7 +1280,7 @@ namespace System.Data
                 // there is a change, since we are supporting hierarchy(bacause of Names Simple Type) old check (just one leel base check) is wrong
                 if (value != null && value.CanHaveMaxLength())
                 {
-                    _maxLength = _simpleType.MaxLength;// this is temp solution, since we dont let simple content to have
+                    _maxLength = _simpleType.MaxLength; // this is temp solution, since we dont let simple content to have
                 }
 
                 //maxlength set but for simple type we want to set it, after coming to decision about it , we should
@@ -1532,7 +1532,7 @@ namespace System.Data
             clone.DataType = DataType;
             clone._defaultValue = _defaultValue;
             clone._defaultValueIsNull = ((_defaultValue == DBNull.Value) || (clone.ImplementsINullable && DataStorage.IsObjectSqlNull(_defaultValue))) ? true : false;
-            clone._columnMapping = _columnMapping;// clone column Mapping since we dont let MaxLength to be set throu API
+            clone._columnMapping = _columnMapping; // clone column Mapping since we dont let MaxLength to be set throu API
             clone._readOnly = _readOnly;
             clone.MaxLength = MaxLength;
             clone.XmlDataType = XmlDataType;

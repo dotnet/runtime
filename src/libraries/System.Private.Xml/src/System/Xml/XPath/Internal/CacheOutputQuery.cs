@@ -43,8 +43,8 @@ namespace MS.Internal.Xml.XPath
         {
             outputBuffer.Clear();
             count = 0;
-            return input.Evaluate(context);// This is trick. IDQuery needs this value. Otherwise we would return this.
-                                           // All subclasses should and would anyway override this method and return this.
+            return input.Evaluate(context); // This is trick. IDQuery needs this value. Otherwise we would return this.
+                                            // All subclasses should and would anyway override this method and return this.
         }
 
         public override XPathNavigator Advance()

@@ -76,7 +76,7 @@ namespace System.Data
         public override void ResetValue(object component)
         {
             DataRowView dataRowView = (DataRowView)component;
-            dataRowView.SetColumnValue(Column, DBNull.Value);// no need to ccheck for the col type and set Sql...Null!
+            dataRowView.SetColumnValue(Column, DBNull.Value); // no need to ccheck for the col type and set Sql...Null!
         }
 
         public override void SetValue(object component, object value)
