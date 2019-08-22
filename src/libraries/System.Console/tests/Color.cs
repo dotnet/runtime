@@ -51,21 +51,4 @@ public class Color
             Assert.Equal("1234", Encoding.UTF8.GetString(data.ToArray()));
         });
     }
-
-    [Fact]
-    [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // the CI system redirects stdout, so we can't easily test non-redirected behavior
-    [PlatformSpecific(TestPlatforms.AnyUnix)]
-    public static void NonRedirectedOutputDoesUseAnsiSequences()
-    {
-        // Make sure that when writing out to a UnixConsoleStream, the ANSI escape sequences are properly
-        // written out.
-        Helpers.RunInNonRedirectedOutput((data) =>
-        {
-            Console.ForegroundColor = ConsoleColor.Blue;
-            Console.BackgroundColor = ConsoleColor.Red;
-            Console.ResetColor();
-            const char Esc = (char)0x1B;
-            Assert.Equal(3, Encoding.UTF8.GetString(data.ToArray()).ToCharArray().Count(c => c == Esc));
-        });
-    }
 }
