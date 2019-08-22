@@ -557,6 +557,9 @@
 # https://github.com/mono/mono/issues/15153
 -nomethod System.Tests.ActivatorTests.TestingCreateInstanceObjectHandleFullSignature
 
+# flaky test, System.ArgumentNullException : Key cannot be null. Parameter name: key
+-nomethod System.Tests.GetEnvironmentVariable.EnvironmentVariablesAreHashtable
+
 ####################################################################
 ##  System.Threading.Tests
 ####################################################################
@@ -630,6 +633,8 @@
 -nomethod System.ComponentModel.Composition.ExportCollectionTests.ImportCollectionsFromContainerOnly
 # disable the whole namespace, https://github.com/mono/mono/issues/16417
 -nonamespace System.ComponentModel.Composition
+# same issue (only System.ComponentModel.Composition uses this namespace)
+-nonamespace Tests.Integration
 
 ####################################################################
 ##  System.Composition.TypedParts.Tests
