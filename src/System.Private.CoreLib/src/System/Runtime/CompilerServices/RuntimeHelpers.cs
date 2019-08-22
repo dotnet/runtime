@@ -146,6 +146,7 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <returns>true if given type is reference type or value type that contains references</returns>
+        [Intrinsic]
         public static bool IsReferenceOrContainsReferences<T>()
         {
             // The body of this function will be replaced by the EE with unsafe code!!!
@@ -157,6 +158,7 @@ namespace System.Runtime.CompilerServices
         /// <remarks>
         /// Only use the result of this for Equals() comparison, not for CompareTo() comparison.
         /// </remarks>
+        [Intrinsic]
         internal static bool IsBitwiseEquatable<T>()
         {
             // The body of this function will be replaced by the EE with unsafe code!!!
@@ -167,6 +169,7 @@ namespace System.Runtime.CompilerServices
         internal static ref byte GetRawData(this object obj) =>
             ref Unsafe.As<RawData>(obj).Data;
 
+        [Intrinsic]
         internal static ref byte GetRawSzArrayData(this Array array) =>
             ref Unsafe.As<RawSzArrayData>(array).Data;
 
