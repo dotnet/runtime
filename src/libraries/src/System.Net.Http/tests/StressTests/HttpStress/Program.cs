@@ -35,7 +35,9 @@ public static class Program
         cmd.AddOption(new Option("-serverUri", "Stress suite server uri.") { Argument = new Argument<Uri>("serverUri", new Uri("https://localhost:5001")) });
         cmd.AddOption(new Option("-runMode", "Stress suite execution mode. Defaults to Both.") { Argument = new Argument<RunMode>("runMode", RunMode.both) });
         cmd.AddOption(new Option("-maxContentLength", "Max content length for request and response bodies.") { Argument = new Argument<int>("numBytes", 1000) });
-        cmd.AddOption(new Option("-maxRequestUriSize", "Max query string length support by the server.") { Argument = new Argument<int>("numChars", 8000) });
+        cmd.AddOption(new Option("-maxRequestUriSize", "Max query string length support by the server.") { Argument = new Argument<int>("numChars", 5000) });
+        cmd.AddOption(new Option("-maxRequestHeaderCount", "Maximum number of headers to place in request") { Argument = new Argument<int>("numHeaders", 90) });
+        cmd.AddOption(new Option("-maxRequestHeaderTotalSize", "Max request header total size.") { Argument = new Argument<int>("numBytes", 1000) });
         cmd.AddOption(new Option("-http", "HTTP version (1.1 or 2.0)") { Argument = new Argument<Version>("version", HttpVersion.Version20) });
         cmd.AddOption(new Option("-connectionLifetime", "Max connection lifetime length (milliseconds).") { Argument = new Argument<int?>("connectionLifetime", null) });
         cmd.AddOption(new Option("-ops", "Indices of the operations to use") { Argument = new Argument<int[]>("space-delimited indices", null) });
@@ -47,6 +49,7 @@ public static class Program
         cmd.AddOption(new Option("-numParameters", "Max number of query parameters or form fields for a request.") { Argument = new Argument<int>("queryParameters", 1) });
         cmd.AddOption(new Option("-cancelRate", "Number between 0 and 1 indicating rate of client-side request cancellation attempts. Defaults to 0.1.") { Argument = new Argument<double>("probability", 0.1) });
         cmd.AddOption(new Option("-httpSys", "Use http.sys instead of Kestrel.") { Argument = new Argument<bool>("enable", false) });
+        cmd.AddOption(new Option("-winHttp", "Use WinHttpHandler for the stress client.") { Argument = new Argument<bool>("enable", false) });
         cmd.AddOption(new Option("-displayInterval", "Client stats display interval in seconds. Defaults to 5 seconds.") { Argument = new Argument<int>("seconds", 5) });
         cmd.AddOption(new Option("-clientTimeout", "Default HttpClient timeout in seconds. Defaults to 10 seconds.") { Argument = new Argument<int>("seconds", 10) });
 
@@ -70,10 +73,13 @@ public static class Program
             ListOperations = cmdline.ValueForOption<bool>("-listOps"),
 
             HttpVersion = cmdline.ValueForOption<Version>("-http"),
+            UseWinHttpHandler = cmdline.ValueForOption<bool>("-winHttp"),
             ConcurrentRequests = cmdline.ValueForOption<int>("-n"),
             RandomSeed = cmdline.ValueForOption<int?>("-seed") ?? new Random().Next(),
             MaxContentLength = cmdline.ValueForOption<int>("-maxContentLength"),
             MaxRequestUriSize = cmdline.ValueForOption<int>("-maxRequestUriSize"),
+            MaxRequestHeaderCount = cmdline.ValueForOption<int>("-maxRequestHeaderCount"),
+            MaxRequestHeaderTotalSize = cmdline.ValueForOption<int>("-maxRequestHeaderTotalSize"),
             OpIndices = cmdline.ValueForOption<int[]>("-ops"),
             ExcludedOpIndices = cmdline.ValueForOption<int[]>("-xops"),
             MaxParameters = cmdline.ValueForOption<int>("-numParameters"),
@@ -104,9 +110,9 @@ public static class Program
             return;
         }
 
-        if (config.ServerUri.Scheme != "https")
+        if (!config.ServerUri.Scheme.StartsWith("http"))
         {
-            Console.Error.WriteLine("Server uri must be https.");
+            Console.Error.WriteLine("Invalid server uri");
             return;
         }
 
