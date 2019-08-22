@@ -25,14 +25,21 @@ namespace System.Net.WebSockets
                 lock (ReceiveAsyncLock) // synchronize with receives in CloseAsync
                 {
                     ThrowIfOperationInProgress(_lastReceiveAsync.IsCompleted);
-                    ValueTask<ValueWebSocketReceiveResult> t = ReceiveAsyncPrivate<ValueWebSocketReceiveResultGetter, ValueWebSocketReceiveResult>(buffer, cancellationToken);
 
-                    // WARNING: This code is only valid because ReceiveAsyncPrivate returns a ValueTask that wraps a T or a Task.
-                    // If that ever changes where ReceiveAsyncPrivate could wrap an IValueTaskSource, this must also change.
-                    _lastReceiveAsync =
-                        t.IsCompletedSuccessfully ? (t.Result.MessageType == WebSocketMessageType.Close ? s_cachedCloseTask : Task.CompletedTask) :
-                        t.AsTask();
-                    return t;
+                    ValueTask<ValueWebSocketReceiveResult> receiveValueTask = ReceiveAsyncPrivate<ValueWebSocketReceiveResultGetter, ValueWebSocketReceiveResult>(buffer, cancellationToken);
+                    if (receiveValueTask.IsCompletedSuccessfully)
+                    {
+                        _lastReceiveAsync = receiveValueTask.Result.MessageType == WebSocketMessageType.Close ? s_cachedCloseTask : Task.CompletedTask;
+                        return receiveValueTask;
+                    }
+
+                    // We need to both store the last receive task and return it, but we can't do that with a ValueTask,
+                    // as that could result in consuming it multiple times.  Instead, we use AsTask to consume it just once,
+                    // and then store that Task and return a new ValueTask that wraps it. (It would be nice in the future
+                    // to avoid this AsTask as well; currently it's used both for error detection and as part of close tracking.)
+                    Task<ValueWebSocketReceiveResult> receiveTask = receiveValueTask.AsTask();
+                    _lastReceiveAsync = receiveTask;
+                    return new ValueTask<ValueWebSocketReceiveResult>(receiveTask);
                 }
             }
             catch (Exception exc)
