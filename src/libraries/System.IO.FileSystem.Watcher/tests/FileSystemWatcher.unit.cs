@@ -775,8 +775,8 @@ namespace System.IO.Tests
             watcher.Filters.Add("*.dll");
             watcher.Filters.Add(string.Empty);
 
-            Assert.False(watcher.Filters.Contains(string.Empty));
-            Assert.True(watcher.Filters.Contains("*"));
+            Assert.DoesNotContain(string.Empty, watcher.Filters);
+            Assert.Contains("*", watcher.Filters);
         }
 
         [Fact]
@@ -787,8 +787,8 @@ namespace System.IO.Tests
             watcher.Filters.Add("*.dll");
             watcher.Filters.Add(null);
 
-            Assert.False(watcher.Filters.Contains(null));
-            Assert.True(watcher.Filters.Contains("*"));
+            Assert.DoesNotContain(null, watcher.Filters);
+            Assert.Contains("*", watcher.Filters);
         }
 
         [Fact]
@@ -798,7 +798,7 @@ namespace System.IO.Tests
             watcher.Filters.Add("*.pdb");
             watcher.Filters.Add("*.dll");
 
-            Assert.True(watcher.Filters.Contains("*.pdb"));
+            Assert.Contains("*.pdb", watcher.Filters);
         }
 
         [Fact]

@@ -304,7 +304,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
                 foreach (X509Certificate2 documentCert in cms.Certificates)
                 {
-                    Assert.True(expectedCerts.Contains(documentCert));
+                    Assert.Contains(documentCert, expectedCerts);
                 }
             }
         }

@@ -146,13 +146,13 @@ namespace System.ComponentModel.Composition
             ComposablePart part2 = PartFactory.Create();
 
             batch.AddPart(part1);
-            Assert.True(batch.PartsToAdd.Contains(part1));
+            Assert.Contains(part1, batch.PartsToAdd);
 
             ReadOnlyCollection<ComposablePart> partsToAddBeforeCopy = batch.PartsToAdd;
             Assert.Same(partsToAddBeforeCopy, batch.PartsToAdd);
 
             Assert.Equal(1, partsToAddBeforeCopy.Count);
-            Assert.True(partsToAddBeforeCopy.Contains(part1));
+            Assert.Contains(part1, partsToAddBeforeCopy);
 
             batch.AddPart(part2);
 
@@ -160,8 +160,8 @@ namespace System.ComponentModel.Composition
             Assert.Same(partsToAddAfterCopy, batch.PartsToAdd);
 
             Assert.Equal(2, partsToAddAfterCopy.Count);
-            Assert.True(partsToAddAfterCopy.Contains(part1));
-            Assert.True(partsToAddAfterCopy.Contains(part2));
+            Assert.Contains(part1, partsToAddAfterCopy);
+            Assert.Contains(part2, partsToAddAfterCopy);
             Assert.NotSame(partsToAddBeforeCopy, partsToAddAfterCopy);
         }
 
@@ -173,13 +173,13 @@ namespace System.ComponentModel.Composition
             ComposablePart part2 = PartFactory.Create();
 
             batch.RemovePart(part1);
-            Assert.True(batch.PartsToRemove.Contains(part1));
+            Assert.Contains(part1, batch.PartsToRemove);
 
             ReadOnlyCollection<ComposablePart> partsToRemoveBeforeCopy = batch.PartsToRemove;
             Assert.Same(partsToRemoveBeforeCopy, batch.PartsToRemove);
 
             Assert.Equal(1, partsToRemoveBeforeCopy.Count);
-            Assert.True(partsToRemoveBeforeCopy.Contains(part1));
+            Assert.Contains(part1, partsToRemoveBeforeCopy);
 
             batch.RemovePart(part2);
 
@@ -187,8 +187,8 @@ namespace System.ComponentModel.Composition
             Assert.Same(partsToRemoveAfterCopy, batch.PartsToRemove);
 
             Assert.Equal(2, partsToRemoveAfterCopy.Count);
-            Assert.True(partsToRemoveAfterCopy.Contains(part1));
-            Assert.True(partsToRemoveAfterCopy.Contains(part2));
+            Assert.Contains(part1, partsToRemoveAfterCopy);
+            Assert.Contains(part2, partsToRemoveAfterCopy);
             Assert.NotSame(partsToRemoveBeforeCopy, partsToRemoveAfterCopy);
         }
 
@@ -320,7 +320,7 @@ namespace System.ComponentModel.Composition
             Assert.Equal(1, batch.PartsToAdd.Count);
 
             Assert.Equal("Value", this.GetSingleExport(batch.PartsToAdd[0], "Contract").Value);
-            Assert.True(batch.PartsToAdd.Contains(part));
+            Assert.Contains(part, batch.PartsToAdd);
         }
 
         [Fact]
@@ -332,7 +332,7 @@ namespace System.ComponentModel.Composition
             Assert.Equal(1, batch.PartsToAdd.Count);
 
             Assert.Equal("Value", this.GetSingleLazy<string>(batch.PartsToAdd[0]).Value);
-            Assert.True(batch.PartsToAdd.Contains(part));
+            Assert.Contains(part, batch.PartsToAdd);
         }
 
         [Fact]
@@ -344,7 +344,7 @@ namespace System.ComponentModel.Composition
             Assert.Equal(1, batch.PartsToAdd.Count);
 
             Assert.Equal("Value", this.GetSingleExport(batch.PartsToAdd[0], "Contract").Value);
-            Assert.True(batch.PartsToAdd.Contains(part));
+            Assert.Contains(part, batch.PartsToAdd);
         }
 
         [Fact]

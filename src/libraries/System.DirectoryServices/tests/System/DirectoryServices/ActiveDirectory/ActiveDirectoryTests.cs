@@ -401,7 +401,7 @@ namespace System.DirectoryServices.Tests
 
                         partitions = new string[ds.Partitions.Count];
                         ds.Partitions.CopyTo(partitions, 0);
-                        Assert.True(partitions.Contains(firstPartition));
+                        Assert.Contains(firstPartition, partitions);
                     }
                 }
             }

@@ -525,9 +525,9 @@ namespace System.Net.Http.Functional.Tests
                         Assert.True(request.Headers.TryGetValues("Request-Id", out var requestId));
                         Assert.True(request.Headers.TryGetValues("Correlation-Context", out var correlationContext));
                         Assert.Equal(3, correlationContext.Count());
-                        Assert.True(correlationContext.Contains("key=value"));
-                        Assert.True(correlationContext.Contains("bad%2Fkey=value"));
-                        Assert.True(correlationContext.Contains("goodkey=bad%2Fvalue"));
+                        Assert.Contains("key=value", correlationContext);
+                        Assert.Contains("bad%2Fkey=value", correlationContext);
+                        Assert.Contains("goodkey=bad%2Fvalue", correlationContext);
 
                         var requestStatus = GetPropertyValueFromAnonymousTypeInstance<TaskStatus>(kvp.Value, "RequestTaskStatus");
                         Assert.Equal(TaskStatus.RanToCompletion, requestStatus);

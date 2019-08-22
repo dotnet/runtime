@@ -364,7 +364,7 @@ namespace System.Linq.Expressions.Tests
                     Assert.Same(exps[i], en.Current);
                     Assert.Same(exps[i], nonGenEn.Current);
                     Assert.Equal(i, children.IndexOf(exps[i]));
-                    Assert.True(children.Contains(exps[i]));
+                    Assert.Contains(exps[i], children);
                 }
 
                 Assert.False(en.MoveNext());
@@ -383,7 +383,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => children[-1]);
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => children[parCount]);
             Assert.Equal(-1, children.IndexOf(Expression.Parameter(typeof(int))));
-            Assert.False(children.Contains(Expression.Parameter(typeof(int))));
+            Assert.DoesNotContain(Expression.Parameter(typeof(int)), children);
         }
 
         [Theory]
@@ -396,7 +396,7 @@ namespace System.Linq.Expressions.Tests
             BlockExpression block = Expression.Block(expressions);
 
             Assert.Equal(-1, block.Expressions.IndexOf(Expression.Default(typeof(long))));
-            Assert.False(block.Expressions.Contains(null));
+            Assert.DoesNotContain(null, block.Expressions);
         }
 
         [Theory]

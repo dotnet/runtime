@@ -351,7 +351,7 @@ public static partial class XmlSerializerTests
         Assert.True(y.Count == 2);
         foreach (string item in x)
         {
-            Assert.True(y.Contains(item));
+            Assert.Contains(item, y);
         }
     }
 
@@ -731,7 +731,7 @@ public static partial class XmlSerializerTests
 
         foreach (var item in value)
         {
-            Assert.True(actual.Contains(item));
+            Assert.Contains(item, actual);
         }
     }
 

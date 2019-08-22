@@ -173,8 +173,8 @@ namespace System.Data.Common
             Assert.Equal(2, providerTable.Rows.Count);
             List<string> invariantNames = DbProviderFactories.GetProviderInvariantNames().ToList();
             Assert.Equal(2, invariantNames.Count);
-            Assert.True(invariantNames.Contains("System.Data.Common.TestProvider"));
-            Assert.True(invariantNames.Contains("System.Data.SqlClient"));
+            Assert.Contains("System.Data.Common.TestProvider", invariantNames);
+            Assert.Contains("System.Data.SqlClient", invariantNames);
         }
 
         private void ClearRegisteredFactories()
