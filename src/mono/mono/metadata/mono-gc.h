@@ -118,7 +118,7 @@ MONO_API void     mono_gc_finalize_notify    (void);
 MONO_API int    mono_gc_invoke_finalizers (void);
 /* heap walking is only valid in the pre-stop-world event callback */
 MONO_API int    mono_gc_walk_heap        (int flags, MonoGCReferences callback, void *data);
-	
+
 MONO_END_DECLS
 
 #endif /* __METADATA_MONO_GC_H__ */
