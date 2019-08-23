@@ -80,6 +80,7 @@ typedef struct {
 	int max_got_offset;
 	LLVMValueRef personality;
 	LLVMValueRef *intrins_by_id;
+	gpointer gc_poll_cold_wrapper_compiled;
 
 	/* For AOT */
 	MonoAssembly *assembly;
@@ -93,6 +94,7 @@ typedef struct {
 	LLVMValueRef inited_var;
 	LLVMValueRef unbox_tramp_indexes;
 	LLVMValueRef unbox_trampolines;
+	LLVMValueRef gc_poll_cold_wrapper;
 	int max_inited_idx, max_method_idx;
 	gboolean has_jitted_code;
 	gboolean static_link;
@@ -3058,16 +3060,15 @@ emit_init_icall_wrapper (MonoLLVMModule *module, MonoAotInitSubtype subtype)
 
 /* Emit a wrapper around the parameterless JIT icall ICALL_ID with a cold calling convention */
 static LLVMValueRef
-emit_icall_cold_wrapper (MonoLLVMModule *module, MonoJitICallId icall_id)
+emit_icall_cold_wrapper (MonoLLVMModule *module, LLVMModuleRef lmodule, MonoJitICallId icall_id, gboolean aot)
 {
-	LLVMModuleRef lmodule = module->lmodule;
 	LLVMValueRef func, callee;
 	LLVMBasicBlockRef entry_bb;
 	LLVMBuilderRef builder;
 	LLVMTypeRef sig;
 	char *name;
 
-	name = g_strdup_printf ("icall_cold_wrapper_%d", icall_id);
+	name = g_strdup_printf ("%s_icall_cold_wrapper_%d", module->global_prefix, icall_id);
 
 	func = LLVMAddFunction (lmodule, name, LLVMFunctionType (LLVMVoidType (), NULL, 0, FALSE));
 	sig = LLVMFunctionType (LLVMVoidType (), NULL, 0, FALSE);
@@ -3079,7 +3080,17 @@ emit_icall_cold_wrapper (MonoLLVMModule *module, MonoJitICallId icall_id)
 	builder = LLVMCreateBuilder ();
 	LLVMPositionBuilderAtEnd (builder, entry_bb);
 
-	callee = get_aotconst_typed_module (module, builder, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (icall_id), LLVMPointerType (sig, 0));
+	if (aot) {
+		callee = get_aotconst_typed_module (module, builder, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (icall_id), LLVMPointerType (sig, 0));
+	} else {
+		MonoJitICallInfo * const info = mono_find_jit_icall_info (icall_id);
+		gpointer target = (gpointer)mono_icall_get_wrapper_full (info, TRUE);
+
+		LLVMValueRef tramp_var = LLVMAddGlobal (lmodule, LLVMPointerType (sig, 0), name);
+		LLVMSetInitializer (tramp_var, LLVMConstIntToPtr (LLVMConstInt (LLVMInt64Type (), (guint64)(size_t)target, FALSE), LLVMPointerType (sig, 0)));
+		LLVMSetLinkage (tramp_var, LLVMExternalLinkage);
+		callee = LLVMBuildLoad (builder, tramp_var, "");
+	}
 	LLVMBuildCall (builder, callee, NULL, 0, "");
 
 	LLVMBuildRetVoid (builder);
@@ -3129,7 +3140,8 @@ emit_gc_safepoint_poll (MonoLLVMModule *module)
 	LLVMBuilderRef builder;
 	LLVMTypeRef sig;
 
-	icall_wrapper = emit_icall_cold_wrapper (module, MONO_JIT_ICALL_mono_threads_state_poll);
+	icall_wrapper = emit_icall_cold_wrapper (module, module->lmodule, MONO_JIT_ICALL_mono_threads_state_poll, TRUE);
+	module->gc_poll_cold_wrapper = icall_wrapper;
 
 	sig = LLVMFunctionType0 (LLVMVoidType (), FALSE);
 	func = mono_llvm_get_or_insert_gc_safepoint_poll (lmodule);
@@ -6206,12 +6218,23 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_GC_SAFE_POINT: {
-			LLVMValueRef val, cmp, callee;
+			LLVMValueRef val, cmp, callee, call;
 			LLVMBasicBlockRef poll_bb, cont_bb;
 			LLVMValueRef args [2];
 			static LLVMTypeRef sig;
-			MonoJitICallId const icall_id = MONO_JIT_ICALL_mono_threads_state_poll;
 			const char *icall_name = "mono_threads_state_poll";
+
+			/*
+			 * Create the cold wrapper around the icall, along with a managed method for it so
+			 * unwinding works.
+			 */
+			if (!cfg->compile_aot && !ctx->module->gc_poll_cold_wrapper_compiled) {
+				ERROR_DECL (error);
+				/* Compiling a method here is a bit ugly, but it works */
+				MonoMethod *wrapper = mono_marshal_get_llvm_func_wrapper (LLVM_FUNC_WRAPPER_GC_POLL);
+				ctx->module->gc_poll_cold_wrapper_compiled = mono_jit_compile_method (wrapper, error);
+				mono_error_assert_ok (error);
+			}
 
 			if (!sig)
 				sig = LLVMFunctionType0 (LLVMVoidType (), FALSE);
@@ -6219,7 +6242,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			/*
 			 * if (!*sreg1)
 			 *   mono_threads_state_poll ();
-			 * FIXME: Use a cold cconv wrapper
 			 */
 			val = mono_llvm_build_load (builder, convert (ctx, lhs, LLVMPointerType (IntPtrType (), 0)), "", TRUE);
 			cmp = LLVMBuildICmp (builder, LLVMIntEQ, val, LLVMConstNull (LLVMTypeOf (val)), "");
@@ -6236,11 +6258,13 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMPositionBuilderAtEnd (builder, poll_bb);
 
 			if (ctx->cfg->compile_aot) {
-				callee = get_callee (ctx, sig, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (icall_id));
+				callee = get_callee (ctx, sig, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (MONO_JIT_ICALL_mono_threads_state_poll));
+				call = LLVMBuildCall (builder, callee, NULL, 0, "");
 			} else {
-				callee = get_jit_callee (ctx, icall_name, sig, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (icall_id));
+				callee = get_jit_callee (ctx, icall_name, sig, MONO_PATCH_INFO_ABS, ctx->module->gc_poll_cold_wrapper_compiled);
+				call = LLVMBuildCall (builder, callee, NULL, 0, "");
+				set_call_cold_cconv (call);
 			}
-			LLVMBuildCall (builder, callee, NULL, 0, "");
 			LLVMBuildBr (builder, cont_bb);
 
 			ctx->builder = builder = create_builder (ctx);
@@ -7724,6 +7748,27 @@ emit_method_inner (EmitContext *ctx)
 
 			const char *init_name = mono_marshal_get_aot_init_wrapper_name (info->d.aot_init.subtype);
 			ctx->method_name = g_strdup_printf ("%s%s", ctx->module->global_prefix, init_name);
+			ctx->cfg->asm_symbol = g_strdup (ctx->method_name);
+
+			if (!cfg->llvm_only && ctx->module->external_symbols) {
+				LLVMSetLinkage (method, LLVMExternalLinkage);
+				LLVMSetVisibility (method, LLVMHiddenVisibility);
+			}
+
+			goto after_codegen;
+		} else if (info->subtype == WRAPPER_SUBTYPE_LLVM_FUNC) {
+			g_assert (info->d.llvm_func.subtype == LLVM_FUNC_WRAPPER_GC_POLL);
+
+			if (cfg->compile_aot) {
+				method = ctx->module->gc_poll_cold_wrapper;
+				g_assert (method);
+			} else {
+				method = emit_icall_cold_wrapper (ctx->module, lmodule, MONO_JIT_ICALL_mono_threads_state_poll, FALSE);
+			}
+			ctx->lmethod = method;
+			ctx->module->max_method_idx = MAX (ctx->module->max_method_idx, cfg->method_index);
+
+			ctx->method_name = g_strdup (LLVMGetValueName (method)); //g_strdup_printf ("%s_%s", ctx->module->global_prefix, LLVMGetValueName (method));
 			ctx->cfg->asm_symbol = g_strdup (ctx->method_name);
 
 			if (!cfg->llvm_only && ctx->module->external_symbols) {
