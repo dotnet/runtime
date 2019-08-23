@@ -276,11 +276,13 @@ public:
     CallDsc* gcCallDescList;
     CallDsc* gcCallDescLast;
 
-    //-------------------------------------------------------------------------
-
-    void gcCountForHeader(UNALIGNED unsigned int* untrackedCount, UNALIGNED unsigned int* varPtrTableSize);
+//-------------------------------------------------------------------------
 
 #ifdef JIT32_GCENCODER
+    void gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount, UNALIGNED unsigned int* pVarPtrTableSize);
+
+    bool gcIsUntrackedLocalOrNonEnregisteredArg(unsigned varNum, bool* pThisKeptAliveIsInUntracked = nullptr);
+
     size_t gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, unsigned codeSize, size_t* pArgTabOffset);
 #else
     RegSlotMap*   m_regSlotMap;
