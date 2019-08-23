@@ -622,7 +622,11 @@ LinearScan::LinearScan(Compiler* theCompiler)
     if (lsraStressMask != 0)
     {
         // The code in this #if can be used to debug JitStressRegs issues according to
-        // method hash.  To use, simply set environment variables JitStressRegsHashLo and JitStressRegsHashHi
+        // method hash or method count.
+        // To use, simply set environment variables:
+        //   JitStressRegsHashLo and JitStressRegsHashHi to set the range of method hash, or
+        //   JitStressRegsStart and JitStressRegsEnd to set the range of method count
+        //     (Compiler::jitTotalMethodCount as reported by COMPlus_DumpJittedMethods).
         unsigned methHash = compiler->info.compMethodHash();
         char* lostr = getenv("JitStressRegsHashLo");
         unsigned methHashLo = 0;
@@ -643,11 +647,31 @@ LinearScan::LinearScan(Compiler* theCompiler)
         {
             lsraStressMask = 0;
         }
-        else if (dump == true)
+        // Check method count
+        unsigned count = Compiler::jitTotalMethodCompiled;
+        unsigned start = 0;
+        unsigned end = UINT32_MAX;
+        char* startStr = getenv("JitStressRegsStart");
+        char* endStr = getenv("JitStressRegsEnd");
+        if (startStr != nullptr)
         {
-            printf("JitStressRegs = %x for method %s, hash = 0x%x.\n",
-                lsraStressMask, compiler->info.compFullName, compiler->info.compMethodHash());
-            printf("");         // in our logic this causes a flush
+            sscanf_s(startStr, "%d", &start);
+            dump = true;
+        }
+        if (endStr != nullptr)
+        {
+            sscanf_s(endStr, "%d", &end);
+            dump = true;
+        }
+        if (count < start || (count > end))
+        {
+            lsraStressMask = 0;
+        }
+        if ((lsraStressMask != 0) && (dump == true))
+        {
+            printf("JitStressRegs = %x for method %d: %s, hash = 0x%x.\n",
+                lsraStressMask, Compiler::jitTotalMethodCompiled, compiler->info.compFullName, compiler->info.compMethodHash());
+            printf("");         // flush
         }
     }
 #endif // 0
@@ -5680,8 +5704,7 @@ void LinearScan::allocateRegisters()
 #endif
 
 #ifdef DEBUG
-                // Under stress mode, don't attempt to allocate a reg to
-                // reg optional ref position, unless it's a ParamDef.
+                // Under stress mode, don't allocate registers to RegOptional RefPositions.
                 if (allocateReg && regOptionalNoAlloc())
                 {
                     allocateReg = false;
