@@ -9,10 +9,6 @@ if(WIN32)
     string(REPLACE "/guard:cf" "" CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS})
 endif(WIN32)
 
-if(CLR_CMAKE_PLATFORM_UNIX)
-    add_compile_options(-fPIC)
-endif(CLR_CMAKE_PLATFORM_UNIX)
-
 add_subdirectory(full)
 
 # Only add the small version of the resources if the platform is Windows.

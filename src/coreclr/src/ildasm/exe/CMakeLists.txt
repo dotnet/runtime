@@ -10,7 +10,6 @@ add_definitions(-DFEATURE_CORECLR)
 include_directories(..)
 
 if(CLR_CMAKE_PLATFORM_UNIX)
-    add_compile_options(-fPIE)
     build_resources(${CMAKE_CURRENT_SOURCE_DIR}/../dasm.rc dasm_rc TARGET_CPP_FILE)
 
     set(ILDASM_RESOURCES

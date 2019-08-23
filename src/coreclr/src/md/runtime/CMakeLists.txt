@@ -41,10 +41,6 @@ set(MDRUNTIME_HEADERS
 convert_to_absolute_path(MDRUNTIME_HEADERS ${MDRUNTIME_HEADERS})
 convert_to_absolute_path(MDRUNTIME_SOURCES ${MDRUNTIME_SOURCES})
 
-if(CLR_CMAKE_PLATFORM_UNIX)
-    add_compile_options(-fPIC)
-endif(CLR_CMAKE_PLATFORM_UNIX)
-
 add_subdirectory(dac)
 add_subdirectory(wks)
 add_subdirectory(dbi)

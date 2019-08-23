@@ -62,7 +62,6 @@ foreach(IDL_SOURCE IN LISTS CORGUIDS_IDL_SOURCES)
    list(APPEND CORGUIDS_SOURCES ${C_SOURCE})
 endforeach(IDL_SOURCE)
 
-add_compile_options(-fPIC)
 endif(WIN32)
 
 if(FEATURE_JIT_PITCHING)

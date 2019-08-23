@@ -1,10 +1,6 @@
 include(${CLR_DIR}/dac.cmake)
 add_definitions(-DFEATURE_NO_HOST)
 
-if(CLR_CMAKE_PLATFORM_UNIX)
-    add_compile_options(-fPIC)
-endif(CLR_CMAKE_PLATFORM_UNIX)
-
 set(CLR_DAC_SOURCES
 )
 

@@ -6,6 +6,9 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# All code we build should be compiled as position independent
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 set(CLR_DEFINES_DEBUG_INIT              DEBUG _DEBUG _DBG URTBLDENV_FRIENDLY=Checked BUILDENV_CHECKED=1)
 set(CLR_DEFINES_CHECKED_INIT            DEBUG _DEBUG _DBG URTBLDENV_FRIENDLY=Checked BUILDENV_CHECKED=1)
 set(CLR_DEFINES_RELEASE_INIT            NDEBUG URTBLDENV_FRIENDLY=Retail)
@@ -323,10 +326,9 @@ elseif (CLR_CMAKE_PLATFORM_UNIX)
       endif ()
 
       # -fdata-sections -ffunction-sections: each function has own section instead of one per .o file (needed for --gc-sections)
-      # -fPIC: enable Position Independent Code normally just for shared libraries but required when linking with address sanitizer
       # -O1: optimization level used instead of -O0 to avoid compile error "invalid operand for inline asm constraint"
-      set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${CLR_SANITIZE_CXX_FLAGS} -fdata-sections -ffunction-sections -fPIC -O1")
-      set(CMAKE_CXX_FLAGS_CHECKED "${CMAKE_CXX_FLAGS_CHECKED} ${CLR_SANITIZE_CXX_FLAGS} -fdata-sections -ffunction-sections -fPIC -O1")
+      set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${CLR_SANITIZE_CXX_FLAGS} -fdata-sections -ffunction-sections  -O1")
+      set(CMAKE_CXX_FLAGS_CHECKED "${CMAKE_CXX_FLAGS_CHECKED} ${CLR_SANITIZE_CXX_FLAGS} -fdata-sections -ffunction-sections  -O1")
 
       set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} ${CLR_SANITIZE_LINK_FLAGS}")
       set(CMAKE_EXE_LINKER_FLAGS_CHECKED "${CMAKE_EXE_LINKER_FLAGS_CHECKED} ${CLR_SANITIZE_LINK_FLAGS}")
@@ -336,6 +338,11 @@ elseif (CLR_CMAKE_PLATFORM_UNIX)
       set(CMAKE_SHARED_LINKER_FLAGS_CHECKED "${CMAKE_SHARED_LINKER_FLAGS_CHECKED} ${CLR_SANITIZE_LINK_FLAGS} -Wl,--gc-sections")
     endif ()
   endif(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL CHECKED)
+
+  # This linker option causes executables we build to be marked as containing position independent code.
+  # It is necessary to make ASLR work for executables.
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pie" )
+
 endif(WIN32)
 
 # CLR_ADDITIONAL_LINKER_FLAGS - used for passing additional arguments to linker
