@@ -89,7 +89,7 @@
       <ExcludeNetStandard21Refs Include="System.Reflection.Emit.Lightweight" />
       <_NetStandard21Files 
         Include="$(_NETStandard21RefFolder)\*.dll"
-        Exclude="@(ExcludeNetStandardRefs -> '$(_NETStandard21RefFolder)\%(Identity).dll')"  />
+        Exclude="@(ExcludeNetStandard21Refs -> '$(_NETStandard21RefFolder)\%(Identity).dll')"  />
     </ItemGroup>
 
     <Error Condition="'@(_NetStandard21Files)' == ''" Text="Could not find package assets for netstandard2.1" />
