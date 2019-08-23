@@ -12,7 +12,7 @@
           DependsOnTargets="GetSharedFrameworkProjects"
           BeforeTargets="EnsureProjectsBuilt">
     <ItemGroup>
-      <StageProject Include="@(SharedFrameworkProjects)" />
+      <StageProject Include="@(SharedFrameworkProject)" />
     </ItemGroup>
   </Target>
 
