@@ -5138,7 +5138,8 @@ ves_icall_System_Reflection_RuntimeAssembly_get_location (MonoReflectionAssembly
 {
 	MonoDomain *domain = MONO_HANDLE_DOMAIN (refassembly);
 	MonoAssembly *assembly = MONO_HANDLE_GETVAL (refassembly, assembly);
-	return mono_string_new_handle (domain, mono_image_get_filename (assembly->image), error);
+	const char *image_name = m_image_get_filename (assembly->image);
+	return mono_string_new_handle (domain, image_name != NULL ? image_name : "", error);
 }
 
 MonoBoolean

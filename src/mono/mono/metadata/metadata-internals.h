@@ -1181,8 +1181,25 @@ m_image_has_entry_point (MonoImage *image)
 {
 	return image->storage ? image->storage->has_entry_point : FALSE;
 }
-
 #endif
+
+static inline const char *
+m_image_get_name (MonoImage *image)
+{
+	return image->name;
+}
+
+static inline const char *
+m_image_get_filename (MonoImage *image)
+{
+	return image->filename;
+}
+
+static inline const char *
+m_image_get_assembly_name (MonoImage *image)
+{
+	return image->assembly_name;
+}
 
 static inline
 MonoAssemblyLoadContext *

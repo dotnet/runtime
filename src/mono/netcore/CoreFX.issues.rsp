@@ -745,14 +745,6 @@
 -nomethod System.Reflection.Context.Tests.CustomReflectionContextTests.MapType_Interface_Throws
 
 ####################################################################
-##  System.Reflection.CoreCLR.Tests
-####################################################################
-
-# FileNotFoundException
-# https://github.com/mono/mono/issues/15192
--nomethod System.Reflection.Tests.AssemblyTests.LoadFromStream_Location_IsEmpty
-
-####################################################################
 ##  System.Reflection.TypeExtensions.CoreCLR.Tests
 ####################################################################
 
