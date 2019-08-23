@@ -80,6 +80,7 @@
       <InstallerFileNameWithoutExtension>$(InstallerName)-$(InstallerBuildPart)</InstallerFileNameWithoutExtension>
       <InstallerFile Condition="'$(InstallerFile)' == ''">$(AssetOutputPath)$(InstallerFileNameWithoutExtension)$(InstallerExtension)</InstallerFile>
       <ExeBundleInstallerFile>$(AssetOutputPath)$(InstallerFileNameWithoutExtension).exe</ExeBundleInstallerFile>
+      <ExeBundleInstallerEngineFile>$(AssetOutputPath)$(InstallerFileNameWithoutExtension)-engine.exe</ExeBundleInstallerEngineFile>
       <CompressedArchiveFile>$(AssetOutputPath)$(InstallerFileNameWithoutExtension)$(CompressedFileExtension)</CompressedArchiveFile>
     </PropertyGroup>
 
