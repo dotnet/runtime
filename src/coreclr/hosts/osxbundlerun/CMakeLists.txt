@@ -2,8 +2,6 @@ project(osxbundlerun)
 
 include_directories(../unixcoreruncommon)
 
-add_compile_options(-fPIE)
-
 set(CORERUN_SOURCES 
     osxbundlerun.cpp 
 )

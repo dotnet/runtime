@@ -97,7 +97,6 @@ target_link_libraries(clrgc ${GC_LINK_LIBRARIES})
 install_clr(clrgc)
 
 if(CLR_CMAKE_PLATFORM_UNIX)
-  add_compile_options(-fPIC)
   # dprintf causes many warnings (https://github.com/dotnet/coreclr/issues/13367)
   add_compile_options(-Wno-format)
 endif(CLR_CMAKE_PLATFORM_UNIX)

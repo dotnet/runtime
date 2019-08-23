@@ -14,7 +14,6 @@ if(WIN32)
 endif()
 
 if(CLR_CMAKE_PLATFORM_UNIX)
-  add_compile_options(-fPIE)
   add_definitions(-DNO_NGENPDB)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 

@@ -16,7 +16,6 @@ if(WIN32)
 endif(WIN32)
 
 if(CLR_CMAKE_PLATFORM_UNIX)
-    add_compile_options(-fPIC)
 
     add_definitions(-DFEATURE_PAL)
     add_definitions(-DPAL_IMPLEMENTATION)

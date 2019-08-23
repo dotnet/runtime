@@ -51,10 +51,6 @@ set(MDCOMPILER_HEADERS
 convert_to_absolute_path(MDCOMPILER_SOURCES ${MDCOMPILER_SOURCES})
 convert_to_absolute_path(MDCOMPILER_HEADERS ${MDCOMPILER_HEADERS})
 
-if(CLR_CMAKE_PLATFORM_UNIX)
-    add_compile_options(-fPIC)
-endif(CLR_CMAKE_PLATFORM_UNIX)
-
 add_subdirectory(dac)
 add_subdirectory(wks)
 add_subdirectory(dbi)
