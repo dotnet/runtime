@@ -2,8 +2,43 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+// We need to add an InternalsVisibleToAttribute here to mscorlib since we need to expose some of these types via type forwards in mscorlib
+// since tooling expects some types to live there and not in System.Runtime.CompilerServices.VisualC, but we don't want to expose
+// these types publicly.
+[assembly:System.Runtime.CompilerServices.InternalsVisibleTo("mscorlib, PublicKey=00000000000000000400000000000000")]
+
 namespace System.Runtime.CompilerServices
 {
+    // Types used by the C++/CLI compiler during linking.
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    internal sealed class AssemblyAttributesGoHere
+    {
+        internal AssemblyAttributesGoHere()
+        {
+        }
+    }
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    internal sealed class AssemblyAttributesGoHereS
+    {
+        internal AssemblyAttributesGoHereS()
+        {
+        }
+    }
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    internal sealed class AssemblyAttributesGoHereM
+    {
+        internal AssemblyAttributesGoHereM()
+        {
+        }
+    }
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    internal sealed class AssemblyAttributesGoHereSM
+    {
+        internal AssemblyAttributesGoHereSM()
+        {
+        }
+    }
+
     // Types used in Custom Modifier to specify calling conventions.
     public class CallConvCdecl
     {
@@ -92,6 +127,19 @@ namespace System.Runtime.CompilerServices
         public RequiredAttributeAttribute(Type requiredContract) => RequiredContract = requiredContract;
 
         public Type RequiredContract { get; }
+    }
+
+    [AttributeUsage(AttributeTargets.Class |
+                    AttributeTargets.Constructor |
+                    AttributeTargets.Method |
+                    AttributeTargets.Field |
+                    AttributeTargets.Event |
+                    AttributeTargets.Property)]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    internal sealed class SuppressMergeCheckAttribute : Attribute
+    {
+        public SuppressMergeCheckAttribute()
+        {}
     }
 
     // The CLR data marshaler has some behaviors that are incompatible with

@@ -31,4 +31,10 @@
     <GenFacadesOmitType Include="System.Void" />
     <Compile Include="$(MSBuildThisFileDirectory)System.Void.cs" />
   </ItemGroup>
+
+  <ItemGroup>
+    <!-- include any forwards needed by both generated and manual projects -->
+    <Compile Condition="Exists('$(MSBuildThisFileDirectory)$(MSBuildProjectName).forwards.cs')"
+                 Include="$(MSBuildThisFileDirectory)$(MSBuildProjectName).forwards.cs" />
+  </ItemGroup>
 </Project>
