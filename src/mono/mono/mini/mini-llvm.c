@@ -6224,13 +6224,11 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			static LLVMTypeRef sig;
 			const char *icall_name = "mono_threads_state_poll";
 
-			g_assert (!cfg->compile_aot);
-
 			/*
 			 * Create the cold wrapper around the icall, along with a managed method for it so
 			 * unwinding works.
 			 */
-			if (!ctx->module->gc_poll_cold_wrapper_compiled) {
+			if (!cfg->compile_aot && !ctx->module->gc_poll_cold_wrapper_compiled) {
 				ERROR_DECL (error);
 				/* Compiling a method here is a bit ugly, but it works */
 				MonoMethod *wrapper = mono_marshal_get_llvm_func_wrapper (LLVM_FUNC_WRAPPER_GC_POLL);
@@ -6259,9 +6257,14 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			ctx->builder = builder = create_builder (ctx);
 			LLVMPositionBuilderAtEnd (builder, poll_bb);
 
-			callee = get_jit_callee (ctx, icall_name, sig, MONO_PATCH_INFO_ABS, ctx->module->gc_poll_cold_wrapper_compiled);
-			call = LLVMBuildCall (builder, callee, NULL, 0, "");
-			set_call_cold_cconv (call);
+			if (ctx->cfg->compile_aot) {
+				callee = get_callee (ctx, sig, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (MONO_JIT_ICALL_mono_threads_state_poll));
+				call = LLVMBuildCall (builder, callee, NULL, 0, "");
+			} else {
+				callee = get_jit_callee (ctx, icall_name, sig, MONO_PATCH_INFO_ABS, ctx->module->gc_poll_cold_wrapper_compiled);
+				call = LLVMBuildCall (builder, callee, NULL, 0, "");
+				set_call_cold_cconv (call);
+			}
 			LLVMBuildBr (builder, cont_bb);
 
 			ctx->builder = builder = create_builder (ctx);
