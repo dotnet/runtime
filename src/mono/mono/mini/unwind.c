@@ -584,8 +584,14 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 			p ++;
 			break;
 		case DW_CFA_offset:
-			hwreg = mono_dwarf_reg_to_hw_reg (*p & 0x3f);
+			reg = *p & 0x3f;
 			p ++;
+			if (reg >= NUM_DWARF_REGS) {
+				/* Register we don't care about, like a caller save reg in a cold cconv */
+				decode_uleb128 (p, &p);
+				break;
+			}
+			hwreg = mono_dwarf_reg_to_hw_reg (reg);
 			reg_saved [hwreg] = TRUE;
 			locations [hwreg].loc_type = LOC_OFFSET;
 			locations [hwreg].offset = decode_uleb128 (p, &p) * DWARF_DATA_ALIGN;
@@ -606,30 +612,29 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 				break;
 			case DW_CFA_offset_extended_sf:
 				reg = decode_uleb128 (p, &p);
-				hwreg = mono_dwarf_reg_to_hw_reg (reg);
 				offset = decode_sleb128 (p, &p);
-				if (reg >= NUM_DWARF_REGS) {
-					mono_runtime_printf_err ("Unwind failure. Assertion at %s %d\n.", __FILE__, __LINE__);
-					return FALSE;
-				}
+				if (reg >= NUM_DWARF_REGS)
+					break;
+				hwreg = mono_dwarf_reg_to_hw_reg (reg);
 				reg_saved [hwreg] = TRUE;
 				locations [hwreg].loc_type = LOC_OFFSET;
 				locations [hwreg].offset = offset * DWARF_DATA_ALIGN;
 				break;
 			case DW_CFA_offset_extended:
 				reg = decode_uleb128 (p, &p);
-				hwreg = mono_dwarf_reg_to_hw_reg (reg);
 				offset = decode_uleb128 (p, &p);
-				if (reg >= NUM_DWARF_REGS) {
-					mono_runtime_printf_err ("Unwind failure. Assertion at %s %d\n.", __FILE__, __LINE__);
-					return FALSE;
-				}
+				if (reg >= NUM_DWARF_REGS)
+					break;
+				hwreg = mono_dwarf_reg_to_hw_reg (reg);
 				reg_saved [hwreg] = TRUE;
 				locations [hwreg].loc_type = LOC_OFFSET;
 				locations [hwreg].offset = offset * DWARF_DATA_ALIGN;
 				break;
 			case DW_CFA_same_value:
-				hwreg = mono_dwarf_reg_to_hw_reg (decode_uleb128 (p, &p));
+				reg = decode_uleb128 (p, &p);
+				if (reg >= NUM_DWARF_REGS)
+					break;
+				hwreg = mono_dwarf_reg_to_hw_reg (reg);
 				locations [hwreg].loc_type = LOC_SAME;
 				break;
 			case DW_CFA_advance_loc1:
