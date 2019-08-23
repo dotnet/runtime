@@ -146,54 +146,6 @@ FCIMPL2(LPVOID, COMModule::nCreateISymWriterForDynamicModule, ReflectModuleBaseO
 FCIMPLEND
 
 //**************************************************
-// LoadInMemoryTypeByName
-// Explicitly loading an in memory type
-// <TODO>@todo: this function is not dealing with nested type correctly yet.
-// We will need to parse the full name by finding "+" for enclosing type, etc.</TODO>
-//**************************************************
-void QCALLTYPE COMModule::LoadInMemoryTypeByName(QCall::ModuleHandle pModule, LPCWSTR wszFullName)
-{
-    QCALL_CONTRACT;
-    
-    TypeHandle      typeHnd;
-
-    BEGIN_QCALL;
-
-    if (!pModule->IsReflection())  
-        COMPlusThrow(kNotSupportedException, W("NotSupported_NonReflectedType"));   
-
-    RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
-    _ASSERTE(pRCW);
-
-    // it is ok to use public import API because this is a dynamic module anyway. We are also receiving Unicode full name as
-    // parameter.
-    IMetaDataImport * pImport = pRCW->GetRWImporter();
-
-    if (wszFullName == NULL)
-        IfFailThrow( E_FAIL );
-
-    // look up the handle
-    mdTypeDef  td;
-    HRESULT hr = pImport->FindTypeDefByName(wszFullName, mdTokenNil, &td);
-    if (FAILED(hr))
-    {
-        if (hr != CLDB_E_RECORD_NOTFOUND)
-            COMPlusThrowHR(hr);
-
-        // Get the UTF8 version of strFullName
-        MAKE_UTF8PTR_FROMWIDE(szFullName, wszFullName);
-        pModule->GetAssembly()->ThrowTypeLoadException(szFullName, IDS_CLASSLOAD_GENERAL);
-    }
-
-    TypeKey typeKey(pModule, td);
-    typeHnd = pModule->GetClassLoader()->LoadTypeHandleForTypeKey(&typeKey, TypeHandle());
-
-    END_QCALL;
-
-    return;
-}
-
-//**************************************************
 // GetTypeRef
 // This function will return the type token given full qual name. If the type
 // is defined locally, we will return the TypeDef token. Or we will return a TypeRef token 

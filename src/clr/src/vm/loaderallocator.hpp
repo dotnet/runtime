@@ -396,11 +396,6 @@ public:
     // in the return value.
     DispatchToken GetDispatchToken(UINT32 typeId, UINT32 slotNumber);
 
-    // Same as GetDispatchToken, but returns invalid DispatchToken  when the
-    // value doesn't exist or a transient exception (OOM, stack overflow) is
-    // encountered. To check if the token is valid, use DispatchToken::IsValid
-    DispatchToken TryLookupDispatchToken(UINT32 typeId, UINT32 slotNumber);
-
     virtual LoaderAllocatorID* Id() =0;
     BOOL IsCollectible() { WRAPPER_NO_CONTRACT; return m_IsCollectible; }
 

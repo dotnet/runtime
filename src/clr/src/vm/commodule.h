@@ -33,12 +33,6 @@ public:
                                    LPCWSTR wszRefedModuleFileName,
                                    INT32 tkResolution);
 
-    // LoadInMemoryTypeByName
-    // This function will return the class token for the named element.
-    static
-    void QCALLTYPE LoadInMemoryTypeByName(QCall::ModuleHandle pModule, LPCWSTR wszFullName);
-
-
     // SetFieldRVAContent
     // This function is used to set the FieldRVA with the content data
     static

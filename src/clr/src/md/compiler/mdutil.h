@@ -26,41 +26,6 @@ ULONG _GetSizeOfConstantBlob(
     void        *pValue,                    // BLOB value
     ULONG       cchString);                 // Size of string in wide chars, or -1 for auto.
 
-
-//*********************************************************************
-// APIs to help look up TypeRef using CORPATH environment variable
-//*********************************************************************
-class CORPATHService
-{
-public:
-
-    static HRESULT GetClassFromCORPath(
-        __in __in_z LPWSTR      wzClassname,            // fully qualified class name
-        mdTypeRef   tr,                     // TypeRef to be resolved
-        IMetaModelCommon *pCommon,          // Scope in which the TypeRef is defined.
-        REFIID      riid, 
-        IUnknown    **ppIScope,
-        mdTypeDef   *ptd);                  // [OUT] typedef corresponding the typeref
-
-    static HRESULT GetClassFromDir(
-        __in __in_z LPWSTR      wzClassname, // Fully qualified class name.
-        __in SString&      dir,              // Directory to try.
-        mdTypeRef   tr,                     // TypeRef to resolve.
-        IMetaModelCommon *pCommon,          // Scope in which the TypeRef is defined.
-        REFIID      riid, 
-        IUnknown    **ppIScope,
-        mdTypeDef   *ptd);                  // [OUT] typedef
-
-    static HRESULT FindTypeDef(
-        __in __in_z LPCWSTR      wzModule,  // name of the module that we are going to open
-        mdTypeRef   tr,                     // TypeRef to resolve.
-        IMetaModelCommon *pCommon,          // Scope in which the TypeRef is defined.
-        REFIID      riid, 
-        IUnknown    **ppIScope,
-        mdTypeDef   *ptd );                 // [OUT] the type that we resolve to
-};  // class CORPATHService
-
-
 #if defined(FEATURE_METADATA_IN_VM)
 
 class RegMeta;

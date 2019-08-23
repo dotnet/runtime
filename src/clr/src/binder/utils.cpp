@@ -194,50 +194,6 @@ namespace BINDER_SPACE
         BINDER_LOG_LEAVE(W("Utils::MutateUrlToPath"));
     }
 
-    void MutatePathToUrl(SString &pathOrUrl)
-    {
-        BINDER_LOG_ENTER(W("Utils::MutatePathToUrl"));
-        SString::Iterator i = pathOrUrl.Begin();
-
-        BINDER_LOG_STRING(W("Path"), pathOrUrl);
-
-#if !defined(PLATFORM_UNIX)
-        // Network path \\server --> file://server
-        // Disk path    c:\dir   --> file:///c:/dir
-        if (i[0] == W('\\'))
-        {
-            const SString networkUrlPrefix(SString::Literal, W("file:"));
-
-            // Network path
-            pathOrUrl.Insert(i, networkUrlPrefix);
-            pathOrUrl.Skip(i, networkUrlPrefix);
-        }
-        else
-        {
-            const SString diskPathUrlPrefix(SString::Literal, W("file:///"));
-
-            // Disk path
-            pathOrUrl.Insert(i, diskPathUrlPrefix);
-            pathOrUrl.Skip(i, diskPathUrlPrefix);
-        }
-#else
-        // Unix doesn't have a distinction between a network or a local path
-        _ASSERTE(i[0] == W('\\') || i[0] == W('/'));
-        const SString fileUrlPrefix(SString::Literal, W("file://"));
-
-        pathOrUrl.Insert(i, fileUrlPrefix);
-        pathOrUrl.Skip(i, fileUrlPrefix);
-#endif
-
-        while (pathOrUrl.Find(i, W('\\')))
-        {
-            pathOrUrl.Replace(i, W('/'));
-        }
-
-        BINDER_LOG_STRING(W("URL"), pathOrUrl);
-        BINDER_LOG_LEAVE(W("Utils::MutatePathToUrl"));
-    }
-
     void PlatformPath(SString &path)
     {
         BINDER_LOG_ENTER(W("Utils::PlatformPath"));
