@@ -3,11 +3,11 @@
 /* this ALWAYS GENERATED file contains the definitions for the interfaces */
 
 
- /* File created by MIDL compiler version 8.00.0613 */
+ /* File created by MIDL compiler version 8.01.0622 */
 /* at Mon Jan 18 19:14:07 2038
  */
-/* Compiler settings for C:/ssd/coreclr/src/inc/sospriv.idl:
-    Oicf, W1, Zp8, env=Win32 (32b run), target_arch=X86 8.00.0613 
+/* Compiler settings for C:/git/diagnostics/src/inc/sospriv.idl:
+    Oicf, W1, Zp8, env=Win32 (32b run), target_arch=X86 8.01.0622 
     protocol : dce , ms_ext, c_ext, robust
     error checks: allocation ref bounds_check enum stub_data 
     VC __declspec() decoration level: 
@@ -49,56 +49,77 @@
 #define __ISOSEnum_FWD_DEFINED__
 typedef interface ISOSEnum ISOSEnum;
 
-#endif 	/* __ISOSEnum_FWD_DEFINED__ */
+#endif  /* __ISOSEnum_FWD_DEFINED__ */
 
 
 #ifndef __ISOSHandleEnum_FWD_DEFINED__
 #define __ISOSHandleEnum_FWD_DEFINED__
 typedef interface ISOSHandleEnum ISOSHandleEnum;
 
-#endif 	/* __ISOSHandleEnum_FWD_DEFINED__ */
+#endif  /* __ISOSHandleEnum_FWD_DEFINED__ */
 
 
 #ifndef __ISOSStackRefErrorEnum_FWD_DEFINED__
 #define __ISOSStackRefErrorEnum_FWD_DEFINED__
 typedef interface ISOSStackRefErrorEnum ISOSStackRefErrorEnum;
 
-#endif 	/* __ISOSStackRefErrorEnum_FWD_DEFINED__ */
+#endif  /* __ISOSStackRefErrorEnum_FWD_DEFINED__ */
 
 
 #ifndef __ISOSStackRefEnum_FWD_DEFINED__
 #define __ISOSStackRefEnum_FWD_DEFINED__
 typedef interface ISOSStackRefEnum ISOSStackRefEnum;
 
-#endif 	/* __ISOSStackRefEnum_FWD_DEFINED__ */
+#endif  /* __ISOSStackRefEnum_FWD_DEFINED__ */
 
 
 #ifndef __ISOSDacInterface_FWD_DEFINED__
 #define __ISOSDacInterface_FWD_DEFINED__
 typedef interface ISOSDacInterface ISOSDacInterface;
 
-#endif 	/* __ISOSDacInterface_FWD_DEFINED__ */
+#endif  /* __ISOSDacInterface_FWD_DEFINED__ */
 
 
 #ifndef __ISOSDacInterface2_FWD_DEFINED__
 #define __ISOSDacInterface2_FWD_DEFINED__
 typedef interface ISOSDacInterface2 ISOSDacInterface2;
 
-#endif 	/* __ISOSDacInterface2_FWD_DEFINED__ */
+#endif  /* __ISOSDacInterface2_FWD_DEFINED__ */
 
 
 #ifndef __ISOSDacInterface3_FWD_DEFINED__
 #define __ISOSDacInterface3_FWD_DEFINED__
 typedef interface ISOSDacInterface3 ISOSDacInterface3;
 
-#endif 	/* __ISOSDacInterface3_FWD_DEFINED__ */
+#endif  /* __ISOSDacInterface3_FWD_DEFINED__ */
 
 
 #ifndef __ISOSDacInterface4_FWD_DEFINED__
 #define __ISOSDacInterface4_FWD_DEFINED__
 typedef interface ISOSDacInterface4 ISOSDacInterface4;
 
-#endif 	/* __ISOSDacInterface4_FWD_DEFINED__ */
+#endif  /* __ISOSDacInterface4_FWD_DEFINED__ */
+
+
+#ifndef __ISOSDacInterface5_FWD_DEFINED__
+#define __ISOSDacInterface5_FWD_DEFINED__
+typedef interface ISOSDacInterface5 ISOSDacInterface5;
+
+#endif  /* __ISOSDacInterface5_FWD_DEFINED__ */
+
+
+#ifndef __ISOSDacInterface6_FWD_DEFINED__
+#define __ISOSDacInterface6_FWD_DEFINED__
+typedef interface ISOSDacInterface6 ISOSDacInterface6;
+
+#endif  /* __ISOSDacInterface6_FWD_DEFINED__ */
+
+
+#ifndef __ISOSDacInterface7_FWD_DEFINED__
+#define __ISOSDacInterface7_FWD_DEFINED__
+typedef interface ISOSDacInterface7 ISOSDacInterface7;
+
+#endif  /* __ISOSDacInterface7_FWD_DEFINED__ */
 
 
 /* header files for imported files */
@@ -153,8 +174,8 @@ typedef int ModuleMapType;
 typedef int VCSHeapType;
 
 #endif
-enum ModuleMapType { TYPEDEFTOMETHODTABLE, TYPEREFTOMETHODTABLE };
-enum VCSHeapType {IndcellHeap, LookupHeap, ResolveHeap, DispatchHeap, CacheEntryHeap};
+typedef enum { TYPEDEFTOMETHODTABLE, TYPEREFTOMETHODTABLE } ModuleMapType;
+typedef enum {IndcellHeap, LookupHeap, ResolveHeap, DispatchHeap, CacheEntryHeap} VCSHeapType;
 typedef void ( *MODULEMAPTRAVERSE )( 
     UINT index,
     CLRDATA_ADDRESS methodTable,
@@ -190,7 +211,7 @@ typedef struct _SOSHandleData
     unsigned int RefCount;
     unsigned int JupiterRefCount;
     BOOL IsPegged;
-    } 	SOSHandleData;
+    }   SOSHandleData;
 
 #endif //HandleData
 
@@ -224,7 +245,7 @@ EXTERN_C const IID IID_ISOSEnum;
     };
     
     
-#else 	/* C style interface */
+#else   /* C style interface */
 
     typedef struct ISOSEnumVtbl
     {
@@ -266,34 +287,34 @@ EXTERN_C const IID IID_ISOSEnum;
 #ifdef COBJMACROS
 
 
-#define ISOSEnum_QueryInterface(This,riid,ppvObject)	\
+#define ISOSEnum_QueryInterface(This,riid,ppvObject)    \
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
-#define ISOSEnum_AddRef(This)	\
+#define ISOSEnum_AddRef(This)   \
     ( (This)->lpVtbl -> AddRef(This) ) 
 
-#define ISOSEnum_Release(This)	\
+#define ISOSEnum_Release(This)  \
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ISOSEnum_Skip(This,count)	\
+#define ISOSEnum_Skip(This,count)   \
     ( (This)->lpVtbl -> Skip(This,count) ) 
 
-#define ISOSEnum_Reset(This)	\
+#define ISOSEnum_Reset(This)    \
     ( (This)->lpVtbl -> Reset(This) ) 
 
-#define ISOSEnum_GetCount(This,pCount)	\
+#define ISOSEnum_GetCount(This,pCount)  \
     ( (This)->lpVtbl -> GetCount(This,pCount) ) 
 
 #endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
+#endif  /* C style interface */
 
 
 
 
-#endif 	/* __ISOSEnum_INTERFACE_DEFINED__ */
+#endif  /* __ISOSEnum_INTERFACE_DEFINED__ */
 
 
 #ifndef __ISOSHandleEnum_INTERFACE_DEFINED__
@@ -319,7 +340,7 @@ EXTERN_C const IID IID_ISOSHandleEnum;
     };
     
     
-#else 	/* C style interface */
+#else   /* C style interface */
 
     typedef struct ISOSHandleEnumVtbl
     {
@@ -367,38 +388,38 @@ EXTERN_C const IID IID_ISOSHandleEnum;
 #ifdef COBJMACROS
 
 
-#define ISOSHandleEnum_QueryInterface(This,riid,ppvObject)	\
+#define ISOSHandleEnum_QueryInterface(This,riid,ppvObject)  \
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
-#define ISOSHandleEnum_AddRef(This)	\
+#define ISOSHandleEnum_AddRef(This) \
     ( (This)->lpVtbl -> AddRef(This) ) 
 
-#define ISOSHandleEnum_Release(This)	\
+#define ISOSHandleEnum_Release(This)    \
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ISOSHandleEnum_Skip(This,count)	\
+#define ISOSHandleEnum_Skip(This,count) \
     ( (This)->lpVtbl -> Skip(This,count) ) 
 
-#define ISOSHandleEnum_Reset(This)	\
+#define ISOSHandleEnum_Reset(This)  \
     ( (This)->lpVtbl -> Reset(This) ) 
 
-#define ISOSHandleEnum_GetCount(This,pCount)	\
+#define ISOSHandleEnum_GetCount(This,pCount)    \
     ( (This)->lpVtbl -> GetCount(This,pCount) ) 
 
 
-#define ISOSHandleEnum_Next(This,count,handles,pNeeded)	\
+#define ISOSHandleEnum_Next(This,count,handles,pNeeded) \
     ( (This)->lpVtbl -> Next(This,count,handles,pNeeded) ) 
 
 #endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
+#endif  /* C style interface */
 
 
 
 
-#endif 	/* __ISOSHandleEnum_INTERFACE_DEFINED__ */
+#endif  /* __ISOSHandleEnum_INTERFACE_DEFINED__ */
 
 
 /* interface __MIDL_itf_sospriv_0000_0002 */
@@ -409,16 +430,16 @@ EXTERN_C const IID IID_ISOSHandleEnum;
 typedef 
 enum SOSStackSourceType
     {
-        SOS_StackSourceIP	= 0,
-        SOS_StackSourceFrame	= ( SOS_StackSourceIP + 1 ) 
-    } 	SOSStackSourceType;
+        SOS_StackSourceIP   = 0,
+        SOS_StackSourceFrame    = ( SOS_StackSourceIP + 1 ) 
+    }   SOSStackSourceType;
 
 typedef 
 enum SOSRefFlags
     {
-        SOSRefInterior	= 1,
-        SOSRefPinned	= 2
-    } 	SOSRefFlags;
+        SOSRefInterior  = 1,
+        SOSRefPinned    = 2
+    }   SOSRefFlags;
 
 typedef struct _SOS_StackRefData
     {
@@ -431,14 +452,14 @@ typedef struct _SOS_StackRefData
     SOSStackSourceType SourceType;
     CLRDATA_ADDRESS Source;
     CLRDATA_ADDRESS StackPointer;
-    } 	SOSStackRefData;
+    }   SOSStackRefData;
 
 typedef struct _SOS_StackRefError
     {
     SOSStackSourceType SourceType;
     CLRDATA_ADDRESS Source;
     CLRDATA_ADDRESS StackPointer;
-    } 	SOSStackRefError;
+    }   SOSStackRefError;
 
 #endif // _SOS_StackReference_
 
@@ -469,7 +490,7 @@ EXTERN_C const IID IID_ISOSStackRefErrorEnum;
     };
     
     
-#else 	/* C style interface */
+#else   /* C style interface */
 
     typedef struct ISOSStackRefErrorEnumVtbl
     {
@@ -517,38 +538,38 @@ EXTERN_C const IID IID_ISOSStackRefErrorEnum;
 #ifdef COBJMACROS
 
 
-#define ISOSStackRefErrorEnum_QueryInterface(This,riid,ppvObject)	\
+#define ISOSStackRefErrorEnum_QueryInterface(This,riid,ppvObject)   \
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
-#define ISOSStackRefErrorEnum_AddRef(This)	\
+#define ISOSStackRefErrorEnum_AddRef(This)  \
     ( (This)->lpVtbl -> AddRef(This) ) 
 
-#define ISOSStackRefErrorEnum_Release(This)	\
+#define ISOSStackRefErrorEnum_Release(This) \
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ISOSStackRefErrorEnum_Skip(This,count)	\
+#define ISOSStackRefErrorEnum_Skip(This,count)  \
     ( (This)->lpVtbl -> Skip(This,count) ) 
 
-#define ISOSStackRefErrorEnum_Reset(This)	\
+#define ISOSStackRefErrorEnum_Reset(This)   \
     ( (This)->lpVtbl -> Reset(This) ) 
 
-#define ISOSStackRefErrorEnum_GetCount(This,pCount)	\
+#define ISOSStackRefErrorEnum_GetCount(This,pCount) \
     ( (This)->lpVtbl -> GetCount(This,pCount) ) 
 
 
-#define ISOSStackRefErrorEnum_Next(This,count,ref,pFetched)	\
+#define ISOSStackRefErrorEnum_Next(This,count,ref,pFetched) \
     ( (This)->lpVtbl -> Next(This,count,ref,pFetched) ) 
 
 #endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
+#endif  /* C style interface */
 
 
 
 
-#endif 	/* __ISOSStackRefErrorEnum_INTERFACE_DEFINED__ */
+#endif  /* __ISOSStackRefErrorEnum_INTERFACE_DEFINED__ */
 
 
 #ifndef __ISOSStackRefEnum_INTERFACE_DEFINED__
@@ -577,7 +598,7 @@ EXTERN_C const IID IID_ISOSStackRefEnum;
     };
     
     
-#else 	/* C style interface */
+#else   /* C style interface */
 
     typedef struct ISOSStackRefEnumVtbl
     {
@@ -629,41 +650,41 @@ EXTERN_C const IID IID_ISOSStackRefEnum;
 #ifdef COBJMACROS
 
 
-#define ISOSStackRefEnum_QueryInterface(This,riid,ppvObject)	\
+#define ISOSStackRefEnum_QueryInterface(This,riid,ppvObject)    \
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
-#define ISOSStackRefEnum_AddRef(This)	\
+#define ISOSStackRefEnum_AddRef(This)   \
     ( (This)->lpVtbl -> AddRef(This) ) 
 
-#define ISOSStackRefEnum_Release(This)	\
+#define ISOSStackRefEnum_Release(This)  \
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ISOSStackRefEnum_Skip(This,count)	\
+#define ISOSStackRefEnum_Skip(This,count)   \
     ( (This)->lpVtbl -> Skip(This,count) ) 
 
-#define ISOSStackRefEnum_Reset(This)	\
+#define ISOSStackRefEnum_Reset(This)    \
     ( (This)->lpVtbl -> Reset(This) ) 
 
-#define ISOSStackRefEnum_GetCount(This,pCount)	\
+#define ISOSStackRefEnum_GetCount(This,pCount)  \
     ( (This)->lpVtbl -> GetCount(This,pCount) ) 
 
 
-#define ISOSStackRefEnum_Next(This,count,ref,pFetched)	\
+#define ISOSStackRefEnum_Next(This,count,ref,pFetched)  \
     ( (This)->lpVtbl -> Next(This,count,ref,pFetched) ) 
 
-#define ISOSStackRefEnum_EnumerateErrors(This,ppEnum)	\
+#define ISOSStackRefEnum_EnumerateErrors(This,ppEnum)   \
     ( (This)->lpVtbl -> EnumerateErrors(This,ppEnum) ) 
 
 #endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
+#endif  /* C style interface */
 
 
 
 
-#endif 	/* __ISOSStackRefEnum_INTERFACE_DEFINED__ */
+#endif  /* __ISOSStackRefEnum_INTERFACE_DEFINED__ */
 
 
 #ifndef __ISOSDacInterface_INTERFACE_DEFINED__
@@ -1093,7 +1114,7 @@ EXTERN_C const IID IID_ISOSDacInterface;
     };
     
     
-#else 	/* C style interface */
+#else   /* C style interface */
 
     typedef struct ISOSDacInterfaceVtbl
     {
@@ -1621,289 +1642,289 @@ EXTERN_C const IID IID_ISOSDacInterface;
 #ifdef COBJMACROS
 
 
-#define ISOSDacInterface_QueryInterface(This,riid,ppvObject)	\
+#define ISOSDacInterface_QueryInterface(This,riid,ppvObject)    \
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
-#define ISOSDacInterface_AddRef(This)	\
+#define ISOSDacInterface_AddRef(This)   \
     ( (This)->lpVtbl -> AddRef(This) ) 
 
-#define ISOSDacInterface_Release(This)	\
+#define ISOSDacInterface_Release(This)  \
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ISOSDacInterface_GetThreadStoreData(This,data)	\
+#define ISOSDacInterface_GetThreadStoreData(This,data)  \
     ( (This)->lpVtbl -> GetThreadStoreData(This,data) ) 
 
-#define ISOSDacInterface_GetAppDomainStoreData(This,data)	\
+#define ISOSDacInterface_GetAppDomainStoreData(This,data)   \
     ( (This)->lpVtbl -> GetAppDomainStoreData(This,data) ) 
 
-#define ISOSDacInterface_GetAppDomainList(This,count,values,pNeeded)	\
+#define ISOSDacInterface_GetAppDomainList(This,count,values,pNeeded)    \
     ( (This)->lpVtbl -> GetAppDomainList(This,count,values,pNeeded) ) 
 
-#define ISOSDacInterface_GetAppDomainData(This,addr,data)	\
+#define ISOSDacInterface_GetAppDomainData(This,addr,data)   \
     ( (This)->lpVtbl -> GetAppDomainData(This,addr,data) ) 
 
-#define ISOSDacInterface_GetAppDomainName(This,addr,count,name,pNeeded)	\
+#define ISOSDacInterface_GetAppDomainName(This,addr,count,name,pNeeded) \
     ( (This)->lpVtbl -> GetAppDomainName(This,addr,count,name,pNeeded) ) 
 
-#define ISOSDacInterface_GetDomainFromContext(This,context,domain)	\
+#define ISOSDacInterface_GetDomainFromContext(This,context,domain)  \
     ( (This)->lpVtbl -> GetDomainFromContext(This,context,domain) ) 
 
-#define ISOSDacInterface_GetAssemblyList(This,appDomain,count,values,pNeeded)	\
+#define ISOSDacInterface_GetAssemblyList(This,appDomain,count,values,pNeeded)   \
     ( (This)->lpVtbl -> GetAssemblyList(This,appDomain,count,values,pNeeded) ) 
 
-#define ISOSDacInterface_GetAssemblyData(This,baseDomainPtr,assembly,data)	\
+#define ISOSDacInterface_GetAssemblyData(This,baseDomainPtr,assembly,data)  \
     ( (This)->lpVtbl -> GetAssemblyData(This,baseDomainPtr,assembly,data) ) 
 
-#define ISOSDacInterface_GetAssemblyName(This,assembly,count,name,pNeeded)	\
+#define ISOSDacInterface_GetAssemblyName(This,assembly,count,name,pNeeded)  \
     ( (This)->lpVtbl -> GetAssemblyName(This,assembly,count,name,pNeeded) ) 
 
-#define ISOSDacInterface_GetModule(This,addr,mod)	\
+#define ISOSDacInterface_GetModule(This,addr,mod)   \
     ( (This)->lpVtbl -> GetModule(This,addr,mod) ) 
 
-#define ISOSDacInterface_GetModuleData(This,moduleAddr,data)	\
+#define ISOSDacInterface_GetModuleData(This,moduleAddr,data)    \
     ( (This)->lpVtbl -> GetModuleData(This,moduleAddr,data) ) 
 
-#define ISOSDacInterface_TraverseModuleMap(This,mmt,moduleAddr,pCallback,token)	\
+#define ISOSDacInterface_TraverseModuleMap(This,mmt,moduleAddr,pCallback,token) \
     ( (This)->lpVtbl -> TraverseModuleMap(This,mmt,moduleAddr,pCallback,token) ) 
 
-#define ISOSDacInterface_GetAssemblyModuleList(This,assembly,count,modules,pNeeded)	\
+#define ISOSDacInterface_GetAssemblyModuleList(This,assembly,count,modules,pNeeded) \
     ( (This)->lpVtbl -> GetAssemblyModuleList(This,assembly,count,modules,pNeeded) ) 
 
-#define ISOSDacInterface_GetILForModule(This,moduleAddr,rva,il)	\
+#define ISOSDacInterface_GetILForModule(This,moduleAddr,rva,il) \
     ( (This)->lpVtbl -> GetILForModule(This,moduleAddr,rva,il) ) 
 
-#define ISOSDacInterface_GetThreadData(This,thread,data)	\
+#define ISOSDacInterface_GetThreadData(This,thread,data)    \
     ( (This)->lpVtbl -> GetThreadData(This,thread,data) ) 
 
-#define ISOSDacInterface_GetThreadFromThinlockID(This,thinLockId,pThread)	\
+#define ISOSDacInterface_GetThreadFromThinlockID(This,thinLockId,pThread)   \
     ( (This)->lpVtbl -> GetThreadFromThinlockID(This,thinLockId,pThread) ) 
 
-#define ISOSDacInterface_GetStackLimits(This,threadPtr,lower,upper,fp)	\
+#define ISOSDacInterface_GetStackLimits(This,threadPtr,lower,upper,fp)  \
     ( (This)->lpVtbl -> GetStackLimits(This,threadPtr,lower,upper,fp) ) 
 
-#define ISOSDacInterface_GetMethodDescData(This,methodDesc,ip,data,cRevertedRejitVersions,rgRevertedRejitData,pcNeededRevertedRejitData)	\
+#define ISOSDacInterface_GetMethodDescData(This,methodDesc,ip,data,cRevertedRejitVersions,rgRevertedRejitData,pcNeededRevertedRejitData)    \
     ( (This)->lpVtbl -> GetMethodDescData(This,methodDesc,ip,data,cRevertedRejitVersions,rgRevertedRejitData,pcNeededRevertedRejitData) ) 
 
-#define ISOSDacInterface_GetMethodDescPtrFromIP(This,ip,ppMD)	\
+#define ISOSDacInterface_GetMethodDescPtrFromIP(This,ip,ppMD)   \
     ( (This)->lpVtbl -> GetMethodDescPtrFromIP(This,ip,ppMD) ) 
 
-#define ISOSDacInterface_GetMethodDescName(This,methodDesc,count,name,pNeeded)	\
+#define ISOSDacInterface_GetMethodDescName(This,methodDesc,count,name,pNeeded)  \
     ( (This)->lpVtbl -> GetMethodDescName(This,methodDesc,count,name,pNeeded) ) 
 
-#define ISOSDacInterface_GetMethodDescPtrFromFrame(This,frameAddr,ppMD)	\
+#define ISOSDacInterface_GetMethodDescPtrFromFrame(This,frameAddr,ppMD) \
     ( (This)->lpVtbl -> GetMethodDescPtrFromFrame(This,frameAddr,ppMD) ) 
 
-#define ISOSDacInterface_GetMethodDescFromToken(This,moduleAddr,token,methodDesc)	\
+#define ISOSDacInterface_GetMethodDescFromToken(This,moduleAddr,token,methodDesc)   \
     ( (This)->lpVtbl -> GetMethodDescFromToken(This,moduleAddr,token,methodDesc) ) 
 
-#define ISOSDacInterface_GetMethodDescTransparencyData(This,methodDesc,data)	\
+#define ISOSDacInterface_GetMethodDescTransparencyData(This,methodDesc,data)    \
     ( (This)->lpVtbl -> GetMethodDescTransparencyData(This,methodDesc,data) ) 
 
-#define ISOSDacInterface_GetCodeHeaderData(This,ip,data)	\
+#define ISOSDacInterface_GetCodeHeaderData(This,ip,data)    \
     ( (This)->lpVtbl -> GetCodeHeaderData(This,ip,data) ) 
 
-#define ISOSDacInterface_GetJitManagerList(This,count,managers,pNeeded)	\
+#define ISOSDacInterface_GetJitManagerList(This,count,managers,pNeeded) \
     ( (This)->lpVtbl -> GetJitManagerList(This,count,managers,pNeeded) ) 
 
-#define ISOSDacInterface_GetJitHelperFunctionName(This,ip,count,name,pNeeded)	\
+#define ISOSDacInterface_GetJitHelperFunctionName(This,ip,count,name,pNeeded)   \
     ( (This)->lpVtbl -> GetJitHelperFunctionName(This,ip,count,name,pNeeded) ) 
 
-#define ISOSDacInterface_GetJumpThunkTarget(This,ctx,targetIP,targetMD)	\
+#define ISOSDacInterface_GetJumpThunkTarget(This,ctx,targetIP,targetMD) \
     ( (This)->lpVtbl -> GetJumpThunkTarget(This,ctx,targetIP,targetMD) ) 
 
-#define ISOSDacInterface_GetThreadpoolData(This,data)	\
+#define ISOSDacInterface_GetThreadpoolData(This,data)   \
     ( (This)->lpVtbl -> GetThreadpoolData(This,data) ) 
 
-#define ISOSDacInterface_GetWorkRequestData(This,addrWorkRequest,data)	\
+#define ISOSDacInterface_GetWorkRequestData(This,addrWorkRequest,data)  \
     ( (This)->lpVtbl -> GetWorkRequestData(This,addrWorkRequest,data) ) 
 
-#define ISOSDacInterface_GetHillClimbingLogEntry(This,addr,data)	\
+#define ISOSDacInterface_GetHillClimbingLogEntry(This,addr,data)    \
     ( (This)->lpVtbl -> GetHillClimbingLogEntry(This,addr,data) ) 
 
-#define ISOSDacInterface_GetObjectData(This,objAddr,data)	\
+#define ISOSDacInterface_GetObjectData(This,objAddr,data)   \
     ( (This)->lpVtbl -> GetObjectData(This,objAddr,data) ) 
 
-#define ISOSDacInterface_GetObjectStringData(This,obj,count,stringData,pNeeded)	\
+#define ISOSDacInterface_GetObjectStringData(This,obj,count,stringData,pNeeded) \
     ( (This)->lpVtbl -> GetObjectStringData(This,obj,count,stringData,pNeeded) ) 
 
-#define ISOSDacInterface_GetObjectClassName(This,obj,count,className,pNeeded)	\
+#define ISOSDacInterface_GetObjectClassName(This,obj,count,className,pNeeded)   \
     ( (This)->lpVtbl -> GetObjectClassName(This,obj,count,className,pNeeded) ) 
 
-#define ISOSDacInterface_GetMethodTableName(This,mt,count,mtName,pNeeded)	\
+#define ISOSDacInterface_GetMethodTableName(This,mt,count,mtName,pNeeded)   \
     ( (This)->lpVtbl -> GetMethodTableName(This,mt,count,mtName,pNeeded) ) 
 
-#define ISOSDacInterface_GetMethodTableData(This,mt,data)	\
+#define ISOSDacInterface_GetMethodTableData(This,mt,data)   \
     ( (This)->lpVtbl -> GetMethodTableData(This,mt,data) ) 
 
-#define ISOSDacInterface_GetMethodTableSlot(This,mt,slot,value)	\
+#define ISOSDacInterface_GetMethodTableSlot(This,mt,slot,value) \
     ( (This)->lpVtbl -> GetMethodTableSlot(This,mt,slot,value) ) 
 
-#define ISOSDacInterface_GetMethodTableFieldData(This,mt,data)	\
+#define ISOSDacInterface_GetMethodTableFieldData(This,mt,data)  \
     ( (This)->lpVtbl -> GetMethodTableFieldData(This,mt,data) ) 
 
-#define ISOSDacInterface_GetMethodTableTransparencyData(This,mt,data)	\
+#define ISOSDacInterface_GetMethodTableTransparencyData(This,mt,data)   \
     ( (This)->lpVtbl -> GetMethodTableTransparencyData(This,mt,data) ) 
 
-#define ISOSDacInterface_GetMethodTableForEEClass(This,eeClass,value)	\
+#define ISOSDacInterface_GetMethodTableForEEClass(This,eeClass,value)   \
     ( (This)->lpVtbl -> GetMethodTableForEEClass(This,eeClass,value) ) 
 
-#define ISOSDacInterface_GetFieldDescData(This,fieldDesc,data)	\
+#define ISOSDacInterface_GetFieldDescData(This,fieldDesc,data)  \
     ( (This)->lpVtbl -> GetFieldDescData(This,fieldDesc,data) ) 
 
-#define ISOSDacInterface_GetFrameName(This,vtable,count,frameName,pNeeded)	\
+#define ISOSDacInterface_GetFrameName(This,vtable,count,frameName,pNeeded)  \
     ( (This)->lpVtbl -> GetFrameName(This,vtable,count,frameName,pNeeded) ) 
 
-#define ISOSDacInterface_GetPEFileBase(This,addr,base)	\
+#define ISOSDacInterface_GetPEFileBase(This,addr,base)  \
     ( (This)->lpVtbl -> GetPEFileBase(This,addr,base) ) 
 
-#define ISOSDacInterface_GetPEFileName(This,addr,count,fileName,pNeeded)	\
+#define ISOSDacInterface_GetPEFileName(This,addr,count,fileName,pNeeded)    \
     ( (This)->lpVtbl -> GetPEFileName(This,addr,count,fileName,pNeeded) ) 
 
-#define ISOSDacInterface_GetGCHeapData(This,data)	\
+#define ISOSDacInterface_GetGCHeapData(This,data)   \
     ( (This)->lpVtbl -> GetGCHeapData(This,data) ) 
 
-#define ISOSDacInterface_GetGCHeapList(This,count,heaps,pNeeded)	\
+#define ISOSDacInterface_GetGCHeapList(This,count,heaps,pNeeded)    \
     ( (This)->lpVtbl -> GetGCHeapList(This,count,heaps,pNeeded) ) 
 
-#define ISOSDacInterface_GetGCHeapDetails(This,heap,details)	\
+#define ISOSDacInterface_GetGCHeapDetails(This,heap,details)    \
     ( (This)->lpVtbl -> GetGCHeapDetails(This,heap,details) ) 
 
-#define ISOSDacInterface_GetGCHeapStaticData(This,data)	\
+#define ISOSDacInterface_GetGCHeapStaticData(This,data) \
     ( (This)->lpVtbl -> GetGCHeapStaticData(This,data) ) 
 
-#define ISOSDacInterface_GetHeapSegmentData(This,seg,data)	\
+#define ISOSDacInterface_GetHeapSegmentData(This,seg,data)  \
     ( (This)->lpVtbl -> GetHeapSegmentData(This,seg,data) ) 
 
-#define ISOSDacInterface_GetOOMData(This,oomAddr,data)	\
+#define ISOSDacInterface_GetOOMData(This,oomAddr,data)  \
     ( (This)->lpVtbl -> GetOOMData(This,oomAddr,data) ) 
 
-#define ISOSDacInterface_GetOOMStaticData(This,data)	\
+#define ISOSDacInterface_GetOOMStaticData(This,data)    \
     ( (This)->lpVtbl -> GetOOMStaticData(This,data) ) 
 
-#define ISOSDacInterface_GetHeapAnalyzeData(This,addr,data)	\
+#define ISOSDacInterface_GetHeapAnalyzeData(This,addr,data) \
     ( (This)->lpVtbl -> GetHeapAnalyzeData(This,addr,data) ) 
 
-#define ISOSDacInterface_GetHeapAnalyzeStaticData(This,data)	\
+#define ISOSDacInterface_GetHeapAnalyzeStaticData(This,data)    \
     ( (This)->lpVtbl -> GetHeapAnalyzeStaticData(This,data) ) 
 
-#define ISOSDacInterface_GetDomainLocalModuleData(This,addr,data)	\
+#define ISOSDacInterface_GetDomainLocalModuleData(This,addr,data)   \
     ( (This)->lpVtbl -> GetDomainLocalModuleData(This,addr,data) ) 
 
-#define ISOSDacInterface_GetDomainLocalModuleDataFromAppDomain(This,appDomainAddr,moduleID,data)	\
+#define ISOSDacInterface_GetDomainLocalModuleDataFromAppDomain(This,appDomainAddr,moduleID,data)    \
     ( (This)->lpVtbl -> GetDomainLocalModuleDataFromAppDomain(This,appDomainAddr,moduleID,data) ) 
 
-#define ISOSDacInterface_GetDomainLocalModuleDataFromModule(This,moduleAddr,data)	\
+#define ISOSDacInterface_GetDomainLocalModuleDataFromModule(This,moduleAddr,data)   \
     ( (This)->lpVtbl -> GetDomainLocalModuleDataFromModule(This,moduleAddr,data) ) 
 
-#define ISOSDacInterface_GetThreadLocalModuleData(This,thread,index,data)	\
+#define ISOSDacInterface_GetThreadLocalModuleData(This,thread,index,data)   \
     ( (This)->lpVtbl -> GetThreadLocalModuleData(This,thread,index,data) ) 
 
-#define ISOSDacInterface_GetSyncBlockData(This,number,data)	\
+#define ISOSDacInterface_GetSyncBlockData(This,number,data) \
     ( (This)->lpVtbl -> GetSyncBlockData(This,number,data) ) 
 
-#define ISOSDacInterface_GetSyncBlockCleanupData(This,addr,data)	\
+#define ISOSDacInterface_GetSyncBlockCleanupData(This,addr,data)    \
     ( (This)->lpVtbl -> GetSyncBlockCleanupData(This,addr,data) ) 
 
-#define ISOSDacInterface_GetHandleEnum(This,ppHandleEnum)	\
+#define ISOSDacInterface_GetHandleEnum(This,ppHandleEnum)   \
     ( (This)->lpVtbl -> GetHandleEnum(This,ppHandleEnum) ) 
 
-#define ISOSDacInterface_GetHandleEnumForTypes(This,types,count,ppHandleEnum)	\
+#define ISOSDacInterface_GetHandleEnumForTypes(This,types,count,ppHandleEnum)   \
     ( (This)->lpVtbl -> GetHandleEnumForTypes(This,types,count,ppHandleEnum) ) 
 
-#define ISOSDacInterface_GetHandleEnumForGC(This,gen,ppHandleEnum)	\
+#define ISOSDacInterface_GetHandleEnumForGC(This,gen,ppHandleEnum)  \
     ( (This)->lpVtbl -> GetHandleEnumForGC(This,gen,ppHandleEnum) ) 
 
-#define ISOSDacInterface_TraverseEHInfo(This,ip,pCallback,token)	\
+#define ISOSDacInterface_TraverseEHInfo(This,ip,pCallback,token)    \
     ( (This)->lpVtbl -> TraverseEHInfo(This,ip,pCallback,token) ) 
 
-#define ISOSDacInterface_GetNestedExceptionData(This,exception,exceptionObject,nextNestedException)	\
+#define ISOSDacInterface_GetNestedExceptionData(This,exception,exceptionObject,nextNestedException) \
     ( (This)->lpVtbl -> GetNestedExceptionData(This,exception,exceptionObject,nextNestedException) ) 
 
-#define ISOSDacInterface_GetStressLogAddress(This,stressLog)	\
+#define ISOSDacInterface_GetStressLogAddress(This,stressLog)    \
     ( (This)->lpVtbl -> GetStressLogAddress(This,stressLog) ) 
 
-#define ISOSDacInterface_TraverseLoaderHeap(This,loaderHeapAddr,pCallback)	\
+#define ISOSDacInterface_TraverseLoaderHeap(This,loaderHeapAddr,pCallback)  \
     ( (This)->lpVtbl -> TraverseLoaderHeap(This,loaderHeapAddr,pCallback) ) 
 
-#define ISOSDacInterface_GetCodeHeapList(This,jitManager,count,codeHeaps,pNeeded)	\
+#define ISOSDacInterface_GetCodeHeapList(This,jitManager,count,codeHeaps,pNeeded)   \
     ( (This)->lpVtbl -> GetCodeHeapList(This,jitManager,count,codeHeaps,pNeeded) ) 
 
-#define ISOSDacInterface_TraverseVirtCallStubHeap(This,pAppDomain,heaptype,pCallback)	\
+#define ISOSDacInterface_TraverseVirtCallStubHeap(This,pAppDomain,heaptype,pCallback)   \
     ( (This)->lpVtbl -> TraverseVirtCallStubHeap(This,pAppDomain,heaptype,pCallback) ) 
 
-#define ISOSDacInterface_GetUsefulGlobals(This,data)	\
+#define ISOSDacInterface_GetUsefulGlobals(This,data)    \
     ( (This)->lpVtbl -> GetUsefulGlobals(This,data) ) 
 
-#define ISOSDacInterface_GetClrWatsonBuckets(This,thread,pGenericModeBlock)	\
+#define ISOSDacInterface_GetClrWatsonBuckets(This,thread,pGenericModeBlock) \
     ( (This)->lpVtbl -> GetClrWatsonBuckets(This,thread,pGenericModeBlock) ) 
 
-#define ISOSDacInterface_GetTLSIndex(This,pIndex)	\
+#define ISOSDacInterface_GetTLSIndex(This,pIndex)   \
     ( (This)->lpVtbl -> GetTLSIndex(This,pIndex) ) 
 
-#define ISOSDacInterface_GetDacModuleHandle(This,phModule)	\
+#define ISOSDacInterface_GetDacModuleHandle(This,phModule)  \
     ( (This)->lpVtbl -> GetDacModuleHandle(This,phModule) ) 
 
-#define ISOSDacInterface_GetRCWData(This,addr,data)	\
+#define ISOSDacInterface_GetRCWData(This,addr,data) \
     ( (This)->lpVtbl -> GetRCWData(This,addr,data) ) 
 
-#define ISOSDacInterface_GetRCWInterfaces(This,rcw,count,interfaces,pNeeded)	\
+#define ISOSDacInterface_GetRCWInterfaces(This,rcw,count,interfaces,pNeeded)    \
     ( (This)->lpVtbl -> GetRCWInterfaces(This,rcw,count,interfaces,pNeeded) ) 
 
-#define ISOSDacInterface_GetCCWData(This,ccw,data)	\
+#define ISOSDacInterface_GetCCWData(This,ccw,data)  \
     ( (This)->lpVtbl -> GetCCWData(This,ccw,data) ) 
 
-#define ISOSDacInterface_GetCCWInterfaces(This,ccw,count,interfaces,pNeeded)	\
+#define ISOSDacInterface_GetCCWInterfaces(This,ccw,count,interfaces,pNeeded)    \
     ( (This)->lpVtbl -> GetCCWInterfaces(This,ccw,count,interfaces,pNeeded) ) 
 
-#define ISOSDacInterface_TraverseRCWCleanupList(This,cleanupListPtr,pCallback,token)	\
+#define ISOSDacInterface_TraverseRCWCleanupList(This,cleanupListPtr,pCallback,token)    \
     ( (This)->lpVtbl -> TraverseRCWCleanupList(This,cleanupListPtr,pCallback,token) ) 
 
-#define ISOSDacInterface_GetStackReferences(This,osThreadID,ppEnum)	\
+#define ISOSDacInterface_GetStackReferences(This,osThreadID,ppEnum) \
     ( (This)->lpVtbl -> GetStackReferences(This,osThreadID,ppEnum) ) 
 
-#define ISOSDacInterface_GetRegisterName(This,regName,count,buffer,pNeeded)	\
+#define ISOSDacInterface_GetRegisterName(This,regName,count,buffer,pNeeded) \
     ( (This)->lpVtbl -> GetRegisterName(This,regName,count,buffer,pNeeded) ) 
 
-#define ISOSDacInterface_GetThreadAllocData(This,thread,data)	\
+#define ISOSDacInterface_GetThreadAllocData(This,thread,data)   \
     ( (This)->lpVtbl -> GetThreadAllocData(This,thread,data) ) 
 
-#define ISOSDacInterface_GetHeapAllocData(This,count,data,pNeeded)	\
+#define ISOSDacInterface_GetHeapAllocData(This,count,data,pNeeded)  \
     ( (This)->lpVtbl -> GetHeapAllocData(This,count,data,pNeeded) ) 
 
-#define ISOSDacInterface_GetFailedAssemblyList(This,appDomain,count,values,pNeeded)	\
+#define ISOSDacInterface_GetFailedAssemblyList(This,appDomain,count,values,pNeeded) \
     ( (This)->lpVtbl -> GetFailedAssemblyList(This,appDomain,count,values,pNeeded) ) 
 
-#define ISOSDacInterface_GetPrivateBinPaths(This,appDomain,count,paths,pNeeded)	\
+#define ISOSDacInterface_GetPrivateBinPaths(This,appDomain,count,paths,pNeeded) \
     ( (This)->lpVtbl -> GetPrivateBinPaths(This,appDomain,count,paths,pNeeded) ) 
 
-#define ISOSDacInterface_GetAssemblyLocation(This,assembly,count,location,pNeeded)	\
+#define ISOSDacInterface_GetAssemblyLocation(This,assembly,count,location,pNeeded)  \
     ( (This)->lpVtbl -> GetAssemblyLocation(This,assembly,count,location,pNeeded) ) 
 
-#define ISOSDacInterface_GetAppDomainConfigFile(This,appDomain,count,configFile,pNeeded)	\
+#define ISOSDacInterface_GetAppDomainConfigFile(This,appDomain,count,configFile,pNeeded)    \
     ( (This)->lpVtbl -> GetAppDomainConfigFile(This,appDomain,count,configFile,pNeeded) ) 
 
-#define ISOSDacInterface_GetApplicationBase(This,appDomain,count,base,pNeeded)	\
+#define ISOSDacInterface_GetApplicationBase(This,appDomain,count,base,pNeeded)  \
     ( (This)->lpVtbl -> GetApplicationBase(This,appDomain,count,base,pNeeded) ) 
 
-#define ISOSDacInterface_GetFailedAssemblyData(This,assembly,pContext,pResult)	\
+#define ISOSDacInterface_GetFailedAssemblyData(This,assembly,pContext,pResult)  \
     ( (This)->lpVtbl -> GetFailedAssemblyData(This,assembly,pContext,pResult) ) 
 
-#define ISOSDacInterface_GetFailedAssemblyLocation(This,assesmbly,count,location,pNeeded)	\
+#define ISOSDacInterface_GetFailedAssemblyLocation(This,assesmbly,count,location,pNeeded)   \
     ( (This)->lpVtbl -> GetFailedAssemblyLocation(This,assesmbly,count,location,pNeeded) ) 
 
-#define ISOSDacInterface_GetFailedAssemblyDisplayName(This,assembly,count,name,pNeeded)	\
+#define ISOSDacInterface_GetFailedAssemblyDisplayName(This,assembly,count,name,pNeeded) \
     ( (This)->lpVtbl -> GetFailedAssemblyDisplayName(This,assembly,count,name,pNeeded) ) 
 
 #endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
+#endif  /* C style interface */
 
 
 
 
-#endif 	/* __ISOSDacInterface_INTERFACE_DEFINED__ */
+#endif  /* __ISOSDacInterface_INTERFACE_DEFINED__ */
 
 
 #ifndef __ISOSDacInterface2_INTERFACE_DEFINED__
@@ -1932,7 +1953,7 @@ EXTERN_C const IID IID_ISOSDacInterface2;
     };
     
     
-#else 	/* C style interface */
+#else   /* C style interface */
 
     typedef struct ISOSDacInterface2Vtbl
     {
@@ -1973,31 +1994,31 @@ EXTERN_C const IID IID_ISOSDacInterface2;
 #ifdef COBJMACROS
 
 
-#define ISOSDacInterface2_QueryInterface(This,riid,ppvObject)	\
+#define ISOSDacInterface2_QueryInterface(This,riid,ppvObject)   \
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
-#define ISOSDacInterface2_AddRef(This)	\
+#define ISOSDacInterface2_AddRef(This)  \
     ( (This)->lpVtbl -> AddRef(This) ) 
 
-#define ISOSDacInterface2_Release(This)	\
+#define ISOSDacInterface2_Release(This) \
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ISOSDacInterface2_GetObjectExceptionData(This,objAddr,data)	\
+#define ISOSDacInterface2_GetObjectExceptionData(This,objAddr,data) \
     ( (This)->lpVtbl -> GetObjectExceptionData(This,objAddr,data) ) 
 
-#define ISOSDacInterface2_IsRCWDCOMProxy(This,rcwAddr,isDCOMProxy)	\
+#define ISOSDacInterface2_IsRCWDCOMProxy(This,rcwAddr,isDCOMProxy)  \
     ( (This)->lpVtbl -> IsRCWDCOMProxy(This,rcwAddr,isDCOMProxy) ) 
 
 #endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
+#endif  /* C style interface */
 
 
 
 
-#endif 	/* __ISOSDacInterface2_INTERFACE_DEFINED__ */
+#endif  /* __ISOSDacInterface2_INTERFACE_DEFINED__ */
 
 
 #ifndef __ISOSDacInterface3_INTERFACE_DEFINED__
@@ -2028,7 +2049,7 @@ EXTERN_C const IID IID_ISOSDacInterface3;
     };
     
     
-#else 	/* C style interface */
+#else   /* C style interface */
 
     typedef struct ISOSDacInterface3Vtbl
     {
@@ -2072,34 +2093,34 @@ EXTERN_C const IID IID_ISOSDacInterface3;
 #ifdef COBJMACROS
 
 
-#define ISOSDacInterface3_QueryInterface(This,riid,ppvObject)	\
+#define ISOSDacInterface3_QueryInterface(This,riid,ppvObject)   \
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
-#define ISOSDacInterface3_AddRef(This)	\
+#define ISOSDacInterface3_AddRef(This)  \
     ( (This)->lpVtbl -> AddRef(This) ) 
 
-#define ISOSDacInterface3_Release(This)	\
+#define ISOSDacInterface3_Release(This) \
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ISOSDacInterface3_GetGCInterestingInfoData(This,interestingInfoAddr,data)	\
+#define ISOSDacInterface3_GetGCInterestingInfoData(This,interestingInfoAddr,data)   \
     ( (This)->lpVtbl -> GetGCInterestingInfoData(This,interestingInfoAddr,data) ) 
 
-#define ISOSDacInterface3_GetGCInterestingInfoStaticData(This,data)	\
+#define ISOSDacInterface3_GetGCInterestingInfoStaticData(This,data) \
     ( (This)->lpVtbl -> GetGCInterestingInfoStaticData(This,data) ) 
 
-#define ISOSDacInterface3_GetGCGlobalMechanisms(This,globalMechanisms)	\
+#define ISOSDacInterface3_GetGCGlobalMechanisms(This,globalMechanisms)  \
     ( (This)->lpVtbl -> GetGCGlobalMechanisms(This,globalMechanisms) ) 
 
 #endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
+#endif  /* C style interface */
 
 
 
 
-#endif 	/* __ISOSDacInterface3_INTERFACE_DEFINED__ */
+#endif  /* __ISOSDacInterface3_INTERFACE_DEFINED__ */
 
 
 #ifndef __ISOSDacInterface4_INTERFACE_DEFINED__
@@ -2125,7 +2146,7 @@ EXTERN_C const IID IID_ISOSDacInterface4;
     };
     
     
-#else 	/* C style interface */
+#else   /* C style interface */
 
     typedef struct ISOSDacInterface4Vtbl
     {
@@ -2162,28 +2183,28 @@ EXTERN_C const IID IID_ISOSDacInterface4;
 #ifdef COBJMACROS
 
 
-#define ISOSDacInterface4_QueryInterface(This,riid,ppvObject)	\
+#define ISOSDacInterface4_QueryInterface(This,riid,ppvObject)   \
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
-#define ISOSDacInterface4_AddRef(This)	\
+#define ISOSDacInterface4_AddRef(This)  \
     ( (This)->lpVtbl -> AddRef(This) ) 
 
-#define ISOSDacInterface4_Release(This)	\
+#define ISOSDacInterface4_Release(This) \
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ISOSDacInterface4_GetClrNotification(This,arguments,count,pNeeded)	\
+#define ISOSDacInterface4_GetClrNotification(This,arguments,count,pNeeded)  \
     ( (This)->lpVtbl -> GetClrNotification(This,arguments,count,pNeeded) ) 
 
 #endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
+#endif  /* C style interface */
 
 
 
 
-#endif 	/* __ISOSDacInterface4_INTERFACE_DEFINED__ */
+#endif  /* __ISOSDacInterface4_INTERFACE_DEFINED__ */
 
 
 #ifndef __ISOSDacInterface5_INTERFACE_DEFINED__
@@ -2211,7 +2232,7 @@ EXTERN_C const IID IID_ISOSDacInterface5;
     };
     
     
-#else 	/* C style interface */
+#else   /* C style interface */
 
     typedef struct ISOSDacInterface5Vtbl
     {
@@ -2233,8 +2254,9 @@ EXTERN_C const IID IID_ISOSDacInterface5;
             ISOSDacInterface5 * This,
             CLRDATA_ADDRESS methodDesc,
             int rejitId,
-            CLRDATA_ADDRESS *nativeCodeAddrs,
-            int cNativeCodeAddrs);
+            struct DacpTieredVersionData *nativeCodeAddrs,
+            int cNativeCodeAddrs,
+            int *pcNativeCodeAddrs);
         
         END_INTERFACE
     } ISOSDacInterface5Vtbl;
@@ -2249,73 +2271,75 @@ EXTERN_C const IID IID_ISOSDacInterface5;
 #ifdef COBJMACROS
 
 
-#define ISOSDacInterface5_QueryInterface(This,riid,ppvObject)	\
+#define ISOSDacInterface5_QueryInterface(This,riid,ppvObject)   \
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
-#define ISOSDacInterface5_AddRef(This)	\
+#define ISOSDacInterface5_AddRef(This)  \
     ( (This)->lpVtbl -> AddRef(This) ) 
 
-#define ISOSDacInterface5_Release(This)	\
+#define ISOSDacInterface5_Release(This) \
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ISOSDacInterface5_GetTieredVersions(This,methodDesc,rejitId,nativeCodeAddrs,cNativeCodeAddrs)	\
-    ( (This)->lpVtbl -> GetTieredVersions(This,methodDesc,rejitId,nativeCodeAddrs,cNativeCodeAddrs) ) 
+#define ISOSDacInterface5_GetTieredVersions(This,methodDesc,rejitId,nativeCodeAddrs,cNativeCodeAddrs,pcNativeCodeAddrs) \
+    ( (This)->lpVtbl -> GetTieredVersions(This,methodDesc,rejitId,nativeCodeAddrs,cNativeCodeAddrs,pcNativeCodeAddrs) ) 
 
 #endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
+#endif  /* C style interface */
 
 
 
 
-#endif 	/* __ISOSDacInterface5_INTERFACE_DEFINED__ */
+#endif  /* __ISOSDacInterface5_INTERFACE_DEFINED__ */
 
 
 #ifndef __ISOSDacInterface6_INTERFACE_DEFINED__
 #define __ISOSDacInterface6_INTERFACE_DEFINED__
 
-    /* interface ISOSDacInterface6 */
-    /* [uuid][local][object] */
+/* interface ISOSDacInterface6 */
+/* [uuid][local][object] */ 
 
 
-    EXTERN_C const IID IID_ISOSDacInterface6;
+EXTERN_C const IID IID_ISOSDacInterface6;
 
 #if defined(__cplusplus) && !defined(CINTERFACE)
-
+    
     MIDL_INTERFACE("11206399-4B66-4EDB-98EA-85654E59AD45")
     ISOSDacInterface6 : public IUnknown
     {
     public:
-        virtual HRESULT STDMETHODCALLTYPE GetMethodTableCollectibleData(
-            CLRDATA_ADDRESS mt, 
+        virtual HRESULT STDMETHODCALLTYPE GetMethodTableCollectibleData( 
+            CLRDATA_ADDRESS mt,
             struct DacpMethodTableCollectibleData *data) = 0;
+        
     };
-
-
-#else 	/* C style interface */
+    
+    
+#else   /* C style interface */
 
     typedef struct ISOSDacInterface6Vtbl
     {
         BEGIN_INTERFACE
-
-        HRESULT(STDMETHODCALLTYPE *QueryInterface)(
-            ISOSDacInterface5 * This,
+        
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
+            ISOSDacInterface6 * This,
             /* [in] */ REFIID riid,
-            /* [annotation][iid_is][out] */
+            /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
-
-        ULONG(STDMETHODCALLTYPE *AddRef)(
-            ISOSDacInterface5 * This);
-
-        ULONG(STDMETHODCALLTYPE *Release)(
-            ISOSDacInterface5 * This);
-
-        HRESULT(STDMETHODCALLTYPE *GetMethodTableCollectibleData)(
-            CLRDATA_ADDRESS mt, 
+        
+        ULONG ( STDMETHODCALLTYPE *AddRef )( 
+            ISOSDacInterface6 * This);
+        
+        ULONG ( STDMETHODCALLTYPE *Release )( 
+            ISOSDacInterface6 * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *GetMethodTableCollectibleData )( 
+            ISOSDacInterface6 * This,
+            CLRDATA_ADDRESS mt,
             struct DacpMethodTableCollectibleData *data);
-
+        
         END_INTERFACE
     } ISOSDacInterface6Vtbl;
 
@@ -2324,33 +2348,158 @@ EXTERN_C const IID IID_ISOSDacInterface5;
         CONST_VTBL struct ISOSDacInterface6Vtbl *lpVtbl;
     };
 
-
+    
 
 #ifdef COBJMACROS
 
 
-#define ISOSDacInterface6_QueryInterface(This,riid,ppvObject)	\
+#define ISOSDacInterface6_QueryInterface(This,riid,ppvObject)   \
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
-#define ISOSDacInterface6_AddRef(This)	\
+#define ISOSDacInterface6_AddRef(This)  \
     ( (This)->lpVtbl -> AddRef(This) ) 
 
-#define ISOSDacInterface6_Release(This)	\
+#define ISOSDacInterface6_Release(This) \
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ISOSDacInterface6_GetMethodTableCollectibleData(This,mt,data)	\
+#define ISOSDacInterface6_GetMethodTableCollectibleData(This,mt,data)   \
     ( (This)->lpVtbl -> GetMethodTableCollectibleData(This,mt,data) ) 
 
 #endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
+#endif  /* C style interface */
 
 
 
 
-#endif 	/* __ISOSDacInterface6_INTERFACE_DEFINED__ */
+#endif  /* __ISOSDacInterface6_INTERFACE_DEFINED__ */
+
+
+#ifndef __ISOSDacInterface7_INTERFACE_DEFINED__
+#define __ISOSDacInterface7_INTERFACE_DEFINED__
+
+/* interface ISOSDacInterface7 */
+/* [uuid][local][object] */ 
+
+
+EXTERN_C const IID IID_ISOSDacInterface7;
+
+#if defined(__cplusplus) && !defined(CINTERFACE)
+    
+    MIDL_INTERFACE("c1020dde-fe98-4536-a53b-f35a74c327eb")
+    ISOSDacInterface7 : public IUnknown
+    {
+    public:
+        virtual HRESULT STDMETHODCALLTYPE GetPendingReJITID( 
+            CLRDATA_ADDRESS methodDesc,
+            int *pRejitId) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE GetReJITInformation( 
+            CLRDATA_ADDRESS methodDesc,
+            int rejitId,
+            struct DacpReJitData2 *pRejitData) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE GetProfilerModifiedILInformation( 
+            CLRDATA_ADDRESS methodDesc,
+            struct DacpProfilerILData *pILData) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE GetMethodsWithProfilerModifiedIL( 
+            CLRDATA_ADDRESS mod,
+            CLRDATA_ADDRESS *methodDescs,
+            int cMethodDescs,
+            int *pcMethodDescs) = 0;
+        
+    };
+    
+    
+#else   /* C style interface */
+
+    typedef struct ISOSDacInterface7Vtbl
+    {
+        BEGIN_INTERFACE
+        
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
+            ISOSDacInterface7 * This,
+            /* [in] */ REFIID riid,
+            /* [annotation][iid_is][out] */ 
+            _COM_Outptr_  void **ppvObject);
+        
+        ULONG ( STDMETHODCALLTYPE *AddRef )( 
+            ISOSDacInterface7 * This);
+        
+        ULONG ( STDMETHODCALLTYPE *Release )( 
+            ISOSDacInterface7 * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *GetPendingReJITID )( 
+            ISOSDacInterface7 * This,
+            CLRDATA_ADDRESS methodDesc,
+            int *pRejitId);
+        
+        HRESULT ( STDMETHODCALLTYPE *GetReJITInformation )( 
+            ISOSDacInterface7 * This,
+            CLRDATA_ADDRESS methodDesc,
+            int rejitId,
+            struct DacpReJitData2 *pRejitData);
+        
+        HRESULT ( STDMETHODCALLTYPE *GetProfilerModifiedILInformation )( 
+            ISOSDacInterface7 * This,
+            CLRDATA_ADDRESS methodDesc,
+            struct DacpProfilerILData *pILData);
+        
+        HRESULT ( STDMETHODCALLTYPE *GetMethodsWithProfilerModifiedIL )( 
+            ISOSDacInterface7 * This,
+            CLRDATA_ADDRESS mod,
+            CLRDATA_ADDRESS *methodDescs,
+            int cMethodDescs,
+            int *pcMethodDescs);
+        
+        END_INTERFACE
+    } ISOSDacInterface7Vtbl;
+
+    interface ISOSDacInterface7
+    {
+        CONST_VTBL struct ISOSDacInterface7Vtbl *lpVtbl;
+    };
+
+    
+
+#ifdef COBJMACROS
+
+
+#define ISOSDacInterface7_QueryInterface(This,riid,ppvObject)   \
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
+
+#define ISOSDacInterface7_AddRef(This)  \
+    ( (This)->lpVtbl -> AddRef(This) ) 
+
+#define ISOSDacInterface7_Release(This) \
+    ( (This)->lpVtbl -> Release(This) ) 
+
+
+#define ISOSDacInterface7_GetPendingReJITID(This,methodDesc,pRejitId)   \
+    ( (This)->lpVtbl -> GetPendingReJITID(This,methodDesc,pRejitId) ) 
+
+#define ISOSDacInterface7_GetReJITInformation(This,methodDesc,rejitId,pRejitData)   \
+    ( (This)->lpVtbl -> GetReJITInformation(This,methodDesc,rejitId,pRejitData) ) 
+
+#define ISOSDacInterface7_GetProfilerModifiedILInformation(This,methodDesc,pILData) \
+    ( (This)->lpVtbl -> GetProfilerModifiedILInformation(This,methodDesc,pILData) ) 
+
+#define ISOSDacInterface7_GetMethodsWithProfilerModifiedIL(This,mod,methodDescs,cMethodDescs,pcMethodDescs) \
+    ( (This)->lpVtbl -> GetMethodsWithProfilerModifiedIL(This,mod,methodDescs,cMethodDescs,pcMethodDescs) ) 
+
+#endif /* COBJMACROS */
+
+
+#endif  /* C style interface */
+
+
+
+
+#endif  /* __ISOSDacInterface7_INTERFACE_DEFINED__ */
+
 
 /* Additional Prototypes for ALL interfaces */
 

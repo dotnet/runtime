@@ -1104,104 +1104,77 @@ HRESULT ClrDataAccess::GetTieredVersions(
     EX_TRY
     {
         CodeVersionManager *pCodeVersionManager = pMD->GetCodeVersionManager();
+        ILCodeVersion ilCodeVersion = pCodeVersionManager->GetILCodeVersion(pMD, rejitId);
 
-        // Total number of jitted rejit versions
-        ULONG cJittedRejitVersions;
-        if (!SUCCEEDED(ReJitManager::GetReJITIDs(pMD, 0 /* cReJitIds */, &cJittedRejitVersions, NULL /* reJitIds */)))
+        if (ilCodeVersion.IsNull())
         {
-            goto cleanup;
-        }
-
-        if ((ULONG)rejitId >= cJittedRejitVersions)
-        {
+            // Bad rejit ID
             hr = E_INVALIDARG;
             goto cleanup;
         }
 
-        ULONG cReJitIds;
-        StackSArray<ReJITID> reJitIds;
-
-        // Prepare array to populate with rejitids.
-        ReJITID *rgReJitIds = reJitIds.OpenRawBuffer(cJittedRejitVersions);
-        if (rgReJitIds != NULL)
+        TADDR r2rImageBase = NULL;
+        TADDR r2rImageEnd = NULL;
         {
-            hr = ReJitManager::GetReJITIDs(pMD, cJittedRejitVersions, &cReJitIds, rgReJitIds);
-            if (SUCCEEDED(hr))
+            PTR_Module pModule = (PTR_Module)pMD->GetModule();
+            if (pModule->IsReadyToRun())
             {
-                reJitIds.CloseRawBuffer(cReJitIds);
-
-                ILCodeVersion ilCodeVersion = pCodeVersionManager->GetILCodeVersion(pMD, reJitIds[rejitId]);
-
-                if (ilCodeVersion.IsNull())
-                {
-                    hr = S_FALSE;
-                    goto cleanup;
-                }
-
-                TADDR r2rImageBase = NULL;
-                TADDR r2rImageEnd = NULL;
-                {
-                    PTR_Module pModule = (PTR_Module)pMD->GetModule();
-                    if (pModule->IsReadyToRun())
-                    {
-                        PTR_PEImageLayout pImage = pModule->GetReadyToRunInfo()->GetImage();
-                        r2rImageBase = dac_cast<TADDR>(pImage->GetBase());
-                        r2rImageEnd = r2rImageBase + pImage->GetSize();
-                    }
-                }
-
-                NativeCodeVersionCollection nativeCodeVersions = ilCodeVersion.GetNativeCodeVersions(pMD);
-                int count = 0;
-                for (NativeCodeVersionIterator iter = nativeCodeVersions.Begin(); iter != nativeCodeVersions.End(); iter++)
-                {
-                    TADDR pNativeCode = PCODEToPINSTR((*iter).GetNativeCode());
-                    nativeCodeAddrs[count].NativeCodeAddr = pNativeCode;
-                    PTR_NativeCodeVersionNode pNode = (*iter).AsNode();
-                    nativeCodeAddrs[count].NativeCodeVersionNodePtr = TO_CDADDR(PTR_TO_TADDR(pNode));
-
-                    if (r2rImageBase <= pNativeCode && pNativeCode < r2rImageEnd)
-                    {
-                        nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_ReadyToRun;
-                    }
-                    else if (pMD->IsEligibleForTieredCompilation())
-                    {
-                        switch ((*iter).GetOptimizationTier())
-                        {
-                        default:
-                            nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_Unknown;
-                            break;
-                        case NativeCodeVersion::OptimizationTier0:
-                            nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_QuickJitted;
-                            break;
-                        case NativeCodeVersion::OptimizationTier1:
-                            nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_OptimizedTier1;
-                            break;
-                        case NativeCodeVersion::OptimizationTierOptimized:
-                            nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_Optimized;
-                            break;
-                        }
-                    }
-                    else if (pMD->IsJitOptimizationDisabled())
-                    {
-                        nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_MinOptJitted;
-                    }
-                    else
-                    {
-                        nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_Optimized;
-                    }
-
-                    ++count;
-
-                    if (count >= cNativeCodeAddrs)
-                    {
-                        hr = S_FALSE;
-                        break;
-                    }
-                }
-
-                *pcNativeCodeAddrs = count;
+                PTR_PEImageLayout pImage = pModule->GetReadyToRunInfo()->GetImage();
+                r2rImageBase = dac_cast<TADDR>(pImage->GetBase());
+                r2rImageEnd = r2rImageBase + pImage->GetSize();
             }
         }
+
+        NativeCodeVersionCollection nativeCodeVersions = ilCodeVersion.GetNativeCodeVersions(pMD);
+        int count = 0;
+        for (NativeCodeVersionIterator iter = nativeCodeVersions.Begin(); iter != nativeCodeVersions.End(); iter++)
+        {
+            TADDR pNativeCode = PCODEToPINSTR((*iter).GetNativeCode());
+            nativeCodeAddrs[count].NativeCodeAddr = pNativeCode;
+            PTR_NativeCodeVersionNode pNode = (*iter).AsNode();
+            nativeCodeAddrs[count].NativeCodeVersionNodePtr = TO_CDADDR(PTR_TO_TADDR(pNode));
+
+            if (r2rImageBase <= pNativeCode && pNativeCode < r2rImageEnd)
+            {
+                nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_ReadyToRun;
+            }
+            else if (pMD->IsEligibleForTieredCompilation())
+            {
+                switch ((*iter).GetOptimizationTier())
+                {
+                default:
+                    nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_Unknown;
+                    break;
+                case NativeCodeVersion::OptimizationTier0:
+                    nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_QuickJitted;
+                    break;
+                case NativeCodeVersion::OptimizationTier1:
+                    nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_OptimizedTier1;
+                    break;
+                case NativeCodeVersion::OptimizationTierOptimized:
+                    nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_Optimized;
+                    break;
+                }
+            }
+            else if (pMD->IsJitOptimizationDisabled())
+            {
+                nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_MinOptJitted;
+            }
+            else
+            {
+                nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_Optimized;
+            }
+
+            ++count;
+
+            if (count >= cNativeCodeAddrs)
+            {
+                hr = S_FALSE;
+                break;
+            }
+        }
+
+        *pcNativeCodeAddrs = count;
     }
     EX_CATCH
     {
@@ -4299,5 +4272,173 @@ HRESULT ClrDataAccess::GetClrNotification(CLRDATA_ADDRESS arguments[], int count
 
     SOSDacLeave();
 
-    return hr;;
+    return hr;
+}
+
+HRESULT ClrDataAccess::GetPendingReJITID(CLRDATA_ADDRESS methodDesc, int *pRejitId)
+{
+    if (methodDesc == 0 || pRejitId == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    SOSDacEnter();
+    
+    *pRejitId = -1;
+    PTR_MethodDesc pMD = PTR_MethodDesc(TO_TADDR(methodDesc));
+
+    CodeVersionManager* pCodeVersionManager = pMD->GetCodeVersionManager();
+    CodeVersionManager::TableLockHolder lock(pCodeVersionManager);
+    ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pMD);
+    if (ilVersion.IsNull())
+    {
+        hr = E_INVALIDARG;
+    }
+    else if (ilVersion.GetRejitState() == ILCodeVersion::kStateRequested)
+    {
+        *pRejitId = (int)ilVersion.GetVersionId();
+    }
+    else
+    {
+        hr = S_FALSE;
+    }
+
+    SOSDacLeave();
+
+    return hr;
+}
+
+HRESULT ClrDataAccess::GetReJITInformation(CLRDATA_ADDRESS methodDesc, int rejitId, struct DacpReJitData2 *pReJitData)
+{
+    if (methodDesc == 0 || rejitId < 0 || pReJitData == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    SOSDacEnter();
+
+    PTR_MethodDesc pMD = PTR_MethodDesc(TO_TADDR(methodDesc));
+
+    CodeVersionManager* pCodeVersionManager = pMD->GetCodeVersionManager();
+    CodeVersionManager::TableLockHolder lock(pCodeVersionManager);
+    ILCodeVersion ilVersion = pCodeVersionManager->GetILCodeVersion(pMD, rejitId);
+    if (ilVersion.IsNull())
+    {
+        hr = E_INVALIDARG;
+    }
+    else
+    {
+        pReJitData->rejitID = rejitId;
+
+        switch (ilVersion.GetRejitState())
+        {
+        default:
+            _ASSERTE(!"Unknown SharedRejitInfo state.  DAC should be updated to understand this new state.");
+            pReJitData->flags = DacpReJitData2::kUnknown;
+            break;
+
+        case ILCodeVersion::kStateRequested:
+            pReJitData->flags = DacpReJitData2::kRequested;
+            break;
+
+        case ILCodeVersion::kStateActive:
+            pReJitData->flags = DacpReJitData2::kActive;
+            break;
+        }
+
+        pReJitData->il = TO_CDADDR(PTR_TO_TADDR(ilVersion.GetIL()));
+        PTR_ILCodeVersionNode nodePtr = ilVersion.IsDefaultVersion() ? NULL : ilVersion.AsNode();
+        pReJitData->ilCodeVersionNodePtr = TO_CDADDR(PTR_TO_TADDR(nodePtr));
+    }
+    
+    SOSDacLeave();
+
+    return hr;    
+}
+
+
+HRESULT ClrDataAccess::GetProfilerModifiedILInformation(CLRDATA_ADDRESS methodDesc, struct DacpProfilerILData *pILData)
+{
+    if (methodDesc == 0 || pILData == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    SOSDacEnter();
+
+    pILData->type = DacpProfilerILData::Unmodified;
+    pILData->rejitID = 0;
+    pILData->il = NULL;
+    PTR_MethodDesc pMD = PTR_MethodDesc(TO_TADDR(methodDesc));
+
+    CodeVersionManager* pCodeVersionManager = pMD->GetCodeVersionManager();
+    CodeVersionManager::TableLockHolder lock(pCodeVersionManager);
+    ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pMD);
+    if (ilVersion.GetRejitState() != ILCodeVersion::kStateActive || !ilVersion.HasDefaultIL())
+    {
+        pILData->type = DacpProfilerILData::ReJITModified;
+        pILData->rejitID = static_cast<ULONG>(pCodeVersionManager->GetActiveILCodeVersion(pMD).GetVersionId());
+    }
+
+    TADDR pDynamicIL = pMD->GetModule()->GetDynamicIL(pMD->GetMemberDef(), TRUE);
+    if (pDynamicIL != NULL)
+    {
+        pILData->type = DacpProfilerILData::ILModified;
+        pILData->il = (CLRDATA_ADDRESS)pDynamicIL;
+    }
+
+    SOSDacLeave();
+
+    return hr;
+}
+
+HRESULT ClrDataAccess::GetMethodsWithProfilerModifiedIL(CLRDATA_ADDRESS mod, CLRDATA_ADDRESS *methodDescs, int cMethodDescs, int *pcMethodDescs)
+{
+    if (mod == 0 || methodDescs == NULL || cMethodDescs == 0 || pcMethodDescs == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    SOSDacEnter();
+
+    *pcMethodDescs = 0;
+
+    PTR_Module pModule = PTR_Module(TO_TADDR(mod));
+    CodeVersionManager* pCodeVersionManager = pModule->GetCodeVersionManager();
+    CodeVersionManager::TableLockHolder lock(pCodeVersionManager);
+
+    LookupMap<PTR_MethodTable>::Iterator typeIter(&pModule->m_TypeDefToMethodTableMap);
+    for (int i = 0; typeIter.Next(); i++)
+    {
+        if (*pcMethodDescs >= cMethodDescs)
+        {
+            break;
+        }
+
+        if (typeIter.GetElement())
+        {
+            MethodTable* pMT = typeIter.GetElement();
+            for (MethodTable::IntroducedMethodIterator itMethods(pMT, FALSE); itMethods.IsValid(); itMethods.Next())
+            {
+                PTR_MethodDesc pMD = dac_cast<PTR_MethodDesc>(itMethods.GetMethodDesc());
+
+                TADDR pDynamicIL = pModule->GetDynamicIL(pMD->GetMemberDef(), TRUE);
+                ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pMD);
+                if (ilVersion.GetRejitState() != ILCodeVersion::kStateActive || !ilVersion.HasDefaultIL() || pDynamicIL != NULL)
+                {
+                    methodDescs[*pcMethodDescs] = PTR_CDADDR(pMD);
+                    ++(*pcMethodDescs);
+                }
+
+                if (*pcMethodDescs >= cMethodDescs)
+                {
+                    break;
+                }
+            }
+        }
+    }
+
+    SOSDacLeave();
+
+    return hr;
 }
