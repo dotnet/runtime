@@ -370,6 +370,68 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(3, child.MyOverflow["MyIntMissingChild"].GetInt32());
         }
 
+        [Fact]
+        public static void DeserializeIntoObjectProperty()
+        {
+            ClassWithExtensionPropertyAsObject obj;
+            string json;
+
+            // Baseline dictionary.
+            json = @"{""MyDict"":{""Property1"":1}}";
+            obj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAsObject>(json);
+            Assert.Equal(1, obj.MyOverflow.Count);
+            Assert.Equal(1, ((JsonElement)obj.MyOverflow["MyDict"]).EnumerateObject().First().Value.GetInt32());
+
+            // Attempt to deserialize directly into the overflow property; this is just added as a normal missing property like MyDict above.
+            json = @"{""MyOverflow"":{""Property1"":1}}";
+            obj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAsObject>(json);
+            Assert.Equal(1, obj.MyOverflow.Count);
+            Assert.Equal(1, ((JsonElement)obj.MyOverflow["MyOverflow"]).EnumerateObject().First().Value.GetInt32());
+
+            // Attempt to deserialize null into the overflow property. This is also treated as a missing property.
+            json = @"{""MyOverflow"":null}";
+            obj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAsObject>(json);
+            Assert.Equal(1, obj.MyOverflow.Count);
+            Assert.Null(obj.MyOverflow["MyOverflow"]);
+
+            // Attempt to deserialize object into the overflow property. This is also treated as a missing property.
+            json = @"{""MyOverflow"":{}}";
+            obj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAsObject>(json);
+            Assert.Equal(1, obj.MyOverflow.Count);
+            Assert.Equal(JsonValueKind.Object, ((JsonElement)obj.MyOverflow["MyOverflow"]).ValueKind);
+        }
+
+        [Fact]
+        public static void DeserializeIntoJsonElementProperty()
+        {
+            ClassWithExtensionPropertyAsJsonElement obj;
+            string json;
+
+            // Baseline dictionary.
+            json = @"{""MyDict"":{""Property1"":1}}";
+            obj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAsJsonElement>(json);
+            Assert.Equal(1, obj.MyOverflow.Count);
+            Assert.Equal(1, obj.MyOverflow["MyDict"].EnumerateObject().First().Value.GetInt32());
+
+            // Attempt to deserialize directly into the overflow property; this is just added as a normal missing property like MyDict above.
+            json = @"{""MyOverflow"":{""Property1"":1}}";
+            obj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAsJsonElement>(json);
+            Assert.Equal(1, obj.MyOverflow.Count);
+            Assert.Equal(1, obj.MyOverflow["MyOverflow"].EnumerateObject().First().Value.GetInt32());
+
+            // Attempt to deserialize null into the overflow property. This is also treated as a missing property.
+            json = @"{""MyOverflow"":null}";
+            obj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAsJsonElement>(json);
+            Assert.Equal(1, obj.MyOverflow.Count);
+            Assert.Equal(JsonValueKind.Null, obj.MyOverflow["MyOverflow"].ValueKind);
+
+            // Attempt to deserialize object into the overflow property. This is also treated as a missing property.
+            json = @"{""MyOverflow"":{}}";
+            obj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAsJsonElement>(json);
+            Assert.Equal(1, obj.MyOverflow.Count);
+            Assert.Equal(JsonValueKind.Object, obj.MyOverflow["MyOverflow"].ValueKind);
+        }
+
         private class ClassWithInvalidExtensionPropertyStringString
         {
             [JsonExtensionData]
