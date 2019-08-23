@@ -7098,10 +7098,17 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 
 #ifdef ENABLE_NETCORE
+		case OP_XCAST: {
+			LLVMTypeRef t = simd_class_to_llvm_type (ctx, ins->klass);
+
+			values [ins->dreg] = LLVMBuildBitCast (builder, lhs, t, "");
+			break;
+		}
 		case OP_XCOMPARE_FP: {
 			LLVMRealPredicate pred = fpcond_to_llvm_cond [ins->inst_c0];
 			LLVMValueRef cmp = LLVMBuildFCmp (builder, pred, lhs, rhs, "");
 			int nelems = LLVMGetVectorSize (LLVMTypeOf (cmp));
+			g_assert (LLVMTypeOf (lhs) == LLVMTypeOf (rhs));
 			if (ins->inst_c1 == MONO_TYPE_R8)
 				values [ins->dreg] = LLVMBuildBitCast (builder, LLVMBuildSExt (builder, cmp, LLVMVectorType (LLVMInt64Type (), nelems), ""), LLVMTypeOf (lhs), "");
 			else
@@ -7111,16 +7118,20 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_XCOMPARE: {
 			LLVMIntPredicate pred = cond_to_llvm_cond [ins->inst_c0];
 			LLVMValueRef cmp = LLVMBuildICmp (builder, pred, lhs, rhs, "");
+			g_assert (LLVMTypeOf (lhs) == LLVMTypeOf (rhs));
 			values [ins->dreg] = LLVMBuildSExt (builder, cmp, LLVMTypeOf (lhs), "");
 			break;
 		}
 		case OP_XEQUAL: {
 			LLVMTypeRef t;
-			LLVMValueRef mask [32], shuffle;
+			LLVMValueRef cmp, mask [32], shuffle;
 			int nelems;
 
 			//%c = icmp sgt <16 x i8> %a0, %a1
-			LLVMValueRef cmp = LLVMBuildICmp (builder, LLVMIntEQ, lhs, rhs, "");
+			if (LLVMGetElementType (LLVMTypeOf (lhs)) == LLVMDoubleType () || LLVMGetElementType (LLVMTypeOf (lhs)) == LLVMFloatType ())
+				cmp = LLVMBuildFCmp (builder, LLVMRealOEQ, lhs, rhs, "");
+			else
+				cmp = LLVMBuildICmp (builder, LLVMIntEQ, lhs, rhs, "");
 			nelems = LLVMGetVectorSize (LLVMTypeOf (cmp));
 			t = LLVMVectorType (LLVMInt8Type (), nelems);
 			cmp = LLVMBuildSExt (builder, cmp, t, "");
@@ -7136,45 +7147,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				cmp = LLVMBuildAnd (builder, cmp, shuffle, "");
 				half = half / 2;
 			}
-#if 0
-			if (nelems == 32) {
-				// AND [0..15] and [16..31] into [0..15]
-				for (int i = 0; i < 16; ++i)
-					mask [i] = LLVMConstInt (LLVMInt32Type (), 16 + i, FALSE);
-				for (int i = 16; i < 32; ++i)
-					mask [i] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
-				shuffle = LLVMBuildShuffleVector (builder, cmp, LLVMGetUndef (t), LLVMConstVector (mask, LLVMGetVectorSize (t)), "");
-				cmp = LLVMBuildAnd (builder, cmp, shuffle, "");
-			}
-			// AND [0..7] and [8..15] into [0..7]
-			for (int i = 0; i < 8; ++i)
-				mask [i] = LLVMConstInt (LLVMInt32Type (), 8 + i, FALSE);
-			for (int i = 8; i < nelems; ++i)
-				mask [i] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
-			shuffle = LLVMBuildShuffleVector (builder, cmp, LLVMGetUndef (t), LLVMConstVector (mask, LLVMGetVectorSize (t)), "");
-			cmp = LLVMBuildAnd (builder, cmp, shuffle, "");
-			// AND [0..3] and [4..7] into [0..3]
-			for (int i = 0; i < 4; ++i)
-				mask [i] = LLVMConstInt (LLVMInt32Type (), 4 + i, FALSE);
-			for (int i = 4; i < nelems; ++i)
-				mask [i] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
-			shuffle = LLVMBuildShuffleVector (builder, cmp, LLVMGetUndef (t), LLVMConstVector (mask, LLVMGetVectorSize (t)), "");
-			cmp = LLVMBuildAnd (builder, cmp, shuffle, "");
-			// AND [0..1] and [2..3] into [0..1]
-			for (int i = 0; i < 2; ++i)
-				mask [i] = LLVMConstInt (LLVMInt32Type (), 2 + i, FALSE);
-			for (int i = 2; i < nelems; ++i)
-				mask [i] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
-			shuffle = LLVMBuildShuffleVector (builder, cmp, LLVMGetUndef (t), LLVMConstVector (mask, LLVMGetVectorSize (t)), "");
-			cmp = LLVMBuildAnd (builder, cmp, shuffle, "");
-			// AND [0] and [1] into [0]
-			for (int i = 0; i < 1; ++i)
-				mask [i] = LLVMConstInt (LLVMInt32Type (), 1 + i, FALSE);
-			for (int i = 1; i < nelems; ++i)
-				mask [i] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
-			shuffle = LLVMBuildShuffleVector (builder, cmp, LLVMGetUndef (t), LLVMConstVector (mask, LLVMGetVectorSize (t)), "");
-			cmp = LLVMBuildAnd (builder, cmp, shuffle, "");
-#endif
 			// Extract [0]
 			values [ins->dreg] = LLVMBuildExtractElement (builder, cmp, LLVMConstInt (LLVMInt32Type (), 0, FALSE), "");
 			// Maybe convert to 0/1 ?
