@@ -33,10 +33,7 @@ jobs:
         image: ubuntu-16.04-cross-14.04-23cacb0-20190528233931
         registry: mcr
       helixQueues:
-      # Ubuntu.1404.Arm32.Open is used only by CI while Ubuntu.1604.Arm32.Open serves PRs and scheduled builds.
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.helixQueueGroup, 'ci')) }}:
-        - Ubuntu.1404.Arm32.Open
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(parameters.helixQueueGroup, 'ci')) }}:
+      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
         - (Ubuntu.1804.Arm32.Open)Ubuntu.1604.Arm32.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-30f6673-20190814153226
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - (Debian.9.Arm32)Ubuntu.1604.Arm32@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-9-helix-arm32v7-74c9941-20190620155841
