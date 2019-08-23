@@ -96,7 +96,6 @@ stages:
         dependsOn:
           - PrePublish
         enableSymbolValidation: false # https://github.com/dotnet/arcade/issues/2871
-        enableSourceLinkValidation: true
         SDLValidationParameters:
           enable: true
           params: ' -SourceToolsList @("policheck","credscan")
