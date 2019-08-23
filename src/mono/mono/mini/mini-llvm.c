@@ -7630,10 +7630,12 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	}
 	ctx->method_name = method_name;
 
-	if (cfg->compile_aot)
+	if (cfg->compile_aot) {
 		ctx->lmodule = ctx->module->lmodule;
-	else
+	} else {
 		ctx->lmodule = LLVMModuleCreateWithName (g_strdup_printf ("jit-module-%s", cfg->method->name));
+		ctx->module->lmodule = ctx->lmodule;
+	}
 	ctx->llvm_only = ctx->module->llvm_only;
 #ifdef TARGET_WASM
 	ctx->emit_dummy_arg = TRUE;
@@ -10211,11 +10213,10 @@ init_jit_module (MonoDomain *domain)
 	module = g_new0 (MonoLLVMModule, 1);
 
 	name = g_strdup_printf ("mono-%s", domain->friendly_name);
-	module->lmodule = LLVMModuleCreateWithName (name);
 	module->context = LLVMGetGlobalContext ();
 	module->intrins_by_id = g_new0 (LLVMValueRef, INTRINS_NUM);
 
-	module->mono_ee = (MonoEERef*)mono_llvm_create_ee (LLVMCreateModuleProviderForExistingModule (module->lmodule), alloc_cb, emitted_cb, exception_cb, &module->ee);
+	module->mono_ee = (MonoEERef*)mono_llvm_create_ee (alloc_cb, emitted_cb, exception_cb, &module->ee);
 
 	add_intrinsics (module->lmodule);
 	add_types (module);
