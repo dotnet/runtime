@@ -4271,46 +4271,6 @@ bool CheckThreadExceptionStateForInterception()
 static Volatile<BOOL> fReady = 0;
 static SpinLock initLock;
 
-void DECLSPEC_NORETURN RaiseDeadLockException()
-{
-    STATIC_CONTRACT_THROWS;
-
-// Disable the "initialization of static local vars is no thread safe" error
-#ifdef _MSC_VER
-#pragma warning(disable: 4640)
-#endif
-    CHECK_LOCAL_STATIC_VAR(static SString s);
-#ifdef _MSC_VER
-#pragma warning(default : 4640)
-#endif
-    if (!fReady)
-    {
-        WCHAR name[256];
-        HRESULT hr = S_OK;
-        {
-            FAULT_NOT_FATAL();
-            GCX_COOP();
-            hr = UtilLoadStringRC(IDS_EE_THREAD_DEADLOCK_VICTIM, name, sizeof(name)/sizeof(WCHAR), 1);
-            }
-        initLock.Init(LOCK_TYPE_DEFAULT);
-        SpinLockHolder  __spinLockHolder(&initLock);
-        if (!fReady)
-            {
-                if (SUCCEEDED(hr))
-                {
-                    s.Set(name);
-                fReady = 1;
-                }
-                else
-                {
-                    ThrowHR(hr);
-                }
-            }
-        }
-
-    ThrowHR(HOST_E_DEADLOCK, s);
-}
-
 //******************************************************************************
 //
 //  ExceptionIsAlwaysSwallowed

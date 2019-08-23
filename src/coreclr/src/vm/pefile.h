@@ -627,16 +627,6 @@ class PEAssembly : public PEFile
         PEAssembly *pParentAssembly,
         IMetaDataAssemblyEmit *pEmit);
 
-    static PEAssembly *OpenMemory(
-        PEAssembly *pParentAssembly,
-        const void *flat,
-        COUNT_T size);
-
-    static PEAssembly *DoOpenMemory(
-        PEAssembly *pParentAssembly,
-        const void *flat,
-        COUNT_T size);
-
   private:
     // Private helpers for crufty exception handling reasons
     static PEAssembly *DoOpenSystem(IUnknown *pAppCtx);

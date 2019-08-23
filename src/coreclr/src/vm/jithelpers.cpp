@@ -4058,20 +4058,6 @@ NOINLINE HCIMPL3(CORINFO_MethodPtr, JIT_VirtualFunctionPointer_Framed, Object * 
 }
 HCIMPLEND
 
-HCIMPL2(VOID, JIT_GetRuntimeFieldHandle, Object ** destPtr, CORINFO_FIELD_HANDLE field)
-{
-    FCALL_CONTRACT;
-
-    HELPER_METHOD_FRAME_BEGIN_0();
-
-    FieldDesc *pField = (FieldDesc *)field;
-    SetObjectReference((OBJECTREF*) destPtr,
-                       pField->GetStubFieldInfo());
-
-    HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND
-
 HCIMPL1(Object*, JIT_GetRuntimeFieldStub, CORINFO_FIELD_HANDLE field)
 {
     FCALL_CONTRACT;
@@ -4086,20 +4072,6 @@ HCIMPL1(Object*, JIT_GetRuntimeFieldStub, CORINFO_FIELD_HANDLE field)
     HELPER_METHOD_FRAME_END();
 
     return (OBJECTREFToObject(stubRuntimeField));
-}
-HCIMPLEND
-
-HCIMPL2(VOID, JIT_GetRuntimeMethodHandle, Object ** destPtr, CORINFO_METHOD_HANDLE method)
-{
-    FCALL_CONTRACT;
-
-    HELPER_METHOD_FRAME_BEGIN_0();
-
-    MethodDesc *pMethod = (MethodDesc *)method;
-    SetObjectReference((OBJECTREF*) destPtr,
-                       pMethod->GetStubMethodInfo());
-
-    HELPER_METHOD_FRAME_END();
 }
 HCIMPLEND
 

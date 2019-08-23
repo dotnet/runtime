@@ -67,14 +67,6 @@ void CallDescrWorkerWithHandler(
                 CallDescrData *   pCallDescrData,
                 BOOL              fCriticalCall = FALSE);
 
-void DispatchCall(
-                CallDescrData *   pCallDescrData,
-                OBJECTREF *             pRefException
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-                , CorruptionSeverity *  pSeverity = NULL
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-                );
-
 // Helper for VM->managed calls with simple signatures.
 void * DispatchCallSimple(
                     SIZE_T *pSrc,

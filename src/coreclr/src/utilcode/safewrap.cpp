@@ -45,28 +45,6 @@ void ClrGetCurrentDirectory(SString & value)
     }
 }
 
-// Nothrowing wrapper.
-bool ClrGetCurrentDirectoryNoThrow(SString & value)
-{
-    CONTRACTL
-    {
-        NOTHROW; 
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-    
-    bool fOk = true;
-    EX_TRY
-    {
-        ClrGetCurrentDirectory(value);
-    }
-    EX_CATCH
-    {
-        fOk = false;
-    }
-    EX_END_CATCH(SwallowAllExceptions)
-    return fOk;
-}
 //-----------------------------------------------------------------------------
 // Reads an environment variable into the given SString.
 // Returns true on success, false on failure (includes if the var does not exist).
@@ -103,30 +81,6 @@ bool ClrGetEnvironmentVariable(LPCSTR szEnvVarName, SString & value)
     return true;
 }
 
-// Nothrowing wrapper.
-bool ClrGetEnvironmentVariableNoThrow(LPCSTR szEnvVarName, SString & value)
-{
-    CONTRACTL
-    {
-        NOTHROW; 
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-    
-
-    bool fOk = false;
-    EX_TRY
-    {
-        fOk = ClrGetEnvironmentVariable(szEnvVarName, value);
-    }
-    EX_CATCH
-    {
-        fOk = false;
-    }
-    EX_END_CATCH(SwallowAllExceptions)
-    return fOk;
-}
-
 void ClrGetModuleFileName(HMODULE hModule, SString & value)
 {
     CONTRACTL
@@ -139,28 +93,6 @@ void ClrGetModuleFileName(HMODULE hModule, SString & value)
     WCHAR * pCharBuf = value.OpenUnicodeBuffer(_MAX_PATH);                   
     DWORD numChars = GetModuleFileNameW(hModule, pCharBuf, _MAX_PATH);
     value.CloseBuffer(numChars);
-}
-
-bool ClrGetModuleFileNameNoThrow(HMODULE hModule, SString & value)
-{
-    CONTRACTL
-    {
-        NOTHROW; 
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    bool fOk = true;
-    EX_TRY
-    {
-        ClrGetModuleFileName(hModule, value);
-    }
-    EX_CATCH
-    {
-        fOk = false;
-    }
-    EX_END_CATCH(SwallowAllExceptions)
-    return fOk;
 }
 
 ClrDirectoryEnumerator::ClrDirectoryEnumerator(LPCWSTR pBaseDirectory, LPCWSTR pMask /*= W("*")*/)

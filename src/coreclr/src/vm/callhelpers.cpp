@@ -227,60 +227,6 @@ void * DispatchCallSimple(
     return *(void **)(&callDescrData.returnValue);
 }
 
-// This method performs the proper profiler and debugger callbacks before dispatching the
-// call. The caller has the responsibility of furnishing the target address, register and stack arguments.
-// Stack arguments should be in reverse order, and pSrc should point to past the last argument
-// Returns the return value or the exception object if one was thrown.
-void DispatchCall(
-                    CallDescrData * pCallDescrData,
-                    OBJECTREF *pRefException
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-                    , CorruptionSeverity *pSeverity /*= NULL*/
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-                    )
-{
-    CONTRACTL
-    {
-        GC_TRIGGERS;
-        THROWS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-#ifdef DEBUGGING_SUPPORTED 
-    if (CORDebuggerTraceCall())
-        g_pDebugInterface->TraceCall((const BYTE *)pCallDescrData->pTarget);
-#endif // DEBUGGING_SUPPORTED
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-    if (pSeverity != NULL)
-    {
-        // By default, assume any exception that comes out is NotCorrupting
-        *pSeverity = NotCorrupting;
-    }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-
-    EX_TRY
-    {
-        DispatchCallDebuggerWrapper(pCallDescrData,
-                                    FALSE);
-    }
-    EX_CATCH
-    {
-        *pRefException = GET_THROWABLE();
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-        if (pSeverity != NULL)
-        {
-            // By default, assume any exception that comes out is NotCorrupting
-            *pSeverity = GetThread()->GetExceptionState()->GetLastActiveExceptionCorruptionSeverity();
-        }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-
-    }
-    EX_END_CATCH(RethrowTransientExceptions);
-}
-
 #ifdef CALLDESCR_REGTYPEMAP
 //*******************************************************************************
 void FillInRegTypeMap(int argOffset, CorElementType typ, BYTE * pMap)
