@@ -273,7 +273,7 @@ public:
 		: TM(TM), ObjectLayer([=] { return std::shared_ptr<RuntimeDyld::MemoryManager> (mm); }),
 		  CompileLayer (ObjectLayer, SimpleCompiler (*TM)),
 		  modules(),
-		  fpm (unwrap (mp)) {
+		  fpm (NULL) {
 		initPassManager ();
 	}
 
