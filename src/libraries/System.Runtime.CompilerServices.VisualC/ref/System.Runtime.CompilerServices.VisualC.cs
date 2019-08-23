@@ -26,11 +26,6 @@ namespace System.Runtime.CompilerServices
     public static partial class CompilerMarshalOverride
     {
     }
-    [System.AttributeUsage(System.AttributeTargets.All)]
-    internal sealed class DecoratedNameAttribute : System.Attribute
-    {
-        public DecoratedNameAttribute(string decoratedName) {}
-    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Struct)]
     public sealed partial class HasCopySemanticsAttribute : System.Attribute
     {
