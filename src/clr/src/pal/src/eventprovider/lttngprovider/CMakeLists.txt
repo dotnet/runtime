@@ -46,8 +46,6 @@ add_library(eventprovider
     eventproviderhelpers.cpp
 )
 
-add_compile_options(-fPIC)
-
 add_library(coreclrtraceptprovider
     SHARED
     ${TRACEPOINT_PROVIDER_SOURCES}

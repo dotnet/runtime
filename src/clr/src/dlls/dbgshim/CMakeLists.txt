@@ -41,8 +41,6 @@ endif(CLR_CMAKE_PLATFORM_DARWIN)
 add_library_clr(dbgshim SHARED ${DBGSHIM_SOURCES})
 
 if(CLR_CMAKE_PLATFORM_UNIX)
-    add_compile_options(-fPIC)
-
     add_custom_target(dbgshim_exports DEPENDS ${EXPORTS_FILE})
     add_dependencies(dbgshim dbgshim_exports)
 

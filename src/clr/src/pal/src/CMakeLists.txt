@@ -9,8 +9,6 @@ if(NOT DEFINED ENV{ROOTFS_DIR})
   include_directories(SYSTEM /usr/local/include)
 endif()
 
-add_compile_options(-fPIC)
-
 if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
   include_directories(libunwind/include)
   include_directories(libunwind/include/tdep)

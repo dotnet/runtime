@@ -1,7 +1,5 @@
 project(unixcoreruncommon)
 
-add_compile_options(-fPIC)
-
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 include(configure.cmake)
