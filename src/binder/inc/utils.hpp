@@ -33,7 +33,6 @@ namespace BINDER_SPACE
     HRESULT FileOrDirectoryExistsLog(PathString &path);
 
     void MutateUrlToPath(SString &urlOrPath);
-    void MutatePathToUrl(SString &pathOrUrl);
 
     // Mutates path
     void PlatformPath(SString &path);

@@ -1536,53 +1536,6 @@ DispatchToken LoaderAllocator::GetDispatchToken(
     return DispatchToken::CreateDispatchToken(typeId, slotNumber);
 }
 
-DispatchToken LoaderAllocator::TryLookupDispatchToken(UINT32 typeId, UINT32 slotNumber)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    } CONTRACTL_END;
-
-#ifdef FAT_DISPATCH_TOKENS
-
-    if (DispatchToken::RequiresDispatchTokenFat(typeId, slotNumber))
-    {
-        if (m_pFatTokenSetLock != NULL)
-        {
-            DispatchTokenFat * pFat = NULL;
-            // Stack probes and locking operations are throwing. Catch all
-            // exceptions and just return an invalid token, since this is
-            EX_TRY
-            {
-                SimpleReadLockHolder rlock(m_pFatTokenSetLock);
-                if (m_pFatTokenSet != NULL)
-                {
-                    DispatchTokenFat key(typeId, slotNumber);
-                    pFat = m_pFatTokenSet->Lookup(&key);
-                }
-            }
-            EX_CATCH
-            {
-                pFat = NULL;
-            }
-            EX_END_CATCH(SwallowAllExceptions);
-
-            if (pFat != NULL)
-            {
-                return DispatchToken(pFat);
-            }
-        }
-        // Return invalid token when not found.
-        return DispatchToken();
-    }
-    else
-#endif // FAT_DISPATCH_TOKENS
-    {
-        return DispatchToken::CreateDispatchToken(typeId, slotNumber);
-    }
-}
-
 void LoaderAllocator::InitVirtualCallStubManager(BaseDomain * pDomain)
 {
     STANDARD_VM_CONTRACT;

@@ -55,11 +55,6 @@ protected:
     // Starts the runtime. This is equivalent to CoInitializeCor()
     STDMETHODIMP Start();
 
-    STDMETHODIMP MapFile(                       // Return code.
-        HANDLE     hFile,                       // [in]  Handle for file
-        HMODULE   *hMapAddress                  // [out] HINSTANCE for mapped file
-        );
-
     STDMETHODIMP LocksHeldByLogicalThread(      // Return code.
         DWORD *pCount                           // [out] Number of locks that the current thread holds.
         );
@@ -149,15 +144,6 @@ public:
 
     // Class factory hook-up.
     static HRESULT CreateObject(REFIID riid, void **ppUnk);
-
-    STDMETHODIMP MapFile(                       // Return code.
-        HANDLE     hFile,                       // [in]  Handle for file
-        HMODULE   *hMapAddress                  // [out] HINSTANCE for mapped file
-        )
-    {
-        WRAPPER_NO_CONTRACT;
-        return CorRuntimeHostBase::MapFile(hFile,hMapAddress);
-    }
 
     STDMETHODIMP STDMETHODCALLTYPE SetHostControl(
         IHostControl* pHostControl);

@@ -102,10 +102,6 @@ namespace BINDER_SPACE
                      /* in */ SString                 &assemblyPath,
                      /* in */ BOOL                     fIsInGAC);
 
-        // Enumerates dependent assemblies
-        HRESULT GetNextAssemblyNameRef(/* in  */ DWORD          nIndex,
-                                       /* out */ AssemblyName **ppAssemblyName);
-
         inline AssemblyName *GetAssemblyName(BOOL fAddRef = FALSE);
         inline BOOL GetIsInGAC();
         inline BOOL GetIsDynamicBind();

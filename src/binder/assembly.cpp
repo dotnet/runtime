@@ -204,59 +204,6 @@ Exit:
         return m_pMDImport->GetScopeProps(NULL, pMVID);
     }
     
-    HRESULT Assembly::GetNextAssemblyNameRef(DWORD          nIndex,
-                                             AssemblyName **ppAssemblyName)
-    {
-        HRESULT hr = S_OK;
-        BINDER_LOG_ENTER(L"Assembly::GetNextAssemblyNameRef");
-
-        if (ppAssemblyName == NULL)
-        {
-            IF_FAIL_GO(E_INVALIDARG);
-        }
-        else if (GetNbAssemblyRefTokens() == static_cast<DWORD>(-1))
-        {
-            mdAssembly *pAssemblyRefTokens = NULL;
-            DWORD dwCAssemblyRefTokens = 0;
-
-            IF_FAIL_GO(BINDER_SPACE::GetAssemblyRefTokens(GetMDImport(),
-                                                          &pAssemblyRefTokens,
-                                                          &dwCAssemblyRefTokens));
-
-            if (InterlockedCompareExchangeT(&m_pAssemblyRefTokens,
-                                            pAssemblyRefTokens,
-                                            NULL))
-            {
-                SAFE_DELETE_ARRAY(pAssemblyRefTokens);
-            }
-            SetNbAsssemblyRefTokens(dwCAssemblyRefTokens);
-        }
-
-        _ASSERTE(GetNbAssemblyRefTokens() != static_cast<DWORD>(-1));
-
-        // Verify input index
-        if (nIndex >= GetNbAssemblyRefTokens())
-        {
-            IF_FAIL_GO(HRESULT_FROM_WIN32(ERROR_NO_MORE_ITEMS));
-        }
-        else
-        {
-            ReleaseHolder<AssemblyName> pAssemblyName;
-
-            SAFE_NEW(pAssemblyName, AssemblyName);
-            IF_FAIL_GO(pAssemblyName->Init(GetMDImport(),
-                                           peNone,
-                                           GetAssemblyRefTokens()[nIndex],
-                                           FALSE /* fIsDefinition */));
-
-            *ppAssemblyName = pAssemblyName.Extract();
-        }
-
-    Exit:
-        BINDER_LOG_LEAVE_HR(L"Assembly::GetNextAssemblyNameRef", hr);
-        return hr;
-    }
-
     /* static */
     PEKIND Assembly::GetSystemArchitecture()
     {

@@ -236,8 +236,6 @@ struct CallOutFilterParam { BOOL OneShot; };
 LONG CallOutFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv);
 
 
-void DECLSPEC_NORETURN RaiseDeadLockException();
-
 void STDMETHODCALLTYPE DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionInfo,
                                            OBJECTREF *Throwable = NULL,
                                            BOOL useLastThrownObject = FALSE,

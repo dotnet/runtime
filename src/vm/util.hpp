@@ -109,9 +109,6 @@ void * __cdecl _alloca(size_t);
 #pragma warning(disable:6255)
 #endif // _PREFAST_
 
-// Function to parse apart a command line and return the
-// arguments just like argv and argc
-LPWSTR* CommandLineToArgvW(__in LPWSTR lpCmdLine, DWORD *pNumArgs);
 #define ISWWHITE(x) ((x)==W(' ') || (x)==W('\t') || (x)==W('\n') || (x)==W('\r') )
 
 BOOL inline FitsInI1(__int64 val)
@@ -309,14 +306,6 @@ void NPrintToStdOutA(const char *pszString, size_t nbytes);
 void NPrintToStdOutW(const WCHAR *pwzString, size_t nchars);
 void NPrintToStdErrA(const char *pszString, size_t nbytes);
 void NPrintToStdErrW(const WCHAR *pwzString, size_t nchars);
-
-//=====================================================================
-// VM-safe wrapper for PostError.
-//
-HRESULT VMPostError(                    // Returned error.
-    HRESULT     hrRpt,                  // Reported error.
-    ...);                               // Error arguments.
-
 
 #include "nativevaraccessors.h"
 

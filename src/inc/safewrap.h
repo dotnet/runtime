@@ -63,10 +63,8 @@ class SString;
 bool ClrGetEnvironmentVariable(LPCSTR szEnvVarName, SString & value);
 bool ClrGetEnvironmentVariableNoThrow(LPCSTR szEnvVarName, SString & value);
 void ClrGetModuleFileName(HMODULE hModule, SString & value);
-bool ClrGetModuleFileNameNoThrow(HMODULE hModule, SString & value);
 
 void ClrGetCurrentDirectory(SString & value);
-bool ClrGetCurrentDirectoryNoThrow(SString & value);
 
 
 /* --------------------------------------------------------------------------- *
