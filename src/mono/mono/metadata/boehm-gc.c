@@ -2067,6 +2067,12 @@ mono_gchandle_free_domain (MonoDomain *domain)
 
 }
 
+guint64
+mono_gc_get_total_allocated_bytes (MonoBoolean precise) 
+{
+	return 0;
+}
+
 void
 mono_gc_register_obj_with_weak_fields (void *obj)
 {
