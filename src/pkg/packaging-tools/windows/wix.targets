@@ -346,18 +346,22 @@
   </Target>
 
   <Target Name="ExtractEngineBundle"
-          DependsOnTargets="GetInstallerGenerationFlags">
+          DependsOnTargets="
+            GetInstallerGenerationFlags;
+            GetWixBuildConfiguration">
     <Exec
       Condition="'$(GenerateExeBundle)' == 'true'"
-      Command="insignia.exe -ib $(CombinedInstallerFile) -o $(CombinedInstallerEngine)"
+      Command="insignia.exe -ib $(OutInstallerFile) -o $(ExeBundleInstallerEngineFile)"
       WorkingDirectory="$(WixToolsDir)" />
   </Target>
 
   <Target Name="ReattachEngineToBundle"
-          DependsOnTargets="GetInstallerGenerationFlags">
+          DependsOnTargets="
+            GetInstallerGenerationFlags;
+            GetWixBuildConfiguration">
     <Exec
       Condition="'$(GenerateExeBundle)' == 'true'"
-      Command="insignia.exe -ab $(CombinedInstallerEngine) $(CombinedInstallerFile) -o $(CombinedInstallerFile)"
+      Command="insignia.exe -ab $(ExeBundleInstallerEngineFile) $(OutInstallerFile) -o $(OutInstallerFile)"
       WorkingDirectory="$(WixToolsDir)" />
   </Target>
 
