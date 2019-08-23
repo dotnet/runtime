@@ -2505,7 +2505,7 @@ mono_gc_get_los_limit (void)
 }
 
 void
-sgen_set_bytes_allocated_attached(guint64 bytes)
+sgen_set_bytes_allocated_attached (guint64 bytes)
 {
 	bytes_allocated_attached = bytes;
 }
@@ -2521,14 +2521,13 @@ mono_gc_get_allocated_bytes_for_current_thread (void)
 }
 
 guint64
-mono_gc_get_total_allocated_bytes(MonoBoolean precise)
+mono_gc_get_total_allocated_bytes (MonoBoolean precise)
 {
-	if (precise) 
-	{	
+	if (precise) {	
 		LOCK_GC;
 		sgen_stop_world (0, FALSE);
 
-		sgen_update_allocation_count();
+		sgen_update_allocation_count ();
 		
 		sgen_restart_world (0, FALSE);
 		UNLOCK_GC;

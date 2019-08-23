@@ -520,7 +520,7 @@ sgen_clear_tlabs (void)
 		info->tlab_real_end = NULL;
 	} FOREACH_THREAD_END
 
-	sgen_set_bytes_allocated_attached(total_bytes_allocated_globally);
+	sgen_set_bytes_allocated_attached (total_bytes_allocated_globally);
 } 
 
 void sgen_update_allocation_count (void)
@@ -532,7 +532,7 @@ void sgen_update_allocation_count (void)
 		total_bytes_allocated_globally += info->total_bytes_allocated;
 	} FOREACH_THREAD_END
 
-	sgen_set_bytes_allocated_attached(total_bytes_allocated_globally);
+	sgen_set_bytes_allocated_attached (total_bytes_allocated_globally);
 }
 
 
