@@ -46,8 +46,8 @@ typedef int VCSHeapType;
 cpp_quote("#endif")
     
 
-cpp_quote("typedef enum ModuleMapType { TYPEDEFTOMETHODTABLE, TYPEREFTOMETHODTABLE };")
-cpp_quote("typedef enum VCSHeapType {IndcellHeap, LookupHeap, ResolveHeap, DispatchHeap, CacheEntryHeap};")
+cpp_quote("typedef enum { TYPEDEFTOMETHODTABLE, TYPEREFTOMETHODTABLE } ModuleMapType;")
+cpp_quote("typedef enum {IndcellHeap, LookupHeap, ResolveHeap, DispatchHeap, CacheEntryHeap} VCSHeapType;")
 
 typedef void (*MODULEMAPTRAVERSE)(UINT index, CLRDATA_ADDRESS methodTable,LPVOID token);
 typedef void (*VISITHEAP)(CLRDATA_ADDRESS blockData,size_t blockSize,BOOL blockIsCurrentBlock);
@@ -375,5 +375,18 @@ interface ISOSDacInterface5 : IUnknown
 ]
 interface ISOSDacInterface6 : IUnknown
 {
-    HRESULT GetMethodTableFieldData(CLRDATA_ADDRESS mt, struct DacpMethodTableFieldData *data);
+    HRESULT GetMethodTableCollectibleData(CLRDATA_ADDRESS mt, struct DacpMethodTableCollectibleData *data);
+};
+
+[
+    object,
+    local,
+    uuid(c1020dde-fe98-4536-a53b-f35a74c327eb)
+]
+interface ISOSDacInterface7 : IUnknown
+{
+    HRESULT GetPendingReJITID(CLRDATA_ADDRESS methodDesc, int *pRejitId);
+    HRESULT GetReJITInformation(CLRDATA_ADDRESS methodDesc, int rejitId, struct DacpReJitData2 *pRejitData);
+    HRESULT GetProfilerModifiedILInformation(CLRDATA_ADDRESS methodDesc, struct DacpProfilerILData *pILData);
+    HRESULT GetMethodsWithProfilerModifiedIL(CLRDATA_ADDRESS mod, CLRDATA_ADDRESS *methodDescs, int cMethodDescs, int *pcMethodDescs);
 };
