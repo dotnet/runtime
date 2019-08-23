@@ -9,8 +9,6 @@ using System.Text.RegularExpressions;
 
 public static class MethodImplOptionsTests
 {
-    private const int UnexpectedTimeoutMs = 30_000;
-
     public static int Main()
     {
         const int Pass = 100;
@@ -75,11 +73,7 @@ public static class MethodImplOptionsTests
             GetIlasmProcessStartInfos(ilasmFile, ildasmFile, ilFileName, out disasmIlFileName, out ilasmPsi, out ildasmPsi);
 
             Process ilasmProcess = Process.Start(ilasmPsi);
-            if (!ilasmProcess.WaitForExit(UnexpectedTimeoutMs))
-            {
-                Console.WriteLine("Timed out waiting for ilasm to exit");
-                return false;
-            }
+            ilasmProcess.WaitForExit();
             if (ilasmProcess.ExitCode != 0)
             {
                 Console.WriteLine($"ilasm failed with exit code: {ilasmProcess.ExitCode}");
@@ -87,11 +81,7 @@ public static class MethodImplOptionsTests
             }
 
             Process ildasmProcess = Process.Start(ildasmPsi);
-            if (!ildasmProcess.WaitForExit(UnexpectedTimeoutMs))
-            {
-                Console.WriteLine("Timed out waiting for ildasm to exit");
-                return false;
-            }
+            ildasmProcess.WaitForExit();
             if (ildasmProcess.ExitCode != 0)
             {
                 Console.WriteLine($"ildasm failed with exit code: {ildasmProcess.ExitCode}");
