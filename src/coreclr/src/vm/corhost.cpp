@@ -1274,31 +1274,6 @@ static PEImage *MapFileHelper(HANDLE hFile)
     return pImage.Extract();
 }
 
-HRESULT CorRuntimeHostBase::MapFile(HANDLE hFile, HMODULE* phHandle)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-        ENTRY_POINT;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr;
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    BEGIN_EXTERNAL_ENTRYPOINT(&hr)
-    {
-        *phHandle = (HMODULE) (MapFileHelper(hFile)->GetLoadedLayout()->GetBase());
-    }
-    END_EXTERNAL_ENTRYPOINT;
-    END_ENTRYPOINT_NOTHROW;
-
-
-    return hr;
-}
-
 LONG CorHost2::m_RefCount = 0;
 
 static Volatile<BOOL> fOneOnly = 0;

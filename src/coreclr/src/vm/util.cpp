@@ -1105,28 +1105,6 @@ bool    SetNativeVarVal(const ICorDebugInfo::VarLoc &   varLoc,
     return true;
 }
 
-HRESULT VMPostError(                    // Returned error.
-    HRESULT     hrRpt,                  // Reported error.
-    ...)                                // Error arguments.
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    GCX_PREEMP();
-   
-    va_list     marker;                 // User text.
-    va_start(marker, hrRpt);
-    hrRpt = PostErrorVA(hrRpt, marker);
-    va_end(marker);
-    
-    return hrRpt;
-}
-
 #ifndef CROSSGEN_COMPILE
 
 //-----------------------------------------------------------------------------
