@@ -8204,8 +8204,11 @@ after_codegen:
 			g_ptr_array_add (ctx->module->callsite_list, g_ptr_array_index (ctx->callsite_list, i));
 	}
 
-	if (cfg->verbose_level > 1)
+	if (cfg->verbose_level > 1) {
+		g_print ("\n*** LLVM IR for %s ***\n", mono_method_full_name (cfg->method, FALSE));
 		mono_llvm_dump_value (method);
+		g_print ("***\n\n");
+	}
 
 	if (cfg->compile_aot && !cfg->llvm_only)
 		mark_as_used (ctx->module, method);
