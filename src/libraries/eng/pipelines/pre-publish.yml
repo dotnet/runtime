@@ -10,7 +10,7 @@ stages:
     - template: ../common/templates/jobs/jobs.yml
       parameters:
         enableMicrobuild: true
-        enablePublishUsingPipelines: ${{ variables._PublishUsingPipelines }}
+        enablePublishUsingPipelines: $(_PublishUsingPipelines)
         enablePublishBuildAssets: true
         enablePublishBuildArtifacts: true
         jobs:
