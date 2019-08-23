@@ -71,6 +71,7 @@ jobs:
     helixQueueGroup: pr
     jobParameters:
       testGroup: innerloop
+      publishTestArtifacts: true
 
 #
 # ReadyToRun test jobs
@@ -89,6 +90,7 @@ jobs:
       testGroup: innerloop
       readyToRun: true
       displayNameArgs: R2R
+      publishTestArtifacts: true
 
 #
 # CoreFX test runs against CoreCLR
