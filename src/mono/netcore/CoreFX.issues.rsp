@@ -70,7 +70,7 @@
 -nomethod System.IO.Tests.Directory_SetCurrentDirectory+Directory_SetCurrentDirectory_SymLink.SetToPathContainingSymLink
 
 # flaky test (The process cannot access the file ...)
--nomethod System.IO.Tests.File_Copy_str_str.CopyFileWithData_MemberData
+-nomethod System.IO.Tests.*.CopyFileWithData_MemberData
 
 ####################################################################
 ##  System.Linq.Expressions.Tests
@@ -557,6 +557,9 @@
 # https://github.com/mono/mono/issues/15153
 -nomethod System.Tests.ActivatorTests.TestingCreateInstanceObjectHandleFullSignature
 
+# flaky test, System.ArgumentNullException : Key cannot be null. Parameter name: key
+-nomethod System.Tests.GetEnvironmentVariable.EnvironmentVariablesAreHashtable
+
 ####################################################################
 ##  System.Threading.Tests
 ####################################################################
@@ -586,6 +589,13 @@
 # Expects PlatformNotSupportedException but none thrown
 # https://github.com/mono/mono/issues/15161
 -nomethod System.Threading.Tests.SemaphoreTests.Ctor_NamesArentSupported_Unix
+
+####################################################################
+##  System.Threading.Tests
+####################################################################
+
+# Requires precise GC (should be ignored in dotnet/corefx for mono)
+-nomethod System.Threading.Tasks.Tests.ExecutionContextFlowTest.TaskCompletionSourceDoesntCaptureExecutionContext
 
 ####################################################################
 ##  System.Threading.ThreadPool.Tests
@@ -621,6 +631,10 @@
 -nomethod System.ComponentModel.Composition.MetadataAttributeTests.StronglyTypedStructureTestWithTransparentViews
 -nomethod System.ComponentModel.Composition.MetadataViewProviderTests.GetMetadataView_IMetadataViewWithDefaultedInt64
 -nomethod System.ComponentModel.Composition.ExportCollectionTests.ImportCollectionsFromContainerOnly
+# disable the whole namespace, https://github.com/mono/mono/issues/16417
+-nonamespace System.ComponentModel.Composition
+# same issue (only System.ComponentModel.Composition uses this namespace)
+-nonamespace Tests.Integration
 
 ####################################################################
 ##  System.Composition.TypedParts.Tests
@@ -992,3 +1006,6 @@
 -nomethod System.IO.Tests.FileStream_Dispose.Dispose_CallsVirtualDispose_TrueArg
 -nomethod System.Net.Sockets.Tests.DisposedSocket.NonDisposedSocket_SafeHandlesCollected
 -nomethod System.Diagnostics.TraceSourceTests.SwitchClassTests.PruneTest
+
+# Flaky test (FileSystemWatcher)
+-nomethod System.IO.Tests.Directory_NotifyFilter_Tests.FileSystemWatcher_Directory_NotifyFilter_LastWriteTime
