@@ -352,13 +352,6 @@ INT32 QCALLTYPE SystemNative::GetProcessorCount()
         processorCount = systemInfo.dwNumberOfProcessors;
     }
 
-#ifdef FEATURE_PAL
-    uint32_t cpuLimit;
-
-    if (PAL_GetCpuLimit(&cpuLimit) && cpuLimit < (uint32_t)processorCount)
-        processorCount = cpuLimit;
-#endif
-
     END_QCALL;
 
     return processorCount;
