@@ -6,10 +6,6 @@ include_directories(BEFORE ${VM_DIR})
 include_directories(BEFORE ${VM_DIR}/${ARCH_SOURCES_DIR})
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
-if(CLR_CMAKE_PLATFORM_UNIX)
-  add_compile_options(-fPIC)
-endif(CLR_CMAKE_PLATFORM_UNIX)
-
 set(CORDBEE_SOURCES_DAC_AND_WKS
   controller.cpp
   debugger.cpp

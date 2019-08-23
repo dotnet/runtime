@@ -16,10 +16,6 @@ endif(CLR_CMAKE_TARGET_ARCH_I386)
 
 convert_to_absolute_path(GCINFO_SOURCES ${GCINFO_SOURCES})
 
-if(CLR_CMAKE_PLATFORM_UNIX)
-    add_compile_options(-fPIC)
-endif(CLR_CMAKE_PLATFORM_UNIX)
-
 add_subdirectory(lib)
 add_subdirectory(crossgen)
 

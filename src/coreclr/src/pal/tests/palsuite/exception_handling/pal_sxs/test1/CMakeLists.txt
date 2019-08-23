@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 2.8.12.2)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 if(CLR_CMAKE_PLATFORM_UNIX)
-    add_compile_options(-fPIC)
     add_definitions(-DFEATURE_ENABLE_HARDWARE_EXCEPTIONS)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 

@@ -37,8 +37,6 @@ endif()
 
 include(configure.cmake)
 
-add_compile_options(-fPIC)
-
 set(NATIVEGLOBALIZATION_SOURCES
     pal_calendarData.c
     pal_casing.c
