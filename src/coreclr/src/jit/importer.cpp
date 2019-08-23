@@ -10363,9 +10363,10 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
                 // Check the class attributes.
                 DWORD flags = info.compCompHnd->getClassAttribs(pResolvedToken->hClass);
 
-                // If the class is final and is not marshal byref or
+                // If the class is final and is not marshal byref, variant or
                 // contextful, the jit can expand the IsInst check inline.
-                DWORD flagsMask = CORINFO_FLG_FINAL | CORINFO_FLG_MARSHAL_BYREF | CORINFO_FLG_CONTEXTFUL;
+                DWORD flagsMask =
+                    CORINFO_FLG_FINAL | CORINFO_FLG_MARSHAL_BYREF | CORINFO_FLG_VARIANCE | CORINFO_FLG_CONTEXTFUL;
                 canExpandInline = ((flags & flagsMask) == CORINFO_FLG_FINAL);
             }
         }
