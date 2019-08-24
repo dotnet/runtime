@@ -384,6 +384,28 @@ namespace System.IO
                 {
                     numBytes <<= 1;
                 }
+
+                // We do not want to read even a single byte more than necessary.
+                //
+                // Subtract pending bytes that the decoder may be holding onto. This assumes that each
+                // decoded char corresponds to one or more bytes. Note that custom encodings or encodings with
+                // a custom replacement sequence may violate this assumption.
+                if (numBytes > 1)
+                {
+                    DecoderNLS? decoder = _decoder as DecoderNLS;
+                    // For internal decoders, we can check whether the decoder has any pending state.
+                    // For custom decoders, assume that the decoder has pending state.
+                    if (decoder == null || decoder.HasState)
+                    {
+                        numBytes -= 1;
+
+                        // The worst case is charsRemaining = 2 and UTF32Decoder holding onto 3 pending bytes. We need to read just
+                        // one byte in this case.
+                        if (_2BytesPerChar && numBytes > 2)
+                            numBytes -= 2;
+                    }
+                }
+
                 if (numBytes > MaxCharBytesSize)
                 {
                     numBytes = MaxCharBytesSize;

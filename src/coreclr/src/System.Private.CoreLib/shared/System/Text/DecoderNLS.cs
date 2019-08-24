@@ -217,7 +217,7 @@ namespace System.Text
         public bool MustFlush => _mustFlush;
 
         // Anything left in our decoder?
-        internal virtual bool HasState => false;
+        internal virtual bool HasState => _leftoverByteCount != 0;
 
         // Allow encoding to clear our must flush instead of throwing (in ThrowCharsOverflow)
         internal void ClearMustFlush()
