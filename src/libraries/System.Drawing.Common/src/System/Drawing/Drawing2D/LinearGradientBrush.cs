@@ -238,7 +238,7 @@ namespace System.Drawing.Drawing2D
 
                 if (count == 0 || value.Positions.Length == 0)
                     throw new ArgumentException(SR.BlendObjectMustHaveTwoElements);
-                if (count >=2 && count != value.Positions.Length)
+                if (count >= 2 && count != value.Positions.Length)
                     throw new ArgumentOutOfRangeException();
                 if (count >= 2 && value.Positions[0] != 0.0F)
                     throw new ArgumentException(SR.BlendObjectFirstElementInvalid);
@@ -505,7 +505,7 @@ namespace System.Drawing.Drawing2D
 
         public void ScaleTransform(float sx, float sy, MatrixOrder order)
         {
-            Gdip.CheckStatus( Gdip.GdipScaleLineTransform(
+            Gdip.CheckStatus(Gdip.GdipScaleLineTransform(
                 new HandleRef(this, NativeBrush), sx, sy, order));
         }
 

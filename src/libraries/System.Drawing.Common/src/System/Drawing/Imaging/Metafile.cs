@@ -166,7 +166,7 @@ namespace System.Drawing.Imaging
         /// <summary>
         /// Initializes a new instance of the <see cref='Metafile'/> class with the specified filename.
         /// </summary>
-        public Metafile(string fileName, IntPtr referenceHdc, RectangleF frameRect,  MetafileFrameUnit frameUnit, EmfType type) :
+        public Metafile(string fileName, IntPtr referenceHdc, RectangleF frameRect, MetafileFrameUnit frameUnit, EmfType type) :
             this(fileName, referenceHdc, frameRect, frameUnit, type, null)
         {
         }

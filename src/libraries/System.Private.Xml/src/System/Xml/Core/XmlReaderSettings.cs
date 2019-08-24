@@ -598,7 +598,7 @@ namespace System.Xml
                 }
             }
 
-            return  AddValidationAndConformanceInternal(reader, resolver, addConformanceWrapper: false);
+            return AddValidationAndConformanceInternal(reader, resolver, addConformanceWrapper: false);
         }
 
         private XmlReader AddValidationAndConformanceWrapper(XmlReader reader)
@@ -609,7 +609,7 @@ namespace System.Xml
                 resolver = GetXmlResolver_CheckConfig();
             }
 
-            return  AddValidationAndConformanceInternal(reader, resolver, addConformanceWrapper: true);
+            return AddValidationAndConformanceInternal(reader, resolver, addConformanceWrapper: true);
         }
 
         private XmlReader AddValidationAndConformanceInternal(XmlReader reader, XmlResolver resolver, bool addConformanceWrapper)

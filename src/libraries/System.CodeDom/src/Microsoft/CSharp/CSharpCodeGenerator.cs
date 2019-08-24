@@ -2741,60 +2741,60 @@ namespace Microsoft.CSharp
                 }
             }
 
-                    // replace + with . for nested classes.
-                    //
-                    var sb = new StringBuilder(s.Length + 10);
-                    if ((typeRef.Options & CodeTypeReferenceOptions.GlobalReference) != 0)
-                    {
-                        sb.Append("global::");
-                    }
+            // replace + with . for nested classes.
+            //
+            var sb = new StringBuilder(s.Length + 10);
+            if ((typeRef.Options & CodeTypeReferenceOptions.GlobalReference) != 0)
+            {
+                sb.Append("global::");
+            }
 
-                    string baseType = typeRef.BaseType;
+            string baseType = typeRef.BaseType;
 
-                    int lastIndex = 0;
-                    int currentTypeArgStart = 0;
-                    for (int i = 0; i < baseType.Length; i++)
-                    {
-                        switch (baseType[i])
+            int lastIndex = 0;
+            int currentTypeArgStart = 0;
+            for (int i = 0; i < baseType.Length; i++)
+            {
+                switch (baseType[i])
+                {
+                    case '+':
+                    case '.':
+                        sb.Append(CreateEscapedIdentifier(baseType.Substring(lastIndex, i - lastIndex)));
+                        sb.Append('.');
+                        i++;
+                        lastIndex = i;
+                        break;
+
+                    case '`':
+                        sb.Append(CreateEscapedIdentifier(baseType.Substring(lastIndex, i - lastIndex)));
+                        i++;    // skip the '
+                        int numTypeArgs = 0;
+                        while (i < baseType.Length && baseType[i] >= '0' && baseType[i] <= '9')
                         {
-                            case '+':
-                            case '.':
-                                sb.Append(CreateEscapedIdentifier(baseType.Substring(lastIndex, i - lastIndex)));
-                                sb.Append('.');
-                                i++;
-                                lastIndex = i;
-                                break;
-
-                            case '`':
-                                sb.Append(CreateEscapedIdentifier(baseType.Substring(lastIndex, i - lastIndex)));
-                                i++;    // skip the '
-                                int numTypeArgs = 0;
-                                while (i < baseType.Length && baseType[i] >= '0' && baseType[i] <= '9')
-                                {
-                                    numTypeArgs = numTypeArgs * 10 + (baseType[i] - '0');
-                                    i++;
-                                }
-
-                                GetTypeArgumentsOutput(typeRef.TypeArguments, currentTypeArgStart, numTypeArgs, sb);
-                                currentTypeArgStart += numTypeArgs;
-
-                                // Arity can be in the middle of a nested type name, so we might have a . or + after it.
-                                // Skip it if so.
-                                if (i < baseType.Length && (baseType[i] == '+' || baseType[i] == '.'))
-                                {
-                                    sb.Append('.');
-                                    i++;
-                                }
-
-                                lastIndex = i;
-                                break;
+                            numTypeArgs = numTypeArgs * 10 + (baseType[i] - '0');
+                            i++;
                         }
-                    }
 
-                    if (lastIndex < baseType.Length)
-                        sb.Append(CreateEscapedIdentifier(baseType.Substring(lastIndex)));
+                        GetTypeArgumentsOutput(typeRef.TypeArguments, currentTypeArgStart, numTypeArgs, sb);
+                        currentTypeArgStart += numTypeArgs;
 
-                    return sb.ToString();
+                        // Arity can be in the middle of a nested type name, so we might have a . or + after it.
+                        // Skip it if so.
+                        if (i < baseType.Length && (baseType[i] == '+' || baseType[i] == '.'))
+                        {
+                            sb.Append('.');
+                            i++;
+                        }
+
+                        lastIndex = i;
+                        break;
+                }
+            }
+
+            if (lastIndex < baseType.Length)
+                sb.Append(CreateEscapedIdentifier(baseType.Substring(lastIndex)));
+
+            return sb.ToString();
         }
 
         private string GetTypeArgumentsOutput(CodeTypeReferenceCollection typeArguments)

@@ -115,7 +115,7 @@ namespace System.ComponentModel.Composition.Hosting
             }
         }
 
-internal static string GetTypeIdentityFromExport(this MemberInfo member, Type typeIdentityType)
+        internal static string GetTypeIdentityFromExport(this MemberInfo member, Type typeIdentityType)
         {
             if (typeIdentityType != null)
             {
@@ -154,7 +154,7 @@ internal static string GetTypeIdentityFromExport(this MemberInfo member, Type ty
             return string.IsNullOrEmpty(export.ContractName);
         }
 
-internal static Type GetContractTypeFromImport(this IAttributedImport import, ImportType importType)
+        internal static Type GetContractTypeFromImport(this IAttributedImport import, ImportType importType)
         {
             if (import.ContractType != null)
             {
@@ -224,7 +224,7 @@ internal static Type GetContractTypeFromImport(this IAttributedImport import, Im
                 bool hasConstraints = false;
                 object[] genericParameterConstraints = new object[genericArguments.Length];
                 GenericParameterAttributes[] genericParameterAttributes = new GenericParameterAttributes[genericArguments.Length];
-                for (int i=0; i< genericArguments.Length; i++)
+                for (int i = 0; i < genericArguments.Length; i++)
                 {
                     Type genericArgument = genericArguments[i];
 

@@ -108,7 +108,7 @@ namespace Microsoft.Internal.Collections
 
             public void Add(object item)
             {
-                _collectionOfT.Add((T) item);
+                _collectionOfT.Add((T)item);
             }
 
             public void Clear()

@@ -13,7 +13,7 @@ namespace System.Linq
         internal abstract Expression Expression { get; }
         internal abstract IEnumerable Enumerable { get; }
 
-        internal EnumerableQuery() {}
+        internal EnumerableQuery() { }
 
         internal static IQueryable Create(Type elementType, IEnumerable sequence)
         {

@@ -252,17 +252,17 @@ namespace System
 
         internal void CheckSetIsSimpleFlag()
         {
-            Type type  = this.GetType();
+            Type type = this.GetType();
 
-            if (    type == typeof(GenericUriParser)
-                ||  type == typeof(HttpStyleUriParser)
-                ||  type == typeof(FtpStyleUriParser)
-                ||  type == typeof(FileStyleUriParser)
-                ||  type == typeof(NewsStyleUriParser)
-                ||  type == typeof(GopherStyleUriParser)
-                ||  type == typeof(NetPipeStyleUriParser)
-                ||  type == typeof(NetTcpStyleUriParser)
-                ||  type == typeof(LdapStyleUriParser)
+            if (type == typeof(GenericUriParser)
+                || type == typeof(HttpStyleUriParser)
+                || type == typeof(FtpStyleUriParser)
+                || type == typeof(FileStyleUriParser)
+                || type == typeof(NewsStyleUriParser)
+                || type == typeof(GopherStyleUriParser)
+                || type == typeof(NetPipeStyleUriParser)
+                || type == typeof(NetTcpStyleUriParser)
+                || type == typeof(LdapStyleUriParser)
                 )
             {
                 _flags |= UriSyntaxFlags.SimpleUserSyntax;

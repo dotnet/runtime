@@ -10,7 +10,7 @@ using Internal.Cryptography;
 
 using Microsoft.Win32.SafeHandles;
 
-using ErrorCode=Interop.NCrypt.ErrorCode;
+using ErrorCode = Interop.NCrypt.ErrorCode;
 
 namespace System.Security.Cryptography
 {

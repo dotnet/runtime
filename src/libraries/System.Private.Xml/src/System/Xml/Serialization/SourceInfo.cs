@@ -227,7 +227,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        public static implicit operator string (SourceInfo source)
+        public static implicit operator string(SourceInfo source)
         {
             return source.Source;
         }

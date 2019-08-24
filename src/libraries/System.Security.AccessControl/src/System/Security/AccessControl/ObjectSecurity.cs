@@ -20,12 +20,12 @@ namespace System.Security.AccessControl
 
     public enum AccessControlModification
     {
-        Add                    = 0,
-        Set                    = 1,
-        Reset                  = 2,
-        Remove                 = 3,
-        RemoveAll              = 4,
-        RemoveSpecific         = 5,
+        Add = 0,
+        Set = 1,
+        Reset = 2,
+        Remove = 3,
+        RemoveAll = 4,
+        RemoveSpecific = 5,
     }
 
 
@@ -64,51 +64,51 @@ namespace System.Security.AccessControl
         {
         }
 
-        protected ObjectSecurity( bool isContainer, bool isDS )
+        protected ObjectSecurity(bool isContainer, bool isDS)
             : this()
         {
             // we will create an empty DACL, denying anyone any access as the default. 5 is the capacity.
             DiscretionaryAcl dacl = new DiscretionaryAcl(isContainer, isDS, 5);
-             _securityDescriptor = new CommonSecurityDescriptor( isContainer, isDS, ControlFlags.None, null, null, null, dacl );
+            _securityDescriptor = new CommonSecurityDescriptor(isContainer, isDS, ControlFlags.None, null, null, null, dacl);
         }
 
         protected ObjectSecurity(CommonSecurityDescriptor securityDescriptor)
             : this()
         {
-            if ( securityDescriptor == null )
+            if (securityDescriptor == null)
             {
-                throw new ArgumentNullException( nameof(securityDescriptor));
+                throw new ArgumentNullException(nameof(securityDescriptor));
             }
 
-             _securityDescriptor = securityDescriptor;
+            _securityDescriptor = securityDescriptor;
         }
 
         #endregion
 
         #region Private methods
 
-        private void UpdateWithNewSecurityDescriptor( RawSecurityDescriptor newOne, AccessControlSections includeSections )
+        private void UpdateWithNewSecurityDescriptor(RawSecurityDescriptor newOne, AccessControlSections includeSections)
         {
-            Debug.Assert( newOne != null, "Must not supply a null parameter here" );
+            Debug.Assert(newOne != null, "Must not supply a null parameter here");
 
-            if (( includeSections & AccessControlSections.Owner ) != 0 )
+            if ((includeSections & AccessControlSections.Owner) != 0)
             {
                 _ownerModified = true;
                 _securityDescriptor.Owner = newOne.Owner;
             }
 
-            if (( includeSections & AccessControlSections.Group ) != 0 )
+            if ((includeSections & AccessControlSections.Group) != 0)
             {
                 _groupModified = true;
                 _securityDescriptor.Group = newOne.Group;
             }
 
-            if (( includeSections & AccessControlSections.Audit ) != 0 )
+            if ((includeSections & AccessControlSections.Audit) != 0)
             {
                 _saclModified = true;
-                if ( newOne.SystemAcl != null )
+                if (newOne.SystemAcl != null)
                 {
-                    _securityDescriptor.SystemAcl = new SystemAcl( IsContainer, IsDS, newOne.SystemAcl, true );
+                    _securityDescriptor.SystemAcl = new SystemAcl(IsContainer, IsDS, newOne.SystemAcl, true);
                 }
                 else
                 {
@@ -118,12 +118,12 @@ namespace System.Security.AccessControl
                 _securityDescriptor.UpdateControlFlags(SACL_CONTROL_FLAGS, (ControlFlags)(newOne.ControlFlags & SACL_CONTROL_FLAGS));
             }
 
-            if (( includeSections & AccessControlSections.Access ) != 0 )
+            if ((includeSections & AccessControlSections.Access) != 0)
             {
                 _daclModified = true;
-                if ( newOne.DiscretionaryAcl != null )
+                if (newOne.DiscretionaryAcl != null)
                 {
-                    _securityDescriptor.DiscretionaryAcl = new DiscretionaryAcl( IsContainer, IsDS, newOne.DiscretionaryAcl, true );
+                    _securityDescriptor.DiscretionaryAcl = new DiscretionaryAcl(IsContainer, IsDS, newOne.DiscretionaryAcl, true);
                 }
                 else
                 {
@@ -137,7 +137,7 @@ namespace System.Security.AccessControl
                 _securityDescriptor.UpdateControlFlags(DACL_CONTROL_FLAGS,
                     (ControlFlags)((newOne.ControlFlags | daclFlag) & DACL_CONTROL_FLAGS));
             }
-         }
+        }
 
         #endregion
 
@@ -172,9 +172,9 @@ namespace System.Security.AccessControl
         {
             get
             {
-                if (!( _lock.IsReadLockHeld || _lock.IsWriteLockHeld ))
+                if (!(_lock.IsReadLockHeld || _lock.IsWriteLockHeld))
                 {
-                    throw new InvalidOperationException( SR.InvalidOperation_MustLockForReadOrWrite );
+                    throw new InvalidOperationException(SR.InvalidOperation_MustLockForReadOrWrite);
                 }
 
                 return _ownerModified;
@@ -182,9 +182,9 @@ namespace System.Security.AccessControl
 
             set
             {
-                if ( !_lock.IsWriteLockHeld )
+                if (!_lock.IsWriteLockHeld)
                 {
-                    throw new InvalidOperationException( SR.InvalidOperation_MustLockForWrite );
+                    throw new InvalidOperationException(SR.InvalidOperation_MustLockForWrite);
                 }
 
                 _ownerModified = value;
@@ -195,9 +195,9 @@ namespace System.Security.AccessControl
         {
             get
             {
-                if (!( _lock.IsReadLockHeld || _lock.IsWriteLockHeld ))
+                if (!(_lock.IsReadLockHeld || _lock.IsWriteLockHeld))
                 {
-                    throw new InvalidOperationException( SR.InvalidOperation_MustLockForReadOrWrite );
+                    throw new InvalidOperationException(SR.InvalidOperation_MustLockForReadOrWrite);
                 }
 
                 return _groupModified;
@@ -205,9 +205,9 @@ namespace System.Security.AccessControl
 
             set
             {
-                if ( !_lock.IsWriteLockHeld )
+                if (!_lock.IsWriteLockHeld)
                 {
-                    throw new InvalidOperationException( SR.InvalidOperation_MustLockForWrite );
+                    throw new InvalidOperationException(SR.InvalidOperation_MustLockForWrite);
                 }
 
                 _groupModified = value;
@@ -218,9 +218,9 @@ namespace System.Security.AccessControl
         {
             get
             {
-                if (!( _lock.IsReadLockHeld || _lock.IsWriteLockHeld ))
+                if (!(_lock.IsReadLockHeld || _lock.IsWriteLockHeld))
                 {
-                    throw new InvalidOperationException( SR.InvalidOperation_MustLockForReadOrWrite );
+                    throw new InvalidOperationException(SR.InvalidOperation_MustLockForReadOrWrite);
                 }
 
                 return _saclModified;
@@ -228,9 +228,9 @@ namespace System.Security.AccessControl
 
             set
             {
-                if ( !_lock.IsWriteLockHeld )
+                if (!_lock.IsWriteLockHeld)
                 {
-                    throw new InvalidOperationException( SR.InvalidOperation_MustLockForWrite );
+                    throw new InvalidOperationException(SR.InvalidOperation_MustLockForWrite);
                 }
 
                 _saclModified = value;
@@ -241,9 +241,9 @@ namespace System.Security.AccessControl
         {
             get
             {
-                if (!( _lock.IsReadLockHeld || _lock.IsWriteLockHeld ))
+                if (!(_lock.IsReadLockHeld || _lock.IsWriteLockHeld))
                 {
-                    throw new InvalidOperationException( SR.InvalidOperation_MustLockForReadOrWrite );
+                    throw new InvalidOperationException(SR.InvalidOperation_MustLockForReadOrWrite);
                 }
 
                 return _daclModified;
@@ -251,9 +251,9 @@ namespace System.Security.AccessControl
 
             set
             {
-                if ( !_lock.IsWriteLockHeld )
+                if (!_lock.IsWriteLockHeld)
                 {
-                    throw new InvalidOperationException( SR.InvalidOperation_MustLockForWrite );
+                    throw new InvalidOperationException(SR.InvalidOperation_MustLockForWrite);
                 }
 
                 _daclModified = value;
@@ -276,7 +276,7 @@ namespace System.Security.AccessControl
         // This overloaded method takes a name of an existing object
         //
 
-        protected virtual void Persist( string name, AccessControlSections includeSections )
+        protected virtual void Persist(string name, AccessControlSections includeSections)
         {
             throw NotImplemented.ByDesign;
         }
@@ -286,7 +286,7 @@ namespace System.Security.AccessControl
         // privilege while persisting if the enableOwnershipPrivilege is true.
         // Integrators can override it if this is not desired.
         //
-        protected virtual void Persist(bool enableOwnershipPrivilege, string name, AccessControlSections includeSections )
+        protected virtual void Persist(bool enableOwnershipPrivilege, string name, AccessControlSections includeSections)
         {
             Privilege ownerPrivilege = null;
 
@@ -309,7 +309,7 @@ namespace System.Security.AccessControl
             catch
             {
                 // protection against exception filter-based luring attacks
-                if ( ownerPrivilege != null )
+                if (ownerPrivilege != null)
                 {
                     ownerPrivilege.Revert();
                 }
@@ -330,7 +330,7 @@ namespace System.Security.AccessControl
         // This overloaded method takes a handle to an existing object
         //
 
-        protected virtual void Persist( SafeHandle handle, AccessControlSections includeSections )
+        protected virtual void Persist(SafeHandle handle, AccessControlSections includeSections)
         {
             throw NotImplemented.ByDesign;
         }
@@ -343,18 +343,18 @@ namespace System.Security.AccessControl
         // Sets and retrieves the owner of this object
         //
 
-        public IdentityReference GetOwner( System.Type targetType )
+        public IdentityReference GetOwner(System.Type targetType)
         {
             ReadLock();
 
             try
             {
-                if ( _securityDescriptor.Owner == null )
+                if (_securityDescriptor.Owner == null)
                 {
                     return null;
                 }
 
-                return _securityDescriptor.Owner.Translate( targetType );
+                return _securityDescriptor.Owner.Translate(targetType);
             }
             finally
             {
@@ -362,18 +362,18 @@ namespace System.Security.AccessControl
             }
         }
 
-        public void SetOwner( IdentityReference identity )
+        public void SetOwner(IdentityReference identity)
         {
-            if ( identity == null )
+            if (identity == null)
             {
-                throw new ArgumentNullException( nameof(identity));
+                throw new ArgumentNullException(nameof(identity));
             }
 
             WriteLock();
 
             try
             {
-                _securityDescriptor.Owner = identity.Translate( typeof( SecurityIdentifier )) as SecurityIdentifier;
+                _securityDescriptor.Owner = identity.Translate(typeof(SecurityIdentifier)) as SecurityIdentifier;
                 _ownerModified = true;
             }
             finally
@@ -386,18 +386,18 @@ namespace System.Security.AccessControl
         // Sets and retrieves the group of this object
         //
 
-        public IdentityReference GetGroup( System.Type targetType )
+        public IdentityReference GetGroup(System.Type targetType)
         {
             ReadLock();
 
             try
             {
-                if ( _securityDescriptor.Group == null )
+                if (_securityDescriptor.Group == null)
                 {
                     return null;
                 }
 
-                return _securityDescriptor.Group.Translate( targetType );
+                return _securityDescriptor.Group.Translate(targetType);
             }
             finally
             {
@@ -405,18 +405,18 @@ namespace System.Security.AccessControl
             }
         }
 
-        public void SetGroup( IdentityReference identity )
+        public void SetGroup(IdentityReference identity)
         {
-            if ( identity == null )
+            if (identity == null)
             {
-                throw new ArgumentNullException( nameof(identity));
+                throw new ArgumentNullException(nameof(identity));
             }
 
             WriteLock();
 
             try
             {
-                _securityDescriptor.Group = identity.Translate( typeof( SecurityIdentifier )) as SecurityIdentifier;
+                _securityDescriptor.Group = identity.Translate(typeof(SecurityIdentifier)) as SecurityIdentifier;
                 _groupModified = true;
             }
             finally
@@ -425,18 +425,18 @@ namespace System.Security.AccessControl
             }
         }
 
-        public virtual void PurgeAccessRules( IdentityReference identity )
+        public virtual void PurgeAccessRules(IdentityReference identity)
         {
-            if ( identity == null )
+            if (identity == null)
             {
-                throw new ArgumentNullException( nameof(identity));
+                throw new ArgumentNullException(nameof(identity));
             }
 
             WriteLock();
 
             try
             {
-                _securityDescriptor.PurgeAccessControl( identity.Translate( typeof( SecurityIdentifier )) as SecurityIdentifier );
+                _securityDescriptor.PurgeAccessControl(identity.Translate(typeof(SecurityIdentifier)) as SecurityIdentifier);
                 _daclModified = true;
             }
             finally
@@ -447,16 +447,16 @@ namespace System.Security.AccessControl
 
         public virtual void PurgeAuditRules(IdentityReference identity)
         {
-            if ( identity == null )
+            if (identity == null)
             {
-                throw new ArgumentNullException( nameof(identity));
+                throw new ArgumentNullException(nameof(identity));
             }
 
             WriteLock();
 
             try
             {
-                _securityDescriptor.PurgeAudit( identity.Translate( typeof( SecurityIdentifier )) as SecurityIdentifier );
+                _securityDescriptor.PurgeAudit(identity.Translate(typeof(SecurityIdentifier)) as SecurityIdentifier);
                 _saclModified = true;
             }
             finally
@@ -473,7 +473,7 @@ namespace System.Security.AccessControl
 
                 try
                 {
-                    return (( _securityDescriptor.ControlFlags & ControlFlags.DiscretionaryAclProtected ) != 0 );
+                    return ((_securityDescriptor.ControlFlags & ControlFlags.DiscretionaryAclProtected) != 0);
                 }
                 finally
                 {
@@ -482,13 +482,13 @@ namespace System.Security.AccessControl
             }
         }
 
-        public void SetAccessRuleProtection( bool isProtected, bool preserveInheritance )
+        public void SetAccessRuleProtection(bool isProtected, bool preserveInheritance)
         {
             WriteLock();
 
             try
             {
-                _securityDescriptor.SetDiscretionaryAclProtection( isProtected, preserveInheritance );
+                _securityDescriptor.SetDiscretionaryAclProtection(isProtected, preserveInheritance);
                 _daclModified = true;
             }
             finally
@@ -505,7 +505,7 @@ namespace System.Security.AccessControl
 
                 try
                 {
-                    return (( _securityDescriptor.ControlFlags & ControlFlags.SystemAclProtected ) != 0 );
+                    return ((_securityDescriptor.ControlFlags & ControlFlags.SystemAclProtected) != 0);
                 }
                 finally
                 {
@@ -514,13 +514,13 @@ namespace System.Security.AccessControl
             }
         }
 
-        public void SetAuditRuleProtection( bool isProtected, bool preserveInheritance )
+        public void SetAuditRuleProtection(bool isProtected, bool preserveInheritance)
         {
             WriteLock();
 
             try
             {
-                _securityDescriptor.SetSystemAclProtection( isProtected, preserveInheritance );
+                _securityDescriptor.SetSystemAclProtection(isProtected, preserveInheritance);
                 _saclModified = true;
             }
             finally
@@ -568,13 +568,13 @@ namespace System.Security.AccessControl
             return true; // SDDL to binary conversions are supported on Windows 2000 and higher
         }
 
-        public string GetSecurityDescriptorSddlForm( AccessControlSections includeSections )
+        public string GetSecurityDescriptorSddlForm(AccessControlSections includeSections)
         {
             ReadLock();
 
             try
             {
-                return _securityDescriptor.GetSddlForm( includeSections );
+                return _securityDescriptor.GetSddlForm(includeSections);
             }
             finally
             {
@@ -582,19 +582,19 @@ namespace System.Security.AccessControl
             }
         }
 
-        public void SetSecurityDescriptorSddlForm( string sddlForm )
+        public void SetSecurityDescriptorSddlForm(string sddlForm)
         {
-            SetSecurityDescriptorSddlForm( sddlForm, AccessControlSections.All );
+            SetSecurityDescriptorSddlForm(sddlForm, AccessControlSections.All);
         }
 
-        public void SetSecurityDescriptorSddlForm( string sddlForm, AccessControlSections includeSections )
+        public void SetSecurityDescriptorSddlForm(string sddlForm, AccessControlSections includeSections)
         {
-            if ( sddlForm == null )
+            if (sddlForm == null)
             {
-                throw new ArgumentNullException( nameof(sddlForm));
+                throw new ArgumentNullException(nameof(sddlForm));
             }
 
-            if (( includeSections & AccessControlSections.All ) == 0 )
+            if ((includeSections & AccessControlSections.All) == 0)
             {
                 throw new ArgumentException(
                     SR.Arg_EnumAtLeastOneFlag,
@@ -605,7 +605,7 @@ nameof(includeSections));
 
             try
             {
-                UpdateWithNewSecurityDescriptor( new RawSecurityDescriptor( sddlForm ), includeSections );
+                UpdateWithNewSecurityDescriptor(new RawSecurityDescriptor(sddlForm), includeSections);
             }
             finally
             {
@@ -621,7 +621,7 @@ nameof(includeSections));
             {
                 byte[] result = new byte[_securityDescriptor.BinaryLength];
 
-                _securityDescriptor.GetBinaryForm( result, 0 );
+                _securityDescriptor.GetBinaryForm(result, 0);
 
                 return result;
             }
@@ -631,19 +631,19 @@ nameof(includeSections));
             }
         }
 
-        public void SetSecurityDescriptorBinaryForm( byte[] binaryForm )
+        public void SetSecurityDescriptorBinaryForm(byte[] binaryForm)
         {
-            SetSecurityDescriptorBinaryForm( binaryForm, AccessControlSections.All );
+            SetSecurityDescriptorBinaryForm(binaryForm, AccessControlSections.All);
         }
 
-        public void SetSecurityDescriptorBinaryForm( byte[] binaryForm, AccessControlSections includeSections )
+        public void SetSecurityDescriptorBinaryForm(byte[] binaryForm, AccessControlSections includeSections)
         {
-            if ( binaryForm == null )
+            if (binaryForm == null)
             {
-                throw new ArgumentNullException( nameof(binaryForm));
+                throw new ArgumentNullException(nameof(binaryForm));
             }
 
-            if (( includeSections & AccessControlSections.All ) == 0 )
+            if ((includeSections & AccessControlSections.All) == 0)
             {
                 throw new ArgumentException(
                     SR.Arg_EnumAtLeastOneFlag,
@@ -654,7 +654,7 @@ nameof(includeSections));
 
             try
             {
-                UpdateWithNewSecurityDescriptor( new RawSecurityDescriptor( binaryForm, 0 ), includeSections );
+                UpdateWithNewSecurityDescriptor(new RawSecurityDescriptor(binaryForm, 0), includeSections);
             }
             finally
             {
@@ -666,17 +666,17 @@ nameof(includeSections));
         public abstract Type AccessRuleType { get; }
         public abstract Type AuditRuleType { get; }
 
-        protected abstract bool ModifyAccess( AccessControlModification modification, AccessRule rule, out bool modified);
-        protected abstract bool ModifyAudit( AccessControlModification modification, AuditRule rule, out bool modified );
+        protected abstract bool ModifyAccess(AccessControlModification modification, AccessRule rule, out bool modified);
+        protected abstract bool ModifyAudit(AccessControlModification modification, AuditRule rule, out bool modified);
 
         public virtual bool ModifyAccessRule(AccessControlModification modification, AccessRule rule, out bool modified)
         {
-            if ( rule == null )
+            if (rule == null)
             {
-                throw new ArgumentNullException( nameof(rule));
+                throw new ArgumentNullException(nameof(rule));
             }
 
-            if ( !this.AccessRuleType.GetTypeInfo().IsAssignableFrom(rule.GetType().GetTypeInfo()) )
+            if (!this.AccessRuleType.GetTypeInfo().IsAssignableFrom(rule.GetType().GetTypeInfo()))
             {
                 throw new ArgumentException(
                     SR.AccessControl_InvalidAccessRuleType,
@@ -697,12 +697,12 @@ nameof(rule));
 
         public virtual bool ModifyAuditRule(AccessControlModification modification, AuditRule rule, out bool modified)
         {
-            if ( rule == null )
+            if (rule == null)
             {
-                throw new ArgumentNullException( nameof(rule));
+                throw new ArgumentNullException(nameof(rule));
             }
 
-            if ( !this.AuditRuleType.GetTypeInfo().IsAssignableFrom(rule.GetType().GetTypeInfo()) )
+            if (!this.AuditRuleType.GetTypeInfo().IsAssignableFrom(rule.GetType().GetTypeInfo()))
             {
                 throw new ArgumentException(
                     SR.AccessControl_InvalidAuditRuleType,
@@ -721,9 +721,9 @@ nameof(rule));
             }
         }
 
-        public abstract AccessRule AccessRuleFactory( IdentityReference identityReference, int accessMask, bool isInherited, InheritanceFlags inheritanceFlags, PropagationFlags propagationFlags, AccessControlType type );
+        public abstract AccessRule AccessRuleFactory(IdentityReference identityReference, int accessMask, bool isInherited, InheritanceFlags inheritanceFlags, PropagationFlags propagationFlags, AccessControlType type);
 
-        public abstract AuditRule AuditRuleFactory( IdentityReference identityReference, int accessMask, bool isInherited, InheritanceFlags inheritanceFlags, PropagationFlags propagationFlags, AuditFlags flags );
+        public abstract AuditRule AuditRuleFactory(IdentityReference identityReference, int accessMask, bool isInherited, InheritanceFlags inheritanceFlags, PropagationFlags propagationFlags, AuditFlags flags);
         #endregion
     }
 }

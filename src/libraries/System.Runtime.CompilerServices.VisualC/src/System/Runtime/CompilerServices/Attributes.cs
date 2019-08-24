@@ -59,7 +59,7 @@ namespace System.Runtime.CompilerServices
     [AttributeUsage(AttributeTargets.All)]
     internal sealed class DecoratedNameAttribute : Attribute
     {
-        public DecoratedNameAttribute(string decoratedName) {}
+        public DecoratedNameAttribute(string decoratedName) { }
     }
 
     // Indicates that the modified instance is pinned in memory.
@@ -121,7 +121,7 @@ namespace System.Runtime.CompilerServices
         public NativeCppClassAttribute() { }
     }
 
-    [AttributeUsage (AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Enum | AttributeTargets.Interface, AllowMultiple=true, Inherited=false)]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Enum | AttributeTargets.Interface, AllowMultiple = true, Inherited = false)]
     public sealed class RequiredAttributeAttribute : Attribute
     {
         public RequiredAttributeAttribute(Type requiredContract) => RequiredContract = requiredContract;

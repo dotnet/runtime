@@ -67,7 +67,7 @@ namespace System.Text.Json
 
             if (!jsonPropertyInfo.IgnoreNullValues)
             {
-                state.Current.JsonPropertyInfo.SetValueAsObject(state.Current.ReturnValue, value : null);
+                state.Current.JsonPropertyInfo.SetValueAsObject(state.Current.ReturnValue, value: null);
             }
 
             return false;

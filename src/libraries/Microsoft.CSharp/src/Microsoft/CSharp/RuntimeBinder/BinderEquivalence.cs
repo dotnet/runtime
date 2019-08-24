@@ -31,10 +31,10 @@ namespace Microsoft.CSharp.RuntimeBinder
         // creating binders is not a very frequent operation.
         // typically a dynamic operation in the source will create just one binder lazily when first executed.
         private static readonly ConcurrentDictionary<ICSharpBinder, ICSharpBinder> binderEquivalenceCache =
-            new ConcurrentDictionary<ICSharpBinder, ICSharpBinder>(concurrencyLevel:2, capacity: 32, new BinderEqualityComparer());
+            new ConcurrentDictionary<ICSharpBinder, ICSharpBinder>(concurrencyLevel: 2, capacity: 32, new BinderEqualityComparer());
 
         internal static T TryGetExisting<T>(this T binder)
-            where T: ICSharpBinder
+            where T : ICSharpBinder
         {
             var fromCache = binderEquivalenceCache.GetOrAdd(binder, binder);
             if (fromCache == (object)binder)

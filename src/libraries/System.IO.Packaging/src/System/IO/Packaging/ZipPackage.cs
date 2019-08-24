@@ -784,21 +784,21 @@ namespace System.IO.Packaging
                             {
                                 ProcessDefaultTagAttributes(reader);
                             }
+                            else if (reader.NodeType == XmlNodeType.Element
+                                     && reader.Depth == 1
+                                     && (string.CompareOrdinal(reader.NamespaceURI, TypesNamespaceUri) == 0)
+                                     && (string.CompareOrdinal(reader.Name, OverrideTagName) == 0))
+                            {
+                                ProcessOverrideTagAttributes(reader);
+                            }
+                            else if (reader.NodeType == XmlNodeType.EndElement && reader.Depth == 0 && string.CompareOrdinal(reader.Name, TypesTagName) == 0)
+                            {
+                                continue;
+                            }
                             else
-                                if (reader.NodeType == XmlNodeType.Element
-                                    && reader.Depth == 1
-                                    && (string.CompareOrdinal(reader.NamespaceURI, TypesNamespaceUri) == 0)
-                                    && (string.CompareOrdinal(reader.Name, OverrideTagName) == 0))
-                                {
-                                    ProcessOverrideTagAttributes(reader);
-                                }
-                                else
-                                    if (reader.NodeType == XmlNodeType.EndElement && reader.Depth == 0 && string.CompareOrdinal(reader.Name, TypesTagName) == 0)
-                                        continue;
-                                    else
-                                    {
-                                        throw new XmlException(SR.TypesXmlDoesNotMatchSchema, null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
-                                    }
+                            {
+                                throw new XmlException(SR.TypesXmlDoesNotMatchSchema, null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
+                            }
                         }
                     }
                     else

@@ -297,7 +297,7 @@ namespace System.Data.SqlTypes
         }
 
         // Explicit conversion from SqlString to String. Throw exception if x is Null.
-        public static explicit operator string (SqlString x)
+        public static explicit operator string(SqlString x)
         {
             return x.Value;
         }

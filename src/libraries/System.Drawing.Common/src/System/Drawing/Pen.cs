@@ -41,7 +41,7 @@ namespace System.Drawing
         /// </summary>
         private Pen(IntPtr nativePen) => SetNativePen(nativePen);
 
-        internal Pen(Color color, bool immutable) : this(color) =>  _immutable = immutable;
+        internal Pen(Color color, bool immutable) : this(color) => _immutable = immutable;
 
         /// <summary>
         /// Initializes a new instance of the Pen class with the specified <see cref='Color'/>.
@@ -217,7 +217,7 @@ namespace System.Drawing
 
             int status = Gdip.GdipSetPenLineCap197819(new HandleRef(this, NativePen),
                 unchecked((int)startCap), unchecked((int)endCap), unchecked((int)dashCap));
-                Gdip.CheckStatus(status);
+            Gdip.CheckStatus(status);
         }
 
         /// <summary>
@@ -660,7 +660,7 @@ namespace System.Drawing
         {
             IntPtr nativeBrush = IntPtr.Zero;
             int status = Gdip.GdipGetPenBrushFill(new HandleRef(this, NativePen), out nativeBrush);
-                Gdip.CheckStatus(status);
+            Gdip.CheckStatus(status);
 
             return nativeBrush;
         }

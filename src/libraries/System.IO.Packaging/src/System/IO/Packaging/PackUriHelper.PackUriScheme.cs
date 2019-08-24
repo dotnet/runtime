@@ -45,7 +45,7 @@ namespace System.IO.Packaging
         /// This parameter can be null in which case we will create a valid pack uri
         /// that references the entire package</param>
         /// <returns>A Uri with the "pack://" scheme</returns>
-         /// <exception cref="ArgumentNullException">If packageUri parameter is null</exception>
+        /// <exception cref="ArgumentNullException">If packageUri parameter is null</exception>
         /// <exception cref="ArgumentException">If packageUri parameter is not an absolute Uri</exception>
         /// <exception cref="ArgumentException">If partUri parameter does not conform to the valid partUri syntax</exception>
         public static Uri Create(Uri packageUri, Uri partUri)

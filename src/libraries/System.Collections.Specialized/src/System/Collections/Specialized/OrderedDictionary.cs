@@ -422,7 +422,8 @@ namespace System.Collections.Specialized
 #endregion
 
 #region IDeserializationCallback implementation
-        void IDeserializationCallback.OnDeserialization(object sender) {
+        void IDeserializationCallback.OnDeserialization(object sender)
+        {
             OnDeserialization(sender);
         }
 

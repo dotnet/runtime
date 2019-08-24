@@ -102,7 +102,8 @@ namespace System.IO.Packaging
 
         public override long Length
         {
-            get {
+            get
+            {
                 // ZipArchiveEntry's read stream doesn't provide a length since it's a raw DeflateStream
                 // Return length from the archive entry.
                 if (_packageFileAccess == FileAccess.Read)

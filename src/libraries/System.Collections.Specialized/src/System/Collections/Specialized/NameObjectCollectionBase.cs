@@ -53,13 +53,15 @@ namespace System.Collections.Specialized
         }
 
         [Obsolete("Please use NameObjectCollectionBase(IEqualityComparer) instead.")]
-        protected NameObjectCollectionBase(IHashCodeProvider hashProvider, IComparer comparer) {
+        protected NameObjectCollectionBase(IHashCodeProvider hashProvider, IComparer comparer)
+        {
             _keyComparer = new CompatibleComparer(hashProvider, comparer);
             Reset();
         }
 
         [Obsolete("Please use NameObjectCollectionBase(Int32, IEqualityComparer) instead.")]
-        protected NameObjectCollectionBase(int capacity, IHashCodeProvider hashProvider, IComparer comparer) {
+        protected NameObjectCollectionBase(int capacity, IHashCodeProvider hashProvider, IComparer comparer)
+        {
             _keyComparer = new CompatibleComparer(hashProvider, comparer);
             Reset(capacity);
         }

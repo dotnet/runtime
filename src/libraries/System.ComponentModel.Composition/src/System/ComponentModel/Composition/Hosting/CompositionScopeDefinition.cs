@@ -37,7 +37,7 @@ namespace System.ComponentModel.Composition.Hosting
             InitializeCompositionScopeDefinition(catalog, children, null);
         }
 
-/// <summary>
+        /// <summary>
         /// Initializes a new instance of the <see cref="CompositionScopeDefinition"/> class.
         /// </summary>
         /// <param name="catalog">The catalog.</param>
@@ -52,7 +52,7 @@ namespace System.ComponentModel.Composition.Hosting
             InitializeCompositionScopeDefinition(catalog, children, publicSurface);
         }
 
-/// <summary>
+        /// <summary>
         /// Initializes a new instance of the <see cref="CompositionScopeDefinition"/> class.
         /// </summary>
         /// <param name="catalog">The catalog.</param>
@@ -137,7 +137,7 @@ namespace System.ComponentModel.Composition.Hosting
                 ThrowIfDisposed();
                 if (_publicSurface == null)
                 {
-                    return this.SelectMany( (p) => p.ExportDefinitions );
+                    return this.SelectMany((p) => p.ExportDefinitions);
                 }
 
                 return _publicSurface;

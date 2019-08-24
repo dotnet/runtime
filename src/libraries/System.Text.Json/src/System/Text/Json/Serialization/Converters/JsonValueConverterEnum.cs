@@ -26,7 +26,7 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         public JsonConverterEnum(EnumConverterOptions options)
-            : this (options, namingPolicy: null)
+            : this(options, namingPolicy: null)
         {
         }
 

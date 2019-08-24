@@ -261,12 +261,13 @@ namespace System.Data.Common
         internal static ArgumentOutOfRangeException InvalidCommandType(CommandType value)
         {
 #if DEBUG
-            switch (value) {
-            case CommandType.Text:
-            case CommandType.StoredProcedure:
-            case CommandType.TableDirect:
-                Debug.Assert(false, "valid CommandType " + value.ToString());
-                break;
+            switch (value)
+            {
+                case CommandType.Text:
+                case CommandType.StoredProcedure:
+                case CommandType.TableDirect:
+                    Debug.Assert(false, "valid CommandType " + value.ToString());
+                    break;
             }
 #endif
             return InvalidEnumerationValue(typeof(CommandType), (int)value);
@@ -276,13 +277,14 @@ namespace System.Data.Common
         internal static ArgumentOutOfRangeException InvalidDataRowVersion(DataRowVersion value)
         {
 #if DEBUG
-            switch (value) {
-            case DataRowVersion.Default:
-            case DataRowVersion.Current:
-            case DataRowVersion.Original:
-            case DataRowVersion.Proposed:
-                Debug.Assert(false, "valid DataRowVersion " + value.ToString());
-                break;
+            switch (value)
+            {
+                case DataRowVersion.Default:
+                case DataRowVersion.Current:
+                case DataRowVersion.Original:
+                case DataRowVersion.Proposed:
+                    Debug.Assert(false, "valid DataRowVersion " + value.ToString());
+                    break;
             }
 #endif
             return InvalidEnumerationValue(typeof(DataRowVersion), (int)value);
@@ -292,16 +294,17 @@ namespace System.Data.Common
         internal static ArgumentOutOfRangeException InvalidIsolationLevel(IsolationLevel value)
         {
 #if DEBUG
-            switch (value) {
-            case IsolationLevel.Unspecified:
-            case IsolationLevel.Chaos:
-            case IsolationLevel.ReadUncommitted:
-            case IsolationLevel.ReadCommitted:
-            case IsolationLevel.RepeatableRead:
-            case IsolationLevel.Serializable:
-            case IsolationLevel.Snapshot:
-                Debug.Assert(false, "valid IsolationLevel " + value.ToString());
-                break;
+            switch (value)
+            {
+                case IsolationLevel.Unspecified:
+                case IsolationLevel.Chaos:
+                case IsolationLevel.ReadUncommitted:
+                case IsolationLevel.ReadCommitted:
+                case IsolationLevel.RepeatableRead:
+                case IsolationLevel.Serializable:
+                case IsolationLevel.Snapshot:
+                    Debug.Assert(false, "valid IsolationLevel " + value.ToString());
+                    break;
             }
 #endif
             return InvalidEnumerationValue(typeof(IsolationLevel), (int)value);
@@ -311,13 +314,14 @@ namespace System.Data.Common
         internal static ArgumentOutOfRangeException InvalidParameterDirection(ParameterDirection value)
         {
 #if DEBUG
-            switch (value) {
-            case ParameterDirection.Input:
-            case ParameterDirection.Output:
-            case ParameterDirection.InputOutput:
-            case ParameterDirection.ReturnValue:
-                Debug.Assert(false, "valid ParameterDirection " + value.ToString());
-                break;
+            switch (value)
+            {
+                case ParameterDirection.Input:
+                case ParameterDirection.Output:
+                case ParameterDirection.InputOutput:
+                case ParameterDirection.ReturnValue:
+                    Debug.Assert(false, "valid ParameterDirection " + value.ToString());
+                    break;
             }
 #endif
             return InvalidEnumerationValue(typeof(ParameterDirection), (int)value);
@@ -327,13 +331,14 @@ namespace System.Data.Common
         internal static ArgumentOutOfRangeException InvalidUpdateRowSource(UpdateRowSource value)
         {
 #if DEBUG
-            switch (value) {
-            case UpdateRowSource.None:
-            case UpdateRowSource.OutputParameters:
-            case UpdateRowSource.FirstReturnedRecord:
-            case UpdateRowSource.Both:
-                Debug.Assert(false, "valid UpdateRowSource " + value.ToString());
-                break;
+            switch (value)
+            {
+                case UpdateRowSource.None:
+                case UpdateRowSource.OutputParameters:
+                case UpdateRowSource.FirstReturnedRecord:
+                case UpdateRowSource.Both:
+                    Debug.Assert(false, "valid UpdateRowSource " + value.ToString());
+                    break;
             }
 #endif
             return InvalidEnumerationValue(typeof(UpdateRowSource), (int)value);
@@ -1293,15 +1298,17 @@ namespace System.Data.Common
             return (condition == (condition & value.Direction));
         }
 #if DEBUG
-        private static void IsDirectionValid(ParameterDirection value) {
-            switch (value) { // @perfnote: Enum.IsDefined
-            case ParameterDirection.Input:
-            case ParameterDirection.Output:
-            case ParameterDirection.InputOutput:
-            case ParameterDirection.ReturnValue:
-                break;
-            default:
-                throw ADP.InvalidParameterDirection(value);
+        private static void IsDirectionValid(ParameterDirection value)
+        {
+            switch (value)
+            { // @perfnote: Enum.IsDefined
+                case ParameterDirection.Input:
+                case ParameterDirection.Output:
+                case ParameterDirection.InputOutput:
+                case ParameterDirection.ReturnValue:
+                    break;
+                default:
+                    throw ADP.InvalidParameterDirection(value);
             }
         }
 #endif

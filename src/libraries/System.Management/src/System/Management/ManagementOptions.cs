@@ -15,35 +15,35 @@ namespace System.Management
         /// <summary>
         ///    <para>The default COM authentication level. WMI uses the default Windows Authentication setting.</para>
         /// </summary>
-        Default=0,
+        Default = 0,
         /// <summary>
         ///    <para> No COM authentication.</para>
         /// </summary>
-        None=1,
+        None = 1,
         /// <summary>
         ///    <para> Connect-level COM authentication.</para>
         /// </summary>
-        Connect=2,
+        Connect = 2,
         /// <summary>
         ///    <para> Call-level COM authentication.</para>
         /// </summary>
-        Call=3,
+        Call = 3,
         /// <summary>
         ///    <para> Packet-level COM authentication.</para>
         /// </summary>
-        Packet=4,
+        Packet = 4,
         /// <summary>
         ///    <para>Packet Integrity-level COM authentication.</para>
         /// </summary>
-        PacketIntegrity=5,
+        PacketIntegrity = 5,
         /// <summary>
         ///    <para>Packet Privacy-level COM authentication.</para>
         /// </summary>
-        PacketPrivacy=6,
+        PacketPrivacy = 6,
         /// <summary>
         ///    <para>The default COM authentication level. WMI uses the default Windows Authentication setting.</para>
         /// </summary>
-        Unchanged=-1
+        Unchanged = -1
     }
 
     /// <summary>
@@ -54,31 +54,31 @@ namespace System.Management
         /// <summary>
         ///    <para>Default impersonation.</para>
         /// </summary>
-        Default=0,
+        Default = 0,
         /// <summary>
         ///    <para> Anonymous COM impersonation level that hides the
         ///       identity of the caller. Calls to WMI may fail
         ///       with this impersonation level.</para>
         /// </summary>
-        Anonymous=1,
+        Anonymous = 1,
         /// <summary>
         ///    <para> Identify-level COM impersonation level that allows objects
         ///       to query the credentials of the caller. Calls to
         ///       WMI may fail with this impersonation level.</para>
         /// </summary>
-        Identify=2,
+        Identify = 2,
         /// <summary>
         ///    <para> Impersonate-level COM impersonation level that allows
         ///       objects to use the credentials of the caller. This is the recommended impersonation level for WMI calls.</para>
         /// </summary>
-        Impersonate=3,
+        Impersonate = 3,
         /// <summary>
         ///    <para> Delegate-level COM impersonation level that allows objects
         ///       to permit other objects to use the credentials of the caller. This
         ///       level, which will work with WMI calls but may constitute an unnecessary
         ///       security risk, is supported only under Windows 2000.</para>
         /// </summary>
-        Delegate=4
+        Delegate = 4
     }
 
     /// <summary>
@@ -95,17 +95,17 @@ namespace System.Management
         ///    <para> Updates an existing object
         ///       only; does not create a new object.</para>
         /// </summary>
-        UpdateOnly=1,
+        UpdateOnly = 1,
         /// <summary>
         ///    <para> Creates an object only;
         ///       does not update an existing object.</para>
         /// </summary>
-        CreateOnly=2,
+        CreateOnly = 2,
         /// <summary>
         ///    <para> Saves the object, whether
         ///       updating an existing object or creating a new object.</para>
         /// </summary>
-        UpdateOrCreate=3
+        UpdateOrCreate = 3
     }
 
     //CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC//
@@ -149,7 +149,8 @@ namespace System.Management
             FireIdentifierChanged();
         }
 
-        internal int Flags {
+        internal int Flags
+        {
             get { return flags; }
             set { flags = value; }
         }
@@ -177,9 +178,9 @@ namespace System.Management
                 ManagementNamedValueCollection oldContext = context;
 
                 if (null != value)
-                    context = (ManagementNamedValueCollection) value.Clone();
+                    context = (ManagementNamedValueCollection)value.Clone();
                 else
-                    context = new ManagementNamedValueCollection ();
+                    context = new ManagementNamedValueCollection();
 
                 if (null != oldContext)
                     oldContext.IdentifierChanged -= new IdentifierChangedEventHandler(HandleIdentifierChange);
@@ -221,8 +222,8 @@ namespace System.Management
         }
 
 
-        internal ManagementOptions() : this(null, InfiniteTimeout) {}
-        internal ManagementOptions(ManagementNamedValueCollection context, TimeSpan timeout) : this(context, timeout, 0) {}
+        internal ManagementOptions() : this(null, InfiniteTimeout) { }
+        internal ManagementOptions(ManagementNamedValueCollection context, TimeSpan timeout) : this(context, timeout, 0) { }
         internal ManagementOptions(ManagementNamedValueCollection context, TimeSpan timeout, int flags)
         {
             this.flags = flags;
@@ -234,7 +235,8 @@ namespace System.Management
         }
 
 
-        internal IWbemContext GetContext () {
+        internal IWbemContext GetContext()
+        {
             if (context != null)
                 return context.GetContext();
             else
@@ -330,7 +332,8 @@ namespace System.Management
         public bool ReturnImmediately
         {
             get { return (((Flags & (int)tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_RETURN_IMMEDIATELY) != 0) ? true : false); }
-            set {
+            set
+            {
                 Flags = (value == false) ? (Flags & (int)~tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_RETURN_IMMEDIATELY) :
                             (Flags | (int)tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_RETURN_IMMEDIATELY);
             }
@@ -347,7 +350,8 @@ namespace System.Management
         public int BlockSize
         {
             get { return blockSize; }
-            set {
+            set
+            {
                 //Unfortunately BlockSize was defined as int, but valid values are only  > 0
                 if (value <= 0)
                     throw new ArgumentOutOfRangeException(nameof(value));
@@ -377,7 +381,8 @@ namespace System.Management
         public bool Rewindable
         {
             get { return (((Flags & (int)tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_FORWARD_ONLY) != 0) ? false : true); }
-            set {
+            set
+            {
                 Flags = (value == true) ? (Flags & (int)~tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_FORWARD_ONLY) :
                                             (Flags | (int)tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_FORWARD_ONLY);
             }
@@ -403,7 +408,8 @@ namespace System.Management
         public bool UseAmendedQualifiers
         {
             get { return (((Flags & (int)tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_USE_AMENDED_QUALIFIERS) != 0) ? true : false); }
-            set {
+            set
+            {
                 Flags = (value == true) ? (Flags | (int)tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_USE_AMENDED_QUALIFIERS) :
                                             (Flags & (int)~tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_USE_AMENDED_QUALIFIERS);
             }
@@ -426,8 +432,10 @@ namespace System.Management
             get
             { return (((Flags & (int)tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_ENSURE_LOCATABLE) != 0) ? true : false); }
             set
-            { Flags = (value == true) ? (Flags | (int)tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_ENSURE_LOCATABLE) :
-                      (Flags & (int)~tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_ENSURE_LOCATABLE); }
+            {
+                Flags = (value == true) ? (Flags | (int)tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_ENSURE_LOCATABLE) :
+                        (Flags & (int)~tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_ENSURE_LOCATABLE);
+            }
         }
 
 
@@ -447,8 +455,10 @@ namespace System.Management
             get
             { return (((Flags & (int)tag_WBEM_QUERY_FLAG_TYPE.WBEM_FLAG_PROTOTYPE) != 0) ? true : false); }
             set
-            { Flags = (value == true) ? (Flags | (int)tag_WBEM_QUERY_FLAG_TYPE.WBEM_FLAG_PROTOTYPE) :
-                      (Flags & (int)~tag_WBEM_QUERY_FLAG_TYPE.WBEM_FLAG_PROTOTYPE); }
+            {
+                Flags = (value == true) ? (Flags | (int)tag_WBEM_QUERY_FLAG_TYPE.WBEM_FLAG_PROTOTYPE) :
+                        (Flags & (int)~tag_WBEM_QUERY_FLAG_TYPE.WBEM_FLAG_PROTOTYPE);
+            }
         }
 
         /// <summary>
@@ -466,8 +476,10 @@ namespace System.Management
             get
             { return (((Flags & (int)tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_DIRECT_READ) != 0) ? true : false); }
             set
-            { Flags = (value == true) ? (Flags | (int)tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_DIRECT_READ) :
-                      (Flags & (int)~tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_DIRECT_READ); }
+            {
+                Flags = (value == true) ? (Flags | (int)tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_DIRECT_READ) :
+                        (Flags & (int)~tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_DIRECT_READ);
+            }
         }
 
 
@@ -487,8 +499,10 @@ namespace System.Management
             get
             { return (((Flags & (int)tag_WBEM_QUERY_FLAG_TYPE.WBEM_FLAG_SHALLOW) != 0) ? false : true); }
             set
-            { Flags = (value == false) ? (Flags | (int)tag_WBEM_QUERY_FLAG_TYPE.WBEM_FLAG_SHALLOW) :
-                      (Flags & (int)~tag_WBEM_QUERY_FLAG_TYPE.WBEM_FLAG_SHALLOW); }
+            {
+                Flags = (value == false) ? (Flags | (int)tag_WBEM_QUERY_FLAG_TYPE.WBEM_FLAG_SHALLOW) :
+                        (Flags & (int)~tag_WBEM_QUERY_FLAG_TYPE.WBEM_FLAG_SHALLOW);
+            }
         }
 
 
@@ -502,7 +516,7 @@ namespace System.Management
         /// class with default values (see the individual property descriptions
         /// for what the default values are). This is the default constructor. </para>
         /// </summary>
-        public EnumerationOptions() : this (null, InfiniteTimeout, 1, true, true, false, false, false, false, false) {}
+        public EnumerationOptions() : this(null, InfiniteTimeout, 1, true, true, false, false, false, false, false) { }
 
 
 
@@ -549,14 +563,14 @@ namespace System.Management
         /// <returns>
         ///    <para>The cloned object.</para>
         /// </returns>
-        public override object Clone ()
+        public override object Clone()
         {
             ManagementNamedValueCollection newContext = null;
 
             if (null != Context)
                 newContext = (ManagementNamedValueCollection)Context.Clone();
 
-            return new EnumerationOptions (newContext, Timeout, blockSize, Rewindable,
+            return new EnumerationOptions(newContext, Timeout, blockSize, Rewindable,
                             ReturnImmediately, UseAmendedQualifiers, EnsureLocatable, PrototypeOnly, DirectRead, EnumerateDeep);
         }
 
@@ -666,7 +680,7 @@ namespace System.Management
             set
             {
                 blockSize = value;
-                FireIdentifierChanged ();
+                FireIdentifierChanged();
             }
 
         }
@@ -679,7 +693,7 @@ namespace System.Management
         ///    This is the default constructor.</para>
         /// </summary>
         public EventWatcherOptions()
-            : this (null, InfiniteTimeout, 1) {}
+            : this(null, InfiniteTimeout, 1) { }
 
         /// <summary>
         /// <para> Initializes a new instance of the <see cref='System.Management.EventWatcherOptions'/> class with the given
@@ -691,7 +705,7 @@ namespace System.Management
         public EventWatcherOptions(ManagementNamedValueCollection context, TimeSpan timeout, int blockSize)
             : base(context, timeout)
         {
-            Flags = (int)tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_RETURN_IMMEDIATELY|(int)tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_FORWARD_ONLY;
+            Flags = (int)tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_RETURN_IMMEDIATELY | (int)tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_FORWARD_ONLY;
             BlockSize = blockSize;
         }
 
@@ -701,14 +715,14 @@ namespace System.Management
         /// <returns>
         ///    The cloned object.
         /// </returns>
-        public override object Clone ()
+        public override object Clone()
         {
             ManagementNamedValueCollection newContext = null;
 
             if (null != Context)
                 newContext = (ManagementNamedValueCollection)Context.Clone();
 
-            return new EventWatcherOptions (newContext, Timeout, blockSize);
+            return new EventWatcherOptions(newContext, Timeout, blockSize);
         }
     }//EventWatcherOptions
 
@@ -803,7 +817,8 @@ namespace System.Management
         public bool UseAmendedQualifiers
         {
             get { return (((Flags & (int)tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_USE_AMENDED_QUALIFIERS) != 0) ? true : false); }
-            set {
+            set
+            {
                 Flags = (value == true) ? (Flags | (int)tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_USE_AMENDED_QUALIFIERS) :
                                             (Flags & (int)~tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_USE_AMENDED_QUALIFIERS);
                 FireIdentifierChanged();
@@ -817,14 +832,14 @@ namespace System.Management
         /// <para>Initializes a new instance of the <see cref='System.Management.ObjectGetOptions'/> class for getting a WMI object, using
         ///    default values. This is the default constructor.</para>
         /// </summary>
-        public ObjectGetOptions() : this(null, InfiniteTimeout, false) {}
+        public ObjectGetOptions() : this(null, InfiniteTimeout, false) { }
 
         /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.Management.ObjectGetOptions'/> class for getting a WMI object, using the
         ///    specified provider-specific context.</para>
         /// </summary>
         /// <param name='context'>A provider-specific, named-value pairs context object to be passed through to the provider.</param>
-        public ObjectGetOptions(ManagementNamedValueCollection context) : this(context, InfiniteTimeout, false) {}
+        public ObjectGetOptions(ManagementNamedValueCollection context) : this(context, InfiniteTimeout, false) { }
 
         /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.Management.ObjectGetOptions'/> class for getting a WMI object,
@@ -844,14 +859,14 @@ namespace System.Management
         /// <returns>
         ///    <para>The cloned object.</para>
         /// </returns>
-        public override object Clone ()
+        public override object Clone()
         {
             ManagementNamedValueCollection newContext = null;
 
             if (null != Context)
                 newContext = (ManagementNamedValueCollection)Context.Clone();
 
-            return new ObjectGetOptions (newContext, Timeout, UseAmendedQualifiers);
+            return new ObjectGetOptions(newContext, Timeout, UseAmendedQualifiers);
         }
     }
 
@@ -935,8 +950,11 @@ namespace System.Management
         public bool UseAmendedQualifiers
         {
             get { return (((Flags & (int)tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_USE_AMENDED_QUALIFIERS) != 0) ? true : false); }
-            set { Flags = (value == true) ? (Flags | (int)tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_USE_AMENDED_QUALIFIERS) :
-                                            (Flags & (int)~tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_USE_AMENDED_QUALIFIERS); }
+            set
+            {
+                Flags = (value == true) ? (Flags | (int)tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_USE_AMENDED_QUALIFIERS) :
+                                          (Flags & (int)~tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_USE_AMENDED_QUALIFIERS);
+            }
         }
 
         /// <summary>
@@ -947,11 +965,14 @@ namespace System.Management
         /// </value>
         public PutType Type
         {
-            get { return (((Flags & (int)tag_WBEM_CHANGE_FLAG_TYPE.WBEM_FLAG_UPDATE_ONLY) != 0) ? PutType.UpdateOnly :
-                          ((Flags & (int)tag_WBEM_CHANGE_FLAG_TYPE.WBEM_FLAG_CREATE_ONLY) != 0) ? PutType.CreateOnly :
-                                                                                PutType.UpdateOrCreate);
+            get
+            {
+                return (((Flags & (int)tag_WBEM_CHANGE_FLAG_TYPE.WBEM_FLAG_UPDATE_ONLY) != 0) ? PutType.UpdateOnly :
+                        ((Flags & (int)tag_WBEM_CHANGE_FLAG_TYPE.WBEM_FLAG_CREATE_ONLY) != 0) ? PutType.CreateOnly :
+                                                                              PutType.UpdateOrCreate);
             }
-            set {
+            set
+            {
                 Flags |= value switch
                 {
                     PutType.UpdateOnly => (int)tag_WBEM_CHANGE_FLAG_TYPE.WBEM_FLAG_UPDATE_ONLY,
@@ -969,14 +990,14 @@ namespace System.Management
         /// <para>Initializes a new instance of the <see cref='System.Management.PutOptions'/> class for put operations, using default values.
         ///    This is the default constructor.</para>
         /// </summary>
-        public PutOptions() : this(null, InfiniteTimeout, false, PutType.UpdateOrCreate) {}
+        public PutOptions() : this(null, InfiniteTimeout, false, PutType.UpdateOrCreate) { }
 
         /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.Management.PutOptions'/> class for committing a WMI object, using the
         ///    specified provider-specific context.</para>
         /// </summary>
         /// <param name='context'>A provider-specific, named-value pairs context object to be passed through to the provider.</param>
-        public PutOptions(ManagementNamedValueCollection context) : this(context, InfiniteTimeout, false, PutType.UpdateOrCreate) {}
+        public PutOptions(ManagementNamedValueCollection context) : this(context, InfiniteTimeout, false, PutType.UpdateOrCreate) { }
 
         /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.Management.PutOptions'/> class for committing a WMI object, using
@@ -998,14 +1019,14 @@ namespace System.Management
         /// <returns>
         ///    <para>The cloned object.</para>
         /// </returns>
-        public override object Clone ()
+        public override object Clone()
         {
             ManagementNamedValueCollection newContext = null;
 
             if (null != Context)
                 newContext = (ManagementNamedValueCollection)Context.Clone();
 
-            return new PutOptions (newContext, Timeout, UseAmendedQualifiers, Type);
+            return new PutOptions(newContext, Timeout, UseAmendedQualifiers, Type);
         }
     }
 
@@ -1069,7 +1090,7 @@ namespace System.Management
         /// <para>Initializes a new instance of the <see cref='System.Management.DeleteOptions'/> class for the delete operation, using default values.
         ///    This is the default constructor.</para>
         /// </summary>
-        public DeleteOptions() : base () {}
+        public DeleteOptions() : base() { }
 
         /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.Management.DeleteOptions'/> class for a delete operation, using
@@ -1077,7 +1098,7 @@ namespace System.Management
         /// </summary>
         /// <param name='context'>A provider-specific, named-value pairs object to be passed through to the provider. </param>
         /// <param name='timeout'>The length of time to let the operation perform before it times out. The default value is <see cref='System.Management.ManagementOptions.InfiniteTimeout'/> . Setting this parameter will invoke the operation semisynchronously.</param>
-        public DeleteOptions(ManagementNamedValueCollection context, TimeSpan timeout) : base(context, timeout) {}
+        public DeleteOptions(ManagementNamedValueCollection context, TimeSpan timeout) : base(context, timeout) { }
 
         /// <summary>
         ///    <para> Returns a copy of the object.</para>
@@ -1085,14 +1106,14 @@ namespace System.Management
         /// <returns>
         ///    <para>A cloned object.</para>
         /// </returns>
-        public override object Clone ()
+        public override object Clone()
         {
             ManagementNamedValueCollection newContext = null;
 
             if (null != Context)
                 newContext = (ManagementNamedValueCollection)Context.Clone();
 
-            return new DeleteOptions (newContext, Timeout);
+            return new DeleteOptions(newContext, Timeout);
         }
     }
 
@@ -1156,7 +1177,7 @@ namespace System.Management
         /// <para>Initializes a new instance of the <see cref='System.Management.InvokeMethodOptions'/> class for the <see cref='System.Management.ManagementObject.InvokeMethod(string, ManagementBaseObject, InvokeMethodOptions) '/> operation, using default values.
         ///    This is the default constructor.</para>
         /// </summary>
-        public InvokeMethodOptions() : base () {}
+        public InvokeMethodOptions() : base() { }
 
         /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.Management.InvokeMethodOptions'/> class for an invoke operation using
@@ -1164,7 +1185,7 @@ namespace System.Management
         /// </summary>
         /// <param name=' context'>A provider-specific, named-value pairs object to be passed through to the provider. </param>
         /// <param name='timeout'>The length of time to let the operation perform before it times out. The default value is <see cref='System.Management.ManagementOptions.InfiniteTimeout'/> . Setting this parameter will invoke the operation semisynchronously.</param>
-        public InvokeMethodOptions(ManagementNamedValueCollection context, TimeSpan timeout) : base(context, timeout) {}
+        public InvokeMethodOptions(ManagementNamedValueCollection context, TimeSpan timeout) : base(context, timeout) { }
 
         /// <summary>
         ///    <para> Returns a copy of the object.</para>
@@ -1172,14 +1193,14 @@ namespace System.Management
         /// <returns>
         ///    <para>The cloned object.</para>
         /// </returns>
-        public override object Clone ()
+        public override object Clone()
         {
             ManagementNamedValueCollection newContext = null;
 
             if (null != Context)
                 newContext = (ManagementNamedValueCollection)Context.Clone();
 
-            return new InvokeMethodOptions (newContext, Timeout);
+            return new InvokeMethodOptions(newContext, Timeout);
         }
     }
 
@@ -1277,7 +1298,8 @@ namespace System.Management
         public string Locale
         {
             get { return (null != locale) ? locale : string.Empty; }
-            set {
+            set
+            {
                 if (locale != value)
                 {
                     locale = value;
@@ -1302,7 +1324,8 @@ namespace System.Management
         public string Username
         {
             get { return username; }
-            set {
+            set
+            {
                 if (username != value)
                 {
                     username = value;
@@ -1324,13 +1347,14 @@ namespace System.Management
         /// </remarks>
         public string Password
         {
-            set {
-                if ( value != null)
+            set
+            {
+                if (value != null)
                 {
                     if (securePassword == null)
                     {
                         securePassword = new SecureString();
-                        for ( int i=0; i <value.Length; i++)
+                        for (int i = 0; i < value.Length; i++)
                         {
                             securePassword.AppendChar(value[i]);
                         }
@@ -1338,14 +1362,14 @@ namespace System.Management
                     else
                     {
                         SecureString tempStr = new SecureString();
-                        for ( int i=0; i <value.Length; i++)
+                        for (int i = 0; i < value.Length; i++)
                         {
                             tempStr.AppendChar(value[i]);
                         }
                         securePassword.Clear();
                         securePassword = tempStr.Copy();
                         FireIdentifierChanged();
-                         tempStr.Dispose();
+                        tempStr.Dispose();
                     }
                 }
                 else
@@ -1372,10 +1396,11 @@ namespace System.Management
         /// </remarks>
         public SecureString SecurePassword
         {
-            set{
-                if ( value != null)
+            set
+            {
+                if (value != null)
                 {
-                    if ( securePassword == null)
+                    if (securePassword == null)
                     {
                         securePassword = value.Copy();
                     }
@@ -1421,7 +1446,8 @@ namespace System.Management
         public string Authority
         {
             get { return (null != authority) ? authority : string.Empty; }
-            set {
+            set
+            {
                 if (authority != value)
                 {
                     authority = value;
@@ -1452,7 +1478,8 @@ namespace System.Management
         public ImpersonationLevel Impersonation
         {
             get { return impersonation; }
-            set {
+            set
+            {
                 if (impersonation != value)
                 {
                     impersonation = value;
@@ -1482,7 +1509,8 @@ namespace System.Management
         public AuthenticationLevel Authentication
         {
             get { return authentication; }
-            set {
+            set
+            {
                 if (authentication != value)
                 {
                     authentication = value;
@@ -1505,7 +1533,8 @@ namespace System.Management
         public bool EnablePrivileges
         {
             get { return enablePrivileges; }
-            set {
+            set
+            {
                 if (enablePrivileges != value)
                 {
                     enablePrivileges = value;
@@ -1526,10 +1555,11 @@ namespace System.Management
         /// <para>Initializes a new instance of the <see cref='System.Management.ConnectionOptions'/> class for the connection operation, using default values. This is the
         ///    default constructor.</para>
         /// </summary>
-        public ConnectionOptions () :
-            this (DEFAULTLOCALE, null, (string)null, DEFAULTAUTHORITY,
+        public ConnectionOptions() :
+            this(DEFAULTLOCALE, null, (string)null, DEFAULTAUTHORITY,
                     DEFAULTIMPERSONATION, DEFAULTAUTHENTICATION,
-                    DEFAULTENABLEPRIVILEGES, null, InfiniteTimeout) {}
+                    DEFAULTENABLEPRIVILEGES, null, InfiniteTimeout)
+        { }
 
 
         //parameterized
@@ -1546,11 +1576,11 @@ namespace System.Management
         /// <param name=' enablePrivileges'><see langword='true'/>to enable special user privileges; otherwise, <see langword='false'/> . This parameter should only be used when performing an operation that requires special Windows NT user privileges.</param>
         /// <param name=' context'>A provider-specific, named value pairs object to be passed through to the provider.</param>
         /// <param name=' timeout'>Reserved for future use.</param>
-        public ConnectionOptions (string locale,
+        public ConnectionOptions(string locale,
                 string username, string password, string authority,
                 ImpersonationLevel impersonation, AuthenticationLevel authentication,
                 bool enablePrivileges,
-                ManagementNamedValueCollection context, TimeSpan timeout) : base (context, timeout)
+                ManagementNamedValueCollection context, TimeSpan timeout) : base(context, timeout)
         {
             if (locale != null)
                 this.locale = locale;
@@ -1561,7 +1591,7 @@ namespace System.Management
             if (password != null)
             {
                 this.securePassword = new SecureString();
-                for ( int i=0; i <password.Length; i++)
+                for (int i = 0; i < password.Length; i++)
                 {
                     securePassword.AppendChar(password[i]);
                 }
@@ -1590,11 +1620,11 @@ namespace System.Management
         /// <param name='enablePrivileges'><see langword='true'/>to enable special user privileges; otherwise, <see langword='false'/> . This parameter should only be used when performing an operation that requires special Windows NT user privileges.</param>
         /// <param name='context'>A provider-specific, named value pairs object to be passed through to the provider.</param>
         /// <param name='timeout'>Reserved for future use.</param>
-        public ConnectionOptions (string locale,
+        public ConnectionOptions(string locale,
                 string username, SecureString password, string authority,
                 ImpersonationLevel impersonation, AuthenticationLevel authentication,
                 bool enablePrivileges,
-                ManagementNamedValueCollection context, TimeSpan timeout) : base (context, timeout)
+                ManagementNamedValueCollection context, TimeSpan timeout) : base(context, timeout)
         {
             if (locale != null)
                 this.locale = locale;
@@ -1623,13 +1653,13 @@ namespace System.Management
         /// <returns>
         ///    <para>The cloned object.</para>
         /// </returns>
-        public override object Clone ()
+        public override object Clone()
         {
             ManagementNamedValueCollection newContext = null;
 
             if (null != Context)
                 newContext = (ManagementNamedValueCollection)Context.Clone();
-            return new ConnectionOptions (locale, username, GetSecurePassword (),
+            return new ConnectionOptions(locale, username, GetSecurePassword(),
                     authority, impersonation, authentication, enablePrivileges, newContext, Timeout);
         }
 
@@ -1641,7 +1671,8 @@ namespace System.Management
         {
             if (securePassword != null)
             {
-                try{
+                try
+                {
                     return System.Runtime.InteropServices.Marshal.SecureStringToBSTR(securePassword);
                 }
                 catch (OutOfMemoryException)
@@ -1652,7 +1683,7 @@ namespace System.Management
             else
                 return IntPtr.Zero;
         }
-         internal SecureString GetSecurePassword()
+        internal SecureString GetSecurePassword()
         {
             if (securePassword != null)
                 return securePassword.Copy();
@@ -1660,9 +1691,9 @@ namespace System.Management
                 return null;
         }
 
-        internal ConnectionOptions(ManagementNamedValueCollection context, TimeSpan timeout, int flags) : base(context, timeout, flags) {}
+        internal ConnectionOptions(ManagementNamedValueCollection context, TimeSpan timeout, int flags) : base(context, timeout, flags) { }
 
-        internal ConnectionOptions(ManagementNamedValueCollection context) : base(context, InfiniteTimeout) {}
+        internal ConnectionOptions(ManagementNamedValueCollection context) : base(context, InfiniteTimeout) { }
 
         internal static ConnectionOptions _Clone(ConnectionOptions options)
         {

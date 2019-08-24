@@ -135,9 +135,9 @@ namespace System.ComponentModel.Composition
             }
 
             // If the Metadata dictionary is cast compatible with the passed in type
-            if (ExportServices.IsDefaultMetadataViewType(metadataViewType)
-            ||  metadataViewType.IsInterface
-            ||  ExportServices.IsDictionaryConstructorViewType(metadataViewType))
+            if (ExportServices.IsDefaultMetadataViewType(metadataViewType) ||
+                metadataViewType.IsInterface ||
+                ExportServices.IsDictionaryConstructorViewType(metadataViewType))
             {
                 return true;
             }

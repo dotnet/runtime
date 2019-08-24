@@ -9,7 +9,7 @@ internal partial class Interop
 {
     internal partial class User32
     {
-        [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         internal unsafe struct WNDCLASS
         {
             public int style;

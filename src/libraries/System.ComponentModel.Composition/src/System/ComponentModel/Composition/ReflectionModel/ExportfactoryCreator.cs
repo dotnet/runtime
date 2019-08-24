@@ -12,7 +12,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         private static readonly MethodInfo _createStronglyTypedExportFactoryOfT = typeof(ExportFactoryCreator).GetMethod("CreateStronglyTypedExportFactoryOfT", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
         private static readonly MethodInfo _createStronglyTypedExportFactoryOfTM = typeof(ExportFactoryCreator).GetMethod("CreateStronglyTypedExportFactoryOfTM", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
 
-        private readonly Type    _exportFactoryType;
+        private readonly Type _exportFactoryType;
 
         public ExportFactoryCreator(Type exportFactoryType)
         {
@@ -29,7 +29,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             MethodInfo genericMethod = null;
             if (metadataViewType == null)
             {
-                 genericMethod = _createStronglyTypedExportFactoryOfT.MakeGenericMethod(exportType);
+                genericMethod = _createStronglyTypedExportFactoryOfT.MakeGenericMethod(exportType);
             }
             else
             {
@@ -71,7 +71,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             var metadataView = AttributedModelServices.GetMetadataView<M>(export.Metadata);
             object[] args = { exportLifetimeContextCreator, metadataView };
 
-            var instance =  Activator.CreateInstance(constructed, args);
+            var instance = Activator.CreateInstance(constructed, args);
 
             return instance;
         }

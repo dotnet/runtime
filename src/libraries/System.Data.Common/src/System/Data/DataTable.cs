@@ -4775,7 +4775,7 @@ namespace System.Data
                 }
 
                 DataRow dataRow = LoadRow(values, loadOption, indextoUse); // if indextoUse == null, it means we dont have PK,
-                                                                          // so LoadRow will take care of just adding the row to end
+                                                                           // so LoadRow will take care of just adding the row to end
 
                 return dataRow;
             }

@@ -111,9 +111,9 @@ namespace Internal.Cryptography.Pal
                 CertStoreFlags.CERT_STORE_ENUM_ARCHIVED_FLAG | CertStoreFlags.CERT_STORE_CREATE_NEW_FLAG | CertStoreFlags.CERT_STORE_DEFER_CLOSE_UNTIL_LAST_FREE_FLAG,
                 null);
             if (certStore.IsInvalid)
-                throw Marshal.GetHRForLastWin32Error().ToCryptographicException();;
+                throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
             if (!Interop.crypt32.CertAddCertificateLinkToStore(certStore, certificatePal.CertContext, CertStoreAddDisposition.CERT_STORE_ADD_ALWAYS, IntPtr.Zero))
-                throw Marshal.GetHRForLastWin32Error().ToCryptographicException();;
+                throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
             return new StorePal(certStore);
         }
 
@@ -133,7 +133,7 @@ namespace Internal.Cryptography.Pal
                 CertStoreFlags.CERT_STORE_ENUM_ARCHIVED_FLAG | CertStoreFlags.CERT_STORE_CREATE_NEW_FLAG,
                 null);
             if (certStore.IsInvalid)
-                throw Marshal.GetHRForLastWin32Error().ToCryptographicException();;
+                throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
 
             //
             // We use CertAddCertificateLinkToStore to keep a link to the original store, so any property changes get

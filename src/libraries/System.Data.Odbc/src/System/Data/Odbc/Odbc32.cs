@@ -688,57 +688,43 @@ namespace System.Data.Odbc
         // Column set for SQLPrimaryKeys
         internal enum SQL_PRIMARYKEYS : short
         {
-/*
-            CATALOGNAME         = 1,                    // TABLE_CAT
-            SCHEMANAME          = 2,                    // TABLE_SCHEM
-            TABLENAME           = 3,                    // TABLE_NAME
-*/
+            // CATALOGNAME = 1,                // TABLE_CAT
+            // SCHEMANAME = 2,                 // TABLE_SCHEM
+            // TABLENAME = 3,                  // TABLE_NAME
             COLUMNNAME = 4,                    // COLUMN_NAME
-/*
-            KEY_SEQ             = 5,                    // KEY_SEQ
-            PKNAME              = 6,                    // PK_NAME
-*/
+            // KEY_SEQ = 5,                    // KEY_SEQ
+            // PKNAME = 6,                     // PK_NAME
         }
 
         // Column set for SQLStatistics
         internal enum SQL_STATISTICS : short
         {
-/*
-            CATALOGNAME         = 1,                    // TABLE_CAT
-            SCHEMANAME          = 2,                    // TABLE_SCHEM
-            TABLENAME           = 3,                    // TABLE_NAME
-            NONUNIQUE           = 4,                    // NON_UNIQUE
-            INDEXQUALIFIER      = 5,                    // INDEX_QUALIFIER
-*/
+            // CATALOGNAME = 1,               // TABLE_CAT
+            // SCHEMANAME = 2,                // TABLE_SCHEM
+            // TABLENAME = 3,                 // TABLE_NAME
+            // NONUNIQUE = 4,                 // NON_UNIQUE
+            // INDEXQUALIFIER = 5,            // INDEX_QUALIFIER
             INDEXNAME = 6,                    // INDEX_NAME
-/*
-            TYPE                = 7,                    // TYPE
-*/
-            ORDINAL_POSITION = 8,                    // ORDINAL_POSITION
-            COLUMN_NAME = 9,                    // COLUMN_NAME
-/*
-            ASC_OR_DESC         = 10,                   // ASC_OR_DESC
-            CARDINALITY         = 11,                   // CARDINALITY
-            PAGES               = 12,                   // PAGES
-            FILTER_CONDITION    = 13,                   // FILTER_CONDITION
-*/
+            // TYPE = 7,                      // TYPE
+            ORDINAL_POSITION = 8,             // ORDINAL_POSITION
+            COLUMN_NAME = 9,                  // COLUMN_NAME
+            // ASC_OR_DESC = 10,              // ASC_OR_DESC
+            // CARDINALITY = 11,              // CARDINALITY
+            // PAGES = 12,                    // PAGES
+            // FILTER_CONDITION = 13,         // FILTER_CONDITION
         }
 
         // Column set for SQLSpecialColumns
         internal enum SQL_SPECIALCOLUMNSET : short
         {
-/*
-            SCOPE               = 1,                    // SCOPE
-*/
+            // SCOPE = 1,                       // SCOPE
             COLUMN_NAME = 2,                    // COLUMN_NAME
-/*
-            DATA_TYPE           = 3,                    // DATA_TYPE
-            TYPE_NAME           = 4,                    // TYPE_NAME
-            COLUMN_SIZE         = 5,                    // COLUMN_SIZE
-            BUFFER_LENGTH       = 6,                    // BUFFER_LENGTH
-            DECIMAL_DIGITS      = 7,                    // DECIMAL_DIGITS
-            PSEUDO_COLUMN       = 8,                    // PSEUDO_COLUMN
-*/
+            // DATA_TYPE           = 3,         // DATA_TYPE
+            // TYPE_NAME           = 4,         // TYPE_NAME
+            // COLUMN_SIZE         = 5,         // COLUMN_SIZE
+            // BUFFER_LENGTH       = 6,         // BUFFER_LENGTH
+            // DECIMAL_DIGITS      = 7,         // DECIMAL_DIGITS
+            // PSEUDO_COLUMN       = 8,         // PSEUDO_COLUMN
         }
 
         internal const short SQL_DIAG_SQLSTATE = 4;

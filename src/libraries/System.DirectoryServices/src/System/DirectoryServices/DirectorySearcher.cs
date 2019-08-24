@@ -410,8 +410,8 @@ namespace System.DirectoryServices
         /// </devdoc>
         [
             DefaultValue(""),
-           // CoreFXPort - Remove design support
-           // TypeConverter("System.Diagnostics.Design.StringValueConverter, " + AssemblyRef.SystemDesign)
+            // CoreFXPort - Remove design support
+            // TypeConverter("System.Diagnostics.Design.StringValueConverter, " + AssemblyRef.SystemDesign)
         ]
         public string AttributeScopeQuery
         {

@@ -179,7 +179,7 @@ namespace System.ComponentModel
         private static LicenseProvider GetCachedProviderInstance(Type providerType)
         {
             Debug.Assert(providerType != null, "Type cannot ever be null");
-            return (LicenseProvider) s_providerInstances?[providerType];
+            return (LicenseProvider)s_providerInstances?[providerType];
         }
 
         /// <summary>

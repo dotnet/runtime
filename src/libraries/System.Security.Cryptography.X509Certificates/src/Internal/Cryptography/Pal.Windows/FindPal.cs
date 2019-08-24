@@ -66,7 +66,7 @@ namespace Internal.Cryptography.Pal
         public void FindBySubjectDistinguishedName(string subjectDistinguishedName)
         {
             FindCore(
-                delegate(SafeCertContextHandle pCertContext)
+                delegate (SafeCertContextHandle pCertContext)
                 {
                     string actual = GetCertNameInfo(pCertContext, CertNameType.CERT_NAME_RDN_TYPE, CertNameFlags.None);
                     return subjectDistinguishedName.Equals(actual, StringComparison.OrdinalIgnoreCase);
@@ -84,7 +84,7 @@ namespace Internal.Cryptography.Pal
         public void FindByIssuerDistinguishedName(string issuerDistinguishedName)
         {
             FindCore(
-                delegate(SafeCertContextHandle pCertContext)
+                delegate (SafeCertContextHandle pCertContext)
                 {
                     string actual = GetCertNameInfo(pCertContext, CertNameType.CERT_NAME_RDN_TYPE, CertNameFlags.CERT_NAME_ISSUER_FLAG);
                     return issuerDistinguishedName.Equals(actual, StringComparison.OrdinalIgnoreCase);
@@ -94,7 +94,7 @@ namespace Internal.Cryptography.Pal
         public unsafe void FindBySerialNumber(BigInteger hexValue, BigInteger decimalValue)
         {
             FindCore(
-                delegate(SafeCertContextHandle pCertContext)
+                delegate (SafeCertContextHandle pCertContext)
                 {
                     byte[] actual = pCertContext.CertContext->pCertInfo->SerialNumber.ToByteArray();
                     GC.KeepAlive(pCertContext);
@@ -126,7 +126,7 @@ namespace Internal.Cryptography.Pal
             FILETIME fileTime = FILETIME.FromDateTime(dateTime);
 
             FindCore(
-                delegate(SafeCertContextHandle pCertContext)
+                delegate (SafeCertContextHandle pCertContext)
                 {
                     int comparison = Interop.crypt32.CertVerifyTimeValidity(ref fileTime,
                         pCertContext.CertContext->pCertInfo);
@@ -138,7 +138,7 @@ namespace Internal.Cryptography.Pal
         public unsafe void FindByTemplateName(string templateName)
         {
             FindCore(
-                delegate(SafeCertContextHandle pCertContext)
+                delegate (SafeCertContextHandle pCertContext)
                 {
                     // The template name can have 2 different formats: V1 format (<= Win2K) is just a string
                     // V2 format (XP only) can be a friendly name or an OID.
@@ -154,7 +154,7 @@ namespace Internal.Cryptography.Pal
                             byte[] extensionRawData = pV1Template->Value.ToByteArray();
                             if (!extensionRawData.DecodeObjectNoThrow(
                                 CryptDecodeObjectStructType.X509_UNICODE_ANY_STRING,
-                                delegate(void* pvDecoded, int cbDecoded)
+                                delegate (void* pvDecoded, int cbDecoded)
                                 {
                                     Debug.Assert(cbDecoded >= sizeof(CERT_NAME_VALUE));
                                     CERT_NAME_VALUE* pNameValue = (CERT_NAME_VALUE*)pvDecoded;
@@ -177,7 +177,7 @@ namespace Internal.Cryptography.Pal
                             byte[] extensionRawData = pV2Template->Value.ToByteArray();
                             if (!extensionRawData.DecodeObjectNoThrow(
                                 CryptDecodeObjectStructType.X509_CERTIFICATE_TEMPLATE,
-                                delegate(void* pvDecoded, int cbDecoded)
+                                delegate (void* pvDecoded, int cbDecoded)
                                 {
                                     Debug.Assert(cbDecoded >= sizeof(CERT_TEMPLATE_EXT));
                                     CERT_TEMPLATE_EXT* pTemplateExt = (CERT_TEMPLATE_EXT*)pvDecoded;
@@ -235,7 +235,7 @@ namespace Internal.Cryptography.Pal
         public unsafe void FindByCertificatePolicy(string oidValue)
         {
             FindCore(
-                delegate(SafeCertContextHandle pCertContext)
+                delegate (SafeCertContextHandle pCertContext)
                 {
                     CERT_INFO* pCertInfo = pCertContext.CertContext->pCertInfo;
                     CERT_EXTENSION* pCertExtension = Interop.crypt32.CertFindExtension(Oids.CertPolicies,
@@ -247,7 +247,7 @@ namespace Internal.Cryptography.Pal
                     byte[] extensionRawData = pCertExtension->Value.ToByteArray();
                     if (!extensionRawData.DecodeObjectNoThrow(
                         CryptDecodeObjectStructType.X509_CERT_POLICIES,
-                        delegate(void* pvDecoded, int cbDecoded)
+                        delegate (void* pvDecoded, int cbDecoded)
                         {
                             Debug.Assert(cbDecoded >= sizeof(CERT_POLICIES_INFO));
                             CERT_POLICIES_INFO* pCertPoliciesInfo = (CERT_POLICIES_INFO*)pvDecoded;

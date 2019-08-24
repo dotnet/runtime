@@ -295,7 +295,7 @@ namespace System.IO.Compression
                         throw new InvalidDataException(SR.GenericInvalidData);
                     }
 
-                     _inflater.SetInput(_buffer, 0, bytes);
+                    _inflater.SetInput(_buffer, 0, bytes);
                 }
             }
 

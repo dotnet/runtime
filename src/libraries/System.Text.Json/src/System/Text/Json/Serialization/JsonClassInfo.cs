@@ -170,7 +170,7 @@ namespace System.Text.Json
                 case ClassType.Dictionary:
                     {
                         // Add a single property that maps to the class type so we can have policies applied.
-                         AddPolicyProperty(type, options);
+                        AddPolicyProperty(type, options);
 
                         Type objectType;
                         if (IsNativelySupportedCollection(type))

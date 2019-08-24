@@ -17,9 +17,9 @@ namespace System.Security.Cryptography.Pkcs
         }
 
 #if netstandard
-internal
+        internal
 #else
-public
+        public
 #endif
         CmsRecipient(X509Certificate2 certificate, RSAEncryptionPadding rsaEncryptionPadding)
             : this(certificate)
@@ -29,9 +29,9 @@ public
         }
 
 #if netstandard
-internal
+        internal
 #else
-public
+        public
 #endif
         CmsRecipient(SubjectIdentifierType recipientIdentifierType, X509Certificate2 certificate, RSAEncryptionPadding rsaEncryptionPadding)
             : this(recipientIdentifierType, certificate)
@@ -63,9 +63,9 @@ public
         }
 
 #if netstandard
-internal
+        internal
 #else
-public
+        public
 #endif
         RSAEncryptionPadding? RSAEncryptionPadding { get; }
         public SubjectIdentifierType RecipientIdentifierType { get; }

@@ -48,6 +48,6 @@ namespace System.Security.Cryptography
                 _incrementalHash.Dispose();
             }
             base.Dispose(disposing);
-         }
+        }
     }
 }

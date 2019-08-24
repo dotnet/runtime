@@ -43,6 +43,5 @@ namespace System.ComponentModel.Composition.Hosting
                 return _compositionScopeDefinition.Children.ToReadOnlyCollection();
             }
         }
-
-}
+    }
 }

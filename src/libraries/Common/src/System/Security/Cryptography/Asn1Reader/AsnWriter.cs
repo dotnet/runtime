@@ -421,7 +421,7 @@ namespace System.Security.Cryptography.Asn1
             WriteLength(-1);
         }
 
-        private void PopTag(Asn1Tag tag, UniversalTagNumber tagType, bool sortContents=false)
+        private void PopTag(Asn1Tag tag, UniversalTagNumber tagType, bool sortContents = false)
         {
             CheckDisposed();
 

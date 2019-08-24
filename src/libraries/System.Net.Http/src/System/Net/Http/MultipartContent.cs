@@ -210,7 +210,7 @@ namespace System.Net.Http
         {
             try
             {
-                var streams = new Stream[2 + (_nestedContent.Count*2)];
+                var streams = new Stream[2 + (_nestedContent.Count * 2)];
                 var scratch = new StringBuilder();
                 int streamIndex = 0;
 

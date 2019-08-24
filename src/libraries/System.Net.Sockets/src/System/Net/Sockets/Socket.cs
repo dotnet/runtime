@@ -2132,7 +2132,7 @@ namespace System.Net.Sockets
             }
 
             ValidateForMultiConnect(isMultiEndpoint: false);
-            return UnsafeBeginConnect(remoteEP, callback, state, flowContext:true);
+            return UnsafeBeginConnect(remoteEP, callback, state, flowContext: true);
         }
 
         private bool CanUseConnectEx(EndPoint remoteEP)

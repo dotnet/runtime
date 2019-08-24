@@ -44,7 +44,8 @@ namespace System.Diagnostics
 
         public StringDictionary Attributes
         {
-            get {
+            get
+            {
                 if (_attributes == null)
                     _attributes = new StringDictionary();
                 return _attributes;

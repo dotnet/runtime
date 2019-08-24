@@ -10,7 +10,7 @@ using System.Diagnostics;
 namespace System.Resources
 {
     //internal sealed class FastResourceComparer : IComparer, IEqualityComparer, IComparer<String>, IEqualityComparer<String>
-    internal sealed class FastResourceComparer :IComparer<string>, IEqualityComparer<string>
+    internal sealed class FastResourceComparer : IComparer<string>, IEqualityComparer<string>
     {
         internal static readonly FastResourceComparer Default = new FastResourceComparer();
 

@@ -219,7 +219,7 @@ namespace System.IO
             => EnumerateFileSystemEntries(path, searchPattern, EnumerationOptions.FromSearchOption(searchOption));
 
         public static IEnumerable<string> EnumerateFileSystemEntries(string path, string searchPattern, EnumerationOptions enumerationOptions)
-            =>  InternalEnumeratePaths(path, searchPattern, SearchTarget.Both, enumerationOptions);
+            => InternalEnumeratePaths(path, searchPattern, SearchTarget.Both, enumerationOptions);
 
         public static string GetDirectoryRoot(string path)
         {

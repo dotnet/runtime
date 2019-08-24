@@ -48,7 +48,8 @@ namespace System.Collections.Specialized
 
         [Obsolete("Please use NameValueCollection(IEqualityComparer) instead.")]
         public NameValueCollection(IHashCodeProvider hashProvider, IComparer comparer)
-            : base(hashProvider, comparer) {
+            : base(hashProvider, comparer)
+        {
         }
 
         /// <devdoc>
@@ -89,7 +90,8 @@ namespace System.Collections.Specialized
 
         [Obsolete("Please use NameValueCollection(Int32, IEqualityComparer) instead.")]
         public NameValueCollection(int capacity, IHashCodeProvider hashProvider, IComparer comparer)
-            : base(capacity, hashProvider, comparer) {
+            : base(capacity, hashProvider, comparer)
+        {
         }
 
         protected NameValueCollection(SerializationInfo info, StreamingContext context) : base(info, context)

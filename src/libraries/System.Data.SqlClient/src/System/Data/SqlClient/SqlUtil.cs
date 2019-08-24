@@ -29,7 +29,8 @@ namespace System.Data.SqlClient
                 TaskCompletionSource<object> completion = new TaskCompletionSource<object>();
                 ContinueTaskWithState(task, completion,
                     state: Tuple.Create(onSuccess, onFailure, completion),
-                    onSuccess: (state) => {
+                    onSuccess: (state) =>
+                    {
                         var parameters = (Tuple<Action, Action<Exception>, TaskCompletionSource<object>>)state;
                         Action success = parameters.Item1;
                         TaskCompletionSource<object> taskCompletionSource = parameters.Item3;
@@ -58,7 +59,8 @@ namespace System.Data.SqlClient
             {
                 var completion = new TaskCompletionSource<object>();
                 ContinueTaskWithState(task, completion, state,
-                    onSuccess: (continueState) => {
+                    onSuccess: (continueState) =>
+                    {
                         onSuccess(continueState);
                         completion.SetResult(null);
                     },

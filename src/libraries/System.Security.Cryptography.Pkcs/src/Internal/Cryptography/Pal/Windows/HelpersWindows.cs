@@ -15,7 +15,7 @@ using X509IssuerSerial = System.Security.Cryptography.Xml.X509IssuerSerial;
 
 using Microsoft.Win32.SafeHandles;
 
-using CryptProvParam=Interop.Advapi32.CryptProvParam;
+using CryptProvParam = Interop.Advapi32.CryptProvParam;
 using static Interop.Crypt32;
 
 namespace Internal.Cryptography.Pal.Windows

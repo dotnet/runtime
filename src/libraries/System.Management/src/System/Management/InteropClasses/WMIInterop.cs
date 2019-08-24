@@ -10,8 +10,8 @@ using System.Threading;
 using System.Runtime.Versioning;
 using System.Text;
 
-namespace WbemClient_v1 {}
-namespace WbemUtilities_v1 {}
+namespace WbemClient_v1 { }
+namespace WbemUtilities_v1 { }
 
 namespace System.Management
 {
@@ -60,7 +60,7 @@ namespace System.Management
             Dispose_(false);
         }
 
-        private void Dispose_ ( bool finalization )
+        private void Dispose_(bool finalization)
         {
             if (pWbemClassObject != IntPtr.Zero)
             {
@@ -75,7 +75,7 @@ namespace System.Management
             Dispose_(true);
         }
 
-        private void DeserializeFromBlob(byte [] rg)
+        private void DeserializeFromBlob(byte[] rg)
         {
             IntPtr hGlobal = IntPtr.Zero;
             System.Runtime.InteropServices.ComTypes.IStream stream = null;
@@ -100,7 +100,7 @@ namespace System.Management
 
         private byte[] SerializeToBlob()
         {
-            byte [] rg = null;
+            byte[] rg = null;
             System.Runtime.InteropServices.ComTypes.IStream stream = null;
             IntPtr pData = IntPtr.Zero;
             try
@@ -343,7 +343,7 @@ namespace System.Management
         {
             if (pWbemClassObject == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
-            int res =  WmiNetUtilsHelper.BeginMethodEnumeration_f(22, pWbemClassObject, lEnumFlags);
+            int res = WmiNetUtilsHelper.BeginMethodEnumeration_f(22, pWbemClassObject, lEnumFlags);
             GC.KeepAlive(this);
             return res;
         }
@@ -400,24 +400,24 @@ namespace System.Management
 
         private enum STATFLAG
         {
-            STATFLAG_DEFAULT    = 0,
-            STATFLAG_NONAME     = 1
+            STATFLAG_DEFAULT = 0,
+            STATFLAG_NONAME  = 1
         }
 
         private enum MSHCTX
         {
-            MSHCTX_LOCAL               = 0,
-            MSHCTX_NOSHAREDMEM         = 1,
-            MSHCTX_DIFFERENTMACHINE    = 2,
-            MSHCTX_INPROC              = 3
+            MSHCTX_LOCAL            = 0,
+            MSHCTX_NOSHAREDMEM      = 1,
+            MSHCTX_DIFFERENTMACHINE = 2,
+            MSHCTX_INPROC           = 3
         }
 
         private enum MSHLFLAGS
         {
-            MSHLFLAGS_NORMAL         = 0,
-            MSHLFLAGS_TABLESTRONG    = 1,
-            MSHLFLAGS_TABLEWEAK      = 2,
-            MSHLFLAGS_NOPING         = 3
+            MSHLFLAGS_NORMAL      = 0,
+            MSHLFLAGS_TABLESTRONG = 1,
+            MSHLFLAGS_TABLEWEAK   = 2,
+            MSHLFLAGS_NOPING      = 3
         }
     }
 
@@ -438,14 +438,14 @@ namespace System.Management
             Dispose_(false);
         }
 
-        private void Dispose_( bool finalization )
+        private void Dispose_(bool finalization)
         {
             if (pWbemQualifierSet != IntPtr.Zero)
             {
                 Marshal.Release(pWbemQualifierSet);
                 pWbemQualifierSet = IntPtr.Zero;
             }
-            if ( finalization == false )
+            if (finalization == false)
             {
                 GC.KeepAlive(this);
             }
@@ -471,7 +471,7 @@ namespace System.Management
         {
             if (pWbemQualifierSet == IntPtr.Zero)
                 throw new ObjectDisposedException(name);
-            int res =  WmiNetUtilsHelper.QualifierPut_f(4, pWbemQualifierSet, wszName, ref pVal, lFlavor);
+            int res = WmiNetUtilsHelper.QualifierPut_f(4, pWbemQualifierSet, wszName, ref pVal, lFlavor);
             GC.KeepAlive(this);
             return res;
         }
@@ -562,30 +562,30 @@ namespace System.Management
     [ComImport]
     internal interface IWbemClassObject_DoNotMarshal
     {
-        [PreserveSig] int GetQualifierSet_([Out][MarshalAs(UnmanagedType.Interface)]  out IWbemQualifierSet_DoNotMarshal   ppQualSet);
-        [PreserveSig] int Get_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName, [In] int lFlags, [In][Out] ref object pVal, [In][Out] ref int pType, [In][Out] ref int plFlavor);
-        [PreserveSig] int Put_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName, [In] int lFlags, [In] ref object pVal, [In] int Type);
-        [PreserveSig] int Delete_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName);
-        [PreserveSig] int GetNames_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszQualifierName, [In] int lFlags, [In] ref object pQualifierVal, [Out][MarshalAs(UnmanagedType.SafeArray, SafeArraySubType=VarEnum.VT_BSTR)]  out string[]   pNames);
+        [PreserveSig] int GetQualifierSet_([Out][MarshalAs(UnmanagedType.Interface)]  out IWbemQualifierSet_DoNotMarshal ppQualSet);
+        [PreserveSig] int Get_([In][MarshalAs(UnmanagedType.LPWStr)] string wszName, [In] int lFlags, [In][Out] ref object pVal, [In][Out] ref int pType, [In][Out] ref int plFlavor);
+        [PreserveSig] int Put_([In][MarshalAs(UnmanagedType.LPWStr)] string wszName, [In] int lFlags, [In] ref object pVal, [In] int Type);
+        [PreserveSig] int Delete_([In][MarshalAs(UnmanagedType.LPWStr)] string wszName);
+        [PreserveSig] int GetNames_([In][MarshalAs(UnmanagedType.LPWStr)] string wszQualifierName, [In] int lFlags, [In] ref object pQualifierVal, [Out][MarshalAs(UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_BSTR)]  out string[] pNames);
         [PreserveSig] int BeginEnumeration_([In] int lEnumFlags);
-        [PreserveSig] int Next_([In] int lFlags, [In][Out][MarshalAs(UnmanagedType.BStr)]  ref string   strName, [In][Out] ref object pVal, [In][Out] ref int pType, [In][Out] ref int plFlavor);
+        [PreserveSig] int Next_([In] int lFlags, [In][Out][MarshalAs(UnmanagedType.BStr)] ref string strName, [In][Out] ref object pVal, [In][Out] ref int pType, [In][Out] ref int plFlavor);
         [PreserveSig] int EndEnumeration_();
-        [PreserveSig] int GetPropertyQualifierSet_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszProperty, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemQualifierSet_DoNotMarshal   ppQualSet);
-        [PreserveSig] int Clone_([Out][MarshalAs(UnmanagedType.Interface)]  out IWbemClassObject_DoNotMarshal   ppCopy);
-        [PreserveSig] int GetObjectText_([In] int lFlags, [Out][MarshalAs(UnmanagedType.BStr)]  out string   pstrObjectText);
-        [PreserveSig] int SpawnDerivedClass_([In] int lFlags, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemClassObject_DoNotMarshal   ppNewClass);
-        [PreserveSig] int SpawnInstance_([In] int lFlags, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemClassObject_DoNotMarshal   ppNewInstance);
-        [PreserveSig] int CompareTo_([In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal   pCompareTo);
-        [PreserveSig] int GetPropertyOrigin_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName, [Out][MarshalAs(UnmanagedType.BStr)]  out string   pstrClassName);
-        [PreserveSig] int InheritsFrom_([In][MarshalAs(UnmanagedType.LPWStr)]  string   strAncestor);
-        [PreserveSig] int GetMethod_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName, [In] int lFlags, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemClassObject_DoNotMarshal   ppInSignature, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemClassObject_DoNotMarshal   ppOutSignature);
-        [PreserveSig] int PutMethod_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal   pInSignature, [In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal   pOutSignature);
-        [PreserveSig] int DeleteMethod_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName);
+        [PreserveSig] int GetPropertyQualifierSet_([In][MarshalAs(UnmanagedType.LPWStr)] string wszProperty, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemQualifierSet_DoNotMarshal ppQualSet);
+        [PreserveSig] int Clone_([Out][MarshalAs(UnmanagedType.Interface)]  out IWbemClassObject_DoNotMarshal ppCopy);
+        [PreserveSig] int GetObjectText_([In] int lFlags, [Out][MarshalAs(UnmanagedType.BStr)]  out string pstrObjectText);
+        [PreserveSig] int SpawnDerivedClass_([In] int lFlags, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemClassObject_DoNotMarshal ppNewClass);
+        [PreserveSig] int SpawnInstance_([In] int lFlags, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemClassObject_DoNotMarshal ppNewInstance);
+        [PreserveSig] int CompareTo_([In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal pCompareTo);
+        [PreserveSig] int GetPropertyOrigin_([In][MarshalAs(UnmanagedType.LPWStr)] string wszName, [Out][MarshalAs(UnmanagedType.BStr)]  out string pstrClassName);
+        [PreserveSig] int InheritsFrom_([In][MarshalAs(UnmanagedType.LPWStr)] string strAncestor);
+        [PreserveSig] int GetMethod_([In][MarshalAs(UnmanagedType.LPWStr)] string wszName, [In] int lFlags, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemClassObject_DoNotMarshal ppInSignature, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemClassObject_DoNotMarshal ppOutSignature);
+        [PreserveSig] int PutMethod_([In][MarshalAs(UnmanagedType.LPWStr)] string wszName, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal pInSignature, [In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal pOutSignature);
+        [PreserveSig] int DeleteMethod_([In][MarshalAs(UnmanagedType.LPWStr)] string wszName);
         [PreserveSig] int BeginMethodEnumeration_([In] int lEnumFlags);
-        [PreserveSig] int NextMethod_([In] int lFlags, [In][Out][MarshalAs(UnmanagedType.BStr)]  ref string   pstrName, [In][Out][MarshalAs(UnmanagedType.Interface)]  ref IWbemClassObject_DoNotMarshal   ppInSignature, [In][Out][MarshalAs(UnmanagedType.Interface)]  ref IWbemClassObject_DoNotMarshal   ppOutSignature);
+        [PreserveSig] int NextMethod_([In] int lFlags, [In][Out][MarshalAs(UnmanagedType.BStr)]  ref string pstrName, [In][Out][MarshalAs(UnmanagedType.Interface)]  ref IWbemClassObject_DoNotMarshal ppInSignature, [In][Out][MarshalAs(UnmanagedType.Interface)]  ref IWbemClassObject_DoNotMarshal ppOutSignature);
         [PreserveSig] int EndMethodEnumeration_();
-        [PreserveSig] int GetMethodQualifierSet_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszMethod, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemQualifierSet_DoNotMarshal   ppQualSet);
-        [PreserveSig] int GetMethodOrigin_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszMethodName, [Out][MarshalAs(UnmanagedType.BStr)]  out string   pstrClassName);
+        [PreserveSig] int GetMethodQualifierSet_([In][MarshalAs(UnmanagedType.LPWStr)] string wszMethod, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemQualifierSet_DoNotMarshal ppQualSet);
+        [PreserveSig] int GetMethodOrigin_([In][MarshalAs(UnmanagedType.LPWStr)] string wszMethodName, [Out][MarshalAs(UnmanagedType.BStr)]  out string pstrClassName);
     }
 
     [InterfaceTypeAttribute(0x0001)]
@@ -594,12 +594,12 @@ namespace System.Management
     [ComImport]
     internal interface IWbemQualifierSet_DoNotMarshal
     {
-        [PreserveSig] int Get_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName, [In] int lFlags, [In][Out] ref object pVal, [In][Out] ref int plFlavor);
-        [PreserveSig] int Put_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName, [In] ref object pVal, [In] int lFlavor);
-        [PreserveSig] int Delete_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName);
-        [PreserveSig] int GetNames_([In] int lFlags, [Out][MarshalAs(UnmanagedType.SafeArray, SafeArraySubType=VarEnum.VT_BSTR)]  out string[]   pNames);
+        [PreserveSig] int Get_([In][MarshalAs(UnmanagedType.LPWStr)] string wszName, [In] int lFlags, [In][Out] ref object pVal, [In][Out] ref int plFlavor);
+        [PreserveSig] int Put_([In][MarshalAs(UnmanagedType.LPWStr)] string wszName, [In] ref object pVal, [In] int lFlavor);
+        [PreserveSig] int Delete_([In][MarshalAs(UnmanagedType.LPWStr)] string wszName);
+        [PreserveSig] int GetNames_([In] int lFlags, [Out][MarshalAs(UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_BSTR)]  out string[] pNames);
         [PreserveSig] int BeginEnumeration_([In] int lFlags);
-        [PreserveSig] int Next_([In] int lFlags, [In][Out][MarshalAs(UnmanagedType.BStr)]  ref string   pstrName, [In][Out] ref object pVal, [In][Out] ref int plFlavor);
+        [PreserveSig] int Next_([In] int lFlags, [In][Out][MarshalAs(UnmanagedType.BStr)]  ref string pstrName, [In][Out] ref object pVal, [In][Out] ref int plFlavor);
         [PreserveSig] int EndEnumeration_();
     }
 
@@ -609,7 +609,7 @@ namespace System.Management
     [ComImport]
     internal interface IWbemLocator
     {
-        [PreserveSig] int ConnectServer_([In][MarshalAs(UnmanagedType.BStr)]  string   strNetworkResource, [In][MarshalAs(UnmanagedType.BStr)]  string   strUser, [In]IntPtr   strPassword, [In][MarshalAs(UnmanagedType.BStr)]  string   strLocale, [In] int lSecurityFlags, [In][MarshalAs(UnmanagedType.BStr)]  string   strAuthority, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemServices   ppNamespace);
+        [PreserveSig] int ConnectServer_([In][MarshalAs(UnmanagedType.BStr)] string strNetworkResource, [In][MarshalAs(UnmanagedType.BStr)] string strUser, [In]IntPtr strPassword, [In][MarshalAs(UnmanagedType.BStr)] string strLocale, [In] int lSecurityFlags, [In][MarshalAs(UnmanagedType.BStr)] string strAuthority, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemServices ppNamespace);
     }
 
     [GuidAttribute("44ACA674-E8FC-11D0-A07C-00C04FB68820")]
@@ -618,14 +618,14 @@ namespace System.Management
     [ComImport]
     internal interface IWbemContext
     {
-        [PreserveSig] int Clone_([Out][MarshalAs(UnmanagedType.Interface)]  out IWbemContext   ppNewCopy);
-        [PreserveSig] int GetNames_([In] int lFlags, [Out][MarshalAs(UnmanagedType.SafeArray, SafeArraySubType=VarEnum.VT_BSTR)]  out string[]   pNames);
+        [PreserveSig] int Clone_([Out][MarshalAs(UnmanagedType.Interface)]  out IWbemContext ppNewCopy);
+        [PreserveSig] int GetNames_([In] int lFlags, [Out][MarshalAs(UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_BSTR)]  out string[] pNames);
         [PreserveSig] int BeginEnumeration_([In] int lFlags);
-        [PreserveSig] int Next_([In] int lFlags, [Out][MarshalAs(UnmanagedType.BStr)]  out string   pstrName, [Out] out object pValue);
+        [PreserveSig] int Next_([In] int lFlags, [Out][MarshalAs(UnmanagedType.BStr)]  out string pstrName, [Out] out object pValue);
         [PreserveSig] int EndEnumeration_();
-        [PreserveSig] int SetValue_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName, [In] int lFlags, [In] ref object pValue);
-        [PreserveSig] int GetValue_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName, [In] int lFlags, [Out] out object pValue);
-        [PreserveSig] int DeleteValue_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName, [In] int lFlags);
+        [PreserveSig] int SetValue_([In][MarshalAs(UnmanagedType.LPWStr)] string wszName, [In] int lFlags, [In] ref object pValue);
+        [PreserveSig] int GetValue_([In][MarshalAs(UnmanagedType.LPWStr)] string wszName, [In] int lFlags, [Out] out object pValue);
+        [PreserveSig] int DeleteValue_([In][MarshalAs(UnmanagedType.LPWStr)] string wszName, [In] int lFlags);
         [PreserveSig] int DeleteAll_();
     }
 
@@ -635,29 +635,29 @@ namespace System.Management
     [ComImport]
     internal interface IWbemServices
     {
-        [PreserveSig] int OpenNamespace_([In][MarshalAs(UnmanagedType.BStr)]  string   strNamespace, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [In][Out][MarshalAs(UnmanagedType.Interface)]  ref IWbemServices   ppWorkingNamespace, [In] IntPtr ppCallResult);
-        [PreserveSig] int CancelAsyncCall_([In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink   pSink);
-        [PreserveSig] int QueryObjectSink_([In] int lFlags, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemObjectSink   ppResponseHandler);
-        [PreserveSig] int GetObject_([In][MarshalAs(UnmanagedType.BStr)]  string   strObjectPath, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [Out][MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef=typeof(MarshalWbemObject))] out IWbemClassObjectFreeThreaded ppObject, [In] IntPtr ppCallResult);
-        [PreserveSig] int GetObjectAsync_([In][MarshalAs(UnmanagedType.BStr)]  string   strObjectPath, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink   pResponseHandler);
-        [PreserveSig] int PutClass_([In] IntPtr pObject, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [In] IntPtr ppCallResult);
-        [PreserveSig] int PutClassAsync_([In] IntPtr pObject, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink   pResponseHandler);
-        [PreserveSig] int DeleteClass_([In][MarshalAs(UnmanagedType.BStr)]  string   strClass, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [In] IntPtr ppCallResult);
-        [PreserveSig] int DeleteClassAsync_([In][MarshalAs(UnmanagedType.BStr)]  string   strClass, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink   pResponseHandler);
-        [PreserveSig] int CreateClassEnum_([In][MarshalAs(UnmanagedType.BStr)]  string   strSuperclass, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [Out][MarshalAs(UnmanagedType.Interface)]  out IEnumWbemClassObject   ppEnum);
-        [PreserveSig] int CreateClassEnumAsync_([In][MarshalAs(UnmanagedType.BStr)]  string   strSuperclass, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink   pResponseHandler);
-        [PreserveSig] int PutInstance_([In] IntPtr pInst, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [In] IntPtr ppCallResult);
-        [PreserveSig] int PutInstanceAsync_([In] IntPtr pInst, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink   pResponseHandler);
-        [PreserveSig] int DeleteInstance_([In][MarshalAs(UnmanagedType.BStr)]  string   strObjectPath, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [In] IntPtr ppCallResult);
-        [PreserveSig] int DeleteInstanceAsync_([In][MarshalAs(UnmanagedType.BStr)]  string   strObjectPath, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink   pResponseHandler);
-        [PreserveSig] int CreateInstanceEnum_([In][MarshalAs(UnmanagedType.BStr)]  string   strFilter, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [Out][MarshalAs(UnmanagedType.Interface)]  out IEnumWbemClassObject   ppEnum);
-        [PreserveSig] int CreateInstanceEnumAsync_([In][MarshalAs(UnmanagedType.BStr)]  string   strFilter, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink   pResponseHandler);
-        [PreserveSig] int ExecQuery_([In][MarshalAs(UnmanagedType.BStr)]  string   strQueryLanguage, [In][MarshalAs(UnmanagedType.BStr)]  string   strQuery, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [Out][MarshalAs(UnmanagedType.Interface)]  out IEnumWbemClassObject   ppEnum);
-        [PreserveSig] int ExecQueryAsync_([In][MarshalAs(UnmanagedType.BStr)]  string   strQueryLanguage, [In][MarshalAs(UnmanagedType.BStr)]  string   strQuery, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink   pResponseHandler);
-        [PreserveSig] int ExecNotificationQuery_([In][MarshalAs(UnmanagedType.BStr)]  string   strQueryLanguage, [In][MarshalAs(UnmanagedType.BStr)]  string   strQuery, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [Out][MarshalAs(UnmanagedType.Interface)]  out IEnumWbemClassObject   ppEnum);
-        [PreserveSig] int ExecNotificationQueryAsync_([In][MarshalAs(UnmanagedType.BStr)]  string   strQueryLanguage, [In][MarshalAs(UnmanagedType.BStr)]  string   strQuery, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink   pResponseHandler);
-        [PreserveSig] int ExecMethod_([In][MarshalAs(UnmanagedType.BStr)]  string   strObjectPath, [In][MarshalAs(UnmanagedType.BStr)]  string   strMethodName, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [In] IntPtr pInParams, [Out][MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef=typeof(MarshalWbemObject))] out IWbemClassObjectFreeThreaded ppOutParams, [In] IntPtr ppCallResult);
-        [PreserveSig] int ExecMethodAsync_([In][MarshalAs(UnmanagedType.BStr)]  string   strObjectPath, [In][MarshalAs(UnmanagedType.BStr)]  string   strMethodName, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [In] IntPtr pInParams, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink   pResponseHandler);
+        [PreserveSig] int OpenNamespace_([In][MarshalAs(UnmanagedType.BStr)] string strNamespace, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In][Out][MarshalAs(UnmanagedType.Interface)]  ref IWbemServices ppWorkingNamespace, [In] IntPtr ppCallResult);
+        [PreserveSig] int CancelAsyncCall_([In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink pSink);
+        [PreserveSig] int QueryObjectSink_([In] int lFlags, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemObjectSink ppResponseHandler);
+        [PreserveSig] int GetObject_([In][MarshalAs(UnmanagedType.BStr)] string strObjectPath, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [Out][MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(MarshalWbemObject))] out IWbemClassObjectFreeThreaded ppObject, [In] IntPtr ppCallResult);
+        [PreserveSig] int GetObjectAsync_([In][MarshalAs(UnmanagedType.BStr)] string strObjectPath, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink pResponseHandler);
+        [PreserveSig] int PutClass_([In] IntPtr pObject, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In] IntPtr ppCallResult);
+        [PreserveSig] int PutClassAsync_([In] IntPtr pObject, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink pResponseHandler);
+        [PreserveSig] int DeleteClass_([In][MarshalAs(UnmanagedType.BStr)] string strClass, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In] IntPtr ppCallResult);
+        [PreserveSig] int DeleteClassAsync_([In][MarshalAs(UnmanagedType.BStr)] string strClass, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink pResponseHandler);
+        [PreserveSig] int CreateClassEnum_([In][MarshalAs(UnmanagedType.BStr)] string strSuperclass, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [Out][MarshalAs(UnmanagedType.Interface)]  out IEnumWbemClassObject ppEnum);
+        [PreserveSig] int CreateClassEnumAsync_([In][MarshalAs(UnmanagedType.BStr)] string strSuperclass, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink pResponseHandler);
+        [PreserveSig] int PutInstance_([In] IntPtr pInst, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In] IntPtr ppCallResult);
+        [PreserveSig] int PutInstanceAsync_([In] IntPtr pInst, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink pResponseHandler);
+        [PreserveSig] int DeleteInstance_([In][MarshalAs(UnmanagedType.BStr)] string strObjectPath, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In] IntPtr ppCallResult);
+        [PreserveSig] int DeleteInstanceAsync_([In][MarshalAs(UnmanagedType.BStr)] string strObjectPath, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink pResponseHandler);
+        [PreserveSig] int CreateInstanceEnum_([In][MarshalAs(UnmanagedType.BStr)] string strFilter, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [Out][MarshalAs(UnmanagedType.Interface)]  out IEnumWbemClassObject ppEnum);
+        [PreserveSig] int CreateInstanceEnumAsync_([In][MarshalAs(UnmanagedType.BStr)] string strFilter, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink pResponseHandler);
+        [PreserveSig] int ExecQuery_([In][MarshalAs(UnmanagedType.BStr)] string strQueryLanguage, [In][MarshalAs(UnmanagedType.BStr)] string strQuery, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [Out][MarshalAs(UnmanagedType.Interface)]  out IEnumWbemClassObject ppEnum);
+        [PreserveSig] int ExecQueryAsync_([In][MarshalAs(UnmanagedType.BStr)] string strQueryLanguage, [In][MarshalAs(UnmanagedType.BStr)] string strQuery, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink pResponseHandler);
+        [PreserveSig] int ExecNotificationQuery_([In][MarshalAs(UnmanagedType.BStr)] string strQueryLanguage, [In][MarshalAs(UnmanagedType.BStr)] string strQuery, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [Out][MarshalAs(UnmanagedType.Interface)]  out IEnumWbemClassObject ppEnum);
+        [PreserveSig] int ExecNotificationQueryAsync_([In][MarshalAs(UnmanagedType.BStr)] string strQueryLanguage, [In][MarshalAs(UnmanagedType.BStr)] string strQuery, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink pResponseHandler);
+        [PreserveSig] int ExecMethod_([In][MarshalAs(UnmanagedType.BStr)] string strObjectPath, [In][MarshalAs(UnmanagedType.BStr)] string strMethodName, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In] IntPtr pInParams, [Out][MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(MarshalWbemObject))] out IWbemClassObjectFreeThreaded ppOutParams, [In] IntPtr ppCallResult);
+        [PreserveSig] int ExecMethodAsync_([In][MarshalAs(UnmanagedType.BStr)] string strObjectPath, [In][MarshalAs(UnmanagedType.BStr)] string strMethodName, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In] IntPtr pInParams, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink pResponseHandler);
     }
 
     [InterfaceTypeAttribute(0x0001)]
@@ -666,29 +666,29 @@ namespace System.Management
     [ComImport]
     internal interface IWbemServices_Old
     {
-        [PreserveSig] int OpenNamespace_([In][MarshalAs(UnmanagedType.BStr)]  string   strNamespace, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [In][Out][MarshalAs(UnmanagedType.Interface)]  ref IWbemServices   ppWorkingNamespace, [In] IntPtr ppCallResult);
-        [PreserveSig] int CancelAsyncCall_([In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink   pSink);
-        [PreserveSig] int QueryObjectSink_([In] int lFlags, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemObjectSink   ppResponseHandler);
-        [PreserveSig] int GetObject_([In][MarshalAs(UnmanagedType.BStr)]  string   strObjectPath, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [In][Out][MarshalAs(UnmanagedType.Interface)]  ref IWbemClassObject_DoNotMarshal   ppObject, [In] IntPtr ppCallResult);
-        [PreserveSig] int GetObjectAsync_([In][MarshalAs(UnmanagedType.BStr)]  string   strObjectPath, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink   pResponseHandler);
-        [PreserveSig] int PutClass_([In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal   pObject, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [In] IntPtr ppCallResult);
-        [PreserveSig] int PutClassAsync_([In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal   pObject, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink   pResponseHandler);
-        [PreserveSig] int DeleteClass_([In][MarshalAs(UnmanagedType.BStr)]  string   strClass, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [In] IntPtr ppCallResult);
-        [PreserveSig] int DeleteClassAsync_([In][MarshalAs(UnmanagedType.BStr)]  string   strClass, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink   pResponseHandler);
-        [PreserveSig] int CreateClassEnum_([In][MarshalAs(UnmanagedType.BStr)]  string   strSuperclass, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [Out][MarshalAs(UnmanagedType.Interface)]  out IEnumWbemClassObject   ppEnum);
-        [PreserveSig] int CreateClassEnumAsync_([In][MarshalAs(UnmanagedType.BStr)]  string   strSuperclass, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink   pResponseHandler);
-        [PreserveSig] int PutInstance_([In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal   pInst, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [In] IntPtr ppCallResult);
-        [PreserveSig] int PutInstanceAsync_([In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal   pInst, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink   pResponseHandler);
-        [PreserveSig] int DeleteInstance_([In][MarshalAs(UnmanagedType.BStr)]  string   strObjectPath, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [In] IntPtr ppCallResult);
-        [PreserveSig] int DeleteInstanceAsync_([In][MarshalAs(UnmanagedType.BStr)]  string   strObjectPath, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink   pResponseHandler);
-        [PreserveSig] int CreateInstanceEnum_([In][MarshalAs(UnmanagedType.BStr)]  string   strFilter, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [Out][MarshalAs(UnmanagedType.Interface)]  out IEnumWbemClassObject   ppEnum);
-        [PreserveSig] int CreateInstanceEnumAsync_([In][MarshalAs(UnmanagedType.BStr)]  string   strFilter, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink   pResponseHandler);
-        [PreserveSig] int ExecQuery_([In][MarshalAs(UnmanagedType.BStr)]  string   strQueryLanguage, [In][MarshalAs(UnmanagedType.BStr)]  string   strQuery, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [Out][MarshalAs(UnmanagedType.Interface)]  out IEnumWbemClassObject   ppEnum);
-        [PreserveSig] int ExecQueryAsync_([In][MarshalAs(UnmanagedType.BStr)]  string   strQueryLanguage, [In][MarshalAs(UnmanagedType.BStr)]  string   strQuery, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink   pResponseHandler);
-        [PreserveSig] int ExecNotificationQuery_([In][MarshalAs(UnmanagedType.BStr)]  string   strQueryLanguage, [In][MarshalAs(UnmanagedType.BStr)]  string   strQuery, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [Out][MarshalAs(UnmanagedType.Interface)]  out IEnumWbemClassObject   ppEnum);
-        [PreserveSig] int ExecNotificationQueryAsync_([In][MarshalAs(UnmanagedType.BStr)]  string   strQueryLanguage, [In][MarshalAs(UnmanagedType.BStr)]  string   strQuery, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink   pResponseHandler);
-        [PreserveSig] int ExecMethod_([In][MarshalAs(UnmanagedType.BStr)]  string   strObjectPath, [In][MarshalAs(UnmanagedType.BStr)]  string   strMethodName, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal   pInParams, [In][Out][MarshalAs(UnmanagedType.Interface)]  ref IWbemClassObject_DoNotMarshal   ppOutParams, [In] IntPtr ppCallResult);
-        [PreserveSig] int ExecMethodAsync_([In][MarshalAs(UnmanagedType.BStr)]  string   strObjectPath, [In][MarshalAs(UnmanagedType.BStr)]  string   strMethodName, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal   pInParams, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink   pResponseHandler);
+        [PreserveSig] int OpenNamespace_([In][MarshalAs(UnmanagedType.BStr)] string strNamespace, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In][Out][MarshalAs(UnmanagedType.Interface)]  ref IWbemServices ppWorkingNamespace, [In] IntPtr ppCallResult);
+        [PreserveSig] int CancelAsyncCall_([In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink pSink);
+        [PreserveSig] int QueryObjectSink_([In] int lFlags, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemObjectSink ppResponseHandler);
+        [PreserveSig] int GetObject_([In][MarshalAs(UnmanagedType.BStr)] string strObjectPath, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In][Out][MarshalAs(UnmanagedType.Interface)]  ref IWbemClassObject_DoNotMarshal ppObject, [In] IntPtr ppCallResult);
+        [PreserveSig] int GetObjectAsync_([In][MarshalAs(UnmanagedType.BStr)] string strObjectPath, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink pResponseHandler);
+        [PreserveSig] int PutClass_([In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal pObject, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In] IntPtr ppCallResult);
+        [PreserveSig] int PutClassAsync_([In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal pObject, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink pResponseHandler);
+        [PreserveSig] int DeleteClass_([In][MarshalAs(UnmanagedType.BStr)] string strClass, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In] IntPtr ppCallResult);
+        [PreserveSig] int DeleteClassAsync_([In][MarshalAs(UnmanagedType.BStr)] string strClass, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink pResponseHandler);
+        [PreserveSig] int CreateClassEnum_([In][MarshalAs(UnmanagedType.BStr)] string strSuperclass, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [Out][MarshalAs(UnmanagedType.Interface)]  out IEnumWbemClassObject ppEnum);
+        [PreserveSig] int CreateClassEnumAsync_([In][MarshalAs(UnmanagedType.BStr)] string strSuperclass, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink pResponseHandler);
+        [PreserveSig] int PutInstance_([In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal pInst, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In] IntPtr ppCallResult);
+        [PreserveSig] int PutInstanceAsync_([In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal pInst, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink pResponseHandler);
+        [PreserveSig] int DeleteInstance_([In][MarshalAs(UnmanagedType.BStr)] string strObjectPath, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In] IntPtr ppCallResult);
+        [PreserveSig] int DeleteInstanceAsync_([In][MarshalAs(UnmanagedType.BStr)] string strObjectPath, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink pResponseHandler);
+        [PreserveSig] int CreateInstanceEnum_([In][MarshalAs(UnmanagedType.BStr)] string strFilter, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [Out][MarshalAs(UnmanagedType.Interface)]  out IEnumWbemClassObject ppEnum);
+        [PreserveSig] int CreateInstanceEnumAsync_([In][MarshalAs(UnmanagedType.BStr)] string strFilter, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink pResponseHandler);
+        [PreserveSig] int ExecQuery_([In][MarshalAs(UnmanagedType.BStr)] string strQueryLanguage, [In][MarshalAs(UnmanagedType.BStr)] string strQuery, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [Out][MarshalAs(UnmanagedType.Interface)]  out IEnumWbemClassObject ppEnum);
+        [PreserveSig] int ExecQueryAsync_([In][MarshalAs(UnmanagedType.BStr)] string strQueryLanguage, [In][MarshalAs(UnmanagedType.BStr)] string strQuery, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink pResponseHandler);
+        [PreserveSig] int ExecNotificationQuery_([In][MarshalAs(UnmanagedType.BStr)] string strQueryLanguage, [In][MarshalAs(UnmanagedType.BStr)] string strQuery, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [Out][MarshalAs(UnmanagedType.Interface)]  out IEnumWbemClassObject ppEnum);
+        [PreserveSig] int ExecNotificationQueryAsync_([In][MarshalAs(UnmanagedType.BStr)] string strQueryLanguage, [In][MarshalAs(UnmanagedType.BStr)] string strQuery, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink pResponseHandler);
+        [PreserveSig] int ExecMethod_([In][MarshalAs(UnmanagedType.BStr)] string strObjectPath, [In][MarshalAs(UnmanagedType.BStr)] string strMethodName, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal pInParams, [In][Out][MarshalAs(UnmanagedType.Interface)]  ref IWbemClassObject_DoNotMarshal ppOutParams, [In] IntPtr ppCallResult);
+        [PreserveSig] int ExecMethodAsync_([In][MarshalAs(UnmanagedType.BStr)] string strObjectPath, [In][MarshalAs(UnmanagedType.BStr)] string strMethodName, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal pInParams, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink pResponseHandler);
     }
 
     [GuidAttribute("44ACA675-E8FC-11D0-A07C-00C04FB68820")]
@@ -697,9 +697,9 @@ namespace System.Management
     [ComImport]
     internal interface IWbemCallResult
     {
-        [PreserveSig] int GetResultObject_([In] int lTimeout, [Out][MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef=typeof(MarshalWbemObject))] out IWbemClassObjectFreeThreaded ppResultObject);
-        [PreserveSig] int GetResultString_([In] int lTimeout, [Out][MarshalAs(UnmanagedType.BStr)]  out string   pstrResultString);
-        [PreserveSig] int GetResultServices_([In] int lTimeout, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemServices   ppServices);
+        [PreserveSig] int GetResultObject_([In] int lTimeout, [Out][MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(MarshalWbemObject))] out IWbemClassObjectFreeThreaded ppResultObject);
+        [PreserveSig] int GetResultString_([In] int lTimeout, [Out][MarshalAs(UnmanagedType.BStr)]  out string pstrResultString);
+        [PreserveSig] int GetResultServices_([In] int lTimeout, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemServices ppServices);
         [PreserveSig] int GetCallStatus_([In] int lTimeout, [Out] out int plStatus);
     }
 
@@ -710,7 +710,7 @@ namespace System.Management
     internal interface IWbemObjectSink
     {
         [PreserveSig] int Indicate_([In] int lObjectCount, [In][MarshalAs(UnmanagedType.LPArray)] IntPtr[] apObjArray);
-        [PreserveSig] int SetStatus_([In] int lFlags, [In][MarshalAs(UnmanagedType.Error)]  int   hResult, [In][MarshalAs(UnmanagedType.BStr)]  string   strParam, [In] IntPtr pObjParam);
+        [PreserveSig] int SetStatus_([In] int lFlags, [In][MarshalAs(UnmanagedType.Error)]  int hResult, [In][MarshalAs(UnmanagedType.BStr)] string strParam, [In] IntPtr pObjParam);
     }
 
     [InterfaceTypeAttribute(0x0001)]
@@ -721,8 +721,8 @@ namespace System.Management
     {
         [PreserveSig] int Reset_();
         [PreserveSig] int Next_([In] int lTimeout, [In] uint uCount, [In][Out][MarshalAs(UnmanagedType.LPArray)] IWbemClassObject_DoNotMarshal[] apObjects, [Out] out uint puReturned);
-        [PreserveSig] int NextAsync_([In] uint uCount, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink   pSink);
-        [PreserveSig] int Clone_([Out][MarshalAs(UnmanagedType.Interface)]  out IEnumWbemClassObject   ppEnum);
+        [PreserveSig] int NextAsync_([In] uint uCount, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink pSink);
+        [PreserveSig] int Clone_([Out][MarshalAs(UnmanagedType.Interface)]  out IEnumWbemClassObject ppEnum);
         [PreserveSig] int Skip_([In] int lTimeout, [In] uint nCount);
     }
 
@@ -731,7 +731,7 @@ namespace System.Management
     [ComImport]
     internal interface IWbemShutdown
     {
-        [PreserveSig] int Shutdown_([In] int uReason, [In] uint uMaxMilliseconds, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx);
+        [PreserveSig] int Shutdown_([In] int uReason, [In] uint uMaxMilliseconds, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx);
     }
 
     [InterfaceTypeAttribute(0x0001)]
@@ -740,8 +740,8 @@ namespace System.Management
     [ComImport]
     internal interface IWbemObjectTextSrc
     {
-        [PreserveSig] int GetText_([In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal   pObj, [In] uint uObjTextFormat, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [Out][MarshalAs(UnmanagedType.BStr)]  out string   strText);
-        [PreserveSig] int CreateFromText_([In] int lFlags, [In][MarshalAs(UnmanagedType.BStr)]  string   strText, [In] uint uObjTextFormat, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemClassObject_DoNotMarshal   pNewObj);
+        [PreserveSig] int GetText_([In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal pObj, [In] uint uObjTextFormat, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [Out][MarshalAs(UnmanagedType.BStr)]  out string strText);
+        [PreserveSig] int CreateFromText_([In] int lFlags, [In][MarshalAs(UnmanagedType.BStr)] string strText, [In] uint uObjTextFormat, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemClassObject_DoNotMarshal pNewObj);
     }
 
     [GuidAttribute("49353C9A-516B-11D1-AEA6-00C04FB68820")]
@@ -750,38 +750,38 @@ namespace System.Management
     [ComImport]
     internal interface IWbemObjectAccess
     {
-        [PreserveSig] int GetQualifierSet_([Out][MarshalAs(UnmanagedType.Interface)]  out IWbemQualifierSet_DoNotMarshal   ppQualSet);
-        [PreserveSig] int Get_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName, [In] int lFlags, [In][Out] ref object pVal, [In][Out] ref int pType, [In][Out] ref int plFlavor);
-        [PreserveSig] int Put_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName, [In] int lFlags, [In] ref object pVal, [In] int Type);
-        [PreserveSig] int Delete_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName);
-        [PreserveSig] int GetNames_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszQualifierName, [In] int lFlags, [In] ref object pQualifierVal, [Out][MarshalAs(UnmanagedType.SafeArray, SafeArraySubType=VarEnum.VT_BSTR)]  out string[]   pNames);
+        [PreserveSig] int GetQualifierSet_([Out][MarshalAs(UnmanagedType.Interface)]  out IWbemQualifierSet_DoNotMarshal ppQualSet);
+        [PreserveSig] int Get_([In][MarshalAs(UnmanagedType.LPWStr)] string wszName, [In] int lFlags, [In][Out] ref object pVal, [In][Out] ref int pType, [In][Out] ref int plFlavor);
+        [PreserveSig] int Put_([In][MarshalAs(UnmanagedType.LPWStr)] string wszName, [In] int lFlags, [In] ref object pVal, [In] int Type);
+        [PreserveSig] int Delete_([In][MarshalAs(UnmanagedType.LPWStr)] string wszName);
+        [PreserveSig] int GetNames_([In][MarshalAs(UnmanagedType.LPWStr)] string wszQualifierName, [In] int lFlags, [In] ref object pQualifierVal, [Out][MarshalAs(UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_BSTR)]  out string[] pNames);
         [PreserveSig] int BeginEnumeration_([In] int lEnumFlags);
-        [PreserveSig] int Next_([In] int lFlags, [In][Out][MarshalAs(UnmanagedType.BStr)]  ref string   strName, [In][Out] ref object pVal, [In][Out] ref int pType, [In][Out] ref int plFlavor);
+        [PreserveSig] int Next_([In] int lFlags, [In][Out][MarshalAs(UnmanagedType.BStr)]  ref string strName, [In][Out] ref object pVal, [In][Out] ref int pType, [In][Out] ref int plFlavor);
         [PreserveSig] int EndEnumeration_();
-        [PreserveSig] int GetPropertyQualifierSet_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszProperty, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemQualifierSet_DoNotMarshal   ppQualSet);
-        [PreserveSig] int Clone_([Out][MarshalAs(UnmanagedType.Interface)]  out IWbemClassObject_DoNotMarshal   ppCopy);
-        [PreserveSig] int GetObjectText_([In] int lFlags, [Out][MarshalAs(UnmanagedType.BStr)]  out string   pstrObjectText);
-        [PreserveSig] int SpawnDerivedClass_([In] int lFlags, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemClassObject_DoNotMarshal   ppNewClass);
-        [PreserveSig] int SpawnInstance_([In] int lFlags, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemClassObject_DoNotMarshal   ppNewInstance);
-        [PreserveSig] int CompareTo_([In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal   pCompareTo);
-        [PreserveSig] int GetPropertyOrigin_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName, [Out][MarshalAs(UnmanagedType.BStr)]  out string   pstrClassName);
-        [PreserveSig] int InheritsFrom_([In][MarshalAs(UnmanagedType.LPWStr)]  string   strAncestor);
-        [PreserveSig] int GetMethod_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName, [In] int lFlags, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemClassObject_DoNotMarshal   ppInSignature, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemClassObject_DoNotMarshal   ppOutSignature);
-        [PreserveSig] int PutMethod_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal   pInSignature, [In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal   pOutSignature);
-        [PreserveSig] int DeleteMethod_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName);
+        [PreserveSig] int GetPropertyQualifierSet_([In][MarshalAs(UnmanagedType.LPWStr)] string wszProperty, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemQualifierSet_DoNotMarshal ppQualSet);
+        [PreserveSig] int Clone_([Out][MarshalAs(UnmanagedType.Interface)]  out IWbemClassObject_DoNotMarshal ppCopy);
+        [PreserveSig] int GetObjectText_([In] int lFlags, [Out][MarshalAs(UnmanagedType.BStr)]  out string pstrObjectText);
+        [PreserveSig] int SpawnDerivedClass_([In] int lFlags, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemClassObject_DoNotMarshal ppNewClass);
+        [PreserveSig] int SpawnInstance_([In] int lFlags, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemClassObject_DoNotMarshal ppNewInstance);
+        [PreserveSig] int CompareTo_([In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal pCompareTo);
+        [PreserveSig] int GetPropertyOrigin_([In][MarshalAs(UnmanagedType.LPWStr)] string wszName, [Out][MarshalAs(UnmanagedType.BStr)]  out string pstrClassName);
+        [PreserveSig] int InheritsFrom_([In][MarshalAs(UnmanagedType.LPWStr)] string strAncestor);
+        [PreserveSig] int GetMethod_([In][MarshalAs(UnmanagedType.LPWStr)] string wszName, [In] int lFlags, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemClassObject_DoNotMarshal ppInSignature, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemClassObject_DoNotMarshal ppOutSignature);
+        [PreserveSig] int PutMethod_([In][MarshalAs(UnmanagedType.LPWStr)] string wszName, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal pInSignature, [In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal pOutSignature);
+        [PreserveSig] int DeleteMethod_([In][MarshalAs(UnmanagedType.LPWStr)] string wszName);
         [PreserveSig] int BeginMethodEnumeration_([In] int lEnumFlags);
-        [PreserveSig] int NextMethod_([In] int lFlags, [In][Out][MarshalAs(UnmanagedType.BStr)]  ref string   pstrName, [In][Out][MarshalAs(UnmanagedType.Interface)]  ref IWbemClassObject_DoNotMarshal   ppInSignature, [In][Out][MarshalAs(UnmanagedType.Interface)]  ref IWbemClassObject_DoNotMarshal   ppOutSignature);
+        [PreserveSig] int NextMethod_([In] int lFlags, [In][Out][MarshalAs(UnmanagedType.BStr)]  ref string pstrName, [In][Out][MarshalAs(UnmanagedType.Interface)]  ref IWbemClassObject_DoNotMarshal ppInSignature, [In][Out][MarshalAs(UnmanagedType.Interface)]  ref IWbemClassObject_DoNotMarshal ppOutSignature);
         [PreserveSig] int EndMethodEnumeration_();
-        [PreserveSig] int GetMethodQualifierSet_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszMethod, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemQualifierSet_DoNotMarshal   ppQualSet);
-        [PreserveSig] int GetMethodOrigin_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszMethodName, [Out][MarshalAs(UnmanagedType.BStr)]  out string   pstrClassName);
-        [PreserveSig] int GetPropertyHandle_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszPropertyName, [Out] out int pType, [Out] out int plHandle);
+        [PreserveSig] int GetMethodQualifierSet_([In][MarshalAs(UnmanagedType.LPWStr)] string wszMethod, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemQualifierSet_DoNotMarshal ppQualSet);
+        [PreserveSig] int GetMethodOrigin_([In][MarshalAs(UnmanagedType.LPWStr)] string wszMethodName, [Out][MarshalAs(UnmanagedType.BStr)]  out string pstrClassName);
+        [PreserveSig] int GetPropertyHandle_([In][MarshalAs(UnmanagedType.LPWStr)] string wszPropertyName, [Out] out int pType, [Out] out int plHandle);
         [PreserveSig] int WritePropertyValue_([In] int lHandle, [In] int lNumBytes, [In] ref byte aData);
         [PreserveSig] int ReadPropertyValue_([In] int lHandle, [In] int lBufferSize, [Out] out int plNumBytes, [Out] out byte aData);
         [PreserveSig] int ReadDWORD_([In] int lHandle, [Out] out uint pdw);
         [PreserveSig] int WriteDWORD_([In] int lHandle, [In] uint dw);
         [PreserveSig] int ReadQWORD_([In] int lHandle, [Out] out ulong pqw);
         [PreserveSig] int WriteQWORD_([In] int lHandle, [In] ulong pw);
-        [PreserveSig] int GetPropertyInfoByHandle_([In] int lHandle, [Out][MarshalAs(UnmanagedType.BStr)]  out string   pstrName, [Out] out int pType);
+        [PreserveSig] int GetPropertyInfoByHandle_([In] int lHandle, [Out][MarshalAs(UnmanagedType.BStr)]  out string pstrName, [Out] out int pType);
         [PreserveSig] int Lock_([In] int lFlags);
         [PreserveSig] int Unlock_([In] int lFlags);
     }
@@ -792,7 +792,7 @@ namespace System.Management
     [ComImport]
     internal interface IUnsecuredApartment
     {
-        [PreserveSig] int CreateObjectStub_([In][MarshalAs(UnmanagedType.IUnknown)]  object   pObject, [Out][MarshalAs(UnmanagedType.IUnknown)]  out object   ppStub);
+        [PreserveSig] int CreateObjectStub_([In][MarshalAs(UnmanagedType.IUnknown)]  object pObject, [Out][MarshalAs(UnmanagedType.IUnknown)]  out object ppStub);
     }
 
     [GuidAttribute("EB87E1BC-3233-11D2-AEC9-00C04FB68820")]
@@ -800,8 +800,8 @@ namespace System.Management
     [ComImport]
     internal interface IWbemStatusCodeText
     {
-        [PreserveSig] int GetErrorCodeText_([In][MarshalAs(UnmanagedType.Error)]  int   hRes, [In] uint LocaleId, [In] int lFlags, [Out][MarshalAs(UnmanagedType.BStr)]  out string   MessageText);
-        [PreserveSig] int GetFacilityCodeText_([In][MarshalAs(UnmanagedType.Error)]  int   hRes, [In] uint LocaleId, [In] int lFlags, [Out][MarshalAs(UnmanagedType.BStr)]  out string   MessageText);
+        [PreserveSig] int GetErrorCodeText_([In][MarshalAs(UnmanagedType.Error)]  int hRes, [In] uint LocaleId, [In] int lFlags, [Out][MarshalAs(UnmanagedType.BStr)]  out string MessageText);
+        [PreserveSig] int GetFacilityCodeText_([In][MarshalAs(UnmanagedType.Error)]  int hRes, [In] uint LocaleId, [In] int lFlags, [Out][MarshalAs(UnmanagedType.BStr)]  out string MessageText);
     }
 
     [InterfaceTypeAttribute(0x0001)]
@@ -810,7 +810,7 @@ namespace System.Management
     [ComImport]
     internal interface IWbemUnboundObjectSink
     {
-        [PreserveSig] int IndicateToConsumer_([In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal   pLogicalConsumer, [In] int lNumObjects, [In][MarshalAs(UnmanagedType.Interface)]  ref IWbemClassObject_DoNotMarshal   apObjects);
+        [PreserveSig] int IndicateToConsumer_([In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal pLogicalConsumer, [In] int lNumObjects, [In][MarshalAs(UnmanagedType.Interface)]  ref IWbemClassObject_DoNotMarshal apObjects);
     }
 
     [InterfaceTypeAttribute(0x0001)]
@@ -819,8 +819,8 @@ namespace System.Management
     [ComImport]
     internal interface IWbemPropertyProvider
     {
-        [PreserveSig] int GetProperty_([In] int lFlags, [In][MarshalAs(UnmanagedType.BStr)]  string   strLocale, [In][MarshalAs(UnmanagedType.BStr)]  string   strClassMapping, [In][MarshalAs(UnmanagedType.BStr)]  string   strInstMapping, [In][MarshalAs(UnmanagedType.BStr)]  string   strPropMapping, [Out] out object pvValue);
-        [PreserveSig] int PutProperty_([In] int lFlags, [In][MarshalAs(UnmanagedType.BStr)]  string   strLocale, [In][MarshalAs(UnmanagedType.BStr)]  string   strClassMapping, [In][MarshalAs(UnmanagedType.BStr)]  string   strInstMapping, [In][MarshalAs(UnmanagedType.BStr)]  string   strPropMapping, [In] ref object pvValue);
+        [PreserveSig] int GetProperty_([In] int lFlags, [In][MarshalAs(UnmanagedType.BStr)] string strLocale, [In][MarshalAs(UnmanagedType.BStr)] string strClassMapping, [In][MarshalAs(UnmanagedType.BStr)] string strInstMapping, [In][MarshalAs(UnmanagedType.BStr)] string strPropMapping, [Out] out object pvValue);
+        [PreserveSig] int PutProperty_([In] int lFlags, [In][MarshalAs(UnmanagedType.BStr)] string strLocale, [In][MarshalAs(UnmanagedType.BStr)] string strClassMapping, [In][MarshalAs(UnmanagedType.BStr)] string strInstMapping, [In][MarshalAs(UnmanagedType.BStr)] string strPropMapping, [In] ref object pvValue);
     }
 
     [InterfaceTypeAttribute(0x0001)]
@@ -829,7 +829,7 @@ namespace System.Management
     [ComImport]
     internal interface IWbemEventProvider
     {
-        [PreserveSig] int ProvideEvents_([In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink   pSink, [In] int lFlags);
+        [PreserveSig] int ProvideEvents_([In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink pSink, [In] int lFlags);
     }
 
     [GuidAttribute("580ACAF8-FA1C-11D0-AD72-00C04FD8FDFF")]
@@ -838,7 +838,7 @@ namespace System.Management
     [ComImport]
     internal interface IWbemEventProviderQuerySink
     {
-        [PreserveSig] int NewQuery_([In] uint dwId, [In][MarshalAs(UnmanagedType.LPWStr)]  string   wszQueryLanguage, [In][MarshalAs(UnmanagedType.LPWStr)]  string   wszQuery);
+        [PreserveSig] int NewQuery_([In] uint dwId, [In][MarshalAs(UnmanagedType.LPWStr)] string wszQueryLanguage, [In][MarshalAs(UnmanagedType.LPWStr)] string wszQuery);
         [PreserveSig] int CancelQuery_([In] uint dwId);
     }
 
@@ -848,7 +848,7 @@ namespace System.Management
     [ComImport]
     internal interface IWbemEventProviderSecurity
     {
-        [PreserveSig] int AccessCheck_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszQueryLanguage, [In][MarshalAs(UnmanagedType.LPWStr)]  string   wszQuery, [In] int lSidLength, [In] ref byte pSid);
+        [PreserveSig] int AccessCheck_([In][MarshalAs(UnmanagedType.LPWStr)] string wszQueryLanguage, [In][MarshalAs(UnmanagedType.LPWStr)] string wszQuery, [In] int lSidLength, [In] ref byte pSid);
     }
 
     [GuidAttribute("631F7D97-D993-11D2-B339-00105A1F4AAF")]
@@ -857,7 +857,7 @@ namespace System.Management
     [ComImport]
     internal interface IWbemProviderIdentity
     {
-        [PreserveSig] int SetRegistrationObject_([In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal   pProvReg);
+        [PreserveSig] int SetRegistrationObject_([In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal pProvReg);
     }
 
     [InterfaceTypeAttribute(0x0001)]
@@ -866,7 +866,7 @@ namespace System.Management
     [ComImport]
     internal interface IWbemEventConsumerProvider
     {
-        [PreserveSig] int FindConsumer_([In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal   pLogicalConsumer, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemUnboundObjectSink   ppConsumer);
+        [PreserveSig] int FindConsumer_([In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal pLogicalConsumer, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemUnboundObjectSink ppConsumer);
     }
 
     [GuidAttribute("1BE41571-91DD-11D1-AEB2-00C04FB68820")]
@@ -882,7 +882,7 @@ namespace System.Management
     [ComImport]
     internal interface IWbemProviderInit
     {
-        [PreserveSig] int Initialize_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszUser, [In] int lFlags, [In][MarshalAs(UnmanagedType.LPWStr)]  string   wszNamespace, [In][MarshalAs(UnmanagedType.LPWStr)]  string   wszLocale, [In][MarshalAs(UnmanagedType.Interface)]  IWbemServices   pNamespace, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemProviderInitSink   pInitSink);
+        [PreserveSig] int Initialize_([In][MarshalAs(UnmanagedType.LPWStr)] string wszUser, [In] int lFlags, [In][MarshalAs(UnmanagedType.LPWStr)] string wszNamespace, [In][MarshalAs(UnmanagedType.LPWStr)] string wszLocale, [In][MarshalAs(UnmanagedType.Interface)]  IWbemServices pNamespace, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemProviderInitSink pInitSink);
     }
 
     [InterfaceTypeAttribute(0x0001)]
@@ -890,7 +890,7 @@ namespace System.Management
     [ComImport]
     internal interface IWbemDecoupledRegistrar
     {
-        [PreserveSig] int Register_([In] int flags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   context, [In][MarshalAs(UnmanagedType.LPWStr)]  string   user, [In][MarshalAs(UnmanagedType.LPWStr)]  string   locale, [In][MarshalAs(UnmanagedType.LPWStr)]  string   scope, [In][MarshalAs(UnmanagedType.LPWStr)]  string   registration, [In][MarshalAs(UnmanagedType.IUnknown)]  object   unknown);
+        [PreserveSig] int Register_([In] int flags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext context, [In][MarshalAs(UnmanagedType.LPWStr)] string user, [In][MarshalAs(UnmanagedType.LPWStr)] string locale, [In][MarshalAs(UnmanagedType.LPWStr)] string scope, [In][MarshalAs(UnmanagedType.LPWStr)] string registration, [In][MarshalAs(UnmanagedType.IUnknown)]  object unknown);
         [PreserveSig] int UnRegister_();
     }
 
@@ -900,12 +900,12 @@ namespace System.Management
     [ComImport]
     internal interface IWbemEventSink
     {
-        [PreserveSig] int Indicate_([In] int lObjectCount, [In][MarshalAs(UnmanagedType.Interface)]  ref IWbemClassObject_DoNotMarshal   apObjArray);
-        [PreserveSig] int SetStatus_([In] int lFlags, [In][MarshalAs(UnmanagedType.Error)]  int   hResult, [In][MarshalAs(UnmanagedType.BStr)]  string   strParam, [In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal   pObjParam);
-        [PreserveSig] int IndicateWithSD_([In] int lNumObjects, [In][MarshalAs(UnmanagedType.IUnknown)]  ref object   apObjects, [In] int lSDLength, [In] ref byte pSD);
+        [PreserveSig] int Indicate_([In] int lObjectCount, [In][MarshalAs(UnmanagedType.Interface)]  ref IWbemClassObject_DoNotMarshal apObjArray);
+        [PreserveSig] int SetStatus_([In] int lFlags, [In][MarshalAs(UnmanagedType.Error)]  int hResult, [In][MarshalAs(UnmanagedType.BStr)] string strParam, [In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal pObjParam);
+        [PreserveSig] int IndicateWithSD_([In] int lNumObjects, [In][MarshalAs(UnmanagedType.IUnknown)]  ref object apObjects, [In] int lSDLength, [In] ref byte pSD);
         [PreserveSig] int SetSinkSecurity_([In] int lSDLength, [In] ref byte pSD);
         [PreserveSig] int IsActive_();
-        [PreserveSig] int GetRestrictedSink_([In] int lNumQueries, [In][MarshalAs(UnmanagedType.LPWStr)]  ref string   awszQueries, [In][MarshalAs(UnmanagedType.IUnknown)]  object   pCallback, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemEventSink   ppSink);
+        [PreserveSig] int GetRestrictedSink_([In] int lNumQueries, [In][MarshalAs(UnmanagedType.LPWStr)]  ref string awszQueries, [In][MarshalAs(UnmanagedType.IUnknown)]  object pCallback, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemEventSink ppSink);
         [PreserveSig] int SetBatchingParameters_([In] int lFlags, [In] uint dwMaxBufferSize, [In] uint dwMaxSendLatency);
     }
 
@@ -916,15 +916,15 @@ namespace System.Management
     internal interface IWbemPathKeyList
     {
         [PreserveSig] int GetCount_([Out] out uint puKeyCount);
-        [PreserveSig] int SetKey_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName, [In] uint uFlags, [In] uint uCimType, [In] IntPtr pKeyVal);
-        [PreserveSig] int SetKey2_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName, [In] uint uFlags, [In] uint uCimType, [In] ref object pKeyVal);
-        [PreserveSig] int GetKey_([In] uint uKeyIx, [In] uint uFlags, [In][Out] ref uint puNameBufSize, [Out][MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U2, SizeParamIndex = 2)]  char[]   pszKeyName, [In][Out] ref uint puKeyValBufSize, [In][Out] IntPtr pKeyVal, [Out] out uint puApparentCimType);
-        [PreserveSig] int GetKey2_([In] uint uKeyIx, [In] uint uFlags, [In][Out] ref uint puNameBufSize, [Out][MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U2, SizeParamIndex = 2)]  char[]   pszKeyName, [In][Out] ref object pKeyValue, [Out] out uint puApparentCimType);
-        [PreserveSig] int RemoveKey_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName, [In] uint uFlags);
+        [PreserveSig] int SetKey_([In][MarshalAs(UnmanagedType.LPWStr)] string wszName, [In] uint uFlags, [In] uint uCimType, [In] IntPtr pKeyVal);
+        [PreserveSig] int SetKey2_([In][MarshalAs(UnmanagedType.LPWStr)] string wszName, [In] uint uFlags, [In] uint uCimType, [In] ref object pKeyVal);
+        [PreserveSig] int GetKey_([In] uint uKeyIx, [In] uint uFlags, [In][Out] ref uint puNameBufSize, [Out][MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U2, SizeParamIndex = 2)]  char[] pszKeyName, [In][Out] ref uint puKeyValBufSize, [In][Out] IntPtr pKeyVal, [Out] out uint puApparentCimType);
+        [PreserveSig] int GetKey2_([In] uint uKeyIx, [In] uint uFlags, [In][Out] ref uint puNameBufSize, [Out][MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U2, SizeParamIndex = 2)]  char[] pszKeyName, [In][Out] ref object pKeyValue, [Out] out uint puApparentCimType);
+        [PreserveSig] int RemoveKey_([In][MarshalAs(UnmanagedType.LPWStr)] string wszName, [In] uint uFlags);
         [PreserveSig] int RemoveAllKeys_([In] uint uFlags);
         [PreserveSig] int MakeSingleton_([In] sbyte bSet);
         [PreserveSig] int GetInfo_([In] uint uRequestedInfo, [Out] out ulong puResponse);
-        [PreserveSig] int GetText_([In] int lFlags, [In][Out] ref uint puBuffLength, [Out][MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U2, SizeParamIndex = 1)]  char[]   pszText);
+        [PreserveSig] int GetText_([In] int lFlags, [In][Out] ref uint puBuffLength, [Out][MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U2, SizeParamIndex = 1)]  char[] pszText);
     }
 
     [GuidAttribute("3BC15AF2-736C-477E-9E51-238AF8667DCC")]
@@ -932,32 +932,32 @@ namespace System.Management
     [ComImport]
     internal interface IWbemPath
     {
-        [PreserveSig] int SetText_([In] uint uMode, [In][MarshalAs(UnmanagedType.LPWStr)]  string   pszPath);
-        [PreserveSig] int GetText_([In] int lFlags, [In][Out] ref uint puBuffLength, [Out][MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U2, SizeParamIndex = 1)]  char[]   pszText);
+        [PreserveSig] int SetText_([In] uint uMode, [In][MarshalAs(UnmanagedType.LPWStr)] string pszPath);
+        [PreserveSig] int GetText_([In] int lFlags, [In][Out] ref uint puBuffLength, [Out][MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U2, SizeParamIndex = 1)]  char[] pszText);
         [PreserveSig] int GetInfo_([In] uint uRequestedInfo, [Out] out ulong puResponse);
-        [PreserveSig] int SetServer_([In][MarshalAs(UnmanagedType.LPWStr)]  string   Name);
-        [PreserveSig] int GetServer_([In][Out] ref uint puNameBufLength, [Out][MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U2, SizeParamIndex = 0)]  char[]   pName);
+        [PreserveSig] int SetServer_([In][MarshalAs(UnmanagedType.LPWStr)] string Name);
+        [PreserveSig] int GetServer_([In][Out] ref uint puNameBufLength, [Out][MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U2, SizeParamIndex = 0)]  char[] pName);
         [PreserveSig] int GetNamespaceCount_([Out] out uint puCount);
-        [PreserveSig] int SetNamespaceAt_([In] uint uIndex, [In][MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U2, SizeParamIndex = 0)]  char[]   pszName);
-        [PreserveSig] int GetNamespaceAt_([In] uint uIndex, [In][Out] ref uint puNameBufLength, [Out][MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U2, SizeParamIndex = 1)]  char[]   pName);
+        [PreserveSig] int SetNamespaceAt_([In] uint uIndex, [In][MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U2, SizeParamIndex = 0)]  char[] pszName);
+        [PreserveSig] int GetNamespaceAt_([In] uint uIndex, [In][Out] ref uint puNameBufLength, [Out][MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U2, SizeParamIndex = 1)]  char[] pName);
         [PreserveSig] int RemoveNamespaceAt_([In] uint uIndex);
         [PreserveSig] int RemoveAllNamespaces_();
         [PreserveSig] int GetScopeCount_([Out] out uint puCount);
-        [PreserveSig] int SetScope_([In] uint uIndex, [In][MarshalAs(UnmanagedType.LPWStr)]  string   pszClass);
-        [PreserveSig] int SetScopeFromText_([In] uint uIndex, [In][MarshalAs(UnmanagedType.LPWStr)]  string   pszText);
-        [PreserveSig] int GetScope_([In] uint uIndex, [In][Out] ref uint puClassNameBufSize, [Out][MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U2, SizeParamIndex = 1)]  char[]   pszClass, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemPathKeyList   pKeyList);
-        [PreserveSig] int GetScopeAsText_([In] uint uIndex, [In][Out] ref uint puTextBufSize, [Out][MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U2, SizeParamIndex = 1)]  char[]   pszText);
+        [PreserveSig] int SetScope_([In] uint uIndex, [In][MarshalAs(UnmanagedType.LPWStr)] string pszClass);
+        [PreserveSig] int SetScopeFromText_([In] uint uIndex, [In][MarshalAs(UnmanagedType.LPWStr)] string pszText);
+        [PreserveSig] int GetScope_([In] uint uIndex, [In][Out] ref uint puClassNameBufSize, [Out][MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U2, SizeParamIndex = 1)]  char[] pszClass, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemPathKeyList pKeyList);
+        [PreserveSig] int GetScopeAsText_([In] uint uIndex, [In][Out] ref uint puTextBufSize, [Out][MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U2, SizeParamIndex = 1)]  char[] pszText);
         [PreserveSig] int RemoveScope_([In] uint uIndex);
         [PreserveSig] int RemoveAllScopes_();
-        [PreserveSig] int SetClassName_([In][MarshalAs(UnmanagedType.LPWStr)]  string   Name);
-        [PreserveSig] int GetClassName_([In][Out] ref uint puBuffLength, [Out][MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U2, SizeParamIndex = 0)]  char[]   pszName);
-        [PreserveSig] int GetKeyList_([Out][MarshalAs(UnmanagedType.Interface)]  out IWbemPathKeyList   pOut);
-        [PreserveSig] int CreateClassPart_([In] int lFlags, [In][MarshalAs(UnmanagedType.LPWStr)]  string   Name);
+        [PreserveSig] int SetClassName_([In][MarshalAs(UnmanagedType.LPWStr)] string Name);
+        [PreserveSig] int GetClassName_([In][Out] ref uint puBuffLength, [Out][MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U2, SizeParamIndex = 0)]  char[] pszName);
+        [PreserveSig] int GetKeyList_([Out][MarshalAs(UnmanagedType.Interface)]  out IWbemPathKeyList pOut);
+        [PreserveSig] int CreateClassPart_([In] int lFlags, [In][MarshalAs(UnmanagedType.LPWStr)] string Name);
         [PreserveSig] int DeleteClassPart_([In] int lFlags);
-        [PreserveSig] int IsRelative_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszMachine, [In][MarshalAs(UnmanagedType.LPWStr)]  string   wszNamespace);
-        [PreserveSig] int IsRelativeOrChild_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszMachine, [In][MarshalAs(UnmanagedType.LPWStr)]  string   wszNamespace, [In] int lFlags);
-        [PreserveSig] int IsLocal_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszMachine);
-        [PreserveSig] int IsSameClassName_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszClass);
+        [PreserveSig] int IsRelative_([In][MarshalAs(UnmanagedType.LPWStr)] string wszMachine, [In][MarshalAs(UnmanagedType.LPWStr)] string wszNamespace);
+        [PreserveSig] int IsRelativeOrChild_([In][MarshalAs(UnmanagedType.LPWStr)] string wszMachine, [In][MarshalAs(UnmanagedType.LPWStr)] string wszNamespace, [In] int lFlags);
+        [PreserveSig] int IsLocal_([In][MarshalAs(UnmanagedType.LPWStr)] string wszMachine);
+        [PreserveSig] int IsSameClassName_([In][MarshalAs(UnmanagedType.LPWStr)] string wszClass);
     }
 
     #endregion
@@ -1487,7 +1487,7 @@ namespace System.Management
 
                 ndx = reqList.Add(myReq);
 
-                if ( evtGo.Set() == false )
+                if (evtGo.Set() == false)
                 {
                     reqList.RemoveAt(ndx);
                     throw new ManagementException(SR.WorkerThreadWakeupFailed);
@@ -1566,7 +1566,7 @@ namespace System.Management
         public static bool IsNoContextMTA()
         {
             // If the runtime says we are not an MTA thread, we'll trust it and return false
-            if (Thread.CurrentThread.GetApartmentState()  != ApartmentState.MTA)
+            if (Thread.CurrentThread.GetApartmentState() != ApartmentState.MTA)
                 return false;
 
             // We know that 'ApartmentState' says we are MTA
@@ -1619,7 +1619,7 @@ namespace System.Management
             // If we are on Win2k or above, we are OK
             // - Platform == Win32NT and OS version >= 5.0.0.0
             OperatingSystem os = Environment.OSVersion;
-            if (os.Platform==PlatformID.Win32NT && os.Version >= new Version(5, 0))
+            if (os.Platform == PlatformID.Win32NT && os.Version >= new Version(5, 0))
                 return true;
             return false;
         }
@@ -1648,16 +1648,16 @@ namespace System.Management
     internal class ThreadDispatch
     {
         #region Private fields
-        private     Thread                                  thread;
-        private     Exception                               exception;                                 // Exception thrown from worker method (if any). Exposed as property.
-        private     ThreadWorkerMethodWithReturn            threadWorkerMethodWithReturn;              // Delegate to be called for worker method with return value
-        private     ThreadWorkerMethodWithReturnAndParam    threadWorkerMethodWithReturnAndParam;      // Delegate to be called for worker method with return value and parameter
-        private     ThreadWorkerMethod                      threadWorkerMethod;                        // Delegate to be called for worker method
-        private     ThreadWorkerMethodWithParam             threadWorkerMethodWithParam;               // Delegate to be called for worker method with parameter
-        private     object                                  threadReturn;                              // Return data from worker method.
-        private     object                                  threadParams;                              // Parameters to be passed to worker method
-        private     bool                                    backgroundThread;                          // Is this a background thread?
-        private     ApartmentState                          apartmentType;                             // Apartment type of thread
+        private Thread thread;
+        private Exception exception;                                                        // Exception thrown from worker method (if any). Exposed as property.
+        private ThreadWorkerMethodWithReturn threadWorkerMethodWithReturn;                  // Delegate to be called for worker method with return value
+        private ThreadWorkerMethodWithReturnAndParam threadWorkerMethodWithReturnAndParam;  // Delegate to be called for worker method with return value and parameter
+        private ThreadWorkerMethod threadWorkerMethod;                                      // Delegate to be called for worker method
+        private ThreadWorkerMethodWithParam threadWorkerMethodWithParam;                    // Delegate to be called for worker method with parameter
+        private object threadReturn;                                                        // Return data from worker method.
+        private object threadParams;                                                        // Parameters to be passed to worker method
+        private bool backgroundThread;                                                      // Is this a background thread?
+        private ApartmentState apartmentType;                                               // Apartment type of thread
         #endregion
 
         #region Properties
@@ -1735,22 +1735,22 @@ namespace System.Management
         /// <summary>
         /// Delegate declaration representing signature of worker method with return value.
         /// </summary>
-        public delegate object  ThreadWorkerMethodWithReturn (  );
+        public delegate object ThreadWorkerMethodWithReturn();
 
         /// <summary>
         /// Delegate declaration representing signature of worker method with return value and parameter.
         /// </summary>
-        public delegate object  ThreadWorkerMethodWithReturnAndParam ( object param );
+        public delegate object ThreadWorkerMethodWithReturnAndParam(object param);
 
         /// <summary>
         /// Delegate declaration representing signature of worker method with no return value and no parameter
         /// </summary>
-        public delegate void    ThreadWorkerMethod (  );
+        public delegate void ThreadWorkerMethod();
 
         /// <summary>
         /// Delegate declaration representing signature of worker method with parameter.
         /// </summary>
-        public delegate void    ThreadWorkerMethodWithParam ( object param );
+        public delegate void ThreadWorkerMethodWithParam(object param);
         #endregion
 
         #region Public methods
@@ -1762,9 +1762,9 @@ namespace System.Management
         ///     3. Background thread status will be false
         /// </summary>
         /// <param name="workerMethod">Delegate to be called to perform the work</param>
-        public ThreadDispatch ( ThreadWorkerMethodWithReturn workerMethod ) : this ( )
+        public ThreadDispatch(ThreadWorkerMethodWithReturn workerMethod) : this()
         {
-            InitializeThreadState ( null, workerMethod, ApartmentState.MTA, false );
+            InitializeThreadState(null, workerMethod, ApartmentState.MTA, false);
         }
 
         /// <summary>
@@ -1775,9 +1775,9 @@ namespace System.Management
         ///     3. Background thread status will be false
         /// </summary>
         /// <param name="workerMethod">Delegate to be called to perform the work</param>
-        public ThreadDispatch ( ThreadWorkerMethodWithReturnAndParam workerMethod ) : this ( )
+        public ThreadDispatch(ThreadWorkerMethodWithReturnAndParam workerMethod) : this()
         {
-            InitializeThreadState ( null, workerMethod, ApartmentState.MTA, false );
+            InitializeThreadState(null, workerMethod, ApartmentState.MTA, false);
         }
 
         /// <summary>
@@ -1788,9 +1788,9 @@ namespace System.Management
         ///     3. Background thread status will be false
         /// </summary>
         /// <param name="workerMethod">Delegate to be called to perform the work</param>
-        public ThreadDispatch ( ThreadWorkerMethodWithParam workerMethod ) : this ( )
+        public ThreadDispatch(ThreadWorkerMethodWithParam workerMethod) : this()
         {
-            InitializeThreadState ( null, workerMethod, ApartmentState.MTA, false );
+            InitializeThreadState(null, workerMethod, ApartmentState.MTA, false);
         }
 
         /// <summary>
@@ -1801,20 +1801,20 @@ namespace System.Management
         ///     3. Background thread status will be false
         /// </summary>
         /// <param name="workerMethod">Delegate to be called to perform the work</param>
-        public ThreadDispatch ( ThreadWorkerMethod workerMethod ) : this ( )
+        public ThreadDispatch(ThreadWorkerMethod workerMethod) : this()
         {
-            InitializeThreadState ( null, workerMethod, ApartmentState.MTA, false );
+            InitializeThreadState(null, workerMethod, ApartmentState.MTA, false);
         }
 
         /// <summary>
         /// Starts the thread execution and waits for thread to finish. If an exception occurs in the worker method
         /// this method rethrows the exception.
         /// </summary>
-        public void Start ( )
+        public void Start()
         {
             this.exception = null;
             DispatchThread();
-            if ( this.Exception != null )
+            if (this.Exception != null)
             {
                 throw this.Exception;
             }
@@ -1826,18 +1826,18 @@ namespace System.Management
         /// Initializes the ThreadDispatch instance with initial values. Note that this constructor is private to avoid
         /// declaring instances without specifying at least a worker delegate instance.
         /// </summary>
-        private ThreadDispatch ( )
+        private ThreadDispatch()
         {
-            this.thread                               = null;
-            this.exception                            = null;
-            this.threadParams                         = null;
-            this.threadWorkerMethodWithReturn         = null;
+            this.thread = null;
+            this.exception = null;
+            this.threadParams = null;
+            this.threadWorkerMethodWithReturn = null;
             this.threadWorkerMethodWithReturnAndParam = null;
-            this.threadWorkerMethod                   = null;
-            this.threadWorkerMethodWithParam          = null;
-            this.threadReturn                         = null;
-            this.backgroundThread                     = false;
-            this.apartmentType                        = ApartmentState.MTA;
+            this.threadWorkerMethod = null;
+            this.threadWorkerMethodWithParam = null;
+            this.threadReturn = null;
+            this.backgroundThread = false;
+            this.apartmentType = ApartmentState.MTA;
         }
 
         /// <summary>
@@ -1847,11 +1847,11 @@ namespace System.Management
         /// <param name="workerMethod">The delegate to be called from thread</param>
         /// <param name="aptState">The apartment of the thread created</param>
         /// <param name="background">Thread is created as a background or not</param>
-        private void InitializeThreadState ( object threadParams, ThreadWorkerMethodWithReturn workerMethod, ApartmentState aptState, bool background )
+        private void InitializeThreadState(object threadParams, ThreadWorkerMethodWithReturn workerMethod, ApartmentState aptState, bool background)
         {
             this.threadParams = threadParams;
-            this.threadWorkerMethodWithReturn  = workerMethod;
-            this.thread = new Thread ( new ThreadStart ( ThreadEntryPointMethodWithReturn ) );
+            this.threadWorkerMethodWithReturn = workerMethod;
+            this.thread = new Thread(new ThreadStart(ThreadEntryPointMethodWithReturn));
             this.thread.SetApartmentState(aptState);
             this.backgroundThread = background;
         }
@@ -1863,11 +1863,11 @@ namespace System.Management
         /// <param name="workerMethod">The delegate to be called from thread</param>
         /// <param name="aptState">The apartment of the thread created</param>
         /// <param name="background">Thread is created as a background or not</param>
-        private void InitializeThreadState ( object threadParams, ThreadWorkerMethodWithReturnAndParam workerMethod, ApartmentState aptState, bool background )
+        private void InitializeThreadState(object threadParams, ThreadWorkerMethodWithReturnAndParam workerMethod, ApartmentState aptState, bool background)
         {
             this.threadParams = threadParams;
             this.threadWorkerMethodWithReturnAndParam = workerMethod;
-            this.thread = new Thread ( new ThreadStart ( ThreadEntryPointMethodWithReturnAndParam ) );
+            this.thread = new Thread(new ThreadStart(ThreadEntryPointMethodWithReturnAndParam));
             this.thread.SetApartmentState(aptState);
             this.backgroundThread = background;
         }
@@ -1879,12 +1879,12 @@ namespace System.Management
         /// <param name="workerMethod">The delegate to be called from thread</param>
         /// <param name="aptState">The apartment of the thread created</param>
         /// <param name="background">Thread is created as a background or not</param>
-        private void InitializeThreadState ( object threadParams, ThreadWorkerMethod workerMethod, ApartmentState aptState, bool background )
+        private void InitializeThreadState(object threadParams, ThreadWorkerMethod workerMethod, ApartmentState aptState, bool background)
         {
             this.threadParams = threadParams;
-            this.threadWorkerMethod  = workerMethod;
-            this.thread = new Thread ( new ThreadStart ( ThreadEntryPoint ) );
-            this.thread.SetApartmentState(aptState );
+            this.threadWorkerMethod = workerMethod;
+            this.thread = new Thread(new ThreadStart(ThreadEntryPoint));
+            this.thread.SetApartmentState(aptState);
             this.backgroundThread = background;
         }
 
@@ -1895,12 +1895,12 @@ namespace System.Management
         /// <param name="workerMethod">The delegate to be called from thread</param>
         /// <param name="aptState">The apartment of the thread created</param>
         /// <param name="background">Thread is created as a background or not</param>
-        private void InitializeThreadState ( object threadParams, ThreadWorkerMethodWithParam workerMethod, ApartmentState aptState, bool background )
+        private void InitializeThreadState(object threadParams, ThreadWorkerMethodWithParam workerMethod, ApartmentState aptState, bool background)
         {
             this.threadParams = threadParams;
             this.threadWorkerMethodWithParam = workerMethod;
-            this.thread = new Thread ( new ThreadStart ( ThreadEntryPointMethodWithParam ) );
-            this.thread.SetApartmentState( aptState );
+            this.thread = new Thread(new ThreadStart(ThreadEntryPointMethodWithParam));
+            this.thread.SetApartmentState(aptState);
             this.backgroundThread = background;
         }
 
@@ -1908,7 +1908,7 @@ namespace System.Management
         /// <summary>
         /// Starts the execution of the thread and waits until the threadFinished event is signaled before continuing
         /// </summary>
-        private void DispatchThread ( )
+        private void DispatchThread()
         {
             this.thread.Start();
             this.thread.Join();
@@ -1919,7 +1919,7 @@ namespace System.Management
         /// exceptions thrown from the worker method and re-throws the exception.
         /// The worker method for this thread entry point has no parameter and no return value.
         /// </summary>
-        private void ThreadEntryPoint ( )
+        private void ThreadEntryPoint()
         {
             try
             {
@@ -1937,11 +1937,11 @@ namespace System.Management
         /// The worker method for this thread entry point takes a parameter and no return value.
         /// </summary>
 
-        private void ThreadEntryPointMethodWithParam ( )
+        private void ThreadEntryPointMethodWithParam()
         {
             try
             {
-                this.threadWorkerMethodWithParam ( this.threadParams );
+                this.threadWorkerMethodWithParam(this.threadParams);
             }
             catch (Exception e)
             {
@@ -1955,7 +1955,7 @@ namespace System.Management
         /// The worker method for this thread entry point has no parameter but does return a value.
         /// </summary>
 
-        private void ThreadEntryPointMethodWithReturn ( )
+        private void ThreadEntryPointMethodWithReturn()
         {
             try
             {
@@ -1973,7 +1973,7 @@ namespace System.Management
         /// The worker method for this thread entry point has a parameter and return value.
         /// </summary>
 
-        private void ThreadEntryPointMethodWithReturnAndParam ( )
+        private void ThreadEntryPointMethodWithReturnAndParam()
         {
             try
             {

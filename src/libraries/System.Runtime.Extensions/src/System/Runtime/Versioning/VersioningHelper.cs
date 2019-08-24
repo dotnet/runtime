@@ -60,7 +60,8 @@ namespace System.Runtime.Versioning
                 safeName.Append('r');
                 safeName.Append(clrID);
             }
-            if ((requires & SxSRequirements.AppDomainID) != 0) {
+            if ((requires & SxSRequirements.AppDomainID) != 0)
+            {
                 safeName.Append(separator);
                 safeName.Append("ad");
                 safeName.Append(AppDomain.CurrentDomain.Id);

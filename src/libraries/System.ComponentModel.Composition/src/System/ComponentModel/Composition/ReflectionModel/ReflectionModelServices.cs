@@ -322,7 +322,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         }
     }
 
-internal class ReflectionPartCreationInfo : IReflectionPartCreationInfo
+    internal class ReflectionPartCreationInfo : IReflectionPartCreationInfo
     {
         private readonly Lazy<Type> _partType;
         private readonly Lazy<IEnumerable<ImportDefinition>> _imports;

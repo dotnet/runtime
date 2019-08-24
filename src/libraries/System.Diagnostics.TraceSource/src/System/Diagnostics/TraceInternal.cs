@@ -145,7 +145,7 @@ namespace System.Diagnostics
 
         public static void Indent()
         {
-             Debug.IndentLevel++;
+            Debug.IndentLevel++;
         }
 
         public static void Unindent()

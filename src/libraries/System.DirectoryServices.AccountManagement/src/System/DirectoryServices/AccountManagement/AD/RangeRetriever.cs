@@ -229,13 +229,13 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         private bool _disposed = false;                  // keeps track of whether this object was disposed or not.
-        private readonly bool _disposeDirEntry = false;           // If set to true then the RangeRetriever object will own the directory entry
+        private readonly bool _disposeDirEntry = false;  // If set to true then the RangeRetriever object will own the directory entry
                                                          // supplied to it in the constructor and will be responsible for disposing this entry
                                                          // when Dispose() is called on this object.
         private bool _cacheValues = false;               // If set to true then the attribute values will be cached in the InnerList
                                                          // By default caching is turned off.
-        private readonly DirectoryEntry _de;                      // the DirectoryEntry whose property we're retrieving the values of
-        private readonly string _propertyName;                    // the property we're retrieving the values of
+        private readonly DirectoryEntry _de;             // the DirectoryEntry whose property we're retrieving the values of
+        private readonly string _propertyName;           // the property we're retrieving the values of
 
         private bool _endReached = false;                // if true, all property values (from all chunks) have been retrieved
 

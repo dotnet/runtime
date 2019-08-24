@@ -21,7 +21,7 @@ namespace System.Drawing
 
         internal Bitmap(IntPtr ptr) => SetNativeImage(ptr);
 
-        public Bitmap(string filename) : this (filename, useIcm: false) { }
+        public Bitmap(string filename) : this(filename, useIcm: false) { }
 
         public Bitmap(string filename, bool useIcm)
         {

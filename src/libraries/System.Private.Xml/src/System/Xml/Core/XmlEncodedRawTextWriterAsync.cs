@@ -762,7 +762,7 @@ namespace System.Xml
                                 pSrc += 2;
                             }
                             /* Invalid XML character */
-                            else  if (ch <= 0x7F || ch >= 0xFFFE)
+                            else if (ch <= 0x7F || ch >= 0xFFFE)
                             {
                                 pDst = InvalidXmlChar(ch, pDst, true);
                                 pSrc++;
@@ -966,7 +966,7 @@ namespace System.Xml
                                 pSrc += 2;
                             }
                             /* Invalid XML character */
-                            else  if (ch <= 0x7F || ch >= 0xFFFE)
+                            else if (ch <= 0x7F || ch >= 0xFFFE)
                             {
                                 pDst = InvalidXmlChar(ch, pDst, true);
                                 pSrc++;
@@ -1150,7 +1150,7 @@ namespace System.Xml
                         pSrc += 2;
                     }
                     /* Invalid XML character */
-                    else  if (ch <= 0x7F || ch >= 0xFFFE)
+                    else if (ch <= 0x7F || ch >= 0xFFFE)
                     {
                         pDst = InvalidXmlChar(ch, pDst, false);
                         pSrc++;
@@ -1369,7 +1369,7 @@ namespace System.Xml
                                 pSrc += 2;
                             }
                             /* Invalid XML character */
-                            else  if (ch <= 0x7F || ch >= 0xFFFE)
+                            else if (ch <= 0x7F || ch >= 0xFFFE)
                             {
                                 pDst = InvalidXmlChar(ch, pDst, false);
                                 pSrc++;
@@ -1600,7 +1600,7 @@ namespace System.Xml
                                     pSrc += 2;
                                 }
                                 /* Invalid XML character */
-                                else  if (ch <= 0x7F || ch >= 0xFFFE)
+                                else if (ch <= 0x7F || ch >= 0xFFFE)
                                 {
                                     pDst = InvalidXmlChar(ch, pDst, false);
                                     pSrc++;
@@ -1784,7 +1784,7 @@ namespace System.Xml
                                     pSrc += 2;
                                 }
                                 /* Invalid XML character */
-                                else  if (ch <= 0x7F || ch >= 0xFFFE)
+                                else if (ch <= 0x7F || ch >= 0xFFFE)
                                 {
                                     pDst = InvalidXmlChar(ch, pDst, false);
                                     pSrc++;

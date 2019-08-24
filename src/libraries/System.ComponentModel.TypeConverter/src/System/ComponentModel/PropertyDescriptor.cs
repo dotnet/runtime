@@ -383,7 +383,7 @@ namespace System.ComponentModel
         {
             if (component != null)
             {
-                ((EventHandler) _valueChangedHandlers?[component])?.Invoke(component, e);
+                ((EventHandler)_valueChangedHandlers?[component])?.Invoke(component, e);
             }
         }
 

@@ -81,7 +81,7 @@ namespace System.Runtime.Serialization.Json
                             }
                             else
                             {
-                                tempDelegate =  new JsonFormatReaderGenerator().GenerateGetOnlyCollectionReader(TraditionalCollectionDataContract);
+                                tempDelegate = new JsonFormatReaderGenerator().GenerateGetOnlyCollectionReader(TraditionalCollectionDataContract);
                             }
 
                             Interlocked.MemoryBarrier();

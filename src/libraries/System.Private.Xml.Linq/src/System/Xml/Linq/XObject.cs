@@ -81,7 +81,7 @@ namespace System.Xml.Linq
             if (annotation == null) throw new ArgumentNullException(nameof(annotation));
             if (annotations == null)
             {
-                annotations = annotation is object[] ? new object[] { annotation } : annotation;
+                annotations = annotation is object[]? new object[] { annotation } : annotation;
             }
             else
             {

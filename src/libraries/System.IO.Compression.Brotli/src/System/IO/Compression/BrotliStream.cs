@@ -129,8 +129,8 @@ namespace System.IO.Compression
         }
 
         public Stream BaseStream => _stream;
-        public override bool CanRead => _mode == CompressionMode.Decompress  && _stream != null && _stream.CanRead;
-        public override bool CanWrite => _mode == CompressionMode.Compress  && _stream != null && _stream.CanWrite;
+        public override bool CanRead => _mode == CompressionMode.Decompress && _stream != null && _stream.CanRead;
+        public override bool CanWrite => _mode == CompressionMode.Compress && _stream != null && _stream.CanWrite;
         public override bool CanSeek => false;
         public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
         public override long Length => throw new NotSupportedException();

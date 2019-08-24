@@ -15,7 +15,7 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// </summary>
     internal sealed class CSharpGetIndexBinder : GetIndexBinder, ICSharpBinder
     {
-        public string Name =>  SpecialNames.Indexer;
+        public string Name => SpecialNames.Indexer;
 
         public BindingFlag BindingFlags => BindingFlag.BIND_RVALUEREQUIRED;
 

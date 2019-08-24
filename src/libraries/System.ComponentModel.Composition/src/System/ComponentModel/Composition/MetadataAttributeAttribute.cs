@@ -8,8 +8,7 @@ namespace System.ComponentModel.Composition
     ///     Specifies that an attribute can be used to provide metadata for a type, property, field,
     ///     or method marked with the <see cref="ExportAttribute"/>.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Class,
-                    AllowMultiple=false, Inherited=true)]
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
     public sealed class MetadataAttributeAttribute : Attribute
     {
         /// <summary>

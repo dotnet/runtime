@@ -66,7 +66,7 @@ namespace System.Security.Cryptography.Xml
                         throw new CryptographicException(SR.Cryptography_Partial_Chain);
                     }
 
-                elements = (X509ChainElementCollection)chain.ChainElements;
+                    elements = (X509ChainElementCollection)chain.ChainElements;
                     for (int index = 0; index < (Utils.IsSelfSigned(chain) ? 1 : elements.Count - 1); index++)
                     {
                         AddCertificate(elements[index].Certificate);

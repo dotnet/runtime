@@ -58,11 +58,11 @@ namespace Internal.Cryptography.Pal
                         {
                             int cbEncoded = 0;
                             if (!Interop.crypt32.CertSerializeCertificateStoreElement(pCertContext, 0, null, ref cbEncoded))
-                                throw Marshal.GetHRForLastWin32Error().ToCryptographicException();;
+                                throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
 
                             byte[] pbEncoded = new byte[cbEncoded];
                             if (!Interop.crypt32.CertSerializeCertificateStoreElement(pCertContext, 0, pbEncoded, ref cbEncoded))
-                                throw Marshal.GetHRForLastWin32Error().ToCryptographicException();;
+                                throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
 
                             return pbEncoded;
                         }
@@ -79,14 +79,14 @@ namespace Internal.Cryptography.Pal
                             CRYPTOAPI_BLOB dataBlob = new CRYPTOAPI_BLOB(0, (byte*)null);
 
                             if (!Interop.crypt32.PFXExportCertStore(_certStore, ref dataBlob, password, PFXExportFlags.EXPORT_PRIVATE_KEYS | PFXExportFlags.REPORT_NOT_ABLE_TO_EXPORT_PRIVATE_KEY))
-                                throw Marshal.GetHRForLastWin32Error().ToCryptographicException();;
+                                throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
 
                             byte[] pbEncoded = new byte[dataBlob.cbData];
                             fixed (byte* ppbEncoded = pbEncoded)
                             {
                                 dataBlob.pbData = ppbEncoded;
                                 if (!Interop.crypt32.PFXExportCertStore(_certStore, ref dataBlob, password, PFXExportFlags.EXPORT_PRIVATE_KEYS | PFXExportFlags.REPORT_NOT_ABLE_TO_EXPORT_PRIVATE_KEY))
-                                    throw Marshal.GetHRForLastWin32Error().ToCryptographicException();;
+                                    throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
                             }
 
                             return pbEncoded;

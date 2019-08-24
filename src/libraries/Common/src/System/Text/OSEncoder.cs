@@ -62,7 +62,7 @@ namespace System.Text
                 index++;
             }
 
-            int result = OSEncoding.WideCharToMultiByte(_encoding.CodePage, pTempBuffer, index+1, bytes, byteCount);
+            int result = OSEncoding.WideCharToMultiByte(_encoding.CodePage, pTempBuffer, index + 1, bytes, byteCount);
 
             if (count - index > 0)
                 result += OSEncoding.WideCharToMultiByte(
@@ -157,7 +157,7 @@ namespace System.Text
                     return 0;
                 }
 
-                int result =  OSEncoding.WideCharToMultiByte(_encoding.CodePage, chars, charCount, bytes, byteCount);
+                int result = OSEncoding.WideCharToMultiByte(_encoding.CodePage, chars, charCount, bytes, byteCount);
                 _charLeftOver = lastChar;
                 return result;
             }

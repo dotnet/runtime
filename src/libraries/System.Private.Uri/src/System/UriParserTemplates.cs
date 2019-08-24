@@ -2,60 +2,61 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System {
+namespace System
+{
 
-    public class HttpStyleUriParser: UriParser
+    public class HttpStyleUriParser : UriParser
     {
-        public HttpStyleUriParser():base(UriParser.HttpUri.Flags)
+        public HttpStyleUriParser() : base(UriParser.HttpUri.Flags)
         {
         }
     }
 
-    public class FtpStyleUriParser: UriParser
+    public class FtpStyleUriParser : UriParser
     {
-        public FtpStyleUriParser():base(UriParser.FtpUri.Flags)
+        public FtpStyleUriParser() : base(UriParser.FtpUri.Flags)
         {
         }
     }
 
-    public class FileStyleUriParser: UriParser
+    public class FileStyleUriParser : UriParser
     {
-        public FileStyleUriParser():base(UriParser.FileUri.Flags)
+        public FileStyleUriParser() : base(UriParser.FileUri.Flags)
         {
         }
     }
 
-    public class NewsStyleUriParser: UriParser
+    public class NewsStyleUriParser : UriParser
     {
-        public NewsStyleUriParser():base(UriParser.NewsUri.Flags)
+        public NewsStyleUriParser() : base(UriParser.NewsUri.Flags)
         {
         }
     }
 
-    public class GopherStyleUriParser: UriParser
+    public class GopherStyleUriParser : UriParser
     {
-        public GopherStyleUriParser():base(UriParser.GopherUri.Flags)
+        public GopherStyleUriParser() : base(UriParser.GopherUri.Flags)
         {
         }
     }
 
-    public class LdapStyleUriParser: UriParser
+    public class LdapStyleUriParser : UriParser
     {
-        public LdapStyleUriParser():base(UriParser.LdapUri.Flags)
+        public LdapStyleUriParser() : base(UriParser.LdapUri.Flags)
         {
         }
     }
 
-    public class NetPipeStyleUriParser: UriParser
+    public class NetPipeStyleUriParser : UriParser
     {
-        public NetPipeStyleUriParser():base(UriParser.NetPipeUri.Flags)
+        public NetPipeStyleUriParser() : base(UriParser.NetPipeUri.Flags)
         {
         }
     }
 
-    public class NetTcpStyleUriParser: UriParser
+    public class NetTcpStyleUriParser : UriParser
     {
-        public NetTcpStyleUriParser():base(UriParser.NetTcpUri.Flags)
+        public NetTcpStyleUriParser() : base(UriParser.NetTcpUri.Flags)
         {
         }
     }

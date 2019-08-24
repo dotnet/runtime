@@ -577,7 +577,7 @@ namespace System.Xml.Xsl.Xslt
                 _prefix = rec.prefix;
                 _localName = rec.localName;
             }
-            public static implicit operator string (DelayedQName qn)
+            public static implicit operator string(DelayedQName qn)
             {
                 return qn._prefix.Length == 0 ? qn._localName : (qn._prefix + ':' + qn._localName);
             }

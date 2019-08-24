@@ -218,7 +218,7 @@ namespace System.Net
 
         public static bool IsRestricted(string headerName, bool response)
         {
-            headerName =  HttpValidationHelpers.CheckBadHeaderNameChars(headerName);
+            headerName = HttpValidationHelpers.CheckBadHeaderNameChars(headerName);
             return response ? HeaderInfo[headerName].IsResponseRestricted : HeaderInfo[headerName].IsRequestRestricted;
         }
 

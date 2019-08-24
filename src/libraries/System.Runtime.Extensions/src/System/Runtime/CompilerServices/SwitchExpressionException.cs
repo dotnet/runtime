@@ -18,7 +18,9 @@ namespace System.Runtime.CompilerServices
             : base(SR.Arg_SwitchExpressionException) { }
 
         public SwitchExpressionException(Exception? innerException) :
-            base(SR.Arg_SwitchExpressionException, innerException) { }
+            base(SR.Arg_SwitchExpressionException, innerException)
+        {
+        }
 
         public SwitchExpressionException(object? unmatchedValue) : this()
         {

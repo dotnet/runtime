@@ -70,7 +70,7 @@ namespace System.Data.SqlTypes
         }
 
         // Explicit conversion from SqlDouble to double. Throw exception if x is Null.
-        public static explicit operator double (SqlDouble x)
+        public static explicit operator double(SqlDouble x)
         {
             return x.Value;
         }

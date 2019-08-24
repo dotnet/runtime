@@ -16,12 +16,12 @@ namespace System.Management
     /// <summary>
     /// <para>Represents the method that will handle the <see cref='System.Management.ManagementOperationObserver.Completed'/> event.</para>
     /// </summary>
-    public delegate void CompletedEventHandler (object sender, CompletedEventArgs e);
+    public delegate void CompletedEventHandler(object sender, CompletedEventArgs e);
 
     /// <summary>
     /// <para>Represents the method that will handle the <see cref='System.Management.ManagementOperationObserver.Progress'/> event.</para>
     /// </summary>
-    public delegate void ProgressEventHandler (object sender, ProgressEventArgs e);
+    public delegate void ProgressEventHandler(object sender, ProgressEventArgs e);
 
     /// <summary>
     /// <para>Represents the method that will handle the <see cref='System.Management.ManagementOperationObserver.ObjectPut'/> event.</para>
@@ -131,41 +131,41 @@ namespace System.Management
         /// <summary>
         ///    <para> Occurs when a new object is available.</para>
         /// </summary>
-        public event ObjectReadyEventHandler        ObjectReady;
+        public event ObjectReadyEventHandler ObjectReady;
 
         /// <summary>
         ///    <para> Occurs when an operation has completed.</para>
         /// </summary>
-        public event CompletedEventHandler          Completed;
+        public event CompletedEventHandler Completed;
 
         /// <summary>
         ///    <para> Occurs to indicate the progress of an ongoing operation.</para>
         /// </summary>
-        public event ProgressEventHandler           Progress;
+        public event ProgressEventHandler Progress;
 
         /// <summary>
         ///    <para> Occurs when an object has been successfully committed.</para>
         /// </summary>
-        public event ObjectPutEventHandler          ObjectPut;
+        public event ObjectPutEventHandler ObjectPut;
 
         /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.Management.ManagementOperationObserver'/> class. This is the default constructor.</para>
         /// </summary>
-        public ManagementOperationObserver ()
+        public ManagementOperationObserver()
         {
             // We make our sink collection synchronized
-            m_sinkCollection = new Hashtable ();
-            delegateInvoker = new WmiDelegateInvoker (this);
+            m_sinkCollection = new Hashtable();
+            delegateInvoker = new WmiDelegateInvoker(this);
         }
 
         /// <summary>
         ///    <para> Cancels all outstanding operations.</para>
         /// </summary>
-        public void Cancel ()
+        public void Cancel()
         {
             // Cancel all the sinks we have - make a copy to avoid things
             // changing under our feet
-            Hashtable copiedSinkTable =  new Hashtable ();
+            Hashtable copiedSinkTable = new Hashtable();
 
             lock (m_sinkCollection)
             {
@@ -173,12 +173,12 @@ namespace System.Management
 
                 try
                 {
-                    sinkEnum.Reset ();
+                    sinkEnum.Reset();
 
-                    while (sinkEnum.MoveNext ())
+                    while (sinkEnum.MoveNext())
                     {
-                        DictionaryEntry entry = (DictionaryEntry) sinkEnum.Current;
-                        copiedSinkTable.Add (entry.Key, entry.Value);
+                        DictionaryEntry entry = (DictionaryEntry)sinkEnum.Current;
+                        copiedSinkTable.Add(entry.Key, entry.Value);
                     }
                 }
                 catch
@@ -190,16 +190,16 @@ namespace System.Management
             try
             {
                 IDictionaryEnumerator copiedSinkEnum = copiedSinkTable.GetEnumerator();
-                copiedSinkEnum.Reset ();
+                copiedSinkEnum.Reset();
 
-                while (copiedSinkEnum.MoveNext ())
+                while (copiedSinkEnum.MoveNext())
                 {
-                    DictionaryEntry entry = (DictionaryEntry) copiedSinkEnum.Current;
-                    WmiEventSink eventSink = (WmiEventSink) entry.Value;
+                    DictionaryEntry entry = (DictionaryEntry)copiedSinkEnum.Current;
+                    WmiEventSink eventSink = (WmiEventSink)entry.Value;
 
                     try
                     {
-                        eventSink.Cancel ();
+                        eventSink.Cancel();
                     }
                     catch
                     {
@@ -211,7 +211,7 @@ namespace System.Management
             }
         }
 
-        internal WmiEventSink GetNewSink (
+        internal WmiEventSink GetNewSink(
             ManagementScope scope,
             object context)
         {
@@ -222,7 +222,7 @@ namespace System.Management
                 // Add it to our collection
                 lock (m_sinkCollection)
                 {
-                    m_sinkCollection.Add (eventSink.GetHashCode(), eventSink);
+                    m_sinkCollection.Add(eventSink.GetHashCode(), eventSink);
                 }
 
                 return eventSink;
@@ -242,7 +242,7 @@ namespace System.Management
                 try
                 {
                     if (Progress != null)
-                        result = ((Progress.GetInvocationList ()).Length > 0);
+                        result = ((Progress.GetInvocationList()).Length > 0);
                 }
                 catch
                 {
@@ -251,7 +251,7 @@ namespace System.Management
                 return result;
             }
         }
-        internal WmiEventSink GetNewPutSink (
+        internal WmiEventSink GetNewPutSink(
             ManagementScope scope,
             object context,
             string path,
@@ -264,7 +264,7 @@ namespace System.Management
                 // Add it to our collection
                 lock (m_sinkCollection)
                 {
-                    m_sinkCollection.Add (eventSink.GetHashCode(), eventSink);
+                    m_sinkCollection.Add(eventSink.GetHashCode(), eventSink);
                 }
 
                 return eventSink;
@@ -275,7 +275,7 @@ namespace System.Management
             }
         }
 
-        internal WmiGetEventSink GetNewGetSink (
+        internal WmiGetEventSink GetNewGetSink(
             ManagementScope scope,
             object context,
             ManagementObject managementObject)
@@ -288,7 +288,7 @@ namespace System.Management
                 // Add it to our collection
                 lock (m_sinkCollection)
                 {
-                    m_sinkCollection.Add (eventSink.GetHashCode(), eventSink);
+                    m_sinkCollection.Add(eventSink.GetHashCode(), eventSink);
                 }
 
                 return eventSink;
@@ -299,17 +299,17 @@ namespace System.Management
             }
         }
 
-        internal void RemoveSink (WmiEventSink eventSink)
+        internal void RemoveSink(WmiEventSink eventSink)
         {
             try
             {
                 lock (m_sinkCollection)
                 {
-                    m_sinkCollection.Remove (eventSink.GetHashCode ());
+                    m_sinkCollection.Remove(eventSink.GetHashCode());
                 }
 
                 // Release the stub as we are now disconnected
-                eventSink.ReleaseStub ();
+                eventSink.ReleaseStub();
             }
             catch
             {
@@ -320,44 +320,44 @@ namespace System.Management
         /// Fires the ObjectReady event to whomsoever is listening
         /// </summary>
         /// <param name="args"> </param>
-        internal void FireObjectReady (ObjectReadyEventArgs args)
+        internal void FireObjectReady(ObjectReadyEventArgs args)
         {
             try
             {
-                delegateInvoker.FireEventToDelegates (ObjectReady, args);
+                delegateInvoker.FireEventToDelegates(ObjectReady, args);
             }
             catch
             {
             }
         }
 
-        internal void FireCompleted (CompletedEventArgs args)
+        internal void FireCompleted(CompletedEventArgs args)
         {
             try
             {
-                delegateInvoker.FireEventToDelegates (Completed, args);
+                delegateInvoker.FireEventToDelegates(Completed, args);
             }
             catch
             {
             }
         }
 
-        internal void FireProgress (ProgressEventArgs args)
+        internal void FireProgress(ProgressEventArgs args)
         {
             try
             {
-                delegateInvoker.FireEventToDelegates (Progress, args);
+                delegateInvoker.FireEventToDelegates(Progress, args);
             }
             catch
             {
             }
         }
 
-        internal void FireObjectPut (ObjectPutEventArgs args)
+        internal void FireObjectPut(ObjectPutEventArgs args)
         {
             try
             {
-                delegateInvoker.FireEventToDelegates (ObjectPut, args);
+                delegateInvoker.FireEventToDelegates(ObjectPut, args);
             }
             catch
             {
@@ -371,7 +371,7 @@ namespace System.Management
         private readonly ManagementEventArgs args;
         private readonly AutoResetEvent h;
 
-        internal WmiEventState (Delegate d, ManagementEventArgs args, AutoResetEvent h)
+        internal WmiEventState(Delegate d, ManagementEventArgs args, AutoResetEvent h)
         {
             this.d = d;
             this.args = args;
@@ -407,7 +407,7 @@ namespace System.Management
     {
         internal object sender;
 
-        internal WmiDelegateInvoker (object sender)
+        internal WmiDelegateInvoker(object sender)
         {
             this.sender = sender;
         }
@@ -419,7 +419,7 @@ namespace System.Management
         /// <param name="md">The MulticastDelegate representing the collection
         /// of targets for the event</param>
         /// <param name="args">The accompanying event arguments</param>
-        internal void FireEventToDelegates (MulticastDelegate md, ManagementEventArgs args)
+        internal void FireEventToDelegates(MulticastDelegate md, ManagementEventArgs args)
         {
             try
             {
@@ -429,7 +429,7 @@ namespace System.Management
                     {
                         try
                         {
-                            d.DynamicInvoke (new object [] {this.sender, args});
+                            d.DynamicInvoke(new object[] { this.sender, args });
                         }
                         catch
                         {

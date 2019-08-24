@@ -166,15 +166,15 @@ namespace System.IO.Enumeration
             EnumerationOptions options,
             bool isNormalized)
         {
-             return new FileSystemEnumerable<FileInfo>(
-                directory,
-                (ref FileSystemEntry entry) => (FileInfo)entry.ToFileSystemInfo(),
-                options,
-                isNormalized)
-             {
-                 ShouldIncludePredicate = (ref FileSystemEntry entry) =>
-                     !entry.IsDirectory && MatchesPattern(expression, entry.FileName, options)
-             };
+            return new FileSystemEnumerable<FileInfo>(
+               directory,
+               (ref FileSystemEntry entry) => (FileInfo)entry.ToFileSystemInfo(),
+               options,
+               isNormalized)
+            {
+                ShouldIncludePredicate = (ref FileSystemEntry entry) =>
+                    !entry.IsDirectory && MatchesPattern(expression, entry.FileName, options)
+            };
         }
 
         internal static IEnumerable<DirectoryInfo> DirectoryInfos(

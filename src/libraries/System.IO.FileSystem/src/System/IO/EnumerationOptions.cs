@@ -17,11 +17,11 @@ namespace System.IO
         /// For internal use. These are the options we want to use if calling the existing Directory/File APIs where you don't
         /// explicitly specify EnumerationOptions.
         /// </summary>
-        internal static EnumerationOptions Compatible { get; } = new EnumerationOptions
-            { MatchType = MatchType.Win32, AttributesToSkip = 0, IgnoreInaccessible = false };
+        internal static EnumerationOptions Compatible { get; } =
+            new EnumerationOptions { MatchType = MatchType.Win32, AttributesToSkip = 0, IgnoreInaccessible = false };
 
-        private static EnumerationOptions CompatibleRecursive { get; } = new EnumerationOptions
-            { RecurseSubdirectories = true, MatchType = MatchType.Win32, AttributesToSkip = 0, IgnoreInaccessible = false };
+        private static EnumerationOptions CompatibleRecursive { get; } =
+            new EnumerationOptions { RecurseSubdirectories = true, MatchType = MatchType.Win32, AttributesToSkip = 0, IgnoreInaccessible = false };
 
         /// <summary>
         /// Internal singleton for default options.

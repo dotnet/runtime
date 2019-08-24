@@ -1167,7 +1167,7 @@ namespace System.Data.SqlTypes
         }
 
         // Explicit conversion from SqlDecimal to Decimal. Throw exception if x is Null.
-        public static explicit operator decimal (SqlDecimal x)
+        public static explicit operator decimal(SqlDecimal x)
         {
             return x.Value;
         }

@@ -196,7 +196,7 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Read a parameter from the current key using CRYPT_SILENT, to avoid any potential UI prompts.
         /// </summary>
-        private object ReadKeyParameterSilent(int keyParam, bool throwOnNotFound=true)
+        private object ReadKeyParameterSilent(int keyParam, bool throwOnNotFound = true)
         {
             const uint SilentFlags = (uint)Interop.Advapi32.CryptAcquireContextFlags.CRYPT_SILENT;
 

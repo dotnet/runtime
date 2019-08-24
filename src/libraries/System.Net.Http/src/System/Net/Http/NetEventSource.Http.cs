@@ -61,12 +61,10 @@ namespace System.Net
         [Event(HandlerMessageId, Keywords = Keywords.Debug, Level = EventLevel.Verbose)]
         public void HandlerMessage(int poolId, int workerId, int requestId, string memberName, string message) =>
             WriteEvent(HandlerMessageId, poolId, workerId, requestId, memberName, message);
-            //Console.WriteLine($"{poolId}/{workerId}/{requestId}: ({memberName}): {message}");  // uncomment for debugging only
 
         [Event(HandlerErrorId, Keywords = Keywords.Debug, Level = EventLevel.Error)]
         public void HandlerMessageError(int poolId, int workerId, int requestId, string memberName, string message) =>
             WriteEvent(HandlerErrorId, poolId, workerId, requestId, memberName, message);
-            //Console.WriteLine($"{poolId}/{workerId}/{requestId}: ({memberName}): {message}");  // uncomment for debugging only
 
         [NonEvent]
         public static void AuthenticationInfo(Uri uri, string message)

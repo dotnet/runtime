@@ -93,7 +93,7 @@ namespace System.Security.Cryptography
             if (index < 0 || index >= array.Length)
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
 
-             _list.CopyTo(array, index);
+            _list.CopyTo(array, index);
         }
 
         public bool IsSynchronized

@@ -229,7 +229,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 }
                 else
                 {
-                    return index > _objects.Length - 1 ? null  : _objects[index];
+                    return index > _objects.Length - 1 ? null : _objects[index];
                 }
             }
             set

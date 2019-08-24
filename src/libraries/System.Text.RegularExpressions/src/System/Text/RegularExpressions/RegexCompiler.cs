@@ -266,14 +266,16 @@ namespace System.Text.RegularExpressions
         /*
          * True if we need to do the backtrack logic for the current operation
          */
-        private bool IsBack() {
+        private bool IsBack()
+        {
             return (_regexopcode & RegexCode.Back) != 0;
         }
 
         /*
          * True if we need to do the second-backtrack logic for the current operation
          */
-        private bool IsBack2() {
+        private bool IsBack2()
+        {
             return (_regexopcode & RegexCode.Back2) != 0;
         }
 #endif
@@ -953,8 +955,8 @@ namespace System.Text.RegularExpressions
 
         private void CallToLower()
         {
-             Ldloc(_cultureV);
-             Call(s_chartolowerM);
+            Ldloc(_cultureV);
+            Call(s_chartolowerM);
         }
 
         /*
@@ -1608,12 +1610,13 @@ namespace System.Text.RegularExpressions
         /*
          * Some simple debugging stuff
          */
-        private static readonly MethodInfo s_debugWriteLine = typeof(Debug).GetMethod("WriteLine", new Type[] {typeof(string)});
+        private static readonly MethodInfo s_debugWriteLine = typeof(Debug).GetMethod("WriteLine", new Type[] { typeof(string) });
 
         /*
          * Debug only: emit code to print out a message
          */
-        private void Message(string str) {
+        private void Message(string str)
+        {
             Ldstr(str);
             Call(s_debugWriteLine);
         }
@@ -1635,7 +1638,8 @@ namespace System.Text.RegularExpressions
         private void GenerateOneCode()
         {
 #if DEBUG
-            if ((_options & RegexOptions.Debug) != 0) {
+            if ((_options & RegexOptions.Debug) != 0)
+            {
                 Mvlocfld(_textposV, s_textposF);
                 Mvlocfld(_trackposV, s_trackposF);
                 Mvlocfld(_stackposV, s_stackposF);

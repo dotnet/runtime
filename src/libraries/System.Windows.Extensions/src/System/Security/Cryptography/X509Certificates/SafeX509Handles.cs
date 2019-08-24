@@ -27,7 +27,7 @@ namespace System.Security.Cryptography.X509Certificates
 
     internal abstract class SafePointerHandle<T> : SafeHandle where T : SafeHandle, new()
     {
-        protected SafePointerHandle(): base(IntPtr.Zero, true)
+        protected SafePointerHandle() : base(IntPtr.Zero, true)
         {
         }
 

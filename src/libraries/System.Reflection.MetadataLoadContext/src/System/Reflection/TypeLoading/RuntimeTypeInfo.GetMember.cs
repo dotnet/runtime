@@ -41,9 +41,9 @@ namespace System.Reflection.TypeLoading
 
             MemberInfo[] results;
 
-            if ((results = QuerySpecificMemberTypeIfRequested(type, optionalName, bindingAttr, predicate, MemberTypes.Method, out QueryResult<MethodInfo>  methods)) != null)
+            if ((results = QuerySpecificMemberTypeIfRequested(type, optionalName, bindingAttr, predicate, MemberTypes.Method, out QueryResult<MethodInfo> methods)) != null)
                 return results;
-            if ((results = QuerySpecificMemberTypeIfRequested(type, optionalName, bindingAttr, predicate, MemberTypes.Constructor, out QueryResult<ConstructorInfo>  constructors)) != null)
+            if ((results = QuerySpecificMemberTypeIfRequested(type, optionalName, bindingAttr, predicate, MemberTypes.Constructor, out QueryResult<ConstructorInfo> constructors)) != null)
                 return results;
             if ((results = QuerySpecificMemberTypeIfRequested(type, optionalName, bindingAttr, predicate, MemberTypes.Property, out QueryResult<PropertyInfo> properties)) != null)
                 return results;

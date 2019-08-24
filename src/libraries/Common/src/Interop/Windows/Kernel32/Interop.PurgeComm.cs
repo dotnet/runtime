@@ -17,7 +17,7 @@ internal partial class Interop
             internal const uint PURGE_RXCLEAR = 0x0008;  // Kill the typeahead buffer if there.
         }
 
-        [DllImport(Libraries.Kernel32, SetLastError=true, CharSet=CharSet.Auto)]
+        [DllImport(Libraries.Kernel32, SetLastError = true, CharSet = CharSet.Auto)]
         internal static extern bool PurgeComm(
             SafeFileHandle hFile,
             uint dwFlags);

@@ -14,7 +14,7 @@ namespace System
         }
         public LoaderOptimizationAttribute(LoaderOptimization value)
         {
-            _val = (byte) value;
+            _val = (byte)value;
         }
         public LoaderOptimization Value => (LoaderOptimization)_val;
     }

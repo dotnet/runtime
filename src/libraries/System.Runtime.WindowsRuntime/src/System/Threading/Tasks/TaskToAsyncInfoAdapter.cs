@@ -296,15 +296,15 @@ namespace System.Threading.Tasks
 
         #region State bit field operations
 
-        internal bool CompletedSynchronously {[Pure] get { return (0 != (_state & STATEFLAG_COMPLETED_SYNCHRONOUSLY)); } }
+        internal bool CompletedSynchronously { [Pure] get { return (0 != (_state & STATEFLAG_COMPLETED_SYNCHRONOUSLY)); } }
 
-        private bool IsInStartedState {[Pure] get { return (0 != (_state & STATE_STARTED)); } }
+        private bool IsInStartedState { [Pure] get { return (0 != (_state & STATE_STARTED)); } }
 
-        private bool IsInRunToCompletionState {[Pure] get { return (0 != (_state & STATE_RUN_TO_COMPLETION)); } }
+        private bool IsInRunToCompletionState { [Pure] get { return (0 != (_state & STATE_RUN_TO_COMPLETION)); } }
 
-        private bool IsInErrorState {[Pure] get { return (0 != (_state & STATE_ERROR)); } }
+        private bool IsInErrorState { [Pure] get { return (0 != (_state & STATE_ERROR)); } }
 
-        private bool IsInClosedState {[Pure] get { return (0 != (_state & STATE_CLOSED)); } }
+        private bool IsInClosedState { [Pure] get { return (0 != (_state & STATE_CLOSED)); } }
 
         private bool IsInRunningState
         {
