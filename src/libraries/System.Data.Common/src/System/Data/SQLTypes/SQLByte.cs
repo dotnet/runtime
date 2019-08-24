@@ -64,7 +64,7 @@ namespace System.Data.SqlTypes
         }
 
         // Explicit conversion from SqlByte to byte. Throw exception if x is Null.
-        public static explicit operator byte (SqlByte x)
+        public static explicit operator byte(SqlByte x)
         {
             return x.Value;
         }

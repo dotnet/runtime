@@ -16,7 +16,7 @@ namespace System.Management
     /// <summary>
     /// <para>Represents the method that will handle the <see cref='System.Management.ManagementEventWatcher.Stopped'/> event.</para>
     /// </summary>
-    public delegate void StoppedEventHandler (object sender, StoppedEventArgs e);
+    public delegate void StoppedEventHandler(object sender, StoppedEventArgs e);
 
     //CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC//
     /// <summary>
@@ -114,15 +114,15 @@ namespace System.Management
     public class ManagementEventWatcher : Component
     {
         //fields
-        private ManagementScope         scope;
-        private EventQuery              query;
-        private EventWatcherOptions     options;
-        private IEnumWbemClassObject    enumWbem;
-        private IWbemClassObjectFreeThreaded[]      cachedObjects; //points to objects currently available in cache
-        private uint                    cachedCount; //says how many objects are in the cache (when using BlockSize option)
-        private uint                    cacheIndex; //used to walk the cache
-        private SinkForEventQuery       sink; // the sink implementation for event queries
-        private readonly WmiDelegateInvoker      delegateInvoker;
+        private ManagementScope scope;
+        private EventQuery query;
+        private EventWatcherOptions options;
+        private IEnumWbemClassObject enumWbem;
+        private IWbemClassObjectFreeThreaded[] cachedObjects; //points to objects currently available in cache
+        private uint cachedCount; //says how many objects are in the cache (when using BlockSize option)
+        private uint cacheIndex; //used to walk the cache
+        private SinkForEventQuery sink; // the sink implementation for event queries
+        private readonly WmiDelegateInvoker delegateInvoker;
 
         //Called when IdentifierChanged() event fires
         private void HandleIdentifierChange(object sender,
@@ -140,7 +140,7 @@ namespace System.Management
         /// <para> Initializes a new instance of the <see cref='System.Management.ManagementEventWatcher'/> class. For further
         ///    initialization, set the properties on the object. This is the default constructor.</para>
         /// </summary>
-        public ManagementEventWatcher() : this((ManagementScope)null, null, null) {}
+        public ManagementEventWatcher() : this((ManagementScope)null, null, null) { }
 
         //parameterized constructors
         /// <summary>
@@ -151,8 +151,8 @@ namespace System.Management
         ///    <para>The namespace in which the watcher will be listening for
         ///       events is the default namespace that is currently set.</para>
         /// </remarks>
-        public ManagementEventWatcher (
-            EventQuery query) : this(null, query, null) {}
+        public ManagementEventWatcher(
+            EventQuery query) : this(null, query, null) { }
 
         /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.Management.ManagementEventWatcher'/> class when given a WMI event query in the
@@ -163,8 +163,8 @@ namespace System.Management
         ///    <para>The namespace in which the watcher will be listening for
         ///       events is the default namespace that is currently set.</para>
         /// </remarks>
-        public ManagementEventWatcher (
-            string query) : this(null, new EventQuery(query), null) {}
+        public ManagementEventWatcher(
+            string query) : this(null, new EventQuery(query), null) { }
 
         /// <summary>
         /// <para> Initializes a new instance of the <see cref='System.Management.ManagementEventWatcher'/>
@@ -174,7 +174,7 @@ namespace System.Management
         /// <param name=' query'>An <see cref='System.Management.EventQuery'/> object representing a WMI event query, which determines the events for which the watcher will listen.</param>
         public ManagementEventWatcher(
             ManagementScope scope,
-            EventQuery query) : this(scope, query, null) {}
+            EventQuery query) : this(scope, query, null) { }
 
         /// <summary>
         /// <para> Initializes a new instance of the <see cref='System.Management.ManagementEventWatcher'/>
@@ -185,7 +185,7 @@ namespace System.Management
         /// <param name=' query'> The query that defines the events for which the watcher will listen.</param>
         public ManagementEventWatcher(
             string scope,
-            string query) : this(new ManagementScope(scope), new EventQuery(query), null) {}
+            string query) : this(new ManagementScope(scope), new EventQuery(query), null) { }
 
         /// <summary>
         /// <para> Initializes a new instance of the <see cref='System.Management.ManagementEventWatcher'/> class that listens for
@@ -199,7 +199,7 @@ namespace System.Management
         public ManagementEventWatcher(
             string scope,
             string query,
-            EventWatcherOptions options) : this(new ManagementScope(scope), new EventQuery(query), options) {}
+            EventWatcherOptions options) : this(new ManagementScope(scope), new EventQuery(query), options) { }
 
         /// <summary>
         /// <para> Initializes a new instance of the <see cref='System.Management.ManagementEventWatcher'/> class
@@ -236,25 +236,25 @@ namespace System.Management
             cachedCount = 0;
             cacheIndex = 0;
             sink = null;
-            delegateInvoker = new WmiDelegateInvoker (this);
+            delegateInvoker = new WmiDelegateInvoker(this);
         }
 
         /// <summary>
         ///    <para>Ensures that outstanding calls are cleared. This is the destructor for the object.</para>
         /// </summary>
-        ~ManagementEventWatcher ()
+        ~ManagementEventWatcher()
         {
             // Ensure any outstanding calls are cleared
-            Stop ();
+            Stop();
 
             if (null != scope)
-                scope.IdentifierChanged -= new IdentifierChangedEventHandler (HandleIdentifierChange);
+                scope.IdentifierChanged -= new IdentifierChangedEventHandler(HandleIdentifierChange);
 
             if (null != options)
-                options.IdentifierChanged -= new IdentifierChangedEventHandler (HandleIdentifierChange);
+                options.IdentifierChanged -= new IdentifierChangedEventHandler(HandleIdentifierChange);
 
             if (null != query)
-                query.IdentifierChanged -= new IdentifierChangedEventHandler (HandleIdentifierChange);
+                query.IdentifierChanged -= new IdentifierChangedEventHandler(HandleIdentifierChange);
         }
 
         //
@@ -264,12 +264,12 @@ namespace System.Management
         /// <summary>
         ///    <para> Occurs when a new event arrives.</para>
         /// </summary>
-        public event EventArrivedEventHandler       EventArrived;
+        public event EventArrivedEventHandler EventArrived;
 
         /// <summary>
         ///    <para> Occurs when a subscription is canceled.</para>
         /// </summary>
-        public event StoppedEventHandler            Stopped;
+        public event StoppedEventHandler Stopped;
 
         //
         //Public Properties
@@ -292,7 +292,7 @@ namespace System.Management
                 if (null != value)
                 {
                     ManagementScope oldScope = scope;
-                    scope = (ManagementScope)value.Clone ();
+                    scope = (ManagementScope)value.Clone();
 
                     // Unregister ourselves from the previous scope object
                     if (null != oldScope)
@@ -325,7 +325,7 @@ namespace System.Management
                 if (null != value)
                 {
                     ManagementQuery oldQuery = query;
-                    query = (EventQuery)value.Clone ();
+                    query = (EventQuery)value.Clone();
 
                     // Unregister ourselves from the previous query object
                     if (null != oldQuery)
@@ -358,7 +358,7 @@ namespace System.Management
                 if (null != value)
                 {
                     EventWatcherOptions oldOptions = options;
-                    options = (EventWatcherOptions)value.Clone ();
+                    options = (EventWatcherOptions)value.Clone();
 
                     // Unregister ourselves from the previous scope object
                     if (null != oldOptions)
@@ -392,7 +392,7 @@ namespace System.Management
         {
             ManagementBaseObject obj = null;
 
-            Initialize ();
+            Initialize();
 
 #pragma warning disable CA2002
             lock (this)
@@ -407,11 +407,11 @@ namespace System.Management
                     if (null == enumWbem)   //don't have an enumerator yet - get it
                     {
                         //Execute the query
-                        status = scope.GetSecuredIWbemServicesHandler( Scope.GetIWbemServices() ).ExecNotificationQuery_(
+                        status = scope.GetSecuredIWbemServicesHandler(Scope.GetIWbemServices()).ExecNotificationQuery_(
                             query.QueryLanguage,
                             query.QueryString,
                             options.Flags,
-                            options.GetContext (),
+                            options.GetContext(),
                             ref enumWbem);
                     }
 
@@ -425,8 +425,8 @@ namespace System.Management
                             IWbemClassObject_DoNotMarshal[] tempArray = new IWbemClassObject_DoNotMarshal[options.BlockSize];
 
                             int timeout = (ManagementOptions.InfiniteTimeout == options.Timeout)
-                                ? (int) tag_WBEM_TIMEOUT_TYPE.WBEM_INFINITE :
-                                (int) options.Timeout.TotalMilliseconds;
+                                ? (int)tag_WBEM_TIMEOUT_TYPE.WBEM_INFINITE :
+                                (int)options.Timeout.TotalMilliseconds;
 
                             status = scope.GetSecuredIEnumWbemClassObjectHandler(enumWbem).Next_(timeout, (uint)options.BlockSize, tempArray, ref cachedCount);
                             cacheIndex = 0;
@@ -478,10 +478,10 @@ namespace System.Management
         /// </summary>
         public void Start()
         {
-            Initialize ();
+            Initialize();
 
             // Cancel any current event query
-            Stop ();
+            Stop();
 
             // Submit a new query
             SecurityHandler securityHandler = Scope.GetSecurityHandler();
@@ -539,26 +539,26 @@ namespace System.Management
             {
                 Marshal.ReleaseComObject(enumWbem);
                 enumWbem = null;
-                FireStopped (new StoppedEventArgs (options.Context, (int)ManagementStatus.OperationCanceled));
+                FireStopped(new StoppedEventArgs(options.Context, (int)ManagementStatus.OperationCanceled));
             }
 
             // In async mode cancel the call to the sink - this will
             // unwind the operation and cause a Stopped message
             if (null != sink)
             {
-                sink.Cancel ();
+                sink.Cancel();
                 sink = null;
             }
         }
 
-        private void Initialize ()
+        private void Initialize()
         {
             //If the query is not set yet we can't do it
             if (null == query)
                 throw new InvalidOperationException();
 
             if (null == options)
-                Options = new EventWatcherOptions ();
+                Options = new EventWatcherOptions();
 
             //If we're not connected yet, this is the time to do it...
 #pragma warning disable CA2002
@@ -566,7 +566,7 @@ namespace System.Management
 #pragma warning restore CA2002
             {
                 if (null == scope)
-                    Scope = new ManagementScope ();
+                    Scope = new ManagementScope();
 
                 if (null == cachedObjects)
                     cachedObjects = new IWbemClassObjectFreeThreaded[options.BlockSize];
@@ -574,27 +574,27 @@ namespace System.Management
 
             lock (scope)
             {
-                scope.Initialize ();
+                scope.Initialize();
             }
         }
 
 
-        internal void FireStopped (StoppedEventArgs args)
+        internal void FireStopped(StoppedEventArgs args)
         {
             try
             {
-                delegateInvoker.FireEventToDelegates (Stopped, args);
+                delegateInvoker.FireEventToDelegates(Stopped, args);
             }
             catch
             {
             }
         }
 
-        internal void FireEventArrived (EventArrivedEventArgs args)
+        internal void FireEventArrived(EventArrivedEventArgs args)
         {
             try
             {
-                delegateInvoker.FireEventToDelegates (EventArrived, args);
+                delegateInvoker.FireEventToDelegates(EventArrived, args);
             }
             catch
             {
@@ -607,16 +607,16 @@ namespace System.Management
 
     internal class SinkForEventQuery : IWmiEventSource
     {
-        private readonly ManagementEventWatcher          eventWatcher;
-        private readonly object                          context;
-        private readonly IWbemServices                   services;
+        private readonly ManagementEventWatcher eventWatcher;
+        private readonly object context;
+        private readonly IWbemServices services;
         private IWbemObjectSink stub;           // The secured IWbemObjectSink
         private int status;
         private readonly bool isLocal;
 
-        public int Status {get {return status; } set {status=value; }}
+        public int Status { get { return status; } set { status = value; } }
 
-        public SinkForEventQuery (ManagementEventWatcher eventWatcher,
+        public SinkForEventQuery(ManagementEventWatcher eventWatcher,
             object context,
             IWbemServices services)
         {
@@ -627,8 +627,8 @@ namespace System.Management
             this.isLocal = false;
 
             // determine if the server is local, and if so don't create a real stub using unsecap
-            if ((0==string.Compare(eventWatcher.Scope.Path.Server, ".", StringComparison.OrdinalIgnoreCase)) ||
-                (0==string.Compare(eventWatcher.Scope.Path.Server, System.Environment.MachineName, StringComparison.OrdinalIgnoreCase)))
+            if ((0 == string.Compare(eventWatcher.Scope.Path.Server, ".", StringComparison.OrdinalIgnoreCase)) ||
+                (0 == string.Compare(eventWatcher.Scope.Path.Server, System.Environment.MachineName, StringComparison.OrdinalIgnoreCase)))
             {
                 this.isLocal = true;
             }
@@ -640,19 +640,19 @@ namespace System.Management
                 //
                 // Ensure we are able to trap exceptions from worker thread.
                 //
-                ThreadDispatch disp = new ThreadDispatch ( new ThreadDispatch.ThreadWorkerMethodWithParam ( HackToCreateStubInMTA ) );
+                ThreadDispatch disp = new ThreadDispatch(new ThreadDispatch.ThreadWorkerMethodWithParam(HackToCreateStubInMTA));
                 disp.Parameter = this;
-                disp.Start ( );
+                disp.Start();
             }
 
         }
 
         private void HackToCreateStubInMTA(object param)
         {
-            SinkForEventQuery obj = (SinkForEventQuery) param;
+            SinkForEventQuery obj = (SinkForEventQuery)param;
             object dmuxStub = null;
-            obj.Status = WmiNetUtilsHelper.GetDemultiplexedStub_f (obj, obj.isLocal, out dmuxStub);
-            obj.stub = (IWbemObjectSink) dmuxStub;
+            obj.Status = WmiNetUtilsHelper.GetDemultiplexedStub_f(obj, obj.isLocal, out dmuxStub);
+            obj.stub = (IWbemObjectSink)dmuxStub;
         }
 
         internal IWbemObjectSink Stub
@@ -676,7 +676,7 @@ namespace System.Management
             }
         }
 
-        public void SetStatus (
+        public void SetStatus(
             int flags,
             int hResult,
             string message,
@@ -717,7 +717,7 @@ namespace System.Management
             }
         }
 
-        internal void Cancel ()
+        internal void Cancel()
         {
             if (null != stub)
             {
@@ -745,7 +745,7 @@ namespace System.Management
             }
         }
 
-        internal void ReleaseStub ()
+        internal void ReleaseStub()
         {
             if (null != stub)
             {

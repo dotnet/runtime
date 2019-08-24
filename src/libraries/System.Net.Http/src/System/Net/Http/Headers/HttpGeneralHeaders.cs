@@ -70,7 +70,7 @@ namespace System.Net.Http.Headers
                     return true;
                 }
             }
-                else if (parent.ContainsParsedValue(KnownHeaders.Connection.Descriptor, HeaderUtilities.ConnectionClose))
+            else if (parent.ContainsParsedValue(KnownHeaders.Connection.Descriptor, HeaderUtilities.ConnectionClose))
             {
                 return true;
             }

@@ -28,7 +28,7 @@ namespace System
             HResult = HResults.COR_E_CONTEXTMARSHAL;
         }
 
-        protected ContextMarshalException(SerializationInfo info, StreamingContext context): base(info, context)
+        protected ContextMarshalException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
     }

@@ -81,7 +81,7 @@ namespace System.ComponentModel.Composition.Hosting
             return false;
         }
 
-/// <summary>
+        /// <summary>
         /// Determines whether the part contains a metadata entry with the specified key.
         /// </summary>
         /// <param name="part">The part.</param>

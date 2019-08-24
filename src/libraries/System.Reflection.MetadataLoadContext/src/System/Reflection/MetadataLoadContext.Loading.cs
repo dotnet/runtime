@@ -28,7 +28,7 @@ namespace System.Reflection
                     throw new BadImageFormatException(SR.NoMetadataInPeImage);
 
                 string location = (peStream is FileStream fs) ? (fs.Name ?? string.Empty) : string.Empty;
-                MetadataReader reader  = peReader.GetMetadataReader();
+                MetadataReader reader = peReader.GetMetadataReader();
                 RoAssembly candidate = new EcmaAssembly(this, peReader, reader, location);
                 AssemblyNameData defNameData = candidate.GetAssemblyNameDataNoCopy();
                 byte[] pkt = defNameData.PublicKeyToken ?? Array.Empty<byte>();

@@ -316,7 +316,7 @@ namespace System.Reflection.Metadata
         public Guid ReadGuid()
         {
             const int size = 16;
-            byte * ptr = GetCurrentPointerAndAdvance(size);
+            byte* ptr = GetCurrentPointerAndAdvance(size);
             if (BitConverter.IsLittleEndian)
             {
                 return *(Guid*)ptr;

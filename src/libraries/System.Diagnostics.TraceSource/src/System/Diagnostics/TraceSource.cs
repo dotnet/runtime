@@ -468,8 +468,10 @@ namespace System.Diagnostics
             }
         }
 
-        public StringDictionary Attributes {
-            get {
+        public StringDictionary Attributes
+        {
+            get
+            {
                 // Ensure that config is loaded
                 Initialize();
 

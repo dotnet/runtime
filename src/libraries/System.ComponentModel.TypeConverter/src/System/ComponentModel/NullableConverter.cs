@@ -107,9 +107,9 @@ namespace System.ComponentModel
             }
             else if (destinationType == typeof(InstanceDescriptor))
             {
-                ConstructorInfo ci = NullableType.GetConstructor(new Type[] {UnderlyingType});
+                ConstructorInfo ci = NullableType.GetConstructor(new Type[] { UnderlyingType });
                 Debug.Assert(ci != null, "Couldn't find constructor");
-                return new InstanceDescriptor(ci, new object[] {value}, true);
+                return new InstanceDescriptor(ci, new object[] { value }, true);
             }
             else if (value == null)
             {

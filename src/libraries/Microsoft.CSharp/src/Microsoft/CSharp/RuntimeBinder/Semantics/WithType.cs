@@ -94,7 +94,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         // The SymWithType is considered NULL iff the Symbol is NULL.
-        public static implicit operator bool (SymWithType swt)
+        public static implicit operator bool(SymWithType swt)
         {
             return swt != null;
         }

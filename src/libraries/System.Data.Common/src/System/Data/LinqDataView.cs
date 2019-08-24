@@ -122,7 +122,7 @@ namespace System.Data
             }
             else  // find for expression based sort
             {
-                if (sortExpressionBuilder.Count !=1)
+                if (sortExpressionBuilder.Count != 1)
                     throw DataSetUtil.InvalidOperation(SR.Format(SR.LDV_InvalidNumOfKeys, sortExpressionBuilder.Count));
 
                 Index.ComparisonBySelector<object, DataRow> compareDelg =
@@ -217,8 +217,7 @@ namespace System.Data
         internal override void SetIndex(string newSort, DataViewRowState newRowStates, IFilter newRowFilter)
         {
             // Throw only if expressions (filter or sort) are used and rowstate is not current rows
-            if ( (base.SortComparison != null || base.RowPredicate != null)
-                    && newRowStates != DataViewRowState.CurrentRows)
+            if ((base.SortComparison != null || base.RowPredicate != null) && newRowStates != DataViewRowState.CurrentRows)
             {
                 throw DataSetUtil.Argument(SR.LDVRowStateError);
             }

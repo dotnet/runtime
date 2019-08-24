@@ -924,7 +924,8 @@ namespace System.Data.SqlClient
                     {
                         AsyncHelper.ContinueTaskWithState(execNQ, completion,
                             state: Tuple.Create(this, completion),
-                            onSuccess: state => {
+                            onSuccess: state =>
+                            {
                                 var parameters = (Tuple<SqlCommand, TaskCompletionSource<object>>)state;
                                 parameters.Item1.BeginExecuteNonQueryInternalReadStage(parameters.Item2);
                             }
@@ -1284,7 +1285,8 @@ namespace System.Data.SqlClient
                 {
                     AsyncHelper.ContinueTaskWithState(writeTask, completion,
                         state: Tuple.Create(this, completion),
-                        onSuccess: state => {
+                        onSuccess: state =>
+                        {
                             var parameters = (Tuple<SqlCommand, TaskCompletionSource<object>>)state;
                             parameters.Item1.BeginExecuteXmlReaderInternalReadStage(parameters.Item2);
                         }
@@ -1573,7 +1575,8 @@ namespace System.Data.SqlClient
                 {
                     AsyncHelper.ContinueTaskWithState(writeTask, completion,
                         state: Tuple.Create(this, completion),
-                        onSuccess: state => {
+                        onSuccess: state =>
+                        {
                             var parameters = (Tuple<SqlCommand, TaskCompletionSource<object>>)state;
                             parameters.Item1.BeginExecuteReaderInternalReadStage(parameters.Item2);
                         }
@@ -2584,7 +2587,7 @@ namespace System.Data.SqlClient
                     Debug.Assert(!IsPrepared, "Batch RPC should not be prepared!");
                     Debug.Assert(!IsDirty, "Batch RPC should not be marked as dirty!");
                     Debug.Assert(_SqlRPCBatchArray != null, "RunExecuteReader rpc array not provided");
-                    writeTask = _stateObj.Parser.TdsExecuteRPC( _SqlRPCBatchArray, timeout, inSchema, this.Notification, _stateObj, CommandType.StoredProcedure == CommandType, sync: !asyncWrite);
+                    writeTask = _stateObj.Parser.TdsExecuteRPC(_SqlRPCBatchArray, timeout, inSchema, this.Notification, _stateObj, CommandType.StoredProcedure == CommandType, sync: !asyncWrite);
                 }
                 else if ((System.Data.CommandType.Text == this.CommandType) && (0 == GetParameterCount(_parameters)))
                 {
@@ -3328,7 +3331,7 @@ namespace System.Data.SqlClient
                         if (parameter.IsDerivedParameterTypeName)
                         {
                             string[] parts = MultipartIdentifier.ParseMultipartIdentifier(parameter.TypeName, "[\"", "]\"", SR.SQL_TDSParserTableName, false);
-                            if (parts != null && parts.Length==4) // will always return int[4] right justified
+                            if (parts != null && parts.Length == 4) // will always return int[4] right justified
                             {
                                 if (
                                     parts[3] != null && // name must not be null

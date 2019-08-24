@@ -888,7 +888,7 @@ namespace System.Net.Http
         // TODO: Remove this overload once https://github.com/dotnet/csharplang/issues/1331 is addressed
         // and the compiler doesn't prevent using spans in async methods.
         private static void ParseHeaderNameValue(HttpConnection connection, ArraySegment<byte> line, HttpResponseMessage response) =>
-            ParseHeaderNameValue(connection, (Span<byte>)line, response, isFromTrailer:false);
+            ParseHeaderNameValue(connection, (Span<byte>)line, response, isFromTrailer: false);
 
         private static void ParseHeaderNameValue(HttpConnection connection, ReadOnlySpan<byte> line, HttpResponseMessage response, bool isFromTrailer)
         {

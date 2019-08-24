@@ -71,7 +71,7 @@ namespace System.Security.Cryptography.X509Certificates
             AddGeneralName(new GeneralNameAsn { OtherName = otherName });
         }
 
-        public X509Extension Build(bool critical=false)
+        public X509Extension Build(bool critical = false)
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
             {

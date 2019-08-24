@@ -1135,7 +1135,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         pexprDest = ExprFactory.CreateConstant(typeDest, cv);
                         return ConstCastResult.Success;
                     }
-                    valueInt = (long)(constSrc.UInt64Value& 0xFFFFFFFFFFFFFFFF);
+                    valueInt = (long)(constSrc.UInt64Value & 0xFFFFFFFFFFFFFFFF);
                 }
                 else
                 {

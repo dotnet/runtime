@@ -56,7 +56,8 @@ namespace System.Security.Cryptography
                     CngKey key = _core.GetOrGenerateKey(curve);
                     ForceSetKeySize(key.KeySize);
                 }
-                else {
+                else
+                {
                     int keySize = 0;
                     // Get the proper KeySize from algorithm name
                     if (alg == CngAlgorithm.ECDsaP256)

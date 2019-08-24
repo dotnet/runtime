@@ -238,7 +238,7 @@ namespace System.Reflection.TypeLoading.Ecma
 
                     if (br.RemainingBytes == 0)
                         break;
-                    ma.MarshalType  = br.ReadSerializedString();
+                    ma.MarshalType = br.ReadSerializedString();
                     ma.MarshalTypeRef = Helpers.LoadTypeFromAssemblyQualifiedName(ma.MarshalType, module.GetRoAssembly(), ignoreCase: false, throwOnError: false);
 
                     if (br.RemainingBytes == 0)

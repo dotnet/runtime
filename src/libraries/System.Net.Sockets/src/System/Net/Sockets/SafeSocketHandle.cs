@@ -162,7 +162,7 @@ namespace System.Net.Sockets
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"_innerSocket={_innerSocket}");
 
 #if DEBUG
-                // If this throws it could be very bad.
+            // If this throws it could be very bad.
             try
             {
 #endif

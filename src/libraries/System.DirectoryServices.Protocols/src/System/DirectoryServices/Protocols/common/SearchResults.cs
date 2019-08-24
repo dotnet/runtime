@@ -72,7 +72,7 @@ namespace System.DirectoryServices.Protocols
     {
         private readonly DirectoryControl[] _resultControls = null;
 
-        internal SearchResultEntry(string dn) : this(dn, new SearchResultAttributeCollection()) {}
+        internal SearchResultEntry(string dn) : this(dn, new SearchResultAttributeCollection()) { }
 
         internal SearchResultEntry(string dn, SearchResultAttributeCollection attrs)
         {

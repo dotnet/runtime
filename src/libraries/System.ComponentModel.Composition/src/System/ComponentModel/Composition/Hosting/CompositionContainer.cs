@@ -90,7 +90,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// <exception cref="ArgumentException">
         ///     <paramref name="providers"/> contains an element that is <see langword="null"/>.
         /// </exception>
-        public CompositionContainer(ComposablePartCatalog catalog, params ExportProvider[] providers):
+        public CompositionContainer(ComposablePartCatalog catalog, params ExportProvider[] providers) :
             this(catalog, false, providers)
         {
         }
@@ -212,7 +212,7 @@ namespace System.ComponentModel.Composition.Hosting
                 _disposableRootProvider = _rootProvider as IDisposable;
             }
 
-//Insert Composition Service
+            //Insert Composition Service
             if (compositionOptions.HasFlag(CompositionOptions.ExportCompositionService))
             {
                 this.ComposeExportedValue<ICompositionService>(new CompositionServiceShim(this));

@@ -890,7 +890,7 @@ namespace System.Reflection
                     if (left.IsStatic != right.IsStatic)
                         return false;
 
-                    if ( left.Name != right.Name)
+                    if (left.Name != right.Name)
                         return false;
 
                     Type[] leftGenericParameters = left.GetGenericArguments();

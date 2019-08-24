@@ -603,7 +603,7 @@ namespace System.ServiceModel.Syndication
             {
                 foreach (XmlQualifiedName attr in attrs.Keys)
                 {
-                    Debug.Assert(!FeedUtils.IsXmlns(attr.Name, attr.Namespace), "XML namespace attributes should not be added to the list." );
+                    Debug.Assert(!FeedUtils.IsXmlns(attr.Name, attr.Namespace), "XML namespace attributes should not be added to the list.");
                     result.AttributeExtensions.Add(attr, attrs[attr]);
                 }
             }

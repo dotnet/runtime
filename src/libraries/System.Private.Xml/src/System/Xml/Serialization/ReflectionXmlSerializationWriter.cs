@@ -881,7 +881,8 @@ namespace System.Xml.Serialization
             }
         }
 
-        private bool CanOptimizeWriteListSequence(TypeDesc listElementTypeDesc) {
+        private bool CanOptimizeWriteListSequence(TypeDesc listElementTypeDesc)
+        {
             // check to see if we can write values of the attribute sequentially
             // currently we have only one data type (XmlQualifiedName) that we can not write "inline",
             // because we need to output xmlns:qx="..." for each of the qnames
@@ -1243,7 +1244,7 @@ namespace System.Xml.Serialization
                             {
                                 if (mapping.Members[j].Name == memberNameSpecified)
                                 {
-                                    specifiedSource = (bool) p[j];
+                                    specifiedSource = (bool)p[j];
                                     break;
                                 }
                             }

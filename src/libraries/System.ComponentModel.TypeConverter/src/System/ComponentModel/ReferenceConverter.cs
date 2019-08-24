@@ -94,7 +94,7 @@ namespace System.ComponentModel
                 if (value != null)
                 {
                     // Try the reference service first.
-                    IReferenceService refSvc = (IReferenceService) context?.GetService(typeof(IReferenceService));
+                    IReferenceService refSvc = (IReferenceService)context?.GetService(typeof(IReferenceService));
                     if (refSvc != null)
                     {
                         string name = refSvc.GetName(value);

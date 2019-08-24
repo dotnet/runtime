@@ -19,14 +19,15 @@ namespace System.Security.Cryptography
             _rsaKey = (RSA)key;
         }
 
-        public RandomNumberGenerator RNG {
+        public RandomNumberGenerator RNG
+        {
             get { return RngValue; }
             set { RngValue = value; }
         }
 
         public override string Parameters
         {
-            get {return null; }
+            get { return null; }
             set { }
         }
 

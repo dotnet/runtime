@@ -8,7 +8,8 @@ internal partial class Interop
 {
     internal partial class User32
     {
-        internal struct USEROBJECTFLAGS {
+        internal struct USEROBJECTFLAGS
+        {
             public int fInherit;
             public int fReserved;
             public int dwFlags;

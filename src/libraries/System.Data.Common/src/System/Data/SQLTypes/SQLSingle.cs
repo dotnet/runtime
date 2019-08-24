@@ -71,7 +71,7 @@ namespace System.Data.SqlTypes
         }
 
         // Explicit conversion from SqlSingle to float. Throw exception if x is Null.
-        public static explicit operator float (SqlSingle x)
+        public static explicit operator float(SqlSingle x)
         {
             return x.Value;
         }

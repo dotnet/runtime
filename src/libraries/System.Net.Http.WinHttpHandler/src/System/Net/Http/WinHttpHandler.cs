@@ -554,8 +554,8 @@ namespace System.Net.Http
             state.DefaultProxyCredentials = _defaultProxyCredentials;
             state.PreAuthenticate = _preAuthenticate;
 
-            Task.Factory.StartNew(
-                s => {
+            Task.Factory.StartNew(s =>
+                {
                     var whrs = (WinHttpRequestState)s;
                     _ = whrs.Handler.StartRequestAsync(whrs);
                 },
@@ -1223,7 +1223,7 @@ namespace System.Net.Http
             _authHelper.ChangeDefaultCredentialsPolicy(
                 state.RequestHandle,
                 Interop.WinHttp.WINHTTP_AUTH_TARGET_SERVER,
-                allowDefaultCredentials:false);
+                allowDefaultCredentials: false);
         }
 
         private void SetRequestHandleBufferingOptions(SafeWinHttpHandle requestHandle)

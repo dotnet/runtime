@@ -177,7 +177,7 @@ namespace System.Collections.Generic
                     }
 
                     return result;
-               }
+                }
             }
 
             internal override bool InOrderTreeWalk(TreeWalkPredicate<T> action)

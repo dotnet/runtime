@@ -39,7 +39,7 @@ namespace System.Net.Http
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                ThrowOperationCanceledException(innerException:null, cancellationToken);
+                ThrowOperationCanceledException(innerException: null, cancellationToken);
             }
         }
     }

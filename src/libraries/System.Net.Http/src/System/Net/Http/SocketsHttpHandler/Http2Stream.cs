@@ -683,7 +683,7 @@ namespace System.Net.Http
             // (4) Receiving EOF from the server. If so, resetException will contain an exception like "expected 9 bytes of data", and canRetry will be false.
             public void OnReset(Exception resetException, Http2ProtocolErrorCode? resetStreamErrorCode = null, bool canRetry = false)
             {
-                if (NetEventSource.IsEnabled) Trace($"{nameof(resetException)}={resetException}, {nameof(resetStreamErrorCode )}={resetStreamErrorCode}");
+                if (NetEventSource.IsEnabled) Trace($"{nameof(resetException)}={resetException}, {nameof(resetStreamErrorCode)}={resetStreamErrorCode}");
 
                 bool cancel = false;
                 CancellationTokenSource requestBodyCancellationSource = null;

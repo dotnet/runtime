@@ -110,7 +110,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         public override DynamicMetaObject FallbackUnaryOperation(DynamicMetaObject target, DynamicMetaObject errorSuggestion)
         {
             BinderHelper.ValidateBindArgument(target, nameof(target));
-            return BinderHelper.Bind(this, _binder, new[] {target}, _argumentInfo, errorSuggestion);
+            return BinderHelper.Bind(this, _binder, new[] { target }, _argumentInfo, errorSuggestion);
         }
     }
 }

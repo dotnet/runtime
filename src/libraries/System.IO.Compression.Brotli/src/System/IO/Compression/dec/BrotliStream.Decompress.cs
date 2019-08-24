@@ -111,7 +111,7 @@ namespace System.IO.Compression
             {
                 return new ValueTask<int>(Task.FromCanceled<int>(cancellationToken));
             }
-             return FinishReadAsyncMemory(buffer, cancellationToken);
+            return FinishReadAsyncMemory(buffer, cancellationToken);
         }
 
         private async ValueTask<int> FinishReadAsyncMemory(Memory<byte> buffer, CancellationToken cancellationToken)

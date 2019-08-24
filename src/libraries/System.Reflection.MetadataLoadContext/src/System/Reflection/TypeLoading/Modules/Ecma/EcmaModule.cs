@@ -45,7 +45,7 @@ namespace System.Reflection.TypeLoading.Ecma
         public sealed override Guid ModuleVersionId => ModuleDefinition.Mvid.GetGuid(Reader);
         public sealed override string ScopeName => ModuleDefinition.Name.GetString(Reader);
 
-        public sealed override IEnumerable<CustomAttributeData> CustomAttributes  => ModuleDefinition.GetCustomAttributes().ToTrueCustomAttributes(this);
+        public sealed override IEnumerable<CustomAttributeData> CustomAttributes => ModuleDefinition.GetCustomAttributes().ToTrueCustomAttributes(this);
 
         internal MethodInfo ComputeEntryPoint(bool fileRefEntryPointAllowed)
         {

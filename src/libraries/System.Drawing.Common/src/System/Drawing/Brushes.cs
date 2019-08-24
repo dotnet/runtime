@@ -247,7 +247,7 @@ namespace System.Drawing
         public static Brush MediumOrchid => GetBrush(s_mediumOrchidKey, Color.MediumOrchid);
         public static Brush MediumPurple => GetBrush(s_mediumPurpleKey, Color.MediumPurple);
         public static Brush MediumSeaGreen => GetBrush(s_mediumSeaGreenKey, Color.MediumSeaGreen);
-        public static Brush MediumSlateBlue => GetBrush(s_mediumSlateBlueKey,  Color.MediumSlateBlue);
+        public static Brush MediumSlateBlue => GetBrush(s_mediumSlateBlueKey, Color.MediumSlateBlue);
         public static Brush MediumSpringGreen => GetBrush(s_mediumSpringGreenKey, Color.MediumSpringGreen);
         public static Brush MediumTurquoise => GetBrush(s_mediumTurquoiseKey, Color.MediumTurquoise);
         public static Brush MediumVioletRed => GetBrush(s_mediumVioletRedKey, Color.MediumVioletRed);

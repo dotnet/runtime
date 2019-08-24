@@ -34,7 +34,7 @@ namespace System.Text
 
             fixed (char* pChar = chars)
             {
-                return WideCharToMultiByte(_codePage, pChar+index, count, null, 0);
+                return WideCharToMultiByte(_codePage, pChar + index, count, null, 0);
             }
         }
 
@@ -76,9 +76,9 @@ namespace System.Text
             }
 
             fixed (char* pChars = s)
-            fixed (byte *pBytes = &bytes[0])
+            fixed (byte* pBytes = &bytes[0])
             {
-                return WideCharToMultiByte(_codePage, pChars+charIndex, charCount, pBytes+byteIndex, bytes.Length - byteIndex);
+                return WideCharToMultiByte(_codePage, pChars + charIndex, charCount, pBytes + byteIndex, bytes.Length - byteIndex);
             }
         }
 
@@ -105,9 +105,9 @@ namespace System.Text
             }
 
             fixed (char* pChars = chars)
-            fixed (byte *pBytes = &bytes[0])
+            fixed (byte* pBytes = &bytes[0])
             {
-                return WideCharToMultiByte(_codePage, pChars+charIndex, charCount, pBytes+byteIndex, bytes.Length - byteIndex);
+                return WideCharToMultiByte(_codePage, pChars + charIndex, charCount, pBytes + byteIndex, bytes.Length - byteIndex);
             }
         }
 
@@ -127,7 +127,7 @@ namespace System.Text
 
             fixed (byte* pBytes = bytes)
             {
-                return MultiByteToWideChar(_codePage, pBytes+index, count, null, 0);
+                return MultiByteToWideChar(_codePage, pBytes + index, count, null, 0);
             }
         }
 
@@ -154,7 +154,7 @@ namespace System.Text
             fixed (byte* pBytes = bytes)
             fixed (char* pChars = &chars[0])
             {
-                return MultiByteToWideChar(_codePage, pBytes+byteIndex, byteCount, pChars+charIndex, chars.Length - charIndex);
+                return MultiByteToWideChar(_codePage, pBytes + byteIndex, byteCount, pChars + charIndex, chars.Length - charIndex);
             }
         }
 

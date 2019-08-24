@@ -11,7 +11,7 @@ namespace System.Security.Cryptography
     {
         private readonly RandomNumberGenerator _impl;
 
-        public RNGCryptoServiceProvider() : this((CspParameters) null) { }
+        public RNGCryptoServiceProvider() : this((CspParameters)null) { }
         public RNGCryptoServiceProvider(string str) : this((CspParameters)null) { }
         public RNGCryptoServiceProvider(byte[] rgb) : this((CspParameters)null) { }
 

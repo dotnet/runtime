@@ -140,7 +140,7 @@ namespace System.Text.RegularExpressions
             }
         }
 
-       /// <summary>
+        /// <summary>
         /// Given a Match, emits into the ValueStringBuilder the evaluated
         /// Right-to-Left substitution pattern.
         /// </summary>

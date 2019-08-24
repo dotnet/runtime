@@ -38,7 +38,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 _searcher.ServerPageTimeLimit = s_defaultTimeSpan;
             }
 
-             _searcher.CacheResults = cacheResults;
+            _searcher.CacheResults = cacheResults;
         }
 
         public SearchResult FindOne() => _searcher.FindOne();

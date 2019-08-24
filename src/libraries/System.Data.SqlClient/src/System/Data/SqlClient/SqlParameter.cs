@@ -835,7 +835,7 @@ namespace System.Data.SqlClient
                 // NOTE: Udts can change their value any time
                 if (_internalMetaType.SqlDbType == Data.SqlDbType.Udt)
                 {
-                    Set(SqlParameterFlags.IsNull, ((_value == null) || (_value == DBNull.Value) || (( _flags.HasFlag(SqlParameterFlags.IsSqlParameterSqlType)) && (_valueAsINullable.IsNull))));
+                    Set(SqlParameterFlags.IsNull, ((_value == null) || (_value == DBNull.Value) || ((_flags.HasFlag(SqlParameterFlags.IsSqlParameterSqlType)) && (_valueAsINullable.IsNull))));
                 }
                 return _flags.HasFlag(SqlParameterFlags.IsNull);
             }

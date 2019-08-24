@@ -1090,7 +1090,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    _instructions.EmitByRefCall(method, parameters, new[] {updater});
+                    _instructions.EmitByRefCall(method, parameters, new[] { updater });
                     updater.UndefineTemps(_instructions, _locals);
                 }
 

@@ -517,7 +517,7 @@ namespace System.IO.Compression
                     compressedSize = reader.ReadInt32();
                     uncompressedSize = reader.ReadInt32();
                 }
-                reader.BaseStream.Seek( -seekSize - entry.CompressedLength - 4,  SeekOrigin.Current); // Seek back to the beginning of compressed stream
+                reader.BaseStream.Seek(-seekSize - entry.CompressedLength - 4, SeekOrigin.Current); // Seek back to the beginning of compressed stream
             }
 
             if (entry.CompressedLength != compressedSize)

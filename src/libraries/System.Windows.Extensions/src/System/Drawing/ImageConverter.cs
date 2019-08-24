@@ -125,7 +125,7 @@ namespace System.Drawing
 
                 // pHeader.signature will always be 0x1c15.
                 // "PBrush" should be the 6 chars after position 12 as well.
-                if ( rawData.Length <= pHeader.headersize + 18 ||
+                if (rawData.Length <= pHeader.headersize + 18 ||
                     !rawData.Slice(pHeader.headersize + 12, 6).SequenceEqual(PBrush))
                 {
                     return null;

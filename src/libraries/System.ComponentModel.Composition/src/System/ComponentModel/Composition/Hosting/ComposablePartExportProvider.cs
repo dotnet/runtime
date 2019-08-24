@@ -32,7 +32,7 @@ namespace System.ComponentModel.Composition.Hosting
         }
 
         public ComposablePartExportProvider(bool isThreadSafe)
-            :this(isThreadSafe ? CompositionOptions.IsThreadSafe : CompositionOptions.Default)
+            : this(isThreadSafe ? CompositionOptions.IsThreadSafe : CompositionOptions.Default)
         {
         }
 
@@ -180,7 +180,7 @@ namespace System.ComponentModel.Composition.Hosting
             }
         }
 
-/// <summary>
+        /// <summary>
         /// Returns all exports that match the conditions of the specified import.
         /// </summary>
         /// <param name="definition">The <see cref="ImportDefinition"/> that defines the conditions of the

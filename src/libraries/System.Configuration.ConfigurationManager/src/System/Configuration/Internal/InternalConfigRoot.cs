@@ -142,7 +142,7 @@ namespace System.Configuration.Internal
 
                     childRecord = _isDesignTime
                         ? MgmtConfigurationRecord.Create(this, currentRecord, currentConfigPath, null)
-                        : (BaseConfigurationRecord) RuntimeConfigurationRecord.Create(this, currentRecord, currentConfigPath);
+                        : (BaseConfigurationRecord)RuntimeConfigurationRecord.Create(this, currentRecord, currentConfigPath);
 
                     currentRecord.HlAddChild(configName, childRecord);
 

@@ -343,7 +343,7 @@ namespace System.Json
 
         // JsonValue -> CLI
 
-        public static implicit operator bool (JsonValue value)
+        public static implicit operator bool(JsonValue value)
         {
             if (value == null)
             {
@@ -353,7 +353,7 @@ namespace System.Json
             return Convert.ToBoolean(((JsonPrimitive)value).Value, CultureInfo.InvariantCulture);
         }
 
-        public static implicit operator byte (JsonValue value)
+        public static implicit operator byte(JsonValue value)
         {
             if (value == null)
             {
@@ -363,7 +363,7 @@ namespace System.Json
             return Convert.ToByte(((JsonPrimitive)value).Value, CultureInfo.InvariantCulture);
         }
 
-        public static implicit operator char (JsonValue value)
+        public static implicit operator char(JsonValue value)
         {
             if (value == null)
             {
@@ -373,7 +373,7 @@ namespace System.Json
             return Convert.ToChar(((JsonPrimitive)value).Value, CultureInfo.InvariantCulture);
         }
 
-        public static implicit operator decimal (JsonValue value)
+        public static implicit operator decimal(JsonValue value)
         {
             if (value == null)
             {
@@ -383,14 +383,14 @@ namespace System.Json
             return Convert.ToDecimal(((JsonPrimitive)value).Value, CultureInfo.InvariantCulture);
         }
 
-        public static implicit operator double (JsonValue value)
+        public static implicit operator double(JsonValue value)
         {
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
             return Convert.ToDouble(((JsonPrimitive)value).Value, CultureInfo.InvariantCulture);
         }
 
-        public static implicit operator float (JsonValue value)
+        public static implicit operator float(JsonValue value)
         {
             if (value == null)
             {
@@ -400,7 +400,7 @@ namespace System.Json
             return Convert.ToSingle(((JsonPrimitive)value).Value, CultureInfo.InvariantCulture);
         }
 
-        public static implicit operator int (JsonValue value)
+        public static implicit operator int(JsonValue value)
         {
             if (value == null)
             {
@@ -410,7 +410,7 @@ namespace System.Json
             return Convert.ToInt32(((JsonPrimitive)value).Value, CultureInfo.InvariantCulture);
         }
 
-        public static implicit operator long (JsonValue value)
+        public static implicit operator long(JsonValue value)
         {
             if (value == null)
             {
@@ -421,7 +421,7 @@ namespace System.Json
         }
 
         [CLSCompliant(false)]
-        public static implicit operator sbyte (JsonValue value)
+        public static implicit operator sbyte(JsonValue value)
         {
             if (value == null)
             {
@@ -431,7 +431,7 @@ namespace System.Json
             return Convert.ToSByte(((JsonPrimitive)value).Value, CultureInfo.InvariantCulture);
         }
 
-        public static implicit operator short (JsonValue value)
+        public static implicit operator short(JsonValue value)
         {
             if (value == null)
             {
@@ -441,7 +441,7 @@ namespace System.Json
             return Convert.ToInt16(((JsonPrimitive)value).Value, CultureInfo.InvariantCulture);
         }
 
-        public static implicit operator string (JsonValue value)
+        public static implicit operator string(JsonValue value)
         {
             return value != null ?
                 (string)((JsonPrimitive)value).Value :
@@ -449,7 +449,7 @@ namespace System.Json
         }
 
         [CLSCompliant(false)]
-        public static implicit operator uint (JsonValue value)
+        public static implicit operator uint(JsonValue value)
         {
             if (value == null)
             {
@@ -460,7 +460,7 @@ namespace System.Json
         }
 
         [CLSCompliant(false)]
-        public static implicit operator ulong (JsonValue value)
+        public static implicit operator ulong(JsonValue value)
         {
             if (value == null)
             {
@@ -471,7 +471,7 @@ namespace System.Json
         }
 
         [CLSCompliant(false)]
-        public static implicit operator ushort (JsonValue value)
+        public static implicit operator ushort(JsonValue value)
         {
             if (value == null)
             {

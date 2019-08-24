@@ -23,7 +23,8 @@ namespace System.Data.Odbc
 
         private object _coercedValue;
 
-        private OdbcParameter(OdbcParameter source) : this() { // V1.2.3300, Clone
+        private OdbcParameter(OdbcParameter source) : this() // V1.2.3300, Clone
+        {
             ADP.CheckArgumentNull(source, nameof(source));
 
             source.CloneHelper(this);

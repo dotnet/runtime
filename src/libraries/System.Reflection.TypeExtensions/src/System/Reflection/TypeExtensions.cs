@@ -332,7 +332,7 @@ namespace System.Reflection
             }
 
             return token;
-         }
+        }
     }
 
     public static class MethodInfoExtensions

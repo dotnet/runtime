@@ -10,14 +10,15 @@ internal partial class Interop
     internal partial class User32
     {
         [StructLayout(LayoutKind.Sequential)]
-        public struct MSG {
-            public IntPtr   hwnd;
-            public int      message;
-            public IntPtr   wParam;
-            public IntPtr   lParam;
-            public int      time;
-            public int      pt_x;
-            public int      pt_y;
+        public struct MSG
+        {
+            public IntPtr hwnd;
+            public int message;
+            public IntPtr wParam;
+            public IntPtr lParam;
+            public int time;
+            public int pt_x;
+            public int pt_y;
         }
     }
 }

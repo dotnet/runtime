@@ -28,7 +28,7 @@ namespace System.Configuration
 
         private static readonly ConfigurationPropertyCollection s_properties = new ConfigurationPropertyCollection { s_propProviders, s_propDefaultProvider };
 
-        public ProtectedConfigurationSection(){}
+        public ProtectedConfigurationSection() { }
 
         protected internal override ConfigurationPropertyCollection Properties => s_properties;
 

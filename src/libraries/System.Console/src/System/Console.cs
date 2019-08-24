@@ -130,7 +130,10 @@ namespace System
                     stream: outputStream,
                     encoding: OutputEncoding.RemovePreamble(), // This ensures no prefix is written to the stream.
                     bufferSize: WriteBufferSize,
-                    leaveOpen: true) { AutoFlush = true });
+                    leaveOpen: true)
+                {
+                    AutoFlush = true
+                });
         }
 
         private static StrongBox<bool> _isStdInRedirected;

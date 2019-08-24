@@ -22,7 +22,7 @@ namespace System.Xml.Schema
 
         public virtual XmlSchemaDatatypeVariety Variety { get { return XmlSchemaDatatypeVariety.Atomic; } }
 
-        internal XmlSchemaDatatype() {}
+        internal XmlSchemaDatatype() { }
 
         public virtual object ChangeType(object value, Type targetType)
         {

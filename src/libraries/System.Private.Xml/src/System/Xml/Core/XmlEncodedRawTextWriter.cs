@@ -997,7 +997,7 @@ namespace System.Xml
                                 pSrc += 2;
                             }
                             /* Invalid XML character */
-                            else  if (ch <= 0x7F || ch >= 0xFFFE)
+                            else if (ch <= 0x7F || ch >= 0xFFFE)
                             {
                                 pDst = InvalidXmlChar(ch, pDst, true);
                                 pSrc++;
@@ -1117,7 +1117,7 @@ namespace System.Xml
                                 pSrc += 2;
                             }
                             /* Invalid XML character */
-                            else  if (ch <= 0x7F || ch >= 0xFFFE)
+                            else if (ch <= 0x7F || ch >= 0xFFFE)
                             {
                                 pDst = InvalidXmlChar(ch, pDst, true);
                                 pSrc++;
@@ -1195,7 +1195,7 @@ namespace System.Xml
                         pSrc += 2;
                     }
                     /* Invalid XML character */
-                    else  if (ch <= 0x7F || ch >= 0xFFFE)
+                    else if (ch <= 0x7F || ch >= 0xFFFE)
                     {
                         pDst = InvalidXmlChar(ch, pDst, false);
                         pSrc++;
@@ -1299,7 +1299,7 @@ namespace System.Xml
                                 pSrc += 2;
                             }
                             /* Invalid XML character */
-                            else  if (ch <= 0x7F || ch >= 0xFFFE)
+                            else if (ch <= 0x7F || ch >= 0xFFFE)
                             {
                                 pDst = InvalidXmlChar(ch, pDst, false);
                                 pSrc++;
@@ -1448,7 +1448,7 @@ namespace System.Xml
                                 pSrc += 2;
                             }
                             /* Invalid XML character */
-                            else  if (ch <= 0x7F || ch >= 0xFFFE)
+                            else if (ch <= 0x7F || ch >= 0xFFFE)
                             {
                                 pDst = InvalidXmlChar(ch, pDst, false);
                                 pSrc++;
@@ -1593,7 +1593,7 @@ namespace System.Xml
                                 pSrc += 2;
                             }
                             /* Invalid XML character */
-                            else  if (ch <= 0x7F || ch >= 0xFFFE)
+                            else if (ch <= 0x7F || ch >= 0xFFFE)
                             {
                                 pDst = InvalidXmlChar(ch, pDst, false);
                                 pSrc++;
@@ -1658,8 +1658,8 @@ namespace System.Xml
                 }
                 else
                 {
-                        *pDst = (char)ch;
-                        pDst++;
+                    *pDst = (char)ch;
+                    pDst++;
                     return pDst;
                 }
             }
@@ -1675,7 +1675,7 @@ namespace System.Xml
                 pSrc += 2;
             }
             /* Invalid XML character */
-            else  if (ch <= 0x7F || ch >= 0xFFFE)
+            else if (ch <= 0x7F || ch >= 0xFFFE)
             {
                 pDst = InvalidXmlChar(ch, pDst, false);
                 pSrc++;
@@ -1818,7 +1818,7 @@ namespace System.Xml
             fixed (char* pSrc = s)
             {
                 char* pS = pSrc;
-                while ((*pDst++ = (char)*pS++) != 0);
+                while ((*pDst++ = (char)*pS++) != 0) ;
             }
 
             pDst[-1] = (char)';';

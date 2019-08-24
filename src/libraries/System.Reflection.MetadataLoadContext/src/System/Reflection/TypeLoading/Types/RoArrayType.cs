@@ -150,7 +150,7 @@ namespace System.Reflection.TypeLoading
 
         internal sealed override IEnumerable<MethodInfo> GetMethodsCore(NameFilter filter, Type reflectedType)
         {
-            int rank =_rank;
+            int rank = _rank;
 
             int uniquifier = 0;
             RoType systemInt32 = Loader.GetCoreType(CoreType.Int32);

@@ -168,7 +168,7 @@ namespace System.Linq
                     var interfacesWithInfo = pubType.GetInterfaces().Select(IntrospectionExtensions.GetTypeInfo).ToArray();
                     var singleTypeGenInterfacesWithGetType = interfacesWithInfo
                         .Where(i => i.IsGenericType && i.GenericTypeArguments.Length == 1)
-                        .Select(i => new {Info = i, GenType = i.GetGenericTypeDefinition() })
+                        .Select(i => new { Info = i, GenType = i.GetGenericTypeDefinition() })
                         .ToArray();
                     Type typeArg = singleTypeGenInterfacesWithGetType
                         .Where(i => i.GenType == typeof(IOrderedQueryable<>) || i.GenType == typeof(IOrderedEnumerable<>))

@@ -125,12 +125,7 @@ namespace System.Net.Http
 
         public bool CheckCertificateRevocationList { get; set; }
 
-        public Func<
-            HttpRequestMessage,
-            X509Certificate2,
-            X509Chain,
-            SslPolicyErrors,
-            bool> ServerCertificateValidationCallback { get; set; }
+        public Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateValidationCallback { get; set; }
 
         public WinHttpTransportContext TransportContext
         {

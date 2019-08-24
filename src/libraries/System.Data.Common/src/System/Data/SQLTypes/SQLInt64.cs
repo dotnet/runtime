@@ -65,7 +65,7 @@ namespace System.Data.SqlTypes
         }
 
         // Explicit conversion from SqlInt64 to long. Throw exception if x is Null.
-        public static explicit operator long (SqlInt64 x)
+        public static explicit operator long(SqlInt64 x)
         {
             return x.Value;
         }

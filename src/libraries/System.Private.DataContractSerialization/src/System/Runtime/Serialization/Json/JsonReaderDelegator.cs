@@ -236,7 +236,7 @@ namespace System.Runtime.Serialization.Json
             return ParseJsonDate(ReadElementContentAsString(), _dateTimeFormat);
         }
 
-        #if USE_REFEMIT
+#if USE_REFEMIT
         public override bool TryReadDateTimeArray(XmlObjectSerializerReadContext context,
 #else
         internal override bool TryReadDateTimeArray(XmlObjectSerializerReadContext context,

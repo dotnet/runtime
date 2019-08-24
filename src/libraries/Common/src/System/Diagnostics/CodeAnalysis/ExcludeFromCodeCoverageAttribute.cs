@@ -10,7 +10,7 @@ namespace System.Diagnostics.CodeAnalysis
 #else
     internal
 #endif
-    sealed class ExcludeFromCodeCoverageAttribute: Attribute
+    sealed class ExcludeFromCodeCoverageAttribute : Attribute
     {
         public ExcludeFromCodeCoverageAttribute()
         { }

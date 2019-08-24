@@ -1199,7 +1199,7 @@ namespace System.Net
             // Count them first.
             for (int i = 0; i < count; i++)
             {
-                char ch = (char) bytes[offset + i];
+                char ch = (char)bytes[offset + i];
 
                 if (ch == ' ')
                 {
@@ -1221,8 +1221,8 @@ namespace System.Net
 
             for (int i = 0; i < count; i++)
             {
-                byte b = bytes[offset+i];
-                char ch = (char) b;
+                byte b = bytes[offset + i];
+                char ch = (char)b;
 
                 if (IsSafe(ch))
                 {
@@ -1230,13 +1230,13 @@ namespace System.Net
                 }
                 else if (ch == ' ')
                 {
-                    expandedBytes[pos++] = (byte) '+';
+                    expandedBytes[pos++] = (byte)'+';
                 }
                 else
                 {
-                    expandedBytes[pos++] = (byte) '%';
-                    expandedBytes[pos++] = (byte) IntToHex((b >> 4) & 0xf);
-                    expandedBytes[pos++] = (byte) IntToHex(b & 0x0f);
+                    expandedBytes[pos++] = (byte)'%';
+                    expandedBytes[pos++] = (byte)IntToHex((b >> 4) & 0xf);
+                    expandedBytes[pos++] = (byte)IntToHex(b & 0x0f);
                 }
             }
 

@@ -238,7 +238,7 @@ namespace System.Composition.TypedParts.Discovery
 
             public int GetHashCode(ParameterInfo obj)
             {
-                return HashHelpers.Combine(obj.Position.GetHashCode(),  obj.Member.GetHashCode());
+                return HashHelpers.Combine(obj.Position.GetHashCode(), obj.Member.GetHashCode());
             }
 
             public bool Equals(ParameterInfo x, ParameterInfo y)

@@ -15,7 +15,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         protected ExprOperator(ExpressionKind kind, CType type, Expr call, MethPropWithInst userDefinedMethod)
-            : this (kind, type)
+            : this(kind, type)
         {
             OptionalUserDefinedCall = call;
             UserDefinedCallMethod = userDefinedMethod;

@@ -555,11 +555,11 @@ namespace System.Collections.Concurrent
                 private readonly IEnumerator<TSource> _sharedReader;
                 private readonly SharedLong _sharedIndex; //initial value -1
 
-                private volatile KeyValuePair<long, TSource>[]? _fillBuffer;  // intermediate buffer to reduce locking
-                private volatile int _fillBufferSize;               // actual number of elements in _FillBuffer. Will start
-                                                                     // at _FillBuffer.Length, and might be reduced during the last refill
-                private volatile int _fillBufferCurrentPosition;    //shared value to be accessed by Interlock.Increment only
-                private volatile int _activeCopiers;               //number of active copiers
+                private volatile KeyValuePair<long, TSource>[]? _fillBuffer; // intermediate buffer to reduce locking
+                private volatile int _fillBufferSize;            // actual number of elements in _FillBuffer. Will start
+                                                                 // at _FillBuffer.Length, and might be reduced during the last refill
+                private volatile int _fillBufferCurrentPosition; //shared value to be accessed by Interlock.Increment only
+                private volatile int _activeCopiers;             //number of active copiers
 
                 //fields shared by all partitions that this Enumerable owns, their allocation is deferred
                 private readonly SharedBool _hasNoElementsLeft; // no elements left at all.

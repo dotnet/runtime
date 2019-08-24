@@ -12,17 +12,17 @@ namespace System.IO.Compression
     {
         private DeflateStream _deflateStream;
 
-        public GZipStream(Stream stream, CompressionMode mode): this(stream, mode, leaveOpen: false)
+        public GZipStream(Stream stream, CompressionMode mode) : this(stream, mode, leaveOpen: false)
         {
         }
 
         public GZipStream(Stream stream, CompressionMode mode, bool leaveOpen)
         {
-             _deflateStream = new DeflateStream(stream, mode, leaveOpen, ZLibNative.GZip_DefaultWindowBits);
+            _deflateStream = new DeflateStream(stream, mode, leaveOpen, ZLibNative.GZip_DefaultWindowBits);
         }
 
         // Implies mode = Compress
-        public GZipStream(Stream stream, CompressionLevel compressionLevel): this(stream, compressionLevel, leaveOpen: false)
+        public GZipStream(Stream stream, CompressionLevel compressionLevel) : this(stream, compressionLevel, leaveOpen: false)
         {
         }
 

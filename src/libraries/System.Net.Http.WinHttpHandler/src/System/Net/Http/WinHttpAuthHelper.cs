@@ -131,10 +131,10 @@ namespace System.Net.Http
                     ICredentials proxyCreds = state.Proxy == null ?
                         state.DefaultProxyCredentials :
                         state.Proxy.Credentials;
-                     if (proxyCreds == null)
-                     {
-                         break;
-                     }
+                    if (proxyCreds == null)
+                    {
+                        break;
+                    }
 
                     // Determine authorization scheme to use. We ignore the firstScheme
                     // parameter which is included in the supportedSchemes flags already.
@@ -336,7 +336,7 @@ namespace System.Net.Http
                     authScheme == Interop.WinHttp.WINHTTP_AUTH_SCHEME_NTLM)
                 {
                     // Allow WinHTTP to transmit the default credentials.
-                    ChangeDefaultCredentialsPolicy(requestHandle, authTarget, allowDefaultCredentials:true);
+                    ChangeDefaultCredentialsPolicy(requestHandle, authTarget, allowDefaultCredentials: true);
                     userName = null;
                     password = null;
                 }

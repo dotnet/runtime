@@ -63,7 +63,7 @@ namespace System.Data.SqlTypes
         }
 
         // Explicit conversion from SqlInt16 to short. Throw exception if x is Null.
-        public static explicit operator short (SqlInt16 x)
+        public static explicit operator short(SqlInt16 x)
         {
             return x.Value;
         }

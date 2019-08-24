@@ -48,10 +48,10 @@ namespace System.Xml.Serialization
                 AddImport(intf, types);
 
             ConstructorInfo[] ctors = type.GetConstructors();
-            for (int i = 0; i<ctors.Length; i++)
+            for (int i = 0; i < ctors.Length; i++)
             {
                 ParameterInfo[] parms = ctors[i].GetParameters();
-                for (int j = 0; j<parms.Length; j++)
+                for (int j = 0; j < parms.Length; j++)
                 {
                     AddImport(parms[j].ParameterType, types);
                 }
@@ -60,7 +60,7 @@ namespace System.Xml.Serialization
             if (type.IsGenericType)
             {
                 Type[] arguments = type.GetGenericArguments();
-                for (int i = 0; i<arguments.Length; i++)
+                for (int i = 0; i < arguments.Length; i++)
                 {
                     AddImport(arguments[i], types);
                 }

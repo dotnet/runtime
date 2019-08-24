@@ -46,7 +46,7 @@ namespace System.Management
         ///    and <see cref='System.Runtime.Serialization.StreamingContext'/>.</para>
         /// </summary>
         /// <param name='info'>The <see cref='System.Runtime.Serialization.SerializationInfo'/> to populate with data.</param>
-    /// <param name='context'>The destination (see <see cref='System.Runtime.Serialization.StreamingContext'/> ) for this serialization.</param>
+        /// <param name='context'>The destination (see <see cref='System.Runtime.Serialization.StreamingContext'/> ) for this serialization.</param>
         protected ManagementNamedValueCollection(SerializationInfo info, StreamingContext context) : base(info, context)
         {
             throw new PlatformNotSupportedException();
@@ -65,19 +65,21 @@ namespace System.Management
             {
                 int status = (int)ManagementStatus.NoError;
 
-                try {
-                    wbemContext = (IWbemContext) new WbemContext ();
+                try
+                {
+                    wbemContext = (IWbemContext)new WbemContext();
 
                     foreach (string name in this)
                     {
                         object val = base.BaseGet(name);
-                        status = wbemContext.SetValue_ (name, 0, ref val);
+                        status = wbemContext.SetValue_(name, 0, ref val);
                         if ((status & 0x80000000) != 0)
                         {
                             break;
                         }
                     }
-                } catch {}
+                }
+                catch { }
             }
 
             return wbemContext;
@@ -88,16 +90,17 @@ namespace System.Management
         /// </summary>
         /// <param name=' name'>The name of the new value.</param>
         /// <param name=' value'>The value to be associated with the name.</param>
-        public void Add (string name, object value)
+        public void Add(string name, object value)
         {
             // Remove any old entry
             try
             {
-                base.BaseRemove (name);
-            } catch {}
+                base.BaseRemove(name);
+            }
+            catch { }
 
-            base.BaseAdd (name, value);
-            FireIdentifierChanged ();
+            base.BaseAdd(name, value);
+            FireIdentifierChanged();
         }
 
         /// <summary>
@@ -107,19 +110,19 @@ namespace System.Management
         ///       exception is thrown.</para>
         /// </summary>
         /// <param name=' name'>The name of the value to be removed.</param>
-        public void Remove (string name)
+        public void Remove(string name)
         {
-            base.BaseRemove (name);
-            FireIdentifierChanged ();
+            base.BaseRemove(name);
+            FireIdentifierChanged();
         }
 
         /// <summary>
         ///    <para>Removes all entries from the collection.</para>
         /// </summary>
-        public void RemoveAll ()
+        public void RemoveAll()
         {
-            base.BaseClear ();
-            FireIdentifierChanged ();
+            base.BaseClear();
+            FireIdentifierChanged();
         }
 
         /// <summary>
@@ -130,38 +133,40 @@ namespace System.Management
         /// <returns>
         ///    The new copy of the collection.
         /// </returns>
-        public ManagementNamedValueCollection Clone ()
+        public ManagementNamedValueCollection Clone()
         {
             ManagementNamedValueCollection nvc = new ManagementNamedValueCollection();
 
             foreach (string name in this)
             {
                 // If we can clone the value, do so. Otherwise throw.
-                object val = base.BaseGet (name);
+                object val = base.BaseGet(name);
 
                 if (null != val)
                 {
-                    Type valueType = val.GetType ();
+                    Type valueType = val.GetType();
 
                     if (valueType.IsByRef)
                     {
                         try
                         {
-                            object clonedValue = ((ICloneable)val).Clone ();
-                            nvc.Add (name, clonedValue);
+                            object clonedValue = ((ICloneable)val).Clone();
+                            nvc.Add(name, clonedValue);
                         }
                         catch
                         {
-                            throw new NotSupportedException ();
+                            throw new NotSupportedException();
                         }
                     }
                     else
                     {
-                        nvc.Add (name, val);
+                        nvc.Add(name, val);
                     }
                 }
                 else
-                    nvc.Add (name, null);
+                {
+                    nvc.Add(name, null);
+                }
             }
 
             return nvc;
@@ -177,7 +182,8 @@ namespace System.Management
         /// </value>
         public object this[string name]
         {
-            get {
+            get
+            {
                 return base.BaseGet(name);
             }
         }

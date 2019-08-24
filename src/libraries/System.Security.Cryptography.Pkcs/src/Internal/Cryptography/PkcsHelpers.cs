@@ -120,7 +120,7 @@ namespace Internal.Cryptography
 
         public static AttributeAsn[] NormalizeAttributeSet(
             AttributeAsn[] setItems,
-            Action<byte[]> encodedValueProcessor=null)
+            Action<byte[]> encodedValueProcessor = null)
         {
             byte[] normalizedValue;
 

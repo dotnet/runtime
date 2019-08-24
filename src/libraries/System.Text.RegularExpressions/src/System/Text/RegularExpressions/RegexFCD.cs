@@ -103,11 +103,11 @@ namespace System.Text.RegularExpressions
                         // In release, cutoff at a length to which we can still reasonably construct a string
                         // In debug, use a smaller cutoff to exercise the cutoff path in tests
                         const int Cutoff =
-                        #if DEBUG
+#if DEBUG
                             50;
-                        #else
+#else
                             1_000_000;
-                        #endif
+#endif
 
                         if (curNode.M > 0 && curNode.M < Cutoff)
                         {

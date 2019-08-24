@@ -26,7 +26,7 @@ namespace System.Text.RegularExpressions
     {
         // The following primitive operations come directly from the parser
 
-                                                    // lef/back operands        description
+                                                  // lef/back operands        description
         public const int Onerep = 0;              // lef,back char,min,max    a {n}
         public const int Notonerep = 1;           // lef,back char,min,max    .{n}
         public const int Setrep = 2;              // lef,back set,min,max     [\d]{n}

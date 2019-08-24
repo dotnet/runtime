@@ -81,7 +81,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     </para>
         /// </remarks>
         public AggregateExportProvider(IEnumerable<ExportProvider> providers)
-            : this((providers!= null) ? providers.AsArray() : null)
+            : this((providers != null) ? providers.AsArray() : null)
         {
         }
 

@@ -141,7 +141,7 @@ namespace System.Management
         ///    <code lang='VB'>Dim c As New ManagementClass()
         ///    </code>
         /// </example>
-        public ManagementClass() : this ((ManagementScope)null, (ManagementPath)null, null) {}
+        public ManagementClass() : this((ManagementScope)null, (ManagementPath)null, null) { }
 
         //parameterized constructors
         /// <summary>
@@ -161,7 +161,7 @@ namespace System.Management
         ///     New ManagementPath("Win32_LogicalDisk"))
         ///    </code>
         /// </example>
-        public ManagementClass(ManagementPath path) : this(null, path, null) {}
+        public ManagementClass(ManagementPath path) : this(null, path, null) { }
 
         /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.Management.ManagementClass'/> class initialized to the given path.</para>
@@ -174,7 +174,7 @@ namespace System.Management
         ///    <code lang='VB'>Dim c As New ManagementClass("Win32_LogicalDisk")
         ///    </code>
         /// </example>
-        public ManagementClass(string path) : this(null, new ManagementPath(path), null) {}
+        public ManagementClass(string path) : this(null, new ManagementPath(path), null) { }
 
         /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.Management.ManagementClass'/> class initialized to the
@@ -194,7 +194,7 @@ namespace System.Management
         /// Dim c As New ManagementClass(p,o)
         ///    </code>
         /// </example>
-        public ManagementClass(ManagementPath path, ObjectGetOptions options) : this(null, path, options) {}
+        public ManagementClass(ManagementPath path, ObjectGetOptions options) : this(null, path, options) { }
 
         /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.Management.ManagementClass'/> class initialized to the given WMI class path
@@ -213,7 +213,7 @@ namespace System.Management
         ///    </code>
         /// </example>
         public ManagementClass(string path, ObjectGetOptions options)
-            : this(null, new ManagementPath(path), options) {}
+            : this(null, new ManagementPath(path), options) { }
 
         /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.Management.ManagementClass'/> class for the specified
@@ -240,7 +240,7 @@ namespace System.Management
         ///    </code>
         /// </example>
         public ManagementClass(ManagementScope scope, ManagementPath path, ObjectGetOptions options)
-            : base (scope, path, options) {}
+            : base(scope, path, options) { }
 
         /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.Management.ManagementClass'/> class for the specified WMI class, in the
@@ -265,7 +265,7 @@ namespace System.Management
         ///    </code>
         /// </example>
         public ManagementClass(string scope, string path, ObjectGetOptions options)
-            : base (new ManagementScope(scope), new ManagementPath(path), options) {}
+            : base(new ManagementScope(scope), new ManagementPath(path), options) { }
 
         protected ManagementClass(SerializationInfo info, StreamingContext context) : base(info, context)
         {
@@ -353,7 +353,7 @@ namespace System.Management
                 }
 
                 if (null != val)
-                    result.AddRange((string [])val);
+                    result.AddRange((string[])val);
 
                 return result;
             }
@@ -382,7 +382,7 @@ namespace System.Management
         {
             get
             {
-                Initialize ( true );
+                Initialize(true);
 
                 if (methods == null)
                     methods = new MethodDataCollection(this);
@@ -458,7 +458,7 @@ namespace System.Management
             if ((null == Path) || (null == Path.Path) || (0 == Path.Path.Length))
                 throw new InvalidOperationException();
 
-            Initialize ( false );
+            Initialize(false);
             IEnumWbemClassObject enumWbem = null;
 
             EnumerationOptions o = (null == options) ? new EnumerationOptions() : (EnumerationOptions)options.Clone();
@@ -467,16 +467,13 @@ namespace System.Management
             o.EnsureLocatable = false; o.PrototypeOnly = false;
 
             SecurityHandler securityHandler = null;
-            int status                      = (int)ManagementStatus.NoError;
+            int status = (int)ManagementStatus.NoError;
 
             try
             {
                 securityHandler = Scope.GetSecurityHandler();
-                            status = scope.GetSecuredIWbemServicesHandler(Scope.GetIWbemServices() ).CreateInstanceEnum_(ClassName,
-                                                            o.Flags,
-                                                            o.GetContext(),
-                                                            ref enumWbem
-                                                             );
+                status = scope.GetSecuredIWbemServicesHandler(Scope.GetIWbemServices()).CreateInstanceEnum_(
+                    ClassName, o.Flags, o.GetContext(), ref enumWbem);
             }
             finally
             {
@@ -585,7 +582,7 @@ namespace System.Management
             if ((null == Path) || (null == Path.Path) || (0 == Path.Path.Length))
                 throw new InvalidOperationException();
 
-            Initialize ( false );
+            Initialize(false);
 
             EnumerationOptions o = (null == options) ? new EnumerationOptions() : (EnumerationOptions)options.Clone();
 
@@ -603,19 +600,16 @@ namespace System.Management
             WmiEventSink sink = watcher.GetNewSink(Scope, o.Context);
 
             SecurityHandler securityHandler = null;
-            int status                      = (int)ManagementStatus.NoError;
+            int status = (int)ManagementStatus.NoError;
 
             securityHandler = Scope.GetSecurityHandler();
 
-                    status = scope.GetSecuredIWbemServicesHandler(Scope.GetIWbemServices() ).CreateInstanceEnumAsync_(
-                ClassName,
-                o.Flags,
-                o.GetContext(),
-                sink.Stub );
+            status = scope.GetSecuredIWbemServicesHandler(Scope.GetIWbemServices()).CreateInstanceEnumAsync_(
+                ClassName, o.Flags, o.GetContext(), sink.Stub);
 
 
             if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler.Reset();
 
             if (status < 0)
             {
@@ -682,7 +676,7 @@ namespace System.Management
             if (null == Path)
                 throw new InvalidOperationException();
 
-            Initialize ( false );
+            Initialize(false);
             IEnumWbemClassObject enumWbem = null;
 
             EnumerationOptions o = (null == options) ? new EnumerationOptions() : (EnumerationOptions)options.Clone();
@@ -691,15 +685,13 @@ namespace System.Management
             o.EnsureLocatable = false; o.PrototypeOnly = false;
 
             SecurityHandler securityHandler = null;
-            int status                      = (int)ManagementStatus.NoError;
+            int status = (int)ManagementStatus.NoError;
 
             try
             {
                 securityHandler = Scope.GetSecurityHandler();
-                            status = scope.GetSecuredIWbemServicesHandler( Scope.GetIWbemServices() ).CreateClassEnum_(ClassName,
-                    o.Flags,
-                    o.GetContext(),
-                    ref enumWbem);
+                status = scope.GetSecuredIWbemServicesHandler(Scope.GetIWbemServices()).CreateClassEnum_(
+                    ClassName, o.Flags, o.GetContext(), ref enumWbem);
             }
             finally
             {
@@ -743,7 +735,7 @@ namespace System.Management
             if (null == Path)
                 throw new InvalidOperationException();
 
-            Initialize ( false );
+            Initialize(false);
 
             EnumerationOptions o = (null == options) ? new EnumerationOptions() :
                                       (EnumerationOptions)options.Clone();
@@ -762,14 +754,12 @@ namespace System.Management
             WmiEventSink sink = watcher.GetNewSink(Scope, o.Context);
 
             SecurityHandler securityHandler = null;
-            int status                      = (int)ManagementStatus.NoError;
+            int status = (int)ManagementStatus.NoError;
 
             securityHandler = Scope.GetSecurityHandler();
 
-                    status = scope.GetSecuredIWbemServicesHandler(Scope.GetIWbemServices() ).CreateClassEnumAsync_(ClassName,
-                o.Flags,
-                o.GetContext(),
-                sink.Stub);
+            status = scope.GetSecuredIWbemServicesHandler(Scope.GetIWbemServices()).CreateClassEnumAsync_(
+                ClassName, o.Flags, o.GetContext(), sink.Stub);
 
 
             if (securityHandler != null)
@@ -1032,7 +1022,7 @@ namespace System.Management
             if ((null == Path) || (null == Path.Path) || (0 == Path.Path.Length))
                 throw new InvalidOperationException();
 
-            Initialize ( false );
+            Initialize(false);
 
             IEnumWbemClassObject enumWbem = null;
 
@@ -1040,7 +1030,7 @@ namespace System.Management
             //Ensure EnumerateDeep flag bit is turned off as it's invalid for queries
             o.EnumerateDeep = true;
 
-            RelatedObjectQuery q = new RelatedObjectQuery(true,    Path.Path,
+            RelatedObjectQuery q = new RelatedObjectQuery(true, Path.Path,
                                                             relatedClass,
                                                             relationshipClass,
                                                             relatedQualifier,
@@ -1048,12 +1038,12 @@ namespace System.Management
                                                             relatedRole, thisRole);
 
             SecurityHandler securityHandler = null;
-            int status                      = (int)ManagementStatus.NoError;
+            int status = (int)ManagementStatus.NoError;
 
             try
             {
                 securityHandler = Scope.GetSecurityHandler();
-                status = scope.GetSecuredIWbemServicesHandler(Scope.GetIWbemServices() ).ExecQuery_(
+                status = scope.GetSecuredIWbemServicesHandler(Scope.GetIWbemServices()).ExecQuery_(
                     q.QueryLanguage,
                     q.QueryString,
                     o.Flags,
@@ -1130,7 +1120,7 @@ namespace System.Management
             if ((null == Path) || (null == Path.Path) || (0 == Path.Path.Length))
                 throw new InvalidOperationException();
 
-            Initialize ( true );
+            Initialize(true);
 
             if (null == watcher)
                 throw new ArgumentNullException(nameof(watcher));
@@ -1159,16 +1149,12 @@ namespace System.Management
                                                                 relatedRole, thisRole);
 
                 SecurityHandler securityHandler = null;
-                int status                      = (int)ManagementStatus.NoError;
+                int status = (int)ManagementStatus.NoError;
 
                 securityHandler = Scope.GetSecurityHandler();
 
-                            status = scope.GetSecuredIWbemServicesHandler(Scope.GetIWbemServices() ).ExecQueryAsync_(
-                        q.QueryLanguage,
-                        q.QueryString,
-                        o.Flags,
-                        o.GetContext(),
-                        sink.Stub);
+                status = scope.GetSecuredIWbemServicesHandler(Scope.GetIWbemServices()).ExecQueryAsync_(
+                    q.QueryLanguage, q.QueryString, o.Flags, o.GetContext(), sink.Stub);
 
 
                 if (securityHandler != null)
@@ -1241,7 +1227,7 @@ namespace System.Management
             if ((null == Path) || (null == Path.Path) || (0 == Path.Path.Length))
                 throw new InvalidOperationException();
 
-            Initialize ( false );
+            Initialize(false);
 
             IEnumWbemClassObject enumWbem = null;
 
@@ -1254,18 +1240,14 @@ namespace System.Management
                                                         relationshipQualifier, thisRole);
 
             SecurityHandler securityHandler = null;
-            int status                      = (int)ManagementStatus.NoError;
+            int status = (int)ManagementStatus.NoError;
 
             //Execute WMI query
             try
             {
                 securityHandler = Scope.GetSecurityHandler();
-                            status = scope.GetSecuredIWbemServicesHandler(Scope.GetIWbemServices() ).ExecQuery_(
-                    q.QueryLanguage,
-                    q.QueryString,
-                    o.Flags,
-                    o.GetContext(),
-                    ref enumWbem);
+                status = scope.GetSecuredIWbemServicesHandler(Scope.GetIWbemServices()).ExecQuery_(
+                    q.QueryLanguage, q.QueryString, o.Flags, o.GetContext(), ref enumWbem);
 
             }
             finally
@@ -1334,7 +1316,7 @@ namespace System.Management
                 throw new ArgumentNullException(nameof(watcher));
             else
             {
-                Initialize ( true );
+                Initialize(true);
 
                 EnumerationOptions o =
                         (null != options) ? (EnumerationOptions)options.Clone() : new EnumerationOptions();
@@ -1355,16 +1337,12 @@ namespace System.Management
                         relationshipQualifier, thisRole);
 
                 SecurityHandler securityHandler = null;
-                int status                      = (int)ManagementStatus.NoError;
+                int status = (int)ManagementStatus.NoError;
 
                 securityHandler = Scope.GetSecurityHandler();
 
-                            status = scope.GetSecuredIWbemServicesHandler(Scope.GetIWbemServices()).ExecQueryAsync_(
-                        q.QueryLanguage,
-                        q.QueryString,
-                        o.Flags,
-                        o.GetContext(),
-                        sink.Stub);
+                status = scope.GetSecuredIWbemServicesHandler(Scope.GetIWbemServices()).ExecQueryAsync_(
+                    q.QueryLanguage, q.QueryString, o.Flags, o.GetContext(), sink.Stub);
 
 
                 if (securityHandler != null)

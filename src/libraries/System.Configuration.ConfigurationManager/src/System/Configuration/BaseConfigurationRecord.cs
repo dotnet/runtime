@@ -31,37 +31,37 @@ namespace System.Configuration
         protected const string ConfigSectionsTag = "configSections";
 
         protected const string SectionTag = "section";
-        protected const string  SectionNameAttribute = "name";
-        protected const string  SectionTypeAttribute = "type";
-        protected const string  SectionAllowLocationAttribute = "allowLocation";
-        protected const string  SectionAllowDefinitionAttribute = "allowDefinition";
-        protected const string   AllowDefinitionEverywhere = "Everywhere";
-        protected const string   AllowDefinitionMachineOnly = "MachineOnly";
-        protected const string   AllowDefinitionMachineToApplication = "MachineToApplication";
-        protected const string   AllowDefinitionMachineToWebRoot = "MachineToWebRoot";
-        protected const string  SectionAllowExeDefinitionAttribute = "allowExeDefinition";
-        protected const string   AllowExeDefinitionMachineToRoaming = "MachineToRoamingUser";
-        protected const string   AllowExeDefinitionMachineToLocal = "MachineToLocalUser";
-        protected const string  SectionRestartonExternalChangesAttribute = "restartOnExternalChanges";
-        protected const string  SectionRequirePermissionAttribute = "requirePermission";
-        internal const string   SectionOverrideModeDefaultAttribute = "overrideModeDefault";
+        protected const string SectionNameAttribute = "name";
+        protected const string SectionTypeAttribute = "type";
+        protected const string SectionAllowLocationAttribute = "allowLocation";
+        protected const string SectionAllowDefinitionAttribute = "allowDefinition";
+        protected const string AllowDefinitionEverywhere = "Everywhere";
+        protected const string AllowDefinitionMachineOnly = "MachineOnly";
+        protected const string AllowDefinitionMachineToApplication = "MachineToApplication";
+        protected const string AllowDefinitionMachineToWebRoot = "MachineToWebRoot";
+        protected const string SectionAllowExeDefinitionAttribute = "allowExeDefinition";
+        protected const string AllowExeDefinitionMachineToRoaming = "MachineToRoamingUser";
+        protected const string AllowExeDefinitionMachineToLocal = "MachineToLocalUser";
+        protected const string SectionRestartonExternalChangesAttribute = "restartOnExternalChanges";
+        protected const string SectionRequirePermissionAttribute = "requirePermission";
+        internal const string SectionOverrideModeDefaultAttribute = "overrideModeDefault";
 
         internal const string OverrideModeInherit = "Inherit";
         internal const string OverrideModeAllow = "Allow";
         internal const string OverrideModeDeny = "Deny";
 
         protected const string SectionGroupTag = "sectionGroup";
-        protected const string  SectionGroupNameAttribute = "name";
-        protected const string  SectionGroupTypeAttribute = "type";
+        protected const string SectionGroupNameAttribute = "name";
+        protected const string SectionGroupTypeAttribute = "type";
 
         protected const string RemoveTag = "remove";
         protected const string ClearTag = "clear";
 
         protected const string LocationTag = "location";
-        protected const string  LocationPathAttribute = "path";
-        internal const string   LocationAllowOverrideAttribute = "allowOverride";
-        internal const string   LocationOverrideModeAttribute = "overrideMode";
-        protected const string  LocationInheritInChildApplicationsAttribute = "inheritInChildApplications";
+        protected const string LocationPathAttribute = "path";
+        internal const string LocationAllowOverrideAttribute = "allowOverride";
+        internal const string LocationOverrideModeAttribute = "overrideMode";
+        protected const string LocationInheritInChildApplicationsAttribute = "inheritInChildApplications";
 
         protected const string ConfigSourceAttribute = "configSource";
         internal const string ProtectionProviderAttibute = "configProtectionProvider";

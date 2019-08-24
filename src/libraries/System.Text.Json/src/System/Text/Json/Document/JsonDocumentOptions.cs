@@ -27,7 +27,7 @@ namespace System.Text.Json
         /// </remarks>
         public JsonCommentHandling CommentHandling
         {
-            readonly get =>  _commentHandling;
+            readonly get => _commentHandling;
             set
             {
                 Debug.Assert(value >= 0);

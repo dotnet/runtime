@@ -34,7 +34,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Expr lhs;
             if (assignment.LHS is ExprProperty prop)
             {
-                if (prop.OptionalArguments== null)
+                if (prop.OptionalArguments == null)
                 {
                     // Regular property.
                     lhs = Visit(prop);
@@ -113,7 +113,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Debug.Assert(expr != null);
             Expr pObject;
-            if (expr.OptionalObject== null)
+            if (expr.OptionalObject == null)
             {
                 pObject = ExprFactory.CreateNull();
             }
@@ -244,7 +244,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             Expr pObject;
-            if (expr.MethWithInst.Meth().isStatic || expr.MemberGroup.OptionalObject== null)
+            if (expr.MethWithInst.Meth().isStatic || expr.MemberGroup.OptionalObject == null)
             {
                 pObject = ExprFactory.CreateNull();
             }
@@ -283,7 +283,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Debug.Assert(expr != null);
             Expr pObject;
-            if (expr.PropWithTypeSlot.Prop().isStatic || expr.MemberGroup.OptionalObject== null)
+            if (expr.PropWithTypeSlot.Prop().isStatic || expr.MemberGroup.OptionalObject == null)
             {
                 pObject = ExprFactory.CreateNull();
             }

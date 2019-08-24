@@ -323,7 +323,7 @@ namespace System.Management
             return new ManagementBaseObject(theClone);
         }
 
-        internal virtual void Initialize ( bool getObject ) {}
+        internal virtual void Initialize(bool getObject) { }
 
         //
         //Properties
@@ -342,7 +342,7 @@ namespace System.Management
         {
             get
             {
-                Initialize ( true );
+                Initialize(true);
 
                 if (properties == null)
                     properties = new PropertyDataCollection(this, false);
@@ -364,7 +364,7 @@ namespace System.Management
         {
             get
             {
-                Initialize ( false );
+                Initialize(false);
 
                 if (systemProperties == null)
                     systemProperties = new PropertyDataCollection(this, true);
@@ -387,7 +387,7 @@ namespace System.Management
         {
             get
             {
-                Initialize ( true );
+                Initialize(true);
 
                 if (qualifiers == null)
                     qualifiers = new QualifierDataCollection(this);
@@ -479,10 +479,10 @@ namespace System.Management
             get { return GetPropertyValue(propertyName); }
             set
             {
-                Initialize ( true );
+                Initialize(true);
                 try
                 {
-                    SetPropertyValue (propertyName, value);
+                    SetPropertyValue(propertyName, value);
                 }
                 catch (COMException e)
                 {
@@ -504,10 +504,10 @@ namespace System.Management
         public object GetPropertyValue(string propertyName)
         {
             if (null == propertyName)
-                throw new ArgumentNullException (nameof(propertyName));
+                throw new ArgumentNullException(nameof(propertyName));
 
             // Check for system properties
-            if (propertyName.StartsWith ("__", StringComparison.Ordinal))
+            if (propertyName.StartsWith("__", StringComparison.Ordinal))
                 return SystemProperties[propertyName].Value;
             else
                 return Properties[propertyName].Value;
@@ -525,7 +525,7 @@ namespace System.Management
         /// </returns>
         public object GetQualifierValue(string qualifierName)
         {
-            return Qualifiers [qualifierName].Value;
+            return Qualifiers[qualifierName].Value;
         }
 
         //******************************************************
@@ -538,7 +538,7 @@ namespace System.Management
         /// <param name='qualifierValue'>The value to set.</param>
         public void SetQualifierValue(string qualifierName, object qualifierValue)
         {
-            Qualifiers [qualifierName].Value = qualifierValue;
+            Qualifiers[qualifierName].Value = qualifierValue;
         }
 
 
@@ -595,7 +595,7 @@ namespace System.Management
             //
             switch (format)
             {
-                case TextFormat.Mof :
+                case TextFormat.Mof:
 
                     status = wbemObject.GetObjectText_(0, out objText);
 
@@ -609,8 +609,8 @@ namespace System.Management
 
                     return objText;
 
-                case TextFormat.CimDtd20 :
-                case TextFormat.WmiDtd20 :
+                case TextFormat.CimDtd20:
+                case TextFormat.WmiDtd20:
 
                     //This may throw on non-XP platforms... - should we catch ?
                     IWbemObjectTextSrc wbemTextSrc = (IWbemObjectTextSrc)new WbemObjectTextSrc();
@@ -660,7 +660,7 @@ namespace System.Management
             {
                 if (obj is ManagementBaseObject)
                 {
-                    result = CompareTo ((ManagementBaseObject)obj, ComparisonSettings.IncludeAll);
+                    result = CompareTo((ManagementBaseObject)obj, ComparisonSettings.IncludeAll);
                 }
                 else
                 {
@@ -741,15 +741,15 @@ namespace System.Management
         public bool CompareTo(ManagementBaseObject otherObject, ComparisonSettings settings)
         {
             if (null == otherObject)
-                throw new ArgumentNullException (nameof(otherObject));
+                throw new ArgumentNullException(nameof(otherObject));
 
             bool result = false;
 
             if (null != wbemObject)
             {
-                int status = (int) ManagementStatus.NoError;
+                int status = (int)ManagementStatus.NoError;
 
-                status = wbemObject.CompareTo_((int) settings, otherObject.wbemObject);
+                status = wbemObject.CompareTo_((int)settings, otherObject.wbemObject);
 
                 if ((int)ManagementStatus.Different == status)
                     result = false;
@@ -772,7 +772,7 @@ namespace System.Management
                 int dummy1 = 0, dummy2 = 0;
                 int status = (int)ManagementStatus.NoError;
 
-                status = wbemObject.Get_ ("__CLASS", 0, ref val, ref dummy1, ref dummy2);
+                status = wbemObject.Get_("__CLASS", 0, ref val, ref dummy1, ref dummy2);
 
                 if (status < 0)
                 {
@@ -785,7 +785,7 @@ namespace System.Management
                 if (val is System.DBNull)
                     return string.Empty;
                 else
-                    return ((string) val);
+                    return ((string)val);
             }
         }
 
@@ -820,15 +820,15 @@ namespace System.Management
         /// </summary>
         /// <param name='propertyName'>The name of the property to be changed.</param>
         /// <param name='propertyValue'>The new value for this property.</param>
-        public void SetPropertyValue (
+        public void SetPropertyValue(
             string propertyName,
             object propertyValue)
         {
             if (null == propertyName)
-                throw new ArgumentNullException (nameof(propertyName));
+                throw new ArgumentNullException(nameof(propertyName));
 
             // Check for system properties
-            if (propertyName.StartsWith ("__", StringComparison.Ordinal))
+            if (propertyName.StartsWith("__", StringComparison.Ordinal))
                 SystemProperties[propertyName].Value = propertyValue;
             else
                 Properties[propertyName].Value = propertyValue;

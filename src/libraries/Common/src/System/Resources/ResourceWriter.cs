@@ -488,9 +488,11 @@ namespace System.Resources
             // This is a user type, or a precanned resource.  Find type
             // table index.  If not there, add new element.
             string typeName;
-            if (type == typeof(PrecannedResource)) {
+            if (type == typeof(PrecannedResource))
+            {
                 typeName = ((PrecannedResource)value).TypeName;
-                if (typeName.StartsWith("ResourceTypeCode.", StringComparison.Ordinal)) {
+                if (typeName.StartsWith("ResourceTypeCode.", StringComparison.Ordinal))
+                {
                     typeName = typeName.Substring(17);  // Remove through '.'
                     ResourceTypeCode typeCode = (ResourceTypeCode)Enum.Parse(typeof(ResourceTypeCode), typeName);
                     return typeCode;
@@ -503,7 +505,8 @@ namespace System.Resources
             }
 
             int typeIndex = types.IndexOf(typeName);
-            if (typeIndex == -1) {
+            if (typeIndex == -1)
+            {
                 typeIndex = types.Count;
                 types.Add(typeName);
             }

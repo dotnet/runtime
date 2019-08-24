@@ -21,9 +21,9 @@ namespace System.Net.Http
             /// "chunk extensions" are allowed. We place a limit on how long a line can be to avoid OOM issues if an
             /// infinite chunk length is sent.  This value is arbitrary and can be changed as needed.
             /// </remarks>
-            private const int MaxChunkBytesAllowed = 16*1024;
+            private const int MaxChunkBytesAllowed = 16 * 1024;
             /// <summary>How long a trailing header can be.  This value is arbitrary and can be changed as needed.</summary>
-            private const int MaxTrailingHeaderLength = 16*1024;
+            private const int MaxTrailingHeaderLength = 16 * 1024;
             /// <summary>The number of bytes remaining in the chunk.</summary>
             private ulong _chunkBytesRemaining;
             /// <summary>The current state of the parsing state machine for the chunked response.</summary>
@@ -374,7 +374,7 @@ namespace System.Net.Http
                                 {
                                     // Make sure that we don't inadvertently consume trailing headers
                                     // while draining a connection that's being returned back to the pool.
-                                    HttpConnection.ParseHeaderNameValue(_connection, currentLine, _response, isFromTrailer : true);
+                                    HttpConnection.ParseHeaderNameValue(_connection, currentLine, _response, isFromTrailer: true);
                                 }
                             }
 
