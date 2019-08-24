@@ -462,7 +462,6 @@ register_thread (MonoThreadInfo *info)
 	g_assert (stsize);
 	info->stack_start_limit = staddr;
 	info->stack_end = staddr + stsize;
-
 	info->stackdata = g_byte_array_new ();
 
 	info->internal_thread_gchandle = G_MAXUINT32;
@@ -470,6 +469,7 @@ register_thread (MonoThreadInfo *info)
 	info->profiler_signal_ack = 1;
 
 #ifdef USE_WINDOWS_BACKEND
+	info->windows_tib = (PNT_TIB)NtCurrentTeb ();
 	info->win32_apc_info = 0;
 	info->win32_apc_info_io_handle = INVALID_HANDLE_VALUE;
 #endif
