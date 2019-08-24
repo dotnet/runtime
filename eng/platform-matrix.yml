@@ -13,6 +13,7 @@ parameters:
   # 'all' - the queues used for non-PR, non-CI test runs, e.g., Manual or Scheduled runs. Typically this is all available queues.
   # 'corefx' - the queues used for a corefx test run.
   helixQueueGroup: 'pr'
+  ignoreDependencyOnBuildJobs: false
   jobParameters: {}
 
 jobs:
@@ -25,6 +26,7 @@ jobs:
 - ${{ if or(containsValue(parameters.platforms, 'Linux_arm'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
   - template: ${{ parameters.jobTemplate }}
     parameters:
+      ignoreDependencyOnBuildJobs: ${{ parameters.ignoreDependencyOnBuildJobs }}
       buildConfig: ${{ parameters.buildConfig }}
       archType: arm
       osGroup: Linux
@@ -47,6 +49,7 @@ jobs:
 - ${{ if or(containsValue(parameters.platforms, 'Linux_arm64'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
   - template: ${{ parameters.jobTemplate }}
     parameters:
+      ignoreDependencyOnBuildJobs: ${{ parameters.ignoreDependencyOnBuildJobs }}
       buildConfig: ${{ parameters.buildConfig }}
       archType: arm64
       osGroup: Linux
@@ -70,6 +73,7 @@ jobs:
 - ${{ if or(containsValue(parameters.platforms, 'Linux_musl_x64'), eq(parameters.platformGroup, 'all')) }}:
   - template: ${{ parameters.jobTemplate }}
     parameters:
+      ignoreDependencyOnBuildJobs: ${{ parameters.ignoreDependencyOnBuildJobs }}
       buildConfig: ${{ parameters.buildConfig }}
       archType: x64
       osGroup: Linux
@@ -90,6 +94,7 @@ jobs:
 - ${{ if or(containsValue(parameters.platforms, 'Linux_musl_arm64'), eq(parameters.platformGroup, 'all')) }}:
   - template: ${{ parameters.jobTemplate }}
     parameters:
+      ignoreDependencyOnBuildJobs: ${{ parameters.ignoreDependencyOnBuildJobs }}
       buildConfig: ${{ parameters.buildConfig }}
       archType: arm64
       osGroup: Linux
@@ -110,6 +115,7 @@ jobs:
 - ${{ if or(containsValue(parameters.platforms, 'Linux_rhel6_x64'), eq(parameters.platformGroup, 'all')) }}:
   - template: ${{ parameters.jobTemplate }}
     parameters:
+      ignoreDependencyOnBuildJobs: ${{ parameters.ignoreDependencyOnBuildJobs }}
       buildConfig: ${{ parameters.buildConfig }}
       archType: x64
       osGroup: Linux
@@ -128,6 +134,7 @@ jobs:
 - ${{ if or(containsValue(parameters.platforms, 'Linux_x64'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
   - template: ${{ parameters.jobTemplate }}
     parameters:
+      ignoreDependencyOnBuildJobs: ${{ parameters.ignoreDependencyOnBuildJobs }}
       buildConfig: ${{ parameters.buildConfig }}
       archType: x64
       osGroup: Linux
@@ -175,6 +182,7 @@ jobs:
 - ${{ if or(containsValue(parameters.platforms, 'OSX_x64'), eq(parameters.platformGroup, 'all')) }}:
   - template: ${{ parameters.jobTemplate }}
     parameters:
+      ignoreDependencyOnBuildJobs: ${{ parameters.ignoreDependencyOnBuildJobs }}
       buildConfig: ${{ parameters.buildConfig }}
       archType: x64
       osGroup: OSX
@@ -195,6 +203,7 @@ jobs:
 - ${{ if or(containsValue(parameters.platforms, 'Windows_NT_x64'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
   - template: ${{ parameters.jobTemplate }}
     parameters:
+      ignoreDependencyOnBuildJobs: ${{ parameters.ignoreDependencyOnBuildJobs }}
       buildConfig: ${{ parameters.buildConfig }}
       archType: x64
       osGroup: Windows_NT
@@ -220,6 +229,7 @@ jobs:
 - ${{ if or(containsValue(parameters.platforms, 'Windows_NT_x86'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
   - template: ${{ parameters.jobTemplate }}
     parameters:
+      ignoreDependencyOnBuildJobs: ${{ parameters.ignoreDependencyOnBuildJobs }}
       buildConfig: ${{ parameters.buildConfig }}
       archType: x86
       osGroup: Windows_NT
@@ -243,6 +253,7 @@ jobs:
 - ${{ if or(containsValue(parameters.platforms, 'Windows_NT_arm'), eq(parameters.platformGroup, 'all')) }}:
   - template: ${{ parameters.jobTemplate }}
     parameters:
+      ignoreDependencyOnBuildJobs: ${{ parameters.ignoreDependencyOnBuildJobs }}
       buildConfig: ${{ parameters.buildConfig }}
       archType: arm
       osGroup: Windows_NT
@@ -262,6 +273,7 @@ jobs:
 - ${{ if or(containsValue(parameters.platforms, 'Windows_NT_arm64'), eq(parameters.platformGroup, 'all')) }}:
   - template: ${{ parameters.jobTemplate }}
     parameters:
+      ignoreDependencyOnBuildJobs: ${{ parameters.ignoreDependencyOnBuildJobs }}
       buildConfig: ${{ parameters.buildConfig }}
       archType: arm64
       osGroup: Windows_NT
