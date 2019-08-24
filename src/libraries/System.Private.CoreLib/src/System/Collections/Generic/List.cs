@@ -430,7 +430,7 @@ namespace System.Collections.Generic
 
             for (int i = 0; i < _size; i++)
             {
-                if (match!(_items[i]))
+                if (match(_items[i]))
                 {
                     return _items[i];
                 }
@@ -482,7 +482,7 @@ namespace System.Collections.Generic
             int endIndex = startIndex + count;
             for (int i = startIndex; i < endIndex; i++)
             {
-                if (match!(_items[i])) return i;
+                if (match(_items[i])) return i;
             }
             return -1;
         }
@@ -497,7 +497,7 @@ namespace System.Collections.Generic
 
             for (int i = _size - 1; i >= 0; i--)
             {
-                if (match!(_items[i]))
+                if (match(_items[i]))
                 {
                     return _items[i];
                 }
@@ -567,7 +567,7 @@ namespace System.Collections.Generic
                 {
                     break;
                 }
-                action!(_items[i]);
+                action(_items[i]);
             }
 
             if (version != _version)
@@ -875,7 +875,7 @@ namespace System.Collections.Generic
             while (current < _size)
             {
                 // Find the first item which needs to be kept.
-                while (current < _size && match!(_items[current])) current++;
+                while (current < _size && match(_items[current])) current++;
 
                 if (current < _size)
                 {
@@ -1073,7 +1073,7 @@ namespace System.Collections.Generic
 
             for (int i = 0; i < _size; i++)
             {
-                if (!match!(_items[i]))
+                if (!match(_items[i]))
                 {
                     return false;
                 }
