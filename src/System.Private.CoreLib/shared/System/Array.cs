@@ -770,7 +770,7 @@ namespace System
             int endIndex = startIndex + count;
             for (int i = startIndex; i < endIndex; i++)
             {
-                if (match!(array[i]))
+                if (match(array[i]))
                     return i;
             }
             return -1;
