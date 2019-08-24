@@ -3,6 +3,7 @@ trigger:
   branches:
     include:
     - release/3.0
+    - release/3.1
 
 pr: none
 
