@@ -9,8 +9,6 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-logger.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-logger-internals.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-codeman.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\dlmalloc.c" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\dlmalloc.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-counters.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-compiler.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-complex.h" />

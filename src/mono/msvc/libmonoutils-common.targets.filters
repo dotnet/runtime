@@ -16,12 +16,6 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-codeman.c">
       <Filter>Source Files$(MonoUtilsFilterSubFolder)\common</Filter>
     </ClCompile>
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\dlmalloc.c">
-      <Filter>Source Files$(MonoUtilsFilterSubFolder)\common</Filter>
-    </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\dlmalloc.h">
-      <Filter>Header Files$(MonoUtilsFilterSubFolder)\common</Filter>
-    </ClInclude>
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-counters.c">
       <Filter>Source Files$(MonoUtilsFilterSubFolder)\common</Filter>
     </ClCompile>
