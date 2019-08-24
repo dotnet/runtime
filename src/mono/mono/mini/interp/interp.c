@@ -3198,6 +3198,30 @@ mono_interp_box_nullable (InterpFrame* frame, const guint16* ip, stackval* sp, M
 	return pop_vt_sp ? size : 0;
 }
 
+static MONO_NEVER_INLINE int
+mono_interp_store_remote_field_vt (InterpFrame* frame, const guint16* ip, stackval* sp, MonoError* error)
+{
+	InterpMethod* const imethod = frame->imethod;
+	MonoClassField *field;
+
+	MonoObject* const o = sp [-2].data.o;
+
+	field = (MonoClassField*)imethod->data_items[* (guint16 *)(ip + 1)];
+	MonoClass *klass = mono_class_from_mono_type_internal (field->type);
+	int const i32 = mono_class_value_size (klass, NULL);
+
+#ifndef DISABLE_REMOTING
+	if (mono_object_is_transparent_proxy (o)) {
+		MonoClass *klass = ((MonoTransparentProxy*)o)->remote_class->proxy_class;
+		mono_store_remote_field_checked (o, klass, field, sp [-1].data.p, error);
+		mono_error_cleanup (error); /* FIXME: don't swallow the error */
+	} else
+#endif
+		mono_value_copy_internal ((char *) o + field->offset, sp [-1].data.p, klass);
+
+	return ALIGN_TO (i32, MINT_VT_ALIGNMENT);
+}
+
 /*
  * If EXIT_AT_FINALLY is not -1, exit after exiting the finally clause with that index.
  * If BASE_FRAME is not NULL, copy arguments/locals from BASE_FRAME.
@@ -5049,29 +5073,14 @@ main_loop:
 			sp -= 2;
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_STRMFLD_VT) {
-			MonoClassField *field;
+		MINT_IN_CASE(MINT_STRMFLD_VT)
 
-			MonoObject* const o = sp [-2].data.o; // See the comment about GC safety above.
-			NULL_CHECK (o);
-			field = (MonoClassField*)imethod->data_items[* (guint16 *)(ip + 1)];
-			MonoClass *klass = mono_class_from_mono_type_internal (field->type);
-			int const i32 = mono_class_value_size (klass, NULL);
+			NULL_CHECK (sp [-2].data.o);
+			vt_sp -= mono_interp_store_remote_field_vt (frame, ip, sp, error);
 			ip += 2;
-
-#ifndef DISABLE_REMOTING
-			if (mono_object_is_transparent_proxy (o)) {
-				MonoClass *klass = ((MonoTransparentProxy*)o)->remote_class->proxy_class;
-				mono_store_remote_field_checked (o, klass, field, sp [-1].data.p, error);
-				mono_error_cleanup (error); /* FIXME: don't swallow the error */
-			} else
-#endif
-				mono_value_copy_internal ((char *) o + field->offset, sp [-1].data.p, klass);
-
 			sp -= 2;
-			vt_sp -= ALIGN_TO (i32, MINT_VT_ALIGNMENT);
 			MINT_IN_BREAK;
-		}
+
 		MINT_IN_CASE(MINT_LDSFLDA) {
 			MonoVTable *vtable = (MonoVTable*) imethod->data_items [*(guint16*)(ip + 1)];
 			INIT_VTABLE (vtable);
