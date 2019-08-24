@@ -5,6 +5,7 @@ pr:
 - release/2.1
 - release/2.2
 - release/3.0
+- release/3.1
 
 jobs:
 #
