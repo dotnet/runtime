@@ -202,7 +202,7 @@ namespace System.Numerics.Tensors
             for (int i = 0; i < sourceStrides.Length; i++)
             {
                 // reverse the index for reverseStride so that we divide by largest stride first
-                var nIndex = sourceReverseStride ? sourceStrides.Length - 1 - i: i;
+                var nIndex = sourceReverseStride ? sourceStrides.Length - 1 - i : i;
 
                 var sourceStride = sourceStrides[nIndex];
                 var transformStride = transformStrides[nIndex];

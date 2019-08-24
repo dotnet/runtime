@@ -76,7 +76,7 @@ namespace System.Composition
         ///      A <see cref="string"/> containing the contract name to export the type or member
         ///      marked with this attribute, under. The default value is an empty string ("").
         /// </value>
-        public string ContractName { get;  }
+        public string ContractName { get; }
 
         /// <summary>
         ///     Get the contract type that is exported by the member that this attribute is attached to.

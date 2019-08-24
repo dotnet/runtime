@@ -39,7 +39,7 @@ namespace Windows.UI.Xaml
         }
 
         protected LayoutCycleException(SerializationInfo serializationInfo, StreamingContext streamingContext)
-            : base (serializationInfo, streamingContext)
+            : base(serializationInfo, streamingContext)
         {
         }
     }

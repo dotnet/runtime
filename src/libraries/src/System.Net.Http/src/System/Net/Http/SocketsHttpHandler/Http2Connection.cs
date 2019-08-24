@@ -1353,8 +1353,8 @@ namespace System.Net.Http
             _outgoingBuffer.Commit(FrameHeader.Size);
         }
 
-         /// <summary>Abort all streams and cause further processing to fail.</summary>
-         /// <param name="abortException">Exception causing Abort to be called.</param>
+        /// <summary>Abort all streams and cause further processing to fail.</summary>
+        /// <param name="abortException">Exception causing Abort to be called.</param>
         private void Abort(Exception abortException)
         {
             // The connection has failed, e.g. failed IO or a connection-level frame error.

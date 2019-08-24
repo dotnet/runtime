@@ -274,7 +274,7 @@ namespace System.Xml.Linq
                         }
                         else
                         {
-                            n = ((XNode) e.content).next;
+                            n = ((XNode)e.content).next;
                             continue;
                         }
                     }

@@ -131,7 +131,7 @@ namespace System.ComponentModel
                 lock (this)
                 {
                     _site?.Container?.Remove(this);
-                    ((EventHandler) _events?[s_eventDisposed])?.Invoke(this, EventArgs.Empty);
+                    ((EventHandler)_events?[s_eventDisposed])?.Invoke(this, EventArgs.Empty);
                 }
             }
         }

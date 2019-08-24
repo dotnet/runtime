@@ -126,8 +126,8 @@ namespace System
             public string? String;
             public Offset Offset;
             public string? DnsSafeHost;    // stores dns safe host when idn is on and we have unicode or idn host
-            public MoreInfo? MoreInfo;       // Multi-threading: This field must be always accessed through a _local_
-                                            // stack copy of m_Info.
+            public MoreInfo? MoreInfo;     // Multi-threading: This field must be always accessed through a _local_
+                                           // stack copy of m_Info.
         };
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]

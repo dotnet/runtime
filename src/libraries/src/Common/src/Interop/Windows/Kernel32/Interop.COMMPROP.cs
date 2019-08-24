@@ -17,8 +17,8 @@ internal partial class Interop
         // https://msdn.microsoft.com/en-us/library/windows/desktop/aa363189.aspx
         internal struct COMMPROP
         {
-            public ushort  wPacketLength;
-            public ushort  wPacketVersion;
+            public ushort wPacketLength;
+            public ushort wPacketVersion;
             public int dwServiceMask;
             public int dwReserved1;
             public int dwMaxTxQueue;
@@ -29,7 +29,7 @@ internal partial class Interop
             public int dwSettableParams;
             public int dwSettableBaud;
             public ushort wSettableData;
-            public ushort  wSettableStopParity;
+            public ushort wSettableStopParity;
             public int dwCurrentTxQueue;
             public int dwCurrentRxQueue;
             public int dwProvSpec1;

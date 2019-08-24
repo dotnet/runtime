@@ -143,7 +143,7 @@ namespace System.ServiceModel.Syndication
 
         public IEnumerable<SyndicationItem> Items
         {
-            get =>_items ?? (_items = new NullNotAllowedCollection<SyndicationItem>());
+            get => _items ?? (_items = new NullNotAllowedCollection<SyndicationItem>());
             set => _items = value ?? throw new ArgumentNullException(nameof(value));
         }
 
@@ -171,7 +171,7 @@ namespace System.ServiceModel.Syndication
 
         public Collection<SyndicationLink> Links
         {
-            get =>_links ?? (_links = new NullNotAllowedCollection<SyndicationLink>());
+            get => _links ?? (_links = new NullNotAllowedCollection<SyndicationLink>());
         }
 
         public TextSyndicationContent Title { get; set; }

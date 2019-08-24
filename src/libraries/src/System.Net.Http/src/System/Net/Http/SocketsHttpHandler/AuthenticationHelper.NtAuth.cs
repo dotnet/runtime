@@ -120,7 +120,7 @@ namespace System.Net.Http
                         }
 
                         ChannelBinding channelBinding = connection.TransportContext?.GetChannelBinding(ChannelBindingKind.Endpoint);
-                        NTAuthentication authContext = new NTAuthentication(isServer:false, challenge.SchemeName, challenge.Credential, spn, ContextFlagsPal.Connection, channelBinding);
+                        NTAuthentication authContext = new NTAuthentication(isServer: false, challenge.SchemeName, challenge.Credential, spn, ContextFlagsPal.Connection, channelBinding);
                         string challengeData = challenge.ChallengeData;
                         try
                         {
@@ -169,12 +169,12 @@ namespace System.Net.Http
 
         public static Task<HttpResponseMessage> SendWithNtProxyAuthAsync(HttpRequestMessage request, Uri proxyUri, ICredentials proxyCredentials, HttpConnection connection, HttpConnectionPool connectionPool, CancellationToken cancellationToken)
         {
-            return SendWithNtAuthAsync(request, proxyUri, proxyCredentials, isProxyAuth:true, connection, connectionPool, cancellationToken);
+            return SendWithNtAuthAsync(request, proxyUri, proxyCredentials, isProxyAuth: true, connection, connectionPool, cancellationToken);
         }
 
         public static Task<HttpResponseMessage> SendWithNtConnectionAuthAsync(HttpRequestMessage request, ICredentials credentials, HttpConnection connection, HttpConnectionPool connectionPool, CancellationToken cancellationToken)
         {
-            return SendWithNtAuthAsync(request, request.RequestUri, credentials, isProxyAuth:false, connection, connectionPool, cancellationToken);
+            return SendWithNtAuthAsync(request, request.RequestUri, credentials, isProxyAuth: false, connection, connectionPool, cancellationToken);
         }
     }
 }

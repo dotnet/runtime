@@ -79,7 +79,7 @@ namespace Internal.Cryptography.Pal
 
         internal SafeCertStoreHandle SafeCertStoreHandle
         {
-            get {return _certStore; }
+            get { return _certStore; }
         }
 
         SafeHandle IStorePal.SafeHandle

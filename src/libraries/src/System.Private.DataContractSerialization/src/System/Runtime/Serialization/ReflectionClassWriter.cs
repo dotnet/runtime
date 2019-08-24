@@ -23,7 +23,7 @@ namespace System.Runtime.Serialization
             obj = ResolveAdapterType(obj, classContract);
             if (classContract.IsISerializable)
             {
-                context.WriteISerializable(xmlWriter, (ISerializable) obj);
+                context.WriteISerializable(xmlWriter, (ISerializable)obj);
             }
             else
             {

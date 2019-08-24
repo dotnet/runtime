@@ -114,7 +114,7 @@ namespace System.Data.SqlTypes
         /// <summary>
         /// Converts a <see cref='SqlBinary'/> to a binary object.
         /// </summary>
-        public static explicit operator byte[] (SqlBinary x) => x.Value;
+        public static explicit operator byte[](SqlBinary x) => x.Value;
 
         /// <summary>
         /// Returns a string describing a <see cref='SqlBinary'/> object.

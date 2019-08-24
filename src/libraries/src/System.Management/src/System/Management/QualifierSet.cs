@@ -83,7 +83,7 @@ namespace System.Management
         /// </summary>
         private IWbemQualifierSetFreeThreaded GetTypeQualifierSet(QualifierType qualifierSetType)
         {
-            IWbemQualifierSetFreeThreaded qualifierSet    = null;
+            IWbemQualifierSetFreeThreaded qualifierSet = null;
 
             int status = qualifierSetType switch
             {
@@ -115,7 +115,8 @@ namespace System.Management
         /// </value>
         public int Count
         {
-            get {
+            get
+            {
                 string[] qualifierNames = null;
                 IWbemQualifierSetFreeThreaded quals;
                 try
@@ -151,7 +152,9 @@ namespace System.Management
         /// <para><see langword='true'/> if the object is synchronized;
         ///    otherwise, <see langword='false'/>.</para>
         /// </value>
-        public bool IsSynchronized { get { return false; }
+        public bool IsSynchronized
+        {
+            get { return false; }
         }
 
         /// <summary>
@@ -160,7 +163,9 @@ namespace System.Management
         /// <value>
         ///    <para>The object to be used for synchronization.</para>
         /// </value>
-        public object SyncRoot { get { return this; }
+        public object SyncRoot
+        {
+            get { return this; }
         }
 
         /// <overload>
@@ -306,10 +311,10 @@ namespace System.Management
             internal QualifierDataEnumerator(ManagementBaseObject parent, string propertyOrMethodName,
                                                         QualifierType qualifierType)
             {
-                this.parent               = parent;
+                this.parent = parent;
                 this.propertyOrMethodName = propertyOrMethodName;
-                this.qualifierType        = qualifierType;
-                this.qualifierNames       = null;
+                this.qualifierType = qualifierType;
+                this.qualifierNames = null;
 
                 IWbemQualifierSetFreeThreaded qualifierSet = null;
                 int status = (int)ManagementStatus.NoError;
@@ -353,7 +358,8 @@ namespace System.Management
             /// </value>
             public QualifierData Current
             {
-                get {
+                get
+                {
                     if ((index == -1) || (index == qualifierNames.Length))
                         throw new InvalidOperationException();
                     else
@@ -403,7 +409,8 @@ namespace System.Management
         /// </value>
         public virtual QualifierData this[string qualifierName]
         {
-            get {
+            get
+            {
                 if (null == qualifierName)
                     throw new ArgumentNullException(nameof(qualifierName));
 

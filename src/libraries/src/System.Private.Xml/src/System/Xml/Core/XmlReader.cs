@@ -1870,7 +1870,7 @@ namespace System.Xml
             {
                 read = input.Read(bytes, byteCount, bytes.Length - byteCount);
                 byteCount += read;
-            } while (read > 0 && byteCount< 2);
+            } while (read > 0 && byteCount < 2);
 
             // create text or binary XML reader depenting on the stream first 2 bytes
             if (byteCount >= 2 && (bytes[0] == 0xdf && bytes[1] == 0xff))

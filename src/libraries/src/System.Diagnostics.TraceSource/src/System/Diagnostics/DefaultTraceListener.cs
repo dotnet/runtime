@@ -83,7 +83,7 @@ namespace System.Diagnostics
             string stackTrace;
             try
             {
-                stackTrace = new StackTrace(fNeedFileInfo:true).ToString();
+                stackTrace = new StackTrace(fNeedFileInfo: true).ToString();
             }
             catch
             {

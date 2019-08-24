@@ -29,10 +29,10 @@ internal partial class Interop
             if (GetCPInfoExW((uint)codePage, 0, &cpInfo) != BOOL.FALSE)
             {
                 // we don't care about the last 2 bytes as those are nulls
-                for (int i=0; i<10 && leadByteRanges[i] != 0; i+=2)
+                for (int i = 0; i < 10 && leadByteRanges[i] != 0; i += 2)
                 {
                     leadByteRanges[i] = cpInfo.LeadByte[i];
-                    leadByteRanges[i+1] = cpInfo.LeadByte[i+1];
+                    leadByteRanges[i + 1] = cpInfo.LeadByte[i + 1];
                     count++;
                 }
             }

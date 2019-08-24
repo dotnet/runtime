@@ -70,7 +70,7 @@ namespace System.Configuration
                 }
                 else
                 {
-                    ApplicationUri =  Uri.EscapeDataString(configBasePath);
+                    ApplicationUri = Uri.EscapeDataString(configBasePath);
                 }
             }
 

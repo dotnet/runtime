@@ -153,11 +153,14 @@ namespace System.ComponentModel
 
                 if (changeService != null)
                 {
-                    try {
+                    try
+                    {
                         changeService.OnComponentChanging(component, this);
                     }
-                    catch (CheckoutException coEx) {
-                        if (coEx == CheckoutException.Canceled) {
+                    catch (CheckoutException coEx)
+                    {
+                        if (coEx == CheckoutException.Canceled)
+                        {
                             return;
                         }
                         throw;
@@ -424,11 +427,14 @@ namespace System.ComponentModel
 
                 if (changeService != null)
                 {
-                    try {
+                    try
+                    {
                         changeService.OnComponentChanging(component, this);
                     }
-                    catch (CheckoutException coEx) {
-                        if (coEx == CheckoutException.Canceled) {
+                    catch (CheckoutException coEx)
+                    {
+                        if (coEx == CheckoutException.Canceled)
+                        {
                             return;
                         }
                         throw;

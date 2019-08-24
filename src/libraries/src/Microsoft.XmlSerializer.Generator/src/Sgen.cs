@@ -67,7 +67,7 @@ namespace Microsoft.XmlSerializer.Generator
                     else if (ArgumentMatch(arg, "out") || ShortNameArgumentMatch(arg, "o"))
                     {
                         i++;
-                        if (i >= args.Length || codePath != null )
+                        if (i >= args.Length || codePath != null)
                         {
                             errs.Add(SR.Format(SR.ErrInvalidArgument, arg));
                         }
@@ -388,7 +388,7 @@ namespace Microsoft.XmlSerializer.Generator
         private bool ArgumentMatch(string arg, string formal)
         {
             // Full name format, eg: --assembly
-            if (arg.Length < 3 || arg[0] != '-' || arg[1] != '-' )
+            if (arg.Length < 3 || arg[0] != '-' || arg[1] != '-')
             {
                 return false;
             }

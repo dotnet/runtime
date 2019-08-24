@@ -107,7 +107,7 @@ namespace System.Net
         /// </devdoc>
         public virtual Stream GetResponseStream()
         {
-             throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
+            throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
         }
 
         /// <devdoc>

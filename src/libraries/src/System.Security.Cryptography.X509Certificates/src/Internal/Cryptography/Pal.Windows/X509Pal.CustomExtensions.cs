@@ -250,7 +250,7 @@ namespace Internal.Cryptography.Pal
                             int cb = 20;
                             byte[] buffer = new byte[cb];
                             if (!Interop.crypt32.CryptHashPublicKeyInfo(IntPtr.Zero, AlgId.CALG_SHA1, 0, CertEncodingType.All, ref publicKeyInfo, buffer, ref cb))
-                                throw Marshal.GetHRForLastWin32Error().ToCryptographicException();;
+                                throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
                             if (cb < buffer.Length)
                             {
                                 byte[] newBuffer = new byte[cb];

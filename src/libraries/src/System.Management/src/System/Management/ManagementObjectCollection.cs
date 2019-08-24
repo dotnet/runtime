@@ -73,12 +73,12 @@ namespace System.Management
             IEnumWbemClassObject enumWbem)
         {
             if (null != options)
-                this.options = (EnumerationOptions) options.Clone();
+                this.options = (EnumerationOptions)options.Clone();
             else
-                this.options = new EnumerationOptions ();
+                this.options = new EnumerationOptions();
 
             if (null != scope)
-                this.scope = (ManagementScope)scope.Clone ();
+                this.scope = (ManagementScope)scope.Clone();
             else
                 this.scope = ManagementScope._Clone(null);
 
@@ -88,9 +88,9 @@ namespace System.Management
         /// <summary>
         /// <para>Disposes of resources the object is holding. This is the destructor for the object.</para>
         /// </summary>
-        ~ManagementObjectCollection ()
+        ~ManagementObjectCollection()
         {
-            Dispose ( false );
+            Dispose(false);
         }
 
         /// <summary>
@@ -98,22 +98,22 @@ namespace System.Management
         /// method has been called, an attempt to use this object will
         /// result in an ObjectDisposedException being thrown.
         /// </summary>
-        public void Dispose ()
+        public void Dispose()
         {
             if (!isDisposed)
             {
-                Dispose ( true );
+                Dispose(true);
             }
         }
 
-        private void Dispose ( bool disposing )
+        private void Dispose(bool disposing)
         {
-            if ( disposing )
+            if (disposing)
             {
-                GC.SuppressFinalize (this);
+                GC.SuppressFinalize(this);
                 isDisposed = true;
             }
-            Marshal.ReleaseComObject (enumWbem);
+            Marshal.ReleaseComObject(enumWbem);
         }
 
 
@@ -145,8 +145,8 @@ namespace System.Management
                 //
                 int count = 0;
 
-                IEnumerator enumCol = this.GetEnumerator ( );
-                while ( enumCol.MoveNext() == true )
+                IEnumerator enumCol = this.GetEnumerator();
+                while (enumCol.MoveNext() == true)
                 {
                     count++;
                 }
@@ -197,16 +197,16 @@ namespace System.Management
         /// </summary>
         /// <param name='array'>An array to copy to. </param>
         /// <param name='index'>The index to start from. </param>
-        public void CopyTo (Array array, int index)
+        public void CopyTo(Array array, int index)
         {
             if (isDisposed)
                 throw new ObjectDisposedException(name);
 
             if (null == array)
-                throw new ArgumentNullException (nameof(array));
+                throw new ArgumentNullException(nameof(array));
 
-            if ((index < array.GetLowerBound (0)) || (index > array.GetUpperBound(0)))
-                throw new ArgumentOutOfRangeException (nameof(index));
+            if ((index < array.GetLowerBound(0)) || (index > array.GetUpperBound(0)))
+                throw new ArgumentOutOfRangeException(nameof(index));
 
             // Since we don't know the size until we've enumerated
             // we'll have to dump the objects in a list first then
@@ -214,7 +214,7 @@ namespace System.Management
 
             int capacity = array.Length - index;
             int numObjects = 0;
-            ArrayList arrList = new ArrayList ();
+            ArrayList arrList = new ArrayList();
 
             ManagementObjectEnumerator en = this.GetEnumerator();
             ManagementBaseObject obj;
@@ -227,11 +227,11 @@ namespace System.Management
                 numObjects++;
 
                 if (numObjects > capacity)
-                    throw new ArgumentException (null, nameof(index));
+                    throw new ArgumentException(null, nameof(index));
             }
 
             // If we get here we are OK. Now copy the list to the array
-            arrList.CopyTo (array, index);
+            arrList.CopyTo(array, index);
 
             return;
         }
@@ -242,9 +242,9 @@ namespace System.Management
         /// </summary>
         /// <param name='objectCollection'>The target array.</param>
         /// <param name=' index'>The index to start from.</param>
-        public void CopyTo (ManagementBaseObject[] objectCollection, int index)
+        public void CopyTo(ManagementBaseObject[] objectCollection, int index)
         {
-            CopyTo ((Array)objectCollection, index);
+            CopyTo((Array)objectCollection, index);
         }
 
         //
@@ -288,25 +288,25 @@ namespace System.Management
 
             // Unless this is the first enumerator, we have
             // to clone. This may throw if we are non-rewindable.
-            if ( this.options.Rewindable == true )
+            if (this.options.Rewindable == true)
             {
                 IEnumWbemClassObject enumWbemClone = null;
                 int status = (int)ManagementStatus.NoError;
 
                 try
                 {
-                    status = scope.GetSecuredIEnumWbemClassObjectHandler(enumWbem ).Clone_( ref enumWbemClone);
+                    status = scope.GetSecuredIEnumWbemClassObjectHandler(enumWbem).Clone_(ref enumWbemClone);
 
                     if ((status & 0x80000000) == 0)
                     {
                         //since the original enumerator might not be reset, we need
                         //to reset the new one.
-                        status = scope.GetSecuredIEnumWbemClassObjectHandler(enumWbemClone ).Reset_( );
+                        status = scope.GetSecuredIEnumWbemClassObjectHandler(enumWbemClone).Reset_();
                     }
                 }
                 catch (COMException e)
                 {
-                    ManagementException.ThrowWithExtendedInfo (e);
+                    ManagementException.ThrowWithExtendedInfo(e);
                 }
 
                 if ((status & 0xfffff000) == 0x80041000)
@@ -317,7 +317,7 @@ namespace System.Management
                 {
                     Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                 }
-                return new ManagementObjectEnumerator (this, enumWbemClone);
+                return new ManagementObjectEnumerator(this, enumWbemClone);
             }
             else
             {
@@ -342,7 +342,7 @@ namespace System.Management
         /// </returns>
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return GetEnumerator ();
+            return GetEnumerator();
         }
 
 
@@ -426,9 +426,9 @@ namespace System.Management
             /// <summary>
             /// <para>Disposes of resources the object is holding. This is the destructor for the object.</para>
             /// </summary>
-            ~ManagementObjectEnumerator ()
+            ~ManagementObjectEnumerator()
             {
-                Dispose ();
+                Dispose();
             }
 
 
@@ -437,13 +437,13 @@ namespace System.Management
             /// method has been called, an attempt to use this object will
             /// result in an ObjectDisposedException being thrown.
             /// </summary>
-            public void Dispose ()
+            public void Dispose()
             {
                 if (!isDisposed)
                 {
                     if (null != enumWbem)
                     {
-                        Marshal.ReleaseComObject (enumWbem);
+                        Marshal.ReleaseComObject(enumWbem);
                         enumWbem = null;
                     }
 
@@ -457,7 +457,7 @@ namespace System.Management
 
                     isDisposed = true;
 
-                    GC.SuppressFinalize (this);
+                    GC.SuppressFinalize(this);
                 }
             }
 
@@ -479,7 +479,7 @@ namespace System.Management
                     if (cacheIndex < 0)
                         throw new InvalidOperationException();
 
-                    return ManagementBaseObject.GetBaseObject (cachedObjects[cacheIndex],
+                    return ManagementBaseObject.GetBaseObject(cachedObjects[cacheIndex],
                         collectionObject.scope);
                 }
             }
@@ -511,7 +511,7 @@ namespace System.Management
             ///    successfully advanced to the next element; <see langword='false'/> if the enumerator has
             ///    passed the end of the collection.</para>
             /// </returns>
-            public bool MoveNext ()
+            public bool MoveNext()
             {
                 if (isDisposed)
                     throw new ObjectDisposedException(name);
@@ -538,7 +538,7 @@ namespace System.Management
                     //counterparts afterwards.
                     IWbemClassObject_DoNotMarshal[] tempArray = new IWbemClassObject_DoNotMarshal[collectionObject.options.BlockSize];
 
-                    int status = collectionObject.scope.GetSecuredIEnumWbemClassObjectHandler(enumWbem ).Next_(timeout, (uint)collectionObject.options.BlockSize, tempArray, ref cachedCount);
+                    int status = collectionObject.scope.GetSecuredIEnumWbemClassObjectHandler(enumWbem).Next_(timeout, (uint)collectionObject.options.BlockSize, tempArray, ref cachedCount);
 
                     securityHandler.Reset();
 
@@ -596,7 +596,7 @@ namespace System.Management
             /// <summary>
             ///    <para>Resets the enumerator to the beginning of the collection.</para>
             /// </summary>
-            public void Reset ()
+            public void Reset()
             {
                 if (isDisposed)
                     throw new ObjectDisposedException(name);
@@ -616,11 +616,11 @@ namespace System.Management
                     }
                     catch (COMException e)
                     {
-                        ManagementException.ThrowWithExtendedInfo (e);
+                        ManagementException.ThrowWithExtendedInfo(e);
                     }
                     finally
                     {
-                        securityHandler.Reset ();
+                        securityHandler.Reset();
                     }
 
                     if ((status & 0xfffff000) == 0x80041000)
@@ -633,7 +633,7 @@ namespace System.Management
                     }
 
                     //Flush the current enumeration cache
-                    for (int i=(cacheIndex >= 0 ? cacheIndex : 0); i<cachedCount; i++)
+                    for (int i = (cacheIndex >= 0 ? cacheIndex : 0); i < cachedCount; i++)
                         Marshal.ReleaseComObject((IWbemClassObject_DoNotMarshal)(Marshal.GetObjectForIUnknown(cachedObjects[i])));
 
                     cachedCount = 0;

@@ -19,7 +19,7 @@ namespace System.Management
     ///       derivatives of it are actually used in the API.</para>
     /// </remarks>
     //CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC//
-    [TypeConverter(typeof(ManagementQueryConverter ))]
+    [TypeConverter(typeof(ManagementQueryConverter))]
     public abstract class ManagementQuery : ICloneable
     {
         internal const string DEFAULTQUERYLANGUAGE = "WQL";
@@ -39,16 +39,16 @@ namespace System.Management
         private string queryLanguage;
         private string queryString;
 
-        internal void SetQueryString (string qString)
+        internal void SetQueryString(string qString)
         {
             queryString = qString;
         }
 
         //default constructor
-        internal ManagementQuery() : this(DEFAULTQUERYLANGUAGE, null) {}
+        internal ManagementQuery() : this(DEFAULTQUERYLANGUAGE, null) { }
 
         //parameterized constructors
-        internal ManagementQuery(string query) : this(DEFAULTQUERYLANGUAGE, query) {}
+        internal ManagementQuery(string query) : this(DEFAULTQUERYLANGUAGE, query) { }
         internal ManagementQuery(string language, string query)
         {
             QueryLanguage = language;
@@ -59,7 +59,7 @@ namespace System.Management
         ///  Parses the query string and sets the property values accordingly.
         /// </summary>
         /// <param name="query">The query string to be parsed.</param>
-        protected internal virtual void ParseQuery (string query) {}
+        protected internal virtual void ParseQuery(string query) { }
 
         //
         //properties
@@ -75,12 +75,14 @@ namespace System.Management
         /// </value>
         public virtual string QueryString
         {
-            get {return (null != queryString) ? queryString : string.Empty; }
-            set {
-                if (queryString != value) {
-                    ParseQuery (value); // this may throw
+            get { return (null != queryString) ? queryString : string.Empty; }
+            set
+            {
+                if (queryString != value)
+                {
+                    ParseQuery(value); // this may throw
                     queryString = value;
-                    FireIdentifierChanged ();
+                    FireIdentifierChanged();
                 }
             }
         }
@@ -95,11 +97,13 @@ namespace System.Management
         /// </value>
         public virtual string QueryLanguage
         {
-            get {return (null != queryLanguage) ? queryLanguage : string.Empty; }
-            set {
-                if (queryLanguage != value) {
+            get { return (null != queryLanguage) ? queryLanguage : string.Empty; }
+            set
+            {
+                if (queryLanguage != value)
+                {
                     queryLanguage = value;
-                    FireIdentifierChanged ();
+                    FireIdentifierChanged();
                 }
             }
         }
@@ -113,13 +117,13 @@ namespace System.Management
         /// </returns>
         public abstract object Clone();
 
-        internal static void ParseToken (ref string q, string token, string op, ref bool bTokenFound, ref string tokenValue)
+        internal static void ParseToken(ref string q, string token, string op, ref bool bTokenFound, ref string tokenValue)
         {
             if (bTokenFound)
-                throw new ArgumentException (SR.InvalidQueryDuplicatedToken);    // Invalid query - duplicate token
+                throw new ArgumentException(SR.InvalidQueryDuplicatedToken);    // Invalid query - duplicate token
 
             bTokenFound = true;
-            q = q.Remove (0, token.Length).TrimStart (null);
+            q = q.Remove(0, token.Length).TrimStart(null);
 
             // Next character should be the operator if any
             if (op != null)
@@ -132,25 +136,25 @@ namespace System.Management
             }
 
             if (0 == q.Length)
-                throw new ArgumentException (SR.InvalidQueryNullToken);        // Invalid query - token has no value
+                throw new ArgumentException(SR.InvalidQueryNullToken);        // Invalid query - token has no value
 
             // Next token should be the token value - look for terminating WS
             // or end of string
             int i;
-            if (-1 == (i = q.IndexOf (' ')))
+            if (-1 == (i = q.IndexOf(' ')))
                 i = q.Length;            // No WS => consume entire string
 
-            tokenValue = q.Substring (0, i);
-            q = q.Remove (0, tokenValue.Length).TrimStart(null);
+            tokenValue = q.Substring(0, i);
+            q = q.Remove(0, tokenValue.Length).TrimStart(null);
         }
 
-        internal static void ParseToken (ref string q, string token, ref bool bTokenFound)
+        internal static void ParseToken(ref string q, string token, ref bool bTokenFound)
         {
             if (bTokenFound)
-                throw new ArgumentException (SR.InvalidQueryDuplicatedToken);    // Invalid query - duplicate token
+                throw new ArgumentException(SR.InvalidQueryDuplicatedToken);    // Invalid query - duplicate token
 
             bTokenFound = true;
-            q = q.Remove (0, token.Length).TrimStart (null);
+            q = q.Remove(0, token.Length).TrimStart(null);
         }
 
     }//ManagementQuery
@@ -216,14 +220,14 @@ namespace System.Management
         /// class with no initialized values. This
         /// is the default constructor.</para>
         /// </summary>
-        public ObjectQuery() : base() {}
+        public ObjectQuery() : base() { }
         /// <summary>
         /// <para> Initializes a new instance of the <see cref='System.Management.ObjectQuery'/>
         /// class
         /// for a specific query string.</para>
         /// </summary>
         /// <param name='query'>The string representation of the query.</param>
-        public ObjectQuery(string query) : base(query) {}
+        public ObjectQuery(string query) : base(query) { }
         /// <summary>
         /// <para> Initializes a new instance of the <see cref='System.Management.ObjectQuery'/>
         /// class for a specific
@@ -231,7 +235,7 @@ namespace System.Management
         /// </summary>
         /// <param name='language'>The query language in which this query is specified.</param>
         /// <param name=' query'>The string representation of the query.</param>
-        public ObjectQuery(string language, string query) : base(language, query) {}
+        public ObjectQuery(string language, string query) : base(language, query) { }
 
         //ICloneable
         /// <summary>
@@ -240,7 +244,7 @@ namespace System.Management
         /// <returns>
         ///    The cloned object.
         /// </returns>
-        public override object Clone ()
+        public override object Clone()
         {
             return new ObjectQuery(QueryLanguage, QueryString);
         }
@@ -429,13 +433,13 @@ namespace System.Management
         /// class. This is the
         /// default constructor.</para>
         /// </summary>
-        public EventQuery() : base() {}
+        public EventQuery() : base() { }
         /// <summary>
         /// <para> Initializes a new instance of the <see cref='System.Management.EventQuery'/>
         /// class for the specified query.</para>
         /// </summary>
         /// <param name='query'>A textual representation of the event query.</param>
-        public EventQuery(string query) : base(query) {}
+        public EventQuery(string query) : base(query) { }
         /// <summary>
         /// <para> Initializes a new instance of the <see cref='System.Management.EventQuery'/>
         /// class for the specified
@@ -443,7 +447,7 @@ namespace System.Management
         /// </summary>
         /// <param name='language'>The language in which the query string is specified. </param>
         /// <param name=' query'>The string representation of the query.</param>
-        public EventQuery(string language, string query) : base(language, query) {}
+        public EventQuery(string language, string query) : base(language, query) { }
 
         //ICloneable
         /// <summary>
@@ -518,14 +522,14 @@ namespace System.Management
         /// <para>Initializes a new instance of the <see cref='System.Management.WqlObjectQuery'/> class. This is the
         ///    default constructor.</para>
         /// </summary>
-        public WqlObjectQuery() : base(null) {}
+        public WqlObjectQuery() : base(null) { }
 
         /// <summary>
         /// <para> Initializes a new instance of the <see cref='System.Management.WqlObjectQuery'/> class initialized to the
         ///    specified query.</para>
         /// </summary>
         /// <param name='query'><para> The representation of the data query.</para></param>
-        public WqlObjectQuery(string query) : base(query) {}
+        public WqlObjectQuery(string query) : base(query) { }
 
         //QueryLanguage property is read-only in this class (does this work ??)
         /// <summary>
@@ -538,7 +542,7 @@ namespace System.Management
         public override string QueryLanguage
         {
             get
-            {return base.QueryLanguage; }
+            { return base.QueryLanguage; }
         }
 
         //ICloneable
@@ -621,7 +625,7 @@ namespace System.Management
         /// class. This is the
         /// default constructor.</para>
         /// </summary>
-        public SelectQuery() :this(null) {}
+        public SelectQuery() : this(null) { }
 
         //parameterized constructors
         //ISSUE : We have 2 possible constructors that take a single string :
@@ -651,7 +655,7 @@ namespace System.Management
         /// </example>
         public SelectQuery(string queryOrClassName)
         {
-            selectedProperties = new StringCollection ();
+            selectedProperties = new StringCollection();
 
             if (null != queryOrClassName)
             {
@@ -668,12 +672,12 @@ namespace System.Management
                     // Do some basic sanity checking on whether it's a class name
                     //
 
-                    ManagementPath p = new ManagementPath (queryOrClassName);
+                    ManagementPath p = new ManagementPath(queryOrClassName);
 
-                    if (p.IsClass && (p.NamespacePath.Length==0))
+                    if (p.IsClass && (p.NamespacePath.Length == 0))
                         ClassName = queryOrClassName;
                     else
-                        throw new ArgumentException (SR.InvalidQuery, nameof(queryOrClassName));
+                        throw new ArgumentException(SR.InvalidQuery, nameof(queryOrClassName));
 
                 }
             }
@@ -692,7 +696,7 @@ namespace System.Management
         ///    <code lang='VB'>Dim s As New SelectQuery("Win32_Process", "HandleID=1234")
         ///    </code>
         /// </example>
-        public SelectQuery(string className, string condition) : this(className, condition, null) {}
+        public SelectQuery(string className, string condition) : this(className, condition, null) { }
 
         /// <summary>
         /// <para> Initializes a new instance of the <see cref='System.Management.SelectQuery'/>
@@ -716,15 +720,15 @@ namespace System.Management
         ///                          properties)
         ///    </code>
         /// </example>
-        public SelectQuery(string className, string condition, string[] selectedProperties) : base ()
+        public SelectQuery(string className, string condition, string[] selectedProperties) : base()
         {
             this.isSchemaQuery = false;
             this.className = className;
             this.condition = condition;
-            this.selectedProperties = new StringCollection ();
+            this.selectedProperties = new StringCollection();
 
             if (null != selectedProperties)
-                this.selectedProperties.AddRange (selectedProperties);
+                this.selectedProperties.AddRange(selectedProperties);
 
             BuildQuery();
         }
@@ -742,7 +746,7 @@ namespace System.Management
         ///    <code lang='VB'>Dim s As New SelectQuery(true, "__CLASS = ""Win32_Service""")
         ///    </code>
         /// </example>
-        public SelectQuery(bool isSchemaQuery, string condition) : base ()
+        public SelectQuery(bool isSchemaQuery, string condition) : base()
         {
             if (isSchemaQuery == false)
                 throw new ArgumentException(SR.InvalidQuery, nameof(isSchemaQuery));
@@ -778,12 +782,15 @@ namespace System.Management
         /// </example>
         public override string QueryString
         {
-            get {
+            get
+            {
                 // We need to force a rebuild as we may not have detected
                 // a change to selected properties
-                BuildQuery ();
-                return base.QueryString; }
-            set {
+                BuildQuery();
+                return base.QueryString;
+            }
+            set
+            {
                 base.QueryString = value;
             }
         }
@@ -877,20 +884,21 @@ namespace System.Management
         public StringCollection SelectedProperties
         {
             get { return selectedProperties; }
-            set {
+            set
+            {
                 if (null != value)
                 {
                     // A tad painful since StringCollection doesn't support ICloneable
                     StringCollection src = (StringCollection)value;
-                    StringCollection dst = new StringCollection ();
+                    StringCollection dst = new StringCollection();
 
                     foreach (string s in src)
-                        dst.Add (s);
+                        dst.Add(s);
 
                     selectedProperties = dst;
                 }
                 else
-                    selectedProperties = new StringCollection ();
+                    selectedProperties = new StringCollection();
 
                 BuildQuery();
                 FireIdentifierChanged();
@@ -909,9 +917,9 @@ namespace System.Management
                 //If the class name is not set we can't build a query
                 //Shouldn't throw here because the user may be in the process of filling in the properties...
                 if (className == null)
-                    SetQueryString (string.Empty);
+                    SetQueryString(string.Empty);
 
-                if ((className == null) || (className.Length==0))
+                if ((className == null) || (className.Length == 0))
                     return;
 
                 //Select clause
@@ -945,7 +953,7 @@ namespace System.Management
             //Set the queryString member to the built query (NB: note we set
             //by accessing the internal helper function rather than the property,
             //since we do not want to force a parse of a query we just built).
-            SetQueryString (s);
+            SetQueryString(s);
         }
 
 
@@ -971,13 +979,13 @@ namespace System.Management
                 string keyword = TokenSelect;
                 if ((q.Length >= keyword.Length) && (string.Compare(q, 0, keyword, 0, keyword.Length, StringComparison.OrdinalIgnoreCase) == 0)) //select clause found
                 {
-                    ParseToken (ref q, keyword, ref bFound);
+                    ParseToken(ref q, keyword, ref bFound);
                     if (q[0] != '*') //we have properties
                     {
                         if (null != selectedProperties)
-                            selectedProperties.Clear ();
+                            selectedProperties.Clear();
                         else
-                            selectedProperties = new StringCollection ();
+                            selectedProperties = new StringCollection();
 
                         //get the property list
                         while (true)
@@ -985,9 +993,9 @@ namespace System.Management
                             if ((i = q.IndexOf(',')) > 0)
                             {
                                 tempProp = q.Substring(0, i);
-                                q = q.Remove(0, i+1).TrimStart(null);
+                                q = q.Remove(0, i + 1).TrimStart(null);
                                 tempProp = tempProp.Trim();
-                                if (tempProp.Length>0)
+                                if (tempProp.Length > 0)
                                     selectedProperties.Add(tempProp);
                             }
                             else
@@ -1031,34 +1039,34 @@ namespace System.Management
 
                 // Should start with "select"
                 if ((q.Length < keyword.Length) ||
-                    (0 != string.Compare (q, 0, keyword, 0, keyword.Length, StringComparison.OrdinalIgnoreCase)))
-                    throw new ArgumentException (SR.InvalidQuery, "select");
+                    (0 != string.Compare(q, 0, keyword, 0, keyword.Length, StringComparison.OrdinalIgnoreCase)))
+                    throw new ArgumentException(SR.InvalidQuery, "select");
 
-                q = q.Remove (0, keyword.Length).TrimStart (null);
+                q = q.Remove(0, keyword.Length).TrimStart(null);
 
                 // Next should be a '*'
-                if (0 != q.IndexOf ('*', 0))
-                    throw new ArgumentException (SR.InvalidQuery, "*");
+                if (0 != q.IndexOf('*', 0))
+                    throw new ArgumentException(SR.InvalidQuery, "*");
 
-                q = q.Remove (0, 1).TrimStart (null);
+                q = q.Remove(0, 1).TrimStart(null);
 
                 // Next should be "from"
                 keyword = "from";
 
                 if ((q.Length < keyword.Length) ||
-                    (0 != string.Compare (q, 0, keyword, 0, keyword.Length, StringComparison.OrdinalIgnoreCase)))
-                    throw new ArgumentException (SR.InvalidQuery, "from");
+                    (0 != string.Compare(q, 0, keyword, 0, keyword.Length, StringComparison.OrdinalIgnoreCase)))
+                    throw new ArgumentException(SR.InvalidQuery, "from");
 
-                q = q.Remove (0, keyword.Length).TrimStart (null);
+                q = q.Remove(0, keyword.Length).TrimStart(null);
 
                 // Next should be "meta_class"
                 keyword = "meta_class";
 
                 if ((q.Length < keyword.Length) ||
-                    (0 != string.Compare (q, 0, keyword, 0, keyword.Length, StringComparison.OrdinalIgnoreCase)))
-                    throw new ArgumentException (SR.InvalidQuery, "meta_class");
+                    (0 != string.Compare(q, 0, keyword, 0, keyword.Length, StringComparison.OrdinalIgnoreCase)))
+                    throw new ArgumentException(SR.InvalidQuery, "meta_class");
 
-                q = q.Remove (0, keyword.Length).TrimStart (null);
+                q = q.Remove(0, keyword.Length).TrimStart(null);
 
                 // There may be a where clause
                 if (0 < q.Length)
@@ -1067,13 +1075,13 @@ namespace System.Management
                     keyword = "where";
 
                     if ((q.Length < keyword.Length) ||
-                        (0 != string.Compare (q, 0, keyword, 0, keyword.Length, StringComparison.OrdinalIgnoreCase)))
-                        throw new ArgumentException (SR.InvalidQuery, "where");
+                        (0 != string.Compare(q, 0, keyword, 0, keyword.Length, StringComparison.OrdinalIgnoreCase)))
+                        throw new ArgumentException(SR.InvalidQuery, "where");
 
-                    q = q.Remove (0, keyword.Length);
+                    q = q.Remove(0, keyword.Length);
 
                     // Must be some white space next
-                    if ((0 == q.Length) || !char.IsWhiteSpace (q[0]))
+                    if ((0 == q.Length) || !char.IsWhiteSpace(q[0]))
                         throw new ArgumentException(SR.InvalidQuery);    // Invalid query
 
                     q = q.TrimStart(null);    // Remove the leading whitespace
@@ -1095,7 +1103,7 @@ namespace System.Management
         /// <returns>
         ///    The copied object.
         /// </returns>
-        public override object Clone ()
+        public override object Clone()
         {
             string[] strArray = null;
 
@@ -1105,8 +1113,8 @@ namespace System.Management
 
                 if (0 < count)
                 {
-                    strArray = new string [count];
-                    selectedProperties.CopyTo (strArray, 0);
+                    strArray = new string[count];
+                    selectedProperties.CopyTo(strArray, 0);
                 }
             }
 
@@ -1207,7 +1215,7 @@ namespace System.Management
         /// <para>Initializes a new instance of the <see cref='System.Management.RelatedObjectQuery'/> class. This is the
         ///    default constructor.</para>
         /// </summary>
-        public RelatedObjectQuery() :this(null) {}
+        public RelatedObjectQuery() : this(null) { }
 
         //parameterized constructor
         //ISSUE : We have 2 possible constructors that take a single string :
@@ -1264,15 +1272,15 @@ namespace System.Management
                     // Do some basic sanity checking on whether it's a class/instance name
                     //
 
-                    ManagementPath p = new ManagementPath (queryOrSourceObject);
+                    ManagementPath p = new ManagementPath(queryOrSourceObject);
 
-                    if ((p.IsClass || p.IsInstance) && (p.NamespacePath.Length==0))
+                    if ((p.IsClass || p.IsInstance) && (p.NamespacePath.Length == 0))
                     {
                         SourceObject = queryOrSourceObject;
                         isSchemaQuery = false;
                     }
                     else
-                        throw new ArgumentException (SR.InvalidQuery, nameof(queryOrSourceObject));
+                        throw new ArgumentException(SR.InvalidQuery, nameof(queryOrSourceObject));
                 }
             }
         }
@@ -1284,7 +1292,8 @@ namespace System.Management
         /// <param name='sourceObject'>The path of the source object for this query.</param>
         /// <param name='relatedClass'>The related objects class.</param>
         public RelatedObjectQuery(string sourceObject, string relatedClass) : this(sourceObject, relatedClass,
-                                                                                    null, null, null, null, null, false) {}
+                                                                                    null, null, null, null, null, false)
+        { }
 
         //Do we need additional variants of constructors here ??
         /// <summary>
@@ -1556,48 +1565,48 @@ namespace System.Management
             //If the source object is not set we can't build a query
             //Shouldn't throw here because the user may be in the process of filling in the properties...
             if (sourceObject == null)
-                SetQueryString (string.Empty);
+                SetQueryString(string.Empty);
 
-            if ((sourceObject == null) || (sourceObject.Length==0))
+            if ((sourceObject == null) || (sourceObject.Length == 0))
                 return;
 
             //"associators" clause
             string s = TokenAssociators + " " + TokenOf + " {" + sourceObject + "}";
 
             //If any of the other parameters are set we need a "where" clause
-            if (!(RelatedClass.Length==0) ||
-                !(RelationshipClass.Length==0) ||
-                !(RelatedQualifier.Length==0) ||
-                !(RelationshipQualifier.Length==0) ||
-                !(RelatedRole.Length==0) ||
-                !(ThisRole.Length==0) ||
+            if (!(RelatedClass.Length == 0) ||
+                !(RelationshipClass.Length == 0) ||
+                !(RelatedQualifier.Length == 0) ||
+                !(RelationshipQualifier.Length == 0) ||
+                !(RelatedRole.Length == 0) ||
+                !(ThisRole.Length == 0) ||
                 classDefinitionsOnly ||
                 isSchemaQuery)
             {
                 s = s + " " + TokenWhere;
 
                 //"ResultClass"
-                if (!(RelatedClass.Length==0))
+                if (!(RelatedClass.Length == 0))
                     s = s + " " + TokenResultClass + " = " + relatedClass;
 
                 //"AssocClass"
-                if (!(RelationshipClass.Length==0))
+                if (!(RelationshipClass.Length == 0))
                     s = s + " " + TokenAssocClass + " = " + relationshipClass;
 
                 //"ResultRole"
-                if (!(RelatedRole.Length==0))
+                if (!(RelatedRole.Length == 0))
                     s = s + " " + TokenResultRole + " = " + relatedRole;
 
                 //"Role"
-                if (!(ThisRole.Length==0))
+                if (!(ThisRole.Length == 0))
                     s = s + " " + TokenRole + " = " + thisRole;
 
                 //"RequiredQualifier"
-                if (!(RelatedQualifier.Length==0))
+                if (!(RelatedQualifier.Length == 0))
                     s = s + " " + TokenRequiredQualifier + " = " + relatedQualifier;
 
                 //"RequiredAssocQualifier"
-                if (!(RelationshipQualifier.Length==0))
+                if (!(RelationshipQualifier.Length == 0))
                     s = s + " " + TokenRequiredAssocQualifier + " = " + relationshipQualifier;
 
                 //"SchemaOnly" and "ClassDefsOnly"
@@ -1613,7 +1622,7 @@ namespace System.Management
             //Set the queryString member to the built query (NB: note we set
             //by accessing the internal helper function rather than the property,
             //since we do not want to force a parse of a query we just built).
-            SetQueryString (s);
+            SetQueryString(s);
 
         }//BuildQuery()
 
@@ -1632,8 +1641,8 @@ namespace System.Management
             string tempThisRole = null;
             string tempRelatedQualifier = null;
             string tempRelationshipQualifier = null;
-            bool   tempClassDefsOnly = false;
-            bool   tempIsSchemaQuery = false;
+            bool tempClassDefsOnly = false;
+            bool tempIsSchemaQuery = false;
 
             //Trim whitespaces
             string q = query.Trim();
@@ -1647,7 +1656,7 @@ namespace System.Management
             q = q.Remove(0, TokenAssociators.Length);
 
             // Must be some white space next
-            if ((0 == q.Length) || !char.IsWhiteSpace (q[0]))
+            if ((0 == q.Length) || !char.IsWhiteSpace(q[0]))
                 throw new ArgumentException(SR.InvalidQuery);    // Invalid query
 
             q = q.TrimStart(null);    // Remove the leading whitespace
@@ -1657,7 +1666,7 @@ namespace System.Management
                 throw new ArgumentException(SR.InvalidQuery, "of");    // Invalid query
 
             // Strip off the clause and leading WS
-            q = q.Remove(0, TokenOf.Length).TrimStart (null);
+            q = q.Remove(0, TokenOf.Length).TrimStart(null);
 
             // Next character should be "{"
             if (0 != q.IndexOf('{'))
@@ -1671,19 +1680,19 @@ namespace System.Management
                 throw new ArgumentException(SR.InvalidQuery);    // Invalid query
 
             tempSourceObject = q.Substring(0, i).TrimEnd(null);
-            q = q.Remove(0, i+1).TrimStart(null);
+            q = q.Remove(0, i + 1).TrimStart(null);
 
             // At this point we may or may not have a "where" clause
             if (0 < q.Length)
             {
                 // Next should be the "where" clause
-                if (0 != string.Compare (q, 0, TokenWhere, 0, TokenWhere.Length, StringComparison.OrdinalIgnoreCase))
+                if (0 != string.Compare(q, 0, TokenWhere, 0, TokenWhere.Length, StringComparison.OrdinalIgnoreCase))
                     throw new ArgumentException(SR.InvalidQuery, "where");    // Invalid query
 
-                q = q.Remove (0, TokenWhere.Length);
+                q = q.Remove(0, TokenWhere.Length);
 
                 // Must be some white space next
-                if ((0 == q.Length) || !char.IsWhiteSpace (q[0]))
+                if ((0 == q.Length) || !char.IsWhiteSpace(q[0]))
                     throw new ArgumentException(SR.InvalidQuery);    // Invalid query
 
                 q = q.TrimStart(null);    // Remove the leading whitespace
@@ -1701,26 +1710,26 @@ namespace System.Management
                 // Keep looking for tokens until we are done
                 while (true)
                 {
-                    if ((q.Length >= TokenResultClass.Length) && (0 == string.Compare (q, 0, TokenResultClass, 0, TokenResultClass.Length, StringComparison.OrdinalIgnoreCase)))
-                        ParseToken (ref q, TokenResultClass, "=", ref bResultClassFound, ref tempRelatedClass);
-                    else if ((q.Length >= TokenAssocClass.Length) && (0 == string.Compare (q, 0, TokenAssocClass, 0, TokenAssocClass.Length, StringComparison.OrdinalIgnoreCase)))
-                        ParseToken (ref q, TokenAssocClass, "=", ref bAssocClassFound, ref tempRelationshipClass);
-                    else if ((q.Length >= TokenResultRole.Length) && (0 == string.Compare (q, 0, TokenResultRole, 0, TokenResultRole.Length, StringComparison.OrdinalIgnoreCase)))
-                        ParseToken (ref q, TokenResultRole, "=", ref bResultRoleFound, ref tempRelatedRole);
-                    else if ((q.Length >= TokenRole.Length) && (0 == string.Compare (q, 0, TokenRole, 0, TokenRole.Length, StringComparison.OrdinalIgnoreCase)))
-                        ParseToken (ref q, TokenRole, "=", ref bRoleFound, ref tempThisRole);
-                    else if ((q.Length >= TokenRequiredQualifier.Length) && (0 == string.Compare (q, 0, TokenRequiredQualifier, 0, TokenRequiredQualifier.Length, StringComparison.OrdinalIgnoreCase)))
-                        ParseToken (ref q, TokenRequiredQualifier, "=", ref bRequiredQualifierFound, ref tempRelatedQualifier);
-                    else if ((q.Length >= TokenRequiredAssocQualifier.Length) && (0 == string.Compare (q, 0, TokenRequiredAssocQualifier, 0, TokenRequiredAssocQualifier.Length, StringComparison.OrdinalIgnoreCase)))
-                        ParseToken (ref q, TokenRequiredAssocQualifier, "=", ref bRequiredAssocQualifierFound, ref tempRelationshipQualifier);
-                    else if ((q.Length >= TokenSchemaOnly.Length) && (0 == string.Compare (q, 0, TokenSchemaOnly, 0, TokenSchemaOnly.Length, StringComparison.OrdinalIgnoreCase)))
+                    if ((q.Length >= TokenResultClass.Length) && (0 == string.Compare(q, 0, TokenResultClass, 0, TokenResultClass.Length, StringComparison.OrdinalIgnoreCase)))
+                        ParseToken(ref q, TokenResultClass, "=", ref bResultClassFound, ref tempRelatedClass);
+                    else if ((q.Length >= TokenAssocClass.Length) && (0 == string.Compare(q, 0, TokenAssocClass, 0, TokenAssocClass.Length, StringComparison.OrdinalIgnoreCase)))
+                        ParseToken(ref q, TokenAssocClass, "=", ref bAssocClassFound, ref tempRelationshipClass);
+                    else if ((q.Length >= TokenResultRole.Length) && (0 == string.Compare(q, 0, TokenResultRole, 0, TokenResultRole.Length, StringComparison.OrdinalIgnoreCase)))
+                        ParseToken(ref q, TokenResultRole, "=", ref bResultRoleFound, ref tempRelatedRole);
+                    else if ((q.Length >= TokenRole.Length) && (0 == string.Compare(q, 0, TokenRole, 0, TokenRole.Length, StringComparison.OrdinalIgnoreCase)))
+                        ParseToken(ref q, TokenRole, "=", ref bRoleFound, ref tempThisRole);
+                    else if ((q.Length >= TokenRequiredQualifier.Length) && (0 == string.Compare(q, 0, TokenRequiredQualifier, 0, TokenRequiredQualifier.Length, StringComparison.OrdinalIgnoreCase)))
+                        ParseToken(ref q, TokenRequiredQualifier, "=", ref bRequiredQualifierFound, ref tempRelatedQualifier);
+                    else if ((q.Length >= TokenRequiredAssocQualifier.Length) && (0 == string.Compare(q, 0, TokenRequiredAssocQualifier, 0, TokenRequiredAssocQualifier.Length, StringComparison.OrdinalIgnoreCase)))
+                        ParseToken(ref q, TokenRequiredAssocQualifier, "=", ref bRequiredAssocQualifierFound, ref tempRelationshipQualifier);
+                    else if ((q.Length >= TokenSchemaOnly.Length) && (0 == string.Compare(q, 0, TokenSchemaOnly, 0, TokenSchemaOnly.Length, StringComparison.OrdinalIgnoreCase)))
                     {
-                        ParseToken (ref q, TokenSchemaOnly, ref bSchemaOnlyFound);
+                        ParseToken(ref q, TokenSchemaOnly, ref bSchemaOnlyFound);
                         tempIsSchemaQuery = true;
                     }
-                    else if ((q.Length >= TokenClassDefsOnly.Length) && (0 == string.Compare (q, 0, TokenClassDefsOnly, 0, TokenClassDefsOnly.Length, StringComparison.OrdinalIgnoreCase)))
+                    else if ((q.Length >= TokenClassDefsOnly.Length) && (0 == string.Compare(q, 0, TokenClassDefsOnly, 0, TokenClassDefsOnly.Length, StringComparison.OrdinalIgnoreCase)))
                     {
-                        ParseToken (ref q, TokenClassDefsOnly, ref bClassDefsOnlyFound);
+                        ParseToken(ref q, TokenClassDefsOnly, ref bClassDefsOnlyFound);
                         tempClassDefsOnly = true;
                     }
                     else if (0 == q.Length)
@@ -1843,7 +1852,7 @@ namespace System.Management
         /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.Management.RelationshipQuery'/> class. This is the default constructor.</para>
         /// </summary>
-        public RelationshipQuery() :this(null) {}
+        public RelationshipQuery() : this(null) { }
 
         //parameterized constructor
         //ISSUE : We have 2 possible constructors that take a single string :
@@ -1890,15 +1899,15 @@ namespace System.Management
 
                     // Do some basic sanity checking on whether it's a class/instance name
                     //
-                    ManagementPath p = new ManagementPath (queryOrSourceObject);
+                    ManagementPath p = new ManagementPath(queryOrSourceObject);
 
-                    if ((p.IsClass || p.IsInstance) && (p.NamespacePath.Length==0))
+                    if ((p.IsClass || p.IsInstance) && (p.NamespacePath.Length == 0))
                     {
                         SourceObject = queryOrSourceObject;
                         isSchemaQuery = false;
                     }
                     else
-                        throw new ArgumentException (SR.InvalidQuery, nameof(queryOrSourceObject));
+                        throw new ArgumentException(SR.InvalidQuery, nameof(queryOrSourceObject));
 
                 }
             }
@@ -1911,7 +1920,9 @@ namespace System.Management
         /// <param name='sourceObject'> The path of the source object for this query.</param>
         /// <param name='relationshipClass'> The type of relationship for which to query.</param>
         public RelationshipQuery(string sourceObject, string relationshipClass) : this(sourceObject, relationshipClass,
-                                                                                        null, null, false) {}
+                                                                                        null, null, false)
+        { }
+
         //Do we need additional variants of constructors here ??
         /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.Management.RelationshipQuery'/> class for the given set of parameters.
@@ -2091,31 +2102,31 @@ namespace System.Management
             if (sourceObject == null)
                 SetQueryString(string.Empty);
 
-            if ((sourceObject == null) || (sourceObject.Length==0))
+            if ((sourceObject == null) || (sourceObject.Length == 0))
                 return;
 
             //"references" clause
             string s = TokenReferences + " " + TokenOf + " {" + sourceObject + "}";
 
             //If any of the other parameters are set we need a "where" clause
-            if (!(RelationshipClass.Length==0) ||
-                !(RelationshipQualifier.Length==0) ||
-                !(ThisRole.Length==0) ||
+            if (!(RelationshipClass.Length == 0) ||
+                !(RelationshipQualifier.Length == 0) ||
+                !(ThisRole.Length == 0) ||
                 classDefinitionsOnly ||
                 isSchemaQuery)
             {
                 s = s + " " + TokenWhere;
 
                 //"ResultClass"
-                if (!(RelationshipClass.Length==0))
+                if (!(RelationshipClass.Length == 0))
                     s = s + " " + TokenResultClass + " = " + relationshipClass;
 
                 //"Role"
-                if (!(ThisRole.Length==0))
+                if (!(ThisRole.Length == 0))
                     s = s + " " + TokenRole + " = " + thisRole;
 
                 //"RequiredQualifier"
-                if (!(RelationshipQualifier.Length==0))
+                if (!(RelationshipQualifier.Length == 0))
                     s = s + " " + TokenRequiredQualifier + " = " + relationshipQualifier;
 
                 //"SchemaOnly" and "ClassDefsOnly"
@@ -2132,7 +2143,7 @@ namespace System.Management
             //Set the queryString member to the built query (NB: note we set
             //by accessing the internal helper function rather than the property,
             //since we do not want to force a parse of a query we just built).
-            SetQueryString (s);
+            SetQueryString(s);
         } //BuildQuery()
 
 
@@ -2147,8 +2158,8 @@ namespace System.Management
             string tempRelationshipClass = null;
             string tempThisRole = null;
             string tempRelationshipQualifier = null;
-            bool   tempClassDefsOnly = false;
-            bool   tempSchemaOnly = false;
+            bool tempClassDefsOnly = false;
+            bool tempSchemaOnly = false;
 
             //Trim whitespaces
             string q = query.Trim();
@@ -2162,7 +2173,7 @@ namespace System.Management
             q = q.Remove(0, TokenReferences.Length);
 
             // Must be some white space next
-            if ((0 == q.Length) || !char.IsWhiteSpace (q[0]))
+            if ((0 == q.Length) || !char.IsWhiteSpace(q[0]))
                 throw new ArgumentException(SR.InvalidQuery);    // Invalid query
 
             q = q.TrimStart(null);    // Remove the leading whitespace
@@ -2172,7 +2183,7 @@ namespace System.Management
                 throw new ArgumentException(SR.InvalidQuery, "of");    // Invalid query
 
             // Strip off the clause and leading WS
-            q = q.Remove(0, TokenOf.Length).TrimStart (null);
+            q = q.Remove(0, TokenOf.Length).TrimStart(null);
 
             // Next character should be "{"
             if (0 != q.IndexOf('{'))
@@ -2186,19 +2197,19 @@ namespace System.Management
                 throw new ArgumentException(SR.InvalidQuery);    // Invalid query
 
             tempSourceObject = q.Substring(0, i).TrimEnd(null);
-            q = q.Remove(0, i+1).TrimStart(null);
+            q = q.Remove(0, i + 1).TrimStart(null);
 
             // At this point we may or may not have a "where" clause
             if (0 < q.Length)
             {
                 // Next should be the "where" clause
-                if (0 != string.Compare (q, 0, TokenWhere, 0, TokenWhere.Length, StringComparison.OrdinalIgnoreCase))
+                if (0 != string.Compare(q, 0, TokenWhere, 0, TokenWhere.Length, StringComparison.OrdinalIgnoreCase))
                     throw new ArgumentException(SR.InvalidQuery, "where");    // Invalid query
 
-                q = q.Remove (0, TokenWhere.Length);
+                q = q.Remove(0, TokenWhere.Length);
 
                 // Must be some white space next
-                if ((0 == q.Length) || !char.IsWhiteSpace (q[0]))
+                if ((0 == q.Length) || !char.IsWhiteSpace(q[0]))
                     throw new ArgumentException(SR.InvalidQuery);    // Invalid query
 
                 q = q.TrimStart(null);    // Remove the leading whitespace
@@ -2213,20 +2224,20 @@ namespace System.Management
                 // Keep looking for tokens until we are done
                 while (true)
                 {
-                    if ((q.Length >= TokenResultClass.Length) && (0 == string.Compare (q, 0, TokenResultClass, 0, TokenResultClass.Length, StringComparison.OrdinalIgnoreCase)))
-                        ParseToken (ref q, TokenResultClass, "=", ref bResultClassFound, ref tempRelationshipClass);
-                    else if ((q.Length >= TokenRole.Length) && (0 == string.Compare (q, 0, TokenRole, 0, TokenRole.Length, StringComparison.OrdinalIgnoreCase)))
-                        ParseToken (ref q, TokenRole, "=", ref bRoleFound, ref tempThisRole);
-                    else if ((q.Length >= TokenRequiredQualifier.Length) && (0 == string.Compare (q, 0, TokenRequiredQualifier, 0, TokenRequiredQualifier.Length, StringComparison.OrdinalIgnoreCase)))
-                        ParseToken (ref q, TokenRequiredQualifier, "=", ref bRequiredQualifierFound, ref tempRelationshipQualifier);
-                    else if ((q.Length >= TokenClassDefsOnly.Length) && (0 == string.Compare (q, 0, TokenClassDefsOnly, 0, TokenClassDefsOnly.Length, StringComparison.OrdinalIgnoreCase)))
+                    if ((q.Length >= TokenResultClass.Length) && (0 == string.Compare(q, 0, TokenResultClass, 0, TokenResultClass.Length, StringComparison.OrdinalIgnoreCase)))
+                        ParseToken(ref q, TokenResultClass, "=", ref bResultClassFound, ref tempRelationshipClass);
+                    else if ((q.Length >= TokenRole.Length) && (0 == string.Compare(q, 0, TokenRole, 0, TokenRole.Length, StringComparison.OrdinalIgnoreCase)))
+                        ParseToken(ref q, TokenRole, "=", ref bRoleFound, ref tempThisRole);
+                    else if ((q.Length >= TokenRequiredQualifier.Length) && (0 == string.Compare(q, 0, TokenRequiredQualifier, 0, TokenRequiredQualifier.Length, StringComparison.OrdinalIgnoreCase)))
+                        ParseToken(ref q, TokenRequiredQualifier, "=", ref bRequiredQualifierFound, ref tempRelationshipQualifier);
+                    else if ((q.Length >= TokenClassDefsOnly.Length) && (0 == string.Compare(q, 0, TokenClassDefsOnly, 0, TokenClassDefsOnly.Length, StringComparison.OrdinalIgnoreCase)))
                     {
-                        ParseToken (ref q, TokenClassDefsOnly, ref bClassDefsOnlyFound);
+                        ParseToken(ref q, TokenClassDefsOnly, ref bClassDefsOnlyFound);
                         tempClassDefsOnly = true;
                     }
-                    else if ((q.Length >= TokenSchemaOnly.Length) && (0 == string.Compare (q, 0, TokenSchemaOnly, 0, TokenSchemaOnly.Length, StringComparison.OrdinalIgnoreCase)))
+                    else if ((q.Length >= TokenSchemaOnly.Length) && (0 == string.Compare(q, 0, TokenSchemaOnly, 0, TokenSchemaOnly.Length, StringComparison.OrdinalIgnoreCase)))
                     {
-                        ParseToken (ref q, TokenSchemaOnly, ref bSchemaOnlyFound);
+                        ParseToken(ref q, TokenSchemaOnly, ref bSchemaOnlyFound);
                         tempSchemaOnly = true;
                     }
                     else if (0 == q.Length)
@@ -2432,7 +2443,7 @@ namespace System.Management
         /// class. This is the default
         /// constructor.</para>
         /// </summary>
-        public WqlEventQuery() : this(null, TimeSpan.Zero, null, TimeSpan.Zero, null, null) {}
+        public WqlEventQuery() : this(null, TimeSpan.Zero, null, TimeSpan.Zero, null, null) { }
 
         //parameterized constructors
         //ISSUE : We have 2 possible constructors that take a single string :
@@ -2476,14 +2487,14 @@ namespace System.Management
                 {
                     // Do some basic sanity checking on whether it's a class name
                     //
-                    ManagementPath p = new ManagementPath (queryOrEventClassName);
+                    ManagementPath p = new ManagementPath(queryOrEventClassName);
 
-                    if (p.IsClass && (p.NamespacePath.Length==0))
+                    if (p.IsClass && (p.NamespacePath.Length == 0))
                     {
                         EventClassName = queryOrEventClassName;
                     }
                     else
-                        throw new ArgumentException (SR.InvalidQuery, nameof(queryOrEventClassName));
+                        throw new ArgumentException(SR.InvalidQuery, nameof(queryOrEventClassName));
                 }
             }
         }
@@ -2507,7 +2518,7 @@ namespace System.Management
         /// Dim q As New WqlEventQuery("MyEvent", "FirstProp &lt; 20 and SecondProp = 'red'")
         ///    </code>
         /// </example>
-        public WqlEventQuery(string eventClassName, string condition) : this(eventClassName, TimeSpan.Zero, condition, TimeSpan.Zero, null, null) {}
+        public WqlEventQuery(string eventClassName, string condition) : this(eventClassName, TimeSpan.Zero, condition, TimeSpan.Zero, null, null) { }
 
         /// <summary>
         /// <para> Initializes a new instance of the <see cref='System.Management.WqlEventQuery'/>
@@ -2531,8 +2542,9 @@ namespace System.Management
         /// Dim q As New WqlEventQuery("__InstanceCreationEvent", t)
         ///    </code>
         /// </example>
-        public WqlEventQuery(string eventClassName, TimeSpan withinInterval):
-                                        this(eventClassName, withinInterval, null, TimeSpan.Zero, null, null) {}
+        public WqlEventQuery(string eventClassName, TimeSpan withinInterval) :
+                                        this(eventClassName, withinInterval, null, TimeSpan.Zero, null, null)
+        { }
         /// <summary>
         /// <para> Initializes a new instance of the <see cref='System.Management.WqlEventQuery'/>
         /// class with the specified
@@ -2563,7 +2575,8 @@ namespace System.Management
         ///    </code>
         /// </example>
         public WqlEventQuery(string eventClassName, TimeSpan withinInterval, string condition) :
-                                        this(eventClassName, withinInterval, condition, TimeSpan.Zero, null, null) {}
+                                        this(eventClassName, withinInterval, condition, TimeSpan.Zero, null, null)
+        { }
 
         /// <summary>
         /// <para> Initializes a new instance of the <see cref='System.Management.WqlEventQuery'/>
@@ -2594,7 +2607,8 @@ namespace System.Management
         ///    </code>
         /// </example>
         public WqlEventQuery(string eventClassName, string condition, TimeSpan groupWithinInterval) :
-                                        this(eventClassName, TimeSpan.Zero, condition, groupWithinInterval, null, null) {}
+                                        this(eventClassName, TimeSpan.Zero, condition, groupWithinInterval, null, null)
+        { }
 
         /// <summary>
         /// <para> Initializes a new instance of the <see cref='System.Management.WqlEventQuery'/>
@@ -2632,7 +2646,8 @@ namespace System.Management
         /// </code>
         /// </example>
         public WqlEventQuery(string eventClassName, string condition, TimeSpan groupWithinInterval, string[] groupByPropertyList) :
-            this(eventClassName, TimeSpan.Zero, condition, groupWithinInterval, groupByPropertyList, null) {}
+            this(eventClassName, TimeSpan.Zero, condition, groupWithinInterval, groupByPropertyList, null)
+        { }
 
         /// <summary>
         /// <para> Initializes a new instance of the <see cref='System.Management.WqlEventQuery'/>
@@ -2678,10 +2693,10 @@ namespace System.Management
             this.withinInterval = withinInterval;
             this.condition = condition;
             this.groupWithinInterval = groupWithinInterval;
-            this.groupByPropertyList = new StringCollection ();
+            this.groupByPropertyList = new StringCollection();
 
             if (null != groupByPropertyList)
-                this.groupByPropertyList.AddRange (groupByPropertyList);
+                this.groupByPropertyList.AddRange(groupByPropertyList);
 
             this.havingCondition = havingCondition;
             BuildQuery();
@@ -2699,7 +2714,7 @@ namespace System.Management
         public override string QueryLanguage
         {
             get
-            {return base.QueryLanguage; }
+            { return base.QueryLanguage; }
         }
 
         /// <summary>
@@ -2714,7 +2729,7 @@ namespace System.Management
             {
                 // We need to force a rebuild as we may not have detected
                 // a change to selected properties
-                BuildQuery ();
+                BuildQuery();
                 return base.QueryString;
             }
             set
@@ -2892,13 +2907,14 @@ namespace System.Management
         public StringCollection GroupByPropertyList
         {
             get { return groupByPropertyList; }
-            set {
+            set
+            {
                 // A tad painful since StringCollection doesn't support ICloneable
                 StringCollection src = (StringCollection)value;
-                StringCollection dst = new StringCollection ();
+                StringCollection dst = new StringCollection();
 
                 foreach (string s in src)
-                    dst.Add (s);
+                    dst.Add(s);
 
                 groupByPropertyList = dst;
                 BuildQuery();
@@ -2950,9 +2966,9 @@ namespace System.Management
         {
             //If the event class name is not set we can't build a query
             //This shouldn't throw because the user may be in the process of setting properties...
-            if ((eventClassName == null) || (eventClassName.Length==0))
+            if ((eventClassName == null) || (eventClassName.Length == 0))
             {
-                SetQueryString (string.Empty);
+                SetQueryString(string.Empty);
                 return;
             }
 
@@ -2967,7 +2983,7 @@ namespace System.Management
                 s = s + " within " + withinInterval.TotalSeconds.ToString((IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(double)));
 
             //Where clause
-            if (!(Condition.Length==0))
+            if (!(Condition.Length == 0))
                 s = s + " where " + condition;
 
             //Group within clause
@@ -2981,12 +2997,12 @@ namespace System.Management
                     int count = groupByPropertyList.Count;
                     s = s + " by ";
 
-                    for (int i=0; i<count; i++)
+                    for (int i = 0; i < count; i++)
                         s = s + groupByPropertyList[i] + (i == (count - 1) ? "" : ",");
                 }
 
                 //Having clause
-                if (!(HavingCondition.Length==0))
+                if (!(HavingCondition.Length == 0))
                 {
                     s = s + " having " + havingCondition;
                 }
@@ -2995,7 +3011,7 @@ namespace System.Management
             //Set the queryString member to the built query (NB: note we set
             //by accessing the internal helper function rather than the property,
             //since we do not want to force a parse of a query we just built).
-            SetQueryString (s);
+            SetQueryString(s);
 
         }//BuildQuery
 
@@ -3022,23 +3038,23 @@ namespace System.Management
 
             //Find "select" clause and make sure it's a select *
             string keyword = TokenSelect;
-            if ((q.Length < keyword.Length) || (0 != string.Compare (q, 0, keyword, 0, keyword.Length, StringComparison.OrdinalIgnoreCase)))
+            if ((q.Length < keyword.Length) || (0 != string.Compare(q, 0, keyword, 0, keyword.Length, StringComparison.OrdinalIgnoreCase)))
                 throw new ArgumentException(SR.InvalidQuery);
-            q =    q.Remove(0, keyword.Length).TrimStart(null);
+            q = q.Remove(0, keyword.Length).TrimStart(null);
 
             if (!q.StartsWith("*", StringComparison.Ordinal))
-                    throw new ArgumentException(SR.InvalidQuery, "*");
+                throw new ArgumentException(SR.InvalidQuery, "*");
             q = q.Remove(0, 1).TrimStart(null);
 
             //Find "from" clause
             keyword = "from ";
-            if ((q.Length < keyword.Length) || (0 != string.Compare (q, 0, keyword, 0, keyword.Length, StringComparison.OrdinalIgnoreCase)))
+            if ((q.Length < keyword.Length) || (0 != string.Compare(q, 0, keyword, 0, keyword.Length, StringComparison.OrdinalIgnoreCase)))
                 throw new ArgumentException(SR.InvalidQuery, "from");
             ParseToken(ref q, keyword, null, ref bFound, ref eventClassName);
 
             //Find "within" clause
             keyword = "within ";
-            if ((q.Length >= keyword.Length) && (0 == string.Compare (q, 0, keyword, 0, keyword.Length, StringComparison.OrdinalIgnoreCase)))
+            if ((q.Length >= keyword.Length) && (0 == string.Compare(q, 0, keyword, 0, keyword.Length, StringComparison.OrdinalIgnoreCase)))
             {
                 string intervalString = null; bFound = false;
                 ParseToken(ref q, keyword, null, ref bFound, ref intervalString);
@@ -3053,19 +3069,19 @@ namespace System.Management
                 w = q.Substring(0, i).Trim();
                 q = q.Remove(0, i);
 
-                string intervalString = null; bFound=false;
+                string intervalString = null; bFound = false;
                 ParseToken(ref q, keyword, null, ref bFound, ref intervalString);
                 groupWithinInterval = TimeSpan.FromSeconds(((IConvertible)intervalString).ToDouble(null));
 
                 //Find "By" subclause
                 keyword = "by ";
-                if ((q.Length >= keyword.Length) && (0 == string.Compare (q, 0, keyword, 0, keyword.Length, StringComparison.OrdinalIgnoreCase)))
+                if ((q.Length >= keyword.Length) && (0 == string.Compare(q, 0, keyword, 0, keyword.Length, StringComparison.OrdinalIgnoreCase)))
                 {
                     q = q.Remove(0, keyword.Length);
                     if (null != groupByPropertyList)
-                        groupByPropertyList.Clear ();
+                        groupByPropertyList.Clear();
                     else
-                        groupByPropertyList = new StringCollection ();
+                        groupByPropertyList = new StringCollection();
 
                     //get the property list
                     while (true)
@@ -3073,9 +3089,9 @@ namespace System.Management
                         if ((i = q.IndexOf(',')) > 0)
                         {
                             tempProp = q.Substring(0, i);
-                            q = q.Remove(0, i+1).TrimStart(null);
+                            q = q.Remove(0, i + 1).TrimStart(null);
                             tempProp = tempProp.Trim();
-                            if (tempProp.Length>0)
+                            if (tempProp.Length > 0)
                                 groupByPropertyList.Add(tempProp);
                         }
                         else
@@ -3098,7 +3114,7 @@ namespace System.Management
 
                 //Find "Having" subclause
                 keyword = "having "; bFound = false;
-                if ((q.Length >= keyword.Length) && (0 == string.Compare (q, 0, keyword, 0, keyword.Length, StringComparison.OrdinalIgnoreCase)))
+                if ((q.Length >= keyword.Length) && (0 == string.Compare(q, 0, keyword, 0, keyword.Length, StringComparison.OrdinalIgnoreCase)))
                 {   //the rest until the end is assumed to be the having condition
                     q = q.Remove(0, keyword.Length);
 
@@ -3114,7 +3130,7 @@ namespace System.Management
 
             //Find "where" clause
             keyword = "where ";
-            if ((w.Length >= keyword.Length) && (0 == string.Compare (w, 0, keyword, 0, keyword.Length, StringComparison.OrdinalIgnoreCase))) //where clause exists
+            if ((w.Length >= keyword.Length) && (0 == string.Compare(w, 0, keyword, 0, keyword.Length, StringComparison.OrdinalIgnoreCase))) //where clause exists
             {
                 condition = w.Substring(keyword.Length);
             }
@@ -3139,8 +3155,8 @@ namespace System.Management
 
                 if (0 < count)
                 {
-                    strArray = new string [count];
-                    groupByPropertyList.CopyTo (strArray, 0);
+                    strArray = new string[count];
+                    groupByPropertyList.CopyTo(strArray, 0);
                 }
             }
 
@@ -3214,20 +3230,20 @@ namespace System.Management
             if (value is EventQuery && destinationType == typeof(InstanceDescriptor))
             {
                 EventQuery obj = ((EventQuery)(value));
-                ConstructorInfo ctor = typeof(EventQuery).GetConstructor(new Type[] {typeof(string)});
+                ConstructorInfo ctor = typeof(EventQuery).GetConstructor(new Type[] { typeof(string) });
                 if (ctor != null)
                 {
-                    return new InstanceDescriptor(ctor, new object[] {obj.QueryString});
+                    return new InstanceDescriptor(ctor, new object[] { obj.QueryString });
                 }
             }
 
             if (value is ObjectQuery && destinationType == typeof(InstanceDescriptor))
             {
                 ObjectQuery obj = ((ObjectQuery)(value));
-                ConstructorInfo ctor = typeof(ObjectQuery).GetConstructor(new Type[] {typeof(string)});
+                ConstructorInfo ctor = typeof(ObjectQuery).GetConstructor(new Type[] { typeof(string) });
                 if (ctor != null)
                 {
-                    return new InstanceDescriptor(ctor, new object[] {obj.QueryString});
+                    return new InstanceDescriptor(ctor, new object[] { obj.QueryString });
                 }
             }
             return base.ConvertTo(context, culture, value, destinationType);

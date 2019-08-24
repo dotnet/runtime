@@ -253,7 +253,7 @@ namespace System.Numerics
         {
         }
 
-        public BigInteger(ReadOnlySpan<byte> value, bool isUnsigned=false, bool isBigEndian=false)
+        public BigInteger(ReadOnlySpan<byte> value, bool isUnsigned = false, bool isBigEndian = false)
         {
             int byteCount = value.Length;
 
@@ -1150,7 +1150,7 @@ namespace System.Numerics
         ///   </item>
         /// </list>
         /// </remarks>
-        public byte[] ToByteArray(bool isUnsigned=false, bool isBigEndian=false)
+        public byte[] ToByteArray(bool isUnsigned = false, bool isBigEndian = false)
         {
             int ignored = 0;
             return TryGetBytes(GetBytesMode.AllocateArray, default, isUnsigned, isBigEndian, ref ignored);
@@ -1167,7 +1167,7 @@ namespace System.Numerics
         /// <param name="isBigEndian">Whether or not to write the bytes in a big-endian byte order</param>
         /// <returns>true if the bytes fit in <paramref name="destination"/>; false if not all bytes could be written due to lack of space.</returns>
         /// <exception cref="OverflowException">If <paramref name="isUnsigned"/> is <c>true</c> and <see cref="Sign"/> is negative.</exception>
-        public bool TryWriteBytes(Span<byte> destination, out int bytesWritten, bool isUnsigned=false, bool isBigEndian=false)
+        public bool TryWriteBytes(Span<byte> destination, out int bytesWritten, bool isUnsigned = false, bool isBigEndian = false)
         {
             bytesWritten = 0;
             if (TryGetBytes(GetBytesMode.Span, destination, isUnsigned, isBigEndian, ref bytesWritten) == null)
@@ -1186,7 +1186,7 @@ namespace System.Numerics
 
         /// <summary>Gets the number of bytes that will be output by <see cref="ToByteArray(bool, bool)"/> and <see cref="TryWriteBytes(Span{byte}, out int, bool, bool)"/>.</summary>
         /// <returns>The number of bytes.</returns>
-        public int GetByteCount(bool isUnsigned=false)
+        public int GetByteCount(bool isUnsigned = false)
         {
             int count = 0;
             // Big or Little Endian doesn't matter for the byte count.

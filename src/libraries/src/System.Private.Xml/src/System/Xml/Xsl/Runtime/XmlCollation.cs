@@ -106,7 +106,7 @@ namespace System.Xml.Xsl.Runtime
                 }
             }
 
-            public static implicit operator int (Options options)
+            public static implicit operator int(Options options)
             {
                 return options._value;
             }

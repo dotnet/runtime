@@ -67,13 +67,13 @@ namespace System.Net
 
         private string m_domainKey = string.Empty; // Do not rename (binary serialization)
 
-/*
-    TODO: #13607
-    VSO 449560
-    Reflecting on internal method won't work on AOT without rd.xml and DisableReflection
-    block in toolchain.Networking team will be working on exposing methods from S.Net.Primitive
-    public, this is a temporary workaround till that happens.
-*/
+        /*
+            TODO: #13607
+            VSO 449560
+            Reflecting on internal method won't work on AOT without rd.xml and DisableReflection
+            block in toolchain.Networking team will be working on exposing methods from S.Net.Primitive
+            public, this is a temporary workaround till that happens.
+        */
 #if uap
         public
 #else
@@ -81,13 +81,13 @@ namespace System.Net
 #endif
         bool IsQuotedVersion = false;
 
-/*
-    TODO: #13607
-    VSO 449560
-    Reflecting on internal method won't work on AOT without rd.xml and DisableReflection
-    block in toolchain.Networking team will be working on exposing methods from S.Net.Primitive
-    public, this is a temporary workaround till that happens.
-*/
+        /*
+            TODO: #13607
+            VSO 449560
+            Reflecting on internal method won't work on AOT without rd.xml and DisableReflection
+            block in toolchain.Networking team will be working on exposing methods from S.Net.Primitive
+            public, this is a temporary workaround till that happens.
+        */
 #if uap
         public
 #else
@@ -242,13 +242,13 @@ namespace System.Net
             }
         }
 
-/*
-    TODO: #13607
-    VSO 449560
-    Reflecting on internal method won't work on AOT without rd.xml and DisableReflection
-    block in toolchain.Networking team will be working on exposing methods from S.Net.Primitive
-    public, this is a temporary workaround till that happens.
-*/
+        /*
+            TODO: #13607
+            VSO 449560
+            Reflecting on internal method won't work on AOT without rd.xml and DisableReflection
+            block in toolchain.Networking team will be working on exposing methods from S.Net.Primitive
+            public, this is a temporary workaround till that happens.
+        */
 #if uap
         public
 #else
@@ -286,13 +286,13 @@ namespace System.Net
             }
         }
 
-/*
-    TODO: #13607
-    VSO 449560
-    Reflecting on internal method won't work on AOT without rd.xml and DisableReflection
-    block in toolchain.Networking team will be working on exposing methods from S.Net.Primitive
-    public, this is a temporary workaround till that happens.
-*/
+        /*
+            TODO: #13607
+            VSO 449560
+            Reflecting on internal method won't work on AOT without rd.xml and DisableReflection
+            block in toolchain.Networking team will be working on exposing methods from S.Net.Primitive
+            public, this is a temporary workaround till that happens.
+        */
 #if uap
         public
 #else
@@ -703,13 +703,13 @@ namespace System.Net
             }
         }
 
-/*
-    TODO: #13607
-    VSO 449560
-    Reflecting on internal method won't work on AOT without rd.xml and DisableReflection
-    block in toolchain.Networking team will be working on exposing methods from S.Net.Primitive
-    public, this is a temporary workaround till that happens.
-*/
+        /*
+            TODO: #13607
+            VSO 449560
+            Reflecting on internal method won't work on AOT without rd.xml and DisableReflection
+            block in toolchain.Networking team will be working on exposing methods from S.Net.Primitive
+            public, this is a temporary workaround till that happens.
+        */
 #if uap
         public
 #else
@@ -844,13 +844,13 @@ namespace System.Net
             }
         }
 
-/*
-    TODO: #13607
-    VSO 449560
-    Reflecting on internal method won't work on AOT without rd.xml and DisableReflection
-    block in toolchain.Networking team will be working on exposing methods from S.Net.Primitive
-    public, this is a temporary workaround till that happens.
-*/
+        /*
+            TODO: #13607
+            VSO 449560
+            Reflecting on internal method won't work on AOT without rd.xml and DisableReflection
+            block in toolchain.Networking team will be working on exposing methods from S.Net.Primitive
+            public, this is a temporary workaround till that happens.
+        */
 #if uap
         public
 #else

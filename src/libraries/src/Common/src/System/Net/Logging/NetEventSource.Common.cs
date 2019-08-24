@@ -411,7 +411,6 @@ namespace System.Net
 
         public static new bool IsEnabled =>
             Log.IsEnabled();
-            //true; // uncomment for debugging only
 
         [NonEvent]
         public static string IdOf(object value) => value != null ? value.GetType().Name + "#" + GetHashCode(value) : NullInstance;

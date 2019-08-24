@@ -130,7 +130,7 @@ internal static partial class Interop
         [DllImport(Interop.Libraries.Odbc32, CharSet = CharSet.Unicode)]
         internal static extern /*SQLRETURN*/ODBC32.RetCode SQLExecDirectW(
             /*SQLHSTMT*/OdbcStatementHandle StatementHandle,
-            /*SQLCHAR* */string   StatementText,
+            /*SQLCHAR* */string StatementText,
             /*SQLINTEGER*/int TextLength);
 
         [DllImport(Interop.Libraries.Odbc32)]
@@ -245,7 +245,7 @@ internal static partial class Interop
         [DllImport(Interop.Libraries.Odbc32, CharSet = CharSet.Unicode)]
         internal static extern /*SQLRETURN*/ODBC32.RetCode SQLPrepareW(
             /*SQLHSTMT*/OdbcStatementHandle StatementHandle,
-            /*SQLCHAR* */string   StatementText,
+            /*SQLCHAR* */string StatementText,
             /*SQLINTEGER*/int TextLength);
 
         [DllImport(Interop.Libraries.Odbc32, CharSet = CharSet.Unicode)]

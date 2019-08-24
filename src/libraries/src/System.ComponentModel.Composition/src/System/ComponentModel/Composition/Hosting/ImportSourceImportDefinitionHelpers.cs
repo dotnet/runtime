@@ -53,7 +53,7 @@ namespace System.ComponentModel.Composition.Hosting
                     var reply = _metadata;
                     if (reply == null)
                     {
-                        reply = new Dictionary<string, object> (_sourceDefinition.Metadata);
+                        reply = new Dictionary<string, object>(_sourceDefinition.Metadata);
                         reply.Remove(CompositionConstants.ImportSourceMetadataName);
                         _metadata = reply;
                     }

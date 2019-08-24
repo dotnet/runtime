@@ -76,7 +76,7 @@ namespace Internal.Cryptography.Pal
 
                 byte[] thumbprint = new byte[cbData];
                 if (!Interop.crypt32.CertGetCertificateContextProperty(_certContext, CertContextPropId.CERT_SHA1_HASH_PROP_ID, thumbprint, ref cbData))
-                    throw Marshal.GetHRForLastWin32Error().ToCryptographicException();;
+                    throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
                 return thumbprint;
             }
         }
@@ -151,14 +151,14 @@ namespace Internal.Cryptography.Pal
                         CERT_CHAIN_PARA chainPara = new CERT_CHAIN_PARA();
                         chainPara.cbSize = sizeof(CERT_CHAIN_PARA);
                         if (!Interop.crypt32.CertGetCertificateChain(ChainEngine.HCCE_CURRENT_USER, _certContext, (FILETIME*)null, SafeCertStoreHandle.InvalidHandle, ref chainPara, CertChainFlags.None, IntPtr.Zero, out certChainContext))
-                            throw Marshal.GetHRForLastWin32Error().ToCryptographicException();;
+                            throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
                         if (!Interop.crypt32.CertGetCertificateContextProperty(_certContext, CertContextPropId.CERT_PUBKEY_ALG_PARA_PROP_ID, null, ref cbData))
-                            throw Marshal.GetHRForLastWin32Error().ToCryptographicException();;
+                            throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
                     }
 
                     byte[] keyAlgorithmParameters = new byte[cbData];
                     if (!Interop.crypt32.CertGetCertificateContextProperty(_certContext, CertContextPropId.CERT_PUBKEY_ALG_PARA_PROP_ID, keyAlgorithmParameters, ref cbData))
-                        throw Marshal.GetHRForLastWin32Error().ToCryptographicException();;
+                        throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
 
                     return keyAlgorithmParameters;
                 }
@@ -546,7 +546,7 @@ namespace Internal.Cryptography.Pal
         {
             using (IExportPal storePal = StorePal.FromCertificate(this))
             {
-                return storePal.Export (contentType, password);
+                return storePal.Export(contentType, password);
             }
         }
     }

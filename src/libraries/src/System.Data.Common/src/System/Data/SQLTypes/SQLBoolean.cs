@@ -106,7 +106,7 @@ namespace System.Data.SqlTypes
         /// <summary>
         /// Converts a <see cref='SqlBoolean'/> to a boolean.
         /// </summary>
-        public static explicit operator bool (SqlBoolean x)
+        public static explicit operator bool(SqlBoolean x)
         {
             return x.Value;
         }

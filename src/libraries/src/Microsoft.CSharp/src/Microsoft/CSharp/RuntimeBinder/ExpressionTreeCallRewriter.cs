@@ -775,13 +775,11 @@ namespace Microsoft.CSharp.RuntimeBinder
                         return GenerateConvert(call);
 
                     case PREDEFMETH.PM_EXPRESSION_NEWARRAYINIT:
-                    {
                         ExprList list = (ExprList)call.OptionalArguments;
                         return
                             Expression.NewArrayInit(
                                 ((ExprTypeOf)list.OptionalElement).SourceType.AssociatedSystemType,
                                 GetArgumentsFromArrayInit((ExprArrayInit)list.OptionalNextListNode));
-                    }
 
                     case PREDEFMETH.PM_EXPRESSION_ARRAYINDEX:
                     case PREDEFMETH.PM_EXPRESSION_ARRAYINDEX2:

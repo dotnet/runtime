@@ -30,28 +30,28 @@ namespace System.Text.RegularExpressions
 
         protected internal int[] runtrack;         // The backtracking stack.  Opcodes use this to store data regarding
         protected internal int runtrackpos;        // what they have matched and where to backtrack to.  Each "frame" on
-                                           // the stack takes the form of [CodePosition Data1 Data2...], where
-                                           // CodePosition is the position of the current opcode and
-                                           // the data values are all optional.  The CodePosition can be negative, and
-                                           // these values (also called "back2") are used by the BranchMark family of opcodes
-                                           // to indicate whether they are backtracking after a successful or failed
-                                           // match.
-                                           // When we backtrack, we pop the CodePosition off the stack, set the current
-                                           // instruction pointer to that code position, and mark the opcode
-                                           // with a backtracking flag ("Back").  Each opcode then knows how to
-                                           // handle its own data.
+                                                   // the stack takes the form of [CodePosition Data1 Data2...], where
+                                                   // CodePosition is the position of the current opcode and
+                                                   // the data values are all optional.  The CodePosition can be negative, and
+                                                   // these values (also called "back2") are used by the BranchMark family of opcodes
+                                                   // to indicate whether they are backtracking after a successful or failed
+                                                   // match.
+                                                   // When we backtrack, we pop the CodePosition off the stack, set the current
+                                                   // instruction pointer to that code position, and mark the opcode
+                                                   // with a backtracking flag ("Back").  Each opcode then knows how to
+                                                   // handle its own data.
 
         protected internal int[] runstack;         // This stack is used to track text positions across different opcodes.
         protected internal int runstackpos;        // For example, in /(a*b)+/, the parentheses result in a SetMark/CaptureMark
-                                           // pair. SetMark records the text position before we match a*b.  Then
-                                           // CaptureMark uses that position to figure out where the capture starts.
-                                           // Opcodes which push onto this stack are always paired with other opcodes
-                                           // which will pop the value from it later.  A successful match should mean
-                                           // that this stack is empty.
+                                                   // pair. SetMark records the text position before we match a*b.  Then
+                                                   // CaptureMark uses that position to figure out where the capture starts.
+                                                   // Opcodes which push onto this stack are always paired with other opcodes
+                                                   // which will pop the value from it later.  A successful match should mean
+                                                   // that this stack is empty.
 
         protected internal int[] runcrawl;         // The crawl stack is used to keep track of captures.  Every time a group
         protected internal int runcrawlpos;        // has a capture, we push its group number onto the runcrawl stack.  In
-                                           // the case of a balanced match, we push BOTH groups onto the stack.
+                                                   // the case of a balanced match, we push BOTH groups onto the stack.
 
         protected internal int runtrackcount;      // count of states that may do backtracking
 

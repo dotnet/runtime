@@ -200,7 +200,7 @@ namespace System.Data.SqlTypes
         }
 
         // Explicit conversion from SqlMoney to Decimal. Throw exception if x is Null.
-        public static explicit operator decimal (SqlMoney x)
+        public static explicit operator decimal(SqlMoney x)
         {
             return x.Value;
         }

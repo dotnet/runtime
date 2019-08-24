@@ -32,7 +32,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///     <see cref="ComposablePartDefinition"/>.
         /// </value>
         /// <remarks>
-         ///     <note type="inheritinfo">
+        ///     <note type="inheritinfo">
         ///         Overrides of this property should never return <see langword="null"/>.
         ///         If the <see cref="ComposablePart"/> objects created by the
         ///         <see cref="ComposablePartDefinition"/> do not provide exported values, return

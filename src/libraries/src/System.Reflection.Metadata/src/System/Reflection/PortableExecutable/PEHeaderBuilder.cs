@@ -98,7 +98,7 @@ namespace System.Reflection.PortableExecutable
 
         public static PEHeaderBuilder CreateExecutableHeader()
         {
-            return new PEHeaderBuilder(imageCharacteristics : Characteristics.ExecutableImage);
+            return new PEHeaderBuilder(imageCharacteristics: Characteristics.ExecutableImage);
         }
 
         public static PEHeaderBuilder CreateLibraryHeader()

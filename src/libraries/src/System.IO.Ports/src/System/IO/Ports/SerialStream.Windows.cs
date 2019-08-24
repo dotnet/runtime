@@ -558,7 +558,7 @@ namespace System.IO.Ports
         {
             if (portName == null)
             {
-                 throw new ArgumentNullException(nameof(portName));
+                throw new ArgumentNullException(nameof(portName));
             }
 
             if (!portName.StartsWith("COM", StringComparison.OrdinalIgnoreCase) ||

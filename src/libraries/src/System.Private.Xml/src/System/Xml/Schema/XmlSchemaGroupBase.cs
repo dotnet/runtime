@@ -8,7 +8,7 @@ namespace System.Xml.Schema
 
     public abstract class XmlSchemaGroupBase : XmlSchemaParticle
     {
-        internal XmlSchemaGroupBase() {}
+        internal XmlSchemaGroupBase() { }
 
         [XmlIgnore]
         public abstract XmlSchemaObjectCollection Items { get; }

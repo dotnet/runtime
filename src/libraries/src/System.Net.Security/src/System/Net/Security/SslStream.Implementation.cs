@@ -372,7 +372,7 @@ namespace System.Net.Security
                 SetException(e);
                 if (_exception.SourceException != e)
                 {
-                   ThrowIfExceptional();
+                    ThrowIfExceptional();
                 }
                 throw;
             }

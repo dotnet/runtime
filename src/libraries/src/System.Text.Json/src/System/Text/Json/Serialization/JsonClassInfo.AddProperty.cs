@@ -18,9 +18,9 @@ namespace System.Text.Json
             // dictionaries. Typically it would represent a CLR type such as System.String.
             PolicyProperty = AddProperty(
                 propertyType,
-                propertyInfo : null,        // Not a real property so this is null.
-                classType : typeof(object), // A dummy type (not used).
-                options : options);
+                propertyInfo: null,        // Not a real property so this is null.
+                classType: typeof(object), // A dummy type (not used).
+                options: options);
         }
 
         private JsonPropertyInfo AddProperty(Type propertyType, PropertyInfo propertyInfo, Type classType, JsonSerializerOptions options)

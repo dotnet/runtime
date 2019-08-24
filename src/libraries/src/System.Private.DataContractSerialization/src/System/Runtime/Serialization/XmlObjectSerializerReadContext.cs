@@ -1065,7 +1065,7 @@ namespace System.Runtime.Serialization
             {
                 for (int i = 0; i < xmlAttributes.Count; i++)
                 {
-                    wrapperElement.Attributes.Append((XmlAttribute) xmlAttributes[i]);
+                    wrapperElement.Attributes.Append((XmlAttribute)xmlAttributes[i]);
                 }
             }
             if (xmlChildNodes != null)

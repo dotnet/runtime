@@ -26,40 +26,39 @@ namespace System.Data.Common
             + "))"
             + "[\\s;]*"
         ;*/
-        private const string ConnectionStringPattern =                  // may not contain embedded null except trailing last value
+        private const string ConnectionStringPattern =                      // may not contain embedded null except trailing last value
                 "([\\s;]*"                                                  // leading whitespace and extra semicolons
                 + "(?![\\s;])"                                              // key does not start with space or semicolon
                 + "(?<key>([^=\\s\\p{Cc}]|\\s+[^=\\s\\p{Cc}]|\\s+==|==)+)"  // allow any visible character for keyname except '=' which must quoted as '=='
                 + "\\s*=(?!=)\\s*"                                          // the equal sign divides the key and value parts
                 + "(?<value>"
-                + "(\"([^\"\u0000]|\"\")*\")"                              // double quoted string, " must be quoted as ""
+                + "(\"([^\"\u0000]|\"\")*\")"                               // double quoted string, " must be quoted as ""
                 + "|"
-                + "('([^'\u0000]|'')*')"                                   // single quoted string, ' must be quoted as ''
+                + "('([^'\u0000]|'')*')"                                    // single quoted string, ' must be quoted as ''
                 + "|"
-                + "((?![\"'\\s])"                                          // unquoted value must not start with " or ' or space, would also like = but too late to change
-                + "([^;\\s\\p{Cc}]|\\s+[^;\\s\\p{Cc}])*"                  // control characters must be quoted
+                + "((?![\"'\\s])"                                           // unquoted value must not start with " or ' or space, would also like = but too late to change
+                + "([^;\\s\\p{Cc}]|\\s+[^;\\s\\p{Cc}])*"                    // control characters must be quoted
                 + "(?<![\"']))"                                            // unquoted value must not stop with " or '
-                + ")(\\s*)(;|[\u0000\\s]*$)"                                // whitespace after value up to semicolon or end-of-line
-                + ")*"                                                      // repeat the key-value pair
-                + "[\\s;]*[\u0000\\s]*"                                     // trailing whitespace/semicolons (DataSourceLocator), embedded nulls are allowed only in the end
+                + ")(\\s*)(;|[\u0000\\s]*$)"                               // whitespace after value up to semicolon or end-of-line
+                + ")*"                                                     // repeat the key-value pair
+                + "[\\s;]*[\u0000\\s]*"                                    // trailing whitespace/semicolons (DataSourceLocator), embedded nulls are allowed only in the end
             ;
 
-        private const string ConnectionStringPatternOdbc =              // may not contain embedded null except trailing last value
-                "([\\s;]*"                                                  // leading whitespace and extra semicolons
-                + "(?![\\s;])"                                              // key does not start with space or semicolon
-                + "(?<key>([^=\\s\\p{Cc}]|\\s+[^=\\s\\p{Cc}])+)"            // allow any visible character for keyname except '='
-                + "\\s*=\\s*"                                               // the equal sign divides the key and value parts
+        private const string ConnectionStringPatternOdbc =                 // may not contain embedded null except trailing last value
+                "([\\s;]*"                                                 // leading whitespace and extra semicolons
+                + "(?![\\s;])"                                             // key does not start with space or semicolon
+                + "(?<key>([^=\\s\\p{Cc}]|\\s+[^=\\s\\p{Cc}])+)"           // allow any visible character for keyname except '='
+                + "\\s*=\\s*"                                              // the equal sign divides the key and value parts
                 + "(?<value>"
                 + "(\\{([^\\}\u0000]|\\}\\})*\\})"                         // quoted string, starts with { and ends with }
                 + "|"
                 + "((?![\\{\\s])"                                          // unquoted value must not start with { or space, would also like = but too late to change
-                + "([^;\\s\\p{Cc}]|\\s+[^;\\s\\p{Cc}])*"                  // control characters must be quoted
+                + "([^;\\s\\p{Cc}]|\\s+[^;\\s\\p{Cc}])*"                   // control characters must be quoted
 
-                + ")" // although the spec does not allow {}
-                // embedded within a value, the retail code does.
+                + ")" // although the spec does not allow {} embedded within a value, the retail code does.
                 + ")(\\s*)(;|[\u0000\\s]*$)"                               // whitespace after value up to semicolon or end-of-line
-                + ")*"                                                      // repeat the key-value pair
-                + "[\\s;]*[\u0000\\s]*"                                     // traling whitespace/semicolons (DataSourceLocator), embedded nulls are allowed only in the end
+                + ")*"                                                     // repeat the key-value pair
+                + "[\\s;]*[\u0000\\s]*"                                    // traling whitespace/semicolons (DataSourceLocator), embedded nulls are allowed only in the end
             ;
 
         private static readonly Regex s_connectionStringRegex = new Regex(ConnectionStringPattern, RegexOptions.ExplicitCapture | RegexOptions.Compiled);
@@ -548,47 +547,48 @@ namespace System.Data.Common
             try
             {
 #endif
-            int nextStartPosition = 0;
-            int endPosition = connectionString.Length;
-            while (nextStartPosition < endPosition)
-            {
-                int startPosition = nextStartPosition;
-
-                string keyname, keyvalue;
-                nextStartPosition = GetKeyValuePair(connectionString, startPosition, buffer, firstKey, out keyname, out keyvalue);
-                if (string.IsNullOrEmpty(keyname))
+                int nextStartPosition = 0;
+                int endPosition = connectionString.Length;
+                while (nextStartPosition < endPosition)
                 {
-                    // if (nextStartPosition != endPosition) { throw; }
-                    break;
-                }
+                    int startPosition = nextStartPosition;
+
+                    string keyname, keyvalue;
+                    nextStartPosition = GetKeyValuePair(connectionString, startPosition, buffer, firstKey, out keyname, out keyvalue);
+                    if (string.IsNullOrEmpty(keyname))
+                    {
+                        break;
+                    }
 #if DEBUG
                     DebugTraceKeyValuePair(keyname, keyvalue, synonyms);
 
                     Debug.Assert(IsKeyNameValid(keyname), "ParseFailure, invalid keyname");
                     Debug.Assert(IsValueValidInternal(keyvalue), "parse failure, invalid keyvalue");
 #endif
-                string synonym;
-                string realkeyname = null != synonyms ?
-                    (synonyms.TryGetValue(keyname, out synonym) ? synonym : null) :
-                    keyname;
-                if (!IsKeyNameValid(realkeyname))
-                {
-                    throw ADP.KeywordNotSupported(keyname);
-                }
-                if (!firstKey || !parsetable.ContainsKey(realkeyname))
-                {
-                    parsetable[realkeyname] = keyvalue; // last key-value pair wins (or first)
-                }
+                    string synonym;
+                    string realkeyname = null != synonyms ?
+                        (synonyms.TryGetValue(keyname, out synonym) ? synonym : null) :
+                        keyname;
 
-                if (null != localKeychain)
-                {
-                    localKeychain = localKeychain.Next = new NameValuePair(realkeyname, keyvalue, nextStartPosition - startPosition);
+                    if (!IsKeyNameValid(realkeyname))
+                    {
+                        throw ADP.KeywordNotSupported(keyname);
+                    }
+                    if (!firstKey || !parsetable.ContainsKey(realkeyname))
+                    {
+                        parsetable[realkeyname] = keyvalue; // last key-value pair wins (or first)
+                    }
+
+                    if (null != localKeychain)
+                    {
+                        localKeychain = localKeychain.Next = new NameValuePair(realkeyname, keyvalue, nextStartPosition - startPosition);
+                    }
+                    else if (buildChain)
+                    {
+                        // first time only - don't contain modified chain from UDL file
+                        keychain = localKeychain = new NameValuePair(realkeyname, keyvalue, nextStartPosition - startPosition);
+                    }
                 }
-                else if (buildChain)
-                { // first time only - don't contain modified chain from UDL file
-                    keychain = localKeychain = new NameValuePair(realkeyname, keyvalue, nextStartPosition - startPosition);
-                }
-            }
 #if DEBUG
             }
             catch (ArgumentException e)

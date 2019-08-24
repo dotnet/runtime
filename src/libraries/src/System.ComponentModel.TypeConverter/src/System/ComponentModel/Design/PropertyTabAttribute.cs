@@ -122,7 +122,7 @@ namespace System.ComponentModel
             }
         }
 
-        protected string[] TabClassNames => (string[]) _tabClassNames?.Clone();
+        protected string[] TabClassNames => (string[])_tabClassNames?.Clone();
 
         /// <summary>
         /// Gets the scopes of tabs for this System.ComponentModel.Design.PropertyTabAttribute, from System.ComponentModel.Design.PropertyTabScope.

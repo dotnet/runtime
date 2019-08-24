@@ -533,7 +533,7 @@ namespace System.Net.Security
         //
         private static unsafe int MustRunInitializeSecurityContext(
             ref SafeFreeCredentials inCredentials,
-            bool  isContextAbsent,
+            bool isContextAbsent,
             byte* targetName,
             Interop.SspiCli.ContextFlags inFlags,
             Interop.SspiCli.Endianness endianness,

@@ -51,7 +51,7 @@ namespace System.ComponentModel.Composition.Primitives
             }
         }
 
-internal static bool IsImportDependentOnPart(this ImportDefinition import, ComposablePartDefinition part, ExportDefinition export, bool expandGenerics)
+        internal static bool IsImportDependentOnPart(this ImportDefinition import, ComposablePartDefinition part, ExportDefinition export, bool expandGenerics)
         {
             import = import.GetProductImportDefinition();
             if (expandGenerics)

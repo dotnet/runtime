@@ -1600,12 +1600,12 @@ namespace System.Globalization
                                             // Handles E0, which should format the same as E-0
                                             i++;
                                         }
-                                        else if (src+1 < format.Length && pFormat[src] == '+' && pFormat[src + 1] == '0')
+                                        else if (src + 1 < format.Length && pFormat[src] == '+' && pFormat[src + 1] == '0')
                                         {
                                             // Handles E+0
                                             positiveSign = true;
                                         }
-                                        else if (src+1 < format.Length && pFormat[src] == '-' && pFormat[src + 1] == '0')
+                                        else if (src + 1 < format.Length && pFormat[src] == '-' && pFormat[src + 1] == '0')
                                         {
                                             // Handles E-0
                                             // Do nothing, this is just a place holder s.t. we don't break out of the loop.

@@ -83,7 +83,7 @@ namespace System.Text
                 index++;
             }
 
-            int result = OSEncoding.MultiByteToWideChar(_encoding.CodePage, pTempBuffer, index+1, chars, charCount);
+            int result = OSEncoding.MultiByteToWideChar(_encoding.CodePage, pTempBuffer, index + 1, chars, charCount);
 
             if (count - index > 0)
                 result += OSEncoding.MultiByteToWideChar(
@@ -170,7 +170,7 @@ namespace System.Text
             if (charCount == 0)
                 return 0;
 
-            byte lastByte = byteCount > 0 && !flush && IsLastByteALeadByte(bytes, byteCount) ? bytes[byteCount - 1] : (byte) 0;
+            byte lastByte = byteCount > 0 && !flush && IsLastByteALeadByte(bytes, byteCount) ? bytes[byteCount - 1] : (byte)0;
 
             if (lastByte != 0)
                 byteCount--;
@@ -183,7 +183,7 @@ namespace System.Text
                     return 0;
                 }
 
-                int result =  OSEncoding.MultiByteToWideChar(_encoding.CodePage, bytes, byteCount, chars, charCount);
+                int result = OSEncoding.MultiByteToWideChar(_encoding.CodePage, bytes, byteCount, chars, charCount);
                 _leftOverLeadByte = lastByte;
                 return result;
             }

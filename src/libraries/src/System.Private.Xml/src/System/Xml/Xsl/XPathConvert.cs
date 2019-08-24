@@ -586,7 +586,7 @@ namespace System.Xml.Xsl
             }
 
             // Get the double value.
-            public static explicit operator double (BigNumber bn)
+            public static explicit operator double(BigNumber bn)
             {
                 uint uEx;
                 int exp;
@@ -2458,7 +2458,7 @@ namespace System.Xml.Xsl
 
                 Returns the double value of this floating decimal.
             */
-            public static explicit operator double (FloatingDecimal dec)
+            public static explicit operator double(FloatingDecimal dec)
             {
                 BigNumber num, numHi, numLo;
                 uint ul;

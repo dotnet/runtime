@@ -113,7 +113,7 @@ namespace System.Net.Http
         {
             for (int i = 0; i < input.Length; i++)
             {
-                if (!IsTokenChar((char) input[i]))
+                if (!IsTokenChar((char)input[i]))
                 {
                     return false;
                 }

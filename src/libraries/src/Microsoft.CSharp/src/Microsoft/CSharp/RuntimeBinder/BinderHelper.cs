@@ -112,7 +112,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     DynamicMetaObject arg0 = args[0];
 
                     expression = Expression.Block(
-                        new[] {tempForIncrement},
+                        new[] { tempForIncrement },
                         Expression.Assign(tempForIncrement, Expression.Convert(arg0.Expression, arg0.Value.GetType())),
                         expression,
                         Expression.Assign(arg0.Expression, Expression.Convert(tempForIncrement, arg0.Expression.Type)));
@@ -367,7 +367,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 return array;
             }
 
-            return new[] {sourceHead, sourceLast};
+            return new[] { sourceHead, sourceLast };
         }
 
         /////////////////////////////////////////////////////////////////////////////////

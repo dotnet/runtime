@@ -139,7 +139,8 @@ namespace Internal.Cryptography.Pal.AnyOS
                     break;
             }
 
-            return new AlgorithmIdentifier(new Oid(asn.Algorithm), keyLength) {
+            return new AlgorithmIdentifier(new Oid(asn.Algorithm), keyLength)
+            {
                 Parameters = parameters
             };
         }

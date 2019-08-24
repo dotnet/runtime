@@ -14,7 +14,7 @@ namespace System.ComponentModel.Design
     public abstract class DesignerOptionService : IDesignerOptionService
     {
         private DesignerOptionCollection _options;
-        private static readonly char[] s_slash = {'\\'};
+        private static readonly char[] s_slash = { '\\' };
 
         /// <summary>
         /// Returns the options collection for this service. There is

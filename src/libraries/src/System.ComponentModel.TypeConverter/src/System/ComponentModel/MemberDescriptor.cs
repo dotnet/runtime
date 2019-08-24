@@ -173,13 +173,13 @@ namespace System.ComponentModel
         /// Gets the name of the category that the member belongs to, as specified
         /// in the <see cref='System.ComponentModel.CategoryAttribute'/>.
         /// </summary>
-        public virtual string Category => _category ?? (_category = ((CategoryAttribute) Attributes[typeof(CategoryAttribute)]).Category);
+        public virtual string Category => _category ?? (_category = ((CategoryAttribute)Attributes[typeof(CategoryAttribute)]).Category);
 
         /// <summary>
         /// Gets the description of the member as specified in the <see cref='System.ComponentModel.DescriptionAttribute'/>.
         /// </summary>
         public virtual string Description => _description ??
-                                             (_description = ((DescriptionAttribute) Attributes[typeof(DescriptionAttribute)]).Description);
+                                             (_description = ((DescriptionAttribute)Attributes[typeof(DescriptionAttribute)]).Description);
 
         /// <summary>
         /// Gets a value indicating whether the member is browsable as specified in the
@@ -455,7 +455,8 @@ namespace System.ComponentModel
         protected static ISite GetSite(object component) => (component as IComponent)?.Site;
 
         [Obsolete("This method has been deprecated. Use GetInvocationTarget instead. https://go.microsoft.com/fwlink/?linkid=14202")]
-        protected static object GetInvokee(Type componentClass, object component) {
+        protected static object GetInvokee(Type componentClass, object component)
+        {
 
             if (componentClass == null)
             {

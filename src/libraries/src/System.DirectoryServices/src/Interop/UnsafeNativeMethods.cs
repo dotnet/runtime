@@ -284,7 +284,7 @@ namespace System.DirectoryServices.Interop
                 set;
             }
 
-            object Values { get; set;  }
+            object Values { get; set; }
         }
 
         [ComImport, Guid("C6F602B6-8F69-11D0-8528-00C04FD8D503")]

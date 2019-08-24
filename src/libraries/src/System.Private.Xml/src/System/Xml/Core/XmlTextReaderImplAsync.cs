@@ -3962,7 +3962,7 @@ namespace System.Xml
             if (_dtdInfo == null ||
                  ((entity = _dtdInfo.LookupEntity(name)) == null))
             {
-               // Needed only for XmlTextReader (when used from XmlDocument)
+                // Needed only for XmlTextReader (when used from XmlDocument)
                 if (_disableUndeclaredEntityCheck)
                 {
                     SchemaEntity schemaEntity = new SchemaEntity(new XmlQualifiedName(name), false);

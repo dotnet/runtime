@@ -237,7 +237,7 @@ namespace System.ServiceProcess
         /// <devdoc>
         /// can be used to write notification of service command calls, such as Start and Stop, to the Application event log. This property is read-only.
         /// </devdoc>
-        [Browsable (false), DesignerSerializationVisibility (DesignerSerializationVisibility.Hidden)]
+        [Browsable(false), DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public virtual EventLog EventLog
         {
             get

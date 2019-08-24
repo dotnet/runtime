@@ -6,9 +6,9 @@ namespace System.Security.Cryptography
 {
     public abstract class AsymmetricKeyExchangeFormatter
     {
-        protected AsymmetricKeyExchangeFormatter() {}
+        protected AsymmetricKeyExchangeFormatter() { }
 
-        public abstract string Parameters {get; }
+        public abstract string Parameters { get; }
 
         public abstract void SetKey(AsymmetricAlgorithm key);
         public abstract byte[] CreateKeyExchange(byte[] data);

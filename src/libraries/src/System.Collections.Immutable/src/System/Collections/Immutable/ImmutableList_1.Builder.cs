@@ -169,7 +169,7 @@ namespace System.Collections.Immutable
             {
                 return ref this.Root.ItemRef(index);
             }
-            #endif
+#endif
 
             #endregion
 

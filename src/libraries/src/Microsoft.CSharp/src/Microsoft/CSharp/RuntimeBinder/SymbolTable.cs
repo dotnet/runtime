@@ -39,7 +39,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             public override bool Equals(object obj)
             {
                 Debug.Fail("Sub-optimal overload called. Check if this can be avoided.");
-                return obj is NameHashKey key &&  Equals(key);
+                return obj is NameHashKey key && Equals(key);
             }
 
             public override int GetHashCode() => Type.GetHashCode() ^ Name.GetHashCode();
@@ -789,10 +789,10 @@ namespace Microsoft.CSharp.RuntimeBinder
             {
                 // We use "IsEquivalentTo" so that unified local types match.
                 if (sym is AggregateSymbol agg)
-                if (agg.AssociatedSystemType.IsEquivalentTo(t.IsGenericType ? t.GetGenericTypeDefinition() : t))
-                {
-                    return agg;
-                }
+                    if (agg.AssociatedSystemType.IsEquivalentTo(t.IsGenericType ? t.GetGenericTypeDefinition() : t))
+                    {
+                        return agg;
+                    }
 
                 sym = sym.nextSameName;
             }

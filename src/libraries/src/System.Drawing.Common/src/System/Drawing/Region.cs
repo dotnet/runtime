@@ -385,7 +385,7 @@ namespace System.Drawing
             Gdip.CheckStatus(Gdip.GdipIsVisibleRegionPointI(
                 new HandleRef(this, NativeRegion),
                 point.X, point.Y,
-                new HandleRef(g,  g?.NativeGraphics ?? IntPtr.Zero),
+                new HandleRef(g, g?.NativeGraphics ?? IntPtr.Zero),
                 out int isVisible));
 
             return isVisible != 0;

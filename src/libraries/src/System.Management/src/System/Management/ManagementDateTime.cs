@@ -175,7 +175,7 @@ namespace System.Management
                 tempString = dmtf.Substring(15, 6);
                 if (("******" != tempString))
                 {
-                    ticks = (long.Parse(tempString, (IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(long)))) * (TimeSpan.TicksPerMillisecond/1000);
+                    ticks = (long.Parse(tempString, (IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(long)))) * (TimeSpan.TicksPerMillisecond / 1000);
                 }
                 tempString = dmtf.Substring(22, 3);
                 if (("***" != tempString))
@@ -184,7 +184,7 @@ namespace System.Management
                     utcOffset = int.Parse(tempString, frmInt32);
                 }
 
-                if ( year < 0 || month < 0 || day < 0 || hour < 0 || minute < 0 || second < 0 || ticks < 0)
+                if (year < 0 || month < 0 || day < 0 || hour < 0 || minute < 0 || second < 0 || ticks < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(dmtfDate));
                 }
@@ -256,7 +256,7 @@ namespace System.Management
             else
             {
                 string strTemp = OffsetMins.ToString(frmInt32);
-                UtcString = "-" + strTemp.Substring(1, strTemp.Length-1).PadLeft(3, '0');
+                UtcString = "-" + strTemp.Substring(1, strTemp.Length - 1).PadLeft(3, '0');
             }
 
             string dmtfDateTime = date.Year.ToString(frmInt32).PadLeft(4, '0');
@@ -271,7 +271,7 @@ namespace System.Management
             // Construct a DateTime with the precision to Second as same as the passed DateTime and so get
             // the ticks difference so that the microseconds can be calculated
             DateTime dtTemp = new DateTime(date.Year, date.Month, date.Day, date.Hour, date.Minute, date.Second, 0);
-            long microsec = ((date.Ticks-dtTemp.Ticks) * 1000) / System.TimeSpan.TicksPerMillisecond;
+            long microsec = ((date.Ticks - dtTemp.Ticks) * 1000) / System.TimeSpan.TicksPerMillisecond;
 
             // fill the microseconds field
             string strMicrosec = microsec.ToString((IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(long)));
@@ -354,7 +354,7 @@ namespace System.Management
                 seconds = int.Parse(tempString, frmInt32);
 
                 tempString = dmtfts.Substring(15, 6);
-                ticks = (long.Parse(tempString, (IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(long)))) * (System.TimeSpan.TicksPerMillisecond/1000);
+                ticks = (long.Parse(tempString, (IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(long)))) * (System.TimeSpan.TicksPerMillisecond / 1000);
 
             }
             catch
@@ -362,7 +362,7 @@ namespace System.Management
                 throw new System.ArgumentOutOfRangeException(nameof(dmtfTimespan));
             }
 
-            if ( days < 0 || hours < 0 || minutes < 0 || seconds < 0 || ticks < 0 )
+            if (days < 0 || hours < 0 || minutes < 0 || seconds < 0 || ticks < 0)
             {
                 throw new System.ArgumentOutOfRangeException(nameof(dmtfTimespan));
             }
@@ -426,7 +426,7 @@ namespace System.Management
             // Construct a DateTime with the precision to Second as same as the passed DateTime and so get
             // the ticks difference so that the microseconds can be calculated
             TimeSpan tsTemp = new TimeSpan(timespan.Days, timespan.Hours, timespan.Minutes, timespan.Seconds, 0);
-            long microsec = ((timespan.Ticks-tsTemp.Ticks) * 1000) / System.TimeSpan.TicksPerMillisecond;
+            long microsec = ((timespan.Ticks - tsTemp.Ticks) * 1000) / System.TimeSpan.TicksPerMillisecond;
 
             // fill the microseconds field
             string strMicrosec = microsec.ToString((IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(long)));

@@ -453,7 +453,8 @@ namespace System.Numerics
             return new Complex(u, v);
         }
 
-        public static Complex Cos(Complex value) {
+        public static Complex Cos(Complex value)
+        {
             double p = Math.Exp(value.m_imaginary);
             double q = 1.0 / p;
             double sinh = (p - q) * 0.5;
@@ -532,7 +533,8 @@ namespace System.Numerics
             return (ImaginaryOne / two) * (Log(One - ImaginaryOne * value) - Log(One + ImaginaryOne * value));
         }
 
-        private static void Asin_Internal (double x, double y, out double b, out double bPrime, out double v) {
+        private static void Asin_Internal(double x, double y, out double b, out double bPrime, out double v)
+        {
 
             // This method for the inverse complex sine (and cosine) is described in Hull, Fairgrieve,
             // and Tang, "Implementing the Complex Arcsine and Arccosine Functions Using Exception Handling",

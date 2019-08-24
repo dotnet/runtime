@@ -27,7 +27,8 @@ namespace System.Security.Cryptography
             }
         }
 
-        public RandomNumberGenerator Rng {
+        public RandomNumberGenerator Rng
+        {
             get { return RngValue; }
             set { RngValue = value; }
         }

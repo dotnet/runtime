@@ -31,7 +31,7 @@ namespace System.IO.Packaging
         // .NET Framework will parse this as relative. This will break internal relationships
         // in packaging. For more information, see
         // http://www.mono-project.com/docs/faq/known-issues/urikind-relativeorabsolute/
-        private static readonly UriKind DotNetRelativeOrAbsolute = Type.GetType ("Mono.Runtime") == null ? UriKind.RelativeOrAbsolute : (UriKind)300;
+        private static readonly UriKind DotNetRelativeOrAbsolute = Type.GetType("Mono.Runtime") == null ? UriKind.RelativeOrAbsolute : (UriKind)300;
 
         #region IEnumerable
         /// <summary>

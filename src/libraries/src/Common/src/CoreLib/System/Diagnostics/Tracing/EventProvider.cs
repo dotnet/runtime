@@ -537,7 +537,7 @@ namespace System.Diagnostics.Tracing
                                     {
                                         int startIdx = keywordIdx + 18;
                                         int endIdx = dataAsString.IndexOf('\0', startIdx);
-                                        string keywordBitString = dataAsString.Substring(startIdx, endIdx-startIdx);
+                                        string keywordBitString = dataAsString.Substring(startIdx, endIdx - startIdx);
                                         int keywordBit;
                                         if (0 < endIdx && int.TryParse(keywordBitString, out keywordBit))
                                             action(etwSessionId, 1L << keywordBit, ref sessionList);

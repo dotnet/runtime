@@ -13,7 +13,7 @@ namespace System.Security.Cryptography
     {
         protected TripleDES()
         {
-            KeySizeValue = 3*64;
+            KeySizeValue = 3 * 64;
             BlockSizeValue = 64;
             FeedbackSizeValue = BlockSizeValue;
             LegalBlockSizesValue = s_legalBlockSizes.CloneKeySizesArray();
@@ -48,7 +48,7 @@ namespace System.Security.Cryptography
                 if (value == null)
                     throw new ArgumentNullException(nameof(value));
 
-                if (!(value.Length*8).IsLegalSize(s_legalKeySizes))
+                if (!(value.Length * 8).IsLegalSize(s_legalKeySizes))
                     throw new ArgumentException(SR.Cryptography_InvalidKeySize);
 
                 if (IsWeakKey(value))
@@ -63,7 +63,7 @@ namespace System.Security.Cryptography
             if (rgbKey == null)
                 throw new CryptographicException(SR.Cryptography_InvalidKeySize);  // Desktop compat: Strange exception for a null value, but this is what we threw in classic CLR.
 
-            if (!(rgbKey.Length*8).IsLegalSize(s_legalKeySizes))
+            if (!(rgbKey.Length * 8).IsLegalSize(s_legalKeySizes))
                 throw new CryptographicException(SR.Cryptography_InvalidKeySize);
 
             byte[] rgbOddParityKey = rgbKey.FixupKeyParity();
