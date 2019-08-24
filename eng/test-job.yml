@@ -14,6 +14,7 @@ parameters:
   runInUnloadableContext: false
   publishTestArtifacts: false
   condition: true
+  ignoreDependencyOnBuildJobs: false
 
 ### Test job
 
@@ -98,7 +99,8 @@ jobs:
     condition: and(succeeded(), ${{ parameters.condition }})
 
     # Test job depends on the corresponding build job
-    dependsOn: ${{ format('build_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+    ${{ if ne(parameters.ignoreDependencyOnBuildJobs, true) }}:
+      dependsOn: ${{ format('build_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
 
     # Run all steps in the container.
     # Note that the containers are defined in platform-matrix.yml
