@@ -3182,20 +3182,40 @@ static MONO_NEVER_INLINE int
 mono_interp_box_nullable (InterpFrame* frame, const guint16* ip, stackval* sp, MonoError* error)
 {
 	InterpMethod* const imethod = frame->imethod;
-	MonoClass* const c = (MonoClass*)imethod->data_items [* (guint16 *)(ip + 1)];
+	MonoClass* const c = (MonoClass*)imethod->data_items [*(const guint16*)(ip + 1)];
 
-	int size = mono_class_value_size (c, NULL);
+	int const size = mono_class_value_size (c, NULL);
 
-	guint16 offset = * (guint16 *)(ip + 2);
-	gboolean pop_vt_sp = !(offset & BOX_NOT_CLEAR_VT_SP);
+	guint16 offset = *(const guint16*)(ip + 2);
+	gboolean const pop_vt_sp = !(offset & BOX_NOT_CLEAR_VT_SP);
 	offset &= ~BOX_NOT_CLEAR_VT_SP;
 
 	sp [-1 - offset].data.o = mono_nullable_box (sp [-1 - offset].data.p, c, error);
 	mono_error_cleanup (error); /* FIXME: don't swallow the error */
 
-	size = ALIGN_TO (size, MINT_VT_ALIGNMENT);
+	return pop_vt_sp ? ALIGN_TO (size, MINT_VT_ALIGNMENT) : 0;
+}
 
-	return pop_vt_sp ? size : 0;
+static MONO_NEVER_INLINE int
+mono_interp_box_vt (InterpFrame* frame, const guint16* ip, stackval* sp)
+{
+	InterpMethod* const imethod = frame->imethod;
+
+	MonoObject* o; // See the comment about GC safety.
+	MonoVTable * const vtable = (MonoVTable*)imethod->data_items [*(const guint16*)(ip + 1)];
+	MonoClass* const c = vtable->klass;
+
+	int const size = mono_class_value_size (c, NULL);
+
+	guint16 offset = *(const guint16*)(ip + 2);
+	gboolean const pop_vt_sp = !(offset & BOX_NOT_CLEAR_VT_SP);
+	offset &= ~BOX_NOT_CLEAR_VT_SP;
+
+	frame_objref (frame) = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
+	mono_value_copy_internal (mono_object_get_data (frame_objref (frame)), sp [-1 - offset].data.p, c);
+
+	sp [-1 - offset].data.p = frame_objref (frame);
+	return pop_vt_sp ? ALIGN_TO (size, MINT_VT_ALIGNMENT) : 0;
 }
 
 static MONO_NEVER_INLINE int
@@ -5334,33 +5354,15 @@ main_loop:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_BOX_VT) {
-			MonoObject* o; // See the comment about GC safety above.
-			MonoVTable *vtable = (MonoVTable*)imethod->data_items [* (guint16 *)(ip + 1)];
-			MonoClass* const c = vtable->klass;
-
-			int size = mono_class_value_size (c, NULL);
-
-			guint16 offset = * (guint16 *)(ip + 2);
-			gboolean pop_vt_sp = !(offset & BOX_NOT_CLEAR_VT_SP);
-			offset &= ~BOX_NOT_CLEAR_VT_SP;
-
-			frame_objref (frame) = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
-			mono_value_copy_internal (mono_object_get_data (frame_objref (frame)), sp [-1 - offset].data.p, c);
-
-			sp [-1 - offset].data.p = frame_objref (frame);
-			size = ALIGN_TO (size, MINT_VT_ALIGNMENT);
-			if (pop_vt_sp)
-				vt_sp -= size;
-
+			vt_sp -= mono_interp_box_vt (frame, ip, sp);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_BOX_NULLABLE)
-
+		MINT_IN_CASE(MINT_BOX_NULLABLE) {
 			vt_sp -= mono_interp_box_nullable (frame, ip, sp, error);
 			ip += 3;
 			MINT_IN_BREAK;
-
+		}
 		MINT_IN_CASE(MINT_NEWARR) {
 			MonoVTable *vtable = (MonoVTable*)imethod->data_items[*(guint16 *)(ip + 1)];
 			sp [-1].data.o = (MonoObject*) mono_array_new_specific_checked (vtable, sp [-1].data.i, error);
