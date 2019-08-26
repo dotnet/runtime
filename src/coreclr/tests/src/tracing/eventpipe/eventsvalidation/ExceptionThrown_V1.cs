@@ -35,6 +35,8 @@ namespace Tracing.Tests.ExceptionThrown_V1
         {
             for (int i = 0; i < 1000; i++)
             {
+                if (i % 100 == 0)
+                    Logger.logger.Log($"Thrown an excpetion {i} times...");
                 try
                 {
                     throw new ArgumentNullException("Throw ArgumentNullException");

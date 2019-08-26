@@ -36,32 +36,28 @@ namespace Tracing.Tests.ProviderValidation
                 new Provider("Microsoft-DotNETCore-SampleProfiler")
             };
 
-            var tests = new int[] { 4, 10 }
-                .Select(x => (uint)Math.Pow(2, x))
-                .Select(bufferSize => new SessionConfiguration(circularBufferSizeMB: bufferSize, format: EventPipeSerializationFormat.NetTrace,  providers: providers))
-                .Select<SessionConfiguration, Func<int>>(configuration => () => IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, configuration));
+            var config = new SessionConfiguration(circularBufferSizeMB: (uint)Math.Pow(2, 10), format: EventPipeSerializationFormat.NetTrace,  providers: providers);
 
-            foreach (var test in tests)
-            {
-                var ret = test();
-                if (ret < 0)
-                    return ret;
-            }
-
-            return 100;
+            var ret = IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, config);
+            if (ret < 0)
+                return ret;
+            else
+                return 100;
         }
 
         private static Dictionary<string, ExpectedEventCount> _expectedEventCounts = new Dictionary<string, ExpectedEventCount>()
         {
-            { "MyEventSource", new ExpectedEventCount(1000, 0.30f) },
+            { "MyEventSource", new ExpectedEventCount(100_000, 0.30f) },
             { "Microsoft-Windows-DotNETRuntimeRundown", -1 },
             { "Microsoft-DotNETCore-SampleProfiler", -1 }
         };
 
         private static Action _eventGeneratingAction = () => 
         {
-            foreach (var _ in Enumerable.Range(0,1000))
+            for (int i = 0; i < 100_000; i++)
             {
+                if (i % 10_000 == 0)
+                    Logger.logger.Log($"Fired MyEvent {i:N0}/100,000 times...");
                 MyEventSource.Log.MyEvent();
             }
         };
