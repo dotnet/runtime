@@ -62,12 +62,6 @@ Combine: MonoDefaults, GENERATE_GET_CLASS_WITH_CACHE, TYPED_HANDLE_DECL and frie
  * chunk should be updated before an object is written into the
  * handle, and chunks to be scanned (between bottom and top) should
  * always be valid.
- *
- * Note that the handle stack is scanned PRECISELY (see
- * sgen_client_scan_thread_data ()).  That means there should not be
- * stale objects scanned.  So when we manipulate the size of a chunk,
- * we must ensure that the newly scannable slot is either null or
- * points to a valid value.
  */
 
 static HandleStack*
@@ -176,6 +170,9 @@ mono_handle_new (MonoObject *obj, MonoThreadInfo *info, const char *owner)
 #ifdef MONO_HANDLE_TRACK_SP
 	mono_handle_chunk_leak_check (handles);
 #endif
+
+	// FIXME: Since we scan the handle stack inprecisely, some of the
+	// membars could be removed
 
 retry:
 	if (G_LIKELY (top->size < OBJECTS_PER_HANDLES_CHUNK)) {
@@ -319,14 +316,11 @@ mono_handle_stack_scan (HandleStack *stack, GcScanFunc func, gpointer gc_data, g
 		check_handle_stack_monotonic (stack);
 
 	/*
-	  We're called twice - on the imprecise pass we do nothing.
-	  Interior pointers are retained in managed frames.
-	  On the precise pass, we scan all the objects where the handles point to the start of
-	  the object.
-
-	  Note that if we're running, we know the world is stopped.
-	*/
-	if (!precise)
+	 * We're called twice, on the precise pass we do nothing.
+	 * On the inprecise pass, we pin the objects pointed to by the handles.
+	 * Note that if we're running, we know the world is stopped.
+	 */
+	if (precise)
 		return;
 
 	HandleChunk *cur = stack->bottom;
