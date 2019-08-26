@@ -110,13 +110,14 @@ typedef struct {
 	int thunks_size;
 } MonoCompileArch;
 
+#define MONO_ARCH_EMULATE_FCONV_TO_U4 1
+#define MONO_ARCH_EMULATE_FCONV_TO_U8 1
 #ifdef MONO_ARCH_ILP32
 /* For the watch (starting with series 4), a new ABI is introduced: arm64_32.
  * We can still use the older AOT compiler to produce bitcode, because it's
  * "offset compatible". However, since it is targeting arm7k, it makes certain
  * assumptions that we need to align here. */
 #define MONO_ARCH_EMULATE_FCONV_TO_I8 1
-#define MONO_ARCH_EMULATE_FCONV_TO_U8 1
 #define MONO_ARCH_EMULATE_LCONV_TO_R8 1
 #define MONO_ARCH_EMULATE_LCONV_TO_R4 1
 #define MONO_ARCH_EMULATE_LCONV_TO_R8_UN 1
