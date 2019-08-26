@@ -63,7 +63,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <PropertyGroup>
       <_IlasmDir Condition="'$(_IlasmDir)' == '' and '%(_IlasmPackageReference.Identity)' == '$(MicrosoftNetCoreIlasmPackageName)'">%(_IlasmPackageReference.NativePath)/</_IlasmDir>
-      <_IldasmDir Condition="'$(_IlasmDir)' == '' and '%(_IlasmPackageReference.Identity)' == '$(MicrosoftNetCoreIldasmPackageName)'">%(_IlasmPackageReference.NativePath)/</_IldasmDir>
+      <_IldasmDir Condition="'$(_IldasmDir)' == '' and '%(_IlasmPackageReference.Identity)' == '$(MicrosoftNetCoreIldasmPackageName)'">%(_IlasmPackageReference.NativePath)/</_IldasmDir>
     </PropertyGroup>
   </Target>
 
