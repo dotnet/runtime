@@ -68,15 +68,6 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        ///   Returns an enumerator that iterates through the JSON object properties.
-        /// </summary>
-        /// <returns>An enumerator structure for the JSON object.</returns>
-        /// <exception cref="ArgumentException">
-        ///   Property name to set already exists if handling duplicates is set to <see cref="DuplicatePropertyNameHandling.Error"/>.
-        /// </exception>
-        public IEnumerator<KeyValuePair<string, JsonNode>> GetEnumerator() => new JsonObjectEnumerator(this);
-
-        /// <summary>
         ///   Adds the specified property to the JSON object.
         /// </summary>
         /// <param name="jsonProperty">The property to add.</param>
@@ -139,7 +130,7 @@ namespace System.Text.Json
         ///   Adds the specified property as a <see cref="JsonString"/> to the JSON object.
         /// </summary>
         /// <param name="propertyName">Name of the property to add.</param>
-        /// <param name="propertyValue"><see cref="ReadOnlySpan{T}"/> value of the property to add.</param>
+        /// <param name="propertyValue"><see cref="ReadOnlySpan{Char}"/> value of the property to add.</param>
         /// <exception cref="ArgumentException">
         ///   Property name to set already exists if handling duplicates is set to <see cref="DuplicatePropertyNameHandling.Error"/>.
         /// </exception>
@@ -372,6 +363,27 @@ namespace System.Text.Json
         }
 
         /// <summary>
+        ///   Adds the property values from the specified collection as a <see cref="JsonArray"/> property to the JSON object.
+        /// </summary>
+        /// <param name="propertyName">Name of the <see cref="JsonArray"/> property to add.</param>
+        /// <param name="propertyValues">Properties to add.</param>
+        /// <exception cref="ArgumentException">
+        ///   Provided collection contains duplicates if handling duplicates is set to <see cref="DuplicatePropertyNameHandling.Error"/>.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        ///   Some of property names are null.
+        /// </exception>
+        public void Add(string propertyName, IEnumerable<JsonNode> propertyValues)
+        {
+            var jsonArray = new JsonArray();
+            foreach (JsonNode value in propertyValues)
+            {
+                jsonArray.Add(value);
+            }
+            Add(propertyName, (JsonNode)jsonArray);
+        }
+
+        /// <summary>
         ///   Removes the property with the specified name.
         /// </summary>
         /// <param name="propertyName"></param>
@@ -438,7 +450,7 @@ namespace System.Text.Json
         /// <exception cref="KeyNotFoundException">
         ///   Property with specified name is not found in JSON object.
         /// </exception>
-        /// <exception cref="InvalidCastException">
+        /// <exception cref="ArgumentException">
         ///   Property with specified name is not a JSON object.
         /// </exception>
         public JsonObject GetJsonObjectPropertyValue(string propertyName)
@@ -448,7 +460,7 @@ namespace System.Text.Json
                 return jsonObject;
             }
 
-            throw new InvalidCastException(SR.Format(SR.PropertyTypeMismatch, propertyName));
+            throw new ArgumentException(SR.Format(SR.PropertyTypeMismatch, propertyName));
         }
 
         /// <summary>
@@ -464,14 +476,53 @@ namespace System.Text.Json
         {
             if (TryGetPropertyValue(propertyName, out JsonNode jsonNode))
             {
-                if (jsonNode is JsonObject jsonNodeCasted)
-                {
-                    jsonObject = jsonNodeCasted;
-                    return true;
-                }
+                jsonObject = jsonNode as JsonObject;
+                return jsonObject != null;
             }
 
             jsonObject = null;
+            return false;
+        }
+
+        /// <summary>
+        ///   Returns the JSON array value of a property with the specified name.
+        /// </summary>
+        /// <param name="propertyName">Name of the property to return.</param>
+        /// <returns>JSON objectvalue of a property with the specified name.</returns>
+        /// <exception cref="KeyNotFoundException">
+        ///   Property with specified name is not found in JSON array.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   Property with specified name is not a JSON array.
+        /// </exception>
+        public JsonArray GetJsonArrayPropertyValue(string propertyName)
+        {
+            if (GetPropertyValue(propertyName) is JsonArray jsonArray)
+            {
+                return jsonArray;
+            }
+
+            throw new ArgumentException(SR.Format(SR.PropertyTypeMismatch, propertyName));
+        }
+
+        /// <summary>
+        ///   Returns the JSON array value of a property with the specified name.
+        /// </summary>
+        /// <param name="propertyName">Name of the property to return.</param>
+        /// <param name="jsonArray">JSON array value of the property with specified name.</param>
+        /// <returns>
+        ///  <see langword="true"/> if JSON array property with specified name was found;
+        ///  otherwise, <see langword="false"/>
+        /// </returns>
+        public bool TryGetJsonArrayPropertyValue(string propertyName, out JsonArray jsonArray)
+        {
+            if (TryGetPropertyValue(propertyName, out JsonNode jsonNode))
+            {
+                jsonArray = jsonNode as JsonArray;
+                return jsonArray != null;
+            }
+
+            jsonArray = null;
             return false;
         }
 
@@ -489,6 +540,48 @@ namespace System.Text.Json
         ///   Returns an enumerator that iterates through the JSON object properties.
         /// </summary>
         /// <returns>An enumerator structure for the <see cref="JsonObject"/>.</returns>
-        IEnumerator IEnumerable.GetEnumerator() => new JsonObjectEnumerator(this);
+        /// <exception cref="ArgumentException">
+        ///   Property name to set already exists if handling duplicates is set to <see cref="DuplicatePropertyNameHandling.Error"/>.
+        /// </exception>
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        /// <summary>
+        ///   Returns an enumerator that iterates through the JSON object properties.
+        /// </summary>
+        /// <returns>An enumerator structure for the JSON object.</returns>
+        /// <exception cref="ArgumentException">
+        ///   Property name to set already exists if handling duplicates is set to <see cref="DuplicatePropertyNameHandling.Error"/>.
+        /// </exception>
+        IEnumerator<KeyValuePair<string, JsonNode>> IEnumerable<KeyValuePair<string, JsonNode>>.GetEnumerator() => new JsonObjectEnumerator(this);
+
+        /// <summary>
+        ///   Returns an enumerator that iterates through the JSON object properties.
+        /// </summary>
+        /// <returns>An enumerator structure for the JSON object.</returns>
+        /// <exception cref="ArgumentException">
+        ///   Property name to set already exists if handling duplicates is set to <see cref="DuplicatePropertyNameHandling.Error"/>.
+        /// </exception>
+        public JsonObjectEnumerator GetEnumerator() => new JsonObjectEnumerator(this);
+
+        /// <summary>
+        ///   Creates a new JSON object that is a copy of the current instance.
+        /// </summary>
+        /// <returns>A new JSON object that is a copy of this instance.</returns>
+        public override JsonNode Clone()
+        {
+            var jsonObject = new JsonObject(_duplicatePropertyNameHandling);
+
+            foreach (KeyValuePair<string, JsonNode> property in _dictionary)
+            {
+                jsonObject.Add(property.Key, property.Value.Clone());
+            }
+
+            return jsonObject;
+        }
+
+        /// <summary>
+        ///   Returns <see cref="JsonValueKind.Object"/>
+        /// </summary>
+        public override JsonValueKind ValueKind { get => JsonValueKind.Object; }
     }
 }

@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+using System.Globalization;
 using Xunit;
 
 namespace System.Text.Json.Tests
@@ -79,20 +81,29 @@ namespace System.Text.Json.Tests
             Assert.Equal(guidString, jsonString);
         }
 
-        [Fact]
-        public static void TestDateTime()
+        public static IEnumerable<object[]> DateTimeData =>
+           new List<object[]>
+           {
+                       new object[] { new DateTime(DateTime.MinValue.Ticks, DateTimeKind.Utc) },
+                       new object[] { new DateTime(2019, 1, 1) },
+                       new object[] { new DateTime(2019, 1, 1, new GregorianCalendar()) },
+                       new object[] { new DateTime(2019, 1, 1, new ChineseLunisolarCalendar()) }
+           };
+
+        [Theory]
+        [MemberData(nameof(DateTimeData))]
+        public static void TestDateTime(DateTime dateTime)
         {
-            DateTime dateTime = new DateTime(DateTime.MinValue.Ticks);
             var jsonString = new JsonString(dateTime);
-            Assert.Equal(dateTime.ToString(), jsonString);
+            Assert.Equal(dateTime.ToString("s", CultureInfo.InvariantCulture), jsonString);
         }
 
-        [Fact]
-        public static void TestDateTimeOffset()
+        [Theory]
+        [MemberData(nameof(DateTimeData))]
+        public static void TestDateTimeOffset(DateTimeOffset dateTimeOffset)
         {
-            DateTimeOffset dateTimeOffset = new DateTime(DateTime.MinValue.Ticks, DateTimeKind.Utc);
             var jsonString = new JsonString(dateTimeOffset);
-            Assert.Equal(dateTimeOffset.ToString(), jsonString);
+            Assert.Equal(dateTimeOffset.ToString("s", CultureInfo.InvariantCulture), jsonString);
         }
 
         [Fact]
