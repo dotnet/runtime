@@ -146,7 +146,6 @@
       <Compile Include="src\Mono\MonoDomain.cs" />
       <Compile Include="src\Mono\MonoDomainSetup.cs" />
       <Compile Include="src\Mono\RuntimeHandles.cs" />
-      <Compile Include="src\System\AppContext.cs" />
       <Compile Include="src\System\ArgIterator.cs" />
       <Compile Include="src\System\Array.cs" />
       <Compile Include="src\System\Attribute.cs" />
