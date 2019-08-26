@@ -88,15 +88,8 @@ namespace System.Xml
             _type = ValueHandleType.Empty;
         }
 
-        private static Base64Encoding Base64Encoding
-        {
-            get
-            {
-                if (s_base64Encoding == null)
-                    s_base64Encoding = new Base64Encoding();
-                return s_base64Encoding;
-            }
-        }
+        private static Base64Encoding Base64Encoding => s_base64Encoding ??= new Base64Encoding();
+
         public void SetConstantValue(ValueHandleConstStringType constStringType)
         {
             _type = ValueHandleType.ConstString;
@@ -141,9 +134,7 @@ namespace System.Xml
 
                 case ValueHandleType.Char:
                     int ch = GetChar();
-                    if (ch > char.MaxValue)
-                        return false;
-                    return XmlConverter.IsWhitespace((char)ch);
+                    return ch <= char.MaxValue && XmlConverter.IsWhitespace((char)ch);
 
                 case ValueHandleType.EscapedUTF8:
                     return _bufferReader.IsWhitespaceUTF8(_offset, _length);
@@ -871,21 +862,18 @@ namespace System.Xml
             DiagnosticUtility.DebugAssert(_type == ValueHandleType.EscapedUTF8, "");
             return _bufferReader.GetEscapedString(_offset, _length);
         }
+
         private string GetCharText()
         {
             int ch = GetChar();
             if (ch > char.MaxValue)
             {
                 SurrogateChar surrogate = new SurrogateChar(ch);
-                char[] chars = new char[2];
-                chars[0] = surrogate.HighChar;
-                chars[1] = surrogate.LowChar;
-                return new string(chars, 0, 2);
+                Span<char> chars = stackalloc char[2] { surrogate.HighChar, surrogate.LowChar };
+                return new string(chars);
             }
-            else
-            {
-                return ((char)ch).ToString();
-            }
+
+            return ((char)ch).ToString();
         }
 
         private int GetChar()
