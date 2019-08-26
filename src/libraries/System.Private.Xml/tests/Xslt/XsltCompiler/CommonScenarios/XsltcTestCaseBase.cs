@@ -117,17 +117,10 @@ namespace System.Xml.Tests
             return commandLine.Replace(@"$(CurrentWorkingDirectory)", XsltcModule.TargetDirectory);
         }
 
-        protected bool ShouldSkip(object[] varParams)
+        protected bool ShouldSkip(bool englishOnly)
         {
             // some test only applicable in English environment, so skip them if current cultral is not english
-            bool isCultralEnglish = CultureInfo.CurrentCulture.TwoLetterISOLanguageName.ToLower() == "en";
-            if (isCultralEnglish)
-            {
-                return false;
-            }
-
-            // look up key word "EnglishOnly", if hit return true, otherwise false
-            return varParams != null && varParams.Any(o => o.ToString() == "EnglishOnly");
+            return englishOnly && CultureInfo.CurrentCulture.TwoLetterISOLanguageName.ToLower() != "en";
         }
 
         protected void VerifyTest(string cmdLine, string baselineFile, bool loadFromFile)
