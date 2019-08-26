@@ -54,6 +54,7 @@
     <Compile Include="CharConverterTests.cs" />
     <Compile Include="CollectionChangedEventArgsTests.cs" />
     <Compile Include="CollectionConverterTests.cs" />
+    <Compile Include="ComponentConverterTests.cs" />
     <Compile Include="ComplexBindingPropertiesAttributeTests.cs" />
     <Compile Include="ComponentResourceManagerTests.cs" />
     <Compile Include="ComponentEditorTests.cs" />
