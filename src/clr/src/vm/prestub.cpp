@@ -2053,16 +2053,6 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT)
     // should have thrown an exception if it couldn't make a stub.
     _ASSERTE((pStub != NULL) ^ (pCode != NULL));
 
-    /**************************   SECURITY   *************************/
-
-    // Lets check to see if we need declarative security on this stub, If we have
-    // security checks on this method or class then we need to add an intermediate
-    // stub that performs declarative checks prior to calling the real stub.
-    // record if security needs to intercept this call (also depends on whether we plan to use stubs for declarative security)
-
-
-    _ASSERTE((pStub != NULL) ^ (pCode != NULL));
-
 #if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
     //
     // We are seeing memory reordering race around fixups (see DDB 193514 and related bugs). We get into
