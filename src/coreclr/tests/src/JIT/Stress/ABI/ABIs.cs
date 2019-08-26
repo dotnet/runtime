@@ -107,9 +107,7 @@ namespace ABIStress
             {
                 typeof(byte), typeof(short), typeof(int), typeof(long),
                 typeof(float), typeof(double),
-                // Vector128 is disabled for now due to
-                // https://github.com/dotnet/coreclr/issues/26022
-                typeof(Vector<int>), /*typeof(Vector128<int>),*/ typeof(Vector256<int>),
+                typeof(Vector<int>), typeof(Vector128<int>), typeof(Vector256<int>),
                 typeof(S1P), typeof(S2P), typeof(S2U), typeof(S3U),
                 typeof(S4P), typeof(S4U), typeof(S5U), typeof(S6U),
                 typeof(S7U), typeof(S8P), typeof(S8U), typeof(S9U),
