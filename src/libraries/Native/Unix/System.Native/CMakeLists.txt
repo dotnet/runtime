@@ -54,6 +54,10 @@ endif ()
 
 if (CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
     target_link_libraries(System.Native pthread)
+if (HAVE_INOTIFY)
+    find_library(INOTIFY_LIBRARY inotify HINTS /usr/local/lib)
+    target_link_libraries(System.Native ${INOTIFY_LIBRARY})
+endif()
 endif ()
 
 install_library_and_symbols (System.Native)
