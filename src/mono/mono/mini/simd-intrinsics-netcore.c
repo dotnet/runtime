@@ -437,6 +437,11 @@ static guint16 popcnt_methods [] = {
 	SN_get_IsSupported
 };
 
+static guint16 lzcnt_methods [] = {
+	SN_LeadingZeroCount,
+	SN_get_IsSupported
+};
+
 static guint16 bmi1_methods [] = {
 	SN_TrailingZeroCount,
 	SN_get_IsSupported,
@@ -477,6 +482,31 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 			if (!supported)
 				return NULL;
 			MONO_INST_NEW (cfg, ins, is_64bit ? OP_POPCNT64 : OP_POPCNT32);
+			ins->dreg = alloc_ireg (cfg);
+			ins->sreg1 = args [0]->dreg;
+			MONO_ADD_INS (cfg->cbb, ins);
+			return ins;
+		default:
+			return NULL;
+		}
+	}
+	if (!strcmp (class_name, "Lzcnt") || (!strcmp (class_name, "X64") && cmethod->klass->nested_in && !strcmp (m_class_get_name (cmethod->klass->nested_in), "Lzcnt"))) {
+		id = lookup_intrins (lzcnt_methods, sizeof (lzcnt_methods), cmethod);
+		if (id == -1)
+			return NULL;
+
+		supported = (get_cpu_features () & MONO_CPU_X86_LZCNT) != 0;
+		is_64bit = !strcmp (class_name, "X64");
+
+		switch (id) {
+		case SN_get_IsSupported:
+			EMIT_NEW_ICONST (cfg, ins, supported ? 1 : 0);
+			ins->type = STACK_I4;
+			return ins;
+		case SN_LeadingZeroCount:
+			if (!supported)
+				return NULL;
+			MONO_INST_NEW (cfg, ins, is_64bit ? OP_LZCNT64 : OP_LZCNT32);
 			ins->dreg = alloc_ireg (cfg);
 			ins->sreg1 = args [0]->dreg;
 			MONO_ADD_INS (cfg->cbb, ins);
