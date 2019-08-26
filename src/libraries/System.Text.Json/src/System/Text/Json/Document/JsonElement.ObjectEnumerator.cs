@@ -19,21 +19,62 @@ namespace System.Text.Json
             private readonly JsonElement _target;
             private int _curIdx;
             private readonly int _endIdx;
+            private JsonObjectEnumerator _jsonObjectEnumerator;
 
             internal ObjectEnumerator(JsonElement target)
             {
-                Debug.Assert(target.TokenType == JsonTokenType.StartObject);
-
                 _target = target;
                 _curIdx = -1;
-                _endIdx = _target._parent.GetEndIndex(_target._idx, includeEndElement: false);
+
+                if (target._parent is JsonDocument document)
+                {
+                    Debug.Assert(target.TokenType == JsonTokenType.StartObject);
+
+                    _endIdx = document.GetEndIndex(_target._idx, includeEndElement: false);
+                    _jsonObjectEnumerator = default;
+                }
+                else
+                {
+                    _endIdx = -1;
+
+                    var jsonObject = (JsonObject)target._parent;
+                    _jsonObjectEnumerator = new JsonObjectEnumerator(jsonObject);
+                }
             }
 
             /// <inheritdoc />
-            public JsonProperty Current =>
-                _curIdx < 0 ?
-                    default :
-                    new JsonProperty(new JsonElement(_target._parent, _curIdx));
+            public JsonProperty Current
+            {
+                get
+                {
+                    if (!_target.IsImmutable)
+                    {
+                        KeyValuePair<string, JsonNode> propertyPair = _jsonObjectEnumerator.Current;
+
+                        // propertyPair.Key is null before first after last call of MoveNext
+                        if (propertyPair.Key == null)
+                        {
+                            return default;
+                        }
+
+                        // null JsonNode case
+                        if (propertyPair.Value == null)
+                        {
+                            return new JsonProperty(new JsonElement(null), propertyPair.Key);
+                        }
+
+                        return new JsonProperty(propertyPair.Value.AsJsonElement(), propertyPair.Key);
+                    }
+
+                    if (_curIdx < 0)
+                    {
+                        return default;
+                    }
+
+                    var document = (JsonDocument)_target._parent;
+                    return new JsonProperty(new JsonElement(document, _curIdx));
+                }
+            }
 
             /// <summary>
             ///   Returns an enumerator that iterates the properties of an object.
@@ -65,12 +106,20 @@ namespace System.Text.Json
             public void Dispose()
             {
                 _curIdx = _endIdx;
+                if (!_target.IsImmutable)
+                {
+                    _jsonObjectEnumerator.Dispose();
+                }
             }
 
             /// <inheritdoc />
             public void Reset()
             {
                 _curIdx = -1;
+                if (!_target.IsImmutable)
+                {
+                    ((IEnumerator)_jsonObjectEnumerator).Reset();
+                }
             }
 
             /// <inheritdoc />
@@ -79,6 +128,11 @@ namespace System.Text.Json
             /// <inheritdoc />
             public bool MoveNext()
             {
+                if (!_target.IsImmutable)
+                {
+                    return _jsonObjectEnumerator.MoveNext();
+                }
+
                 if (_curIdx >= _endIdx)
                 {
                     return false;
@@ -90,7 +144,8 @@ namespace System.Text.Json
                 }
                 else
                 {
-                    _curIdx = _target._parent.GetEndIndex(_curIdx, includeEndElement: true);
+                    var document = (JsonDocument)_target._parent;
+                    _curIdx = document.GetEndIndex(_curIdx, includeEndElement: true);
                 }
 
                 // _curIdx is now pointing at a property name, move one more to get the value

@@ -441,4 +441,7 @@
   <data name="InvalidDuplicatePropertyNameHandling" xml:space="preserve">
     <value>The DuplicatePropertyNameHandling enum must be set to one of the supported values.</value>
   </data>
+  <data name="ArrayModifiedDuringIteration" xml:space="preserve">
+    <value>The JSON array was modified during iteration.</value>
+  </data>
 </root>

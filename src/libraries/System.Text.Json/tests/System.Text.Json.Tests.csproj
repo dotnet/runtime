@@ -21,6 +21,8 @@
     <Compile Include="JsonElementWriteTests.cs" />
     <Compile Include="JsonEncodedTextTests.cs" />
     <Compile Include="JsonGuidTestData.cs" />
+    <Compile Include="JsonNodeToJsonElementTests.cs" />
+    <Compile Include="JsonNodeCloneTests.cs" />
     <Compile Include="JsonNumberTestData.cs" />
     <Compile Include="JsonPropertyTests.cs" />
     <Compile Include="JsonReaderStateAndOptionsTests.cs" />
@@ -115,10 +117,12 @@
     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="JsonArrayTests.cs" />
     <Compile Include="JsonBooleanTests.cs" />
+    <Compile Include="JsonNodeTestData.cs" />
+    <Compile Include="JsonNodeParseTests.cs" />
     <Compile Include="JsonNumberTests.cs" />
     <Compile Include="JsonObjectTests.cs" />
-    <Compile Include="JsonObjectTests.TestData.cs" />
     <Compile Include="JsonStringTests.cs" />
   </ItemGroup>
 </Project>

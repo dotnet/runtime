@@ -231,8 +231,7 @@ namespace System.Text.Json
             JsonTokenType expectedType,
             JsonTokenType actualType)
         {
-            return GetInvalidOperationException(
-                SR.Format(SR.JsonElementHasWrongType, expectedType.ToValueKind(), actualType.ToValueKind()));
+            return GetJsonElementWrongTypeException(expectedType.ToValueKind(), actualType.ToValueKind());
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -240,8 +239,25 @@ namespace System.Text.Json
             string expectedTypeName,
             JsonTokenType actualType)
         {
+            return GetJsonElementWrongTypeException(expectedTypeName, actualType.ToValueKind());
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static InvalidOperationException GetJsonElementWrongTypeException(
+            JsonValueKind expectedType,
+            JsonValueKind actualType)
+        {
             return GetInvalidOperationException(
-                SR.Format(SR.JsonElementHasWrongType, expectedTypeName, actualType.ToValueKind()));
+                SR.Format(SR.JsonElementHasWrongType, expectedType, actualType));
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static InvalidOperationException GetJsonElementWrongTypeException(
+            string expectedTypeName,
+            JsonValueKind actualType)
+        {
+            return GetInvalidOperationException(
+                SR.Format(SR.JsonElementHasWrongType, expectedTypeName, actualType));
         }
 
         public static void ThrowJsonReaderException(ref Utf8JsonReader json, ExceptionResource resource, byte nextByte = default, ReadOnlySpan<byte> bytes = default)

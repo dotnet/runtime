@@ -3,11 +3,13 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
 using Xunit;
 
 namespace System.Text.Json.Tests
 {
-    public static partial class JsonObjectTests
+    public static class JsonObjectTests
     {
         [Fact]
         public static void TestDefaultConstructor()
@@ -131,20 +133,29 @@ namespace System.Text.Json.Tests
             Assert.Equal(guidString, (JsonString)jsonObject["guid"]);
         }
 
-        [Fact]
-        public static void TestDateTime()
+        public static IEnumerable<object[]> DateTimeData =>
+            new List<object[]>
+            {
+                new object[] { new DateTime(DateTime.MinValue.Ticks, DateTimeKind.Utc) },
+                new object[] { new DateTime(2019, 1, 1) },
+                new object[] { new DateTime(2019, 1, 1, new GregorianCalendar()) },
+                new object[] { new DateTime(2019, 1, 1, new ChineseLunisolarCalendar()) }
+            };
+
+        [Theory]
+        [MemberData(nameof(DateTimeData))]
+        public static void TestDateTime(DateTime dateTime)
         {
-            DateTime dateTime = new DateTime(DateTime.MinValue.Ticks);
             var jsonObject = new JsonObject { { "dateTime", dateTime } };
-            Assert.Equal(dateTime.ToString(), (JsonString)jsonObject["dateTime"]);
+            Assert.Equal(dateTime.ToString("s", CultureInfo.InvariantCulture), (JsonString)jsonObject["dateTime"]);
         }
 
-        [Fact]
-        public static void TestDateTimeOffset()
+        [Theory]
+        [MemberData(nameof(DateTimeData))]
+        public static void TestDateTimeOffset(DateTimeOffset dateTimeOffset)
         {
-            DateTimeOffset dateTimeOffset = new DateTime(DateTime.MinValue.Ticks, DateTimeKind.Utc);
             var jsonObject = new JsonObject { { "dateTimeOffset", dateTimeOffset } };
-            Assert.Equal(dateTimeOffset.ToString(), (JsonString)jsonObject["dateTimeOffset"]);
+            Assert.Equal(dateTimeOffset.ToString("s", CultureInfo.InvariantCulture), (JsonString)jsonObject["dateTimeOffset"]);
         }
 
         [Fact]
@@ -292,6 +303,104 @@ namespace System.Text.Json.Tests
             employees.AddRange(EmployeesDatabase.GetTenBestEmployees());
 
             CheckEmployeesAreDifferent(employees);
+        }
+
+        [Fact]
+        public static void TestAddingJsonArrayFromJsonNumberArray()
+        {
+            var preferences = new JsonObject()
+            {
+                { "prime numbers", new JsonNumber[] { 19, 37 } }
+            };
+
+            var primeNumbers = (JsonArray)preferences["prime numbers"];
+            Assert.Equal(2, primeNumbers.Count);
+
+            int[] expected = { 19, 37 };
+
+            for (int i = 0; i < primeNumbers.Count; i++)
+            {
+                Assert.IsType<JsonNumber>(primeNumbers[i]);
+                Assert.Equal(expected[i], primeNumbers[i] as JsonNumber);
+            }
+        }
+
+        [Fact]
+        public static void TestAddingJsonArray()
+        {
+            var preferences = new JsonObject()
+            {
+                { "colours", (JsonNode) new JsonArray{ "red", "green", "blue" } }
+            };
+
+            var colours = (JsonArray)preferences["colours"];
+            Assert.Equal(3, colours.Count);
+
+            string[] expected = { "red", "green", "blue" };
+
+            for (int i = 0; i < colours.Count; i++)
+            {
+                Assert.IsType<JsonString>(colours[i]);
+                Assert.Equal(expected[i], colours[i] as JsonString);
+            }
+        }
+
+        [Fact]
+        public static void TestAddingJsonArrayFromIEnumerableOfStrings()
+        {
+            var sportsExperienceYears = new JsonObject()
+            {
+                { "skiing", 5 },
+                { "cycling", 8 },
+                { "hiking", 6 },
+                { "chess", 2 },
+                { "skating", 1 },
+            };
+
+            // choose only sports with > 2 experience years
+            IEnumerable<string> sports = sportsExperienceYears.Where(sport => ((JsonNumber)sport.Value).GetInt32() > 2).Select(sport => sport.Key);
+
+            var preferences = new JsonObject()
+            {
+                { "sports", (JsonNode) new JsonArray(sports) }
+            };
+
+            var sportsJsonArray = (JsonArray)preferences["sports"];
+            Assert.Equal(3, sportsJsonArray.Count);
+
+            for (int i = 0; i < sportsJsonArray.Count; i++)
+            {
+                Assert.IsType<JsonString>(sportsJsonArray[i]);
+                Assert.Equal(sports.ElementAt(i), sportsJsonArray[i] as JsonString);
+            }
+        }
+
+        [Fact]
+        public static void TestAddingJsonArrayFromIEnumerableOfJsonNodes()
+        {
+            var strangeWords = new JsonArray()
+            {
+                "supercalifragilisticexpialidocious",
+                "gladiolus",
+                "albumen",
+                "smaragdine"
+            };
+
+            var preferences = new JsonObject()
+            {
+                { "strange words", strangeWords.Where(word => ((JsonString)word).Value.Length < 10) }
+            };
+
+            var strangeWordsJsonArray = (JsonArray)preferences["strange words"];
+            Assert.Equal(2, strangeWordsJsonArray.Count);
+
+            string[] expected = { "gladiolus", "albumen" };
+
+            for (int i = 0; i < strangeWordsJsonArray.Count; i++)
+            {
+                Assert.IsType<JsonString>(strangeWordsJsonArray[i]);
+                Assert.Equal(expected[i], strangeWordsJsonArray[i] as JsonString);
+            }
         }
 
         [Fact]
@@ -507,7 +616,7 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void TestGetJsonObjectPropertyThrows()
         {
-            Assert.Throws<InvalidCastException>(() =>
+            Assert.Throws<ArgumentException>(() =>
             {
                 var jsonObject = new JsonObject()
                 {
@@ -530,6 +639,35 @@ namespace System.Text.Json.Tests
             Assert.Null(property);
 
             Assert.False(jsonObject.TryGetJsonObjectPropertyValue("other", out property));
+            Assert.Null(property);
+        }
+
+        [Fact]
+        public static void TestGetJsonArrayPropertyThrows()
+        {
+            Assert.Throws<ArgumentException>(() =>
+            {
+                var jsonObject = new JsonObject()
+                {
+                    { "name", "value" }
+                };
+
+                jsonObject.GetJsonArrayPropertyValue("name");
+            });
+        }
+
+        [Fact]
+        public static void TestTryGetArrayPropertyFails()
+        {
+            var jsonObject = new JsonObject()
+            {
+                { "name", "value" }
+            };
+
+            Assert.False(jsonObject.TryGetJsonArrayPropertyValue("name", out JsonArray property));
+            Assert.Null(property);
+
+            Assert.False(jsonObject.TryGetJsonArrayPropertyValue("other", out property));
             Assert.Null(property);
         }
 
