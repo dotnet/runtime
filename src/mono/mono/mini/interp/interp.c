@@ -740,9 +740,9 @@ stackval_from_data (MonoType *type_, stackval *result, void *data, gboolean pinv
 }
 
 static void inline
-stackval_to_data (MonoType *type_, stackval *val, void *data, gboolean pinvoke)
+stackval_to_data (MonoType *type, stackval *val, void *data, gboolean pinvoke)
 {
-	MonoType *type = mini_native_type_replace_type (type_);
+	type = mini_native_type_replace_type (type);
 	if (type->byref) {
 		gpointer *p = (gpointer*)data;
 		*p = val->data.p;
@@ -847,9 +847,9 @@ stackval_to_data (MonoType *type_, stackval *val, void *data, gboolean pinvoke)
  * of copying the value.
  */
 static gpointer
-stackval_to_data_addr (MonoType *type_, stackval *val)
+stackval_to_data_addr (MonoType *type, stackval *val)
 {
-	MonoType *type = mini_native_type_replace_type (type_);
+	type = mini_native_type_replace_type (type);
 	if (type->byref)
 		return &val->data.p;
 
