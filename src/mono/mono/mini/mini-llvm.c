@@ -8224,7 +8224,7 @@ after_codegen:
 	}
 
 	if (cfg->verbose_level > 1) {
-		g_print ("\n*** LLVM IR for %s ***\n", mono_method_full_name (cfg->method, FALSE));
+		g_print ("\n*** Unoptimized LLVM IR for %s ***\n", mono_method_full_name (cfg->method, FALSE));
 		mono_llvm_dump_value (method);
 		g_print ("***\n\n");
 	}
@@ -10277,6 +10277,11 @@ llvm_jit_finalize_method (EmitContext *ctx)
 		callee_vars [i ++] = var;
 
 	cfg->native_code = (guint8*)mono_llvm_compile_method (ctx->module->mono_ee, ctx->lmethod, nvars, callee_vars, callee_addrs, &eh_frame);
+	if (cfg->verbose_level > 1) {
+		g_print ("\n*** Optimized LLVM IR for %s ***\n", mono_method_full_name (cfg->method, FALSE));
+		mono_llvm_dump_value (ctx->lmethod);
+		g_print ("***\n\n");
+	}
 
 	decode_llvm_eh_info (ctx, eh_frame);
 
