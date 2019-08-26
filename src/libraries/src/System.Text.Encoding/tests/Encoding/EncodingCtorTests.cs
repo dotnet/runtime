@@ -81,24 +81,24 @@ namespace System.Text.Tests
             Assert.Empty(encoding.GetPreamble());
             Assert.False(encoding.IsSingleByte);
         }
-    }
 
-    public class CustomEncoding : Encoding
-    {
-        public CustomEncoding() : base() {}
-        public CustomEncoding(int codePage): base(codePage) { }
-        public CustomEncoding(int codePage, EncoderFallback encoderFallback, DecoderFallback decoderFallback) : base(codePage, encoderFallback, decoderFallback) { }
+        private sealed class CustomEncoding : Encoding
+        {
+            public CustomEncoding() : base() { }
+            public CustomEncoding(int codePage) : base(codePage) { }
+            public CustomEncoding(int codePage, EncoderFallback encoderFallback, DecoderFallback decoderFallback) : base(codePage, encoderFallback, decoderFallback) { }
 
-        public override int GetByteCount(char[] chars, int index, int count) => 1;
+            public override int GetByteCount(char[] chars, int index, int count) => 1;
 
-        public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex) => 2;
+            public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex) => 2;
 
-        public override int GetCharCount(byte[] bytes, int index, int count) => 3;
+            public override int GetCharCount(byte[] bytes, int index, int count) => 3;
 
-        public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex) => 4;
+            public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex) => 4;
 
-        public override int GetMaxByteCount(int charCount) => 5;
+            public override int GetMaxByteCount(int charCount) => 5;
 
-        public override int GetMaxCharCount(int byteCount) => 6;
+            public override int GetMaxCharCount(int byteCount) => 6;
+        }
     }
 }

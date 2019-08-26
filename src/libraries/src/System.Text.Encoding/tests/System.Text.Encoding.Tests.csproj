@@ -35,6 +35,7 @@
     <Compile Include="Encoding\EncodingCtorTests.cs" />
     <Compile Include="Encoding\EncodingGetEncodingTests.cs" />
     <Compile Include="Encoding\EncodingConvertTests.cs" />
+    <Compile Include="Encoding\EncodingVirtualTests.cs" />
     <Compile Include="Fallback\DecoderReplacementFallbackTests.cs" />
     <Compile Include="Fallback\EncoderReplacementFallbackTests.cs" />
     <Compile Include="Fallback\EncoderExceptionFallbackTests.cs" />
