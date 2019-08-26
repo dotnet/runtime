@@ -100,7 +100,7 @@ scan_object_for_binary_protocol_copy_wbarrier (gpointer dest, char *start, mword
 #endif
 
 void
-mono_gc_wbarrier_value_copy_internal (gpointer dest, gpointer src, int count, MonoClass *klass)
+mono_gc_wbarrier_value_copy_internal (gpointer dest, gconstpointer src, int count, MonoClass *klass)
 {
 	HEAVY_STAT (++stat_wbarrier_value_copy);
 	g_assert (m_class_is_valuetype (klass));

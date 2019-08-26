@@ -2987,7 +2987,7 @@ sgen_thread_detach_with_lock (SgenThreadInfo *p)
  * mono_gc_wbarrier_arrayref_copy_internal:
  */
 void
-mono_gc_wbarrier_arrayref_copy_internal (gpointer dest_ptr, gpointer src_ptr, int count)
+mono_gc_wbarrier_arrayref_copy_internal (gpointer dest_ptr, gconstpointer src_ptr, int count)
 {
 	HEAVY_STAT (++stat_wbarrier_arrayref_copy);
 	/*This check can be done without taking a lock since dest_ptr array is pinned*/

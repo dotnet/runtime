@@ -51,7 +51,7 @@ typedef gpointer MonoInterpFrameHandle;
 	MONO_EE_CALLBACK (gpointer, frame_get_this, (MonoInterpFrameHandle frame)) \
 	MONO_EE_CALLBACK (gpointer, frame_get_res, (MonoInterpFrameHandle frame)) \
 	MONO_EE_CALLBACK (void, frame_arg_to_data, (MonoInterpFrameHandle frame, MonoMethodSignature *sig, int index, gpointer data)) \
-	MONO_EE_CALLBACK (void, data_to_frame_arg, (MonoInterpFrameHandle frame, MonoMethodSignature *sig, int index, gpointer data)) \
+	MONO_EE_CALLBACK (void, data_to_frame_arg, (MonoInterpFrameHandle frame, MonoMethodSignature *sig, int index, gconstpointer data)) \
 	MONO_EE_CALLBACK (gpointer, frame_arg_to_storage, (MonoInterpFrameHandle frame, MonoMethodSignature *sig, int index)) \
 	MONO_EE_CALLBACK (void, frame_arg_set_storage, (MonoInterpFrameHandle frame, MonoMethodSignature *sig, int index, gpointer storage)) \
 	MONO_EE_CALLBACK (MonoInterpFrameHandle, frame_get_parent, (MonoInterpFrameHandle frame)) \

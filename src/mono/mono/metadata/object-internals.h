@@ -2288,7 +2288,7 @@ int
 mono_object_hash_internal (MonoObject* obj);
 
 void
-mono_value_copy_internal (void* dest, /*const*/ void* src, MonoClass *klass);
+mono_value_copy_internal (void* dest, const void* src, MonoClass *klass);
 
 void
 mono_value_copy_array_internal (MonoArray *dest, int dest_idx, const void* src, int count);
@@ -2399,7 +2399,7 @@ void
 mono_gc_wbarrier_set_arrayref_internal  (MonoArray *arr, void* slot_ptr, MonoObject* value);
 
 void
-mono_gc_wbarrier_arrayref_copy_internal (void* dest_ptr, void* src_ptr, int count);
+mono_gc_wbarrier_arrayref_copy_internal (void* dest_ptr, const void* src_ptr, int count);
 
 void
 mono_gc_wbarrier_generic_store_internal (void* ptr, MonoObject* value);
@@ -2411,7 +2411,7 @@ void
 mono_gc_wbarrier_generic_nostore_internal (void* ptr);
 
 void
-mono_gc_wbarrier_value_copy_internal (void* dest, /*const*/ void* src, int count, MonoClass *klass);
+mono_gc_wbarrier_value_copy_internal (void* dest, const void* src, int count, MonoClass *klass);
 
 void
 mono_gc_wbarrier_object_copy_internal (MonoObject* obj, MonoObject *src);

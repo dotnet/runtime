@@ -651,7 +651,7 @@ get_virtual_method_fast (InterpMethod *imethod, MonoVTable *vtable, int offset)
 }
 
 static void inline
-stackval_from_data (MonoType *type_, stackval *result, void *data, gboolean pinvoke)
+stackval_from_data (MonoType *type_, stackval *result, const void *data, gboolean pinvoke)
 {
 	MonoType *type = mini_native_type_replace_type (type_);
 	if (type->byref) {
@@ -1076,7 +1076,7 @@ ves_array_get (InterpFrame *frame, stackval *sp, stackval *retval, MonoMethodSig
 		return;
 
 	gint32 esize = mono_array_element_size (ac);
-	gpointer ea = mono_array_addr_with_size_fast (ao, esize, pos);
+	gconstpointer ea = mono_array_addr_with_size_fast (ao, esize, pos);
 
 	MonoType *mt = sig->ret;
 	stackval_from_data (mt, retval, ea, FALSE);
@@ -1316,7 +1316,7 @@ interp_frame_arg_to_data (MonoInterpFrameHandle frame, MonoMethodSignature *sig,
 }
 
 static void
-interp_data_to_frame_arg (MonoInterpFrameHandle frame, MonoMethodSignature *sig, int index, gpointer data)
+interp_data_to_frame_arg (MonoInterpFrameHandle frame, MonoMethodSignature *sig, int index, gconstpointer data)
 {
 	InterpFrame *iframe = (InterpFrame*)frame;
 
