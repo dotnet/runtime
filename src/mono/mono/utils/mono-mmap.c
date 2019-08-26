@@ -51,8 +51,10 @@
 #define MAP_ANONYMOUS MAP_ANON
 #endif
 
+#if !defined(__APPLE__)  // returning virtual addresses <4G requires entitlement on Apple platforms, do not use it
 #ifndef MAP_32BIT
 #define MAP_32BIT 0
+#endif
 #endif
 
 typedef struct {
@@ -277,8 +279,10 @@ mono_valloc (void *addr, size_t length, int flags, MonoMemAccountType type)
 	/* translate the flags */
 	if (flags & MONO_MMAP_FIXED)
 		mflags |= MAP_FIXED;
+#if !defined(__APPLE__)  // returning virtual addresses <4G requires entitlement on Apple platforms, do not use it
 	if (flags & MONO_MMAP_32BIT)
 		mflags |= MAP_32BIT;
+#endif
 
 #ifdef HOST_WASM
 	if (length == 0)
@@ -381,8 +385,10 @@ mono_file_map_error (size_t length, int flags, int fd, guint64 offset, void **re
 		mflags |= MAP_SHARED;
 	if (flags & MONO_MMAP_FIXED)
 		mflags |= MAP_FIXED;
+#if !defined(__APPLE__)  // returning virtual addresses <4G requires entitlement on Apple platforms, do not use it
 	if (flags & MONO_MMAP_32BIT)
 		mflags |= MAP_32BIT;
+#endif
 
 #ifdef HOST_WASM
 	if (length == 0)
