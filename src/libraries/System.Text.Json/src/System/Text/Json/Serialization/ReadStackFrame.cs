@@ -126,6 +126,7 @@ namespace System.Text.Json
             PropertyIndex = 0;
             EndProperty();
         }
+
         public void EndProperty()
         {
             CollectionPropertyInitialized = false;

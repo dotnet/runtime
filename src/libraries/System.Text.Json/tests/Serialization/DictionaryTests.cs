@@ -922,7 +922,7 @@ namespace System.Text.Json.Serialization.Tests
         public static void ClassWithNoSetterAndDictionary()
         {
             // We don't attempt to deserialize into dictionaries without a setter.
-            string json = @"{""MyDictionary"":{""Key1"":""Value1"", ""Key2"":""Value2""}}";
+            string json = @"{""MyDictionary"":{""Key1"":""Value1"", ""Key2"":""Value2""},""MyDictionaryWithSetter"":{""Key1"":""Value1""}}";
             ClassWithPopulatedDictionaryAndNoSetter obj = JsonSerializer.Deserialize<ClassWithPopulatedDictionaryAndNoSetter>(json);
             Assert.Equal(1, obj.MyDictionary.Count);
         }
@@ -934,6 +934,43 @@ namespace System.Text.Json.Serialization.Tests
             string json = @"{""MyImmutableDictionary"":{""Key1"":""Value1"", ""Key2"":""Value2""}}";
             ClassWithPopulatedDictionaryAndNoSetter obj = JsonSerializer.Deserialize<ClassWithPopulatedDictionaryAndNoSetter>(json);
             Assert.Equal(1, obj.MyImmutableDictionary.Count);
+        }
+
+        public class ClassWithNoSetter
+        {
+            public Dictionary<string, int> SkippedChild { get; }
+            public Dictionary<string, int> ParsedChild { get; set; }
+            public IDictionary<string, int> AnotherSkippedChild { get; }
+            public IDictionary<string, int> AnotherParsedChild { get; set; }
+        }
+
+        [Fact]
+        public static void ClassWithNoSetterAndValidProperty()
+        {
+            // Tests that the parser picks back up after skipping/draining ignored elements.
+            string json = @"{
+                ""SkippedChild"": {},
+                ""ParsedChild"": {""Key1"":18},
+                ""UnmatchedProp"": null,
+                ""AnotherSkippedChild"": {""DrainProp1"":{}, ""DrainProp2"":{""SubProp"":0}},
+                ""AnotherSkippedChild"": {},
+                ""AnotherParsedChild"": {""Key1"":18, ""Key2"":20}
+            }";
+
+            ClassWithNoSetter parsedObject = JsonSerializer.Deserialize<ClassWithNoSetter>(json);
+
+            Assert.Null(parsedObject.SkippedChild);
+
+            Assert.NotNull(parsedObject.ParsedChild);
+            Assert.Equal(1, parsedObject.ParsedChild.Count);
+            Assert.Equal(18, parsedObject.ParsedChild["Key1"]);
+
+            Assert.Null(parsedObject.AnotherSkippedChild);
+
+            Assert.NotNull(parsedObject.AnotherParsedChild);
+            Assert.Equal(2, parsedObject.AnotherParsedChild.Count);
+            Assert.Equal(18, parsedObject.AnotherParsedChild["Key1"]);
+            Assert.Equal(20, parsedObject.AnotherParsedChild["Key2"]);
         }
 
         public class ClassWithPopulatedDictionaryAndSetter
