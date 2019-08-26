@@ -100,13 +100,13 @@ namespace System.Buffers
 
                 // The pool was exhausted for this buffer size.  Allocate a new buffer with a size corresponding
                 // to the appropriate bucket.
-                buffer = GC.AllocateUninitializedArray<T>(_buckets[index]._bufferLength);
+                buffer = new T[_buckets[index]._bufferLength];
             }
             else
             {
                 // The request was for a size too large for the pool.  Allocate an array of exactly the requested length.
                 // When it's returned to the pool, we'll simply throw it away.
-                buffer = GC.AllocateUninitializedArray<T>(minimumLength);
+                buffer = new T[minimumLength];
             }
 
             if (log.IsEnabled())
@@ -215,7 +215,7 @@ namespace System.Buffers
                 // for that slot, in which case we should do so now.
                 if (allocateBuffer)
                 {
-                    buffer = GC.AllocateUninitializedArray<T>(_bufferLength);
+                    buffer = new T[_bufferLength];
 
                     ArrayPoolEventSource log = ArrayPoolEventSource.Log;
                     if (log.IsEnabled())
