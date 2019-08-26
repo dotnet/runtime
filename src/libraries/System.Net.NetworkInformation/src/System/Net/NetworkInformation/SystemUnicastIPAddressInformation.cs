@@ -156,16 +156,10 @@ namespace System.Net.NetworkInformation
             Debug.Assert((0 <= prefixLength) && (prefixLength <= 126));
             Debug.Assert((family == AddressFamily.InterNetwork) || (family == AddressFamily.InterNetworkV6));
 
-            byte[] addressBytes;
-            if (family == AddressFamily.InterNetwork)
-            {
-                addressBytes = new byte[4];
-            }
-            else
-            {
-                Debug.Assert(family == AddressFamily.InterNetworkV6);
-                addressBytes = new byte[16];
-            }
+            Span<byte> addressBytes = (family == AddressFamily.InterNetwork) ?
+                stackalloc byte[4] :
+                stackalloc byte[16];
+            addressBytes.Clear();
 
             Debug.Assert(prefixLength <= (addressBytes.Length * 8));
 

@@ -1161,7 +1161,7 @@ namespace System.Xml
 
             if (_attributeValue != null)
             {
-                char[] chars = new char[2] { highChar, lowChar };
+                Span<char> chars = stackalloc char[2] { highChar, lowChar };
                 WriteAttributeText(new string(chars));
             }
 
