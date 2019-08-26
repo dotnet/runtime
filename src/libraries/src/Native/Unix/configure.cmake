@@ -18,6 +18,7 @@ elseif (CMAKE_SYSTEM_NAME STREQUAL Darwin)
 elseif (CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
     set(PAL_UNIX_NAME \"FREEBSD\")
     include_directories(SYSTEM /usr/local/include)
+    set(CMAKE_REQUIRED_INCLUDES /usr/local/include)
 elseif (CMAKE_SYSTEM_NAME STREQUAL NetBSD)
     set(PAL_UNIX_NAME \"NETBSD\")
 elseif (CMAKE_SYSTEM_NAME STREQUAL Emscripten)
@@ -492,6 +493,10 @@ check_c_source_compiles(
     IPV6MR_INTERFACE_UNSIGNED
 )
 
+check_include_files(
+    "sys/inotify.h"
+    HAVE_SYS_INOTIFY_H)
+
 check_c_source_compiles(
     "
     #include <sys/inotify.h>
@@ -672,6 +677,11 @@ check_c_source_compiles(
 )
 set (CMAKE_REQUIRED_FLAGS ${PREVIOUS_CMAKE_REQUIRED_FLAGS})
 
+set (PREVIOUS_CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
+if (HAVE_SYS_INOTIFY_H AND CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
+set (CMAKE_REQUIRED_LIBRARIES "-linotify -L/usr/local/lib")
+endif()
+
 check_function_exists(
     inotify_init
     HAVE_INOTIFY_INIT)
@@ -683,6 +693,7 @@ check_function_exists(
 check_function_exists(
     inotify_rm_watch
     HAVE_INOTIFY_RM_WATCH)
+set (CMAKE_REQUIRED_LIBRARIES ${PREVIOUS_CMAKE_REQUIRED_LIBRARIES})
 
 set (HAVE_INOTIFY 0)
 if (HAVE_INOTIFY_INIT AND HAVE_INOTIFY_ADD_WATCH AND HAVE_INOTIFY_RM_WATCH)
