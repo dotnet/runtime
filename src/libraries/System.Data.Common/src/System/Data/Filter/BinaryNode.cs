@@ -1505,6 +1505,9 @@ namespace System.Data
         internal const int match_exact = 4;    // <STR>
         internal const int match_all = 5;      // *
 
+        // WhiteSpace Chars Include : 0x9, 0xA, 0xB, 0xC, 0xD, 0x20, 0xA0, 0x2000, 0x2001, 0x2002, 0x2003, 0x2004, 0x2005, 0x2006, 0x2007, 0x2008, 0x2009, 0x200A, 0x200B, 0x3000, and 0xFEFF.
+        private static readonly char[] s_trimChars = new char[] { (char)0x20, (char)0x3000 };
+
         private int _kind;
         private string _pattern = null;
 
@@ -1515,17 +1518,15 @@ namespace System.Data
 
         internal override object Eval(DataRow row, DataRowVersion version)
         {
-            object vRight;
             object vLeft = _left.Eval(row, version);
             string substring;
-
 
             if ((vLeft == DBNull.Value) || (_left.IsSqlColumn && DataStorage.IsObjectSqlNull(vLeft)))
                 return DBNull.Value;
 
             if (_pattern == null)
             {
-                vRight = _right.Eval(row, version);
+                object vRight = _right.Eval(row, version);
 
                 if (!(vRight is string) && !(vRight is SqlString))
                 {
@@ -1555,15 +1556,9 @@ namespace System.Data
                 SetTypeMismatchError(_op, vLeft.GetType(), typeof(string));
             }
 
-            // WhiteSpace Chars Include : 0x9, 0xA, 0xB, 0xC, 0xD, 0x20, 0xA0, 0x2000, 0x2001, 0x2002, 0x2003, 0x2004, 0x2005, 0x2006, 0x2007, 0x2008, 0x2009, 0x200A, 0x200B, 0x3000, and 0xFEFF.
-            char[] trimChars = new char[2] { (char)0x20, (char)0x3000 };
-            string tempStr;
-            if (vLeft is SqlString)
-                tempStr = ((SqlString)vLeft).Value;
-            else
-                tempStr = (string)vLeft;
+            string tempStr = vLeft is SqlString sqlString ? sqlString.Value : (string)vLeft;
 
-            string s1 = (tempStr).TrimEnd(trimChars);
+            string s1 = tempStr.TrimEnd(s_trimChars);
 
             switch (_kind)
             {
@@ -1576,7 +1571,7 @@ namespace System.Data
                 case match_left:
                     return (0 == table.IndexOf(s1, substring));
                 case match_right:
-                    string s2 = substring.TrimEnd(trimChars);
+                    string s2 = substring.TrimEnd(s_trimChars);
                     return table.IsSuffix(s1, s2);
                 default:
                     Debug.Fail("Unexpected LIKE kind");
