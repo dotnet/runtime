@@ -1,0 +1,86 @@
+parameters:
+  buildConfig: ''
+  archType: ''
+  osGroup: ''
+  osIdentifier: ''
+  name: ''
+  helixType: '(unspecified)'
+  container: ''
+  crossrootfsDir: ''
+  readyToRun: false
+
+  # arcade-specific parameters
+  condition: ''
+  continueOnError: false
+  dependsOn: ''
+  displayName: ''
+  timeoutInMinutes: ''
+  enableMicrobuild: ''
+  gatherAssetManifests: false
+
+  variables: {} ## any extra variables to add to the defaults defined below
+
+jobs:
+- template: /eng/xplat-job.yml
+  parameters:
+    buildConfig: ${{ parameters.buildConfig }}
+    archType: ${{ parameters.archType }}
+    osGroup: ${{ parameters.osGroup }}
+    osIdentifier: ${{ parameters.osIdentifier }}
+    name: ${{ parameters.name }}
+    helixType: ${{ parameters.helixType }}
+    container: ${{ parameters.container }}
+    crossrootfsDir: ${{ parameters.crossrootfsDir }}
+  
+    # arcade-specific parameters
+    condition: ${{ parameters.condition }}
+    continueOnError: ${{ parameters.continueOnError }}
+    dependsOn: ${{ parameters.dependsOn }}
+    displayName: ${{ parameters.displayName }}
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+    enableMicrobuild: ${{ parameters.enableMicrobuild }}
+    gatherAssetManifests: ${{ parameters.gatherAssetManifests }}
+  
+    variables:
+    - ${{ if ne(parameters.testGroup, '') }}:
+      - name: testArtifactRootName
+        value: ${{ parameters.osIdentifier}}_${{ parameters.archType }}_${{ parameters.buildConfig }}_${{ parameters.testGroup }}
+
+    - ${{ if eq(parameters.testGroup, '') }}:
+      - name: testArtifactRootName
+        value: ${{ parameters.osIdentifier}}_${{ parameters.archType }}_${{ parameters.buildConfig }}
+
+    - name: binTestsPath
+      value: $(Build.SourcesDirectory)/bin/tests
+
+    - name: testRootFolderPath
+      value: $(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)
+
+    - ${{ if ne(parameters.readyToRun, true) }}:
+      - name: testArtifactName
+        value: Tests_$(testArtifactRootName)
+
+    - ${{ if eq(parameters.readyToRun, true) }}:
+      - name: testArtifactName
+        value: Tests_r2r_$(testArtifactRootName)
+
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - name: archiveExtension
+        value: '.zip'
+      - name: archiveType
+        value: zip
+      - name: tarCompression
+        value: ''
+
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - name: archiveExtension
+        value: '.tar.gz'
+      - name: archiveType
+        value: tar
+      - name: tarCompression
+        value: gz
+
+    - ${{ each variable in parameters.variables }}:
+      - ${{insert}}: ${{ variable }}
+
+    steps: ${{ parameters.steps }}
