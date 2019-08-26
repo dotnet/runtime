@@ -136,7 +136,12 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 {
 	guint8 *code;
 	guint8 buf [16];
-	gboolean can_write = mono_breakpoint_clean_code (method_start, orig_code, 14, buf, sizeof (buf));
+
+	// Since method_start is retrieved from function return address (below current call/jmp to patch) there is a case when
+	// last instruction of a function is the call (due to OP_NOT_REACHED) instruction and then directly followed by a
+	// different method. In that case current orig_code points into next method and method_start will also point into
+	// next method, not the method including the call to patch. For this specific case, fallback to using a method_start of NULL.
+	gboolean can_write = mono_breakpoint_clean_code (method_start != orig_code ? method_start : NULL, orig_code, 14, buf, sizeof (buf));
 
 	code = buf + 14;
 

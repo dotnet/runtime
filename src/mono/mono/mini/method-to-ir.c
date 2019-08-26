@@ -7188,12 +7188,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				virtual_ = FALSE;
 			}
 
-#ifdef ENABLE_NETCORE
 			if (cmethod && method_does_not_return (cmethod)) {
 				cfg->cbb->out_of_line = TRUE;
 				noreturn = TRUE;
 			}
-#endif
 
 			cdata.method = method;
 			cdata.inst_tailcall = inst_tailcall;
