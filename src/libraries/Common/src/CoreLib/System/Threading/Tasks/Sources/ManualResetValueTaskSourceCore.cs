@@ -64,8 +64,8 @@ namespace System.Threading.Tasks.Sources
             SignalCompletion();
         }
 
-        /// <summary>Complets with an error.</summary>
-        /// <param name="error"></param>
+        /// <summary>Completes with an error.</summary>
+        /// <param name="error">The exception.</param>
         public void SetException(Exception error)
         {
             _error = ExceptionDispatchInfo.Capture(error);
