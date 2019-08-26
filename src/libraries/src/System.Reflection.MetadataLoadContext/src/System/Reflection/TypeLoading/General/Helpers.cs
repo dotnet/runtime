@@ -153,6 +153,18 @@ namespace System.Reflection.TypeLoading
             return an.GetPublicKeyToken();
         }
 
+        public static AssemblyNameFlags ConvertAssemblyFlagsToAssemblyNameFlags(AssemblyFlags assemblyFlags)
+        {
+            AssemblyNameFlags assemblyNameFlags = AssemblyNameFlags.None;
+
+            if ((assemblyFlags & AssemblyFlags.Retargetable) != 0)
+            {
+                assemblyNameFlags |= AssemblyNameFlags.Retargetable;
+            }
+
+            return assemblyNameFlags;
+        }
+
         //
         // Note that for a top level type, the resulting ns is string.Empty, *not* null.
         // This is a concession to the fact that MetadataReader's fast String equal methods
@@ -349,7 +361,7 @@ namespace System.Reflection.TypeLoading
             // as the original is wide open to tampering by anyone.
             byte[] pkt = assemblyName.GetPublicKeyToken().CloneArray();
 
-            return new RoAssemblyName(assemblyName.Name, assemblyName.Version, assemblyName.CultureName, pkt);
+            return new RoAssemblyName(assemblyName.Name, assemblyName.Version, assemblyName.CultureName, pkt, assemblyName.Flags);
         }
 
         public static byte[] ToUtf8(this string s) => Encoding.UTF8.GetBytes(s);

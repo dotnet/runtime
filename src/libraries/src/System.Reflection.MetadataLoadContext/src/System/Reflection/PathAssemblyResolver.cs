@@ -77,8 +77,10 @@ namespace System.Reflection
                                 candidateWithSamePkt = assemblyFromPath;
                             }
                         }
-                        // If assemblyName does not specify a PublicKeyToken, then still consider those with a PublicKeyToken.
-                        else if (candidateWithSamePkt == null && pktFromName.IsEmpty)
+                        // If assemblyName does not specify a PublicKeyToken, or assemblyName is marked 'Retargetable',
+                        // then still consider those with a PublicKeyToken and take the highest version available.
+                        else if ((candidateWithSamePkt == null && pktFromName.IsEmpty) ||
+                            ((assemblyName.Flags & AssemblyNameFlags.Retargetable) != 0))
                         {
                             // Pick the highest version.
                             if (candidateIgnoringPkt == null || assemblyNameFromPath.Version > candidateIgnoringPkt.GetName().Version)

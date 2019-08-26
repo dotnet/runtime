@@ -245,7 +245,7 @@ namespace System.Reflection.Tests
             }
         }
 
-       [Fact]
+        [Fact]
         public static void DuplicateUnsignedAssembliesSameVersionsDifferentLocale()
         {
             using (TempDirectory dir = new TempDirectory())
@@ -321,6 +321,55 @@ namespace System.Reflection.Tests
                     Assert.NotSame(a1, a2);
 
                     Assert.Equal(3, lc.GetAssemblies().Count());
+                }
+            }
+        }
+
+        [Fact]
+        public static void RelocatableAssembly()
+        {
+            string coreAssemblyPath = TestUtils.GetPathToCoreAssembly();
+            string coreAssemblyName = Path.GetFileNameWithoutExtension(coreAssemblyPath);
+
+            // Ensure mscorlib is specified since we want to relocate an older mscorlib later.
+            string coreDirectory = Path.GetDirectoryName(coreAssemblyPath);
+            string mscorLibPath = Path.Combine(coreDirectory, "mscorlib.dll");
+
+            using (TempDirectory dir = new TempDirectory())
+            using (TempFile relocatableAsmFile = new TempFile(Path.Combine(dir.Path, TestData.s_RetargetableAssemblySimpleName), TestData.s_RetargetableImage))
+            {
+                var resolver = new PathAssemblyResolver(new string[] { coreAssemblyPath, mscorLibPath, relocatableAsmFile.Path });
+
+                using (MetadataLoadContext lc = new MetadataLoadContext(resolver, coreAssemblyName))
+                {
+                    Assembly retargetableAssembly = lc.LoadFromAssemblyName(TestData.s_RetargetableAssemblySimpleName);
+                    Assert.NotNull(retargetableAssembly);
+
+                    // The assembly only contains a reference to an older, retargetable mscorlib.
+                    AssemblyName[] assemblyNames = retargetableAssembly.GetReferencedAssemblies();
+                    AssemblyName retargetableAssemblyName = assemblyNames[0];
+                    Assert.Equal(AssemblyNameFlags.Retargetable, retargetableAssemblyName.Flags);
+                    Assert.Equal(new Version(2,0,5,0), retargetableAssemblyName.Version);
+
+                    // Trigger PathAssemblyResolver.Resolve for the older mscorlib.
+                    Type myType = retargetableAssembly.GetType("Relocate.MyClass");
+                    FieldInfo[] fields = myType.GetFields();
+                    Assert.Equal(1, fields.Length);
+                    FieldInfo field = fields[0];
+                    Assert.Equal("MyObj", field.Name);
+
+                    // Verify that LoadFromAssemblyName also finds the newer mscorlib.
+                    Assembly mscorlib = lc.LoadFromAssemblyName(retargetableAssemblyName);
+                    Assert.True(mscorlib.GetName().Version > retargetableAssemblyName.Version);
+
+                    // The older reference has a different public key token, which requires AssemblyNameFlags.Retargetable to find the newer assembly.
+                    byte[] newerPKT = mscorlib.GetName().GetPublicKeyToken();
+                    Assert.NotEmpty(newerPKT);
+
+                    byte[] olderPKT = retargetableAssemblyName.GetPublicKeyToken();
+                    Assert.NotEmpty(olderPKT);
+
+                    Assert.False(Enumerable.SequenceEqual(newerPKT, olderPKT));
                 }
             }
         }
