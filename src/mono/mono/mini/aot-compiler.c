@@ -1589,21 +1589,6 @@ arch_emit_direct_call (MonoAotCompile *acfg, const char *target, gboolean extern
 	g_assert_not_reached ();
 #endif
 }
-
-static void
-arch_emit_label_address (MonoAotCompile *acfg, const char *target, gboolean external_call, gboolean thumb, MonoJumpInfo *ji, int *call_size)
-{
-#if defined(TARGET_ARM) && defined(TARGET_ANDROID)
-	/* binutils ld does not support branch islands on arm32 */
-	if (!thumb) {
-		emit_unset_mode (acfg);
-		fprintf (acfg->fp, "ldr pc,=%s\n", target);
-		fprintf (acfg->fp, ".ltorg\n");
-		*call_size = 8;
-	} else
-#endif
-	arch_emit_direct_call (acfg, target, external_call, thumb, ji, call_size);
-}
 #endif
 
 /*
@@ -9924,9 +9909,9 @@ emit_code (MonoAotCompile *acfg)
 		int call_size;
 
 		if (!ignore_cfg (acfg->cfgs [i])) {
-			arch_emit_label_address (acfg, acfg->cfgs [i]->asm_symbol, FALSE, acfg->thumb_mixed && acfg->cfgs [i]->compile_llvm, NULL, &call_size);
+			arch_emit_direct_call (acfg, acfg->cfgs [i]->asm_symbol, FALSE, acfg->thumb_mixed && acfg->cfgs [i]->compile_llvm, NULL, &call_size);
 		} else {
-			arch_emit_label_address (acfg, symbol, FALSE, FALSE, NULL, &call_size);
+			arch_emit_direct_call (acfg, symbol, FALSE, FALSE, NULL, &call_size);
 		}
 #endif
 	}
