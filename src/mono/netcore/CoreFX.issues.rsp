@@ -610,10 +610,6 @@
 # Explicitly skipped if it's MonoVM (SkipOnTargetFramework)
 -nomethod System.Threading.ThreadPools.Tests.ThreadPoolTests.SetMinMaxThreadsTest_ChangedInDotNetCore
 
-# ThreadPool.CompletedWorkItemCount is not implemented
-# https://github.com/mono/mono/issues/14829
--nomethod System.Threading.ThreadPools.Tests.ThreadPoolTests.MetricsTest
-
 ####################################################################
 ##  System.ComponentModel.Composition.Tests
 ####################################################################

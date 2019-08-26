@@ -21,6 +21,14 @@ mono_threadpool_worker_request (void);
 gboolean
 mono_threadpool_worker_notify_completed (void);
 
+#ifdef ENABLE_NETCORE
+gint64
+mono_threadpool_worker_get_completed_threads_count (void);
+
+gint32
+mono_threadpool_worker_get_threads_count (void);
+#endif
+
 gint32
 mono_threadpool_worker_get_min (void);
 gboolean
