@@ -33,46 +33,34 @@
 
 using System.Collections.Generic;
 using System.ComponentModel.Design;
-using System.Diagnostics;
-using System.Globalization;
-using Microsoft.DotNet.RemoteExecutor;
+using System.Linq;
 using Xunit;
 
 namespace System.ComponentModel.Tests
 {
-    public class ReferenceConverterTest
+    public class ReferenceConverterTests : TypeConverterTestBase
     {
-
-        class TestReferenceService : IReferenceService
+        public class TestReferenceService : IReferenceService
         {
-            private Dictionary<string, object> references;
-
-            public TestReferenceService()
-            {
-                references = new Dictionary<string, object>();
-            }
+            private Dictionary<string, object> _references = new Dictionary<string, object>();
 
             public void AddReference(string name, object reference)
             {
-                references[name] = reference;
+                _references[name ?? "(null)"] = reference;
             }
 
-            public void ClearReferences()
-            {
-                references.Clear();
-            }
+            public void ClearReferences() => _references.Clear();
 
-            public IComponent GetComponent(object reference)
-            {
-                return null;
-            }
+            public IComponent GetComponent(object reference) => null;
 
             public string GetName(object reference)
             {
-                foreach (KeyValuePair<string, object> entry in references)
+                foreach (KeyValuePair<string, object> entry in _references)
                 {
                     if (entry.Value == reference)
-                        return entry.Key;
+                    {
+                        return entry.Key == "(null)" ? null : entry.Key;
+                    }
                 }
 
                 return null;
@@ -80,15 +68,18 @@ namespace System.ComponentModel.Tests
 
             public object GetReference(string name)
             {
-                if (!references.ContainsKey(name))
+                if (!_references.ContainsKey(name ?? "(null)"))
+                {
                     return null;
-                return references[name];
+                }
+
+                return _references[name];
             }
 
             public object[] GetReferences()
             {
-                object[] array = new object[references.Values.Count];
-                references.Values.CopyTo(array, 0);
+                object[] array = new object[_references.Values.Count];
+                _references.Values.CopyTo(array, 0);
                 return array;
             }
 
@@ -96,162 +87,228 @@ namespace System.ComponentModel.Tests
             {
                 object[] references = GetReferences();
 
-                List<object> filtered = new List<object>();
+                var filtered = new List<object>();
                 foreach (object reference in references)
                 {
                     if (baseType.IsInstanceOfType(reference))
+                    {
                         filtered.Add(reference);
+                    }
                 }
 
                 return filtered.ToArray();
             }
         }
 
-        private class TestTypeDescriptorContext : ITypeDescriptorContext
+        public class TestTypeDescriptorContext : ITypeDescriptorContext
         {
-            private IReferenceService reference_service = null;
-            private IContainer container = null;
+            private IReferenceService _referenceService = null;
 
-            public TestTypeDescriptorContext()
-            {
-            }
+            public TestTypeDescriptorContext() { }
 
             public TestTypeDescriptorContext(IReferenceService referenceService)
             {
-                reference_service = referenceService;
+                _referenceService = referenceService;
             }
 
+            public IContainer Container { get; set; }
 
-            public IContainer Container
-            {
-                get { return container; }
-                set { container = value; }
-            }
+            public object Instance => null;
+            public PropertyDescriptor PropertyDescriptor => null;
 
-            public object Instance
-            {
-                get { return null; }
-            }
-
-            public PropertyDescriptor PropertyDescriptor
-            {
-                get { return null; }
-            }
-
-            public void OnComponentChanged()
-            {
-            }
-
-            public bool OnComponentChanging()
-            {
-                return true;
-            }
+            public void OnComponentChanged() { }
+            public bool OnComponentChanging() => true;
 
             public object GetService(Type serviceType)
             {
                 if (serviceType == typeof(IReferenceService))
-                    return reference_service;
+                {
+                    return _referenceService;
+                }
+
                 return null;
             }
         }
 
-        private interface ITestInterface
+        private interface ITestInterface { }
+
+        private class TestComponent : Component { }
+
+        public override TypeConverter Converter => new ReferenceConverter(typeof(ITestInterface));
+
+        public override bool StandardValuesExclusive => true;
+        public override bool StandardValuesSupported => true;
+
+        public override IEnumerable<ConvertTest> ConvertFromTestData()
         {
+            // This does actually succeed despite CanConvertFrom returning false.
+            ConvertTest noContext = ConvertTest.Valid("reference name", null).WithContext(null);
+            noContext.CanConvert = false;
+            yield return noContext;
+
+            // No IReferenceService or IContainer.
+            yield return ConvertTest.Valid("", null);
+            yield return ConvertTest.Valid("   ", null);
+            yield return ConvertTest.Valid("(none)", null).WithInvariantRemoteInvokeCulture();
+            yield return ConvertTest.Valid("nothing", null);
+
+            // IReferenceService.
+            var component = new TestComponent();
+            var referenceService = new TestReferenceService();
+            referenceService.AddReference("reference name", component);
+            var contextWithReferenceCollection = new TestTypeDescriptorContext(referenceService);
+
+            yield return ConvertTest.Valid("reference name", component).WithContext(contextWithReferenceCollection);
+            yield return ConvertTest.Valid("no such reference", null).WithContext(contextWithReferenceCollection);
+
+            // IContainer.
+            var container = new Container();
+            container.Add(component, "reference name");
+            var contextWithContainer = new TestTypeDescriptorContext { Container = container };
+
+            yield return ConvertTest.Valid("reference name", component).WithContext(contextWithContainer);
+            yield return ConvertTest.Valid("no such reference", null).WithContext(contextWithContainer);
+
+            yield return ConvertTest.CantConvertFrom(1);
+            yield return ConvertTest.CantConvertFrom(new object());
         }
 
-        private class TestComponent : Component
+        public override IEnumerable<ConvertTest> ConvertToTestData()
         {
-        }
+            var component = new TestComponent();
 
-        [Fact]
-        public void CanConvertFrom()
-        {
-            ReferenceConverter converter = new ReferenceConverter(typeof(ITestInterface));
-            // without context
-            Assert.False(converter.CanConvertFrom(null, typeof(string)));
-            // with context
-            Assert.True(converter.CanConvertFrom(new TestTypeDescriptorContext(), typeof(string)));
-        }
+            // No Context.
+            yield return ConvertTest.Valid(null, "(none)").WithInvariantRemoteInvokeCulture();;
+            yield return ConvertTest.Valid(null, "(none)").WithContext(null).WithInvariantRemoteInvokeCulture();;
+            yield return ConvertTest.Valid(string.Empty, string.Empty).WithContext(null);
 
-        [Fact]
-        public void ConvertFrom()
-        {
-            ReferenceConverter converter = new ReferenceConverter(typeof(ITestInterface));
-            string referenceName = "reference name";
-            // no context
-            Assert.Null(converter.ConvertFrom(null, null, referenceName));
+            // IReferenceCollection.
+            var referenceService = new TestReferenceService();
+            referenceService.AddReference("reference name", component);
+            var contextWithReferenceService = new TestTypeDescriptorContext(referenceService);
 
-            TestComponent component = new TestComponent();
+            yield return ConvertTest.Valid(component, "reference name").WithContext(contextWithReferenceService);
+            yield return ConvertTest.Valid(new Component(), string.Empty).WithContext(contextWithReferenceService);
 
-            // context with IReferenceService
-            TestReferenceService referenceService = new TestReferenceService();
-            referenceService.AddReference(referenceName, component);
-            TestTypeDescriptorContext context = new TestTypeDescriptorContext(referenceService);
-            Assert.Same(component, converter.ConvertFrom(context, null, referenceName));
+            // IContainer.
+            var container = new Container();
+            container.Add(component, "reference name");
+            var contextWithContainer = new TestTypeDescriptorContext { Container = container };
 
-            // context with Component without IReferenceService
-            Container container = new Container();
-            container.Add(component, referenceName);
-            context = new TestTypeDescriptorContext();
-            context.Container = container;
-            Assert.Same(component, converter.ConvertFrom(context, null, referenceName));
-        }
+            yield return ConvertTest.Valid(component, "reference name").WithContext(contextWithContainer);
+            yield return ConvertTest.Valid(new Component(), string.Empty).WithContext(contextWithContainer);
 
-        [Fact]
-        public void ConvertTo()
-        {
-            RemoteExecutor.Invoke(() =>
-            {
-                CultureInfo.CurrentUICulture = CultureInfo.InvariantCulture;
-
-                ReferenceConverter remoteConverter = new ReferenceConverter(typeof(ITestInterface));
-                Assert.Equal("(none)", (string)remoteConverter.ConvertTo(null, null, null, typeof(string)));
-            }).Dispose();
-
-            ReferenceConverter converter = new ReferenceConverter(typeof(ITestInterface));
-            string referenceName = "reference name";
-            TestComponent component = new TestComponent();
-
-            // no context
-            Assert.Equal(string.Empty, (string)converter.ConvertTo(null, null, component, typeof(string)));
-
-            // context with IReferenceService
-            TestReferenceService referenceService = new TestReferenceService();
-            referenceService.AddReference(referenceName, component);
-            TestTypeDescriptorContext context = new TestTypeDescriptorContext(referenceService);
-            Assert.Equal(referenceName, (string)converter.ConvertTo(context, null, component, typeof(string)));
-
-            // context with Component without IReferenceService
-            Container container = new Container();
-            container.Add(component, referenceName);
-            context = new TestTypeDescriptorContext();
-            context.Container = container;
-            Assert.Equal(referenceName, (string)converter.ConvertTo(context, null, component, typeof(string)));
+            yield return ConvertTest.CantConvertTo(1, typeof(int));
         }
 
         [Fact]
-        public void CanConvertTo()
+        public void GetStandardValues_IReferenceService_ReturnsExpected()
         {
-            ReferenceConverter converter = new ReferenceConverter(typeof(ITestInterface));
-            Assert.True(converter.CanConvertTo(new TestTypeDescriptorContext(), typeof(string)));
-        }
+            var converter = new ReferenceConverter(typeof(TestComponent));
 
-        [Fact]
-        public void GetStandardValues()
-        {
-            ReferenceConverter converter = new ReferenceConverter(typeof(TestComponent));
+            var component1 = new TestComponent();
+            var component2 = new TestComponent();
+            var component3 = new Component();
 
-            TestComponent component1 = new TestComponent();
-            TestComponent component2 = new TestComponent();
-            TestReferenceService referenceService = new TestReferenceService();
+            var referenceService = new TestReferenceService();
             referenceService.AddReference("reference name 1", component1);
             referenceService.AddReference("reference name 2", component2);
-            ITypeDescriptorContext context = new TestTypeDescriptorContext(referenceService);
+            referenceService.AddReference("reference name 3", component3);
+
+            var context = new TestTypeDescriptorContext(referenceService);
 
             TypeConverter.StandardValuesCollection values = converter.GetStandardValues(context);
-            Assert.NotNull(values);
-            // 2 components + 1 null value
-            Assert.Equal(3, values.Count);
+            Assert.Equal(new object[] { component1, component2, null }, values.Cast<object>());
+        }
+
+        [Fact]
+        public void GetStandardValues_IReferenceServiceNoValuesAllowed_ReturnsEmpty()
+        {
+            var converter = new SubReferenceConverter(typeof(TestComponent));
+
+            var component1 = new Component();
+            var component2 = new TestComponent();
+            var component3 = new TestComponent();
+
+            var referenceService = new TestReferenceService();
+            referenceService.AddReference("reference name 1", component1);
+            referenceService.AddReference("reference name 2", component2);
+            referenceService.AddReference("reference name 3", component3);
+
+            var context = new TestTypeDescriptorContext(referenceService);
+
+            TypeConverter.StandardValuesCollection values = converter.GetStandardValues(context);
+            Assert.Equal(new object[] { null }, values.Cast<object>());
+            Assert.Equal(new object[] { component2, component3 }, converter.Values);
+        }
+
+        [Fact]
+        public void GetStandardValues_IContainer_ReturnsExpected()
+        {
+            var component1 = new TestComponent();
+            var component2 = new TestComponent();
+            var component3 = new Component();
+
+            var container = new Container();
+            container.Add(component1);
+            container.Add(component2);
+            container.Add(component3);
+
+            var converter = new ReferenceConverter(typeof(TestComponent));
+            var context = new TestTypeDescriptorContext { Container = container };
+
+            TypeConverter.StandardValuesCollection values = converter.GetStandardValues(context);
+            Assert.Equal(new object[] { component1, component2, null }, values.Cast<object>());
+        }
+
+        [Fact]
+        public void GetStandardValues_IContainerNoValuesAllowed_ReturnsEmpty()
+        {
+            var component1 = new Component();
+            var component2 = new TestComponent();
+            var component3 = new TestComponent();
+
+            var container = new Container();
+            container.Add(component1);
+            container.Add(component2);
+            container.Add(component3);
+
+            var converter = new SubReferenceConverter(typeof(TestComponent));
+            var context = new TestTypeDescriptorContext { Container = container };
+
+            TypeConverter.StandardValuesCollection values = converter.GetStandardValues(context);
+            Assert.Equal(new object[] { null }, values.Cast<object>());
+            Assert.Equal(new object[] { component2, component3 }, converter.Values);
+        }
+
+        [Fact]
+        public void GetStandardValues_NullContext_ReturnsEmpty()
+        {
+            var converter = new ReferenceConverter(typeof(TestComponent));
+            Assert.Empty(converter.GetStandardValues(null));
+        }
+
+        [Fact]
+        public void GetStandardValues_NoReferenceCollectionOrIContainer_ReturnsEmpty()
+        {
+            var converter = new ReferenceConverter(typeof(TestComponent));
+            var context = new TestTypeDescriptorContext();
+
+            TypeConverter.StandardValuesCollection values = converter.GetStandardValues(context);
+            Assert.Equal(new object[] { null }, values.Cast<object>());
+        }
+
+        private class SubReferenceConverter : ReferenceConverter
+        {
+            public SubReferenceConverter(Type type) : base(type) { }
+
+            public List<object> Values { get; } = new List<object>();
+
+            protected override bool IsValueAllowed(ITypeDescriptorContext context, object value)
+            {
+                Values.Add(value);
+                return false;
+            }
         }
     }
 }
