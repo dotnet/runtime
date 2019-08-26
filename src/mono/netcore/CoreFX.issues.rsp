@@ -334,10 +334,6 @@
 ##  System.Reflection.Tests
 ####################################################################
 
-# Expected to throw FileLoadException, but we aren't
-# https://github.com/mono/mono/issues/15021
--nomethod System.Reflection.Tests.AssemblyNameTests.Ctor_String_Invalid
-
 # Expected ArgumentException, but none was thrown
 # https://github.com/mono/mono/issues/15024
 -nomethod System.Reflection.Tests.MethodInfoTests.Invoke_OptionalParameterUnassingableFromMissing_WithMissingValue_ThrowsArgumentException

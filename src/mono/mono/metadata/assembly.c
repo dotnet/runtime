@@ -3495,11 +3495,22 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 	
 	parts = tmp = g_strsplit (name, ",", 6);
 	if (!tmp || !*tmp) {
-		g_strfreev (tmp);
-		return FALSE;
+		goto cleanup_and_fail;
 	}
 
 	dllname = g_strstrip (*tmp);
+	// Simple name cannot be empty
+	if (!*dllname) {
+		goto cleanup_and_fail;
+	}
+	// Characters /, :, and \ not allowed in simple names
+	while (*dllname) {
+		gchar tmp_char = *dllname;
+		if (tmp_char == '/' || tmp_char == ':' || tmp_char == '\\')
+			goto cleanup_and_fail;
+		dllname++;
+	}
+	dllname = *tmp;
 	
 	tmp++;
 
@@ -3593,8 +3604,7 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 			continue;
 		}
 
-		g_strfreev (parts);
-		return FALSE;
+		goto cleanup_and_fail;
 	}
 
 	/* if retargetable flag is set, then we must have a fully qualified name */
