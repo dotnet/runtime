@@ -127,5 +127,21 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>2de3acc671fc624191672a45564f9ef130af5cd4</Sha>
     </Dependency>
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Feed" Version="2.2.0-beta.19422.24">
+      <Uri>https://github.com/dotnet/arcade</Uri>
+      <Sha>c7f03b2cf06bdfc64dad4140fd0d486127095cd8</Sha>
+    </Dependency>
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Packaging" Version="1.0.0-beta.19422.24">
+      <Uri>https://github.com/dotnet/arcade</Uri>
+      <Sha>c7f03b2cf06bdfc64dad4140fd0d486127095cd8</Sha>
+    </Dependency>
+    <Dependency Name="Microsoft.DotNet.VersionTools.Tasks" Version="1.0.0-beta.19422.24">
+      <Uri>https://github.com/dotnet/arcade</Uri>
+      <Sha>c7f03b2cf06bdfc64dad4140fd0d486127095cd8</Sha>
+    </Dependency>
+    <Dependency Name="Microsoft.SourceLink" Version="1.0.0-beta2-19367-01">
+      <Uri>https://github.com/dotnet/sourcelink</Uri>
+      <Sha></Sha>
+    </Dependency>
   </ToolsetDependencies>
 </Dependencies>

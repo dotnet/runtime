@@ -36,8 +36,8 @@ namespace Microsoft.DotNet.CoreSetup.Packaging.Tests
             id = id ?? project;
 
             string nuspecPath = Path.Combine(
-                dirs.BaseBinFolder,
-                project,
+                dirs.BaseArtifactsFolder,
+                "packages",
                 dirs.Configuration,
                 "specs",
                 $"{id}.nuspec");
