@@ -10,25 +10,25 @@ namespace System.Numerics.Tests
 {
     public class Matrix4x4Tests
     {
-        static Matrix4x4 GenerateMatrixNumberFrom1To16()
+        static Matrix4x4 GenerateIncrementalMatrixNumber(float value = 0.0f)
         {
             Matrix4x4 a = new Matrix4x4();
-            a.M11 = 1.0f;
-            a.M12 = 2.0f;
-            a.M13 = 3.0f;
-            a.M14 = 4.0f;
-            a.M21 = 5.0f;
-            a.M22 = 6.0f;
-            a.M23 = 7.0f;
-            a.M24 = 8.0f;
-            a.M31 = 9.0f;
-            a.M32 = 10.0f;
-            a.M33 = 11.0f;
-            a.M34 = 12.0f;
-            a.M41 = 13.0f;
-            a.M42 = 14.0f;
-            a.M43 = 15.0f;
-            a.M44 = 16.0f;
+            a.M11 = value + 1.0f;
+            a.M12 = value + 2.0f;
+            a.M13 = value + 3.0f;
+            a.M14 = value + 4.0f;
+            a.M21 = value + 5.0f;
+            a.M22 = value + 6.0f;
+            a.M23 = value + 7.0f;
+            a.M24 = value + 8.0f;
+            a.M31 = value + 9.0f;
+            a.M32 = value + 10.0f;
+            a.M33 = value + 11.0f;
+            a.M34 = value + 12.0f;
+            a.M41 = value + 13.0f;
+            a.M42 = value + 14.0f;
+            a.M43 = value + 15.0f;
+            a.M44 = value + 16.0f;
             return a;
         }
 
@@ -353,7 +353,7 @@ namespace System.Numerics.Tests
             Quaternion rotation;
             Vector3 translation;
 
-            Assert.False(Matrix4x4.Decompose(GenerateMatrixNumberFrom1To16(), out scales, out rotation, out translation), "decompose should have failed.");
+            Assert.False(Matrix4x4.Decompose(GenerateIncrementalMatrixNumber(), out scales, out rotation, out translation), "decompose should have failed.");
             Assert.False(Matrix4x4.Decompose(new Matrix4x4(Matrix3x2.CreateSkew(1, 2)), out scales, out rotation, out translation), "decompose should have failed.");
         }
 
@@ -361,7 +361,7 @@ namespace System.Numerics.Tests
         [Fact]
         public void Matrix4x4TransformTest()
         {
-            Matrix4x4 target = GenerateMatrixNumberFrom1To16();
+            Matrix4x4 target = GenerateIncrementalMatrixNumber();
 
             Matrix4x4 m =
                 Matrix4x4.CreateRotationX(MathHelper.ToRadians(30.0f)) *
@@ -1142,7 +1142,7 @@ namespace System.Numerics.Tests
             a.M43 = 43.0f;
             a.M44 = 44.0f;
 
-            Matrix4x4 b = GenerateMatrixNumberFrom1To16();
+            Matrix4x4 b = GenerateIncrementalMatrixNumber();
 
             float t = 0.5f;
 
@@ -1176,7 +1176,7 @@ namespace System.Numerics.Tests
         [Fact]
         public void Matrix4x4UnaryNegationTest()
         {
-            Matrix4x4 a = GenerateMatrixNumberFrom1To16();
+            Matrix4x4 a = GenerateIncrementalMatrixNumber();
 
             Matrix4x4 expected = new Matrix4x4();
             expected.M11 = -1.0f;
@@ -1204,8 +1204,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void Matrix4x4SubtractionTest()
         {
-            Matrix4x4 a = GenerateMatrixNumberFrom1To16();
-            Matrix4x4 b = new Matrix4x4(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
+            Matrix4x4 a = GenerateIncrementalMatrixNumber();
+            Matrix4x4 b = GenerateIncrementalMatrixNumber(-8.0f);
 
             Matrix4x4 expected = new Matrix4x4();
             expected.M11 = a.M11 - b.M11;
@@ -1233,8 +1233,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void Matrix4x4MultiplyTest1()
         {
-            Matrix4x4 a = GenerateMatrixNumberFrom1To16();
-            Matrix4x4 b = GenerateMatrixNumberFrom1To16();
+            Matrix4x4 a = GenerateIncrementalMatrixNumber();
+            Matrix4x4 b = GenerateIncrementalMatrixNumber(-8.0f);
 
             Matrix4x4 expected = new Matrix4x4();
             expected.M11 = a.M11 * b.M11 + a.M12 * b.M21 + a.M13 * b.M31 + a.M14 * b.M41;
@@ -1297,8 +1297,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void Matrix4x4AdditionTest()
         {
-            Matrix4x4 a = GenerateMatrixNumberFrom1To16();
-            Matrix4x4 b = new Matrix4x4(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
+            Matrix4x4 a = GenerateIncrementalMatrixNumber();
+            Matrix4x4 b = GenerateIncrementalMatrixNumber(-8.0f);
 
             Matrix4x4 expected = new Matrix4x4();
             expected.M11 = a.M11 + b.M11;
@@ -1326,7 +1326,7 @@ namespace System.Numerics.Tests
         [Fact]
         public void Matrix4x4TransposeTest()
         {
-            Matrix4x4 a = GenerateMatrixNumberFrom1To16();
+            Matrix4x4 a = GenerateIncrementalMatrixNumber();
 
             Matrix4x4 expected = new Matrix4x4();
             expected.M11 = a.M11;
@@ -1529,8 +1529,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void Matrix4x4AddTest()
         {
-            Matrix4x4 a = GenerateMatrixNumberFrom1To16();
-            Matrix4x4 b = new Matrix4x4(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
+            Matrix4x4 a = GenerateIncrementalMatrixNumber();
+            Matrix4x4 b = GenerateIncrementalMatrixNumber(-8.0f);
 
             Matrix4x4 expected = new Matrix4x4();
             expected.M11 = a.M11 + b.M11;
@@ -1558,8 +1558,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void Matrix4x4EqualsTest()
         {
-            Matrix4x4 a = GenerateMatrixNumberFrom1To16();
-            Matrix4x4 b = GenerateMatrixNumberFrom1To16();
+            Matrix4x4 a = GenerateIncrementalMatrixNumber();
+            Matrix4x4 b = GenerateIncrementalMatrixNumber();
 
             // case 1: compare between same values
             object obj = b;
@@ -1592,7 +1592,7 @@ namespace System.Numerics.Tests
         [Fact]
         public void Matrix4x4GetHashCodeTest()
         {
-            Matrix4x4 target = GenerateMatrixNumberFrom1To16();
+            Matrix4x4 target = GenerateIncrementalMatrixNumber();
             int expected = unchecked(
                 target.M11.GetHashCode() + target.M12.GetHashCode() + target.M13.GetHashCode() + target.M14.GetHashCode() +
                 target.M21.GetHashCode() + target.M22.GetHashCode() + target.M23.GetHashCode() + target.M24.GetHashCode() +
@@ -1608,8 +1608,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void Matrix4x4MultiplyTest3()
         {
-            Matrix4x4 a = GenerateMatrixNumberFrom1To16();
-            Matrix4x4 b = GenerateMatrixNumberFrom1To16();
+            Matrix4x4 a = GenerateIncrementalMatrixNumber();
+            Matrix4x4 b = GenerateIncrementalMatrixNumber(-8.0f);
 
             Matrix4x4 expected = new Matrix4x4();
             expected.M11 = a.M11 * b.M11 + a.M12 * b.M21 + a.M13 * b.M31 + a.M14 * b.M41;
@@ -1641,7 +1641,7 @@ namespace System.Numerics.Tests
         [Fact]
         public void Matrix4x4MultiplyTest5()
         {
-            Matrix4x4 a = GenerateMatrixNumberFrom1To16();
+            Matrix4x4 a = GenerateIncrementalMatrixNumber();
             Matrix4x4 expected = new Matrix4x4(3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45, 48);
             Matrix4x4 actual = Matrix4x4.Multiply(a, 3);
 
@@ -1652,7 +1652,7 @@ namespace System.Numerics.Tests
         [Fact]
         public void Matrix4x4MultiplyTest6()
         {
-            Matrix4x4 a = GenerateMatrixNumberFrom1To16();
+            Matrix4x4 a = GenerateIncrementalMatrixNumber();
             Matrix4x4 expected = new Matrix4x4(3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45, 48);
             Matrix4x4 actual = a * 3;
 
@@ -1663,7 +1663,7 @@ namespace System.Numerics.Tests
         [Fact]
         public void Matrix4x4NegateTest()
         {
-            Matrix4x4 m = GenerateMatrixNumberFrom1To16();
+            Matrix4x4 m = GenerateIncrementalMatrixNumber();
 
             Matrix4x4 expected = new Matrix4x4();
             expected.M11 = -1.0f;
@@ -1692,8 +1692,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void Matrix4x4InequalityTest()
         {
-            Matrix4x4 a = GenerateMatrixNumberFrom1To16();
-            Matrix4x4 b = GenerateMatrixNumberFrom1To16();
+            Matrix4x4 a = GenerateIncrementalMatrixNumber();
+            Matrix4x4 b = GenerateIncrementalMatrixNumber();
 
             // case 1: compare between same values
             bool expected = false;
@@ -1711,8 +1711,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void Matrix4x4EqualityTest()
         {
-            Matrix4x4 a = GenerateMatrixNumberFrom1To16();
-            Matrix4x4 b = GenerateMatrixNumberFrom1To16();
+            Matrix4x4 a = GenerateIncrementalMatrixNumber();
+            Matrix4x4 b = GenerateIncrementalMatrixNumber();
 
             // case 1: compare between same values
             bool expected = true;
@@ -1730,8 +1730,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void Matrix4x4SubtractTest()
         {
-            Matrix4x4 a = GenerateMatrixNumberFrom1To16();
-            Matrix4x4 b = new Matrix4x4(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
+            Matrix4x4 a = GenerateIncrementalMatrixNumber();
+            Matrix4x4 b = GenerateIncrementalMatrixNumber(-8.0f);
 
             Matrix4x4 expected = new Matrix4x4();
             expected.M11 = a.M11 - b.M11;
@@ -2307,8 +2307,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void Matrix4x4EqualsTest1()
         {
-            Matrix4x4 a = GenerateMatrixNumberFrom1To16();
-            Matrix4x4 b = GenerateMatrixNumberFrom1To16();
+            Matrix4x4 a = GenerateIncrementalMatrixNumber();
+            Matrix4x4 b = GenerateIncrementalMatrixNumber();
 
             // case 1: compare between same values
             bool expected = true;
