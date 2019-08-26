@@ -42,6 +42,7 @@
 #cmakedefine01 HAVE_STATFS
 #cmakedefine01 HAVE_SYS_SOCKIO_H
 #cmakedefine01 HAVE_SYS_POLL_H
+#cmakedefine01 HAVE_SYS_INOTIFY_H
 #cmakedefine01 HAVE_EPOLL
 #cmakedefine01 HAVE_ACCEPT4
 #cmakedefine01 HAVE_KQUEUE
