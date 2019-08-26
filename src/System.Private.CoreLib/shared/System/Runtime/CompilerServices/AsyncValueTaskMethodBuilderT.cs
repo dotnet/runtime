@@ -7,21 +7,24 @@ using System.Threading.Tasks;
 
 namespace System.Runtime.CompilerServices
 {
-    /// <summary>Represents a builder for asynchronous methods that return a <see cref="ValueTask"/>.</summary>
+    /// <summary>Represents a builder for asynchronous methods that returns a <see cref="ValueTask{TResult}"/>.</summary>
+    /// <typeparam name="TResult">The type of the result.</typeparam>
     [StructLayout(LayoutKind.Auto)]
-    public struct AsyncValueTaskMethodBuilder
+    public struct AsyncValueTaskMethodBuilder<TResult>
     {
-        /// <summary>The <see cref="AsyncTaskMethodBuilder"/> to which most operations are delegated.</summary>
-        private AsyncTaskMethodBuilder _methodBuilder; // mutable struct; do not make it readonly
-        /// <summary>true if completed synchronously and successfully; otherwise, false.</summary>
+        /// <summary>The <see cref="AsyncTaskMethodBuilder{TResult}"/> to which most operations are delegated.</summary>
+        private AsyncTaskMethodBuilder<TResult> _methodBuilder; // mutable struct; do not make it readonly
+        /// <summary>The result for this builder, if it's completed before any awaits occur.</summary>
+        private TResult _result;
+        /// <summary>true if <see cref="_result"/> contains the synchronous result for the async method; otherwise, false.</summary>
         private bool _haveResult;
         /// <summary>true if the builder should be used for setting/getting the result; otherwise, false.</summary>
         private bool _useBuilder;
 
-        /// <summary>Creates an instance of the <see cref="AsyncValueTaskMethodBuilder"/> struct.</summary>
+        /// <summary>Creates an instance of the <see cref="AsyncValueTaskMethodBuilder{TResult}"/> struct.</summary>
         /// <returns>The initialized instance.</returns>
-        public static AsyncValueTaskMethodBuilder Create() =>
-            // _methodBuilder should be initialized to AsyncTaskMethodBuilder.Create(), but on coreclr
+        public static AsyncValueTaskMethodBuilder<TResult> Create() =>
+            // _methodBuilder should be initialized to AsyncTaskMethodBuilder<TResult>.Create(), but on coreclr
             // that Create() is a nop, so we can just return the default here.
             default;
 
@@ -38,14 +41,16 @@ namespace System.Runtime.CompilerServices
         public void SetStateMachine(IAsyncStateMachine stateMachine) => _methodBuilder.SetStateMachine(stateMachine);
 
         /// <summary>Marks the task as successfully completed.</summary>
-        public void SetResult()
+        /// <param name="result">The result to use to complete the task.</param>
+        public void SetResult(TResult result)
         {
             if (_useBuilder)
             {
-                _methodBuilder.SetResult();
+                _methodBuilder.SetResult(result);
             }
             else
             {
+                _result = result;
                 _haveResult = true;
             }
         }
@@ -55,18 +60,18 @@ namespace System.Runtime.CompilerServices
         public void SetException(Exception exception) => _methodBuilder.SetException(exception);
 
         /// <summary>Gets the task for this builder.</summary>
-        public ValueTask Task
+        public ValueTask<TResult> Task
         {
             get
             {
                 if (_haveResult)
                 {
-                    return default;
+                    return new ValueTask<TResult>(_result);
                 }
                 else
                 {
                     _useBuilder = true;
-                    return new ValueTask(_methodBuilder.Task);
+                    return new ValueTask<TResult>(_methodBuilder.Task);
                 }
             }
         }
@@ -74,7 +79,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>Schedules the state machine to proceed to the next action when the specified awaiter completes.</summary>
         /// <typeparam name="TAwaiter">The type of the awaiter.</typeparam>
         /// <typeparam name="TStateMachine">The type of the state machine.</typeparam>
-        /// <param name="awaiter">The awaiter.</param>
+        /// <param name="awaiter">the awaiter</param>
         /// <param name="stateMachine">The state machine.</param>
         public void AwaitOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine)
             where TAwaiter : INotifyCompletion
@@ -87,7 +92,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>Schedules the state machine to proceed to the next action when the specified awaiter completes.</summary>
         /// <typeparam name="TAwaiter">The type of the awaiter.</typeparam>
         /// <typeparam name="TStateMachine">The type of the state machine.</typeparam>
-        /// <param name="awaiter">The awaiter.</param>
+        /// <param name="awaiter">the awaiter</param>
         /// <param name="stateMachine">The state machine.</param>
         public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine)
             where TAwaiter : ICriticalNotifyCompletion
