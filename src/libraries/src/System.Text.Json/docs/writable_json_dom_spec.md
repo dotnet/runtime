@@ -243,6 +243,7 @@ Mailbox.SendAllEmployeesData(employees.AsJsonElement());
 * Do we want to add recursive equals on `JsonArray` and `JsonObject`?
 * Do we want to make `JsonNode` derived types implement `IComparable` (which ones)?
 * Do we want `JsonObject` to implement `IDictionary` and `JsonArray` to implement `IList` (currently JsonArray does, but JsonObject not)? 
+* Do we want `JsonArray` to support `Contains`, `IndexOf` and `LastIndexOf` if we keep reference equality for `JsonArray`/`JsonObject` and don't have a good way of comparing numbers? 
 * Would escaped characters be supported for creating `JsonNumber` from string? 
 * Is the API for `JsonNode` and `JsonElement` interactions sufficient? 
 * Do we want to support duplicate and order preservation/control when adding/removing values in `JsonArray`/`JsonObject`?
@@ -251,7 +252,7 @@ Mailbox.SendAllEmployeesData(employees.AsJsonElement());
     | Solution | Pros | Cons |
     |----------|:-------------|--------|
     |current API| - no additional checks need to be made | - creating recursive loop by the user may be problematic |
-    |tracking nodes | - handles recursive loop problem | - when node is added to a parent, it needs to be checked <br>  if it already has a parent  and make a copy if it has |
+    |tracking nodes | - handles recursive loop problem | - when node is added to a parent, it needs to be checked <br>  if it already has a parent and make a copy if it has |
 * Do we want to change `JsonNumber`'s backing field to something different than `string`?     
     Suggestions: 
     - `Span<byte>` or array of `Utf8String`/`Char8` (once they come online in the future) / `byte`  
@@ -262,7 +263,12 @@ Mailbox.SendAllEmployeesData(employees.AsJsonElement());
 * Should `ToString` on `JsonBoolean` and `JsonString` return the .NET or JSON representation?
 * Do we want to keep implicit cast operators (even though for `JsonNumber` it would mean throwing in some cases, which is against FDG)?
 * Do we want overloads that take a `StringComparison` enum for methods retrieving properties? It would make API easier to use where case is not important.
-* Where do we want to enable user to set handling properties manner?
+* Where do we want to enable user to set handling properties manner? Do we want to support it as `JsonElement` does not?
+* Do we want to support transforming `JsonObject` into JSON string? Should `ToString` behave this way or do we want an additional method - e.g. `GetJsonString` (it might be confusing as we have a type `JsonString`) or `GetJsonRepresenation`?
+* `AsJsonElement` function on `JsonNode` currently does not work for `null` node. Do we want to support null case somehow?
+* Do we want both `Clone` and `DeepCopy` methods for `JsonNode`? 
+* Are we OK with needing to cast `JsonArray` to `JsonNode` in order to add it to `JsonObject`? (there's an ambiguous call between `JsonArray` and `IEnumerable<JsonNode>` right now)
+* Do we want `IsImmutable` property for `JsonElement`?
 
 ## Useful links
 

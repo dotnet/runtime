@@ -13,11 +13,97 @@ namespace System.Text.Json
         Ignore = 1,
         Error = 2,
     }
+    public sealed partial class JsonArray : System.Text.Json.JsonNode, System.Collections.Generic.ICollection<System.Text.Json.JsonNode>, System.Collections.Generic.IEnumerable<System.Text.Json.JsonNode>, System.Collections.Generic.IList<System.Text.Json.JsonNode>, System.Collections.Generic.IReadOnlyCollection<System.Text.Json.JsonNode>, System.Collections.Generic.IReadOnlyList<System.Text.Json.JsonNode>, System.Collections.IEnumerable
+    {
+        public JsonArray() { }
+        public JsonArray(System.Collections.Generic.IEnumerable<bool> values) { }
+        public JsonArray(System.Collections.Generic.IEnumerable<byte> values) { }
+        public JsonArray(System.Collections.Generic.IEnumerable<decimal> values) { }
+        public JsonArray(System.Collections.Generic.IEnumerable<double> values) { }
+        public JsonArray(System.Collections.Generic.IEnumerable<short> values) { }
+        public JsonArray(System.Collections.Generic.IEnumerable<int> values) { }
+        public JsonArray(System.Collections.Generic.IEnumerable<long> values) { }
+        [System.CLSCompliantAttribute(false)]
+        public JsonArray(System.Collections.Generic.IEnumerable<sbyte> values) { }
+        public JsonArray(System.Collections.Generic.IEnumerable<float> values) { }
+        public JsonArray(System.Collections.Generic.IEnumerable<string> values) { }
+        public JsonArray(System.Collections.Generic.IEnumerable<System.Text.Json.JsonNode> values) { }
+        [System.CLSCompliantAttribute(false)]
+        public JsonArray(System.Collections.Generic.IEnumerable<ushort> values) { }
+        [System.CLSCompliantAttribute(false)]
+        public JsonArray(System.Collections.Generic.IEnumerable<uint> values) { }
+        [System.CLSCompliantAttribute(false)]
+        public JsonArray(System.Collections.Generic.IEnumerable<ulong> values) { }
+        public int Count { get { throw null; } }
+        public bool IsReadOnly { get { throw null; } }
+        public System.Text.Json.JsonNode this[int idx] { get { throw null; } set { } }
+        public override System.Text.Json.JsonValueKind ValueKind { get { throw null; } }
+        public void Add(bool value) { }
+        public void Add(byte value) { }
+        public void Add(decimal value) { }
+        public void Add(double value) { }
+        public void Add(short value) { }
+        public void Add(int value) { }
+        public void Add(long value) { }
+        [System.CLSCompliantAttribute(false)]
+        public void Add(sbyte value) { }
+        public void Add(float value) { }
+        public void Add(string value) { }
+        public void Add(System.Text.Json.JsonNode value) { }
+        [System.CLSCompliantAttribute(false)]
+        public void Add(ushort value) { }
+        [System.CLSCompliantAttribute(false)]
+        public void Add(uint value) { }
+        [System.CLSCompliantAttribute(false)]
+        public void Add(ulong value) { }
+        public void Clear() { }
+        public override System.Text.Json.JsonNode Clone() { throw null; }
+        public bool Contains(System.Text.Json.JsonNode value) { throw null; }
+        public System.Text.Json.JsonArrayEnumerator GetEnumerator() { throw null; }
+        public int IndexOf(System.Text.Json.JsonNode item) { throw null; }
+        public void Insert(int index, bool item) { }
+        public void Insert(int index, byte item) { }
+        public void Insert(int index, decimal item) { }
+        public void Insert(int index, double item) { }
+        public void Insert(int index, short item) { }
+        public void Insert(int index, int item) { }
+        public void Insert(int index, long item) { }
+        [System.CLSCompliantAttribute(false)]
+        public void Insert(int index, sbyte item) { }
+        public void Insert(int index, float item) { }
+        public void Insert(int index, string item) { }
+        public void Insert(int index, System.Text.Json.JsonNode item) { }
+        [System.CLSCompliantAttribute(false)]
+        public void Insert(int index, ushort item) { }
+        [System.CLSCompliantAttribute(false)]
+        public void Insert(int index, uint item) { }
+        [System.CLSCompliantAttribute(false)]
+        public void Insert(int index, ulong item) { }
+        public int LastIndexOf(System.Text.Json.JsonNode item) { throw null; }
+        public bool Remove(System.Text.Json.JsonNode item) { throw null; }
+        public int RemoveAll(System.Predicate<System.Text.Json.JsonNode> match) { throw null; }
+        public void RemoveAt(int index) { }
+        void System.Collections.Generic.ICollection<System.Text.Json.JsonNode>.CopyTo(System.Text.Json.JsonNode[] array, int arrayIndex) { }
+        System.Collections.Generic.IEnumerator<System.Text.Json.JsonNode> System.Collections.Generic.IEnumerable<System.Text.Json.JsonNode>.GetEnumerator() { throw null; }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+    }
+    public partial struct JsonArrayEnumerator : System.Collections.Generic.IEnumerator<System.Text.Json.JsonNode>, System.Collections.IEnumerator, System.IDisposable
+    {
+        private object _dummy;
+        public JsonArrayEnumerator(System.Text.Json.JsonArray jsonArray) { throw null; }
+        public System.Text.Json.JsonNode Current { get { throw null; } }
+        object System.Collections.IEnumerator.Current { get { throw null; } }
+        public void Dispose() { }
+        public bool MoveNext() { throw null; }
+        void System.Collections.IEnumerator.Reset() { }
+    }
     public sealed partial class JsonBoolean : System.Text.Json.JsonNode, System.IEquatable<System.Text.Json.JsonBoolean>
     {
         public JsonBoolean() { }
         public JsonBoolean(bool value) { }
         public bool Value { get { throw null; } set { } }
+        public override System.Text.Json.JsonValueKind ValueKind { get { throw null; } }
+        public override System.Text.Json.JsonNode Clone() { throw null; }
         public override bool Equals(object obj) { throw null; }
         public bool Equals(System.Text.Json.JsonBoolean other) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -58,6 +144,7 @@ namespace System.Text.Json
     {
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
+        public bool IsImmutable { get { throw null; } }
         public System.Text.Json.JsonElement this[int index] { get { throw null; } }
         public System.Text.Json.JsonValueKind ValueKind { get { throw null; } }
         public System.Text.Json.JsonElement Clone() { throw null; }
@@ -178,6 +265,13 @@ namespace System.Text.Json
     public abstract partial class JsonNode
     {
         internal JsonNode() { }
+        public abstract System.Text.Json.JsonValueKind ValueKind { get; }
+        public System.Text.Json.JsonElement AsJsonElement() { throw null; }
+        public abstract System.Text.Json.JsonNode Clone();
+        public static System.Text.Json.JsonNode DeepCopy(System.Text.Json.JsonElement jsonElement) { throw null; }
+        public static System.Text.Json.JsonNode GetNode(System.Text.Json.JsonElement jsonElement) { throw null; }
+        public static System.Text.Json.JsonNode Parse(string json) { throw null; }
+        public static bool TryGetNode(System.Text.Json.JsonElement jsonElement, out System.Text.Json.JsonNode jsonNode) { throw null; }
     }
     public sealed partial class JsonNumber : System.Text.Json.JsonNode, System.IEquatable<System.Text.Json.JsonNumber>
     {
@@ -198,6 +292,8 @@ namespace System.Text.Json
         public JsonNumber(uint value) { }
         [System.CLSCompliantAttribute(false)]
         public JsonNumber(ulong value) { }
+        public override System.Text.Json.JsonValueKind ValueKind { get { throw null; } }
+        public override System.Text.Json.JsonNode Clone() { throw null; }
         public override bool Equals(object obj) { throw null; }
         public bool Equals(System.Text.Json.JsonNumber other) { throw null; }
         public byte GetByte() { throw null; }
@@ -273,9 +369,11 @@ namespace System.Text.Json
         public System.Text.Json.JsonNode this[string propertyName] { get { throw null; } set { } }
         public System.Collections.Generic.ICollection<string> PropertyNames { get { throw null; } }
         public System.Collections.Generic.ICollection<System.Text.Json.JsonNode> PropertyValues { get { throw null; } }
+        public override System.Text.Json.JsonValueKind ValueKind { get { throw null; } }
         public void Add(System.Collections.Generic.KeyValuePair<string, System.Text.Json.JsonNode> jsonProperty) { }
         public void Add(string propertyName, bool propertyValue) { }
         public void Add(string propertyName, byte propertyValue) { }
+        public void Add(string propertyName, System.Collections.Generic.IEnumerable<System.Text.Json.JsonNode> propertyValues) { }
         public void Add(string propertyName, System.DateTime propertyValue) { }
         public void Add(string propertyName, System.DateTimeOffset propertyValue) { }
         public void Add(string propertyName, decimal propertyValue) { }
@@ -297,12 +395,16 @@ namespace System.Text.Json
         [System.CLSCompliantAttribute(false)]
         public void Add(string propertyName, ulong propertyValue) { }
         public void AddRange(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, System.Text.Json.JsonNode>> jsonProperties) { }
+        public override System.Text.Json.JsonNode Clone() { throw null; }
         public bool ContainsProperty(string propertyName) { throw null; }
-        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, System.Text.Json.JsonNode>> GetEnumerator() { throw null; }
+        public System.Text.Json.JsonObjectEnumerator GetEnumerator() { throw null; }
+        public System.Text.Json.JsonArray GetJsonArrayPropertyValue(string propertyName) { throw null; }
         public System.Text.Json.JsonObject GetJsonObjectPropertyValue(string propertyName) { throw null; }
         public System.Text.Json.JsonNode GetPropertyValue(string propertyName) { throw null; }
         public bool Remove(string propertyName) { throw null; }
+        System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, System.Text.Json.JsonNode>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<System.String,System.Text.Json.JsonNode>>.GetEnumerator() { throw null; }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        public bool TryGetJsonArrayPropertyValue(string propertyName, out System.Text.Json.JsonArray jsonArray) { throw null; }
         public bool TryGetJsonObjectPropertyValue(string propertyName, out System.Text.Json.JsonObject jsonObject) { throw null; }
         public bool TryGetPropertyValue(string propertyName, out System.Text.Json.JsonNode jsonNode) { throw null; }
     }
@@ -314,7 +416,7 @@ namespace System.Text.Json
         object System.Collections.IEnumerator.Current { get { throw null; } }
         public void Dispose() { }
         public bool MoveNext() { throw null; }
-        public void Reset() { }
+        void System.Collections.IEnumerator.Reset() { }
     }
     public readonly partial struct JsonProperty
     {
@@ -386,13 +488,21 @@ namespace System.Text.Json
         public JsonString(System.ReadOnlySpan<char> value) { }
         public JsonString(string value) { }
         public string Value { get { throw null; } set { } }
+        public override System.Text.Json.JsonValueKind ValueKind { get { throw null; } }
+        public override System.Text.Json.JsonNode Clone() { throw null; }
         public override bool Equals(object obj) { throw null; }
         public bool Equals(System.Text.Json.JsonString other) { throw null; }
+        public System.DateTime GetDateTime() { throw null; }
+        public System.DateTimeOffset GetDateTimeOffset() { throw null; }
+        public System.Guid GetGuid() { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Text.Json.JsonString left, System.Text.Json.JsonString right) { throw null; }
         public static implicit operator System.Text.Json.JsonString (string value) { throw null; }
         public static bool operator !=(System.Text.Json.JsonString left, System.Text.Json.JsonString right) { throw null; }
         public override string ToString() { throw null; }
+        public bool TryGetDateTime(out System.DateTime value) { throw null; }
+        public bool TryGetDateTimeOffset(out System.DateTimeOffset value) { throw null; }
+        public bool TryGetGuid(out System.Guid value) { throw null; }
     }
     public enum JsonTokenType : byte
     {

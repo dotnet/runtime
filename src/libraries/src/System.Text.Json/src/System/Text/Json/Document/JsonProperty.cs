@@ -17,16 +17,18 @@ namespace System.Text.Json
         ///   The value of this property.
         /// </summary>
         public JsonElement Value { get; }
+        private string _name { get; }
 
-        internal JsonProperty(JsonElement value)
+        internal JsonProperty(JsonElement value, string name = null)
         {
             Value = value;
+            _name = name;
         }
 
         /// <summary>
         ///   The name of this property.
         /// </summary>
-        public string Name => Value.GetPropertyName();
+        public string Name => _name ?? Value.GetPropertyName();
 
         /// <summary>
         ///   Compares <paramref name="text" /> to the name of this property.
