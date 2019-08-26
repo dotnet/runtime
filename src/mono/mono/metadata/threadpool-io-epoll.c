@@ -50,6 +50,12 @@ epoll_init (gint wakeup_pipe_fd)
 	return TRUE;
 }
 
+static gboolean
+epoll_can_register_fd (int fd)
+{
+	return TRUE;
+}
+
 static void
 epoll_register_fd (gint fd, gint events, gboolean is_new)
 {
@@ -124,6 +130,7 @@ epoll_event_wait (void (*callback) (gint fd, gint events, gpointer user_data), g
 
 static ThreadPoolIOBackend backend_epoll = {
 	epoll_init,
+	epoll_can_register_fd,
 	epoll_register_fd,
 	epoll_remove_fd,
 	epoll_event_wait,

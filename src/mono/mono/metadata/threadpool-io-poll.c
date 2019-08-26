@@ -31,6 +31,12 @@ poll_init (gint wakeup_pipe_fd)
 	return TRUE;
 }
 
+static gboolean
+poll_can_register_fd (int fd)
+{
+	return 	mono_poll_can_add (poll_fds, poll_fds_size, fd);
+}
+
 static void
 poll_register_fd (gint fd, gint events, gboolean is_new)
 {
@@ -75,6 +81,7 @@ poll_register_fd (gint fd, gint events, gboolean is_new)
 	}
 
 	POLL_INIT_FD (&poll_fds [poll_fds_size - 1], fd, poll_event);
+
 }
 
 static void
@@ -214,6 +221,7 @@ poll_event_wait (void (*callback) (gint fd, gint events, gpointer user_data), gp
 
 static ThreadPoolIOBackend backend_poll = {
 	poll_init,
+	poll_can_register_fd,
 	poll_register_fd,
 	poll_remove_fd,
 	poll_event_wait,
