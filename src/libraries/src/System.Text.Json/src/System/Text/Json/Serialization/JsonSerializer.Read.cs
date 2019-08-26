@@ -82,6 +82,7 @@ namespace System.Text.Json
                         if (readStack.Current.Drain)
                         {
                             readStack.Pop();
+                            readStack.Current.EndObject();
                         }
                         else if (readStack.Current.IsProcessingDictionary || readStack.Current.IsProcessingIDictionaryConstructible)
                         {
