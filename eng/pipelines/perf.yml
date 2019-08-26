@@ -6,6 +6,7 @@ trigger:
 
 pr: none
 
+jobs:
 - template: /eng/platform-matrix.yml
   parameters:
     jobTemplate: build-job.yml
