@@ -56,7 +56,6 @@ jobs:
     helixQueueGroup: ci
     jobParameters:
       testGroup: outerloop
-      publishTestArtifacts: true
 
 #
 # ReadyToRun test jobs
@@ -81,7 +80,6 @@ jobs:
       testGroup: outerloop
       readyToRun: true
       displayNameArgs: R2R
-      publishTestArtifacts: true
 
 #
 # Crossgen-comparison jobs
