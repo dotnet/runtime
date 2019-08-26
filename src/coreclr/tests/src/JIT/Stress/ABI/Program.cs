@@ -22,7 +22,7 @@ namespace ABIStress
         {
             static void Usage()
             {
-                Console.WriteLine("Usage: [--verbose] [--caller-index <number>] [--num-calls <number>] [--tailcalls] [--pinvokes] [--no-ctrlc-summary]");
+                Console.WriteLine("Usage: [--verbose] [--caller-index <number>] [--num-calls <number>] [--tailcalls] [--pinvokes] [--max-params <number>] [--no-ctrlc-summary]");
                 Console.WriteLine("Either --caller-index or --num-calls must be specified.");
                 Console.WriteLine("Example: --num-calls 100");
                 Console.WriteLine("  Stress first 100 tailcalls and pinvokes");
@@ -30,6 +30,8 @@ namespace ABIStress
                 Console.WriteLine("  Stress tailcaller 37, verbose output");
                 Console.WriteLine("Example: --pinvokes --num-calls 1000");
                 Console.WriteLine("  Stress first 1000 pinvokes");
+                Console.WriteLine("Example: --tailcalls --num-calls 100 --max-params 2");
+                Console.WriteLine("  Stress 100 tailcalls with either 1 or 2 parameters");
             }
 
             if (args.Contains("-help") || args.Contains("--help") || args.Contains("-h"))
@@ -55,6 +57,8 @@ namespace ABIStress
                 callerIndex = int.Parse(args[argIndex + 1]);
             if ((argIndex = Array.IndexOf(args, "--num-calls")) != -1)
                 numCalls = int.Parse(args[argIndex + 1]);
+            if ((argIndex = Array.IndexOf(args, "--max-params")) != -1)
+                Config.MaxParams = int.Parse(args[argIndex + 1]);
 
             if ((callerIndex == -1) == (numCalls == -1))
             {
@@ -316,7 +320,7 @@ namespace ABIStress
 
         private static List<TypeEx> RandomParameters(TypeEx[] candidateParamTypes, Random rand)
         {
-            List<TypeEx> pms = new List<TypeEx>(rand.Next(Config.MinParams, Config.MaxParams));
+            List<TypeEx> pms = new List<TypeEx>(rand.Next(Config.MinParams, Config.MaxParams + 1));
             for (int j = 0; j < pms.Capacity; j++)
                 pms.Add(candidateParamTypes[rand.Next(candidateParamTypes.Length)]);
 
