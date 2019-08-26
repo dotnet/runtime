@@ -6,6 +6,7 @@ using System;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using Xunit;
 using Xunit.Sdk;
 
@@ -43,14 +44,85 @@ namespace System.Numerics.Tests
         private void TestConstructorWithSpan<T>() where T : struct
         {
             T[] values = GenerateRandomValuesForVector<T>().ToArray();
-            var valueSpan = new Span<T>(values);
+            Vector<T> vector;
 
-            var vector = new Vector<T>(valueSpan);
+            // Span<T> ctor
+            vector = new Vector<T>(new Span<T>(values));
             ValidateVector(vector,
                 (index, val) =>
                 {
                     Assert.Equal(values[index], val);
                 });
+
+            // ReadOnlySpan<T> ctor
+            vector = new Vector<T>(new ReadOnlySpan<T>(values));
+            ValidateVector(vector,
+                (index, val) =>
+                {
+                    Assert.Equal(values[index], val);
+                });
+
+            // ReadOnlySpan<byte> ctor
+            vector = new Vector<T>(MemoryMarshal.AsBytes(new ReadOnlySpan<T>(values)));
+            ValidateVector(vector,
+                (index, val) =>
+                {
+                    Assert.Equal(values[index], val);
+                });
+        }
+
+        [Fact]
+        public void ReadOnlySpanBasedConstructorWithLessElements_Byte() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<byte>());
+        [Fact]
+        public void ReadOnlySpanBasedConstructorWithLessElements_SByte() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<sbyte>());
+        [Fact]
+        public void ReadOnlySpanBasedConstructorWithLessElements_UInt16() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<ushort>());
+        [Fact]
+        public void ReadOnlySpanBasedConstructorWithLessElements_Int16() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<short>());
+        [Fact]
+        public void ReadOnlySpanBasedConstructorWithLessElements_UInt32() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<uint>());
+        [Fact]
+        public void ReadOnlySpanBasedConstructorWithLessElements_Int32() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<int>());
+        [Fact]
+        public void ReadOnlySpanBasedConstructorWithLessElements_UInt64() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<ulong>());
+        [Fact]
+        public void ReadOnlySpanBasedConstructorWithLessElements_Int64() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<long>());
+        [Fact]
+        public void ReadOnlySpanBasedConstructorWithLessElements_Single() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<float>());
+        [Fact]
+        public void ReadOnlySpanBasedConstructorWithLessElements_Double() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<double>());
+
+        private void TestReadOnlySpanBasedConstructorWithLessElements<T>() where T : struct
+        {
+            T[] values = GenerateRandomValuesForVector<T>(Vector<T>.Count - 1).ToArray();
+            var vector = new Vector<T>(new ReadOnlySpan<T>(values));
+        }
+
+        [Fact]
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_Byte() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<byte>());
+        [Fact]
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_SByte() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<sbyte>());
+        [Fact]
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_UInt16() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<ushort>());
+        [Fact]
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_Int16() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<short>());
+        [Fact]
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_UInt32() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<uint>());
+        [Fact]
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_Int32() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<int>());
+        [Fact]
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_UInt64() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<ulong>());
+        [Fact]
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_Int64() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<long>());
+        [Fact]
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_Single() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<float>());
+        [Fact]
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_Double() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<double>());
+
+        private void TestReadOnlySpanByteBasedConstructorWithLessElements<T>() where T : struct
+        {
+            byte[] values = GenerateRandomValuesForVector<byte>(Vector<byte>.Count - 1).ToArray();
+            var vector = new Vector<T>(new ReadOnlySpan<byte>(values));
         }
 
         [Fact]
@@ -212,15 +284,129 @@ namespace System.Numerics.Tests
         [Fact]
         public void ConstructorWithUnsupportedTypes_DateTime() => TestConstructorWithUnsupportedTypes<DateTime>();
         [Fact]
-        public void ConstructorWithUnsupportedTypes_Char() => TestConstructorWithUnsupportedTypes<char>();
+        public void ConstructorWithUnsupportedTypes_Char() => TestConstructorWithUnsupportedTypes<Char>();
 
         private void TestConstructorWithUnsupportedTypes<T>() where T : struct
         {
+            Assert.Throws<NotSupportedException>(() => new Vector<T>(new ReadOnlySpan<byte>(new byte[4])));
+            Assert.Throws<NotSupportedException>(() => new Vector<T>(new ReadOnlySpan<T>(new T[4])));
             Assert.Throws<NotSupportedException>(() => new Vector<T>(new Span<T>(new T[4])));
         }
 
         #endregion Tests for constructors using unsupported types
 
         #endregion Constructor Tests
+
+        #region CopyTo (span) Tests
+        [Fact]
+        public void CopyToSpanByte() { TestCopyToSpan<byte>(); }
+        [Fact]
+        public void CopyToSpanSByte() { TestCopyToSpan<sbyte>(); }
+        [Fact]
+        public void CopyToSpanUInt16() { TestCopyToSpan<ushort>(); }
+        [Fact]
+        public void CopyToSpanInt16() { TestCopyToSpan<short>(); }
+        [Fact]
+        public void CopyToSpanUInt32() { TestCopyToSpan<uint>(); }
+        [Fact]
+        public void CopyToSpanInt32() { TestCopyToSpan<int>(); }
+        [Fact]
+        public void CopyToSpanUInt64() { TestCopyToSpan<ulong>(); }
+        [Fact]
+        public void CopyToSpanInt64() { TestCopyToSpan<long>(); }
+        [Fact]
+        public void CopyToSpanSingle() { TestCopyToSpan<float>(); }
+        [Fact]
+        public void CopyToSpanDouble() { TestCopyToSpan<double>(); }
+        private void TestCopyToSpan<T>() where T : struct
+        {
+            T[] initialValues = GenerateRandomValuesForVector<T>();
+            var vector = new Vector<T>(initialValues);
+            Span<T> destination = new T[Vector<T>.Count];
+
+            Assert.Throws<ArgumentException>(() => vector.CopyTo(new Span<T>(new T[Vector<T>.Count - 1])));
+
+            // CopyTo(Span<T>) method
+            vector.CopyTo(destination);
+            for (int g = 0; g < destination.Length; g++)
+            {
+                Assert.Equal(initialValues[g], destination[g]);
+                Assert.Equal(vector[g], destination[g]);
+            }
+
+            destination.Clear();
+
+            Assert.Throws<ArgumentException>(() => vector.CopyTo(new Span<byte>(new byte[Vector<byte>.Count - 1])));
+
+            // CopyTo(Span<byte>) method
+            vector.CopyTo(MemoryMarshal.AsBytes(destination));
+            for (int g = 0; g < destination.Length; g++)
+            {
+                Assert.Equal(initialValues[g], destination[g]);
+                Assert.Equal(vector[g], destination[g]);
+            }
+
+        }
+        #endregion
+
+        #region TryCopyTo (span) Tests
+        [Fact]
+        public void TryCopyToSpanByte() { TestTryCopyToSpan<byte>(); }
+        [Fact]
+        public void TryCopyToSpanSByte() { TestTryCopyToSpan<sbyte>(); }
+        [Fact]
+        public void TryCopyToSpanUInt16() { TestTryCopyToSpan<ushort>(); }
+        [Fact]
+        public void TryCopyToSpanInt16() { TestTryCopyToSpan<short>(); }
+        [Fact]
+        public void TryCopyToSpanUInt32() { TestTryCopyToSpan<uint>(); }
+        [Fact]
+        public void TryCopyToSpanInt32() { TestTryCopyToSpan<int>(); }
+        [Fact]
+        public void TryCopyToSpanUInt64() { TestTryCopyToSpan<ulong>(); }
+        [Fact]
+        public void TryCopyToSpanInt64() { TestTryCopyToSpan<long>(); }
+        [Fact]
+        public void TryCopyToSpanSingle() { TestTryCopyToSpan<float>(); }
+        [Fact]
+        public void TryCopyToSpanDouble() { TestTryCopyToSpan<double>(); }
+        private void TestTryCopyToSpan<T>() where T : struct
+        {
+            T[] initialValues = GenerateRandomValuesForVector<T>();
+            var vector = new Vector<T>(initialValues);
+            Span<T> destination = new T[Vector<T>.Count];
+
+            // Fill the destination vector with random data; this allows
+            // us to check that we didn't overwrite any part of the destination
+            // if it was too small to contain the entire output.
+
+            new Random().NextBytes(MemoryMarshal.AsBytes(destination));
+            T[] destinationCopy = destination.ToArray();
+
+            Assert.False(vector.TryCopyTo(destination.Slice(1)));
+            Assert.Equal<T>(destination.ToArray(), destinationCopy.ToArray());
+
+            // TryCopyTo(Span<T>) method
+            Assert.True(vector.TryCopyTo(destination));
+            for (int g = 0; g < destination.Length; g++)
+            {
+                Assert.Equal(initialValues[g], destination[g]);
+                Assert.Equal(vector[g], destination[g]);
+            }
+
+            destination.Clear();
+
+            Assert.False(vector.TryCopyTo(new byte[Vector<byte>.Count - 1]));
+
+            // CopyTo(Span<byte>) method
+            Assert.True(vector.TryCopyTo(MemoryMarshal.AsBytes(destination)));
+            for (int g = 0; g < destination.Length; g++)
+            {
+                Assert.Equal(initialValues[g], destination[g]);
+                Assert.Equal(vector[g], destination[g]);
+            }
+
+        }
+        #endregion
     }
 }
