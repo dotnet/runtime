@@ -9,15 +9,15 @@ namespace System.Numerics.Tests
 {
     public class Matrix3x2Tests
     {
-        static Matrix3x2 GenerateMatrixNumberFrom1To6()
+        static Matrix3x2 GenerateIncrementalMatrixNumber(float value = 0.0f)
         {
             Matrix3x2 a = new Matrix3x2();
-            a.M11 = 1.0f;
-            a.M12 = 2.0f;
-            a.M21 = 3.0f;
-            a.M22 = 4.0f;
-            a.M31 = 5.0f;
-            a.M32 = 6.0f;
+            a.M11 = value + 1.0f;
+            a.M12 = value + 2.0f;
+            a.M21 = value + 3.0f;
+            a.M22 = value + 4.0f;
+            a.M31 = value + 5.0f;
+            a.M32 = value + 6.0f;
             return a;
         }
 
@@ -314,7 +314,7 @@ namespace System.Numerics.Tests
             a.M31 = 31.0f;
             a.M32 = 32.0f;
 
-            Matrix3x2 b = GenerateMatrixNumberFrom1To6();
+            Matrix3x2 b = GenerateIncrementalMatrixNumber();
 
             float t = 0.5f;
 
@@ -337,7 +337,7 @@ namespace System.Numerics.Tests
         [Fact]
         public void Matrix3x2UnaryNegationTest()
         {
-            Matrix3x2 a = GenerateMatrixNumberFrom1To6();
+            Matrix3x2 a = GenerateIncrementalMatrixNumber();
 
             Matrix3x2 expected = new Matrix3x2();
             expected.M11 = -1.0f;
@@ -355,9 +355,15 @@ namespace System.Numerics.Tests
         [Fact]
         public void Matrix3x2SubtractionTest()
         {
-            Matrix3x2 a = GenerateMatrixNumberFrom1To6();
-            Matrix3x2 b = GenerateMatrixNumberFrom1To6();
+            Matrix3x2 a = GenerateIncrementalMatrixNumber();
+            Matrix3x2 b = GenerateIncrementalMatrixNumber(-3.0f);
             Matrix3x2 expected = new Matrix3x2();
+            expected.M11 = a.M11 - b.M11;
+            expected.M12 = a.M12 - b.M12;
+            expected.M21 = a.M21 - b.M21;
+            expected.M22 = a.M22 - b.M22;
+            expected.M31 = a.M31 - b.M31;
+            expected.M32 = a.M32 - b.M32;
 
             Matrix3x2 actual = a - b;
             Assert.True(MathHelper.Equal(expected, actual), "Matrix3x2.operator - did not return the expected value.");
@@ -367,8 +373,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void Matrix3x2MultiplyTest1()
         {
-            Matrix3x2 a = GenerateMatrixNumberFrom1To6();
-            Matrix3x2 b = GenerateMatrixNumberFrom1To6();
+            Matrix3x2 a = GenerateIncrementalMatrixNumber();
+            Matrix3x2 b = GenerateIncrementalMatrixNumber(-3.0f);
 
             Matrix3x2 expected = new Matrix3x2();
             expected.M11 = a.M11 * b.M11 + a.M12 * b.M21;
@@ -423,8 +429,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void Matrix3x2AdditionTest()
         {
-            Matrix3x2 a = GenerateMatrixNumberFrom1To6();
-            Matrix3x2 b = GenerateMatrixNumberFrom1To6();
+            Matrix3x2 a = GenerateIncrementalMatrixNumber();
+            Matrix3x2 b = GenerateIncrementalMatrixNumber(-3.0f);
 
             Matrix3x2 expected = new Matrix3x2();
             expected.M11 = a.M11 + b.M11;
@@ -466,8 +472,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void Matrix3x2AddTest()
         {
-            Matrix3x2 a = GenerateMatrixNumberFrom1To6();
-            Matrix3x2 b = GenerateMatrixNumberFrom1To6();
+            Matrix3x2 a = GenerateIncrementalMatrixNumber();
+            Matrix3x2 b = GenerateIncrementalMatrixNumber(-3.0f);
 
             Matrix3x2 expected = new Matrix3x2();
             expected.M11 = a.M11 + b.M11;
@@ -487,8 +493,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void Matrix3x2EqualsTest()
         {
-            Matrix3x2 a = GenerateMatrixNumberFrom1To6();
-            Matrix3x2 b = GenerateMatrixNumberFrom1To6();
+            Matrix3x2 a = GenerateIncrementalMatrixNumber();
+            Matrix3x2 b = GenerateIncrementalMatrixNumber();
 
             // case 1: compare between same values
             object obj = b;
@@ -521,7 +527,7 @@ namespace System.Numerics.Tests
         [Fact]
         public void Matrix3x2GetHashCodeTest()
         {
-            Matrix3x2 target = GenerateMatrixNumberFrom1To6();
+            Matrix3x2 target = GenerateIncrementalMatrixNumber();
             int expected = unchecked(target.M11.GetHashCode() + target.M12.GetHashCode() +
                                      target.M21.GetHashCode() + target.M22.GetHashCode() +
                                      target.M31.GetHashCode() + target.M32.GetHashCode());
@@ -535,8 +541,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void Matrix3x2MultiplyTest3()
         {
-            Matrix3x2 a = GenerateMatrixNumberFrom1To6();
-            Matrix3x2 b = GenerateMatrixNumberFrom1To6();
+            Matrix3x2 a = GenerateIncrementalMatrixNumber();
+            Matrix3x2 b = GenerateIncrementalMatrixNumber(-3.0f);
 
             Matrix3x2 expected = new Matrix3x2();
             expected.M11 = a.M11 * b.M11 + a.M12 * b.M21;
@@ -570,7 +576,7 @@ namespace System.Numerics.Tests
         [Fact]
         public void Matrix3x2MultiplyTest5()
         {
-            Matrix3x2 a = GenerateMatrixNumberFrom1To6();
+            Matrix3x2 a = GenerateIncrementalMatrixNumber();
             Matrix3x2 expected = new Matrix3x2(3, 6, 9, 12, 15, 18);
             Matrix3x2 actual = Matrix3x2.Multiply(a, 3);
 
@@ -581,7 +587,7 @@ namespace System.Numerics.Tests
         [Fact]
         public void Matrix3x2MultiplyTest6()
         {
-            Matrix3x2 a = GenerateMatrixNumberFrom1To6();
+            Matrix3x2 a = GenerateIncrementalMatrixNumber();
             Matrix3x2 expected = new Matrix3x2(3, 6, 9, 12, 15, 18);
             Matrix3x2 actual = a * 3;
 
@@ -592,7 +598,7 @@ namespace System.Numerics.Tests
         [Fact]
         public void Matrix3x2NegateTest()
         {
-            Matrix3x2 m = GenerateMatrixNumberFrom1To6();
+            Matrix3x2 m = GenerateIncrementalMatrixNumber();
 
             Matrix3x2 expected = new Matrix3x2();
             expected.M11 = -1.0f;
@@ -611,8 +617,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void Matrix3x2InequalityTest()
         {
-            Matrix3x2 a = GenerateMatrixNumberFrom1To6();
-            Matrix3x2 b = GenerateMatrixNumberFrom1To6();
+            Matrix3x2 a = GenerateIncrementalMatrixNumber();
+            Matrix3x2 b = GenerateIncrementalMatrixNumber();
 
             // case 1: compare between same values
             bool expected = false;
@@ -630,8 +636,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void Matrix3x2EqualityTest()
         {
-            Matrix3x2 a = GenerateMatrixNumberFrom1To6();
-            Matrix3x2 b = GenerateMatrixNumberFrom1To6();
+            Matrix3x2 a = GenerateIncrementalMatrixNumber();
+            Matrix3x2 b = GenerateIncrementalMatrixNumber();
 
             // case 1: compare between same values
             bool expected = true;
@@ -649,11 +655,17 @@ namespace System.Numerics.Tests
         [Fact]
         public void Matrix3x2SubtractTest()
         {
-            Matrix3x2 a = GenerateMatrixNumberFrom1To6();
-            Matrix3x2 b = GenerateMatrixNumberFrom1To6();
+            Matrix3x2 a = GenerateIncrementalMatrixNumber();
+            Matrix3x2 b = GenerateIncrementalMatrixNumber(-3.0f);
             Matrix3x2 expected = new Matrix3x2();
-            Matrix3x2 actual;
+            expected.M11 = a.M11 - b.M11;
+            expected.M12 = a.M12 - b.M12;
+            expected.M21 = a.M21 - b.M21;
+            expected.M22 = a.M22 - b.M22;
+            expected.M31 = a.M31 - b.M31;
+            expected.M32 = a.M32 - b.M32;
 
+            Matrix3x2 actual;
             actual = Matrix3x2.Subtract(a, b);
             Assert.Equal(expected, actual);
         }
@@ -804,8 +816,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void Matrix3x2EqualsTest1()
         {
-            Matrix3x2 a = GenerateMatrixNumberFrom1To6();
-            Matrix3x2 b = GenerateMatrixNumberFrom1To6();
+            Matrix3x2 a = GenerateIncrementalMatrixNumber();
+            Matrix3x2 b = GenerateIncrementalMatrixNumber();
 
             // case 1: compare between same values
             bool expected = true;
