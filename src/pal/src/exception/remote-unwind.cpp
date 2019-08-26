@@ -220,7 +220,7 @@ access_reg(unw_addr_space_t as, unw_regnum_t regnum, unw_word_t *valp, int write
     case UNW_X86_64_R14:   *valp = (unw_word_t)winContext->R14; break;
     case UNW_X86_64_R15:   *valp = (unw_word_t)winContext->R15; break;
 #elif defined(_X86_)
-    case UNW_REG_IP,       *valp = (unw_word_t)winContext->Eip; break;
+    case UNW_REG_IP:       *valp = (unw_word_t)winContext->Eip; break;
     case UNW_REG_SP:       *valp = (unw_word_t)winContext->Esp; break;
     case UNW_X86_EBX:      *valp = (unw_word_t)winContext->Ebx; break;
     case UNW_X86_ESI:      *valp = (unw_word_t)winContext->Esi; break;
