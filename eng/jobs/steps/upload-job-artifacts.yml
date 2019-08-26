@@ -8,7 +8,9 @@ steps:
     displayName: Prepare job-specific Artifacts subdirectory
     inputs:
       SourceFolder: '$(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)'
-      Contents: '**/*'
+      Contents: |
+        Shipping/**/*
+        NonShipping/**/*
       TargetFolder: '$(Build.StagingDirectory)/Artifacts/${{ parameters.name }}'
       CleanTargetFolder: true
     condition: and(succeeded(), eq(variables._BuildConfig, 'Release'))
