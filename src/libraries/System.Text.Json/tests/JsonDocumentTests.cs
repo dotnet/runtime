@@ -421,11 +421,11 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
-        public static void ParseJson_Stream_Async_ClearRentedBuffer_WhenThrow_CodeCoverage()
+        public static async Task ParseJson_Stream_Async_ClearRentedBuffer_WhenThrow_CodeCoverage()
         {
             using (Stream stream = new ThrowOnReadStream(new byte[] { 1 }))
             {
-                Assert.ThrowsAsync<EndOfStreamException>(async () => await JsonDocument.ParseAsync(stream));
+                await Assert.ThrowsAsync<EndOfStreamException>(async () => await JsonDocument.ParseAsync(stream));
             }
         }
 
@@ -439,11 +439,11 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
-        public static void ParseJson_Stream_Async_ThrowsOn_ArrayPoolRent_CodeCoverage()
+        public static async Task ParseJson_Stream_Async_ThrowsOn_ArrayPoolRent_CodeCoverage()
         {
             using (Stream stream = new ThrowOnCanSeekStream(new byte[] { 1 }))
             {
-                Assert.ThrowsAsync<InsufficientMemoryException>(async () => await JsonDocument.ParseAsync(stream));
+                await Assert.ThrowsAsync<InsufficientMemoryException>(async () => await JsonDocument.ParseAsync(stream));
             }
         }
 
@@ -1834,15 +1834,6 @@ namespace System.Text.Json.Tests
                 using var writer = new Utf8JsonWriter(buffer);
                 root.WriteTo(writer);
             });
-        }
-
-        [Fact]
-        public static void CheckByPassingNullWriter()
-        {
-            using (JsonDocument doc = JsonDocument.Parse("true", default))
-            {
-                AssertExtensions.Throws<ArgumentNullException>("writer", () => doc.WriteTo(null));
-            }
         }
 
         [Fact]
@@ -3676,41 +3667,6 @@ namespace System.Text.Json.Tests
             }
 
             return s_compactJson[testCaseType] = existing;
-        }
-
-        [Fact]
-        public static void WriteNumberTooLargeScientific()
-        {
-            // This value is a reference "potential interoperability problem" from
-            // https://tools.ietf.org/html/rfc7159#section-6
-            const string OneQuarticGoogol = "1e400";
-
-            // This just validates we write the literal number 1e400 even though it is too
-            // large to be represented by System.Double and would be converted to
-            // PositiveInfinity instead (or throw if using double.Parse on frameworks
-            // older than .NET Core 3.0).
-            var buffer = new ArrayBufferWriter<byte>(1024);
-            var expectedNonIndentedJson = $"[{OneQuarticGoogol}]";
-            using (JsonDocument doc = JsonDocument.Parse($"[ {OneQuarticGoogol} ]"))
-            {
-                using var writer = new Utf8JsonWriter(buffer, default);
-                doc.WriteTo(writer);
-                writer.Flush();
-
-                AssertContents(expectedNonIndentedJson, buffer);
-            }
-        }
-
-        private static void AssertContents(string expectedValue, ArrayBufferWriter<byte> buffer)
-        {
-            Assert.Equal(
-                expectedValue,
-                Encoding.UTF8.GetString(
-                    buffer.WrittenSpan
-#if netfx
-                        .ToArray()
-#endif
-                    ));
         }
 
         [Fact]
