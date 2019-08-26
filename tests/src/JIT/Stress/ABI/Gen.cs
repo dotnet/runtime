@@ -16,7 +16,8 @@ namespace ABIStress
     // This class allows us to generate random values of specified types.
     internal static class Gen
     {
-        private static unsafe TVec GenConstantVector<TVec, TElem>(Random rand) where TVec : unmanaged where TElem : unmanaged
+        private static unsafe TVec GenConstantVector<TVec, TElem>(Random rand)
+            where TVec : unmanaged where TElem : unmanaged
         {
             int outerSize = sizeof(TVec);
             int innerSize = sizeof(TElem);
