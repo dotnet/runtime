@@ -36,7 +36,7 @@ namespace System.Reflection
                 {
                     pkt = defNameData.PublicKey.ComputePublicKeyToken();
                 }
-                RoAssemblyName defName = new RoAssemblyName(defNameData.Name, defNameData.Version, defNameData.CultureName, pkt);
+                RoAssemblyName defName = new RoAssemblyName(defNameData.Name, defNameData.Version, defNameData.CultureName, pkt, defNameData.Flags);
 
                 RoAssembly winner = _loadedAssemblies.GetOrAdd(defName, candidate);
                 if (winner == candidate)
