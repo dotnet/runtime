@@ -7817,6 +7817,7 @@ buffer_add_cattrs (Buffer *buf, MonoDomain *domain, MonoImage *image, MonoClass 
 			if (!is_ok (error)) {
 				DEBUG_PRINTF (2, "[dbg] mono_reflection_create_custom_attr_data_args () failed with: '%s'\n", mono_error_get_message (error));
 				mono_error_cleanup (error);
+				CLEAR_ICALL_FRAME;
 				return ERR_LOADER_ERROR;
 			}
 			typed_args = MONO_HANDLE_RAW (typed_args_h);

@@ -1337,12 +1337,16 @@ ves_icall_System_Reflection_CustomAttributeData_ResolveArgumentsInternal (MonoRe
 	MonoReflectionMethod *ref_method = MONO_HANDLE_RAW (ref_method_h);
 	MonoReflectionAssembly *assembly = MONO_HANDLE_RAW (assembly_h);
 	MonoMethodSignature *sig;
+	MonoObjectHandle obj_h, namedarg_h, typedarg_h, minfo_h;
 	int i;
-
-	error_init (error);
 
 	if (len == 0)
 		return;
+
+	obj_h = MONO_HANDLE_NEW (MonoObject, NULL);
+	namedarg_h = MONO_HANDLE_NEW (MonoObject, NULL);
+	typedarg_h = MONO_HANDLE_NEW (MonoObject, NULL);
+	minfo_h = MONO_HANDLE_NEW (MonoObject, NULL);
 
 	image = assembly->assembly->image;
 	method = ref_method->method;
@@ -1364,23 +1368,27 @@ ves_icall_System_Reflection_CustomAttributeData_ResolveArgumentsInternal (MonoRe
 
 	sig = mono_method_signature_internal (method);
 	for (i = 0; i < sig->param_count; ++i) {
-		MonoObject *obj = mono_array_get_internal (typed_args, MonoObject*, i);
+		MonoObject *obj;
 		MonoObject *typedarg;
 		MonoType *t;
+
+		obj = mono_array_get_internal (typed_args, MonoObject*, i);
+		MONO_HANDLE_ASSIGN_RAW (obj_h, obj);
 
 		t = mono_method_signature_internal (method)->params [i];
 		if (t->type == MONO_TYPE_OBJECT && obj)
 			t = m_class_get_byval_arg (obj->vtable->klass);
 		typedarg = create_cattr_typed_arg (t, obj, error);
-
 		goto_if_nok (error, leave);
 		mono_array_setref_internal (typed_args, i, typedarg);
 	}
 
 	for (i = 0; i < mono_array_length_internal (named_args); ++i) {
-		MonoObject *obj = mono_array_get_internal (named_args, MonoObject*, i);
+		MonoObject *obj;
 		MonoObject *namedarg, *minfo;
 
+		obj = mono_array_get_internal (named_args, MonoObject*, i);
+		MONO_HANDLE_ASSIGN_RAW (obj_h, obj);
 		if (arginfo [i].prop) {
 			minfo = (MonoObject*)mono_property_get_object_checked (domain, arginfo [i].prop->parent, arginfo [i].prop, error);
 			if (!minfo)
@@ -1389,13 +1397,17 @@ ves_icall_System_Reflection_CustomAttributeData_ResolveArgumentsInternal (MonoRe
 			minfo = (MonoObject*)mono_field_get_object_checked (domain, NULL, arginfo [i].field, error);
 			goto_if_nok (error, leave);
 		}
+		MONO_HANDLE_ASSIGN_RAW (minfo_h, minfo);
 
 #if ENABLE_NETCORE
 		namedarg = create_cattr_named_arg (minfo, obj, error);
+		MONO_HANDLE_ASSIGN_RAW (namedarg_h, namedarg);
 #else
 		MonoObject* typedarg = create_cattr_typed_arg (arginfo [i].type, obj, error);
+		MONO_HANDLE_ASSIGN_RAW (typedarg_h, typedarg);
 		goto_if_nok (error, leave);
 		namedarg = create_cattr_named_arg (minfo, typedarg, error);
+		MONO_HANDLE_ASSIGN_RAW (namedarg_h, namedarg);
 #endif
 		goto_if_nok (error, leave);
 
