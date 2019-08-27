@@ -6,7 +6,7 @@ Option Explicit On
 
 Imports System
 Imports System.Environment
-Imports System.Security
+Imports System.Reflection
 Imports Microsoft.VisualBasic.CompilerServices.Utils
 Imports ExUtils = Microsoft.VisualBasic.CompilerServices.ExceptionUtils
 
@@ -122,7 +122,7 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' </remarks>
         Public Shared ReadOnly Property CurrentUserApplicationData() As String
             Get
-                Throw New PlatformNotSupportedException()
+                Return GetDirectoryPath(GetWindowsFormsDirectory("System.Windows.Forms.Application", "UserAppDataPath"), SR.IO_SpecialDirectory_UserAppData)
             End Get
         End Property
 
@@ -139,7 +139,7 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' </remarks>
         Public Shared ReadOnly Property AllUsersApplicationData() As String
             Get
-                Throw New PlatformNotSupportedException()
+                Return GetDirectoryPath(GetWindowsFormsDirectory("System.Windows.Forms.Application", "CommonAppDataPath"), SR.IO_SpecialDirectory_AllUserAppData)
             End Get
         End Property
 
@@ -155,6 +155,15 @@ Namespace Microsoft.VisualBasic.FileIO
                 Throw ExUtils.GetDirectoryNotFoundException(SR.IO_SpecialDirectoryNotExist, GetResourceString(DirectoryNameResID))
             End If
             Return FileSystem.NormalizePath(Directory)
+        End Function
+
+        Private Shared Function GetWindowsFormsDirectory(typeName As String, propertyName As String) As String
+            Dim type As Type = type.GetType($"{typeName}, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError:=False)
+            Dim [property] As PropertyInfo = type?.GetProperty(propertyName)
+            If [property] Is Nothing Then
+                Return ""
+            End If
+            Return DirectCast([property].GetValue(Nothing, BindingFlags.DoNotWrapExceptions, Nothing, Nothing, Nothing), String)
         End Function
 
     End Class

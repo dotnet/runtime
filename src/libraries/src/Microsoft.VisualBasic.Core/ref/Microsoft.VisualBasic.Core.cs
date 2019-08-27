@@ -306,8 +306,11 @@ namespace Microsoft.VisualBasic
         internal ErrObject() { }
         public string Description { get { throw null; } set { } }
         public int Erl { get { throw null; } }
+        public int HelpContext { get { throw null; } set { } }
+        public string HelpFile { get { throw null; } set { } }
         public int LastDllError { get { throw null; } }
         public int Number { get { throw null; } set { } }
+        public string Source { get { throw null; } set { } }
         public void Clear() { }
         public System.Exception GetException() { throw null; }
         public void Raise(int Number, object Source = null, object Description = null, object HelpFile = null, object HelpContext = null) { }
@@ -458,6 +461,7 @@ namespace Microsoft.VisualBasic
     public sealed partial class Information
     {
         internal Information() { }
+        public static int Erl() { throw null; }
         public static Microsoft.VisualBasic.ErrObject Err() { throw null; }
         public static bool IsArray(object VarName) { throw null; }
         public static bool IsDate(object Expression) { throw null; }
@@ -479,12 +483,25 @@ namespace Microsoft.VisualBasic
     public sealed partial class Interaction
     {
         internal Interaction() { }
+        public static void AppActivate(int ProcessId) { }
+        public static void AppActivate(string Title) { }
         public static void Beep() { }
         public static object CallByName(object ObjectRef, string ProcName, Microsoft.VisualBasic.CallType UseCallType, params object[] Args) { throw null; }
         public static object Choose(double Index, params object[] Choice) { throw null; }
+        public static string Command() { throw null; }
         public static object CreateObject(string ProgId, string ServerName = "") { throw null; }
+        public static void DeleteSetting(string AppName, string Section = null, string Key = null) { }
+        public static string Environ(string Expression) { throw null; }
+        public static string Environ(int Expression) { throw null; }
+        public static string[,] GetAllSettings(string AppName, string Section) { throw null; }
+        public static object GetObject(string PathName = null, string Class = null) { throw null; }
+        public static string GetSetting(string AppName, string Section, string Key, string Default = "") { throw null; }
         public static object IIf(bool Expression, object TruePart, object FalsePart) { throw null; }
+        public static string InputBox(string Prompt, string Title = "", string DefaultResponse = "", int XPos = -1, int YPos = -1) { throw null; }
+        public static MsgBoxResult MsgBox(object Prompt, MsgBoxStyle Buttons = MsgBoxStyle.ApplicationModal, object Title = null) { throw null; }
         public static string Partition(long Number, long Start, long Stop, long Interval) { throw null; }
+        public static void SaveSetting(string AppName, string Section, string Key, string Setting) { }
+        public static int Shell(string PathName, AppWinStyle Style = AppWinStyle.MinimizedFocus, bool Wait = false, int Timeout = -1) { throw null; }
         public static object Switch(params object[] VarExpr) { throw null; }
     }
     public enum MsgBoxResult

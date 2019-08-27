@@ -1052,4 +1052,7 @@
   <data name="NoShellDelete" xml:space="preserve">
     <value>UI not available for delete</value>
   </data>
+  <data name="MethodRequiresSystemWindowsForms" xml:space="preserve">
+    <value>Method requires System.Windows.Forms.</value>
+  </data>
 </root>

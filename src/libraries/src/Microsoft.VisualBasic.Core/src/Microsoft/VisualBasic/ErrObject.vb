@@ -22,6 +22,13 @@ Namespace Microsoft.VisualBasic
         Private m_ClearOnCapture As Boolean
         Private m_DescriptionIsSet As Boolean
 
+        Private m_curSource As String
+        Private m_SourceIsSet As Boolean
+        Private m_curHelpFile As String
+        Private m_curHelpContext As Integer
+        Private m_HelpFileIsSet As Boolean
+        Private m_HelpContextIsSet As Boolean
+
         Friend Sub New()
             Me.Clear() 'need to do this so the fields are set to Empty string, not Nothing
         End Sub
@@ -54,6 +61,30 @@ Namespace Microsoft.VisualBasic
             Set(ByVal Value As Integer)
                 m_curNumber = MapErrorNumber(Value)
                 m_NumberIsSet = True
+            End Set
+        End Property
+
+        Public Property Source() As String
+            Get
+                'Return the current Source if we've already calculated it.
+                If m_SourceIsSet Then
+                    Return m_curSource
+                End If
+
+                If Not m_curException Is Nothing Then
+                    Me.Source = m_curException.Source
+                    Return m_curSource
+                Else
+                    'The default case.  NOTE:  falling into the default does not "Set" the property.
+                    'We only get here if the Err object was previously cleared.
+                    '
+                    Return ""
+                End If
+            End Get
+
+            Set(ByVal Value As String)
+                m_curSource = Value
+                m_SourceIsSet = True
             End Set
         End Property
 
@@ -113,6 +144,101 @@ Namespace Microsoft.VisualBasic
             End Set
         End Property
 
+        Public Property HelpFile() As String
+            Get
+                If m_HelpFileIsSet Then
+                    Return m_curHelpFile
+                End If
+
+                If Not m_curException Is Nothing Then
+                    ParseHelpLink(m_curException.HelpLink)
+                    Return m_curHelpFile
+                Else
+                    'The default case.  NOTE:  falling into the default does not "Set" the property.
+                    'We only get here if the Err object was previously cleared.
+                    '
+                    Return ""
+                End If
+            End Get
+
+            Set(ByVal Value As String)
+                m_curHelpFile = Value
+
+                m_HelpFileIsSet = True
+            End Set
+        End Property
+
+        Private Function MakeHelpLink(ByVal HelpFile As String, ByVal HelpContext As Integer) As String
+            Return HelpFile & "#" & CStr(HelpContext)
+        End Function
+
+        Private Sub ParseHelpLink(ByVal HelpLink As String)
+
+            Diagnostics.Debug.Assert((Not m_HelpContextIsSet) OrElse (Not m_HelpFileIsSet), "Why is this getting called?")
+
+            If HelpLink Is Nothing OrElse HelpLink.Length = 0 Then
+
+                If Not m_HelpContextIsSet Then
+                    Me.HelpContext = 0
+                End If
+                If Not m_HelpFileIsSet Then
+                    Me.HelpFile = ""
+                End If
+
+            Else
+
+                Dim iContext As Integer = m_InvariantCompareInfo.IndexOf(HelpLink, "#", Globalization.CompareOptions.Ordinal)
+
+                If iContext <> -1 Then
+                    If Not m_HelpContextIsSet Then
+                        If iContext < HelpLink.Length Then
+                            Me.HelpContext = CInt(HelpLink.Substring(iContext + 1))
+                        Else
+                            Me.HelpContext = 0
+                        End If
+                    End If
+                    If Not m_HelpFileIsSet Then
+                        Me.HelpFile = HelpLink.Substring(0, iContext)
+                    End If
+                Else
+                    If Not m_HelpContextIsSet Then
+                        Me.HelpContext = 0
+                    End If
+                    If Not m_HelpFileIsSet Then
+                        Me.HelpFile = HelpLink
+                    End If
+                End If
+
+            End If
+
+        End Sub
+
+        Public Property HelpContext() As Integer
+            Get
+                If m_HelpContextIsSet Then
+                    Return m_curHelpContext
+                End If
+
+                If Not m_curException Is Nothing Then
+                    ParseHelpLink(m_curException.HelpLink)
+                    Return m_curHelpContext
+
+                Else
+                    'The default case.  NOTE:  falling into the default does not "Set" the property.
+                    'We only get here if the Err object was previously cleared.
+                    '
+                    Return 0
+                End If
+
+                Return m_curHelpContext
+            End Get
+
+            Set(ByVal Value As Integer)
+                m_curHelpContext = Value
+                m_HelpContextIsSet = True
+            End Set
+        End Property
+
         Public Function GetException() As Exception
             Return m_curException
         End Function
@@ -124,6 +250,12 @@ Namespace Microsoft.VisualBasic
         Public Sub Clear()
             m_curException = Nothing
             m_curNumber = 0
+            m_curSource = ""
+            m_curHelpFile = ""
+            m_curHelpContext = 0
+            m_SourceIsSet = False
+            m_HelpFileIsSet = False
+            m_HelpContextIsSet = False
             m_curDescription = ""
             m_curErl = 0
             m_NumberIsSet = False
@@ -151,6 +283,31 @@ Namespace Microsoft.VisualBasic
             End If
             Me.Number = Number
 
+            If Not Source Is Nothing Then
+                Me.Source = CStr(Source)
+            Else
+                ' .NET Framework uses VBHost.GetWindowTitle() if available
+                ' but the VBHost type is not accessible here.
+                Dim FullName As String
+                Dim CommaPos As Integer
+
+                FullName = System.Reflection.Assembly.GetCallingAssembly().FullName
+                CommaPos = InStr(FullName, ",")
+                If CommaPos < 1 Then
+                    Me.Source = FullName
+                Else
+                    Me.Source = Left(FullName, CommaPos - 1)
+                End If
+            End If
+
+            If Not HelpFile Is Nothing Then
+                Me.HelpFile = CStr(HelpFile)
+            End If
+
+            If Not HelpContext Is Nothing Then
+                Me.HelpContext = CInt(HelpContext)
+            End If
+
             If Not Description Is Nothing Then
                 Me.Description = CStr(Description)
             ElseIf Not m_DescriptionIsSet Then
@@ -160,6 +317,8 @@ Namespace Microsoft.VisualBasic
 
             Dim e As Exception
             e = MapNumberToException(m_curNumber, m_curDescription)
+            e.Source = m_curSource
+            e.HelpLink = MakeHelpLink(m_curHelpFile, m_curHelpContext)
             m_ClearOnCapture = False
             Throw e
         End Sub
