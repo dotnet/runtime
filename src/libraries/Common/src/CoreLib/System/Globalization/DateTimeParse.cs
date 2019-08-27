@@ -3303,7 +3303,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
 
         /*=================================MatchAbbreviatedMonthName==================================
         **Action: Parse the abbreviated month name from string starting at str.Index.
-        **Returns: A value from 1 to 12 for the first month to the twelveth month.
+        **Returns: A value from 1 to 12 for the first month to the twelfth month.
         **Arguments:    str: a __DTString.  The parsing will start from the
         **              next character after str.Index.
         **Exceptions: FormatException if an abbreviated month name can not be found.
@@ -3338,6 +3338,19 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     }
                 }
 
+                // Search genitive form.
+                if ((dtfi.FormatFlags & DateTimeFormatFlags.UseGenitiveMonth) != 0)
+                {
+                    int tempResult = str.MatchLongestWords(dtfi.AbbreviatedMonthGenitiveNames, ref maxMatchStrLen);
+
+                    // We found a longer match in the genitive month name.  Use this as the result.
+                    // tempResult + 1 should be the month value.
+                    if (tempResult >= 0)
+                    {
+                        result = tempResult + 1;
+                    }
+                }
+
                 // Search leap year form.
                 if ((dtfi.FormatFlags & DateTimeFormatFlags.UseLeapYearMonth) != 0)
                 {
@@ -3361,7 +3374,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
 
         /*=================================MatchMonthName==================================
         **Action: Parse the month name from string starting at str.Index.
-        **Returns: A value from 1 to 12 indicating the first month to the twelveth month.
+        **Returns: A value from 1 to 12 indicating the first month to the twelfth month.
         **Arguments:    str: a __DTString.  The parsing will start from the
         **              next character after str.Index.
         **Exceptions: FormatException if a month name can not be found.
