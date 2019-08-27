@@ -95,7 +95,7 @@ release_gc_locks (void)
 }
 
 static TV_DECLARE (stop_world_time);
-static unsigned long max_pause_usec = 0;
+static unsigned long max_stw_pause_time = 0;
 
 static guint64 time_stop_world;
 static guint64 time_restart_world;
@@ -128,7 +128,10 @@ sgen_client_stop_world (int generation, gboolean serial_collection)
 	MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_POST_STOP_WORLD, generation, serial_collection));
 
 	TV_GETTIME (end_handshake);
-	time_stop_world += TV_ELAPSED (stop_world_time, end_handshake);
+
+	unsigned long stop_world_tv_elapsed = TV_ELAPSED (stop_world_time, end_handshake);
+	SGEN_LOG (2, "stopping world (time: %d usec)", (int)stop_world_tv_elapsed / 10);
+	time_stop_world += stop_world_tv_elapsed;
 
 	sgen_memgov_collection_start (generation);
 	if (sgen_need_bridge_processing ())
@@ -141,7 +144,6 @@ sgen_client_restart_world (int generation, gboolean serial_collection, gint64 *s
 {
 	TV_DECLARE (end_sw);
 	TV_DECLARE (start_handshake);
-	unsigned long usec;
 
 	/* notify the profiler of the leftovers */
 	/* FIXME this is the wrong spot at we can STW for non collection reasons. */
@@ -163,12 +165,16 @@ sgen_client_restart_world (int generation, gboolean serial_collection, gint64 *s
 	sgen_unified_suspend_restart_world ();
 
 	TV_GETTIME (end_sw);
-	time_restart_world += TV_ELAPSED (start_handshake, end_sw);
-	usec = TV_ELAPSED (stop_world_time, end_sw);
-	max_pause_usec = MAX (usec, max_pause_usec);
+
+	unsigned long restart_world_tv_elapsed = TV_ELAPSED (start_handshake, end_sw);
+	SGEN_LOG (2, "restarting world (time: %d usec)", (int)restart_world_tv_elapsed / 10);
+	time_restart_world += restart_world_tv_elapsed;
+
+	unsigned long stw_pause_time = TV_ELAPSED (stop_world_time, end_sw);
+	max_stw_pause_time = MAX (stw_pause_time, max_stw_pause_time);
 	end_of_last_stw = end_sw;
 
-	SGEN_LOG (2, "restarted (pause time: %d usec, max: %d)", (int)usec, (int)max_pause_usec);
+	SGEN_LOG (2, "restarted (pause time: %d usec, max: %d usec)", (int)stw_pause_time / 10, (int)max_stw_pause_time / 10);
 
 	MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_POST_START_WORLD, generation, serial_collection));
 
@@ -186,7 +192,7 @@ sgen_client_restart_world (int generation, gboolean serial_collection, gint64 *s
 
 	MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_POST_START_WORLD_UNLOCKED, generation, serial_collection));
 
-	*stw_time = usec;
+	*stw_time = stw_pause_time;
 }
 
 void

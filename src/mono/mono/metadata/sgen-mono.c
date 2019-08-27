@@ -2270,6 +2270,11 @@ sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 		return;
 #endif
 
+	SGEN_TV_DECLARE (scan_thread_data_start);
+	SGEN_TV_DECLARE (scan_thread_data_end);
+
+	SGEN_TV_GETTIME (scan_thread_data_start);
+
 	FOREACH_THREAD_EXCLUDE (info, MONO_THREAD_INFO_FLAGS_NO_GC) {
 		int skip_reason = 0;
 		void *aligned_stack_start;
@@ -2349,6 +2354,9 @@ sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 			}
 		}
 	} FOREACH_THREAD_END
+
+	SGEN_TV_GETTIME (scan_thread_data_end);
+	SGEN_LOG (2, "Scanning thread data: %lld usecs", (long long)(SGEN_TV_ELAPSED (scan_thread_data_start, scan_thread_data_end) / 10));
 }
 
 /*
