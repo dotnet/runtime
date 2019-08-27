@@ -210,29 +210,6 @@ namespace System
                    (syntax == null)));
         }
 
-        //
-        // Checks if Idn is allowed by the syntax & by config
-        //
-        private bool AllowIdn
-        {
-            get
-            {
-                return ((_syntax != null) && ((_syntax.Flags & UriSyntaxFlags.AllowIdn) != 0) &&
-                          ((IdnScope == UriIdnScope.All) || ((IdnScope == UriIdnScope.AllExceptIntranet)
-                                                                              && NotAny(Flags.IntranetUri))));
-            }
-        }
-
-        //
-        // Checks statically if Idn is allowed by the syntax & by config
-        //
-        private bool AllowIdnStatic(UriParser syntax, Flags flags)
-        {
-            return ((syntax != null) && ((syntax.Flags & UriSyntaxFlags.AllowIdn) != 0) &&
-                   ((IdnScope == UriIdnScope.All) || ((IdnScope == UriIdnScope.AllExceptIntranet)
-                                                                            && StaticNotAny(flags, Flags.IntranetUri))));
-        }
-
         private bool IsIntranet(string schemeHost)
         {
             // .NET Native/CoreCLR behavior difference: all URI/IRIs will be treated as Internet.
@@ -917,12 +894,6 @@ namespace System
         }
 
         // Value from config Uri section
-        // The use of this IDN mechanic is discouraged on Win8+ due to native platform improvements.
-#pragma warning disable CA1802 // TODO: https://github.com/dotnet/corefx/issues/40297
-        private static readonly UriIdnScope IdnScope = UriIdnScope.None;   // IDN is disabled in .NET Native and CoreCLR.
-#pragma warning restore CA1802
-
-        // Value from config Uri section
         // On by default in .NET 4.5+ and cannot be disabled by config.
         private const bool IriParsing = true; // IRI Parsing is always enabled in .NET Native and CoreCLR
 
@@ -1139,8 +1110,7 @@ namespace System
         {
             get
             {
-                return ((_iriParsing && InFact(Flags.HasUnicode)) ||
-                        (AllowIdn && (InFact(Flags.IdnHost) || InFact(Flags.UnicodeHost))));
+                return (_iriParsing && InFact(Flags.HasUnicode));
             }
         }
 
@@ -1166,13 +1136,6 @@ namespace System
                 if (IsNotAbsoluteUri)
                 {
                     throw new InvalidOperationException(SR.net_uri_NotAbsolute);
-                }
-
-                if (AllowIdn && (((_flags & Flags.IdnHost) != 0) || ((_flags & Flags.UnicodeHost) != 0)))
-                {
-                    // return pre generated idn
-                    EnsureUriInfo();
-                    return _info.DnsSafeHost!;
                 }
 
                 EnsureHostString(false);
@@ -2219,7 +2182,7 @@ namespace System
                 // is not created/canonicalized at this point.
             }
 
-            if ((IdnScope != UriIdnScope.None) || _iriParsing)
+            if (_iriParsing)
                 PrivateParseMinimalIri(newHost, idx);
 
             return ParsingError.None;
@@ -2230,18 +2193,6 @@ namespace System
             // we have a new host!
             if (newHost != null)
                 _string = newHost;
-
-            // conditions where we don't need to go to parseremaining, so we copy the rest of the
-            // original string.. and switch offsets
-            if ((!_iriParsing && AllowIdn && (((_flags & Flags.IdnHost) != 0) || ((_flags & Flags.UnicodeHost) != 0))) ||
-                (_iriParsing && ((_flags & Flags.HasUnicode) == 0) && AllowIdn && ((_flags & Flags.IdnHost) != 0)))
-            {
-                // update the start of path from the end of new string
-                _flags &= ~(Flags.IndexMask);
-                _flags |= (Flags)_string.Length;
-
-                _string = string.Concat(_string, _originalUnicodeString.AsSpan(idx, _originalUnicodeString.Length - idx));
-            }
 
             // Indicate to createuriinfo that offset is in m_originalUnicodeString
             if (_iriParsing && ((_flags & Flags.HasUnicode) != 0))
@@ -4106,7 +4057,7 @@ namespace System
                         flags |= Flags.HasUserInfo;
 
                         // Iri'ze userinfo
-                        if (iriParsing || (IdnScope != UriIdnScope.None))
+                        if (iriParsing)
                         {
                             if (iriParsing && hasUnicode && hostNotUnicodeNormalized)
                             {
@@ -4171,39 +4122,6 @@ namespace System
                 if (!dnsNotCanonical)
                 {
                     flags |= Flags.CanonicalDnsHost;
-                }
-
-                if ((IdnScope != UriIdnScope.None))
-                {
-                    // check if intranet
-                    //
-                    if ((IdnScope == UriIdnScope.AllExceptIntranet) && IsIntranet(new string(pString, 0, end)))
-                    {
-                        flags |= Flags.IntranetUri;
-                    }
-                    if (AllowIdnStatic(syntax, flags))
-                    {
-                        bool allAscii = true;
-                        bool atLeastOneIdn = false;
-
-                        string? idnValue = DomainNameHelper.UnicodeEquivalent(pString, start, end, ref allAscii, ref atLeastOneIdn);
-
-                        // did we find at least one valid idn
-                        if (atLeastOneIdn)
-                        {
-                            // need to switch string here since we didn't know beforehand there was an idn host
-                            if (StaticNotAny(flags, Flags.HasUnicode))
-                                _originalUnicodeString = _string; // lazily switching strings
-                            flags |= Flags.IdnHost;
-
-                            // need to build string for this special scenario
-                            newHost = string.Concat(_originalUnicodeString.AsSpan(0, startInput), userInfoString, idnValue);
-                            flags |= Flags.CanonicalDnsHost;
-                            _dnsSafeHost = new string(pString, start, end - start);
-                            justNormalized = true;
-                        }
-                        flags |= Flags.HostUnicodeNormalized;
-                    }
                 }
             }
             else if (((syntaxFlags & UriSyntaxFlags.AllowDnsHost) != 0)
@@ -4400,73 +4318,18 @@ namespace System
 
             flags |= Flags.DnsHostType;
 
-            // check if intranet
-            //
-            if ((IdnScope == UriIdnScope.AllExceptIntranet) && IsIntranet(new string(pString, 0, end)))
+            if (hasUnicode)
             {
-                flags |= Flags.IntranetUri;
-            }
-
-            if (AllowIdnStatic(syntax, flags))
-            {
-                bool allAscii = true;
-                bool atLeastOneIdn = false;
-
-                string? idnValue = DomainNameHelper.IdnEquivalent(pString, start, end, ref allAscii, ref atLeastOneIdn);
-                string? UniEquvlt = DomainNameHelper.UnicodeEquivalent(idnValue!, pString, start, end);
-
-                if (!allAscii)
-                    flags |= Flags.UnicodeHost; // we have a unicode host
-
-                if (atLeastOneIdn)
-                    flags |= Flags.IdnHost;   // we have at least one valid idn label
-
-                if (allAscii && atLeastOneIdn && StaticNotAny(flags, Flags.HasUnicode))
+                string temp = UriHelper.StripBidiControlCharacter(pString, start, end - start);
+                try
                 {
-                    // original string location changed lazily
-                    _originalUnicodeString = _string;
-                    newHost = StaticInFact(flags, Flags.HasUserInfo) ?
-                        string.Concat(_originalUnicodeString.AsSpan(0, startInput), userInfoString) :
-                        _originalUnicodeString.Substring(0, startInput);
-                    justNormalized = true;
+                    newHost += ((temp != null) ? temp.Normalize(NormalizationForm.FormC) : null);
                 }
-                else if (!iriParsing && (StaticInFact(flags, Flags.UnicodeHost) || StaticInFact(flags, Flags.IdnHost)))
+                catch (ArgumentException)
                 {
-                    // original string location changed lazily
-                    _originalUnicodeString = _string;
-                    newHost = StaticInFact(flags, Flags.HasUserInfo) ?
-                        string.Concat(_originalUnicodeString.AsSpan(0, startInput), userInfoString) :
-                        _originalUnicodeString.Substring(0, startInput);
-                    justNormalized = true;
+                    err = ParsingError.BadHostName;
                 }
-
-                if (!(allAscii && !atLeastOneIdn))
-                {
-                    _dnsSafeHost = idnValue;
-                    newHost += UniEquvlt;
-                    justNormalized = true;
-                }
-                else if (allAscii && !atLeastOneIdn && iriParsing && hasUnicode)
-                {
-                    newHost += UniEquvlt;
-                    justNormalized = true;
-                }
-            }
-            else
-            {
-                if (hasUnicode)
-                {
-                    string temp = UriHelper.StripBidiControlCharacter(pString, start, end - start);
-                    try
-                    {
-                        newHost += ((temp != null) ? temp.Normalize(NormalizationForm.FormC) : null);
-                    }
-                    catch (ArgumentException)
-                    {
-                        err = ParsingError.BadHostName;
-                    }
-                    justNormalized = true;
-                }
+                justNormalized = true;
             }
             flags |= Flags.HostUnicodeNormalized;
         }
@@ -4475,53 +4338,18 @@ namespace System
                                             bool iriParsing, bool hasUnicode, UriParser syntax,
                                             ref Flags flags, ref string? newHost, ref ParsingError err)
         {
-            if (StaticNotAny(flags, Flags.HostUnicodeNormalized) && (AllowIdnStatic(syntax, flags) ||
-                (iriParsing && hasUnicode)))
+            if (StaticNotAny(flags, Flags.HostUnicodeNormalized) && (iriParsing && hasUnicode))
             {
                 // Normalize any other host or do idn
                 string user = new string(pString, startInput, end - startInput);
 
-                if (AllowIdnStatic(syntax, flags))
+                try
                 {
-                    bool allAscii = true;
-                    bool atLeastOneIdn = false;
-
-                    string? UniEquvlt = DomainNameHelper.UnicodeEquivalent(pString, startInput, end, ref allAscii,
-                        ref atLeastOneIdn);
-
-                    if (((allAscii && atLeastOneIdn) || !allAscii) && !(iriParsing && hasUnicode))
-                    {
-                        // original string location changed lazily
-                        _originalUnicodeString = _string;
-                        newHost = _originalUnicodeString.Substring(0, startInput);
-                        flags |= Flags.HasUnicode;
-                    }
-                    if (atLeastOneIdn || !allAscii)
-                    {
-                        newHost += UniEquvlt;
-                        string? bidiStrippedHost = null;
-                        _dnsSafeHost = DomainNameHelper.IdnEquivalent(pString, startInput, end, ref allAscii,
-                            ref bidiStrippedHost);
-                        if (atLeastOneIdn)
-                            flags |= Flags.IdnHost;
-                        if (!allAscii)
-                            flags |= Flags.UnicodeHost;
-                    }
-                    else if (iriParsing && hasUnicode)
-                    {
-                        newHost += user;
-                    }
+                    newHost += user.Normalize(NormalizationForm.FormC);
                 }
-                else
+                catch (ArgumentException)
                 {
-                    try
-                    {
-                        newHost += user.Normalize(NormalizationForm.FormC);
-                    }
-                    catch (ArgumentException)
-                    {
-                        err = ParsingError.BadHostName;
-                    }
+                    err = ParsingError.BadHostName;
                 }
 
                 flags |= Flags.HostUnicodeNormalized;
