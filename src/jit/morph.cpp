@@ -14935,6 +14935,15 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
             }
             break;
 
+        case GT_PHI:
+            tree->gtFlags &= ~GTF_ALL_EFFECT;
+            for (GenTreePhi::Use& use : tree->AsPhi()->Uses())
+            {
+                use.SetNode(fgMorphTree(use.GetNode()));
+                tree->gtFlags |= use.GetNode()->gtFlags & GTF_ALL_EFFECT;
+            }
+            break;
+
         case GT_CMPXCHG:
             tree->gtCmpXchg.gtOpLocation  = fgMorphTree(tree->gtCmpXchg.gtOpLocation);
             tree->gtCmpXchg.gtOpValue     = fgMorphTree(tree->gtCmpXchg.gtOpValue);

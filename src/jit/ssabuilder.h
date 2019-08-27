@@ -94,6 +94,13 @@ private:
     // Compute the iterated dominance frontier for the specified block.
     void ComputeIteratedDominanceFrontier(BasicBlock* b, const BlkToBlkVectorMap* mapDF, BlkVector* bIDF);
 
+    // Insert a new GT_PHI statement.
+    void InsertPhi(BasicBlock* block, unsigned lclNum);
+
+    // Add a new GT_PHI_ARG node to an existing GT_PHI node
+    void AddPhiArg(
+        BasicBlock* block, GenTreeStmt* stmt, GenTreePhi* phi, unsigned lclNum, unsigned ssaNum, BasicBlock* pred);
+
     // Requires "postOrder" to hold the blocks of the flowgraph in topologically sorted order. Requires
     // count to be the valid entries in the "postOrder" array. Inserts GT_PHI nodes at the beginning
     // of basic blocks that require them like so:
