@@ -5947,125 +5947,84 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
     compCurStmtNum = blk->bbStmtNum - 1; // Set compCurStmtNum
 #endif
 
+    GenTreeStmt* stmt = blk->firstStmt();
+
     // First: visit phi's.  If "newVNForPhis", give them new VN's.  If not,
     // first check to see if all phi args have the same value.
-    GenTreeStmt* firstNonPhi = blk->FirstNonPhiDef();
-    for (GenTreeStmt* phiDefStmt = blk->firstStmt(); phiDefStmt != firstNonPhi; phiDefStmt = phiDefStmt->getNextStmt())
+    for (; (stmt != nullptr) && stmt->IsPhiDefnStmt(); stmt = stmt->getNextStmt())
     {
-        // TODO-Cleanup: It has been proposed that we should have an IsPhiDef predicate.  We would use it
-        // in Block::FirstNonPhiDef as well.
-        GenTree* phiDef = phiDefStmt->gtStmtExpr;
-        assert(phiDef->OperGet() == GT_ASG);
-        GenTreeLclVarCommon* newSsaVar = phiDef->gtOp.gtOp1->AsLclVarCommon();
+        GenTree* asg = stmt->gtStmtExpr;
+        assert(asg->OperIs(GT_ASG));
 
-        ValueNumPair phiAppVNP;
-        ValueNumPair sameVNPair;
+        GenTreeLclVar* newSsaDef = asg->AsOp()->gtGetOp1()->AsLclVar();
+        ValueNumPair   phiVNP;
+        ValueNumPair   sameVNP;
 
-        GenTree* phiFunc = phiDef->gtOp.gtOp2;
-
-        // At this point a GT_PHI node should never have a nullptr for gtOp1
-        // and the gtOp1 should always be a GT_LIST node.
-        GenTree* phiOp1 = phiFunc->gtOp.gtOp1;
-        noway_assert(phiOp1 != nullptr);
-        noway_assert(phiOp1->OperGet() == GT_LIST);
-
-        GenTreeArgList* phiArgs = phiFunc->gtOp.gtOp1->AsArgList();
-
-        // A GT_PHI node should have more than one argument.
-        noway_assert(phiArgs->Rest() != nullptr);
-
-        GenTreeLclVarCommon* phiArg = phiArgs->Current()->AsLclVarCommon();
-        phiArgs                     = phiArgs->Rest();
-
-        phiAppVNP.SetBoth(vnStore->VNForIntCon(phiArg->gtSsaNum));
-        bool allSameLib  = true;
-        bool allSameCons = true;
-        sameVNPair       = lvaTable[phiArg->gtLclNum].GetPerSsaData(phiArg->gtSsaNum)->m_vnPair;
-        if (!sameVNPair.BothDefined())
+        for (GenTreePhi::Use& use : asg->AsOp()->gtGetOp2()->AsPhi()->Uses())
         {
-            allSameLib  = false;
-            allSameCons = false;
-        }
-        while (phiArgs != nullptr)
-        {
-            phiArg = phiArgs->Current()->AsLclVarCommon();
-            // Set the VN of the phi arg.
-            phiArg->gtVNPair = lvaTable[phiArg->gtLclNum].GetPerSsaData(phiArg->gtSsaNum)->m_vnPair;
-            if (phiArg->gtVNPair.BothDefined())
+            GenTreePhiArg* phiArg         = use.GetNode()->AsPhiArg();
+            ValueNum       phiArgSsaNumVN = vnStore->VNForIntCon(phiArg->GetSsaNum());
+            ValueNumPair   phiArgVNP      = lvaGetDesc(phiArg)->GetPerSsaData(phiArg->GetSsaNum())->m_vnPair;
+
+            phiArg->gtVNPair = phiArgVNP;
+
+            if (phiVNP.GetLiberal() == ValueNumStore::NoVN)
             {
-                if (phiArg->gtVNPair.GetLiberal() != sameVNPair.GetLiberal())
-                {
-                    allSameLib = false;
-                }
-                if (phiArg->gtVNPair.GetConservative() != sameVNPair.GetConservative())
-                {
-                    allSameCons = false;
-                }
+                // This is the first PHI argument
+                phiVNP  = ValueNumPair(phiArgSsaNumVN, phiArgSsaNumVN);
+                sameVNP = phiArgVNP;
             }
             else
             {
-                allSameLib  = false;
-                allSameCons = false;
+                phiVNP = vnStore->VNPairForFunc(newSsaDef->TypeGet(), VNF_Phi,
+                                                ValueNumPair(phiArgSsaNumVN, phiArgSsaNumVN), phiVNP);
+
+                if ((sameVNP.GetLiberal() != phiArgVNP.GetLiberal()) ||
+                    (sameVNP.GetConservative() != phiArgVNP.GetConservative()))
+                {
+                    // If this argument's VNs are different from "same" then change "same" to NoVN.
+                    // Note that this means that if any argument's VN is NoVN then the final result
+                    // will also be NoVN, which is what we want.
+                    sameVNP.SetBoth(ValueNumStore::NoVN);
+                }
             }
-            ValueNumPair phiArgSsaVNP;
-            phiArgSsaVNP.SetBoth(vnStore->VNForIntCon(phiArg->gtSsaNum));
-            phiAppVNP = vnStore->VNPairForFunc(newSsaVar->TypeGet(), VNF_Phi, phiArgSsaVNP, phiAppVNP);
-            phiArgs   = phiArgs->Rest();
         }
 
-        ValueNumPair newVNPair;
-        if (allSameLib)
-        {
-            newVNPair.SetLiberal(sameVNPair.GetLiberal());
-        }
-        else
-        {
-            newVNPair.SetLiberal(phiAppVNP.GetLiberal());
-        }
-        if (allSameCons)
-        {
-            newVNPair.SetConservative(sameVNPair.GetConservative());
-        }
-        else
-        {
-            newVNPair.SetConservative(phiAppVNP.GetConservative());
-        }
-
-        LclSsaVarDsc* newSsaVarDsc = lvaTable[newSsaVar->gtLclNum].GetPerSsaData(newSsaVar->GetSsaNum());
-        // If all the args of the phi had the same value(s, liberal and conservative), then there wasn't really
-        // a reason to have the phi -- just pass on that value.
-        if (allSameLib && allSameCons)
-        {
-            newSsaVarDsc->m_vnPair = newVNPair;
 #ifdef DEBUG
-            if (verbose)
-            {
-                printf("In SSA definition, incoming phi args all same, set VN of local %d/%d to ",
-                       newSsaVar->GetLclNum(), newSsaVar->GetSsaNum());
-                vnpPrint(newVNPair, 1);
-                printf(".\n");
-            }
-#endif // DEBUG
+        // There should be at least to 2 PHI arguments so phiVN's VNs should always be VNF_Phi functions.
+        VNFuncApp phiFunc;
+        assert(vnStore->GetVNFunc(phiVNP.GetLiberal(), &phiFunc) && (phiFunc.m_func == VNF_Phi));
+        assert(vnStore->GetVNFunc(phiVNP.GetConservative(), &phiFunc) && (phiFunc.m_func == VNF_Phi));
+#endif
+
+        ValueNumPair newSsaDefVNP;
+
+        if (sameVNP.BothDefined())
+        {
+            // If all the args of the phi had the same value(s, liberal and conservative), then there wasn't really
+            // a reason to have the phi -- just pass on that value.
+            newSsaDefVNP = sameVNP;
         }
         else
         {
             // They were not the same; we need to create a phi definition.
-            ValueNumPair lclNumVNP;
-            lclNumVNP.SetBoth(ValueNum(newSsaVar->GetLclNum()));
-            ValueNumPair ssaNumVNP;
-            ssaNumVNP.SetBoth(ValueNum(newSsaVar->GetSsaNum()));
-            ValueNumPair vnPhiDef =
-                vnStore->VNPairForFunc(newSsaVar->TypeGet(), VNF_PhiDef, lclNumVNP, ssaNumVNP, phiAppVNP);
-            newSsaVarDsc->m_vnPair = vnPhiDef;
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("SSA definition: set VN of local %d/%d to ", newSsaVar->GetLclNum(), newSsaVar->GetSsaNum());
-                vnpPrint(vnPhiDef, 1);
-                printf(".\n");
-            }
-#endif // DEBUG
+            ValueNum lclNumVN = ValueNum(newSsaDef->GetLclNum());
+            ValueNum ssaNumVN = ValueNum(newSsaDef->GetSsaNum());
+
+            newSsaDefVNP = vnStore->VNPairForFunc(newSsaDef->TypeGet(), VNF_PhiDef, ValueNumPair(lclNumVN, lclNumVN),
+                                                  ValueNumPair(ssaNumVN, ssaNumVN), phiVNP);
         }
+
+        LclSsaVarDsc* newSsaDefDsc = lvaGetDesc(newSsaDef)->GetPerSsaData(newSsaDef->GetSsaNum());
+        newSsaDefDsc->m_vnPair     = newSsaDefVNP;
+#ifdef DEBUG
+        if (verbose)
+        {
+            printf("SSA PHI definition: set VN of local %d/%d to ", newSsaDef->GetLclNum(), newSsaDef->GetSsaNum());
+            vnpPrint(newSsaDefVNP, 1);
+            printf(" %s.\n", sameVNP.BothDefined() ? "(all same)" : "");
+        }
+#endif // DEBUG
     }
 
     // Now do the same for each MemoryKind.
@@ -6157,7 +6116,7 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
     }
 
     // Now iterate over the remaining statements, and their trees.
-    for (GenTreeStmt* stmt = firstNonPhi; stmt != nullptr; stmt = stmt->getNextStmt())
+    for (; stmt != nullptr; stmt = stmt->getNextStmt())
     {
 #ifdef DEBUG
         compCurStmtNum++;
