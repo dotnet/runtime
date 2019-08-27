@@ -244,11 +244,18 @@ public class ArrayMarshal
     [DllImport("MarshalArrayLPArrayNative")]
     private static extern bool CStyle_Array_Bool_Out(
         [Out] bool[] actual, int cActual);
+
+    [DllImport("MarshalArrayLPArrayNative")]
+    private static extern int Get_Multidimensional_Array_Sum(int[,] array, int rows, int columns);
     #endregion
 
     #region Marshal ByVal
 
     private const int ARRAY_SIZE = 100;
+
+    private const int ROWS = 3;
+
+    private const int COLUMNS = 2;
 
     private static T[] InitArray<T>(int size)
     {
@@ -287,6 +294,20 @@ public class ArrayMarshal
             array[i].str = i.ToString();
         }
 
+        return array;
+    }
+
+    private static int[,] InitMultidimensionalBlittableArray(int rows, int columns)
+    {
+        int[,] array = new int[rows, columns];
+
+        for (int i = 0; i < array.GetLength(0); i++)
+        {
+            for (int j = 0; j < array.GetLength(1); j++)
+            {
+                array[i, j] = i * j;
+            }
+        }
         return array;
     }
 
@@ -619,6 +640,19 @@ public class ArrayMarshal
 
     #endregion
 
+    private static void TestMultidimensional()
+    {
+        Console.WriteLine("================== [Get_Multidimensional_Array_Sum] ============");
+        int[,] array = InitMultidimensionalBlittableArray(ROWS, COLUMNS);
+        int sum = 0;
+        foreach (int item in array)
+        {
+            sum += item;
+        }
+
+        Assert.AreEqual(sum, Get_Multidimensional_Array_Sum(array, ROWS, COLUMNS));
+    }
+
     public static int Main()
     {
         try
@@ -627,6 +661,7 @@ public class ArrayMarshal
             TestMarshalByVal_In();
             TestMarshalInOut_ByVal();
             TestMarshalOut_ByVal();
+            TestMultidimensional();
             
             Console.WriteLine("\nTest PASS.");
             return 100;
