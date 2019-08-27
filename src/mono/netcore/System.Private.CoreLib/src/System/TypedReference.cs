@@ -102,7 +102,7 @@ namespace System
 		[CLSCompliant (false)]
 		public unsafe static void SetTypedReference (TypedReference target, Object value)
 		{
-			throw new NotImplementedException ();
+			throw new NotSupportedException ();
 		}
 	}
 }
