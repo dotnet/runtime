@@ -25,6 +25,7 @@
 #include "mono/metadata/tabledefs.h"
 #include "mono/metadata/tokentype.h"
 #include "mono/metadata/verify-internals.h"
+#include "mono/metadata/icall-decl.h"
 #include "mono/utils/checked-build.h"
 
 #define CHECK_ADD4_OVERFLOW_UN(a, b) ((guint32)(0xFFFFFFFFU) - (guint32)(b) < (guint32)(a))
@@ -1014,7 +1015,7 @@ create_custom_attr_into_array (MonoImage *image, MonoMethod *method, const gucha
  * NAMED_ARG_INFO will contain information about the named arguments.
  */
 void
-mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *method, const guchar *data, guint32 len, MonoArray **typed_args_out, MonoArray **named_args_out, CattrNamedArg **named_arg_info, MonoError *error)
+mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *method, const guchar *data, guint32 len, MonoArrayHandleOut typed_args_h, MonoArrayHandleOut named_args_h, CattrNamedArg **named_arg_info, MonoError *error)
 {
 	MonoArray *typed_args, *named_args;
 	MonoClass *attrklass;
@@ -1025,8 +1026,8 @@ mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *meth
 	guint32 i, j, num_named;
 	CattrNamedArg *arginfo = NULL;
 
-	*typed_args_out = NULL;
-	*named_args_out = NULL;
+	MONO_HANDLE_ASSIGN_RAW (typed_args_h, NULL);
+	MONO_HANDLE_ASSIGN_RAW (named_args_h, NULL);
 	*named_arg_info = NULL;
 
 	typed_args = NULL;
@@ -1051,6 +1052,7 @@ mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *meth
 	 */
 	typed_args = mono_array_new_checked (domain, mono_get_object_class (), mono_method_signature_internal (method)->param_count, error);
 	return_if_nok (error);
+	MONO_HANDLE_ASSIGN_RAW (typed_args_h, typed_args);
 
 	for (i = 0; i < mono_method_signature_internal (method)->param_count; ++i) {
 		MonoObject *obj;
@@ -1068,6 +1070,7 @@ mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *meth
 	num_named = read16 (named);
 	named_args = mono_array_new_checked (domain, mono_get_object_class (), num_named, error);
 	return_if_nok (error);
+	MONO_HANDLE_ASSIGN_RAW (named_args_h, named_args);
 	named += 2;
 	attrklass = method->klass;
 
@@ -1159,8 +1162,6 @@ mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *meth
 		g_free (name);
 	}
 
-	*typed_args_out = typed_args;
-	*named_args_out = named_args;
 	return;
 fail:
 	mono_error_set_generic_error (error, "System.Reflection", "CustomAttributeFormatException", "Binary format of the specified custom attribute was invalid.");
@@ -1322,26 +1323,30 @@ fail:
 	*named_arg_info = NULL;
 }
 
-static gboolean
-reflection_resolve_custom_attribute_data (MonoReflectionMethod *ref_method, MonoReflectionAssembly *assembly, gpointer data, guint32 len, MonoArray **ctor_args, MonoArray **named_args_out, MonoError *error)
+void
+ves_icall_System_Reflection_CustomAttributeData_ResolveArgumentsInternal (MonoReflectionMethodHandle ref_method_h, MonoReflectionAssemblyHandle assembly_h,
+																		  gpointer data, guint32 len,
+																		  MonoArrayHandleOut ctor_args_h, MonoArrayHandleOut named_args_h,
+																		  MonoError *error)
 {
 	MonoDomain *domain;
 	MonoArray *typed_args, *named_args;
 	MonoImage *image;
 	MonoMethod *method;
 	CattrNamedArg *arginfo = NULL;
+	MonoReflectionMethod *ref_method = MONO_HANDLE_RAW (ref_method_h);
+	MonoReflectionAssembly *assembly = MONO_HANDLE_RAW (assembly_h);
+	MonoMethodSignature *sig;
+	MonoObjectHandle obj_h, namedarg_h, typedarg_h, minfo_h;
 	int i;
 
-	error_init (error);
-
-	*ctor_args = NULL;
-	*named_args_out = NULL;
-
-	typed_args = NULL;
-	named_args = NULL;
-
 	if (len == 0)
-		return TRUE;
+		return;
+
+	obj_h = MONO_HANDLE_NEW (MonoObject, NULL);
+	namedarg_h = MONO_HANDLE_NEW (MonoObject, NULL);
+	typedarg_h = MONO_HANDLE_NEW (MonoObject, NULL);
+	minfo_h = MONO_HANDLE_NEW (MonoObject, NULL);
 
 	image = assembly->assembly->image;
 	method = ref_method->method;
@@ -1352,30 +1357,38 @@ reflection_resolve_custom_attribute_data (MonoReflectionMethod *ref_method, Mono
 		goto leave;
 	}
 
-	mono_reflection_create_custom_attr_data_args (image, method, (const guchar *)data, len, &typed_args, &named_args, &arginfo, error);
+	// FIXME: Handles
+	mono_reflection_create_custom_attr_data_args (image, method, (const guchar *)data, len, ctor_args_h, named_args_h, &arginfo, error);
 	goto_if_nok (error, leave);
+	typed_args = MONO_HANDLE_RAW (ctor_args_h);
+	named_args = MONO_HANDLE_RAW (named_args_h);
 
 	if (!typed_args || !named_args)
 		goto leave;
 
-	for (i = 0; i < mono_method_signature_internal (method)->param_count; ++i) {
-		MonoObject *obj = mono_array_get_internal (typed_args, MonoObject*, i);
+	sig = mono_method_signature_internal (method);
+	for (i = 0; i < sig->param_count; ++i) {
+		MonoObject *obj;
 		MonoObject *typedarg;
 		MonoType *t;
+
+		obj = mono_array_get_internal (typed_args, MonoObject*, i);
+		MONO_HANDLE_ASSIGN_RAW (obj_h, obj);
 
 		t = mono_method_signature_internal (method)->params [i];
 		if (t->type == MONO_TYPE_OBJECT && obj)
 			t = m_class_get_byval_arg (obj->vtable->klass);
 		typedarg = create_cattr_typed_arg (t, obj, error);
-
 		goto_if_nok (error, leave);
 		mono_array_setref_internal (typed_args, i, typedarg);
 	}
 
 	for (i = 0; i < mono_array_length_internal (named_args); ++i) {
-		MonoObject *obj = mono_array_get_internal (named_args, MonoObject*, i);
+		MonoObject *obj;
 		MonoObject *namedarg, *minfo;
 
+		obj = mono_array_get_internal (named_args, MonoObject*, i);
+		MONO_HANDLE_ASSIGN_RAW (obj_h, obj);
 		if (arginfo [i].prop) {
 			minfo = (MonoObject*)mono_property_get_object_checked (domain, arginfo [i].prop->parent, arginfo [i].prop, error);
 			if (!minfo)
@@ -1384,33 +1397,25 @@ reflection_resolve_custom_attribute_data (MonoReflectionMethod *ref_method, Mono
 			minfo = (MonoObject*)mono_field_get_object_checked (domain, NULL, arginfo [i].field, error);
 			goto_if_nok (error, leave);
 		}
+		MONO_HANDLE_ASSIGN_RAW (minfo_h, minfo);
 
 #if ENABLE_NETCORE
 		namedarg = create_cattr_named_arg (minfo, obj, error);
+		MONO_HANDLE_ASSIGN_RAW (namedarg_h, namedarg);
 #else
 		MonoObject* typedarg = create_cattr_typed_arg (arginfo [i].type, obj, error);
+		MONO_HANDLE_ASSIGN_RAW (typedarg_h, typedarg);
 		goto_if_nok (error, leave);
 		namedarg = create_cattr_named_arg (minfo, typedarg, error);
+		MONO_HANDLE_ASSIGN_RAW (namedarg_h, namedarg);
 #endif
 		goto_if_nok (error, leave);
 
 		mono_array_setref_internal (named_args, i, namedarg);
 	}
 
-	*ctor_args = typed_args;
-	*named_args_out = named_args;
-
 leave:
 	g_free (arginfo);
-	return is_ok (error);
-}
-
-void
-ves_icall_System_Reflection_CustomAttributeData_ResolveArgumentsInternal (MonoReflectionMethod *ref_method, MonoReflectionAssembly *assembly, gpointer data, guint32 len, MonoArray **ctor_args, MonoArray **named_args)
-{
-	ERROR_DECL (error);
-	(void) reflection_resolve_custom_attribute_data (ref_method, assembly, data, len, ctor_args, named_args, error);
-	mono_error_set_pending_exception (error);
 }
 
 static MonoClass*

@@ -1710,7 +1710,6 @@ ves_icall_SymbolType_create_unmanaged_type (MonoReflectionType *type);
 
 void        mono_reflection_register_with_runtime (MonoReflectionType *type);
 
-void        mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *method, const guchar *data, guint32 len, MonoArray **typed_args_out, MonoArray **named_args_out, CattrNamedArg **named_arg_info, MonoError *error);
 MonoMethodSignature * mono_reflection_lookup_signature (MonoImage *image, MonoMethod *method, guint32 token, MonoError *error);
 
 MonoArrayHandle mono_param_get_objects_internal  (MonoDomain *domain, MonoMethod *method, MonoClass *refclass, MonoError *error);
@@ -1734,10 +1733,6 @@ mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, gboolean 
 
 gboolean
 mono_reflection_call_is_assignable_to (MonoClass *klass, MonoClass *oklass, MonoError *error);
-
-ICALL_EXPORT
-void
-ves_icall_System_Reflection_CustomAttributeData_ResolveArgumentsInternal (MonoReflectionMethod *method, MonoReflectionAssembly *assembly, gpointer data, guint32 data_length, MonoArray **ctor_args, MonoArray ** named_args);
 
 gboolean
 mono_image_build_metadata (MonoReflectionModuleBuilder *module, MonoError *error);
