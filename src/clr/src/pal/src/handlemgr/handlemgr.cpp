@@ -82,8 +82,6 @@ PAL_ERROR
 CSimpleHandleManager::AllocateHandle(
     CPalThread *pThread,
     IPalObject *pObject,
-    DWORD dwAccessRights,
-    bool fInheritable,
     HANDLE *ph
     )
 {
@@ -158,8 +156,6 @@ CSimpleHandleManager::AllocateHandle(
     
     pObject->AddReference();
     m_rghteHandleTable[dwIndex].u.pObject = pObject;
-    m_rghteHandleTable[dwIndex].dwAccessRights = dwAccessRights;
-    m_rghteHandleTable[dwIndex].fInheritable = fInheritable;
     m_rghteHandleTable[dwIndex].fEntryAllocated = TRUE;
 
 AllocateHandleExit:
@@ -173,7 +169,6 @@ PAL_ERROR
 CSimpleHandleManager::GetObjectFromHandle(
     CPalThread *pThread,
     HANDLE h,
-    DWORD *pdwRightsGranted,
     IPalObject **ppObject
     )
 {
@@ -191,7 +186,6 @@ CSimpleHandleManager::GetObjectFromHandle(
     
     hi = HandleToHandleIndex(h);
 
-    *pdwRightsGranted = m_rghteHandleTable[hi].dwAccessRights;
     *ppObject = m_rghteHandleTable[hi].u.pObject;
     (*ppObject)->AddReference();
     

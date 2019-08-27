@@ -263,7 +263,6 @@ THREADGetThreadProcessId(
     palError = InternalGetThreadDataFromHandle(
         pThread,
         hThread,
-        0,
         &pTargetThread,
         &pobjThread
         );
@@ -1055,7 +1054,6 @@ CorUnix::InternalGetThreadPriority(
     palError = InternalGetThreadDataFromHandle(
         pThread,
         hThread,
-        0,  // THREAD_QUERY_INFORMATION
         &pTargetThread,
         &pobjThread
         );
@@ -1141,7 +1139,6 @@ CorUnix::InternalSetThreadPriority(
     palError = InternalGetThreadDataFromHandle(
         pThread,
         hTargetThread,
-        0, // THREAD_SET_INFORMATION
         &pTargetThread,
         &pobjThread
         );
@@ -1324,7 +1321,6 @@ CorUnix::GetThreadTimesInternal(
     palError = InternalGetThreadDataFromHandle(
         pthrCurrent,
         hThread,
-        0,
         &pthrTarget,
         &pobjThread
         );
@@ -1394,7 +1390,6 @@ CorUnix::GetThreadTimesInternal(
     palError = InternalGetThreadDataFromHandle(
         pThread,
         hThread,
-        0, // THREAD_GET_CONTEXT
         &pTargetThread,
         &pobjThread
         );
@@ -1473,7 +1468,6 @@ CorUnix::GetThreadTimesInternal(
     palError = InternalGetThreadDataFromHandle(
         pThread,
         hThread,
-        0, // THREAD_GET_CONTEXT
         &pTargetThread,
         &pobjThread
         );
@@ -1876,7 +1870,6 @@ CorUnix::CreateThreadObject(
         pThread,
         pobjThread,
         &aotThread,
-        0, //THREAD_ALL_ACCESS,
         &hThread,
         &pobjRegisteredThread
         );
@@ -2006,7 +1999,6 @@ CorUnix::InternalCreateDummyThread(
         pThread,
         pobjThread,
         &aotThread,
-        0, // THREAD_ALL_ACCESS
         phThread,
         &pobjThreadRegistered
         );
@@ -2058,7 +2050,6 @@ PAL_ERROR
 CorUnix::InternalGetThreadDataFromHandle(
     CPalThread *pThread,
     HANDLE hThread,
-    DWORD dwRightsRequired,
     CPalThread **ppTargetThread,
     IPalObject **ppobjThread
     )
@@ -2080,7 +2071,6 @@ CorUnix::InternalGetThreadDataFromHandle(
             pThread,
             hThread,
             &aotThread,
-            dwRightsRequired,
             &pobj
             );
 
@@ -2715,7 +2705,6 @@ PAL_InjectActivation(
     PAL_ERROR palError = InternalGetThreadDataFromHandle(
         pCurrentThread,
         hThread,
-        0,
         &pTargetThread,
         &pobjThread
         );

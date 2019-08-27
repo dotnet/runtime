@@ -1018,7 +1018,6 @@ namespace CorUnix
             CPalThread *pThread,                // IN, OPTIONAL
             IPalObject *pObjectToRegister,
             CAllowedObjectTypes *pAllowedTypes,
-            DWORD dwRightsRequested,
             HANDLE *pHandle,                    // OUT
             IPalObject **ppRegisteredObject     // OUT
             ) = 0;
@@ -1050,9 +1049,6 @@ namespace CorUnix
         ObtainHandleForObject(
             CPalThread *pThread,                // IN, OPTIONAL
             IPalObject *pObject,
-            DWORD dwRightsRequested,
-            bool fInheritHandle,
-            IPalProcess *pProcessForHandle,     // IN, OPTIONAL
             HANDLE *pNewHandle                  // OUT
             ) = 0;
 
@@ -1083,7 +1079,6 @@ namespace CorUnix
             CPalThread *pThread,                // IN, OPTIONAL
             HANDLE hHandleToReference,
             CAllowedObjectTypes *pAllowedTypes,
-            DWORD dwRightsRequired,
             IPalObject **ppObject               // OUT
             ) = 0;
 
@@ -1098,25 +1093,8 @@ namespace CorUnix
             HANDLE rghHandlesToReference[],
             DWORD dwHandleCount,
             CAllowedObjectTypes *pAllowedTypes,
-            DWORD dwRightsRequired,
             IPalObject *rgpObjects[]            // OUT
             ) = 0;
-
-        //
-        // This routine is for cross-process handle duplication.
-        //
-
-        virtual
-        PAL_ERROR
-        ReferenceObjectByForeignHandle(
-            CPalThread *pThread,                // IN, OPTIONAL
-            HANDLE hForeignHandle,
-            IPalProcess *pForeignProcess,
-            CAllowedObjectTypes *pAllowedTypes,
-            DWORD dwRightsRequired,
-            IPalObject **ppObject               // OUT
-            ) = 0;
-        
     };
 
     extern IPalObjectManager *g_pObjectManager;

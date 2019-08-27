@@ -730,7 +730,6 @@ CorUnix::InternalCreateFile(
 
     pLocalData->inheritable = inheritable;
     pLocalData->unix_fd = filed;
-    pLocalData->dwDesiredAccess = dwDesiredAccess;
     pLocalData->open_flags = open_flags;
     pLocalData->open_flags_deviceaccessonly = (dwDesiredAccess == 0);
 
@@ -745,7 +744,6 @@ CorUnix::InternalCreateFile(
         pThread,
         pFileObject,
         &aotFile, 
-        dwDesiredAccess,
         phFile,
         &pRegisteredFile
         );
@@ -1841,7 +1839,6 @@ CorUnix::InternalWriteFile(
         pThread,
         hFile,
         &aotFile,
-        GENERIC_WRITE,
         &pFileObject
         );
 
@@ -2022,7 +2019,6 @@ CorUnix::InternalReadFile(
         pThread,
         hFile,
         &aotFile,
-        GENERIC_READ,
         &pFileObject
         );
 
@@ -2208,7 +2204,6 @@ CorUnix::InternalSetEndOfFile(
         pThread,
         hFile,
         &aotFile,
-        GENERIC_WRITE,
         &pFileObject
         );
 
@@ -2520,7 +2515,6 @@ CorUnix::InternalSetFilePointer(
         pThread,
         hFile,
         &aotFile,
-        GENERIC_READ,
         &pFileObject
         );
 
@@ -2709,7 +2703,6 @@ CorUnix::InternalGetFileSize(
         pThread,
         hFile,
         &aotFile,
-        GENERIC_READ,
         &pFileObject
         );
 
@@ -2875,7 +2868,6 @@ CorUnix::InternalFlushFileBuffers(
         pThread,
         hFile,
         &aotFile,
-        GENERIC_WRITE,
         &pFileObject
         );
 
@@ -3862,7 +3854,6 @@ CorUnix::InternalCreatePipe(
         pThread,
         pReadFileObject,
         &aotFile,
-        GENERIC_READ,
         phReadPipe,
         &pReadRegisteredFile
         );
@@ -3884,7 +3875,6 @@ CorUnix::InternalCreatePipe(
         pThread,
         pWriteFileObject,
         &aotFile,
-        GENERIC_WRITE,
         phWritePipe,
         &pWriteRegisteredFile
         );
@@ -4038,7 +4028,6 @@ static HANDLE init_std_handle(HANDLE * pStd, FILE *stream)
 
     pLocalData->inheritable = TRUE;
     pLocalData->unix_fd = new_fd;
-    pLocalData->dwDesiredAccess = 0;
     pLocalData->open_flags = 0;
     pLocalData->open_flags_deviceaccessonly = FALSE;
 
@@ -4053,7 +4042,6 @@ static HANDLE init_std_handle(HANDLE * pStd, FILE *stream)
         pThread,
         pFileObject,
         &aotFile, 
-        0,
         &hFile,
         &pRegisteredFile
         );
@@ -4225,7 +4213,6 @@ GetFileInformationByHandle(
         pThread,
         hFile,
         &aotFile,
-        GENERIC_READ,
         &pFileObject
         );
 
