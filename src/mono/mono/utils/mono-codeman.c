@@ -71,29 +71,29 @@ static const MonoCodeManagerCallbacks *code_manager_callbacks;
 
 #define MONO_PROT_RWX (MONO_MMAP_READ|MONO_MMAP_WRITE|MONO_MMAP_EXEC|MONO_MMAP_JIT)
 
-typedef struct _CodeChunck CodeChunk;
+typedef struct _CodeChunk CodeChunk;
 
 enum {
 	CODE_FLAG_MMAP,
 	CODE_FLAG_MALLOC
 };
 
-struct _CodeChunck {
+struct _CodeChunk {
 	char *data;
+	CodeChunk *next;
 	int pos;
 	int size;
-	CodeChunk *next;
-	unsigned int flags: 8;
+	unsigned int reserved: 8;
 	/* this number of bytes is available to resolve addresses far in memory */
 	unsigned int bsize: 24;
 };
 
 struct _MonoCodeManager {
-	int dynamic;
-	int read_only;
 	CodeChunk *current;
 	CodeChunk *full;
 	CodeChunk *last;
+	int dynamic : 1;
+	int read_only : 1;
 };
 
 #define ALIGN_INT(val,alignment) (((val) + (alignment - 1)) & ~(alignment - 1))
@@ -192,7 +192,7 @@ mono_code_manager_install_callbacks (const MonoCodeManagerCallbacks* callbacks)
 
 static
 int
-mono_codeman_get_allocation_type (MonoCodeManager const *cman)
+mono_codeman_allocation_type (MonoCodeManager const *cman)
 {
 #ifdef FORCE_MALLOC
 	return CODE_FLAG_MALLOC;
@@ -216,7 +216,7 @@ mono_code_manager_new_internal (gboolean dynamic)
 #if _WIN32
 		// It would seem the heap should live and die with the codemanager,
 		// but that was failing, so try a global.
-		if (mono_codeman_get_allocation_type (cman) == CODE_FLAG_MALLOC && !mono_code_manager_heap) {
+		if (mono_codeman_allocation_type (cman) == CODE_FLAG_MALLOC && !mono_code_manager_heap) {
 			// This heap is leaked, similar to dlmalloc state.
 			void* const heap = HeapCreate (HEAP_CREATE_ENABLE_EXECUTE, 0, 0);
 			if (heap && mono_atomic_cas_ptr (&mono_code_manager_heap, heap, NULL))
@@ -278,6 +278,8 @@ mono_codeman_malloc (gsize n)
 static void
 mono_codeman_free (gpointer p)
 {
+	if (!p)
+		return;
 #if _WIN32
 	void* const heap = mono_code_manager_heap;
 	g_assert (heap);
@@ -288,7 +290,7 @@ mono_codeman_free (gpointer p)
 }
 
 static void
-free_chunklist (CodeChunk *chunk)
+free_chunklist (MonoCodeManager *cman, CodeChunk *chunk)
 {
 	CodeChunk *dead;
 	
@@ -301,16 +303,21 @@ free_chunklist (CodeChunk *chunk)
 #define valgrind_unregister(x)
 #endif
 
+	if (!chunk)
+		return;
+
+	const int flags = mono_codeman_allocation_type (cman);
+
 	for (; chunk; ) {
 		dead = chunk;
 		MONO_PROFILER_RAISE (jit_chunk_destroyed, ((mono_byte *) dead->data));
 		if (code_manager_callbacks)
 			code_manager_callbacks->chunk_destroy (dead->data);
 		chunk = chunk->next;
-		if (dead->flags == CODE_FLAG_MMAP) {
+		if (flags == CODE_FLAG_MMAP) {
 			codechunk_vfree (dead->data, dead->size);
 			/* valgrind_unregister(dead->data); */
-		} else if (dead->flags == CODE_FLAG_MALLOC) {
+		} else if (flags == CODE_FLAG_MALLOC) {
 			mono_codeman_free (dead->data);
 		}
 		code_memory_used -= dead->size;
@@ -328,8 +335,8 @@ mono_code_manager_destroy (MonoCodeManager *cman)
 {
 	if (!cman)
 		return;
-	free_chunklist (cman->full);
-	free_chunklist (cman->current);
+	free_chunklist (cman, cman->full);
+	free_chunklist (cman, cman->current);
 	g_free (cman);
 }
 
@@ -390,7 +397,7 @@ mono_code_manager_foreach (MonoCodeManager *cman, MonoCodeManagerFunc func, void
 	}
 }
 
-/* BIND_ROOM is the divisor for the chunck of code size dedicated
+/* BIND_ROOM is the divisor for the chunk of code size dedicated
  * to binding branches (branches not reachable with the immediate displacement)
  * bind_size = size/BIND_ROOM;
  * we should reduce it and make MIN_PAGES bigger for such systems
@@ -411,7 +418,7 @@ new_codechunk (MonoCodeManager *cman, int size)
 	CodeChunk *chunk;
 	void *ptr;
 
-	const int flags = mono_codeman_get_allocation_type (cman);
+	const int flags = mono_codeman_allocation_type (cman);
 	const int pagesize = mono_pagesize ();
 	const int valloc_granule = mono_valloc_granule ();
 
@@ -484,7 +491,7 @@ new_codechunk (MonoCodeManager *cman, int size)
 	chunk->next = NULL;
 	chunk->size = chunk_size;
 	chunk->data = (char *) ptr;
-	chunk->flags = flags;
+	chunk->reserved = 0;
 	chunk->pos = bsize;
 	chunk->bsize = bsize;
 	if (code_manager_callbacks)
