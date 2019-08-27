@@ -883,11 +883,16 @@ gctest: mono gc-test.exe
 	MONO_DEBUG_OPTIONS=clear-nursery-at-gc $(MINI_RUNTIME) --regression gc-test.exe
 
 LLVM_AOT_RUNTIME_OPTS=$(if $(LLVM),--llvm,)
+if AMD64
+LLVM_AOT_COMPILER_OPTS=$(if $(LLVM),"=llvmllc=-mcpu=generic -mattr=+sse3",)
+else
+LLVM_AOT_COMPILER_OPTS=
+endif
 GSHAREDVT_RUNTIME_OPTS=$(if $(GSHAREDVT),-O=gsharedvt,)
 
 aotcheck: mono $(regtests)
 	rm -rf *.exe.so *.exe.dylib *.exe.dylib.dSYM
-	$(MINI_RUNTIME) $(LLVM_AOT_RUNTIME_OPTS) --aot $(regtests) || exit 1
+	$(MINI_RUNTIME) $(LLVM_AOT_RUNTIME_OPTS) --aot$(LLVM_AOT_COMPILER_OPTS) $(regtests) || exit 1
 	for i in $(regtests); do $(RUNTIME_AOTCHECK) --regression $$i || exit 1; done
 	rm -rf *.exe.so *.exe.dylib *.exe.dylib.dSYM
 
