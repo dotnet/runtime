@@ -192,7 +192,7 @@ static bool ConfigureTerminal(bool signalForBreak, bool forChild, uint8_t minCha
         if (g_currentTermios.c_lflag == termios.c_lflag &&
             g_currentTermios.c_iflag == termios.c_iflag &&
             g_currentTermios.c_cc[VMIN] == termios.c_cc[VMIN] &&
-            g_currentTermios.c_cc[VMIN] == termios.c_cc[VMIN])
+            g_currentTermios.c_cc[VTIME] == termios.c_cc[VTIME])
         {
             return true;
         }
