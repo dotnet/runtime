@@ -7792,6 +7792,8 @@ buffer_add_cattrs (Buffer *buf, MonoDomain *domain, MonoImage *image, MonoClass 
 		return ERR_NONE;
 	}
 
+	SETUP_ICALL_FUNCTION;
+
 	for (i = 0; i < cinfo->num_attrs; ++i) {
 		if (!attr_klass || mono_class_has_parent (cinfo->attrs [i].ctor->klass, attr_klass))
 			nattrs ++;
