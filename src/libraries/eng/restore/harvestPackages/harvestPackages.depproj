@@ -1,47 +1,44 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project InitialTargets="AddPackageDownload" Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
 
-  <Import Project="harvestPackages.props" />
-
   <Import Project="$(RepoRoot)pkg/baseline/baseline.props" />
-
-  <!--
-    Custom target to update the stable versions. Ideally we would just run this target as part of the build but
-    currently the restore step happens in CLI which doesn't have matching dependencies for the package task. Currently
-    they have different versions of nuget libraries. We can look at fixing that in the future but for now this will need
-    to be manually run to update the harvestPackages.props file.
-  -->
-  <Target Name="UpdateToLatestStablePackages">
-    <ItemGroup>
-      <PackageReference>
-        <!-- Set version to highest version possible to ensure we get the highest stable package version -->
-        <Version>255.255.255</Version>
-      </PackageReference>
-    </ItemGroup>
-    <GetLastStablePackage
-        LatestPackages="@(PackageReference)"
-        PackageIndexes="$(PackageIndexFile)">
-        <Output TaskParameter="LastStablePackages" ItemName="_NewPackageReferences" />
-    </GetLastStablePackage>
-
-    <ItemGroup>
-      <_Lines Include="&lt;Project xmlns=&quot;http://schemas.microsoft.com/developer/msbuild/2003&quot;&gt;" />
-      <_Lines Include="&lt;!-- The versions can be updated by running UpdateToLatestStablePackages target in harvestPackages.depproj --&gt;" />
-      <_Lines Include="&lt;ItemGroup&gt;" />
-      <_Lines Include="&lt;PackageReference Include=&quot;%(_NewPackageReferences.Identity)&quot;&gt;&#13;&#10;  &lt;Version&gt;%(_NewPackageReferences.Version)&lt;/Version&gt;&#13;&#10;&lt;/PackageReference&gt;" />
-      <_Lines Include="&lt;/ItemGroup&gt;" />
-      <_Lines Include="&lt;/Project&gt;" />
-    </ItemGroup>
-
-    <WriteLinesToFile Lines="@(_Lines)" File="harvestPackages.props" Overwrite="true" />
-
-  </Target>
 
   <!-- only restore this project during the build, don't copy any of it's packages
        The sole purpose of this project is to download packages that can be examined
        for harvesting binaries & support. -->
   <Target Name="Build" DependsOnTargets="RestorePackages" />
+
+  <Target Name="AddPackageDownload">
+    <ItemGroup>
+      <_AllPkgProjs Include="$(RepoRoot)src/**/*.pkgproj" />
+    </ItemGroup>
+    <!-- Need separate ItemGroups so right metadata gets populated -->
+    <ItemGroup>
+      <_AllPkgProjsToPackageIdentity Include="@(_AllPkgProjs -> '%(Filename)')" />
+    </ItemGroup>
+
+    <GetLastStablePackage
+        LatestPackages="@(_AllPkgProjsToPackageIdentity)"
+        PackageIndexes="$(PackageIndexFile)"
+        DoNotAllowVersionsFromSameRelease="true">
+        <Output TaskParameter="LastStablePackages" ItemName="_PackageDownload" />
+    </GetLastStablePackage>
+
+    <!-- Allow to override package download and versions in case there is already a PackageDownload set -->
+    <ItemGroup>
+      <_OverridenPackageDownloads Include="@(_PackageDownload)" Condition="'@(PackageDownload)' == '@(_PackageDownload)' and %(Identity) != ''" />
+      <_PackageDownload Remove="@(_OverridenPackageDownloads)" />
+      <_PackageDownload Include="@(PackageDownload)" />
+
+      <PackageDownload Remove="@(PackageDownload)" />
+      <PackageDownload Include="@(_PackageDownload)" Condition="'%(_PackageDownload.IsImplicitlyDefined)' != 'true'" />
+      <!-- Add exact version to PackageDownload -->
+      <PackageDownload>
+        <Version>[%(Version)]</Version>
+      </PackageDownload>
+    </ItemGroup>
+  </Target>
 
 </Project>
