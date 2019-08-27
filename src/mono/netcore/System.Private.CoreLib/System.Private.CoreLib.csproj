@@ -97,6 +97,8 @@
 
   <!-- Assembly attributes -->
   <PropertyGroup>
+    <!-- SDK sets product to assembly but we want it to be our product name -->
+    <Product>Microsoft%AE .NET Core</Product>
     <AssemblyName>System.Private.CoreLib</AssemblyName>
     <AssemblyVersion>5.0.0.0</AssemblyVersion>
     <ExcludeAssemblyInfoPartialFile>true</ExcludeAssemblyInfoPartialFile>
