@@ -344,10 +344,10 @@ namespace System.Globalization
 
         ////////////////////////////////////////////////////////////////////////////
         //
-        // Add the text that is a date separator but is treated like ignroable symbol.
+        // Add the text that is a date separator but is treated like ignorable symbol.
         // E.g.
         // hu-HU has:
-        //      shrot date pattern: yyyy. MM. dd.;yyyy-MM-dd;yy-MM-dd
+        //      short date pattern: yyyy. MM. dd.;yyyy-MM-dd;yy-MM-dd
         //      long date pattern: yyyy. MMMM d.
         // Here, "." is the date separator (derived from short date pattern). However,
         // "." also appear at the end of long date pattern.  In this case, we just
@@ -604,7 +604,7 @@ namespace System.Globalization
         //-----------------------------------------------------------------------------
         // EqualStringArrays
         //      compares two string arrays and return true if all elements of the first
-        //      array equals to all elmentsof the second array.
+        //      array equals to all elements of the second array.
         //      otherwise it returns false.
         //-----------------------------------------------------------------------------
 
