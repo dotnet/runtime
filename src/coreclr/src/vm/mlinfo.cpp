@@ -2802,6 +2802,8 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 }
             }
 
+            m_args.na.m_pArrayMT = arrayTypeHnd.GetMethodTable();
+
             // Handle retrieving the information for the array type.
             IfFailGoto(HandleArrayElemType(&ParamInfo, thElement, asArray->GetRank(), mtype == ELEMENT_TYPE_SZARRAY, isParam, pAssembly), lFail);
             break;

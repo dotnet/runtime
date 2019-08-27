@@ -1111,3 +1111,16 @@ extern "C" DLL_EXPORT BOOL MarshalArrayOfStructAsLPArrayByRefOut(S2 **pActual, i
     }
     return breturn;
 }
+
+extern "C" DLL_EXPORT int Get_Multidimensional_Array_Sum(int* array, int rows, int columns)
+{
+    int sum = 0;
+    for(int i = 0; i < rows; ++i)
+    {
+        for (int j = 0; j < columns; ++j)
+        {
+            sum += array[i * columns + j];
+        }
+    }
+    return sum;
+}
