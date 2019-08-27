@@ -27,14 +27,14 @@ namespace Microsoft.VisualBasic.FileIO.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Supported on netfx")]
         public static void AllUsersApplicationDataFolderTest()
         {
-            Assert.Throws<PlatformNotSupportedException>(() => SpecialDirectories.AllUsersApplicationData);
+            Assert.Throws<System.IO.DirectoryNotFoundException>(() => SpecialDirectories.AllUsersApplicationData);
         }
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Supported on netfx")]
         public static void CurrentUserApplicationDataFolderTest()
         {
-            Assert.Throws<PlatformNotSupportedException>(() => SpecialDirectories.CurrentUserApplicationData);
+            Assert.Throws<System.IO.DirectoryNotFoundException>(() => SpecialDirectories.CurrentUserApplicationData);
         }
 
         [Fact]
