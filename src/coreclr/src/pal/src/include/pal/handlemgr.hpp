@@ -63,10 +63,7 @@ namespace CorUnix
                 IPalObject *pObject;
                 HANDLE_INDEX hiNextIndex;
             } u;
-            
-            DWORD dwAccessRights;
-            bool fInheritable;
-            
+
             bool fEntryAllocated;
         } HANDLE_TABLE_ENTRY;
 
@@ -118,8 +115,6 @@ namespace CorUnix
         AllocateHandle(
             CPalThread *pThread,
             IPalObject *pObject,
-            DWORD dwAccessRights,
-            bool fInheritable,
             HANDLE *ph
             );
 
@@ -131,7 +126,6 @@ namespace CorUnix
         GetObjectFromHandle(
             CPalThread *pThread,
             HANDLE h,
-            DWORD *pdwRightsGranted,
             IPalObject **ppObject
             );
 

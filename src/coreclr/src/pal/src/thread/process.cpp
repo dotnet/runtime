@@ -480,7 +480,6 @@ CreateProcessA(
         CommandLineW,
         lpProcessAttributes,
         lpThreadAttributes,
-        bInheritHandles,
         dwCreationFlags,
         lpEnvironment,
         CurrentDirectoryW,
@@ -551,7 +550,6 @@ CreateProcessW(
         lpCommandLine,
         lpProcessAttributes,
         lpThreadAttributes,
-        bInheritHandles,
         dwCreationFlags,
         lpEnvironment,
         lpCurrentDirectory,
@@ -588,7 +586,6 @@ PrepareStandardHandle(
         pThread,
         hFile,
         &aotFile,
-        0,
         &pobjFile
         );
 
@@ -663,7 +660,6 @@ CorUnix::InternalCreateProcess(
     LPWSTR lpCommandLine,
     LPSECURITY_ATTRIBUTES lpProcessAttributes,
     LPSECURITY_ATTRIBUTES lpThreadAttributes,
-    BOOL bInheritHandles,
     DWORD dwCreationFlags,
     LPVOID lpEnvironment,
     LPCWSTR lpCurrentDirectory,
@@ -897,7 +893,6 @@ CorUnix::InternalCreateProcess(
         pThread,
         pobjProcess,
         &aotProcess,
-        PROCESS_ALL_ACCESS,
         &hProcess,
         &pobjProcessRegistered
         );
@@ -2721,7 +2716,6 @@ OpenProcess(
         pThread,
         pobjProcess,
         &aotProcess,
-        dwDesiredAccess,
         &hProcess,
         &pobjProcessRegistered
         );
@@ -2896,7 +2890,6 @@ GetProcessModulesFromHandle(
             pThread,
             hProcess,
             &aotProcess,
-            0,
             &pobjProcess);
 
         if (NO_ERROR != palError)
@@ -3614,7 +3607,6 @@ PROCGetProcessIDFromHandle(
         pThread,
         hProcess,
         &aotProcess,
-        0,
         &pobjProcess
         );
 
@@ -3819,7 +3811,6 @@ CorUnix::CreateInitialProcessAndThreadObjects(
         pThread,
         pobjProcess,
         &aotProcess,
-        PROCESS_ALL_ACCESS,
         &hProcess,
         &g_pobjProcess
         );
@@ -4191,7 +4182,6 @@ PROCGetProcessStatus(
         pThread,
         hProcess,
         &aotProcess,
-        0,
         &pobjProcess
         );
 

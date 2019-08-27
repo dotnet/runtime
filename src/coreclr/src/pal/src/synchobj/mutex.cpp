@@ -343,7 +343,6 @@ CorUnix::InternalCreateMutex(
         pthr,
         pobjMutex,
         aot,
-        0, // should be MUTEX_ALL_ACCESS -- currently ignored (no Win32 security)
         &hMutex,
         &pobjRegisteredMutex
         );
@@ -471,7 +470,6 @@ CorUnix::InternalReleaseMutex(
         pthr,
         hMutex,
         &aotAnyMutex,
-        0, // should be MUTEX_MODIFY_STATE -- current ignored (no Win32 security)
         &pobjMutex
         );
 
@@ -574,7 +572,7 @@ OpenMutexA (
         goto OpenMutexAExit;
     }
 
-    palError = InternalOpenMutex(pthr, dwDesiredAccess, bInheritHandle, lpName, &hMutex);
+    palError = InternalOpenMutex(pthr, lpName, &hMutex);
 
 OpenMutexAExit:
     if (NO_ERROR != palError)
@@ -642,7 +640,7 @@ OpenMutexW(
         }
     }
 
-    palError = InternalOpenMutex(pthr, dwDesiredAccess, bInheritHandle, lpName == nullptr ? nullptr : utf8Name, &hMutex);
+    palError = InternalOpenMutex(pthr, lpName == nullptr ? nullptr : utf8Name, &hMutex);
 
 OpenMutexWExit:
     if (NO_ERROR != palError)
@@ -660,10 +658,6 @@ OpenMutexWExit:
 Function:
   InternalOpenMutex
 
-Note:
-  dwDesiredAccess is currently ignored (no Win32 object security support)
-  bInheritHandle is currently ignored (handles to mutexes are not inheritable)
-
 Parameters:
   pthr -- thread data for calling thread
   phEvent -- on success, receives the allocated mutex handle
@@ -674,8 +668,6 @@ Parameters:
 PAL_ERROR
 CorUnix::InternalOpenMutex(
     CPalThread *pthr,
-    DWORD dwDesiredAccess,
-    BOOL bInheritHandle,
     LPCSTR lpName,
     HANDLE *phMutex
     )
@@ -690,11 +682,9 @@ CorUnix::InternalOpenMutex(
     _ASSERTE(NULL != lpName);
     _ASSERTE(NULL != phMutex);
 
-    ENTRY("InternalOpenMutex(pthr=%p, dwDesiredAccess=%d, bInheritHandle=%d, "
+    ENTRY("InternalOpenMutex(pthr=%p, "
         "lpName=%p, phMutex=%p)\n",
         pthr,
-        dwDesiredAccess,
-        bInheritHandle,
         lpName,
         phMutex
         );
@@ -715,7 +705,6 @@ CorUnix::InternalOpenMutex(
         pthr,
         pobjMutex,
         &aotNamedMutex,
-        dwDesiredAccess,
         &hMutex,
         &pobjRegisteredMutex
         );
