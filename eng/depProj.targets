@@ -68,7 +68,7 @@ See the LICENSE file in the project root for more information.
           BeforeTargets="ResolvePackageAssets"
           Condition="'$(VSDesignTimeBuild)' != 'true'" />
 
-  <Target Name="CoreCompile">
+  <Target Name="CoreCompile" Condition="'@(PackageReference)' != '' Or '@(PackageDownload)' == ''">
 
     <Error Condition="'$(NuGetDeploySourceItem)' != 'ReferenceCopyLocalPaths' AND
                       '$(NuGetDeploySourceItem)' != 'Reference' AND
