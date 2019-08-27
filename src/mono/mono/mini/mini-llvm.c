@@ -7219,11 +7219,13 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = LLVMBuildCall (builder, get_intrins (ctx, INTRINS_CTPOP_I64), &lhs, 1, "");
 			break;
 		case OP_LZCNT32:
-			values [ins->dreg] = LLVMBuildCall (builder, get_intrins (ctx, INTRINS_CTLZ_I32), &lhs, 1, "");
+		case OP_LZCNT64: {
+			LLVMValueRef args [2];
+			args [0] = lhs;
+			args [1] = LLVMConstInt (LLVMInt1Type (), 1, FALSE);
+			values [ins->dreg] = LLVMBuildCall (builder, get_intrins (ctx, ins->opcode == OP_LZCNT32 ? INTRINS_CTLZ_I32 : INTRINS_CTLZ_I64), args, 2, "");
 			break;
-		case OP_LZCNT64:
-			values [ins->dreg] = LLVMBuildCall (builder, get_intrins (ctx, INTRINS_CTLZ_I64), &lhs, 1, "");
-			break;
+		}
 		case OP_CTTZ32:
 		case OP_CTTZ64: {
 			LLVMValueRef args [2];
@@ -8636,17 +8638,17 @@ add_intrinsic (LLVMModuleRef module, int id)
 	case INTRINS_EXPECT_I1:
 		AddFunc2 (module, name, LLVMInt1Type (), LLVMInt1Type (), LLVMInt1Type ());
 		break;
-	case INTRINS_CTLZ_I32:
 	case INTRINS_CTPOP_I32:
 		AddFunc1 (module, name, LLVMInt32Type (), LLVMInt32Type ());
 		break;
-	case INTRINS_CTLZ_I64:
 	case INTRINS_CTPOP_I64:
 		AddFunc1 (module, name, LLVMInt64Type (), LLVMInt64Type ());
 		break;
+	case INTRINS_CTLZ_I32:
 	case INTRINS_CTTZ_I32:
 		AddFunc2 (module, name, LLVMInt32Type (), LLVMInt32Type (), LLVMInt1Type ());
 		break;
+	case INTRINS_CTLZ_I64:
 	case INTRINS_CTTZ_I64:
 		AddFunc2 (module, name, LLVMInt64Type (), LLVMInt64Type (), LLVMInt1Type ());
 		break;
