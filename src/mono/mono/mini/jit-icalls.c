@@ -925,12 +925,12 @@ mono_fconv_u4_2 (double v)
 	return mono_fconv_u4 (v);
 }
 
-gint32
+guint32
 mono_rconv_u4 (float v)
 {
 	if (mono_isinf (v) || mono_isnan (v))
 		return 0;
-	return (gint32)v;
+	return (guint32) v;
 }
 #endif
 
