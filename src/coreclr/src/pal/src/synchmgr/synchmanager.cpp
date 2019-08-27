@@ -1502,7 +1502,6 @@ namespace CorUnix
             pSynchManager->m_dwWorkerThreadTid = (DWORD)osThreadId;
             palErr = InternalGetThreadDataFromHandle(pthrCurrent,
                                                      hWorkerThread,
-                                                     0,
                                                      &pSynchManager->m_pthrWorker,
                                                      &pSynchManager->m_pipoThread);
             if (NO_ERROR != palErr)

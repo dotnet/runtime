@@ -32,7 +32,6 @@ namespace CorUnix
         HANDLE hSource,
         HANDLE hTargetProcess,
         LPHANDLE phDuplicate,
-        DWORD dwDesiredAccess,
         BOOL bInheritHandle,
         DWORD dwOptions
         );

@@ -353,7 +353,6 @@ CorUnix::InternalCreateSemaphore(
         pthr,
         pobjSemaphore,
         &aotSempahore, 
-        0, // Should be SEMAPHORE_ALL_ACCESS; currently ignored (no Win32 security)
         phSemaphore,
         &pobjRegisteredSemaphore
         );
@@ -469,8 +468,7 @@ CorUnix::InternalReleaseSemaphore(
     palError = g_pObjectManager->ReferenceObjectByHandle(
         pthr,
         hSemaphore,
-        &aotSempahore, 
-        0, // Should be SEMAPHORE_MODIFY_STATE; currently ignored (no Win32 security)
+        &aotSempahore,
         &pobjSemaphore
         );
 

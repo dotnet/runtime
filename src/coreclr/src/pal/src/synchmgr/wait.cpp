@@ -323,7 +323,6 @@ QueueUserAPC(
     palErr = InternalGetThreadDataFromHandle(
         pCurrentThread,
         hThread,
-        0, // THREAD_SET_CONTEXT
         &pTargetThread,
         &pTargetThreadObject
         );
@@ -407,7 +406,6 @@ DWORD CorUnix::InternalWaitForMultipleObjectsEx(
                                                                      (VOID **)lpHandles, 
                                                                      nCount,
                                                                      &sg_aotWaitObject,
-                                                                     SYNCHRONIZE,
                                                                      ppIPalObjs);
     if (NO_ERROR != palErr)
     {
@@ -735,7 +733,6 @@ DWORD CorUnix::InternalSignalObjectAndWait(
             thread,
             hObjectToSignal,
             &sg_aotSignalableObject,
-            0, // should be MUTEX_MODIFY_STATE or equivalent for a signalable object, currently ignored (no Win32 security)
             &objectToSignal);
     if (palError != NO_ERROR)
     {
@@ -749,7 +746,6 @@ DWORD CorUnix::InternalSignalObjectAndWait(
             thread,
             hObjectToWaitOn,
             &sg_aotWaitObject,
-            SYNCHRONIZE,
             &objectToWaitOn);
     if (palError != NO_ERROR)
     {
