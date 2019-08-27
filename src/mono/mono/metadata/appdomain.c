@@ -97,8 +97,8 @@ static gboolean no_exec = FALSE;
 
 #ifdef ENABLE_NETCORE
 static int n_appctx_props;
-static char **appctx_keys;
-static char **appctx_values;
+static gunichar2 **appctx_keys;
+static gunichar2 **appctx_values;
 #endif
 
 static const char *
@@ -3336,12 +3336,12 @@ void
 mono_runtime_register_appctx_properties (int nprops, const char **keys,  const char **values)
 {
 	n_appctx_props = nprops;
-	appctx_keys = g_new0 (char*, nprops);
-	appctx_values = g_new0 (char*, nprops);
+	appctx_keys = g_new0 (gunichar2*, nprops);
+	appctx_values = g_new0 (gunichar2*, nprops);
 
 	for (int i = 0; i < nprops; ++i) {
-		appctx_keys [i] = g_strdup (keys [i]);
-		appctx_values [i] = g_strdup (values [i]);
+		appctx_keys [i] = g_utf8_to_utf16 (keys [i], strlen (keys [i]), NULL, NULL, NULL);
+		appctx_values [i] = g_utf8_to_utf16 (values [i], strlen (values [i]), NULL, NULL, NULL);
 	}
 }
 
