@@ -80,7 +80,6 @@ DuplicateHandle(
         hSourceHandle,
         hTargetProcessHandle,
         lpTargetHandle,
-        dwDesiredAccess,
         bInheritHandle,
         dwOptions
         );
@@ -102,7 +101,6 @@ CorUnix::InternalDuplicateHandle(
     HANDLE hSource,
     HANDLE hTargetProcess,
     LPHANDLE phDuplicate,
-    DWORD dwDesiredAccess,
     BOOL bInheritHandle,
     DWORD dwOptions
     )
@@ -198,7 +196,6 @@ CorUnix::InternalDuplicateHandle(
             pThread,
             hSource,
             &aotDuplicateHandle,
-            dwDesiredAccess,
             &pobjSource
             );
 
@@ -232,9 +229,6 @@ CorUnix::InternalDuplicateHandle(
     palError = g_pObjectManager->ObtainHandleForObject(
         pThread,
         pobjSource,
-        dwDesiredAccess,
-        bInheritHandle,
-        NULL,
         phDuplicate
         );
 

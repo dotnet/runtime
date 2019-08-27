@@ -38,8 +38,6 @@ namespace CorUnix
     {
     public:
         int  unix_fd;
-        DWORD dwDesiredAccess; /* Unix assumes files are always opened for reading.
-                                  In Windows we can open a file for writing only */
         int  open_flags;       /* stores Unix file creation flags */
         BOOL open_flags_deviceaccessonly;
         CHAR *unix_filename;

@@ -74,7 +74,6 @@ _open_osfhandle( INT_PTR osfhandle, int flags )
         pthrCurrent,
         reinterpret_cast<HANDLE>(osfhandle),
         &aotFile,
-        0,
         &pobjFile
         );
 

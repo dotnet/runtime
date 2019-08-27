@@ -572,7 +572,6 @@ CorUnix::InternalCreateFileMapping(
                 pThread,
                 hFile,
                 &aotFile,
-                GENERIC_READ,
                 &pFileObject
                 );
 
@@ -779,7 +778,6 @@ CorUnix::InternalCreateFileMapping(
         pThread,
         pMapping,
         &aotFileMapping, 
-        flProtect,          // TODO: is flProtect really an access right?
         phMapping,
         &pRegisteredMapping
         );
@@ -1115,7 +1113,6 @@ CorUnix::InternalMapViewOfFile(
         pThread,
         hFileMappingObject,
         &aotFileMapping,
-        dwDesiredAccess,
         &pMappingObject
         );
 
@@ -2248,7 +2245,6 @@ void * MAPMapPEFile(HANDLE hFile)
             pThread,
             hFile,
             &aotFile,
-            GENERIC_READ,
             &pFileObject
             );
     if (NO_ERROR != palError)
