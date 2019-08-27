@@ -104,7 +104,7 @@ jobs:
       timeoutInMinutes: 90
 
     ${{ if ne(parameters.testGroup, 'innerloop') }}:
-      timeoutInMinutes: 120
+      timeoutInMinutes: 160
 
     steps:
 
