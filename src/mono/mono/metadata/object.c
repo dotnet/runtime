@@ -9148,14 +9148,6 @@ mono_get_addr_from_ftnptr (gpointer descr)
 	return callbacks.get_addr_from_ftnptr (descr);
 }	
 
-gunichar2 *
-mono_string_chars_internal (MonoString *s)
-{
-	// MONO_REQ_GC_UNSAFE_MODE; //FIXME too much trouble for now
-
-	return s->chars;
-}
-
 /**
  * mono_string_chars:
  * \param s a \c MonoString
@@ -9165,14 +9157,6 @@ mono_unichar2*
 mono_string_chars (MonoString *s)
 {
 	MONO_EXTERNAL_ONLY (mono_unichar2*, mono_string_chars_internal (s));
-}
-
-int
-mono_string_length_internal (MonoString *s)
-{
-	MONO_REQ_GC_UNSAFE_MODE;
-
-	return s->length;
 }
 
 /**
