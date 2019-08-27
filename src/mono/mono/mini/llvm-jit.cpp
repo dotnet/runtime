@@ -465,6 +465,8 @@ mono_llvm_get_cpu_features (void)
 		if (llvm::sys::getHostCPUFeatures(HostFeatures)) {
 			if (HostFeatures ["popcnt"])
 				f |= MONO_CPU_X86_POPCNT;
+			if (HostFeatures ["lzcnt"])
+				f |= MONO_CPU_X86_LZCNT;
 			if (HostFeatures ["avx"])
 				f |= MONO_CPU_X86_AVX;
 			if (HostFeatures ["bmi"])

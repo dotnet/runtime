@@ -303,6 +303,8 @@ typedef enum {
 	INTRINS_EXPECT_I1,
 	INTRINS_CTPOP_I32,
 	INTRINS_CTPOP_I64,
+	INTRINS_CTLZ_I32,
+	INTRINS_CTLZ_I64,
 	INTRINS_CTTZ_I32,
 	INTRINS_CTTZ_I64,
 	INTRINS_PEXT_I32,
@@ -7216,6 +7218,12 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_POPCNT64:
 			values [ins->dreg] = LLVMBuildCall (builder, get_intrins (ctx, INTRINS_CTPOP_I64), &lhs, 1, "");
 			break;
+		case OP_LZCNT32:
+			values [ins->dreg] = LLVMBuildCall (builder, get_intrins (ctx, INTRINS_CTLZ_I32), &lhs, 1, "");
+			break;
+		case OP_LZCNT64:
+			values [ins->dreg] = LLVMBuildCall (builder, get_intrins (ctx, INTRINS_CTLZ_I64), &lhs, 1, "");
+			break;
 		case OP_CTTZ32:
 		case OP_CTTZ64: {
 			LLVMValueRef args [2];
@@ -8462,6 +8470,8 @@ static IntrinsicDesc intrinsics[] = {
 	{INTRINS_EXPECT_I1, "llvm.expect.i1"},
 	{INTRINS_CTPOP_I32, "llvm.ctpop.i32"},
 	{INTRINS_CTPOP_I64, "llvm.ctpop.i64"},
+	{INTRINS_CTLZ_I32, "llvm.ctlz.i32"},
+	{INTRINS_CTLZ_I64, "llvm.ctlz.i64"},
 	{INTRINS_CTTZ_I32, "llvm.cttz.i32"},
 	{INTRINS_CTTZ_I64, "llvm.cttz.i64"},
 	{INTRINS_PEXT_I32, "llvm.x86.bmi.pext.32"},
@@ -8625,9 +8635,11 @@ add_intrinsic (LLVMModuleRef module, int id)
 	case INTRINS_EXPECT_I1:
 		AddFunc2 (module, name, LLVMInt1Type (), LLVMInt1Type (), LLVMInt1Type ());
 		break;
+	case INTRINS_CTLZ_I32:
 	case INTRINS_CTPOP_I32:
 		AddFunc1 (module, name, LLVMInt32Type (), LLVMInt32Type ());
 		break;
+	case INTRINS_CTLZ_I64:
 	case INTRINS_CTPOP_I64:
 		AddFunc1 (module, name, LLVMInt64Type (), LLVMInt64Type ());
 		break;
