@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.Logging
         /// <summary>
         /// Checks if the given <paramref name="logLevel"/> is enabled.
         /// </summary>
-        /// <param name="logLevel">level to be checked.</param>
+        /// <param name="logLevel">Level to be checked.</param>
         /// <returns><c>true</c> if enabled.</returns>
         bool IsEnabled(LogLevel logLevel);
 
