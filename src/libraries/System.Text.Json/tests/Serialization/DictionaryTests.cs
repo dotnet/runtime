@@ -936,41 +936,176 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(1, obj.MyImmutableDictionary.Count);
         }
 
-        public class ClassWithNoSetter
+        public class ClassWithIgnoredDictionary1
         {
-            public Dictionary<string, int> SkippedChild { get; }
-            public Dictionary<string, int> ParsedChild { get; set; }
-            public IDictionary<string, int> AnotherSkippedChild { get; }
-            public IDictionary<string, int> AnotherParsedChild { get; set; }
+            public Dictionary<string, int> Parsed1 { get; set; }
+            public Dictionary<string, int> Parsed2 { get; set; }
+            public Dictionary<string, int> Skipped3 { get; }
+        }
+
+        public class ClassWithIgnoredDictionary2
+        {
+            public IDictionary<string, int> Parsed1 { get; set; }
+            public IDictionary<string, int> Skipped2 { get; }
+            public IDictionary<string, int> Parsed3 { get; set; }
+        }
+
+        public class ClassWithIgnoredDictionary3
+        {
+            public Dictionary<string, int> Parsed1 { get; set; }
+            public Dictionary<string, int> Skipped2 { get; }
+            public Dictionary<string, int> Skipped3 { get; }
+        }
+
+        public class ClassWithIgnoredDictionary4
+        {
+            public Dictionary<string, int> Skipped1 { get; }
+            public Dictionary<string, int> Parsed2 { get; set; }
+            public Dictionary<string, int> Parsed3 { get; set; }
+        }
+
+        public class ClassWithIgnoredDictionary5
+        {
+            public Dictionary<string, int> Skipped1 { get; }
+            public Dictionary<string, int> Parsed2 { get; set; }
+            public Dictionary<string, int> Skipped3 { get; }
+        }
+
+        public class ClassWithIgnoredDictionary6
+        {
+            public Dictionary<string, int> Skipped1 { get; }
+            public Dictionary<string, int> Skipped2 { get; }
+            public Dictionary<string, int> Parsed3 { get; set; }
+        }
+
+        public class ClassWithIgnoredDictionary7
+        {
+            public Dictionary<string, int> Skipped1 { get; }
+            public Dictionary<string, int> Skipped2 { get; }
+            public Dictionary<string, int> Skipped3 { get; }
+        }
+
+        public class ClassWithIgnoredIDictionary
+        {
+            public IDictionary<string, int> Parsed1 { get; set; }
+            public IDictionary<string, int> Skipped2 { get; }
+            public IDictionary<string, int> Parsed3 { get; set; }
+        }
+
+        public class ClassWithIgnoreAttributeDictionary
+        {
+            public Dictionary<string, int> Parsed1 { get; set; }
+            [JsonIgnore] public Dictionary<string, int> Skipped2 { get; set; } // Note this has a setter.
+            public Dictionary<string, int> Parsed3 { get; set; }
+        }
+
+        public class ClassWithIgnoredImmutableDictionary
+        {
+            public ImmutableDictionary<string, int> Parsed1 { get; set; }
+            public ImmutableDictionary<string, int> Skipped2 { get; }
+            public ImmutableDictionary<string, int> Parsed3 { get; set; }
         }
 
         [Fact]
-        public static void ClassWithNoSetterAndValidProperty()
+        public static void IgnoredMembers()
+        {
+            // Verify all combinations of 3 properties with at least one ignore.
+            VerifyIgnore<ClassWithIgnoredDictionary1>(false, false, true);
+            VerifyIgnore<ClassWithIgnoredDictionary2>(false, true, false);
+            VerifyIgnore<ClassWithIgnoredDictionary3>(false, true, true);
+            VerifyIgnore<ClassWithIgnoredDictionary4>(true, false, false);
+            VerifyIgnore<ClassWithIgnoredDictionary5>(true, false, true);
+            VerifyIgnore<ClassWithIgnoredDictionary6>(true, true, false);
+            VerifyIgnore<ClassWithIgnoredDictionary7>(true, true, true);
+
+            // Verify single case for IDictionary, [Ignore] and ImmutableDictionary.
+            VerifyIgnore<ClassWithIgnoredIDictionary>(false, true, false, true);
+            VerifyIgnore<ClassWithIgnoreAttributeDictionary>(false, true, false, true);
+            VerifyIgnore<ClassWithIgnoredImmutableDictionary>(false, true, false, true);
+        }
+
+        private static void VerifyIgnore<T>(bool skip1, bool skip2, bool skip3, bool addMissing = false)
         {
             // Tests that the parser picks back up after skipping/draining ignored elements.
-            string json = @"{
-                ""SkippedChild"": {},
-                ""ParsedChild"": {""Key1"":18},
-                ""UnmatchedProp"": null,
-                ""AnotherSkippedChild"": {""DrainProp1"":{}, ""DrainProp2"":{""SubProp"":0}},
-                ""AnotherSkippedChild"": {},
-                ""AnotherParsedChild"": {""Key1"":18, ""Key2"":20}
-            }";
+            StringBuilder json = new StringBuilder(@"{");
 
-            ClassWithNoSetter parsedObject = JsonSerializer.Deserialize<ClassWithNoSetter>(json);
+            if (addMissing)
+            {
+                json.Append(@"""MissingProp1"": {},");
+            }
 
-            Assert.Null(parsedObject.SkippedChild);
+            if (skip1)
+            {
+                json.Append(@"""Skipped1"":{},");
+            }
+            else
+            {
+                json.Append(@"""Parsed1"":{""Key"":1},");
+            }
 
-            Assert.NotNull(parsedObject.ParsedChild);
-            Assert.Equal(1, parsedObject.ParsedChild.Count);
-            Assert.Equal(18, parsedObject.ParsedChild["Key1"]);
+            if (addMissing)
+            {
+                json.Append(@"""MissingProp2"": null,");
+            }
 
-            Assert.Null(parsedObject.AnotherSkippedChild);
+            if (skip2)
+            {
+                json.Append(@"""Skipped2"":{},");
+            }
+            else
+            {
+                json.Append(@"""Parsed2"":{""Key"":2},");
+            }
 
-            Assert.NotNull(parsedObject.AnotherParsedChild);
-            Assert.Equal(2, parsedObject.AnotherParsedChild.Count);
-            Assert.Equal(18, parsedObject.AnotherParsedChild["Key1"]);
-            Assert.Equal(20, parsedObject.AnotherParsedChild["Key2"]);
+            if (addMissing)
+            {
+                json.Append(@"""MissingProp3"": {""ABC"":{}},");
+            }
+
+            if (skip3)
+            {
+                json.Append(@"""Skipped3"":{}}");
+            }
+            else
+            {
+                json.Append(@"""Parsed3"":{""Key"":3}}");
+            }
+
+            // Deserialize and verify.
+
+            T obj = JsonSerializer.Deserialize<T>(json.ToString());
+
+            IDictionary<string, int> GetProperty(string propertyName)
+            {
+                return (IDictionary<string, int>)obj.GetType().GetProperty(propertyName).GetValue(obj);
+            }
+
+            if (skip1)
+            {
+                Assert.Null(GetProperty("Skipped1"));
+            }
+            else
+            {
+                Assert.Equal(1, GetProperty("Parsed1")["Key"]);
+            }
+
+            if (skip2)
+            {
+                Assert.Null(GetProperty("Skipped2"));
+            }
+            else
+            {
+                Assert.Equal(2, GetProperty("Parsed2")["Key"]);
+            }
+
+            if (skip3)
+            {
+                Assert.Null(GetProperty("Skipped3"));
+            }
+            else
+            {
+                Assert.Equal(3, GetProperty("Parsed3")["Key"]);
+            }
         }
 
         public class ClassWithPopulatedDictionaryAndSetter
