@@ -1,13 +1,15 @@
 <Project>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
 
   <!--
-    Always disable sourcelink in this project so that Arcade doesn't complain about 'The target
-    "InitializeSourceControlInformationFromSourceControlManager" does not exist in the project.'.
+    Add basic project properties for NuGet restore, needed to import the SourceLink MSBuild tool
+    package's targets into the build.
   -->
-  <Import Project="$(RepositoryEngineeringDir)/DisableSourceControlManagement.targets"
-          Condition="'$(DisableSourceControlManagementTargetsImported)' != 'true'" />
+  <PropertyGroup>
+    <TargetFramework>$(NETCoreAppFramework)</TargetFramework>
+  </PropertyGroup>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 
   <!-- Target that builds dotnet, hostfxr and hostpolicy with the same version as what NetCoreApp will be built for
        since the build produced artifacts should always version the same (even if they may not get used).
@@ -18,11 +20,6 @@
             GenerateNativeVersionFile;
             BuildCoreHostUnix;
             BuildCoreHostWindows" />
-
-  <PropertyGroup Condition="'$(OSGroup)' != 'Windows_NT'">
-    <GenerateVersionSourceFile>true</GenerateVersionSourceFile>
-    <NativeVersionSourceFile>$(ObjDir)version.cpp</NativeVersionSourceFile>
-  </PropertyGroup>
 
   <Target Name="BuildCoreHostUnix"
           Condition="'$(OSGroup)' != 'Windows_NT'"
