@@ -100,7 +100,7 @@ __configuration=Debug
 __linkPortable=0
 __cmake_defines=
 __baseIntermediateOutputPath="$RootRepo/artifacts/obj"
-__versionSourceFile="$__baseIntermediateOutputPath/version.cpp"
+__versionSourceFile="$__baseIntermediateOutputPath/_version.c"
 __cmake_bin_prefix=
 
 while [ "$1" != "" ]; do
