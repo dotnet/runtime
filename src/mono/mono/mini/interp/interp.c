@@ -3281,7 +3281,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 #if DEBUG_INTERP
 	vtalloc = vt_sp;
 #endif
-	locals = frame_locals (frame);
+	locals = (unsigned char *) vt_sp + frame->imethod->vt_stack_size;
 	child_frame.parent = frame;
 
 	if (clause_args && clause_args->filter_exception) {
@@ -3302,7 +3302,7 @@ main_loop:
 		DUMP_INSTR();
 		MINT_IN_SWITCH (*ip) {
 		MINT_IN_CASE(MINT_INITLOCALS)
-			memset (frame_locals (frame), 0, frame->imethod->locals_size);
+			memset (locals, 0, frame->imethod->locals_size);
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_NOP)
@@ -3465,7 +3465,7 @@ main_loop:
 #if DEBUG_INTERP
 			vtalloc = vt_sp;
 #endif
-			locals = frame_locals (frame);
+			locals = vt_sp + frame->imethod->vt_stack_size;
 			ip = frame->imethod->code;
 			MINT_IN_BREAK;
 		}
