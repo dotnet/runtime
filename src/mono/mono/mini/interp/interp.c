@@ -84,13 +84,13 @@
 /* Arguments that are passed when invoking only a finally/filter clause from the frame */
 typedef struct {
 	/* Where we start the frame execution from */
-	guint16 *start_with_ip;
+	const guint16 *start_with_ip;
 	/*
 	 * End ip of the exit_clause. We need it so we know whether the resume
 	 * state is for this frame (which is called from EH) or for the original
 	 * frame further down the stack.
 	 */
-	guint16 *end_at_ip;
+	const guint16 *end_at_ip;
 	/* When exiting this clause we also exit the frame */
 	int exit_clause;
 	/* Exception that we are filtering */
@@ -229,6 +229,8 @@ int mono_interp_traceopt = 0;
 #define MINT_IN_DEFAULT default:
 #endif
 
+// FIXME The inlining of this needs to be reevaluated in the context of later changes.
+// Also there is now only one caller, so consider inlining it manually.
 static MONO_NEVER_INLINE GSList* // Inlining this causes caller to use more stack.
 set_resume_state (ThreadContext *context, InterpFrame *frame, GSList* finally_ips)
 {
@@ -244,23 +246,6 @@ set_resume_state (ThreadContext *context, InterpFrame *frame, GSList* finally_ip
 	return finally_ips;
 }
 
-/* Set the current execution state to the resume state in context */
-#define SET_RESUME_STATE(context) do { \
-		ip = (const guint16*)(context)->handler_ip;						\
-		/* spec says stack should be empty at endfinally so it should be at the start too */ \
-		sp = frame->stack; \
-		vt_sp = (unsigned char *) sp + frame->imethod->stack_size; \
-		if (frame->ex) { \
-			sp->data.p = frame->ex;										\
-			++sp;														\
-		} \
-		(finally_ips) = set_resume_state ((context), (frame), (finally_ips));				\
-		/* goto main_loop instead of MINT_IN_DISPATCH helps the compiler and therefore conserves stack. \
-		 * This is a slow/rare path and conserving stack is preferred over its performance otherwise.	\
-                 */												\
-		goto main_loop;											\
-	} while (0)
-
 /*
  * If this bit is set, it means the call has thrown the exception, and we
  * reached this point because the EH code in mono_handle_exception ()
@@ -268,18 +253,8 @@ set_resume_state (ThreadContext *context, InterpFrame *frame, GSList* finally_ip
  * has set the fields in context to indicate where we have to resume execution.
  */
 #define CHECK_RESUME_STATE(context) do { \
-		if ((context)->has_resume_state) { \
-			if (frame == (context)->handler_frame && (!clause_args || (context)->handler_ip < clause_args->end_at_ip)) \
-				SET_RESUME_STATE (context); \
-			else \
-				goto exit_frame; \
-		} \
-	} while (0)
-
-// In a void function, leave ret empty.
-#define CHECK_RESUME_STATE_IN_HELPER_FUNCTION(context, ret) do { \
-		if ((context)->has_resume_state) \
-			return ret; \
+		if ((context)->has_resume_state)	\
+			goto resume;			\
 	} while (0)
 
 static void
@@ -947,7 +922,7 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, con
 #define THROW_EX_GENERAL(exception,ex_ip, rethrow)		\
 	do {							\
 		interp_throw (context, (exception), (frame), (ex_ip), (rethrow)); \
-		CHECK_RESUME_STATE(context); \
+		goto resume;							  \
 	} while (0)
 
 #define THROW_EX(exception,ex_ip) THROW_EX_GENERAL ((exception), (ex_ip), FALSE)
@@ -3082,9 +3057,11 @@ mono_interp_newobj_vt (
 	// stack for all the other recursive cases.
 	interp_exec_method (child_frame, context, error);
 
-	CHECK_RESUME_STATE_IN_HELPER_FUNCTION (context, );
+	CHECK_RESUME_STATE (context);
 
 	*sp = valuetype_this;
+resume:
+	;
 }
 
 static MONO_NEVER_INLINE MonoException*
@@ -3153,7 +3130,7 @@ mono_interp_newobj (
 
 	interp_exec_method (child_frame, context, error);
 
-	CHECK_RESUME_STATE_IN_HELPER_FUNCTION (context, NULL);
+	CHECK_RESUME_STATE (context);
 
 	/*
 	 * a constructor returns void, but we need to return the object we created
@@ -3165,6 +3142,7 @@ mono_interp_newobj (
 	} else {
 		sp->data.o = frame_objref (frame);
 	}
+resume:
 	return NULL;
 }
 
@@ -6605,6 +6583,29 @@ main_loop:
 
 	g_assert_not_reached ();
 
+resume:
+	g_assert (context->has_resume_state);
+
+	if (frame == context->handler_frame && (!clause_args || context->handler_ip < clause_args->end_at_ip)) {
+		/* Set the current execution state to the resume state in context */
+
+		ip = context->handler_ip;
+		/* spec says stack should be empty at endfinally so it should be at the start too */
+		sp = frame->stack;
+		vt_sp = (guchar*)sp + frame->imethod->stack_size;
+		if (frame->ex) {
+			sp->data.p = frame->ex;
+			++sp;
+		}
+
+		// FIXME Reevaluate if this should be inlined.
+		finally_ips = set_resume_state (context, frame, finally_ips);
+		// goto main_loop instead of MINT_IN_DISPATCH helps the compiler and therefore conserves stack.
+		// This is a slow/rare path and conserving stack is preferred over its performance otherwise.
+		//
+		goto main_loop;
+	}
+	// fall through
 exit_frame:
 	error_init_reuse (error);
 
@@ -6686,7 +6687,7 @@ interp_set_resume_state (MonoJitTlsData *jit_tls, MonoException *ex, MonoJitExce
 	/* Ditto */
 	if (ei)
 		*(MonoException**)(frame_locals (context->handler_frame) + ei->exvar_offset) = ex;
-	context->handler_ip = (guint16*) handler_ip;
+	context->handler_ip = (const guint16*)handler_ip;
 }
 
 static void
@@ -6698,7 +6699,7 @@ interp_get_resume_state (const MonoJitTlsData *jit_tls, gboolean *has_resume_sta
 	*has_resume_state = context->has_resume_state;
 	if (context->has_resume_state) {
 		*interp_frame = context->handler_frame;
-		*handler_ip = context->handler_ip;
+		*handler_ip = (gpointer)context->handler_ip;
 	}
 }
 
@@ -6718,8 +6719,8 @@ interp_run_finally (StackFrameInfo *frame, int clause_index, gpointer handler_ip
 	FrameClauseArgs clause_args;
 
 	memset (&clause_args, 0, sizeof (FrameClauseArgs));
-	clause_args.start_with_ip = (guint16*) handler_ip;
-	clause_args.end_at_ip = (guint16*) handler_ip_end;
+	clause_args.start_with_ip = (const guint16*)handler_ip;
+	clause_args.end_at_ip = (const guint16*)handler_ip_end;
 	clause_args.exit_clause = clause_index;
 
 	ERROR_DECL (error);
@@ -6758,8 +6759,8 @@ interp_run_filter (StackFrameInfo *frame, MonoException *ex, int clause_index, g
 	child_frame.stack_args = iframe->stack_args;
 
 	memset (&clause_args, 0, sizeof (FrameClauseArgs));
-	clause_args.start_with_ip = (guint16*) handler_ip;
-	clause_args.end_at_ip = (guint16*) handler_ip_end;
+	clause_args.start_with_ip = (const guint16*)handler_ip;
+	clause_args.end_at_ip = (const guint16*)handler_ip_end;
 	clause_args.filter_exception = ex;
 	clause_args.base_frame = iframe;
 
