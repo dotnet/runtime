@@ -39,10 +39,6 @@ namespace System.Drawing
                 CheckStatus(status);
 
                 Debug.Unindent();
-
-                // Sync to event for handling shutdown
-                AppDomain currentDomain = AppDomain.CurrentDomain;
-                currentDomain.ProcessExit += new EventHandler(OnProcessExit);
             }
 
             /// <summary>
@@ -69,73 +65,6 @@ namespace System.Drawing
 
                     return threadData;
                 }
-            }
-
-            // Clean up thread data
-            [MethodImpl(MethodImplOptions.NoInlining)]
-            private static void ClearThreadData()
-            {
-                Debug.WriteLineIf(s_gdiPlusInitialization.TraceVerbose, "Releasing TLS data");
-                LocalDataStoreSlot slot = Thread.GetNamedDataSlot(ThreadDataSlotName);
-                Thread.SetData(slot, null);
-            }
-
-            /// <summary>
-            /// Shutsdown GDI+
-            /// </summary>
-            private static void Shutdown()
-            {
-                Debug.WriteLineIf(s_gdiPlusInitialization.TraceVerbose, "Shutdown GDI+ [" + AppDomain.CurrentDomain.FriendlyName + "]");
-                Debug.Indent();
-
-                if (Initialized)
-                {
-                    Debug.WriteLineIf(s_gdiPlusInitialization.TraceVerbose, "Not already shutdown");
-
-                    ClearThreadData();
-
-                    // Due to conditions at shutdown, we can't be sure all objects will be finalized here: e.g. a Global variable
-                    // in the application/domain may still be holding a GDI+ object. If so, calling GdiplusShutdown will free the GDI+ heap,
-                    // causing AppVerifier exceptions due to active crit sections.
-                    // For now, we will simply not call shutdown, the resultant heap leak should occur most often during shutdown anyway.
-                    // If GDI+ moves their allocations to the standard heap we can revisit.
-
-#if GDIP_SHUTDOWN
-                    // Let any thread data collect and finalize before
-                    // we tear down GDI+
-                    //
-                    Debug.WriteLineIf(GdiPlusInitialization.TraceVerbose, "Running garbage collector");
-                    GC.Collect();
-                    GC.WaitForPendingFinalizers();
-                    GC.Collect();
-
-                    // Shutdown GDI+
-                    //
-                    Debug.WriteLineIf(GdiPlusInitialization.TraceVerbose, "Instruct GDI+ to shutdown");
-
-                    GdiplusShutdown(ref initToken);
-                    initToken = IntPtr.Zero;
-#endif
-
-                    // unhook our shutdown handlers as we do not need to shut down more than once
-                    AppDomain currentDomain = AppDomain.CurrentDomain;
-                    currentDomain.ProcessExit -= new EventHandler(OnProcessExit);
-                    if (!currentDomain.IsDefaultAppDomain())
-                    {
-                        currentDomain.DomainUnload -= new EventHandler(OnProcessExit);
-                    }
-                }
-                Debug.Unindent();
-            }
-
-
-            // When we get notification that the process/domain is terminating, we will
-            // try to shutdown GDI+ if we haven't already.
-            [PrePrepareMethod]
-            private static void OnProcessExit(object sender, EventArgs e)
-            {
-                Debug.WriteLineIf(s_gdiPlusInitialization.TraceVerbose, "Process exited");
-                Shutdown();
             }
 
             // Used to ensure static constructor has run.
