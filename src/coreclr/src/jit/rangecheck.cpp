@@ -405,14 +405,14 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeCon
     }
     else if (expr->OperGet() == GT_PHI)
     {
-        for (GenTreeArgList* args = expr->gtOp.gtOp1->AsArgList(); args != nullptr; args = args->Rest())
+        for (GenTreePhi::Use& use : expr->AsPhi()->Uses())
         {
             // If the arg is already in the path, skip.
-            if (m_pSearchPath->Lookup(args->Current()))
+            if (m_pSearchPath->Lookup(use.GetNode()))
             {
                 continue;
             }
-            if (!IsMonotonicallyIncreasing(args->Current(), rejectNegativeConst))
+            if (!IsMonotonicallyIncreasing(use.GetNode(), rejectNegativeConst))
             {
                 JITDUMP("Phi argument not monotonic\n");
                 return false;
@@ -986,9 +986,9 @@ bool RangeCheck::DoesVarDefOverflow(GenTreeLclVarCommon* lcl)
 
 bool RangeCheck::DoesPhiOverflow(BasicBlock* block, GenTree* expr)
 {
-    for (GenTreeArgList* args = expr->gtOp.gtOp1->AsArgList(); args != nullptr; args = args->Rest())
+    for (GenTreePhi::Use& use : expr->AsPhi()->Uses())
     {
-        GenTree* arg = args->Current();
+        GenTree* arg = use.GetNode();
         if (m_pSearchPath->Lookup(arg))
         {
             continue;
@@ -1123,21 +1123,21 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monotonic 
     // If phi, then compute the range for arguments, calling the result "dependent" when looping begins.
     else if (expr->OperGet() == GT_PHI)
     {
-        for (GenTreeArgList* args = expr->gtOp.gtOp1->AsArgList(); args != nullptr; args = args->Rest())
+        for (GenTreePhi::Use& use : expr->AsPhi()->Uses())
         {
             Range argRange = Range(Limit(Limit::keUndef));
-            if (m_pSearchPath->Lookup(args->Current()))
+            if (m_pSearchPath->Lookup(use.GetNode()))
             {
-                JITDUMP("PhiArg [%06d] is already being computed\n", Compiler::dspTreeID(args->Current()));
+                JITDUMP("PhiArg [%06d] is already being computed\n", Compiler::dspTreeID(use.GetNode()));
                 argRange = Range(Limit(Limit::keDependent));
             }
             else
             {
-                argRange = GetRange(block, args->Current(), monotonic DEBUGARG(indent + 1));
+                argRange = GetRange(block, use.GetNode(), monotonic DEBUGARG(indent + 1));
             }
             assert(!argRange.LowerLimit().IsUndef());
             assert(!argRange.UpperLimit().IsUndef());
-            MergeAssertion(block, args->Current(), &argRange DEBUGARG(indent + 1));
+            MergeAssertion(block, use.GetNode(), &argRange DEBUGARG(indent + 1));
             JITDUMP("Merging ranges %s %s:", range.ToString(m_pCompiler->getAllocatorDebugOnly()),
                     argRange.ToString(m_pCompiler->getAllocatorDebugOnly()));
             range = RangeOps::Merge(range, argRange, monotonic);

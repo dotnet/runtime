@@ -1483,6 +1483,9 @@ AGAIN:
                     Compare(op1->gtArrOffs.gtIndex, op2->gtArrOffs.gtIndex) &&
                     Compare(op1->gtArrOffs.gtArrObj, op2->gtArrOffs.gtArrObj));
 
+        case GT_PHI:
+            return GenTreePhi::Equals(op1->AsPhi(), op2->AsPhi());
+
         case GT_CMPXCHG:
             return Compare(op1->gtCmpXchg.gtOpLocation, op2->gtCmpXchg.gtOpLocation) &&
                    Compare(op1->gtCmpXchg.gtOpValue, op2->gtCmpXchg.gtOpValue) &&
@@ -1697,6 +1700,16 @@ AGAIN:
                 gtHasRef(tree->gtArrOffs.gtArrObj, lclNum, defOnly))
             {
                 return true;
+            }
+            break;
+
+        case GT_PHI:
+            for (GenTreePhi::Use& use : tree->AsPhi()->Uses())
+            {
+                if (gtHasRef(use.GetNode(), lclNum, defOnly))
+                {
+                    return true;
+                }
             }
             break;
 
@@ -2123,6 +2136,13 @@ AGAIN:
                 temp = tree->gtCall.gtCallLateArgs;
                 assert(temp);
                 hash = genTreeHashAdd(hash, gtHashValue(temp));
+            }
+            break;
+
+        case GT_PHI:
+            for (GenTreePhi::Use& use : tree->AsPhi()->Uses())
+            {
+                hash = genTreeHashAdd(hash, gtHashValue(use.GetNode()));
             }
             break;
 
@@ -4251,6 +4271,23 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             costSz += tree->gtArrOffs.gtArrObj->gtCostSz;
             break;
 
+        case GT_PHI:
+            for (GenTreePhi::Use& use : tree->AsPhi()->Uses())
+            {
+                lvl2 = gtSetEvalOrder(use.GetNode());
+                // PHI args should always have cost 0 and level 1
+                assert(lvl2 == 1);
+                assert(use.GetNode()->gtCostEx == 0);
+                assert(use.GetNode()->gtCostSz == 0);
+            }
+            // Give it a level of 2, just to be sure that it's greater than the LHS of
+            // the parent assignment and the PHI gets evaluated first in linear order.
+            // See also SsaBuilder::InsertPhi and SsaBuilder::AddPhiArg.
+            level  = 2;
+            costEx = 0;
+            costSz = 0;
+            break;
+
         case GT_CMPXCHG:
 
             level  = gtSetEvalOrder(tree->gtCmpXchg.gtOpLocation);
@@ -4547,6 +4584,16 @@ GenTree** GenTree::gtGetChildPointer(GenTree* parent) const
             }
             break;
 
+        case GT_PHI:
+            for (GenTreePhi::Use& use : parent->AsPhi()->Uses())
+            {
+                if (use.GetNode() == this)
+                {
+                    return &use.NodeRef();
+                }
+            }
+            break;
+
         case GT_CMPXCHG:
             if (this == parent->gtCmpXchg.gtOpLocation)
             {
@@ -4758,10 +4805,6 @@ bool GenTree::TryGetUse(GenTree* def, GenTree*** use)
             return false;
 
         // Variadic nodes
-        case GT_PHI:
-            assert(this->AsUnOp()->gtOp1 != nullptr);
-            return this->AsUnOp()->gtOp1->TryGetUseList(def, use);
-
         case GT_FIELD_LIST:
             return TryGetUseList(def, use);
 
@@ -4801,6 +4844,17 @@ bool GenTree::TryGetUse(GenTree* def, GenTree*** use)
 #endif // FEATURE_HW_INTRINSICS
 
         // Special nodes
+        case GT_PHI:
+            for (GenTreePhi::Use& phiUse : AsPhi()->Uses())
+            {
+                if (phiUse.GetNode() == def)
+                {
+                    *use = &phiUse.NodeRef();
+                    return true;
+                }
+            }
+            return false;
+
         case GT_CMPXCHG:
         {
             GenTreeCmpXchg* const cmpXchg = this->AsCmpXchg();
@@ -7340,6 +7394,19 @@ GenTree* Compiler::gtCloneExpr(
         }
         break;
 
+        case GT_PHI:
+        {
+            copy                      = new (this, GT_PHI) GenTreePhi(tree->TypeGet());
+            GenTreePhi::Use** prevUse = &copy->AsPhi()->gtUses;
+            for (GenTreePhi::Use& use : tree->AsPhi()->Uses())
+            {
+                *prevUse = new (this, CMK_ASTNode)
+                    GenTreePhi::Use(gtCloneExpr(use.GetNode(), addFlags, deepVarNum, deepVarVal), *prevUse);
+                prevUse = &((*prevUse)->NextRef());
+            }
+        }
+        break;
+
         case GT_CMPXCHG:
             copy = new (this, GT_CMPXCHG)
                 GenTreeCmpXchg(tree->TypeGet(),
@@ -8094,6 +8161,16 @@ unsigned GenTree::NumChildren()
         // Special
         switch (OperGet())
         {
+            case GT_PHI:
+            {
+                unsigned count = 0;
+                for (GenTreePhi::Use& use : AsPhi()->Uses())
+                {
+                    count++;
+                }
+                return count;
+            }
+
             case GT_CMPXCHG:
                 return 3;
 
@@ -8207,6 +8284,17 @@ GenTree* GenTree::GetChild(unsigned childNum)
         // Special
         switch (OperGet())
         {
+            case GT_PHI:
+                for (GenTreePhi::Use& use : AsPhi()->Uses())
+                {
+                    if (childNum == 0)
+                    {
+                        return use.GetNode();
+                    }
+                    childNum--;
+                }
+                unreached();
+
             case GT_CMPXCHG:
                 switch (childNum)
                 {
@@ -8355,12 +8443,12 @@ GenTree* GenTree::GetChild(unsigned childNum)
 }
 
 GenTreeUseEdgeIterator::GenTreeUseEdgeIterator()
-    : m_advance(nullptr), m_node(nullptr), m_edge(nullptr), m_argList(nullptr), m_state(-1)
+    : m_advance(nullptr), m_node(nullptr), m_edge(nullptr), m_statePtr(nullptr), m_state(-1)
 {
 }
 
 GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
-    : m_advance(nullptr), m_node(node), m_edge(nullptr), m_argList(nullptr), m_state(0)
+    : m_advance(nullptr), m_node(node), m_edge(nullptr), m_statePtr(nullptr), m_state(0)
 {
     assert(m_node != nullptr);
 
@@ -8458,19 +8546,15 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
             return;
 
         // Variadic nodes
-        case GT_PHI:
-            SetEntryStateForList(m_node->AsUnOp()->gtOp1);
-            return;
-
         case GT_FIELD_LIST:
-            SetEntryStateForList(m_node);
+            SetEntryStateForList(m_node->AsArgList());
             return;
 
 #ifdef FEATURE_SIMD
         case GT_SIMD:
             if (m_node->AsSIMD()->gtSIMDIntrinsicID == SIMDIntrinsicInitN)
             {
-                SetEntryStateForList(m_node->AsSIMD()->gtOp1);
+                SetEntryStateForList(m_node->AsSIMD()->gtOp1->AsArgList());
             }
             else
             {
@@ -8488,7 +8572,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
             }
             else if (m_node->AsHWIntrinsic()->gtOp1->OperIsList())
             {
-                SetEntryStateForList(m_node->AsHWIntrinsic()->gtOp1);
+                SetEntryStateForList(m_node->AsHWIntrinsic()->gtOp1->AsArgList());
             }
             else
             {
@@ -8511,6 +8595,12 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
             return;
 
         // Special nodes
+        case GT_PHI:
+            m_statePtr = m_node->AsPhi()->gtUses;
+            m_advance  = &GenTreeUseEdgeIterator::AdvancePhi;
+            AdvancePhi();
+            return;
+
         case GT_CMPXCHG:
             m_edge = &m_node->AsCmpXchg()->gtOpLocation;
             assert(*m_edge != nullptr);
@@ -8722,6 +8812,25 @@ void GenTreeUseEdgeIterator::AdvanceStoreDynBlk()
 }
 
 //------------------------------------------------------------------------
+// GenTreeUseEdgeIterator::AdvancePhi: produces the next operand of a Phi node and advances the state.
+//
+void GenTreeUseEdgeIterator::AdvancePhi()
+{
+    assert(m_state == 0);
+
+    if (m_statePtr == nullptr)
+    {
+        m_state = -1;
+    }
+    else
+    {
+        GenTreePhi::Use* currentUse = static_cast<GenTreePhi::Use*>(m_statePtr);
+        m_edge                      = &currentUse->NodeRef();
+        m_statePtr                  = currentUse->GetNext();
+    }
+}
+
+//------------------------------------------------------------------------
 // GenTreeUseEdgeIterator::AdvanceBinOp: produces the next operand of a binary node and advances the state.
 //
 // This function must be instantiated s.t. `ReverseOperands` is `true` iff the node is marked with the
@@ -8777,25 +8886,25 @@ void GenTreeUseEdgeIterator::AdvanceList()
 {
     assert(m_state == 0);
 
-    if (m_argList == nullptr)
+    if (m_statePtr == nullptr)
     {
         m_state = -1;
     }
     else
     {
-        GenTreeArgList* listNode = m_argList->AsArgList();
+        GenTreeArgList* listNode = static_cast<GenTreeArgList*>(m_statePtr);
         m_edge                   = &listNode->gtOp1;
-        m_argList                = listNode->Rest();
+        m_statePtr               = listNode->Rest();
     }
 }
 
 //------------------------------------------------------------------------
 // GenTreeUseEdgeIterator::SetEntryStateForList: produces the first operand of a list node.
 //
-void GenTreeUseEdgeIterator::SetEntryStateForList(GenTree* list)
+void GenTreeUseEdgeIterator::SetEntryStateForList(GenTreeArgList* list)
 {
-    m_argList = list;
-    m_advance = &GenTreeUseEdgeIterator::AdvanceList;
+    m_statePtr = list;
+    m_advance  = &GenTreeUseEdgeIterator::AdvanceList;
     AdvanceList();
 }
 
@@ -8819,8 +8928,8 @@ void          GenTreeUseEdgeIterator::AdvanceCall()
     switch (state)
     {
         case CALL_INSTANCE:
-            m_argList = call->gtCallArgs;
-            m_advance = &GenTreeUseEdgeIterator::AdvanceCall<CALL_ARGS>;
+            m_statePtr = call->gtCallArgs;
+            m_advance  = &GenTreeUseEdgeIterator::AdvanceCall<CALL_ARGS>;
             if (call->gtCallObjp != nullptr)
             {
                 m_edge = &call->gtCallObjp;
@@ -8829,23 +8938,23 @@ void          GenTreeUseEdgeIterator::AdvanceCall()
             __fallthrough;
 
         case CALL_ARGS:
-            if (m_argList != nullptr)
+            if (m_statePtr != nullptr)
             {
-                GenTreeArgList* argNode = m_argList->AsArgList();
+                GenTreeArgList* argNode = static_cast<GenTreeArgList*>(m_statePtr);
                 m_edge                  = &argNode->gtOp1;
-                m_argList               = argNode->Rest();
+                m_statePtr              = argNode->Rest();
                 return;
             }
-            m_argList = call->gtCallLateArgs;
-            m_advance = &GenTreeUseEdgeIterator::AdvanceCall<CALL_LATE_ARGS>;
+            m_statePtr = call->gtCallLateArgs;
+            m_advance  = &GenTreeUseEdgeIterator::AdvanceCall<CALL_LATE_ARGS>;
             __fallthrough;
 
         case CALL_LATE_ARGS:
-            if (m_argList != nullptr)
+            if (m_statePtr != nullptr)
             {
-                GenTreeArgList* argNode = m_argList->AsArgList();
+                GenTreeArgList* argNode = static_cast<GenTreeArgList*>(m_statePtr);
                 m_edge                  = &argNode->gtOp1;
-                m_argList               = argNode->Rest();
+                m_statePtr              = argNode->Rest();
                 return;
             }
             m_advance = &GenTreeUseEdgeIterator::AdvanceCall<CALL_CONTROL_EXPR>;
@@ -10795,6 +10904,20 @@ void Compiler::gtDispTree(GenTree*     tree,
 
     switch (tree->gtOper)
     {
+        case GT_PHI:
+            gtDispCommonEndLine(tree);
+
+            if (!topOnly)
+            {
+                for (GenTreePhi::Use& use : tree->AsPhi()->Uses())
+                {
+                    char block[32];
+                    sprintf_s(block, sizeof(block), "pred " FMT_BB, use.GetNode()->AsPhiArg()->gtPredBB->bbNum);
+                    gtDispChild(use.GetNode(), indentStack, (use.GetNext() == nullptr) ? IIArcBottom : IIArc, block);
+                }
+            }
+            break;
+
         case GT_FIELD:
             if (FieldSeqStore::IsPseudoField(tree->gtField.gtFldHnd))
             {
