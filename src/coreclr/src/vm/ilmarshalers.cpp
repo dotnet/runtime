@@ -3701,7 +3701,9 @@ void ILNativeArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
 
 bool ILNativeArrayMarshaler::CanMarshalViaPinning()
 {
-    return IsCLRToNative(m_dwMarshalFlags) && !IsByref(m_dwMarshalFlags) && (NULL == OleVariant::GetMarshalerForVarType(m_pargs->na.m_vt, TRUE));
+    // We can't pin an array if we have a marshaler for the var type
+    // or if we can't get a method-table representing the array (how we determine the offset to pin).
+    return IsCLRToNative(m_dwMarshalFlags) && !IsByref(m_dwMarshalFlags) && (NULL != m_pargs->na.m_pArrayMT) && (NULL == OleVariant::GetMarshalerForVarType(m_pargs->na.m_vt, TRUE));
 }
 
 void ILNativeArrayMarshaler::EmitMarshalViaPinning(ILCodeStream* pslILEmit)
@@ -3709,7 +3711,7 @@ void ILNativeArrayMarshaler::EmitMarshalViaPinning(ILCodeStream* pslILEmit)
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        PRECONDITION(IsCLRToNative(m_dwMarshalFlags) && !IsByref(m_dwMarshalFlags));
+        PRECONDITION(CanMarshalViaPinning());
     }
     CONTRACTL_END;
 
@@ -3744,7 +3746,7 @@ void ILNativeArrayMarshaler::EmitMarshalViaPinning(ILCodeStream* pslILEmit)
     pslILEmit->EmitCONV_I();
     // Optimize marshalling by emitting the data ptr offset directly into the IL stream
     // instead of doing an FCall to recalulate it each time when possible.
-    pslILEmit->EmitLDC(ArrayBase::GetDataPtrOffset(m_pargs->m_pMarshalInfo->GetArrayElementTypeHandle().MakeSZArray().GetMethodTable()));
+    pslILEmit->EmitLDC(ArrayBase::GetDataPtrOffset(m_pargs->na.m_pArrayMT));
     pslILEmit->EmitADD();
     EmitStoreNativeValue(pslILEmit);
 
