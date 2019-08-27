@@ -1214,7 +1214,7 @@ add_float (guint *fpr, guint *stack_size, ArgInfo *ainfo, gboolean is_double, gi
 		ainfo->reg = ARMREG_SP;
 		ainfo->storage = RegTypeBase;
 
-		*stack_size += 8;
+		*stack_size += is_double ? 8 : 4;
 	}
 }
 
