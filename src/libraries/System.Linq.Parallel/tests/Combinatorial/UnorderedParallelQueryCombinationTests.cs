@@ -587,7 +587,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [MemberData(nameof(UnaryOperations))]
-        [MemberData(nameof(BinaryOperations))]
+        //[MemberData(nameof(BinaryOperations))]
         public static void ToArray_Unordered(Labeled<Operation> operation)
         {
             IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
