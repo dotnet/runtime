@@ -11,6 +11,7 @@ parameters:
   corefxTests: false
   displayNameArgs: ''
   condition: true
+  ignoreDependencyOnBuildJobs: false
 
 ### Test build job
 
@@ -32,19 +33,19 @@ jobs:
 
     # Compute job name from template parameters
     ${{ if and(eq(parameters.testGroup, 'innerloop'), eq(parameters.displayNameArgs, '')) }}:
-      name: 'build_test_p0_${{ parameters.osIdentifier }}_${{ parameters.archType }}_${{parameters.buildConfig }}'      
+      name: 'build_test_p0_${{ parameters.osIdentifier }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'      
       displayName: 'Build Test Pri0 ${{ parameters.osIdentifier }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
 
     ${{ if and(ne(parameters.testGroup, 'innerloop'), eq(parameters.displayNameArgs, '')) }}:
-      name: 'build_test_p1_${{ parameters.osIdentifier }}_${{ parameters.archType }}_${{parameters.buildConfig }}'      
+      name: 'build_test_p1_${{ parameters.osIdentifier }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'      
       displayName: 'Build Test Pri1 ${{ parameters.osIdentifier }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
 
     ${{ if and(eq(parameters.testGroup, 'innerloop'), ne(parameters.displayNameArgs, '')) }}:
-      name: 'build_test_p0_${{ parameters.displayNameArgs }}_${{ parameters.osIdentifier }}_${{ parameters.archType }}_${{parameters.buildConfig }}'      
+      name: 'build_test_p0_${{ parameters.displayNameArgs }}_${{ parameters.osIdentifier }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'      
       displayName: 'Build Test Pri0 ${{ parameters.displayNameArgs }} ${{ parameters.osIdentifier }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
 
     ${{ if and(ne(parameters.testGroup, 'innerloop'), ne(parameters.displayNameArgs, '')) }}:
-      name: 'build_test_p1_${{ parameters.displayNameArgs }}_${{ parameters.osIdentifier }}_${{ parameters.archType }}_${{parameters.buildConfig }}'      
+      name: 'build_test_p1_${{ parameters.displayNameArgs }}_${{ parameters.osIdentifier }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'      
       displayName: 'Build Test Pri1 ${{ parameters.displayNameArgs }} ${{ parameters.osIdentifier }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
 
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
@@ -92,7 +93,8 @@ jobs:
     condition: and(succeeded(), ${{ parameters.condition }})
 
     # Test job depends on the corresponding build job
-    dependsOn: ${{ format('build_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+    ${{ if ne(parameters.ignoreDependencyOnBuildJobs, true) }}:
+      dependsOn: ${{ format('build_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
 
     # Run all steps in the container.
     # Note that the containers are defined in platform-matrix.yml

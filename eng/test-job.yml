@@ -23,17 +23,18 @@ parameters:
 jobs:
 - template: build-test-job.yml
   parameters:
-    buildConfig:            ${{ parameters.buildConfig }}
-    archType:               ${{ parameters.archType }}
-    osGroup:                ${{ parameters.osGroup }}
-    osIdentifier:           ${{ parameters.osIdentifier }}
-    container:              ${{ parameters.container }}
-    testGroup:              ${{ parameters.testGroup }}
-    readyToRun:             ${{ parameters.readyToRun }}
-    crossrootfsDir:         ${{ parameters.crossrootfsDir }}
-    corefxTests:            ${{ parameters.coreFxTests }}
-    displayNameArgs:        ${{ parameters.displayNameArgs }}
-    condition:              ${{ parameters.condition }}
+    buildConfig:                 ${{ parameters.buildConfig }}
+    archType:                    ${{ parameters.archType }}
+    osGroup:                     ${{ parameters.osGroup }}
+    osIdentifier:                ${{ parameters.osIdentifier }}
+    container:                   ${{ parameters.container }}
+    testGroup:                   ${{ parameters.testGroup }}
+    readyToRun:                  ${{ parameters.readyToRun }}
+    crossrootfsDir:              ${{ parameters.crossrootfsDir }}
+    corefxTests:                 ${{ parameters.coreFxTests }}
+    displayNameArgs:             ${{ parameters.displayNameArgs }}
+    condition:                   ${{ parameters.condition }}
+    ignoreDependencyOnBuildJobs: ${{ parameters.ignoreDependencyOnBuildJobs }}
 
 - template: run-test-job.yml
   parameters:
