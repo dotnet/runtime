@@ -971,10 +971,6 @@ namespace System
             {
                 _originalUnicodeString = otherUri._originalUnicodeString;
             }
-            if (otherUri.AllowIdn && (otherUri.InFact(Flags.IdnHost) || otherUri.InFact(Flags.UnicodeHost)))
-            {
-                _dnsSafeHost = otherUri._dnsSafeHost;
-            }
         }
     }
 }
