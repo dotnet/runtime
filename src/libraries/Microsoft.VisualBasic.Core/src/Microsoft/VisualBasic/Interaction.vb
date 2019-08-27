@@ -3,8 +3,13 @@
 ' See the LICENSE file in the project root for more information.
 
 Imports System
+Imports System.Reflection
 Imports System.Text
 Imports System.Runtime.InteropServices
+
+#If Not PLATFORM_UAP Then
+Imports Microsoft.Win32
+#End If
 
 Imports Microsoft.VisualBasic.CompilerServices
 Imports Microsoft.VisualBasic.CompilerServices.ExceptionUtils
@@ -13,6 +18,104 @@ Imports Microsoft.VisualBasic.CompilerServices.Utils
 Namespace Microsoft.VisualBasic
 
     Public Module Interaction
+        Private m_SortedEnvList As System.Collections.SortedList
+
+        '============================================================================
+        ' Application/system interaction functions.
+        '============================================================================
+
+        Public Function Shell(ByVal PathName As String, Optional ByVal Style As AppWinStyle = AppWinStyle.MinimizedFocus, Optional ByVal Wait As Boolean = False, Optional ByVal Timeout As Integer = -1) As Integer
+            Return DirectCast(InvokeMethod("Shell", PathName, Style, Wait, Timeout), Integer)
+        End Function
+
+        Public Sub AppActivate(ByVal ProcessId As Integer)
+            InvokeMethod("AppActivateByProcessId", ProcessId)
+        End Sub
+
+        Public Sub AppActivate(ByVal Title As String)
+            InvokeMethod("AppActivateByTitle", Title)
+        End Sub
+
+        Private m_CommandLine As String
+
+        Public Function Command() As String
+
+            If m_CommandLine Is Nothing Then
+                Dim s As String = Environment.CommandLine
+
+                'The first element of the array is the .exe name
+                '  we must remove this when building the return value
+                If (s Is Nothing) OrElse (s.Length = 0) Then
+                    Return ""
+                End If
+
+                'The following code must remove the application name from the command line
+                ' without disturbing the arguments (trailing and embedded spaces)
+                '
+                'We also need to handle embedded spaces in the application name
+                ' as well as skipping over quotations used around embedded spaces within
+                ' the application name
+                '  examples:
+                '       f:\"Program Files"\Microsoft\foo.exe  a b  d   e  f 
+                '       "f:\"Program Files"\Microsoft\foo.exe" a b  d   e  f 
+                '       f:\Program Files\Microsoft\foo.exe                  a b  d   e  f 
+                Dim LengthOfAppName, j As Integer
+
+                'Remove the app name from the arguments
+                LengthOfAppName = Environment.GetCommandLineArgs(0).Length
+
+                Do
+                    j = s.IndexOf(ChrW(34), j)
+                    If j >= 0 AndAlso j <= LengthOfAppName Then
+                        s = s.Remove(j, 1)
+                    End If
+                Loop While (j >= 0 AndAlso j <= LengthOfAppName)
+
+                If j = 0 OrElse j > s.Length Then
+                    m_CommandLine = ""
+                Else
+                    m_CommandLine = LTrim(s.Substring(LengthOfAppName))
+                End If
+            End If
+            Return m_CommandLine
+        End Function
+
+        Public Function Environ(ByVal Expression As Integer) As String
+
+            'Validate index - Note that unlike the fx, this is a legacy VB function and the index is 1 based.
+            If Expression <= 0 OrElse Expression > 255 Then
+                Throw New ArgumentException(GetResourceString(SR.Argument_Range1toFF1, "Expression"))
+            End If
+
+            If m_SortedEnvList Is Nothing Then
+                SyncLock m_EnvironSyncObject
+                    If m_SortedEnvList Is Nothing Then
+                        'Constructing the sorted environment list is extremely slow, so we keep a copy around. This list must be alphabetized to match vb5/vb6 behavior
+                        m_SortedEnvList = New System.Collections.SortedList(Environment.GetEnvironmentVariables())
+                    End If
+                End SyncLock
+            End If
+
+            If Expression > m_SortedEnvList.Count Then
+                Return ""
+            End If
+
+            Dim EnvVarName As String = m_SortedEnvList.GetKey(Expression - 1).ToString()
+            Dim EnvVarValue As String = m_SortedEnvList.GetByIndex(Expression - 1).ToString()
+            Return (EnvVarName & "=" & EnvVarValue)
+        End Function
+
+        Private m_EnvironSyncObject As New Object
+
+        Public Function Environ(ByVal Expression As String) As String
+            Expression = Trim(Expression)
+
+            If Expression.Length = 0 Then
+                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Expression"))
+            End If
+
+            Return Environment.GetEnvironmentVariable(Expression)
+        End Function
 
         '============================================================================
         ' User interaction functions.
@@ -25,6 +128,23 @@ Namespace Microsoft.VisualBasic
             Throw New PlatformNotSupportedException()
 #End If
         End Sub
+
+        Public Function InputBox(ByVal Prompt As String, Optional ByVal Title As String = "", Optional ByVal DefaultResponse As String = "", Optional ByVal XPos As Integer = -1, Optional ByVal YPos As Integer = -1) As String
+            Return DirectCast(InvokeMethod("InputBox", Prompt, Title, DefaultResponse, XPos, YPos), String)
+        End Function
+
+        Public Function MsgBox(ByVal Prompt As Object, Optional ByVal Buttons As MsgBoxStyle = MsgBoxStyle.OkOnly, Optional ByVal Title As Object = Nothing) As MsgBoxResult
+            Return DirectCast(InvokeMethod("MsgBox", Prompt, Buttons, Title), MsgBoxResult)
+        End Function
+
+        Private Function InvokeMethod(methodName As String, ParamArray args As Object()) As Object
+            Dim type As Type = type.GetType("Microsoft.VisualBasic._Interaction, Microsoft.VisualBasic.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError:=False)
+            Dim method As MethodInfo = type?.GetMethod(methodName)
+            If method Is Nothing Then
+                Throw New PlatformNotSupportedException(SR.MethodRequiresSystemWindowsForms)
+            End If
+            Return method.Invoke(Nothing, BindingFlags.DoNotWrapExceptions, Nothing, args, Nothing)
+        End Function
 
         '============================================================================
         ' String functions.
@@ -195,6 +315,203 @@ Namespace Microsoft.VisualBasic
             Return Nothing 'If nothing matched above
         End Function
 
+        '============================================================================
+        ' Registry functions.
+        '============================================================================
+
+        Public Sub DeleteSetting(ByVal AppName As String, Optional ByVal Section As String = Nothing, Optional ByVal Key As String = Nothing)
+#If PLATFORM_UAP Then
+            Throw New PlatformNotSupportedException()
+#Else
+            Dim AppSection As String
+            Dim UserKey As RegistryKey
+            Dim AppSectionKey As RegistryKey = Nothing
+
+            CheckPathComponent(AppName)
+            AppSection = FormRegKey(AppName, Section)
+
+            Try
+                UserKey = Registry.CurrentUser
+
+                If IsNothing(Key) OrElse (Key.Length = 0) Then
+                    UserKey.DeleteSubKeyTree(AppSection)
+                Else
+                    AppSectionKey = UserKey.OpenSubKey(AppSection, True)
+                    If AppSectionKey Is Nothing Then
+                        Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Section"))
+                    End If
+
+                    AppSectionKey.DeleteValue(Key)
+                End If
+
+            Catch ex As Exception
+                Throw ex
+            Finally
+                If AppSectionKey IsNot Nothing Then
+                    AppSectionKey.Close()
+                End If
+            End Try
+#End If
+        End Sub
+
+        Public Function GetAllSettings(ByVal AppName As String, ByVal Section As String) As String(,)
+#If PLATFORM_UAP Then
+            Throw New PlatformNotSupportedException()
+#Else
+            Dim rk As RegistryKey
+            Dim sAppSect As String
+            Dim i As Integer
+            Dim lUpperBound As Integer
+            Dim sValueNames() As String
+            Dim sValues(,) As String
+            Dim o As Object
+            Dim sName As String
+
+            ' Check for empty string in path
+            CheckPathComponent(AppName)
+            CheckPathComponent(Section)
+            sAppSect = FormRegKey(AppName, Section)
+            rk = Registry.CurrentUser.OpenSubKey(sAppSect)
+
+
+            If rk Is Nothing Then
+                Return Nothing
+            End If
+
+            GetAllSettings = Nothing
+            Try
+                If rk.ValueCount <> 0 Then
+                    sValueNames = rk.GetValueNames()
+                    lUpperBound = sValueNames.GetUpperBound(0)
+                    ReDim sValues(lUpperBound, 1)
+
+                    For i = 0 To lUpperBound
+                        sName = sValueNames(i)
+
+                        'Assign name
+                        sValues(i, 0) = sName
+
+                        'Assign value
+                        o = rk.GetValue(sName)
+
+                        If (Not o Is Nothing) AndAlso (TypeOf o Is String) Then
+                            sValues(i, 1) = o.ToString()
+                        End If
+                    Next i
+
+                    GetAllSettings = sValues
+                End If
+
+            Catch ex As StackOverflowException
+                Throw ex
+            Catch ex As OutOfMemoryException
+                Throw ex
+            Catch ex As System.Threading.ThreadAbortException
+                Throw ex
+
+            Catch ex As Exception
+                'Consume the exception
+
+            Finally
+                rk.Close()
+            End Try
+#End If
+        End Function
+
+        Public Function GetSetting(ByVal AppName As String, ByVal Section As String, ByVal Key As String, Optional ByVal [Default] As String = "") As String
+#If PLATFORM_UAP Then
+            Throw New PlatformNotSupportedException()
+#Else
+            Dim rk As RegistryKey = Nothing
+            Dim sAppSect As String
+            Dim o As Object
+
+            'Check for empty strings
+            CheckPathComponent(AppName)
+            CheckPathComponent(Section)
+            CheckPathComponent(Key)
+            If [Default] Is Nothing Then
+                [Default] = ""
+            End If
+
+            'Open the sub key
+            sAppSect = FormRegKey(AppName, Section)
+            Try
+                rk = Registry.CurrentUser.OpenSubKey(sAppSect)    'By default, does not request write permission
+
+                'Get the key's value
+                If rk Is Nothing Then
+                    Return [Default]
+                End If
+
+                o = rk.GetValue(Key, [Default])
+            Finally
+                If rk IsNot Nothing Then
+                    rk.Close()
+                End If
+            End Try
+
+            If o Is Nothing Then
+                Return Nothing
+            ElseIf TypeOf o Is String Then ' - odd that this is required to be a string when it isn't in GetAllSettings() above...
+                Return DirectCast(o, String)
+            Else
+                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue))
+            End If
+#End If
+        End Function
+
+        Public Sub SaveSetting(ByVal AppName As String, ByVal Section As String, ByVal Key As String, ByVal Setting As String)
+#If PLATFORM_UAP Then
+            Throw New PlatformNotSupportedException()
+#Else
+            Dim rk As RegistryKey
+            Dim sIniSect As String
+
+            ' Check for empty string in path
+            CheckPathComponent(AppName)
+            CheckPathComponent(Section)
+            CheckPathComponent(Key)
+
+            sIniSect = FormRegKey(AppName, Section)
+            rk = Registry.CurrentUser.CreateSubKey(sIniSect)
+
+            If rk Is Nothing Then
+                'Subkey could not be created
+                Throw New ArgumentException(GetResourceString(SR.Interaction_ResKeyNotCreated1, sIniSect))
+            End If
+
+            Try
+                rk.SetValue(Key, Setting)
+            Catch ex As Exception
+                Throw ex
+            Finally
+                rk.Close()
+            End Try
+#End If
+        End Sub
+
+        '============================================================================
+        ' Private functions.
+        '============================================================================
+        Private Function FormRegKey(ByVal sApp As String, ByVal sSect As String) As String
+            Const REGISTRY_INI_ROOT As String = "Software\VB and VBA Program Settings"
+            'Forms the string for the key value
+            If IsNothing(sApp) OrElse (sApp.Length = 0) Then
+                FormRegKey = REGISTRY_INI_ROOT
+            ElseIf IsNothing(sSect) OrElse (sSect.Length = 0) Then
+                FormRegKey = REGISTRY_INI_ROOT & "\" & sApp
+            Else
+                FormRegKey = REGISTRY_INI_ROOT & "\" & sApp & "\" & sSect
+            End If
+        End Function
+
+        Private Sub CheckPathComponent(ByVal s As String)
+            If (s Is Nothing) OrElse (s.Length = 0) Then
+                Throw New ArgumentException(GetResourceString(SR.Argument_PathNullOrEmpty))
+            End If
+        End Sub
+
         Public Function CreateObject(ByVal ProgId As String, Optional ByVal ServerName As String = "") As Object
             'Creates local or remote COM2 objects.  Should not be used to create COM+ objects.
             'Applications that need to be STA should set STA either on their Sub Main via STAThreadAttribute
@@ -239,6 +556,43 @@ Namespace Microsoft.VisualBasic
             Catch e As Exception
                 Throw VbMakeException(vbErrors.CantCreateObject)
             End Try
+        End Function
+
+        Public Function GetObject(Optional ByVal PathName As String = Nothing, Optional ByVal [Class] As String = Nothing) As Object
+            'Only works for Com2 objects, not for COM+ objects.
+
+            If Len([Class]) = 0 Then
+                Try
+                    Return Marshal.BindToMoniker([PathName])
+                Catch ex As StackOverflowException
+                    Throw ex
+                Catch ex As OutOfMemoryException
+                    Throw ex
+                Catch ex As System.Threading.ThreadAbortException
+                    Throw ex
+                Catch
+                    Throw VbMakeException(vbErrors.CantCreateObject)
+                End Try
+            Else
+                If PathName Is Nothing Then
+                    Return Nothing
+                ElseIf Len(PathName) = 0 Then
+                    Try
+                        Dim t As Type = Type.GetTypeFromProgID([Class])
+                        Return System.Activator.CreateInstance(t)
+                    Catch ex As StackOverflowException
+                        Throw ex
+                    Catch ex As OutOfMemoryException
+                        Throw ex
+                    Catch ex As System.Threading.ThreadAbortException
+                        Throw ex
+                    Catch
+                        Throw VbMakeException(vbErrors.CantCreateObject)
+                    End Try
+                Else
+                    Return Nothing
+                End If
+            End If
         End Function
 
         '============================================================================

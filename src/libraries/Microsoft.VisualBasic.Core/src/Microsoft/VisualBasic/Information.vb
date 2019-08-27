@@ -52,6 +52,12 @@ Namespace Microsoft.VisualBasic
 
         End Function
 
+        Public Function Erl() As Integer
+            Dim oProj As ProjectData
+            oProj = ProjectData.GetProjectData()
+            Erl = oProj.m_Err.Erl
+        End Function
+
         Public Function IsArray(ByVal VarName As Object) As Boolean
 
             If VarName Is Nothing Then
