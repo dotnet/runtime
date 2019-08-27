@@ -82,6 +82,7 @@ struct OverrideProcArgs
 
         struct
         {
+            MethodTable*    m_pArrayMT;
             VARTYPE         m_vt;
 #ifdef FEATURE_COMINTEROP
             SIZE_T          m_cbElementSize;
