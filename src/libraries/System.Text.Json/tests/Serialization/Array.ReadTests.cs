@@ -450,11 +450,8 @@ namespace System.Text.Json.Serialization.Tests
             public IEnumerable<int> ParsedChild3 { get; set; }
         }
 
-        [Fact]
-        public static void ClassWithMixedSettersIsParsed()
-        {
-            // Tests that the parser picks back up after skipping/draining ignored elements.
-            string json = @"{
+        [Theory]
+        [InlineData(@"{
                 ""SkippedChild1"": {},
                 ""ParsedChild1"": [1],
                 ""UnmatchedProp"": null,
@@ -462,9 +459,18 @@ namespace System.Text.Json.Serialization.Tests
                 ""SkippedChild2"": {},
                 ""ParsedChild2"": [2,2],
                 ""SkippedChild3"": {},
-                ""ParsedChild3"": [3,3]
-            }";
-
+                ""ParsedChild3"": [3,3]}")]
+        [InlineData(@"{
+                ""SkippedChild1"": null,
+                ""ParsedChild1"": [1],
+                ""UnmatchedProp"": null,
+                ""SkippedChild2"": [],
+                ""SkippedChild2"": null,
+                ""ParsedChild2"": [2,2],
+                ""SkippedChild3"": null,
+                ""ParsedChild3"": [3,3]}")]
+        public static void ClassWithMixedSettersIsParsed(string json)
+        {
             ClassWithMixedSetters parsedObject = JsonSerializer.Deserialize<ClassWithMixedSetters>(json);
 
             Assert.Null(parsedObject.SkippedChild1);
