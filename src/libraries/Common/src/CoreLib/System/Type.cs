@@ -352,6 +352,25 @@ namespace System
             return new SignatureGenericMethodParameterType(position);
         }
 
+        // This is used by the ToString() overrides of all reflection types. The legacy behavior has the following problems:
+        //  1. Use only Name for nested types, which can be confused with global types and generic parameters of the same name.
+        //  2. Use only Name for generic parameters, which can be confused with nested types and global types of the same name.
+        //  3. Use only Name for all primitive types, void and TypedReference
+        //  4. MethodBase.ToString() use "ByRef" for byref parameters which is different than Type.ToString().
+        //  5. ConstructorInfo.ToString() outputs "Void" as the return type. Why Void?
+        internal string FormatTypeName()
+        {
+            Type elementType = GetRootElementType();
+
+            if (elementType.IsPrimitive ||
+                elementType.IsNested ||
+                elementType == typeof(void) ||
+                elementType == typeof(TypedReference))
+                return Name;
+
+            return ToString();
+        }
+
         public override string ToString() => "Type: " + Name;  // Why do we add the "Type: " prefix?
 
         public override bool Equals(object? o) => o == null ? false : Equals(o as Type);
