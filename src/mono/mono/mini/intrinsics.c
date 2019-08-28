@@ -119,8 +119,11 @@ llvm_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			opcode = OP_ABSF;
 		else if (!strcmp (cmethod->name, "Sqrt"))
 			opcode = OP_SQRTF;
-		else if (!strcmp (cmethod->name, "Max"))
+		// Max and Min can only be optimized in fast math mode
+		else if (!strcmp (cmethod->name, "Max") && mono_use_fast_math)
 			opcode = OP_RMAX;
+		else if (!strcmp (cmethod->name, "Min") && mono_use_fast_math)
+			opcode = OP_RMIN;
 		else if (!strcmp (cmethod->name, "Pow"))
 			opcode = OP_RPOW;
 		if (opcode) {
