@@ -184,7 +184,7 @@ corefx/.stamp-dl-corefx-tests-$(NETCORETESTS_VERSION):
 # Running individual test: MONO_ENV_OPTIONS="--debug" make run-tests-corefx-System.Collections.Tests
 #
 
-run-tests-corefx: update-tests-corefx
+run-tests-corefx: prepare update-tests-corefx
 	@rm -f .failures; \
 	counter=0; \
 	tests_count=$(words $(dir $(wildcard corefx/tests/extracted/*/))); \
