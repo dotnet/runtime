@@ -1144,6 +1144,7 @@ mono_init_native_crash_info (void)
 {
 	gdb_path = g_find_program_in_path ("gdb");
 	lldb_path = g_find_program_in_path ("lldb");
+	mono_threads_summarize_init ();
 }
 
 void

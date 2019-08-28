@@ -546,7 +546,7 @@ typedef struct {
 } MonoThreadSummary;
 
 void
-mono_threads_summarize_init (const char *timeline_dir);
+mono_threads_summarize_init (void);
 
 gboolean
 mono_threads_summarize (MonoContext *ctx, gchar **out, MonoStackHash *hashes, gboolean silent, gboolean signal_handler_controller, gchar *mem, size_t provided_size);
