@@ -336,6 +336,14 @@ NativeImagePerfMap::NativeImagePerfMap(Assembly * pAssembly, BSTR pDestPath)
 
     // Open the perf map file.
     OpenFile(sDestPerfMapPath);
+
+    // Determine whether to emit RVAs or file offsets based on the specified configuration.
+    m_EmitRVAs = true;
+    CLRConfigStringHolder wszFormat(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_NativeImagePerfMapFormat));
+    if(wszFormat != NULL && (wcsncmp(wszFormat, strOFFSET, wcslen(strOFFSET)) == 0))
+    {
+        m_EmitRVAs = false;
+    }
 }
 
 // Log data to the perfmap for the specified module.
@@ -371,7 +379,7 @@ void NativeImagePerfMap::LogDataForModule(Module * pModule)
 }
 
 // Log a pre-compiled method to the perfmap.
-void NativeImagePerfMap::LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode, PEImageLayout * pLoadedLayout, const char *optimizationTier)
+void NativeImagePerfMap::LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode, PEImageLayout *pLoadedLayout, const char *optimizationTier)
 {
     STANDARD_VM_CONTRACT;
 
@@ -387,14 +395,25 @@ void NativeImagePerfMap::LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode,
 
     // NGEN can split code between hot and cold sections which are separate in memory.
     // Emit an entry for each section if it is used.
+    PCODE addr;
     if (methodRegionInfo.hotSize > 0)
     {
-        LogMethod(pMethod, pLoadedLayout->RvaToOffset((PCODE)methodRegionInfo.hotStartAddress - baseAddr), methodRegionInfo.hotSize, optimizationTier);
+        addr = (PCODE)methodRegionInfo.hotStartAddress - baseAddr;
+        if (!m_EmitRVAs)
+        {
+            addr = pLoadedLayout->RvaToOffset(addr);
+        }
+        LogMethod(pMethod, addr, methodRegionInfo.hotSize, optimizationTier);
     }
 
     if (methodRegionInfo.coldSize > 0)
     {
-        LogMethod(pMethod, pLoadedLayout->RvaToOffset((PCODE)methodRegionInfo.coldStartAddress - baseAddr), methodRegionInfo.coldSize, optimizationTier);
+        addr = (PCODE)methodRegionInfo.coldStartAddress - baseAddr;
+        if (!m_EmitRVAs)
+        {
+            addr = pLoadedLayout->RvaToOffset(addr);
+        }
+        LogMethod(pMethod, addr, methodRegionInfo.coldSize, optimizationTier);
     }
 }
 
