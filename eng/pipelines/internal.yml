@@ -73,6 +73,7 @@ stages:
 
   - stage: test
     displayName: Test
+    dependsOn: build
     jobs:
     #
     # Release test builds
