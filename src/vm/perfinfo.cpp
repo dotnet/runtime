@@ -41,7 +41,9 @@ void PerfInfo::LogImage(PEFile* pFile, WCHAR* guid)
 
     SString value;
     const SString& path = pFile->GetPath();
-    value.Printf("%S%c%S", path.GetUnicode(), sDelimiter, guid);
+    PEImageLayout *pLoadedLayout = pFile->GetLoaded();
+    SIZE_T baseAddr = (SIZE_T)pLoadedLayout->GetBase();
+    value.Printf("%S%c%S%c%p", path.GetUnicode(), sDelimiter, guid, sDelimiter, baseAddr);
 
     SString command;
     command.Printf("%s", "ImageLoad");
