@@ -12,6 +12,10 @@ namespace System.Text.Json
         {
             if (state.Current.SkipProperty)
             {
+                // Clear the current property in case it is a dictionary, since dictionaries must have EndProperty() called when completed.
+                // A non-dictionary property can also have EndProperty() called when completed, although it is redundant.
+                state.Current.EndProperty();
+
                 return false;
             }
 
