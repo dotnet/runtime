@@ -6047,11 +6047,6 @@ MethodTableBuilder::InitMethodDesc(
     if (IsMdStatic(dwMemberAttrs))
         pNewMD->SetStatic();
 
-    // Set suppress unmanaged code access permission attribute
-
-    if (pNewMD->IsNDirect())
-        pNewMD->ComputeSuppressUnmanagedCodeAccessAttr(pIMDII);
-
 #ifdef _DEBUG 
     // Mark as many methods as synchronized as possible.
     //
