@@ -5889,7 +5889,9 @@ main_loop:
 			if (clause_args && clause_index == clause_args->exit_clause)
 				goto exit_frame;
 
+#if DEBUG_INTERP // This assert causes Linux/amd64/clang to use more stack.
 			g_assert (sp >= frame->stack);
+#endif
 			sp = frame->stack;
 
 			if (finally_ips) {
