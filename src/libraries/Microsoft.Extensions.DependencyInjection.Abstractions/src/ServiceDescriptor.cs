@@ -452,7 +452,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <summary>
         /// Creates an instance of <see cref="ServiceDescriptor"/> with the specified
         /// <typeparamref name="TService"/>, <paramref name="implementationInstance"/>,
-        /// and the <see cref="ServiceLifetime.Scoped"/> lifetime.
+        /// and the <see cref="ServiceLifetime.Singleton"/> lifetime.
         /// </summary>
         /// <typeparam name="TService">The type of the service.</typeparam>
         /// <param name="implementationInstance">The instance of the implementation.</param>
@@ -471,7 +471,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <summary>
         /// Creates an instance of <see cref="ServiceDescriptor"/> with the specified
         /// <paramref name="serviceType"/>, <paramref name="implementationInstance"/>,
-        /// and the <see cref="ServiceLifetime.Scoped"/> lifetime.
+        /// and the <see cref="ServiceLifetime.Singleton"/> lifetime.
         /// </summary>
         /// <param name="serviceType">The type of the service.</param>
         /// <param name="implementationInstance">The instance of the implementation.</param>
