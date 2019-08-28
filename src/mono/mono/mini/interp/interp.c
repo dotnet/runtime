@@ -283,6 +283,13 @@ get_context (void)
 	return context;
 }
 
+static void
+mono_interp_error_cleanup (MonoError* error)
+{
+	mono_error_cleanup (error); /* FIXME: don't swallow the error */
+	error_init_reuse (error); // one instruction, so this function is good inline candidate
+}
+
 static MONO_NEVER_INLINE void
 ves_real_abort (int line, MonoMethod *mh,
 		const unsigned short *ip, stackval *stack, stackval *sp)
@@ -3165,7 +3172,7 @@ mono_interp_box_nullable (InterpFrame* frame, const guint16* ip, stackval* sp, M
 	offset &= ~BOX_NOT_CLEAR_VT_SP;
 
 	sp [-1 - offset].data.o = mono_nullable_box (sp [-1 - offset].data.p, c, error);
-	mono_error_cleanup (error); /* FIXME: don't swallow the error */
+	mono_interp_error_cleanup (error); /* FIXME: don't swallow the error */
 
 	return pop_vt_sp ? ALIGN_TO (size, MINT_VT_ALIGNMENT) : 0;
 }
@@ -3223,7 +3230,7 @@ mono_interp_store_remote_field_vt (InterpFrame* frame, const guint16* ip, stackv
 	if (mono_object_is_transparent_proxy (o)) {
 		MonoClass *klass = ((MonoTransparentProxy*)o)->remote_class->proxy_class;
 		mono_store_remote_field_checked (o, klass, field, sp [-1].data.p, error);
-		mono_error_cleanup (error); /* FIXME: don't swallow the error */
+		mono_interp_error_cleanup (error); /* FIXME: don't swallow the error */
 	} else
 #endif
 		mono_value_copy_internal ((char *) o + field->offset, sp [-1].data.p, klass);
@@ -3500,7 +3507,7 @@ main_loop:
 
 			if (child_frame.imethod->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
 				child_frame.imethod = mono_interp_get_imethod (frame->imethod->domain, mono_marshal_get_native_wrapper (child_frame.imethod->method, FALSE, FALSE), error);
-				mono_error_cleanup (error); /* FIXME: don't swallow the error */
+				mono_interp_error_cleanup (error); /* FIXME: don't swallow the error */
 			}
 
 			if (csignature->hasthis) {
@@ -5072,7 +5079,7 @@ main_loop:
 			if (mono_object_is_transparent_proxy (o)) {
 				MonoClass *klass = ((MonoTransparentProxy*)o)->remote_class->proxy_class;
 				mono_store_remote_field_checked (o, klass, field, &sp [-1].data, error);
-				mono_error_cleanup (error); /* FIXME: don't swallow the error */
+				mono_interp_error_cleanup (error); /* FIXME: don't swallow the error */
 			} else
 #endif
 				stackval_to_data (field->type, &sp [-1], (char*)o + field->offset, FALSE);
@@ -5346,7 +5353,6 @@ main_loop:
 			if (!is_ok (error)) {
 				goto throw_error_label;
 			}
-			mono_error_cleanup (error); /* FIXME: don't swallow the error */
 			ip += 2;
 			/*if (profiling_classes) {
 				guint count = GPOINTER_TO_UINT (g_hash_table_lookup (profiling_classes, o->vtable->klass));
@@ -5584,7 +5590,7 @@ main_loop:
 			case MINT_STELEM_REF: {
 				if (sp [2].data.p) {
 					MonoObject *isinst_obj = mono_object_isinst_checked (sp [2].data.o, m_class_get_element_class (mono_object_class (o)), error);
-					mono_error_cleanup (error); /* FIXME: don't swallow the error */
+					mono_interp_error_cleanup (error); /* FIXME: don't swallow the error */
 					if (!isinst_obj)
 						THROW_EX (mono_get_exception_array_type_mismatch (), ip);
 				}
