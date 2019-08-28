@@ -111,13 +111,19 @@ namespace System
                 // OnDeserialization is called after each instance of this class is deserialized.
                 // This callback method performs TransitionTime validation after being deserialized.
 
-                try
+                // On Unix, TimeZoneInfos are created with empty/default TransitionTimes, since
+                // TransitionTimes are not used on Unix. When deserializing TransitionTimes, only
+                // validate it if it isn't an empty/default instance.
+                if (this != default)
                 {
-                    ValidateTransitionTime(_timeOfDay, _month, _week, _day, _dayOfWeek);
-                }
-                catch (ArgumentException e)
-                {
-                    throw new SerializationException(SR.Serialization_InvalidData, e);
+                    try
+                    {
+                        ValidateTransitionTime(_timeOfDay, _month, _week, _day, _dayOfWeek);
+                    }
+                    catch (ArgumentException e)
+                    {
+                        throw new SerializationException(SR.Serialization_InvalidData, e);
+                    }
                 }
             }
 
