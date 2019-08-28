@@ -114,6 +114,13 @@
     <StrongNameKeyId>SilverlightPlatform</StrongNameKeyId>
   </PropertyGroup>
 
+  <!-- SourceLink -->
+  <PropertyGroup>
+    <!-- This is needed to embed build-time generated sources such as eventing and resource files to sourcelink PDBs. -->
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <CoreCompileDependsOn>$(CoreCompileDependsOn);AddUntrackedResourcesForSourceLink</CoreCompileDependsOn>
+  </PropertyGroup>
+
   <!--
     Helper Paths
   -->
@@ -447,6 +454,16 @@
   <Import Project="CreateRuntimeRootILLinkDescriptorFile.targets" />
 
   <Target Name="CreateRuntimeRootIlLinkDescFile" BeforeTargets="CoreCompile" DependsOnTargets="_CreateILLinkRuntimeRootDescriptorFile">
+  </Target>
+
+  <!-- This is working around dotnet/coreclr#26371 until dotnet/sourcelink#392 gets solved -->
+  <Target Name="AddUntrackedResourcesForSourceLink"
+    BeforeTargets="CoreCompile"
+    DependsOnTargets="SetEmbeddedFilesFromSourceControlManagerUntrackedFiles;
+                      _GenerateResxSource" >
+    <ItemGroup>
+      <EmbeddedFiles Include="@(GeneratedResxSource)" />
+    </ItemGroup>
   </Target>
 
   <ItemGroup>
