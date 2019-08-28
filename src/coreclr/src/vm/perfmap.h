@@ -81,8 +81,13 @@ public:
 class NativeImagePerfMap : PerfMap
 {
 private:
+    const WCHAR *strOFFSET = W("OFFSET");
+
+    // Specify the address format since it's now possible for 'perf script' to output file offsets or RVAs.
+    bool m_EmitRVAs;
+
     // Log a pre-compiled method to the map.
-    void LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode, PEImageLayout * pLoadedLayout, const char *optimizationTier);
+    void LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode, PEImageLayout *pLoadedLayout, const char *optimizationTier);
 
 public:
     // Construct a new map for a native image.
