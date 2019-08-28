@@ -668,7 +668,6 @@ public:
         return GetMethodTable()->IsInterface();
     }
 
-    void ComputeSuppressUnmanagedCodeAccessAttr(IMDInternalImport *pImport);
     BOOL HasNativeCallableAttribute();
 
 #ifdef FEATURE_COMINTEROP 
