@@ -98,6 +98,7 @@ namespace System.Text.Json
         {
             if (state.Current.SkipProperty)
             {
+                // Todo: determine if this is reachable.
                 return;
             }
 

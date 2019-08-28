@@ -365,19 +365,23 @@ namespace System.Text.Json.Serialization.Tests
             public SimpleTestClass AnotherParsedChild { get; set; }
         }
 
-        [Fact]
-        public static void ClassWithNoSetterAndValidProperty()
-        {
-            // Tests that the parser picks back up after skipping/draining ignored elements.
-            string json = @"{
+        [Theory]
+        [InlineData(@"{
                 ""SkippedChild"": {},
                 ""ParsedChild"": {""MyInt16"":18},
                 ""UnmatchedProp"": null,
                 ""AnotherSkippedChild"": {""DrainProp1"":{}, ""DrainProp2"":{""SubProp"":0}},
                 ""AnotherSkippedChild"": {},
-                ""AnotherParsedChild"": {""MyInt16"":20}
-            }";
-
+                ""AnotherParsedChild"": {""MyInt16"":20}}")]
+        [InlineData(@"{
+                ""SkippedChild"": null,
+                ""ParsedChild"": {""MyInt16"":18},
+                ""UnmatchedProp"": null,
+                ""AnotherSkippedChild"": {""DrainProp1"":{}, ""DrainProp2"":{""SubProp"":0}},
+                ""AnotherSkippedChild"": null,
+                ""AnotherParsedChild"": {""MyInt16"":20}}")]
+        public static void ClassWithNoSetterAndValidProperty(string json)
+        {
             ClassWithNoSetter parsedObject = JsonSerializer.Deserialize<ClassWithNoSetter>(json);
 
             Assert.Null(parsedObject.SkippedChild);
