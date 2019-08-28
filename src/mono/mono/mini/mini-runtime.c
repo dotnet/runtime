@@ -4077,8 +4077,12 @@ mini_init (const char *filename, const char *runtime_version)
 {
 	ERROR_DECL (error);
 	MonoDomain *domain;
+
 	MonoRuntimeCallbacks callbacks;
-	MonoThreadInfoRuntimeCallbacks ticallbacks;
+
+	static const MonoThreadInfoRuntimeCallbacks ticallbacks = {
+		MONO_THREAD_INFO_RUNTIME_CALLBACKS (MONO_INIT_CALLBACK, mono)
+	};
 
 	MONO_VES_INIT_BEGIN ();
 
@@ -4171,12 +4175,6 @@ mini_init (const char *filename, const char *runtime_version)
 #endif
 
 	mono_install_callbacks (&callbacks);
-
-	memset (&ticallbacks, 0, sizeof (ticallbacks));
-	ticallbacks.setup_async_callback = mono_setup_async_callback;
-	ticallbacks.thread_state_init_from_sigctx = mono_thread_state_init_from_sigctx;
-	ticallbacks.thread_state_init_from_handle = mono_thread_state_init_from_handle;
-	ticallbacks.thread_state_init = mono_thread_state_init;
 
 #ifndef HOST_WIN32
 	mono_w32handle_init ();

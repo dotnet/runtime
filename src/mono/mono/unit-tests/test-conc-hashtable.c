@@ -319,7 +319,7 @@ benchmark_glib (void)
 }
 
 static void
-thread_state_init (MonoThreadUnwindState *ctx)
+monotest_thread_state_init (MonoThreadUnwindState *ctx)
 {
 }
 
@@ -329,16 +329,22 @@ extern "C"
 int
 test_conc_hashtable_main (void);
 
+
+#define monotest_setup_async_callback          NULL
+#define monotest_thread_state_init_from_sigctx NULL
+#define monotest_thread_state_init_from_handle NULL
+
 int
 test_conc_hashtable_main (void)
 {
-	MonoThreadInfoRuntimeCallbacks ticallbacks;
+	static const MonoThreadInfoRuntimeCallbacks ticallbacks = {
+		MONO_THREAD_INFO_RUNTIME_CALLBACKS (MONO_INIT_CALLBACK, monotest)
+	};
+
 	int res = 0;
 
 	CHECKED_MONO_INIT ();
 	mono_thread_info_init (sizeof (MonoThreadInfo));
-	memset (&ticallbacks, 0, sizeof (ticallbacks));
-	ticallbacks.thread_state_init = thread_state_init;
 	mono_thread_info_runtime_init (&ticallbacks);
 #ifndef HOST_WIN32
 	mono_w32handle_init ();

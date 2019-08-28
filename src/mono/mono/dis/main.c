@@ -1980,14 +1980,20 @@ usage (void)
 }
 
 static void
-thread_state_init (MonoThreadUnwindState *ctx)
+monodis_thread_state_init (MonoThreadUnwindState *ctx)
 {
 }
+
+#define monodis_setup_async_callback          NULL
+#define monodis_thread_state_init_from_sigctx NULL
+#define monodis_thread_state_init_from_handle NULL
 
 int
 main (int argc, char *argv [])
 {
-	MonoThreadInfoRuntimeCallbacks ticallbacks;
+	static const MonoThreadInfoRuntimeCallbacks ticallbacks = {
+		MONO_THREAD_INFO_RUNTIME_CALLBACKS (MONO_INIT_CALLBACK, monodis)
+	};
 
 	GList *input_files = NULL, *l;
 	int i, j;
@@ -2042,8 +2048,6 @@ main (int argc, char *argv [])
 	CHECKED_MONO_INIT ();
 	mono_counters_init ();
 	mono_tls_init_runtime_keys ();
-	memset (&ticallbacks, 0, sizeof (ticallbacks));
-	ticallbacks.thread_state_init = thread_state_init;
 #ifndef HOST_WIN32
 	mono_w32handle_init ();
 #endif

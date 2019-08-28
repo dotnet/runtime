@@ -1400,6 +1400,9 @@ mono_qsort (void* base, size_t num, size_t size, int (*compare)(const void*, con
 	qsort (base, num, size, compare);
 }
 
+#define MONO_DECL_CALLBACK(prefix, ret, name, sig) ret (*name) sig;
+#define MONO_INIT_CALLBACK(prefix, ret, name, sig) prefix ## _ ## name,
+
 // For each allocator; i.e. returning gpointer that needs to be cast.
 // Macros do not recurse, so naming function and macro the same is ok.
 // However these are also already macros.
