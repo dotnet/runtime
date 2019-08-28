@@ -146,8 +146,6 @@ ComPlusCallInfo *ComPlusCall::PopulateComPlusCallMethodDesc(MethodDesc* pMD, DWO
     if (pdwStubFlags == NULL)
         return pComInfo;
 
-    pMD->ComputeSuppressUnmanagedCodeAccessAttr(pMD->GetMDImport());
-
     //
     // Compute NDirectStubFlags
     //

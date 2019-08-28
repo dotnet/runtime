@@ -5325,19 +5325,6 @@ void NDirectMethodDesc::InitEarlyBoundNDirectTarget()
 #endif // !CROSSGEN_COMPILE
 
 //*******************************************************************************
-void MethodDesc::ComputeSuppressUnmanagedCodeAccessAttr(IMDInternalImport *pImport)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END;
-
-}
-
-//*******************************************************************************
 BOOL MethodDesc::HasNativeCallableAttribute()
 {
 
