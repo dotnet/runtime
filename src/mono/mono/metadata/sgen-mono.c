@@ -100,7 +100,7 @@ scan_object_for_binary_protocol_copy_wbarrier (gpointer dest, char *start, mword
 #endif
 
 void
-mono_gc_wbarrier_value_copy_internal (gpointer dest, gpointer src, int count, MonoClass *klass)
+mono_gc_wbarrier_value_copy_internal (gpointer dest, gconstpointer src, int count, MonoClass *klass)
 {
 	HEAVY_STAT (++stat_wbarrier_value_copy);
 	g_assert (m_class_is_valuetype (klass));
@@ -1643,6 +1643,116 @@ report_handle_stack_roots (GCRootReport *report, SgenThreadInfo *info, gboolean 
 	mono_handle_stack_scan (info->client_info.info.handle_stack, report_handle_stack_root, &ud, ud.precise, FALSE);
 }
 
+static void*
+get_aligned_stack_start (SgenThreadInfo *info)
+{
+	void* aligned_stack_start = (void*)(mword) ALIGN_TO ((mword)info->client_info.stack_start, SIZEOF_VOID_P);
+#if _WIN32
+// Due to the guard page mechanism providing gradual commit of Windows stacks,
+// stack pages must be touched in order.
+//
+// This mechanism is only transparent (kernel handles page faults and user never sees them),
+// for the thread touching its own stack. Not for cross-thread stack references as are being
+// done here.
+//
+// Here is a small program that demonstrates the behavior:
+//
+// #include <windows.h>
+// #include <stdio.h>
+//
+// #pragma optimize ("x", on)
+//
+// int volatile * volatile Event1;
+// int volatile Event2;
+// HANDLE ThreadHandle;
+//
+// DWORD __stdcall thread (void* x)
+// {
+// 	while (!Event1)
+// 		_mm_pause ();
+//
+// 	__try {
+// 		*Event1 = 0x123;
+// 	} __except (GetExceptionCode () == STATUS_GUARD_PAGE_VIOLATION) {
+// 		printf ("oops\n");
+// 	}
+// 	Event2 = 1;
+// 	return 0;
+// }
+//
+// int unlucky;
+// int print = 1;
+//
+// __declspec (noinline)
+// __declspec (safebuffers)
+// void f (void)
+// {
+// 	int local [5];
+//
+// 	while (unlucky && ((size_t)_AddressOfReturnAddress () - 8) & 0xFFF)
+// 		f ();
+//
+// 	unlucky = 0;
+// 	Event1 = local;
+//
+// 	while (!Event2)
+// 		_mm_pause ();
+//
+// 	if (print) {
+// 		printf ("%X\n", local [0]);
+// 		print = 0;
+// 	}
+//
+// 	if (ThreadHandle) {
+// 		WaitForSingleObject (ThreadHandle, INFINITE);
+// 		ThreadHandle = NULL;
+// 	}
+// }
+//
+// int main (int argc, char** argv)
+// {
+// 	unlucky = argc > 1;
+// 	ThreadHandle = CreateThread (0, 0, thread, 0, 0, 0);
+// 	f ();
+// }
+//
+// This would seem to be a problem otherwise, not just for garbage collectors.
+//
+// We therefore have a few choices:
+//
+// 1. Historical slow code: VirtualQuery and check for guard page. Slow.
+//
+// MEMORY_BASIC_INFORMATION mem_info;
+// SIZE_T result = VirtualQuery (info->client_info.stack_start, &mem_info, sizeof(mem_info));
+// g_assert (result != 0);
+// if (mem_info.Protect & PAGE_GUARD) {
+// 	aligned_stack_start = ((char*) mem_info.BaseAddress) + mem_info.RegionSize;
+// }
+//
+// VirtualQuery not historically allowed in UWP, but it is now.
+//
+// 2. Touch page under __try / __except and handle STATUS_GUARD_PAGE_VIOLATION.
+//    Good but compiler specific.
+//
+// __try {
+// 	*(volatile char*)aligned_stack_start;
+// } __except (GetExceptionCode () == STATUS_GUARD_PAGE_VIOLATION) {
+// 	MEMORY_BASIC_INFORMATION mem_info;
+// 	const SIZE_T result = VirtualQuery(aligned_stack_start, &mem_info, sizeof(mem_info));
+// 	g_assert (result >= sizeof (mem_info));
+// 	VirtualProtect (aligned_stack_start, 1, mem_info.Protect | PAGE_GUARD, &mem_info.Protect);
+// }
+//
+// 3. Vectored exception handler. Not terrible. Not compiler specific.
+//
+// 4. Check against the high watermark in the TIB. That is done.
+//  TIB is the public prefix TEB. It is Windows.h, ntddk.h, etc.
+//
+	aligned_stack_start = MAX (aligned_stack_start, info->client_info.info.windows_tib->StackLimit);
+#endif
+	return aligned_stack_start;
+}
+
 static void
 report_stack_roots (void)
 {
@@ -1661,23 +1771,7 @@ report_stack_roots (void)
 		g_assert (info->client_info.stack_start);
 		g_assert (info->client_info.info.stack_end);
 
-		aligned_stack_start = (void*)(mword) ALIGN_TO ((mword)info->client_info.stack_start, SIZEOF_VOID_P);
-#ifdef HOST_WIN32
-		/* Windows uses a guard page before the committed stack memory pages to detect when the
-		   stack needs to be grown. If we suspend a thread just after a function prolog has
-		   decremented the stack pointer to point into the guard page but before the thread has
-		   been able to read or write to that page, starting the stack scan at aligned_stack_start
-		   will raise a STATUS_GUARD_PAGE_VIOLATION and the process will crash. This code uses
-		   VirtualQuery() to determine whether stack_start points into the guard page and then
-		   updates aligned_stack_start to point at the next non-guard page. */
-		MEMORY_BASIC_INFORMATION mem_info;
-		SIZE_T result = VirtualQuery (info->client_info.stack_start, &mem_info, sizeof(mem_info));
-		g_assert (result != 0);
-		if (mem_info.Protect & PAGE_GUARD) {
-			aligned_stack_start = ((char*) mem_info.BaseAddress) + mem_info.RegionSize;
-		}
-#endif
-
+		aligned_stack_start = get_aligned_stack_start (info);
 		g_assert (info->client_info.suspend_done);
 
 		report_conservative_roots (&report, aligned_stack_start, (void **)aligned_stack_start, (void **)info->client_info.info.stack_end);
@@ -2176,6 +2270,11 @@ sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 		return;
 #endif
 
+	SGEN_TV_DECLARE (scan_thread_data_start);
+	SGEN_TV_DECLARE (scan_thread_data_end);
+
+	SGEN_TV_GETTIME (scan_thread_data_start);
+
 	FOREACH_THREAD_EXCLUDE (info, MONO_THREAD_INFO_FLAGS_NO_GC) {
 		int skip_reason = 0;
 		void *aligned_stack_start;
@@ -2208,23 +2307,7 @@ sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 		g_assert (info->client_info.stack_start);
 		g_assert (info->client_info.info.stack_end);
 
-		aligned_stack_start = (void*)(mword) ALIGN_TO ((mword)info->client_info.stack_start, SIZEOF_VOID_P);
-#ifdef HOST_WIN32
-		/* Windows uses a guard page before the committed stack memory pages to detect when the
-		   stack needs to be grown. If we suspend a thread just after a function prolog has
-		   decremented the stack pointer to point into the guard page but before the thread has
-		   been able to read or write to that page, starting the stack scan at aligned_stack_start
-		   will raise a STATUS_GUARD_PAGE_VIOLATION and the process will crash. This code uses
-		   VirtualQuery() to determine whether stack_start points into the guard page and then
-		   updates aligned_stack_start to point at the next non-guard page. */
-		MEMORY_BASIC_INFORMATION mem_info;
-		SIZE_T result = VirtualQuery(info->client_info.stack_start, &mem_info, sizeof(mem_info));
-		g_assert (result != 0);
-		if (mem_info.Protect & PAGE_GUARD) {
-			aligned_stack_start = ((char*) mem_info.BaseAddress) + mem_info.RegionSize;
-		}
-#endif
-
+		aligned_stack_start = get_aligned_stack_start (info);
 		g_assert (info->client_info.suspend_done);
 		SGEN_LOG (3, "Scanning thread %p, range: %p-%p, size: %zd, pinned=%zd", info, info->client_info.stack_start, info->client_info.info.stack_end, (char*)info->client_info.info.stack_end - (char*)info->client_info.stack_start, sgen_get_pinned_count ());
 		if (mono_gc_get_gc_callbacks ()->thread_mark_func && !conservative_stack_mark) {
@@ -2271,6 +2354,9 @@ sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 			}
 		}
 	} FOREACH_THREAD_END
+
+	SGEN_TV_GETTIME (scan_thread_data_end);
+	SGEN_LOG (2, "Scanning thread data: %lld usecs", (long long)(SGEN_TV_ELAPSED (scan_thread_data_start, scan_thread_data_end) / 10));
 }
 
 /*

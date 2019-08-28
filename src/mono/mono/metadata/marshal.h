@@ -131,7 +131,8 @@ typedef enum {
 	WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG,
 	WRAPPER_SUBTYPE_INTERP_IN,
 	WRAPPER_SUBTYPE_INTERP_LMF,
-	WRAPPER_SUBTYPE_AOT_INIT
+	WRAPPER_SUBTYPE_AOT_INIT,
+	WRAPPER_SUBTYPE_LLVM_FUNC
 } WrapperSubtype;
 
 typedef struct {
@@ -224,6 +225,17 @@ typedef struct {
 	MonoAotInitSubtype subtype;
 } AOTInitWrapperInfo;
 
+typedef enum {
+	LLVM_FUNC_WRAPPER_GC_POLL = 0
+} MonoLLVMFuncWrapperSubtype;
+
+typedef struct {
+	// We emit this code when we init the module,
+	// and later match up the native code with this method
+	// using the name.
+	MonoLLVMFuncWrapperSubtype subtype;
+} LLVMFuncWrapperInfo;
+
 /*
  * This structure contains additional information to uniquely identify a given wrapper
  * method. It can be retrieved by mono_marshal_get_wrapper_info () for certain types
@@ -270,6 +282,8 @@ typedef struct {
 		InterpInWrapperInfo interp_in;
 		/* AOT_INIT */
 		AOTInitWrapperInfo aot_init;
+		/* LLVM_FUNC */
+		LLVMFuncWrapperInfo llvm_func;
 	} d;
 } WrapperInfo;
 
@@ -440,6 +454,9 @@ mono_marshal_get_aot_init_wrapper (MonoAotInitSubtype subtype) MONO_LLVM_INTERNA
 
 const char *
 mono_marshal_get_aot_init_wrapper_name (MonoAotInitSubtype subtype) MONO_LLVM_INTERNAL;
+
+MonoMethod *
+mono_marshal_get_llvm_func_wrapper (MonoLLVMFuncWrapperSubtype subtype) MONO_LLVM_INTERNAL;
 
 MonoMethod *
 mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, gboolean aot);

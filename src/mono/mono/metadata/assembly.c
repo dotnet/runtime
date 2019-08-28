@@ -381,6 +381,9 @@ chain_redirections_loadfrom (MonoAssemblyLoadContext *alc, MonoImage *image, Mon
 static MonoAssembly*
 mono_problematic_image_reprobe (MonoAssemblyLoadContext *alc, MonoImage *image, MonoImageOpenStatus *status);
 
+static MonoAssembly *
+invoke_assembly_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, gchar **apath);
+
 static MonoBoolean
 mono_assembly_is_in_gac (const gchar *filanem);
 static MonoAssemblyName*
@@ -1633,31 +1636,39 @@ netcore_load_reference (MonoAssemblyName *aname, MonoAssemblyLoadContext *alc, M
 	 *
 	 * 2. If it's a non-default ALC, call the Load() method.
 	 *
-	 * 3. Try to load using the default ALC (except for satellite requests).
+	 * 3. If the ALC is not the default and this is not a satellite request,
+	 *    check if it's already loaded by the default ALC.
 	 *
-	 * 4. Call ALC ResolveSatelliteAssembly method (for satellite requests).
+	 * 4. If the ALC is not the default or this is not a satellite request,
+	 *    check the TPA paths and ApplicationBase.
 	 *
-	 * 5. Call ALC Resolving event.
+	 * 5. If this is a satellite request, call the ALC ResolveSatelliteAssembly method.
 	 *
-	 * 6. Call the ALC AssemblyResolve event (except for corlib satellite assemblies).
+	 * 6. Call the ALC Resolving event.
 	 *
-	 * 7. Return NULL.
+	 * 7. Call the ALC AssemblyResolve event (except for corlib satellite assemblies).
+	 *
+	 * 8. Return NULL.
 	 */
 
 	reference = mono_assembly_loaded_internal (alc, aname, FALSE);
 	if (reference)
 		goto leave;
 
-	if (!is_default)
+	if (!is_default) {
 		reference = mono_alc_invoke_resolve_using_load_nofail (alc, aname);
-	if (reference)
-		goto leave;
+		if (reference)
+			goto leave;
+	}
+
+	if (!is_default && !is_satellite) {
+		reference = mono_assembly_loaded_internal (mono_domain_default_alc (mono_alc_domain (alc)), aname, FALSE);
+		if (reference)
+			goto leave;
+	}
 
 	if (is_default || !is_satellite) {
-		MonoAssemblyByNameRequest req;
-		mono_assembly_request_prepare_byname (&req, MONO_ASMCTX_DEFAULT, mono_domain_default_alc (mono_alc_domain (alc)));
-		req.requesting_assembly = requesting;
-		reference = mono_assembly_request_byname_nosearch (aname, &req, NULL);
+		reference = invoke_assembly_preload_hook (mono_domain_default_alc (mono_alc_domain (alc)), aname, assemblies_path);
 		if (reference)
 			goto leave;
 	}
@@ -3484,11 +3495,22 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 	
 	parts = tmp = g_strsplit (name, ",", 6);
 	if (!tmp || !*tmp) {
-		g_strfreev (tmp);
-		return FALSE;
+		goto cleanup_and_fail;
 	}
 
 	dllname = g_strstrip (*tmp);
+	// Simple name cannot be empty
+	if (!*dllname) {
+		goto cleanup_and_fail;
+	}
+	// Characters /, :, and \ not allowed in simple names
+	while (*dllname) {
+		gchar tmp_char = *dllname;
+		if (tmp_char == '/' || tmp_char == ':' || tmp_char == '\\')
+			goto cleanup_and_fail;
+		dllname++;
+	}
+	dllname = *tmp;
 	
 	tmp++;
 
@@ -3582,8 +3604,7 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 			continue;
 		}
 
-		g_strfreev (parts);
-		return FALSE;
+		goto cleanup_and_fail;
 	}
 
 	/* if retargetable flag is set, then we must have a fully qualified name */

@@ -656,7 +656,9 @@ typedef enum {
 	LLVMArgFpStruct,
 	LLVMArgVtypeByRef,
 	/* Vtype returned as an int */
-	LLVMArgVtypeAsScalar
+	LLVMArgVtypeAsScalar,
+	/* Address to local vtype passed as argument (using register or stack). */
+	LLVMArgVtypeAddr
 } LLVMArgStorage;
 
 typedef struct {

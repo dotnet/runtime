@@ -97,8 +97,8 @@ static gboolean no_exec = FALSE;
 
 #ifdef ENABLE_NETCORE
 static int n_appctx_props;
-static char **appctx_keys;
-static char **appctx_values;
+static gunichar2 **appctx_keys;
+static gunichar2 **appctx_values;
 #endif
 
 static const char *
@@ -308,13 +308,16 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 	mono_gc_init_icalls ();
 
 	mono_install_assembly_preload_hook_v2 (mono_domain_assembly_preload, GUINT_TO_POINTER (FALSE), FALSE);
-	mono_install_assembly_preload_hook_v2 (mono_domain_assembly_preload, GUINT_TO_POINTER (TRUE), TRUE);
 	mono_install_assembly_search_hook_v2 (mono_domain_assembly_search, GUINT_TO_POINTER (FALSE), FALSE, FALSE);
-	mono_install_assembly_search_hook_v2 (mono_domain_assembly_search, GUINT_TO_POINTER (TRUE), TRUE, FALSE);
 	mono_install_assembly_search_hook_v2 (mono_domain_assembly_postload_search, GUINT_TO_POINTER (FALSE), FALSE, TRUE);
-	mono_install_assembly_search_hook_v2 (mono_domain_assembly_postload_search, GUINT_TO_POINTER (TRUE), TRUE, TRUE);
 	mono_install_assembly_load_hook_v2 (mono_domain_fire_assembly_load, NULL);
+
+#ifndef ENABLE_NETCORE // refonly hooks
+	mono_install_assembly_preload_hook_v2 (mono_domain_assembly_preload, GUINT_TO_POINTER (TRUE), TRUE);
+	mono_install_assembly_search_hook_v2 (mono_domain_assembly_search, GUINT_TO_POINTER (TRUE), TRUE, FALSE);
+	mono_install_assembly_search_hook_v2 (mono_domain_assembly_postload_search, GUINT_TO_POINTER (TRUE), TRUE, TRUE);
 	mono_install_assembly_asmctx_from_path_hook (mono_domain_asmctx_from_path, NULL);
+#endif
 
 	mono_thread_init (start_cb, attach_cb);
 
@@ -2464,9 +2467,14 @@ ves_icall_System_Reflection_Assembly_InternalLoad (MonoStringHandle name_handle,
 	gboolean parsed;
 	char *name;
 
+	MonoAssembly *requesting_assembly = mono_runtime_get_caller_from_stack_mark (stack_mark);
 	MonoAssemblyLoadContext *alc = (MonoAssemblyLoadContext *)load_Context;
+
 	if (!alc)
-		alc = mono_domain_default_alc (mono_domain_get ());
+		alc = mono_assembly_get_alc (requesting_assembly);
+	if (!alc)
+		g_assert_not_reached ();
+	
 	MonoDomain *domain = mono_alc_domain (alc);
 	g_assert (alc);
 	asmctx = MONO_ASMCTX_DEFAULT;
@@ -2477,7 +2485,7 @@ ves_icall_System_Reflection_Assembly_InternalLoad (MonoStringHandle name_handle,
 	 * other than for corlib satellite assemblies (which I've dealt with further down the call stack).
 	 */
 	//req.no_postload_search = TRUE;
-	req.requesting_assembly = mono_runtime_get_caller_from_stack_mark (stack_mark);
+	req.requesting_assembly = requesting_assembly;
 
 	name = mono_string_handle_to_utf8 (name_handle, error);
 	goto_if_nok (error, fail);
@@ -3096,7 +3104,6 @@ unload_thread_main (void *arg)
 {
 	unload_data *data = (unload_data*)arg;
 	MonoDomain *domain = data->domain;
-	MonoInternalThread *internal;
 	int i;
 	gsize result = 1; // failure
 
@@ -3329,12 +3336,12 @@ void
 mono_runtime_register_appctx_properties (int nprops, const char **keys,  const char **values)
 {
 	n_appctx_props = nprops;
-	appctx_keys = g_new0 (char*, nprops);
-	appctx_values = g_new0 (char*, nprops);
+	appctx_keys = g_new0 (gunichar2*, nprops);
+	appctx_values = g_new0 (gunichar2*, nprops);
 
 	for (int i = 0; i < nprops; ++i) {
-		appctx_keys [i] = g_strdup (keys [i]);
-		appctx_values [i] = g_strdup (values [i]);
+		appctx_keys [i] = g_utf8_to_utf16 (keys [i], strlen (keys [i]), NULL, NULL, NULL);
+		appctx_values [i] = g_utf8_to_utf16 (values [i], strlen (values [i]), NULL, NULL, NULL);
 	}
 }
 

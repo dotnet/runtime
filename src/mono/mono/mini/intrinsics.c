@@ -1692,6 +1692,15 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		}
 	}
 
+	/* Workaround for the compiler server IsMemoryAvailable. */
+	if (!strcmp ("Microsoft.CodeAnalysis.CompilerServer", cmethod_klass_name_space) && !strcmp ("MemoryHelper", cmethod_klass_name)) {
+		if (!strcmp (cmethod->name, "IsMemoryAvailable")) {
+			EMIT_NEW_ICONST (cfg, ins, 1);
+			ins->type = STACK_I4;
+			return ins;
+		}
+	}
+
 #ifdef ENABLE_NETCORE
 	// Return false for IsSupported for all types in System.Runtime.Intrinsics.X86 
 	// as we don't support them now
@@ -1868,7 +1877,13 @@ mini_emit_inst_for_field_load (MonoCompile *cfg, MonoClassField *field)
 		is_le = (TARGET_BYTE_ORDER == G_LITTLE_ENDIAN);
 		EMIT_NEW_ICONST (cfg, ins, is_le);
 		return ins;
+	} 
+#ifdef ENABLE_NETCORE
+	else if ((klass == mono_defaults.int_class || klass == mono_defaults.uint_class) && strcmp (field->name, "Zero") == 0) {
+		EMIT_NEW_PCONST (cfg, ins, 0);
+		return ins;
 	}
+#endif
 	return NULL;
 }
 #else

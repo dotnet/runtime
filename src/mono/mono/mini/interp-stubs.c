@@ -178,7 +178,7 @@ g_assert_not_reached ();
 }
 
 static void
-stub_data_to_frame_arg (MonoInterpFrameHandle frame, MonoMethodSignature *sig, int index, gpointer data)
+stub_data_to_frame_arg (MonoInterpFrameHandle frame, MonoMethodSignature *sig, int index, gconstpointer data)
 {
 	g_assert_not_reached ();
 }

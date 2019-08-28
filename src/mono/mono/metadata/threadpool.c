@@ -725,6 +725,20 @@ ves_icall_System_Threading_ThreadPool_SetMaxThreadsNative (gint32 worker_threads
 	return TRUE;
 }
 
+#ifdef ENABLE_NETCORE
+gint32
+ves_icall_System_Threading_ThreadPool_GetThreadCount (MonoError *error)
+{
+	return mono_threadpool_worker_get_threads_count ();
+}
+
+gint64
+ves_icall_System_Threading_ThreadPool_GetCompletedWorkItemCount (MonoError *error)
+{
+	return mono_threadpool_worker_get_completed_threads_count ();
+}
+#endif
+
 void
 ves_icall_System_Threading_ThreadPool_InitializeVMTp (MonoBoolean *enable_worker_tracking, MonoError *error)
 {

@@ -75,3 +75,15 @@ mono_threadpool_worker_notify_completed (void)
 {
 	return FALSE;
 }
+
+#ifdef ENABLE_NETCORE
+gint64 mono_threadpool_worker_get_completed_threads_count (void)
+{
+	return 0;
+}
+
+gint32 mono_threadpool_worker_get_threads_count (void)
+{
+	return 0;
+}
+#endif

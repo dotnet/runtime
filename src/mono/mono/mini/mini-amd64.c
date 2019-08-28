@@ -2190,7 +2190,7 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 			break;
 		case ArgValuetypeAddrInIReg:
 		case ArgValuetypeAddrOnStack:
-			linfo->args [i].storage = LLVMArgVtypeByRef;
+			linfo->args [i].storage = LLVMArgVtypeAddr;
 			break;
 		default:
 			cfg->exception_message = g_strdup ("ainfo->storage");

@@ -70,7 +70,7 @@
 -nomethod System.IO.Tests.Directory_SetCurrentDirectory+Directory_SetCurrentDirectory_SymLink.SetToPathContainingSymLink
 
 # flaky test (The process cannot access the file ...)
--nomethod System.IO.Tests.File_Copy_str_str.CopyFileWithData_MemberData
+-nomethod System.IO.Tests.*.CopyFileWithData_MemberData
 
 ####################################################################
 ##  System.Linq.Expressions.Tests
@@ -334,10 +334,6 @@
 ##  System.Reflection.Tests
 ####################################################################
 
-# Expected to throw FileLoadException, but we aren't
-# https://github.com/mono/mono/issues/15021
--nomethod System.Reflection.Tests.AssemblyNameTests.Ctor_String_Invalid
-
 # Expected ArgumentException, but none was thrown
 # https://github.com/mono/mono/issues/15024
 -nomethod System.Reflection.Tests.MethodInfoTests.Invoke_OptionalParameterUnassingableFromMissing_WithMissingValue_ThrowsArgumentException
@@ -557,6 +553,9 @@
 # https://github.com/mono/mono/issues/15153
 -nomethod System.Tests.ActivatorTests.TestingCreateInstanceObjectHandleFullSignature
 
+# flaky test, System.ArgumentNullException : Key cannot be null. Parameter name: key
+-nomethod System.Tests.GetEnvironmentVariable.EnvironmentVariablesAreHashtable
+
 ####################################################################
 ##  System.Threading.Tests
 ####################################################################
@@ -588,6 +587,13 @@
 -nomethod System.Threading.Tests.SemaphoreTests.Ctor_NamesArentSupported_Unix
 
 ####################################################################
+##  System.Threading.Tests
+####################################################################
+
+# Requires precise GC (should be ignored in dotnet/corefx for mono)
+-nomethod System.Threading.Tasks.Tests.ExecutionContextFlowTest.TaskCompletionSourceDoesntCaptureExecutionContext
+
+####################################################################
 ##  System.Threading.ThreadPool.Tests
 ####################################################################
 
@@ -604,10 +610,6 @@
 # Explicitly skipped if it's MonoVM (SkipOnTargetFramework)
 -nomethod System.Threading.ThreadPools.Tests.ThreadPoolTests.SetMinMaxThreadsTest_ChangedInDotNetCore
 
-# ThreadPool.CompletedWorkItemCount is not implemented
-# https://github.com/mono/mono/issues/14829
--nomethod System.Threading.ThreadPools.Tests.ThreadPoolTests.MetricsTest
-
 ####################################################################
 ##  System.ComponentModel.Composition.Tests
 ####################################################################
@@ -621,6 +623,10 @@
 -nomethod System.ComponentModel.Composition.MetadataAttributeTests.StronglyTypedStructureTestWithTransparentViews
 -nomethod System.ComponentModel.Composition.MetadataViewProviderTests.GetMetadataView_IMetadataViewWithDefaultedInt64
 -nomethod System.ComponentModel.Composition.ExportCollectionTests.ImportCollectionsFromContainerOnly
+# disable the whole namespace, https://github.com/mono/mono/issues/16417
+-nonamespace System.ComponentModel.Composition
+# same issue (only System.ComponentModel.Composition uses this namespace)
+-nonamespace Tests.Integration
 
 ####################################################################
 ##  System.Composition.TypedParts.Tests
@@ -729,14 +735,6 @@
 -nomethod System.Reflection.Context.Tests.CustomReflectionContextTests.MapType_MemberAttributes_Success
 -nomethod System.Reflection.Context.Tests.CustomReflectionContextTests.MapType_ParameterAttributes_Success
 -nomethod System.Reflection.Context.Tests.CustomReflectionContextTests.MapType_Interface_Throws
-
-####################################################################
-##  System.Reflection.CoreCLR.Tests
-####################################################################
-
-# FileNotFoundException
-# https://github.com/mono/mono/issues/15192
--nomethod System.Reflection.Tests.AssemblyTests.LoadFromStream_Location_IsEmpty
 
 ####################################################################
 ##  System.Reflection.TypeExtensions.CoreCLR.Tests
@@ -992,3 +990,6 @@
 -nomethod System.IO.Tests.FileStream_Dispose.Dispose_CallsVirtualDispose_TrueArg
 -nomethod System.Net.Sockets.Tests.DisposedSocket.NonDisposedSocket_SafeHandlesCollected
 -nomethod System.Diagnostics.TraceSourceTests.SwitchClassTests.PruneTest
+
+# Flaky test (FileSystemWatcher)
+-nomethod System.IO.Tests.Directory_NotifyFilter_Tests.FileSystemWatcher_Directory_NotifyFilter_LastWriteTime

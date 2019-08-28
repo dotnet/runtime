@@ -22,6 +22,7 @@
 #include <llvm/Support/Host.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/IR/Mangler.h>
+#include "llvm/IR/LegacyPassNameParser.h"
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include "llvm/ExecutionEngine/Orc/CompileUtils.h"
 #include "llvm/ExecutionEngine/Orc/IRCompileLayer.h"
@@ -29,6 +30,7 @@
 #include "llvm/ExecutionEngine/RTDyldMemoryManager.h"
 #include "llvm/ExecutionEngine/Orc/RTDyldObjectLinkingLayer.h"
 #include "llvm/ExecutionEngine/JITSymbol.h"
+#include "llvm/Transforms/Scalar.h"
 
 #include <cstdlib>
 
@@ -255,6 +257,12 @@ make_mono_llvm_jit (TargetMachine *target_machine)
 
 #elif LLVM_API_VERSION > 600
 
+// The OptimizationList is automatically populated with registered Passes by the
+// PassNameParser.
+//
+static cl::list<const PassInfo*, bool, PassNameParser>
+PassList(cl::desc("Optimizations available:"));
+
 class MonoLLVMJIT {
 public:
 	/* We use our own trampoline infrastructure instead of the Orc one */
@@ -265,7 +273,38 @@ public:
 	MonoLLVMJIT (TargetMachine *TM, MonoJitMemoryManager *mm)
 		: TM(TM), ObjectLayer([=] { return std::shared_ptr<RuntimeDyld::MemoryManager> (mm); }),
 		  CompileLayer (ObjectLayer, SimpleCompiler (*TM)),
-		  modules() {
+		  modules(),
+		  fpm (NULL) {
+		initPassManager ();
+	}
+
+	void initPassManager () {
+		PassRegistry &registry = *PassRegistry::getPassRegistry();
+		initializeCore(registry);
+		initializeScalarOpts(registry);
+		initializeInstCombine(registry);
+		initializeTarget(registry);
+
+		const char *opts = g_getenv ("MONO_LLVM_OPT");
+		if (opts == NULL) {
+			// FIXME: find optimal mono specific order of passes
+			// see https://llvm.org/docs/Frontend/PerformanceTips.html#pass-ordering
+			opts = " -simplifycfg -sroa -instcombine -gvn";
+		}
+
+		char **args = g_strsplit (opts, " ", -1);
+		llvm::cl::ParseCommandLineOptions (g_strv_length (args), args, "");
+
+		for (int i = 0; i < PassList.size(); i++) {
+			Pass *pass = PassList[i]->getNormalCtor()();
+			if (pass->getPassKind () == llvm::PT_Function || pass->getPassKind () == llvm::PT_Loop) {
+				fpm.add (pass);
+			} else {
+				printf("Opt pass is ignored: %s\n", args[i + 1]);
+			}
+		}
+		g_strfreev (args);
+		fpm.doInitialization();
 	}
 
 	ModuleHandleT addModule(Function *F, std::shared_ptr<Module> M) {
@@ -325,6 +364,7 @@ public:
 
 	gpointer compile (Function *F, int nvars, LLVMValueRef *callee_vars, gpointer *callee_addrs, gpointer *eh_frame) {
 		F->getParent ()->setDataLayout (TM->createDataLayout ());
+		fpm.run(*F);
 		// Orc uses a shared_ptr to refer to modules so we have to save them ourselves to keep a ref
 		std::shared_ptr<Module> m (F->getParent ());
 		modules.push_back (m);
@@ -354,6 +394,7 @@ private:
 	ObjLayerT ObjectLayer;
 	CompileLayerT CompileLayer;
 	std::vector<std::shared_ptr<Module>> modules;
+	legacy::FunctionPassManager fpm;
 };
 
 static MonoJitMemoryManager *mono_mm;
@@ -375,7 +416,7 @@ make_mono_llvm_jit (TargetMachine *target_machine)
 static MonoLLVMJIT *jit;
 
 MonoEERef
-mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, FunctionEmittedCb *emitted_cb, ExceptionTableCb *exception_cb, LLVMExecutionEngineRef *ee)
+mono_llvm_create_ee (AllocCodeMemoryCb *alloc_cb, FunctionEmittedCb *emitted_cb, ExceptionTableCb *exception_cb, LLVMExecutionEngineRef *ee)
 {
 	alloc_code_mem_cb = alloc_cb;
 
@@ -435,6 +476,8 @@ mono_llvm_get_cpu_features (void)
 		if (llvm::sys::getHostCPUFeatures(HostFeatures)) {
 			if (HostFeatures ["popcnt"])
 				f |= MONO_CPU_X86_POPCNT;
+			if (HostFeatures ["lzcnt"])
+				f |= MONO_CPU_X86_LZCNT;
 			if (HostFeatures ["avx"])
 				f |= MONO_CPU_X86_AVX;
 			if (HostFeatures ["bmi"])
@@ -464,7 +507,7 @@ mono_llvm_set_unhandled_exception_handler (void)
 }
 
 MonoEERef
-mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, FunctionEmittedCb *emitted_cb, ExceptionTableCb *exception_cb, LLVMExecutionEngineRef *ee)
+mono_llvm_create_ee (AllocCodeMemoryCb *alloc_cb, FunctionEmittedCb *emitted_cb, ExceptionTableCb *exception_cb, LLVMExecutionEngineRef *ee)
 {
 	g_error ("LLVM JIT not supported on this platform.");
 	return NULL;

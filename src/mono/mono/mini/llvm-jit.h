@@ -38,7 +38,7 @@ typedef void (ExceptionTableCb) (void *data);
 typedef void* MonoEERef;
 
 MonoEERef
-mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, FunctionEmittedCb *emitted_cb, ExceptionTableCb *exception_cb, LLVMExecutionEngineRef *ee);
+mono_llvm_create_ee (AllocCodeMemoryCb *alloc_cb, FunctionEmittedCb *emitted_cb, ExceptionTableCb *exception_cb, LLVMExecutionEngineRef *ee);
 
 void
 mono_llvm_dispose_ee (MonoEERef *mono_ee);

@@ -49,6 +49,8 @@ win32_sources = \
 platform_sources = $(win32_sources)
 else
 unix_sources = \
+	dlmalloc.h      	\
+	dlmalloc.c      	\
 	os-event-unix.c
 
 platform_sources = $(unix_sources)
@@ -61,8 +63,6 @@ monoutils_sources = \
 	mono-logger.c		\
 	mono-logger-internals.h	\
 	mono-codeman.c		\
-	dlmalloc.h      	\
-	dlmalloc.c      	\
 	mono-counters.c		\
 	mono-compiler.h		\
 	mono-complex.h		\

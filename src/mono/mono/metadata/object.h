@@ -387,7 +387,7 @@ MONO_API MONO_RT_EXTERNAL_ONLY mono_bool mono_gc_reference_queue_add (MonoRefere
 /* GC write barriers support */
 MONO_API MONO_RT_EXTERNAL_ONLY void mono_gc_wbarrier_set_field     (MonoObject *obj, void* field_ptr, MonoObject* value);
 MONO_API MONO_RT_EXTERNAL_ONLY void mono_gc_wbarrier_set_arrayref  (MonoArray *arr, void* slot_ptr, MonoObject* value);
-MONO_API MONO_RT_EXTERNAL_ONLY void mono_gc_wbarrier_arrayref_copy (void* dest_ptr, void* src_ptr, int count);
+MONO_API MONO_RT_EXTERNAL_ONLY void mono_gc_wbarrier_arrayref_copy (void* dest_ptr, /*const*/ void* src_ptr, int count);
 MONO_API MONO_RT_EXTERNAL_ONLY void mono_gc_wbarrier_generic_store (void* ptr, MonoObject* value);
 MONO_API MONO_RT_EXTERNAL_ONLY void mono_gc_wbarrier_generic_store_atomic (void *ptr, MonoObject *value);
 MONO_API MONO_RT_EXTERNAL_ONLY void mono_gc_wbarrier_generic_nostore (void* ptr);

@@ -115,6 +115,40 @@ struct winx64_doubleStruct
 	public double a;
 }
 
+[StructLayout (LayoutKind.Sequential)]
+public struct winx64_vector3Struct
+{
+	public winx64_vector3Struct (float ix, float iy, float iz)
+	{
+		x=ix;
+		y=iy;
+		z=iz;
+	}
+
+	public static winx64_vector3Struct Add (winx64_vector3Struct a, winx64_vector3Struct b)
+	{
+		Add(ref a, ref b, out a);
+		return a;
+	}
+
+	static void Add (ref winx64_vector3Struct a, ref winx64_vector3Struct b, out winx64_vector3Struct result)
+	{
+		result.x = a.x + b.x;
+		result.y = a.y + b.y;
+		result.z = a.z + b.z;
+	}
+
+	public float x;
+	public float y;
+	public float z;
+}
+
+public struct winx64_vector3PairStruct
+{
+	public winx64_vector3Struct first;
+	public winx64_vector3Struct second;
+}
+
 class winx64structs
 {
 	[DllImport ("libtest")]
@@ -453,6 +487,22 @@ class winx64structs
 			return 100 + retCode;
 
 		return 0;
+	}
+
+	public static int test_0_Value_On_Stack_Local_Copy_Managed ()
+	{
+		var vector3Pair = new winx64_vector3PairStruct
+		{
+			first = new winx64_vector3Struct (1, 2, 3)
+		};
+
+		var local2 = new winx64_vector3Struct (1, 1, 1);
+		var local1 = vector3Pair.first;
+
+		vector3Pair.first = winx64_vector3Struct.Add (local1, local2);
+		vector3Pair.second = winx64_vector3Struct.Add (local1, local2);
+
+		return (vector3Pair.second.x == 2 && vector3Pair.second.y == 3 && vector3Pair.second.z == 4) ? 0 : 1;
 	}
 
 	[MonoPInvokeCallback (typeof (managed_struct1_delegate))]

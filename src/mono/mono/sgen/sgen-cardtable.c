@@ -67,10 +67,10 @@ sgen_card_table_wbarrier_set_field (GCObject *obj, gpointer field_ptr, GCObject*
 }
 
 static void
-sgen_card_table_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
+sgen_card_table_wbarrier_arrayref_copy (gpointer dest_ptr, gconstpointer src_ptr, int count)
 {
 	gpointer *dest = (gpointer *)dest_ptr;
-	gpointer *src = (gpointer *)src_ptr;
+	const gpointer *src = (const gpointer *)src_ptr;
 
 	/*overlapping that required backward copying*/
 	if (src < dest && (src + count) > dest) {
@@ -98,7 +98,7 @@ sgen_card_table_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int
 }
 
 static void
-sgen_card_table_wbarrier_value_copy (gpointer dest, gpointer src, int count, size_t element_size)
+sgen_card_table_wbarrier_value_copy (gpointer dest, gconstpointer src, int count, size_t element_size)
 {
 	size_t size = count * element_size;
 

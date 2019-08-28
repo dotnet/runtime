@@ -133,6 +133,8 @@ System.Private.CoreLib/src/System/Environment.Mono.cs: System.Private.CoreLib/sr
 	test -n '$(MONO_CORLIB_VERSION)'
 	sed -e 's,@''MONO_CORLIB_VERSION@,$(MONO_CORLIB_VERSION),' $< > $@
 
+CORLIB_BUILD_FLAGS?=-c Release
+
 bcl: update-roslyn System.Private.CoreLib/src/System/Environment.Mono.cs
 	$(DOTNET) build $(CORETARGETS) $(CORLIB_BUILD_FLAGS) -p:BuildArch=$(COREARCH) \
 	-p:OutputPath=bin/$(COREARCH) \
@@ -182,7 +184,7 @@ corefx/.stamp-dl-corefx-tests-$(NETCORETESTS_VERSION):
 # Running individual test: MONO_ENV_OPTIONS="--debug" make run-tests-corefx-System.Collections.Tests
 #
 
-run-tests-corefx: update-tests-corefx
+run-tests-corefx: prepare update-tests-corefx
 	@rm -f .failures; \
 	counter=0; \
 	tests_count=$(words $(dir $(wildcard corefx/tests/extracted/*/))); \

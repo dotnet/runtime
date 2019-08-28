@@ -247,8 +247,6 @@ DECL_OFFSET (MonoContext, fregs)
 
 DECL_OFFSET(MonoLMF, lmf_addr)
 
-DECL_OFFSET(SeqPointInfo, ss_trigger_page)
-
 DECL_OFFSET(DynCallArgs, res)
 DECL_OFFSET(DynCallArgs, res2)
 #endif
@@ -260,6 +258,8 @@ DECL_OFFSET(GSharedVtCallInfo, vret_arg_reg)
 DECL_OFFSET(GSharedVtCallInfo, ret_marshal)
 DECL_OFFSET(GSharedVtCallInfo, vret_slot)
 DECL_OFFSET(GSharedVtCallInfo, gsharedvt_in)
+
+DECL_OFFSET(SeqPointInfo, ss_trigger_page)
 #endif
 
 #if defined(TARGET_ARM64)
@@ -277,9 +277,7 @@ DECL_OFFSET(SeqPointInfo, ss_tramp_addr)
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_ARM64)
 DECL_OFFSET(SeqPointInfo, bp_addrs)
-#endif
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_ARM64)
 DECL_OFFSET(CallContext, gregs)
 DECL_OFFSET(CallContext, fregs)
 DECL_OFFSET(CallContext, stack_size)

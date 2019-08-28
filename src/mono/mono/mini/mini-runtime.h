@@ -482,7 +482,7 @@ void mini_patch_llvm_jit_callees            (MonoDomain *domain, MonoMethod *met
 gpointer  mono_jit_search_all_backends_for_jit_info (MonoDomain *domain, MonoMethod *method, MonoJitInfo **ji);
 gpointer  mono_jit_find_compiled_method_with_jit_info (MonoDomain *domain, MonoMethod *method, MonoJitInfo **ji);
 gpointer  mono_jit_find_compiled_method     (MonoDomain *domain, MonoMethod *method);
-gpointer  mono_jit_compile_method           (MonoMethod *method, MonoError *error);
+gpointer  mono_jit_compile_method           (MonoMethod *method, MonoError *error) MONO_LLVM_INTERNAL;
 gpointer  mono_jit_compile_method_jit_only  (MonoMethod *method, MonoError *error);
 
 void      mono_set_bisect_methods          (guint32 opt, const char *method_list_filename);

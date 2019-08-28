@@ -17,20 +17,46 @@
 #include <glib.h>
 
 int
+mono_poll_can_add (mono_pollfd *ufds, unsigned int nfds, int fd)
+{
+	return 1;
+}
+
+int
 mono_poll (mono_pollfd *ufds, unsigned int nfds, int timeout)
 {
 	g_assert_not_reached ();
 	return -1;
 }
+
 #else
 
 #if defined(HAVE_POLL) && !defined(__APPLE__)
+
+int
+mono_poll_can_add (mono_pollfd *ufds, unsigned int nfds, int fd)
+{
+	return 1;
+}
+
 int
 mono_poll (mono_pollfd *ufds, unsigned int nfds, int timeout)
 {
 	return poll (ufds, nfds, timeout);
 }
 #else
+
+int
+mono_poll_can_add (mono_pollfd *ufds, unsigned int nfds, int fd)
+{
+	if (fd < 0)
+		return 1;
+#ifdef HOST_WIN32
+	return (nfds < FD_SETSIZE);
+#else
+	return (fd < FD_SETSIZE);
+#endif
+}
 
 int
 mono_poll (mono_pollfd *ufds, unsigned int nfds, int timeout)

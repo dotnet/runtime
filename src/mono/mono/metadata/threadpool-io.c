@@ -34,6 +34,7 @@
 
 typedef struct {
 	gboolean (*init) (gint wakeup_pipe_fd);
+	gboolean (*can_register_fd) (int fd);
 	void     (*register_fd) (gint fd, gint events, gboolean is_new);
 	void     (*remove_fd) (gint fd);
 	gint     (*event_wait) (void (*callback) (gint fd, gint events, gpointer user_data), gpointer user_data);
@@ -601,6 +602,7 @@ mono_threadpool_io_cleanup (void)
 void
 ves_icall_System_IOSelector_Add (gpointer handle, MonoIOSelectorJob *job)
 {
+	ERROR_DECL (error);
 	ThreadPoolIOUpdate *update;
 
 	g_assert (handle);
@@ -622,9 +624,19 @@ ves_icall_System_IOSelector_Add (gpointer handle, MonoIOSelectorJob *job)
 		return;
 	}
 
+	int fd = GPOINTER_TO_INT (handle);
+
+	if (!threadpool_io->backend.can_register_fd (fd)) {
+		mono_coop_mutex_unlock (&threadpool_io->updates_lock);
+		mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_IO_SELECTOR, "Could not register to wait for file descriptor %d", fd);
+		mono_error_set_not_supported (error, "Could not register to wait for file descriptor %d", fd);
+		mono_error_set_pending_exception (error);
+		return;
+	}
+
 	update = update_get_new ();
 	update->type = UPDATE_ADD;
-	update->data.add.fd = GPOINTER_TO_INT (handle);
+	update->data.add.fd = fd;
 	update->data.add.job = job;
 	mono_memory_barrier (); /* Ensure this is safely published before we wake up the selector */
 

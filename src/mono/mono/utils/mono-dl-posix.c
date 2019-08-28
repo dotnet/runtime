@@ -90,7 +90,16 @@ mono_dl_open_file (const char *file, int flags)
 	/* Bionic doesn't support NULL filenames */
 	if (!file)
 		return NULL;
-	if (!g_file_test (file, G_FILE_TEST_EXISTS))
+	/* The intention of calling `g_file_test (file, G_FILE_TEST_EXISTS)` is
+	 * to speed up probing for non-existent libraries.  The problem is that
+	 * if file is just a simple "libdl.so" then `dlopen (file)` doesn't just
+	 * look for it in the current working directory, it will probe some
+	 * other paths too.  (For example on desktop linux you'd also look in
+	 * all the directories in LD_LIBRARY_PATH).  So the g_file_test() call
+	 * is not a robust way to avoid calling dlopen if the filename is
+	 * relative.
+	 */
+	if (g_path_is_absolute (file) && !g_file_test (file, G_FILE_TEST_EXISTS))
 		return NULL;
 #endif
 #if defined(_AIX)

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Threading
 {
@@ -73,6 +74,13 @@ namespace System.Threading
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		static extern void GetAvailableThreadsNative (out int workerThreads, out int completionPortThreads);
 
+		[MethodImpl(MethodImplOptions.InternalCall)]
+		static extern long GetCompletedWorkItemCount ();
+
+		[MethodImpl(MethodImplOptions.InternalCall)]
+		static extern int GetThreadCount ();
+		
+
 		public static bool SetMaxThreads (int workerThreads, int completionPortThreads)
 		{
 			return SetMaxThreadsNative (workerThreads, completionPortThreads);
@@ -106,9 +114,9 @@ namespace System.Threading
 
 		static long PendingUnmanagedWorkItemCount => 0;
 		
-		public static long CompletedWorkItemCount => throw new PlatformNotSupportedException ();
+		public static long CompletedWorkItemCount => GetCompletedWorkItemCount ();
 
-		public static int ThreadCount => throw new NotImplementedException ();
+		public static int ThreadCount => GetThreadCount ();
 	}
 
 	internal static class _ThreadPoolWaitCallback

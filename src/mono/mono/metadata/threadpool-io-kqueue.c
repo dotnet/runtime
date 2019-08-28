@@ -46,6 +46,12 @@ kqueue_init (gint wakeup_pipe_fd)
 	return TRUE;
 }
 
+static gboolean
+kqueue_can_register_fd (int fd)
+{
+	return TRUE;
+}
+
 static void
 kqueue_register_fd (gint fd, gint events, gboolean is_new)
 {
@@ -63,6 +69,7 @@ kqueue_register_fd (gint fd, gint events, gboolean is_new)
 		if (KQUEUE_INIT_FD (fd, EVFILT_WRITE, EV_ADD | EV_DISABLE) == -1)
 			g_error ("kqueue_register_fd: kevent(write,disable) failed, error (%d) %s", errno, g_strerror (errno));
 	}
+	return;
 }
 
 static void
@@ -121,6 +128,7 @@ kqueue_event_wait (void (*callback) (gint fd, gint events, gpointer user_data), 
 
 static ThreadPoolIOBackend backend_kqueue = {
 	.init = kqueue_init,
+	.can_register_fd = kqueue_can_register_fd,
 	.register_fd = kqueue_register_fd,
 	.remove_fd = kqueue_remove_fd,
 	.event_wait = kqueue_event_wait,

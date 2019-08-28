@@ -124,7 +124,7 @@ mono_gc_wbarrier_set_arrayref (MonoArray *arr, void* slot_ptr, MonoObject* value
 }
 
 void
-mono_gc_wbarrier_arrayref_copy (void* dest_ptr, void* src_ptr, int count)
+mono_gc_wbarrier_arrayref_copy (void* dest_ptr, /*const*/ void* src_ptr, int count)
 {
 	MONO_EXTERNAL_ONLY_GC_UNSAFE_VOID (mono_gc_wbarrier_arrayref_copy_internal (dest_ptr, src_ptr, count));
 }
