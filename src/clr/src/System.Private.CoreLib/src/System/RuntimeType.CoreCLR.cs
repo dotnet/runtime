@@ -3864,35 +3864,6 @@ namespace System
 
         public override string Name => GetCachedName(TypeNameKind.Name)!;
 
-        // This is used by the ToString() overrides of all reflection types. The legacy behavior has the following problems:
-        //  1. Use only Name for nested types, which can be confused with global types and generic parameters of the same name.
-        //  2. Use only Name for generic parameters, which can be confused with nested types and global types of the same name.
-        //  3. Remove the namespace ("System") for all primitive types, which is not language neutral.
-        //  4. MethodBase.ToString() use "ByRef" for byref parameters which is different than Type.ToString().
-        //  5. ConstructorInfo.ToString() outputs "Void" as the return type. Why Void?
-        internal override string FormatTypeName()
-        {
-            Type elementType = GetRootElementType();
-
-            // Legacy: this doesn't make sense, why use only Name for nested types but otherwise
-            // ToString() which contains namespace.
-            if (elementType.IsNested)
-                return Name;
-
-            string typeName = ToString();
-
-            // Legacy: why removing "System"? Is it just because C# has keywords for these types?
-            // If so why don't we change it to lower case to match the C# keyword casing?
-            if (elementType.IsPrimitive ||
-                elementType == typeof(void) ||
-                elementType == typeof(TypedReference))
-            {
-                typeName = typeName.Substring(@"System.".Length);
-            }
-
-            return typeName;
-        }
-
         // This method looks like an attractive inline but expands to two calls,
         // neither of which can be inlined or optimized further. So block it
         // from inlining.
