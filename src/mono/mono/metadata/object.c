@@ -431,34 +431,26 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoMethod *method = NULL;
-	MonoClass *klass;
-	gchar *full_name;
 	MonoDomain *domain = vtable->domain;
-	TypeInitializationLock *lock;
-	MonoNativeThreadId tid;
-	int do_initialization = 0;
-	MonoDomain *last_domain = NULL;
-	gboolean pending_tae = FALSE;
 
 	error_init (error);
 
 	if (vtable->initialized)
 		return TRUE;
 
-	klass = vtable->klass;
+	MonoClass *klass = vtable->klass;
 
 	MonoImage *klass_image = m_class_get_image (klass);
 	if (!mono_runtime_run_module_cctor(klass_image, vtable->domain, error)) {
 		return FALSE;
 	}
-	method = mono_class_get_cctor (klass);
+	MonoMethod *method = mono_class_get_cctor (klass);
 	if (!method) {
 		vtable->initialized = 1;
 		return TRUE;
 	}
 
-	tid = mono_native_thread_id_get ();
+	MonoNativeThreadId tid = mono_native_thread_id_get ();
 
 	/*
 	 * Due some preprocessing inside a global lock. If we are the first thread
@@ -473,6 +465,14 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 		mono_type_initialization_unlock ();
 		return TRUE;
 	}
+
+	gboolean do_initialization = FALSE;
+	MonoDomain *last_domain = NULL;
+	TypeInitializationLock *lock = NULL;
+	gboolean pending_tae = FALSE;
+
+	gboolean ret = FALSE;
+
 	if (vtable->init_failed) {
 		/* The type initialization already failed once, rethrow the same exception */
 		MonoException *exp = get_type_init_exception_for_vtable (vtable);
@@ -481,7 +481,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 		exp->trace_ips = NULL;
 		mono_type_initialization_unlock ();
 		mono_error_set_exception_instance (error, exp);
-		return FALSE;
+		goto return_false;
 	}
 	lock = (TypeInitializationLock *)g_hash_table_lookup (type_initialization_hash, vtable);
 	if (lock == NULL) {
@@ -493,7 +493,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 				vtable->initialized = 1;
 				mono_type_initialization_unlock ();
 				mono_error_set_exception_instance (error, mono_get_exception_appdomain_unloaded ());
-				return FALSE;
+				goto return_false;
 			}
 		}
 		lock = (TypeInitializationLock *)g_malloc0 (sizeof (TypeInitializationLock));
@@ -503,14 +503,14 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 		lock->waiting_count = 1;
 		lock->done = FALSE;
 		g_hash_table_insert (type_initialization_hash, vtable, lock);
-		do_initialization = 1;
+		do_initialization = TRUE;
 	} else {
 		gpointer blocked;
 		TypeInitializationLock *pending_lock;
 
 		if (mono_native_thread_id_equals (lock->initializing_tid, tid)) {
 			mono_type_initialization_unlock ();
-			return TRUE;
+			goto return_true;
 		}
 		/* see if the thread doing the initialization is already blocked on this thread */
 		gboolean is_blocked = TRUE;
@@ -519,7 +519,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 			if (mono_native_thread_id_equals (pending_lock->initializing_tid, tid)) {
 				if (!pending_lock->done) {
 					mono_type_initialization_unlock ();
-					return TRUE;
+					goto return_true;
 				} else {
 					/* the thread doing the initialization is blocked on this thread,
 					   but on a lock that has already been freed. It just hasn't got
@@ -552,7 +552,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 		else
 			mono_error_cleanup (error);
 
-		error_init (error);
+		error_init_reuse (error);
 
 		const char *klass_name_space = m_class_get_name_space (klass);
 		const char *klass_name = m_class_get_name (klass);
@@ -563,6 +563,8 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 			   !strcmp (klass_name_space, "System") &&
 			   !strcmp (klass_name, "TypeInitializationException")))) {
 			vtable->init_failed = 1;
+
+			char *full_name;
 
 			if (klass_name_space && *klass_name_space)
 				full_name = g_strdup_printf ("%s.%s", klass_name_space, klass_name);
@@ -615,9 +617,13 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 	mono_type_initialization_lock ();
 	if (!do_initialization)
 		g_hash_table_remove (blocked_thread_hash, GUINT_TO_POINTER (tid));
-	gboolean deleted = unref_type_lock (lock);
-	if (deleted)
-		g_hash_table_remove (type_initialization_hash, vtable);
+
+	{
+		gboolean deleted = unref_type_lock (lock);
+		if (deleted)
+			g_hash_table_remove (type_initialization_hash, vtable);
+	}
+
 	/* Have to set this here since we check it inside the global lock */
 	if (do_initialization && !vtable->init_failed)
 		vtable->initialized = 1;
@@ -627,9 +633,15 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 	if (vtable->init_failed && !pending_tae) {
 		/* Either we were the initializing thread or we waited for the initialization */
 		mono_error_set_exception_instance (error, get_type_init_exception_for_vtable (vtable));
-		return FALSE;
+		goto return_false;
 	}
-	return TRUE;
+return_true:
+	ret = TRUE;
+	goto exit;
+return_false:
+	ret = FALSE;
+exit:
+	return ret;
 }
 
 MonoDomain *
