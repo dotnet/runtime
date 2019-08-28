@@ -442,9 +442,9 @@ get_custom_mod (MonoImage *m, const char *ptr, char **return_value)
 		 * "int32 modopt (Foo) modopt (Bar)" is encoded as "cmod_opt [typedef_or_ref "Bar"] cmod_opt [typedef_or_ref "Foo"] I4"
 		 */
 		if (*return_value == NULL)
-			*return_value = g_strconcat (" ", mod, " (", s, ")", NULL);
+			*return_value = g_strconcat (" ", mod, " (", s, ")", (const char*)NULL);
 		else
-			*return_value = g_strconcat (mod, " (", s, ") ", *return_value, NULL);
+			*return_value = g_strconcat (mod, " (", s, ") ", *return_value, (const char*)NULL);
 		g_free (s);
 	}
 	return ptr;
@@ -506,7 +506,7 @@ dis_stringify_array (MonoImage *m, MonoArrayType *array, gboolean is_def)
 	type = dis_stringify_type (m, m_class_get_byval_arg (array->eklass), is_def);
 	arr_str = stringify_array (array->rank, array->numsizes, array->numlobounds, array->sizes, array->lobounds);
 
-	ret = g_strconcat (type, arr_str, NULL);
+	ret = g_strconcat (type, arr_str, (const char*)NULL);
 	
 	g_free (arr_str);
 	g_free (type);
@@ -541,9 +541,9 @@ dis_stringify_param (MonoImage *m, MonoType *param)
 	const char *in = param->attrs & PARAM_ATTRIBUTE_IN ? "[in]" : "";
 	const char *out = param->attrs & PARAM_ATTRIBUTE_OUT ? "[out]": "";
 	const char *opt = param->attrs & PARAM_ATTRIBUTE_OPTIONAL ? "[opt]": "";
-	attribs = g_strconcat(in, out, opt, NULL);
+	attribs = g_strconcat(in, out, opt, (const char*)NULL);
 	t = dis_stringify_type (m, param, TRUE);
-	result = g_strjoin(attribs[0] ? " ":"", attribs, t, NULL);
+	result = g_strjoin(attribs[0] ? " ":"", attribs, t, (const char*)NULL);
 	g_free (t);
 	g_free (attribs);
 	return result;
@@ -1259,7 +1259,7 @@ dis_stringify_type (MonoImage *m, MonoType *type, gboolean is_def)
 		/* bare is NULL, for <Module> */
 		return bare;
 		
-	result = g_strconcat (bare, byref, pinned, mods ? mods : "", NULL);
+	result = g_strconcat (bare, byref, pinned, mods ? mods : "", (const char*)NULL);
 
 	g_free (bare);
 

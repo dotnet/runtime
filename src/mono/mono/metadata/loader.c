@@ -480,10 +480,10 @@ find_method (MonoClass *in_class, MonoClass *ic, const char* name, MonoMethodSig
 	if (ic) {
 		class_name = mono_type_get_name_full (m_class_get_byval_arg (ic), MONO_TYPE_NAME_FORMAT_IL);
 
-		qname = g_strconcat (class_name, ".", name, NULL);
+		qname = g_strconcat (class_name, ".", name, (const char*)NULL);
 		const char *ic_name_space = m_class_get_name_space (ic);
 		if (ic_name_space && ic_name_space [0])
-			fqname = g_strconcat (ic_name_space, ".", class_name, ".", name, NULL);
+			fqname = g_strconcat (ic_name_space, ".", class_name, ".", name, (const char*)NULL);
 		else
 			fqname = NULL;
 	} else
@@ -517,10 +517,10 @@ find_method (MonoClass *in_class, MonoClass *ic, const char* name, MonoMethodSig
 			char *ic_qname, *ic_fqname, *ic_class_name;
 			
 			ic_class_name = mono_type_get_name_full (m_class_get_byval_arg (in_ic), MONO_TYPE_NAME_FORMAT_IL);
-			ic_qname = g_strconcat (ic_class_name, ".", name, NULL); 
+			ic_qname = g_strconcat (ic_class_name, ".", name, (const char*)NULL);
 			const char *in_ic_name_space = m_class_get_name_space (in_ic);
 			if (in_ic_name_space && in_ic_name_space [0])
-				ic_fqname = g_strconcat (in_ic_name_space, ".", ic_class_name, ".", name, NULL);
+				ic_fqname = g_strconcat (in_ic_name_space, ".", ic_class_name, ".", name, (const char*)NULL);
 			else
 				ic_fqname = NULL;
 
@@ -1768,23 +1768,23 @@ pinvoke_probe_for_symbol (MonoDl *module, MonoMethodPInvoke *piinfo, const char 
 					case PINVOKE_ATTRIBUTE_CHAR_SET_UNICODE:
 						/* Try the mangled name first */
 						if (mangle_charset == 0)
-							mangled_name = g_strconcat (import, "W", NULL);
+							mangled_name = g_strconcat (import, "W", (const char*)NULL);
 						break;
 					case PINVOKE_ATTRIBUTE_CHAR_SET_AUTO:
 #ifdef HOST_WIN32
 						if (mangle_charset == 0)
-							mangled_name = g_strconcat (import, "W", NULL);
+							mangled_name = g_strconcat (import, "W", (const char*)NULL);
 #else
 						/* Try the mangled name last */
 						if (mangle_charset == 1)
-							mangled_name = g_strconcat (import, "A", NULL);
+							mangled_name = g_strconcat (import, "A", (const char*)NULL);
 #endif
 						break;
 					case PINVOKE_ATTRIBUTE_CHAR_SET_ANSI:
 					default:
 						/* Try the mangled name last */
 						if (mangle_charset == 1)
-							mangled_name = g_strconcat (import, "A", NULL);
+							mangled_name = g_strconcat (import, "A", (const char*)NULL);
 						break;
 					}
 

@@ -1642,7 +1642,7 @@ set_domain_search_path (MonoDomain *domain)
 			search_path = domain->private_bin_path;
 		else {
 			gchar *tmp2 = search_path;
-			search_path = g_strjoin (";", search_path, domain->private_bin_path, NULL);
+			search_path = g_strjoin (";", search_path, domain->private_bin_path, (const char*)NULL);
 			g_free (tmp2);
 		}
 	}
@@ -1710,7 +1710,7 @@ set_domain_search_path (MonoDomain *domain)
 		if (g_path_is_absolute (pvt_split [i - 1])) {
 			tmp [i] = g_strdup (pvt_split [i - 1]);
 		} else {
-			tmp [i] = g_build_filename (tmp [0], pvt_split [i - 1], NULL);
+			tmp [i] = g_build_filename (tmp [0], pvt_split [i - 1], (const char*)NULL);
 		}
 
 		if (strchr (tmp [i], '.')) {
@@ -1774,7 +1774,7 @@ make_sibling_path (const gchar *path, gint pathlen, const char *extension, Shado
 	gchar *result = NULL;
 	switch (extopt) {
 	case SHADOW_COPY_SIBLING_EXT_APPEND: {
-		result = g_strconcat (path, extension, NULL);
+		result = g_strconcat (path, extension, (const char*)NULL);
 		break;
 	}
 	case SHADOW_COPY_SIBLING_EXT_REPLACE: {
@@ -1888,10 +1888,10 @@ get_shadow_assembly_location_base (MonoDomain *domain, MonoError *error)
 			return NULL;
 		}
 
-		location = g_build_filename (cache_path, appname, "assembly", "shadow", NULL);
+		location = g_build_filename (cache_path, appname, "assembly", "shadow", (const char*)NULL);
 	} else {
 		userdir = g_strdup_printf ("%s-mono-cachepath", g_get_user_name ());
-		location = g_build_filename (g_get_tmp_dir (), userdir, "assembly", "shadow", NULL);
+		location = g_build_filename (g_get_tmp_dir (), userdir, "assembly", "shadow", (const char*)NULL);
 	}
 	g_free (appname);
 	g_free (cache_path);
@@ -1923,7 +1923,7 @@ get_shadow_assembly_location (const char *filename, MonoError *error)
 		return NULL;
 	}
 
-	location = g_build_filename (tmploc, name_hash, path_hash, bname, NULL);
+	location = g_build_filename (tmploc, name_hash, path_hash, bname, (const char*)NULL);
 	g_free (tmploc);
 	g_free (bname);
 	g_free (dirname);
@@ -1977,7 +1977,7 @@ shadow_copy_create_ini (const char *shadow, const char *filename)
 	gchar *full_path = NULL;
 
 	char *dir_name = g_path_get_dirname (shadow);
-	char *ini_file = g_build_filename (dir_name, "__AssemblyInfo__.ini", NULL);
+	char *ini_file = g_build_filename (dir_name, "__AssemblyInfo__.ini", (const char*)NULL);
 	g_free (dir_name);
 	result = g_file_test (ini_file, G_FILE_TEST_IS_REGULAR);
 	if (result)
@@ -2241,7 +2241,7 @@ try_load_from (MonoAssembly **assembly,
 	gboolean found = FALSE;
 	
 	*assembly = NULL;
-	fullpath = g_build_filename (path1, path2, path3, path4, NULL);
+	fullpath = g_build_filename (path1, path2, path3, path4, (const char*)NULL);
 
 	if (IS_PORTABILITY_SET) {
 		gchar *new_fullpath = mono_portability_find_file (fullpath, TRUE);
@@ -2276,7 +2276,7 @@ real_load (gchar **search_path, const gchar *culture, const gchar *name, const M
 		local_culture = culture;
 	}
 
-	filename =  g_strconcat (name, ".dll", NULL);
+	filename =  g_strconcat (name, ".dll", (const char*)NULL);
 	len = strlen (filename);
 
 	for (path = search_path; *path; path++) {

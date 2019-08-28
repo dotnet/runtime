@@ -23,80 +23,80 @@ test_buildpath (void)
 	const char *buffer = "var/private";
 	const char *dir = "/";
 	
-	s = g_build_path ("/", "hola///", "//mundo", NULL);
+	s = g_build_path ("/", "hola///", "//mundo", (const char*)NULL);
 	if (strcmp (s, "hola/mundo") != 0)
 		return FAILED ("1 Got wrong result, got: %s", s);
 	g_free (s);
 
-	s = g_build_path ("/", "hola/", "/mundo", NULL);
+	s = g_build_path ("/", "hola/", "/mundo", (const char*)NULL);
 	if (strcmp (s, "hola/mundo") != 0)
 		return FAILED ("2 Got wrong result, got: %s", s);
 	g_free (s);
 
-	s = g_build_path ("/", "hola/", "mundo", NULL);
+	s = g_build_path ("/", "hola/", "mundo", (const char*)NULL);
 	if (strcmp (s, "hola/mundo") != 0)
 		return FAILED ("3 Got wrong result, got: %s", s);
 	g_free (s);
 
-	s = g_build_path ("/", "hola", "/mundo", NULL);
+	s = g_build_path ("/", "hola", "/mundo", (const char*)NULL);
 	if (strcmp (s, "hola/mundo") != 0)
 		return FAILED ("4 Got wrong result, got: %s", s);
 	g_free (s);
 
-	s = g_build_path ("/", "/hello", "world/", NULL);
+	s = g_build_path ("/", "/hello", "world/", (const char*)NULL);
 	if (strcmp (s, "/hello/world/") != 0)
 		return FAILED ("5 Got wrong result, got: %s", s);
 	g_free (s);
 	
 	/* Now test multi-char-separators */
-	s = g_build_path ("**", "hello", "world", NULL);
+	s = g_build_path ("**", "hello", "world", (const char*)NULL);
 	if (strcmp (s, "hello**world") != 0)
 		return FAILED ("6 Got wrong result, got: %s", s);
 	g_free (s);
 
-	s = g_build_path ("**", "hello**", "world", NULL);
+	s = g_build_path ("**", "hello**", "world", (const char*)NULL);
 	if (strcmp (s, "hello**world") != 0)
 		return FAILED ("7 Got wrong result, got: %s", s);
 	g_free (s);
 
-	s = g_build_path ("**", "hello**", "**world", NULL);
+	s = g_build_path ("**", "hello**", "**world", (const char*)NULL);
 	if (strcmp (s, "hello**world") != 0)
 		return FAILED ("8 Got wrong result, got: %s", s);
 	g_free (s);
 	
-	s = g_build_path ("**", "hello**", "**world", NULL);
+	s = g_build_path ("**", "hello**", "**world", (const char*)NULL);
 	if (strcmp (s, "hello**world") != 0)
 		return FAILED ("9 Got wrong result, got: %s", s);
 	g_free (s);
 
-	s = g_build_path ("1234567890", "hello", "world", NULL);
+	s = g_build_path ("1234567890", "hello", "world", (const char*)NULL);
 	if (strcmp (s, "hello1234567890world") != 0)
 		return FAILED ("10 Got wrong result, got: %s", s);
 	g_free (s);
 
-	s = g_build_path ("1234567890", "hello1234567890", "1234567890world", NULL);
+	s = g_build_path ("1234567890", "hello1234567890", "1234567890world", (const char*)NULL);
 	if (strcmp (s, "hello1234567890world") != 0)
 		return FAILED ("11 Got wrong result, got: %s", s);
 	g_free (s);
 
-	s = g_build_path ("1234567890", "hello12345678901234567890", "1234567890world", NULL);
+	s = g_build_path ("1234567890", "hello12345678901234567890", "1234567890world", (const char*)NULL);
 	if (strcmp (s, "hello1234567890world") != 0)
 		return FAILED ("12 Got wrong result, got: %s", s);
 	g_free (s);
 
 	/* Multiple */
-	s = g_build_path ("/", "a", "b", "c", "d", NULL);
+	s = g_build_path ("/", "a", "b", "c", "d", (const char*)NULL);
 	if (strcmp (s, "a/b/c/d") != 0)
 		return FAILED ("13 Got wrong result, got: %s", s);
 	g_free (s);
 
-	s = g_build_path ("/", "/a", "", "/c/", NULL);
+	s = g_build_path ("/", "/a", "", "/c/", (const char*)NULL);
 	if (strcmp (s, "/a/c/") != 0)
 		return FAILED ("14 Got wrong result, got: %s", s);
 	g_free (s);
 
 	/* Null */
-	s = g_build_path ("/", NULL, NULL);
+	s = g_build_path ("/", NULL, (const char*)NULL);
 	if (s == NULL)
 		return FAILED ("must get a non-NULL return");
 	if (s [0] != 0)
@@ -107,7 +107,7 @@ test_buildpath (void)
 	// and caused all kinds of random errors.
 	dir = "//";
 	dir++;
-	s = g_build_filename (dir, buffer, NULL);
+	s = g_build_filename (dir, buffer, (const char*)NULL);
 	if (s [0] != '/')
 		return FAILED ("Must have a '/' at the start");
 
@@ -120,7 +120,7 @@ test_buildfname (void)
 {
 	char *s;
 	
-	s = g_build_filename ("a", "b", "c", "d", NULL);
+	s = g_build_filename ("a", "b", "c", "d", (const char*)NULL);
 #ifdef G_OS_WIN32
 	if (strcmp (s, "a\\b\\c\\d") != 0)
 #else
@@ -130,16 +130,16 @@ test_buildfname (void)
 	g_free (s);
 
 #ifdef G_OS_WIN32
-	s = g_build_filename ("C:\\", "a", NULL);
+	s = g_build_filename ("C:\\", "a", (const char*)NULL);
 	if (strcmp (s, "C:\\a") != 0)
 #else
-	s = g_build_filename ("/", "a", NULL);
+	s = g_build_filename ("/", "a", (const char*)NULL);
 	if (strcmp (s, "/a") != 0)
 #endif
 		return FAILED ("1 Got wrong result, got: %s", s);
 
 #ifndef G_OS_WIN32
-	s = g_build_filename ("/", "foo", "/bar", "tolo/", "/meo/", NULL);
+	s = g_build_filename ("/", "foo", "/bar", "tolo/", "/meo/", (const char*)NULL);
 	if (strcmp (s, "/foo/bar/tolo/meo/") != 0)
 		return FAILED ("1 Got wrong result, got: %s", s);
 #endif

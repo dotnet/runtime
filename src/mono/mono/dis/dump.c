@@ -247,13 +247,13 @@ dump_table_memberref (MonoImage *m)
 		case 0:
 			ks = "TypeDef";
 			xx = get_typedef (m, idx);
-			x = g_strconcat (xx, ".", mono_metadata_string_heap (m, cols [MONO_MEMBERREF_NAME]), NULL);
+			x = g_strconcat (xx, ".", mono_metadata_string_heap (m, cols [MONO_MEMBERREF_NAME]), (const char*)NULL);
 			g_free (xx);
 			break;
 		case 1:
 			ks = "TypeRef";
 			xx = get_typeref (m, idx);
-			x = g_strconcat (xx, ".", mono_metadata_string_heap (m, cols [MONO_MEMBERREF_NAME]), NULL);
+			x = g_strconcat (xx, ".", mono_metadata_string_heap (m, cols [MONO_MEMBERREF_NAME]), (const char*)NULL);
 			g_free (xx);
 			break;
 		case 2:
@@ -265,7 +265,7 @@ dump_table_memberref (MonoImage *m)
 		case 4:
 			ks = "TypeSpec";
 			xx = get_typespec (m, idx, FALSE, NULL);
-			x = g_strconcat (xx, ".", mono_metadata_string_heap (m, cols [MONO_MEMBERREF_NAME]), NULL);
+			x = g_strconcat (xx, ".", mono_metadata_string_heap (m, cols [MONO_MEMBERREF_NAME]), (const char*)NULL);
 			g_free (xx);
 			break;
 		default:

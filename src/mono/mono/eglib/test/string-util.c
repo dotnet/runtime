@@ -22,7 +22,7 @@ test_strfreev (void)
 static RESULT
 test_concat (void)
 {
-	gchar *x = g_strconcat ("Hello", ", ", "world", NULL);
+	gchar *x = g_strconcat ("Hello", ", ", "world", (const char*)NULL);
 	if (strcmp (x, "Hello, world") != 0)
 		return FAILED("concat failed, got: %s", x);
 	g_free (x);
@@ -344,27 +344,27 @@ test_strjoin (void)
 {
 	char *s;
 	
-	s = g_strjoin (NULL, "a", "b", NULL);
+	s = g_strjoin (NULL, "a", "b", (const char*)NULL);
 	if (strcmp (s, "ab") != 0)
 		return FAILED ("Join of two strings with no separator fails");
 	g_free (s);
 
-	s = g_strjoin ("", "a", "b", NULL);
+	s = g_strjoin ("", "a", "b", (const char*)NULL);
 	if (strcmp (s, "ab") != 0)
 		return FAILED ("Join of two strings with empty separator fails");
 	g_free (s);
 
-	s = g_strjoin ("-", "a", "b", NULL);
+	s = g_strjoin ("-", "a", "b", (const char*)NULL);
 	if (strcmp (s, "a-b") != 0)
 		return FAILED ("Join of two strings with separator fails");
 	g_free (s);
 
-	s = g_strjoin ("-", "aaaa", "bbbb", "cccc", "dddd", NULL);
+	s = g_strjoin ("-", "aaaa", "bbbb", "cccc", "dddd", (const char*)NULL);
 	if (strcmp (s, "aaaa-bbbb-cccc-dddd") != 0)
 		return FAILED ("Join of multiple strings fails");
 	g_free (s);
 
-	s = g_strjoin ("-", NULL);
+	s = g_strjoin ("-", (const char*)NULL);
 	if (s == NULL || (strcmp (s, "") != 0))
 		return FAILED ("Failed to join empty arguments");
 	g_free (s);

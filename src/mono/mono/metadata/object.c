@@ -4569,7 +4569,7 @@ prepare_run_main (MonoMethod *method, int argc, char *argv[])
 		gchar *basename = g_path_get_basename (argv [0]);
 		gchar *fullpath = g_build_filename (m_class_get_image (method->klass)->assembly->basedir,
 						    basename,
-						    NULL);
+						    (const char*)NULL);
 
 		utf8_fullpath = mono_utf8_from_external (fullpath);
 		if(utf8_fullpath == NULL) {
@@ -5094,7 +5094,7 @@ prepare_thread_to_exec_main (MonoDomain *domain, MonoMethod *method)
 		}
 
 		if (domain->setup->configuration_file == NULL) {
-			str = g_strconcat (assembly->image->name, ".config", NULL);
+			str = g_strconcat (assembly->image->name, ".config", (const char*)NULL);
 			MonoString *config_file = mono_string_new_checked (domain, str, error);
 			mono_error_assert_ok (error);
 			MONO_OBJECT_SETREF_INTERNAL (domain->setup, configuration_file, config_file);

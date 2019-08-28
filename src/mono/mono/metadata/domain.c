@@ -614,7 +614,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	if ((status != MONO_IMAGE_OK) || (ass == NULL)) {
 		switch (status){
 		case MONO_IMAGE_ERROR_ERRNO: {
-			char *corlib_file = g_build_filename (mono_assembly_getrootdir (), "mono", current_runtime->framework_version, "mscorlib.dll", NULL);
+			char *corlib_file = g_build_filename (mono_assembly_getrootdir (), "mono", current_runtime->framework_version, "mscorlib.dll", (const char*)NULL);
 			g_print ("The assembly mscorlib.dll was not found or could not be loaded.\n");
 			g_print ("It should have been installed in the `%s' directory.\n", corlib_file);
 			g_free (corlib_file);
@@ -1849,7 +1849,7 @@ app_config_parse (const char *exe_filename)
 		text = g_strdup (bundled_config);
 		len = strlen (text);
 	} else {
-		config_filename = g_strconcat (exe_filename, ".config", NULL);
+		config_filename = g_strconcat (exe_filename, ".config", (const char*)NULL);
 
 		if (!g_file_get_contents (config_filename, &text, &len, NULL)) {
 			g_free (config_filename);

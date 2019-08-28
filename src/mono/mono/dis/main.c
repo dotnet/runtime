@@ -1857,7 +1857,7 @@ try_load_from (MonoAssembly **assembly,
 	gchar *fullpath;
 
 	*assembly = NULL;
-	fullpath = g_build_filename (path1, path2, path3, path4, NULL);
+	fullpath = g_build_filename (path1, path2, path3, path4, (const char*)NULL);
 	if (g_file_test (fullpath, G_FILE_TEST_IS_REGULAR))
 		*assembly = mono_assembly_request_open (fullpath, req, NULL);
 
@@ -1880,7 +1880,7 @@ real_load (gchar **search_path, const gchar *culture, const gchar *name, const M
 		local_culture = culture;
 	}
 
-	filename =  g_strconcat (name, ".dll", NULL);
+	filename =  g_strconcat (name, ".dll", (const char*)NULL);
 	len = strlen (filename);
 
 	for (path = search_path; *path; path++) {

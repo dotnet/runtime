@@ -1625,7 +1625,7 @@ aot_cache_load_module (MonoAssembly *assembly, char **aot_name)
 	hash = get_aot_config_hash (assembly);
 
 	tmp2 = g_strdup_printf ("%s-%s%s", assembly->image->assembly_name, hash, MONO_SOLIB_EXT);
-	fname = g_build_filename (cache_dir, tmp2, NULL);
+	fname = g_build_filename (cache_dir, tmp2, (const char*)NULL);
 	*aot_name = fname;
 	g_free (tmp2);
 

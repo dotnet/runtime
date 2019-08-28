@@ -158,7 +158,7 @@ static void
 bundle_save_library_initialize (void)
 {
 	bundle_save_library_initialized = 1;
-	char *path = g_build_filename (g_get_tmp_dir (), "mono-bundle-XXXXXX", NULL);
+	char *path = g_build_filename (g_get_tmp_dir (), "mono-bundle-XXXXXX", (const char*)NULL);
 	bundled_dylibrary_directory = g_mkdtemp (path);
 	g_free (path);
 	if (bundled_dylibrary_directory == NULL)
@@ -176,7 +176,7 @@ save_library (int fd, uint64_t offset, uint64_t size, const char *destfname)
 	if (!bundle_save_library_initialized)
 		bundle_save_library_initialize ();
 	
-	file = g_build_filename (bundled_dylibrary_directory, destfname, NULL);
+	file = g_build_filename (bundled_dylibrary_directory, destfname, (const char*)NULL);
 	buffer = load_from_region (fd, offset, size);
 	g_file_set_contents (file, buffer, size, NULL);
 
@@ -186,7 +186,7 @@ save_library (int fd, uint64_t offset, uint64_t size, const char *destfname)
 		exit (1);
 	}
 	// Register the name with "." as this is how it will be found when embedded
-	internal_path = g_build_filename (".", destfname, NULL);
+	internal_path = g_build_filename (".", destfname, (const char*)NULL);
  	mono_loader_register_module (internal_path, lib);
 	g_free (internal_path);
 	bundle_library_paths = g_slist_append (bundle_library_paths, file);

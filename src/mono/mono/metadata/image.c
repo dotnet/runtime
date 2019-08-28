@@ -738,7 +738,7 @@ mono_image_load_module_checked (MonoImage *image, int idx, MonoError *error)
 		if (valid) {
 			MonoAssemblyLoadContext *alc = mono_image_get_alc (image);
 			MonoLoadedImages *li = mono_image_get_loaded_images_for_modules (image);
-			module_ref = g_build_filename (base_dir, name, NULL);
+			module_ref = g_build_filename (base_dir, name, (const char*)NULL);
 			MonoImage *moduleImage = mono_image_open_a_lot_parameterized (li, alc, module_ref, &status, refonly, FALSE, NULL);
 			if (moduleImage) {
 				if (!assign_assembly_parent_for_netmodule (moduleImage, image, error)) {
@@ -2807,7 +2807,7 @@ mono_image_load_file_for_image_checked (MonoImage *image, int fileidx, MonoError
 	fname_id = mono_metadata_decode_row_col (t, fileidx - 1, MONO_FILE_NAME);
 	fname = mono_metadata_string_heap (image, fname_id);
 	base_dir = g_path_get_dirname (image->name);
-	name = g_build_filename (base_dir, fname, NULL);
+	name = g_build_filename (base_dir, fname, (const char*)NULL);
 	res = mono_image_open (name, NULL);
 	if (!res)
 		goto done;

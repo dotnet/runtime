@@ -131,11 +131,11 @@ get_dl_name_from_libtool (const char *libtool_file)
 	if (installed && strcmp (installed, "no") == 0) {
 		char *dir = g_path_get_dirname (libtool_file);
 		if (dlname)
-			line = g_strconcat (dir, G_DIR_SEPARATOR_S ".libs" G_DIR_SEPARATOR_S, dlname, NULL);
+			line = g_strconcat (dir, G_DIR_SEPARATOR_S ".libs" G_DIR_SEPARATOR_S, dlname, (const char*)NULL);
 		g_free (dir);
 	} else {
 		if (libdir && dlname)
-			line = g_strconcat (libdir, G_DIR_SEPARATOR_S, dlname, NULL);
+			line = g_strconcat (libdir, G_DIR_SEPARATOR_S, dlname, (const char*)NULL);
 	}
 	g_free (dlname);
 	g_free (libdir);
@@ -213,7 +213,7 @@ mono_dl_open (const char *name, int flags, char **error_msg)
 		ext = strrchr (name, '.');
 		if (ext && strcmp (ext, ".la") == 0)
 			suff = "";
-		lname = g_strconcat (name, suff, NULL);
+		lname = g_strconcat (name, suff, (const char*)NULL);
 		llname = get_dl_name_from_libtool (lname);
 		g_free (lname);
 		if (llname) {
@@ -229,7 +229,7 @@ mono_dl_open (const char *name, int flags, char **error_msg)
 			if (!lib && is_library_ar_archive (llname)) {
 				/* try common suffix */
 				char *llaixname;
-				llaixname = g_strconcat (llname, "(shr_64.o)", NULL);
+				llaixname = g_strconcat (llname, "(shr_64.o)", (const char*)NULL);
 				lib = mono_dl_open_file (llaixname, lflags);
 				/* XXX: try another suffix like (shr.o)? */
 				g_free (llaixname);
@@ -391,9 +391,9 @@ mono_dl_build_path (const char *directory, const char *name, void **iter)
 		suffix = "";
 
 	if (directory && *directory)
-		res = g_strconcat (directory, G_DIR_SEPARATOR_S, prefix, name, suffix, NULL);
+		res = g_strconcat (directory, G_DIR_SEPARATOR_S, prefix, name, suffix, (const char*)NULL);
 	else
-		res = g_strconcat (prefix, name, suffix, NULL);
+		res = g_strconcat (prefix, name, suffix, (const char*)NULL);
 	++iteration;
 	*iter = GUINT_TO_POINTER (iteration);
 	return res;

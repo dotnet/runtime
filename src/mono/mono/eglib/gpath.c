@@ -265,8 +265,8 @@ g_find_program_in_path (const gchar *program)
 		if (!hasSuffix) {
 			listx = 0;
 			while (suffix_list[listx]) {
-				program_exe = g_strjoin(NULL,program,suffix_list[listx],NULL);
-				probe_path = g_build_path (G_DIR_SEPARATOR_S, l, program_exe, NULL);
+				program_exe = g_strjoin (NULL, program, suffix_list [listx], (const char*)NULL);
+				probe_path = g_build_path (G_DIR_SEPARATOR_S, l, program_exe, (const char*)NULL);
 #ifdef HAVE_ACCESS
 				if (g_access (probe_path, X_OK) == 0){ /* FIXME: on windows this is just a read permissions test */
 					g_free (curdir);

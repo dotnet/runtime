@@ -1788,7 +1788,7 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 		char *qprog;
 
 		qprog = g_shell_quote (prog);
-		full_prog = g_strconcat (qprog, " ", args_after_prog, NULL);
+		full_prog = g_strconcat (qprog, " ", args_after_prog, (const char*)NULL);
 		g_free (qprog);
 	} else {
 		full_prog = g_shell_quote (prog);
@@ -2070,7 +2070,7 @@ ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStar
 					/* kfmclient needs exec argument */
 					char *old = handler;
 					handler = g_strconcat (old, " exec",
-							       NULL);
+							       (const char*)NULL);
 					g_free (old);
 				}
 			}
