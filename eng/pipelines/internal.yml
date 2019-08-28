@@ -42,6 +42,8 @@ stages:
           # due to waiting for an exclusive lock on the feed.
           # See https://github.com/dotnet/arcade/blob/master/Documentation/CorePackages/AsyncPublishing.md
           timeoutInMinutes: 120
+          signBinaries: true
+          publishToBlobFeed: true
 
     #
     # Publish build information to Build Assets Registry
