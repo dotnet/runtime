@@ -802,10 +802,10 @@ void GCToEEInterface::DiagWalkBGCSurvivors(void* gcContext)
 
 void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
 {
+    assert(args != nullptr);
     int stompWBCompleteActions = SWB_PASS;
     bool is_runtime_suspended = args->is_runtime_suspended;
 
-    assert(args != nullptr);
     switch (args->operation)
     {
     case WriteBarrierOp::StompResize:
