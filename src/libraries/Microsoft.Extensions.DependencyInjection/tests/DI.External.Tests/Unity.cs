@@ -7,8 +7,9 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 {
     public class UnityDependencyInjectionSpecificationTests: SkippableDependencyInjectionSpecificationTests
     {
-        public override string[] SkippedTests => new String[0]
+        public override string[] SkippedTests => new[]
         {
+            "SingletonServiceCanBeResolvedFromScope"
         };
 
         protected override IServiceProvider CreateServiceProviderImpl(IServiceCollection serviceCollection)
