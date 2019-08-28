@@ -5,6 +5,7 @@
 using System.Globalization;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace System.Reflection
 {
@@ -79,5 +80,42 @@ namespace System.Reflection
         }
 
         public static bool operator !=(MethodBase? left, MethodBase? right) => !(left == right);
+
+        internal const int MethodNameBufferSize = 100;
+
+        internal static void AppendParameters(ref ValueStringBuilder sbParamList, Type[] parameterTypes, CallingConventions callingConvention)
+        {
+            string comma = "";
+
+            for (int i = 0; i < parameterTypes.Length; i++)
+            {
+                Type t = parameterTypes[i];
+
+                sbParamList.Append(comma);
+
+                string typeName = t.FormatTypeName();
+
+                // Legacy: Why use "ByRef" for by ref parameters? What language is this?
+                // VB uses "ByRef" but it should precede (not follow) the parameter name.
+                // Why don't we just use "&"?
+                if (t.IsByRef)
+                {
+                    sbParamList.Append(typeName.AsSpan().TrimEnd('&'));
+                    sbParamList.Append(" ByRef");
+                }
+                else
+                {
+                    sbParamList.Append(typeName);
+                }
+
+                comma = ", ";
+            }
+
+            if ((callingConvention & CallingConventions.VarArgs) == CallingConventions.VarArgs)
+            {
+                sbParamList.Append(comma);
+                sbParamList.Append("...");
+            }
+        }
     }
 }

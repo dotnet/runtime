@@ -140,12 +140,6 @@ namespace System
         }
 #endif // FEATURE_COMINTEROP
 
-        // This is only ever called on RuntimeType objects.
-        internal virtual string FormatTypeName()
-        {
-            throw new NotImplementedException();
-        }
-
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern bool operator ==(Type? left, Type? right);
 
