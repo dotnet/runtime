@@ -1191,9 +1191,13 @@ namespace System.Collections.Generic
             int[] newBuckets = new int[newSize];
             for (int i = 0; i < _lastIndex; i++)
             {
-                int bucket = newSlots[i].hashCode % newSize;
-                newSlots[i].next = newBuckets[bucket] - 1;
-                newBuckets[bucket] = i + 1;
+                int hashCode = newSlots[i].hashCode;
+                if (hashCode >= 0)
+                {
+                    int bucket = hashCode % newSize;
+                    newSlots[i].next = newBuckets[bucket] - 1;
+                    newBuckets[bucket] = i + 1;
+                }
             }
             _slots = newSlots;
             _buckets = newBuckets;
