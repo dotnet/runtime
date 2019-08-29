@@ -15,6 +15,9 @@
 #endif
 
 #if _WIN32
+#ifndef PSAPI_VERSION
+#define PSAPI_VERSION 2 // Use the Windows 7 or newer version more directly.
+#endif
 #include <windows.h>
 #include <wchar.h>
 #include <psapi.h>
