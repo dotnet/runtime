@@ -3146,6 +3146,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	cfg->gen_sdb_seq_points = mini_debug_options.gen_sdb_seq_points;
 	cfg->llvm_only = (flags & JIT_FLAG_LLVM_ONLY) != 0;
 	cfg->interp = (flags & JIT_FLAG_INTERP) != 0;
+	cfg->use_current_cpu = (flags & JIT_FLAG_USE_CURRENT_CPU) != 0;
 	cfg->backend = current_backend;
 
 #ifdef HOST_ANDROID

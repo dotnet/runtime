@@ -71,7 +71,7 @@ namespace System
 		[MethodImpl (MethodImplOptions.InternalCall)]
 		public static extern float Tanh (float x);
 
-		// [Intrinsic] TODO: implement intrinsic  (FMA)
+		[Intrinsic]
 		[MethodImpl  (MethodImplOptions.InternalCall)]
 		public static extern float FusedMultiplyAdd (float x, float y, float z);
 

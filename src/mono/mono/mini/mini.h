@@ -1220,6 +1220,8 @@ typedef enum {
 	JIT_FLAG_DISCARD_RESULTS = (1 << 8),
 	/* Whenever to generate code which can work with the interpreter */
 	JIT_FLAG_INTERP = (1 << 9),
+	/* Allow AOT to use all current CPU instructions */
+	JIT_FLAG_USE_CURRENT_CPU = (1 << 10),
 } JitFlags;
 
 /* Bit-fields in the MonoBasicBlock.region */
@@ -1433,6 +1435,7 @@ typedef struct {
 	guint            r4fp : 1;
 	guint            llvm_only : 1;
 	guint            interp : 1;
+	guint            use_current_cpu : 1;
 	guint            domainvar_inited : 1;
 	guint8           uses_simd_intrinsics;
 	int              r4_stack_type;

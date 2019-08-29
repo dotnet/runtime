@@ -293,11 +293,17 @@ typedef enum {
 	INTRINS_SIN,
 	INTRINS_COS,
 	INTRINS_SQRT,
+	INTRINS_FLOOR,
+	INTRINS_CEIL,
+	INTRINS_FMA,
 	INTRINS_FABS,
 	INTRINS_ABSF,
 	INTRINS_SINF,
 	INTRINS_COSF,
 	INTRINS_SQRTF,
+	INTRINS_FLOORF,
+	INTRINS_CEILF,
+	INTRINS_FMAF,
 	INTRINS_POWF,
 	INTRINS_EXPECT_I8,
 	INTRINS_EXPECT_I1,
@@ -5967,6 +5973,54 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = LLVMBuildCall (builder, get_intrins (ctx, INTRINS_SQRTF), args, 1, dname);
 			break;
 		}
+		case OP_FLOOR: {
+			LLVMValueRef args [1];
+
+			args [0] = convert (ctx, lhs, LLVMDoubleType ());
+			values [ins->dreg] = LLVMBuildCall (builder, get_intrins (ctx, INTRINS_FLOOR), args, 1, dname);
+			break;
+		}
+		case OP_FLOORF: {
+			LLVMValueRef args [1];
+
+			args [0] = convert (ctx, lhs, LLVMFloatType ());
+			values [ins->dreg] = LLVMBuildCall (builder, get_intrins (ctx, INTRINS_FLOORF), args, 1, dname);
+			break;
+		}
+		case OP_CEIL: {
+			LLVMValueRef args [1];
+
+			args [0] = convert (ctx, lhs, LLVMDoubleType ());
+			values [ins->dreg] = LLVMBuildCall (builder, get_intrins (ctx, INTRINS_CEIL), args, 1, dname);
+			break;
+		}
+		case OP_CEILF: {
+			LLVMValueRef args [1];
+
+			args [0] = convert (ctx, lhs, LLVMFloatType ());
+			values [ins->dreg] = LLVMBuildCall (builder, get_intrins (ctx, INTRINS_CEILF), args, 1, dname);
+			break;
+		}
+		case OP_FMA: {
+			LLVMValueRef args [3];
+
+			args [0] = convert (ctx, values [ins->sreg1], LLVMDoubleType ());
+			args [1] = convert (ctx, values [ins->sreg2], LLVMDoubleType ());
+			args [2] = convert (ctx, values [ins->sreg3], LLVMDoubleType ());
+			
+			values [ins->dreg] = LLVMBuildCall (builder, get_intrins (ctx, INTRINS_FMA), args, 3, dname);
+			break;
+		}
+		case OP_FMAF: {
+			LLVMValueRef args [3];
+
+			args [0] = convert (ctx, values [ins->sreg1], LLVMFloatType ());
+			args [1] = convert (ctx, values [ins->sreg2], LLVMFloatType ());
+			args [2] = convert (ctx, values [ins->sreg3], LLVMFloatType ());
+			
+			values [ins->dreg] = LLVMBuildCall (builder, get_intrins (ctx, INTRINS_FMAF), args, 3, dname);
+			break;
+		}
 		case OP_ABS: {
 			LLVMValueRef args [1];
 
@@ -8470,6 +8524,12 @@ static IntrinsicDesc intrinsics[] = {
 	{INTRINS_SIN, "llvm.sin.f64"},
 	{INTRINS_COS, "llvm.cos.f64"},
 	{INTRINS_SQRT, "llvm.sqrt.f64"},
+	{INTRINS_FLOOR, "llvm.floor.f64"},
+	{INTRINS_FLOORF, "llvm.floor.f32"},
+	{INTRINS_CEIL, "llvm.ceil.f64"},
+	{INTRINS_CEILF, "llvm.ceil.f32"},
+	{INTRINS_FMA, "llvm.fma.f64"},
+	{INTRINS_FMAF, "llvm.fma.f32"},
 	/* This isn't an intrinsic, instead llvm seems to special case it by name */
 	{INTRINS_FABS, "fabs"},
 	{INTRINS_ABSF, "llvm.fabs.f32"},
@@ -8616,9 +8676,23 @@ add_intrinsic (LLVMModuleRef module, int id)
 		AddFunc (module, name, ret_type, params, 2);
 		break;
 	}
+	case INTRINS_FMA: {
+		LLVMTypeRef params [] = { LLVMDoubleType (), LLVMDoubleType (), LLVMDoubleType () };
+
+		AddFunc (module, name, LLVMDoubleType (), params, 3);
+		break;
+	}
+	case INTRINS_FMAF: {
+		LLVMTypeRef params [] = { LLVMFloatType (), LLVMFloatType (), LLVMFloatType () };
+
+		AddFunc (module, name, LLVMFloatType (), params, 3);
+		break;
+	}
 	case INTRINS_SIN:
 	case INTRINS_COS:
 	case INTRINS_SQRT:
+	case INTRINS_FLOOR:
+	case INTRINS_CEIL:
 	case INTRINS_FABS: {
 		LLVMTypeRef params [] = { LLVMDoubleType () };
 
@@ -8628,6 +8702,8 @@ add_intrinsic (LLVMModuleRef module, int id)
 	case INTRINS_SINF:
 	case INTRINS_COSF:
 	case INTRINS_SQRTF:
+	case INTRINS_FLOORF:
+	case INTRINS_CEILF:
 	case INTRINS_ABSF: {
 		LLVMTypeRef params [] = { LLVMFloatType () };
 
