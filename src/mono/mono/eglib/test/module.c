@@ -72,9 +72,9 @@ test_module_get_module_filename (void)
 #if _WIN32
 	const HMODULE mods [ ] = {NULL, LoadLibraryW (L"msvcrt.dll"), (HMODULE)(gssize)-1 };
 
-	for (int i = 0; i < 2; ++i) {
+	for (int i = 0; i < G_N_ELEMENTS (mods); ++i) {
+		const HMODULE mod = mods [i];
 		for (int j = 0; j <= 2; ++j) {
-			const HMODULE mod = mods [i];
 			wchar_t* str = { 0 };
 			guint32 length = { 0 };
 			wchar_t buf2 [999] = { 0 };
