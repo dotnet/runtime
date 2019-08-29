@@ -2454,8 +2454,10 @@ mono_reflection_get_custom_attrs_blob_checked (MonoReflectionAssembly *assembly,
 {
 	MonoArray *result = NULL;
 	MonoMethodSignature *sig;
+	MonoMethodSignature *sig_free = NULL;
 	MonoObject *arg;
-	char *buffer, *p;
+	char *buffer = NULL;
+	char *p;
 	guint32 buflen, i;
 
 	error_init (error);
@@ -2463,10 +2465,8 @@ mono_reflection_get_custom_attrs_blob_checked (MonoReflectionAssembly *assembly,
 	if (strcmp (ctor->vtable->klass->name, "RuntimeConstructorInfo")) {
 		/* sig is freed later so allocate it in the heap */
 		sig = ctor_builder_to_signature_raw (NULL, (MonoReflectionCtorBuilder*)ctor, error); /* FIXME use handles */
-		if (!is_ok (error)) {
-			g_free (sig);
-			return NULL;
-		}
+		sig_free = sig;
+		goto_if_nok (error, leave);
 	} else {
 		sig = mono_method_signature_internal (((MonoReflectionMethod*)ctor)->method);
 	}
@@ -2529,8 +2529,7 @@ mono_reflection_get_custom_attrs_blob_checked (MonoReflectionAssembly *assembly,
 	memcpy (p, buffer, buflen);
 leave:
 	g_free (buffer);
-	if (strcmp (ctor->vtable->klass->name, "RuntimeConstructorInfo"))
-		g_free (sig);
+	g_free (sig_free);
 	return result;
 }
 
