@@ -75,7 +75,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                 return (T)(object)certificate.GetRSAPrivateKey();
             if (typeof(T) == typeof(ECDsa))
                 return (T)(object)certificate.GetECDsaPrivateKey();
-#if netcoreapp || netstandard21
+#if netcoreapp || netcoreapp30 || netstandard21
             if (typeof(T) == typeof(DSA))
                 return (T)(object)certificate.GetDSAPrivateKey();
 #endif

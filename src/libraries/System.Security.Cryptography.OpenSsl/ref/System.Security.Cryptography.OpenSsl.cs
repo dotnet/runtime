@@ -20,14 +20,11 @@ namespace System.Security.Cryptography
         protected override void Dispose(bool disposing) { }
         public System.Security.Cryptography.SafeEvpPKeyHandle DuplicateKeyHandle() { throw null; }
         public override System.Security.Cryptography.DSAParameters ExportParameters(bool includePrivateParameters) { throw null; }
-#if netcoreapp
         protected override byte[] HashData(byte[] data, int offset, int count, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
         protected override byte[] HashData(System.IO.Stream data, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
-#endif
         public override void ImportParameters(System.Security.Cryptography.DSAParameters parameters) { }
         public override bool VerifySignature(byte[] rgbHash, byte[] rgbSignature) { throw null; }
     }
-#if netcoreapp
     public sealed partial class ECDiffieHellmanOpenSsl : System.Security.Cryptography.ECDiffieHellman
     {
         public ECDiffieHellmanOpenSsl() { }
@@ -46,7 +43,6 @@ namespace System.Security.Cryptography
         public override void GenerateKey(System.Security.Cryptography.ECCurve curve) { }
         public override void ImportParameters(System.Security.Cryptography.ECParameters parameters) { }
     }
-#endif
     public sealed partial class ECDsaOpenSsl : System.Security.Cryptography.ECDsa
     {
         public ECDsaOpenSsl() { }

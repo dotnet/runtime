@@ -3,10 +3,11 @@
     <PackageConfigurations>
       netstandard1.1;
       netstandard;
-      netcoreapp-Windows_NT;
+      netcoreapp3.0-Windows_NT;
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations);
+      netcoreapp-Windows_NT;
       uap-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>

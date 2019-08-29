@@ -594,7 +594,7 @@ namespace System.Security.Cryptography.Pkcs
                     {
                         writer.PopSequence();
 
-#if netcoreapp || netstandard21
+#if netcoreapp || netcoreapp30 || netstandard21
                         Span<byte> setOfTag = stackalloc byte[1];
                         setOfTag[0] = 0x31;
 
@@ -610,7 +610,7 @@ namespace System.Security.Cryptography.Pkcs
                     {
                         writer.PopSetOf();
 
-#if netcoreapp || netstandard21
+#if netcoreapp || netcoreapp30 || netstandard21
                         hasher.AppendData(writer.EncodeAsSpan());
 #else
                         hasher.AppendData(writer.Encode());
@@ -703,7 +703,7 @@ namespace System.Security.Cryptography.Pkcs
                     return false;
                 }
 
-#if netcoreapp || netstandard21
+#if netcoreapp || netcoreapp30 || netstandard21
                 // SHA-2-512 is the biggest digest type we know about.
                 Span<byte> digestValue = stackalloc byte[512 / 8];
                 ReadOnlySpan<byte> digest = digestValue;

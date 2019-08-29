@@ -5,11 +5,9 @@
     <RootNamespace>System.Reflection</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CS1573</NoWarn>
-
     <!-- Only the netcoreapp version supports the new reflection apis (IsSZArray, etc.) -->
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp3.0-Debug;netcoreapp3.0-Release;netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
-
   <ItemGroup>
     <Compile Include="System\CoreRtBridge.cs" />
     <Compile Include="System\Reflection\DefaultBinder.cs" />

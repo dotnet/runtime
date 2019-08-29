@@ -3,6 +3,7 @@
     <BuildConfigurations>
       netcoreapp2.0;
       netcoreapp2.1;
+      netcoreapp3.0;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

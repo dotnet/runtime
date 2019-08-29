@@ -1,7 +1,7 @@
 ﻿<Project DefaultTargets="Build">
   <PropertyGroup>
     <PackageConfigurations>
-      netcoreapp;
+      netcoreapp3.0;
       netstandard2.1;
       net461;
       net462;
@@ -9,6 +9,7 @@
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations)
+      netcoreapp;
       netfx;
       uap;
     </BuildConfigurations>

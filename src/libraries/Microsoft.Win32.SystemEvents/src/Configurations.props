@@ -3,11 +3,12 @@
     <PackageConfigurations>
       netstandard;
       netcoreapp2.0-Windows_NT;
-      netcoreapp-Windows_NT;
+      netcoreapp3.0-Windows_NT;
       net461;
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations);
+      netcoreapp-Windows_NT;
       netfx;
     </BuildConfigurations>
   </PropertyGroup>
