@@ -402,7 +402,7 @@ main (void)
 
 	LocalFree (argvw);
 
-	if ((mono_get_module_filename (NULL, &module_file_name, &length))) {
+	if (mono_get_module_filename (NULL, &module_file_name, &length)) {
 		char *entry = g_utf16_to_utf8 (module_file_name, length, NULL, NULL, NULL);
 		g_free (module_file_name);
 		probe_embedded (entry, &argc, &argv);
