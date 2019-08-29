@@ -15,6 +15,273 @@ Primary Objectives
 Secondary Objectives
 * No “swizzling” or lying about struct types – they are always struct types
  - No confusing use of GT_LCL_FLD to refer to the entire struct as a different type
+  
+Normalizing Struct Types
+------------------------
+We would like to facilitate full enregistration of structs with the following properties:
+1. Its fields are infrequently accessed, and
+1. The entire struct fits into a register, and
+2. Its value is used or defined in a register 
+(i.e. as an argument to or return value from calls or intrinsics).
+
+In RyuJIT, the concept of a type is very simplistic (which helps support the high throughput
+of the JIT). Rather than a symbol table to hold the properties of a type, RyuJIT primarily
+deals with types as simple values of an enumeration. When more detailed information is
+required about the structure of a type, we query the type system, across the JIT/EE interface.
+This is generally done only during the importer (translation from MSIL to the RyuJIT IR),
+during struct promotion analysis, and when determining how to pass or return struct values.
+As a result, struct types are generally treated as an opaque type
+(TYP_STRUCT) of unknown size and structure.
+
+In order to treat fully-enregisterable struct types as "first class" types in RyuJIT, we
+ created new types to represent vectors, in order for the JIT to support operations on them:
+* `TYP_SIMD8`, `TYP_SIMD12`, `TYP_SIMD16` and (where supported by the target) `TYP_SIMD32`.
+ - These types already exist, and represent some already-completed steps toward First Class Structs.
+
+ We propose to create the following additional types to be used where struct types of the given size are
+ passed and/or returned in registers:
+ * `TYP_STRUCT1`, `TYP_STRUCT2`, `TYP_STRUCT4`, `TYP_STRUCT8` (on 64-bit systems)
+
+For other struct types, for which the JIT has no type-specific optimizations, the following
+transformations need to be supported effectively:
+- Optimizations such as CSE and assertion propagation
+  - Depends on being able to discern when instances of these types are equivalent.
+- Passing and returning these values to and from methods
+  - Avoiding unnecessarily copying these values between registers or on the stack.
+  - Allowing promoted structs to be passed or returned without forcing them to become
+    ineligible for register allocation.
+
+Correct and effective code generation for structs requires that the JIT have ready access
+to information about the shape and size of the struct. This information is obtained from the VM
+over the JIT/EE interface. This includes:
+- Struct size
+- Number and type of fields, especially if there are GC references
+
+It has been proposed by @mikedn in
+[#21705 Pull struct type info out of GenTreeObj](https://github.com/dotnet/coreclr/pull/21705)
+that this kind of information could be kept in a `ClassLayout` cache, reducing the size impact on the `GenTree`
+nodes, as well as the number
+of JIT/EE interface queries. Reducing the impact on the size of the nodes would make it less
+costly to retain this information even on rvalues, thus enabling some
+optimization scenarios that are currently disabled for struct types.
+
+Current Representation of Struct Values
+---------------------------------------
+### Importer-Only Struct Values
+
+These struct-typed nodes are created by the importer, but transformed in morph, and so are not
+encountered by most phases of the JIT:
+* `GT_INDEX`: This is transformed to a `GT_IND`
+  * Currently, the IND is marked with `GTF_IND_ARR_INDEX` and the node pointer of the `GT_IND` acts as a key
+    into the array info map.
+  * Proposed: This should be transformed into a `GT_OBJ` when it represents a struct type, and then the
+    class handle would no longer need to be obtained from the array info map.
+* `GT_FIELD`: This is transformed to a `GT_LCL_FLD` or a `GT_IND`
+* `GT_MKREFANY`: This produces a "known" struct type, which is currently obtained by
+  calling `impGetRefAnyClass()` which is a call over the JIT/EE interface. This node is always
+  eliminated, and its source address used to create a copy. If it is on the rhs
+  of an assignment, it will be eliminated during the importer. If it is a call argument it will
+  be eliminated during morph.
+  * The presence of any of these in a method disables struct promotion. See `case CEE_MKREFANY` in the
+    `Importer`, where it is asserted that these are rare, and therefore not worth the trouble to handle.
+
+### Struct “objects” as lvalues
+
+* The lhs of a struct assignment is a block node or local
+  * `GT_OBJ` nodes represent the “shape” info via a struct handle, along with the GC info
+    (location and type of GC references within the struct).
+    * These are used only to represent struct values that contain GC references.
+  * `GT_BLK` nodes represent struct types with no GC references, or opaque blocks of fixed size.
+    * These have no struct handle, resulting in some pessimization or even incorrect
+      code when the appropriate struct handle can't be determined.
+    * These never represent lvalues of structs that contain GC references.
+    * Proposed: Like `GT_OBJ`, these would contain a pointer to the `ClassLayout`.
+  * `GT_STORE_OBJ` and `GT_STORE_BLK` have the same structure as `GT_OBJ` and `GT_BLK`, respectively
+    * `Data()` is op2
+  * `GT_DYN_BLK` and `GT_STORE_DYN_BLK` (GenTreeDynBlk extends GenTreeBlk)
+    * Additional child `gtDynamicSize`
+    * Note that these aren't really struct types; they represent dynamically sized blocks
+      of arbitrary data.
+  * For `GT_LCL_FLD` nodes, the shape information is obtained via an index into the `ClassLayout` cache.
+  * For `GT_LCL_VAR` nodes, the shape information is obtained via the `LclVarDsc`
+
+### Struct “objects” as rvalues
+
+Structs only appear as rvalues in the following contexts:
+
+* On the RHS of an assignment
+  * The lhs provides the “shape” for an assignment. Note, however, that the LHS isn't always available
+    to optimizations, which has led to pessimization, e.g. 
+    [#23739 Block the hoisting of TYP_STRUCT rvalues in loop hoisting](https://github.com/dotnet/coreclr/pull/23739)
+
+* As a call argument
+  * In this context, it must be one of: `GT_OBJ`, `GT_LCL_VAR`, `GT_LCL_FLD` or `GT_FIELD_LIST`
+
+* As an operand to a hardware or SIMD intrinsic (for `TYP_SIMD*` only)
+  * In this case the struct handle is generally assumed to be unneeded, as it is captured (directly or
+    indirectly) in the `GT_SIMD` or `GT_HWIntrinsic` node.
+
+After morph, a struct-typed value on the RHS of assignment is one of:
+* `GT_IND`: in this case the LHS is expected to provide the struct handle
+  * Proposed: `GT_IND` would no longer be used for struct types
+* `GT_CALL`
+* `GT_LCL_VAR`
+* `GT_LCL_FLD`
+  * Proposed: `GT_LCL_FLD` would never be used to represent a reference to the full struct (e.g. as a different type).
+* `GT_SIMD`
+* `GT_OBJ` nodes can also be used as rvalues when they are call arguments
+  * Proposed: `GT_OBJ` nodes can be used in any context where a struct rvalue or lvalue might occur,
+    except after morph when the struct is independently promoted.
+
+Struct IR Phase Transitions
+---------------------------
+
+There are three phases in the JIT that make changes to the representation of struct nodes and lclVars:
+
+* Importer
+  * Vector types are normalized to the appropriate `TYP_SIMD*` type. Other struct nodes have `TYP_STRUCT`.
+  * Proposed: all struct-valued nodes that are created with a class handle will retain either a `ClassLayout`
+    pointer or an index into the `ClassLayout` cache.
+  * Proposed: Also normalize to new types `TYP_STRUCT1`, etc.
+
+* Struct promotion
+  * Fields of promoted structs become separate lclVars (scalar promoted) with primitive types.
+    * This is currently an all-or-nothing choice (either all fields are promoted, or none), and is
+      constrained in the number of fields that can be promoted.
+    * Proposed: Support additional cases. See [Improve Struct Promotion](#Improve-Struct-Promotion)
+
+* Global morph
+  * Some promoted structs are forced to stack, and become “dependently promoted”.
+    * Proposed: promoted structs are forced to stack ONLY if address taken.
+      * This includes removing unnecessary pessimizations of block copies. See [Improve and Simplify Block Assignment Morphing](#Block-Assignments).
+
+  * Call args 
+    * If the struct has been promoted it is morphed to `GT_FIELD_LIST`
+      * Currently this is done only if it is passed on the stack, or if it is passed
+        in registers that exactly match the types of its fields.
+      * Proposed: This transformation would be made even if it is passed in non-matching
+        registers. The necessary transformations for correct code generation would be
+        made in `Lowering`.
+
+    * If it is passed in a single register, it is morphed into a `GT_LCL_FLD` node of the appropriate
+      type.
+      * This may involve making a copy, if the size cannot be safely loaded.
+      * Proposed: This would remain a `GT_OBJ` and would be appropriately transformed in `Lowering`,
+        e.g. using `GT_BITCAST`.
+
+    * If is passed in multiple registers
+      * A `GT_FIELD_LIST` is constructed that represents the load of each register using `GT_LCL_FLD`.
+      * Proposed: This would also remain `GT_OBJ` (or `GT_FIELD_LIST` if promoted) and would be transformed
+        to a `GT_FIELD_LIST` with the appropriate load, assemble or extraction code as needed.
+
+    * Otherwise, if it is passed by reference or on the stack, it is kept as `GT_OBJ` or `GT_LCL_VAR`
+      * Currently, if passed by reference, the value is either forced to the stack or copied.
+      * Proposed: This transformation would also be deferred until `Lowering`, at which time the
+        liveness information can provide `lastUse` information to allow a dead struct to be passed
+        directly by reference instead of being copied.
+
+It is proposed to add the following transformations in `Lowering`:
+* Transform struct values that are passed to or returned from calls by creating one or more of the following:
+  * `GT_FIELD_LIST` of `GT_LCL_FLD` when the struct is non-enregisterable and is passed in multiple
+    registers.
+  * `GT_BITCAST` when a promoted floating point field of a single-field struct is passed in an integer register.
+  * A sequence of nodes to assemble or extract promoted fields
+* Introduce copies as needed for non-last-use struct values that are passed by reference.
+
+Work Items
+----------
+This is a preliminary breakdown of the work into somewhat separable tasks.
+These work items are organized in priority order. Each work item should be able to
+proceed independently, though the aggregate effect of multiple work items may be greater
+than the individual work items alone.
+
+### Cache Struct type info
+[#21705 Pull struct type info out of GenTreeObj](https://github.com/dotnet/coreclr/pull/21705)
+  * Eliminate the use of `GT_IND` for structs
+  * Ensure that all struct-valued nodes have an index into the `ClassLayout` cache
+    * The cache includes entries for opaque "struct" values of a given size, as well as for
+      structs with known class handles
+
+### Defer ABI-specific transformations to `Lowering`.
+This includes all copies and IR transformations that are only required to pass or return the arguments
+as required by the ABI.
+
+Other transformations would remain:
+  * Copies required to satisfy ordering constraints
+  * Transformations (e.g. `GT_FIELD_LIST` creation) required to expose references
+    to promoted struct fields.
+
+This would be done in multiple phases:
+  * First, move transformations other than those listed above to `Lowering`, but retain any "pessimizations"
+    (e.g. marking nodes as `GTF_DONT_CSE` or marking lclVars as `lvDoNotEnregister`)
+  * Add support for passing vector types in the SSE registers for x64/ux
+    * This will also involve modifying code in the VM. See [#23675 Arm64 Vector ABI](https://github.com/dotnet/coreclr/pull/23675)
+      for a general idea of the kinds of VM changes that may be required.
+  * Next, eliminate these "pessimizations".
+    * For cases where `GT_LCL_FLD` is currently used to "retype" the struct, change it to use *either*
+      `GT_LCL_FLD`, if it is already address-taken, or to use a `GT_BITCAST` otherwise.
+      * This work item should address issue #1161 (test is `JIT\Regressions\JitBlue\GitHub_1161`).
+    * Add support in prolog to extract fields, and remove the restriction of not promoting incoming reg
+      structs that have more than one field. Note that SIMD types are already reassembled in the prolog.
+    * Add support in `Lowering` and `CodeGen` to handle call arguments where the fields of a promoted struct
+      must be extracted or reassembled in order to pass the struct in non-matching registers. This includes
+      producing the appropriate IR.
+    * Add support for extracting the fields for the returned struct value of a call (in registers or on
+      stack), producing the appropriate IR.
+    * Add support for assembling non-matching fields into registers for call args and returns.
+    * For arm64, add support for loading non-promoted or non-local structs with ldp
+    * See [Extracting and Assembling Structs](#Extract-Assemble).
+    * The removal of each of these pessimizations should result in improved code generation
+      in cases where previously disabled optimizations are now enabled.
+
+### Fully Enable Struct Optimizations
+
+Most of the existing places in the code where structs are handled conservatively are marked
+with `TODO-1stClassStructs`. This work item involves investigating these and making the
+necessary improvements (or determining that they are infeasible and removing the `TODO`).
+Some of these, such as the handling of `TYP_SIMD8` in LSRA, may be addressed by other work items.
+
+### Add New Fixed-size Struct Types
+
+This would add `TYP_STRUCT1`, `TYP_STRUCT2`, `TYP_STRUCT4` and `TYP_STRUCT8` (the latter only on 64-bit
+systems). They would be normalized in the importer just like the SIMD types.
+  * First, simply add the types and ensure that they are handled as normal structs
+    * Do not make the transformation for structs containing a single ref
+      (see [Improve Struct Promotion](#Improve-Struct-Promotion)
+  * Next, fully enregister if there are no field accesses. This would be done in morph at the same time
+    that fully-enregistered SIMD types are marked as `lvRegStruct`.
+  * Next, modify struct promotion to fully promote (enregister) structs that have, by weight, 
+    more references as incoming or outgoing calls or returns, than field references.
+    * An initial investigation should be undertaken to determine if this is worthwhile.
+    * This requires codegen support to extract the fields from the register at their
+      references.
+
+###  <a name="Improve-Struct-Promotion"/>Improve Struct Promotion
+ * Aggressively promote lclVar struct incoming or outgoing args or returns whose fields match the ABI requirements.
+ * Aggressively promote pointer-sized fields of structs used as args or returns
+ * Allow struct promotion of locals that are passed or returned in a way that doesn't match
+   the field types.
+ * Fully promote structs of pointer size or less that have fewer field references than calls
+   or returns.
+ * Investigate whether it would be useful to re-type single-field structs, rather than creating new lclVars.
+   This would complicate type analysis when copied, passed or returned, but would avoid unnecessarily expanding
+   the lclVar data structures.
+
+### <a name="Block-Assignments"/>Improve and Simplify Block and Block Assignment Morphing
+
+* `fgMorphOneAsgBlockOp` should probably be eliminated, and its functionality either moved to
+  `Lowering` or simply subsumed by the combination of the addition of fixed-size struct types and
+  the full enablement of struct optimizations. Doing so would also involve improving code generation
+  for block copies. See [\#21711 Improve init/copy block codegen](https://github.com/dotnet/coreclr/pull/21711).
+
+* This also includes cleanup of the block morphing methods such that block nodes needn't be visited multiple
+  times, such as `fgMorphBlkToInd` (may be simply unneeded), `fgMorphBlkNode` and `fgMorphBlkOperand`.
+  These methods were introduced to preserve old behavior, but should be simplified.
+
+* Somewhat related is the handling of struct-typed array elements. Currently, after the `GT_INDEX` is transformed
+  into a `GT_IND`, that node must be retained as the key into the `ArrayInfoMap`. For structs, this is then
+  wrapped in `OBJ(ADDR(...))`. We should be able to change the IND to OBJ and avoid wrapping, and should also be
+  able to remove the class handle from the array info map and instead used the one provided by the `GT_OBJ`.
 
 Struct-Related Issues in RyuJIT
 -------------------------------
@@ -39,6 +306,7 @@ static foo getfoo() { return new foo(); }
     * Note that these copies are not generated when passing and returning scalar types,
       and it may be worth considering (in future) whether we can avoiding adding them
       in the first place.
+  * This case may now be handled; needs verification
  
 * [\#1161  RyuJIT properly optimizes structs with a single field if the field type is int but not if it is double](https://github.com/dotnet/coreclr/issues/1161)
   * This issue arises because we never promote a struct with a single double field, due to
@@ -53,13 +321,9 @@ static foo getfoo() { return new foo(); }
     the struct may or may not be passed or returned directly.
   * Unfortunately, there is not currently a scenario or test case for this issue.
 
-* [\#2908 Unix: Unecessary struct copy while passing by value on stack](https://github.com/dotnet/coreclr/issues/2908)
-* [\#6264 Unix: Unnecessary struct copy while passsing struct of size <=16](https://github.com/dotnet/coreclr/issues/6264)
-* [\#6266 Unix: Unnecessary copies for promoted struct arguments](https://github.com/dotnet/coreclr/issues/6266)
+* [\#19425 Unix: Unnecessary struct copy while passsing struct of size <=16](https://github.com/dotnet/coreclr/issues/19425)
 * [\#16619 [RyuJIT] Eliminate unecessary copies when passing structs](https://github.com/dotnet/coreclr/issues/16619)
   * These require changing both the callsite and the callee to avoid copying the parameter onto the stack.
-  * Should be addressed with work items 5 and 10. SIMD parameters are a special case (see #6265), but should be addressed at the
-    same time.
 
 * [\#3144 Avoid marking tmp as DoNotEnregister in tmp=GT_CALL() where call returns a
   enregisterable struct in two return registers](https://github.com/dotnet/coreclr/issues/3144)
@@ -68,22 +332,9 @@ static foo getfoo() { return new foo(); }
     should be done along with the streamlining of the handling of ABI-specific struct passing
     and return values.
     
-* [\#3539 RyuJIT: Poor code quality for tight generic loop with many inlineable calls](https://github.com/dotnet/coreclr/issues/3539)
-(factor x8 slower than non-generic few calls loop).
-  * This appears to be the same fundamental issue as #1133. Since there is a benchmark associated with this, it should be
-    verified when #1133 is addressed.
-
 * [\#4766 Pi-Digits: Extra Struct copies of BigInteger](https://github.com/dotnet/coreclr/issues/4766)
   * In addition to suffering from the same issue as #1133, this has a struct that is promoted even though it is
     passed (by reference) to its non-inlined constructor. This means that any copy to/from this struct will be field-by-field.
-
-* [\#5556 RuyJIT: structs in parameters and enregistering](https://github.com/dotnet/coreclr/issues/5556)
-  * The test case in this issue generates effectively the same loop body on most targets except for x86.
-    Addressing this requires us to "Add support in prolog to extract fields, and
-    remove the restriction of not promoting incoming reg structs that have more than one field" - see [Dependent Work Items](https://github.com/dotnet/coreclr/blob/master/Documentation/design-docs/first-class-structs.md#dependent-work-items)
-    
-* [\#6265 Unix: Unnecessary copies for struct argument with GT_ADDR(GT_SIMD)](https://github.com/dotnet/coreclr/issues/6265)
-  * The IR for passing structs doesn't support having a `GT_SIMD` node as an argument. This should be fixed by work item 10 below.
 
 * [\#11816 Extra zeroing with structs and inlining](https://github.com/dotnet/coreclr/issues/11816)
   * This issue illustrates the failure of the JIT to eliminate zero-initialization of structs that are subsequently fully
@@ -93,206 +344,13 @@ static foo getfoo() { return new foo(); }
 * [\#12865 JIT: inefficient codegen for calls returning 16-byte structs on Linux x64](https://github.com/dotnet/coreclr/issues/12865)
   * This is related to #3144, and requires supporting the assignment of a multi-reg call return into a promoted local variable,
     and enabling subsequent elimination of any redundant copies.
-  
-Normalizing Struct Types
-------------------------
-We would like to facilitate full enregistration of structs with the following properties:
-1. Its fields are infrequently accessed, and
-1. The entire struct fits into a register, and
-2. Its value is used or defined in a register 
-(i.e. as an argument to or return value from calls or intrinsics).
-
-In RyuJIT, the concept of a type is very simplistic (which helps support the high throughput
-of the JIT). Rather than a symbol table to hold the properties of a type, RyuJIT primarily
-deals with types as simple values of an enumeration. When more detailed information is
-required about the structure of a type, we query the type system, across the JIT/EE interface.
-This is generally done only during the importer (translation from MSIL to the RyuJIT IR), and
-during struct promotion analysis. As a result, struct types are treated as an opaque type
-(TYP_STRUCT) of unknown size and structure.
-
-In order to treat fully-enregisterable struct types as "first class" types in RyuJIT, we
- create new types with fixed size and structure:
-* TYP_SIMD8, TYP_SIMD12, TYP_SIMD16 and (where supported by the target) TYP_SIMD32
- - These types already exist, and represent some already-completed steps toward First Class Structs.
-* TYP_STRUCT1, TYP_STRUCT2, TYP_STRUCT4, TYP_STRUCT8 (on 64-bit systems)
- - These types are new, and will be used where struct types of the given size are passed and/or
- returned in registers.
-
-We want to identify and normalize these types early in the compiler, before any decisions are
-made regarding whether they are constrained to live on the stack and whether and how they are
-promoted (scalar replaced) or copied.
-
-One issue that arises is that it becomes necessary to know the size of any struct type that
-we encounter, even if we may not actually need to know the size in order to generate code.
-The major cause of additional queries seems to be for field references. It is possible to
-defer some of these cases. I don't know what the throughput impact will be to always do the
-normalization, but in principle I think it is worth doing because the alternative would be
-to transform the types later (e.g. during morph) and use a contextual tree walk to see if we
-care about the size of the struct. That would likely be a messier analysis.
-
-Current Struct IR Phase Transitions
------------------------------------
-
-There are three phases in the JIT that make changes to the representation of struct tree
-nodes and lclVars:
-
-* Importer
- * All struct type lclVars have TYP_STRUCT
- * All struct assignments/inits are block ops
- * All struct call args are ldobj
- * Other struct nodes have TYP_STRUCT
-* Struct promotion
- * Fields of promoted structs become separate lclVars (scalar promoted) with primitive types
-* Global morph
- * All struct nodes are transformed to block ops
-   - Besides call args
-  * Some promoted structs are forced to stack
-   - Become “dependently promoted”
- * Call args 
-   - Morphed to GT_LCL_FLD if passed in a register
-   - Treated in various ways otherwise (inconsistent)
-
-Proposed Approach
------------------
-The most fundamental change with first class structs is that struct assignments become
-just a special case of assignment. The existing block ops (GT_INITBLK, GT_COPYBLK,
- GT_COPYOBJ, GT_LDOBJ) are eliminated. Instead, the block operations in the incoming MSIL
- are translated into assignments to or from a new GT_OBJ node.
-
-New fixed-size struct types are added: (TYP_STRUCT[1|2|4|8]), which are somewhat similar
-to the (existing) SIMD types (TYP_SIMD[8|16|32]). As is currently done for the SIMD types,
-these types are normalized in the importer.
-
-Conceptually, struct nodes refer to the object, not the address. This is important, as
-the existing block operations all take address operands, meaning that any lclVar involved
-in an assignment (including initialization) will be in an address-taken context in the JIT,
-requiring special analysis to identify the cases where the address is only taken in order
-to assign to or from the lclVar. This further allows for consistency in the treatment of
-structs and simple types - even potentially enabling optimizations of non-enregisterable
-structs.
-
-### Struct promotion
-
-* Struct promotion analysis
- * Aggressively promote pointer-sized fields of structs used as args or returns
- * Consider FULL promotion of pointer-size structs
-   * If there are fewer field references than calls or returns
-
-### Assignments
-* Struct assignments look like any other assignment
-* GenTreeAsg (GT_ASG) extends GenTreeOp with:
-
-```C#
-// True if this assignment is a volatile memory operation.
-bool IsVolatile() const { return (gtFlags & GTF_BLK_VOLATILE) != 0; }
-bool gtAsgGcUnsafe;
-
-// What code sequence we will be using to encode this operation.
-enum
-{
-    AsgKindInvalid,
-    AsgKindDirect,
-    AsgKindHelper,
-    AsgKindRepInstr,
-    AsgKindUnroll,
-} gtAsgKind;
-```
-
-### Struct “objects” as lvalues
-* Lhs of a struct assignment is a block node or lclVar
-* Block nodes represent the address and “shape” info formerly on the block copy:
- * GT_BLK and GT_STORE_BLK (GenTreeBlk)
-   * Has a (non-tree node) size field
-   * Addr() is op1
-   * Data() is op2
- * GT_OBJ and GT_STORE_OBJ (GenTreeObj extends GenTreeBlk)
-   * gtClass, gtGcPtrs, gtGcPtrCount, gtSlots
- * GT_DYN_BLK and GT_STORE_DYN_BLK (GenTreeDynBlk extends GenTreeBlk)
-   * Additional child gtDynamicSize
-
-### Struct “objects” as rvalues
-After morph, structs on rhs of assignment are either:
-* The tree node for the object: e.g. call, retExpr
-* GT_IND of an address (e.g. GT_LEA)
-
-The lhs provides the “shape” for the assignment. Note: it has been suggested that these could 
-remain as GT_BLK nodes, but I have not given that any deep consideration.
-
-### Preserving Struct Types in Trees
-
-Prior to morphing, all nodes that may represent a struct type will have a class handle.
-After morphing, some will become GT_IND.
-
-### Structs As Call Arguments
-
-All struct args imported as GT_OBJ, transformed as follows during morph:
-* P_FULL promoted locals:
-  * Remain as a GT_LCL_VAR nodes, with the appropriate fixed-size struct type.
-  * Note that these may or may not be passed in registers.
-* P_INDEP promoted locals:
-  * These are the ones where the fields don’t match the reg types
-    GT_STRUCT (or something) for aggregating multiple fields into a single register
-  * Op1 is a lclVar for the first promoted field
-  * Op2 is the lclVar for the next field, OR another GT_STRUCT
-  * Bit offset for the second child
-* All other cases (non-locals, OR P_DEP or non-promoted locals):
-  * GT_LIST of GT_IND for each half
-
-### Struct Return
-
-The return of a struct value from the current method is represented as follows:
-* GT_RET(GT_OBJ) initially
-* GT_OBJ morphed, and then transformed similarly to call args
-
-Proposed Struct IR Phase Transitions
-------------------------------------
-
-* Importer
-  * Struct assignments are imported as GT_ASG
-  * Struct type is normalized to TYP_STRUCT* or TYP_SIMD*
-* Struct promotion
-  * Fields of promoted structs become separate lclVars (as is)
-  * Enregisterable structs (including Pair Types) may be promoted to P_FULL (i.e. fully enregistered)
-  * As a future optimization, we may "restructure" multi-register argument or return values as a
-    synthesized struct of appropriately typed fields, and then promoted in the normal manner.
-* Global morph
-  * All struct type local variables remain as simple GT_LCL_VAR nodes.
-  * All other struct nodes are transformed to GT_IND (rhs of assignment) or remain as GT_OBJ
-    * In Lowering, GT_OBJ will be changed to GT_BLK if there are no gc ptrs. This could be done
-      earlier, but there are some places where the object pointer is desired.
-    * It is not actually clear if there is a great deal of value in the GT_BLK, but it was added
-      to be more compatible with existing code that expects block copies with gc pointers to be
-      distinguished from those that do not.
-  * Promoted structs are forced to stack ONLY if address taken
-  * Call arguments
-    * Fixed-size enregisterable structs: GT_LCL_VAR or GT_OBJ of appropriate type.
-    * Multi-register arguments: GT_LIST of register-sized operands:
-      * GT_LCL_VAR if there is a promoted field that exactly matches the register size and type
-        (note that, if we have performed the optimization mentioned above in struct promotion,
-        we may have a GT_LCL_VAR of a synthesized struct field).
-      * GT_LCL_FLD if there is a matching field in the struct that has not been promoted.
-      * GT_IND otherwise. Note that if this is a struct local that does not have a matching field,
-        this will force the local to live on the stack.
-* Lowering
-  * Pair types (e.g. TYP_LONG on 32-bit targets) are decomposed as needed to expose register requirements.
-    Although these are not strictly structs, their handling is similar.
-    * Computations are decomposed into their constituent parts when they independently write
-      separate registers.
-    * TYP_LONG lclVars (and TYP_DOUBLE on ARM) are split (similar to promotion/scalar replacement of
-      structs) if and only if they are register candidates.
-    * Other TYP_LONG/TYP_DOUBLE lclVars are loaded into independent registers either via:
-      * Single GT_LCL_VAR that will translate into a pair load instruction (ldp), with two register 
-        targets, or
-      * GT_LCL_FLD (current approach) or GT_IND (probaby a better approach)
-  * Calls and loads that target multiple registers
-    * Existing gtLsraInfo has the capability to specify multiple destination registers
-    * Additional work is required in LSRA to handle these correctly
-    * If HFAs can be return values (not just call args), then we may need to support up to 4 destination
-      registers for LSRA
 
 Sample IR
 ---------
-### Bug 98404
+
+*** Note: These IR samples have not been updated to correspond to the current state of the IR ***
+
+### Bug 11407
 #### Before
 
 The `getfoo` method initializes a struct of 4 bytes.
@@ -570,108 +628,3 @@ vmovdqu  qword ptr [rdx], ymm0
 add      rsp, 40
 ret 
 ```
-
-Work Items
-----------
-This is a preliminary breakdown of the work into somewhat separable tasks. Those whose descriptions
-are prefaced by '*' have been prototyped in an earlier version of the JIT, and that work is now
-being re-integrated and tested, but may require some cleanup and/or phasing with other work items
-before a PR is submitted.
-
-### Mostly-Independent work items
-1.	*Replace block ops with assignments & new nodes.
-
-2.	*Add new fixed-size types, and normalize them in the importer (might be best to do this with or after #1, but not really dependent)
-
-3.	LSRA
-    * Enable support for multiple destination regs, call nodes that return a struct in multiple
-      registers (for x64/ux, and for arm)
-    * Handle multiple destination regs for ldp on arm64 (could be done before or concurrently with the above).
-      Note that this work item is specifically intended for call arguments. It is likely the case that
-      utilizing ldp for general-purpose code sequences would be handled separately.
-
-4.	X64/ux: aggressively promote lclVar struct incoming or outgoing args with two 8-byte fields
-
-5.	X64/ux:
-    * modify the handling of multireg struct args to use GT_LIST of GT_IND
-    * remove the restriction to NOT promote things that are multi-reg args, as long as they match (i.e. two 8-byte fields).
-      Pass those using GT_LIST of GT_LCL_VAR.
-    * stop adding extra lclVar copies
-
-6.	Arm64:
-    * Promote 16-byte struct lclVars that are incoming or outgoing register arguments only if they have 2 8-byte fields (DONE).
-      Pass those using GT_LIST of GT_LCL_VAR (as above for x64/ux).
-      Note that, if the types do not match, e.g. a TYP_DOUBLE field that will be passed in an integer register,
-      it will require special handling in Lowering and LSRA, as is currently done in the TYP_SIMD8 case.
-    * For other cases, pass as GT_LIST of GT_IND (DONE)
-    * The GT_LIST would be created in fgMorphArgs(). Then in Lower, putarg_reg nodes will be inserted between
-      the GT_LIST and the list item (GT_LCL_VAR or GT_IND). (DONE)
-    * Add support for HFAs.
-    
-    ### Dependent work items:
-    
-7.	*(Depends on 1 & 2): Fully enregister TYP_STRUCT[1|2|3|4|8] with no field accesses.
-
-8.  *(Depends on 1 & 2): Enable value numbering and assertion propagation for struct types.
-
-9.	(Depends on 1 & 2, mostly to avoid conflicts): Add support in prolog to extract fields, and
-    remove the restriction of not promoting incoming reg structs that have more than one field.
-    Note that SIMD types are already reassembled in the prolog.
-    
-10.	(Not really dependent, but probably best done after 1, 2, 5, 6): Add support for assembling
-    non-matching fields into registers for call args and returns. This includes producing the
-    appropriate IR, which may be simply be shifts and or's of the appropriate fields.
-    This would either be done during `fgMorphArgs()` and the `GT_RETURN` case of `fgMorphSmpOp()`
-    or as described below in
-    [Extracting and Assembling Structs](#Extract-Assemble).
-    
-11. (Not really dependent, but probably best done after 1, 2, 5, 6): Add support for extracting the fields for the
-    returned struct value of a call, producing the appropriate IR, which may simply be shifts and
-    and's.
-    This would either be done during the morphing of the call itself, or as described below in
-    [Extracting and Assembling Structs](#Extract-Assemble).
-
-12.	(Depends on 3, may replace the second part of 6): For arm64, add support for loading non-promoted
-    or non-local structs with ldp
-    * Either using TYP_STRUCT and special case handling, OR adding TYP_STRUCT16
-
-13.	(Depends on 7, 9, 10, 11): Enhance struct promotion to allow full enregistration of structs,
-    even if some field are accessed, if there are more call/return references than field references.
-    This work item should address issue #1161, by removing the automatic non-promotion
-    of structs with a single double field, and adding appropriate heuristics for when it
-    should be allowed.
-
-Related Work Item
------------------
-These changes are somewhat orthogonal, though will likely have merge issues if done in parallel with any of
-the above:
-* Unified API for ABI info
-  * Pass/Return info:
-    * Num regs used for passing
-    * Per-slot location (reg num / REG_STK)
-    * Per-slot type (for reg “slots”)
-    * Starting stack slot offset (if passed on stack)
-    * By reference?
-    * etc.
-  * We should be able to unify HFA handling into this model
-  * For arg passing, the API for creating the argEntry should take an arg state that keeps track of
-    what regs have been used, and handles the backfilling case for ARM
-    
-Open Design Questions
----------------------
-### <a name="Extract-Assemble"/>Extracting and Assembling Structs
-
-Should the IR for extracting and assembling struct arguments from or to argument or return registers
-be generated directly during the morphing of call arguments and returns, or should this capability
-be handled in a more general fashion in `fgMorphCopyBlock()`?
-The latter seems desirable for its general applicability.
-
-One way to handle this might be:
-
-1. Whenever you have a case of mismatched structs (call args, call node, or return node),
-   create a promoted temp of the "fake struct type", e.g. for arm you would introduce three
-   new temps for the struct, and for each of its TYP_LONG promoted fields.
-2. Add an assignment to or from the temp (e.g. as a setup arg node), BUT the structs on
-   both sides of that assignment can now be promoted.
-3. Add code to fgMorphCopyBlock to handle the extraction and assembling of structs.
-4. The promoted fields of the temp would be preferenced to the appropriate argument or return registers.
