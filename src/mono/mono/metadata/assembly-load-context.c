@@ -5,6 +5,7 @@
 
 #include "mono/metadata/assembly.h"
 #include "mono/metadata/domain-internals.h"
+#include "mono/metadata/exception-internals.h"
 #include "mono/metadata/icall-decl.h"
 #include "mono/metadata/loader-internals.h"
 #include "mono/metadata/loaded-images-internals.h"
@@ -103,6 +104,37 @@ ves_icall_System_Runtime_Loader_AssemblyLoadContext_GetLoadContextForAssembly (M
 	MonoAssemblyLoadContext *alc = mono_assembly_get_alc (assm);
 
 	return GUINT_TO_POINTER (alc->gchandle);
+}
+
+gpointer
+ves_icall_System_Runtime_Loader_AssemblyLoadContext_InternalLoadUnmanagedDllFromPath (MonoStringHandle fname, MonoError *error)
+{
+	gpointer res = NULL;
+	MonoDl *lib = NULL;
+	char *filename = NULL;
+	char *local_error = NULL;
+
+	g_assert (!MONO_HANDLE_IS_NULL (fname)); // should have already been checked in managed, so we assert
+
+	filename = mono_string_handle_to_utf8 (fname, error);
+	goto_if_nok (error, exit);
+
+	g_assert (g_path_is_absolute (filename)); // again, checked in managed
+
+	lib = mono_dl_open (filename, MONO_DL_LAZY, &local_error);
+
+	if (lib == NULL) {
+		mono_error_set_file_not_found (error, filename, "%s", local_error);
+		goto exit;
+	}
+
+	res = lib->handle;
+
+exit:
+	g_free (lib);
+	g_free (filename);
+	g_free (local_error);
+	return res;
 }
 
 gboolean
