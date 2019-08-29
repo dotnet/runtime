@@ -328,7 +328,7 @@ mono_get_current_directory (gunichar2** pstr, guint32* plength)
 			break;
 		// Call in loop, not just twice, in case another thread is changing it.
 		// Result is transient in currentness and validity (can get deleted or become a file).
-		length = GetCurrentDirectoryW (capacity, (PWSTR)str);
+		length = GetCurrentDirectoryW (capacity, str);
 		success = length && length < (capacity - 1);
 		if (success)
 			break;
