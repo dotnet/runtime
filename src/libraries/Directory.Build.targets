@@ -6,6 +6,8 @@
     tell Microsoft.Common.targets not to import Directory.Build.targets again
     -->
     <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
+    <!-- This is a workaround to allow the SDK to accept the netcoreapp5.0 tfm until the SDK supports targeting this tfm. -->
+    <NETCoreAppMaximumVersion>5.0</NETCoreAppMaximumVersion>
   </PropertyGroup>
 
   <PropertyGroup>

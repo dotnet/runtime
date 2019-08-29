@@ -58,7 +58,7 @@ namespace System.Security.Cryptography.Asn1
         }
 
         public
-#if netcoreapp || uap || NETCOREAPP || netstandard21
+#if netcoreapp || netcoreapp30 || uap || NETCOREAPP || netstandard21
             override
 #endif
         int GetByteCount(ReadOnlySpan<char> chars)
@@ -93,7 +93,7 @@ namespace System.Security.Cryptography.Asn1
         }
 
         public
-#if netcoreapp || uap || NETCOREAPP || netstandard21
+#if netcoreapp || netcoreapp30 || uap || NETCOREAPP || netstandard21
             override
 #endif
         int GetCharCount(ReadOnlySpan<byte> bytes)
@@ -397,7 +397,7 @@ namespace System.Security.Cryptography.Asn1
             return s_utf8Encoding.GetByteCount(s);
         }
 
-#if netcoreapp || uap || NETCOREAPP || netstandard21
+#if netcoreapp || netcoreapp30 || uap || NETCOREAPP || netstandard21
         public override int GetByteCount(ReadOnlySpan<char> chars)
         {
             return s_utf8Encoding.GetByteCount(chars);
@@ -438,7 +438,7 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-#if netcoreapp || uap || NETCOREAPP || netstandard21
+#if netcoreapp || netcoreapp30 || uap || NETCOREAPP || netstandard21
         public override int GetCharCount(ReadOnlySpan<byte> bytes)
         {
             try

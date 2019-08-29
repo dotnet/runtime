@@ -1,5 +1,5 @@
-<Project InitialTargets="IncludeProjectReferences">
-  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
+<Project>
+  <Import Project="Directory.Build.props" />
 
   <PropertyGroup>
     <AdditionalBuildConfigurations>$(AdditionalBuildConfigurations);netstandard-$(OSGroup)-$(ConfigurationGroup)-$(ArchGroup)</AdditionalBuildConfigurations>
@@ -17,24 +17,5 @@
     <Project Include="binplacePackages/binplacePackages.depproj" />
   </ItemGroup>
 
-  <!-- Set up project references to use the sdk restore target. -->
-  <Target Name="IncludeProjectReferences" DependsOnTargets="FilterProjects">
-    <ItemGroup>
-      <ProjectReference Include="@(Project)" />
-    </ItemGroup>
-  </Target>
-
-  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
-
-  <!-- Overwrite the SDK build target. -->
-  <Target Name="Build" DependsOnTargets="FilterProjects">
-    <MSBuild Targets="Build"
-             Projects="@(Project)"
-             Properties="BuildConfiguration=$(BuildConfiguration);%(Project.AdditionalProperties)"
-             BuildInParallel="true"
-             ContinueOnError="ErrorAndStop" />
-
-    <!-- Given we ErrorAndContinue we need to propagate the error if the overall task failed -->
-    <Error Condition="'$(MSBuildLastTaskResult)'=='false'" />
-  </Target>
+  <Import Project="$(RepositoryEngineeringDir)dir.traversal.targets" />
 </Project>

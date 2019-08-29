@@ -3,11 +3,12 @@
     <PackageConfigurations>
       netstandard;
       net461;
-      netcoreapp;
+      netcoreapp3.0;
       uap;
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations);
+      netcoreapp;
       netfx;
     </BuildConfigurations>
   </PropertyGroup>

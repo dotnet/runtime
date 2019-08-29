@@ -347,6 +347,8 @@
     <DefineConstants Condition="'$(TargetFramework)' == 'netstandard2.1'">$(DefineConstants),netstandard21</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp'">$(DefineConstants),netcoreapp</DefineConstants>
     <DefineConstants Condition="'$(TargetFramework)' == 'netcoreapp2.0'">$(DefineConstants),netcoreapp20</DefineConstants>
+    <DefineConstants Condition="'$(TargetFramework)' == 'netcoreapp3.0'">$(DefineConstants),netcoreapp30</DefineConstants>
+    <DefineConstants Condition="'$(TargetFramework)' == 'netcoreapp5.0'">$(DefineConstants),netcoreapp50</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup>

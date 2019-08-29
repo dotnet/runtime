@@ -7,7 +7,7 @@
     <!-- CS0436 - System.Private.CoreLib has internals visible to System.Runtime.WindowsRuntime and is colliding internals on common shared code -->
     <NoWarn>$(NoWarn);1698;0436</NoWarn>
     <ProjectGuid>{844A2A0B-4169-49C3-B367-AFDC4894E487}</ProjectGuid>
-    <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netstandard-Debug;netstandard-Release;netstandard1.0-Debug;netstandard1.0-Release;netstandard1.2-Debug;netstandard1.2-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreapp3.0-Windows_NT-Debug;netcoreapp3.0-Windows_NT-Release;netstandard-Debug;netstandard-Release;netstandard1.0-Debug;netstandard1.0-Release;netstandard1.2-Debug;netstandard1.2-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsNetCoreApp)' == 'true' or '$(TargetsUap)' == 'true'">
     <DefineConstants>$(DefineConstants);netstandard;FEATURE_APPX</DefineConstants>
@@ -22,6 +22,20 @@
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
     <Reference Include="mscorlib" />
     <Reference Include="Windows" />
+    <ProjectReference Include="$(RepositoryEngineeringDir)restore\winrt\winrt.depproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
+    <!-- Needed for the compiler to resolve IObservableMap.MapChanged. -->
+    <ReferenceFromRuntime Include="System.Runtime" />
+    <ReferenceFromRuntime Include="System.Runtime.Extensions">
+      <Aliases>System_Runtime_Extensions</Aliases>
+    </ReferenceFromRuntime>
+    <ReferenceFromRuntime Include="System.Diagnostics.Debug" />
+    <ReferenceFromRuntime Include="System.Diagnostics.Tools" />
+    <ReferenceFromRuntime Include="System.Runtime.InteropServices.WindowsRuntime" />
+    <ReferenceFromRuntime Include="System.ObjectModel" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetsUap)' == 'true'">
     <!-- Needed for the compiler to resolve IObservableMap.MapChanged. -->
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
     <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj">

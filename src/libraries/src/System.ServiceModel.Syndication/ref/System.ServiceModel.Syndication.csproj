@@ -7,7 +7,7 @@
   <ItemGroup>
     <Compile Include="System.ServiceModel.Syndication.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNETCoreApp)' == 'true'">
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="System.ServiceModel.Syndication.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
