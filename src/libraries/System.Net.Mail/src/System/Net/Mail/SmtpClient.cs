@@ -35,6 +35,7 @@ namespace System.Net.Mail
     {
         private string _host;
         private int _port;
+        private int _timeout = 100000;
         private bool _inCall;
         private bool _cancelled;
         private bool _timedOut;
@@ -262,7 +263,7 @@ namespace System.Net.Mail
         {
             get
             {
-                return _transport.Timeout;
+                return _timeout;
             }
             set
             {
@@ -276,7 +277,7 @@ namespace System.Net.Mail
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }
 
-                _transport.Timeout = value;
+                _timeout = value;
             }
         }
 
