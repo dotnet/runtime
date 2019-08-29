@@ -353,21 +353,130 @@ namespace System.Text.Json.Serialization.Tests
             public ClassWithExtensionProperty MyReference { get; set; }
         }
 
-        [Fact]
-        public static void ObjectTree()
+        [Theory]
+        [InlineData(@"{""MyIntMissing"":2,""MyReference"":{""MyIntMissingChild"":3}}")]
+        [InlineData(@"{""MyReference"":{""MyIntMissingChild"":3},""MyIntMissing"":2}")]
+        [InlineData(@"{""MyReference"":{""MyNestedClass"":null,""MyInt"":0,""MyIntMissingChild"":3},""MyIntMissing"":2}")]
+        public static void NestedClass(string json)
         {
-            string json = @"{""MyIntMissing"":2, ""MyReference"":{""MyIntMissingChild"":3}}";
+            ClassWithReference obj;
 
-            ClassWithReference obj = JsonSerializer.Deserialize<ClassWithReference>(json);
-            Assert.IsType<JsonElement>(obj.MyOverflow["MyIntMissing"]);
-            Assert.Equal(1, obj.MyOverflow.Count);
-            Assert.Equal(2, obj.MyOverflow["MyIntMissing"].GetInt32());
+            void Verify()
+            {
+                Assert.IsType<JsonElement>(obj.MyOverflow["MyIntMissing"]);
+                Assert.Equal(1, obj.MyOverflow.Count);
+                Assert.Equal(2, obj.MyOverflow["MyIntMissing"].GetInt32());
 
-            ClassWithExtensionProperty child = obj.MyReference;
-            Assert.IsType<JsonElement>(child.MyOverflow["MyIntMissingChild"]);
-            Assert.IsType<JsonElement>(child.MyOverflow["MyIntMissingChild"]);
-            Assert.Equal(1, child.MyOverflow.Count);
-            Assert.Equal(3, child.MyOverflow["MyIntMissingChild"].GetInt32());
+                ClassWithExtensionProperty child = obj.MyReference;
+
+                Assert.IsType<JsonElement>(child.MyOverflow["MyIntMissingChild"]);
+                Assert.IsType<JsonElement>(child.MyOverflow["MyIntMissingChild"]);
+                Assert.Equal(1, child.MyOverflow.Count);
+                Assert.Equal(3, child.MyOverflow["MyIntMissingChild"].GetInt32());
+                Assert.Null(child.MyNestedClass);
+                Assert.Equal(0, child.MyInt);
+            }
+
+            obj = JsonSerializer.Deserialize<ClassWithReference>(json);
+            Verify();
+
+            // Round-trip the json and verify.
+            json = JsonSerializer.Serialize(obj);
+            obj = JsonSerializer.Deserialize<ClassWithReference>(json);
+            Verify();
+        }
+
+        private class ParentClassWithObject
+        {
+            public string Text { get; set; }
+            public ChildClassWithObject Child { get; set; }
+
+            [JsonExtensionData]
+            public Dictionary<string, object> ExtensionData { get; set; } = new Dictionary<string, object>();
+        }
+
+        private class ChildClassWithObject
+        {
+            public int Number { get; set; }
+
+            [JsonExtensionData]
+            public Dictionary<string, object> ExtensionData { get; set; } = new Dictionary<string, object>();
+        }
+
+        [Fact]
+        public static void NestedClassWithObjectExtensionDataProperty()
+        {
+            var child = new ChildClassWithObject { Number = 2 };
+            child.ExtensionData.Add("SpecialInformation", "I am child class");
+
+            var parent = new ParentClassWithObject { Text = "Hello World" };
+            parent.ExtensionData.Add("SpecialInformation", "I am parent class");
+            parent.Child = child;
+
+            // The extension data is based on the raw strings added above and not JsonElement.
+            Assert.Equal("Hello World", parent.Text);
+            Assert.IsType<string>(parent.ExtensionData["SpecialInformation"]);
+            Assert.Equal("I am parent class", (string)parent.ExtensionData["SpecialInformation"]);
+            Assert.Equal(2, parent.Child.Number);
+            Assert.IsType<string>(parent.Child.ExtensionData["SpecialInformation"]);
+            Assert.Equal("I am child class", (string)parent.Child.ExtensionData["SpecialInformation"]);
+
+            // Round-trip and verify. Extension data is now based on JsonElement.
+            string json = JsonSerializer.Serialize(parent);
+            parent = JsonSerializer.Deserialize<ParentClassWithObject>(json);
+
+            Assert.Equal("Hello World", parent.Text);
+            Assert.IsType<JsonElement>(parent.ExtensionData["SpecialInformation"]);
+            Assert.Equal("I am parent class", ((JsonElement)parent.ExtensionData["SpecialInformation"]).GetString());
+            Assert.Equal(2, parent.Child.Number);
+            Assert.IsType<JsonElement>(parent.Child.ExtensionData["SpecialInformation"]);
+            Assert.Equal("I am child class", ((JsonElement)parent.Child.ExtensionData["SpecialInformation"]).GetString());
+        }
+
+        private class ParentClassWithJsonElement
+        {
+            public string Text { get; set; }
+
+            public List<ChildClassWithJsonElement> Children { get; set; } = new List<ChildClassWithJsonElement>();
+
+            [JsonExtensionData]
+            // Use SortedDictionary as verification of supporting derived dictionaries.
+            public SortedDictionary<string, JsonElement> ExtensionData { get; set; } = new SortedDictionary<string, JsonElement>();
+        }
+
+        private class ChildClassWithJsonElement
+        {
+            public int Number { get; set; }
+
+            [JsonExtensionData]
+            public Dictionary<string, JsonElement> ExtensionData { get; set; } = new Dictionary<string, JsonElement>();
+        }
+
+        [Fact]
+        public static void NestedClassWithJsonElementExtensionDataProperty()
+        {
+            var child = new ChildClassWithJsonElement { Number = 4 };
+            child.ExtensionData.Add("SpecialInformation", JsonDocument.Parse(JsonSerializer.SerializeToUtf8Bytes("I am child class")).RootElement);
+
+            var parent = new ParentClassWithJsonElement { Text = "Hello World" };
+            parent.ExtensionData.Add("SpecialInformation", JsonDocument.Parse(JsonSerializer.SerializeToUtf8Bytes("I am parent class")).RootElement);
+            parent.Children.Add(child);
+
+            Verify();
+
+            // Round-trip and verify.
+            string json = JsonSerializer.Serialize(parent);
+            parent = JsonSerializer.Deserialize<ParentClassWithJsonElement>(json);
+            Verify();
+
+            void Verify()
+            {
+                Assert.Equal("Hello World", parent.Text);
+                Assert.Equal("I am parent class", parent.ExtensionData["SpecialInformation"].GetString());
+                Assert.Equal(1, parent.Children.Count);
+                Assert.Equal(4, parent.Children[0].Number);
+                Assert.Equal("I am child class", parent.Children[0].ExtensionData["SpecialInformation"].GetString());
+            }
         }
 
         [Fact]
