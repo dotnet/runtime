@@ -4275,8 +4275,8 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             for (GenTreePhi::Use& use : tree->AsPhi()->Uses())
             {
                 lvl2 = gtSetEvalOrder(use.GetNode());
-                // PHI args should always have cost 0 and level 1
-                assert(lvl2 == 1);
+                // PHI args should always have cost 0 and level 0
+                assert(lvl2 == 0);
                 assert(use.GetNode()->gtCostEx == 0);
                 assert(use.GetNode()->gtCostSz == 0);
             }
