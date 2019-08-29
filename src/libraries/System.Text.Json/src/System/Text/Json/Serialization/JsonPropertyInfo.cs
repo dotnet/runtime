@@ -178,9 +178,9 @@ namespace System.Text.Json
                         }
                         else if (ClassType == ClassType.Enumerable)
                         {
-                            // Else if it's an implementing type that is not assignable from IList.
+                            // Else if it's an implementing type whose runtime type is not assignable to IList.
                             if (DeclaredPropertyType != ImplementedPropertyType &&
-                                (!typeof(IList).IsAssignableFrom(DeclaredPropertyType) ||
+                                (!typeof(IList).IsAssignableFrom(RuntimePropertyType) ||
                                 ImplementedPropertyType == typeof(ArrayList) ||
                                 ImplementedPropertyType == typeof(IList)))
                             {
