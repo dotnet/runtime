@@ -7,6 +7,7 @@ using System.IO;
 using System.Net.Mime;
 using System.Runtime.ExceptionServices;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 
 namespace System.Net.Mail
 {
@@ -18,9 +19,9 @@ namespace System.Net.Mail
         private SmtpConnection _connection;
         private readonly SmtpClient _client;
         private ICredentialsByHost _credentials;
-        private int _timeout = 100000; // seconds
         private readonly List<SmtpFailedRecipientException> _failedRecipientExceptions = new List<SmtpFailedRecipientException>();
         private bool _identityRequired;
+        private bool _shouldAbort;
 
         private bool _enableSsl = false;
         private X509CertificateCollection _clientCertificates = null;
@@ -74,23 +75,6 @@ namespace System.Net.Mail
             }
         }
 
-        internal int Timeout
-        {
-            get
-            {
-                return _timeout;
-            }
-            set
-            {
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
-
-                _timeout = value;
-            }
-        }
-
         internal bool EnableSsl
         {
             get
@@ -124,8 +108,16 @@ namespace System.Net.Mail
         {
             try
             {
-                _connection = new SmtpConnection(this, _client, _credentials, _authenticationModules);
-                _connection.Timeout = _timeout;
+                lock (this)
+                {
+                    _connection = new SmtpConnection(this, _client, _credentials, _authenticationModules);
+                    if (_shouldAbort)
+                    {
+                        _connection.Abort();
+                    }
+                    _shouldAbort = false;
+                }
+
                 if (NetEventSource.IsEnabled) NetEventSource.Associate(this, _connection);
 
                 if (EnableSsl)
@@ -146,7 +138,6 @@ namespace System.Net.Mail
             try
             {
                 _connection = new SmtpConnection(this, _client, _credentials, _authenticationModules);
-                _connection.Timeout = _timeout;
                 if (NetEventSource.IsEnabled) NetEventSource.Associate(this, _connection);
                 if (EnableSsl)
                 {
@@ -212,9 +203,16 @@ namespace System.Net.Mail
 
         internal void Abort()
         {
-            if (_connection != null)
+            lock (this)
             {
-                _connection.Abort();
+                if (_connection != null)
+                {
+                    _connection.Abort();
+                }
+                else
+                {
+                    _shouldAbort = true;
+                }
             }
         }
 

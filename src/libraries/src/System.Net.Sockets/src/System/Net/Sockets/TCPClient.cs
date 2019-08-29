@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Runtime.ExceptionServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.Sockets
@@ -16,8 +17,10 @@ namespace System.Net.Sockets
         private AddressFamily _family;
         private Socket _clientSocket;
         private NetworkStream _dataStream;
-        private bool _cleanedUp;
+        private volatile int _cleanedUp;
         private bool _active;
+
+        private bool CleanedUp => _cleanedUp == 1;
 
         // Initializes a new instance of the System.Net.Sockets.TcpClient class.
         public TcpClient() : this(AddressFamily.Unknown)
@@ -106,7 +109,7 @@ namespace System.Net.Sockets
             set { _active = value; }
         }
 
-        public int Available => _clientSocket?.Available ?? 0;
+        public int Available => CleanedUp ? 0 : _clientSocket.Available;
 
         // Used by the class to provide the underlying network socket.
         public Socket Client
@@ -115,15 +118,15 @@ namespace System.Net.Sockets
             set
             {
                 _clientSocket = value;
-                _family = _clientSocket?.AddressFamily ?? AddressFamily.Unknown;
+                _family = CleanedUp ? AddressFamily.Unknown : _clientSocket.AddressFamily;
             }
         }
 
-        public bool Connected => _clientSocket?.Connected ?? false;
+        public bool Connected => CleanedUp ? false : _clientSocket.Connected;
 
         public bool ExclusiveAddressUse
         {
-            get { return _clientSocket?.ExclusiveAddressUse ?? false; }
+            get { return CleanedUp ? false : _clientSocket.ExclusiveAddressUse; }
             set
             {
                 if (_clientSocket != null)
@@ -138,7 +141,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, hostname);
 
-            if (_cleanedUp)
+            if (CleanedUp)
             {
                 throw new ObjectDisposedException(GetType().FullName);
             }
@@ -171,7 +174,6 @@ namespace System.Net.Sockets
             {
                 foreach (IPAddress address in addresses)
                 {
-                    Socket tmpSocket = null;
                     try
                     {
                         if (_clientSocket == null)
@@ -181,10 +183,24 @@ namespace System.Net.Sockets
                             Debug.Assert(address.AddressFamily == AddressFamily.InterNetwork || address.AddressFamily == AddressFamily.InterNetworkV6);
                             if ((address.AddressFamily == AddressFamily.InterNetwork && Socket.OSSupportsIPv4) || Socket.OSSupportsIPv6)
                             {
-                                tmpSocket = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-                                tmpSocket.Connect(address, port);
-                                _clientSocket = tmpSocket;
-                                tmpSocket = null;
+                                var socket = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                                // Use of Interlocked.Exchanged ensures _clientSocket is written before CleanedUp is read.
+                                Interlocked.Exchange(ref _clientSocket, socket);
+                                if (CleanedUp)
+                                {
+                                    // Dispose the socket so it throws ObjectDisposedException when we Connect.
+                                    socket.Dispose();
+                                }
+
+                                try
+                                {
+                                    socket.Connect(address, port);
+                                }
+                                catch
+                                {
+                                    _clientSocket = null;
+                                    throw;
+                                }
                             }
 
                             _family = address.AddressFamily;
@@ -201,11 +217,6 @@ namespace System.Net.Sockets
                     }
                     catch (Exception ex) when (!(ex is OutOfMemoryException))
                     {
-                        if (tmpSocket != null)
-                        {
-                            tmpSocket.Dispose();
-                            tmpSocket = null;
-                        }
                         lastex = ExceptionDispatchInfo.Capture(ex);
                     }
                 }
@@ -228,7 +239,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, address);
 
-            if (_cleanedUp)
+            if (CleanedUp)
             {
                 throw new ObjectDisposedException(GetType().FullName);
             }
@@ -252,7 +263,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, remoteEP);
 
-            if (_cleanedUp)
+            if (CleanedUp)
             {
                 throw new ObjectDisposedException(GetType().FullName);
             }
@@ -331,14 +342,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, asyncResult);
 
-            Socket s = Client;
-            if (s == null)
-            {
-                // Dispose nulls out the client socket field.
-                throw new ObjectDisposedException(GetType().Name);
-            }
-
-            s.EndConnect(asyncResult);
+            Client.EndConnect(asyncResult);
             _active = true;
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
@@ -349,7 +353,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            if (_cleanedUp)
+            if (CleanedUp)
             {
                 throw new ObjectDisposedException(GetType().FullName);
             }
@@ -374,44 +378,39 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            if (_cleanedUp)
+            if (Interlocked.CompareExchange(ref _cleanedUp, 1, 0) == 0)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
-                return;
-            }
-
-            if (disposing)
-            {
-                IDisposable dataStream = _dataStream;
-                if (dataStream != null)
+                if (disposing)
                 {
-                    dataStream.Dispose();
-                }
-                else
-                {
-                    // If the NetworkStream wasn't created, the Socket might
-                    // still be there and needs to be closed. In the case in which
-                    // we are bound to a local IPEndPoint this will remove the
-                    // binding and free up the IPEndPoint for later uses.
-                    Socket chkClientSocket = _clientSocket;
-                    if (chkClientSocket != null)
+                    IDisposable dataStream = _dataStream;
+                    if (dataStream != null)
                     {
-                        try
+                        dataStream.Dispose();
+                    }
+                    else
+                    {
+                        // If the NetworkStream wasn't created, the Socket might
+                        // still be there and needs to be closed. In the case in which
+                        // we are bound to a local IPEndPoint this will remove the
+                        // binding and free up the IPEndPoint for later uses.
+                        Socket chkClientSocket = Volatile.Read(ref _clientSocket);
+                        if (chkClientSocket != null)
                         {
-                            chkClientSocket.InternalShutdown(SocketShutdown.Both);
-                        }
-                        finally
-                        {
-                            chkClientSocket.Close();
-                            _clientSocket = null;
+                            try
+                            {
+                                chkClientSocket.InternalShutdown(SocketShutdown.Both);
+                            }
+                            finally
+                            {
+                                chkClientSocket.Close();
+                            }
                         }
                     }
-                }
 
-                GC.SuppressFinalize(this);
+                    GC.SuppressFinalize(this);
+                }
             }
 
-            _cleanedUp = true;
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
