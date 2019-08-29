@@ -52,11 +52,11 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 {
 	guint8 *code, *start;
 	GSList *unwind_ops;
-	int this_reg, size = 20;
+	const int size = 20;
 
 	MonoDomain *domain = mono_domain_get ();
 
-	this_reg = mono_arch_get_this_arg_reg (NULL);
+	const int this_reg = mono_arch_get_this_arg_reg (NULL);
 
 	start = code = (guint8 *)mono_domain_code_reserve (domain, size + MONO_TRAMPOLINE_UNWINDINFO_SIZE(0));
 
@@ -66,7 +66,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 	/* FIXME: Optimize this */
 	amd64_mov_reg_imm (code, AMD64_RAX, addr);
 	amd64_jump_reg (code, AMD64_RAX);
-	g_assert ((code - start) < size);
+	g_assertf ((code - start) <= size, "%d %d", (int)(code - start), size);
 	g_assert_checked (mono_arch_unwindinfo_validate_size (unwind_ops, MONO_TRAMPOLINE_UNWINDINFO_SIZE(0)));
 
 	mono_arch_flush_icache (start, code - start);
@@ -107,7 +107,7 @@ mono_arch_get_static_rgctx_trampoline (gpointer arg, gpointer addr)
 
 	amd64_mov_reg_imm (code, MONO_ARCH_RGCTX_REG, arg);
 	amd64_jump_code (code, addr);
-	g_assert ((code - start) < buf_len);
+	g_assertf ((code - start) <= buf_len, "%d %d", (int)(code - start), buf_len);
 	g_assert_checked (mono_arch_unwindinfo_validate_size (unwind_ops, MONO_TRAMPOLINE_UNWINDINFO_SIZE(0)));
 
 	mono_arch_flush_icache (start, code - start);
@@ -243,7 +243,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	gboolean has_caller;
 	GSList *unwind_ops = NULL;
 	MonoJumpInfo *ji = NULL;
-	const guint kMaxCodeSize = 630;
+	const int kMaxCodeSize = 630;
 
 	if (tramp_type == MONO_TRAMPOLINE_JUMP)
 		has_caller = FALSE;
@@ -573,7 +573,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 		amd64_jump_membase (code, AMD64_RSP, rax_offset - sizeof (target_mgreg_t));
 	}
 
-	g_assert ((code - buf) <= kMaxCodeSize);
+	g_assertf ((code - buf) <= kMaxCodeSize, "%d %d", code, buf, (int)(code - buf), kMaxCodeSize);
 	g_assert_checked (mono_arch_unwindinfo_validate_size (unwind_ops, MONO_MAX_TRAMPOLINE_UNWINDINFO_SIZE));
 
 	mono_arch_flush_icache (buf, code - buf);
@@ -644,7 +644,6 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 	guint8 *tramp;
 	guint8 *code, *buf;
 	guint8 **rgctx_null_jumps;
-	int tramp_size;
 	int depth, index;
 	int i;
 	gboolean mrgctx;
@@ -663,7 +662,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 		index -= size - 1;
 	}
 
-	tramp_size = 64 + 8 * depth;
+	const int tramp_size = 64 + 8 * depth;
 
 	code = buf = (guint8 *)mono_global_codeman_reserve (tramp_size + MONO_TRAMPOLINE_UNWINDINFO_SIZE(0));
 
@@ -730,7 +729,8 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 	mono_arch_flush_icache (buf, code - buf);
 	MONO_PROFILER_RAISE (jit_code_buffer, (buf, code - buf, MONO_PROFILER_CODE_BUFFER_GENERICS_TRAMPOLINE, NULL));
 
-	g_assert (code - buf <= tramp_size);
+	g_assertf ((code - buf) <= tramp_size, "%d %d", (int)(code - buf), tramp_size);
+
 	g_assert_checked (mono_arch_unwindinfo_validate_size (unwind_ops, MONO_TRAMPOLINE_UNWINDINFO_SIZE(0)));
 
 	char *name = mono_get_rgctx_fetch_trampoline_name (slot);
@@ -767,7 +767,8 @@ mono_arch_create_general_rgctx_lazy_fetch_trampoline (MonoTrampInfo **info, gboo
 	mono_arch_flush_icache (buf, code - buf);
 	MONO_PROFILER_RAISE (jit_code_buffer, (buf, code - buf, MONO_PROFILER_CODE_BUFFER_GENERICS_TRAMPOLINE, NULL));
 
-	g_assert (code - buf <= tramp_size);
+	g_assertf ((code - buf) <= tramp_size, "%d %d", (int)(code - buf), tramp_size);
+
 	g_assert_checked (mono_arch_unwindinfo_validate_size (unwind_ops, MONO_TRAMPOLINE_UNWINDINFO_SIZE(0)));
 
 	if (info)
@@ -916,6 +917,8 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 	mono_add_unwind_op_def_cfa (unwind_ops, code, buf, AMD64_RSP, cfa_offset);
 	amd64_ret (code);
 
+	g_assertf ((code - buf) <= tramp_size, "%d %d", (int)(code - buf), tramp_size);
+
 	mono_arch_flush_icache (code, code - buf);
 	MONO_PROFILER_RAISE (jit_code_buffer, (buf, code - buf, MONO_PROFILER_CODE_BUFFER_HELPER, NULL));
 	g_assert (code - buf <= tramp_size);
@@ -1031,7 +1034,8 @@ mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 	mono_add_unwind_op_def_cfa (unwind_ops, code, start, AMD64_RSP, cfa_offset);
 	amd64_ret (code);
 
-	g_assert (code - start < buf_len);
+	g_assertf ((code - start) <= buf_len, "%d %d", (int)(code - start), buf_len);
+
 	g_assert_checked (mono_arch_unwindinfo_validate_size (unwind_ops, MONO_MAX_TRAMPOLINE_UNWINDINFO_SIZE));
 
 	mono_arch_flush_icache (start, code - start);
@@ -1127,7 +1131,8 @@ mono_arch_get_native_to_interp_trampoline (MonoTrampInfo **info)
 	mono_add_unwind_op_def_cfa (unwind_ops, code, start, AMD64_RSP, cfa_offset);
 	amd64_ret (code);
 
-	g_assert (code - start < buf_len);
+	g_assertf ((code - start) <= buf_len, "%d %d", (int)(code - start), buf_len);
+
 	g_assert_checked (mono_arch_unwindinfo_validate_size (unwind_ops, MONO_MAX_TRAMPOLINE_UNWINDINFO_SIZE));
 
 	mono_arch_flush_icache (start, code - start);

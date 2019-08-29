@@ -349,7 +349,7 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	x86_leave (code);
 	x86_ret_imm (code, 4);
 
-	g_assert ((code - buf) < buf_len);
+	g_assertf (code - buf <= buf_len, "%d %d", (int)(code - buf), buf_len);
 
 	if (info)
 		*info = mono_tramp_info_create ("gsharedvt_trampoline", buf, code - buf, ji, unwind_ops);
