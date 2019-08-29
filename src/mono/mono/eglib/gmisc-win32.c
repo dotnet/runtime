@@ -53,7 +53,8 @@ g_getenv(const gchar *variable)
 	gint32 buffer_size = 1024;
 	gint32 retval;
 	var = u8to16(variable); 
-	buffer = g_malloc(buffer_size*sizeof(gunichar2));
+	// FIXME This should loop in case another thread is growing the data.
+	buffer = g_new (gunichar2, buffer_size);
 	retval = GetEnvironmentVariableW (var, buffer, buffer_size);
 	if (retval != 0) {
 		if (retval > buffer_size) {

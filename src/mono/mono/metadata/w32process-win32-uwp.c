@@ -71,11 +71,14 @@ ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStar
 MonoStringHandle
 ves_icall_System_Diagnostics_Process_ProcessName_internal (HANDLE process, MonoError *error)
 {
-	gunichar2 name [MAX_PATH]; // FIXME MAX_PATH
-	const guint32 len = GetModuleFileNameW (NULL, name, G_N_ELEMENTS (name));
-	if (len == 0)
+	gunichar2* name = NULL;
+	guint32 len = 0;
+	// FIXME give allocator to mono_get_module_file_name to avoid copies, here and many other
+	if (!mono_get_module_file_name (NULL, &name, &len))
 		return NULL_HANDLE_STRING;
-	return mono_string_new_utf16_handle (mono_domain_get (), name, len, error);
+	MonoStringHandle res = mono_string_new_utf16_handle (mono_domain_get (), name, len, error);
+	g_free (name);
+	return res;
 }
 
 MonoBoolean

@@ -1433,6 +1433,26 @@ mono_qsort (void* base, size_t num, size_t size, int (*compare)(const void*, con
 #define MONO_DECL_CALLBACK(prefix, ret, name, sig) ret (*name) sig;
 #define MONO_INIT_CALLBACK(prefix, ret, name, sig) prefix ## _ ## name,
 
+// g_free the result
+// No MAX_PATH limit.
+gboolean
+mono_get_module_filename (gpointer mod, gunichar2** pstr, guint32* plength);
+
+// g_free the result
+// No MAX_PATH limit.
+gboolean
+mono_get_module_filename_ex (gpointer process, gpointer mod, gunichar2** pstr, guint32* plength);
+
+// g_free the result
+// No MAX_PATH limit.
+gboolean
+mono_get_module_basename (gpointer process, gpointer mod, gunichar2** pstr, guint32* plength);
+
+// g_free the result
+// No MAX_PATH limit.
+gboolean
+mono_get_current_directory (gunichar2** pstr, guint32* plength);
+
 // For each allocator; i.e. returning gpointer that needs to be cast.
 // Macros do not recurse, so naming function and macro the same is ok.
 // However these are also already macros.

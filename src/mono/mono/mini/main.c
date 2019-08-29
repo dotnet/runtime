@@ -387,14 +387,14 @@ ICALL_EXPORT int ves_icall_Interop_Sys_DoubleToString (double, char*, char*, int
 int
 main (void)
 {
-	TCHAR szFileName[MAX_PATH];
+	gunichar2* module_file_name;
+	guint32 length;
 	int argc;
 	gunichar2** argvw;
 	gchar** argv;
 	int i;
-	DWORD count;
-	
-	argvw = CommandLineToArgvW (GetCommandLine (), &argc);
+
+	argvw = CommandLineToArgvW (GetCommandLineW (), &argc);
 	argv = g_new0 (gchar*, argc + 1);
 	for (i = 0; i < argc; i++)
 		argv [i] = g_utf16_to_utf8 (argvw [i], -1, NULL, NULL, NULL);
@@ -402,8 +402,11 @@ main (void)
 
 	LocalFree (argvw);
 
-	if ((count = GetModuleFileName (NULL, szFileName, MAX_PATH)) != 0){
-		char *entry = g_utf16_to_utf8 (szFileName, count, NULL, NULL, NULL);
+	if (mono_get_module_file_nae (NULL, &szFileName, NULL))
+
+	if ((mono_get_module_filename (NULL, &module_file_name, &length))) {
+		char *entry = g_utf16_to_utf8 (module_file_name, length, NULL, NULL, NULL);
+		g_free (module_file_name);
 		probe_embedded (entry, &argc, &argv);
 	}
 
