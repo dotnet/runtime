@@ -8879,66 +8879,80 @@ mono_load_remote_field_checked (MonoObject *this_obj, MonoClass *klass, MonoClas
 
 	MonoDomain *domain = mono_domain_get ();
 	MonoTransparentProxy *tp = (MonoTransparentProxy *) this_obj;
-	MonoClass *field_class;
-	MonoMethodMessage *msg;
-	MonoArray *out_args;
-	MonoObject *exc;
-	char* full_name;
+
+	MonoObject *exc = NULL;
+	MonoClass *field_class = NULL;
+	MonoString *field_name = NULL;
+	char* full_name = NULL;
+	MonoString *full_name_str = NULL;
+	MonoMethodMessage *msg = NULL;
+	MonoArray *out_args = NULL;
+	MonoReflectionMethod *rm = NULL;
 
 	g_assert (mono_object_is_transparent_proxy (this_obj));
 	g_assert (res != NULL);
 
 	if (mono_class_is_contextbound (tp->remote_class->proxy_class) && tp->rp->context == (MonoObject *) mono_context_get ()) {
 		mono_field_get_value_internal (tp->rp->unwrapped_server, field, res);
-		return res;
+		goto exit;
 	}
 	
 	if (!getter) {
 		getter = mono_class_get_method_from_name_checked (mono_defaults.object_class, "FieldGetter", -1, 0, error);
-		return_val_if_nok (error, NULL);
+		goto_if_nok (error, return_null);
 		if (!getter) {
 			mono_error_set_not_supported (error, "Linked away.");
-			return NULL;
+			goto return_null;
 		}
 	}
 	
 	field_class = mono_class_from_mono_type_internal (field->type);
 
 	msg = (MonoMethodMessage *)mono_object_new_checked (domain, mono_defaults.mono_method_message_class, error);
-	return_val_if_nok (error, NULL);
+	goto_if_nok (error, return_null);
+
 	out_args = mono_array_new_checked (domain, mono_defaults.object_class, 1, error);
-	return_val_if_nok (error, NULL);
-	MonoReflectionMethod *rm = mono_method_get_object_checked (domain, getter, NULL, error);
-	return_val_if_nok (error, NULL);
+	goto_if_nok (error, return_null);
+
+	rm = mono_method_get_object_checked (domain, getter, NULL, error);
+	goto_if_nok (error, return_null);
+
 	mono_message_init (domain, msg, rm, out_args, error);
-	return_val_if_nok (error, NULL);
+	goto_if_nok (error, return_null);
 
 	full_name = mono_type_get_full_name (klass);
-	MonoString *full_name_str = mono_string_new_checked (domain, full_name, error);
-	g_free (full_name);
-	return_val_if_nok (error, NULL);
+	full_name_str = mono_string_new_checked (domain, full_name, error);
+	goto_if_nok (error, return_null);
+
 	mono_array_setref_internal (msg->args, 0, full_name_str);
-	MonoString *field_name = mono_string_new_checked (domain, mono_field_get_name (field), error);
-	return_val_if_nok (error, NULL);
+	field_name = mono_string_new_checked (domain, mono_field_get_name (field), error);
+	goto_if_nok (error, return_null);
+
 	mono_array_setref_internal (msg->args, 1, field_name);
 
 	mono_remoting_invoke ((MonoObject *)(tp->rp), msg, &exc, &out_args, error);
-	return_val_if_nok (error, NULL);
+	goto_if_nok (error, return_null);
 
 	if (exc) {
 		mono_error_set_exception_instance (error, (MonoException *)exc);
-		return NULL;
+		goto return_null;
 	}
 
 	if (mono_array_length_internal (out_args) == 0)
-		return NULL;
+		goto return_null;
 
 	mono_gc_wbarrier_generic_store_internal (res, mono_array_get_internal (out_args, MonoObject *, 0));
 
 	if (m_class_is_valuetype (field_class)) {
-		return mono_object_get_data ((MonoObject*)*res);
-	} else
-		return res;
+		res = (gpointer*)mono_object_get_data ((MonoObject*)*res);
+	}
+
+	goto exit;
+return_null:
+	res = NULL;
+exit:
+	g_free (full_name);
+	return res;
 }
 
 /**
