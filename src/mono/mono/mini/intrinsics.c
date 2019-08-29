@@ -125,11 +125,6 @@ llvm_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			opcode = OP_CEILF;
 		else if (!strcmp (cmethod->name, "FusedMultiplyAdd"))
 			opcode = OP_FMAF;
-		// Max and Min can only be optimized in fast math mode
-		else if (!strcmp (cmethod->name, "Max") && mono_use_fast_math)
-			opcode = OP_RMAX;
-		else if (!strcmp (cmethod->name, "Min") && mono_use_fast_math)
-			opcode = OP_RMIN;
 		else if (!strcmp (cmethod->name, "Pow"))
 			opcode = OP_RPOW;
 		if (opcode && fsig->param_count > 0) {
@@ -137,12 +132,13 @@ llvm_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			ins->type = STACK_R8;
 			ins->dreg = mono_alloc_dreg (cfg, (MonoStackType)ins->type);
 			ins->sreg1 = args [0]->dreg;
-			if (fsig->param_count == 2) { // POW
+			if (fsig->param_count > 1) { // POW
 				ins->sreg2 = args [1]->dreg;
-			} else if (fsig->param_count == 3) { // FMA
-				ins->sreg2 = args [1]->dreg;
+			}
+			if (fsig->param_count > 2) { // FMA
 				ins->sreg3 = args [2]->dreg;
 			}
+			g_assert (fsig->param_count <= 3);
 			MONO_ADD_INS (cfg->cbb, ins);
 		}
 	}
@@ -163,16 +159,33 @@ llvm_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		} else if (strcmp (cmethod->name, "Abs") == 0 && fsig->params [0]->type == MONO_TYPE_R8) {
 			opcode = OP_ABS;
 		}
+		// Max and Min can only be optimized in fast math mode
+		else if (strcmp (cmethod->name, "Max") == 0 && mono_use_fast_math && fsig->params [0]->type == MONO_TYPE_R8) {
+			opcode = OP_FMAX; 
+		} else if (strcmp (cmethod->name, "Min") == 0 && mono_use_fast_math && fsig->params [0]->type == MONO_TYPE_R8) {
+			opcode = OP_FMIN;
+		}
+		// Math.Max/Min also have float overloads (MathF.Max/Min just redirect to them)
+		else if (strcmp (cmethod->name, "Max") == 0 && mono_use_fast_math && fsig->params [0]->type == MONO_TYPE_R4) {
+			opcode = OP_RMAX; 
+		} else if (strcmp (cmethod->name, "Min") == 0 && mono_use_fast_math && fsig->params [0]->type == MONO_TYPE_R4) {
+			opcode = OP_RMIN;
+		} else if (strcmp (cmethod->name, "Pow") == 0) {
+			opcode = OP_FPOW;
+		}
 
 		if (opcode && fsig->param_count > 0) {
 			MONO_INST_NEW (cfg, ins, opcode);
 			ins->type = STACK_R8;
 			ins->dreg = mono_alloc_dreg (cfg, (MonoStackType)ins->type);
 			ins->sreg1 = args [0]->dreg;
-			if (fsig->param_count == 3) { // FMA
+			if (fsig->param_count > 1) { // POW, MIN, MAX
 				ins->sreg2 = args [1]->dreg;
+			}
+			if (fsig->param_count > 2) { // FMA
 				ins->sreg3 = args [2]->dreg;
 			}
+			g_assert (fsig->param_count <= 3);
 			MONO_ADD_INS (cfg->cbb, ins);
 		}
 

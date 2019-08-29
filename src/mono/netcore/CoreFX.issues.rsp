@@ -993,3 +993,6 @@
 
 # Flaky test (FileSystemWatcher)
 -nomethod System.IO.Tests.Directory_NotifyFilter_Tests.FileSystemWatcher_Directory_NotifyFilter_LastWriteTime
+
+# Flaky test
+-nomethod System.Security.Cryptography.Rsa.Tests.RSAKeyFileTests.ReadEncryptedRsa16384

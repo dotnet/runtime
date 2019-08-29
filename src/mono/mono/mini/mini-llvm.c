@@ -304,6 +304,7 @@ typedef enum {
 	INTRINS_FLOORF,
 	INTRINS_CEILF,
 	INTRINS_FMAF,
+	INTRINS_POW,
 	INTRINS_POWF,
 	INTRINS_EXPECT_I8,
 	INTRINS_EXPECT_I1,
@@ -6050,6 +6051,14 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = LLVMBuildCall (builder, get_intrins (ctx, INTRINS_POWF), args, 2, dname);
 			break;
 		}
+		case OP_FPOW: {
+			LLVMValueRef args [2];
+
+			args [0] = convert (ctx, lhs, LLVMDoubleType ());
+			args [1] = convert (ctx, rhs, LLVMDoubleType ());
+			values [ins->dreg] = LLVMBuildCall (builder, get_intrins (ctx, INTRINS_POW), args, 2, dname);
+			break;
+		}
 
 		case OP_IMIN:
 		case OP_LMIN:
@@ -6059,6 +6068,8 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_LMIN_UN:
 		case OP_IMAX_UN:
 		case OP_LMAX_UN:
+		case OP_FMIN:
+		case OP_FMAX:
 		case OP_RMIN:
 		case OP_RMAX: {
 			LLVMValueRef v;
@@ -6083,9 +6094,11 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case OP_LMAX_UN:
 				v = LLVMBuildICmp (builder, LLVMIntUGE, lhs, rhs, "");
 				break;
+			case OP_FMAX:
 			case OP_RMAX:
 				v = LLVMBuildFCmp (builder, LLVMRealUGE, lhs, rhs, "");
 				break;
+			case OP_FMIN:
 			case OP_RMIN:
 				v = LLVMBuildFCmp (builder, LLVMRealULE, lhs, rhs, "");
 				break;
@@ -8537,6 +8550,7 @@ static IntrinsicDesc intrinsics[] = {
 	{INTRINS_COSF, "llvm.cos.f32"},
 	{INTRINS_SQRTF, "llvm.sqrt.f32"},
 	{INTRINS_POWF, "llvm.pow.f32"},
+	{INTRINS_POW, "llvm.pow.f64"},
 	{INTRINS_EXPECT_I8, "llvm.expect.i8"},
 	{INTRINS_EXPECT_I1, "llvm.expect.i1"},
 	{INTRINS_CTPOP_I32, "llvm.ctpop.i32"},
@@ -8710,12 +8724,12 @@ add_intrinsic (LLVMModuleRef module, int id)
 		AddFunc (module, name, LLVMFloatType (), params, 1);
 		break;
 	}
-	case INTRINS_POWF: {
-		LLVMTypeRef params [] = { LLVMFloatType (), LLVMFloatType () };
-
-		AddFunc (module, name, LLVMFloatType (), params, 2);
+	case INTRINS_POWF:
+		AddFunc2 (module, name, LLVMFloatType (), LLVMFloatType (), LLVMFloatType ());
 		break;
-	}
+	case INTRINS_POW:
+		AddFunc2 (module, name, LLVMDoubleType (), LLVMDoubleType (), LLVMDoubleType ());
+		break;
 	case INTRINS_EXPECT_I8:
 		AddFunc2 (module, name, LLVMInt8Type (), LLVMInt8Type (), LLVMInt8Type ());
 		break;
