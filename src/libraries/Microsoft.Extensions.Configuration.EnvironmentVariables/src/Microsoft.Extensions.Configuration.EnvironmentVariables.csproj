@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <Description>Environment variables configuration provider implementation for Microsoft.Extensions.Configuration.</Description>
-    <TargetFrameworks>netstandard2.0;netcoreapp3.0</TargetFrameworks>
-    <TargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true'">netcoreapp3.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netcoreapp5.0</TargetFrameworks>
+    <TargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true'">netcoreapp5.0</TargetFrameworks>
     <PackageTags>$(PackageTags);envvar;environmentvariable</PackageTags>
     <IsPackable>true</IsPackable>
     <IsShipping>true</IsShipping>
