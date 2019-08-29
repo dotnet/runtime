@@ -4,7 +4,7 @@
     <RootNamespace>System.Security.Permissions</RootNamespace>
     <AssemblyName>System.Security.Permissions</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <Configurations>net461-Debug;net461-Release;netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release;uap-Debug;uap-Release</Configurations>
+    <Configurations>net461-Debug;net461-Release;netcoreapp-Debug;netcoreapp-Release;netcoreapp3.0-Debug;netcoreapp3.0-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
     <Compile Include="System\ApplicationIdentity.cs" />
@@ -179,7 +179,7 @@
     <Compile Include="System\Web\AspNetHostingPermissionAttribute.cs" />
     <Compile Include="System\Web\AspNetHostingPermissionLevel.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="System\Xaml\Permissions\XamlLoadPermission.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
@@ -212,7 +212,7 @@
   <ItemGroup>
     <Reference Include="System.Security.AccessControl" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap'">
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true' or '$(TargetGroup)' == 'uap'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.ComponentModel.Primitives" />
@@ -229,7 +229,7 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Reference Include="System.Windows.Extensions" />
   </ItemGroup>
 </Project>

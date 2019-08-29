@@ -5,13 +5,22 @@
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
     <NETCoreAppPackageVersion Condition="'$(TargetFramework)' == 'netcoreapp2.0'">2.0.7</NETCoreAppPackageVersion>
     <NETCoreAppPackageVersion Condition="'$(TargetFramework)' == 'netcoreapp2.1'">2.1.3</NETCoreAppPackageVersion>
+    <!-- These needs to be replaced once we have a RTM -->      
+    <RuntimeFrameworkVersion Condition="'$(TargetFramework)' == 'netcoreapp3.0'">3.0.0-preview7-27912-14</RuntimeFrameworkVersion>
+    <DisableImplicitFrameworkReferences Condition="'$(TargetFramework)' == 'netcoreapp3.0'">false</DisableImplicitFrameworkReferences>
     <BinPlaceRef>true</BinPlaceRef>
   </PropertyGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' != 'netcoreapp3.0'">
     <PackageReference Include="Microsoft.NETCore.App">
       <Version>$(NETCoreAppPackageVersion)</Version>
     </PackageReference>
+  </ItemGroup>
+  
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
+    <KnownFrameworkReference Update="Microsoft.NETCore.App"
+                            TargetingPackVersion="$(RuntimeFrameworkVersion)"
+                            />
   </ItemGroup>
 
   <ItemGroup>

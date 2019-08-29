@@ -122,16 +122,19 @@
       <CompatibleWith>netstandard</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="netcoreapp3.0">
-      <NETCoreAppMaximumVersion>3.0</NETCoreAppMaximumVersion>
       <TargetFramework>netcoreapp3.0</TargetFramework>
       <Imports>netcoreapp2.2</Imports>
       <CompatibleWith>netstandard2.1</CompatibleWith>
     </TargetGroups>
-    <!-- netcoreapp is an alias for netcoreapp3.0 -->
-    <TargetGroups Include="netcoreapp">
-      <NETCoreAppMaximumVersion>3.0</NETCoreAppMaximumVersion>
-      <TargetFramework>netcoreapp3.0</TargetFramework>
+    <TargetGroups Include="netcoreapp5.0">
+      <TargetFramework>netcoreapp5.0</TargetFramework>
       <Imports>netcoreapp3.0</Imports>
+      <CompatibleWith>netstandard2.1</CompatibleWith>
+    </TargetGroups>
+    <!-- netcoreapp is an alias for netcoreapp5.0 -->
+    <TargetGroups Include="netcoreapp">
+      <TargetFramework>netcoreapp5.0</TargetFramework>
+      <Imports>netcoreapp5.0</Imports>
       <CompatibleWith>netstandard2.1</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="net45">

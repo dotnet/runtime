@@ -14,7 +14,7 @@ namespace System.Drawing
     /// <summary>
     /// Defines a particular format for text, including font face, size, and style attributes.
     /// </summary>
-#if netcoreapp
+#if netcoreapp || netcoreapp30
     [TypeConverter("System.Drawing.FontConverter, System.Windows.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51")]
 #endif
     [Serializable]

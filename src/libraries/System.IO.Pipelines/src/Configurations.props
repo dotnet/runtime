@@ -2,7 +2,7 @@
   <PropertyGroup>
     <PackageConfigurations>
       netstandard;
-      netcoreapp;
+      netcoreapp3.0;
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations);

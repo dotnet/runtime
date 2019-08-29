@@ -11,13 +11,20 @@
     <PackageReference Include="Microsoft.DiaSymReader.Native" Version="1.7.0" />
   </ItemGroup>
 
+  <PropertyGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
+    <!-- These needs to be replaced once we have an official build -->
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview9-19407-2</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <MicrosoftPrivateCorefxNETCoreAppVersion>4.6.0-preview9.19419.3</MicrosoftPrivateCorefxNETCoreAppVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'uap10.0.16299'">
+    <!-- Following is version used in release/uwp6.0 -->
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-b-uwp6-25707-02</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.NETCore.Platforms" Version="$(MicrosoftNETCorePlatformsPackageVersion)" />
-    <PackageReference Include="transport.Microsoft.NETCore.Runtime.CoreCLR">
-      <Version>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</Version>
-      <!-- Following is version used in release/uwp6.0 -->
-      <Version Condition="'$(TargetFramework)'=='uap10.0.16299'">2.1.0-b-uwp6-25707-02</Version>
-    </PackageReference>
+    <PackageReference Include="transport.Microsoft.NETCore.Runtime.CoreCLR" Version="$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)" />
     <PackageReference Include="Microsoft.NETCore.TestHost" Version="$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)" />
     <PackageReference Include="runtime.native.System.Data.SqlClient.sni" Version="$(RuntimeNativeSystemDataSqlClientSniPackageVersion)" />
     <PackageReference Include="Microsoft.NETCore.DotNetHost" Version="$(MicrosoftNETCoreDotNetHostPackageVersion)" />
@@ -26,6 +33,10 @@
          Exclude here so that when building with the 2.x SDK we don't place it in the test shared framework.
          This can be removed once we have a new SDK -->
     <FileToExclude Include="apphost" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Condition="'$(TargetFramework)' == 'netcoreapp3.0'" Include="Microsoft.Private.Corefx.NETCoreApp" Version="$(MicrosoftPrivateCorefxNETCoreAppVersion)" />
   </ItemGroup>
 
   <!-- Setup the testing shared framework host -->

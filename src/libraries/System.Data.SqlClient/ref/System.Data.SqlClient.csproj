@@ -10,7 +10,7 @@
     <Compile Include="System.Data.SqlClient.Forwards.cs" />
     <Compile Condition="'$(TargetsNetFx)' != 'true'" Include="System.Data.SqlClient.Manual.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNETCoreApp)' == 'true'">
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="System.Data.SqlClient.NetCoreApp.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">

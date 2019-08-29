@@ -16,7 +16,7 @@ namespace System.Drawing
 {
     [Serializable]
     [TypeForwardedFrom("System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
-#if netcoreapp
+#if netcoreapp || netcoreapp30
     [TypeConverter("System.Drawing.IconConverter, System.Windows.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51")]
 #endif
     public sealed partial class Icon : MarshalByRefObject, ICloneable, IDisposable, ISerializable

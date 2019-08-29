@@ -567,7 +567,7 @@ namespace System.Security
         void FromXml(System.Security.SecurityElement e, System.Security.Policy.PolicyLevel level);
         System.Security.SecurityElement ToXml(System.Security.Policy.PolicyLevel level);
     }
-#if !netcoreapp && !uap
+#if !netcoreapp && !netcoreapp30 && !uap
     public partial interface IStackWalk
     {
         void Assert();
@@ -591,7 +591,7 @@ namespace System.Security
         public override int GetHashCode() { throw null; }
         public override System.Security.SecurityElement ToXml() { throw null; }
     }
-#if !netcoreapp && !uap
+#if !netcoreapp && !netcoreapp30 && !uap
     public partial class PermissionSet : System.Collections.ICollection, System.Collections.IEnumerable, System.Runtime.Serialization.IDeserializationCallback, System.Security.ISecurityEncodable, System.Security.IStackWalk
     {
         public PermissionSet(System.Security.Permissions.PermissionState state) { }
@@ -1101,7 +1101,7 @@ namespace System.Security.Permissions
         public override System.Security.IPermission CreatePermission() { throw null; }
         public System.Security.PermissionSet CreatePermissionSet() { throw null; }
     }
-#if !netcoreapp && !uap
+#if !netcoreapp && !netcoreapp30 && !uap
     public enum PermissionState
     {
         None = 0,

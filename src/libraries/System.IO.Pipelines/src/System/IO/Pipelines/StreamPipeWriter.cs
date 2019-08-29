@@ -235,7 +235,7 @@ namespace System.IO.Pipelines
 
             if (!_leaveOpen)
             {
-#if netcoreapp
+#if !netstandard
                 await InnerStream.DisposeAsync().ConfigureAwait(false);
 #else
                 InnerStream.Dispose();
@@ -350,7 +350,7 @@ namespace System.IO.Pipelines
 
                 if (returnSegment.Length > 0)
                 {
-#if netcoreapp
+#if !netstandard
                     InnerStream.Write(returnSegment.Memory.Span);
 #else
                     InnerStream.Write(returnSegment.Memory);

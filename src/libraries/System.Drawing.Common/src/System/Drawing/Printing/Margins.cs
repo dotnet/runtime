@@ -11,7 +11,7 @@ namespace System.Drawing.Printing
     /// <summary>
     /// Specifies the margins of a printed page.
     /// </summary>
-#if netcoreapp
+#if netcoreapp || netcoreapp30
     [TypeConverter("System.Drawing.Printing.MarginsConverter, System.Windows.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51")]
 #endif
     public partial class Margins : ICloneable
