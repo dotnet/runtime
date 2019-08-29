@@ -154,4 +154,10 @@ ICALL_EXPORT
 void
 ves_icall_System_Threading_Monitor_Monitor_Enter (MonoObject *obj);
 
+#if ENABLE_NETCORE
+ICALL_EXPORT
+gint64
+ves_icall_System_Threading_Monitor_Monitor_LockContentionCount (void);
+#endif
+
 #endif /* _MONO_METADATA_MONITOR_H_ */

@@ -1438,3 +1438,15 @@ ves_icall_System_Threading_Monitor_Monitor_Enter (MonoObject *obj)
 {
 	mono_monitor_enter_internal (obj);
 }
+
+#if ENABLE_NETCORE
+gint64
+ves_icall_System_Threading_Monitor_Monitor_LockContentionCount (void)
+{
+#ifndef DISABLE_PERFCOUNTERS
+	return mono_perfcounters->thread_contentions;
+#else
+	return 0;
+#endif
+}
+#endif
