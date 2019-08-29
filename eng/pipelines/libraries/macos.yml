@@ -56,8 +56,4 @@ stages:
         submitToHelix: true
 
         variables:
-          - ${{ if eq(parameters.fullMatrix, 'false') }}:
-            - macOSQueues: OSX.1013.Amd64.Open
-
-          - ${{ if eq(parameters.fullMatrix, 'true') }}:
             - macOSQueues: OSX.1013.Amd64.Open+OSX.1014.Amd64.Open
