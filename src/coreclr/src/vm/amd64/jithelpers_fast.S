@@ -37,11 +37,17 @@ LEAF_ENTRY JIT_CheckedWriteBarrier, _TEXT
         .byte 0x72, 0x0e
         PREPARE_EXTERNAL_VAR g_highest_address, rax
         cmp     rdi, [rax]
+
+#ifdef FEATURE_WRITEBARRIER_COPY
+        // jnb     NotInHeap
+        .byte 0x73, 0x06
+        jmp     [rip + C_FUNC(JIT_WriteBarrier_Loc)]
+#else
         // jnb     NotInHeap
         .byte 0x73, 0x02
-        
-        // call C_FUNC(JIT_WriteBarrier)
+        // jmp C_FUNC(JIT_WriteBarrier)
         .byte 0xeb, 0x05
+#endif
 
     NotInHeap:
         // See comment above about possible AV
