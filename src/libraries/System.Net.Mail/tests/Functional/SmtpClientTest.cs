@@ -12,6 +12,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net.NetworkInformation;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -315,6 +316,25 @@ namespace System.Net.Mail.Tests
             }
         }
 
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework has a bug and may not time out for low values")]
+        [PlatformSpecific(~TestPlatforms.OSX)] // on OSX, not all synchronous operations (e.g. connect) can be aborted by closing the socket.
+        public void TestZeroTimeout()
+        {
+            using (Socket serverSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                serverSocket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                serverSocket.Listen(1);
+
+                SmtpClient smtpClient = new SmtpClient("localhost", (serverSocket.LocalEndPoint as IPEndPoint).Port);
+                smtpClient.Timeout = 0;
+
+                MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "test");
+                Assert.Throws<SmtpException>(() => smtpClient.Send(msg));
+            }
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework has a bug and could hang in case of null or empty body")]
         [Theory]
         [InlineData("howdydoo")]
         [InlineData("")]
