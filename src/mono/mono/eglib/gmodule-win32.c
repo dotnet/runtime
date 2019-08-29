@@ -194,6 +194,10 @@ g_module_build_path (const gchar *directory, const gchar *module_name)
 // This is not named "g_" but that should be ok.
 // g_free the result
 // No MAX_PATH limit.
+//
+// Prefer mono_get_module_filename over mono_get_module_filename_ex and mono_get_module_basename.
+// Prefer not-ex, not-base.
+//
 gboolean
 mono_get_module_filename (gpointer mod, gunichar2** pstr, guint32* plength)
 {
@@ -229,6 +233,10 @@ mono_get_module_filename (gpointer mod, gunichar2** pstr, guint32* plength)
 // This is not named "g_" but that should be ok.
 // g_free the result
 // No MAX_PATH limit.
+//
+// Prefer mono_get_module_filename over mono_get_module_filename_ex and mono_get_module_basename.
+// Prefer not-ex, not-base.
+//
 gboolean
 mono_get_module_filename_ex (gpointer process, gpointer mod, gunichar2** pstr, guint32* plength)
 {
@@ -260,6 +268,14 @@ mono_get_module_filename_ex (gpointer process, gpointer mod, gunichar2** pstr, g
 	return success;
 }
 
+// This is not about GModule but is still a close fit.
+// This is not named "g_" but that should be ok.
+// g_free the result
+// No MAX_PATH limit.
+//
+// Prefer mono_get_module_filename over mono_get_module_filename_ex and mono_get_module_basename.
+// Prefer not-ex, not-base.
+//
 gboolean
 mono_get_module_basename (gpointer process, gpointer mod, gunichar2** pstr, guint32* plength)
 {
