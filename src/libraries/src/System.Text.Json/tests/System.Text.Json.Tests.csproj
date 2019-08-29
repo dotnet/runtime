@@ -91,10 +91,12 @@
     <Compile Include="Serialization\Value.ReadTests.GenericCollections.cs" />
     <Compile Include="Serialization\Value.ReadTests.ImmutableCollections.cs" />
     <Compile Include="Serialization\Value.ReadTests.NonGenericCollections.cs" />
+    <Compile Include="Serialization\Value.ReadTests.ObjectModelCollections.cs" />
     <Compile Include="Serialization\Value.WriteTests.cs" />
     <Compile Include="Serialization\Value.WriteTests.GenericCollections.cs" />
     <Compile Include="Serialization\Value.WriteTests.ImmutableCollections.cs" />
     <Compile Include="Serialization\Value.WriteTests.NonGenericCollections.cs" />
+    <Compile Include="Serialization\Value.WriteTests.ObjectModelCollections.cs" />
     <Compile Include="Serialization\WriteValueTests.cs" />
     <Compile Include="TestCaseType.cs" />
     <Compile Include="TestClasses.ClassWithComplexObjects.cs" />

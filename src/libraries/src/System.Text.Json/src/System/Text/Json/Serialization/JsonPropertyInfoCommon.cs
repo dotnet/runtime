@@ -123,6 +123,15 @@ namespace System.Text.Json
 
         public override IEnumerable CreateDerivedEnumerableInstance(JsonPropertyInfo collectionPropertyInfo, IList sourceList, string jsonPath, JsonSerializerOptions options)
         {
+            // Implementing types that don't have default constructors are not supported for deserialization.
+            if (collectionPropertyInfo.DeclaredTypeClassInfo.CreateObject == null)
+            {
+                throw ThrowHelper.GetNotSupportedException_SerializationNotSupportedCollection(
+                    collectionPropertyInfo.DeclaredPropertyType,
+                    collectionPropertyInfo.ParentClassType,
+                    collectionPropertyInfo.PropertyInfo);
+            }
+
             object instance = collectionPropertyInfo.DeclaredTypeClassInfo.CreateObject();
 
             if (instance is IList instanceOfIList)
@@ -164,7 +173,8 @@ namespace System.Text.Json
                 return instanceOfQueue;
             }
 
-            // TODO: Use reflection to support types implementing Stack or Queue.
+            // TODO (https://github.com/dotnet/corefx/issues/40479):
+            // Use reflection to support types implementing Stack or Queue.
 
             throw ThrowHelper.GetNotSupportedException_SerializationNotSupportedCollection(
                 collectionPropertyInfo.DeclaredPropertyType,
@@ -174,6 +184,15 @@ namespace System.Text.Json
 
         public override object CreateDerivedDictionaryInstance(JsonPropertyInfo collectionPropertyInfo, IDictionary sourceDictionary, string jsonPath, JsonSerializerOptions options)
         {
+            // Implementing types that don't have default constructors are not supported for deserialization.
+            if (collectionPropertyInfo.DeclaredTypeClassInfo.CreateObject == null)
+            {
+                throw ThrowHelper.GetNotSupportedException_SerializationNotSupportedCollection(
+                    collectionPropertyInfo.DeclaredPropertyType,
+                    collectionPropertyInfo.ParentClassType,
+                    collectionPropertyInfo.PropertyInfo);
+            }
+
             object instance = collectionPropertyInfo.DeclaredTypeClassInfo.CreateObject();
 
             if (instance is IDictionary instanceOfIDictionary)
@@ -199,7 +218,8 @@ namespace System.Text.Json
                 }
             }
 
-            // TODO: Use reflection to support types implementing SortedList and maybe immutable dictionaries.
+            // TODO (https://github.com/dotnet/corefx/issues/40479):
+            // Use reflection to support types implementing SortedList and maybe immutable dictionaries.
 
             // Types implementing SortedList and immutable dictionaries will fail here.
             throw ThrowHelper.GetNotSupportedException_SerializationNotSupportedCollection(
