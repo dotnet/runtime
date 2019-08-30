@@ -77,6 +77,11 @@
     <_WillCLRTestProjectBuild Condition="'$(BuildAllProjects)' != 'true'">true</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(DisableProjectBuild)' != 'true' And '$(BuildAllProjects)' == 'true' And '$(CLRTestPriority)' &lt;= '$(CLRTestPriorityToBuild)'">true</_WillCLRTestProjectBuild>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <CopyNativeProjectBinaries Condition="'$(CopyNativeProjectBinaries)' == '' And '$(_WillCLRTestProjectBuild)' == 'true' And '$(DisableProjectBuild)' != 'true'">true</CopyNativeProjectBinaries>
+    <CopyNativeProjectBinaries Condition="'$(CopyNativeProjectBinaries)' == '' And ('$(_WillCLRTestProjectBuild)' == 'false' Or '$(DisableProjectBuild)' == 'true')">false</CopyNativeProjectBinaries>
+  </PropertyGroup>
     
   <!-- if we have determined that there is nothing to build, overwrite the build targets so that nothing happens -->
   <Import Project="nobuild.targets" Condition="'$(_WillCLRTestProjectBuild)' == 'false'" />
@@ -181,7 +186,7 @@
   </Target>
 
   <Target Name="ConsolidateNativeProjectReference"
-          Condition="'@(NativeProjectReferenceNormalized)' != ''"
+          Condition="'@(NativeProjectReferenceNormalized)' != '' and '$(CopyNativeProjectBinaries)' == 'true'"
           BeforeTargets="Build" >
      <ItemGroup>
         <NativeProjectOutputFoldersToCopy Include="$([System.String]::Copy('%(NativeProjectReferenceNormalized.RelativeDir)').Replace($(SourceDir),$(__NativeTestIntermediatesDir)\src\))" Condition="'$(RunningOnUnix)' == 'true'" />
@@ -193,6 +198,8 @@
    <MSBuild Projects="$(MSBuildProjectFile)" Targets="CopyNativeProjectBinaries" Properties="NativeProjectOutputFolder=%(NativeProjectOutputFoldersToCopy.Identity)" Condition="'@(NativeProjectReference)' != ''" />
 
   </Target>
+
+  <Target Name="CopyAllNativeProjectReferenceBinaries" DependsOnTargets="ResolveCmakeNativeProjectReference;ConsolidateNativeProjectReference" />
 
   <Target Name="UpdateReferenceItems"
           BeforeTargets="BeforeResolveReferences"

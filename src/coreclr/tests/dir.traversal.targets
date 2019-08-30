@@ -74,6 +74,31 @@
     <!-- Given we ErrorAndContinue we need to propagate the error if the overall task failed -->
     <Error Condition="'$(MSBuildLastTaskResult)'=='false'" />
   </Target>
+  
+  <Target Name="CopyAllNativeTestProjectBinaries">
+    <Message Importance="High" Text="Copying native test binaries..." />
+
+    <PropertyGroup>
+      <DefaultCopyAllNativeTestProjectBinariesTarget Condition="'$(DefaultCopyAllNativeTestProjectBinariesTarget)'==''">CopyAllNativeProjectReferenceBinaries</DefaultCopyAllNativeTestProjectBinariesTarget>
+    </PropertyGroup>
+
+    <!-- To Serialize we use msbuild's batching functionality '%' to force it to batch all similar projects with the same identity 
+      however since the project names are unique it will essentially force each to run in its own batch -->
+    <MSBuild Targets="$(DefaultCopyAllNativeTestProjectBinariesTarget)"
+             Projects="@(Project)"
+             Condition="'$(SerializeProjects)'=='true'"
+             Properties="Dummy=%(Identity)"
+             ContinueOnError="ErrorAndContinue" />
+
+    <MSBuild Targets="$(DefaultCopyAllNativeTestProjectBinariesTarget)"
+             Projects="@(Project)"
+             Condition="'$(SerializeProjects)'!='true'"
+             BuildInParallel="true"
+             ContinueOnError="ErrorAndContinue" />
+
+    <!-- Given we ErrorAndContinue we need to propagate the error if the overall task failed -->
+    <Error Condition="'$(MSBuildLastTaskResult)'=='false'" />
+  </Target>
 
   <PropertyGroup>
     <TraversalBuildDependsOn>
@@ -90,6 +115,10 @@
       RestoreAllProjectPackages;
       $(TraversalRestorePackagesDependsOn)
     </TraversalRestorePackagesDependsOn>
+    <TraversalCopyAllNativeProjectReferenceBinariesDependsOn>
+      CopyAllNativeTestProjectBinaries;
+      $(TraversalCopyAllNativeProjectReferenceBinariesDependsOn)
+    </TraversalCopyAllNativeProjectReferenceBinariesDependsOn>
   </PropertyGroup>
 
   <Target Name="Build" DependsOnTargets="$(TraversalBuildDependsOn)" />
@@ -100,4 +129,5 @@
 
   <Target Name="RestorePackages" DependsOnTargets="$(TraversalRestorePackagesDependsOn)" />
 
+  <Target Name="CopyAllNativeProjectReferenceBinaries" DependsOnTargets="$(TraversalCopyAllNativeProjectReferenceBinariesDependsOn)" />
 </Project>

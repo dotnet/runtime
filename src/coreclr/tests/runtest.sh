@@ -482,13 +482,6 @@ if [ ! -z "$coreClrBinDir" ]; then
     echo "Product Location              : ${coreClrBinDir}"
 fi
 
-if [ -z "$coreOverlayDir" ]; then
-    runtestPyArguments+=("--generate_layout")
-else
-    runtestPyArguments+=("-core_root" "$coreOverlayDir")
-    echo "Core Root Location            : ${coreOverlayDir}"
-fi
-
 if [ ! -z "$testNativeBinDir" ]; then
     runtestPyArguments+=("-test_native_bin_location" "$testNativeBinDir")
     echo "Test Native Bin Location      : ${testNativeBinDir}"
