@@ -163,7 +163,9 @@ namespace System.ServiceProcess.Tests
 
             var controller = new ServiceController();
             controller.ServiceName = KeyIsoSvcName;
-            Assert.Equal(keyIsoDisplayName, controller.DisplayName);
+
+            // On Nano Server >=1809 the casing is sometimes changed during normalization: Expected: KEYISO, Actual: KeyIso
+            Assert.Equal(keyIsoDisplayName, controller.DisplayName, ignoreCase: PlatformDetection.IsWindowsNanoServer);
         }
 
         [Fact]
