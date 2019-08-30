@@ -490,6 +490,16 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 		ins->type = STACK_PTR;
 		return ins;
 	}
+#ifdef ENABLE_NETCORE
+	else if (!strcmp (cmethod->name, "InitBlockUnaligned")) {
+		g_assert (fsig->param_count == 3);
+
+		mini_emit_memory_init_bytes (cfg, args [0], args [1], args [2], MONO_INST_UNALIGNED);
+ 		MONO_INST_NEW (cfg, ins, OP_NOP);
+		MONO_ADD_INS (cfg->cbb, ins);
+		return ins;
+	}
+#endif
 
 	return NULL;
 }
