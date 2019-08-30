@@ -68,6 +68,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             string dotNetRoot = isValid ? Path.Combine(sharedState.ValidInstallRoot, "dotnet") : sharedState.InvalidInstallRoot;
             CommandResult result = Command.Create(sharedState.NativeHostPath, $"{GetHostFxrPath} {explicitLoad} {(useAssemblyPath ? sharedState.TestAssemblyPath : "nullptr")} {dotNetRoot}")
                 .EnableTracingAndCaptureOutputs()
+                .DotNetRoot(null)
                 .Execute();
 
             result.Should().HaveStdErrContaining("Using dotnet root parameter");
@@ -124,6 +125,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .EnvironmentVariable( // Redirect the default install location to a test directory
                         Constants.TestOnlyEnvironmentVariables.DefaultInstallPath,
                         useRegisteredLocation ? sharedState.InvalidInstallRoot : installLocation)
+                    .DotNetRoot(null)
                     .Execute();
             }
 
@@ -205,6 +207,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .EnvironmentVariable( // Redirect the default install location to an invalid location so that it doesn't cause the test to pass 
                         Constants.TestOnlyEnvironmentVariables.DefaultInstallPath,
                         sharedState.InvalidInstallRoot)
+                    .DotNetRoot(null)
                     .Execute();
 
                 result.Should().HaveStdErrContaining($"Looking for install_location file in '{registeredInstallLocationOverride.PathValueOverride}'.");
@@ -230,6 +233,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         {
             Command.Create(sharedState.NativeHostPath, $"{GetHostFxrPath} false [error]")
                 .EnableTracingAndCaptureOutputs()
+                .DotNetRoot(null)
                 .Execute()
                 .Should().Fail()
                 .And.HaveStdOutContaining($"{GetHostFxrPath} failed: 0x{Constants.ErrorCode.InvalidArgFailure.ToString("x")}")
@@ -252,6 +256,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             Command.Create(sharedState.NativeHostPath, GetHostFxrPath)
                 .EnableTracingAndCaptureOutputs()
                 .EnvironmentVariable(Constants.TestOnlyEnvironmentVariables.GloballyRegisteredPath, sharedState.ValidInstallRoot)
+                .DotNetRoot(null)
                 .Execute()
                 .Should().NotHaveStdErrContaining($"Using global installation location [{sharedState.ValidInstallRoot}] as runtime location.");
         }
