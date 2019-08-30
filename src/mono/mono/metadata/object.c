@@ -473,9 +473,12 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 
 	gboolean ret = FALSE;
 
+	HANDLE_FUNCTION_ENTER ();
+
 	if (vtable->init_failed) {
 		/* The type initialization already failed once, rethrow the same exception */
 		MonoException *exp = get_type_init_exception_for_vtable (vtable);
+		MONO_HANDLE_NEW (MonoException, exp);
 		/* Reset the stack_trace and trace_ips because the exception is reused */
 		exp->stack_trace = NULL;
 		exp->trace_ips = NULL;
@@ -544,12 +547,14 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 
 		mono_threads_begin_abort_protected_block ();
 		mono_runtime_try_invoke (method, NULL, NULL, (MonoObject**) &exc, error);
+		MonoExceptionHandle exch = MONO_HANDLE_NEW (MonoException, exc);
 		mono_threads_end_abort_protected_block ();
 
 		//exception extracted, error will be set to the right value later
-		if (exc == NULL && !is_ok (error))//invoking failed but exc was not set
+		if (exc == NULL && !is_ok (error)) { // invoking failed but exc was not set
 			exc = mono_error_convert_to_exception (error);
-		else
+			MONO_HANDLE_ASSIGN_RAW (exch, exc);
+		} else
 			mono_error_cleanup (error);
 
 		error_init_reuse (error);
@@ -572,6 +577,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 				full_name = g_strdup (klass_name);
 
 			MonoException *exc_to_throw = mono_get_exception_type_initialization_checked (full_name, exc, error);
+			MONO_HANDLE_NEW (MonoException, exc_to_throw);
 			g_free (full_name);
 
 			mono_error_assert_ok (error); //We can't recover from this, no way to fail a type we can't alloc a failure.
@@ -641,7 +647,7 @@ return_true:
 return_false:
 	ret = FALSE;
 exit:
-	return ret;
+	HANDLE_FUNCTION_RETURN_VAL (ret);
 }
 
 MonoDomain *
