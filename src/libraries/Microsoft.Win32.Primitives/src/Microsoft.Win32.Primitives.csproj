@@ -5,6 +5,7 @@
     <AssemblyName>Microsoft.Win32.Primitives</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <ItemGroup>
