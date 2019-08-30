@@ -8,27 +8,6 @@ namespace System
 {
     internal static class CharArrayHelpers
     {
-        internal static bool EqualsOrdinal(string left, char[] right, int rightStartIndex, int rightLength)
-        {
-            Debug.Assert(left != null, "Expected non-null string");
-            DebugAssertArrayInputs(right, rightStartIndex, rightLength);
-
-            if (left.Length != rightLength)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < left.Length; i++)
-            {
-                if (left[i] != right[rightStartIndex + i])
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
         internal static bool EqualsOrdinalAsciiIgnoreCase(string left, char[] right, int rightStartIndex, int rightLength)
         {
             Debug.Assert(left != null, "Expected non-null string");
