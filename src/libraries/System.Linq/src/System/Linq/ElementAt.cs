@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Linq
 {
@@ -51,6 +52,7 @@ namespace System.Linq
             return default;
         }
 
+        [return: MaybeNull]
         public static TSource ElementAtOrDefault<TSource>(this IEnumerable<TSource> source, int index)
         {
             if (source == null)
@@ -89,7 +91,7 @@ namespace System.Linq
                 }
             }
 
-            return default(TSource);
+            return default!;
         }
     }
 }

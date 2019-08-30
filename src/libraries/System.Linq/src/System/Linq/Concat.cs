@@ -66,7 +66,7 @@ namespace System.Linq
                 return new ConcatNIterator<TSource>(this, next, 2, hasOnlyCollections);
             }
 
-            internal override IEnumerable<TSource> GetEnumerable(int index)
+            internal override IEnumerable<TSource>? GetEnumerable(int index)
             {
                 Debug.Assert(index >= 0 && index <= 2);
 
@@ -140,7 +140,7 @@ namespace System.Linq
                 _hasOnlyCollections = hasOnlyCollections;
             }
 
-            private ConcatNIterator<TSource> PreviousN => _tail as ConcatNIterator<TSource>;
+            private ConcatNIterator<TSource>? PreviousN => _tail as ConcatNIterator<TSource>;
 
             public override Iterator<TSource> Clone() => new ConcatNIterator<TSource>(_tail, _head, _headIndex, _hasOnlyCollections);
 
@@ -158,7 +158,7 @@ namespace System.Linq
                 return new ConcatNIterator<TSource>(this, next, _headIndex + 1, hasOnlyCollections);
             }
 
-            internal override IEnumerable<TSource> GetEnumerable(int index)
+            internal override IEnumerable<TSource>? GetEnumerable(int index)
             {
                 Debug.Assert(index >= 0);
 
@@ -167,7 +167,7 @@ namespace System.Linq
                     return null;
                 }
 
-                ConcatNIterator<TSource> node, previousN = this;
+                ConcatNIterator<TSource>? node, previousN = this;
                 do
                 {
                     node = previousN;
@@ -193,7 +193,7 @@ namespace System.Linq
             /// <summary>
             /// The enumerator of the current source, if <see cref="MoveNext"/> has been called.
             /// </summary>
-            private IEnumerator<TSource> _enumerator;
+            private IEnumerator<TSource>? _enumerator;
 
             public override void Dispose()
             {
@@ -211,7 +211,7 @@ namespace System.Linq
             /// If the index is equal to the number of enumerables this iterator holds, <c>null</c> is returned.
             /// </summary>
             /// <param name="index">The logical index.</param>
-            internal abstract IEnumerable<TSource> GetEnumerable(int index);
+            internal abstract IEnumerable<TSource>? GetEnumerable(int index);
 
             /// <summary>
             /// Creates a new iterator that concatenates this iterator with an enumerable.
@@ -223,7 +223,7 @@ namespace System.Linq
             {
                 if (_state == 1)
                 {
-                    _enumerator = GetEnumerable(0).GetEnumerator();
+                    _enumerator = GetEnumerable(0)!.GetEnumerator();
                     _state = 2;
                 }
 
@@ -231,13 +231,14 @@ namespace System.Linq
                 {
                     while (true)
                     {
+                        Debug.Assert(_enumerator != null);
                         if (_enumerator.MoveNext())
                         {
                             _current = _enumerator.Current;
                             return true;
                         }
 
-                        IEnumerable<TSource> next = GetEnumerable(_state++ - 1);
+                        IEnumerable<TSource>? next = GetEnumerable(_state++ - 1);
                         if (next != null)
                         {
                             _enumerator.Dispose();

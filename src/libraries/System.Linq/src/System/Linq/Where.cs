@@ -82,7 +82,7 @@ namespace System.Linq
         {
             private readonly IEnumerable<TSource> _source;
             private readonly Func<TSource, bool> _predicate;
-            private IEnumerator<TSource> _enumerator;
+            private IEnumerator<TSource>? _enumerator;
 
             public WhereEnumerableIterator(IEnumerable<TSource> source, Func<TSource, bool> predicate)
             {
@@ -114,6 +114,7 @@ namespace System.Linq
                         _state = 2;
                         goto case 2;
                     case 2:
+                        Debug.Assert(_enumerator != null);
                         while (_enumerator.MoveNext())
                         {
                             TSource item = _enumerator.Current;
@@ -352,7 +353,7 @@ namespace System.Linq
             private readonly IEnumerable<TSource> _source;
             private readonly Func<TSource, bool> _predicate;
             private readonly Func<TSource, TResult> _selector;
-            private IEnumerator<TSource> _enumerator;
+            private IEnumerator<TSource>? _enumerator;
 
             public WhereSelectEnumerableIterator(IEnumerable<TSource> source, Func<TSource, bool> predicate, Func<TSource, TResult> selector)
             {
@@ -387,6 +388,7 @@ namespace System.Linq
                         _state = 2;
                         goto case 2;
                     case 2:
+                        Debug.Assert(_enumerator != null);
                         while (_enumerator.MoveNext())
                         {
                             TSource item = _enumerator.Current;

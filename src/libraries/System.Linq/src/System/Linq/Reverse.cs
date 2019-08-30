@@ -26,7 +26,7 @@ namespace System.Linq
         private sealed partial class ReverseIterator<TSource> : Iterator<TSource>
         {
             private readonly IEnumerable<TSource> _source;
-            private TSource[] _buffer;
+            private TSource[]? _buffer;
 
             public ReverseIterator(IEnumerable<TSource> source)
             {
@@ -66,6 +66,7 @@ namespace System.Linq
                         int index = _state - 3;
                         if (index != -1)
                         {
+                            Debug.Assert(_buffer != null);
                             _current = _buffer[index];
                             --_state;
                             return true;

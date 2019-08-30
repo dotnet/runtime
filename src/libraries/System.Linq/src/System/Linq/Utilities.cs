@@ -18,7 +18,7 @@ namespace System.Linq
         /// <param name="left">The first comparer.</param>
         /// <param name="right">The second comparer.</param>
         /// <returns><c>true</c> if the equality comparers are equal; otherwise, <c>false</c>.</returns>
-        public static bool AreEqualityComparersEqual<TSource>(IEqualityComparer<TSource> left, IEqualityComparer<TSource> right)
+        public static bool AreEqualityComparersEqual<TSource>(IEqualityComparer<TSource>? left, IEqualityComparer<TSource>? right)
         {
             if (left == right)
             {
@@ -32,7 +32,7 @@ namespace System.Linq
                 // Micro-opt: Typically it's impossible to get a different instance
                 // of the default comparer without reflection/serialization.
                 // Save a virtual method call to Equals in the common case.
-                return right == defaultComparer || right.Equals(defaultComparer);
+                return right == defaultComparer || right!.Equals(defaultComparer);
             }
 
             if (right == null)

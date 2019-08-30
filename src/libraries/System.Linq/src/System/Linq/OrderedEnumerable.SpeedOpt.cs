@@ -4,6 +4,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Linq
 {
@@ -138,6 +139,7 @@ namespace System.Linq
 
         public IPartition<TElement> Take(int count) => new OrderedPartition<TElement>(this, 0, count - 1);
 
+        [return: MaybeNull]
         public TElement TryGetElementAt(int index, out bool found)
         {
             if (index == 0)
@@ -157,9 +159,10 @@ namespace System.Linq
             }
 
             found = false;
-            return default(TElement);
+            return default!;
         }
 
+        [return: MaybeNull]
         public TElement TryGetFirst(out bool found)
         {
             CachingComparer<TElement> comparer = GetComparer();
@@ -168,7 +171,7 @@ namespace System.Linq
                 if (!e.MoveNext())
                 {
                     found = false;
-                    return default(TElement);
+                    return default!;
                 }
 
                 TElement value = e.Current;
@@ -187,6 +190,7 @@ namespace System.Linq
             }
         }
 
+        [return: MaybeNull]
         public TElement TryGetLast(out bool found)
         {
             using (IEnumerator<TElement> e = _source.GetEnumerator())
@@ -194,7 +198,7 @@ namespace System.Linq
                 if (!e.MoveNext())
                 {
                     found = false;
-                    return default(TElement);
+                    return default!;
                 }
 
                 CachingComparer<TElement> comparer = GetComparer();
@@ -214,6 +218,7 @@ namespace System.Linq
             }
         }
 
+        [return: MaybeNull]
         public TElement TryGetLast(int minIdx, int maxIdx, out bool found)
         {
             Buffer<TElement> buffer = new Buffer<TElement>(_source);
@@ -221,7 +226,7 @@ namespace System.Linq
             if (minIdx >= count)
             {
                 found = false;
-                return default(TElement);
+                return default!;
             }
 
             found = true;

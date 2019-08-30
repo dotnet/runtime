@@ -4,12 +4,16 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Linq
 {
     internal abstract partial class OrderedEnumerable<TElement> : IOrderedEnumerable<TElement>
     {
         internal IEnumerable<TElement> _source;
+
+        protected OrderedEnumerable(IEnumerable<TElement> source) => _source = source;
 
         private int[] SortedMap(Buffer<TElement> buffer) => GetEnumerableSorter().Sort(buffer._items, buffer._count);
 
@@ -58,17 +62,18 @@ namespace System.Linq
 
         private EnumerableSorter<TElement> GetEnumerableSorter() => GetEnumerableSorter(null);
 
-        internal abstract EnumerableSorter<TElement> GetEnumerableSorter(EnumerableSorter<TElement> next);
+        internal abstract EnumerableSorter<TElement> GetEnumerableSorter(EnumerableSorter<TElement>? next);
 
         private CachingComparer<TElement> GetComparer() => GetComparer(null);
 
-        internal abstract CachingComparer<TElement> GetComparer(CachingComparer<TElement> childComparer);
+        internal abstract CachingComparer<TElement> GetComparer(CachingComparer<TElement>? childComparer);
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        IOrderedEnumerable<TElement> IOrderedEnumerable<TElement>.CreateOrderedEnumerable<TKey>(Func<TElement, TKey> keySelector, IComparer<TKey> comparer, bool descending) =>
+        IOrderedEnumerable<TElement> IOrderedEnumerable<TElement>.CreateOrderedEnumerable<TKey>(Func<TElement, TKey> keySelector, IComparer<TKey>? comparer, bool descending) =>
             new OrderedEnumerable<TElement, TKey>(_source, keySelector, comparer, @descending, this);
 
+        [return: MaybeNull]
         public TElement TryGetFirst(Func<TElement, bool> predicate, out bool found)
         {
             CachingComparer<TElement> comparer = GetComparer();
@@ -80,7 +85,7 @@ namespace System.Linq
                     if (!e.MoveNext())
                     {
                         found = false;
-                        return default(TElement);
+                        return default!;
                     }
 
                     value = e.Current;
@@ -102,6 +107,7 @@ namespace System.Linq
             }
         }
 
+        [return: MaybeNull]
         public TElement TryGetLast(Func<TElement, bool> predicate, out bool found)
         {
             CachingComparer<TElement> comparer = GetComparer();
@@ -113,7 +119,7 @@ namespace System.Linq
                     if (!e.MoveNext())
                     {
                         found = false;
-                        return default(TElement);
+                        return default!;
                     }
 
                     value = e.Current;
@@ -138,12 +144,13 @@ namespace System.Linq
 
     internal sealed class OrderedEnumerable<TElement, TKey> : OrderedEnumerable<TElement>
     {
-        private readonly OrderedEnumerable<TElement> _parent;
+        private readonly OrderedEnumerable<TElement>? _parent;
         private readonly Func<TElement, TKey> _keySelector;
         private readonly IComparer<TKey> _comparer;
         private readonly bool _descending;
 
-        internal OrderedEnumerable(IEnumerable<TElement> source, Func<TElement, TKey> keySelector, IComparer<TKey> comparer, bool descending, OrderedEnumerable<TElement> parent)
+        internal OrderedEnumerable(IEnumerable<TElement> source, Func<TElement, TKey> keySelector, IComparer<TKey>? comparer, bool descending, OrderedEnumerable<TElement>? parent) :
+            base(source)
         {
             if (source is null)
             {
@@ -154,14 +161,13 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
             }
 
-            _source = source;
             _parent = parent;
             _keySelector = keySelector;
             _comparer = comparer ?? Comparer<TKey>.Default;
             _descending = descending;
         }
 
-        internal override EnumerableSorter<TElement> GetEnumerableSorter(EnumerableSorter<TElement> next)
+        internal override EnumerableSorter<TElement> GetEnumerableSorter(EnumerableSorter<TElement>? next)
         {
             EnumerableSorter<TElement> sorter = new EnumerableSorter<TElement, TKey>(_keySelector, _comparer, _descending, next);
             if (_parent != null)
@@ -172,7 +178,7 @@ namespace System.Linq
             return sorter;
         }
 
-        internal override CachingComparer<TElement> GetComparer(CachingComparer<TElement> childComparer)
+        internal override CachingComparer<TElement> GetComparer(CachingComparer<TElement>? childComparer)
         {
             CachingComparer<TElement> cmp = childComparer == null
                 ? new CachingComparer<TElement, TKey>(_keySelector, _comparer, _descending)
@@ -196,7 +202,7 @@ namespace System.Linq
         protected readonly Func<TElement, TKey> _keySelector;
         protected readonly IComparer<TKey> _comparer;
         protected readonly bool _descending;
-        protected TKey _lastKey;
+        [MaybeNull] protected TKey _lastKey = default!;
 
         public CachingComparer(Func<TElement, TKey> keySelector, IComparer<TKey> comparer, bool descending)
         {
@@ -316,10 +322,10 @@ namespace System.Linq
         private readonly Func<TElement, TKey> _keySelector;
         private readonly IComparer<TKey> _comparer;
         private readonly bool _descending;
-        private readonly EnumerableSorter<TElement> _next;
-        private TKey[] _keys;
+        private readonly EnumerableSorter<TElement>? _next;
+        private TKey[]? _keys;
 
-        internal EnumerableSorter(Func<TElement, TKey> keySelector, IComparer<TKey> comparer, bool descending, EnumerableSorter<TElement> next)
+        internal EnumerableSorter(Func<TElement, TKey> keySelector, IComparer<TKey> comparer, bool descending, EnumerableSorter<TElement>? next)
         {
             _keySelector = keySelector;
             _comparer = comparer;
@@ -340,6 +346,8 @@ namespace System.Linq
 
         internal override int CompareAnyKeys(int index1, int index2)
         {
+            Debug.Assert(_keys != null);
+
             int c = _comparer.Compare(_keys[index1], _keys[index2]);
             if (c == 0)
             {

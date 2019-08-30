@@ -35,10 +35,12 @@ namespace System.Linq
         public bool MoveNext() => false;
 
         [ExcludeFromCodeCoverage] // Shouldn't be called, and as undefined can return or throw anything anyway.
-        public TElement Current => default(TElement);
+        [MaybeNull]
+        public TElement Current => default!;
 
         [ExcludeFromCodeCoverage] // Shouldn't be called, and as undefined can return or throw anything anyway.
-        object IEnumerator.Current => default(TElement);
+        [MaybeNull]
+        object IEnumerator.Current => default!;
 
         void IEnumerator.Reset()
         {
@@ -54,22 +56,25 @@ namespace System.Linq
 
         public IPartition<TElement> Take(int count) => this;
 
+        [return: MaybeNull]
         public TElement TryGetElementAt(int index, out bool found)
         {
             found = false;
-            return default(TElement);
+            return default!;
         }
 
+        [return: MaybeNull]
         public TElement TryGetFirst(out bool found)
         {
             found = false;
-            return default(TElement);
+            return default!;
         }
 
+        [return: MaybeNull]
         public TElement TryGetLast(out bool found)
         {
             found = false;
-            return default(TElement);
+            return default!;
         }
 
         public TElement[] ToArray() => Array.Empty<TElement>();
@@ -113,6 +118,7 @@ namespace System.Linq
             return new OrderedPartition<TElement>(_source, _minIndexInclusive, maxIndex);
         }
 
+        [return: MaybeNull]
         public TElement TryGetElementAt(int index, out bool found)
         {
             if (unchecked((uint)index <= (uint)(_maxIndexInclusive - _minIndexInclusive)))
@@ -121,11 +127,13 @@ namespace System.Linq
             }
 
             found = false;
-            return default(TElement);
+            return default!;
         }
 
+        [return: MaybeNull]
         public TElement TryGetFirst(out bool found) => _source.TryGetElementAt(_minIndexInclusive, out found);
 
+        [return: MaybeNull]
         public TElement TryGetLast(out bool found) =>
             _source.TryGetLast(_minIndexInclusive, _maxIndexInclusive, out found);
 
@@ -193,6 +201,7 @@ namespace System.Linq
                 return unchecked((uint)maxIndex >= (uint)_maxIndexInclusive) ? this : new ListPartition<TSource>(_source, _minIndexInclusive, maxIndex);
             }
 
+            [return: MaybeNull]
             public TSource TryGetElementAt(int index, out bool found)
             {
                 if (unchecked((uint)index <= (uint)(_maxIndexInclusive - _minIndexInclusive) && index < _source.Count - _minIndexInclusive))
@@ -202,9 +211,10 @@ namespace System.Linq
                 }
 
                 found = false;
-                return default(TSource);
+                return default!;
             }
 
+            [return: MaybeNull]
             public TSource TryGetFirst(out bool found)
             {
                 if (_source.Count > _minIndexInclusive)
@@ -214,9 +224,10 @@ namespace System.Linq
                 }
 
                 found = false;
-                return default(TSource);
+                return default!;
             }
 
+            [return: MaybeNull]
             public TSource TryGetLast(out bool found)
             {
                 int lastIndex = _source.Count - 1;
@@ -227,7 +238,7 @@ namespace System.Linq
                 }
 
                 found = false;
-                return default(TSource);
+                return default!;
             }
 
             private int Count
@@ -292,7 +303,7 @@ namespace System.Linq
             private readonly int _minIndexInclusive;
             private readonly int _maxIndexInclusive; // -1 if we want everything past _minIndexInclusive.
                                                      // If this is -1, it's impossible to set a limit on the count.
-            private IEnumerator<TSource> _enumerator;
+            private IEnumerator<TSource>? _enumerator;
 
             internal EnumerablePartition(IEnumerable<TSource> source, int minIndexInclusive, int maxIndexInclusive)
             {
@@ -381,6 +392,7 @@ namespace System.Linq
                         _state = 2;
                         goto case 2;
                     case 2:
+                        Debug.Assert(_enumerator != null);
                         if (!SkipBeforeFirst(_enumerator))
                         {
                             // Reached the end before we finished skipping.
@@ -390,6 +402,7 @@ namespace System.Linq
                         _state = 3;
                         goto default;
                     default:
+                        Debug.Assert(_enumerator != null);
                         if ((!HasLimit || taken < Limit) && _enumerator.MoveNext())
                         {
                             if (HasLimit)
@@ -467,6 +480,7 @@ namespace System.Linq
                 return new EnumerablePartition<TSource>(_source, _minIndexInclusive, maxIndex);
             }
 
+            [return: MaybeNull]
             public TSource TryGetElementAt(int index, out bool found)
             {
                 // If the index is negative or >= our max count, return early.
@@ -485,9 +499,10 @@ namespace System.Linq
                 }
 
                 found = false;
-                return default(TSource);
+                return default!;
             }
 
+            [return: MaybeNull]
             public TSource TryGetFirst(out bool found)
             {
                 using (IEnumerator<TSource> en = _source.GetEnumerator())
@@ -500,9 +515,10 @@ namespace System.Linq
                 }
 
                 found = false;
-                return default(TSource);
+                return default!;
             }
 
+            [return: MaybeNull]
             public TSource TryGetLast(out bool found)
             {
                 using (IEnumerator<TSource> en = _source.GetEnumerator())
@@ -526,7 +542,7 @@ namespace System.Linq
                 }
 
                 found = false;
-                return default(TSource);
+                return default!;
             }
 
             public TSource[] ToArray()

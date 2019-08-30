@@ -23,7 +23,7 @@ namespace System.Linq
             return IntersectIterator(first, second, null);
         }
 
-        public static IEnumerable<TSource> Intersect<TSource>(this IEnumerable<TSource> first, IEnumerable<TSource> second, IEqualityComparer<TSource> comparer)
+        public static IEnumerable<TSource> Intersect<TSource>(this IEnumerable<TSource> first, IEnumerable<TSource> second, IEqualityComparer<TSource>? comparer)
         {
             if (first == null)
             {
@@ -38,7 +38,7 @@ namespace System.Linq
             return IntersectIterator(first, second, comparer);
         }
 
-        private static IEnumerable<TSource> IntersectIterator<TSource>(IEnumerable<TSource> first, IEnumerable<TSource> second, IEqualityComparer<TSource> comparer)
+        private static IEnumerable<TSource> IntersectIterator<TSource>(IEnumerable<TSource> first, IEnumerable<TSource> second, IEqualityComparer<TSource>? comparer)
         {
             Set<TSource> set = new Set<TSource>(comparer);
             set.UnionWith(second);

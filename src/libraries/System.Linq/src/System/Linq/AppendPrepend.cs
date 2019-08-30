@@ -40,7 +40,7 @@ namespace System.Linq
         private abstract partial class AppendPrependIterator<TSource> : Iterator<TSource>
         {
             protected readonly IEnumerable<TSource> _source;
-            protected IEnumerator<TSource> _enumerator;
+            protected IEnumerator<TSource>? _enumerator;
 
             protected AppendPrependIterator(IEnumerable<TSource> source)
             {
@@ -60,6 +60,7 @@ namespace System.Linq
 
             protected bool LoadFromEnumerator()
             {
+                Debug.Assert(_enumerator != null);
                 if (_enumerator.MoveNext())
                 {
                     _current = _enumerator.Current;
@@ -167,13 +168,13 @@ namespace System.Linq
         /// <typeparam name="TSource">The type of the source enumerable.</typeparam>
         private partial class AppendPrependN<TSource> : AppendPrependIterator<TSource>
         {
-            private readonly SingleLinkedNode<TSource> _prepended;
-            private readonly SingleLinkedNode<TSource> _appended;
+            private readonly SingleLinkedNode<TSource>? _prepended;
+            private readonly SingleLinkedNode<TSource>? _appended;
             private readonly int _prependCount;
             private readonly int _appendCount;
-            private SingleLinkedNode<TSource> _node;
+            private SingleLinkedNode<TSource>? _node;
 
-            public AppendPrependN(IEnumerable<TSource> source, SingleLinkedNode<TSource> prepended, SingleLinkedNode<TSource> appended, int prependCount, int appendCount)
+            public AppendPrependN(IEnumerable<TSource> source, SingleLinkedNode<TSource>? prepended, SingleLinkedNode<TSource>? appended, int prependCount, int appendCount)
                 : base(source)
             {
                 Debug.Assert(prepended != null || appended != null);
