@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Internal;
@@ -128,7 +129,7 @@ namespace System.Collections.Concurrent
         /// <summary>Attempts to dequeue an item from the queue.</summary>
         /// <param name="result">The dequeued item.</param>
         /// <returns>true if an item could be dequeued; otherwise, false.</returns>
-        public bool TryDequeue(out T result)
+        public bool TryDequeue([MaybeNullWhen(false)] out T result)
         {
             Segment segment = _head;
             T[] array = segment._array;
@@ -138,7 +139,7 @@ namespace System.Collections.Concurrent
             if (first != segment._state._lastCopy)
             {
                 result = array[first];
-                array[first] = default; // Clear the slot to release the element
+                array[first] = default!; // Clear the slot to release the element
                 segment._state._first = (first + 1) & (array.Length - 1);
                 return true;
             }
@@ -151,7 +152,7 @@ namespace System.Collections.Concurrent
         /// <param name="segment">The segment from which the item was dequeued.</param>
         /// <param name="result">The dequeued item.</param>
         /// <returns>true if an item could be dequeued; otherwise, false.</returns>
-        private bool TryDequeueSlow(ref Segment segment, ref T[] array, out T result)
+        private bool TryDequeueSlow(ref Segment segment, ref T[] array, [MaybeNullWhen(false)] out T result)
         {
             Debug.Assert(segment != null, "Expected a non-null segment.");
             Debug.Assert(array != null, "Expected a non-null item array.");
@@ -173,12 +174,12 @@ namespace System.Collections.Concurrent
 
             if (first == segment._state._last)
             {
-                result = default;
+                result = default!;
                 return false;
             }
 
             result = array[first];
-            array[first] = default; // Clear the slot to release the element
+            array[first] = default!; // Clear the slot to release the element
             segment._state._first = (first + 1) & (segment._array.Length - 1);
             segment._state._lastCopy = segment._state._last; // Refresh _lastCopy to ensure that _first has not passed _lastCopy
 
@@ -202,7 +203,7 @@ namespace System.Collections.Concurrent
         /// <remarks>This method is not safe to use concurrently with any other members that may mutate the collection.</remarks>
         public IEnumerator<T> GetEnumerator()
         {
-            for (Segment segment = _head; segment != null; segment = segment._next)
+            for (Segment? segment = _head; segment != null; segment = segment._next)
             {
                 for (int pt = segment._state._first;
                     pt != segment._state._last;
@@ -222,7 +223,7 @@ namespace System.Collections.Concurrent
             get
             {
                 int count = 0;
-                for (Segment segment = _head; segment != null; segment = segment._next)
+                for (Segment? segment = _head; segment != null; segment = segment._next)
                 {
                     int arraySize = segment._array.Length;
                     int first, last;
@@ -243,7 +244,7 @@ namespace System.Collections.Concurrent
         private sealed class Segment
         {
             /// <summary>The next segment in the linked list of segments.</summary>
-            internal Segment _next;
+            internal Segment? _next;
             /// <summary>The data stored in this segment.</summary>
             internal readonly T[] _array;
             /// <summary>Details about the segment.</summary>

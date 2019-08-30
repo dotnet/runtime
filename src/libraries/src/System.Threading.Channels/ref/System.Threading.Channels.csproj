@@ -2,12 +2,18 @@
   <PropertyGroup>
     <ProjectGuid>{97DB4782-7AB3-4F4C-B716-CF722A0E6066}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp3.0-Debug;netcoreapp3.0-Release;netstandard-Debug;netstandard-Release;netstandard1.3-Debug;netstandard1.3-Release</Configurations>
+    <DefineConstants>$(DefineConstants);INTERNAL_NULLABLE_ATTRIBUTES</DefineConstants>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Threading.Channels.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="System.Threading.Channels.netcoreapp.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' != 'true'">
+    <Compile Include="$(CommonPath)\CoreLib\System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Link="System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
+    <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
     <Reference Include="System.Runtime" />
@@ -17,11 +23,9 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Reference Include="netstandard" />
-    <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.3'">
     <Reference Include="System.Runtime" />
     <Reference Include="System.Threading.Tasks" />
-    <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
 </Project>

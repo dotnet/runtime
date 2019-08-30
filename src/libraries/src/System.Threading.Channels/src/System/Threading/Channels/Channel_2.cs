@@ -13,10 +13,10 @@ namespace System.Threading.Channels
     public abstract class Channel<TWrite, TRead>
     {
         /// <summary>Gets the readable half of this channel.</summary>
-        public ChannelReader<TRead> Reader { get; protected set; }
+        public ChannelReader<TRead> Reader { get; protected set; } = null!; // derived types should always set the Reader as part of construction
 
         /// <summary>Gets the writable half of this channel.</summary>
-        public ChannelWriter<TWrite> Writer { get; protected set; }
+        public ChannelWriter<TWrite> Writer { get; protected set; } = null!; // derived types should always set the Writer as part of construction
 
         /// <summary>Implicit cast from a channel to its readable half.</summary>
         /// <param name="channel">The channel being cast.</param>

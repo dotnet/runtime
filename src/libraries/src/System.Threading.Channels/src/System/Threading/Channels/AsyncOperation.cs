@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Sources;
@@ -12,12 +13,12 @@ namespace System.Threading.Channels
     internal abstract class AsyncOperation
     {
         /// <summary>Sentinel object used in a field to indicate the operation is available for use.</summary>
-        protected static readonly Action<object> s_availableSentinel = AvailableSentinel; // named method to help with debugging
-        private static void AvailableSentinel(object s) => Debug.Fail($"{nameof(AsyncOperation)}.{nameof(AvailableSentinel)} invoked with {s}");
+        protected static readonly Action<object?> s_availableSentinel = AvailableSentinel; // named method to help with debugging
+        private static void AvailableSentinel(object? s) => Debug.Fail($"{nameof(AsyncOperation)}.{nameof(AvailableSentinel)} invoked with {s}");
 
         /// <summary>Sentinel object used in a field to indicate the operation has completed.</summary>
-        protected static readonly Action<object> s_completedSentinel = CompletedSentinel; // named method to help with debugging
-        private static void CompletedSentinel(object s) => Debug.Fail($"{nameof(AsyncOperation)}.{nameof(CompletedSentinel)} invoked with {s}");
+        protected static readonly Action<object?> s_completedSentinel = CompletedSentinel; // named method to help with debugging
+        private static void CompletedSentinel(object? s) => Debug.Fail($"{nameof(AsyncOperation)}.{nameof(CompletedSentinel)} invoked with {s}");
 
         /// <summary>Throws an exception indicating that the operation's result was accessed before the operation completed.</summary>
         protected static void ThrowIncompleteOperationException() =>
@@ -51,9 +52,10 @@ namespace System.Threading.Channels
         /// <summary>Only relevant to cancelable operations; 0 if the operation hasn't had completion reserved, 1 if it has.</summary>
         private volatile int _completionReserved = 0;
         /// <summary>The result of the operation.</summary>
-        private TResult _result;
+        [MaybeNull, AllowNull]
+        private TResult _result = default;
         /// <summary>Any error that occurred during the operation.</summary>
-        private ExceptionDispatchInfo _error;
+        private ExceptionDispatchInfo? _error;
         /// <summary>The continuation callback.</summary>
         /// <remarks>
         /// This may be the completion sentinel if the operation has already completed.
@@ -61,13 +63,13 @@ namespace System.Threading.Channels
         /// This may be null if the operation is pending.
         /// This may be another callback if the operation has had a callback hooked up with OnCompleted.
         /// </remarks>
-        private Action<object> _continuation;
+        private Action<object?>? _continuation;
         /// <summary>State object to be passed to <see cref="_continuation"/>.</summary>
-        private object _continuationState;
+        private object? _continuationState;
         /// <summary>Scheduling context (a <see cref="SynchronizationContext"/> or <see cref="TaskScheduler"/>) to which to queue the continuation. May be null.</summary>
-        private object _schedulingContext;
+        private object? _schedulingContext;
         /// <summary>Execution context to use when invoking <see cref="_continuation"/>. May be null.</summary>
-        private ExecutionContext _executionContext;
+        private ExecutionContext? _executionContext;
         /// <summary>The token value associated with the current operation.</summary>
         /// <remarks>
         /// IValueTaskSource operations on this instance are only valid if the provided token matches this value,
@@ -90,14 +92,14 @@ namespace System.Threading.Channels
                 CancellationToken = cancellationToken;
                 _registration = UnsafeRegister(cancellationToken, s =>
                 {
-                    var thisRef = (AsyncOperation<TResult>)s;
+                    var thisRef = (AsyncOperation<TResult>)s!;
                     thisRef.TrySetCanceled(thisRef.CancellationToken);
                 }, this);
             }
         }
 
         /// <summary>Gets or sets the next operation in the linked list of operations.</summary>
-        public AsyncOperation<TResult> Next { get; set; }
+        public AsyncOperation<TResult>? Next { get; set; }
         /// <summary>Gets the cancellation token associated with this operation.</summary>
         public CancellationToken CancellationToken { get; }
         /// <summary>Gets a <see cref="ValueTask"/> backed by this instance and its current token.</summary>
@@ -151,7 +153,7 @@ namespace System.Threading.Channels
                 ThrowIncompleteOperationException();
             }
 
-            ExceptionDispatchInfo error = _error;
+            ExceptionDispatchInfo? error = _error;
             TResult result = _result;
             _currentId++;
 
@@ -178,7 +180,7 @@ namespace System.Threading.Channels
                 ThrowIncompleteOperationException();
             }
 
-            ExceptionDispatchInfo error = _error;
+            ExceptionDispatchInfo? error = _error;
             _currentId++;
 
             if (_pooled)
@@ -212,7 +214,7 @@ namespace System.Threading.Channels
         /// <param name="state">The state to pass to the callback.</param>
         /// <param name="token">The current token that must match <see cref="_currentId"/>.</param>
         /// <param name="flags">Flags that influence the behavior of the callback.</param>
-        public void OnCompleted(Action<object> continuation, object state, short token, ValueTaskSourceOnCompletedFlags flags)
+        public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
         {
             if (_currentId != token)
             {
@@ -238,8 +240,8 @@ namespace System.Threading.Channels
 
             // Capture the scheduling context if necessary.
             Debug.Assert(_schedulingContext == null);
-            SynchronizationContext sc = null;
-            TaskScheduler ts = null;
+            SynchronizationContext? sc = null;
+            TaskScheduler? ts = null;
             if ((flags & ValueTaskSourceOnCompletedFlags.UseSchedulingContext) != 0)
             {
                 sc = SynchronizationContext.Current;
@@ -263,7 +265,7 @@ namespace System.Threading.Channels
             // that means the operation has already completed, and we must invoke the callback, but because we're still
             // inside the awaiter's OnCompleted method and we want to avoid possible stack dives, we must invoke
             // the continuation asynchronously rather than synchronously.
-            Action<object> prevContinuation = Interlocked.CompareExchange(ref _continuation, continuation, null);
+            Action<object?>? prevContinuation = Interlocked.CompareExchange(ref _continuation, continuation, null);
             if (prevContinuation != null)
             {
                 // If the set failed because there's already a delegate in _continuation, but that delegate is
@@ -287,7 +289,7 @@ namespace System.Threading.Channels
                 {
                     sc.Post(s =>
                     {
-                        var t = (Tuple<Action<object>, object>)s;
+                        var t = (Tuple<Action<object?>, object>)s!;
                         t.Item1(t.Item2);
                     }, Tuple.Create(continuation, state));
                 }
@@ -393,7 +395,7 @@ namespace System.Threading.Channels
                     // Otherwise fall through to invoke it synchronously.
                     if (_runContinuationsAsynchronously || sc != SynchronizationContext.Current)
                     {
-                        sc.Post(s => ((AsyncOperation<TResult>)s).SetCompletionAndInvokeContinuation(), this);
+                        sc.Post(s => ((AsyncOperation<TResult>)s!).SetCompletionAndInvokeContinuation(), this);
                         return;
                     }
                 }
@@ -406,7 +408,7 @@ namespace System.Threading.Channels
                     Debug.Assert(ts != null, "Expected a TaskScheduler");
                     if (_runContinuationsAsynchronously || ts != TaskScheduler.Current)
                     {
-                        Task.Factory.StartNew(s => ((AsyncOperation<TResult>)s).SetCompletionAndInvokeContinuation(), this,
+                        Task.Factory.StartNew(s => ((AsyncOperation<TResult>)s!).SetCompletionAndInvokeContinuation(), this,
                             CancellationToken.None, TaskCreationOptions.DenyChildAttach, ts);
                         return;
                     }
@@ -421,7 +423,7 @@ namespace System.Threading.Channels
         {
             if (_executionContext == null)
             {
-                Action<object> c = _continuation;
+                Action<object?> c = _continuation!;
                 _continuation = s_completedSentinel;
                 c(_continuationState);
             }
@@ -429,8 +431,8 @@ namespace System.Threading.Channels
             {
                 ExecutionContext.Run(_executionContext, s =>
                 {
-                    var thisRef = (AsyncOperation<TResult>)s;
-                    Action<object> c = thisRef._continuation;
+                    var thisRef = (AsyncOperation<TResult>)s!;
+                    Action<object?> c = thisRef._continuation!;
                     thisRef._continuation = s_completedSentinel;
                     c(thisRef._continuationState);
                 }, this);
@@ -452,6 +454,7 @@ namespace System.Threading.Channels
         }
 
         /// <summary>The item being written.</summary>
-        public TData Item { get; set; }
+        [MaybeNull, AllowNull]
+        public TData Item { get; set; } = default!;
     }
 }
