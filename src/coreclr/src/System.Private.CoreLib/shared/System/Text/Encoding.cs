@@ -600,11 +600,7 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException(nameof(count),
                       SR.ArgumentOutOfRange_NeedNonNegNum);
 
-            char[] arrChar = new char[count];
-            int index;
-
-            for (index = 0; index < count; index++)
-                arrChar[index] = chars[index];
+            char[] arrChar = new ReadOnlySpan<char>(chars, count).ToArray();
 
             return GetByteCount(arrChar, 0, count);
         }
@@ -744,11 +740,7 @@ namespace System.Text
                     SR.ArgumentOutOfRange_NeedNonNegNum);
 
             // Get the char array to convert
-            char[] arrChar = new char[charCount];
-
-            int index;
-            for (index = 0; index < charCount; index++)
-                arrChar[index] = chars[index];
+            char[] arrChar = new ReadOnlySpan<char>(chars, charCount).ToArray();
 
             // Get the byte array to fill
             byte[] arrByte = new byte[byteCount];
@@ -767,8 +759,7 @@ namespace System.Text
                 byteCount = result;
 
             // Copy the data, don't overrun our array!
-            for (index = 0; index < byteCount; index++)
-                bytes[index] = arrByte[index];
+            new ReadOnlySpan<byte>(arrByte, 0, byteCount).CopyTo(new Span<byte>(bytes, byteCount));
 
             return byteCount;
         }
@@ -814,13 +805,9 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException(nameof(count),
                       SR.ArgumentOutOfRange_NeedNonNegNum);
 
-            byte[] arrbyte = new byte[count];
-            int index;
+            byte[] arrByte = new ReadOnlySpan<byte>(bytes, count).ToArray();
 
-            for (index = 0; index < count; index++)
-                arrbyte[index] = bytes[index];
-
-            return GetCharCount(arrbyte, 0, count);
+            return GetCharCount(arrByte, 0, count);
         }
 
         public virtual unsafe int GetCharCount(ReadOnlySpan<byte> bytes)
@@ -899,11 +886,7 @@ namespace System.Text
                     SR.ArgumentOutOfRange_NeedNonNegNum);
 
             // Get the byte array to convert
-            byte[] arrByte = new byte[byteCount];
-
-            int index;
-            for (index = 0; index < byteCount; index++)
-                arrByte[index] = bytes[index];
+            byte[] arrByte = new ReadOnlySpan<byte>(bytes, byteCount).ToArray();
 
             // Get the char array to fill
             char[] arrChar = new char[charCount];
@@ -922,8 +905,7 @@ namespace System.Text
                 charCount = result;
 
             // Copy the data, don't overrun our array!
-            for (index = 0; index < charCount; index++)
-                chars[index] = arrChar[index];
+            new ReadOnlySpan<char>(arrChar, 0, charCount).CopyTo(new Span<char>(chars, charCount));
 
             return charCount;
         }
