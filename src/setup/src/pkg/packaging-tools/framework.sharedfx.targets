@@ -18,9 +18,15 @@
     </PropertyGroup>
   </Target>
 
+  <!--
+    Set up the PackageReference based on the pkgproj output at the right point in the build process.
+    The BeforeTargets makes it try to run even when the project is excluded from a build from
+    source, so this has to be handled directly.
+  -->
   <Target Name="GetPackageReference"
           DependsOnTargets="GetProductVersions"
-          BeforeTargets="CollectPackageReferences">
+          BeforeTargets="CollectPackageReferences"
+          Condition="'$(DotNetBuildFromSource)' != 'true' or '$(ExcludeFromSourceBuild)' != 'true'">
     <PropertyGroup>
       <SfxVersion Condition="'$(SfxVersion)' == ''">$(ProductVersion)</SfxVersion>
       <SfxPackageIdentity Condition="'$(SfxPackageIdentity)' == ''">$(SfxIdentity)</SfxPackageIdentity>

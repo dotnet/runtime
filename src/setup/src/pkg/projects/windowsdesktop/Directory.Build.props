@@ -15,6 +15,12 @@
     <VSInsertionProductName>WindowsDesktop</VSInsertionProductName>
 
     <!--
+      Do not attempt to restore or build WindowsDesktop projects when building from source, because
+      WinForms and WPF do not participate.
+    -->
+    <ExcludeFromSourceBuild>true</ExcludeFromSourceBuild>
+
+    <!--
       Disable FileVersion check for WindowsDesktop. Files with no FileVersion, as of writing:
 
       runtimes\win-x86\native\PenImc_cor3.dll
