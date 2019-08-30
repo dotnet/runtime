@@ -5,6 +5,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 
 namespace System.Threading.Channels
@@ -29,13 +30,15 @@ namespace System.Threading.Channels
         private readonly bool _runContinuationsAsynchronously;
 
         /// <summary>non-null if the channel has been marked as complete for writing.</summary>
-        private volatile Exception _doneWriting;
+        private volatile Exception? _doneWriting;
 
+#pragma warning disable CA1823 // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/38195
         /// <summary>An <see cref="AsyncOperation{T}"/> if there's a blocked reader.</summary>
-        private AsyncOperation<T> _blockedReader;
+        private AsyncOperation<T>? _blockedReader;
 
         /// <summary>A waiting reader (e.g. WaitForReadAsync) if there is one.</summary>
-        private AsyncOperation<bool> _waitingReader;
+        private AsyncOperation<bool>? _waitingReader;
+#pragma warning restore CA1823
 
         /// <summary>Initialize the channel.</summary>
         /// <param name="runContinuationsAsynchronously">Whether to force continuations to be executed asynchronously.</param>
@@ -79,7 +82,7 @@ namespace System.Threading.Channels
 
                 SingleConsumerUnboundedChannel<T> parent = _parent;
 
-                AsyncOperation<T> oldBlockedReader, newBlockedReader;
+                AsyncOperation<T>? oldBlockedReader, newBlockedReader;
                 lock (parent.SyncObj)
                 {
                     // Now that we hold the lock, try reading again.
@@ -118,7 +121,7 @@ namespace System.Threading.Channels
                 return newBlockedReader.ValueTaskOfT;
             }
 
-            public override bool TryRead(out T item)
+            public override bool TryRead([MaybeNullWhen(false)] out T item)
             {
                 SingleConsumerUnboundedChannel<T> parent = _parent;
                 if (parent._items.TryDequeue(out item))
@@ -146,7 +149,7 @@ namespace System.Threading.Channels
                 }
 
                 SingleConsumerUnboundedChannel<T> parent = _parent;
-                AsyncOperation<bool> oldWaitingReader = null, newWaitingReader;
+                AsyncOperation<bool>? oldWaitingReader = null, newWaitingReader;
                 lock (parent.SyncObj)
                 {
                     // Again while holding the lock, check to see if there are any items available.
@@ -201,10 +204,10 @@ namespace System.Threading.Channels
             internal readonly SingleConsumerUnboundedChannel<T> _parent;
             internal UnboundedChannelWriter(SingleConsumerUnboundedChannel<T> parent) => _parent = parent;
 
-            public override bool TryComplete(Exception error)
+            public override bool TryComplete(Exception? error)
             {
-                AsyncOperation<T> blockedReader = null;
-                AsyncOperation<bool> waitingReader = null;
+                AsyncOperation<T>? blockedReader = null;
+                AsyncOperation<bool>? waitingReader = null;
                 bool completeTask = false;
 
                 SingleConsumerUnboundedChannel<T> parent = _parent;
@@ -278,8 +281,8 @@ namespace System.Threading.Channels
                 SingleConsumerUnboundedChannel<T> parent = _parent;
                 while (true) // in case a reader was canceled and we need to try again
                 {
-                    AsyncOperation<T> blockedReader = null;
-                    AsyncOperation<bool> waitingReader = null;
+                    AsyncOperation<T>? blockedReader = null;
+                    AsyncOperation<bool>? waitingReader = null;
 
                     lock (parent.SyncObj)
                     {
@@ -334,7 +337,7 @@ namespace System.Threading.Channels
 
             public override ValueTask<bool> WaitToWriteAsync(CancellationToken cancellationToken)
             {
-                Exception doneWriting = _parent._doneWriting;
+                Exception? doneWriting = _parent._doneWriting;
                 return
                     cancellationToken.IsCancellationRequested ? new ValueTask<bool>(Task.FromCanceled<bool>(cancellationToken)) :
                     doneWriting == null ? new ValueTask<bool>(true) :

@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 
 namespace System.Threading.Channels
@@ -26,13 +27,13 @@ namespace System.Threading.Channels
         /// <summary>Writers waiting to write to the channel.</summary>
         private readonly Deque<VoidAsyncOperationWithData<T>> _blockedWriters = new Deque<VoidAsyncOperationWithData<T>>();
         /// <summary>Linked list of WaitToReadAsync waiters.</summary>
-        private AsyncOperation<bool> _waitingReadersTail;
+        private AsyncOperation<bool>? _waitingReadersTail;
         /// <summary>Linked list of WaitToWriteAsync waiters.</summary>
-        private AsyncOperation<bool> _waitingWritersTail;
+        private AsyncOperation<bool>? _waitingWritersTail;
         /// <summary>Whether to force continuations to be executed asynchronously from producer writes.</summary>
         private readonly bool _runContinuationsAsynchronously;
         /// <summary>Set to non-null once Complete has been called.</summary>
-        private Exception _doneWriting;
+        private Exception? _doneWriting;
         /// <summary>Gets an object used to synchronize all state on the instance.</summary>
         private object SyncObj => _items;
 
@@ -68,7 +69,7 @@ namespace System.Threading.Channels
 
             public override Task Completion => _parent._completion.Task;
 
-            public override bool TryRead(out T item)
+            public override bool TryRead([MaybeNullWhen(false)] out T item)
             {
                 BoundedChannel<T> parent = _parent;
                 lock (parent.SyncObj)
@@ -83,7 +84,7 @@ namespace System.Threading.Channels
                     }
                 }
 
-                item = default;
+                item = default!;
                 return false;
             }
 
@@ -250,7 +251,7 @@ namespace System.Threading.Channels
                 _waiterSingleton = new AsyncOperation<bool>(runContinuationsAsynchronously: true, pooled: true);
             }
 
-            public override bool TryComplete(Exception error)
+            public override bool TryComplete(Exception? error)
             {
                 BoundedChannel<T> parent = _parent;
                 bool completeTask;
@@ -295,8 +296,8 @@ namespace System.Threading.Channels
 
             public override bool TryWrite(T item)
             {
-                AsyncOperation<T> blockedReader = null;
-                AsyncOperation<bool> waitingReadersTail = null;
+                AsyncOperation<T>? blockedReader = null;
+                AsyncOperation<bool>? waitingReadersTail = null;
 
                 BoundedChannel<T> parent = _parent;
                 lock (parent.SyncObj)
@@ -456,8 +457,8 @@ namespace System.Threading.Channels
                     return new ValueTask(Task.FromCanceled(cancellationToken));
                 }
 
-                AsyncOperation<T> blockedReader = null;
-                AsyncOperation<bool> waitingReadersTail = null;
+                AsyncOperation<T>? blockedReader = null;
+                AsyncOperation<bool>? waitingReadersTail = null;
 
                 BoundedChannel<T> parent = _parent;
                 lock (parent.SyncObj)

@@ -28,7 +28,7 @@ namespace System.Threading.Channels
         /// If this is an OperationCanceledException, it'll be completed with the exception's token.
         /// Otherwise, it'll be completed as faulted with the exception.
         /// </param>
-        internal static void Complete(TaskCompletionSource<VoidResult> tcs, Exception error = null)
+        internal static void Complete(TaskCompletionSource<VoidResult> tcs, Exception? error = null)
         {
             if (error is OperationCanceledException oce)
             {
@@ -60,9 +60,9 @@ namespace System.Threading.Channels
             return new ValueTask<T>(t);
         }
 
-        internal static ValueTask<bool> QueueWaiter(ref AsyncOperation<bool> tail, AsyncOperation<bool> waiter)
+        internal static ValueTask<bool> QueueWaiter(ref AsyncOperation<bool>? tail, AsyncOperation<bool> waiter)
         {
-            AsyncOperation<bool> c = tail;
+            AsyncOperation<bool>? c = tail;
             if (c == null)
             {
                 waiter.Next = waiter;
@@ -76,18 +76,18 @@ namespace System.Threading.Channels
             return waiter.ValueTaskOfT;
         }
 
-        internal static void WakeUpWaiters(ref AsyncOperation<bool> listTail, bool result, Exception error = null)
+        internal static void WakeUpWaiters(ref AsyncOperation<bool>? listTail, bool result, Exception? error = null)
         {
-            AsyncOperation<bool> tail = listTail;
+            AsyncOperation<bool>? tail = listTail;
             if (tail != null)
             {
                 listTail = null;
 
-                AsyncOperation<bool> head = tail.Next;
+                AsyncOperation<bool> head = tail.Next!;
                 AsyncOperation<bool> c = head;
                 do
                 {
-                    AsyncOperation<bool> next = c.Next;
+                    AsyncOperation<bool> next = c.Next!;
                     c.Next = null;
 
                     bool completed = error != null ? c.TrySetException(error) : c.TrySetResult(result);
@@ -112,7 +112,7 @@ namespace System.Threading.Channels
         }
 
         /// <summary>Creates and returns an exception object to indicate that a channel has been closed.</summary>
-        internal static Exception CreateInvalidCompletionException(Exception inner = null) =>
+        internal static Exception CreateInvalidCompletionException(Exception? inner = null) =>
             inner is OperationCanceledException ? inner :
             inner != null && inner != s_doneWritingSentinel ? new ChannelClosedException(inner) :
             new ChannelClosedException();
