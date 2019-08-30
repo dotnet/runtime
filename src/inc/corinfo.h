@@ -217,11 +217,11 @@ TODO: Talk about initializing strutures before use
 #endif
 #endif
 
-SELECTANY const GUID JITEEVersionIdentifier = { /* d609bed1-7831-49fc-bd49-b6f054dd4d46 */
-    0xd609bed1,
-    0x7831,
-    0x49fc,
-    {0xbd, 0x49, 0xb6, 0xf0, 0x54, 0xdd, 0x4d, 0x46}
+SELECTANY const GUID JITEEVersionIdentifier = { /* e2ae5b32-a9ab-426e-bc2a-ae1a883e0367 */
+    0xe2ae5b32,
+    0xa9ab,
+    0x426e,
+    {0xbc, 0x2a, 0xae, 0x1a, 0x88, 0x3e, 0x03, 0x67}
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
