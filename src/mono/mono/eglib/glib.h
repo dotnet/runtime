@@ -1416,22 +1416,6 @@ glong     g_utf8_pointer_to_offset (const gchar *str, const gchar *pos);
 #define G_HAVE_API_SUPPORT(x) (x)
 #define G_UNSUPPORTED_API "%s:%d: '%s' not supported.", __FILE__, __LINE__
 #define g_unsupported_api(name) G_STMT_START { g_warning (G_UNSUPPORTED_API, name); } G_STMT_END
- 
-G_END_DECLS
-
-static inline
-void
-mono_qsort (void* base, size_t num, size_t size, int (*compare)(const void*, const void*))
-{
-	g_assert (compare);
-	g_assert (size);
-	if (num < 2 || !size || !base)
-		return;
-	qsort (base, num, size, compare);
-}
-
-#define MONO_DECL_CALLBACK(prefix, ret, name, sig) ret (*name) sig;
-#define MONO_INIT_CALLBACK(prefix, ret, name, sig) prefix ## _ ## name,
 
 // g_free the result
 // No MAX_PATH limit.
@@ -1452,6 +1436,22 @@ mono_get_module_basename (gpointer process, gpointer mod, gunichar2** pstr, guin
 // No MAX_PATH limit.
 gboolean
 mono_get_current_directory (gunichar2** pstr, guint32* plength);
+
+G_END_DECLS // FIXME: There is more extern C than there should be.
+
+static inline
+void
+mono_qsort (void* base, size_t num, size_t size, int (*compare)(const void*, const void*))
+{
+	g_assert (compare);
+	g_assert (size);
+	if (num < 2 || !size || !base)
+		return;
+	qsort (base, num, size, compare);
+}
+
+#define MONO_DECL_CALLBACK(prefix, ret, name, sig) ret (*name) sig;
+#define MONO_INIT_CALLBACK(prefix, ret, name, sig) prefix ## _ ## name,
 
 // For each allocator; i.e. returning gpointer that needs to be cast.
 // Macros do not recurse, so naming function and macro the same is ok.
