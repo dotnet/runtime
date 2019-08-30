@@ -5,6 +5,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 
 namespace System.Threading.Channels
@@ -24,9 +25,9 @@ namespace System.Threading.Channels
         private readonly bool _runContinuationsAsynchronously;
 
         /// <summary>Readers waiting for a notification that data is available.</summary>
-        private AsyncOperation<bool> _waitingReadersTail;
+        private AsyncOperation<bool>? _waitingReadersTail;
         /// <summary>Set to non-null once Complete has been called.</summary>
-        private Exception _doneWriting;
+        private Exception? _doneWriting;
 
         /// <summary>Initialize the channel.</summary>
         internal UnboundedChannel(bool runContinuationsAsynchronously)
@@ -104,7 +105,7 @@ namespace System.Threading.Channels
                 }
             }
 
-            public override bool TryRead(out T item)
+            public override bool TryRead([MaybeNullWhen(false)] out T item)
             {
                 UnboundedChannel<T> parent = _parent;
 
@@ -115,7 +116,7 @@ namespace System.Threading.Channels
                     return true;
                 }
 
-                item = default;
+                item = default!;
                 return false;
             }
 
@@ -192,7 +193,7 @@ namespace System.Threading.Channels
             internal readonly UnboundedChannel<T> _parent;
             internal UnboundedChannelWriter(UnboundedChannel<T> parent) => _parent = parent;
 
-            public override bool TryComplete(Exception error)
+            public override bool TryComplete(Exception? error)
             {
                 UnboundedChannel<T> parent = _parent;
                 bool completeTask;
@@ -237,8 +238,8 @@ namespace System.Threading.Channels
                 UnboundedChannel<T> parent = _parent;
                 while (true)
                 {
-                    AsyncOperation<T> blockedReader = null;
-                    AsyncOperation<bool> waitingReadersTail = null;
+                    AsyncOperation<T>? blockedReader = null;
+                    AsyncOperation<bool>? waitingReadersTail = null;
                     lock (parent.SyncObj)
                     {
                         // If writing has already been marked as done, fail the write.
@@ -294,7 +295,7 @@ namespace System.Threading.Channels
 
             public override ValueTask<bool> WaitToWriteAsync(CancellationToken cancellationToken)
             {
-                Exception doneWriting = _parent._doneWriting;
+                Exception? doneWriting = _parent._doneWriting;
                 return
                     cancellationToken.IsCancellationRequested ? new ValueTask<bool>(Task.FromCanceled<bool>(cancellationToken)) :
                     doneWriting == null ? new ValueTask<bool>(true) : // unbounded writing can always be done if we haven't completed

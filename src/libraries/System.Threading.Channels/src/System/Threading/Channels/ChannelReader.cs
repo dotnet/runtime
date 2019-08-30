@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 
 namespace System.Threading.Channels
@@ -21,7 +22,7 @@ namespace System.Threading.Channels
         /// <summary>Attempts to read an item to the channel.</summary>
         /// <param name="item">The read item, or a default value if no item could be read.</param>
         /// <returns>true if an item was read; otherwise, false if no item was read.</returns>
-        public abstract bool TryRead(out T item);
+        public abstract bool TryRead([MaybeNullWhen(false)] out T item);
 
         /// <summary>Returns a <see cref="ValueTask{Boolean}"/> that will complete when data is available to read.</summary>
         /// <param name="cancellationToken">A <see cref="CancellationToken"/> used to cancel the wait operation.</param>

@@ -18,7 +18,7 @@ namespace System.Threading.Channels
         /// true if this operation successfully completes the channel; otherwise, false if the channel could not be marked for completion,
         /// for example due to having already been marked as such, or due to not supporting completion.
         /// </returns>
-        public virtual bool TryComplete(Exception error = null) => false;
+        public virtual bool TryComplete(Exception? error = null) => false;
 
         /// <summary>Attempts to write the specified item to the channel.</summary>
         /// <param name="item">The item to write.</param>
@@ -68,7 +68,7 @@ namespace System.Threading.Channels
         /// <summary>Mark the channel as being complete, meaning no more items will be written to it.</summary>
         /// <param name="error">Optional Exception indicating a failure that's causing the channel to complete.</param>
         /// <exception cref="InvalidOperationException">The channel has already been marked as complete.</exception>
-        public void Complete(Exception error = null)
+        public void Complete(Exception? error = null)
         {
             if (!TryComplete(error))
             {

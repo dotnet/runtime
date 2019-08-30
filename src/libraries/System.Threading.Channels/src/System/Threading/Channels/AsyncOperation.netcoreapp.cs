@@ -11,10 +11,10 @@ namespace System.Threading.Channels
         private void UnsafeQueueSetCompletionAndInvokeContinuation() =>
             ThreadPool.UnsafeQueueUserWorkItem(this, preferLocal: false);
 
-        private static void QueueUserWorkItem(Action<object> action, object state) =>
+        private static void QueueUserWorkItem(Action<object?> action, object? state) =>
             ThreadPool.QueueUserWorkItem(action, state, preferLocal: false);
 
-        private static CancellationTokenRegistration UnsafeRegister(CancellationToken cancellationToken, Action<object> action, object state) =>
+        private static CancellationTokenRegistration UnsafeRegister(CancellationToken cancellationToken, Action<object?> action, object? state) =>
             cancellationToken.UnsafeRegister(action, state);
     }
 }

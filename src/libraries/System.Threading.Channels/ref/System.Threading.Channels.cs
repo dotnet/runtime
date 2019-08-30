@@ -30,9 +30,9 @@ namespace System.Threading.Channels
     public partial class ChannelClosedException : System.InvalidOperationException
     {
         public ChannelClosedException() { }
-        public ChannelClosedException(System.Exception innerException) { }
-        public ChannelClosedException(string message) { }
-        public ChannelClosedException(string message, System.Exception innerException) { }
+        public ChannelClosedException(System.Exception? innerException) { }
+        public ChannelClosedException(string? message) { }
+        public ChannelClosedException(string? message, System.Exception? innerException) { }
     }
     public abstract partial class ChannelOptions
     {
@@ -46,14 +46,14 @@ namespace System.Threading.Channels
         protected ChannelReader() { }
         public virtual System.Threading.Tasks.Task Completion { get { throw null; } }
         public virtual System.Threading.Tasks.ValueTask<T> ReadAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public abstract bool TryRead(out T item);
+        public abstract bool TryRead([System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out T item);
         public abstract System.Threading.Tasks.ValueTask<bool> WaitToReadAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
     }
     public abstract partial class ChannelWriter<T>
     {
         protected ChannelWriter() { }
-        public void Complete(System.Exception error = null) { }
-        public virtual bool TryComplete(System.Exception error = null) { throw null; }
+        public void Complete(System.Exception? error = null) { }
+        public virtual bool TryComplete(System.Exception? error = null) { throw null; }
         public abstract bool TryWrite(T item);
         public abstract System.Threading.Tasks.ValueTask<bool> WaitToWriteAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
         public virtual System.Threading.Tasks.ValueTask WriteAsync(T item, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }

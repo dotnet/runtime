@@ -12,11 +12,11 @@ namespace System.Threading.Channels
             Task.Factory.StartNew(s => ((AsyncOperation<TResult>)s).SetCompletionAndInvokeContinuation(), this,
                 CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
-        private static void QueueUserWorkItem(Action<object> action, object state) =>
+        private static void QueueUserWorkItem(Action<object?> action, object? state) =>
             Task.Factory.StartNew(action, state,
                 CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
-        private static CancellationTokenRegistration UnsafeRegister(CancellationToken cancellationToken, Action<object> action, object state) =>
+        private static CancellationTokenRegistration UnsafeRegister(CancellationToken cancellationToken, Action<object?> action, object? state) =>
             cancellationToken.Register(action, state);
     }
 }
