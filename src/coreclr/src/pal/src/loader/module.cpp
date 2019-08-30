@@ -825,6 +825,39 @@ PAL_LOADUnloadPEFile(PVOID ptr)
 }
 
 /*++
+    PAL_LOADMarkSectionAsNotNeeded
+
+    Mark a section as NotNeeded that was loaded by PAL_LOADLoadPEFile().
+
+Parameters:
+    IN ptr - the section address mapped by PAL_LOADLoadPEFile()
+
+Return value:
+    TRUE - success
+    FALSE - failure (incorrect ptr, etc.)
+--*/
+BOOL
+PALAPI
+PAL_LOADMarkSectionAsNotNeeded(void * ptr)
+{
+    BOOL retval = FALSE;
+
+    ENTRY("PAL_LOADMarkSectionAsNotNeeded (ptr=%p)\n", ptr);
+
+    if (nullptr == ptr)
+    {
+        ERROR( "Invalid pointer value\n" );
+    }
+    else
+    {
+        retval = MAPMarkSectionAsNotNeeded(ptr);
+    }
+
+    LOGEXIT("PAL_LOADMarkSectionAsNotNeeded returns %d\n", retval);
+    return retval;
+}
+
+/*++
     PAL_GetSymbolModuleBase
 
     Get base address of the module containing a given symbol
