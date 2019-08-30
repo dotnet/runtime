@@ -13,13 +13,13 @@ namespace System.Linq
         public static IEnumerable<IGrouping<TKey, TSource>> GroupBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector) =>
             new GroupedEnumerable<TSource, TKey>(source, keySelector, null);
 
-        public static IEnumerable<IGrouping<TKey, TSource>> GroupBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey> comparer) =>
+        public static IEnumerable<IGrouping<TKey, TSource>> GroupBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer) =>
             new GroupedEnumerable<TSource, TKey>(source, keySelector, comparer);
 
         public static IEnumerable<IGrouping<TKey, TElement>> GroupBy<TSource, TKey, TElement>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TElement> elementSelector) =>
             new GroupedEnumerable<TSource, TKey, TElement>(source, keySelector, elementSelector, null);
 
-        public static IEnumerable<IGrouping<TKey, TElement>> GroupBy<TSource, TKey, TElement>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TElement> elementSelector, IEqualityComparer<TKey> comparer) =>
+        public static IEnumerable<IGrouping<TKey, TElement>> GroupBy<TSource, TKey, TElement>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TElement> elementSelector, IEqualityComparer<TKey>? comparer) =>
             new GroupedEnumerable<TSource, TKey, TElement>(source, keySelector, elementSelector, comparer);
 
         public static IEnumerable<TResult> GroupBy<TSource, TKey, TResult>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TKey, IEnumerable<TSource>, TResult> resultSelector) =>
@@ -28,10 +28,10 @@ namespace System.Linq
         public static IEnumerable<TResult> GroupBy<TSource, TKey, TElement, TResult>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TElement> elementSelector, Func<TKey, IEnumerable<TElement>, TResult> resultSelector) =>
             new GroupedResultEnumerable<TSource, TKey, TElement, TResult>(source, keySelector, elementSelector, resultSelector, null);
 
-        public static IEnumerable<TResult> GroupBy<TSource, TKey, TResult>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TKey, IEnumerable<TSource>, TResult> resultSelector, IEqualityComparer<TKey> comparer) =>
+        public static IEnumerable<TResult> GroupBy<TSource, TKey, TResult>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TKey, IEnumerable<TSource>, TResult> resultSelector, IEqualityComparer<TKey>? comparer) =>
             new GroupedResultEnumerable<TSource, TKey, TResult>(source, keySelector, resultSelector, comparer);
 
-        public static IEnumerable<TResult> GroupBy<TSource, TKey, TElement, TResult>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TElement> elementSelector, Func<TKey, IEnumerable<TElement>, TResult> resultSelector, IEqualityComparer<TKey> comparer) =>
+        public static IEnumerable<TResult> GroupBy<TSource, TKey, TElement, TResult>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TElement> elementSelector, Func<TKey, IEnumerable<TElement>, TResult> resultSelector, IEqualityComparer<TKey>? comparer) =>
             new GroupedResultEnumerable<TSource, TKey, TElement, TResult>(source, keySelector, elementSelector, resultSelector, comparer);
     }
 
@@ -50,15 +50,18 @@ namespace System.Linq
     [DebuggerTypeProxy(typeof(SystemLinq_GroupingDebugView<,>))]
     public class Grouping<TKey, TElement> : IGrouping<TKey, TElement>, IList<TElement>
     {
-        internal TKey _key;
-        internal int _hashCode;
+        internal readonly TKey _key;
+        internal readonly int _hashCode;
         internal TElement[] _elements;
         internal int _count;
-        internal Grouping<TKey, TElement> _hashNext;
-        internal Grouping<TKey, TElement> _next;
+        internal Grouping<TKey, TElement>? _hashNext;
+        internal Grouping<TKey, TElement>? _next;
 
-        internal Grouping()
+        internal Grouping(TKey key, int hashCode)
         {
+            _key = key;
+            _hashCode = hashCode;
+            _elements = new TElement[1];
         }
 
         internal void Add(TElement element)
@@ -143,10 +146,10 @@ namespace System.Linq
         private readonly IEnumerable<TSource> _source;
         private readonly Func<TSource, TKey> _keySelector;
         private readonly Func<TSource, TElement> _elementSelector;
-        private readonly IEqualityComparer<TKey> _comparer;
+        private readonly IEqualityComparer<TKey>? _comparer;
         private readonly Func<TKey, IEnumerable<TElement>, TResult> _resultSelector;
 
-        public GroupedResultEnumerable(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TElement> elementSelector, Func<TKey, IEnumerable<TElement>, TResult> resultSelector, IEqualityComparer<TKey> comparer)
+        public GroupedResultEnumerable(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TElement> elementSelector, Func<TKey, IEnumerable<TElement>, TResult> resultSelector, IEqualityComparer<TKey>? comparer)
         {
             if (source is null)
             {
@@ -185,10 +188,10 @@ namespace System.Linq
     {
         private readonly IEnumerable<TSource> _source;
         private readonly Func<TSource, TKey> _keySelector;
-        private readonly IEqualityComparer<TKey> _comparer;
+        private readonly IEqualityComparer<TKey>? _comparer;
         private readonly Func<TKey, IEnumerable<TSource>, TResult> _resultSelector;
 
-        public GroupedResultEnumerable(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TKey, IEnumerable<TSource>, TResult> resultSelector, IEqualityComparer<TKey> comparer)
+        public GroupedResultEnumerable(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TKey, IEnumerable<TSource>, TResult> resultSelector, IEqualityComparer<TKey>? comparer)
         {
             if (source is null)
             {
@@ -223,9 +226,9 @@ namespace System.Linq
         private readonly IEnumerable<TSource> _source;
         private readonly Func<TSource, TKey> _keySelector;
         private readonly Func<TSource, TElement> _elementSelector;
-        private readonly IEqualityComparer<TKey> _comparer;
+        private readonly IEqualityComparer<TKey>? _comparer;
 
-        public GroupedEnumerable(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TElement> elementSelector, IEqualityComparer<TKey> comparer)
+        public GroupedEnumerable(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TElement> elementSelector, IEqualityComparer<TKey>? comparer)
         {
             if (source is null)
             {
@@ -256,9 +259,9 @@ namespace System.Linq
     {
         private readonly IEnumerable<TSource> _source;
         private readonly Func<TSource, TKey> _keySelector;
-        private readonly IEqualityComparer<TKey> _comparer;
+        private readonly IEqualityComparer<TKey>? _comparer;
 
-        public GroupedEnumerable(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey> comparer)
+        public GroupedEnumerable(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer)
         {
             if (source is null)
             {

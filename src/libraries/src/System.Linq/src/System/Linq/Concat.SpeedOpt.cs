@@ -73,7 +73,7 @@ namespace System.Linq
                 }
 
                 int count = 0;
-                ConcatNIterator<TSource> node, previousN = this;
+                ConcatNIterator<TSource>? node, previousN = this;
 
                 do
                 {
@@ -113,7 +113,7 @@ namespace System.Linq
                     // On the bright side, the bottleneck will usually be iterating, buffering, and copying
                     // each of the enumerables, so this shouldn't be a noticeable perf hit for most scenarios.
 
-                    IEnumerable<TSource> source = GetEnumerable(i);
+                    IEnumerable<TSource>? source = GetEnumerable(i);
                     if (source == null)
                     {
                         break;
@@ -131,7 +131,7 @@ namespace System.Linq
                 for (int i = 0; i < markers.Count; i++)
                 {
                     Marker marker = markers[i];
-                    IEnumerable<TSource> source = GetEnumerable(deferredCopies[i]);
+                    IEnumerable<TSource> source = GetEnumerable(deferredCopies[i])!;
                     EnumerableHelpers.Copy(source, array, marker.Index, marker.Count);
                 }
 
@@ -157,7 +157,7 @@ namespace System.Linq
                 var array = new TSource[count];
                 int arrayIndex = array.Length; // We start copying in collection-sized chunks from the end of the array.
 
-                ConcatNIterator<TSource> node, previousN = this;
+                ConcatNIterator<TSource>? node, previousN = this;
                 do
                 {
                     node = previousN;
@@ -206,7 +206,7 @@ namespace System.Linq
 
                 for (int i = 0; ; i++)
                 {
-                    IEnumerable<TSource> source = GetEnumerable(i);
+                    IEnumerable<TSource>? source = GetEnumerable(i);
                     if (source == null)
                     {
                         break;

@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Linq
 {
@@ -62,6 +63,7 @@ namespace System.Linq
                 return new RepeatIterator<TResult>(_current, count);
             }
 
+            [return: MaybeNull]
             public TResult TryGetElementAt(int index, out bool found)
             {
                 if ((uint)index < (uint)_count)
@@ -71,7 +73,7 @@ namespace System.Linq
                 }
 
                 found = false;
-                return default(TResult);
+                return default!;
             }
 
             public TResult TryGetFirst(out bool found)

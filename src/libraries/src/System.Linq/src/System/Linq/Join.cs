@@ -38,7 +38,7 @@ namespace System.Linq
             return JoinIterator(outer, inner, outerKeySelector, innerKeySelector, resultSelector, null);
         }
 
-        public static IEnumerable<TResult> Join<TOuter, TInner, TKey, TResult>(this IEnumerable<TOuter> outer, IEnumerable<TInner> inner, Func<TOuter, TKey> outerKeySelector, Func<TInner, TKey> innerKeySelector, Func<TOuter, TInner, TResult> resultSelector, IEqualityComparer<TKey> comparer)
+        public static IEnumerable<TResult> Join<TOuter, TInner, TKey, TResult>(this IEnumerable<TOuter> outer, IEnumerable<TInner> inner, Func<TOuter, TKey> outerKeySelector, Func<TInner, TKey> innerKeySelector, Func<TOuter, TInner, TResult> resultSelector, IEqualityComparer<TKey>? comparer)
         {
             if (outer == null)
             {
@@ -68,7 +68,7 @@ namespace System.Linq
             return JoinIterator(outer, inner, outerKeySelector, innerKeySelector, resultSelector, comparer);
         }
 
-        private static IEnumerable<TResult> JoinIterator<TOuter, TInner, TKey, TResult>(IEnumerable<TOuter> outer, IEnumerable<TInner> inner, Func<TOuter, TKey> outerKeySelector, Func<TInner, TKey> innerKeySelector, Func<TOuter, TInner, TResult> resultSelector, IEqualityComparer<TKey> comparer)
+        private static IEnumerable<TResult> JoinIterator<TOuter, TInner, TKey, TResult>(IEnumerable<TOuter> outer, IEnumerable<TInner> inner, Func<TOuter, TKey> outerKeySelector, Func<TInner, TKey> innerKeySelector, Func<TOuter, TInner, TResult> resultSelector, IEqualityComparer<TKey>? comparer)
         {
             using (IEnumerator<TOuter> e = outer.GetEnumerator())
             {
@@ -80,7 +80,7 @@ namespace System.Linq
                         do
                         {
                             TOuter item = e.Current;
-                            Grouping<TKey, TInner> g = lookup.GetGrouping(outerKeySelector(item), create: false);
+                            Grouping<TKey, TInner>? g = lookup.GetGrouping(outerKeySelector(item), create: false);
                             if (g != null)
                             {
                                 int count = g._count;

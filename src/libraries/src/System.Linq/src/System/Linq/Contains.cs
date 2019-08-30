@@ -12,7 +12,7 @@ namespace System.Linq
             source is ICollection<TSource> collection ? collection.Contains(value) :
             Contains(source, value, null);
 
-        public static bool Contains<TSource>(this IEnumerable<TSource> source, TSource value, IEqualityComparer<TSource> comparer)
+        public static bool Contains<TSource>(this IEnumerable<TSource> source, TSource value, IEqualityComparer<TSource>? comparer)
         {
             if (source == null)
             {

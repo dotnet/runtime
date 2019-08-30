@@ -51,7 +51,7 @@ namespace System.Collections.Generic
             Debug.Assert(source != null);
             Debug.Assert(arrayIndex >= 0);
             Debug.Assert(count >= 0);
-            Debug.Assert(array?.Length - arrayIndex >= count);
+            Debug.Assert(array.Length - arrayIndex >= count);
 
             if (source is ICollection<T> collection)
             {
@@ -76,7 +76,7 @@ namespace System.Collections.Generic
             Debug.Assert(source != null && !(source is ICollection<T>));
             Debug.Assert(arrayIndex >= 0);
             Debug.Assert(count >= 0);
-            Debug.Assert(array?.Length - arrayIndex >= count);
+            Debug.Assert(array.Length - arrayIndex >= count);
 
             int endIndex = arrayIndex + count;
             foreach (T item in source)

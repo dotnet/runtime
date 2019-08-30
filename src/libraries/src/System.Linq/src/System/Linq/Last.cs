@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Linq
 {
@@ -30,12 +31,15 @@ namespace System.Linq
             return last;
         }
 
+        [return: MaybeNull]
         public static TSource LastOrDefault<TSource>(this IEnumerable<TSource> source) =>
             source.TryGetLast(out bool _);
 
+        [return: MaybeNull]
         public static TSource LastOrDefault<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate) =>
             source.TryGetLast(predicate, out bool _);
 
+        [return: MaybeNull]
         private static TSource TryGetLast<TSource>(this IEnumerable<TSource> source, out bool found)
         {
             if (source == null)
@@ -77,9 +81,10 @@ namespace System.Linq
             }
 
             found = false;
-            return default(TSource);
+            return default!;
         }
 
+        [return: MaybeNull]
         private static TSource TryGetLast<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate, out bool found)
         {
             if (source == null)
@@ -135,7 +140,7 @@ namespace System.Linq
             }
 
             found = false;
-            return default(TSource);
+            return default!;
         }
     }
 }

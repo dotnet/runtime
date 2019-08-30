@@ -128,8 +128,8 @@ namespace System.Linq
         {
             private readonly IEnumerable<TSource> _source;
             private readonly Func<TSource, IEnumerable<TResult>> _selector;
-            private IEnumerator<TSource> _sourceEnumerator;
-            private IEnumerator<TResult> _subEnumerator;
+            private IEnumerator<TSource>? _sourceEnumerator;
+            private IEnumerator<TResult>? _subEnumerator;
 
             internal SelectManySingleSelectorIterator(IEnumerable<TSource> source, Func<TSource, IEnumerable<TResult>> selector)
             {
@@ -173,6 +173,7 @@ namespace System.Linq
                         goto case 2;
                     case 2:
                         // Take the next element from the source enumerator.
+                        Debug.Assert(_sourceEnumerator != null);
                         if (!_sourceEnumerator.MoveNext())
                         {
                             break;
@@ -186,6 +187,7 @@ namespace System.Linq
                         goto case 3;
                     case 3:
                         // Take the next element from the sub-collection and yield.
+                        Debug.Assert(_subEnumerator != null);
                         if (!_subEnumerator.MoveNext())
                         {
                             _subEnumerator.Dispose();
