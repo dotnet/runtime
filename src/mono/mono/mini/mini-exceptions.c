@@ -1468,8 +1468,9 @@ check_whitelisted_module (const char *in_name, const char **out_module)
 		return TRUE;
 #else
 	if (allow_all_native_libraries) {
+		g_async_safe_printf ("in_name: %s\n", in_name);
 		if (out_module)
-			*out_module = in_name;
+			*out_module = "<external module>";
 		return TRUE;
 	}
 	if (g_str_has_suffix (in_name, "mono-sgen")) {
