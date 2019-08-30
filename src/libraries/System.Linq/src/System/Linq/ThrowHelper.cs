@@ -3,24 +3,31 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Linq
 {
     internal static class ThrowHelper
     {
+        [DoesNotReturn]
         internal static void ThrowArgumentNullException(ExceptionArgument argument) => throw new ArgumentNullException(GetArgumentString(argument));
 
+        [DoesNotReturn]
         internal static void ThrowArgumentOutOfRangeException(ExceptionArgument argument) => throw new ArgumentOutOfRangeException(GetArgumentString(argument));
 
+        [DoesNotReturn]
         internal static void ThrowMoreThanOneElementException() => throw new InvalidOperationException(SR.MoreThanOneElement);
 
+        [DoesNotReturn]
         internal static void ThrowMoreThanOneMatchException() => throw new InvalidOperationException(SR.MoreThanOneMatch);
 
+        [DoesNotReturn]
         internal static void ThrowNoElementsException() => throw new InvalidOperationException(SR.NoElements);
 
+        [DoesNotReturn]
         internal static void ThrowNoMatchException() => throw new InvalidOperationException(SR.NoMatch);
 
+        [DoesNotReturn]
         internal static void ThrowNotSupportedException() => throw new NotSupportedException();
 
         private static string GetArgumentString(ExceptionArgument argument)

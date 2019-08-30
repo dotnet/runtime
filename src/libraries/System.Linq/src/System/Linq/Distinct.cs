@@ -11,7 +11,7 @@ namespace System.Linq
     {
         public static IEnumerable<TSource> Distinct<TSource>(this IEnumerable<TSource> source) => Distinct(source, null);
 
-        public static IEnumerable<TSource> Distinct<TSource>(this IEnumerable<TSource> source, IEqualityComparer<TSource> comparer)
+        public static IEnumerable<TSource> Distinct<TSource>(this IEnumerable<TSource> source, IEqualityComparer<TSource>? comparer)
         {
             if (source == null)
             {
@@ -28,11 +28,11 @@ namespace System.Linq
         private sealed partial class DistinctIterator<TSource> : Iterator<TSource>
         {
             private readonly IEnumerable<TSource> _source;
-            private readonly IEqualityComparer<TSource> _comparer;
-            private Set<TSource> _set;
-            private IEnumerator<TSource> _enumerator;
+            private readonly IEqualityComparer<TSource>? _comparer;
+            private Set<TSource>? _set;
+            private IEnumerator<TSource>? _enumerator;
 
-            public DistinctIterator(IEnumerable<TSource> source, IEqualityComparer<TSource> comparer)
+            public DistinctIterator(IEnumerable<TSource> source, IEqualityComparer<TSource>? comparer)
             {
                 Debug.Assert(source != null);
                 _source = source;
@@ -60,6 +60,8 @@ namespace System.Linq
                         _state = 2;
                         return true;
                     case 2:
+                        Debug.Assert(_enumerator != null);
+                        Debug.Assert(_set != null);
                         while (_enumerator.MoveNext())
                         {
                             element = _enumerator.Current;

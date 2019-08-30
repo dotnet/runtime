@@ -23,7 +23,7 @@ namespace System.Linq
             return ExceptIterator(first, second, null);
         }
 
-        public static IEnumerable<TSource> Except<TSource>(this IEnumerable<TSource> first, IEnumerable<TSource> second, IEqualityComparer<TSource> comparer)
+        public static IEnumerable<TSource> Except<TSource>(this IEnumerable<TSource> first, IEnumerable<TSource> second, IEqualityComparer<TSource>? comparer)
         {
             if (first == null)
             {
@@ -38,7 +38,7 @@ namespace System.Linq
             return ExceptIterator(first, second, comparer);
         }
 
-        private static IEnumerable<TSource> ExceptIterator<TSource>(IEnumerable<TSource> first, IEnumerable<TSource> second, IEqualityComparer<TSource> comparer)
+        private static IEnumerable<TSource> ExceptIterator<TSource>(IEnumerable<TSource> first, IEnumerable<TSource> second, IEqualityComparer<TSource>? comparer)
         {
             Set<TSource> set = new Set<TSource>(comparer);
             set.UnionWith(second);

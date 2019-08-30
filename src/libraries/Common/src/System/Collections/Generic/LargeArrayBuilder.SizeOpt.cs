@@ -42,7 +42,7 @@ namespace System.Collections.Generic
 
         public CopyPosition CopyTo(CopyPosition position, T[] array, int arrayIndex, int count)
         {
-            Array.Copy(_builder.Buffer, position.Column, array, arrayIndex, count);
+            Array.Copy(_builder.Buffer!, position.Column, array, arrayIndex, count);
             return new CopyPosition(0, position.Column + count);
         }
     }

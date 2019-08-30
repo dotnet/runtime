@@ -69,12 +69,12 @@ namespace System.Linq
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        public object[] Items
+        public object?[] Items
         {
             get
             {
-                List<object> tempList = new List<object>();
-                foreach (object item in _enumerable)
+                var tempList = new List<object?>();
+                foreach (object? item in _enumerable)
                 {
                     tempList.Add(item);
                 }
@@ -95,7 +95,7 @@ namespace System.Linq
     internal sealed class SystemLinq_GroupingDebugView<TKey, TElement>
     {
         private readonly Grouping<TKey, TElement> _grouping;
-        private TElement[] _cachedValues;
+        private TElement[]? _cachedValues;
 
         public SystemLinq_GroupingDebugView(Grouping<TKey, TElement> grouping)
         {
@@ -112,7 +112,7 @@ namespace System.Linq
     internal sealed class SystemLinq_LookupDebugView<TKey, TElement>
     {
         private readonly Lookup<TKey, TElement> _lookup;
-        private IGrouping<TKey, TElement>[] _cachedGroupings;
+        private IGrouping<TKey, TElement>[]? _cachedGroupings;
 
         public SystemLinq_LookupDebugView(Lookup<TKey, TElement> lookup)
         {

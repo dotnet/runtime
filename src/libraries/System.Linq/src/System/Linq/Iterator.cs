@@ -4,6 +4,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Linq
 {
@@ -33,7 +34,8 @@ namespace System.Linq
         {
             private readonly int _threadId;
             internal int _state;
-            internal TSource _current;
+            [MaybeNull, AllowNull]
+            internal TSource _current = default; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/37138
 
             /// <summary>
             /// Initializes a new instance of the <see cref="Iterator{TSource}"/> class.
@@ -65,7 +67,7 @@ namespace System.Linq
             /// </remarks>
             public virtual void Dispose()
             {
-                _current = default(TSource);
+                _current = default;
                 _state = -1;
             }
 
@@ -109,7 +111,7 @@ namespace System.Linq
                 return new WhereEnumerableIterator<TSource>(this, predicate);
             }
 
-            object IEnumerator.Current => Current;
+            object? IEnumerator.Current => Current;
 
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 

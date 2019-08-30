@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Linq
 {
@@ -12,12 +13,14 @@ namespace System.Linq
         {
             IGrouping<TKey, TElement>[] array = new IGrouping<TKey, TElement>[_count];
             int index = 0;
-            Grouping<TKey, TElement> g = _lastGrouping;
+            Grouping<TKey, TElement>? g = _lastGrouping;
             if (g != null)
             {
                 do
                 {
                     g = g._next;
+                    Debug.Assert(g != null);
+
                     array[index] = g;
                     ++index;
                 }
@@ -31,12 +34,14 @@ namespace System.Linq
         {
             TResult[] array = new TResult[_count];
             int index = 0;
-            Grouping<TKey, TElement> g = _lastGrouping;
+            Grouping<TKey, TElement>? g = _lastGrouping;
             if (g != null)
             {
                 do
                 {
                     g = g._next;
+                    Debug.Assert(g != null);
+
                     g.Trim();
                     array[index] = resultSelector(g._key, g._elements);
                     ++index;
@@ -50,12 +55,14 @@ namespace System.Linq
         List<IGrouping<TKey, TElement>> IIListProvider<IGrouping<TKey, TElement>>.ToList()
         {
             List<IGrouping<TKey, TElement>> list = new List<IGrouping<TKey, TElement>>(_count);
-            Grouping<TKey, TElement> g = _lastGrouping;
+            Grouping<TKey, TElement>? g = _lastGrouping;
             if (g != null)
             {
                 do
                 {
                     g = g._next;
+                    Debug.Assert(g != null);
+
                     list.Add(g);
                 }
                 while (g != _lastGrouping);

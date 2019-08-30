@@ -12,7 +12,7 @@ namespace System.Linq
     {
         public static IEnumerable<TSource> Union<TSource>(this IEnumerable<TSource> first, IEnumerable<TSource> second) => Union(first, second, comparer: null);
 
-        public static IEnumerable<TSource> Union<TSource>(this IEnumerable<TSource> first, IEnumerable<TSource> second, IEqualityComparer<TSource> comparer)
+        public static IEnumerable<TSource> Union<TSource>(this IEnumerable<TSource> first, IEnumerable<TSource> second, IEqualityComparer<TSource>? comparer)
         {
             if (first == null)
             {
@@ -33,11 +33,11 @@ namespace System.Linq
         /// <typeparam name="TSource">The type of the source enumerables.</typeparam>
         private abstract partial class UnionIterator<TSource> : Iterator<TSource>
         {
-            internal readonly IEqualityComparer<TSource> _comparer;
-            private IEnumerator<TSource> _enumerator;
-            private Set<TSource> _set;
+            internal readonly IEqualityComparer<TSource>? _comparer;
+            private IEnumerator<TSource>? _enumerator;
+            private Set<TSource>? _set;
 
-            protected UnionIterator(IEqualityComparer<TSource> comparer)
+            protected UnionIterator(IEqualityComparer<TSource>? comparer)
             {
                 _comparer = comparer;
             }
@@ -54,7 +54,7 @@ namespace System.Linq
                 base.Dispose();
             }
 
-            internal abstract IEnumerable<TSource> GetEnumerable(int index);
+            internal abstract IEnumerable<TSource>? GetEnumerable(int index);
 
             internal abstract UnionIterator<TSource> Union(IEnumerable<TSource> next);
 
@@ -67,6 +67,8 @@ namespace System.Linq
 
             private void StoreFirst()
             {
+                Debug.Assert(_enumerator != null);
+
                 Set<TSource> set = new Set<TSource>(_comparer);
                 TSource element = _enumerator.Current;
                 set.Add(element);
@@ -76,8 +78,10 @@ namespace System.Linq
 
             private bool GetNext()
             {
+                Debug.Assert(_enumerator != null);
+                Debug.Assert(_set != null);
+
                 Set<TSource> set = _set;
-                Debug.Assert(set != null);
 
                 while (_enumerator.MoveNext())
                 {
@@ -96,7 +100,7 @@ namespace System.Linq
             {
                 if (_state == 1)
                 {
-                    for (IEnumerable<TSource> enumerable = GetEnumerable(0); enumerable != null; enumerable = GetEnumerable(_state - 1))
+                    for (IEnumerable<TSource>? enumerable = GetEnumerable(0); enumerable != null; enumerable = GetEnumerable(_state - 1))
                     {
                         IEnumerator<TSource> enumerator = enumerable.GetEnumerator();
                         SetEnumerator(enumerator);
@@ -118,7 +122,7 @@ namespace System.Linq
                             return true;
                         }
 
-                        IEnumerable<TSource> enumerable = GetEnumerable(_state - 1);
+                        IEnumerable<TSource>? enumerable = GetEnumerable(_state - 1);
                         if (enumerable == null)
                         {
                             break;
@@ -143,7 +147,7 @@ namespace System.Linq
             private readonly IEnumerable<TSource> _first;
             private readonly IEnumerable<TSource> _second;
 
-            public UnionIterator2(IEnumerable<TSource> first, IEnumerable<TSource> second, IEqualityComparer<TSource> comparer)
+            public UnionIterator2(IEnumerable<TSource> first, IEnumerable<TSource> second, IEqualityComparer<TSource>? comparer)
                 : base(comparer)
             {
                 Debug.Assert(first != null);
@@ -154,7 +158,7 @@ namespace System.Linq
 
             public override Iterator<TSource> Clone() => new UnionIterator2<TSource>(_first, _second, _comparer);
 
-            internal override IEnumerable<TSource> GetEnumerable(int index)
+            internal override IEnumerable<TSource>? GetEnumerable(int index)
             {
                 Debug.Assert(index >= 0 && index <= 2);
                 return index switch
@@ -181,7 +185,7 @@ namespace System.Linq
             private readonly SingleLinkedNode<IEnumerable<TSource>> _sources;
             private readonly int _headIndex;
 
-            public UnionIteratorN(SingleLinkedNode<IEnumerable<TSource>> sources, int headIndex, IEqualityComparer<TSource> comparer)
+            public UnionIteratorN(SingleLinkedNode<IEnumerable<TSource>> sources, int headIndex, IEqualityComparer<TSource>? comparer)
                 : base(comparer)
             {
                 Debug.Assert(headIndex >= 2);
@@ -193,7 +197,7 @@ namespace System.Linq
 
             public override Iterator<TSource> Clone() => new UnionIteratorN<TSource>(_sources, _headIndex, _comparer);
 
-            internal override IEnumerable<TSource> GetEnumerable(int index) => index > _headIndex ? null : _sources.GetNode(_headIndex - index).Item;
+            internal override IEnumerable<TSource>? GetEnumerable(int index) => index > _headIndex ? null : _sources.GetNode(_headIndex - index).Item;
 
             internal override UnionIterator<TSource> Union(IEnumerable<TSource> next)
             {
