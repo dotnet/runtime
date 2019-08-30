@@ -149,6 +149,7 @@ GENERATE_GET_CLASS_WITH_CACHE (variant,    "System", "Variant")
 static GENERATE_GET_CLASS_WITH_CACHE (interface_type_attribute, "System.Runtime.InteropServices", "InterfaceTypeAttribute")
 static GENERATE_GET_CLASS_WITH_CACHE (guid_attribute, "System.Runtime.InteropServices", "GuidAttribute")
 static GENERATE_GET_CLASS_WITH_CACHE (com_visible_attribute, "System.Runtime.InteropServices", "ComVisibleAttribute")
+static GENERATE_GET_CLASS_WITH_CACHE (com_default_interface_attribute, "System.Runtime.InteropServices", "ComDefaultInterfaceAttribute")
 
 /* Upon creation of a CCW, only allocate a weak handle and set the
  * reference count to 0. If the unmanaged client code decides to addref and
@@ -1676,10 +1677,27 @@ ves_icall_System_Runtime_InteropServices_Marshal_GetCCW (MonoObjectHandle object
 	g_assert (!MONO_HANDLE_IS_NULL (ref_type));
 	MonoType * const type = MONO_HANDLE_GETVAL (ref_type, type);
 	g_assert (type);
-	MonoClass * const klass = mono_type_get_class (type);
+	MonoClass * klass = mono_type_get_class (type);
 	g_assert (klass);
 	if (!mono_class_init_checked (klass, error))
 		return NULL;
+
+	MonoCustomAttrInfo *cinfo = mono_custom_attrs_from_class_checked (klass, error);
+	mono_error_assert_ok (error);
+	if (cinfo) {
+		MonoReflectionComDefaultInterfaceAttribute *attr = (MonoReflectionComDefaultInterfaceAttribute *)
+			mono_custom_attrs_get_attr_checked (cinfo, mono_class_get_com_default_interface_attribute_class (), error);
+		mono_error_assert_ok (error); /*FIXME proper error handling*/
+
+		if (attr) {
+			MonoType *def_itf = attr->type->type;
+			if (def_itf->type == MONO_TYPE_CLASS)
+				klass = mono_type_get_class (def_itf);
+		}
+		if (!cinfo->cached)
+			mono_custom_attrs_free (cinfo);
+	}
+
 	return cominterop_get_ccw_checked (object, klass, error);
 #else
 	g_assert_not_reached ();
@@ -2066,7 +2084,11 @@ cominterop_get_ccw_checked (MonoObjectHandle object, MonoClass* itf, MonoError *
 		}
 
 		iface = itf;
-		for (i = mono_class_get_method_count (iface) - 1; i >= 0; i--) {
+		method_count = mono_class_get_method_count (iface);
+		if (method_count && !m_class_get_methods (iface))
+			mono_class_setup_methods (iface);
+
+		for (i = method_count - 1; i >= 0; i--) {
 			int param_index = 0;
 			MonoMethodBuilder *mb;
 			MonoMarshalSpec ** mspecs;

@@ -325,6 +325,9 @@ public class Tests
 	public static extern int mono_test_marshal_safearray_in_ccw([MarshalAs (UnmanagedType.Interface)] ITest itest);
 
 	[DllImport("libtest")]
+	public static extern int mono_test_default_interface_ccw([MarshalAs (UnmanagedType.Interface)] ITest itest);
+
+	[DllImport("libtest")]
 	public static extern bool mono_cominterop_is_supported ();
 
 	public static int Main ()
@@ -602,6 +605,9 @@ public class Tests
 			if (mono_test_marshal_retval_ccw_itest(test_pres_sig, false) != 0)
 				return 204;
 
+			if (mono_test_default_interface_ccw(test) != 0)
+				return 205;
+
 			#endregion // COM Callable Wrapper Tests
 
 			#region SAFEARRAY tests
@@ -780,6 +786,56 @@ public class Tests
         return 0;
 	}
 
+	[ComImport ()]
+	[Guid ("10000000-0000-0000-0000-000000000002")]
+	[InterfaceType (ComInterfaceType.InterfaceIsIUnknown)]
+	public interface IDefTest1
+	{
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		int Method1();
+	}
+
+	[ComImport ()]
+	[Guid ("10000000-0000-0000-0000-000000000003")]
+	[InterfaceType (ComInterfaceType.InterfaceIsIUnknown)]
+	public interface IDefTest2
+	{
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		int Method2();
+	}
+
+	public class TestDefaultInterfaceClass : IDefTest1, IDefTest2
+	{
+		public int Method3()
+		{
+			return 3;
+		}
+
+		public int Method1()
+		{
+			return 1;
+		}
+
+		public int Method4()
+		{
+			return 4;
+		}
+
+		public int Method2()
+		{
+			return 2;
+		}
+	}
+
+	[ComDefaultInterfaceAttribute (typeof (IDefTest1))]
+	public class TestDefaultInterfaceClass1 : TestDefaultInterfaceClass
+	{
+	}
+
+	[ComDefaultInterfaceAttribute (typeof (IDefTest2))]
+	public class TestDefaultInterfaceClass2 : TestDefaultInterfaceClass
+	{
+	}
 
 	[ComImport ()]
 	[Guid ("00000000-0000-0000-0000-000000000001")]
@@ -823,6 +879,12 @@ public class Tests
 		int IntOut();
 		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
 		void ArrayIn ([In, MarshalAs (UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)] object[] array);
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[return: MarshalAs (UnmanagedType.Interface)]
+		TestDefaultInterfaceClass1 GetDefInterface1();
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[return: MarshalAs (UnmanagedType.Interface)]
+		TestDefaultInterfaceClass2 GetDefInterface2();
 	}
 
 	[ComImport ()]
@@ -926,6 +988,10 @@ public class Tests
 		public virtual extern int IntOut();
 		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
 		public virtual extern void ArrayIn ([In, MarshalAs (UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)] object[] array);
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		public virtual extern TestDefaultInterfaceClass1 GetDefInterface1();
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		public virtual extern TestDefaultInterfaceClass2 GetDefInterface2();
 	}
 
 	[System.Runtime.InteropServices.GuidAttribute ("00000000-0000-0000-0000-000000000002")]
@@ -1226,6 +1292,16 @@ public class Tests
 			}
 
 			status = 444;
+		}
+
+		public TestDefaultInterfaceClass1 GetDefInterface1()
+		{
+			return new TestDefaultInterfaceClass1();
+		}
+
+		public TestDefaultInterfaceClass2 GetDefInterface2()
+		{
+			return new TestDefaultInterfaceClass2();
 		}
 	}
 
