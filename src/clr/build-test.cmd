@@ -54,6 +54,8 @@ set __SkipNative=
 set __RuntimeId=
 set __TargetsWindows=1
 set __DoCrossgen=
+set __CopyNativeTestBinaries=0
+set __SkipGenerateLayout=0
 
 @REM CMD has a nasty habit of eating "=" on the argument list, so passing:
 @REM    -priority=1
@@ -94,6 +96,8 @@ if /i "%1" == "runtimeid"             (set __RuntimeId=%2&set processedArgs=!pro
 if /i "%1" == "targetsNonWindows"     (set __TargetsWindows=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "Exclude"               (set __Exclude=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-priority"             (set __Priority=%2&shift&set processedArgs=!processedArgs! %1=%2&shift&goto Arg_Loop)
+if /i "%1" == "copynativeonly"        (set __CopyNativeTestBinaries=1&set __SkipNative=1&set __SkipRestorePackages=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "skipgeneratelayout"    (set __SkipGenerateLayout=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "--"                    (set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 if [!processedArgs!]==[] (
@@ -256,7 +260,7 @@ REM === Restore product binaries from packages
 REM ===
 REM =========================================================================================
 
-if "%__SkipRestorePackages%" == 1 goto SkipRestoreProduct
+if "%__SkipRestorePackages%" == "1" goto SkipRestoreProduct
 
 echo %__MsgPrefix%Restoring CoreCLR product from packages
 
@@ -319,27 +323,49 @@ for /l %%G in (1, 1, %__NumberOfTestGroups%) do (
     set __Logging='!__MsbuildLog!' '!__MsbuildWrn!' '!__MsbuildErr!'
 
     set __TestGroupToBuild=%%G
-    echo Running: msbuild %__ProjectDir%\tests\build.proj !__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! %TargetsWindowsMsbuildArg% %__msbuildArgs% !__PriorityArg! %__UnprocessedBuildArgs%
 
-    REM Disable warnAsError - coreclr issue 19922
-    powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command "%__ProjectDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
-        %__ProjectDir%\tests\build.proj -warnAsError:0 !__Logging! %TargetsWindowsMsbuildArg% %__msbuildArgs% !__PriorityArg! %__UnprocessedBuildArgs%
+    if not "%__CopyNativeTestBinaries%" == "1" (
+        echo Running: msbuild %__ProjectDir%\tests\build.proj !__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! %TargetsWindowsMsbuildArg% %__msbuildArgs% !__PriorityArg! %__UnprocessedBuildArgs%
 
-    if errorlevel 1 (
-        echo %__ErrMsgPrefix%%__MsgPrefix%Error: managed test build failed. Refer to the build log files for details:
-        echo     %__BuildLog%
-        echo     %__BuildWrn%
-        echo     %__BuildErr%
-        REM This is necessary because of a(n apparent) bug in the FOR /L command.  Under certain circumstances,
-        REM such as when this script is invoke with CMD /C "build-test.cmd", a non-zero exit directly from
-        REM within the loop body will not propagate to the caller.  For some reason, goto works around it.
-        goto     :Exit_Failure
+        REM Disable warnAsError - coreclr issue 19922
+        powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command "%__ProjectDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+            %__ProjectDir%\tests\build.proj -warnAsError:0 !__Logging! %TargetsWindowsMsbuildArg% %__msbuildArgs% !__PriorityArg! %__UnprocessedBuildArgs%
+
+        if errorlevel 1 (
+            echo %__ErrMsgPrefix%%__MsgPrefix%Error: managed test build failed. Refer to the build log files for details:
+            echo     %__BuildLog%
+            echo     %__BuildWrn%
+            echo     %__BuildErr%
+            REM This is necessary because of a(n apparent) bug in the FOR /L command.  Under certain circumstances,
+            REM such as when this script is invoke with CMD /C "build-test.cmd", a non-zero exit directly from
+            REM within the loop body will not propagate to the caller.  For some reason, goto works around it.
+            goto     :Exit_Failure
+        )
+    ) else (
+        echo Running: msbuild %__ProjectDir%\tests\build.proj !__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! %TargetsWindowsMsbuildArg% %__msbuildArgs% !__PriorityArg! %__UnprocessedBuildArgs% /t:CopyAllNativeProjectReferenceBinaries
+
+        REM Disable warnAsError - coreclr issue 19922
+        powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command "%__ProjectDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+            %__ProjectDir%\tests\build.proj -warnAsError:0 !__Logging! %TargetsWindowsMsbuildArg% %__msbuildArgs% !__PriorityArg! %__UnprocessedBuildArgs% "/t:CopyAllNativeProjectReferenceBinaries"
+
+        if errorlevel 1 (
+            echo %__ErrMsgPrefix%%__MsgPrefix%Error: copying native test binaries failed. Refer to the build log files for details:
+            echo     %__BuildLog%
+            echo     %__BuildWrn%
+            echo     %__BuildErr%
+            REM This is necessary because of a(n apparent) bug in the FOR /L command.  Under certain circumstances,
+            REM such as when this script is invoke with CMD /C "build-test.cmd", a non-zero exit directly from
+            REM within the loop body will not propagate to the caller.  For some reason, goto works around it.
+            goto     :Exit_Failure
+        )
     )
 
     set __SkipPackageRestore=true
     set __SkipTargetingPackBuild=true
     set __AppendToLog=true
 )
+
+if "%__CopyNativeTestBinaries%" == "1" goto :SkipManagedBuild
 
 REM Check that we've built about as many tests as we expect. This is primarily intended to prevent accidental changes that cause us to build
 REM drastically fewer Pri-1 tests than expected.
@@ -353,6 +379,8 @@ if errorlevel 1 (
 )
 
 :SkipManagedBuild
+
+if "%__SkipGenerateLayout%" == "1" goto TestBuildDone
 
 REM =========================================================================================
 REM ===
@@ -499,6 +527,7 @@ REM ===
 REM === All builds complete!
 REM ===
 REM =========================================================================================
+:TestBuildDone
 
 echo %__MsgPrefix%Test build succeeded.  Finished at %TIME%
 echo %__MsgPrefix%Test binaries are available at !__TestBinDir!
@@ -534,6 +563,8 @@ echo     ubuntu.16.10-x64: Builds overlay for Ubuntu 16.10
 echo     win-x64: Builds overlay for portable Windows
 echo     win7-x64: Builds overlay for Windows 7
 echo crossgen: Precompiles the framework managed assemblies
+echo copynativeonly: Only copy the native test binaries to the managed output. Do not build the native or managed tests.
+echo skipgeneratelayout: Do not generate the Core_Root layout or the CoreFX testhost.
 echo targetsNonWindows:
 echo Exclude- Optional parameter - specify location of default exclusion file ^(defaults to tests\issues.targets if not specified^)
 echo     Set to "" to disable default exclusion file.
