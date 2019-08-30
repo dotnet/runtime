@@ -529,6 +529,28 @@ namespace System.Buffers.ArrayPool.Tests
             });
         }
 
+        [Fact]
+        public void ConfigurablePool_AllocatedArraysAreCleared_string() => ConfigurablePool_AllocatedArraysAreCleared<string>();
+
+        [Fact]
+        public void ConfigurablePool_AllocatedArraysAreCleared_byte() => ConfigurablePool_AllocatedArraysAreCleared<byte>();
+
+        [Fact]
+        public void ConfigurablePool_AllocatedArraysAreCleared_DateTime() => ConfigurablePool_AllocatedArraysAreCleared<DateTime>();
+
+        private static void ConfigurablePool_AllocatedArraysAreCleared<T>()
+        {
+            ArrayPool<T> pool = ArrayPool<T>.Create();
+            for (int size = 1; size <= 1000; size++)
+            {
+                T[] arr = pool.Rent(size);
+                for (int i = 0; i < arr.Length; i++)
+                {
+                    Assert.Equal(default, arr[i]);
+                }
+            }
+        }
+
         public static IEnumerable<object[]> BytePoolInstances()
         {
             yield return new object[] { ArrayPool<byte>.Create() };
