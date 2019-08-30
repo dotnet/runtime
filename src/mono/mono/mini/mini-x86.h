@@ -344,7 +344,7 @@ void
 mono_x86_throw_corlib_exception (host_mgreg_t *regs, guint32 ex_token_index,
 								 host_mgreg_t eip, gint32 pc_offset);
 
-void 
+void
 mono_x86_patch (unsigned char* code, gpointer target);
 
 gpointer

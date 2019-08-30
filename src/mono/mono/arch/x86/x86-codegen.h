@@ -359,29 +359,65 @@ typedef union {
  * the instruction is inspected for validity and the correct displacement
  * is inserted.
  */
-#define x86_patch(ins,target)	\
-	do {	\
-		unsigned char* pos = (ins) + 1;	\
-		int disp, size = 0;	\
-		switch (*(unsigned char*)(ins)) {	\
-		case 0xe8: case 0xe9: ++size; break; /* call, jump32 */	\
-		case 0x0f: if (!(*pos >= 0x80 && *pos <= 0x8f)) assert (0);	\
-		   ++size; ++pos; break; /* prefix for conditional jumps with 32-bit disp */ \
-		case 0xe0: case 0xe1: case 0xe2: /* loop */	\
-		case 0xeb: /* jump8 */	\
-		/* conditional jump opcodes */	\
-		case 0x70: case 0x71: case 0x72: case 0x73:	\
-		case 0x74: case 0x75: case 0x76: case 0x77:	\
-		case 0x78: case 0x79: case 0x7a: case 0x7b:	\
-		case 0x7c: case 0x7d: case 0x7e: case 0x7f:	\
-			break;	\
-		default: assert (0);	\
-		}	\
-		disp = (target) - pos;	\
-		if (size) x86_imm_emit32 (pos, disp - 4);	\
-		else if (x86_is_imm8 (disp - 1)) x86_imm_emit8 (pos, disp - 1);	\
-		else assert (0);	\
-	} while (0)
+void
+mono_x86_patch (guchar* code, gpointer target);
+
+// This is inline only to share with amd64.
+// It is only for use by mono_x86_patch and mono_amd64_patch.
+static inline void
+mono_x86_patch_inline (guchar* code, gpointer target)
+{
+	int instruction_size = 2; // 2 or 5 or 6, code handles anything
+	int offset_size = 1; // 1 or 4
+
+	switch (*code) {
+	case 0xe8: case 0xe9: // call, jump32
+		instruction_size = 5;
+		offset_size = 4;
+		break;
+
+	case 0x0f: // 6byte conditional branches with 32bit offsets.
+		g_assert (code [1] >= 0x80 && code [1] <= 0x8F);
+		instruction_size = 6;
+		offset_size = 4;
+		break;
+
+	case 0xe0: case 0xe1: case 0xe2: /* loop */
+	case 0xeb: /* jump8 */
+	/* conditional jump opcodes */
+	case 0x70: case 0x71: case 0x72: case 0x73:
+	case 0x74: case 0x75: case 0x76: case 0x77:
+	case 0x78: case 0x79: case 0x7a: case 0x7b:
+	case 0x7c: case 0x7d: case 0x7e: case 0x7f:
+		break;
+
+	case 0xFF:
+		// call or jmp indirect; patch the data, not the code.
+		// amd64 handles this elsewhere (RIP relative).
+		g_assert (code [1] == 0x15 || code [1] == 0x25);
+		g_assert (0); // For possible use later.
+		*(void**)(code + 2) = target;
+		return;
+
+	default:
+		g_assert (0);
+	}
+
+	// Offsets are relative to the end of the instruction.
+	ptrdiff_t const offset = (guchar*)target - (code + instruction_size);
+
+	if (offset_size == 4) {
+		g_assert (offset == (gint32)offset); // for amd64
+		code += instruction_size - 4; // Next line demands lvalue, not temp.
+		x86_imm_emit32 (code, offset);
+	} else {
+		g_assert (offset == (gint8)offset);
+		code += instruction_size - 1; // Next line demands lvalue, not temp.
+		x86_imm_emit8 (code, offset);
+	}
+}
+
+#define x86_patch(ins, target) (mono_x86_patch ((ins), (target)))
 
 #define x86_breakpoint(inst) x86_byte (inst, 0xcc)
 

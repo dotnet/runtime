@@ -173,6 +173,12 @@ amd64_use_imm32 (gint64 val)
 	return amd64_is_imm32 (val);
 }
 
+void
+mono_x86_patch (unsigned char* code, gpointer target)
+{
+	mono_x86_patch_inline (code, target);
+}
+
 static void
 amd64_patch (unsigned char* code, gpointer target)
 {
@@ -195,23 +201,22 @@ amd64_patch (unsigned char* code, gpointer target)
 	}
 	else if ((code [0] == 0x8b) && rex && x86_modrm_mod (code [1]) == 0 && x86_modrm_rm (code [1]) == 5) {
 		/* mov 0(%rip), %dreg */
-		*(guint32*)(code + 2) = (guint32)(guint64)target - 7;
+		g_assert (!1); // Historical code was incorrect.
+		ptrdiff_t const offset = (guchar*)target - (code + 6);
+		g_assert (offset == (gint32)offset);
+		*(gint32*)(code + 2) = (gint32)offset;
 	}
 	else if (code [0] == 0xff && (code [1] == 0x15 || code [1] == 0x25)) {
 		/* call or jmp *<OFFSET>(%rip) */
-		*(guint32*)(code + 2) = ((guint32)(guint64)target) - 7;
-	}
-	else if (code [0] == 0xe8 || code [0] == 0xe9) {
-		/* call or jmp <DISP> */
-		gint64 disp = (guint8*)target - (guint8*)code;
-		g_assert (amd64_is_imm32 (disp));
-		x86_patch (code, (unsigned char*)target);
+		// Patch the data, not the code.
+		g_assert (!2); // For possible use later.
+		*(void**)(code + 6 + *(gint32*)(code + 2)) = target;
 	}
 	else
-		x86_patch (code, (unsigned char*)target);
+		x86_patch (code, target);
 }
 
-void 
+void
 mono_amd64_patch (unsigned char* code, gpointer target)
 {
 	amd64_patch (code, target);

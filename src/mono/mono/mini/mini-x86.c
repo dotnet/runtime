@@ -137,10 +137,10 @@ mono_arch_xregname (int reg)
 	}
 }
 
-void 
+void
 mono_x86_patch (unsigned char* code, gpointer target)
 {
-	x86_patch (code, (unsigned char*)target);
+	mono_x86_patch_inline (code, target);
 }
 
 #define FLOAT_PARAM_REGS 0
