@@ -12,31 +12,6 @@ namespace Tests.System
     {
         [Theory]
         [InlineData("Foo", "Foo", true)]
-        [InlineData("FOO", "FOO", true)]
-        [InlineData("fOO", "fOO", true)]
-        [InlineData("HTTP/", "HTTP/", true)]
-        [InlineData("http/", "http/", true)]
-        [InlineData("GZIP", "GZIP", true)]
-        [InlineData("gzip", "gzip", true)]
-        [InlineData("DEFLATE", "DEFLATE", true)]
-        [InlineData("deflate", "deflate", true)]
-        [InlineData("Content-Length", "Content-Length", true)]
-        [InlineData("content-length", "content-length", true)]
-        [InlineData("DEFLATE", "deflate", false)]
-        [InlineData("foo", "bar", false)]
-        [InlineData("GZIP", "DEFLATE", false)]
-        [InlineData("Content-Length", "content-length", false)]
-        public void EqualsOrdinal_ComparingVariousInputsBothWays_ReturnsExpected(string leftString, string rightString, bool expected)
-        {
-            char[] left = leftString.ToCharArray();
-            char[] right = rightString.ToCharArray();
-
-            Assert.Equal(expected, CharArrayHelpers.EqualsOrdinal(leftString, right, 0, right.Length));
-            Assert.Equal(expected, CharArrayHelpers.EqualsOrdinal(rightString, left, 0, left.Length));
-        }
-
-        [Theory]
-        [InlineData("Foo", "Foo", true)]
         [InlineData("Foo", "FOO", true)]
         [InlineData("Foo", "fOO", true)]
         [InlineData("HTTP/", "http/", true)]

@@ -22,7 +22,7 @@ namespace System.Net
             return TryGetHeaderName(
                 array, startIndex, length,
                 (arr, index) => arr[index],
-                (known, arr, start, len) => CharArrayHelpers.EqualsOrdinal(known, arr, start, len),
+                (known, arr, start, len) => known.AsSpan().SequenceEqual(arr.AsSpan(start, len)),
                 out name);
         }
 
