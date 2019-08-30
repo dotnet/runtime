@@ -404,6 +404,7 @@ namespace System.Threading.Tests
             }
         }
 
+        [ActiveIssue(34666)]
         [Theory]
         [MemberData(nameof(CrossProcess_NamedMutex_ProtectedFileAccessAtomic_MemberData))]
         public void CrossProcess_NamedMutex_ProtectedFileAccessAtomic(string prefix)
