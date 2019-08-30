@@ -195,6 +195,7 @@ namespace System.Diagnostics.Tests
             yield return new object[] { null, new object[] { "thanks, 00", "i like it...", 111 } };
         }
 
+        [ActiveIssue(40224, TestPlatforms.Windows)]
         [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         [MemberData(nameof(GetTraceEventFormat_MemberData))]
         public void TraceEventFormatAndParams(string format, object[] parameters)
