@@ -685,7 +685,7 @@ HANDLES_REUSE_WRAPPER(MEV_2, "get_metadata_token", ves_icall_reflection_get_toke
 ICALL_TYPE(MFIELD, "System.Reflection.RuntimeFieldInfo", MFIELD_1)
 HANDLES(MFIELD_1, "GetFieldOffset", ves_icall_RuntimeFieldInfo_GetFieldOffset, gint32, 1, (MonoReflectionField))
 HANDLES(MFIELD_2, "GetParentType", ves_icall_RuntimeFieldInfo_GetParentType, MonoReflectionType, 2, (MonoReflectionField, MonoBoolean))
-ICALL(MFIELD_3, "GetRawConstantValue", ves_icall_RuntimeFieldInfo_GetRawConstantValue)
+HANDLES(MFIELD_3, "GetRawConstantValue", ves_icall_RuntimeFieldInfo_GetRawConstantValue, MonoObject, 1, (MonoReflectionField))
 HANDLES(MFIELD_4, "GetTypeModifiers", ves_icall_System_Reflection_FieldInfo_GetTypeModifiers, MonoArray, 2, (MonoReflectionField, MonoBoolean))
 ICALL(MFIELD_5, "GetValueInternal", ves_icall_RuntimeFieldInfo_GetValueInternal)
 HANDLES(MFIELD_6, "ResolveType", ves_icall_RuntimeFieldInfo_ResolveType, MonoReflectionType, 1, (MonoReflectionField))

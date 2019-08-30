@@ -2521,32 +2521,27 @@ ves_icall_System_RuntimeFieldHandle_SetValueDirect (MonoReflectionFieldHandle fi
 	}
 }
 
-MonoObject *
-ves_icall_RuntimeFieldInfo_GetRawConstantValue (MonoReflectionField *rfield)
-{	
+MonoObjectHandle
+ves_icall_RuntimeFieldInfo_GetRawConstantValue (MonoReflectionFieldHandle rfield, MonoError* error)
+{
+	MonoObjectHandle o_handle = NULL_HANDLE_INIT;
+
 	MonoObject *o = NULL;
-	MonoClassField *field = rfield->field;
+	MonoClassField *field = MONO_HANDLE_GETVAL  (rfield, field);
 	MonoClass *klass;
-	MonoDomain *domain = mono_object_domain (rfield);
+	MonoDomain *domain = MONO_HANDLE_DOMAIN (rfield);
 	gchar *v;
 	MonoTypeEnum def_type;
 	const char *def_value;
 	MonoType *t;
-	ERROR_DECL (error);
 
 	mono_class_init_internal (field->parent);
 
 	t = mono_field_get_type_checked (field, error);
-	if (!is_ok (error)) {
-		mono_error_set_pending_exception (error);
-		return NULL;
-	}
+	goto_if_nok (error, return_null);
 
-	if (!(t->attrs & FIELD_ATTRIBUTE_HAS_DEFAULT)) {
-		mono_error_set_invalid_operation (error, NULL);
-		mono_error_set_pending_exception (error);
-		return NULL;
-	}
+	if (!(t->attrs & FIELD_ATTRIBUTE_HAS_DEFAULT))
+		goto invalid_operation;
 
 	if (image_is_dynamic (m_class_get_image (field->parent))) {
 		MonoClass *klass = field->parent;
@@ -2557,19 +2552,13 @@ ves_icall_RuntimeFieldInfo_GetRawConstantValue (MonoReflectionField *rfield)
 		def_type = def_values [fidx].def_type;
 		def_value = def_values [fidx].data;
 
-		if (def_type == MONO_TYPE_END) {
-			mono_error_set_invalid_operation (error, NULL);
-			mono_error_set_pending_exception (error);
-			return NULL;
-		}
+		if (def_type == MONO_TYPE_END)
+			goto invalid_operation;
 	} else {
 		def_value = mono_class_get_field_default_value (field, &def_type);
 		/* FIXME, maybe we should try to raise TLE if field->parent is broken */
-		if (!def_value) {
-			mono_error_set_invalid_operation (error, NULL);
-			mono_error_set_pending_exception (error);
-			return NULL;
-		}
+		if (!def_value)
+			goto invalid_operation;
 	}
 
 	/*FIXME unify this with reflection.c:mono_get_object_from_blob*/
@@ -2596,27 +2585,32 @@ ves_icall_RuntimeFieldInfo_GetRawConstantValue (MonoReflectionField *rfield)
 		klass = mono_class_from_mono_type_internal (t);
 		g_free (t);
 		o = mono_object_new_checked (domain, klass, error);
-		if (!is_ok (error)) {
-			mono_error_set_pending_exception (error);
-			return NULL;
-		}
+		goto_if_nok (error, return_null);
+		o_handle = MONO_HANDLE_NEW (MonoObject, o);
 		v = ((gchar *) o) + sizeof (MonoObject);
 		mono_get_constant_value_from_blob (domain, def_type, def_value, v, error);
-		if (mono_error_set_pending_exception (error))
-			return NULL;
+		goto_if_nok (error, return_null);
 		break;
 	}
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_CLASS:
 		mono_get_constant_value_from_blob (domain, def_type, def_value, &o, error);
-		if (mono_error_set_pending_exception (error))
-			return NULL;
+		goto_if_nok (error, return_null);
+		o_handle = MONO_HANDLE_NEW (MonoObject, o);
 		break;
 	default:
 		g_assert_not_reached ();
 	}
 
-	return o;
+	goto exit;
+invalid_operation:
+	mono_error_set_invalid_operation (error, NULL);
+	// fall through
+return_null:
+	o_handle = NULL_HANDLE;
+	// fall through
+exit:
+	return o_handle;
 }
 
 MonoReflectionTypeHandle
