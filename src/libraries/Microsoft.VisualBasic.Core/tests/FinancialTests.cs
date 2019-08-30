@@ -10,8 +10,8 @@ namespace Microsoft.VisualBasic.Tests
     public class FinancialTests
     {
         // The accuracy to which we can validate some numeric test cases depends on the platform.
-        private static readonly int s_precision = PlatformDetection.IsAlpine ? 12 :
-            PlatformDetection.IsFullFramework || PlatformDetection.IsArmOrArm64Process ? 14 : 15;
+        private static readonly int s_precision = (PlatformDetection.IsAlpine || PlatformDetection.IsArmOrArm64Process) ? 12 :
+            PlatformDetection.IsFullFramework ? 14 : 15;
 
         [Theory]
         [InlineData(0, 1.0, 1.0, 1.0, 1.0, 0, 0)]
@@ -39,7 +39,7 @@ namespace Microsoft.VisualBasic.Tests
             Assert.Throws<ArgumentException>(() => Financial.DDB(Cost, Salvage, Life, Period, Factor));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue(40245)]
+        [Theory]
         [InlineData(0, 0, 0, 0, DueDate.EndOfPeriod, 0, 0)]
         [InlineData(0.02 / 12, 12.0, -100.0, -100.0, DueDate.BegOfPeriod, 1315.0982120264073, -4)]
         [InlineData(0.0083, 15, 263.0, 0, DueDate.EndOfPeriod, -4182.657291138164, -4)]
