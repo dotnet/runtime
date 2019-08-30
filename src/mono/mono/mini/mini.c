@@ -2122,6 +2122,21 @@ mono_postprocess_patches (MonoCompile *cfg)
 			patch_info->data.table->table = (MonoBasicBlock**)table;
 			break;
 		}
+		default:
+			/* do nothing */
+			break;
+		}
+	}
+}
+
+/* Those patches require the JitInfo of the compiled method already be in place when used */
+static void
+mono_postprocess_patches_after_ji_publish (MonoCompile *cfg)
+{
+	MonoJumpInfo *patch_info;
+
+	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
+		switch (patch_info->type) {
 		case MONO_PATCH_INFO_METHOD_JUMP: {
 			unsigned char *ip = cfg->native_code + patch_info->ip.i;
 
@@ -3876,6 +3891,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 
 		if (cfg->method->dynamic)
 			mono_dynamic_code_hash_lookup (cfg->domain, cfg->method)->ji = cfg->jit_info;
+
+		mono_postprocess_patches_after_ji_publish (cfg);
+
 		mono_domain_unlock (cfg->domain);
 	}
 
