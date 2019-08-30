@@ -323,36 +323,44 @@ namespace HttpStress
                 async ctx =>
                 {
                     string content = ctx.GetRandomString(0, ctx.MaxContentLength);
+                    ulong checksum = CRC.CalculateCRC(content);
 
                     using var req = new HttpRequestMessage(HttpMethod.Post, "/") { Content = new StringDuplexContent(content) };
                     using HttpResponseMessage m = await ctx.SendAsync(req);
 
                     ValidateStatusCode(m);
-                    ValidateContent(content, await m.Content.ReadAsStringAsync());
+                    string checksumMessage = ValidateServerChecksum(m.Headers, checksum) ? "server checksum matches client checksum" : "server checksum mismatch";
+                    ValidateContent(content, await m.Content.ReadAsStringAsync(), checksumMessage);
                 }),
 
                 ("POST Multipart Data",
                 async ctx =>
                 {
                     (string expected, MultipartContent formDataContent) formData = GetMultipartContent(ctx, ctx.MaxRequestParameters);
+                    ulong checksum = CRC.CalculateCRC(formData.expected);
 
                     using var req = new HttpRequestMessage(HttpMethod.Post, "/") { Content = formData.formDataContent };
                     using HttpResponseMessage m = await ctx.SendAsync(req);
 
                     ValidateStatusCode(m);
-                    ValidateContent($"{formData.expected}", await m.Content.ReadAsStringAsync());
+                    string checksumMessage = ValidateServerChecksum(m.Headers, checksum) ? "server checksum matches client checksum" : "server checksum mismatch";
+                    ValidateContent(formData.expected, await m.Content.ReadAsStringAsync(), checksumMessage);
                 }),
 
                 ("POST Duplex",
                 async ctx =>
                 {
                     string content = ctx.GetRandomString(0, ctx.MaxContentLength);
+                    ulong checksum = CRC.CalculateCRC(content);
 
                     using var req = new HttpRequestMessage(HttpMethod.Post, "/duplex") { Content = new StringDuplexContent(content) };
                     using HttpResponseMessage m = await ctx.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
 
                     ValidateStatusCode(m);
-                    ValidateContent(content, await m.Content.ReadAsStringAsync());
+                    string response = await m.Content.ReadAsStringAsync();
+
+                    string checksumMessage = ValidateServerChecksum(m.TrailingHeaders, checksum, required: false) ? "server checksum matches client checksum" : "server checksum mismatch";
+                    ValidateContent(content, await m.Content.ReadAsStringAsync(), checksumMessage);
                 }),
 
                 ("POST Duplex Slow",
@@ -397,6 +405,7 @@ namespace HttpStress
                 async ctx =>
                 {
                     string content = ctx.GetRandomString(0, ctx.MaxContentLength);
+                    ulong checksum = CRC.CalculateCRC(content);
 
                     using var req = new HttpRequestMessage(HttpMethod.Post, "/") { Content = new StringContent(content) };
 
@@ -404,7 +413,8 @@ namespace HttpStress
                     using HttpResponseMessage m = await ctx.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
 
                     ValidateStatusCode(m);
-                    ValidateContent(content, await m.Content.ReadAsStringAsync());
+                    string checksumMessage = ValidateServerChecksum(m.Headers, checksum) ? "server checksum matches client checksum" : "server checksum mismatch";
+                    ValidateContent(content, await m.Content.ReadAsStringAsync(), checksumMessage);
                 }),
 
                 ("HEAD",
