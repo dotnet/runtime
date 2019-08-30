@@ -94,6 +94,13 @@ extern "C"
         returns TRUE if successful, FALSE otherwise
     --*/
     BOOL MAPUnmapPEFile(LPCVOID lpAddress);
+
+    /*++
+    Function :
+        MAPMarkSectionAsNotNeeded - mark a section as NotNeeded
+        returns TRUE if successful, FALSE otherwise
+    --*/
+    BOOL MAPMarkSectionAsNotNeeded(LPCVOID lpAddress);
 }
 
 namespace CorUnix

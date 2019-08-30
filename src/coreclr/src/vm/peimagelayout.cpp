@@ -285,6 +285,9 @@ void PEImageLayout::ApplyBaseRelocations()
                                dwOldProtection, &dwOldProtection))
             ThrowLastError();
     }
+#ifdef FEATURE_PAL
+    PAL_LOADMarkSectionAsNotNeeded((void*)dir);
+#endif // FEATURE_PAL
 #endif // CROSSGEN_COMPILE
 
     if (pFlushRegion != NULL)

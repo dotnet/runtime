@@ -2690,6 +2690,22 @@ BOOL
 PALAPI
 PAL_LOADUnloadPEFile(PVOID ptr);
 
+/*++
+    PAL_LOADMarkSectionAsNotNeeded
+
+    Mark a section as NotNeeded that was loaded by PAL_LOADLoadPEFile().
+
+Parameters:
+    IN ptr - the section address mapped by PAL_LOADLoadPEFile()
+
+Return value:
+    TRUE - success
+    FALSE - failure (incorrect ptr, etc.)
+--*/
+BOOL
+PALAPI
+PAL_LOADMarkSectionAsNotNeeded(void * ptr);
+
 #ifdef UNICODE
 #define LoadLibrary LoadLibraryW
 #define LoadLibraryEx LoadLibraryExW
