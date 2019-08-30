@@ -12,7 +12,7 @@
     <Warning Text="Looks like there may be an update to the build tools. Please run buildtest.cmd from the root of the repo to refresh the build tools." /> 
   </Target>
 
-  <Target Name="ResolveDisabledProjects" BeforeTargets="BuildAllProjects" >
+  <Target Name="ResolveDisabledProjects" BeforeTargets="BuildAllProjects;CopyAllNativeTestProjectBinaries" >
     <ItemGroup>
       <DisabledProjects Include="TestWrappers*\**\*.csproj" />
       <DisabledProjects Include="*\**\cs_template.csproj" />
