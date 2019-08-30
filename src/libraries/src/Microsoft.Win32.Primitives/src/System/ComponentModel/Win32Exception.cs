@@ -36,7 +36,7 @@ namespace System.ComponentModel
         /// Initializes a new instance of the <see cref='System.ComponentModel.Win32Exception'/> class with the specified error and the
         /// specified detailed description.
         /// </summary>
-        public Win32Exception(int error, string message) : base(message)
+        public Win32Exception(int error, string? message) : base(message)
         {
             NativeErrorCode = error;
         }
@@ -44,7 +44,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Initializes a new instance of the Exception class with a specified error message.
         /// </summary>
-        public Win32Exception(string message) : this(Marshal.GetLastWin32Error(), message)
+        public Win32Exception(string? message) : this(Marshal.GetLastWin32Error(), message)
         {
         }
 
@@ -52,7 +52,7 @@ namespace System.ComponentModel
         /// Initializes a new instance of the Exception class with a specified error message and a
         /// reference to the inner exception that is the cause of this exception.
         /// </summary>
-        public Win32Exception(string message, Exception innerException) : base(message, innerException)
+        public Win32Exception(string? message, Exception? innerException) : base(message, innerException)
         {
             NativeErrorCode = Marshal.GetLastWin32Error();
         }
@@ -105,14 +105,14 @@ namespace System.ComponentModel
                 s.Append(message);
             }
 
-            Exception innerException = InnerException;
+            Exception? innerException = InnerException;
             if (innerException != null)
             {
                 s.Append(" ---> ");
                 s.Append(innerException.ToString());
             }
 
-            string stackTrace = StackTrace;
+            string? stackTrace = StackTrace;
             if (stackTrace != null)
             {
                 s.AppendLine();
