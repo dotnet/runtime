@@ -45,6 +45,10 @@ namespace HttpStress
         public bool UseHttpSys { get; set; }
         public string LogPath { get; set; }
         public bool LogAspNet { get; set; }
+        public int? ServerMaxConcurrentStreams { get; set; }
+        public int? ServerMaxFrameSize { get; set; }
+        public int? ServerInitialConnectionWindowSize { get; set; }
+        public int? ServerMaxRequestHeaderFieldSize { get; set; }
     }
 
 }
