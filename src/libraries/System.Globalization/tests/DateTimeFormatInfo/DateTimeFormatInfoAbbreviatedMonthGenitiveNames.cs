@@ -84,7 +84,36 @@ namespace System.Globalization.Tests
             format.AbbreviatedMonthGenitiveNames = new string[] { "GenJan", "GenFeb", "GenMar", "GenApr", "GenMay", "GenJun", "GenJul", "GenAug", "GenSep", "GenOct", "GenNov", "GenDec", "Gen" };
 
             var dateTime = new DateTime(1976, 6, 19);
-            Assert.Equal("19 GenJun 76", dateTime.ToString("d MMM yy", format));
+            string formattedDate = dateTime.ToString("d MMM yy", format);
+            Assert.Equal("19 GenJun 76", formattedDate);
+            Assert.Equal(dateTime, DateTime.ParseExact(formattedDate, "d MMM yy", format));
+            Assert.Equal(dateTime, DateTime.Parse(formattedDate, format));
+        }
+
+        [Fact]
+        public void TestAbbreviatedGenitiveNamesWithAllCultures()
+        {
+            CultureInfo[] cultures = CultureInfo.GetCultures(CultureTypes.AllCultures);
+            DateTime dt = new DateTime(2000, 1, 20);
+
+            foreach (CultureInfo ci in cultures)
+            {
+                string formattedDate = dt.ToString("d MMM yyyy", ci);
+
+                for (int i = 0; i < 12; i++)
+                {
+                    if (!ci.DateTimeFormat.MonthNames[i].Equals(ci.DateTimeFormat.MonthGenitiveNames[i]) ||
+                        !ci.DateTimeFormat.AbbreviatedMonthNames[i].Equals(ci.DateTimeFormat.AbbreviatedMonthGenitiveNames[i]))
+                    {
+                        // We have genitive month names, we expect parsing to work and produce the exact original result.
+                        Assert.Equal(dt, DateTime.Parse(formattedDate, ci));
+                        break;
+                    }
+                }
+
+                // ParseExact should succeeded all the time even with non genitive cases .
+                Assert.Equal(dt, DateTime.ParseExact(formattedDate, "d MMM yyyy", ci));
+            }
         }
 
         [Fact]
