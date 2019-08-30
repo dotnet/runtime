@@ -2673,3 +2673,54 @@ BOOL MAPUnmapPEFile(LPCVOID lpAddress)
     TRACE_(LOADER)("MAPUnmapPEFile returning %d\n", retval);
     return retval;
 }
+
+/*++
+Function :
+    MAPMarkSectionAsNotNeeded - Mark a section as NotNeeded
+    returns TRUE if successful, FALSE otherwise
+--*/
+BOOL MAPMarkSectionAsNotNeeded(LPCVOID lpAddress)
+{
+    TRACE_(LOADER)("MAPMarkSectionAsNotNeeded(lpAddress=%p)\n", lpAddress);
+
+    if ( NULL == lpAddress )
+    {
+        ERROR_(LOADER)( "lpAddress cannot be NULL\n" );
+        return FALSE;
+    }
+
+    BOOL retval = TRUE;
+    CPalThread * pThread = InternalGetCurrentThread();
+    InternalEnterCriticalSection(pThread, &mapping_critsec);
+    PLIST_ENTRY pLink, pLinkNext = NULL;
+
+    // Look through the entire MappedViewList for all mappings associated with the
+    // section with an address 'lpAddress' which we want to mark as NotNeeded.
+
+    for(pLink = MappedViewList.Flink;
+            pLink != &MappedViewList;
+            pLink = pLinkNext)
+    {
+        pLinkNext = pLink->Flink;
+        PMAPPED_VIEW_LIST pView = CONTAINING_RECORD(pLink, MAPPED_VIEW_LIST, Link);
+
+        if (pView->lpAddress == lpAddress) // this entry is associated with the section
+        {
+            if (-1 == madvise(pView->lpAddress, pView->NumberOfBytesToMap, MADV_DONTNEED))
+            {
+                ERROR_(LOADER)("Unable to mark the section as NotNeeded.\n");
+                retval = FALSE;
+            }
+            else
+            {
+                pView->dwDesiredAccess = 0;
+            }
+            break;
+        }
+    }
+
+    InternalLeaveCriticalSection(pThread, &mapping_critsec);
+
+    TRACE_(LOADER)("MAPMarkSectionAsNotNeeded returning %d\n", retval);
+    return retval;
+}
