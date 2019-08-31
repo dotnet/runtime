@@ -34,6 +34,7 @@
 #include <mono/utils/w32api.h>
 #include <mono/utils/mono-os-wait.h>
 #include "external-only.h"
+#include "icall-decl.h"
 
 /*
  * Pull the list of opcodes
@@ -561,6 +562,7 @@ int
 mono_object_hash_internal (MonoObject* obj)
 {
 #ifdef HAVE_MOVING_COLLECTOR
+
 	LockWord lw;
 	unsigned int hash;
 	if (!obj)
@@ -619,13 +621,22 @@ mono_object_hash_internal (MonoObject* obj)
 	mono_memory_write_barrier ();
 	obj->synchronisation = lw.sync;
 	return hash;
+
 #else
+
 /*
  * Wang's address-based hash function:
  *   http://www.concentric.net/~Ttwang/tech/addrhash.htm
  */
 	return (GPOINTER_TO_UINT (obj) >> MONO_OBJECT_ALIGNMENT_SHIFT) * 2654435761u;
 #endif
+
+}
+
+int
+mono_object_hash_icall (MonoObjectHandle obj, MonoError* error)
+{
+	return mono_object_hash_internal (MONO_HANDLE_RAW (obj));
 }
 
 /*
@@ -637,6 +648,7 @@ mono_object_hash_internal (MonoObject* obj)
 int
 mono_object_hash (MonoObject* obj)
 {
+	// FIXME slow?
 	MONO_EXTERNAL_ONLY (int, mono_object_hash_internal (obj));
 }
 
@@ -1062,6 +1074,7 @@ mono_monitor_enter_internal (MonoObject *obj)
 gboolean
 mono_monitor_enter (MonoObject *obj)
 {
+	// FIXME slow?
 	MONO_EXTERNAL_ONLY (gboolean, mono_monitor_enter_internal (obj));
 }
 

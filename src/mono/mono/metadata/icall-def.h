@@ -581,7 +581,7 @@ NOHANDLES(ICALL(NUMBER_FORMATTER_1, "GetFormatterTables", ves_icall_System_Numbe
 
 ICALL_TYPE(OBJ, "System.Object", OBJ_1)
 HANDLES(OBJ_1, "GetType", ves_icall_System_Object_GetType, MonoReflectionType, 1, (MonoObject))
-ICALL(OBJ_2, "InternalGetHashCode", mono_object_hash_internal)
+HANDLES(OBJ_2, "InternalGetHashCode", mono_object_hash_icall, int, 1, (MonoObject))
 HANDLES(OBJ_3, "MemberwiseClone", ves_icall_System_Object_MemberwiseClone, MonoObject, 1, (MonoObject))
 
 ICALL_TYPE(ASSEM, "System.Reflection.Assembly", ASSEM_2)
