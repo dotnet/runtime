@@ -1223,9 +1223,9 @@ mono_monitor_try_enter_with_atomic_var (MonoObject *obj, guint32 ms, MonoBoolean
 }
 
 void
-ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (MonoObjectHandle obj_handle, guint32 ms, MonoBoolean* lockTaken, MonoError* error)
+ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (MonoObjectHandle obj, guint32 ms, MonoBoolean* lockTaken, MonoError* error)
 {
-	mono_monitor_try_enter_with_atomic_var (MONO_HANDLE_RAW (obj_handle), ms, lockTaken, error);
+	mono_monitor_try_enter_with_atomic_var (MONO_HANDLE_RAW (obj), ms, lockTaken, error);
 }
 
 /**
