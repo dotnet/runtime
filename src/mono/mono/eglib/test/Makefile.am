@@ -41,15 +41,24 @@ CXXFLAGS += $(GLIB_TEST_FLAGS_COMMON) @CXXFLAGS_COMMON@
 test_eglib_LDADD = ../libeglib.la $(LTLIBICONV)
 assertf_LDADD = ../libeglib.la $(LTLIBICONV)
 
-# Something amiss with subdirs ordering?
-../libeglib.la: ../goutput.c # etc
-	$(MAKE)  -C .. $(@F)
+abs_srcdir = $(abspath $(srcdir))
 
-run-eglib: all
-	srcdir=`readlink -f $(srcdir)` ./test-eglib
+if DISABLE_EXECUTABLES
+run-eglib:
+else
+# FIXME: Various unit tests are broken on Win32, see https://github.com/mono/mono/issues/16576
+if HOST_WIN32
+run-eglib:
+else
+run-eglib:
+	srcdir="$(abs_srcdir)" ./test-eglib
 
 noinst_PROGRAMS = test-eglib assertf
+endif # !HOST_WIN32
+endif # DISABLE_EXECUTABLES
 
 run-both: run-eglib
+
+check-local: run-both
 
 MAINTAINERCLEANFILES = Makefile.in
