@@ -4097,6 +4097,11 @@ mono_threads_perform_thread_dump (void)
 void
 ves_icall_System_Threading_Thread_GetStackTraces (MonoArrayHandleOut out_threads_handle, MonoArrayHandleOut out_stack_frames_handle, MonoError *error)
 {
+	MONO_HANDLE_ASSIGN_RAW (out_threads_handle, NULL);
+	MONO_HANDLE_ASSIGN_RAW (out_stack_frames_handle, NULL);
+
+	guint32 handle = 0;
+
 	MonoStackFrameHandle stack_frame_handle = MONO_HANDLE_NEW (MonoStackFrame, NULL);
 	MonoReflectionMethodHandle reflection_method_handle = MONO_HANDLE_NEW (MonoReflectionMethod, NULL);
 	MonoStringHandle filename_handle = MONO_HANDLE_NEW (MonoString, NULL);
@@ -4130,7 +4135,8 @@ ves_icall_System_Threading_Thread_GetStackTraces (MonoArrayHandleOut out_threads
 
 	for (tindex = 0; tindex < nthreads; ++tindex) {
 
-		guint32 handle = thread_array [tindex];
+		mono_gchandle_free_internal (handle);
+		handle = thread_array [tindex];
 		MonoInternalThread *thread = (MonoInternalThread *) mono_gchandle_get_target_internal (handle);
 
 		MonoArray *thread_frames;
@@ -4194,9 +4200,11 @@ ves_icall_System_Threading_Thread_GetStackTraces (MonoArrayHandleOut out_threads
 		}
 
 		mono_gchandle_free_internal (handle);
+		handle = 0;
 	}
 
 leave:
+	mono_gchandle_free_internal (handle);
 	g_free (ud.frames);
 }
 
