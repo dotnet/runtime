@@ -13336,6 +13336,10 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 		aot_printerrf (acfg, "--aot=llvmonly requires a runtime compiled with llvm support.\n");
 		return 1;
 	}
+	if (mono_use_llvm || acfg->aot_opts.llvm) {
+		aot_printerrf (acfg, "--aot=llvm requires a runtime compiled with llvm support.\n");
+		return 1;
+	}
 #endif
 
 	if (acfg->opts & MONO_OPT_GSHAREDVT)
