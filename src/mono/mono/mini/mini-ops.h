@@ -755,6 +755,8 @@ MINI_OP(OP_MEMSET, "memset", NONE, NONE, NONE)
 MINI_OP(OP_SAVE_LMF, "save_lmf", NONE, NONE, NONE)
 MINI_OP(OP_RESTORE_LMF, "restore_lmf", NONE, NONE, NONE)
 
+MINI_OP3(OP_MEMMOVE, "memmove", NONE, IREG, IREG, IREG)
+
 /* write barrier */
 MINI_OP(OP_CARD_TABLE_WBARRIER, "card_table_wbarrier", NONE, IREG, IREG)
 

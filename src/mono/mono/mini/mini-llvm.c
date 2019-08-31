@@ -278,6 +278,7 @@ static LLVMRealPredicate fpcond_to_llvm_cond [] = {
 typedef enum {
 	INTRINS_MEMSET,
 	INTRINS_MEMCPY,
+	INTRINS_MEMMOVE,
 	INTRINS_SADD_OVF_I32,
 	INTRINS_UADD_OVF_I32,
 	INTRINS_SSUB_OVF_I32,
@@ -5901,6 +5902,20 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				set_nonnull_load_flag (values [ins->dreg]);
 			break;
 		}
+		case OP_MEMMOVE: {
+			int argn = 0;
+			LLVMValueRef args [5];
+			args [argn++] = convert (ctx, values [ins->sreg1], LLVMPointerType (LLVMInt8Type (), 0));
+			args [argn++] = convert (ctx, values [ins->sreg2], LLVMPointerType (LLVMInt8Type (), 0));
+			args [argn++] = convert (ctx, values [ins->sreg3], LLVMInt64Type ());
+#if LLVM_API_VERSION < 900
+			args [argn++] = LLVMConstInt (LLVMInt32Type (), 1, FALSE); // alignment
+#endif
+			args [argn++] = LLVMConstInt (LLVMInt1Type (), 0, FALSE);  // is_volatile
+
+			LLVMBuildCall (builder, get_intrins (ctx, INTRINS_MEMMOVE), args, argn, "");
+			break;
+		}
 		case OP_NOT_REACHED:
 			LLVMBuildUnreachable (builder);
 			has_terminator = TRUE;
@@ -8522,6 +8537,7 @@ typedef struct {
 static IntrinsicDesc intrinsics[] = {
 	{INTRINS_MEMSET, "llvm.memset.p0i8.i32"},
 	{INTRINS_MEMCPY, "llvm.memcpy.p0i8.p0i8.i32"},
+	{INTRINS_MEMMOVE, "llvm.memmove.p0i8.p0i8.i64"},
 	{INTRINS_SADD_OVF_I32, "llvm.sadd.with.overflow.i32"},
 	{INTRINS_UADD_OVF_I32, "llvm.uadd.with.overflow.i32"},
 	{INTRINS_SSUB_OVF_I32, "llvm.ssub.with.overflow.i32"},
@@ -8660,6 +8676,17 @@ add_intrinsic (LLVMModuleRef module, int id)
 #else
 		LLVMTypeRef params [] = { LLVMPointerType (LLVMInt8Type (), 0), LLVMPointerType (LLVMInt8Type (), 0), LLVMInt32Type (), LLVMInt32Type (), LLVMInt1Type () };
 
+		AddFunc (module, name, LLVMVoidType (), params, 5);
+#endif
+		break;
+	}
+	case INTRINS_MEMMOVE: {
+#if LLVM_API_VERSION >= 900
+		/* No alignment argument */
+		LLVMTypeRef params [] = { LLVMPointerType (LLVMInt8Type (), 0), LLVMPointerType (LLVMInt8Type (), 0), LLVMInt64Type (), LLVMInt1Type () };
+		AddFunc (module, name, LLVMVoidType (), params, 4);
+#else
+		LLVMTypeRef params [] = { LLVMPointerType (LLVMInt8Type (), 0), LLVMPointerType (LLVMInt8Type (), 0), LLVMInt64Type (), LLVMInt32Type (), LLVMInt1Type () };
 		AddFunc (module, name, LLVMVoidType (), params, 5);
 #endif
 		break;
