@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Linq;
-using System.Text.RegularExpressions;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.Text.RegularExpressions;
 using Xunit;
 
 namespace System.Tests
@@ -2162,6 +2163,22 @@ namespace System.Tests
             TimeZoneInfo deserializedTimeZone = TimeZoneInfo.FromSerializedString(serialized);
             Assert.Equal(timeZone, deserializedTimeZone);
             Assert.Equal(serialized, deserializedTimeZone.ToSerializedString());
+        }
+
+        [Theory]
+        [MemberData(nameof(SystemTimeZonesTestData))]
+        public static void BinaryFormatter_RoundTrips(TimeZoneInfo timeZone)
+        {
+            BinaryFormatter formatter = new BinaryFormatter();
+
+            using (MemoryStream stream = new MemoryStream())
+            {
+                formatter.Serialize(stream, timeZone);
+                stream.Position = 0;
+
+                TimeZoneInfo deserializedTimeZone = (TimeZoneInfo)formatter.Deserialize(stream);
+                Assert.Equal(timeZone, deserializedTimeZone);
+            }
         }
 
         [Fact]
