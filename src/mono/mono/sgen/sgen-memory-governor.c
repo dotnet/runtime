@@ -130,7 +130,7 @@ sgen_memgov_calculate_minor_collection_allowance (void)
 	}
 }
 
-static inline size_t
+static size_t
 get_heap_size (void)
 {
 	return sgen_major_collector.get_num_major_sections () * sgen_major_collector.section_size + sgen_los_memory_usage;

@@ -34,7 +34,7 @@ typedef struct {
 
 static node_t nodes [N];
 
-static inline void
+static void
 mono_hazard_pointer_clear_all (MonoThreadHazardPointers *hp, int retain)
 {
 	if (retain != 0)

@@ -153,7 +153,7 @@ typedef struct _ScanData {
 /* Should color be made visible to client even though it has no bridges?
  * True if we predict the number of reduced edges to be enough to justify the extra node.
  */
-static inline gboolean
+static gboolean
 bridgeless_color_is_heavy (ColorData *data) {
 	int fanin = data->incoming_colors;
 	int fanout = dyn_array_ptr_size (&data->other_colors);
@@ -162,7 +162,7 @@ bridgeless_color_is_heavy (ColorData *data) {
 }
 
 // Should color be made visible to client?
-static inline gboolean
+static gboolean
 color_visible_to_client (ColorData *data) {
 	return dyn_array_ptr_size (&data->bridges) || bridgeless_color_is_heavy (data);
 }

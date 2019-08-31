@@ -1262,7 +1262,7 @@ fast_find_range_in_table_no_lock_ex (gsize begin_range, gsize end_range, gboolea
 	return found_entry;
 }
 
-static inline DynamicFunctionTableEntry *
+static DynamicFunctionTableEntry *
 fast_find_range_in_table_no_lock (gsize begin_range, gsize end_range, gboolean *continue_search)
 {
 	GList *found_entry = fast_find_range_in_table_no_lock_ex (begin_range, end_range, continue_search);
@@ -1298,7 +1298,7 @@ find_range_in_table_no_lock_ex (const gpointer code_block, gsize block_size)
 	return found_entry;
 }
 
-static inline DynamicFunctionTableEntry *
+static DynamicFunctionTableEntry *
 find_range_in_table_no_lock (const gpointer code_block, gsize block_size)
 {
 	GList *found_entry = find_range_in_table_no_lock_ex (code_block, block_size);
@@ -1334,7 +1334,7 @@ find_pc_in_table_no_lock_ex (const gpointer pc)
 	return found_entry;
 }
 
-static inline DynamicFunctionTableEntry *
+static DynamicFunctionTableEntry *
 find_pc_in_table_no_lock (const gpointer pc)
 {
 	GList *found_entry = find_pc_in_table_no_lock_ex (pc);
@@ -1373,7 +1373,7 @@ validate_table_no_lock (void)
 
 #else
 
-static inline void
+static void
 validate_table_no_lock (void)
 {
 }
@@ -1580,7 +1580,7 @@ mono_arch_unwindinfo_find_rt_func_in_table (const gpointer code, gsize code_size
 	return found_rt_func;
 }
 
-static inline PRUNTIME_FUNCTION
+static PRUNTIME_FUNCTION
 mono_arch_unwindinfo_find_pc_rt_func_in_table (const gpointer pc)
 {
 	return mono_arch_unwindinfo_find_rt_func_in_table (pc, 0);
@@ -1618,7 +1618,7 @@ validate_rt_funcs_in_table_no_lock (DynamicFunctionTableEntry *entry)
 
 #else
 
-static inline void
+static void
 validate_rt_funcs_in_table_no_lock (DynamicFunctionTableEntry *entry)
 {
 }

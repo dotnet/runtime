@@ -2497,7 +2497,7 @@ mono_patch_info_rgctx_entry_new (MonoMemPool *mp, MonoMethod *method, gboolean i
 	return res;
 }
 
-static inline MonoInst*
+static MonoInst*
 emit_rgctx_fetch_inline (MonoCompile *cfg, MonoInst *rgctx, MonoJumpInfoRgctxEntry *entry)
 {
 	MonoInst *args [16];
@@ -4791,7 +4791,7 @@ exception_exit:
 	return 1;
 }
 
-static inline MonoMethod *
+static MonoMethod *
 mini_get_method_allow_open (MonoMethod *m, guint32 token, MonoClass *klass, MonoGenericContext *context, MonoError *error)
 {
 	MonoMethod *method;
@@ -4810,7 +4810,7 @@ mini_get_method_allow_open (MonoMethod *m, guint32 token, MonoClass *klass, Mono
 	return method;
 }
 
-static inline MonoMethod *
+static MonoMethod *
 mini_get_method (MonoCompile *cfg, MonoMethod *m, guint32 token, MonoClass *klass, MonoGenericContext *context)
 {
 	ERROR_DECL (error);
@@ -4827,7 +4827,7 @@ mini_get_method (MonoCompile *cfg, MonoMethod *m, guint32 token, MonoClass *klas
 	return method;
 }
 
-static inline MonoMethodSignature*
+static MonoMethodSignature*
 mini_get_signature (MonoMethod *method, guint32 token, MonoGenericContext *context, MonoError *error)
 {
 	MonoMethodSignature *fsig;
@@ -5831,7 +5831,7 @@ typedef struct _MonoOpcodeInfo {
 	gint  pushes   : 3; // public -1 means variable
 } MonoOpcodeInfo;
 
-static inline const MonoOpcodeInfo*
+static const MonoOpcodeInfo*
 mono_opcode_decode (guchar *ip, guint op_size, MonoOpcodeEnum il_op, MonoOpcodeParameter *parameter)
 {
 #define Push0 (0)
@@ -11435,7 +11435,7 @@ mono_load_membase_to_load_mem (int opcode)
 	return -1;
 }
 
-static inline int
+static int
 op_to_op_dest_membase (int store_opcode, int opcode)
 {
 #if defined(TARGET_X86)
@@ -11531,7 +11531,7 @@ op_to_op_dest_membase (int store_opcode, int opcode)
 	return -1;
 }
 
-static inline int
+static int
 op_to_op_store_membase (int store_opcode, int opcode)
 {
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
@@ -11548,7 +11548,7 @@ op_to_op_store_membase (int store_opcode, int opcode)
 	return -1;
 }
 
-static inline int
+static int
 op_to_op_src1_membase (MonoCompile *cfg, int load_opcode, int opcode)
 {
 #ifdef TARGET_X86
@@ -11612,7 +11612,7 @@ op_to_op_src1_membase (MonoCompile *cfg, int load_opcode, int opcode)
 	return -1;
 }
 
-static inline int
+static int
 op_to_op_src2_membase (MonoCompile *cfg, int load_opcode, int opcode)
 {
 #ifdef TARGET_X86

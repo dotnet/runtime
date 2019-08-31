@@ -1696,7 +1696,7 @@ asm_writer_emit_section_change (MonoImageWriter *acfg, const char *section_name,
 #endif
 }
 
-static inline
+static
 const char *get_label (const char *s)
 {
 #ifdef TARGET_ASM_APPLE
@@ -1892,7 +1892,7 @@ asm_writer_emit_bytes (MonoImageWriter *acfg, const guint8* buf, int size)
 	}
 }
 
-static inline void
+static void
 asm_writer_emit_int16 (MonoImageWriter *acfg, int value)
 {
 	if (acfg->mode != EMIT_WORD) {
@@ -1906,7 +1906,7 @@ asm_writer_emit_int16 (MonoImageWriter *acfg, int value)
 	fprintf (acfg->fp, "%d", value);
 }
 
-static inline void
+static void
 asm_writer_emit_int32 (MonoImageWriter *acfg, int value)
 {
 	if (acfg->mode != EMIT_LONG) {

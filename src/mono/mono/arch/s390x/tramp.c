@@ -309,7 +309,7 @@ enum_retvalue:
 /*                                                                  */
 /*------------------------------------------------------------------*/
 
-static inline guint8 *
+static guint8 *
 emit_prolog (guint8 *p, MonoMethodSignature *sig, size_data *sz)
 {
 	guint stack_size;
@@ -543,7 +543,7 @@ emit_save_parameters (guint8 *p, MonoMethodSignature *sig, size_data *sz)
 /*                                                                  */
 /*------------------------------------------------------------------*/
 
-static inline guint8 *
+static guint8 *
 alloc_code_memory (guint code_size)
 {
 	guint8 *p;
@@ -573,7 +573,7 @@ alloc_code_memory (guint code_size)
 /*                                                                  */
 /*------------------------------------------------------------------*/
 
-static inline guint8 *
+static guint8 *
 emit_call_and_store_retval (guint8 *p, MonoMethodSignature *sig, 
 			    size_data *sz, gboolean string_ctor)
 {
@@ -674,7 +674,7 @@ printf("Returning %d bytes for type %d (%d)\n",retSize,simpletype,sig->pinvoke);
 /*                                                                  */
 /*------------------------------------------------------------------*/
 
-static inline guint8 *
+static guint8 *
 emit_epilog (guint8 *p, MonoMethodSignature *sig, size_data *sz)
 {
 	/* function epilog */

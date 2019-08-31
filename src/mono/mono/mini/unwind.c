@@ -251,7 +251,7 @@ encode_sleb128 (gint32 value, guint8 *buf, guint8 **endbuf)
 	*endbuf = p;
 }
 
-static inline guint32
+static guint32
 decode_uleb128 (guint8 *buf, guint8 **endbuf)
 {
 	guint8 *p = buf;
@@ -273,7 +273,7 @@ decode_uleb128 (guint8 *buf, guint8 **endbuf)
 	return res;
 }
 
-static inline gint32
+static gint32
 decode_sleb128 (guint8 *buf, guint8 **endbuf)
 {
 	guint8 *p = buf;

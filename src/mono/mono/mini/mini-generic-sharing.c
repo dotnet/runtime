@@ -60,7 +60,7 @@ static mono_mutex_t gshared_mutex;
 
 static gboolean partial_supported = FALSE;
 
-static inline gboolean
+static gboolean
 partial_sharing_supported (void)
 {
 	if (!ALLOW_PARTIAL_SHARING)

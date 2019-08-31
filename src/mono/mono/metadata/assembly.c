@@ -4098,7 +4098,7 @@ search_binding_loaded (MonoAssemblyName *aname)
 	return NULL;
 }
 
-static inline gboolean
+static gboolean
 info_compare_versions (AssemblyVersionSet *left, AssemblyVersionSet *right)
 {
 	if (left->major != right->major || left->minor != right->minor ||
@@ -4108,7 +4108,7 @@ info_compare_versions (AssemblyVersionSet *left, AssemblyVersionSet *right)
 	return TRUE;
 }
 
-static inline gboolean
+static gboolean
 info_versions_equal (MonoAssemblyBindingInfo *left, MonoAssemblyBindingInfo *right)
 {
 	if (left->has_old_version_bottom != right->has_old_version_bottom)
@@ -4172,7 +4172,7 @@ get_version_number (int major, int minor)
 	return major * 256 + minor;
 }
 
-static inline gboolean
+static gboolean
 info_major_minor_in_range (MonoAssemblyBindingInfo *info, MonoAssemblyName *aname)
 {
 	int aname_version_number = get_version_number (aname->major, aname->minor);

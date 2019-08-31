@@ -8,7 +8,7 @@ static mono_pollfd *poll_fds;
 static guint poll_fds_capacity;
 static guint poll_fds_size;
 
-static inline void
+static void
 POLL_INIT_FD (mono_pollfd *poll_fd, gint fd, gint events)
 {
 	poll_fd->fd = fd;
@@ -113,7 +113,7 @@ poll_remove_fd (gint fd)
 		poll_fds_size -= 1;
 }
 
-static inline gint
+static gint
 poll_mark_bad_fds (mono_pollfd *fds, gint size)
 {
 	gint i, ready = 0;

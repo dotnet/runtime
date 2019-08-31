@@ -61,7 +61,7 @@
 /* If the bank is mirrored return the true logical bank that the register in the
  * physical register bank is allocated to.
  */
-static inline int translate_bank (MonoRegState *rs, int bank, int hreg) {
+static int translate_bank (MonoRegState *rs, int bank, int hreg) {
 	return is_hreg_mirrored (rs, bank, hreg) ? get_mirrored_bank (bank) : bank;
 }
 
@@ -134,7 +134,7 @@ static const int regbank_spill_var_size[] = {
 
 #define DEBUG(a) MINI_DEBUG(cfg->verbose_level, 3, a;)
 
-static inline void
+static void
 mono_regstate_assign (MonoRegState *rs)
 {
 #ifdef MONO_ARCH_USE_SHARED_FP_SIMD_BANK
@@ -164,7 +164,7 @@ mono_regstate_assign (MonoRegState *rs)
 #endif
 }
 
-static inline int
+static int
 mono_regstate_alloc_int (MonoRegState *rs, regmask_t allow)
 {
 	regmask_t mask = allow & rs->ifree_mask;
@@ -195,7 +195,7 @@ mono_regstate_alloc_int (MonoRegState *rs, regmask_t allow)
 #endif
 }
 
-static inline void
+static void
 mono_regstate_free_int (MonoRegState *rs, int reg)
 {
 	if (reg >= 0) {
@@ -204,7 +204,7 @@ mono_regstate_free_int (MonoRegState *rs, int reg)
 	}
 }
 
-static inline int
+static int
 mono_regstate_alloc_general (MonoRegState *rs, regmask_t allow, int bank)
 {
 	int i;
@@ -225,7 +225,7 @@ mono_regstate_alloc_general (MonoRegState *rs, regmask_t allow, int bank)
 	return -1;
 }
 
-static inline void
+static void
 mono_regstate_free_general (MonoRegState *rs, int reg, int bank)
 {
 	int mirrored_bank;
@@ -314,7 +314,7 @@ resize_spill_info (MonoCompile *cfg, int bank)
  * returns the offset used by spillvar. It allocates a new
  * spill variable if necessary. 
  */
-static inline int
+static int
 mono_spillvar_offset (MonoCompile *cfg, int spillvar, int bank)
 {
 	MonoSpillInfo *info;
@@ -767,7 +767,7 @@ mono_print_ins (MonoInst *ins)
 	mono_print_ins_index (-1, ins);
 }
 
-static inline void
+static void
 insert_before_ins (MonoBasicBlock *bb, MonoInst *ins, MonoInst* to_insert)
 {
 	/*
@@ -777,7 +777,7 @@ insert_before_ins (MonoBasicBlock *bb, MonoInst *ins, MonoInst* to_insert)
 	mono_bblock_insert_before_ins (bb, ins, to_insert);
 }
 
-static inline void
+static void
 insert_after_ins (MonoBasicBlock *bb, MonoInst *ins, MonoInst **last, MonoInst* to_insert)
 {
 	/*
@@ -789,7 +789,7 @@ insert_after_ins (MonoBasicBlock *bb, MonoInst *ins, MonoInst **last, MonoInst* 
 	*last = to_insert;
 }
 
-static inline int
+static int
 get_vreg_bank (MonoCompile *cfg, int reg, int bank)
 {
 	if (vreg_is_ref (cfg, reg))
@@ -965,7 +965,7 @@ create_copy_ins (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **last, int dest
 	return copy;
 }
 
-static inline const char*
+static const char*
 regbank_to_string (int bank)
 {
 	if (bank == MONO_REG_INT_REF)
@@ -1013,7 +1013,7 @@ enum {
 	MONO_FP_NEEDS_LOAD			= regmask (2)
 };
 
-static inline int
+static int
 alloc_int_reg (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **last, MonoInst *ins, regmask_t dest_mask, int sym_reg, RegTrack *info)
 {
 	int val;
@@ -1033,7 +1033,7 @@ alloc_int_reg (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **last, MonoInst *
 	return val;
 }
 
-static inline int
+static int
 alloc_general_reg (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **last, MonoInst *ins, regmask_t dest_mask, int sym_reg, int bank)
 {
 	int val;
@@ -1049,7 +1049,7 @@ alloc_general_reg (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **last, MonoIn
 	return val;
 }
 
-static inline int
+static int
 alloc_reg (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **last, MonoInst *ins, regmask_t dest_mask, int sym_reg, RegTrack *info, int bank)
 {
 	if (G_UNLIKELY (bank))
@@ -1058,7 +1058,7 @@ alloc_reg (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **last, MonoInst *ins,
 		return alloc_int_reg (cfg, bb, last, ins, dest_mask, sym_reg, info);
 }
 
-static inline void
+static void
 assign_reg (MonoCompile *cfg, MonoRegState *rs, int reg, int hreg, int bank)
 {
 	if (G_UNLIKELY (bank)) {
@@ -1102,7 +1102,7 @@ assign_reg (MonoCompile *cfg, MonoRegState *rs, int reg, int hreg, int bank)
 	}
 }
 
-static inline regmask_t
+static regmask_t
 get_callee_mask (const char spec)
 {
 	if (G_UNLIKELY (reg_bank (spec)))

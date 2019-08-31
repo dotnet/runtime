@@ -63,7 +63,7 @@ g_slist_prepend (GSList *list, gpointer data)
  * Insert the given data in a new node after the current node. 
  * Return new node.
  */
-static inline GSList *
+static GSList *
 insert_after (GSList *list, gpointer data)
 {
 	list->next = g_slist_prepend (list->next, data);
@@ -75,7 +75,7 @@ insert_after (GSList *list, gpointer data)
  * If the list is empty, or the first node contains 'data', return NULL.
  * If no node contains 'data', return the last node.
  */
-static inline GSList*
+static GSList*
 find_prev (GSList *list, gconstpointer data)
 {
 	GSList *prev = NULL;
@@ -89,7 +89,7 @@ find_prev (GSList *list, gconstpointer data)
 }
 
 /* like 'find_prev', but searches for node 'link' */
-static inline GSList*
+static GSList*
 find_prev_link (GSList *list, GSList *link)
 {
 	GSList *prev = NULL;

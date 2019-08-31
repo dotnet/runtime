@@ -1384,7 +1384,7 @@ int cond_to_sparc_cond [][3] = {
 };
 
 /* Map opcode to the sparc condition codes */
-static inline SparcCond
+static SparcCond
 opcode_to_sparc_cond (int opcode)
 {
 	CompRelation rel;

@@ -91,7 +91,7 @@ calc_prime (int x)
 /* We triple the table size at rehash time, similar with previous implementation */
 #define HASH_TABLE_RESIZE_RATIO 3
 
-static inline void mono_g_hash_table_key_store (MonoGHashTable *hash, int slot, MonoObject* key)
+static void mono_g_hash_table_key_store (MonoGHashTable *hash, int slot, MonoObject* key)
 {
 	MonoObject **key_addr = &hash->keys [slot];
 	if (hash->gc_type & MONO_HASH_KEY_GC)
@@ -100,7 +100,7 @@ static inline void mono_g_hash_table_key_store (MonoGHashTable *hash, int slot, 
 		*key_addr = key;
 }
 
-static inline void mono_g_hash_table_value_store (MonoGHashTable *hash, int slot, MonoObject* value)
+static void mono_g_hash_table_value_store (MonoGHashTable *hash, int slot, MonoObject* value)
 {
 	MonoObject **value_addr = &hash->values [slot];
 	if (hash->gc_type & MONO_HASH_VALUE_GC)
@@ -110,7 +110,7 @@ static inline void mono_g_hash_table_value_store (MonoGHashTable *hash, int slot
 }
 
 /* Returns position of key or of an empty slot for it */
-static inline int mono_g_hash_table_find_slot (MonoGHashTable *hash, const MonoObject *key)
+static int mono_g_hash_table_find_slot (MonoGHashTable *hash, const MonoObject *key)
 {
 	guint start = ((*hash->hash_func) (key)) % hash->table_size;
 	guint i = start;

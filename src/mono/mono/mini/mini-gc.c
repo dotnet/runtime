@@ -292,7 +292,7 @@ mini_gc_enable_gc_maps_for_aot (void)
 
 // FIXME: Move these to a shared place
 
-static inline void
+static void
 encode_uleb128 (guint32 value, guint8 *buf, guint8 **endbuf)
 {
 	guint8 *p = buf;
@@ -339,7 +339,7 @@ encode_sleb128 (gint32 value, guint8 *buf, guint8 **endbuf)
 	*endbuf = p;
 }
 
-static inline guint32
+static guint32
 decode_uleb128 (guint8 *buf, guint8 **endbuf)
 {
 	guint8 *p = buf;
@@ -361,7 +361,7 @@ decode_uleb128 (guint8 *buf, guint8 **endbuf)
 	return res;
 }
 
-static inline gint32
+static gint32
 decode_sleb128 (guint8 *buf, guint8 **endbuf)
 {
 	guint8 *p = buf;
@@ -676,19 +676,19 @@ thread_suspend_func (gpointer user_data, void *sigctx, MonoContext *ctx)
 
 #define DEAD_REF ((gpointer)(gssize)0x2a2a2a2a2a2a2a2aULL)
 
-static inline void
+static void
 set_bit (guint8 *bitmap, int width, int y, int x)
 {
 	bitmap [(width * y) + (x / 8)] |= (1 << (x % 8));
 }
 
-static inline void
+static void
 clear_bit (guint8 *bitmap, int width, int y, int x)
 {
 	bitmap [(width * y) + (x / 8)] &= ~(1 << (x % 8));
 }
 
-static inline int
+static int
 get_bit (guint8 *bitmap, int width, int y, int x)
 {
 	return bitmap [(width * y) + (x / 8)] & (1 << (x % 8));
@@ -710,7 +710,7 @@ slot_type_to_string (GCSlotType type)
 	}
 }
 
-static inline host_mgreg_t
+static host_mgreg_t
 get_frame_pointer (MonoContext *ctx, int frame_reg)
 {
 #if defined(TARGET_AMD64)
@@ -1362,7 +1362,7 @@ mini_gc_set_slot_type_from_cfa (MonoCompile *cfg, int slot_offset, GCSlotType ty
 	gcfg->stack_slots_from_cfa = g_slist_prepend_mempool (cfg->mempool, gcfg->stack_slots_from_cfa, GUINT_TO_POINTER (((slot) << 16) | type));
 }
 
-static inline int
+static int
 fp_offset_to_slot (MonoCompile *cfg, int offset)
 {
 	MonoCompileGC *gcfg = cfg->gc_info;
@@ -1370,7 +1370,7 @@ fp_offset_to_slot (MonoCompile *cfg, int offset)
 	return (offset - gcfg->min_offset) / SIZEOF_SLOT;
 }
 
-static inline int
+static int
 slot_to_fp_offset (MonoCompile *cfg, int slot)
 {
 	MonoCompileGC *gcfg = cfg->gc_info;
@@ -1378,7 +1378,7 @@ slot_to_fp_offset (MonoCompile *cfg, int slot)
 	return (slot * SIZEOF_SLOT) + gcfg->min_offset;
 }
 
-static inline MONO_ALWAYS_INLINE void
+static MONO_ALWAYS_INLINE void
 set_slot (MonoCompileGC *gcfg, int slot, int callsite_index, GCSlotType type)
 {
 	g_assert (slot >= 0 && slot < gcfg->nslots);
@@ -1395,7 +1395,7 @@ set_slot (MonoCompileGC *gcfg, int slot, int callsite_index, GCSlotType type)
 	}
 }
 
-static inline void
+static void
 set_slot_everywhere (MonoCompileGC *gcfg, int slot, GCSlotType type)
 {
 	int width, pos;
@@ -1424,7 +1424,7 @@ set_slot_everywhere (MonoCompileGC *gcfg, int slot, GCSlotType type)
 	}
 }
 
-static inline void
+static void
 set_slot_in_range (MonoCompileGC *gcfg, int slot, int from, int to, GCSlotType type)
 {
 	int cindex;
@@ -1436,7 +1436,7 @@ set_slot_in_range (MonoCompileGC *gcfg, int slot, int from, int to, GCSlotType t
 	}
 }
 
-static inline void
+static void
 set_reg_slot (MonoCompileGC *gcfg, int slot, int callsite_index, GCSlotType type)
 {
 	g_assert (slot >= 0 && slot < gcfg->nregs);
@@ -1453,7 +1453,7 @@ set_reg_slot (MonoCompileGC *gcfg, int slot, int callsite_index, GCSlotType type
 	}
 }
 
-static inline void
+static void
 set_reg_slot_everywhere (MonoCompileGC *gcfg, int slot, GCSlotType type)
 {
 	int cindex;
@@ -1462,7 +1462,7 @@ set_reg_slot_everywhere (MonoCompileGC *gcfg, int slot, GCSlotType type)
 		set_reg_slot (gcfg, slot, cindex, type);
 }
 
-static inline void
+static void
 set_reg_slot_in_range (MonoCompileGC *gcfg, int slot, int from, int to, GCSlotType type)
 {
 	int cindex;
@@ -1626,13 +1626,13 @@ get_vtype_bitmap (MonoType *t, int *numbits)
 	}
 }
 
-static inline const char*
+static const char*
 get_offset_sign (int offset)
 {
 	return offset < 0 ? "-" : "+";
 }
 
-static inline int
+static int
 get_offset_val (int offset)
 {
 	return offset < 0 ? (- offset) : offset;
@@ -2203,7 +2203,7 @@ init_gcfg (MonoCompile *cfg)
 	}
 }
 
-static inline gboolean
+static gboolean
 has_bit_set (guint8 *bitmap, int width, int slot)
 {
 	int i;

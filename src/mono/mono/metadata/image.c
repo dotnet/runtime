@@ -2274,7 +2274,7 @@ mono_dynamic_stream_reset (MonoDynamicStream* stream)
 	}
 }
 
-static inline void
+static void
 free_hash (GHashTable *hash)
 {
 	if (hash)

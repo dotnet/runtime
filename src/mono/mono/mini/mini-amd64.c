@@ -154,7 +154,7 @@ debug_omit_fp (void)
 #endif
 }
 
-static inline gboolean
+static gboolean
 amd64_is_near_call (guint8 *code)
 {
 	/* Skip REX */
@@ -164,7 +164,7 @@ amd64_is_near_call (guint8 *code)
 	return code [0] == 0xe8;
 }
 
-static inline gboolean
+static gboolean
 amd64_use_imm32 (gint64 val)
 {
 	if (mini_debug_options.single_imm_size)
@@ -457,13 +457,13 @@ allocate_register_for_valuetype_win64 (ArgInfo *arg_info, ArgumentClass arg_clas
 	return result;
 }
 
-static inline gboolean
+static gboolean
 allocate_parameter_register_for_valuetype_win64 (ArgInfo *arg_info, ArgumentClass arg_class, guint32 arg_size, guint32 *current_int_reg, guint32 *current_float_reg)
 {
 	return allocate_register_for_valuetype_win64 (arg_info, arg_class, arg_size, param_regs, PARAM_REGS, float_param_regs, FLOAT_PARAM_REGS, current_int_reg, current_float_reg);
 }
 
-static inline gboolean
+static gboolean
 allocate_return_register_for_valuetype_win64 (ArgInfo *arg_info, ArgumentClass arg_class, guint32 arg_size, guint32 *current_int_reg, guint32 *current_float_reg)
 {
 	return allocate_register_for_valuetype_win64 (arg_info, arg_class, arg_size, return_regs, RETURN_REGS, float_return_regs, FLOAT_RETURN_REGS, current_int_reg, current_float_reg);
@@ -2075,7 +2075,7 @@ emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 }
 
 #ifdef ENABLE_LLVM
-static inline LLVMArgStorage
+static LLVMArgStorage
 arg_storage_to_llvm_arg_storage (MonoCompile *cfg, ArgStorage storage)
 {
 	switch (storage) {

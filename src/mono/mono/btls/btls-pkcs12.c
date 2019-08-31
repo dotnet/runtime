@@ -55,13 +55,13 @@ allocate_btls_password (const void *password)
 	return buffer;
 }
 #else
-static inline void
+static void
 deallocate_btls_password (char *password)
 {
 	return;
 }
 
-static inline char *
+static char *
 allocate_btls_password (const void *password)
 {
 	return (char *)password;

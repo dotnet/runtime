@@ -259,7 +259,7 @@ compute_dominance_frontier (MonoCompile *cfg)
 	cfg->comp_done |= MONO_COMP_DFRONTIER;
 }
 
-static inline void
+static void
 df_set (MonoCompile *m, MonoBitSet* dest, MonoBitSet *set) 
 {
 	int i;

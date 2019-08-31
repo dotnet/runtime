@@ -259,7 +259,7 @@ remove_breakpoint (BreakpointInstance *inst)
 /*
  * This doesn't take any locks.
  */
-static inline gboolean
+static gboolean
 bp_matches_method (MonoBreakpoint *bp, MonoMethod *method)
 {
 	int i;

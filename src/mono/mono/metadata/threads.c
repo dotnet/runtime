@@ -470,7 +470,7 @@ mono_thread_set_interruption_requested_flags (MonoInternalThread *thread, gboole
 	return sync || !(new_state & ABORT_PROT_BLOCK_MASK);
 }
 
-static inline MonoNativeThreadId
+static MonoNativeThreadId
 thread_get_tid (MonoInternalThread *thread)
 {
 	/* We store the tid as a guint64 to keep the object layout constant between platforms */
@@ -515,7 +515,7 @@ dec_longlived_thread_data (MonoLongLivedThreadData *lltd)
 	mono_refcount_dec (lltd);
 }
 
-static inline void
+static void
 lock_thread (MonoInternalThread *thread)
 {
 	g_assert (thread->longlived);
@@ -524,7 +524,7 @@ lock_thread (MonoInternalThread *thread)
 	mono_coop_mutex_lock (thread->longlived->synch_cs);
 }
 
-static inline void
+static void
 unlock_thread (MonoInternalThread *thread)
 {
 	mono_coop_mutex_unlock (thread->longlived->synch_cs);
@@ -542,7 +542,7 @@ unlock_thread_handle (MonoInternalThreadHandle thread)
 	unlock_thread (mono_internal_thread_handle_ptr (thread));
 }
 
-static inline gboolean
+static gboolean
 is_appdomainunloaded_exception (MonoClass *klass)
 {
 #ifdef ENABLE_NETCORE
@@ -552,7 +552,7 @@ is_appdomainunloaded_exception (MonoClass *klass)
 #endif
 }
 
-static inline gboolean
+static gboolean
 is_threadabort_exception (MonoClass *klass)
 {
 	return klass == mono_defaults.threadabortexception_class;

@@ -73,7 +73,7 @@ arg_info_desc (ArgInfo *info)
 }
 #endif
 
-static inline void
+static void
 add_to_map (GPtrArray *map, int src, int dst)
 {
 	g_ptr_array_add (map, GUINT_TO_POINTER (src));
@@ -94,7 +94,7 @@ add_to_map (GPtrArray *map, int src, int dst)
  * 8..  - stack slots
  *
  */
-static inline int
+static int
 map_reg (int reg)
 {
 	int i = 0;
@@ -106,13 +106,13 @@ map_reg (int reg)
 	return -1;
 }
 
-static inline int
+static int
 map_freg (int reg)
 {
 	return reg + PARAM_REGS;
 }
 
-static inline int
+static int
 map_stack_slot (int slot)
 {
 	return slot + PARAM_REGS + FLOAT_PARAM_REGS;

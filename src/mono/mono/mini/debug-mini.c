@@ -35,7 +35,7 @@ typedef struct
 	guint32 breakpoint_id;
 } MiniDebugMethodInfo;
 
-static inline void
+static void
 record_line_number (MiniDebugMethodInfo *info, guint32 address, guint32 offset)
 {
 	MonoDebugLineNumberEntry lne;
@@ -352,7 +352,7 @@ mono_debug_open_block (MonoCompile *cfg, MonoBasicBlock *bb, guint32 address)
 	record_line_number (info, address, offset);
 }
 
-static inline void
+static void
 encode_value (gint32 value, guint8 *buf, guint8 **endbuf)
 {
 	guint8 *p = buf;
@@ -388,7 +388,7 @@ encode_value (gint32 value, guint8 *buf, guint8 **endbuf)
 		*endbuf = p;
 }
 
-static inline gint32
+static gint32
 decode_value (guint8 *ptr, guint8 **rptr)
 {
 	guint8 b = *ptr;

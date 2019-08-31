@@ -23,14 +23,14 @@
 #include "mono/utils/mono-memory-model.h"
 #include "mono/utils/mono-proclib.h"
 
-static inline GCObject*
+static GCObject*
 alloc_for_promotion (GCVTable vtable, GCObject *obj, size_t objsize, gboolean has_references)
 {
 	sgen_total_promoted_size += objsize;
 	return sgen_major_collector.alloc_object (vtable, objsize, has_references);
 }
 
-static inline GCObject*
+static GCObject*
 alloc_for_promotion_par (GCVTable vtable, GCObject *obj, size_t objsize, gboolean has_references)
 {
 	/*

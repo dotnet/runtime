@@ -446,7 +446,7 @@ sweep_in_progress (void)
 		state == SWEEP_STATE_COMPACTING;
 }
 
-static inline gboolean
+static gboolean
 block_is_swept_or_marking (MSBlockInfo *block)
 {
 	gint32 state = block->state;
@@ -1126,7 +1126,7 @@ get_cardtable_mod_union_for_block (MSBlockInfo *block, gboolean allocate)
 	return other;
 }
 
-static inline guint8*
+static guint8*
 major_get_cardtable_mod_union_for_reference (char *ptr)
 {
 	MSBlockInfo *block = MS_BLOCK_FOR_OBJ (ptr);
@@ -1153,7 +1153,7 @@ mark_mod_union_card (GCObject *obj, void **ptr, GCObject *value_obj)
 	sgen_binary_protocol_mod_union_remset (obj, ptr, value_obj, SGEN_LOAD_VTABLE (value_obj));
 }
 
-static inline gboolean
+static gboolean
 major_block_is_evacuating (MSBlockInfo *block)
 {
 	if (evacuate_block_obj_sizes [block->obj_size_index] &&
@@ -1308,7 +1308,7 @@ static guint64 stat_drain_loops;
 #define DRAIN_GRAY_STACK_FUNCTION_NAME	drain_gray_stack_concurrent_par_with_evacuation
 #include "sgen-marksweep-drain-gray-stack.h"
 
-static inline gboolean
+static gboolean
 major_is_evacuating (void)
 {
 	int i;
@@ -1422,7 +1422,7 @@ mark_pinned_objects_in_block (MSBlockInfo *block, size_t first_entry, size_t las
 		block->has_pinned = TRUE;
 }
 
-static inline void
+static void
 sweep_block_for_size (MSBlockInfo *block, int count, int obj_size)
 {
 	int obj_index;
@@ -1452,7 +1452,7 @@ sweep_block_for_size (MSBlockInfo *block, int count, int obj_size)
 	}
 }
 
-static inline gboolean
+static gboolean
 try_set_block_state (MSBlockInfo *block, gint32 new_state, gint32 expected_state)
 {
 	gint32 old_state = SGEN_CAS (&block->state, new_state, expected_state);
@@ -1462,7 +1462,7 @@ try_set_block_state (MSBlockInfo *block, gint32 new_state, gint32 expected_state
 	return success;
 }
 
-static inline void
+static void
 set_block_state (MSBlockInfo *block, gint32 new_state, gint32 expected_state)
 {
 	SGEN_ASSERT (6, block->state == expected_state, "Block state incorrect before set");
@@ -1539,7 +1539,7 @@ sweep_block (MSBlockInfo *block)
 	return TRUE;
 }
 
-static inline int
+static int
 bitcount (mword d)
 {
 	int count = 0;

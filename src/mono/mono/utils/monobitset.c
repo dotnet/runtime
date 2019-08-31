@@ -269,7 +269,7 @@ bitstart_mask [] = {
 
 #else
 
-static inline gint
+static gint
 my_g_bit_nth_lsf (gsize mask, gint nth_bit)
 {
 	nth_bit ++;
@@ -304,7 +304,7 @@ my_g_bit_nth_lsf (gsize mask, gint nth_bit)
 #endif
 }
 
-static inline gint
+static gint
 my_g_bit_nth_lsf_nomask (gsize mask)
 {
 	/* Mask is expected to be != 0 */
@@ -334,7 +334,7 @@ my_g_bit_nth_lsf_nomask (gsize mask)
 
 #endif
 
-static inline int
+static int
 my_g_bit_nth_msf (gsize mask,
 	       gint   nth_bit)
 {

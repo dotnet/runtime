@@ -82,17 +82,17 @@ mono_gc_weak_link_get (void **link_addr)
 	return obj;
 }
 
-static inline gboolean
+static gboolean
 slot_occupied (HandleData *handles, guint slot) {
 	return handles->bitmap [slot / BITMAP_SIZE] & (1 << (slot % BITMAP_SIZE));
 }
 
-static inline void
+static void
 vacate_slot (HandleData *handles, guint slot) {
 	handles->bitmap [slot / BITMAP_SIZE] &= ~(1 << (slot % BITMAP_SIZE));
 }
 
-static inline void
+static void
 occupy_slot (HandleData *handles, guint slot) {
 	handles->bitmap [slot / BITMAP_SIZE] |= 1 << (slot % BITMAP_SIZE);
 }

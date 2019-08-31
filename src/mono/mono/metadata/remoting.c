@@ -116,14 +116,14 @@ mono_compile_method_icall (MonoMethod *method);
 #define register_icall(func, sig, save) \
 	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, func, #func, (sig), (save), NULL))
 
-static inline void
+static void
 remoting_lock (void)
 {
 	g_assert (remoting_mutex_inited);
 	mono_os_mutex_lock (&remoting_mutex);
 }
 
-static inline void
+static void
 remoting_unlock (void)
 {
 	g_assert (remoting_mutex_inited);
@@ -306,7 +306,7 @@ mono_mb_emit_contextbound_check (MonoMethodBuilder *mb, int branch_code)
 }
 #endif /* !DISABLE_JIT */
 
-static inline MonoMethod*
+static MonoMethod*
 mono_marshal_remoting_find_in_cache (MonoMethod *method, int wrapper_type)
 {
 	MonoMethod *res = NULL;
@@ -334,7 +334,7 @@ mono_marshal_remoting_find_in_cache (MonoMethod *method, int wrapper_type)
 }
 
 /* Create the method from the builder and place it in the cache */
-static inline MonoMethod*
+static MonoMethod*
 mono_remoting_mb_create_and_cache (MonoMethod *key, MonoMethodBuilder *mb, 
 								   MonoMethodSignature *sig, int max_stack, WrapperInfo *info)
 {

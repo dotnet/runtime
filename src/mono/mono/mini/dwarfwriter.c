@@ -109,85 +109,85 @@ mono_dwarf_writer_get_il_file_line_index (MonoDwarfWriter *w)
 
 /* Wrappers around the image writer functions */
 
-static inline void
+static void
 emit_section_change (MonoDwarfWriter *w, const char *section_name, int subsection_index)
 {
 	mono_img_writer_emit_section_change (w->w, section_name, subsection_index);
 }
 
-static inline void
+static void
 emit_push_section (MonoDwarfWriter *w, const char *section_name, int subsection)
 {
 	mono_img_writer_emit_push_section (w->w, section_name, subsection);
 }
 
-static inline void
+static void
 emit_pop_section (MonoDwarfWriter *w)
 {
 	mono_img_writer_emit_pop_section (w->w);
 }
 
-static inline void
+static void
 emit_label (MonoDwarfWriter *w, const char *name) 
 { 
 	mono_img_writer_emit_label (w->w, name); 
 }
 
-static inline void
+static void
 emit_bytes (MonoDwarfWriter *w, const guint8* buf, int size) 
 { 
 	mono_img_writer_emit_bytes (w->w, buf, size); 
 }
 
-static inline void
+static void
 emit_string (MonoDwarfWriter *w, const char *value) 
 { 
 	mono_img_writer_emit_string (w->w, value); 
 }
 
-static inline void
+static void
 emit_line (MonoDwarfWriter *w) 
 { 
 	mono_img_writer_emit_line (w->w); 
 }
 
-static inline void
+static void
 emit_alignment (MonoDwarfWriter *w, int size) 
 { 
 	mono_img_writer_emit_alignment (w->w, size); 
 }
 
-static inline void
+static void
 emit_pointer_unaligned (MonoDwarfWriter *w, const char *target) 
 { 
 	mono_img_writer_emit_pointer_unaligned (w->w, target); 
 }
 
-static inline void
+static void
 emit_pointer (MonoDwarfWriter *w, const char *target) 
 { 
 	mono_img_writer_emit_pointer (w->w, target); 
 }
 
-static inline void
+static void
 emit_int16 (MonoDwarfWriter *w, int value) 
 { 
 	mono_img_writer_emit_int16 (w->w, value); 
 }
 
-static inline void
+static void
 emit_int32 (MonoDwarfWriter *w, int value) 
 { 
 	mono_img_writer_emit_int32 (w->w, value); 
 }
 
-static inline void
+static void
 emit_symbol_diff (MonoDwarfWriter *w, const char *end, const char* start, int offset) 
 { 
 	mono_img_writer_emit_symbol_diff (w->w, end, start, offset); 
 }
 
-static inline void
+static void
 emit_byte (MonoDwarfWriter *w, guint8 val) 
 { 
 	mono_img_writer_emit_byte (w->w, val); 
@@ -1444,7 +1444,7 @@ il_offset_from_address (MonoMethod *method, MonoDebugMethodJitInfo *jit,
 
 static int max_special_addr_diff = 0;
 
-static inline void
+static void
 emit_advance_op (MonoDwarfWriter *w, int line_diff, int addr_diff)
 {
 	gint64 opcode = 0;

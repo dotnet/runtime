@@ -149,7 +149,7 @@ typedef struct {
 	guint8 *buf, *p, *end;
 } Buffer;
 
-static inline void
+static void
 buffer_init (Buffer *buf, int size)
 {
 	buf->buf = (guint8 *)g_malloc (size);
@@ -157,13 +157,13 @@ buffer_init (Buffer *buf, int size)
 	buf->end = buf->buf + size;
 }
 
-static inline int
+static int
 buffer_len (Buffer *buf)
 {
 	return buf->p - buf->buf;
 }
 
-static inline void
+static void
 buffer_make_room (Buffer *buf, int size)
 {
 	if (buf->end - buf->p < size) {
@@ -176,7 +176,7 @@ buffer_make_room (Buffer *buf, int size)
 	}
 }
 
-static inline void
+static void
 buffer_add_byte (Buffer *buf, guint8 val)
 {
 	buffer_make_room (buf, 1);
@@ -184,7 +184,7 @@ buffer_add_byte (Buffer *buf, guint8 val)
 	buf->p++;
 }
 
-static inline void
+static void
 buffer_add_short (Buffer *buf, guint32 val)
 {
 	buffer_make_room (buf, 2);
@@ -193,7 +193,7 @@ buffer_add_short (Buffer *buf, guint32 val)
 	buf->p += 2;
 }
 
-static inline void
+static void
 buffer_add_int (Buffer *buf, guint32 val)
 {
 	buffer_make_room (buf, 4);
@@ -204,20 +204,20 @@ buffer_add_int (Buffer *buf, guint32 val)
 	buf->p += 4;
 }
 
-static inline void
+static void
 buffer_add_long (Buffer *buf, guint64 l)
 {
 	buffer_add_int (buf, (l >> 32) & 0xffffffff);
 	buffer_add_int (buf, (l >> 0) & 0xffffffff);
 }
 
-static inline void
+static void
 buffer_add_id (Buffer *buf, int id)
 {
 	buffer_add_int (buf, (guint64)id);
 }
 
-static inline void
+static void
 buffer_add_data (Buffer *buf, guint8 *data, int len)
 {
 	buffer_make_room (buf, len);
@@ -225,7 +225,7 @@ buffer_add_data (Buffer *buf, guint8 *data, int len)
 	buf->p += len;
 }
 
-static inline void
+static void
 buffer_add_string (Buffer *buf, const char *str)
 {
 	int len;
@@ -239,13 +239,13 @@ buffer_add_string (Buffer *buf, const char *str)
 	}
 }
 
-static inline void
+static void
 buffer_add_buffer (Buffer *buf, Buffer *data)
 {
 	buffer_add_data (buf, data->buf, buffer_len (data));
 }
 
-static inline void
+static void
 buffer_free (Buffer *buf)
 {
 	g_free (buf->buf);

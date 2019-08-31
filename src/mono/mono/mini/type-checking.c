@@ -87,7 +87,7 @@ emit_castclass_with_cache (MonoCompile *cfg, MonoInst *obj, MonoClass *klass, in
 	return res;
 }
 
-static inline void
+static void
 mini_emit_class_check_inst (MonoCompile *cfg, int klass_reg, MonoClass *klass, MonoInst *klass_inst)
 {
 	if (klass_inst) {
@@ -232,7 +232,7 @@ mini_emit_max_iid_check_class (MonoCompile *cfg, int klass_reg, MonoClass *klass
 	mini_emit_max_iid_check (cfg, max_iid_reg, klass, false_target);
 }
 
-static inline void
+static void
 mini_emit_class_check_branch (MonoCompile *cfg, int klass_reg, MonoClass *klass, int branch_op, MonoBasicBlock *target)
 {
 	if (cfg->compile_aot) {

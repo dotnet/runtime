@@ -1381,7 +1381,7 @@ leave:
  * that, the system's file descriptor limit. This is called by the fork child
  * in close_my_fds.
  */
-static inline guint32
+static guint32
 max_fd_count (void)
 {
 #if defined (_AIX)

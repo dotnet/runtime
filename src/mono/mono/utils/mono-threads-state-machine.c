@@ -103,7 +103,7 @@ check_thread_state (MonoThreadInfo* info)
 	}
 }
 
-static inline void
+static void
 trace_state_change_with_func (const char *transition, MonoThreadInfo *info, int cur_raw_state, int next_state, gboolean next_no_safepoints, int suspend_count_delta, const char *func)
 {
 	check_thread_state (info);
@@ -121,7 +121,7 @@ trace_state_change_with_func (const char *transition, MonoThreadInfo *info, int 
 	CHECKED_BUILD_THREAD_TRANSITION (transition, info, get_thread_state (cur_raw_state), get_thread_suspend_count (cur_raw_state), next_state, suspend_count_delta);
 }
 
-static inline void
+static void
 trace_state_change_sigsafe (const char *transition, MonoThreadInfo *info, int cur_raw_state, int next_state, gboolean next_no_safepoints, int suspend_count_delta, const char *func)
 {
 	check_thread_state (info);
@@ -139,7 +139,7 @@ trace_state_change_sigsafe (const char *transition, MonoThreadInfo *info, int cu
 	CHECKED_BUILD_THREAD_TRANSITION_NOBT (transition, info, get_thread_state (cur_raw_state), get_thread_suspend_count (cur_raw_state), next_state, suspend_count_delta);
 }
 
-static inline void
+static void
 trace_state_change (const char *transition, MonoThreadInfo *info, int cur_raw_state, int next_state, gboolean next_no_safepoints, int suspend_count_delta)
 // FIXME migrate all uses
 {

@@ -64,13 +64,13 @@ static MonoNativeTlsKey setup_fields_tls_id;
 
 static MonoNativeTlsKey init_pending_tls_id;
 
-static inline void
+static void
 classes_lock (void)
 {
 	mono_locks_os_acquire (&classes_mutex, ClassesLock);
 }
 
-static inline void
+static void
 classes_unlock (void)
 {
 	mono_locks_os_release (&classes_mutex, ClassesLock);

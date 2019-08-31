@@ -114,7 +114,7 @@ typedef struct {
 	MonoCoopMutex *mutex;
 } BreakCoopAlertableWaitUD;
 
-static inline void
+static void
 break_coop_alertable_wait (gpointer user_data)
 {
 	BreakCoopAlertableWaitUD *ud = (BreakCoopAlertableWaitUD*)user_data;
@@ -132,7 +132,7 @@ break_coop_alertable_wait (gpointer user_data)
  *   Wait on COND/MUTEX. If ALERTABLE is non-null, the wait can be interrupted.
  * In that case, *ALERTABLE will be set to TRUE, and 0 is returned.
  */
-static inline gint
+static gint
 coop_cond_timedwait_alertable (MonoCoopCond *cond, MonoCoopMutex *mutex, guint32 timeout_ms, gboolean *alertable)
 {
 	BreakCoopAlertableWaitUD *ud;

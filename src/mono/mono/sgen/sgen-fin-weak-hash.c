@@ -42,19 +42,19 @@ static int no_finalize = 0;
 
 #define TAG_MASK ((mword)0x1)
 
-static inline GCObject*
+static GCObject*
 tagged_object_get_object (GCObject *object)
 {
 	return (GCObject*)(((mword)object) & ~TAG_MASK);
 }
 
-static inline int
+static int
 tagged_object_get_tag (GCObject *object)
 {
 	return ((mword)object) & TAG_MASK;
 }
 
-static inline GCObject*
+static GCObject*
 tagged_object_apply (void *object, int tag_bits)
 {
        return (GCObject*)((mword)object | (mword)tag_bits);

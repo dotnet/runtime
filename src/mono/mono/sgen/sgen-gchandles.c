@@ -56,7 +56,7 @@ protocol_gchandle_update (int handle_type, gpointer link, gpointer old_value, gp
 }
 
 /* Returns the new value in the slot, or NULL if the CAS failed. */
-static inline gpointer
+static gpointer
 try_set_slot (volatile gpointer *slot, GCObject *obj, gpointer old, GCHandleType type)
 {
 	gpointer new_;
@@ -72,7 +72,7 @@ try_set_slot (volatile gpointer *slot, GCObject *obj, gpointer old, GCHandleType
 	return NULL;
 }
 
-static inline gboolean
+static gboolean
 is_slot_set (volatile gpointer *slot)
 {
 	gpointer entry = *slot;
@@ -82,7 +82,7 @@ is_slot_set (volatile gpointer *slot)
 }
 
 /* Try to claim a slot by setting its occupied bit. */
-static inline gboolean
+static gboolean
 try_occupy_slot (volatile gpointer *slot, gpointer obj, int data)
 {
 	if (is_slot_set (slot))

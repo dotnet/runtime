@@ -520,7 +520,7 @@ sgen_card_table_dump_obj_card (GCObject *object, size_t size, void *dummy)
 
 #define MWORD_MASK (sizeof (mword) - 1)
 
-static inline int
+static int
 find_card_offset (mword card)
 {
 /*XXX Use assembly as this generates some pretty bad code */

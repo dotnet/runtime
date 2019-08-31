@@ -2675,7 +2675,7 @@ report_internal_mem_usage (void)
  * current collection - major collections are full heap, so old gen objects
  * are never alive during a minor collection.
  */
-static inline int
+static int
 sgen_is_object_alive_and_on_current_collection (GCObject *object)
 {
 	if (ptr_in_nursery (object))

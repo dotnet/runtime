@@ -139,7 +139,7 @@ static AgeAllocationBuffer age_alloc_buffers [MAX_AGE];
 /* The collector allocs from here. */
 static SgenFragmentAllocator collector_allocator;
 
-static inline int
+static int
 get_object_age (GCObject *object)
 {
 	size_t idx = ((char*)object - sgen_nursery_start) >> SGEN_TO_SPACE_GRANULE_BITS;
@@ -157,7 +157,7 @@ set_age_in_range (char *start, char *end, int age)
 	memset (region_start, age, length);
 }
 
-static inline void
+static void
 mark_bit (char *space_bitmap, char *pos)
 {
 	size_t idx = (pos - sgen_nursery_start) >> SGEN_TO_SPACE_GRANULE_BITS;
@@ -250,7 +250,7 @@ alloc_for_promotion_slow_path (int age, size_t objsize)
 	return p;
 }
 
-static inline GCObject*
+static GCObject*
 alloc_for_promotion (GCVTable vtable, GCObject *obj, size_t objsize, gboolean has_references)
 {
 	char *p = NULL;

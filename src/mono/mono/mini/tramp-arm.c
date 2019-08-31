@@ -112,7 +112,7 @@ branch_for_target_reachable (guint8 *branch, guint8 *target)
 	return 0;
 }
 
-static inline guint8*
+static guint8*
 emit_bx (guint8* code, int reg)
 {
 	if (mono_arm_thumb_supported ())

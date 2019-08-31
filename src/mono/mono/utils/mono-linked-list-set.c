@@ -19,7 +19,7 @@
 
 #include <mono/utils/atomic.h>
 
-static inline gpointer
+static gpointer
 mask (gpointer n, uintptr_t bit)
 {
 	return (gpointer)(((uintptr_t)n) | bit);

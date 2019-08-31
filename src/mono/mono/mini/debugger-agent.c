@@ -735,7 +735,7 @@ static void
 register_socket_transport (void);
 #endif
 
-static inline gboolean
+static gboolean
 is_debugger_thread (void)
 {
 	MonoInternalThread *internal;
@@ -1656,7 +1656,7 @@ start_debugger_thread (MonoError *error)
  * Functions to decode protocol data
  */
 
-static inline int
+static int
 decode_byte (guint8 *buf, guint8 **endbuf, guint8 *limit)
 {
 	*endbuf = buf + 1;
@@ -1664,7 +1664,7 @@ decode_byte (guint8 *buf, guint8 **endbuf, guint8 *limit)
 	return buf [0];
 }
 
-static inline int
+static int
 decode_int (guint8 *buf, guint8 **endbuf, guint8 *limit)
 {
 	*endbuf = buf + 4;
@@ -1673,7 +1673,7 @@ decode_int (guint8 *buf, guint8 **endbuf, guint8 *limit)
 	return (((int)buf [0]) << 24) | (((int)buf [1]) << 16) | (((int)buf [2]) << 8) | (((int)buf [3]) << 0);
 }
 
-static inline gint64
+static gint64
 decode_long (guint8 *buf, guint8 **endbuf, guint8 *limit)
 {
 	guint32 high = decode_int (buf, &buf, limit);
@@ -1684,13 +1684,13 @@ decode_long (guint8 *buf, guint8 **endbuf, guint8 *limit)
 	return ((((guint64)high) << 32) | ((guint64)low));
 }
 
-static inline int
+static int
 decode_id (guint8 *buf, guint8 **endbuf, guint8 *limit)
 {
 	return decode_int (buf, endbuf, limit);
 }
 
-static inline char*
+static char*
 decode_string (guint8 *buf, guint8 **endbuf, guint8 *limit)
 {
 	int len = decode_int (buf, &buf, limit);
@@ -1716,7 +1716,7 @@ decode_string (guint8 *buf, guint8 **endbuf, guint8 *limit)
  * Functions to encode protocol data
  */
 
-static inline void
+static void
 buffer_init (Buffer *buf, int size)
 {
 	buf->buf = (guint8 *)g_malloc (size);
@@ -1724,13 +1724,13 @@ buffer_init (Buffer *buf, int size)
 	buf->end = buf->buf + size;
 }
 
-static inline int
+static int
 buffer_len (Buffer *buf)
 {
 	return buf->p - buf->buf;
 }
 
-static inline void
+static void
 buffer_make_room (Buffer *buf, int size)
 {
 	if (buf->end - buf->p < size) {
@@ -1743,7 +1743,7 @@ buffer_make_room (Buffer *buf, int size)
 	}
 }
 
-static inline void
+static void
 buffer_add_byte (Buffer *buf, guint8 val)
 {
 	buffer_make_room (buf, 1);
@@ -1751,7 +1751,7 @@ buffer_add_byte (Buffer *buf, guint8 val)
 	buf->p++;
 }
 
-static inline void
+static void
 buffer_add_short (Buffer *buf, guint32 val)
 {
 	buffer_make_room (buf, 2);
@@ -1760,7 +1760,7 @@ buffer_add_short (Buffer *buf, guint32 val)
 	buf->p += 2;
 }
 
-static inline void
+static void
 buffer_add_int (Buffer *buf, guint32 val)
 {
 	buffer_make_room (buf, 4);
@@ -1771,20 +1771,20 @@ buffer_add_int (Buffer *buf, guint32 val)
 	buf->p += 4;
 }
 
-static inline void
+static void
 buffer_add_long (Buffer *buf, guint64 l)
 {
 	buffer_add_int (buf, (l >> 32) & 0xffffffff);
 	buffer_add_int (buf, (l >> 0) & 0xffffffff);
 }
 
-static inline void
+static void
 buffer_add_id (Buffer *buf, int id)
 {
 	buffer_add_int (buf, (guint64)id);
 }
 
-static inline void
+static void
 buffer_add_data (Buffer *buf, guint8 *data, int len)
 {
 	buffer_make_room (buf, len);
@@ -1792,7 +1792,7 @@ buffer_add_data (Buffer *buf, guint8 *data, int len)
 	buf->p += len;
 }
 
-static inline void
+static void
 buffer_add_string (Buffer *buf, const char *str)
 {
 	int len;
@@ -1806,20 +1806,20 @@ buffer_add_string (Buffer *buf, const char *str)
 	}
 }
 
-static inline void
+static void
 buffer_add_byte_array (Buffer *buf, guint8 *bytes, guint32 arr_len)
 {
     buffer_add_int (buf, arr_len);
     buffer_add_data (buf, bytes, arr_len);
 }
 
-static inline void
+static void
 buffer_add_buffer (Buffer *buf, Buffer *data)
 {
 	buffer_add_data (buf, data->buf, buffer_len (data));
 }
 
-static inline void
+static void
 buffer_free (Buffer *buf)
 {
 	g_free (buf->buf);
@@ -2028,7 +2028,7 @@ clear_suspended_objs (void)
 	dbg_unlock ();
 }
 
-static inline int
+static int
 get_objid (MonoObject *obj)
 {
 	if (!obj)
@@ -2083,13 +2083,13 @@ get_object (int objid, MonoObject **obj)
 	return ERR_NONE;
 }
 
-static inline int
+static int
 decode_objid (guint8 *buf, guint8 **endbuf, guint8 *limit)
 {
 	return decode_id (buf, endbuf, limit);
 }
 
-static inline void
+static void
 buffer_add_objid (Buffer *buf, MonoObject *o)
 {
 	buffer_add_id (buf, get_objid (o));
@@ -2298,7 +2298,7 @@ get_id (MonoDomain *domain, IdType type, gpointer val)
 	return id->id;
 }
 
-static inline gpointer
+static gpointer
 decode_ptr_id (guint8 *buf, guint8 **endbuf, guint8 *limit, IdType type, MonoDomain **domain, ErrorCode *err)
 {
 	Id *res;
@@ -2331,7 +2331,7 @@ decode_ptr_id (guint8 *buf, guint8 **endbuf, guint8 *limit, IdType type, MonoDom
 	return res->data.val;
 }
 
-static inline int
+static int
 buffer_add_ptr_id (Buffer *buf, MonoDomain *domain, IdType type, gpointer val)
 {
 	int id = get_id (domain, type, val);
@@ -2340,7 +2340,7 @@ buffer_add_ptr_id (Buffer *buf, MonoDomain *domain, IdType type, gpointer val)
 	return id;
 }
 
-static inline MonoClass*
+static MonoClass*
 decode_typeid (guint8 *buf, guint8 **endbuf, guint8 *limit, MonoDomain **domain, ErrorCode *err)
 {
 	MonoClass *klass;
@@ -2356,19 +2356,19 @@ decode_typeid (guint8 *buf, guint8 **endbuf, guint8 *limit, MonoDomain **domain,
 	return klass;
 }
 
-static inline MonoAssembly*
+static MonoAssembly*
 decode_assemblyid (guint8 *buf, guint8 **endbuf, guint8 *limit, MonoDomain **domain, ErrorCode *err)
 {
 	return (MonoAssembly *)decode_ptr_id (buf, endbuf, limit, ID_ASSEMBLY, domain, err);
 }
 
-static inline MonoImage*
+static MonoImage*
 decode_moduleid (guint8 *buf, guint8 **endbuf, guint8 *limit, MonoDomain **domain, ErrorCode *err)
 {
 	return (MonoImage *)decode_ptr_id (buf, endbuf, limit, ID_MODULE, domain, err);
 }
 
-static inline MonoMethod*
+static MonoMethod*
 decode_methodid (guint8 *buf, guint8 **endbuf, guint8 *limit, MonoDomain **domain, ErrorCode *err)
 {
 	MonoMethod *m;
@@ -2384,25 +2384,25 @@ decode_methodid (guint8 *buf, guint8 **endbuf, guint8 *limit, MonoDomain **domai
 	return m;
 }
 
-static inline MonoClassField*
+static MonoClassField*
 decode_fieldid (guint8 *buf, guint8 **endbuf, guint8 *limit, MonoDomain **domain, ErrorCode *err)
 {
 	return (MonoClassField *)decode_ptr_id (buf, endbuf, limit, ID_FIELD, domain, err);
 }
 
-static inline MonoDomain*
+static MonoDomain*
 decode_domainid (guint8 *buf, guint8 **endbuf, guint8 *limit, MonoDomain **domain, ErrorCode *err)
 {
 	return (MonoDomain *)decode_ptr_id (buf, endbuf, limit, ID_DOMAIN, domain, err);
 }
 
-static inline MonoProperty*
+static MonoProperty*
 decode_propertyid (guint8 *buf, guint8 **endbuf, guint8 *limit, MonoDomain **domain, ErrorCode *err)
 {
 	return (MonoProperty *)decode_ptr_id (buf, endbuf, limit, ID_PROPERTY, domain, err);
 }
 
-static inline void
+static void
 buffer_add_typeid (Buffer *buf, MonoDomain *domain, MonoClass *klass)
 {
 	buffer_add_ptr_id (buf, domain, ID_TYPE, klass);
@@ -2418,7 +2418,7 @@ buffer_add_typeid (Buffer *buf, MonoDomain *domain, MonoClass *klass)
 	}
 }
 
-static inline void
+static void
 buffer_add_methodid (Buffer *buf, MonoDomain *domain, MonoMethod *method)
 {
 	buffer_add_ptr_id (buf, domain, ID_METHOD, method);
@@ -2434,7 +2434,7 @@ buffer_add_methodid (Buffer *buf, MonoDomain *domain, MonoMethod *method)
 	}
 }
 
-static inline void
+static void
 buffer_add_assemblyid (Buffer *buf, MonoDomain *domain, MonoAssembly *assembly)
 {
 	int id;
@@ -2444,25 +2444,25 @@ buffer_add_assemblyid (Buffer *buf, MonoDomain *domain, MonoAssembly *assembly)
 		DEBUG_PRINTF (2, "[dbg]   send assembly [%s][%s][%d]\n", assembly->aname.name, domain->friendly_name, id);
 }
 
-static inline void
+static void
 buffer_add_moduleid (Buffer *buf, MonoDomain *domain, MonoImage *image)
 {
 	buffer_add_ptr_id (buf, domain, ID_MODULE, image);
 }
 
-static inline void
+static void
 buffer_add_fieldid (Buffer *buf, MonoDomain *domain, MonoClassField *field)
 {
 	buffer_add_ptr_id (buf, domain, ID_FIELD, field);
 }
 
-static inline void
+static void
 buffer_add_propertyid (Buffer *buf, MonoDomain *domain, MonoProperty *property)
 {
 	buffer_add_ptr_id (buf, domain, ID_PROPERTY, property);
 }
 
-static inline void
+static void
 buffer_add_domainid (Buffer *buf, MonoDomain *domain)
 {
 	buffer_add_ptr_id (buf, domain, ID_DOMAIN, domain);

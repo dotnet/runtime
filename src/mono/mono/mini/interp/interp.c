@@ -98,7 +98,7 @@ typedef struct {
 	InterpFrame *base_frame;
 } FrameClauseArgs;
 
-static inline void
+static void
 init_frame (InterpFrame *frame, InterpFrame *parent_frame, InterpMethod *rmethod, stackval *method_args, stackval *method_retval)
 {
 	frame->parent = parent_frame;

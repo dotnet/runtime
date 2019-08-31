@@ -149,7 +149,7 @@ g_get_known_folder_path (void)
 
 #else
 
-static inline gchar *
+static gchar *
 g_get_known_folder_path (void)
 {
 	return NULL;

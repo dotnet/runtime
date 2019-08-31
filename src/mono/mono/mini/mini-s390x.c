@@ -418,9 +418,9 @@ typedef struct {
 
 static void indent (int);
 static guint8 * backUpStackPtr(MonoCompile *, guint8 *);
-static inline void add_general (guint *, size_data *, ArgInfo *);
-static inline void add_stackParm (guint *, size_data *, ArgInfo *, gint);
-static inline void add_float (guint *, size_data *, ArgInfo *, gboolean);
+static void add_general (guint *, size_data *, ArgInfo *);
+static void add_stackParm (guint *, size_data *, ArgInfo *, gint);
+static void add_float (guint *, size_data *, ArgInfo *, gboolean);
 static CallInfo * get_call_info (MonoMemPool *, MonoMethodSignature *);
 static guchar * emit_float_to_int (MonoCompile *, guchar *, int, int, int, gboolean);
 static __inline__ void emit_unwind_regs(MonoCompile *, guint8 *, int, int, long);
@@ -628,7 +628,7 @@ emit_unwind_regs(MonoCompile *cfg, guint8 *code, int start, int end, long offset
 /*                                                                  */
 /*------------------------------------------------------------------*/
 
-static inline gboolean
+static gboolean
 retFitsInReg(guint32 size)
 {
 	switch (size) {
@@ -654,7 +654,7 @@ retFitsInReg(guint32 size)
 /*                                                                  */
 /*------------------------------------------------------------------*/
 
-static inline guint8 *
+static guint8 *
 backUpStackPtr(MonoCompile *cfg, guint8 *code)
 {
 	int stackSize = cfg->stack_usage;

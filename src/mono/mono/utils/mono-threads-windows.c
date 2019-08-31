@@ -28,7 +28,7 @@ enum Win32APCInfo {
 	WIN32_APC_INFO_PENDING_ABORT_SLOT = 1 << 3
 };
 
-static inline void
+static void
 request_interrupt (gpointer thread_info, HANDLE native_thread_handle, gint32 pending_apc_slot, PAPCFUNC apc_callback, DWORD tid)
 {
 	/*
@@ -113,7 +113,7 @@ suspend_abort_syscall (PVOID thread_info, HANDLE native_thread_handle, DWORD tid
 	request_interrupt (thread_info, native_thread_handle, WIN32_APC_INFO_PENDING_ABORT_SLOT, abort_apc, tid);
 }
 
-static inline void
+static void
 enter_alertable_wait_ex (MonoThreadInfo *info, HANDLE io_handle)
 {
 	// Only loaded/stored by current thread, here or in APC (also running on current thread).
@@ -124,7 +124,7 @@ enter_alertable_wait_ex (MonoThreadInfo *info, HANDLE io_handle)
 	mono_atomic_xchg_i32 (&info->win32_apc_info, (io_handle == INVALID_HANDLE_VALUE) ? WIN32_APC_INFO_ALERTABLE_WAIT_SLOT : WIN32_APC_INFO_BLOCKING_IO_SLOT);
 }
 
-static inline void
+static void
 leave_alertable_wait_ex (MonoThreadInfo *info, HANDLE io_handle)
 {
 	// Clear any previous flags. Thread is exiting alertable wait region, and info around pending interrupt/abort APC's

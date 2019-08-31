@@ -70,7 +70,7 @@ static void                 add_assembly    (MonoAssemblyLoadContext *alc, MonoA
 
 static MonoDebugHandle     *open_symfile_from_bundle   (MonoImage *image);
 
-static inline DebugDomainInfo*
+static DebugDomainInfo*
 get_domain_info (MonoDomain *domain)
 {
 	g_assert (domain->debug_info);
@@ -351,7 +351,7 @@ mono_debug_image_has_debug_info (MonoImage *image)
 	return data.found;
 }
 
-static inline void
+static void
 write_leb128 (guint32 value, guint8 *ptr, guint8 **rptr)
 {
 	do {
@@ -365,7 +365,7 @@ write_leb128 (guint32 value, guint8 *ptr, guint8 **rptr)
 	*rptr = ptr;
 }
 
-static inline void
+static void
 write_sleb128 (gint32 value, guint8 *ptr, guint8 **rptr)
 {
 	gboolean more = 1;
@@ -526,7 +526,7 @@ mono_debug_add_delegate_trampoline (gpointer code, int size)
 {
 }
 
-static inline guint32
+static guint32
 read_leb128 (guint8 *ptr, guint8 **rptr)
 {
 	guint32 result = 0, shift = 0;
@@ -544,7 +544,7 @@ read_leb128 (guint8 *ptr, guint8 **rptr)
 	return result;
 }
 
-static inline gint32
+static gint32
 read_sleb128 (guint8 *ptr, guint8 **rptr)
 {
 	gint32 result = 0;

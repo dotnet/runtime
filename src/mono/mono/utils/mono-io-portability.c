@@ -19,7 +19,7 @@
 
 int mono_io_portability_helpers = PORTABILITY_UNKNOWN;
 
-static inline gchar *mono_portability_find_file_internal (const gchar *pathname, gboolean last_exists);
+static gchar *mono_portability_find_file_internal (const gchar *pathname, gboolean last_exists);
 
 void mono_portability_helpers_init (void)
 {
@@ -109,7 +109,7 @@ gchar *mono_portability_find_file (const gchar *pathname, gboolean last_exists)
 }
 
 /* Returns newly-allocated string or NULL on failure */
-static inline gchar *mono_portability_find_file_internal (const gchar *pathname, gboolean last_exists)
+static gchar *mono_portability_find_file_internal (const gchar *pathname, gboolean last_exists)
 {
 	gchar *new_pathname, **components, **new_components;
 	int num_components = 0, component = 0;

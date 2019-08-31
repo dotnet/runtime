@@ -282,7 +282,7 @@ _mono_type_get_assembly_name (MonoClass *klass, GString *str)
 	g_free (name);
 }
 
-static inline void
+static void
 mono_type_name_check_byref (MonoType *type, GString *str)
 {
 	if (type->byref)

@@ -79,7 +79,7 @@ typedef union {
 	} pair;
 } interp_pair;
 
-static inline gint64
+static gint64
 get_long_arg (InterpMethodArguments *margs, int idx)
 {
 	interp_pair p;

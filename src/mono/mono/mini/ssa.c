@@ -122,7 +122,7 @@ remove_bb_from_phis (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *targe
 	}
 }
 
-static inline int
+static int
 op_phi_to_move (int opcode)
 {
 	switch (opcode) {
@@ -141,7 +141,7 @@ op_phi_to_move (int opcode)
 	return -1;
 }
 
-static inline void
+static void
 record_use (MonoCompile *cfg, MonoInst *var, MonoBasicBlock *bb, MonoInst *ins)
 {
 	MonoMethodVar *info;
@@ -877,7 +877,7 @@ evaluate_ins (MonoCompile *cfg, MonoInst *ins, MonoInst **res, MonoInst **carray
 	return 0;
 }
 
-static inline void
+static void
 change_varstate (MonoCompile *cfg, GList **cvars, MonoMethodVar *info, int state, MonoInst *c0, MonoInst **carray)
 {
 	if (info->cpstate >= state)
@@ -898,7 +898,7 @@ change_varstate (MonoCompile *cfg, GList **cvars, MonoMethodVar *info, int state
 	}
 }
 
-static inline void
+static void
 add_cprop_bb (MonoCompile *cfg, MonoBasicBlock *bb, GList **bblist)
 {
 	if (G_UNLIKELY (cfg->verbose_level > 1))
@@ -1308,7 +1308,7 @@ mono_ssa_cprop (MonoCompile *cfg)
 	}
 }
 
-static inline void
+static void
 add_to_dce_worklist (MonoCompile *cfg, MonoMethodVar *var, MonoMethodVar *use, GList **wl)
 {
 	GList *tmp;

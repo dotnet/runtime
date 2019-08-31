@@ -144,14 +144,14 @@ get_state (void)
 	return state;
 }
 
-static inline void
+static void
 ringbuf_unpack (gint32 ringbuf, guint16 *buf_start, guint16 *buf_end)
 {
 	*buf_start = (guint16) (ringbuf >> 16);
 	*buf_end = (guint16) (ringbuf & 0x00FF);
 }
 
-static inline gint32
+static gint32
 ringbuf_pack (guint16 buf_start, guint16 buf_end)
 {
 	return ((((gint32)buf_start) << 16) | ((gint32)buf_end));

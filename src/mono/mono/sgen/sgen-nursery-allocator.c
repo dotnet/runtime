@@ -219,20 +219,19 @@ verify_alloc_records (void)
 
 /*********************************************************************************/
 
-
-static inline gpointer
+static gpointer
 mask (gpointer n, uintptr_t bit)
 {
 	return (gpointer)(((uintptr_t)n) | bit);
 }
 
-static inline gpointer
+static gpointer
 unmask (gpointer p)
 {
 	return (gpointer)((uintptr_t)p & ~(uintptr_t)0x3);
 }
 
-static inline uintptr_t
+static uintptr_t
 get_mark (gpointer n)
 {
 	return (uintptr_t)n & 0x1;

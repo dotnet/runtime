@@ -454,7 +454,7 @@ add_gsharedvt_wrappers (MonoAotCompile *acfg, MonoMethodSignature *sig, gboolean
 static void
 add_profile_instances (MonoAotCompile *acfg, ProfileData *data);
 
-static inline gboolean
+static gboolean
 ignore_cfg (MonoCompile *cfg)
 {
 	return !cfg || cfg->skip;
@@ -521,7 +521,7 @@ report_loader_error (MonoAotCompile *acfg, MonoError *error, gboolean fatal, con
 
 #define MAX_SYMBOL_SIZE 256
 
-static inline const char *
+static const char *
 mangle_symbol (const char * symbol, char * mangled_symbol, gsize length)
 {
 	gsize needed_size = length;
@@ -544,7 +544,7 @@ mangle_symbol (const char * symbol, char * mangled_symbol, gsize length)
 	return mangled_symbol;
 }
 
-static inline char *
+static char *
 mangle_symbol_alloc (const char * symbol)
 {
 	g_assert (NULL != symbol);
@@ -561,7 +561,7 @@ mangle_symbol_alloc (const char * symbol)
 #endif
 }
 
-static inline void
+static void
 emit_section_change (MonoAotCompile *acfg, const char *section_name, int subsection_index)
 {
 	mono_img_writer_emit_section_change (acfg->w, section_name, subsection_index);
@@ -569,7 +569,7 @@ emit_section_change (MonoAotCompile *acfg, const char *section_name, int subsect
 
 #if defined(TARGET_WIN32) && defined(TARGET_X86)
 
-static inline void
+static void
 emit_local_symbol (MonoAotCompile *acfg, const char *name, const char *end_label, gboolean func)
 {
 	const char * mangled_symbol_name = name;
@@ -592,7 +592,7 @@ emit_local_symbol (MonoAotCompile *acfg, const char *name, const char *end_label
 
 #else
 
-static inline void
+static void
 emit_local_symbol (MonoAotCompile *acfg, const char *name, const char *end_label, gboolean func) 
 { 
 	mono_img_writer_emit_local_symbol (acfg->w, name, end_label, func);
@@ -600,37 +600,37 @@ emit_local_symbol (MonoAotCompile *acfg, const char *name, const char *end_label
 
 #endif
 
-static inline void
+static void
 emit_label (MonoAotCompile *acfg, const char *name) 
 { 
 	mono_img_writer_emit_label (acfg->w, name); 
 }
 
-static inline void
+static void
 emit_bytes (MonoAotCompile *acfg, const guint8* buf, int size) 
 { 
 	mono_img_writer_emit_bytes (acfg->w, buf, size); 
 }
 
-static inline void
+static void
 emit_string (MonoAotCompile *acfg, const char *value) 
 { 
 	mono_img_writer_emit_string (acfg->w, value); 
 }
 
-static inline void
+static void
 emit_line (MonoAotCompile *acfg) 
 { 
 	mono_img_writer_emit_line (acfg->w); 
 }
 
-static inline void
+static void
 emit_alignment (MonoAotCompile *acfg, int size)
 { 
 	mono_img_writer_emit_alignment (acfg->w, size);
 }
 
-static inline void
+static void
 emit_alignment_code (MonoAotCompile *acfg, int size)
 {
 	if (acfg->align_pad_value)
@@ -639,7 +639,7 @@ emit_alignment_code (MonoAotCompile *acfg, int size)
 		mono_img_writer_emit_alignment (acfg->w, size);
 }
 
-static inline void
+static void
 emit_padding (MonoAotCompile *acfg, int size)
 {
 	int i;
@@ -660,13 +660,13 @@ emit_padding (MonoAotCompile *acfg, int size)
 	}
 }
 
-static inline void
+static void
 emit_pointer (MonoAotCompile *acfg, const char *target) 
 { 
 	mono_img_writer_emit_pointer (acfg->w, target); 
 }
 
-static inline void
+static void
 emit_pointer_2 (MonoAotCompile *acfg, const char *prefix, const char *target) 
 { 
 	if (prefix [0] != '\0') {
@@ -678,31 +678,31 @@ emit_pointer_2 (MonoAotCompile *acfg, const char *prefix, const char *target)
 	}
 }
 
-static inline void
+static void
 emit_int16 (MonoAotCompile *acfg, int value) 
 { 
 	mono_img_writer_emit_int16 (acfg->w, value); 
 }
 
-static inline void
+static void
 emit_int32 (MonoAotCompile *acfg, int value) 
 { 
 	mono_img_writer_emit_int32 (acfg->w, value); 
 }
 
-static inline void
+static void
 emit_symbol_diff (MonoAotCompile *acfg, const char *end, const char* start, int offset) 
 { 
 	mono_img_writer_emit_symbol_diff (acfg->w, end, start, offset); 
 }
 
-static inline void
+static void
 emit_zero_bytes (MonoAotCompile *acfg, int num) 
 { 
 	mono_img_writer_emit_zero_bytes (acfg->w, num); 
 }
 
-static inline void
+static void
 emit_byte (MonoAotCompile *acfg, guint8 val) 
 { 
 	mono_img_writer_emit_byte (acfg->w, val); 
@@ -739,13 +739,13 @@ emit_global_inner (MonoAotCompile *acfg, const char *name, gboolean func)
 
 #endif
 
-static inline gboolean
+static gboolean
 link_shared_library (MonoAotCompile *acfg)
 {
 	return !acfg->aot_opts.static_link && !acfg->aot_opts.asm_only;
 }
 
-static inline gboolean
+static gboolean
 add_to_global_symbol_table (MonoAotCompile *acfg)
 {
 #ifdef TARGET_WIN32_MSVC
@@ -950,7 +950,7 @@ emit_set_arm_mode (MonoAotCompile *acfg)
 	fprintf (acfg->fp, ".code 32\n");
 }
 
-static inline void
+static void
 emit_code_bytes (MonoAotCompile *acfg, const guint8* buf, int size)
 {
 #ifdef TARGET_ARM64
@@ -2901,7 +2901,7 @@ mono_get_field_token (MonoClassField *field)
 	return 0;
 }
 
-static inline void
+static void
 encode_value (gint32 value, guint8 *buf, guint8 **endbuf)
 {
 	guint8 *p = buf;
@@ -3858,7 +3858,7 @@ patch_to_string (MonoJumpInfo *patch_info)
  *   Return whenever PATCH_INFO refers to a direct call, and thus requires a
  * PLT entry.
  */
-static inline gboolean
+static gboolean
 is_plt_patch (MonoJumpInfo *patch_info)
 {
 	switch (patch_info->type) {
@@ -10812,7 +10812,7 @@ emit_library_info (MonoAotCompile *acfg)
 
 #else
 
-static inline void
+static void
 emit_library_info (MonoAotCompile *acfg)
 {
 	return;

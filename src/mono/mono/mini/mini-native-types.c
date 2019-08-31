@@ -368,7 +368,7 @@ mono_emit_native_types_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMe
 
 #endif /* !DISABLE_JIT */
 
-static inline gboolean
+static gboolean
 mono_class_is_magic_assembly (MonoClass *klass)
 {
 	const char *aname = m_class_get_image (klass)->assembly_name;

@@ -184,7 +184,7 @@ static ThreadPoolWorker worker;
 		} while (mono_atomic_cas_i64 (&worker.counters.as_gint64, (var).as_gint64, __old.as_gint64) != __old.as_gint64); \
 	} while (0)
 
-static inline ThreadPoolWorkerCounter
+static ThreadPoolWorkerCounter
 COUNTER_READ (void)
 {
 	ThreadPoolWorkerCounter counter;
