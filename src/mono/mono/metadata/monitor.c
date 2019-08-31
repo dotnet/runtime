@@ -1179,7 +1179,7 @@ mono_monitor_threads_sync_members_offset (int *status_offset, int *nest_offset)
 }
 
 static void
-ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (MonoObject *obj, guint32 ms, MonoBoolean *lockTaken, MonoError* error)
+mono_monitor_try_enter_with_atomic_var (MonoObject *obj, guint32 ms, MonoBoolean *lockTaken, MonoError* error)
 {
 	// The use of error here is unusual, but expedient, and easy enough to understand.
 	// Maybe clean it up later.
@@ -1225,7 +1225,7 @@ ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (MonoObject
 void
 ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var_icall (MonoObjectHandle obj_handle, guint32 ms, MonoBoolean* lockTaken, MonoError* error)
 {
-	ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (MONO_HANDLE_RAW (obj_handle), ms, lockTaken, error);
+	mono_monitor_try_enter_with_atomic_var (MONO_HANDLE_RAW (obj_handle), ms, lockTaken, error);
 }
 
 /**
@@ -1248,7 +1248,7 @@ mono_monitor_enter_v4_internal (MonoObject *obj, MonoBoolean *lock_taken)
 		mono_error_set_pending_exception (error);
 		return;
 	}
-	ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (obj, MONO_INFINITE_WAIT, lock_taken, NULL);
+	mono_monitor_try_enter_with_atomic_var (obj, MONO_INFINITE_WAIT, lock_taken, NULL);
 }
 
 /*
@@ -1265,9 +1265,9 @@ mono_monitor_enter_v4_fast (MonoObject *obj, MonoBoolean *lock_taken)
 	if (*lock_taken == 1 || G_UNLIKELY (!obj))
 		return FALSE;
 
-	gint32 res = mono_monitor_try_enter_internal (obj, 0, TRUE) == 1;
-	*lock_taken = res;
-	return res;
+	gboolean const res = mono_monitor_try_enter_internal (obj, 0, TRUE) == 1;
+	*lock_taken = (MonoBoolean)res;
+	return (guint32)res;
 }
 
 MonoBoolean
@@ -1287,7 +1287,7 @@ ves_icall_System_Threading_Monitor_Monitor_test_owner (MonoObjectHandle obj_hand
 		return mon_status_get_owner (lock_word_get_inflated_lock (lw)->status) == mono_thread_info_get_small_id ();
 	}
 	
-	return(FALSE);
+	return FALSE;
 }
 
 MonoBoolean
