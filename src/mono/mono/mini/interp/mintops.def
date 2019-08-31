@@ -8,7 +8,7 @@
 
 /* OPDEF (opsymbol, opstring, oplength (in uint16s), optype) */
 
-OPDEF(MINT_NOP, "nop", 1, MintOpNoArgs)
+OPDEF(MINT_NOP, "nop", 0, MintOpNoArgs)
 OPDEF(MINT_NIY, "niy", 1, MintOpNoArgs)
 OPDEF(MINT_BREAK, "break", 1, MintOpNoArgs)
 OPDEF(MINT_BREAKPOINT, "breakpoint", 1, MintOpNoArgs)
@@ -157,7 +157,7 @@ OPDEF(MINT_STSFLD_O, "stsfld.o", 3, MintOpUShortInt)
 OPDEF(MINT_STSFLD_P, "stsfld.p", 3, MintOpUShortInt)
 OPDEF(MINT_STSFLD_VT, "stsfld.vt", 5, MintOpTwoShorts)
 OPDEF(MINT_LDSFLDA, "ldsflda", 3, MintOpTwoShorts)
-OPDEF(MINT_LDSSFLDA, "ldssflda", 4, MintOpInt)
+OPDEF(MINT_LDSSFLDA, "ldssflda", 3, MintOpInt)
 
 OPDEF(MINT_LDLOC_I1, "ldloc.i1", 2, MintOpUShortInt)
 OPDEF(MINT_LDLOC_U1, "ldloc.u1", 2, MintOpUShortInt)
