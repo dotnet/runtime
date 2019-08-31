@@ -1464,11 +1464,11 @@ mono_crash_reporting_allow_all_native_libraries ()
 static gboolean
 check_whitelisted_module (const char *in_name, const char **out_module)
 {
+	g_async_safe_printf ("in_name: %s\n", in_name);
 #ifndef MONO_PRIVATE_CRASHES
 		return TRUE;
 #else
 	if (allow_all_native_libraries) {
-		g_async_safe_printf ("in_name: %s\n", in_name);
 		if (out_module)
 			*out_module = "<external module>";
 		return TRUE;
