@@ -1130,6 +1130,12 @@ mono_monitor_exit_internal (MonoObject *obj)
 		mono_monitor_exit_flat (obj, lw);
 }
 
+void
+mono_monitor_exit_icall (MonoObjectHandle obj, MonoError* error)
+{
+	mono_monitor_exit_internal (MONO_HANDLE_RAW (obj));
+}
+
 /**
  * mono_monitor_exit:
  */
@@ -1172,24 +1178,38 @@ mono_monitor_threads_sync_members_offset (int *status_offset, int *nest_offset)
 	*nest_offset = ENCODE_OFF_SIZE (MONO_STRUCT_OFFSET (MonoThreadsSync, nest), sizeof (ts.nest));
 }
 
-void
-ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (MonoObject *obj, guint32 ms, MonoBoolean *lockTaken)
+static void
+ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (MonoObject *obj, guint32 ms, MonoBoolean *lockTaken, MonoError* error)
 {
+	// The use of error here is unusual, but expedient, and easy enough to understand.
+	// Maybe clean it up later.
+
 	gint32 res;
 	gboolean allow_interruption = TRUE;
+
 	if (G_UNLIKELY (!obj)) {
-		ERROR_DECL (error);
-		mono_error_set_argument_null (error, "obj", "");
-		mono_error_set_pending_exception (error);
+		if (error) {
+			mono_error_set_argument_null (error, "obj", "");
+		} else {
+			ERROR_DECL (error);
+			mono_error_set_argument_null (error, "obj", "");
+			mono_error_set_pending_exception (error);
+		}
 		return;
 	}
+
 	do {
 		res = mono_monitor_try_enter_internal (obj, ms, allow_interruption);
 		/*This means we got interrupted during the wait and didn't got the monitor.*/
 		if (res == -1) {
 			MonoException *exc = mono_thread_interruption_checkpoint ();
 			if (exc) {
-				mono_set_pending_exception (exc);
+				if (error) { // implies icall and coop handle frame -- a little gross
+					MONO_HANDLE_NEW (MonoException, exc);
+					mono_error_set_exception_instance (error, exc);
+				} else {
+					mono_set_pending_exception (exc);
+				}
 				return;
 			} else {
 				//we detected a pending interruption but it turned out to be a false positive, we ignore it from now on (this feels like a hack, right?, threads.c should give us less confusing directions)
@@ -1197,8 +1217,15 @@ ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (MonoObject
 			}
 		}
 	} while (res == -1);
+
 	/*It's safe to do it from here since interruption would happen only on the wrapper.*/
 	*lockTaken = res == 1;
+}
+
+void
+ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var_icall (MonoObjectHandle obj_handle, guint32 ms, MonoBoolean* lockTaken, MonoError* error)
+{
+	ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (MONO_HANDLE_RAW (obj_handle), ms, lockTaken, error);
 }
 
 /**
@@ -1208,7 +1235,7 @@ void
 mono_monitor_enter_v4 (MonoObject *obj, char *lock_taken)
 {
 	g_static_assert (sizeof (MonoBoolean) == 1);
-	mono_monitor_enter_v4_internal  (obj, (MonoBoolean*)lock_taken);
+	mono_monitor_enter_v4_internal (obj, (MonoBoolean*)lock_taken);
 }
 
 /* Called from JITted code */
@@ -1221,8 +1248,7 @@ mono_monitor_enter_v4_internal (MonoObject *obj, MonoBoolean *lock_taken)
 		mono_error_set_pending_exception (error);
 		return;
 	}
-
-	ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (obj, MONO_INFINITE_WAIT, lock_taken);
+	ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (obj, MONO_INFINITE_WAIT, lock_taken, NULL);
 }
 
 /*
@@ -1236,18 +1262,19 @@ mono_monitor_enter_v4_internal (MonoObject *obj, MonoBoolean *lock_taken)
 guint32
 mono_monitor_enter_v4_fast (MonoObject *obj, MonoBoolean *lock_taken)
 {
-	if (*lock_taken == 1)
+	if (*lock_taken == 1 || G_UNLIKELY (!obj))
 		return FALSE;
-	if (G_UNLIKELY (!obj))
-		return FALSE;
-	gint32 res = mono_monitor_try_enter_internal (obj, 0, TRUE);
-	*lock_taken = res == 1;
-	return res == 1;
+
+	gint32 res = mono_monitor_try_enter_internal (obj, 0, TRUE) == 1;
+	*lock_taken = res;
+	return res;
 }
 
 MonoBoolean
-ves_icall_System_Threading_Monitor_Monitor_test_owner (MonoObject *obj)
+ves_icall_System_Threading_Monitor_Monitor_test_owner (MonoObjectHandle obj_handle, MonoError* error)
 {
+	MonoObject* const obj = MONO_HANDLE_RAW (obj_handle);
+
 	LockWord lw;
 
 	LOCK_DEBUG (g_message ("%s: Testing if %p is owned by thread %d", __func__, obj, mono_thread_info_get_small_id()));
@@ -1264,8 +1291,10 @@ ves_icall_System_Threading_Monitor_Monitor_test_owner (MonoObject *obj)
 }
 
 MonoBoolean
-ves_icall_System_Threading_Monitor_Monitor_test_synchronised (MonoObject *obj)
+ves_icall_System_Threading_Monitor_Monitor_test_synchronised (MonoObjectHandle obj_handle, MonoError* error)
 {
+	MonoObject* const obj = MONO_HANDLE_RAW (obj_handle);
+
 	LockWord lw;
 
 	LOCK_DEBUG (g_message("%s: (%d) Testing if %p is owned by any thread", __func__, mono_thread_info_get_small_id (), obj));
@@ -1320,20 +1349,22 @@ mono_monitor_pulse (MonoObject *obj, const char *func, gboolean all)
 }
 
 void
-ves_icall_System_Threading_Monitor_Monitor_pulse (MonoObject *obj)
+ves_icall_System_Threading_Monitor_Monitor_pulse (MonoObjectHandle obj, MonoError* error)
 {
-	mono_monitor_pulse (obj, __func__, FALSE);
+	mono_monitor_pulse (MONO_HANDLE_RAW (obj), __func__, FALSE);
 }
 
 void
-ves_icall_System_Threading_Monitor_Monitor_pulse_all (MonoObject *obj)
+ves_icall_System_Threading_Monitor_Monitor_pulse_all (MonoObjectHandle obj, MonoError* error)
 {
-	mono_monitor_pulse (obj, __func__, TRUE);
+	mono_monitor_pulse (MONO_HANDLE_RAW (obj), __func__, TRUE);
 }
 
 MonoBoolean
-ves_icall_System_Threading_Monitor_Monitor_wait (MonoObject *obj, guint32 ms)
+ves_icall_System_Threading_Monitor_Monitor_wait (MonoObjectHandle obj_handle, guint32 ms, MonoError* error)
 {
+	MonoObject* const obj = MONO_HANDLE_RAW (obj_handle);
+
 	LockWord lw;
 	MonoThreadsSync *mon;
 	HANDLE event;
@@ -1447,9 +1478,9 @@ ves_icall_System_Threading_Monitor_Monitor_wait (MonoObject *obj, guint32 ms)
 }
 
 void
-ves_icall_System_Threading_Monitor_Monitor_Enter (MonoObject *obj)
+ves_icall_System_Threading_Monitor_Monitor_Enter (MonoObjectHandle obj, MonoError* error)
 {
-	mono_monitor_enter_internal (obj);
+	mono_monitor_enter_internal (MONO_HANDLE_RAW (obj));
 }
 
 #if ENABLE_NETCORE
