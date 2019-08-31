@@ -454,12 +454,10 @@ mono_native_state_add_frame (MonoStateWriter *writer, MonoFrameSummary *frame)
 	mono_state_writer_printf(writer, "{\n");
 	writer->indent++;
 
-	if (frame->is_managed) {
-		assert_has_space (writer);
-		mono_state_writer_indent (writer);
-		mono_state_writer_object_key (writer, "is_managed");
-		mono_state_writer_printf(writer, "\"%s\",", frame->is_managed ? "true" : "false");
-	}
+	assert_has_space (writer);
+	mono_state_writer_indent (writer);
+	mono_state_writer_object_key (writer, "is_managed");
+	mono_state_writer_printf(writer, "\"%s\",", frame->is_managed ? "true" : "false");
 
 	if (frame->unmanaged_data.is_trampoline) {
 		mono_state_writer_printf(writer, "\n");
