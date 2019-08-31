@@ -9,8 +9,11 @@ namespace Microsoft.VisualBasic.Tests
 {
     public class FinancialTests
     {
+        private static bool IsArmOrArm64OrAlpine { get => PlatformDetection.IsAlpine || PlatformDetection.IsArmOrArm64Process; }
+        private static bool IsNotArmNorArm64NorAlpine { get => !IsArmOrArm64OrAlpine; }
+
         // The accuracy to which we can validate some numeric test cases depends on the platform.
-        private static readonly int s_precision = (PlatformDetection.IsAlpine || PlatformDetection.IsArmOrArm64Process) ? 12 :
+        private static readonly int s_precision = IsArmOrArm64OrAlpine ? 12 :
             PlatformDetection.IsFullFramework ? 14 : 15;
 
         [Theory]
@@ -48,8 +51,14 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData(-0.0083, 15, 263.0, 0, DueDate.EndOfPeriod, -3723.837650080481, -4)] // rate < 0
         [InlineData(0, 15, 263, 0, DueDate.EndOfPeriod, -3945, -4)] // rate = 0
         [InlineData(0.0083, 15, 263.0, 0, (DueDate)8, -4217.37334665461, -4)] // type <> 0 and type <> 1
-        [InlineData(1e+25, 12, 1797, 0, (DueDate)1, -1.797000000000002e+303, -10)] // overFlow
         public void FV(double Rate, double NPer, double Pmt, double PV, DueDate Due, double expected, int relativePrecision)
+        {
+            Assert.Equal(expected, Financial.FV(Rate, NPer, Pmt, PV, Due), s_precision + relativePrecision);
+        }
+
+        [ConditionalTheory(nameof(IsNotArmNorArm64NorAlpine))]
+        [InlineData(1e+25, 12, 1797, 0, (DueDate)1, -1.797000000000002e+303, -10)] // overFlow
+        public void FV_Overflow(double Rate, double NPer, double Pmt, double PV, DueDate Due, double expected, int relativePrecision)
         {
             Assert.Equal(expected, Financial.FV(Rate, NPer, Pmt, PV, Due), s_precision + relativePrecision);
         }
@@ -286,9 +295,15 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData(4322.0, 1009.0, 73, 23, 62.55572010366531, -2)]
         [InlineData(78000.0, 21008, 8, 2, 11081.777777777777, -5)]
         [InlineData(23.0, 7.0, 21, 9, 0.9004329004329005, 0)]
-        [InlineData(9.9999999999999e+305, 0, 100, 10, 1.801980198019784e+304, -10)] // overflow
         [InlineData(1009.0, 4322.0, 73, 23, -62.55572010366531, -2)] // salvage > cost
         public void SYD(double Cost, double Salvage, double Life, double Period, double expected, int relativePrecision)
+        {
+            Assert.Equal(expected, Financial.SYD(Cost, Salvage, Life, Period), s_precision + relativePrecision);
+        }
+
+        [ConditionalTheory(nameof(IsNotArmNorArm64NorAlpine))]
+        [InlineData(9.9999999999999e+305, 0, 100, 10, 1.801980198019784e+304, -10)] // overflow
+        public void SYD_Overflow(double Cost, double Salvage, double Life, double Period, double expected, int relativePrecision)
         {
             Assert.Equal(expected, Financial.SYD(Cost, Salvage, Life, Period), s_precision + relativePrecision);
         }
