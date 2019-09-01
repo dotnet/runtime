@@ -545,9 +545,14 @@ Constant handles may be initialized to it, but non-constant
 handles must be NEW'ed. Uses of these are suspicious and should
 be reviewed and probably changed FIXME.
 */
-extern const MonoObjectHandle mono_null_value_handle;
-#define NULL_HANDLE mono_null_value_handle
+#define NULL_HANDLE (mono_null_value_handle ())
 #define NULL_HANDLE_INIT { 0 }
+static inline MonoObjectHandle
+mono_null_value_handle (void)
+{
+	MonoObjectHandle result = NULL_HANDLE_INIT;
+	return result;
+}
 #define NULL_HANDLE_STRING 		(MONO_HANDLE_CAST (MonoString, NULL_HANDLE))
 #define NULL_HANDLE_ARRAY  		(MONO_HANDLE_CAST (MonoArray,  NULL_HANDLE))
 #define NULL_HANDLE_STRING_BUILDER	(MONO_HANDLE_CAST (MonoStringBuilder, NULL_HANDLE))

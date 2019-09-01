@@ -88,8 +88,6 @@ free_handle_chunk (HandleChunk *chunk)
 	g_free (chunk);
 }
 
-const MonoObjectHandle mono_null_value_handle = { 0 };
-
 #define THIS_IS_AN_OK_NUMBER_OF_HANDLES 100
 
 static HandleChunkElem*
