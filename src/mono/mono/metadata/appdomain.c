@@ -362,10 +362,7 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 		mono_runtime_install_appctx_properties ();
 #endif
 
-#ifndef DISABLE_SOCKETS
 	mono_network_init ();
-#endif
-	
 	mono_console_init ();
 	mono_attach_init ();
 
@@ -527,10 +524,7 @@ mono_runtime_cleanup (MonoDomain *domain)
 	mono_gc_cleanup ();
 
 	mono_thread_cleanup ();
-
-#ifndef DISABLE_SOCKETS
 	mono_network_cleanup ();
-#endif
 	mono_marshal_cleanup ();
 
 	mono_type_initialization_cleanup ();

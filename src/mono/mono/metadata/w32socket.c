@@ -16,7 +16,9 @@
 
 #include <config.h>
 
-#ifndef DISABLE_SOCKETS
+#include <mono/metadata/w32socket.h>
+
+#if !defined(DISABLE_SOCKETS) && !defined(ENABLE_NETCORE)
 
 #if defined(__APPLE__) || defined(__FreeBSD__)
 #define __APPLE_USE_RFC_3542
@@ -66,7 +68,6 @@
 #include <mono/utils/mono-memory-model.h>
 #include <mono/utils/networking.h>
 #include <mono/metadata/w32handle.h>
-#include <mono/metadata/w32socket.h>
 #include <mono/metadata/w32socket-internals.h>
 #include <mono/metadata/w32error.h>
 
@@ -2653,6 +2654,18 @@ ves_icall_cancel_blocking_socket_operation (MonoThreadObjectHandle thread, MonoE
 
 	guint64 tid = mono_internal_thread_handle_ptr (internal)->tid;
 	mono_thread_info_abort_socket_syscall_for_close (MONO_UINT_TO_NATIVE_THREAD_ID (tid));
+}
+
+#else
+
+void
+mono_network_init (void)
+{
+}
+
+void
+mono_network_cleanup (void)
+{
 }
 
 #endif /* #ifndef DISABLE_SOCKETS */
