@@ -26,6 +26,7 @@ jobs:
     osGroup: ${{ parameters.osGroup }}
     osIdentifier: ${{ parameters.osIdentifier }}
     readyToRun: ${{ parameters.readyToRun }}
+    corefxTests: ${{ parameters.corefxTests }}
 
     # Test jobs should continue on error for internal builds
     ${{ if eq(variables['System.TeamProject'], 'internal') }}:

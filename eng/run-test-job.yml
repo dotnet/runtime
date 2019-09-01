@@ -25,6 +25,7 @@ jobs:
     osGroup: ${{ parameters.osGroup }}
     osIdentifier: ${{ parameters.osIdentifier }}
     readyToRun: ${{ parameters.readyToRun }}
+    corefxTests: ${{ parameters.corefxTests }}
     helixType: 'build/tests/'
 
     # Test jobs should continue on error for internal builds
