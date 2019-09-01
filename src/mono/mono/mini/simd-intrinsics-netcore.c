@@ -248,7 +248,9 @@ static guint16 vector_t_methods [] = {
 	SN_CopyTo,
 	SN_Equals,
 	SN_GreaterThan,
+	SN_GreaterThanOrEqual,
 	SN_LessThan,
+	SN_LessThanOrEqual,
 	SN_get_AllOnes,
 	SN_get_Count,
 	SN_get_Item,
@@ -408,19 +410,29 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		}
 		return ins;
 	case SN_GreaterThan:
+	case SN_GreaterThanOrEqual:
 	case SN_LessThan:
+	case SN_LessThanOrEqual:
 		g_assert (fsig->param_count == 2 && mono_metadata_type_equal (fsig->ret, type) && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type));
 		is_unsigned = etype->type == MONO_TYPE_U1 || etype->type == MONO_TYPE_U2 || etype->type == MONO_TYPE_U4 || etype->type == MONO_TYPE_U8;
 		ins = emit_xcompare (cfg, klass, etype, args [0], args [1]);
 		switch (id) {
 		case SN_GreaterThan:
+		case SN_GreaterThanOrEqual:
 			ins->inst_c0 = is_unsigned ? CMP_GT_UN : CMP_GT;
 			break;
 		case SN_LessThan:
+		case SN_LessThanOrEqual:
 			ins->inst_c0 = is_unsigned ? CMP_LT_UN : CMP_LT;
 			break;
 		default:
 			g_assert_not_reached ();
+		}
+		if (id == SN_GreaterThanOrEqual || id == SN_LessThanOrEqual) {
+			MonoInst *eq_ins;
+			eq_ins = emit_xcompare (cfg, klass, etype, args [0], args [1]);
+			ins = emit_simd_ins (cfg, klass, OP_XBINOP, ins->dreg, eq_ins->dreg);
+			ins->inst_c0 = OP_IOR;
 		}
 		return ins;
 	case SN_op_Explicit:
