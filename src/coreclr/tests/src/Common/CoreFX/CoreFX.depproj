@@ -4,8 +4,8 @@
   <PropertyGroup>
       <RestoreOutputPath>$(SourceDir)Common\CoreFX\obj</RestoreOutputPath>
       <Language>C#</Language>
-      <NugetTargetMoniker>.NETCoreApp,Version=v3.0</NugetTargetMoniker>
-      <TargetFramework>netcoreapp3.0</TargetFramework>
+      <NugetTargetMoniker>.NETCoreApp,Version=v5.0</NugetTargetMoniker>
+      <TargetFramework>netcoreapp5.0</TargetFramework>
       <ContainsPackageReferences>true</ContainsPackageReferences>
       <CLRTestKind>SharedLibrary</CLRTestKind>
       <IsTestProject>false</IsTestProject>
