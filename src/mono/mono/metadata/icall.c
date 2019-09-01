@@ -6118,15 +6118,67 @@ ves_icall_System_Reflection_RuntimeAssembly_GetExportedTypes (MonoReflectionAsse
 	return ves_icall_System_Reflection_Assembly_GetTypes (assembly_handle, TRUE, error);
 }
 
+static void
+get_top_level_forwarded_type (MonoImage *image, MonoTableInfo *table, int i, MonoArrayHandle types, MonoArrayHandle exceptions, int *aindex, int *exception_count)
+{
+	ERROR_DECL (local_error);
+	guint32 cols [MONO_EXP_TYPE_SIZE];
+	MonoClass *klass;
+	MonoReflectionTypeHandle rt;
+	
+	mono_metadata_decode_row (table, i, cols, MONO_EXP_TYPE_SIZE);
+	if (!(cols [MONO_EXP_TYPE_FLAGS] & TYPE_ATTRIBUTE_FORWARDER))
+		return;
+	guint32 impl = cols [MONO_EXP_TYPE_IMPLEMENTATION];
+	const char *name = mono_metadata_string_heap (image, cols [MONO_EXP_TYPE_NAME]);
+	const char *nspace = mono_metadata_string_heap (image, cols [MONO_EXP_TYPE_NAMESPACE]);
+
+	g_assert ((impl & MONO_IMPLEMENTATION_MASK) == MONO_IMPLEMENTATION_ASSEMBLYREF);
+	guint32 assembly_idx = impl >> MONO_IMPLEMENTATION_BITS;
+
+	mono_assembly_load_reference (image, assembly_idx - 1);
+	g_assert (image->references [assembly_idx - 1]);
+
+	HANDLE_FUNCTION_ENTER ();
+
+	if (image->references [assembly_idx - 1] == REFERENCE_MISSING) {
+		MonoExceptionHandle ex = MONO_HANDLE_NEW (MonoException, mono_get_exception_bad_image_format ("Invalid image"));
+		MONO_HANDLE_ARRAY_SETREF (types, *aindex, NULL_HANDLE);
+		MONO_HANDLE_ARRAY_SETREF (exceptions, *aindex, ex);
+		(*exception_count)++; (*aindex)++;
+		goto exit;
+	}
+	klass = mono_class_from_name_checked (image->references [assembly_idx - 1]->image, nspace, name, local_error);
+	if (!is_ok (local_error)) {
+		MonoExceptionHandle ex = mono_error_convert_to_exception_handle (local_error);
+		MONO_HANDLE_ARRAY_SETREF (types, *aindex, NULL_HANDLE);
+		MONO_HANDLE_ARRAY_SETREF (exceptions, *aindex, ex);
+		mono_error_cleanup (local_error);
+		(*exception_count)++; (*aindex)++;
+		goto exit;
+	}
+	rt = mono_type_get_object_handle (mono_domain_get (), m_class_get_byval_arg (klass), local_error);
+	if (!is_ok (local_error)) {
+		MonoExceptionHandle ex = mono_error_convert_to_exception_handle (local_error);
+		MONO_HANDLE_ARRAY_SETREF (types, *aindex, NULL_HANDLE);
+		MONO_HANDLE_ARRAY_SETREF (exceptions, *aindex, ex);
+		mono_error_cleanup (local_error);
+		(*exception_count)++; (*aindex)++;
+		goto exit;
+	}
+	MONO_HANDLE_ARRAY_SETREF (types, *aindex, rt);
+	MONO_HANDLE_ARRAY_SETREF (exceptions, *aindex, NULL_HANDLE);
+	(*aindex)++;
+
+exit:
+	HANDLE_FUNCTION_RETURN ();
+}
+
 MonoArrayHandle
 ves_icall_System_Reflection_RuntimeAssembly_GetTopLevelForwardedTypes (MonoReflectionAssemblyHandle assembly_h, MonoError *error)
 {
 	MonoAssembly *assembly = MONO_HANDLE_GETVAL (assembly_h, assembly);
 	MonoImage *image = assembly->image;
-	guint32 cols [MONO_EXP_TYPE_SIZE];
-	const char *name;
-	const char *nspace;
-	guint32 impl, assembly_idx;
 	int count = 0;
 
 	g_assert (!assembly_is_dynamic (assembly));
@@ -6144,48 +6196,7 @@ ves_icall_System_Reflection_RuntimeAssembly_GetTopLevelForwardedTypes (MonoRefle
 	int aindex = 0;
 	int exception_count = 0;
 	for (int i = 0; i < table->rows; ++i) {
-		ERROR_DECL (local_error);
-		mono_metadata_decode_row (table, i, cols, MONO_EXP_TYPE_SIZE);
-		if (!(cols [MONO_EXP_TYPE_FLAGS] & TYPE_ATTRIBUTE_FORWARDER))
-			continue;
-		impl = cols [MONO_EXP_TYPE_IMPLEMENTATION];
-		name = mono_metadata_string_heap (image, cols [MONO_EXP_TYPE_NAME]);
-		nspace = mono_metadata_string_heap (image, cols [MONO_EXP_TYPE_NAMESPACE]);
-
-		g_assert ((impl & MONO_IMPLEMENTATION_MASK) == MONO_IMPLEMENTATION_ASSEMBLYREF);
-
-		assembly_idx = impl >> MONO_IMPLEMENTATION_BITS;
-
-		mono_assembly_load_reference (image, assembly_idx - 1);
-		g_assert (image->references [assembly_idx - 1]);
-		if (image->references [assembly_idx - 1] == REFERENCE_MISSING) {
-			MonoExceptionHandle ex = MONO_HANDLE_NEW (MonoException, mono_get_exception_bad_image_format ("Invalid image"));
-			MONO_HANDLE_ARRAY_SETREF (types, aindex, NULL_HANDLE);
-			MONO_HANDLE_ARRAY_SETREF (exceptions, aindex, ex);
-			exception_count++; aindex++;
-			continue;
-		}
-		MonoClass *klass = mono_class_from_name_checked (image->references [assembly_idx - 1]->image, nspace, name, local_error);
-		if (!is_ok (local_error)) {
-			MonoExceptionHandle ex = mono_error_convert_to_exception_handle (local_error);
-			MONO_HANDLE_ARRAY_SETREF (types, aindex, NULL_HANDLE);
-			MONO_HANDLE_ARRAY_SETREF (exceptions, aindex, ex);
-			mono_error_cleanup (local_error);
-			exception_count++; aindex++;
-			continue;
-		}
-		MonoReflectionTypeHandle rt = mono_type_get_object_handle (mono_domain_get (), m_class_get_byval_arg (klass), local_error);
-		if (!is_ok (local_error)) {
-			MonoExceptionHandle ex = mono_error_convert_to_exception_handle (local_error);
-			MONO_HANDLE_ARRAY_SETREF (types, aindex, NULL_HANDLE);
-			MONO_HANDLE_ARRAY_SETREF (exceptions, aindex, ex);
-			mono_error_cleanup (local_error);
-			exception_count++; aindex++;
-			continue;
-		}
-		MONO_HANDLE_ARRAY_SETREF (types, aindex, rt);
-		MONO_HANDLE_ARRAY_SETREF (exceptions, aindex, NULL_HANDLE);
-		aindex++;
+		get_top_level_forwarded_type (image, table, i, types, exceptions, &aindex, &exception_count);
 	}
 
 	if (exception_count > 0) {
