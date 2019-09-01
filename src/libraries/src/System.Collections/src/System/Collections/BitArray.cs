@@ -771,56 +771,63 @@ namespace System.Collections
             throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
         }
 
-        private class BitArrayEnumeratorSimple : IEnumerator, ICloneable
+        private sealed class BitArrayEnumeratorSimple : IEnumerator, ICloneable
         {
-            private readonly BitArray _bitarray;
+            private readonly BitArray _bitArray;
             private int _index;
             private readonly int _version;
             private bool _currentElement;
 
-            internal BitArrayEnumeratorSimple(BitArray bitarray)
+            internal BitArrayEnumeratorSimple(BitArray bitArray)
             {
-                _bitarray = bitarray;
+                _bitArray = bitArray;
                 _index = -1;
-                _version = bitarray._version;
+                _version = bitArray._version;
             }
 
             public object Clone() => MemberwiseClone();
 
-            public virtual bool MoveNext()
+            public bool MoveNext()
             {
-                ICollection bitarrayAsICollection = _bitarray;
-                if (_version != _bitarray._version)
+                if (_version != _bitArray._version)
+                {
                     throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
+                }
 
-                if (_index < (bitarrayAsICollection.Count - 1))
+                if (_index < (_bitArray.m_length - 1))
                 {
                     _index++;
-                    _currentElement = _bitarray.Get(_index);
+                    _currentElement = _bitArray.Get(_index);
                     return true;
                 }
                 else
                 {
-                    _index = bitarrayAsICollection.Count;
+                    _index = _bitArray.m_length;
                 }
 
                 return false;
             }
 
-            public virtual object Current
+            public object Current
             {
                 get
                 {
-                    if ((uint)_index >= (uint)_bitarray.Count)
+                    if ((uint)_index >= (uint)_bitArray.m_length)
+                    {
                         throw GetInvalidOperationException(_index);
+                    }
+
                     return _currentElement;
                 }
             }
 
             public void Reset()
             {
-                if (_version != _bitarray._version)
+                if (_version != _bitArray._version)
+                {
                     throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
+                }
+
                 _index = -1;
             }
 
@@ -832,7 +839,7 @@ namespace System.Collections
                 }
                 else
                 {
-                    Debug.Assert(index >= _bitarray.Count);
+                    Debug.Assert(index >= _bitArray.m_length);
                     return new InvalidOperationException(SR.InvalidOperation_EnumEnded);
                 }
             }
