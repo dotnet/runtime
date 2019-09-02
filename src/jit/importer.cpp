@@ -20460,7 +20460,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         // First, cons up a suitable resolved token.
         CORINFO_RESOLVED_TOKEN derivedResolvedToken = {};
 
-        derivedResolvedToken.tokenScope   = info.compScopeHnd;
+        derivedResolvedToken.tokenScope   = info.compCompHnd->getMethodModule(derivedMethod);
         derivedResolvedToken.tokenContext = *contextHandle;
         derivedResolvedToken.token        = info.compCompHnd->getMethodDefFromMethod(derivedMethod);
         derivedResolvedToken.tokenType    = CORINFO_TOKENKIND_Method;
