@@ -214,7 +214,6 @@ namespace System.Linq
 
                 int index = hashCode % _groupings.Length;
                 Grouping<TKey, TElement> g = new Grouping<TKey, TElement>(key, hashCode);
-                g._elements = new TElement[1];
                 g._hashNext = _groupings[index];
                 _groupings[index] = g;
                 if (_lastGrouping == null)
