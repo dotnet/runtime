@@ -418,21 +418,19 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		ins = emit_xcompare (cfg, klass, etype, args [0], args [1]);
 		switch (id) {
 		case SN_GreaterThan:
-		case SN_GreaterThanOrEqual:
 			ins->inst_c0 = is_unsigned ? CMP_GT_UN : CMP_GT;
 			break;
+		case SN_GreaterThanOrEqual:
+			ins->inst_c0 = is_unsigned ? CMP_GE_UN : CMP_GE;
+			break;
 		case SN_LessThan:
-		case SN_LessThanOrEqual:
 			ins->inst_c0 = is_unsigned ? CMP_LT_UN : CMP_LT;
+			break;
+		case SN_LessThanOrEqual:
+			ins->inst_c0 = is_unsigned ? CMP_LE_UN : CMP_LE;
 			break;
 		default:
 			g_assert_not_reached ();
-		}
-		if (id == SN_GreaterThanOrEqual || id == SN_LessThanOrEqual) {
-			MonoInst *eq_ins;
-			eq_ins = emit_xcompare (cfg, klass, etype, args [0], args [1]);
-			ins = emit_simd_ins (cfg, klass, OP_XBINOP, ins->dreg, eq_ins->dreg);
-			ins->inst_c0 = OP_IOR;
 		}
 		return ins;
 	case SN_op_Explicit:
