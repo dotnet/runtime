@@ -46,10 +46,10 @@
     <MicrosoftNETCoreILAsmPackageVersion>5.0.0-alpha1.19451.2</MicrosoftNETCoreILAsmPackageVersion>
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>5.0.0-alpha1.19451.2</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <!-- Corefx dependencies -->
-    <MicrosoftNETCorePlatformsPackageVersion>5.0.0-alpha1.19431.3</MicrosoftNETCorePlatformsPackageVersion>
-    <runtimenativeSystemIOPortsPackageVersion>5.0.0-alpha1.19431.3</runtimenativeSystemIOPortsPackageVersion>
+    <MicrosoftNETCorePlatformsPackageVersion>5.0.0-alpha1.19451.2</MicrosoftNETCorePlatformsPackageVersion>
+    <runtimenativeSystemIOPortsPackageVersion>5.0.0-alpha1.19451.2</runtimenativeSystemIOPortsPackageVersion>
     <!-- Standard dependencies -->
-    <NETStandardLibraryPackageVersion>2.2.0-prerelease.19431.2</NETStandardLibraryPackageVersion>
+    <NETStandardLibraryPackageVersion>2.2.0-prerelease.19451.1</NETStandardLibraryPackageVersion>
     <!-- dotnet-optimization dependencies -->
     <optimizationwindows_ntx64IBCCoreFxPackageVersion>99.99.99-master-20190716.1</optimizationwindows_ntx64IBCCoreFxPackageVersion>
     <!-- sni -->
