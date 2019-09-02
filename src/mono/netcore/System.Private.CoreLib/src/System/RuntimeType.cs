@@ -1704,48 +1704,6 @@ namespace System
             return !object.ReferenceEquals(left, right);
         }
 
-        #region MemberInfo Overrides
-
-        // This is used by the ToString() overrides of all reflection types. The legacy behavior has the following problems:
-        //  1. Use only Name for nested types, which can be confused with global types and generic parameters of the same name.
-        //  2. Use only Name for generic parameters, which can be confused with nested types and global types of the same name.
-        //  3. Remove the namespace ("System") for all primitive types, which is not language neutral.
-        //  4. MethodBase.ToString() use "ByRef" for byref parameters which is different than Type.ToString().
-        //  5. ConstructorInfo.ToString() outputs "Void" as the return type. Why Void?
-        // Since it could be a breaking changes to fix these legacy behaviors, we only use the better and more unambiguous format
-        // in serialization (MemberInfoSerializationHolder).
-        internal override string FormatTypeName(bool serialization)
-        {
-            if (serialization)
-            {
-                return GetCachedName(TypeNameKind.SerializationName);
-            }
-            else
-            {
-                Type elementType = GetRootElementType();
-
-                // Legacy: this doesn't make sense, why use only Name for nested types but otherwise
-                // ToString() which contains namespace.
-                if (elementType.IsNested)
-                    return Name;
-
-                string typeName = ToString();
-
-                // Legacy: why removing "System"? Is it just because C# has keywords for these types?
-                // If so why don't we change it to lower case to match the C# keyword casing?
-                if (elementType.IsPrimitive ||
-                    elementType == typeof(void) ||
-                    elementType == typeof(TypedReference))
-                {
-                    typeName = typeName.Substring(@"System.".Length);
-                }
-
-                return typeName;
-            }
-        }
-
-        #endregion
-
         #region Legacy Internal
         private void CreateInstanceCheckThis()
         {

@@ -87,16 +87,6 @@ namespace System
 
 		public static Type GetTypeFromProgID (string progID, string? server, bool throwOnError) => throw new PlatformNotSupportedException ();
 
-		internal string FormatTypeName ()
-		{
-			return FormatTypeName (false);
-		}
-
-		internal virtual string FormatTypeName (bool serialization)
-		{
-			throw new NotImplementedException ();
-		}
-
 		internal virtual Type InternalResolve ()
 		{
 			return UnderlyingSystemType;

@@ -26,7 +26,7 @@ namespace System.Reflection
 			this.marshalAs = marshalAs;
 		}
 
-		internal static void FormatParameters (StringBuilder sb, ParameterInfo[] p, CallingConventions callingConvention, bool serialization)
+		internal static void FormatParameters (StringBuilder sb, ParameterInfo[] p, CallingConventions callingConvention)
 		{
 			for (int i = 0; i < p.Length; ++i) {
 				if (i > 0)
@@ -34,12 +34,12 @@ namespace System.Reflection
 
 				Type t = p[i].ParameterType;
 
-				string typeName = t.FormatTypeName (serialization);
+				string typeName = t.FormatTypeName ();
 
 				// Legacy: Why use "ByRef" for by ref parameters? What language is this?
 				// VB uses "ByRef" but it should precede (not follow) the parameter name.
 				// Why don't we just use "&"?
-				if (t.IsByRef && !serialization) {
+				if (t.IsByRef) {
 					sb.Append (typeName.TrimEnd (new char[] { '&' }));
 					sb.Append (" ByRef");
 				} else {

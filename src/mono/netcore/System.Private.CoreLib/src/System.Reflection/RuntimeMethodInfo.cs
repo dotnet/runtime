@@ -161,20 +161,16 @@ namespace System.Reflection
 			}
 		}
 
-        string FormatNameAndSig (bool serialization)
+        string FormatNameAndSig ()
         {
             // Serialization uses ToString to resolve MethodInfo overloads.
             StringBuilder sbName = new StringBuilder(Name);
 
-            // serialization == true: use unambiguous (except for assembly name) type names to distinguish between overloads.
-            // serialization == false: use basic format to maintain backward compatibility of MethodInfo.ToString().
-            TypeNameFormatFlags format = serialization ? TypeNameFormatFlags.FormatSerialization : TypeNameFormatFlags.FormatBasic;
-
             if (IsGenericMethod)
-                sbName.Append(RuntimeMethodHandle.ConstructInstantiation(this, format));
+                sbName.Append(RuntimeMethodHandle.ConstructInstantiation(this, TypeNameFormatFlags.FormatBasic));
 
             sbName.Append("(");
-            RuntimeParameterInfo.FormatParameters (sbName, GetParametersNoCopy (), CallingConvention, serialization);
+            RuntimeParameterInfo.FormatParameters (sbName, GetParametersNoCopy (), CallingConvention);
             sbName.Append(")");
 
             return sbName.ToString();
@@ -192,7 +188,7 @@ namespace System.Reflection
 
         public override String ToString() 
         {
-            return ReturnType.FormatTypeName() + " " + FormatNameAndSig(false);
+            return ReturnType.FormatTypeName() + " " + FormatNameAndSig();
         }
 
 		internal RuntimeModule GetRuntimeModule ()
@@ -892,7 +888,7 @@ namespace System.Reflection
 			sbName.Append ("Void ");
 
 			sbName.Append("(");
-			RuntimeParameterInfo.FormatParameters (sbName, GetParametersNoCopy (), CallingConvention, false);
+			RuntimeParameterInfo.FormatParameters (sbName, GetParametersNoCopy (), CallingConvention);
 			sbName.Append(")");
 
 			return sbName.ToString();
