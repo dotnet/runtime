@@ -125,6 +125,8 @@ MONO_JIT_ICALL (cominterop_get_function_pointer) \
 MONO_JIT_ICALL (cominterop_get_interface) \
 MONO_JIT_ICALL (cominterop_get_method_interface) \
 MONO_JIT_ICALL (cominterop_object_is_rcw) \
+MONO_JIT_ICALL (cominterop_restore_domain) \
+MONO_JIT_ICALL (cominterop_set_ccw_object_domain) \
 MONO_JIT_ICALL (cominterop_type_from_handle) \
 MONO_JIT_ICALL (g_free) \
 MONO_JIT_ICALL (interp_to_native_trampoline)	\
