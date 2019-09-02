@@ -34,17 +34,17 @@ namespace System.Diagnostics.Tests
                 using (EventLog eventLog = new EventLog())
                 {
                     eventLog.Source = source;
-                    Helpers.RetryOnWin7(() => eventLog.Clear());
-                    Assert.Equal(0, Helpers.RetryOnWin7((() => eventLog.Entries.Count)));
-                    Helpers.RetryOnWin7(() => eventLog.WriteEntry("Writing to event log."));
+                    Helpers.Retry(() => eventLog.Clear());
+                    Assert.Equal(0, Helpers.Retry((() => eventLog.Entries.Count)));
+                    Helpers.Retry(() => eventLog.WriteEntry("Writing to event log."));
                     Helpers.WaitForEventLog(eventLog, 1);
-                    Assert.Equal(1, Helpers.RetryOnWin7((() => eventLog.Entries.Count)));
+                    Assert.Equal(1, Helpers.Retry((() => eventLog.Entries.Count)));
                 }
             }
             finally
             {
                 EventLog.DeleteEventSource(source);
-                Helpers.RetryOnWin7(() => EventLog.Delete(log));
+                Helpers.Retry(() => EventLog.Delete(log));
             }
         }
 
@@ -53,7 +53,7 @@ namespace System.Diagnostics.Tests
         {
             using (EventLog eventLog = new EventLog("Application"))
             {
-                Assert.InRange(Helpers.RetryOnWin7((() => eventLog.Entries.Count)), 1, int.MaxValue);
+                Assert.InRange(Helpers.Retry((() => eventLog.Entries.Count)), 1, int.MaxValue);
             }
         }
 
@@ -71,7 +71,7 @@ namespace System.Diagnostics.Tests
             finally
             {
                 EventLog.DeleteEventSource(source);
-                Helpers.RetryOnWin7(() => EventLog.Delete(log));
+                Helpers.Retry(() => EventLog.Delete(log));
                 Assert.False(EventLog.Exists(log));
             }
         }
@@ -147,7 +147,7 @@ namespace System.Diagnostics.Tests
             finally
             {
                 EventLog.DeleteEventSource(source);
-                Helpers.RetryOnWin7(() => EventLog.Delete(log));
+                Helpers.Retry(() => EventLog.Delete(log));
             }
         }
 
@@ -186,7 +186,7 @@ namespace System.Diagnostics.Tests
             finally
             {
                 EventLog.DeleteEventSource(source);
-                Helpers.RetryOnWin7(() => EventLog.Delete(log));
+                Helpers.Retry(() => EventLog.Delete(log));
             }
         }
 
@@ -213,7 +213,7 @@ namespace System.Diagnostics.Tests
             finally
             {
                 EventLog.DeleteEventSource(source);
-                Helpers.RetryOnWin7(() => EventLog.Delete(log));
+                Helpers.Retry(() => EventLog.Delete(log));
             }
         }
 
@@ -273,7 +273,7 @@ namespace System.Diagnostics.Tests
             finally
             {
                 EventLog.DeleteEventSource(source);
-                Helpers.RetryOnWin7(() => EventLog.Delete(log));
+                Helpers.Retry(() => EventLog.Delete(log));
             }
         }
 
@@ -331,7 +331,7 @@ namespace System.Diagnostics.Tests
             finally
             {
                 EventLog.DeleteEventSource(source);
-                Helpers.RetryOnWin7(() => EventLog.Delete(log));
+                Helpers.Retry(() => EventLog.Delete(log));
             }
         }
 
@@ -357,7 +357,7 @@ namespace System.Diagnostics.Tests
             foreach (var eventLog in EventLog.GetEventLogs())
             {
                 // Accessing eventlog properties should not throw.
-                Assert.True(Helpers.RetryOnWin7(() => eventLog.Entries.Count) >= 0);
+                Assert.True(Helpers.Retry(() => eventLog.Entries.Count) >= 0);
             }
         }
 
