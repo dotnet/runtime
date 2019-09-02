@@ -79,8 +79,8 @@ namespace System.Diagnostics.Tests
                         Assert.True(e.EventException != null || e.EventRecord != null);
                         signal.Set();
                     };
-                    Helpers.RetryOnWin7(() => eventLogWatcher.Enabled = waitOnEvent);
-                    Helpers.RetryOnWin7(() => eventLog.WriteEntry(message, EventLogEntryType.Information));
+                    Helpers.Retry(() => eventLogWatcher.Enabled = waitOnEvent);
+                    Helpers.Retry(() => eventLog.WriteEntry(message, EventLogEntryType.Information));
                     if (waitOnEvent)
                     {
                         Assert.True(signal.WaitOne(6000));
@@ -90,7 +90,7 @@ namespace System.Diagnostics.Tests
             finally
             {
                 EventLog.DeleteEventSource(source);
-                Helpers.RetryOnWin7(() => EventLog.Delete(log));
+                Helpers.Retry(() => EventLog.Delete(log));
             }
         }
 
