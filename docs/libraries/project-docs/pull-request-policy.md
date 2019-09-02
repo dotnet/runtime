@@ -16,6 +16,8 @@ In case CI indicates test failures which are **highly unlikely** to be caused by
 4. In a follow-up Pull Request, the failing test(s) should be disabled with the corresponding issue number, e.g. `[ActiveIssue(x)]`, and the tracking issue should be labeled as `disabled-test`.
 5. A comment should be placed in the original Pull Request that links to the created or updated issues.
 
+The only time this can be skipped is if the issue is already being investigated, is already reproable locally, is already known to happen on the OS/version on which it failed, and additional ref counts on the issues / additional crash dumps / etc. are definitively known to not be necessary for the developer responsible for the issue.  This is relatively rare.
+
 There are plenty of possible bugs, e.g. race conditions, where a failure might highlight a real problem and it won't manifest again on a retry. Therefore these steps should be followed for every iteration of the PR build, e.g. before retrying/rebuilding.
 
 ## Infrastructure issues
