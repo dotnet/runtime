@@ -197,30 +197,7 @@ namespace System.Net.Sockets
             _clientSocket.SetIPProtectionLevel(allowed ? IPProtectionLevel.Unrestricted : IPProtectionLevel.EdgeRestricted);
         }
 
-        private bool _cleanedUp = false;
-        private void FreeResources()
-        {
-            // The only resource we need to free is the network stream, since this
-            // is based on the client socket, closing the stream will cause us
-            // to flush the data to the network, close the stream and (in the
-            // NetoworkStream code) close the socket as well.
-            if (_cleanedUp)
-            {
-                return;
-            }
-
-            Socket chkClientSocket = _clientSocket;
-            if (chkClientSocket != null)
-            {
-                // If the NetworkStream wasn't retrieved, the Socket might
-                // still be there and needs to be closed to release the effect
-                // of the Bind() call and free the bound IPEndPoint.
-                chkClientSocket.InternalShutdown(SocketShutdown.Both);
-                chkClientSocket.Dispose();
-                _clientSocket = null;
-            }
-            _cleanedUp = true;
-        }
+        private bool _disposed = false;
 
         private bool IsAddressFamilyCompatible(AddressFamily family)
         {
@@ -248,7 +225,28 @@ namespace System.Net.Sockets
             if (disposing)
             {
                 if (NetEventSource.IsEnabled) NetEventSource.Info(this);
-                FreeResources();
+
+                // The only resource we need to free is the network stream, since this
+                // is based on the client socket, closing the stream will cause us
+                // to flush the data to the network, close the stream and (in the
+                // NetoworkStream code) close the socket as well.
+                if (_disposed)
+                {
+                    return;
+                }
+
+                Socket chkClientSocket = _clientSocket;
+                if (chkClientSocket != null)
+                {
+                    // If the NetworkStream wasn't retrieved, the Socket might
+                    // still be there and needs to be closed to release the effect
+                    // of the Bind() call and free the bound IPEndPoint.
+                    chkClientSocket.InternalShutdown(SocketShutdown.Both);
+                    chkClientSocket.Dispose();
+                    _clientSocket = null;
+                }
+
+                _disposed = true;
                 GC.SuppressFinalize(this);
             }
         }
@@ -285,11 +283,9 @@ namespace System.Net.Sockets
 
         public IAsyncResult BeginSend(byte[] datagram, int bytes, IPEndPoint endPoint, AsyncCallback requestCallback, object state)
         {
+            ThrowIfDisposed();
+
             // Validate input parameters.
-            if (_cleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
             if (datagram == null)
             {
                 throw new ArgumentNullException(nameof(datagram));
@@ -353,10 +349,7 @@ namespace System.Net.Sockets
 
         public int EndSend(IAsyncResult asyncResult)
         {
-            if (_cleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             if (_active)
             {
@@ -371,10 +364,7 @@ namespace System.Net.Sockets
         public IAsyncResult BeginReceive(AsyncCallback requestCallback, object state)
         {
             // Validate input parameters.
-            if (_cleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             // Due to the nature of the ReceiveFrom() call and the ref parameter convention,
             // we need to cast an IPEndPoint to its base class EndPoint and cast it back down
@@ -394,10 +384,7 @@ namespace System.Net.Sockets
 
         public byte[] EndReceive(IAsyncResult asyncResult, ref IPEndPoint remoteEP)
         {
-            if (_cleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             EndPoint tempRemoteEP;
             if (_family == AddressFamily.InterNetwork)
@@ -428,10 +415,7 @@ namespace System.Net.Sockets
         public void JoinMulticastGroup(IPAddress multicastAddr)
         {
             // Validate input parameters.
-            if (_cleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             if (multicastAddr == null)
             {
@@ -469,12 +453,9 @@ namespace System.Net.Sockets
 
         public void JoinMulticastGroup(IPAddress multicastAddr, IPAddress localAddress)
         {
-            // Validate input parameters.
-            if (_cleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
+            // Validate input parameters.
             if (_family != AddressFamily.InterNetwork)
             {
                 throw new SocketException((int)SocketError.OperationNotSupported);
@@ -491,12 +472,9 @@ namespace System.Net.Sockets
         // Joins an IPv6 multicast address group.
         public void JoinMulticastGroup(int ifindex, IPAddress multicastAddr)
         {
-            // Validate input parameters.
-            if (_cleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
+            // Validate input parameters.
             if (multicastAddr == null)
             {
                 throw new ArgumentNullException(nameof(multicastAddr));
@@ -525,11 +503,9 @@ namespace System.Net.Sockets
         // Joins a multicast address group with the specified time to live (TTL).
         public void JoinMulticastGroup(IPAddress multicastAddr, int timeToLive)
         {
+            ThrowIfDisposed();
+
             // parameter validation;
-            if (_cleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
             if (multicastAddr == null)
             {
                 throw new ArgumentNullException(nameof(multicastAddr));
@@ -552,11 +528,9 @@ namespace System.Net.Sockets
         // Leaves a multicast address group.
         public void DropMulticastGroup(IPAddress multicastAddr)
         {
+            ThrowIfDisposed();
+
             // Validate input parameters.
-            if (_cleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
             if (multicastAddr == null)
             {
                 throw new ArgumentNullException(nameof(multicastAddr));
@@ -592,12 +566,9 @@ namespace System.Net.Sockets
         // Leaves an IPv6 multicast address group.
         public void DropMulticastGroup(IPAddress multicastAddr, int ifindex)
         {
-            // Validate input parameters.
-            if (_cleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
+            // Validate input parameters.
             if (multicastAddr == null)
             {
                 throw new ArgumentNullException(nameof(multicastAddr));
@@ -711,10 +682,8 @@ namespace System.Net.Sockets
 
         public void Connect(string hostname, int port)
         {
-            if (_cleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
+
             if (hostname == null)
             {
                 throw new ArgumentNullException(nameof(hostname));
@@ -842,10 +811,8 @@ namespace System.Net.Sockets
 
         public void Connect(IPAddress addr, int port)
         {
-            if (_cleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
+
             if (addr == null)
             {
                 throw new ArgumentNullException(nameof(addr));
@@ -862,10 +829,8 @@ namespace System.Net.Sockets
 
         public void Connect(IPEndPoint endPoint)
         {
-            if (_cleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
+
             if (endPoint == null)
             {
                 throw new ArgumentNullException(nameof(endPoint));
@@ -878,13 +843,7 @@ namespace System.Net.Sockets
 
         public byte[] Receive(ref IPEndPoint remoteEP)
         {
-            //
-            // parameter validation
-            //
-            if (_cleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             // this is a fix due to the nature of the ReceiveFrom() call and the
             // ref parameter convention, we need to cast an IPEndPoint to it's base
@@ -921,10 +880,8 @@ namespace System.Net.Sockets
         // Sends a UDP datagram to the host at the remote end point.
         public int Send(byte[] dgram, int bytes, IPEndPoint endPoint)
         {
-            if (_cleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
+
             if (dgram == null)
             {
                 throw new ArgumentNullException(nameof(dgram));
@@ -949,10 +906,8 @@ namespace System.Net.Sockets
         // Sends a UDP datagram to the specified port on the specified remote host.
         public int Send(byte[] dgram, int bytes, string hostname, int port)
         {
-            if (_cleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
+
             if (dgram == null)
             {
                 throw new ArgumentNullException(nameof(dgram));
@@ -990,10 +945,8 @@ namespace System.Net.Sockets
         // Sends a UDP datagram to a remote host.
         public int Send(byte[] dgram, int bytes)
         {
-            if (_cleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
+
             if (dgram == null)
             {
                 throw new ArgumentNullException(nameof(dgram));
@@ -1005,6 +958,16 @@ namespace System.Net.Sockets
             }
 
             return Client.Send(dgram, 0, bytes, SocketFlags.None);
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (_disposed)
+            {
+                ThrowObjectDisposedException();
+            }
+
+            void ThrowObjectDisposedException() => throw new ObjectDisposedException(GetType().FullName);
         }
     }
 }
