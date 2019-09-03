@@ -61,7 +61,7 @@ mono_reflection_get_custom_attrs_data_checked (MonoObjectHandle obj, MonoError *
 MonoArrayHandle
 mono_reflection_get_custom_attrs_by_type_handle (MonoObjectHandle obj, MonoClass *attr_klass, MonoError *error);
 
-MonoArray*
+MonoArrayHandle
 mono_reflection_get_custom_attrs_blob_checked (MonoReflectionAssembly *assembly, MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *propValues, MonoArray *fields, MonoArray* fieldValues, MonoError *error);
 
 MonoCustomAttrInfo*

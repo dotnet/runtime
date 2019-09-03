@@ -47,7 +47,10 @@ typedef int *int_ptr;
 typedef int **int_ptr_ref;
 typedef guint8 **guint8_ptr_ref;
 typedef GPtrArray *GPtrArray_ptr;
+// HANDLE is not used just to avoid duplicate typedef warnings with some compilers.
+// gpointer == void* == HANDLE == FILE_HANDLE == PROCESS_HANDLE.
 typedef gpointer PROCESS_HANDLE;
+typedef gpointer FILE_HANDLE;
 typedef MonoAssemblyName *MonoAssemblyName_ptr;
 typedef MonoBoolean *MonoBoolean_ptr;
 typedef MonoClass *MonoClass_ptr;
@@ -173,8 +176,11 @@ typedef MonoStringHandle MonoStringOutHandle;
 #define MONO_HANDLE_TYPE_WRAP_guint8_ptr_ref		ICALL_HANDLES_WRAP_VALUETYPE_REF
 #define MONO_HANDLE_TYPE_WRAP_MonoResolveTokenError_ref	ICALL_HANDLES_WRAP_VALUETYPE_REF
 
+// HANDLE is not used just to avoid duplicate typedef warnings with some compilers.
+// gpointer == void* == HANDLE == FILE_HANDLE == PROCESS_HANDLE.
 #define MONO_HANDLE_TYPE_WRAP_char_ptr   		ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_const_char_ptr		ICALL_HANDLES_WRAP_NONE
+#define MONO_HANDLE_TYPE_WRAP_FILE_HANDLE		ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_MonoClass_ptr  		ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_MonoEvent_ptr		ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_MonoGenericParamInfo_ptr	ICALL_HANDLES_WRAP_NONE
@@ -184,7 +190,7 @@ typedef MonoStringHandle MonoStringOutHandle;
 #define MONO_HANDLE_TYPE_WRAP_MonoStackCrawlMark_ptr  	ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_gint32_ptr   		ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_gpointer_ptr		ICALL_HANDLES_WRAP_NONE
-#define MONO_HANDLE_TYPE_WRAP_PROCESS_HANDLE			ICALL_HANDLES_WRAP_NONE
+#define MONO_HANDLE_TYPE_WRAP_PROCESS_HANDLE		ICALL_HANDLES_WRAP_NONE
 
 // Please keep this sorted (grep ICALL_HANDLES_WRAP_OBJ$ | sort)
 #define MONO_HANDLE_TYPE_WRAP_MonoAppContext 			ICALL_HANDLES_WRAP_OBJ
