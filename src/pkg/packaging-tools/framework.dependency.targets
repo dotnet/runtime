@@ -40,6 +40,15 @@
       </FilesToPackage>
     </ItemGroup>
 
+    <!-- Mark files with symbol file extensions as symbol files: allows filtering them out. -->
+    <ItemGroup>
+      <FilesToPackage
+        Condition="
+          '%(FilesToPackage.Extension)' == '.pdb' or
+          '%(FilesToPackage.Extension)' == '$(SymbolFileExtension)'"
+        IsSymbolFile="true" />
+    </ItemGroup>
+
     <!-- Add versions file with the hashes of the repos we consume -->
     <ItemGroup Condition="'$(FrameworkPackageName)' != ''">
       <FilesToPackage Include="$(IntermediateOutputPath)\$(FrameworkPackageName).versions.txt">
@@ -146,6 +155,13 @@
              Targets="GetFilesToPackage">
       <Output TaskParameter="TargetOutputs" ItemName="SharedFrameworkRuntimeFiles" />
     </MSBuild>
+
+    <!-- Don't include symbol files in platform manifest. -->
+    <ItemGroup>
+      <SharedFrameworkRuntimeFiles
+        Remove="@(SharedFrameworkRuntimeFiles)"
+        Condition="'%(SharedFrameworkRuntimeFiles.IsSymbolFile)' == 'true'" />
+    </ItemGroup>
 
     <!--
       Workaround: zero-versioned Microsoft.VisualBasic.dll in non-Windows CoreFX transport package.

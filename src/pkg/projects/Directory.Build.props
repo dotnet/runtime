@@ -76,33 +76,6 @@
     <IncludeRuntimeJson>true</IncludeRuntimeJson>
   </PropertyGroup>
 
-  <Choose>
-    <When Condition="$(PackageTargetRid.StartsWith('win'))">
-      <PropertyGroup>
-        <ApplicationFileExtension>.exe</ApplicationFileExtension>
-        <LibraryFilePrefix></LibraryFilePrefix>
-        <LibraryFileExtension>.dll</LibraryFileExtension>
-        <SymbolFileExtension>.pdb</SymbolFileExtension>
-      </PropertyGroup>
-    </When>
-    <When Condition="$(PackageTargetRid.StartsWith('osx'))">
-      <PropertyGroup>
-        <ApplicationFileExtension></ApplicationFileExtension>
-        <LibraryFilePrefix>lib</LibraryFilePrefix>
-        <LibraryFileExtension>.dylib</LibraryFileExtension>
-        <SymbolFileExtension>.dwarf</SymbolFileExtension>
-      </PropertyGroup>
-    </When>
-    <Otherwise>
-      <PropertyGroup>
-        <ApplicationFileExtension></ApplicationFileExtension>
-        <LibraryFilePrefix>lib</LibraryFilePrefix>
-        <LibraryFileExtension>.so</LibraryFileExtension>
-        <SymbolFileExtension>.dbg</SymbolFileExtension>
-      </PropertyGroup>
-    </Otherwise>
-  </Choose>
-
   <Import Project="$(PackagingToolsDir)packaging-tools.props" />
 
   <PropertyGroup Condition="'$(MSBuildProjectExtension)' == '.depproj'">
@@ -135,9 +108,6 @@
           Include="$(PackageThirdPartyNoticesFile)" >
       <SkipPackageFileCheck>true</SkipPackageFileCheck>
     </File>
-
-    <AdditionalLibPackageExcludes Condition="'$(SymbolFileExtension)' != ''" Include="%2A%2A\%2A$(SymbolFileExtension)" />
-    <AdditionalSymbolPackageExcludes Condition="'$(LibraryFileExtension)' != ''" Include="%2A%2A\%2A.a;%2A%2A\%2A$(LibraryFileExtension)" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -200,5 +170,37 @@
     <!-- When resolving assets to pack, use the target runtime (if any). -->
     <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
   </PropertyGroup>
+
+  <Choose>
+    <When Condition="$(RuntimeIdentifier.StartsWith('win'))">
+      <PropertyGroup>
+        <ApplicationFileExtension>.exe</ApplicationFileExtension>
+        <LibraryFilePrefix></LibraryFilePrefix>
+        <LibraryFileExtension>.dll</LibraryFileExtension>
+        <SymbolFileExtension>.pdb</SymbolFileExtension>
+      </PropertyGroup>
+    </When>
+    <When Condition="$(RuntimeIdentifier.StartsWith('osx'))">
+      <PropertyGroup>
+        <ApplicationFileExtension></ApplicationFileExtension>
+        <LibraryFilePrefix>lib</LibraryFilePrefix>
+        <LibraryFileExtension>.dylib</LibraryFileExtension>
+        <SymbolFileExtension>.dwarf</SymbolFileExtension>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <ApplicationFileExtension></ApplicationFileExtension>
+        <LibraryFilePrefix>lib</LibraryFilePrefix>
+        <LibraryFileExtension>.so</LibraryFileExtension>
+        <SymbolFileExtension>.dbg</SymbolFileExtension>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
+
+  <ItemGroup>
+    <AdditionalLibPackageExcludes Condition="'$(SymbolFileExtension)' != ''" Include="%2A%2A\%2A$(SymbolFileExtension)" />
+    <AdditionalSymbolPackageExcludes Condition="'$(LibraryFileExtension)' != ''" Include="%2A%2A\%2A.a;%2A%2A\%2A$(LibraryFileExtension)" />
+  </ItemGroup>
 
 </Project>
