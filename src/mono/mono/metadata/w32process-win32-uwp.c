@@ -71,7 +71,7 @@ ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStar
 MonoStringHandle
 ves_icall_System_Diagnostics_Process_ProcessName_internal (HANDLE process, MonoError *error)
 {
-	gunichar2* name = NULL;
+	gunichar2 *name = NULL;
 	guint32 len = 0;
 	// FIXME give allocator to mono_get_module_file_name to avoid copies, here and many other
 	if (!mono_get_module_file_name (NULL, &name, &len))
