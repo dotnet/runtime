@@ -1420,7 +1420,7 @@ glong     g_utf8_pointer_to_offset (const gchar *str, const gchar *pos);
 // g_free the result
 // No MAX_PATH limit.
 gboolean
-mono_get_module_filename (gpointer mod, gunichar2** pstr, guint32* plength);
+mono_get_module_filename (gpointer mod, gunichar2 **pstr, guint32 *plength);
 
 // g_free the result
 // No MAX_PATH limit.
