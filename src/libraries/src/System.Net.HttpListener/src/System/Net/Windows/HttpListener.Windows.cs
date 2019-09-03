@@ -451,7 +451,6 @@ namespace System.Net
             {
                 if (NetEventSource.IsEnabled) NetEventSource.Info($"Dispose ThreadPoolBoundHandle: {_requestQueueBoundHandle}");
                 _requestQueueBoundHandle?.Dispose();
-                _requestQueueBoundHandle = null;
                 _requestQueueHandle.Dispose();
             }
         }
