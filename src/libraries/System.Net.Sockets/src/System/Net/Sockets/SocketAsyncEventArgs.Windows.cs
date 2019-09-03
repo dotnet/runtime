@@ -1275,7 +1275,7 @@ namespace System.Net.Sockets
 
             if (socketError != SocketError.OperationAborted)
             {
-                if (_currentSocket.CleanedUp)
+                if (_currentSocket.Disposed)
                 {
                     socketError = SocketError.OperationAborted;
                 }
@@ -1295,7 +1295,7 @@ namespace System.Net.Sockets
                     }
                     catch
                     {
-                        // _currentSocket.CleanedUp check above does not always work since this code is subject to race conditions.
+                        // _currentSocket.Disposed check above does not always work since this code is subject to race conditions.
                         socketError = SocketError.OperationAborted;
                     }
                 }

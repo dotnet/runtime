@@ -488,14 +488,9 @@ namespace System.Net.Sockets
         private void ThrowForNonFreeStatus(int status)
         {
             Debug.Assert(status == InProgress || status == Configuring || status == Disposed, $"Unexpected status: {status}");
-            if (status == Disposed)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
-            else
-            {
-                throw new InvalidOperationException(SR.net_socketopinprogress);
-            }
+            throw status == Disposed ?
+                new ObjectDisposedException(GetType().FullName) :
+                new InvalidOperationException(SR.net_socketopinprogress);
         }
 
         // Prepares for a native async socket call.

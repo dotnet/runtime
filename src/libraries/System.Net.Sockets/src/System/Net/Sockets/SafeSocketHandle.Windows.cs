@@ -32,8 +32,7 @@ namespace System.Net.Sockets
         {
             if (_released)
             {
-                // Keep the exception message pointing at the external type.
-                throw new ObjectDisposedException(typeof(Socket).FullName);
+                ThrowSocketDisposedException();
             }
 
             if (_iocpBoundHandle != null)
@@ -66,7 +65,7 @@ namespace System.Net.Sockets
                             // If the handle was closed just before the call to BindHandle,
                             // we could end up getting an ArgumentException, which we should
                             // instead propagate as an ObjectDisposedException.
-                            throw new ObjectDisposedException(typeof(Socket).FullName, exception);
+                            ThrowSocketDisposedException(exception);
                         }
                         throw;
                     }
@@ -121,6 +120,9 @@ namespace System.Net.Sockets
             // On Windows, this is handled in TryUnblockSocket.
             return false;
         }
+
+        private static void ThrowSocketDisposedException(Exception innerException = null) =>
+            throw new ObjectDisposedException(typeof(Socket).FullName, innerException);
 
         internal sealed partial class InnerSafeCloseSocket : SafeHandleMinusOneIsInvalid
         {

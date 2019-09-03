@@ -408,7 +408,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                if (_currentSocket.CleanedUp)
+                if (_currentSocket.Disposed)
                 {
                     socketError = SocketError.OperationAborted;
                 }

@@ -67,7 +67,7 @@ namespace System.Net.Sockets
 
         private static object s_internalSyncObject;
         private int _closeTimeout = Socket.DefaultCloseTimeout;
-        private int _intCleanedUp; // 0 if not completed, > 0 otherwise.
+        private int _disposed; // 0 == false, anything else == true
 
         internal static volatile bool s_initialized;
 
@@ -167,10 +167,7 @@ namespace System.Net.Sockets
         {
             get
             {
-                if (CleanedUp)
-                {
-                    throw new ObjectDisposedException(this.GetType().FullName);
-                }
+                ThrowIfDisposed();
 
                 int argp;
 
@@ -194,10 +191,7 @@ namespace System.Net.Sockets
         {
             get
             {
-                if (CleanedUp)
-                {
-                    throw new ObjectDisposedException(this.GetType().FullName);
-                }
+                ThrowIfDisposed();
 
                 if (_nonBlockingConnectInProgress && Poll(0, SelectMode.SelectWrite))
                 {
@@ -234,10 +228,7 @@ namespace System.Net.Sockets
         {
             get
             {
-                if (CleanedUp)
-                {
-                    throw new ObjectDisposedException(this.GetType().FullName);
-                }
+                ThrowIfDisposed();
 
                 if (_remoteEndPoint == null)
                 {
@@ -307,10 +298,7 @@ namespace System.Net.Sockets
             }
             set
             {
-                if (CleanedUp)
-                {
-                    throw new ObjectDisposedException(this.GetType().FullName);
-                }
+                ThrowIfDisposed();
 
                 if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"value:{value} willBlock:{_willBlock} willBlockInternal:{_willBlockInternal}");
 
@@ -683,10 +671,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, localEP);
 
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             // Validate input parameters.
             if (localEP == null)
@@ -709,10 +694,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, localEP);
 
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"localEP:{localEP}");
 
@@ -772,10 +754,7 @@ namespace System.Net.Sockets
         // Establishes a connection to a remote system.
         public void Connect(EndPoint remoteEP)
         {
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             // Validate input parameters.
             if (remoteEP == null)
@@ -837,10 +816,8 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, address);
 
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
+
             if (address == null)
             {
                 throw new ArgumentNullException(nameof(address));
@@ -872,10 +849,8 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, host);
 
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
+
             if (host == null)
             {
                 throw new ArgumentNullException(nameof(host));
@@ -910,10 +885,8 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, addresses);
 
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
+
             if (addresses == null)
             {
                 throw new ArgumentNullException(nameof(addresses));
@@ -1001,12 +974,7 @@ namespace System.Net.Sockets
         public void Listen(int backlog)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, backlog);
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
-
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"backlog:{backlog}");
+            ThrowIfDisposed();
 
             // This may throw ObjectDisposedException.
             SocketError errorCode = SocketPal.Listen(_handle, backlog);
@@ -1038,10 +1006,7 @@ namespace System.Net.Sockets
 
             // Validate input parameters.
 
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             if (_rightEndPoint == null)
             {
@@ -1075,7 +1040,7 @@ namespace System.Net.Sockets
             if (errorCode != SocketError.Success)
             {
                 Debug.Assert(acceptedSocketHandle.IsInvalid);
-                UpdateAcceptSocketErrorForCleanedUp(ref errorCode);
+                UpdateAcceptSocketErrorForDisposed(ref errorCode);
                 UpdateStatusAfterSocketErrorAndThrowException(errorCode);
             }
 
@@ -1125,10 +1090,8 @@ namespace System.Net.Sockets
         public int Send(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out SocketError errorCode)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
+
             if (buffers == null)
             {
                 throw new ArgumentNullException(nameof(buffers));
@@ -1158,7 +1121,7 @@ namespace System.Net.Sockets
 
             if (errorCode != SocketError.Success)
             {
-                UpdateSendSocketErrorForCleanedUp(ref errorCode);
+                UpdateSendSocketErrorForDisposed(ref errorCode);
 
                 // Update the internal state of this socket according to the error before throwing.
                 UpdateStatusAfterSocketError(errorCode);
@@ -1190,10 +1153,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             // Validate input parameters.
             if (buffer == null)
@@ -1219,7 +1179,7 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
-                UpdateSendSocketErrorForCleanedUp(ref errorCode);
+                UpdateSendSocketErrorForDisposed(ref errorCode);
 
                 // Update the internal state of this socket according to the error before throwing.
                 UpdateStatusAfterSocketError(errorCode);
@@ -1254,7 +1214,7 @@ namespace System.Net.Sockets
         public int Send(ReadOnlySpan<byte> buffer, SocketFlags socketFlags, out SocketError errorCode)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-            if (CleanedUp) throw new ObjectDisposedException(GetType().FullName);
+            ThrowIfDisposed();
             ValidateBlockingMode();
 
             int bytesTransferred;
@@ -1262,7 +1222,7 @@ namespace System.Net.Sockets
 
             if (errorCode != SocketError.Success)
             {
-                UpdateSendSocketErrorForCleanedUp(ref errorCode);
+                UpdateSendSocketErrorForDisposed(ref errorCode);
 
                 UpdateStatusAfterSocketError(errorCode);
                 if (NetEventSource.IsEnabled) NetEventSource.Error(this, new SocketException((int)errorCode));
@@ -1282,10 +1242,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             if (!Connected)
             {
@@ -1317,10 +1274,8 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
+
             // Validate input parameters.
             if (buffer == null)
             {
@@ -1351,7 +1306,7 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
-                UpdateSendSocketErrorForCleanedUp(ref errorCode);
+                UpdateSendSocketErrorForDisposed(ref errorCode);
 
                 UpdateStatusAfterSocketErrorAndThrowException(errorCode);
             }
@@ -1417,10 +1372,7 @@ namespace System.Net.Sockets
         public int Receive(byte[] buffer, int offset, int size, SocketFlags socketFlags, out SocketError errorCode)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             // Validate input parameters.
             if (buffer == null)
@@ -1442,7 +1394,7 @@ namespace System.Net.Sockets
             int bytesTransferred;
             errorCode = SocketPal.Receive(_handle, buffer, offset, size, socketFlags, out bytesTransferred);
 
-            UpdateReceiveSocketErrorForCleanedUp(ref errorCode, bytesTransferred);
+            UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
 
             if (errorCode != SocketError.Success)
             {
@@ -1485,13 +1437,13 @@ namespace System.Net.Sockets
         public int Receive(Span<byte> buffer, SocketFlags socketFlags, out SocketError errorCode)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-            if (CleanedUp) throw new ObjectDisposedException(GetType().FullName);
+            ThrowIfDisposed();
             ValidateBlockingMode();
 
             int bytesTransferred;
             errorCode = SocketPal.Receive(_handle, buffer, socketFlags, out bytesTransferred);
 
-            UpdateReceiveSocketErrorForCleanedUp(ref errorCode, bytesTransferred);
+            UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
 
             if (errorCode != SocketError.Success)
             {
@@ -1524,10 +1476,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             if (buffers == null)
             {
@@ -1557,7 +1506,7 @@ namespace System.Net.Sockets
             }
 #endif
 
-            UpdateReceiveSocketErrorForCleanedUp(ref errorCode, bytesTransferred);
+            UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
 
             if (errorCode != SocketError.Success)
             {
@@ -1592,10 +1541,7 @@ namespace System.Net.Sockets
         public int ReceiveMessageFrom(byte[] buffer, int offset, int size, ref SocketFlags socketFlags, ref EndPoint remoteEP, out IPPacketInformation ipPacketInformation)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
             if (buffer == null)
             {
                 throw new ArgumentNullException(nameof(buffer));
@@ -1639,7 +1585,7 @@ namespace System.Net.Sockets
             int bytesTransferred;
             SocketError errorCode = SocketPal.ReceiveMessageFrom(this, _handle, buffer, offset, size, ref socketFlags, socketAddress, out receiveAddress, out ipPacketInformation, out bytesTransferred);
 
-            UpdateReceiveSocketErrorForCleanedUp(ref errorCode, bytesTransferred);
+            UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success && errorCode != SocketError.MessageSize)
@@ -1672,10 +1618,7 @@ namespace System.Net.Sockets
         public int ReceiveFrom(byte[] buffer, int offset, int size, SocketFlags socketFlags, ref EndPoint remoteEP)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             // Validate input parameters.
             if (buffer == null)
@@ -1719,7 +1662,7 @@ namespace System.Net.Sockets
             int bytesTransferred;
             SocketError errorCode = SocketPal.ReceiveFrom(_handle, buffer, offset, size, socketFlags, socketAddress.Buffer, ref socketAddress.InternalSize, out bytesTransferred);
 
-            UpdateReceiveSocketErrorForCleanedUp(ref errorCode, bytesTransferred);
+            UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
 
             // If the native call fails we'll throw a SocketException.
             SocketException socketException = null;
@@ -1782,10 +1725,7 @@ namespace System.Net.Sockets
 
         public int IOControl(int ioControlCode, byte[] optionInValue, byte[] optionOutValue)
         {
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             int realOptionLength = 0;
 
@@ -1814,10 +1754,7 @@ namespace System.Net.Sockets
         // Sets the specified option to the specified value.
         public void SetSocketOption(SocketOptionLevel optionLevel, SocketOptionName optionName, int optionValue)
         {
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"optionLevel:{optionLevel} optionName:{optionName} optionValue:{optionValue}");
 
             SetSocketOption(optionLevel, optionName, optionValue, false);
@@ -1825,10 +1762,7 @@ namespace System.Net.Sockets
 
         public void SetSocketOption(SocketOptionLevel optionLevel, SocketOptionName optionName, byte[] optionValue)
         {
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"optionLevel:{optionLevel} optionName:{optionName} optionValue:{optionValue}");
 
@@ -1853,10 +1787,7 @@ namespace System.Net.Sockets
         // Sets the specified option to the specified value.
         public void SetSocketOption(SocketOptionLevel optionLevel, SocketOptionName optionName, object optionValue)
         {
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             // Validate input parameters.
             if (optionValue == null)
@@ -1907,10 +1838,7 @@ namespace System.Net.Sockets
         // Gets the value of a socket option.
         public object GetSocketOption(SocketOptionLevel optionLevel, SocketOptionName optionName)
         {
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
             if (optionLevel == SocketOptionLevel.Socket && optionName == SocketOptionName.Linger)
             {
                 return GetLingerOpt();
@@ -1947,10 +1875,7 @@ namespace System.Net.Sockets
 
         public void GetSocketOption(SocketOptionLevel optionLevel, SocketOptionName optionName, byte[] optionValue)
         {
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             int optionLength = optionValue != null ? optionValue.Length : 0;
 
@@ -1973,10 +1898,7 @@ namespace System.Net.Sockets
 
         public byte[] GetSocketOption(SocketOptionLevel optionLevel, SocketOptionName optionName, int optionLength)
         {
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             byte[] optionValue = new byte[optionLength];
             int realOptionLength = optionLength;
@@ -2031,10 +1953,7 @@ namespace System.Net.Sockets
         // Determines the status of the socket.
         public bool Poll(int microSeconds, SelectMode mode)
         {
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             bool status;
             SocketError errorCode = SocketPal.Poll(_handle, microSeconds, mode, out status);
@@ -2097,10 +2016,7 @@ namespace System.Net.Sockets
         {
             // Validate input parameters.
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, remoteEP);
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             if (remoteEP == null)
             {
@@ -2174,10 +2090,7 @@ namespace System.Net.Sockets
         public IAsyncResult BeginConnect(string host, int port, AsyncCallback requestCallback, object state)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, host);
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             if (host == null)
             {
@@ -2235,10 +2148,7 @@ namespace System.Net.Sockets
         public IAsyncResult BeginConnect(IPAddress address, int port, AsyncCallback requestCallback, object state)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, address);
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             if (address == null)
             {
@@ -2269,10 +2179,7 @@ namespace System.Net.Sockets
         public IAsyncResult BeginConnect(IPAddress[] addresses, int port, AsyncCallback requestCallback, object state)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, addresses);
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             if (addresses == null)
             {
@@ -2323,10 +2230,7 @@ namespace System.Net.Sockets
         public IAsyncResult BeginDisconnect(bool reuseSocket, AsyncCallback callback, object state)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             // Start context-flowing op.  No need to lock - we don't use the context till the callback.
             DisconnectOverlappedAsyncResult asyncResult = new DisconnectOverlappedAsyncResult(this, state, callback);
@@ -2367,10 +2271,7 @@ namespace System.Net.Sockets
         public void Disconnect(bool reuseSocket)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             SocketError errorCode = SocketError.Success;
 
@@ -2405,10 +2306,7 @@ namespace System.Net.Sockets
         public void EndConnect(IAsyncResult asyncResult)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, asyncResult);
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             // Validate input parameters.
             if (asyncResult == null)
@@ -2441,7 +2339,7 @@ namespace System.Net.Sockets
                 if (ex == null)
                 {
                     SocketError errorCode = (SocketError)castedAsyncResult.ErrorCode;
-                    UpdateConnectSocketErrorForCleanedUp(ref errorCode);
+                    UpdateConnectSocketErrorForDisposed(ref errorCode);
                     // Update the internal state of this socket according to the error before throwing.
                     SocketException se = SocketExceptionFactory.CreateSocketException((int)errorCode, castedAsyncResult.RemoteEndPoint);
                     UpdateStatusAfterSocketError(se);
@@ -2462,10 +2360,7 @@ namespace System.Net.Sockets
         public void EndDisconnect(IAsyncResult asyncResult)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, asyncResult);
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             if (asyncResult == null)
             {
@@ -2532,10 +2427,7 @@ namespace System.Net.Sockets
         public IAsyncResult BeginSend(byte[] buffer, int offset, int size, SocketFlags socketFlags, out SocketError errorCode, AsyncCallback callback, object state)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             // Validate input parameters.
             if (buffer == null)
@@ -2587,7 +2479,7 @@ namespace System.Net.Sockets
             // If the call failed, update our status
             if (!CheckErrorAndUpdateStatus(errorCode))
             {
-                UpdateSendSocketErrorForCleanedUp(ref errorCode);
+                UpdateSendSocketErrorForDisposed(ref errorCode);
             }
 
             return errorCode;
@@ -2607,10 +2499,7 @@ namespace System.Net.Sockets
         public IAsyncResult BeginSend(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out SocketError errorCode, AsyncCallback callback, object state)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             // Validate input parameters.
             if (buffers == null)
@@ -2655,7 +2544,7 @@ namespace System.Net.Sockets
             // If the call failed, update our status
             if (!CheckErrorAndUpdateStatus(errorCode))
             {
-                UpdateSendSocketErrorForCleanedUp(ref errorCode);
+                UpdateSendSocketErrorForDisposed(ref errorCode);
             }
 
             return errorCode;
@@ -2687,10 +2576,7 @@ namespace System.Net.Sockets
         public int EndSend(IAsyncResult asyncResult, out SocketError errorCode)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, asyncResult);
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             // Validate input parameters.
             if (asyncResult == null)
@@ -2717,7 +2603,7 @@ namespace System.Net.Sockets
             errorCode = (SocketError)castedAsyncResult.ErrorCode;
             if (errorCode != SocketError.Success)
             {
-                UpdateSendSocketErrorForCleanedUp(ref errorCode);
+                UpdateSendSocketErrorForDisposed(ref errorCode);
                 // Update the internal state of this socket according to the error before throwing.
                 UpdateStatusAfterSocketError(errorCode);
                 if (NetEventSource.IsEnabled)
@@ -2741,10 +2627,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             if (!Connected)
             {
@@ -2763,10 +2646,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, asyncResult);
 
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             if (asyncResult == null)
             {
@@ -2801,10 +2681,7 @@ namespace System.Net.Sockets
         public IAsyncResult BeginSendTo(byte[] buffer, int offset, int size, SocketFlags socketFlags, EndPoint remoteEP, AsyncCallback callback, object state)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             // Validate input parameters.
             if (buffer == null)
@@ -2870,7 +2747,7 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails synchronously.
             if (!CheckErrorAndUpdateStatus(errorCode))
             {
-                UpdateSendSocketErrorForCleanedUp(ref errorCode);
+                UpdateSendSocketErrorForDisposed(ref errorCode);
                 // Update the internal state of this socket according to the error before throwing.
                 _rightEndPoint = oldEndPoint;
 
@@ -2896,10 +2773,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, asyncResult);
 
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             // Validate input parameters.
             if (asyncResult == null)
@@ -2926,7 +2800,7 @@ namespace System.Net.Sockets
             SocketError errorCode = (SocketError)castedAsyncResult.ErrorCode;
             if (errorCode != SocketError.Success)
             {
-                UpdateSendSocketErrorForCleanedUp(ref errorCode);
+                UpdateSendSocketErrorForDisposed(ref errorCode);
                 UpdateStatusAfterSocketErrorAndThrowException(errorCode);
             }
 
@@ -2971,10 +2845,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             // Validate input parameters.
             if (buffer == null)
@@ -3023,7 +2894,7 @@ namespace System.Net.Sockets
 
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Interop.Winsock.WSARecv returns:{errorCode} returning AsyncResult:{asyncResult}");
 
-            UpdateReceiveSocketErrorForCleanedUp(ref errorCode, bytesTransferred: 0);
+            UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred: 0);
             if (CheckErrorAndUpdateStatus(errorCode))
             {
 #if DEBUG
@@ -3051,10 +2922,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             // Validate input parameters.
             if (buffers == null)
@@ -3098,7 +2966,7 @@ namespace System.Net.Sockets
 
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Interop.Winsock.WSARecv returns:{errorCode} returning AsyncResult:{asyncResult}");
 
-            UpdateReceiveSocketErrorForCleanedUp(ref errorCode, bytesTransferred: 0);
+            UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred: 0);
             if (!CheckErrorAndUpdateStatus(errorCode))
             {
             }
@@ -3148,10 +3016,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, asyncResult);
 
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             // Validate input parameters.
             if (asyncResult == null)
@@ -3186,7 +3051,7 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call failed asynchronously.
             errorCode = (SocketError)castedAsyncResult.ErrorCode;
 
-            UpdateReceiveSocketErrorForCleanedUp(ref errorCode, bytesTransferred);
+            UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
             if (errorCode != SocketError.Success)
             {
                 // Update the internal state of this socket according to the error before throwing.
@@ -3210,10 +3075,7 @@ namespace System.Net.Sockets
                 NetEventSource.Info(this, $"size:{size}");
             }
 
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
             if (buffer == null)
             {
                 throw new ArgumentNullException(nameof(buffer));
@@ -3292,7 +3154,7 @@ namespace System.Net.Sockets
             }
 
             // Throw an appropriate SocketException if the native call fails synchronously.
-            UpdateReceiveSocketErrorForCleanedUp(ref errorCode, bytesTransferred: 0);
+            UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred: 0);
             if (!CheckErrorAndUpdateStatus(errorCode))
             {
                 // Update the internal state of this socket according to the error before throwing.
@@ -3327,10 +3189,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, asyncResult);
 
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
             if (endPoint == null)
             {
                 throw new ArgumentNullException(nameof(endPoint));
@@ -3376,7 +3235,7 @@ namespace System.Net.Sockets
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"bytesTransferred:{bytesTransferred}");
 
             SocketError errorCode = (SocketError)castedAsyncResult.ErrorCode;
-            UpdateReceiveSocketErrorForCleanedUp(ref errorCode, bytesTransferred);
+            UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
             // Throw an appropriate SocketException if the native call failed asynchronously.
             if (errorCode != SocketError.Success && errorCode != SocketError.MessageSize)
             {
@@ -3418,10 +3277,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             // Validate input parameters.
             if (buffer == null)
@@ -3511,7 +3367,7 @@ namespace System.Net.Sockets
             }
 
             // Throw an appropriate SocketException if the native call fails synchronously.
-            UpdateReceiveSocketErrorForCleanedUp(ref errorCode, bytesTransferred: 0);
+            UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred: 0);
             if (!CheckErrorAndUpdateStatus(errorCode))
             {
                 // Update the internal state of this socket according to the error before throwing.
@@ -3540,10 +3396,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, asyncResult);
 
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             // Validate input parameters.
             if (endPoint == null)
@@ -3592,7 +3445,7 @@ namespace System.Net.Sockets
 
             // Throw an appropriate SocketException if the native call failed asynchronously.
             SocketError errorCode = (SocketError)castedAsyncResult.ErrorCode;
-            UpdateReceiveSocketErrorForCleanedUp(ref errorCode, bytesTransferred);
+            UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
             if (errorCode != SocketError.Success)
             {
                 UpdateStatusAfterSocketErrorAndThrowException(errorCode);
@@ -3628,8 +3481,9 @@ namespace System.Net.Sockets
 
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            Debug.Assert(CleanedUp);
-            throw new ObjectDisposedException(this.GetType().FullName);
+            Debug.Assert(Disposed);
+            ThrowObjectDisposedException();
+            return null; // unreachable
         }
 
         public IAsyncResult BeginAccept(int receiveSize, AsyncCallback callback, object state)
@@ -3641,10 +3495,7 @@ namespace System.Net.Sockets
         public IAsyncResult BeginAccept(Socket acceptSocket, int receiveSize, AsyncCallback callback, object state)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             // Validate input parameters.
             if (receiveSize < 0)
@@ -3691,7 +3542,7 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails synchronously.
             if (!CheckErrorAndUpdateStatus(errorCode))
             {
-                UpdateAcceptSocketErrorForCleanedUp(ref errorCode);
+                UpdateAcceptSocketErrorForDisposed(ref errorCode);
                 throw new SocketException((int)errorCode);
             }
         }
@@ -3730,10 +3581,7 @@ namespace System.Net.Sockets
         public Socket EndAccept(out byte[] buffer, out int bytesTransferred, IAsyncResult asyncResult)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, asyncResult);
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             // Validate input parameters.
             if (asyncResult == null)
@@ -3760,7 +3608,7 @@ namespace System.Net.Sockets
             SocketError errorCode = (SocketError)castedAsyncResult.ErrorCode;
             if (errorCode != SocketError.Success)
             {
-                UpdateAcceptSocketErrorForCleanedUp(ref errorCode);
+                UpdateAcceptSocketErrorForDisposed(ref errorCode);
                 UpdateStatusAfterSocketErrorAndThrowException(errorCode);
             }
 
@@ -3786,10 +3634,7 @@ namespace System.Net.Sockets
         public void Shutdown(SocketShutdown how)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, how);
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"how:{how}");
 
@@ -3814,10 +3659,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, e);
 
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             if (e == null)
             {
@@ -3868,10 +3710,7 @@ namespace System.Net.Sockets
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, e);
             bool pending;
 
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             if (e == null)
             {
@@ -4058,10 +3897,7 @@ namespace System.Net.Sockets
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             // Throw if socket disposed
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             // Prepare for and make the native call.
             e.StartOperationCommon(this, SocketAsyncOperation.Disconnect);
@@ -4088,10 +3924,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, e);
 
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             if (e == null)
             {
@@ -4121,10 +3954,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, e);
 
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             if (e == null)
             {
@@ -4174,10 +4004,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, e);
 
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             if (e == null)
             {
@@ -4231,10 +4058,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, e);
 
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             if (e == null)
             {
@@ -4264,11 +4088,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, e);
 
-            // Throw if socket disposed
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             if (e == null)
             {
@@ -4306,10 +4126,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, e);
 
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
+            ThrowIfDisposed();
 
             if (e == null)
             {
@@ -4372,13 +4189,7 @@ namespace System.Net.Sockets
             }
         }
 
-        internal bool CleanedUp
-        {
-            get
-            {
-                return (_intCleanedUp == 1);
-            }
-        }
+        internal bool Disposed => _disposed != 0;
         #endregion
 
         #region Internal and private methods
@@ -4466,7 +4277,7 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
-                UpdateConnectSocketErrorForCleanedUp(ref errorCode);
+                UpdateConnectSocketErrorForDisposed(ref errorCode);
                 // Update the internal state of this socket according to the error before throwing.
                 SocketException socketException = SocketExceptionFactory.CreateSocketException((int)errorCode, endPointSnapshot);
                 UpdateStatusAfterSocketError(socketException);
@@ -4497,14 +4308,14 @@ namespace System.Net.Sockets
             {
                 try
                 {
-                    NetEventSource.Info(this, $"disposing:{disposing} CleanedUp:{CleanedUp}");
+                    NetEventSource.Info(this, $"disposing:{disposing} Disposed:{Disposed}");
                     NetEventSource.Enter(this);
                 }
                 catch (Exception exception) when (!ExceptionCheck.IsFatal(exception)) { }
             }
 
             // Make sure we're the first call to Dispose
-            if (Interlocked.CompareExchange(ref _intCleanedUp, 1, 0) == 1)
+            if (Interlocked.CompareExchange(ref _disposed, 1, 0) == 1)
             {
                 if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
                 return;
@@ -4625,7 +4436,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, $"how:{how}");
 
-            if (CleanedUp || _handle.IsInvalid)
+            if (Disposed || _handle.IsInvalid)
             {
                 return;
             }
@@ -4672,7 +4483,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, $"optionLevel:{optionLevel} optionName:{optionName} optionValue:{optionValue} silent:{silent}");
 
-            if (silent && (CleanedUp || _handle.IsInvalid))
+            if (silent && (Disposed || _handle.IsInvalid))
             {
                 if (NetEventSource.IsEnabled) NetEventSource.Info(this, "skipping the call");
                 return;
@@ -4806,7 +4617,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, $"desired:{desired} willBlock:{_willBlock} willBlockInternal:{_willBlockInternal}");
 
-            if (CleanedUp)
+            if (Disposed)
             {
                 if (NetEventSource.IsEnabled) NetEventSource.Exit(this, "ObjectDisposed");
                 current = _willBlock;
@@ -4908,7 +4719,7 @@ namespace System.Net.Sockets
 
             if (!CheckErrorAndUpdateStatus(errorCode))
             {
-                UpdateConnectSocketErrorForCleanedUp(ref errorCode);
+                UpdateConnectSocketErrorForDisposed(ref errorCode);
                 // Update the internal state of this socket according to the error before throwing.
                 _rightEndPoint = oldEndPoint;
 
@@ -5187,9 +4998,9 @@ namespace System.Net.Sockets
             _isConnected = false;
             _isDisconnected = true;
 
-            if (!CleanedUp)
+            if (!Disposed)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "!CleanedUp");
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "!Disposed");
             }
         }
 
@@ -5258,40 +5069,50 @@ namespace System.Net.Sockets
         // Helper for SendFile implementations
         private static FileStream OpenFile(string name) => string.IsNullOrEmpty(name) ? null : File.OpenRead(name);
 
-        private void UpdateReceiveSocketErrorForCleanedUp(ref SocketError socketError, int bytesTransferred)
+        private void UpdateReceiveSocketErrorForDisposed(ref SocketError socketError, int bytesTransferred)
         {
-            // We use bytesTransferred for checking CleanedUp.
+            // We use bytesTransferred for checking Disposed.
             // When there is a SocketError, bytesTransferred is zero.
             // An interrupted UDP receive on Linux returns SocketError.Success and bytesTransferred zero.
-            if (bytesTransferred == 0 && CleanedUp)
+            if (bytesTransferred == 0 && Disposed)
             {
                 socketError = IsConnectionOriented ? SocketError.ConnectionAborted : SocketError.Interrupted;
             }
         }
 
-        private void UpdateSendSocketErrorForCleanedUp(ref SocketError socketError)
+        private void UpdateSendSocketErrorForDisposed(ref SocketError socketError)
         {
-            if (CleanedUp)
+            if (Disposed)
             {
                 socketError = IsConnectionOriented ? SocketError.ConnectionAborted : SocketError.Interrupted;
             }
         }
 
-        private void UpdateConnectSocketErrorForCleanedUp(ref SocketError socketError)
+        private void UpdateConnectSocketErrorForDisposed(ref SocketError socketError)
         {
-            if (CleanedUp)
+            if (Disposed)
             {
                 socketError = SocketError.NotSocket;
             }
         }
 
-        private void UpdateAcceptSocketErrorForCleanedUp(ref SocketError socketError)
+        private void UpdateAcceptSocketErrorForDisposed(ref SocketError socketError)
         {
-            if (CleanedUp)
+            if (Disposed)
             {
                 socketError = SocketError.Interrupted;
             }
         }
+
+        private void ThrowIfDisposed()
+        {
+            if (Disposed)
+            {
+                ThrowObjectDisposedException();
+            }
+        }
+
+        private void ThrowObjectDisposedException() => throw new ObjectDisposedException(GetType().FullName);
 
         private bool IsConnectionOriented => _socketType == SocketType.Stream;
 

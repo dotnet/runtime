@@ -89,7 +89,7 @@ namespace System.Net.Sockets
                     {
                         socketError = SocketError.NotSocket;
                     }
-                    else if (socket.CleanedUp)
+                    else if (socket.Disposed)
                     {
                         socketError = SocketError.OperationAborted;
                     }
@@ -117,7 +117,7 @@ namespace System.Net.Sockets
                         }
                         catch (ObjectDisposedException)
                         {
-                            // CleanedUp check above does not always work since this code is subject to race conditions
+                            // Disposed check above does not always work since this code is subject to race conditions
                             socketError = SocketError.OperationAborted;
                         }
                     }
