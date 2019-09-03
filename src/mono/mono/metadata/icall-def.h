@@ -459,7 +459,7 @@ ICALL_TYPE(IOPATH, "System.IO.Path", IOPATH_1)
 HANDLES(IOPATH_1, "get_temp_path", ves_icall_System_IO_get_temp_path, MonoString, 0, ())
 
 ICALL_TYPE(IOSELECTOR, "System.IOSelector", IOSELECTOR_1)
-ICALL(IOSELECTOR_1, "Add", ves_icall_System_IOSelector_Add)
+HANDLES(IOSELECTOR_1, "Add", ves_icall_System_IOSelector_Add, void, 2, (gpointer, MonoIOSelectorJob))
 NOHANDLES(ICALL(IOSELECTOR_2, "Remove", ves_icall_System_IOSelector_Remove))
 
 ICALL_TYPE(MATH, "System.Math", MATH_19)
