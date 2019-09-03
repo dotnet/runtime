@@ -145,10 +145,10 @@ mono_threads_platform_yield (void)
 void
 mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
 {
+	int tmp;
 #ifdef __EMSCRIPTEN_PTHREADS__
 	pthread_attr_t attr;
 	gint res;
-	int tmp;
 
 	*staddr = NULL;
 	*stsize = (size_t)-1;
@@ -173,13 +173,13 @@ mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
 		*staddr = (guint8*)wasm_get_stack_base ();
 		*stsize = wasm_get_stack_size ();
 	}
-
-	g_assert (&tmp > *staddr);
-	g_assert (&tmp < (char*)*staddr + *stsize);
 #else
 	*staddr = (guint8*)wasm_get_stack_base ();
 	*stsize = wasm_get_stack_size ();
 #endif
+
+	g_assert ((guint8*)&tmp > *staddr);
+	g_assert ((guint8*)&tmp < (guint8*)*staddr + *stsize);
 }
 
 gboolean
