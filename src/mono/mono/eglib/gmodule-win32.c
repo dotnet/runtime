@@ -282,7 +282,7 @@ mono_get_module_filename_ex (gpointer process, gpointer mod, gunichar2 **pstr, g
 gboolean
 mono_get_module_basename (gpointer process, gpointer mod, gunichar2 **pstr, guint32 *plength)
 {
-	gunichar2* str = NULL;
+	gunichar2 *str = NULL;
 	guint32 capacity = MAX_PATH; // tunable
 	guint32 length = 0;
 	gboolean success = FALSE;
@@ -315,7 +315,7 @@ mono_get_module_basename (gpointer process, gpointer mod, gunichar2 **pstr, guin
 gboolean
 mono_get_current_directory (gunichar2 **pstr, guint32 *plength)
 {
-	gunichar2* str = NULL;
+	gunichar2 *str = NULL;
 	guint32 capacity = MAX_PATH; // tunable
 	guint32 length = 0;
 	gboolean success = FALSE;
