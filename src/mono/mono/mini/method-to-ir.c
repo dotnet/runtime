@@ -884,12 +884,16 @@ handle_enum:
 /*
  * The following tables are used to quickly validate the IL code in type_from_op ().
  */
+#define IF_P8(v) (SIZEOF_VOID_P == 8 ? v : STACK_INV)
+#define IF_P8_I8 IF_P8(STACK_I8)
+#define IF_P8_PTR IF_P8(STACK_PTR)
+
 static const char
 bin_num_table [STACK_MAX] [STACK_MAX] = {
 	{STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV},
-	{STACK_INV, STACK_I4,  STACK_INV, STACK_PTR, STACK_INV, STACK_MP,  STACK_INV, STACK_INV},
-	{STACK_INV, STACK_INV, STACK_I8,  STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV},
-	{STACK_INV, STACK_PTR, STACK_INV, STACK_PTR, STACK_INV, STACK_MP,  STACK_INV, STACK_INV},
+	{STACK_INV, STACK_I4,  IF_P8_I8,  STACK_PTR, STACK_INV, STACK_MP,  STACK_INV, STACK_INV},
+	{STACK_INV, IF_P8_I8,  STACK_I8,  IF_P8_PTR, STACK_INV, STACK_INV, STACK_INV, STACK_INV},
+	{STACK_INV, STACK_PTR, IF_P8_PTR, STACK_PTR, STACK_INV, STACK_MP,  STACK_INV, STACK_INV},
 	{STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_R8,  STACK_INV, STACK_INV, STACK_INV, STACK_R8},
 	{STACK_INV, STACK_MP,  STACK_INV, STACK_MP,  STACK_INV, STACK_PTR, STACK_INV, STACK_INV},
 	{STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV},
@@ -906,28 +910,30 @@ neg_table [] = {
 static const char
 bin_int_table [STACK_MAX] [STACK_MAX] = {
 	{STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV},
-	{STACK_INV, STACK_I4,  STACK_INV, STACK_PTR, STACK_INV, STACK_INV, STACK_INV, STACK_INV},
-	{STACK_INV, STACK_INV, STACK_I8,  STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV},
-	{STACK_INV, STACK_PTR, STACK_INV, STACK_PTR, STACK_INV, STACK_INV, STACK_INV, STACK_INV},
+	{STACK_INV, STACK_I4,  IF_P8_I8,  STACK_PTR, STACK_INV, STACK_INV, STACK_INV, STACK_INV},
+	{STACK_INV, IF_P8_I8,  STACK_I8,  IF_P8_PTR, STACK_INV, STACK_INV, STACK_INV, STACK_INV},
+	{STACK_INV, STACK_PTR, IF_P8_PTR, STACK_PTR, STACK_INV, STACK_INV, STACK_INV, STACK_INV},
 	{STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV},
 	{STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV},
 	{STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV},
 	{STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV}
 };
 
+#define P1 (SIZEOF_VOID_P == 8)
 static const char
 bin_comp_table [STACK_MAX] [STACK_MAX] = {
 /*	Inv i  L  p  F  &  O  vt r4 */
 	{0},
 	{0, 1, 0, 1, 0, 0, 0, 0}, /* i, int32 */
-	{0, 0, 1, 0, 0, 0, 0, 0}, /* L, int64 */
-	{0, 1, 0, 1, 0, 2, 4, 0}, /* p, ptr */
+	{0, 0, 1,P1, 0, 0, 0, 0}, /* L, int64 */
+	{0, 1,P1, 1, 0, 2, 4, 0}, /* p, ptr */
 	{0, 0, 0, 0, 1, 0, 0, 0, 1}, /* F, R8 */
 	{0, 0, 0, 2, 0, 1, 0, 0}, /* &, managed pointer */
 	{0, 0, 0, 4, 0, 0, 3, 0}, /* O, reference */
 	{0, 0, 0, 0, 0, 0, 0, 0}, /* vt value type */
 	{0, 0, 0, 0, 1, 0, 0, 0, 1}, /* r, r4 */
 };
+#undef P1
 
 /* reduce the size of this table */
 static const char
@@ -1857,7 +1863,10 @@ target_type_is_incompatible (MonoCompile *cfg, MonoType *target, MonoInst *arg)
 	case MONO_TYPE_PTR:
 		/* STACK_MP is needed when setting pinned locals */
 		if (arg->type != STACK_I4 && arg->type != STACK_PTR && arg->type != STACK_MP)
-			return 1;
+#if SIZEOF_VOID_P == 8
+			if (arg->type != STACK_I8)
+#endif
+				return 1;
 		return 0;
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
@@ -1881,7 +1890,10 @@ target_type_is_incompatible (MonoCompile *cfg, MonoType *target, MonoInst *arg)
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
 		if (arg->type != STACK_I8)
-			return 1;
+#if SIZEOF_VOID_P == 8
+			if (arg->type != STACK_PTR)
+#endif
+				return 1;
 		return 0;
 	case MONO_TYPE_R4:
 		if (arg->type != cfg->r4_stack_type)
@@ -2017,9 +2029,13 @@ handle_enum:
 			continue;
 		case MONO_TYPE_I:
 		case MONO_TYPE_U:
+			if (args [i]->type != STACK_I4 && args [i]->type != STACK_PTR && args [i]->type != STACK_MP && args [i]->type != STACK_OBJ)
+				return TRUE;
+			continue;
 		case MONO_TYPE_PTR:
 		case MONO_TYPE_FNPTR:
-			if (args [i]->type != STACK_I4 && args [i]->type != STACK_PTR && args [i]->type != STACK_MP && args [i]->type != STACK_OBJ)
+			if (args [i]->type != STACK_I4 && !(SIZEOF_VOID_P == 8 && args [i]->type == STACK_I8) &&
+				args [i]->type != STACK_PTR && args [i]->type != STACK_MP && args [i]->type != STACK_OBJ)
 				return TRUE;
 			continue;
 		case MONO_TYPE_CLASS:
@@ -2032,7 +2048,8 @@ handle_enum:
 			continue;
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
-			if (args [i]->type != STACK_I8)
+			if (args [i]->type != STACK_I8 &&
+				!(SIZEOF_VOID_P == 8 && (args [i]->type == STACK_I4 || args [i]->type == STACK_PTR)))
 				return TRUE;
 			continue;
 		case MONO_TYPE_R4:
