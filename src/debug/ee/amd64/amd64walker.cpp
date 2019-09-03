@@ -16,6 +16,7 @@
 
 #include "frames.h"
 #include "openum.h"
+#include "amd64InstrDecode.h"
 
 #ifdef _TARGET_AMD64_
 
@@ -404,77 +405,333 @@ UINT64 NativeWalker::GetRegisterValue(int registerNumber)
 // bits     7-6     5-3     2-0
 struct ModRMByte
 {
+    ModRMByte(BYTE init) :
+        rm(init & 0x7),
+        reg((init >> 3) & 0x7),
+        mod(init >> 6)
+    {
+    }
+
     BYTE rm :3;
     BYTE reg:3;
     BYTE mod:2;
 };
 
-//         fixed    W       R       X       B
-// bits    7-4      3       2       1       0
-struct RexByte
+static bool IsModRm(Amd64InstrDecode::InstrForm form, int pp, bool W, bool L, bool fPrefix66)
 {
-    BYTE b:1;
-    BYTE x:1;
-    BYTE r:1;
-    BYTE w:1;
-    BYTE fixed:4;
-};
+    bool modrm = true;
+
+    switch (form)
+    {
+    case Amd64InstrDecode::InstrForm::None:
+    case Amd64InstrDecode::InstrForm::I1B:
+    case Amd64InstrDecode::InstrForm::I2B:
+    case Amd64InstrDecode::InstrForm::I3B:
+    case Amd64InstrDecode::InstrForm::I4B:
+    case Amd64InstrDecode::InstrForm::I8B:
+    case Amd64InstrDecode::InstrForm::WP_I4B_or_I4B_or_I2B:
+    case Amd64InstrDecode::InstrForm::WP_I8B_or_I4B_or_I2B:
+        modrm = false;
+        break;
+    case Amd64InstrDecode::InstrForm::I1B_W_None_or_MOp_M16B:
+        modrm = W ? false : true;
+        break;
+    default:
+        if (form & Amd64InstrDecode::InstrForm::Extension)
+            modrm = true;
+        break;
+    }
+    return modrm;
+}
+
+static bool IsWrite(Amd64InstrDecode::InstrForm form, int pp, bool W, bool L, bool fPrefix66)
+{
+    bool isWrite = false;
+    switch (form)
+    {
+    case Amd64InstrDecode::InstrForm::M1st_I1B_L_M16B_or_M8B:
+    case Amd64InstrDecode::InstrForm::M1st_I1B_W_M8B_or_M4B:
+    case Amd64InstrDecode::InstrForm::M1st_I1B_WP_M8B_or_M4B_or_M2B:
+    case Amd64InstrDecode::InstrForm::M1st_L_M32B_or_M16B:
+    case Amd64InstrDecode::InstrForm::M1st_M16B:
+    case Amd64InstrDecode::InstrForm::M1st_M16B_I1B:
+    case Amd64InstrDecode::InstrForm::M1st_M1B:
+    case Amd64InstrDecode::InstrForm::M1st_M1B_I1B:
+    case Amd64InstrDecode::InstrForm::M1st_M2B:
+    case Amd64InstrDecode::InstrForm::M1st_M2B_I1B:
+    case Amd64InstrDecode::InstrForm::M1st_M4B:
+    case Amd64InstrDecode::InstrForm::M1st_M4B_I1B:
+    case Amd64InstrDecode::InstrForm::M1st_M8B:
+    case Amd64InstrDecode::InstrForm::M1st_MUnknown:
+    case Amd64InstrDecode::InstrForm::M1st_W_M4B_or_M1B:
+    case Amd64InstrDecode::InstrForm::M1st_W_M8B_or_M2B:
+    case Amd64InstrDecode::InstrForm::M1st_W_M8B_or_M4B:
+    case Amd64InstrDecode::InstrForm::M1st_WP_M8B_I4B_or_M4B_I4B_or_M2B_I2B:
+    case Amd64InstrDecode::InstrForm::M1st_WP_M8B_or_M4B_or_M2B:
+    case Amd64InstrDecode::InstrForm::MOnly_M10B:
+    case Amd64InstrDecode::InstrForm::MOnly_M1B:
+    case Amd64InstrDecode::InstrForm::MOnly_M2B:
+    case Amd64InstrDecode::InstrForm::MOnly_M4B:
+    case Amd64InstrDecode::InstrForm::MOnly_M8B:
+    case Amd64InstrDecode::InstrForm::MOnly_MUnknown:
+    case Amd64InstrDecode::InstrForm::MOnly_P_M6B_or_M4B:
+    case Amd64InstrDecode::InstrForm::MOnly_W_M16B_or_M8B:
+    case Amd64InstrDecode::InstrForm::MOnly_W_M8B_or_M4B:
+    case Amd64InstrDecode::InstrForm::MOnly_WP_M8B_or_M4B_or_M2B:
+    case Amd64InstrDecode::InstrForm::MOnly_WP_M8B_or_M8B_or_M2B:
+        isWrite = true;
+        break;
+    default:
+        break;
+    }
+    return isWrite;
+}
+
+static int opSize(Amd64InstrDecode::InstrForm form, int pp, bool W, bool L, bool fPrefix66)
+{
+    int opSize = 0;
+    bool P = !((pp == 1) || fPrefix66);
+    switch (form)
+    {
+    // M32B
+    case Amd64InstrDecode::InstrForm::MOp_M32B:
+    case Amd64InstrDecode::InstrForm::MOp_M32B_I1B:
+        opSize = 32;
+        break;
+    // L_M32B_or_M16B
+    case Amd64InstrDecode::InstrForm::M1st_L_M32B_or_M16B:
+    case Amd64InstrDecode::InstrForm::MOp_I1B_L_M32B_or_M16B:
+    case Amd64InstrDecode::InstrForm::MOp_L_M32B_or_M16B:
+        opSize = L ? 32 : 16;
+        break;
+    // L_M32B_or_M8B
+    case Amd64InstrDecode::InstrForm::MOp_L_M32B_or_M8B:
+        opSize = L ? 32 : 8;
+        break;
+    // M16B
+    case Amd64InstrDecode::InstrForm::M1st_M16B:
+    case Amd64InstrDecode::InstrForm::M1st_M16B_I1B:
+    case Amd64InstrDecode::InstrForm::MOp_M16B:
+    case Amd64InstrDecode::InstrForm::MOp_M16B_I1B:
+        opSize = 16;
+        break;
+    // L_M16B_or_M8B
+    case Amd64InstrDecode::InstrForm::M1st_I1B_L_M16B_or_M8B:
+    case Amd64InstrDecode::InstrForm::MOp_L_M16B_or_M8B:
+        opSize = L ? 16 : 8;
+        break;
+    // W_M16B_or_M8B
+    case Amd64InstrDecode::InstrForm::MOnly_W_M16B_or_M8B:
+        opSize = W ? 16 : 8;
+        break;
+    // W_None_or_MOp_M16B
+    case Amd64InstrDecode::InstrForm::I1B_W_None_or_MOp_M16B:
+        opSize = W ? 0 : 16;
+        break;
+    // M10B
+    case Amd64InstrDecode::InstrForm::MOnly_M10B:
+        opSize = 10;
+        break;
+    // M8B
+    case Amd64InstrDecode::InstrForm::MOp_M8B:
+    case Amd64InstrDecode::InstrForm::MOp_M8B_I1B:
+        opSize = 8;
+        break;
+    // L_M8B_or_M4B
+    case Amd64InstrDecode::InstrForm::MOp_L_M8B_or_M4B:
+        opSize = L ? 8 : 4;
+        break;
+    // W_M8B_or_M4B
+    case Amd64InstrDecode::InstrForm::M1st_I1B_W_M8B_or_M4B:
+    case Amd64InstrDecode::InstrForm::M1st_W_M8B_or_M4B:
+    case Amd64InstrDecode::InstrForm::MOnly_W_M8B_or_M4B:
+    case Amd64InstrDecode::InstrForm::MOp_I1B_W_M8B_or_M4B:
+    case Amd64InstrDecode::InstrForm::MOp_I4B_W_M8B_or_M4B:
+    case Amd64InstrDecode::InstrForm::MOp_W_M8B_or_M4B:
+        opSize = W ? 8 : 4;
+        break;
+    // WP_M8B_or_M8B_or_M2B
+    case Amd64InstrDecode::InstrForm::MOnly_WP_M8B_or_M8B_or_M2B:
+        opSize = W ? 8 : P ? 8 : 2;
+        break;
+    // WP_M8B_or_M4B_or_M2B
+    case Amd64InstrDecode::InstrForm::M1st_I1B_WP_M8B_or_M4B_or_M2B:
+    case Amd64InstrDecode::InstrForm::M1st_WP_M8B_I4B_or_M4B_I4B_or_M2B_I2B:
+    case Amd64InstrDecode::InstrForm::M1st_WP_M8B_or_M4B_or_M2B:
+    case Amd64InstrDecode::InstrForm::MOnly_WP_M8B_or_M4B_or_M2B:
+    case Amd64InstrDecode::InstrForm::MOp_I1B_WP_M8B_or_M4B_or_M2B:
+    case Amd64InstrDecode::InstrForm::MOp_WP_M8B_I4B_or_M4B_I4B_or_M2B_I2B:
+    case Amd64InstrDecode::InstrForm::MOp_WP_M8B_or_M4B_or_M2B:
+        opSize = W ? 8 : P ? 4 : 2;
+        break;
+    // W_M8B_or_M2B
+    case Amd64InstrDecode::InstrForm::M1st_W_M8B_or_M2B:
+    case Amd64InstrDecode::InstrForm::MOp_W_M8B_or_M2B:
+        opSize = W ? 8 : 2;
+        break;
+    // M8B
+    case Amd64InstrDecode::InstrForm::M1st_M8B:
+    case Amd64InstrDecode::InstrForm::MOnly_M8B:
+        opSize = 8;
+        break;
+    // M6B
+    case Amd64InstrDecode::InstrForm::MOp_M6B:
+        opSize = 6;
+        break;
+    // P_M6B_or_M4B
+    case Amd64InstrDecode::InstrForm::MOnly_P_M6B_or_M4B:
+        opSize = P ? 6 : 4;
+    // M4B
+    case Amd64InstrDecode::InstrForm::M1st_M4B:
+    case Amd64InstrDecode::InstrForm::M1st_M4B_I1B:
+    case Amd64InstrDecode::InstrForm::MOnly_M4B:
+    case Amd64InstrDecode::InstrForm::MOp_M4B:
+    case Amd64InstrDecode::InstrForm::MOp_M4B_I1B:
+    case Amd64InstrDecode::InstrForm::MOp_M4B_I4B:
+        opSize = 4;
+        break;
+    // L_M4B_or_M2B
+    case Amd64InstrDecode::InstrForm::MOp_L_M4B_or_M2B:
+        opSize = L ? 4 : 2;
+        break;
+    // W_M4B_or_M1B
+    case Amd64InstrDecode::InstrForm::M1st_W_M4B_or_M1B:
+    case Amd64InstrDecode::InstrForm::MOp_W_M4B_or_M1B:
+        opSize = W ? 4 : 1;
+        break;
+    // M2B
+    case Amd64InstrDecode::InstrForm::M1st_M2B:
+    case Amd64InstrDecode::InstrForm::M1st_M2B_I1B:
+    case Amd64InstrDecode::InstrForm::MOnly_M2B:
+    case Amd64InstrDecode::InstrForm::MOp_M2B:
+    case Amd64InstrDecode::InstrForm::MOp_M2B_I1B:
+        opSize = 2;
+        break;
+    // M1B
+    case Amd64InstrDecode::InstrForm::M1st_M1B:
+    case Amd64InstrDecode::InstrForm::M1st_M1B_I1B:
+    case Amd64InstrDecode::InstrForm::MOnly_M1B:
+    case Amd64InstrDecode::InstrForm::MOp_M1B:
+    case Amd64InstrDecode::InstrForm::MOp_M1B_I1B:
+        opSize = 1;
+        break;
+    // MUnknown
+    case Amd64InstrDecode::InstrForm::M1st_MUnknown:
+    case Amd64InstrDecode::InstrForm::MOnly_MUnknown:
+    case Amd64InstrDecode::InstrForm::MOp_MUnknown:
+        // These are not expected/supported. Most/all are not for user code.
+        _ASSERT(false);
+        break;
+    default:
+        break;
+    }
+    return opSize;
+}
+
+static int immSize(Amd64InstrDecode::InstrForm form, int pp, bool W, bool L, bool fPrefix66)
+{
+    int immSize = 0;
+    bool P = !((pp == 1) || fPrefix66);
+    switch (form)
+    {
+    case Amd64InstrDecode::InstrForm::I1B:
+    case Amd64InstrDecode::InstrForm::I1B_W_None_or_MOp_M16B:
+    case Amd64InstrDecode::InstrForm::M1st_I1B_L_M16B_or_M8B:
+    case Amd64InstrDecode::InstrForm::M1st_I1B_W_M8B_or_M4B:
+    case Amd64InstrDecode::InstrForm::M1st_I1B_WP_M8B_or_M4B_or_M2B:
+    case Amd64InstrDecode::InstrForm::M1st_M16B_I1B:
+    case Amd64InstrDecode::InstrForm::M1st_M1B_I1B:
+    case Amd64InstrDecode::InstrForm::M1st_M2B_I1B:
+    case Amd64InstrDecode::InstrForm::M1st_M4B_I1B:
+    case Amd64InstrDecode::InstrForm::MOp_I1B_L_M32B_or_M16B:
+    case Amd64InstrDecode::InstrForm::MOp_I1B_W_M8B_or_M4B:
+    case Amd64InstrDecode::InstrForm::MOp_I1B_WP_M8B_or_M4B_or_M2B:
+    case Amd64InstrDecode::InstrForm::MOp_M16B_I1B:
+    case Amd64InstrDecode::InstrForm::MOp_M1B_I1B:
+    case Amd64InstrDecode::InstrForm::MOp_M2B_I1B:
+    case Amd64InstrDecode::InstrForm::MOp_M32B_I1B:
+    case Amd64InstrDecode::InstrForm::MOp_M4B_I1B:
+    case Amd64InstrDecode::InstrForm::MOp_M8B_I1B:
+        immSize = 1;
+        break;
+    case Amd64InstrDecode::InstrForm::I2B:
+        immSize = 2;
+        break;
+    case Amd64InstrDecode::InstrForm::I3B:
+        immSize = 3;
+        break;
+    case Amd64InstrDecode::InstrForm::I4B:
+    case Amd64InstrDecode::InstrForm::MOp_I4B_W_M8B_or_M4B:
+    case Amd64InstrDecode::InstrForm::MOp_M4B_I4B:
+        immSize = 4;
+        break;
+    case Amd64InstrDecode::InstrForm::I8B:
+        immSize = 8;
+        break;
+    case Amd64InstrDecode::InstrForm::M1st_WP_M8B_I4B_or_M4B_I4B_or_M2B_I2B:
+    case Amd64InstrDecode::InstrForm::MOp_WP_M8B_I4B_or_M4B_I4B_or_M2B_I2B:
+    case Amd64InstrDecode::InstrForm::WP_I4B_or_I4B_or_I2B:
+        immSize = W ? 4 : P ? 4 : 2;
+        break;
+    case Amd64InstrDecode::InstrForm::WP_I8B_or_I4B_or_I2B:
+        immSize = W ? 8 : P ? 4 : 2;
+        break;
+        break;
+    default:
+        break;
+    }
+    return immSize;
+}
 
 // static
 void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, InstructionAttribute * pInstrAttrib)
 {
-    //
-    // Skip instruction prefixes
-    //
-
     LOG((LF_CORDB, LL_INFO10000, "Patch decode: "));
-
-    // for reads and writes where the destination is a RIP-relative address pInstrAttrib->m_cOperandSize will contain the size in bytes of the pointee; in all other
-    // cases it will be zero.  if the RIP-relative address is being written to then pInstrAttrib->m_fIsWrite will be true; in all other cases it will be false.
-    // similar to cbImmedSize in some cases we'll set pInstrAttrib->m_cOperandSize to 0x3 meaning that the prefix will determine the size if one is specified.
-    pInstrAttrib->m_cOperandSize = 0;
-    pInstrAttrib->m_fIsWrite = false;
 
     if (pInstrAttrib == NULL)
     {
         return;
     }
 
+    pInstrAttrib->Reset();
+
     // These three legacy prefixes are used to modify some of the two-byte opcodes.
     bool  fPrefix66 = false;
     bool  fPrefixF2 = false;
     bool  fPrefixF3 = false;
 
-    bool  fRex      = false;
-    bool  fModRM    = false;
+    bool  W     = false;
+    bool  L     = false;
 
-    RexByte   rex   = {0};
-    ModRMByte modrm = {0};
-
-    // We use 0x3 to indicate that we need to look at the operand-size override and the rex byte
-    // to determine whether the immediate size is 2 bytes or 4 bytes.
-    BYTE      cbImmedSize = 0;
+    int pp = 0;
 
     const BYTE* originalAddr = address;
 
+    // Code below doesn't handle patched opcodes
+    _ASSERT((*address != 0xcc) || ((BYTE)DebuggerController::GetPatchedOpcode(address) == 0xcc));
+
+    //
+    // Skip instruction prefixes
+    //
     do
     {
+        bool done = false;
         switch (*address)
         {
         // Operand-Size override
         case 0x66:
             fPrefix66 = true;
-            goto LLegacyPrefix;
+            break;
 
         // Repeat (REP/REPE/REPZ)
         case 0xf2:
             fPrefixF2 = true;
-            goto LLegacyPrefix;
+            break;
 
         // Repeat (REPNE/REPNZ)
         case 0xf3:
             fPrefixF3 = true;
-            goto LLegacyPrefix;
+            break;
 
         // Address-Size override
         case 0x67:          // fall through
@@ -489,12 +746,9 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
 
         // Lock
         case 0xf0:
-LLegacyPrefix:
-            LOG((LF_CORDB, LL_INFO10000, "prefix:%0.2x ", *address));
-            address++;
-            continue;
+            break;
 
-        // REX register extension prefixes
+        // REX register extension prefixes w/o W
         case 0x40:
         case 0x41:
         case 0x42:
@@ -503,6 +757,9 @@ LLegacyPrefix:
         case 0x45:
         case 0x46:
         case 0x47:
+            break;
+
+        // REX register extension prefixes with W
         case 0x48:
         case 0x49:
         case 0x4a:
@@ -511,670 +768,215 @@ LLegacyPrefix:
         case 0x4d:
         case 0x4e:
         case 0x4f:
-            LOG((LF_CORDB, LL_INFO10000, "prefix:%0.2x ", *address));
-            fRex = true;
-            rex  = *(RexByte*)address;
-            address++;
-            continue;
+            W = true;
+            break;
 
         default:
+            done = true;
             break;
         }
-    } while (0);
 
-    pInstrAttrib->Reset();
+        if (done)
+            break;
+        LOG((LF_CORDB, LL_INFO10000, "prefix:%0.2x ", *address));
+        address++;
+    } while (true);
 
-    BYTE opcode0 = *address;
-    BYTE opcode1 = *(address + 1);      // this is only valid if the first opcode byte is 0x0F
-
-    // Handle AVX encodings.  Note that these can mostly be handled as if they are aliases
-    // for a corresponding SSE encoding.
-    // See Figure 2-9 in "Intel 64 and IA-32 Architectures Software Developer's Manual".
-
-    if (opcode0 == 0xC4 || opcode0 == 0xC5)
+    // See "AMD64 Architecture Programmer's Manual Volume 3 Rev 3.26 Figure 1-1 Instruction encoding syntax"
+    enum OpcodeMap
     {
-        BYTE pp;
-        if (opcode0 == 0xC4)
-        {
-            BYTE opcode2 = *(address + 2);
-            address++;
+        Primary = 0x0,
+        Secondary = 0xF,
+        Escape0F_0F = 0x0F0F, // 3D Now
+        Escape0F_38 = 0x0F38,
+        Escape0F_3A = 0x0F3A,
+        VexMap1 = 0xc401,
+        VexMap2 = 0xc402,
+        VexMap3 = 0xc403,
+        XopMap8 = 0x8f08,
+        XopMap9 = 0x8f09,
+        XopMapA = 0x8f0A
+    } opCodeMap;
 
-            // REX bits are encoded in inverted form.
-            // R,X, and B are the top bits (in that order) of opcode1.
+    switch (*address)
+    {
+        case 0xf:
+           switch (address[1])
+           {
+           case 0xF:
+               opCodeMap = Escape0F_0F;
+               address += 2;
+               break;
+            case 0x38:
+               opCodeMap = Escape0F_38;
+               address += 2;
+               break;
+            case 0x3A:
+               opCodeMap = Escape0F_3A;
+               address += 2;
+               break;
+            default:
+                opCodeMap = Secondary;
+                address += 1;
+            }
+            if (fPrefix66)
+                pp = 0x1;
+
+            if (fPrefixF2)
+                pp = 0x3;
+            else if (fPrefixF3)
+                pp = 0x2;
+            break;
+
+        case 0x8f: // XOP
+            if ((address[1] & 0x38) == 0)
+            {
+                opCodeMap = Primary;
+                break;
+            }
+            // Fall through
+        case 0xc4: // Vex 3-byte
+            opCodeMap = (OpcodeMap)(int(address[0]) << 8 | (address[1] & 0x1f));
             // W is the top bit of opcode2.
-            if ((opcode1 & 0x80) != 0)
+            if ((address[2] & 0x80) != 0)
             {
-                rex.r = 1;
-                fRex = true;
+                W = true;
             }
-            if ((opcode1 & 0x40) == 0)
+            if ((address[2] & 0x04) != 0)
             {
-                rex.x = 1;
-                fRex = true;
-            }
-            if ((opcode1 & 0x20) == 0)
-            {
-                rex.b = 1;
-                fRex = true;
-            }
-            if ((opcode2 & 0x80) != 0)
-            {
-                rex.w = 1;
-                fRex = true;
+                L = true;
             }
 
-            pp = opcode2 & 0x3;
-
-            BYTE mmBits = opcode1 & 0x1f;
-            BYTE impliedOpcode1 = 0;
-            switch(mmBits)
+            pp = address[2] & 0x3;
+            address += 3;
+            break;
+        case 0xc5: // Vex 2-byte
+            opCodeMap = VexMap1;
+            W = true;
+            if ((address[1] & 0x04) != 0)
             {
-            case 1:  break;     // No implied leading byte.
-            case 2:  impliedOpcode1 = 0x38;                   break;
-            case 3:  impliedOpcode1 = 0x3A;                   break;
-            default: _ASSERTE(!"NW::DIFPS - invalid opcode"); break;
+                L = true;
             }
 
-            if (impliedOpcode1 != 0)
-            {
-                opcode1 = impliedOpcode1;
-            }
-            else
-            {
-                opcode1 = *address;
-                address++;
-            }
-        }
-        else
-        {
-            pp = opcode1 & 0x3;
-            if ((opcode1 & 0x80) == 0)
-            {
-                // The two-byte VEX encoding only encodes the 'R' bit.
-                fRex = true;
-                rex.r = 1;
-            }
-            opcode1 = *address;
-            address++;
-        }
-        opcode0 = 0x0f;
-        switch (pp)
-        {
-        case 1: fPrefix66 = true; break;
-        case 2: fPrefixF3 = true; break;
-        case 3: fPrefixF2 = true; break;
-        }
+            pp = address[1] & 0x3;
+            address += 2;
+            break;
+        default:
+            opCodeMap = Primary;
     }
 
-    // The following opcode decoding follows the tables in "Appendix A Opcode and Operand Encodings" of
-    // "AMD64 Architecture Programmer's Manual Volume 3"
-
-    // one-byte opcodes
-    if (opcode0 != 0x0F)
+    Amd64InstrDecode::InstrForm form = Amd64InstrDecode::InstrForm::None;
+    switch (opCodeMap)
     {
-        BYTE highNibble = (opcode0 & 0xF0) >> 4;
-        BYTE lowNibble  = (opcode0 & 0x0F);
-
-        switch (highNibble)
-        {
-        case 0x0:
-        case 0x1:
-        case 0x2:
-        case 0x3:
-            if ((lowNibble == 0x6) || (lowNibble == 0x7) || (lowNibble == 0xE) || (lowNibble == 0xF))
-            {
-                _ASSERTE(!"NW::DIFPS - invalid opcode");
-            }
-
-            // CMP
-            if ( (lowNibble <= 0x3) ||
-                 ((lowNibble >= 0x8) && (lowNibble <= 0xB)) )
-            {
-                fModRM = true;
-            }
-
-            // ADD/XOR reg/mem, reg
-            if (lowNibble == 0x0)
-            {
-                pInstrAttrib->m_cOperandSize = 0x1;
-                pInstrAttrib->m_fIsWrite = true;
-            }
-            else if (lowNibble == 0x1)
-            {
-                pInstrAttrib->m_cOperandSize = 0x3;
-                pInstrAttrib->m_fIsWrite = true;
-            }
-            // XOR reg, reg/mem
-            else if (lowNibble == 0x2)
-            {
-                pInstrAttrib->m_cOperandSize = 0x1;
-            }
-            else if (lowNibble == 0x3)
-            {
-                pInstrAttrib->m_cOperandSize = 0x3;
-            }
-
-            break;
-
-        case 0x4:
-        case 0x5:
-            break;
-
-        case 0x6:
-            // IMUL
-            if (lowNibble == 0x9)
-            {
-                fModRM = true;
-                cbImmedSize = 0x3;
-            }
-            else if (lowNibble == 0xB)
-            {
-                fModRM = true;
-                cbImmedSize = 0x1;
-            }
-            else if (lowNibble == 0x3)
-            {
-                if (fRex)
-                {
-                    // MOVSXD
-                    fModRM = true;
-                }
-            }
-            break;
-
-        case 0x7:
-            break;
-
-        case 0x8:
-            fModRM = true;
-
-            // Group 1: lowNibble in [0x0, 0x3]
-            _ASSERTE(lowNibble != 0x2);
-
-            // ADD/XOR reg/mem, imm
-            if (lowNibble == 0x0)
-            {
-                cbImmedSize = 1;
-                pInstrAttrib->m_cOperandSize = 1;
-                pInstrAttrib->m_fIsWrite = true;
-            }
-            else if (lowNibble == 0x1)
-            {
-                cbImmedSize = 3;
-                pInstrAttrib->m_cOperandSize = 3;
-                pInstrAttrib->m_fIsWrite = true;
-            }
-            else if (lowNibble == 0x3)
-            {
-                cbImmedSize = 1;
-                pInstrAttrib->m_cOperandSize = 3;
-                pInstrAttrib->m_fIsWrite = true;
-            }
-            // MOV reg/mem, reg
-            else if (lowNibble == 0x8)
-            {
-                pInstrAttrib->m_cOperandSize = 0x1;
-                pInstrAttrib->m_fIsWrite = true;
-            }
-            else if (lowNibble == 0x9)
-            {
-                pInstrAttrib->m_cOperandSize = 0x3;
-                pInstrAttrib->m_fIsWrite = true;
-            }
-            // MOV reg, reg/mem
-            else if (lowNibble == 0xA)
-            {
-                pInstrAttrib->m_cOperandSize = 0x1;
-            }
-            else if (lowNibble == 0xB)
-            {
-                pInstrAttrib->m_cOperandSize = 0x3;
-            }
-
-            break;
-
-        case 0x9:
-        case 0xA:
-        case 0xB:
-            break;
-
-        case 0xC:
-            if ((lowNibble == 0x4) || (lowNibble == 0x5) || (lowNibble == 0xE))
-            {
-                _ASSERTE(!"NW::DIFPS - invalid opcode");
-            }
-
-            // RET
-            if ((lowNibble == 0x2) || (lowNibble == 0x3))
-            {
-                break;
-            }
-
-            // Group 2 (part 1): lowNibble in [0x0, 0x1]
-            // RCL reg/mem, imm
-            if (lowNibble == 0x0)
-            {
-                fModRM = true;
-                cbImmedSize = 0x1;
-                pInstrAttrib->m_cOperandSize = 0x1;
-                pInstrAttrib->m_fIsWrite = true;
-            }
-            else if (lowNibble == 0x1)
-            {
-                fModRM = true;
-                cbImmedSize = 0x1;
-                pInstrAttrib->m_cOperandSize = 0x3;
-                pInstrAttrib->m_fIsWrite = true;
-            }
-            // Group 11: lowNibble in [0x6, 0x7]
-            // MOV reg/mem, imm
-            else if (lowNibble == 0x6)
-            {
-                fModRM = true;
-                cbImmedSize = 1;
-                pInstrAttrib->m_cOperandSize = 1;
-                pInstrAttrib->m_fIsWrite = true;
-            }
-            else if (lowNibble == 0x7)
-            {
-                fModRM = true;
-                cbImmedSize = 3;
-                pInstrAttrib->m_cOperandSize = 3;
-                pInstrAttrib->m_fIsWrite = true;
-            }
-            break;
-
-        case 0xD:
-            // Group 2 (part 2): lowNibble in [0x0, 0x3]
-            // RCL reg/mem, 1/reg
-            if (lowNibble == 0x0 || lowNibble == 0x2)
-            {
-                fModRM = true;
-                pInstrAttrib->m_cOperandSize = 0x1;
-                pInstrAttrib->m_fIsWrite = true;
-            }
-            else if (lowNibble == 0x1 || lowNibble == 0x3)
-            {
-                fModRM = true;
-                pInstrAttrib->m_cOperandSize = 0x3;
-                pInstrAttrib->m_fIsWrite = true;
-            }
-
-            // x87 instructions: lowNibble in [0x8, 0xF]
-            // - the entire ModRM byte is used to modify the opcode,
-            //   so the ModRM byte cannot be used in RIP-relative addressing
-            break;
-
-        case 0xE:
-            break;
-
-        case 0xF:
-            // Group 3: lowNibble in [0x6, 0x7]
-            // TEST
-            if  ((lowNibble == 0x6) || (lowNibble == 0x7))
-            {
-                fModRM = true;
-
-                modrm = *(ModRMByte*)(address + 1);
-                if ((modrm.reg == 0x0) || (modrm.reg == 0x1))
-                {
-                    if (lowNibble == 0x6)
-                    {
-                        cbImmedSize = 0x1;
-                    }
-                    else
-                    {
-                        cbImmedSize = 0x3;
-                    }
-                }
-            }
-            // Group 4: lowNibble == 0xE
-            // INC reg/mem
-            else if (lowNibble == 0xE)
-            {
-                fModRM = true;
-                pInstrAttrib->m_cOperandSize = 1;
-                pInstrAttrib->m_fIsWrite = true;
-            }
-            // Group 5: lowNibble == 0xF
-            else if (lowNibble == 0xF)
-            {
-                fModRM = true;
-                pInstrAttrib->m_cOperandSize = 3;
-                pInstrAttrib->m_fIsWrite = true;
-            }
-            break;
-        }
-
-        address += 1;
-        if (fModRM)
-        {
-            modrm = *(ModRMByte*)address;
-            address += 1;
-        }
-    }
-    // two-byte opcodes
-    else
-    {
-        BYTE highNibble = (opcode1 & 0xF0) >> 4;
-        BYTE lowNibble  = (opcode1 & 0x0F);
-
-        switch (highNibble)
-        {
-        case 0x0:
-            // Group 6: lowNibble == 0x0
-            if (lowNibble == 0x0)
-            {
-                fModRM = true;
-            }
-            // Group 7: lowNibble == 0x1
-            else if (lowNibble == 0x1)
-            {
-                fModRM = true;
-            }
-            else if ((lowNibble == 0x2) || (lowNibble == 0x3))
-            {
-                fModRM = true;
-            }
-            // Group p: lowNibble == 0xD
-            else if (lowNibble == 0xD)
-            {
-                fModRM = true;
-            }
-            // 3DNow! instructions: lowNibble == 0xF
-            // - all 3DNow! instructions use the ModRM byte
-            else if (lowNibble == 0xF)
-            {
-                fModRM = true;
-                cbImmedSize = 0x1;
-            }
-            break;
-
-        case 0x1:   // Group 16: lowNibble == 0x8
-            // MOVSS xmm, xmm/mem (low nibble 0x0)
-            // MOVSS xmm/mem, xmm (low nibble 0x1)
-            if (lowNibble <= 0x1)
-            {
-                fModRM = true;
-                if (fPrefixF2 || fPrefixF3)
-                    pInstrAttrib->m_cOperandSize = 0x8;
-                else
-                    pInstrAttrib->m_cOperandSize = 0x10;
-
-                if (lowNibble == 0x1)
-                    pInstrAttrib->m_fIsWrite = true;
-
-                break;
-            }
-        case 0x2:   // fall through
-            fModRM = true;
-            if (lowNibble == 0x8 || lowNibble == 0x9)
-            {
-                pInstrAttrib->m_cOperandSize = 0x10;
-
-                if (lowNibble == 0x9)
-                    pInstrAttrib->m_fIsWrite = true;
-            }
-            break;
-
-        case 0x3:
-            break;
-
-        case 0x4:
-        case 0x5:
-        case 0x6:   // fall through
-            fModRM = true;
-            break;
-
-        case 0x7:
-            if (lowNibble == 0x0)
-            {
-                fModRM = true;
-                cbImmedSize = 0x1;
-            }
-            else if ((lowNibble >= 0x1) && (lowNibble <= 0x3))
-            {
-                _ASSERTE(!fPrefixF2 && !fPrefixF3);
-
-                // Group 12: lowNibble == 0x1
-                // Group 13: lowNibble == 0x2
-                // Group 14: lowNibble == 0x3
-                fModRM = true;
-                cbImmedSize = 0x1;
-            }
-            else if ((lowNibble >= 0x4) && (lowNibble <= 0x6))
-            {
-                fModRM = true;
-            }
-            // MOVD reg/mem, mmx for 0F 7E
-            else if ((lowNibble == 0xE) || (lowNibble == 0xF))
-            {
-                _ASSERTE(!fPrefixF2);
-
-                fModRM = true;
-            }
-            break;
-
-        case 0x8:
-            break;
-
-        case 0x9:
-            fModRM = true;
-            break;
-
-        case 0xA:
-            if ((lowNibble >= 0x3) && (lowNibble <= 0x5))
-            {
-                // BT reg/mem, reg
-                fModRM = true;
-                if (lowNibble == 0x3)
-                {
-                    pInstrAttrib->m_cOperandSize = 0x3;
-                    pInstrAttrib->m_fIsWrite = true;
-                }
-                // SHLD reg/mem, imm
-                else if (lowNibble == 0x4)
-                {
-                    cbImmedSize = 0x1;
-                }
-            }
-            else if (lowNibble >= 0xB)
-            {
-                fModRM = true;
-                // BTS reg/mem, reg
-                if (lowNibble == 0xB)
-                {
-                    pInstrAttrib->m_cOperandSize = 0x3;
-                    pInstrAttrib->m_fIsWrite = true;
-                }
-                // SHRD reg/mem, imm
-                else if (lowNibble == 0xC)
-                {
-                    cbImmedSize = 0x1;
-                }
-                // Group 15: lowNibble == 0xE
-            }
-            break;
-
-        case 0xB:
-            // Group 10: lowNibble == 0x9
-            // - this entire group is invalid
-            _ASSERTE((lowNibble != 0x8) && (lowNibble != 0x9));
-
-            fModRM = true;
-            // CMPXCHG reg/mem, reg
-            if (lowNibble == 0x0)
-            {
-                pInstrAttrib->m_cOperandSize = 0x1;
-                pInstrAttrib->m_fIsWrite = true;
-            }
-            else if (lowNibble == 0x1)
-            {
-                pInstrAttrib->m_cOperandSize = 0x3;
-                pInstrAttrib->m_fIsWrite = true;
-            }
-            // Group 8: lowNibble == 0xA
-            // BTS reg/mem, imm
-            else if (lowNibble == 0xA)
-            {
-                cbImmedSize = 0x1;
-                pInstrAttrib->m_cOperandSize = 0x3;
-                pInstrAttrib->m_fIsWrite = true;
-            }
-            // MOVSX reg, reg/mem
-            else if (lowNibble == 0xE)
-            {
-                pInstrAttrib->m_cOperandSize = 1;
-            }
-            else if (lowNibble == 0xF)
-            {
-                pInstrAttrib->m_cOperandSize = 2;
-            }
-            break;
-
-        case 0xC:
-            if (lowNibble <= 0x7)
-            {
-                fModRM = true;
-                // XADD reg/mem, reg
-                if (lowNibble == 0x0)
-                {
-                    pInstrAttrib->m_cOperandSize = 0x1;
-                    pInstrAttrib->m_fIsWrite = true;
-                }
-                else if (lowNibble == 0x1)
-                {
-                    pInstrAttrib->m_cOperandSize = 0x3;
-                    pInstrAttrib->m_fIsWrite = true;
-                }
-                else if ( (lowNibble == 0x2) ||
-                     ((lowNibble >= 0x4) && (lowNibble <= 0x6)) )
-                {
-                    cbImmedSize = 0x1;
-                }
-            }
-            break;
-
-        case 0xD:
-        case 0xE:
-        case 0xF:   // fall through
-            fModRM = true;
-            break;
-        }
-
-        address += 2;
-        if (fModRM)
-        {
-            modrm = *(ModRMByte*)address;
-            address += 1;
-        }
+    case Primary:
+        form = Amd64InstrDecode::instrFormPrimary[*address];
+        break;
+    case Secondary:
+        form = Amd64InstrDecode::instrFormSecondary[(size_t(*address) << 2)| pp];
+        break;
+    case Escape0F_0F: // 3DNow
+        form = Amd64InstrDecode::InstrForm::MOp_M8B_I1B;
+        break;
+    case Escape0F_38:
+        form = Amd64InstrDecode::instrFormF38[(size_t(*address) << 2)| pp];
+        break;
+    case Escape0F_3A:
+        form = Amd64InstrDecode::instrFormF3A[(size_t(*address) << 2)| pp];
+        break;
+    case VexMap1:
+        form = Amd64InstrDecode::instrFormVex1[(size_t(*address) << 2)| pp];
+        break;
+    case VexMap2:
+        form = Amd64InstrDecode::instrFormVex2[(size_t(*address) << 2)| pp];
+        break;
+    case VexMap3:
+        form = Amd64InstrDecode::instrFormVex3[(size_t(*address) << 2)| pp];
+        break;
+    case XopMap8:
+        form = Amd64InstrDecode::instrFormXOP8[(size_t(*address) << 2)| pp];
+        break;
+    case XopMap9:
+        form = Amd64InstrDecode::instrFormXOP9[(size_t(*address) << 2)| pp];
+        break;
+    case XopMapA:
+        form = Amd64InstrDecode::instrFormXOPA[(size_t(*address) << 2)| pp];
+        break;
+    default:
+        _ASSERTE(false);
     }
 
-    // Check for RIP-relative addressing
+    bool fModRM = IsModRm(form, pp, W, L, fPrefix66);
+    ModRMByte modrm = ModRMByte(address[1]);
+
     if (fModRM && (modrm.mod == 0x0) && (modrm.rm == 0x5))
     {
-        // SIB byte cannot be present with RIP-relative addressing.
+        // RIP-relative addressing.
+        if (form & Amd64InstrDecode::InstrForm::Extension)
+        {
+            form = Amd64InstrDecode::instrFormExtension[(size_t(form ^ Amd64InstrDecode::InstrForm::Extension) << 3) | modrm.reg];
+        }
 
-        pInstrAttrib->m_dwOffsetToDisp = (DWORD)(address - originalAddr);
+        pInstrAttrib->m_dwOffsetToDisp = (DWORD)(address - originalAddr) + 1 /* op */ + 1 /* modrm */;
         _ASSERTE(pInstrAttrib->m_dwOffsetToDisp <= MAX_INSTRUCTION_LENGTH);
 
-        // Add 4 to the address for the displacement.
-        address += 4;
+        const int dispBytes = 4;
+        const int immBytes = immSize(form, pp, W, L, fPrefix66);
 
-        // Further adjust the address by the size of the cbImmedSize (if any).
-        if (cbImmedSize == 0x3)
-        {
-            // The cbImmedSize depends on the effective operand size:
-            // 2 bytes if the effective operand size is 16-bit, or
-            // 4 bytes if the effective operand size is 32- or 64-bit.
-            if (fPrefix66)
-            {
-                cbImmedSize = 0x2;
-            }
-            else
-            {
-                cbImmedSize = 0x4;
-            }
-        }
-        address += cbImmedSize;
-
-        // if this is a read or write to a RIP-relative address then update pInstrAttrib->m_cOperandSize with the size of the pointee.
-        if (pInstrAttrib->m_cOperandSize == 0x3)
-        {
-            if (fPrefix66)
-                pInstrAttrib->m_cOperandSize = 0x2; // WORD*
-            else
-                pInstrAttrib->m_cOperandSize = 0x4; // DWORD*
-
-            if (fRex && rex.w == 0x1)
-            {
-                _ASSERTE(pInstrAttrib->m_cOperandSize == 0x4);
-                pInstrAttrib->m_cOperandSize = 0x8; // QWORD*
-            }
-        }
-
-        pInstrAttrib->m_cbInstr = (DWORD)(address - originalAddr);
+        pInstrAttrib->m_cbInstr = pInstrAttrib->m_dwOffsetToDisp + dispBytes + immBytes;
         _ASSERTE(pInstrAttrib->m_cbInstr <= MAX_INSTRUCTION_LENGTH);
-    }
-    else
-    {
-        // not a RIP-relative address so set to default values
-        pInstrAttrib->m_cOperandSize = 0;
-        pInstrAttrib->m_fIsWrite = false;
+
+        pInstrAttrib->m_fIsWrite = IsWrite(form, pp, W, L, fPrefix66);
+        pInstrAttrib->m_cOperandSize = opSize(form, pp, W, L, fPrefix66);
     }
 
-    //
-    // Look at opcode to tell if it's a call or an
-    // absolute branch.
-    //
-    switch (opcode0)
+    if (opCodeMap == Primary)
     {
-        case 0xC2: // RET
-        case 0xC3: // RET N
-            pInstrAttrib->m_fIsAbsBranch = true;
-            LOG((LF_CORDB, LL_INFO10000, "ABS:%0.2x\n", opcode0));
-            break;
+        BYTE opcode0 = *address;
+        //
+        // Look at opcode to tell if it's a call or an
+        // absolute branch.
+        //
+        switch (opcode0)
+        {
+            case 0xC2: // RET
+            case 0xC3: // RET N
+                pInstrAttrib->m_fIsAbsBranch = true;
+                LOG((LF_CORDB, LL_INFO10000, "ABS:%0.2x\n", opcode0));
+                break;
 
-        case 0xE8: // CALL relative
-            pInstrAttrib->m_fIsCall = true;
-            LOG((LF_CORDB, LL_INFO10000, "CALL REL:%0.2x\n", opcode0));
-            break;
+            case 0xE8: // CALL relative
+                pInstrAttrib->m_fIsCall = true;
+                LOG((LF_CORDB, LL_INFO10000, "CALL REL:%0.2x\n", opcode0));
+                break;
 
-        case 0xC8: // ENTER
-            pInstrAttrib->m_fIsCall = true;
-            pInstrAttrib->m_fIsAbsBranch = true;
-            LOG((LF_CORDB, LL_INFO10000, "CALL ABS:%0.2x\n", opcode0));
-            break;
+            case 0xC8: // ENTER
+                pInstrAttrib->m_fIsCall = true;
+                pInstrAttrib->m_fIsAbsBranch = true;
+                LOG((LF_CORDB, LL_INFO10000, "CALL ABS:%0.2x\n", opcode0));
+                break;
 
-        case 0xFF: // CALL/JMP modr/m
-            //
-            // Read opcode modifier from modr/m
-            //
+            case 0xFF: // CALL/JMP modr/m
+                //
+                // Read opcode modifier from modr/m
+                //
 
-            _ASSERTE(fModRM);
-            switch (modrm.reg)
-            {
-                case 2:
-                case 3:
-                    pInstrAttrib->m_fIsCall = true;
-                    // fall through
-                case 4:
-                case 5:
-                    pInstrAttrib->m_fIsAbsBranch = true;
-            }
-            LOG((LF_CORDB, LL_INFO10000, "CALL/JMP modr/m:%0.2x\n", opcode0));
-            break;
+                _ASSERTE(fModRM);
+                switch (modrm.reg)
+                {
+                    case 2:
+                    case 3:
+                        pInstrAttrib->m_fIsCall = true;
+                        // fall through
+                    case 4:
+                    case 5:
+                        pInstrAttrib->m_fIsAbsBranch = true;
+                }
+                LOG((LF_CORDB, LL_INFO10000, "CALL/JMP modr/m:%0.2x\n", opcode0));
+                break;
 
-        default:
-            LOG((LF_CORDB, LL_INFO10000, "NORMAL:%0.2x\n", opcode0));
-    }
-
-    if (pInstrAttrib->m_cOperandSize == 0x0)
-    {
-        // if an operand size wasn't computed (likely because the decoder didn't understand the instruction) then set
-        // the size to the max buffer size.  this is a fall-back to the dev10 behavior and is applicable for reads only.
-        _ASSERTE(!pInstrAttrib->m_fIsWrite);
-        pInstrAttrib->m_cOperandSize = SharedPatchBypassBuffer::cbBufferBypass;
+            default:
+                LOG((LF_CORDB, LL_INFO10000, "NORMAL:%0.2x\n", opcode0));
+        }
     }
 }
 
