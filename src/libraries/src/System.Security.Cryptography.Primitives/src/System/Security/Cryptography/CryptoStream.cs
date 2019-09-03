@@ -203,7 +203,7 @@ namespace System.Security.Cryptography
             // thread if it does a second IO request until the first one completes.
 
             SemaphoreSlim semaphore = AsyncActiveSemaphore;
-            await semaphore.WaitAsync().ForceAsync();
+            await semaphore.WaitAsync(cancellationToken).ForceAsync();
             try
             {
                 return await ReadAsyncCore(buffer, offset, count, cancellationToken, useAsync: true).ConfigureAwait(false);
@@ -482,7 +482,7 @@ namespace System.Security.Cryptography
             // thread if it does a second IO request until the first one completes.
 
             SemaphoreSlim semaphore = AsyncActiveSemaphore;
-            await semaphore.WaitAsync().ForceAsync();
+            await semaphore.WaitAsync(cancellationToken).ForceAsync();
             try
             {
                 await WriteAsyncCore(buffer, offset, count, cancellationToken, useAsync: true).ConfigureAwait(false);

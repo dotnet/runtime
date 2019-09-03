@@ -114,7 +114,7 @@ namespace System.Net.Http
             // is not related to our cancellation token.
             if (cancellationToken.IsCancellationRequested && (e.CancellationToken == cancellationToken))
             {
-                tcs.TrySetCanceled();
+                tcs.TrySetCanceled(cancellationToken);
             }
             else
             {
