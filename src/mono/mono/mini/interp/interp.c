@@ -117,7 +117,7 @@ init_frame (InterpFrame *frame, InterpFrame *parent_frame, InterpMethod *rmethod
  */
 GSList *mono_interp_jit_classes;
 /* Optimizations enabled with interpreter */
-int mono_interp_opt = INTERP_OPT_INLINE;
+int mono_interp_opt = INTERP_OPT_DEFAULT;
 /* If TRUE, interpreted code will be interrupted at function entry/backward branches */
 static gboolean ss_enabled;
 
@@ -3269,7 +3269,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 	unsigned char *locals = NULL;
 #if USE_COMPUTED_GOTO
 	static void * const in_labels[] = {
-#define OPDEF(a,b,c,d) &&LAB_ ## a,
+#define OPDEF(a,b,c,d,e,f) &&LAB_ ## a,
 #include "mintops.def"
 	};
 #endif
@@ -4844,10 +4844,8 @@ main_loop:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_INTRINS_RUNTIMEHELPERS_OBJECT_HAS_COMPONENT_SIZE) {
-			sp -= 1;
-			MonoObject *obj = sp [0].data.o;
-			sp [0].data.i = (obj->vtable->flags & MONO_VT_FLAG_ARRAY_OR_STRING) != 0;
-			sp ++;
+			MonoObject *obj = sp [-1].data.o;
+			sp [-1].data.i = (obj->vtable->flags & MONO_VT_FLAG_ARRAY_OR_STRING) != 0;
 			++ip;
 			MINT_IN_BREAK;
 		}
@@ -6022,12 +6020,6 @@ main_loop:
 			ip += 2;
 			sp++;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_MONO_FREE)
-			++ip;
-			--sp;
-			g_error ("that doesn't seem right");
-			g_free (sp->data.p);
-			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MONO_RETOBJ)
 			++ip;
 			sp--;
@@ -6440,6 +6432,23 @@ main_loop:
 			ip += 4;
 			MINT_IN_BREAK;
 		}
+
+#define MOVLOC(argtype) \
+	* (argtype *)(locals + * (guint16 *)(ip + 2)) = * (argtype *)(locals + * (guint16 *)(ip + 1)); \
+	ip += 3;
+
+		MINT_IN_CASE(MINT_MOVLOC_1) MOVLOC(guint8); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_MOVLOC_2) MOVLOC(guint16); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_MOVLOC_4) MOVLOC(guint32); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_MOVLOC_8) MOVLOC(guint64); MINT_IN_BREAK;
+
+		MINT_IN_CASE(MINT_MOVLOC_VT) {
+			int const i32 = READ32(ip + 3);
+			memcpy (locals + * (guint16 *)(ip + 2), locals + * (guint16*)(ip + 1), i32);
+			ip += 5;
+			MINT_IN_BREAK;
+		}
+
 		MINT_IN_CASE(MINT_LOCALLOC) {
 			if (sp != frame->stack + 1) /*FIX?*/
 				goto abort_label;
@@ -6684,10 +6693,12 @@ interp_parse_options (const char *options)
 
 		if (strncmp (arg, "jit=", 4) == 0)
 			mono_interp_jit_classes = g_slist_prepend (mono_interp_jit_classes, arg + 4);
-		if (strncmp (arg, "interp-only=", 4) == 0)
+		if (strncmp (arg, "interp-only=", strlen ("interp-only=")) == 0)
 			mono_interp_only_classes = g_slist_prepend (mono_interp_only_classes, arg + strlen ("interp-only="));
 		if (strncmp (arg, "-inline", 7) == 0)
 			mono_interp_opt &= ~INTERP_OPT_INLINE;
+		if (strncmp (arg, "-cprop", 6) == 0)
+			mono_interp_opt &= ~INTERP_OPT_CPROP;
 	}
 }
 
@@ -6971,6 +6982,8 @@ register_interp_stats (void)
 {
 	mono_counters_init ();
 	mono_counters_register ("Total transform time", MONO_COUNTER_INTERP | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_interp_stats.transform_time);
+	mono_counters_register ("Total cprop time", MONO_COUNTER_INTERP | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_interp_stats.cprop_time);
+	mono_counters_register ("Instructions optimized away", MONO_COUNTER_INTERP | MONO_COUNTER_INT, &mono_interp_stats.killed_instructions);
 	mono_counters_register ("Methods inlined", MONO_COUNTER_INTERP | MONO_COUNTER_INT, &mono_interp_stats.inlined_methods);
 	mono_counters_register ("Inline failures", MONO_COUNTER_INTERP | MONO_COUNTER_INT, &mono_interp_stats.inline_failures);
 }
