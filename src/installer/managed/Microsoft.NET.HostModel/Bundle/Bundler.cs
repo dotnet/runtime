@@ -30,10 +30,11 @@ namespace Microsoft.NET.HostModel.Bundle
         /// <summary>
         /// Align embedded assemblies such that they can be loaded 
         /// directly from memory-mapped bundle.
-        /// TBD: Set the correct value of alignment while working on 
-        /// the runtime changes to load the embedded assemblies.
+        /// 
+        /// TBD: Determine if this is the minimum required alignment 
+        /// on all platforms and assembly types (and customize the padding accordingly).
         /// </summary>
-        const int AssemblyAlignment = 16;
+        public const int AssemblyAlignment = 4096;
 
         public static string Version => (Manifest.MajorVersion + "." + Manifest.MinorVersion);
 
@@ -57,10 +58,9 @@ namespace Microsoft.NET.HostModel.Bundle
         /// </summary>
         /// <returns>Returns the offset of the start 'file' within 'bundle'</returns>
 
-        long AddToBundle(Stream bundle, Stream file, FileType type = FileType.Extract)
+        long AddToBundle(Stream bundle, Stream file, bool shouldAlign)
         {
-            // Allign assemblies, since they are loaded directly from bundle
-            if (type == FileType.Assembly)
+            if (shouldAlign)
             {
                 long misalignment = (bundle.Position % AssemblyAlignment);
 
@@ -116,16 +116,16 @@ namespace Microsoft.NET.HostModel.Bundle
             {
                 PEReader peReader = new PEReader(file);
                 CorHeader corHeader = peReader.PEHeaders.CorHeader;
-                if ((corHeader != null) && ((corHeader.Flags & CorFlags.ILOnly) != 0))
+                if (corHeader != null)
                 {
-                    return FileType.Assembly;
+                    return ((corHeader.Flags & CorFlags.ILOnly) != 0) ? FileType.IL : FileType.Ready2Run;
                 }
             }
             catch (BadImageFormatException)
             {
             }
 
-            return FileType.Extract;
+            return FileType.Other;
         }
 
         /// <summary>
@@ -160,7 +160,7 @@ namespace Microsoft.NET.HostModel.Bundle
                 throw new ArgumentException("Invalid input specification: Must specify the host binary");
             }
 
-            if(fileSpecs.GroupBy(file => file.BundleRelativePath).Where(g => g.Count() > 1).Any())
+            if (fileSpecs.GroupBy(file => file.BundleRelativePath).Where(g => g.Count() > 1).Any())
             {
                 throw new ArgumentException("Invalid input specification: Found multiple entries with the same BundleRelativePath");
             }
@@ -180,6 +180,17 @@ namespace Microsoft.NET.HostModel.Bundle
                 bundle.Position = bundle.Length;
 
                 // Write the files from the specification into the bundle
+                // Alignment: 
+                //   Assemblies are written aligned at "AssemblyAlignment" bytes to facilitate loading from bundle
+                //   Remaining files (native binaries and other files) are written without alignment.
+                //
+                // The unaligned files are written first, followed by the aligned files, 
+                // and finally the bundle manifest. 
+                // TODO: Order file writes to minimize file size.
+
+                List<Tuple<FileSpec, FileType>> ailgnedFiles = new List<Tuple<FileSpec, FileType>>();
+                bool NeedsAlignment(FileType type) => type == FileType.IL || type == FileType.Ready2Run;
+
                 foreach (var fileSpec in fileSpecs)
                 {
                     if (!ShouldEmbed(fileSpec.BundleRelativePath))
@@ -191,7 +202,27 @@ namespace Microsoft.NET.HostModel.Bundle
                     using (FileStream file = File.OpenRead(fileSpec.SourcePath))
                     {
                         FileType type = InferType(fileSpec.BundleRelativePath, file);
-                        long startOffset = AddToBundle(bundle, file, type);
+
+                        if (NeedsAlignment(type))
+                        {
+                            ailgnedFiles.Add(Tuple.Create(fileSpec, type));
+                            continue;
+                        }
+
+                        long startOffset = AddToBundle(bundle, file, shouldAlign:false);
+                        FileEntry entry = BundleManifest.AddEntry(type, fileSpec.BundleRelativePath, startOffset, file.Length);
+                        trace.Log($"Embed: {entry}");
+                    }
+                }
+
+                foreach (var tuple in ailgnedFiles)
+                {
+                    var fileSpec = tuple.Item1;
+                    var type = tuple.Item2;
+
+                    using (FileStream file = File.OpenRead(fileSpec.SourcePath))
+                    {
+                        long startOffset = AddToBundle(bundle, file, shouldAlign: true);
                         FileEntry entry = BundleManifest.AddEntry(type, fileSpec.BundleRelativePath, startOffset, file.Length);
                         trace.Log($"Embed: {entry}");
                     }
@@ -237,7 +268,7 @@ namespace Microsoft.NET.HostModel.Bundle
             Array.Sort(sources, StringComparer.Ordinal);
 
             List<FileSpec> fileSpecs = new List<FileSpec>(sources.Length);
-            foreach(var file in sources)
+            foreach (var file in sources)
             {
                 fileSpecs.Add(new FileSpec(file, RelativePath(sourceDir, file)));
             }
