@@ -130,8 +130,12 @@ mono_domain_asmctx_from_path (const char *fname, MonoAssembly *requesting_assemb
 static void
 add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass, GHashTable *hash);
 
+#if ENABLE_NETCORE
+
 static void
 add_assembly_to_alc (MonoAssemblyLoadContext *alc, MonoAssembly *ass);
+
+#endif
 
 static MonoAppDomainHandle
 mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetupHandle setup, MonoError *error);
