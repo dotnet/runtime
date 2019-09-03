@@ -9,21 +9,14 @@ namespace Microsoft.NET.HostModel.Bundle
     /// 
     /// The bundler differentiates a few kinds of files via the manifest,
     /// with respect to the way in which they'll be used by the runtime.
-    ///
-    /// - Runtime Configuration files: Processed directly from memory
-    /// - Assemblies: Loaded directly from memory.
-    ///               Currently, these are only pure-managed assemblies.
-    ///               Future versions should include R2R assemblies here.
-    /// - Other files: Files that will be extracted out to disk. 
-    ///                These include native binaries.
     /// </summary>
     public enum FileType : byte
     {
-        Assembly,           // IL Assemblies, which will be processed from bundle
-        Ready2Run,          // R2R assemblies, currently unused, spilled to disk.
-        DepsJson,           // Configuration file, processed from bundle
-        RuntimeConfigJson,  // Configuration file, processed from bundle
-        Extract             // Files spilled to disk by the host
+        IL,                // IL Assemblies
+        Ready2Run,         // R2R assemblies
+        DepsJson,          // .deps.json configuration file
+        RuntimeConfigJson, // .runtimeconfig.json configuration file
+        Other              // Other files, including native binaries
     };
 }
 

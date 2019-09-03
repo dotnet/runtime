@@ -144,6 +144,24 @@ namespace Microsoft.NET.HostModel.Tests
         }
 
         [Fact]
+        public void TestAssemblyAlignment()
+        {
+            var fixture = sharedTestState.TestFixture.Copy();
+
+            var hostName = BundleHelper.GetHostName(fixture);
+            var appName = Path.GetFileNameWithoutExtension(hostName);
+            string publishPath = BundleHelper.GetPublishPath(fixture);
+            var bundleDir = BundleHelper.GetBundleDir(fixture);
+
+            var bundler = new Bundler(hostName, bundleDir.FullName);
+            bundler.GenerateBundle(BundleHelper.GetPublishPath(fixture));
+
+            bundler.BundleManifest.Files.ForEach(file => 
+                Assert.True((file.Type != FileType.IL && file.Type != FileType.Ready2Run) ||
+                            (file.Offset % Bundler.AssemblyAlignment == 0)));
+        }
+
+        [Fact]
         public void TestWithAdditionalContentAfterBundleMetadata()
         {
             var fixture = sharedTestState.TestFixture.Copy();
