@@ -202,7 +202,7 @@ g_module_build_path (const gchar *directory, const gchar *module_name)
 // Prefer not-ex, not-base.
 //
 gboolean
-mono_get_module_filename (gpointer mod, gunichar2** pstr, guint32* plength)
+mono_get_module_filename (gpointer mod, gunichar2 **pstr, guint32 *plength)
 {
 	gunichar2 *str = NULL;
 	guint32 capacity = MAX_PATH; // tunable
