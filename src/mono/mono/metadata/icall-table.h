@@ -90,16 +90,18 @@ typedef MonoW32ProcessInfo *MonoW32ProcessInfo_ref;
 // Maybe do this in TYPED_HANDLE_DECL.
 typedef MonoArray MonoArrayOut;
 typedef MonoArray MonoArrayInOut;
+typedef MonoArrayHandle MonoArrayOutHandle;
+typedef MonoArrayHandle MonoArrayInOutHandle;
+typedef MonoException MonoExceptionOut;
+typedef MonoExceptionHandle MonoExceptionOutHandle;
 typedef MonoObject MonoObjectOut;
 typedef MonoObject MonoObjectInOut;
 typedef MonoObjectHandle MonoObjectOutHandle;
 typedef MonoObjectHandle MonoObjectInOutHandle;
-typedef MonoArrayHandle MonoArrayOutHandle;
-typedef MonoArrayHandle MonoArrayInOutHandle;
-typedef MonoString MonoStringOut;
-typedef MonoStringHandle MonoStringOutHandle;
 typedef MonoReflectionModule MonoReflectionModuleOut;
 typedef MonoReflectionModuleHandle MonoReflectionModuleOutHandle;
+typedef MonoString MonoStringOut;
+typedef MonoStringHandle MonoStringOutHandle;
 
 // How the arguments and return value of an icall should be wrapped.
 // The names and meanings are from marshal-ilgen.c.
@@ -224,6 +226,7 @@ typedef MonoReflectionModuleHandle MonoReflectionModuleOutHandle;
 #define MONO_HANDLE_TYPE_WRAP_MonoTransparentProxy			ICALL_HANDLES_WRAP_OBJ
 #define MONO_HANDLE_TYPE_WRAP_MonoW32ProcessStartInfo		ICALL_HANDLES_WRAP_OBJ
 
+#define MONO_HANDLE_TYPE_WRAP_MonoExceptionOut		ICALL_HANDLES_WRAP_OBJ_OUT
 #define MONO_HANDLE_TYPE_WRAP_MonoObjectOut		ICALL_HANDLES_WRAP_OBJ_OUT
 #define MONO_HANDLE_TYPE_WRAP_MonoStringOut		ICALL_HANDLES_WRAP_OBJ_OUT
 #define MONO_HANDLE_TYPE_WRAP_MonoArrayOut		ICALL_HANDLES_WRAP_OBJ_OUT

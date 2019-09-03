@@ -906,7 +906,7 @@ mono_gc_wbarrier_arrayref_copy_internal (gpointer dest_ptr, gconstpointer src_pt
 }
 
 void
-mono_gc_wbarrier_generic_store_internal (gpointer ptr, MonoObject* value)
+mono_gc_wbarrier_generic_store_internal (void volatile* ptr, MonoObject* value)
 {
 	*(void**)ptr = value;
 }

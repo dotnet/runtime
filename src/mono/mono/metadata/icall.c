@@ -3582,113 +3582,119 @@ ves_icall_RuntimeMethodInfo_GetGenericArguments (MonoReflectionMethodHandle ref_
 	return res;
 }
 
-MonoObject *
-ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this_arg, MonoArray *params, MonoException **exc) 
+MonoObjectHandle
+ves_icall_InternalInvoke (MonoReflectionMethodHandle method_handle, MonoObjectHandle this_arg_handle,
+			  MonoArrayHandle params_handle, MonoExceptionHandleOut exception_out, MonoError *error)
 {
-	ERROR_DECL (error);
+	MonoReflectionMethod* const method = MONO_HANDLE_RAW (method_handle);
+	MonoObject* const this_arg = MONO_HANDLE_RAW (this_arg_handle);
+	MonoArray* const params = MONO_HANDLE_RAW (params_handle);
+
 	/* 
 	 * Invoke from reflection is supposed to always be a virtual call (the API
 	 * is stupid), mono_runtime_invoke_*() calls the provided method, allowing
 	 * greater flexibility.
 	 */
 	MonoMethod *m = method->method;
-	MonoMethodSignature *sig = mono_method_signature_internal (m);
-	MonoImage *image;
-	int pcount;
+	MonoMethodSignature* const sig = mono_method_signature_internal (m);
+	MonoImage *image = NULL;
+	int pcount = 0;
 	void *obj = this_arg;
+	char *this_name = NULL;
+	char *target_name = NULL;
+	char *msg = NULL;
+	MonoObject *result = NULL;
+	MonoArray *arr = NULL;
+	MonoException *exception = NULL;
 
-	*exc = NULL;
+	*MONO_HANDLE_REF (exception_out) = NULL;
 
 	if (mono_security_core_clr_enabled () &&
 	    !mono_security_core_clr_ensure_reflection_access_method (m, error)) {
-		mono_error_set_pending_exception (error);
-		return NULL;
+		goto return_null;
 	}
 
 	if (!(m->flags & METHOD_ATTRIBUTE_STATIC)) {
 		if (!mono_class_vtable_checked (mono_object_domain (method), m->klass, error)) {
 			mono_error_cleanup (error); /* FIXME does this make sense? */
-			mono_gc_wbarrier_generic_store_internal (exc, (MonoObject*) mono_class_get_exception_for_failure (m->klass));
-			return NULL;
+			error_init_reuse (error);
+			exception = mono_class_get_exception_for_failure (m->klass);
+			goto return_null;
 		}
 
 		if (this_arg) {
 			if (!mono_object_isinst_checked (this_arg, m->klass, error)) {
 				if (!is_ok (error)) {
-					mono_gc_wbarrier_generic_store_internal (exc, (MonoObject*) mono_error_convert_to_exception (error));
-					return NULL;
+					exception = mono_error_convert_to_exception (error);
+					goto return_null;
 				}
-				char *this_name = mono_type_get_full_name (mono_object_class (this_arg));
-				char *target_name = mono_type_get_full_name (m->klass);
-				char *msg = g_strdup_printf ("Object of type '%s' doesn't match target type '%s'", this_name, target_name);
-				mono_gc_wbarrier_generic_store_internal (exc, (MonoObject*) mono_exception_from_name_msg (mono_defaults.corlib, "System.Reflection", "TargetException", msg));
-				g_free (msg);
-				g_free (target_name);
-				g_free (this_name);
-				return NULL;
+				this_name = mono_type_get_full_name (mono_object_class (this_arg));
+				target_name = mono_type_get_full_name (m->klass);
+				msg = g_strdup_printf ("Object of type '%s' doesn't match target type '%s'", this_name, target_name);
+				exception = mono_exception_from_name_msg (mono_defaults.corlib, "System.Reflection", "TargetException", msg);
+				goto return_null;
 			}
 			m = mono_object_get_virtual_method_internal (this_arg, m);
 			/* must pass the pointer to the value for valuetype methods */
-			if (m_class_is_valuetype (m->klass))
+			if (m_class_is_valuetype (m->klass)) {
 				obj = mono_object_unbox_internal (this_arg);
+				// FIXMEcoop? Does obj need to be put into a handle?
+			}
 		} else if (strcmp (m->name, ".ctor") && !m->wrapper_type) {
-			mono_gc_wbarrier_generic_store_internal (exc, (MonoObject*) mono_exception_from_name_msg (mono_defaults.corlib, "System.Reflection", "TargetException", "Non-static method requires a target."));
-			return NULL;
+			exception = mono_exception_from_name_msg (mono_defaults.corlib, "System.Reflection", "TargetException", "Non-static method requires a target.");
+			goto return_null;
 		}
 	}
 
 	if ((m->klass != NULL && m_class_is_byreflike (m->klass)) || m_class_is_byreflike (mono_class_from_mono_type_internal (sig->ret))) {
-		mono_gc_wbarrier_generic_store_internal (exc, (MonoObject*) mono_exception_from_name_msg (mono_defaults.corlib, "System", "NotSupportedException", "Cannot invoke method with stack pointers via reflection"));
-		return NULL;
+		exception = mono_exception_from_name_msg (mono_defaults.corlib, "System", "NotSupportedException", "Cannot invoke method with stack pointers via reflection");
+		goto return_null;
 	}
 #if ENABLE_NETCORE
 	if (sig->ret->byref) {
 		MonoType* ret_byval = m_class_get_byval_arg (mono_class_from_mono_type_internal (sig->ret));
 		if (ret_byval->type == MONO_TYPE_VOID) {
-			mono_gc_wbarrier_generic_store_internal (exc, (MonoObject*) mono_exception_from_name_msg (mono_defaults.corlib, "System", "NotSupportedException", "ByRef to void return values are not supported in reflection invocation"));
-			return NULL;
+			exception = mono_exception_from_name_msg (mono_defaults.corlib, "System", "NotSupportedException", "ByRef to void return values are not supported in reflection invocation");
+			goto return_null;
 		}	
 		if (m_class_is_byreflike (mono_class_from_mono_type_internal (ret_byval))) {
-			mono_gc_wbarrier_generic_store_internal (exc, (MonoObject*) mono_exception_from_name_msg (mono_defaults.corlib, "System", "NotSupportedException", "Cannot invoke method returning ByRef to ByRefLike type via reflection"));
-			return NULL;
+			exception = mono_exception_from_name_msg (mono_defaults.corlib, "System", "NotSupportedException", "Cannot invoke method returning ByRef to ByRefLike type via reflection");
+			goto return_null;
 		}
 	}
 #else
 	if (sig->ret->byref) {
-		mono_gc_wbarrier_generic_store_internal (exc, (MonoObject*) mono_exception_from_name_msg (mono_defaults.corlib, "System", "NotSupportedException", "Cannot invoke method returning ByRef type via reflection"));
-		return NULL;
+		exception = mono_exception_from_name_msg (mono_defaults.corlib, "System", "NotSupportedException", "Cannot invoke method returning ByRef type via reflection");
+		goto return_null;
 	}
 #endif
 
 	pcount = params? mono_array_length_internal (params): 0;
 	if (pcount != sig->param_count) {
-		mono_gc_wbarrier_generic_store_internal (exc, (MonoObject*) mono_exception_from_name (mono_defaults.corlib, "System.Reflection", "TargetParameterCountException"));
-		return NULL;
+		exception = mono_exception_from_name (mono_defaults.corlib, "System.Reflection", "TargetParameterCountException");
+		goto return_null;
 	}
 
 	if (mono_class_is_abstract (m->klass) && !strcmp (m->name, ".ctor") && !this_arg) {
-		mono_gc_wbarrier_generic_store_internal (exc, (MonoObject*) mono_exception_from_name_msg (mono_defaults.corlib, "System.Reflection", "TargetException", "Cannot invoke constructor of an abstract class."));
-		return NULL;
+		exception = mono_exception_from_name_msg (mono_defaults.corlib, "System.Reflection", "TargetException", "Cannot invoke constructor of an abstract class.");
+		goto return_null;
 	}
 
 	image = m_class_get_image (m->klass);
 	if (mono_asmctx_get_kind (&image->assembly->context) == MONO_ASMCTX_REFONLY) {
-		mono_gc_wbarrier_generic_store_internal (exc, (MonoObject*) mono_get_exception_invalid_operation ("It is illegal to invoke a method on a type loaded using the ReflectionOnly api."));
-		return NULL;
+		exception = mono_get_exception_invalid_operation ("It is illegal to invoke a method on a type loaded using the ReflectionOnly api.");
+		goto return_null;
 	}
 
 	if (image_is_dynamic (image) && !((MonoDynamicImage*)image)->run) {
-		mono_gc_wbarrier_generic_store_internal (exc, (MonoObject*) mono_get_exception_not_supported ("Cannot invoke a method in a dynamic assembly without run access."));
-		return NULL;
+		exception = mono_get_exception_not_supported ("Cannot invoke a method in a dynamic assembly without run access.");
+		goto return_null;
 	}
 	
 	if (m_class_get_rank (m->klass) && !strcmp (m->name, ".ctor")) {
-		MonoArray *arr;
 		int i;
-		uintptr_t *lengths;
-		intptr_t *lower_bounds;
 		pcount = mono_array_length_internal (params);
-		lengths = g_newa (uintptr_t, pcount);
+		uintptr_t * const lengths = g_newa (uintptr_t, pcount);
 		/* Note: the synthetized array .ctors have int32 as argument type */
 		for (i = 0; i < pcount; ++i)
 			lengths [i] = *(int32_t*) ((char*)mono_array_get_internal (params, gpointer, i) + sizeof (MonoObject));
@@ -3696,35 +3702,28 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this_arg, Mo
 		if (m_class_get_rank (m->klass) == 1 && sig->param_count == 2 && m_class_get_rank (m_class_get_element_class (m->klass))) {
 			/* This is a ctor for jagged arrays. MS creates an array of arrays. */
 			arr = mono_array_new_full_checked (mono_object_domain (params), m->klass, lengths, NULL, error);
-			if (!is_ok (error)) {
-				mono_error_set_pending_exception (error);
-				return NULL;
-			}
+			goto_if_nok (error, return_null);
+
+			MonoArrayHandle subarray_handle = MONO_HANDLE_NEW (MonoArray, NULL);
 
 			for (i = 0; i < mono_array_length_internal (arr); ++i) {
 				MonoArray *subarray = mono_array_new_full_checked (mono_object_domain (params), m_class_get_element_class (m->klass), &lengths [1], NULL, error);
-				if (!is_ok (error)) {
-					mono_error_set_pending_exception (error);
-					return NULL;
-				}
+				goto_if_nok (error, return_null);
+				MONO_HANDLE_ASSIGN_RAW (subarray_handle, subarray); // FIXME? Overkill?
 				mono_array_setref_fast (arr, i, subarray);
 			}
-			return (MonoObject*)arr;
+			goto exit;
 		}
 
 		if (m_class_get_rank (m->klass) == pcount) {
 			/* Only lengths provided. */
 			arr = mono_array_new_full_checked (mono_object_domain (params), m->klass, lengths, NULL, error);
-			if (!is_ok (error)) {
-				mono_error_set_pending_exception (error);
-				return NULL;
-			}
-
-			return (MonoObject*)arr;
+			goto_if_nok (error, return_null);
+			goto exit;
 		} else {
 			g_assert (pcount == (m_class_get_rank (m->klass) * 2));
 			/* The arguments are lower-bound-length pairs */
-			lower_bounds = (intptr_t *)g_alloca (sizeof (intptr_t) * pcount);
+			intptr_t * const lower_bounds = (intptr_t *)g_alloca (sizeof (intptr_t) * pcount);
 
 			for (i = 0; i < pcount / 2; ++i) {
 				lower_bounds [i] = *(int32_t*) ((char*)mono_array_get_internal (params, gpointer, (i * 2)) + sizeof (MonoObject));
@@ -3732,17 +3731,25 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this_arg, Mo
 			}
 
 			arr = mono_array_new_full_checked (mono_object_domain (params), m->klass, lengths, lower_bounds, error);
-			if (!is_ok (error)) {
-				mono_error_set_pending_exception (error);
-				return NULL;
-			}
-
-			return (MonoObject*)arr;
+			goto_if_nok (error, return_null);
+			goto exit;
 		}
 	}
-	MonoObject *result = mono_runtime_invoke_array_checked (m, obj, params, error);
-	mono_error_set_pending_exception (error);
-	return result;
+	result = mono_runtime_invoke_array_checked (m, obj, params, error);
+	goto exit;
+return_null:
+	result = NULL;
+	arr = NULL;
+exit:
+	if (exception) {
+		MONO_HANDLE_NEW (MonoException, exception); // FIXME? overkill?
+		mono_gc_wbarrier_generic_store_internal (MONO_HANDLE_REF (exception_out), (MonoObject*)exception);
+	}
+	g_free (target_name);
+	g_free (this_name);
+	g_free (msg);
+	g_assert (!result || !arr); // only one, or neither, should be set
+	return result ? MONO_HANDLE_NEW (MonoObject, result) : arr ? MONO_HANDLE_NEW (MonoObject, (MonoObject*)arr) : NULL_HANDLE;
 }
 
 #ifndef DISABLE_REMOTING

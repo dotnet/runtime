@@ -557,6 +557,29 @@ mono_null_value_handle (void)
 #define NULL_HANDLE_ARRAY  		(MONO_HANDLE_CAST (MonoArray,  NULL_HANDLE))
 #define NULL_HANDLE_STRING_BUILDER	(MONO_HANDLE_CAST (MonoStringBuilder, NULL_HANDLE))
 
+#if __cplusplus
+
+// Use this to convert a THandle to a raw T** such as for a ref or out parameter, without
+// copying back and forth through an intermediate. The handle must already be allocated,
+// such as icall marshaling does for out and ref parameters.
+#define MONO_HANDLE_REF(h) (h.Ref ())
+
+#else
+
+static inline void volatile*
+mono_handle_ref (void volatile* p)
+{
+	g_assert (p);
+	return p;
+}
+
+// Use this to convert a THandle to a raw T** such as for a ref or out parameter, without
+// copying back and forth through an intermediate. The handle must already be allocated,
+// such as icall marshaling does for out and ref parameters.
+#define MONO_HANDLE_REF(handle) (MONO_TYPEOF_CAST ((handle).__raw, mono_handle_ref ((handle).__raw)))
+
+#endif
+
 static inline MonoObjectHandle
 mono_handle_assign_raw (MonoObjectHandleOut dest, void *src)
 {

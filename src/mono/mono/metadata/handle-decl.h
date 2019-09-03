@@ -67,6 +67,7 @@ Handle macros/functions
 		MONO_IF_CPLUSPLUS (						\
 			MONO_ALWAYS_INLINE					\
 			TYPE * GetRaw () const { return __raw ? *__raw : NULL; } \
+			TYPE * volatile * Ref () { g_assert (__raw); return __raw; } \
 		)								\
 		TYPE * volatile *__raw;						\
 	} TYPED_HANDLE_NAME (TYPE),						\

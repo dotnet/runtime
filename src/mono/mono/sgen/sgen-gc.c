@@ -3045,12 +3045,12 @@ mono_gc_wbarrier_generic_nostore_internal (gpointer ptr)
  * mono_gc_wbarrier_generic_store_internal:
  */
 void
-mono_gc_wbarrier_generic_store_internal (gpointer ptr, GCObject* value)
+mono_gc_wbarrier_generic_store_internal (void volatile* ptr, GCObject* value)
 {
 	SGEN_LOG (8, "Wbarrier store at %p to %p (%s)", ptr, value, value ? sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (value)) : "null");
-	SGEN_UPDATE_REFERENCE_ALLOW_NULL (ptr, value);
+	SGEN_UPDATE_REFERENCE_ALLOW_NULL ((void*)ptr, value); // FIXME volatile
 	if (ptr_in_nursery (value) || sgen_concurrent_collection_in_progress)
-		mono_gc_wbarrier_generic_nostore_internal (ptr);
+		mono_gc_wbarrier_generic_nostore_internal ((void*)ptr); // FIXME volatile
 	sgen_dummy_use (value);
 }
 
