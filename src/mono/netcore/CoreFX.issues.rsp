@@ -676,9 +676,6 @@
 ##  System.Data.SqlClient.Tests
 ####################################################################
 
-# Test does not run when included 
--nomethod System.Data.SqlClient.Tests.AADAccessTokenTest.InvalidCombinationOfAccessToken
-
 # Hangs and then fails... All async tests display the same failure
 # https://github.com/mono/mono/issues/15181
 -nomethod System.Data.SqlClient.Tests.DiagnosticTest.ExecuteNonQueryAsyncTest
@@ -765,21 +762,10 @@
 
 # Overflow Exception
 # https://github.com/mono/mono/issues/15197
--nomethod OverlappedTests.PropertyTest2
-
-# NRE in Overlapped.Pack
-# https://github.com/mono/mono/issues/15308
--nomethod OverlappedTests.PackNegTest
--nomethod OverlappedTests.PackNegTest1
-
-# NRE at Overlapped.Unpack (similar to pack)
-# https://github.com/mono/mono/issues/15310
--nomethod OverlappedTests.UnPackTest
-
-# NRE may be similar to above
 # https://github.com/mono/mono/issues/15311
+# These tests should be ignored on x64 in dotnet/corefx
+-nomethod OverlappedTests.PropertyTest2
 -nomethod OverlappedTests.PropertyTest3
--nomethod OverlappedTests.PropertyTest1
 
 # NRE
 # https://github.com/mono/mono/issues/15312
