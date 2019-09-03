@@ -6,9 +6,6 @@ NETCORETESTS_VERSION := $(shell cat ../eng/Versions.props | sed -n 's/.*Microsof
 NETCOREAPP_VERSION := $(shell cat ../eng/Versions.props | sed -n 's/.*MicrosoftNETCoreAppVersion>\(.*\)<\/MicrosoftNETCoreAppVersion.*/\1/p' )
 ROSLYN_VERSION:=  $(shell cat ../eng/Versions.props | sed -n 's/.*MicrosoftNetCompilersVersion>\(.*\)<\/MicrosoftNetCompilersVersion.*/\1/p' )
 
-# Extracted from https://dotnetcli.blob.core.windows.net/dotnet/aspnetcore/Runtime/master/latest.version
-ASPNETCOREAPP_VERSION := 3.0.0-preview-18614-0151
-
 # runtime version used by $(DOTNET) - local .net core sdk to bootstrap stuff
 # it doesn't match NETCOREAPP_VERSION
 BOOTSTRAP_RUNTIME = $(shell ls ../.dotnet/shared/Microsoft.NETCore.App | tail -1)
@@ -49,9 +46,7 @@ DOTNET := $(shell ./init-tools.sh | tail -1)
 endif
 
 NETCORESDK_FILE := dotnet-runtime-$(NETCOREAPP_VERSION)-$(RID).$(NETCORESDK_EXT)
-ASPNETCORESDK_FILE := aspnetcore-runtime-$(ASPNETCOREAPP_VERSION)-$(RID).$(NETCORESDK_EXT)
 NETCORE_URL := https://dotnetcli.blob.core.windows.net/dotnet/Runtime/$(NETCOREAPP_VERSION)/$(NETCORESDK_FILE)
-ASPNETCORE_URL := https://dotnetcli.blob.core.windows.net/dotnet/aspnetcore/Runtime/$(ASPNETCOREAPP_VERSION)/$(ASPNETCORESDK_FILE)
 FEED_BASE_URL := https://dotnetfeed.blob.core.windows.net/dotnet-core
 TEST_ASSETS_PATH := corefx-tests/$(NETCORETESTS_VERSION)/$(TESTS_PLATFORM)/netcoreapp/corefx-test-assets.xml
 
@@ -66,13 +61,6 @@ $(NETCORESDK_FILE):
 	rm -rf shared/Microsoft.NETCore.App
 	$(UNZIPCMD) $(NETCORESDK_FILE)
 	$(ON_RUNTIME_EXTRACT)
-
-# AspNetCoreApp contains its own .NET Core Runtime but we don't need it so let's remove it 
-# and update version in Microsoft.AspNetCore.App.runtimeconfig.json to NETCOREAPP_VERSION
-$(ASPNETCORESDK_FILE):
-	curl $(ASPNETCORE_URL) --output $(ASPNETCORESDK_FILE)
-	$(UNZIPCMD) $(ASPNETCORESDK_FILE)
-	sed -e 's/.*version.*/\"version\": \"$(NETCOREAPP_VERSION)\"/' < shared/Microsoft.AspNetCore.App/$(ASPNETCOREAPP_VERSION)/Microsoft.AspNetCore.App.runtimeconfig.json > 2 && mv 2 shared/Microsoft.AspNetCore.App/$(ASPNETCOREAPP_VERSION)/Microsoft.AspNetCore.App.runtimeconfig.json
 
 update-corefx: corefx/.stamp-dl-corefx-$(NETCORETESTS_VERSION)
 
@@ -96,12 +84,15 @@ run-sample-dbg: prepare
 run-sample-coreclr:
 	cd sample/HelloWorld && $(DOTNET) run
 
-run-aspnet-sample: prepare
-	rm -rf sample/AspNetCore/{bin,obj}
-	$(DOTNET) publish sample/AspNetCore -c Debug -r $(RID)
-	cp ../mono/mini/.libs/libmonosgen-2.0$(PLATFORM_AOT_SUFFIX) sample/AspNetCore/bin/Debug/netcoreapp3.0/$(RID)/publish/$(PLATFORM_AOT_PREFIX)coreclr$(PLATFORM_AOT_SUFFIX)
-	cp System.Private.CoreLib/bin/$(COREARCH)/System.Private.CoreLib.dll sample/AspNetCore/bin/Debug/netcoreapp3.0/$(RID)/publish/
-	COMPlus_DebugWriteToStdErr=1 ./dotnet --fx-version "$(ASPNETCOREAPP_VERSION)" sample/AspNetCore/bin/Debug/netcoreapp3.0/$(RID)/publish/AspNetCore.dll
+# build any app in "self contained" mode and patch coreclr.dll and corelib with mono bits
+# e.g. `make patch-app APP_PATH=/my/aspnetapp`
+patch-app: prepare
+	@if test -z "$(APP_PATH)"; then echo "APP_PATH is not set"; exit 1; fi
+	cp NuGet.config $(APP_PATH)
+	cd $(APP_PATH) && $(DOTNET) publish -c Release -r $(RID) -f netcoreapp3.0
+	cp ../mono/mini/.libs/libmonosgen-2.0$(PLATFORM_AOT_SUFFIX) $(APP_PATH)/bin/Release/netcoreapp3.0/$(RID)/publish/$(PLATFORM_AOT_PREFIX)coreclr$(PLATFORM_AOT_SUFFIX)	
+	cp System.Private.CoreLib/bin/$(COREARCH)/System.Private.CoreLib.dll $(APP_PATH)/bin/Release/netcoreapp3.0/$(RID)/publish
+	cp System.Private.CoreLib/bin/$(COREARCH)/System.Private.CoreLib.pdb $(APP_PATH)/bin/Release/netcoreapp3.0/$(RID)/publish
 
 # makes $(DOTNET) to use mono runtime (to run real-world apps using '$(DOTNET) run')
 patch-local-dotnet: prepare
@@ -155,14 +146,14 @@ $(SHAREDRUNTIME)/.stamp-link-mono: ../mono/mini/.libs/libmonosgen-2.0$(PLATFORM_
 	cp System.Private.CoreLib/bin/$(COREARCH)/System.Private.CoreLib.pdb $(SHAREDRUNTIME)
 	touch $@
 
-prepare: $(ASPNETCORESDK_FILE) $(NETCORESDK_FILE) update-corefx update-roslyn link-mono
+prepare: $(NETCORESDK_FILE) update-corefx update-roslyn link-mono
 
 nupkg:
 	$(DOTNET) pack roslyn-restore.csproj -p:IsPackable=true -p:NuspecFile=runtime.nuspec -p:NuspecProperties=\"RID=$(RID)\;VERSION=$(VERSION)$(VERSTUB)\;PLATFORM_AOT_SUFFIX=$(PLATFORM_AOT_SUFFIX)\;COREARCH=$(COREARCH)\;PLATFORM_AOT_PREFIX=$(PLATFORM_AOT_PREFIX)\" --output ../artifacts/ --no-build
 	$(DOTNET) pack roslyn-restore.csproj -p:IsPackable=true -p:NuspecFile=metapackage.nuspec -p:NuspecProperties=\"RID=$(RID)\;VERSION=$(VERSION)$(VERSTUB)\;PLATFORM_AOT_SUFFIX=$(PLATFORM_AOT_SUFFIX)\;COREARCH=$(COREARCH)\;PLATFORM_AOT_PREFIX=$(PLATFORM_AOT_PREFIX)\" --output ../artifacts/ --no-build
 
 clean:
-	rm -rf .configured ../.dotnet sdk shared host dotnet tests obj corefx roslyn LICENSE.txt ThirdPartyNotices.txt $(NETCORESDK_FILE) $(ASPNETCORESDK_FILE)
+	rm -rf .configured ../.dotnet sdk shared host dotnet tests obj corefx roslyn LICENSE.txt ThirdPartyNotices.txt $(NETCORESDK_FILE)
 
 
 update-tests-corefx: corefx/.stamp-dl-corefx-tests-$(NETCORETESTS_VERSION)
