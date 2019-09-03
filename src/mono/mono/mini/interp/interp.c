@@ -2355,14 +2355,16 @@ do_transform_method (InterpFrame *frame, ThreadContext *context)
 }
 
 static MONO_NEVER_INLINE guchar*
-copy_varargs_vtstack (MonoMethodSignature *csig, stackval *sp, guchar *vt_sp)
+copy_varargs_vtstack (MonoMethodSignature *csig, stackval *sp, guchar *vt_sp_start)
 {
 	stackval *first_arg = sp - csig->param_count;
+	guchar *vt_sp = vt_sp_start;
 
 	/*
 	 * We need to have the varargs linearly on the stack so the ArgIterator
 	 * can iterate over them. We pass the signature first and then copy them
-	 * one by one on the vtstack.
+	 * one by one on the vtstack. At the end we pass the original vt_stack
+	 * so the callee (MINT_ARGLIST) can find the varargs space.
 	 */
 	*(gpointer*)vt_sp = csig;
 	vt_sp += sizeof (gpointer);
@@ -2376,7 +2378,12 @@ copy_varargs_vtstack (MonoMethodSignature *csig, stackval *sp, guchar *vt_sp)
 		vt_sp += arg_size;
 	}
 
-	return (guchar*)ALIGN_PTR_TO (vt_sp, MINT_VT_ALIGNMENT);
+	vt_sp += sizeof (gpointer);
+	vt_sp = (guchar*)ALIGN_PTR_TO (vt_sp, MINT_VT_ALIGNMENT);
+
+	((gpointer*)vt_sp) [-1] = vt_sp_start;
+
+	return vt_sp;
 }
 
 /*
@@ -3243,6 +3250,8 @@ mono_interp_store_remote_field_vt (InterpFrame* frame, const guint16* ip, stackv
  * If BASE_FRAME is not NULL, copy arguments/locals from BASE_FRAME.
  * The ERROR argument is used to avoid declaring an error object for every interp frame, its not used
  * to return error information.
+ *
+ * Currently this method uses 0x88 of stack space on 64bit gcc. Make sure to keep it under control.
  */
 static void
 interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClauseArgs *clause_args, MonoError *error)
@@ -3341,9 +3350,8 @@ main_loop:
 			++sp;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ARGLIST)
-			g_assert (frame->varargs);
 			sp->data.p = vt_sp;
-			*(gpointer*)sp->data.p = frame->varargs;
+			*(gpointer*)sp->data.p = ((gpointer*)frame->retval->data.p) [-1];
 			vt_sp += ALIGN_TO (sizeof (gpointer), MINT_VT_ALIGNMENT);
 			++ip;
 			++sp;
@@ -3630,7 +3638,6 @@ main_loop:
 			csig = (MonoMethodSignature*) frame->imethod->data_items [* (guint16*) (ip + 2)];
 			/* Push all vararg arguments from normal sp to vt_sp together with the signature */
 			num_varargs = csig->param_count - csig->sentinelpos;
-			child_frame.varargs = (char*) vt_sp;
 			vt_sp = copy_varargs_vtstack (csig, sp, vt_sp);
 
 			ip += 3;
