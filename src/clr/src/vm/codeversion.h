@@ -527,7 +527,7 @@ public:
     static count_t Hash(key_t k)
     {
         LIMITED_METHOD_CONTRACT;
-        return (count_t)(size_t)dac_cast<TADDR>(k);
+        return (count_t)dac_cast<TADDR>(k);
     }
 
     static element_t Null() { LIMITED_METHOD_CONTRACT; return dac_cast<PTR_MethodDescVersioningState>(nullptr); }
@@ -647,7 +647,8 @@ public:
     HRESULT AddILCodeVersion(Module* pModule, mdMethodDef methodDef, ReJITID rejitId, ILCodeVersion* pILCodeVersion);
     HRESULT AddNativeCodeVersion(ILCodeVersion ilCodeVersion, MethodDesc* pClosedMethodDesc, NativeCodeVersion::OptimizationTier optimizationTier, NativeCodeVersion* pNativeCodeVersion);
     HRESULT DoJumpStampIfNecessary(MethodDesc* pMD, PCODE pCode);
-    PCODE PublishVersionableCodeIfNecessary(MethodDesc* pMethodDesc, BOOL fCanBackpatchPrestub);
+    PCODE PublishNonJumpStampVersionableCodeIfNecessary(MethodDesc* pMethodDesc, bool *doBackpatchRef, bool *doFullBackpatchRef);
+    PCODE PublishJumpStampVersionableCodeIfNecessary(MethodDesc* pMethodDesc);
     HRESULT PublishNativeCodeVersion(MethodDesc* pMethodDesc, NativeCodeVersion nativeCodeVersion, BOOL fEESuspended);
     HRESULT GetOrCreateMethodDescVersioningState(MethodDesc* pMethod, MethodDescVersioningState** ppMethodDescVersioningState);
     HRESULT GetOrCreateILCodeVersioningState(Module* pModule, mdMethodDef methodDef, ILCodeVersioningState** ppILCodeVersioningState);
@@ -658,6 +659,20 @@ public:
 #endif
 
     static bool IsMethodSupported(PTR_MethodDesc pMethodDesc);
+
+#ifndef DACCESS_COMPILE
+    static bool InitialNativeCodeVersionMayNotBeTheDefaultNativeCodeVersion()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return s_initialNativeCodeVersionMayNotBeTheDefaultNativeCodeVersion;
+    }
+
+    static void SetInitialNativeCodeVersionMayNotBeTheDefaultNativeCodeVersion()
+    {
+        LIMITED_METHOD_CONTRACT;
+        s_initialNativeCodeVersionMayNotBeTheDefaultNativeCodeVersion = true;
+    }
+#endif
 
 private:
 
@@ -671,7 +686,10 @@ private:
         CDynArray<CodePublishError> * pUnsupportedMethodErrors);
     static HRESULT GetNonVersionableError(MethodDesc* pMD);
     void ReportCodePublishError(CodePublishError* pErrorRecord);
+    void ReportCodePublishError(MethodDesc* pMD, HRESULT hrStatus);
     void ReportCodePublishError(Module* pModule, mdMethodDef methodDef, MethodDesc* pMD, HRESULT hrStatus);
+
+    static bool s_initialNativeCodeVersionMayNotBeTheDefaultNativeCodeVersion;
 #endif
 
     //Module,MethodDef -> ILCodeVersioningState
