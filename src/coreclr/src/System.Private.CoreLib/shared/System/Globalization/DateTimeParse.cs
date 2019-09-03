@@ -49,30 +49,34 @@ namespace System
 
         internal static bool TryParseExact(ReadOnlySpan<char> s, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, DateTimeStyles style, out DateTime result)
         {
-            result = DateTime.MinValue;
             DateTimeResult resultData = new DateTimeResult();       // The buffer to store the parsing result.
             resultData.Init(s);
+
             if (TryParseExact(s, format, dtfi, style, ref resultData))
             {
                 result = resultData.parsedDate;
                 return true;
             }
+
+            result = DateTime.MinValue;
             return false;
         }
 
         internal static bool TryParseExact(ReadOnlySpan<char> s, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, DateTimeStyles style, out DateTime result, out TimeSpan offset)
         {
-            result = DateTime.MinValue;
-            offset = TimeSpan.Zero;
             DateTimeResult resultData = new DateTimeResult();       // The buffer to store the parsing result.
             resultData.Init(s);
             resultData.flags |= ParseFlags.CaptureOffset;
+
             if (TryParseExact(s, format, dtfi, style, ref resultData))
             {
                 result = resultData.parsedDate;
                 offset = resultData.timeZoneOffset;
                 return true;
             }
+
+            result = DateTime.MinValue;
+            offset = TimeSpan.Zero;
             return false;
         }
 
@@ -131,17 +135,19 @@ namespace System
         internal static bool TryParseExactMultiple(ReadOnlySpan<char> s, string?[]? formats,
                                                    DateTimeFormatInfo dtfi, DateTimeStyles style, out DateTime result, out TimeSpan offset)
         {
-            result = DateTime.MinValue;
-            offset = TimeSpan.Zero;
             DateTimeResult resultData = new DateTimeResult();       // The buffer to store the parsing result.
             resultData.Init(s);
             resultData.flags |= ParseFlags.CaptureOffset;
+
             if (TryParseExactMultiple(s, formats, dtfi, style, ref resultData))
             {
                 result = resultData.parsedDate;
                 offset = resultData.timeZoneOffset;
                 return true;
             }
+
+            result = DateTime.MinValue;
+            offset = TimeSpan.Zero;
             return false;
         }
 
@@ -149,14 +155,16 @@ namespace System
         internal static bool TryParseExactMultiple(ReadOnlySpan<char> s, string?[]? formats,
                                                    DateTimeFormatInfo dtfi, DateTimeStyles style, out DateTime result)
         {
-            result = DateTime.MinValue;
             DateTimeResult resultData = new DateTimeResult();       // The buffer to store the parsing result.
             resultData.Init(s);
+
             if (TryParseExactMultiple(s, formats, dtfi, style, ref resultData))
             {
                 result = resultData.parsedDate;
                 return true;
             }
+
+            result = DateTime.MinValue;
             return false;
         }
 
@@ -2456,30 +2464,34 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
 
         internal static bool TryParse(ReadOnlySpan<char> s, DateTimeFormatInfo dtfi, DateTimeStyles styles, out DateTime result)
         {
-            result = DateTime.MinValue;
             DateTimeResult resultData = new DateTimeResult();       // The buffer to store the parsing result.
             resultData.Init(s);
+
             if (TryParse(s, dtfi, styles, ref resultData))
             {
                 result = resultData.parsedDate;
                 return true;
             }
+
+            result = DateTime.MinValue;
             return false;
         }
 
         internal static bool TryParse(ReadOnlySpan<char> s, DateTimeFormatInfo dtfi, DateTimeStyles styles, out DateTime result, out TimeSpan offset)
         {
-            result = DateTime.MinValue;
-            offset = TimeSpan.Zero;
             DateTimeResult parseResult = new DateTimeResult();       // The buffer to store the parsing result.
             parseResult.Init(s);
             parseResult.flags |= ParseFlags.CaptureOffset;
+
             if (TryParse(s, dtfi, styles, ref parseResult))
             {
                 result = parseResult.parsedDate;
                 offset = parseResult.timeZoneOffset;
                 return true;
             }
+
+            result = DateTime.MinValue;
+            offset = TimeSpan.Zero;
             return false;
         }
 
