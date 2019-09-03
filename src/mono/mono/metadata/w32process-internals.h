@@ -45,11 +45,11 @@ mono_w32process_get_pid (gpointer handle);
 gboolean
 mono_w32process_try_get_modules (gpointer process, gpointer *modules, guint32 size, guint32 *needed);
 
-guint32
-mono_w32process_module_get_name (gpointer process, gpointer module, gunichar2 *basename, guint32 size);
+gunichar2 *
+mono_w32process_module_get_name (gpointer process, gpointer module, guint32 *len);
 
-guint32
-mono_w32process_module_get_filename (gpointer process, gpointer module, gunichar2 *basename, guint32 size);
+gunichar2 *
+mono_w32process_module_get_filename (gpointer process, gpointer module, guint32 *len);
 
 gboolean
 mono_w32process_module_get_information (gpointer process, gpointer module, MODULEINFO *modinfo, guint32 size);
