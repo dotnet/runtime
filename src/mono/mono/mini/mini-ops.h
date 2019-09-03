@@ -1379,6 +1379,9 @@ MINI_OP(OP_XCAST, "xcast", XREG, XREG, NONE)
 /* The index is assumed to be in range */
 MINI_OP(OP_XEXTRACT_I32, "xextract_i32", IREG, XREG, IREG)
 MINI_OP(OP_XEXTRACT_I64, "xextract_i64", LREG, XREG, IREG)
+MINI_OP(OP_XEXTRACT_R8, "xextract_r8", FREG, XREG, IREG)
+/* Return an R4 */
+MINI_OP(OP_XEXTRACT_R4, "xextract_r4", FREG, XREG, IREG)
 
 MINI_OP(OP_LZCNT32, "lzcnt32", IREG, IREG, NONE)
 MINI_OP(OP_LZCNT64, "lzcnt64", LREG, LREG, NONE)

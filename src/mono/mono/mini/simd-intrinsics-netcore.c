@@ -313,16 +313,35 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 	case SN_get_Item:
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, len);
 		MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "IndexOutOfRangeException");
-		if (etype->type == MONO_TYPE_R4 || etype->type == MONO_TYPE_R8)
-			// FIXME:
-			return NULL;
-		// FIXME: Optimize constant case
-		gboolean is64 = etype->type == MONO_TYPE_I8 || etype->type == MONO_TYPE_U8;
-		MONO_INST_NEW (cfg, ins, is64 ? OP_XEXTRACT_I64 : OP_XEXTRACT_I32);
-		ins->dreg = is64 ? alloc_lreg (cfg) : alloc_ireg (cfg);
+		int opcode = -1;
+		int dreg;
+		gboolean is64 = FALSE;
+		switch (etype->type) {
+		case MONO_TYPE_I8:
+		case MONO_TYPE_U8:
+			opcode = OP_XEXTRACT_I64;
+			is64 = TRUE;
+			dreg = alloc_lreg (cfg);
+			break;
+		case MONO_TYPE_R8:
+			opcode = OP_XEXTRACT_R8;
+			dreg = alloc_freg (cfg);
+			break;
+		case MONO_TYPE_R4:
+			g_assert (cfg->r4fp);
+			opcode = OP_XEXTRACT_R4;
+			dreg = alloc_freg (cfg);
+			break;
+		default:
+			opcode = OP_XEXTRACT_I32;
+			dreg = alloc_ireg (cfg);
+			break;
+		}
+		MONO_INST_NEW (cfg, ins, opcode);
+		ins->dreg = dreg;
 		ins->sreg1 = load_simd_vreg (cfg, cmethod, args [0], NULL);
 		ins->sreg2 = args [1]->dreg;
-		ins->type = is64 ? STACK_I8 : STACK_I4;
+		mini_type_to_eval_stack_type (cfg, etype, ins);
 		MONO_ADD_INS (cfg->cbb, ins);
 		return ins;
 	case SN_ctor:

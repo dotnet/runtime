@@ -7304,7 +7304,9 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_XEXTRACT_I32:
-		case OP_XEXTRACT_I64: {
+		case OP_XEXTRACT_I64:
+		case OP_XEXTRACT_R8:
+		case OP_XEXTRACT_R4: {
 			LLVMBasicBlockRef bbs [64];
 			LLVMValueRef switch_ins;
 			LLVMValueRef phi_values [64];
