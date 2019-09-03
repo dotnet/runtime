@@ -644,6 +644,24 @@ null,
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        public void ReadWriteEscapedPropertyNames(bool indented)
+        {
+            const string jsonIn = " { \"p\\u0069zza\": 1, \"hello\\u003c\\u003e\": 2, \"normal\": 3 }";
+
+            WriteComplexValue(
+                indented,
+                jsonIn,
+                @"{
+  ""pizza"": 1,
+  ""hello\u003c\u003e"": 2,
+  ""normal"": 3
+}",
+                "{\"pizza\":1,\"hello\\u003c\\u003e\":2,\"normal\":3}");
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
         public void WriteNumberAsProperty(bool indented)
         {
             WritePropertyValueBothForms(
@@ -1209,20 +1227,39 @@ null,
             string expectedMinimal)
         {
             var buffer = new ArrayBufferWriter<byte>(1024);
+            byte[] bufferOutput;
+
+            var options = new JsonWriterOptions
+            {
+                Indented = indented
+            };
 
             using (JsonDocument doc = PrepareDocument(jsonIn))
             {
-                var options = new JsonWriterOptions
-                {
-                    Indented = indented
-                };
-
                 using (var writer = new Utf8JsonWriter(buffer, options))
                 {
                     WriteSingleValue(doc, writer);
                 }
 
                 JsonTestHelper.AssertContents(indented ? expectedIndent : expectedMinimal, buffer);
+
+                bufferOutput = buffer.WrittenSpan.ToArray();
+            }
+
+            // After reading the output and writing it again, it should be byte-for-byte identical.
+            {
+                string bufferString = Encoding.UTF8.GetString(bufferOutput);
+                buffer.Clear();
+
+                using (JsonDocument doc2 = PrepareDocument(bufferString))
+                {
+                    using (var writer = new Utf8JsonWriter(buffer, options))
+                    {
+                        WriteSingleValue(doc2, writer);
+                    }
+                }
+
+                Assert.True(buffer.WrittenSpan.SequenceEqual(bufferOutput));
             }
         }
 
