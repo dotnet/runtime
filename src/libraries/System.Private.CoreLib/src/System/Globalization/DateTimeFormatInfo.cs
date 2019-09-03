@@ -2549,12 +2549,12 @@ namespace System.Globalization
                         if (badFormat)
                         {
                             tokenType = TokenType.UnknownToken;
-                            return (false);
+                            return false;
                         }
                         // This is a Hebrew number.
                         // Do nothing here.  TryParseHebrewNumber() will update token accordingly.
                         tokenType = TokenType.HebrewNumber;
-                        return (true);
+                        return true;
                     }
                 }
             }
