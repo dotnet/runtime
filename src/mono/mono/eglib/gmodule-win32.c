@@ -205,14 +205,13 @@ gboolean
 mono_get_module_filename (gpointer mod, gunichar2** pstr, guint32* plength)
 {
 	gunichar2* str = NULL;
-	guint32 capacity = 32; // tunable
+	guint32 capacity = MAX_PATH; // tunable
 	guint32 length = 0;
 	gboolean success = FALSE;
 
 	while (TRUE)
 	{
 		length = 0;
-		capacity *= 2;
 		if (capacity > (1 << 24))
 			break;
 		str = g_new (gunichar2, capacity);
@@ -226,6 +225,7 @@ mono_get_module_filename (gpointer mod, gunichar2** pstr, guint32* plength)
 		str = NULL;
 		if (!length) // error
 			break;
+		capacity *= 2;
 	}
 	*pstr = str;
 	*plength = length;
@@ -244,14 +244,13 @@ gboolean
 mono_get_module_filename_ex (gpointer process, gpointer mod, gunichar2** pstr, guint32* plength)
 {
 	gunichar2* str = NULL;
-	guint32 capacity = 32; // tunable
+	guint32 capacity = MAX_PATH; // tunable
 	guint32 length = 0;
 	gboolean success = FALSE;
 
 	while (TRUE)
 	{
 		length = 0;
-		capacity *= 2;
 		if (capacity > (1 << 24))
 			break;
 		str = g_new (gunichar2, capacity);
@@ -265,6 +264,7 @@ mono_get_module_filename_ex (gpointer process, gpointer mod, gunichar2** pstr, g
 		str = NULL;
 		if (!length) // error
 			break;
+		capacity *= 2;
 	}
 	*pstr = str;
 	*plength = length;
@@ -283,14 +283,13 @@ gboolean
 mono_get_module_basename (gpointer process, gpointer mod, gunichar2** pstr, guint32* plength)
 {
 	gunichar2* str = NULL;
-	guint32 capacity = 32; // tunable
+	guint32 capacity = MAX_PATH; // tunable
 	guint32 length = 0;
 	gboolean success = FALSE;
 
 	while (TRUE)
 	{
 		length = 0;
-		capacity *= 2;
 		if (capacity > (1 << 24))
 			break;
 		str = g_new (gunichar2, capacity);
@@ -304,6 +303,7 @@ mono_get_module_basename (gpointer process, gpointer mod, gunichar2** pstr, guin
 		str = NULL;
 		if (!length) // error
 			break;
+		capacity *= 2;
 	}
 	*pstr = str;
 	*plength = length;
@@ -316,14 +316,13 @@ gboolean
 mono_get_current_directory (gunichar2** pstr, guint32* plength)
 {
 	gunichar2* str = NULL;
-	guint32 capacity = 32; // tunable
+	guint32 capacity = MAX_PATH; // tunable
 	guint32 length = 0;
 	gboolean success = FALSE;
 
 	while (TRUE)
 	{
 		length = 0;
-		capacity *= 2;
 		if (capacity > (1 << 24))
 			break;
 		str = g_new (gunichar2, capacity);
@@ -339,6 +338,7 @@ mono_get_current_directory (gunichar2** pstr, guint32* plength)
 		str = NULL;
 		if (!length) // error
 			break;
+		capacity *= 2;
 	}
 	*pstr = str;
 	*plength = length;
