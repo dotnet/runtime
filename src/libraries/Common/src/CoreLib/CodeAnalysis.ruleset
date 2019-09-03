@@ -119,6 +119,8 @@
     <Rule Id="SA1136" Action="None" /> <!-- Enum values should be on separate lines -->
     <Rule Id="SA1137" Action="None" /> <!-- Elements should have the same indentation -->
     <Rule Id="SA1139" Action="None" /> <!-- Use literal suffix notation instead of casting -->
+    <Rule Id="SA1141" Action="None" /> <!-- Use tuple syntax -->
+    <Rule Id="SA1142" Action="None" /> <!-- Refer to tuple fields by name -->
     <Rule Id="SA1200" Action="None" /> <!-- Using directive should appear within a namespace declaration -->
     <Rule Id="SA1201" Action="None" /> <!-- Elements should appear in the correct order -->
     <Rule Id="SA1202" Action="None" /> <!-- Elements should be ordered by access -->
@@ -142,6 +144,7 @@
     <Rule Id="SA1312" Action="None" /> <!-- Variable should begin with lower-case letter -->
     <Rule Id="SA1313" Action="None" /> <!-- Parameter should begin with lower-case letter -->
     <Rule Id="SA1314" Action="None" /> <!-- Type parameter names should begin with T -->
+    <Rule Id="SA1316" Action="None" /> <!-- Tuple element names should use correct casing -->
     <Rule Id="SA1401" Action="None" /> <!-- Fields should be private -->
     <Rule Id="SA1402" Action="None" /> <!-- File may only contain a single type -->
     <Rule Id="SA1403" Action="None" /> <!-- File may only contain a single namespace -->
@@ -150,6 +153,7 @@
     <Rule Id="SA1407" Action="None" /> <!-- Arithmetic expressions should declare precedence -->
     <Rule Id="SA1408" Action="None" /> <!-- Conditional expressions should declare precedence -->
     <Rule Id="SA1413" Action="None" /> <!-- Use trailing comma in multi-line initializers -->
+    <Rule Id="SA1414" Action="None" /> <!-- Tuple types in signatures should have element names -->
     <Rule Id="SA1500" Action="None" /> <!-- Braces for multi-line statements should not share line -->
     <Rule Id="SA1501" Action="None" /> <!-- Statement should not be on a single line -->
     <Rule Id="SA1502" Action="None" /> <!-- Element should not be on a single line -->
