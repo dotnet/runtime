@@ -199,10 +199,7 @@ namespace System.Net.Sockets
                 using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
                 {
 #endif
-                    if (_cleanedUp)
-                    {
-                        throw new ObjectDisposedException(GetType().FullName);
-                    }
+                    ThrowIfDisposed();
 
                     // Ask the socket how many bytes are available. If it's
                     // not zero, return true.
@@ -264,10 +261,7 @@ namespace System.Net.Sockets
             {
 #endif
                 bool canRead = CanRead;  // Prevent race with Dispose.
-                if (_cleanedUp)
-                {
-                    throw new ObjectDisposedException(GetType().FullName);
-                }
+                ThrowIfDisposed();
                 if (!canRead)
                 {
                     throw new InvalidOperationException(SR.net_writeonlystream);
@@ -312,7 +306,7 @@ namespace System.Net.Sockets
                 return base.Read(buffer);
             }
 
-            if (_cleanedUp) throw new ObjectDisposedException(GetType().FullName);
+            ThrowIfDisposed();
             if (!CanRead) throw new InvalidOperationException(SR.net_writeonlystream);
 
             int bytesRead = _streamSocket.Receive(buffer, SocketFlags.None, out SocketError errorCode);
@@ -353,10 +347,7 @@ namespace System.Net.Sockets
             {
 #endif
                 bool canWrite = CanWrite; // Prevent race with Dispose.
-                if (_cleanedUp)
-                {
-                    throw new ObjectDisposedException(GetType().FullName);
-                }
+                ThrowIfDisposed();
                 if (!canWrite)
                 {
                     throw new InvalidOperationException(SR.net_readonlystream);
@@ -404,7 +395,7 @@ namespace System.Net.Sockets
                 return;
             }
 
-            if (_cleanedUp) throw new ObjectDisposedException(GetType().FullName);
+            ThrowIfDisposed();
             if (!CanWrite) throw new InvalidOperationException(SR.net_readonlystream);
 
             _streamSocket.Send(buffer, SocketFlags.None, out SocketError errorCode);
@@ -436,7 +427,7 @@ namespace System.Net.Sockets
             }
 #endif
         }
-        private volatile bool _cleanedUp = false;
+        private volatile bool _disposed = false;
         protected override void Dispose(bool disposing)
         {
 #if DEBUG
@@ -444,9 +435,9 @@ namespace System.Net.Sockets
             {
 #endif
                 // Mark this as disposed before changing anything else.
-                bool cleanedUp = _cleanedUp;
-                _cleanedUp = true;
-                if (!cleanedUp && disposing)
+                bool disposed = _disposed;
+                _disposed = true;
+                if (!disposed && disposing)
                 {
                     // The only resource we need to free is the network stream, since this
                     // is based on the client socket, closing the stream will cause us
@@ -499,10 +490,7 @@ namespace System.Net.Sockets
             {
 #endif
                 bool canRead = CanRead; // Prevent race with Dispose.
-                if (_cleanedUp)
-                {
-                    throw new ObjectDisposedException(GetType().FullName);
-                }
+                ThrowIfDisposed();
                 if (!canRead)
                 {
                     throw new InvalidOperationException(SR.net_writeonlystream);
@@ -557,10 +545,7 @@ namespace System.Net.Sockets
             using (DebugThreadTracking.SetThreadKind(ThreadKinds.User))
             {
 #endif
-                if (_cleanedUp)
-                {
-                    throw new ObjectDisposedException(GetType().FullName);
-                }
+                ThrowIfDisposed();
 
                 // Validate input parameters.
                 if (asyncResult == null)
@@ -604,10 +589,7 @@ namespace System.Net.Sockets
             {
 #endif
                 bool canWrite = CanWrite; // Prevent race with Dispose.
-                if (_cleanedUp)
-                {
-                    throw new ObjectDisposedException(GetType().FullName);
-                }
+                ThrowIfDisposed();
                 if (!canWrite)
                 {
                     throw new InvalidOperationException(SR.net_readonlystream);
@@ -659,10 +641,7 @@ namespace System.Net.Sockets
             using (DebugThreadTracking.SetThreadKind(ThreadKinds.User))
             {
 #endif
-                if (_cleanedUp)
-                {
-                    throw new ObjectDisposedException(GetType().FullName);
-                }
+                ThrowIfDisposed();
 
                 // Validate input parameters.
                 if (asyncResult == null)
@@ -703,10 +682,7 @@ namespace System.Net.Sockets
         public override Task<int> ReadAsync(byte[] buffer, int offset, int size, CancellationToken cancellationToken)
         {
             bool canRead = CanRead; // Prevent race with Dispose.
-            if (_cleanedUp)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
+            ThrowIfDisposed();
             if (!canRead)
             {
                 throw new InvalidOperationException(SR.net_writeonlystream);
@@ -745,10 +721,7 @@ namespace System.Net.Sockets
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
         {
             bool canRead = CanRead; // Prevent race with Dispose.
-            if (_cleanedUp)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
+            ThrowIfDisposed();
             if (!canRead)
             {
                 throw new InvalidOperationException(SR.net_writeonlystream);
@@ -788,10 +761,7 @@ namespace System.Net.Sockets
         public override Task WriteAsync(byte[] buffer, int offset, int size, CancellationToken cancellationToken)
         {
             bool canWrite = CanWrite; // Prevent race with Dispose.
-            if (_cleanedUp)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
+            ThrowIfDisposed();
             if (!canWrite)
             {
                 throw new InvalidOperationException(SR.net_readonlystream);
@@ -829,10 +799,7 @@ namespace System.Net.Sockets
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
         {
             bool canWrite = CanWrite; // Prevent race with Dispose.
-            if (_cleanedUp)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
+            ThrowIfDisposed();
             if (!canWrite)
             {
                 throw new InvalidOperationException(SR.net_readonlystream);
@@ -897,6 +864,16 @@ namespace System.Net.Sockets
                     _currentReadTimeout = timeout;
                 }
             }
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (_disposed)
+            {
+                ThrowObjectDisposedException();
+            }
+
+            void ThrowObjectDisposedException() => throw new ObjectDisposedException(GetType().FullName);
         }
     }
 }
