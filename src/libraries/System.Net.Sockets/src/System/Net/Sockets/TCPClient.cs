@@ -109,24 +109,24 @@ namespace System.Net.Sockets
             set { _active = value; }
         }
 
-        public int Available => Disposed ? 0 : _clientSocket.Available;
+        public int Available => Client?.Available ?? 0;
 
         // Used by the class to provide the underlying network socket.
         public Socket Client
         {
-            get { return _clientSocket; }
+            get { return Disposed ? null : _clientSocket; }
             set
             {
                 _clientSocket = value;
-                _family = Disposed ? AddressFamily.Unknown : _clientSocket.AddressFamily;
+                _family = _clientSocket?.AddressFamily ?? AddressFamily.Unknown;
             }
         }
 
-        public bool Connected => Disposed ? false : _clientSocket.Connected;
+        public bool Connected => Client?.Connected ?? false;
 
         public bool ExclusiveAddressUse
         {
-            get { return Disposed ? false : _clientSocket.ExclusiveAddressUse; }
+            get { return Client?.ExclusiveAddressUse ?? false; }
             set
             {
                 if (_clientSocket != null)
@@ -336,7 +336,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, asyncResult);
 
-            Client.EndConnect(asyncResult);
+            _clientSocket.EndConnect(asyncResult);
             _active = true;
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
