@@ -450,6 +450,14 @@ mono_llvm_di_create_location (void *di_builder, void *scope, int row, int column
 }
 
 void
+mono_llvm_set_fast_math (LLVMBuilderRef builder)
+{
+	FastMathFlags flags;
+	flags.setFast ();
+	unwrap(builder)->setFastMathFlags (flags);
+}
+
+void
 mono_llvm_di_set_location (LLVMBuilderRef builder, void *loc_md)
 {
 	unwrap(builder)->SetCurrentDebugLocation ((DILocation*)loc_md);

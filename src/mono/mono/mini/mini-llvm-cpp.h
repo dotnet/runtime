@@ -154,6 +154,9 @@ void
 mono_llvm_di_builder_finalize (void *di_builder);
 
 void
+mono_llvm_set_fast_math (LLVMBuilderRef builder);
+
+void
 mono_llvm_di_set_location (LLVMBuilderRef builder, void *loc_md);
 
 LLVMValueRef

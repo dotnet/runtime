@@ -109,6 +109,18 @@ patch-local-dotnet-aot-llvm: patch-local-dotnet
 		$(DOTNET) $$assembly ; \
 	done; \
 
+# run 'dotnet/performance' benchmarks
+# e.g. 'make run-benchmarks DOTNET_PERF_REPO=/prj/performance'
+# you can append BDN parameters at the end, e.g. ` -- --filter Burgers --keepFiles`
+# NOTE: we have to delete a couple of System.Drawing files to make it work
+run-benchmarks: patch-local-dotnet
+	cd $(DOTNET_PERF_REPO)/src/benchmarks/micro/ && \
+	> corefx/System.Drawing/Perf_Color.cs && \
+	> corefx/System.Drawing/Perf_Graphics_DrawBeziers.cs && \
+	> corefx/System.Drawing/Perf_Graphics_Transforms.cs && \
+	> corefx/System.Drawing/Perf_Image_Load.cs && \
+	$(DOTNET) run -c Release -f netcoreapp5.0 --cli $(CURDIR)/../.dotnet/dotnet
+
 # run HelloWorld using --aot=llvm (requires `--enable-llvm` build)
 run-sample-local-dotnet-llvm: patch-local-dotnet
 	$(DOTNET) build -c Release sample/HelloWorld
