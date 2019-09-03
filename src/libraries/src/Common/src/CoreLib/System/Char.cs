@@ -900,7 +900,7 @@ namespace System
             {
                 return (IsSurrogatePair(s[index], s[index + 1]));
             }
-            return (false);
+            return false;
         }
 
         public static bool IsSurrogatePair(char highSurrogate, char lowSurrogate)

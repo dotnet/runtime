@@ -1852,7 +1852,7 @@ namespace System.Text
                        (EncoderFallback.Equals(that.EncoderFallback)) &&
                        (DecoderFallback.Equals(that.DecoderFallback));
             }
-            return (false);
+            return false;
         }
 
         public override int GetHashCode()

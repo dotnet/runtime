@@ -568,15 +568,15 @@ namespace System.Globalization
 
             if (!IsLeapYear(year, era))
             {
-                return (false);
+                return false;
             }
 
             if (month == 2 && day == 29)
             {
-                return (true);
+                return true;
             }
 
-            return (false);
+            return false;
         }
 
         // Giving the calendar year and era, ValidateYearInEra will validate the existence of the input year in the input era.
@@ -605,7 +605,7 @@ namespace System.Globalization
                                 1,
                                 12));
             }
-            return (false);
+            return false;
         }
 
         // Checks whether a given year in the specified era is a leap year. This method returns true if
