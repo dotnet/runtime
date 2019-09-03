@@ -387,7 +387,7 @@ namespace System.Net.Http
             TransportContext transportContext = null;
 
             // Serialize creation attempt
-            await _http2ConnectionCreateLock.WaitAsync().ConfigureAwait(false);
+            await _http2ConnectionCreateLock.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
                 if (_http2Connection != null)
