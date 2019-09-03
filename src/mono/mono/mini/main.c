@@ -387,7 +387,7 @@ ICALL_EXPORT int ves_icall_Interop_Sys_DoubleToString (double, char*, char*, int
 int
 main (void)
 {
-	gunichar2* module_file_name;
+	gunichar2 *module_file_name;
 	guint32 length;
 	int argc;
 	gunichar2** argvw;
