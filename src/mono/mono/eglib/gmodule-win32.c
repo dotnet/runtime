@@ -280,7 +280,7 @@ mono_get_module_filename_ex (gpointer process, gpointer mod, gunichar2 **pstr, g
 // Prefer not-ex, not-base.
 //
 gboolean
-mono_get_module_basename (gpointer process, gpointer mod, gunichar2** pstr, guint32* plength)
+mono_get_module_basename (gpointer process, gpointer mod, gunichar2 **pstr, guint32 *plength)
 {
 	gunichar2* str = NULL;
 	guint32 capacity = MAX_PATH; // tunable
