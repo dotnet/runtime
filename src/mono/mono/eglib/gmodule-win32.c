@@ -204,7 +204,7 @@ g_module_build_path (const gchar *directory, const gchar *module_name)
 gboolean
 mono_get_module_filename (gpointer mod, gunichar2** pstr, guint32* plength)
 {
-	gunichar2* str = NULL;
+	gunichar2 *str = NULL;
 	guint32 capacity = MAX_PATH; // tunable
 	guint32 length = 0;
 	gboolean success = FALSE;
