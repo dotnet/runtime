@@ -217,7 +217,7 @@ mono_get_module_filename (gpointer mod, gunichar2** pstr, guint32* plength)
 		str = g_new (gunichar2, capacity);
 		if (!str)
 			break;
-		length = GetModuleFileNameW ((HMODULE)mod, (PWSTR)str, capacity);
+		length = GetModuleFileNameW ((HMODULE)mod, str, capacity);
 		success = length && length < (capacity - 1); // This function does not truncate, but - 1 anyway.
 		if (success)
 			break;
