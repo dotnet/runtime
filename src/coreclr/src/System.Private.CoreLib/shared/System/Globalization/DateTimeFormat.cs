@@ -406,7 +406,7 @@ namespace System
                 //
                 if (repeat <= 1)
                 {
-                    return (true);
+                    return true;
                 }
                 // Note that we can't just stop here.  We may find "ddd" while looking back, and we have to look
                 // ahead to see if there is "d" or "dd".
@@ -433,10 +433,10 @@ namespace System
                 //
                 if (repeat <= 1)
                 {
-                    return (true);
+                    return true;
                 }
             }
-            return (false);
+            return false;
         }
 
 

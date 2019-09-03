@@ -682,7 +682,7 @@ namespace System.Globalization
                     }
                     if (index == array[i].Length)
                     {
-                        return (false);
+                        return false;
                     }
 
                     if (index == array[i].Length - 1)
@@ -694,7 +694,7 @@ namespace System.Globalization
                         {
                             case '\x6708': // CJKMonthSuff
                             case '\xc6d4': // KoreanMonthSuff
-                                return (false);
+                                return false;
                         }
                     }
 
@@ -706,10 +706,10 @@ namespace System.Globalization
                         if (array[i][index] == '\'' && array[i][index + 1] == ' ' &&
                            array[i][index + 2] == '\x6708' && array[i][index + 3] == '\'')
                         {
-                            return (false);
+                            return false;
                         }
                     }
-                    return (true);
+                    return true;
                 }
             }
 
