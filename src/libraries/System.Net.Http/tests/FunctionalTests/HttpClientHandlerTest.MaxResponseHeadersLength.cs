@@ -45,6 +45,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [OuterLoop("Uses external server")]
         public async Task SetAfterUse_Throws()
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
