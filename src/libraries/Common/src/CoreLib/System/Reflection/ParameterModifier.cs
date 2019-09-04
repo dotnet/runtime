@@ -18,14 +18,8 @@ namespace System.Reflection
 
         public bool this[int index]
         {
-            get
-            {
-                return _byRef[index];
-            }
-            set
-            {
-                _byRef[index] = value;
-            }
+            get => _byRef[index];
+            set => _byRef[index] = value;
         }
 
 #if CORECLR

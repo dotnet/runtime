@@ -181,7 +181,7 @@ namespace System
 
         public static bool MonitoringIsEnabled
         {
-            get { return true; }
+            get => true;
             set
             {
                 if (!value)

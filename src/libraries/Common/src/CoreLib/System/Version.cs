@@ -408,10 +408,7 @@ namespace System
             return ReferenceEquals(v2, v1) ? true : v2.Equals(v1);
         }
 
-        public static bool operator !=(Version? v1, Version? v2)
-        {
-            return !(v1 == v2);
-        }
+        public static bool operator !=(Version? v1, Version? v2) => !(v1 == v2);
 
         public static bool operator <(Version? v1, Version? v2)
         {
@@ -433,14 +430,8 @@ namespace System
             return (v1.CompareTo(v2) <= 0);
         }
 
-        public static bool operator >(Version? v1, Version? v2)
-        {
-            return (v2 < v1);
-        }
+        public static bool operator >(Version? v1, Version? v2) => (v2 < v1);
 
-        public static bool operator >=(Version? v1, Version? v2)
-        {
-            return (v2 <= v1);
-        }
+        public static bool operator >=(Version? v1, Version? v2) => (v2 <= v1);
     }
 }

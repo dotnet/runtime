@@ -34,8 +34,8 @@ namespace System.Runtime.Versioning
 
         public string? FrameworkDisplayName
         {
-            get { return _frameworkDisplayName; }
-            set { _frameworkDisplayName = value; }
+            get => _frameworkDisplayName;
+            set => _frameworkDisplayName = value;
         }
     }
 }

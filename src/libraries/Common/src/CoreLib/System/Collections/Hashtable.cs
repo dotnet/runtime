@@ -699,10 +699,7 @@ namespace System.Collections
                 return null;
             }
 
-            set
-            {
-                Insert(key, value, false);
-            }
+            set => Insert(key, value, false);
         }
 
         // Increases the bucket count of this hashtable. This method is called from
@@ -1328,10 +1325,7 @@ namespace System.Collections
 
             public override object? this[object key]
             {
-                get
-                {
-                    return _table[key];
-                }
+                get => _table[key];
                 set
                 {
                     lock (_table.SyncRoot)

@@ -65,10 +65,7 @@ namespace System.Threading
                 object? obj = ExecutionContext.GetLocalValue(this);
                 return (obj == null) ? default : (T)obj;
             }
-            set
-            {
-                ExecutionContext.SetLocalValue(this, value, m_valueChangedHandler != null);
-            }
+            set => ExecutionContext.SetLocalValue(this, value, m_valueChangedHandler != null);
         }
 
         void IAsyncLocal.OnValueChanged(object? previousValueObj, object? currentValueObj, bool contextChanged)

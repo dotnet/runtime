@@ -34,7 +34,6 @@ namespace System.Diagnostics.Tracing
         EventPipe
     }
 
-    // New in CLR4.0
     internal enum ControllerCommand
     {
         // Strictly Positive numbers are for provider-specific commands, negative number are for 'shared' commands. 256
@@ -343,11 +342,25 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        // New in CLR4.0
         protected virtual void OnControllerCommand(ControllerCommand command, IDictionary<string, string?>? arguments, int sessionId, int etwSessionId) { }
-        protected EventLevel Level { get { return (EventLevel)m_level; } set { m_level = (byte)value; } }
-        protected EventKeywords MatchAnyKeyword { get { return (EventKeywords)m_anyKeywordMask; } set { m_anyKeywordMask = unchecked((long)value); } }
-        protected EventKeywords MatchAllKeyword { get { return (EventKeywords)m_allKeywordMask; } set { m_allKeywordMask = unchecked((long)value); } }
+
+        protected EventLevel Level
+        {
+            get => (EventLevel)m_level;
+            set => m_level = (byte)value;
+        }
+
+        protected EventKeywords MatchAnyKeyword
+        {
+            get => (EventKeywords)m_anyKeywordMask;
+            set => m_anyKeywordMask = unchecked((long)value);
+        }
+
+        protected EventKeywords MatchAllKeyword
+        {
+            get => (EventKeywords)m_allKeywordMask;
+            set => m_allKeywordMask = unchecked((long)value);
+        }
 
         private static int FindNull(byte[] buffer, int idx)
         {
