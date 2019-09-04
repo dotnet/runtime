@@ -500,7 +500,7 @@ namespace Internal.Cryptography.Pal
                     (buf, st) =>
                     {
                         st.baseUri.AsSpan().CopyTo(buf);
-                        st.resource.Span.CopyTo(buf.Slice(st.Item1.Length));
+                        st.resource.Span.CopyTo(buf.Slice(st.baseUri.Length));
                     });
             }
 
@@ -510,8 +510,8 @@ namespace Internal.Cryptography.Pal
                 (buf, st) =>
                 {
                     st.baseUri.AsSpan().CopyTo(buf);
-                    buf[st.Item1.Length] = '/';
-                    st.resource.Span.CopyTo(buf.Slice(st.Item1.Length + 1));
+                    buf[st.baseUri.Length] = '/';
+                    st.resource.Span.CopyTo(buf.Slice(st.baseUri.Length + 1));
                 });
         }
 
