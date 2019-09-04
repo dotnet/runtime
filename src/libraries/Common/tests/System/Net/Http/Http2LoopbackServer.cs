@@ -143,7 +143,7 @@ namespace System.Net.Test.Common
         // GenericLoopbackServer implementation
         //
 
-        public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = null)
+        public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
         {
             Http2LoopbackConnection connection = await EstablishConnectionAsync().ConfigureAwait(false);
 
@@ -153,7 +153,7 @@ namespace System.Net.Test.Common
             // So, send a GOAWAY frame now so the client won't inadvertantly try to reuse the connection.
             await connection.SendGoAway(streamId).ConfigureAwait(false);
 
-            if (content == null)
+            if (string.IsNullOrEmpty(content))
             {
                 await connection.SendResponseHeadersAsync(streamId, endStream: true, statusCode, isTrailingHeader: false, headers : headers).ConfigureAwait(false);
             }
@@ -188,9 +188,8 @@ namespace System.Net.Test.Common
         }
     }
 
-    public class Http2Options
+    public class Http2Options : GenericLoopbackOptions
     {
-        public IPAddress Address { get; set; } = IPAddress.Loopback;
         public int ListenBacklog { get; set; } = 1;
         public bool UseSsl { get; set; } = PlatformDetection.SupportsAlpn && !Capability.Http2ForceUnencryptedLoopback();
         public SslProtocols SslProtocols { get; set; } = SslProtocols.Tls12;
@@ -208,9 +207,15 @@ namespace System.Net.Test.Common
             }
         }
 
-        public override async Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000)
+        public override async Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000, GenericLoopbackOptions options = null)
         {
-            using (var server = Http2LoopbackServer.CreateServer())
+            Http2Options http2Options = new Http2Options();
+            if (options != null)
+            {
+                http2Options.Address = options.Address;
+            }
+
+            using (var server = Http2LoopbackServer.CreateServer(http2Options))
             {
                 await funcAsync(server, server.Address).TimeoutAfter(millisecondsTimeout).ConfigureAwait(false);
             }

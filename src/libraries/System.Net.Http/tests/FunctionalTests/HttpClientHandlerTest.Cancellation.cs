@@ -82,20 +82,26 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(OneBoolAndCancellationMode))]
         public async Task GetAsync_CancelDuringResponseHeadersReceived_TaskCanceledQuickly(bool connectionClose, CancellationMode mode)
         {
+            if (LoopbackServerFactory.IsHttp2 && connectionClose)
+            {
+                // There is no Connection header in HTTP/2
+                return;
+            }
+
             using (HttpClient client = CreateHttpClient())
             {
                 client.Timeout = Timeout.InfiniteTimeSpan;
                 var cts = new CancellationTokenSource();
 
-                await LoopbackServer.CreateServerAsync(async (server, url) =>
+                await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
                 {
                     var partialResponseHeadersSent = new TaskCompletionSource<bool>();
                     var clientFinished = new TaskCompletionSource<bool>();
 
                     Task serverTask = server.AcceptConnectionAsync(async connection =>
                     {
-                        await connection.ReadRequestHeaderAndSendCustomResponseAsync(
-                            $"HTTP/1.1 200 OK\r\nDate: {DateTimeOffset.UtcNow:R}\r\n"); // missing final \r\n so headers don't complete
+                        await connection.ReadRequestDataAsync();
+                        await connection.SendResponseAsync(HttpStatusCode.OK, content: null, isFinal: false);
 
                         partialResponseHeadersSent.TrySetResult(true);
                         await clientFinished.Task;
@@ -126,25 +132,33 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(TwoBoolsAndCancellationMode))]
         public async Task GetAsync_CancelDuringResponseBodyReceived_Buffered_TaskCanceledQuickly(bool chunkedTransfer, bool connectionClose, CancellationMode mode)
         {
+            if (LoopbackServerFactory.IsHttp2 && (chunkedTransfer || connectionClose))
+            {
+                // There is no chunked encoding or connection header in HTTP/2
+                return;
+            }
+
             using (HttpClient client = CreateHttpClient())
             {
                 client.Timeout = Timeout.InfiniteTimeSpan;
                 var cts = new CancellationTokenSource();
 
-                await LoopbackServer.CreateServerAsync(async (server, url) =>
+                await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
                 {
                     var responseHeadersSent = new TaskCompletionSource<bool>();
                     var clientFinished = new TaskCompletionSource<bool>();
 
                     Task serverTask = server.AcceptConnectionAsync(async connection =>
                     {
-                        await connection.ReadRequestHeaderAndSendCustomResponseAsync(
-                            $"HTTP/1.1 200 OK\r\n" +
-                            $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-                            (!chunkedTransfer ? "Content-Length: 20\r\n" : "") +
-                            (connectionClose ? "Connection: close\r\n" : "") +
-                            $"\r\n123"); // "123" is part of body and could either be chunked size or part of content-length bytes, both incomplete
+                        var headers = new List<HttpHeaderData>();
+                        headers.Add(chunkedTransfer ? new HttpHeaderData("Transfer-Encoding", "chunked") : new HttpHeaderData("Content-Length", "20"));
+                        if (connectionClose)
+                        {
+                            headers.Add(new HttpHeaderData("Connection", "close"));
+                        }
 
+                        await connection.ReadRequestDataAsync();
+                        await connection.SendResponseAsync(HttpStatusCode.OK, headers: headers, content: "123", isFinal: false);
                         responseHeadersSent.TrySetResult(true);
                         await clientFinished.Task;
                     });
@@ -174,9 +188,15 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(ThreeBools))]
         public async Task GetAsync_CancelDuringResponseBodyReceived_Unbuffered_TaskCanceledQuickly(bool chunkedTransfer, bool connectionClose, bool readOrCopyToAsync)
         {
-            if (IsNetfxHandler || IsCurlHandler)
+            if (IsCurlHandler)
             {
                 // doesn't cancel
+                return;
+            }
+
+            if (LoopbackServerFactory.IsHttp2 && (chunkedTransfer || connectionClose))
+            {
+                // There is no chunked encoding or connection header in HTTP/2
                 return;
             }
 
@@ -185,19 +205,21 @@ namespace System.Net.Http.Functional.Tests
                 client.Timeout = Timeout.InfiniteTimeSpan;
                 var cts = new CancellationTokenSource();
 
-                await LoopbackServer.CreateServerAsync(async (server, url) =>
+                await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
                 {
                     var clientFinished = new TaskCompletionSource<bool>();
 
                     Task serverTask = server.AcceptConnectionAsync(async connection =>
                     {
-                        await connection.ReadRequestHeaderAndSendCustomResponseAsync(
-                            $"HTTP/1.1 200 OK\r\n" +
-                            $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-                            (!chunkedTransfer ? "Content-Length: 20\r\n" : "") +
-                            (connectionClose ? "Connection: close\r\n" : "") +
-                            $"\r\n");
+                        var headers = new List<HttpHeaderData>();
+                        headers.Add(chunkedTransfer ? new HttpHeaderData("Transfer-Encoding", "chunked") : new HttpHeaderData("Content-Length", "20"));
+                        if (connectionClose)
+                        {
+                            headers.Add(new HttpHeaderData("Connection", "close"));
+                        }
 
+                        await connection.ReadRequestDataAsync();
+                        await connection.SendResponseAsync(HttpStatusCode.OK, headers: headers, isFinal: false);
                         await clientFinished.Task;
                     });
 
@@ -231,11 +253,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(CancellationMode.DisposeHttpClient, true)]
         public async Task GetAsync_CancelPendingRequests_DoesntCancelReadAsyncOnResponseStream(CancellationMode mode, bool copyToAsync)
         {
-            if (IsNetfxHandler)
-            {
-                // throws ObjectDisposedException as part of Stream.CopyToAsync/ReadAsync
-                return;
-            }
             if (IsCurlHandler)
             {
                 // Issue #27065
@@ -247,7 +264,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 client.Timeout = Timeout.InfiniteTimeSpan;
 
-                await LoopbackServer.CreateServerAsync(async (server, url) =>
+                await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
                 {
                     var clientReadSomeBody = new TaskCompletionSource<bool>();
                     var clientFinished = new TaskCompletionSource<bool>();
@@ -258,15 +275,11 @@ namespace System.Net.Http.Functional.Tests
 
                     Task serverTask = server.AcceptConnectionAsync(async connection =>
                     {
-                        await connection.ReadRequestHeaderAndSendCustomResponseAsync(
-                            $"HTTP/1.1 200 OK\r\n" +
-                            $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-                            $"Content-Length: {contentLength}\r\n" +
-                            $"\r\n");
-
+                        await connection.ReadRequestDataAsync();
+                        await connection.SendResponseAsync(HttpStatusCode.OK, headers: new HttpHeaderData[] { new HttpHeaderData("Content-Length", contentLength.ToString()) }, isFinal: false);
                         for (int i = 0; i < responseSegments; i++)
                         {
-                            await connection.Writer.WriteAsync(responseContentSegment);
+                            await connection.SendResponseBodyAsync(responseContentSegment, isFinal: i == responseSegments - 1);
                             if (i == 0)
                             {
                                 await clientReadSomeBody.Task;
@@ -315,12 +328,16 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact]
         public async Task MaxConnectionsPerServer_WaitingConnectionsAreCancelable()
         {
-            if (IsNetfxHandler || IsCurlHandler)
+            if (IsCurlHandler)
             {
-                // Throws HttpRequestException wrapping a WebException for the canceled request
-                // instead of throwing an OperationCanceledException or a canceled WebException directly.
                 // With CurlHandler, this test sometimes hangs.
                 throw new SkipTestException("Skipping on unstable platform handler");
+            }
+
+            if (LoopbackServerFactory.IsHttp2)
+            {
+                // HTTP/2 does not use connection limits.
+                throw new SkipTestException("Not supported on HTTP/2");
             }
 
             using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -538,19 +555,9 @@ namespace System.Net.Http.Functional.Tests
 
             Assert.NotNull(error);
 
-            if (IsNetfxHandler)
-            {
-                Assert.True(
-                    error is WebException we && we.Status == WebExceptionStatus.RequestCanceled ||
+            Assert.True(
                     error is OperationCanceledException,
                     "Expected cancellation exception, got:" + Environment.NewLine + error);
-            }
-            else
-            {
-                Assert.True(
-                    error is OperationCanceledException,
-                    "Expected cancellation exception, got:" + Environment.NewLine + error);
-            }
 
             Assert.True(stopwatch.Elapsed < new TimeSpan(0, 0, 60), $"Elapsed time {stopwatch.Elapsed} should be less than 60 seconds, was {stopwatch.Elapsed.TotalSeconds}");
         }
