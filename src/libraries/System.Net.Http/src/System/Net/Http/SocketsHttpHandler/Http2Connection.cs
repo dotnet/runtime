@@ -822,7 +822,7 @@ namespace System.Net.Http
             if (_abortException != null)
             {
                 _writerLock.Release();
-                throw new IOException(SR.net_http_request_aborted);
+                throw new IOException(SR.net_http_request_aborted, _abortException);
             }
         }
 
