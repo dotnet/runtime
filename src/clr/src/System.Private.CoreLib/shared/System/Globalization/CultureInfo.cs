@@ -520,12 +520,10 @@ namespace System.Globalization
         public static CultureInfo? DefaultThreadCurrentCulture
         {
             get => s_DefaultThreadCurrentCulture;
-            set
-            {
+            set =>
                 // If you add pre-conditions to this method, check to see if you also need to
                 // add them to Thread.CurrentCulture.set.
                 s_DefaultThreadCurrentCulture = value;
-            }
         }
 
         public static CultureInfo? DefaultThreadCurrentUICulture

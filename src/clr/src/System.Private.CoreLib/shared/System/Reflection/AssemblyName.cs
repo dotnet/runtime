@@ -37,39 +37,33 @@ namespace System.Reflection
         // the name partitions up the strong name's namespace
         public string? Name
         {
-            get { return _name; }
-            set { _name = value; }
+            get => _name;
+            set => _name = value;
         }
 
         public Version? Version
         {
-            get { return _version; }
-            set { _version = value; }
+            get => _version;
+            set => _version = value;
         }
 
         // Locales, internally the LCID is used for the match.
         public CultureInfo? CultureInfo
         {
-            get { return _cultureInfo; }
-            set { _cultureInfo = value; }
+            get => _cultureInfo;
+            set => _cultureInfo = value;
         }
 
         public string? CultureName
         {
-            get
-            {
-                return _cultureInfo?.Name;
-            }
-            set
-            {
-                _cultureInfo = (value == null) ? null : new CultureInfo(value);
-            }
+            get => _cultureInfo?.Name;
+            set => _cultureInfo = (value == null) ? null : new CultureInfo(value);
         }
 
         public string? CodeBase
         {
-            get { return _codeBase; }
-            set { _codeBase = value; }
+            get => _codeBase;
+            set => _codeBase = value;
         }
 
         public string? EscapedCodeBase
@@ -192,7 +186,7 @@ namespace System.Reflection
         // set or retrieved directly
         public AssemblyNameFlags Flags
         {
-            get { return (AssemblyNameFlags)((uint)_flags & 0xFFFFF10F); }
+            get => (AssemblyNameFlags)((uint)_flags & 0xFFFFF10F);
             set
             {
                 _flags &= unchecked((AssemblyNameFlags)0x00000EF0);
@@ -202,20 +196,20 @@ namespace System.Reflection
 
         public AssemblyHashAlgorithm HashAlgorithm
         {
-            get { return _hashAlgorithm; }
-            set { _hashAlgorithm = value; }
+            get => _hashAlgorithm;
+            set => _hashAlgorithm = value;
         }
 
         public AssemblyVersionCompatibility VersionCompatibility
         {
-            get { return _versionCompatibility; }
-            set { _versionCompatibility = value; }
+            get => _versionCompatibility;
+            set => _versionCompatibility = value;
         }
 
         public StrongNameKeyPair? KeyPair
         {
-            get { return _strongNameKeyPair; }
-            set { _strongNameKeyPair = value; }
+            get => _strongNameKeyPair;
+            set => _strongNameKeyPair = value;
         }
 
         public string FullName

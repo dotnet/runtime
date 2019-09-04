@@ -220,14 +220,8 @@ namespace System.Threading
         [Obsolete("The ApartmentState property has been deprecated.  Use GetApartmentState, SetApartmentState or TrySetApartmentState instead.", false)]
         public ApartmentState ApartmentState
         {
-            get
-            {
-                return GetApartmentState();
-            }
-            set
-            {
-                TrySetApartmentState(value);
-            }
+            get => GetApartmentState();
+            set => TrySetApartmentState(value);
         }
 
         public void SetApartmentState(ApartmentState state)

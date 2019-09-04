@@ -78,10 +78,8 @@ namespace System
             return false;
         }
 
-        unsafe bool IEquatable<UIntPtr>.Equals(UIntPtr other)
-        {
-            return _value == other._value;
-        }
+        unsafe bool IEquatable<UIntPtr>.Equals(UIntPtr other) =>
+            _value == other._value;
 
         public override unsafe int GetHashCode()
         {
@@ -106,117 +104,83 @@ namespace System
 
         [Intrinsic]
         [NonVersionable]
-        public unsafe ulong ToUInt64()
-        {
-            return (ulong)_value;
-        }
+        public unsafe ulong ToUInt64() => (ulong)_value;
 
         [Intrinsic]
         [NonVersionable]
-        public static explicit operator UIntPtr(uint value)
-        {
-            return new UIntPtr(value);
-        }
+        public static explicit operator UIntPtr(uint value) =>
+            new UIntPtr(value);
 
         [Intrinsic]
         [NonVersionable]
-        public static explicit operator UIntPtr(ulong value)
-        {
-            return new UIntPtr(value);
-        }
+        public static explicit operator UIntPtr(ulong value) =>
+            new UIntPtr(value);
 
         [Intrinsic]
         [NonVersionable]
-        public static unsafe explicit operator UIntPtr(void* value)
-        {
-            return new UIntPtr(value);
-        }
+        public static unsafe explicit operator UIntPtr(void* value) =>
+            new UIntPtr(value);
 
         [Intrinsic]
         [NonVersionable]
-        public static unsafe explicit operator void*(UIntPtr value)
-        {
-            return value._value;
-        }
+        public static unsafe explicit operator void*(UIntPtr value) =>
+            value._value;
 
         [Intrinsic]
         [NonVersionable]
-        public static unsafe explicit operator uint(UIntPtr value)
-        {
+        public static unsafe explicit operator uint(UIntPtr value) =>
 #if BIT64
-            return checked((uint)value._value);
+            checked((uint)value._value);
 #else
-            return (uint)value._value;
+            (uint)value._value;
 #endif
-        }
+
 
         [Intrinsic]
         [NonVersionable]
-        public static unsafe explicit operator ulong(UIntPtr value)
-        {
-            return (ulong)value._value;
-        }
+        public static unsafe explicit operator ulong(UIntPtr value) =>
+            (ulong)value._value;
 
         [Intrinsic]
         [NonVersionable]
-        public static unsafe bool operator ==(UIntPtr value1, UIntPtr value2)
-        {
-            return value1._value == value2._value;
-        }
+        public static unsafe bool operator ==(UIntPtr value1, UIntPtr value2) =>
+            value1._value == value2._value;
 
         [Intrinsic]
         [NonVersionable]
-        public static unsafe bool operator !=(UIntPtr value1, UIntPtr value2)
-        {
-            return value1._value != value2._value;
-        }
+        public static unsafe bool operator !=(UIntPtr value1, UIntPtr value2) =>
+            value1._value != value2._value;
 
         [NonVersionable]
-        public static UIntPtr Add(UIntPtr pointer, int offset)
-        {
-            return pointer + offset;
-        }
+        public static UIntPtr Add(UIntPtr pointer, int offset) =>
+            pointer + offset;
 
         [Intrinsic]
         [NonVersionable]
-        public static unsafe UIntPtr operator +(UIntPtr pointer, int offset)
-        {
-            return new UIntPtr((nuint)pointer._value + (nuint)offset);
-        }
+        public static unsafe UIntPtr operator +(UIntPtr pointer, int offset) =>
+            new UIntPtr((nuint)pointer._value + (nuint)offset);
 
         [NonVersionable]
-        public static UIntPtr Subtract(UIntPtr pointer, int offset)
-        {
-            return pointer - offset;
-        }
+        public static UIntPtr Subtract(UIntPtr pointer, int offset) =>
+            pointer - offset;
 
         [Intrinsic]
         [NonVersionable]
-        public static unsafe UIntPtr operator -(UIntPtr pointer, int offset)
-        {
-            return new UIntPtr((nuint)pointer._value - (nuint)offset);
-        }
+        public static unsafe UIntPtr operator -(UIntPtr pointer, int offset) =>
+            new UIntPtr((nuint)pointer._value - (nuint)offset);
 
         public static int Size
         {
             [Intrinsic]
             [NonVersionable]
-            get
-            {
-                return sizeof(nuint);
-            }
+            get => sizeof(nuint);
         }
 
         [Intrinsic]
         [NonVersionable]
-        public unsafe void* ToPointer()
-        {
-            return _value;
-        }
+        public unsafe void* ToPointer() => _value;
 
-        public override unsafe string ToString()
-        {
-            return ((nuint)_value).ToString(CultureInfo.InvariantCulture);
-        }
+        public override unsafe string ToString() =>
+            ((nuint)_value).ToString(CultureInfo.InvariantCulture);
     }
 }

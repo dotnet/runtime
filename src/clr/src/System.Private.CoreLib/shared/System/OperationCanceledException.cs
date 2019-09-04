@@ -25,8 +25,8 @@ namespace System
 
         public CancellationToken CancellationToken
         {
-            get { return _cancellationToken; }
-            private set { _cancellationToken = value; }
+            get => _cancellationToken;
+            private set => _cancellationToken = value;
         }
 
         public OperationCanceledException()

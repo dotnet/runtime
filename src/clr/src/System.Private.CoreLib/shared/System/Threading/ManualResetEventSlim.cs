@@ -95,15 +95,8 @@ namespace System.Threading
         /// <value>true if the event has is set; otherwise, false.</value>
         public bool IsSet
         {
-            get
-            {
-                return 0 != ExtractStatePortion(m_combinedState, SignalledState_BitMask);
-            }
-
-            private set
-            {
-                UpdateStateAtomically(((value) ? 1 : 0) << SignalledState_ShiftCount, SignalledState_BitMask);
-            }
+            get => 0 != ExtractStatePortion(m_combinedState, SignalledState_BitMask);
+            private set => UpdateStateAtomically(((value) ? 1 : 0) << SignalledState_ShiftCount, SignalledState_BitMask);
         }
 
         /// <summary>
@@ -111,11 +104,7 @@ namespace System.Threading
         /// </summary>
         public int SpinCount
         {
-            get
-            {
-                return ExtractStatePortionAndShiftRight(m_combinedState, SpinCountState_BitMask, SpinCountState_ShiftCount);
-            }
-
+            get => ExtractStatePortionAndShiftRight(m_combinedState, SpinCountState_BitMask, SpinCountState_ShiftCount);
             private set
             {
                 Debug.Assert(value >= 0, "SpinCount is a restricted-width integer. The value supplied is outside the legal range.");
@@ -130,11 +119,7 @@ namespace System.Threading
         /// </summary>
         private int Waiters
         {
-            get
-            {
-                return ExtractStatePortionAndShiftRight(m_combinedState, NumWaitersState_BitMask, NumWaitersState_ShiftCount);
-            }
-
+            get => ExtractStatePortionAndShiftRight(m_combinedState, NumWaitersState_BitMask, NumWaitersState_ShiftCount);
             set
             {
                 // setting to <0 would indicate an internal flaw, hence Assert is appropriate.

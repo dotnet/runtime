@@ -16,7 +16,7 @@ namespace System.Runtime.Intrinsics.Arm.Arm64
     [CLSCompliant(false)]
     public static class Aes
     {
-        public static bool IsSupported { [Intrinsic] get { return false; } }
+        public static bool IsSupported { [Intrinsic] get => false; }
 
         /// <summary>
         /// Performs AES single round decryption
