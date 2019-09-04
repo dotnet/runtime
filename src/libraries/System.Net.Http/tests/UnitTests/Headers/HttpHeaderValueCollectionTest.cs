@@ -249,7 +249,7 @@ namespace System.Net.Http.Tests
             string input = "Basic, D\rigest qop=\"auth\",algorithm=MD5-sess";
             Assert.False(headers.WwwAuthenticate.TryParseAdd(input));
             Assert.Equal("Negotiate", headers.WwwAuthenticate.ToString());
-            Assert.Equal("WWW-Authenticate: Negotiate\r\n", headers.ToString());
+            Assert.Equal($"WWW-Authenticate: Negotiate{Environment.NewLine}", headers.ToString());
         }
 
         [Fact]
