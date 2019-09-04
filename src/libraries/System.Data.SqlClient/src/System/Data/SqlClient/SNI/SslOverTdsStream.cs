@@ -89,69 +89,49 @@ namespace System.Data.SqlClient.SNI
         /// </summary>
         private async Task<int> ReadInternal(byte[] buffer, int offset, int count, CancellationToken token, bool async)
         {
+            int readBytes = 0;
+            byte[] packetData = null;
+            byte[] readTarget = buffer;
+            int readOffset = offset;
             if (_encapsulate)
             {
-                return await ReadInternalEncapsulate(buffer, offset, count, token, async).ConfigureAwait(false);
-            }
-            else if (async)
-            {
-                return await ReadInternalAsync(buffer, offset, count, token).ConfigureAwait(false);
-            }
-            else
-            {
-                return ReadInternalSync(buffer, offset, count);
-            }
-        }
-
-        private async Task<int> ReadInternalEncapsulate(byte[] buffer, int offset, int count, CancellationToken token, bool async)
-        {
-            int readBytes = 0;
-            byte[] packetData = ArrayPool<byte>.Shared.Rent(count < TdsEnums.HEADER_LEN ? TdsEnums.HEADER_LEN : count);
-
-            if (_packetBytes == 0)
-            {
-                // Account for split packets
-                while (readBytes < TdsEnums.HEADER_LEN)
+                packetData = ArrayPool<byte>.Shared.Rent(count < TdsEnums.HEADER_LEN ? TdsEnums.HEADER_LEN : count);
+                readTarget = packetData;
+                readOffset = 0;
+                if (_packetBytes == 0)
                 {
-                    readBytes += (async ?
-                        await ReadInternalAsync(packetData, readBytes, TdsEnums.HEADER_LEN - readBytes, token).ConfigureAwait(false) :
-                        ReadInternalSync(packetData, readBytes, TdsEnums.HEADER_LEN - readBytes)
-                   );
+                    // Account for split packets
+                    while (readBytes < TdsEnums.HEADER_LEN)
+                    {
+                        readBytes += async ?
+                            await _stream.ReadAsync(packetData, readBytes, TdsEnums.HEADER_LEN - readBytes, token).ConfigureAwait(false) :
+                            _stream.Read(packetData, readBytes, TdsEnums.HEADER_LEN - readBytes);
+                    }
+
+                    _packetBytes = (packetData[TdsEnums.HEADER_LEN_FIELD_OFFSET] << 8) | packetData[TdsEnums.HEADER_LEN_FIELD_OFFSET + 1];
+                    _packetBytes -= TdsEnums.HEADER_LEN;
                 }
 
-                _packetBytes = (packetData[TdsEnums.HEADER_LEN_FIELD_OFFSET] << 8) | packetData[TdsEnums.HEADER_LEN_FIELD_OFFSET + 1];
-                _packetBytes -= TdsEnums.HEADER_LEN;
+                if (count > _packetBytes)
+                {
+                    count = _packetBytes;
+                }
             }
 
-            if (count > _packetBytes)
+            readBytes = async ?
+                await _stream.ReadAsync(readTarget, readOffset, count, token).ConfigureAwait(false) :
+                _stream.Read(readTarget, readOffset, count);
+
+            if (_encapsulate)
             {
-                count = _packetBytes;
+                _packetBytes -= readBytes;
             }
-
-            readBytes = (async ?
-                await ReadInternalAsync(packetData, 0, count, token).ConfigureAwait(false) :
-                ReadInternalSync(packetData, 0, count)
-            );
-
-
-            _packetBytes -= readBytes;
-
-            Buffer.BlockCopy(packetData, 0, buffer, offset, readBytes);
-
-            Array.Clear(packetData, 0, readBytes);
-            ArrayPool<byte>.Shared.Return(packetData, clearArray: false);
-
+            if (packetData != null)
+            {
+                Buffer.BlockCopy(packetData, 0, buffer, offset, readBytes);
+                ArrayPool<byte>.Shared.Return(packetData, clearArray: true);
+            }
             return readBytes;
-        }
-
-        private async Task<int> ReadInternalAsync(byte[] buffer, int offset, int count, CancellationToken token)
-        {
-            return await _stream.ReadAsync(buffer, 0, count, token).ConfigureAwait(false);
-        }
-
-        private int ReadInternalSync(byte[] buffer, int offset, int count)
-        {
-            return _stream.Read(buffer, 0, count);
         }
 
         /// <summary>
