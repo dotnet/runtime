@@ -78,10 +78,16 @@ namespace System.Security.Cryptography.Xml.Tests
             encrypted.DecryptDocument();
         }
 
-        [Theory]
-        [InlineData(true)] // OAEP is recommended
-        [InlineData(false)]
-        public void AsymmetricEncryptionRoundtrip(bool useOAEP)
+        [Fact]
+        public void AsymmetricEncryptionRoundtripUseOAEP() =>
+            AsymmetricEncryptionRoundtrip(useOAEP: true); // OAEP is recommended
+
+        [ActiveIssue(40759, TestPlatforms.Windows)]
+        [Fact]
+        public void AsymmetricEncryptionRoundtrip() =>
+            AsymmetricEncryptionRoundtrip(useOAEP: false);
+
+        private void AsymmetricEncryptionRoundtrip(bool useOAEP)
         {
             const string testString = "some text node";
             const string exampleXmlRootElement = "example";
