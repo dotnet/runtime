@@ -541,6 +541,35 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(JsonValueKind.Object, obj.MyOverflow["MyOverflow"].ValueKind);
         }
 
+        [Fact]
+        public static void SerializerOutputRoundtripsWhenEscaping()
+        {
+            string jsonString = "{\"\u6C49\u5B57\":\"abc\",\"Class\":{\"\u6F22\u5B57\":\"xyz\"},\"\u62DC\u6258\":{\"\u62DC\u6258\u62DC\u6258\":1}}";
+
+            ClassWithEscapedProperty input = JsonSerializer.Deserialize<ClassWithEscapedProperty>(jsonString);
+
+            Assert.Equal("abc", input.\u6C49\u5B57);
+            Assert.Equal("xyz", input.Class.\u6F22\u5B57);
+
+            string normalizedString = JsonSerializer.Serialize(input);
+
+            Assert.Equal(normalizedString, JsonSerializer.Serialize(JsonSerializer.Deserialize<ClassWithEscapedProperty>(normalizedString)));
+        }
+
+        public class ClassWithEscapedProperty
+        {
+            public string \u6C49\u5B57 { get; set; }
+            public NestedClassWithEscapedProperty Class { get; set; }
+
+            [JsonExtensionData]
+            public Dictionary<string, object> Overflow { get; set; }
+        }
+
+        public class NestedClassWithEscapedProperty
+        {
+            public string \u6F22\u5B57 { get; set; }
+        }
+
         private class ClassWithInvalidExtensionPropertyStringString
         {
             [JsonExtensionData]
