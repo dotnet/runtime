@@ -9,6 +9,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System.Threading.Tasks
@@ -30,7 +31,7 @@ namespace System.Threading.Tasks
         // a 32-bit field, and just use the first 32-bits of the long.  And to minimize false sharing, each
         // value is stored in its own heap-allocated object, which is lazily allocated by the thread using
         // that range, minimizing the chances it'll be near the objects from other threads.
-        internal volatile Box<long> _nSharedCurrentIndexOffset;
+        internal volatile StrongBox<long> _nSharedCurrentIndexOffset;
 
         // to be set to 1 by the worker that finishes this range. It's OK to do a non-interlocked write here.
         internal int _bRangeFinished;
@@ -104,7 +105,7 @@ namespace System.Threading.Tasks
                 {
                     if (_indexRanges[_nCurrentIndexRange]._nSharedCurrentIndexOffset == null)
                     {
-                        Interlocked.CompareExchange(ref _indexRanges[_nCurrentIndexRange]._nSharedCurrentIndexOffset, new Box<long>(0), null);
+                        Interlocked.CompareExchange(ref _indexRanges[_nCurrentIndexRange]._nSharedCurrentIndexOffset, new StrongBox<long>(0), null);
                     }
 
                     long nMyOffset;
