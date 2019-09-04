@@ -2891,7 +2891,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         else
         {
             // If it is a VSD call getting dispatched via tail call helper,
-            // fgMorphTailCall() would materialize stub addr as an additional
+            // fgMorphTailCallViaHelper() would materialize stub addr as an additional
             // parameter added to the original arg list and hence no need to
             // add as a non-standard arg.
         }
@@ -7237,17 +7237,516 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee)
 #endif
 }
 
+//------------------------------------------------------------------------
+// fgMorphPotentialTailCall: Attempt to morph a call that the importer has
+// identified as a potential tailcall to an actual tailcall and return the
+// placeholder node to use in this case.
+//
+// Arguments:
+//    call - The call to morph.
+//
+// Return Value:
+//    Returns a node to use if the call was morphed into a tailcall. If this
+//    function returns a node the call is done being morphed and the new node
+//    should be used. Otherwise the call will have been demoted to a regular call
+//    and should go through normal morph.
+//
+// Notes:
+//    This is called only for calls that the importer has already identified as
+//    potential tailcalls. It will do profitability and legality checks and
+//    classify which kind of tailcall we are able to (or should) do, along with
+//    modifying the trees to perform that kind of tailcall.
+//
+GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
+{
+    // It should either be an explicit (i.e. tail prefixed) or an implicit tail call
+    assert(call->IsTailPrefixedCall() ^ call->IsImplicitTailCall());
+
+    // It cannot be an inline candidate
+    assert(!call->IsInlineCandidate());
+
+    auto failTailCall = [&](const char* reason) {
+#ifdef DEBUG
+        if (verbose)
+        {
+            printf("\nRejecting tail call in morph for call ");
+            printTreeID(call);
+            printf(": %s\n", reason);
+        }
+#endif
+
+        // for non user funcs, we have no handles to report
+        info.compCompHnd->reportTailCallDecision(nullptr,
+                                                 (call->gtCallType == CT_USER_FUNC) ? call->gtCallMethHnd : nullptr,
+                                                 call->IsTailPrefixedCall(), TAILCALL_FAIL, reason);
+
+        // We have checked the candidate so demote.
+        call->gtCallMoreFlags &= ~GTF_CALL_M_EXPLICIT_TAILCALL;
+#if FEATURE_TAILCALL_OPT
+        call->gtCallMoreFlags &= ~GTF_CALL_M_IMPLICIT_TAILCALL;
+#endif
+    };
+
+    if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
+    {
+        failTailCall("Might turn into an intrinsic");
+        return nullptr;
+    }
+
+    if (opts.compNeedSecurityCheck)
+    {
+        failTailCall("Needs security check");
+        return nullptr;
+    }
+
+    if (compLocallocUsed || compLocallocOptimized)
+    {
+        failTailCall("Localloc used");
+        return nullptr;
+    }
+
+#ifdef _TARGET_AMD64_
+    // Needed for Jit64 compat.
+    // In future, enabling tail calls from methods that need GS cookie check
+    // would require codegen side work to emit GS cookie check before a tail
+    // call.
+    if (getNeedsGSSecurityCookie())
+    {
+        failTailCall("GS Security cookie check");
+        return nullptr;
+    }
+#endif
+
+#ifdef DEBUG
+    // DDB 99324: Just disable tailcall under compGcChecks stress mode.
+    if (opts.compGcChecks)
+    {
+        failTailCall("GcChecks");
+        return nullptr;
+    }
+#endif
+
+    // We have to ensure to pass the incoming retValBuf as the
+    // outgoing one. Using a temp will not do as this function will
+    // not regain control to do the copy. This can happen when inlining
+    // a tailcall which also has a potential tailcall in it: the IL looks
+    // like we can do a tailcall, but the trees generated use a temp for the inlinee's
+    // result. TODO-CQ: Fix this.
+    if (info.compRetBuffArg != BAD_VAR_NUM)
+    {
+        noway_assert(call->TypeGet() == TYP_VOID);
+        GenTree* retValBuf = call->gtCallArgs->gtOp.gtOp1;
+        if (retValBuf->gtOper != GT_LCL_VAR || retValBuf->gtLclVarCommon.gtLclNum != info.compRetBuffArg)
+        {
+            failTailCall("Need to copy return buffer");
+            return nullptr;
+        }
+    }
+
+    // We are still not sure whether it can be a tail call. Because, when converting
+    // a call to an implicit tail call, we must check that there are no locals with
+    // their address taken.  If this is the case, we have to assume that the address
+    // has been leaked and the current stack frame must live until after the final
+    // call.
+
+    // Verify that none of vars has lvHasLdAddrOp or lvAddrExposed bit set. Note
+    // that lvHasLdAddrOp is much more conservative.  We cannot just base it on
+    // lvAddrExposed alone since it is not guaranteed to be set on all VarDscs
+    // during morph stage. The reason for also checking lvAddrExposed is that in case
+    // of vararg methods user args are marked as addr exposed but not lvHasLdAddrOp.
+    // The combination of lvHasLdAddrOp and lvAddrExposed though conservative allows us
+    // never to be incorrect.
+    //
+    // TODO-Throughput: have a compiler level flag to indicate whether method has vars whose
+    // address is taken. Such a flag could be set whenever lvHasLdAddrOp or LvAddrExposed
+    // is set. This avoids the need for iterating through all lcl vars of the current
+    // method.  Right now throughout the code base we are not consistently using 'set'
+    // method to set lvHasLdAddrOp and lvAddrExposed flags.
+    bool hasStructParam = false;
+    for (unsigned varNum = 0; varNum < lvaCount; varNum++)
+    {
+        LclVarDsc* varDsc = lvaTable + varNum;
+        // If the method is marked as an explicit tail call we will skip the
+        // following three hazard checks.
+        // We still must check for any struct parameters and set 'hasStructParam'
+        // so that we won't transform the recursive tail call into a loop.
+        //
+        if (call->IsImplicitTailCall())
+        {
+            if (varDsc->lvHasLdAddrOp)
+            {
+                failTailCall("Local address taken");
+                return nullptr;
+            }
+            if (varDsc->lvAddrExposed)
+            {
+                if (lvaIsImplicitByRefLocal(varNum))
+                {
+                    // The address of the implicit-byref is a non-address use of the pointer parameter.
+                }
+                else if (varDsc->lvIsStructField && lvaIsImplicitByRefLocal(varDsc->lvParentLcl))
+                {
+                    // The address of the implicit-byref's field is likewise a non-address use of the pointer
+                    // parameter.
+                }
+                else if (varDsc->lvPromoted && (lvaTable[varDsc->lvFieldLclStart].lvParentLcl != varNum))
+                {
+                    // This temp was used for struct promotion bookkeeping.  It will not be used, and will have
+                    // its ref count and address-taken flag reset in fgMarkDemotedImplicitByRefArgs.
+                    assert(lvaIsImplicitByRefLocal(lvaTable[varDsc->lvFieldLclStart].lvParentLcl));
+                    assert(fgGlobalMorph);
+                }
+                else
+                {
+                    failTailCall("Local address taken");
+                    return nullptr;
+                }
+            }
+            if (varDsc->lvPromoted && varDsc->lvIsParam && !lvaIsImplicitByRefLocal(varNum))
+            {
+                failTailCall("Has Struct Promoted Param");
+                return nullptr;
+            }
+            if (varDsc->lvPinned)
+            {
+                // A tail call removes the method from the stack, which means the pinning
+                // goes away for the callee.  We can't allow that.
+                failTailCall("Has Pinned Vars");
+                return nullptr;
+            }
+        }
+
+        if (varTypeIsStruct(varDsc->TypeGet()) && varDsc->lvIsParam)
+        {
+            hasStructParam = true;
+            // This prevents transforming a recursive tail call into a loop
+            // but doesn't prevent tail call optimization so we need to
+            // look at the rest of parameters.
+        }
+    }
+
+    bool canFastTailCall = fgCanFastTailCall(call);
+    if (!canFastTailCall)
+    {
+        // Implicit or opportunistic tail calls are always dispatched via fast tail call
+        // mechanism and never via tail call helper for perf.
+        if (call->IsImplicitTailCall())
+        {
+            failTailCall("Opportunistic tail call cannot be dispatched as epilog+jmp");
+            return nullptr;
+        }
+        if (!call->IsVirtualStub() && call->HasNonStandardAddedArgs(this))
+        {
+            // If we are here, it means that the call is an explicitly ".tail" prefixed and cannot be
+            // dispatched as a fast tail call.
+
+            // Methods with non-standard args will have indirection cell or cookie param passed
+            // in callee trash register (e.g. R11). Tail call helper doesn't preserve it before
+            // tail calling the target method and hence ".tail" prefix on such calls needs to be
+            // ignored.
+            //
+            // Exception to the above rule: although Virtual Stub Dispatch (VSD) calls require
+            // extra stub param (e.g. in R11 on Amd64), they can still be called via tail call helper.
+            // This is done by by adding stubAddr as an additional arg before the original list of
+            // args. For more details see fgMorphTailCallViaHelper() and CreateTailCallCopyArgsThunk()
+            // in Stublinkerx86.cpp.
+            failTailCall("Method with non-standard args passed in callee trash register cannot be tail "
+                         "called via helper");
+            return nullptr;
+        }
+#if defined(_TARGET_ARM64_) || defined(_TARGET_UNIX_)
+        // NYI - TAILCALL_RECURSIVE/TAILCALL_HELPER.
+        // So, bail out if we can't make fast tail call.
+        failTailCall("Non-qualified fast tail call");
+        return nullptr;
+#endif
+    }
+
+    if (!fgCheckStmtAfterTailCall())
+    {
+        failTailCall("Unexpected statements after the tail call");
+        return nullptr;
+    }
+
+    // Ok, now we are _almost_ there. If this needs helper then make sure we can
+    // get the required copy thunk.
+    void* pfnCopyArgs = nullptr;
+#if !defined(_TARGET_X86_) || defined(_TARGET_UNIX_)
+    if (!canFastTailCall)
+    {
+        CorInfoHelperTailCallSpecialHandling handling = CORINFO_TAILCALL_NORMAL;
+        if (call->IsVirtualStub())
+        {
+            handling = CORINFO_TAILCALL_STUB_DISPATCH_ARG;
+        }
+
+        pfnCopyArgs = info.compCompHnd->getTailCallCopyArgsThunk(call->callSig, handling);
+        if (pfnCopyArgs == nullptr)
+        {
+            if (info.compMatchedVM)
+            {
+                failTailCall("TailCallCopyArgsThunk not available.");
+                return nullptr;
+            }
+
+            // If we don't have a matched VM, we won't get valid results when asking for a thunk.
+            pfnCopyArgs = UlongToPtr(0xCA11CA11); // "callcall"
+        }
+    }
+#endif // !defined(_TARGET_X86_) || defined(_TARGET_UNIX_)
+
+    // Check if we can make the tailcall a loop.
+    bool fastTailCallToLoop = false;
+#if FEATURE_TAILCALL_OPT
+    // TODO-CQ: enable the transformation when the method has a struct parameter that can be passed in a register
+    // or return type is a struct that can be passed in a register.
+    //
+    // TODO-CQ: if the method being compiled requires generic context reported in gc-info (either through
+    // hidden generic context param or through keep alive thisptr), then while transforming a recursive
+    // call to such a method requires that the generic context stored on stack slot be updated.  Right now,
+    // fgMorphRecursiveFastTailCallIntoLoop() is not handling update of generic context while transforming
+    // a recursive call into a loop.  Another option is to modify gtIsRecursiveCall() to check that the
+    // generic type parameters of both caller and callee generic method are the same.
+    if (opts.compTailCallLoopOpt && canFastTailCall && gtIsRecursiveCall(call) && !lvaReportParamTypeArg() &&
+        !lvaKeepAliveAndReportThis() && !call->IsVirtual() && !hasStructParam && !varTypeIsStruct(call->TypeGet()) &&
+        ((info.compClassAttr & CORINFO_FLG_MARSHAL_BYREF) == 0))
+    {
+        fastTailCallToLoop = true;
+    }
+#endif
+
+    // Ok -- now we are committed to performing a tailcall. Report the decision.
+    CorInfoTailCall tailCallResult;
+    if (fastTailCallToLoop)
+    {
+        tailCallResult = TAILCALL_RECURSIVE;
+    }
+    else if (canFastTailCall)
+    {
+        tailCallResult = TAILCALL_OPTIMIZED;
+    }
+    else
+    {
+        tailCallResult = TAILCALL_HELPER;
+    }
+
+    info.compCompHnd->reportTailCallDecision(nullptr,
+                                             (call->gtCallType == CT_USER_FUNC) ? call->gtCallMethHnd : nullptr,
+                                             call->IsTailPrefixedCall(), tailCallResult, nullptr);
+
+    // Now actually morph the call.
+    compTailCallUsed = true;
+    // This will prevent inlining this call.
+    call->gtCallMoreFlags |= GTF_CALL_M_TAILCALL;
+    if (!canFastTailCall)
+    {
+        call->gtCallMoreFlags |= GTF_CALL_M_TAILCALL_VIA_HELPER;
+    }
+#if FEATURE_TAILCALL_OPT
+    if (fastTailCallToLoop)
+    {
+        call->gtCallMoreFlags |= GTF_CALL_M_TAILCALL_TO_LOOP;
+    }
+#endif
+
+    // Mark that this is no longer a pending tailcall. We need to do this before
+    // we call fgMorphCall again (which happens in the fast tailcall case) to
+    // avoid recursing back into this method.
+    call->gtCallMoreFlags &= ~GTF_CALL_M_EXPLICIT_TAILCALL;
+#if FEATURE_TAILCALL_OPT
+    call->gtCallMoreFlags &= ~GTF_CALL_M_IMPLICIT_TAILCALL;
+#endif
+
+    // Store the call type for later to introduce the correct placeholder.
+    var_types origCallType = call->TypeGet();
+    // Avoid potential extra work for the return (for example, vzeroupper)
+    call->gtType = TYP_VOID;
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("\nGTF_CALL_M_TAILCALL bit set for call ");
+        printTreeID(call);
+        printf("\n");
+        if (fastTailCallToLoop)
+        {
+            printf("\nGTF_CALL_M_TAILCALL_TO_LOOP bit set for call ");
+            printTreeID(call);
+            printf("\n");
+        }
+    }
+#endif
+
+#if !FEATURE_TAILCALL_OPT_SHARED_RETURN
+    // We enable shared-ret tail call optimization for recursive calls even if
+    // FEATURE_TAILCALL_OPT_SHARED_RETURN is not defined.
+    if (gtIsRecursiveCall(call))
+#endif
+    {
+        // Many tailcalls will have call and ret in the same block, and thus be
+        // BBJ_RETURN, but if the call falls through to a ret, and we are doing a
+        // tailcall, change it here.
+        compCurBB->bbJumpKind = BBJ_RETURN;
+    }
+
+    // Do some target-specific transformations (before we process the args, etc.)
+    // This is needed only for tail prefixed calls that cannot be dispatched as
+    // fast calls.
+    if (call->IsTailCallViaHelper())
+    {
+        fgMorphTailCallViaHelper(call, pfnCopyArgs);
+
+        // Force re-evaluating the argInfo. fgMorphTailCallViaHelper will modify the
+        // argument list, invalidating the argInfo.
+        call->fgArgInfo = nullptr;
+    }
+
+    GenTree* stmtExpr = fgMorphStmt->gtStmtExpr;
+
+#ifdef DEBUG
+    // Tail call needs to be in one of the following IR forms
+    //    Either a call stmt or
+    //    GT_RETURN(GT_CALL(..)) or GT_RETURN(GT_CAST(GT_CALL(..)))
+    //    var = GT_CALL(..) or var = (GT_CAST(GT_CALL(..)))
+    //    GT_COMMA(GT_CALL(..), GT_NOP) or GT_COMMA(GT_CAST(GT_CALL(..)), GT_NOP)
+    // In the above,
+    //    GT_CASTS may be nested.
+    genTreeOps stmtOper = stmtExpr->gtOper;
+    if (stmtOper == GT_CALL)
+    {
+        assert(stmtExpr == call);
+    }
+    else
+    {
+        assert(stmtOper == GT_RETURN || stmtOper == GT_ASG || stmtOper == GT_COMMA);
+        GenTree* treeWithCall;
+        if (stmtOper == GT_RETURN)
+        {
+            treeWithCall = stmtExpr->gtGetOp1();
+        }
+        else if (stmtOper == GT_COMMA)
+        {
+            // Second operation must be nop.
+            assert(stmtExpr->gtGetOp2()->IsNothingNode());
+            treeWithCall = stmtExpr->gtGetOp1();
+        }
+        else
+        {
+            treeWithCall = stmtExpr->gtGetOp2();
+        }
+
+        // Peel off casts
+        while (treeWithCall->gtOper == GT_CAST)
+        {
+            assert(!treeWithCall->gtOverflow());
+            treeWithCall = treeWithCall->gtGetOp1();
+        }
+
+        assert(treeWithCall == call);
+    }
+#endif
+    GenTreeStmt* nextMorphStmt = fgMorphStmt->gtNextStmt;
+    // Remove all stmts after the call.
+    while (nextMorphStmt != nullptr)
+    {
+        GenTreeStmt* stmtToRemove = nextMorphStmt;
+        nextMorphStmt             = stmtToRemove->gtNextStmt;
+        fgRemoveStmt(compCurBB, stmtToRemove);
+    }
+
+    fgMorphStmt->gtStmtExpr = call;
+
+    // Tail call via helper: The VM can't use return address hijacking if we're
+    // not going to return and the helper doesn't have enough info to safely poll,
+    // so we poll before the tail call, if the block isn't already safe.  Since
+    // tail call via helper is a slow mechanism it doen't matter whether we emit
+    // GC poll.  This is done to be in parity with Jit64. Also this avoids GC info
+    // size increase if all most all methods are expected to be tail calls (e.g. F#).
+    //
+    // Note that we can avoid emitting GC-poll if we know that the current BB is
+    // dominated by a Gc-SafePoint block.  But we don't have dominator info at this
+    // point.  One option is to just add a place holder node for GC-poll (e.g. GT_GCPOLL)
+    // here and remove it in lowering if the block is dominated by a GC-SafePoint.  For
+    // now it not clear whether optimizing slow tail calls is worth the effort.  As a
+    // low cost check, we check whether the first and current basic blocks are
+    // GC-SafePoints.
+    //
+    // Fast Tail call as epilog+jmp - No need to insert GC-poll. Instead, fgSetBlockOrder()
+    // is going to mark the method as fully interruptible if the block containing this tail
+    // call is reachable without executing any call.
+    if (canFastTailCall || (fgFirstBB->bbFlags & BBF_GC_SAFE_POINT) || (compCurBB->bbFlags & BBF_GC_SAFE_POINT) ||
+        !fgCreateGCPoll(GCPOLL_INLINE, compCurBB))
+    {
+        // We didn't insert a poll block, so we need to morph the call now
+        // (Normally it will get morphed when we get to the split poll block)
+        GenTree* temp = fgMorphCall(call);
+        noway_assert(temp == call);
+    }
+
+    // Tail call via helper: we just call CORINFO_HELP_TAILCALL, and it jumps to
+    // the target. So we don't need an epilog - just like CORINFO_HELP_THROW.
+    //
+    // Fast tail call: in case of fast tail calls, we need a jmp epilog and
+    // hence mark it as BBJ_RETURN with BBF_JMP flag set.
+    noway_assert(compCurBB->bbJumpKind == BBJ_RETURN);
+
+    if (canFastTailCall)
+    {
+        compCurBB->bbFlags |= BBF_HAS_JMP;
+    }
+    else
+    {
+        compCurBB->bbJumpKind = BBJ_THROW;
+    }
+
+    // For non-void calls, we return a place holder which will be
+    // used by the parent GT_RETURN node of this call.
+
+    GenTree* result = call;
+    if (origCallType != TYP_VOID && info.compRetType != TYP_VOID)
+    {
+        var_types nodeTy = origCallType;
+#ifdef FEATURE_HFA
+        // Return a dummy node, as the return is already removed.
+        if (nodeTy == TYP_STRUCT)
+        {
+            // This is a HFA, use float 0.
+            nodeTy = TYP_FLOAT;
+        }
+#elif defined(UNIX_AMD64_ABI)
+        // Return a dummy node, as the return is already removed.
+        if (varTypeIsStruct(nodeTy))
+        {
+            // This is a register-returned struct. Return a 0.
+            // The actual return registers are hacked in lower and the register allocator.
+            nodeTy = TYP_INT;
+        }
+#endif
+#ifdef FEATURE_SIMD
+        // Return a dummy node, as the return is already removed.
+        if (varTypeIsSIMD(nodeTy))
+        {
+            nodeTy = TYP_DOUBLE;
+        }
+#endif
+        result = gtNewZeroConNode(genActualType(nodeTy));
+        result = fgMorphTree(result);
+    }
+
+    return result;
+}
+
 /*****************************************************************************
  *
  *  Transform the given GT_CALL tree for tail call code generation.
  */
-void Compiler::fgMorphTailCall(GenTreeCall* call, void* pfnCopyArgs)
+void Compiler::fgMorphTailCallViaHelper(GenTreeCall* call, void* pfnCopyArgs)
 {
 #if defined(_TARGET_UNIX_)
     noway_assert(!"Slow tail calls not supported on non-Windows platforms.");
 #endif
 
-    JITDUMP("fgMorphTailCall (before):\n");
+    JITDUMP("fgMorphTailCallViaHelper (before):\n");
     DISPTREE(call);
 
     // The runtime requires that we perform a null check on the `this` argument before
@@ -7617,7 +8116,7 @@ void Compiler::fgMorphTailCall(GenTreeCall* call, void* pfnCopyArgs)
     // The function is responsible for doing explicit null check when it is necessary.
     assert(!call->NeedsNullCheck());
 
-    JITDUMP("fgMorphTailCall (after):\n");
+    JITDUMP("fgMorphTailCallViaHelper (after):\n");
     DISPTREE(call);
 }
 
@@ -7948,557 +8447,70 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
     }
     if (call->CanTailCall())
     {
-        // It should either be an explicit (i.e. tail prefixed) or an implicit tail call
-        assert(call->IsTailPrefixedCall() ^ call->IsImplicitTailCall());
-
-        // It cannot be an inline candidate
-        assert(!call->IsInlineCandidate());
-
-        const char* szFailReason   = nullptr;
-        bool        hasStructParam = false;
-        if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
+        GenTree* newNode = fgMorphPotentialTailCall(call);
+        if (newNode != nullptr)
         {
-            szFailReason = "Might turn into an intrinsic";
+            return newNode;
         }
 
-        if (opts.compNeedSecurityCheck)
-        {
-            szFailReason = "Needs security check";
-        }
-        else if (compLocallocUsed || compLocallocOptimized)
-        {
-            szFailReason = "Localloc used";
-        }
-#ifdef _TARGET_AMD64_
-        // Needed for Jit64 compat.
-        // In future, enabling tail calls from methods that need GS cookie check
-        // would require codegen side work to emit GS cookie check before a tail
-        // call.
-        else if (getNeedsGSSecurityCookie())
-        {
-            szFailReason = "GS Security cookie check";
-        }
-#endif
-#ifdef DEBUG
-        // DDB 99324: Just disable tailcall under compGcChecks stress mode.
-        else if (opts.compGcChecks)
-        {
-            szFailReason = "GcChecks";
-        }
-#endif
-#if FEATURE_TAILCALL_OPT
-        else
-        {
-            // We are still not sure whether it can be a tail call. Because, when converting
-            // a call to an implicit tail call, we must check that there are no locals with
-            // their address taken.  If this is the case, we have to assume that the address
-            // has been leaked and the current stack frame must live until after the final
-            // call.
-
-            // Verify that none of vars has lvHasLdAddrOp or lvAddrExposed bit set. Note
-            // that lvHasLdAddrOp is much more conservative.  We cannot just base it on
-            // lvAddrExposed alone since it is not guaranteed to be set on all VarDscs
-            // during morph stage. The reason for also checking lvAddrExposed is that in case
-            // of vararg methods user args are marked as addr exposed but not lvHasLdAddrOp.
-            // The combination of lvHasLdAddrOp and lvAddrExposed though conservative allows us
-            // never to be incorrect.
-            //
-            // TODO-Throughput: have a compiler level flag to indicate whether method has vars whose
-            // address is taken. Such a flag could be set whenever lvHasLdAddrOp or LvAddrExposed
-            // is set. This avoids the need for iterating through all lcl vars of the current
-            // method.  Right now throughout the code base we are not consistently using 'set'
-            // method to set lvHasLdAddrOp and lvAddrExposed flags.
-            unsigned   varNum;
-            LclVarDsc* varDsc;
-            bool       hasAddrExposedVars     = false;
-            bool       hasStructPromotedParam = false;
-            bool       hasPinnedVars          = false;
-
-            for (varNum = 0, varDsc = lvaTable; varNum < lvaCount; varNum++, varDsc++)
-            {
-                // If the method is marked as an explicit tail call we will skip the
-                // following three hazard checks.
-                // We still must check for any struct parameters and set 'hasStructParam'
-                // so that we won't transform the recursive tail call into a loop.
-                //
-                if (call->IsImplicitTailCall())
-                {
-                    if (varDsc->lvHasLdAddrOp)
-                    {
-                        hasAddrExposedVars = true;
-                        break;
-                    }
-                    if (varDsc->lvAddrExposed)
-                    {
-                        if (lvaIsImplicitByRefLocal(varNum))
-                        {
-                            // The address of the implicit-byref is a non-address use of the pointer parameter.
-                        }
-                        else if (varDsc->lvIsStructField && lvaIsImplicitByRefLocal(varDsc->lvParentLcl))
-                        {
-                            // The address of the implicit-byref's field is likewise a non-address use of the pointer
-                            // parameter.
-                        }
-                        else if (varDsc->lvPromoted && (lvaTable[varDsc->lvFieldLclStart].lvParentLcl != varNum))
-                        {
-                            // This temp was used for struct promotion bookkeeping.  It will not be used, and will have
-                            // its ref count and address-taken flag reset in fgMarkDemotedImplicitByRefArgs.
-                            assert(lvaIsImplicitByRefLocal(lvaTable[varDsc->lvFieldLclStart].lvParentLcl));
-                            assert(fgGlobalMorph);
-                        }
-                        else
-                        {
-                            hasAddrExposedVars = true;
-                            break;
-                        }
-                    }
-                    if (varDsc->lvPromoted && varDsc->lvIsParam && !lvaIsImplicitByRefLocal(varNum))
-                    {
-                        hasStructPromotedParam = true;
-                        break;
-                    }
-                    if (varDsc->lvPinned)
-                    {
-                        // A tail call removes the method from the stack, which means the pinning
-                        // goes away for the callee.  We can't allow that.
-                        hasPinnedVars = true;
-                        break;
-                    }
-                }
-                if (varTypeIsStruct(varDsc->TypeGet()) && varDsc->lvIsParam)
-                {
-                    hasStructParam = true;
-                    // This prevents transforming a recursive tail call into a loop
-                    // but doesn't prevent tail call optimization so we need to
-                    // look at the rest of parameters.
-                    continue;
-                }
-            }
-
-            if (hasAddrExposedVars)
-            {
-                szFailReason = "Local address taken";
-            }
-            if (hasStructPromotedParam)
-            {
-                szFailReason = "Has Struct Promoted Param";
-            }
-            if (hasPinnedVars)
-            {
-                szFailReason = "Has Pinned Vars";
-            }
-        }
-#endif // FEATURE_TAILCALL_OPT
-
-        var_types callType = call->TypeGet();
-
-        // We have to ensure to pass the incoming retValBuf as the
-        // outgoing one. Using a temp will not do as this function will
-        // not regain control to do the copy.
-
-        if (info.compRetBuffArg != BAD_VAR_NUM)
-        {
-            noway_assert(callType == TYP_VOID);
-            GenTree* retValBuf = call->gtCallArgs->gtOp.gtOp1;
-            if (retValBuf->gtOper != GT_LCL_VAR || retValBuf->gtLclVarCommon.gtLclNum != info.compRetBuffArg)
-            {
-                szFailReason = "Need to copy return buffer";
-            }
-        }
-
-        // If this is an opportunistic tail call and cannot be dispatched as
-        // fast tail call, go the non-tail call route.  This is done for perf
-        // reason.
-        //
-        // Avoid the cost of determining whether can be dispatched as fast tail
-        // call if we already know that tail call cannot be honored for other
-        // reasons.
-        bool canFastTailCall = false;
-        if (szFailReason == nullptr)
-        {
-            canFastTailCall = fgCanFastTailCall(call);
-            if (!canFastTailCall)
-            {
-                // Implicit or opportunistic tail calls are always dispatched via fast tail call
-                // mechanism and never via tail call helper for perf.
-                if (call->IsImplicitTailCall())
-                {
-                    szFailReason = "Opportunistic tail call cannot be dispatched as epilog+jmp";
-                }
-                else if (!call->IsVirtualStub() && call->HasNonStandardAddedArgs(this))
-                {
-                    // If we are here, it means that the call is an explicitly ".tail" prefixed and cannot be
-                    // dispatched as a fast tail call.
-
-                    // Methods with non-standard args will have indirection cell or cookie param passed
-                    // in callee trash register (e.g. R11). Tail call helper doesn't preserve it before
-                    // tail calling the target method and hence ".tail" prefix on such calls needs to be
-                    // ignored.
-                    //
-                    // Exception to the above rule: although Virtual Stub Dispatch (VSD) calls require
-                    // extra stub param (e.g. in R11 on Amd64), they can still be called via tail call helper.
-                    // This is done by by adding stubAddr as an additional arg before the original list of
-                    // args. For more details see fgMorphTailCall() and CreateTailCallCopyArgsThunk()
-                    // in Stublinkerx86.cpp.
-                    szFailReason = "Method with non-standard args passed in callee trash register cannot be tail "
-                                   "called via helper";
-                }
-#if defined(_TARGET_ARM64_) || defined(_TARGET_UNIX_)
-                else
-                {
-                    // NYI - TAILCALL_RECURSIVE/TAILCALL_HELPER.
-                    // So, bail out if we can't make fast tail call.
-                    szFailReason = "Non-qualified fast tail call";
-                }
-#endif
-            }
-        }
-
-        // Clear these flags before calling fgMorphCall() to avoid recursion.
-        bool isTailPrefixed = call->IsTailPrefixedCall();
-        call->gtCallMoreFlags &= ~GTF_CALL_M_EXPLICIT_TAILCALL;
-
-#if FEATURE_TAILCALL_OPT
-        call->gtCallMoreFlags &= ~GTF_CALL_M_IMPLICIT_TAILCALL;
-#endif
-
-        if (szFailReason == nullptr)
-        {
-            if (!fgCheckStmtAfterTailCall())
-            {
-                szFailReason = "Unexpected statements after the tail call";
-            }
-        }
-
-        void* pfnCopyArgs = nullptr;
-#if !defined(_TARGET_X86_) || defined(_TARGET_UNIX_)
-        if (!canFastTailCall && szFailReason == nullptr)
-        {
-            pfnCopyArgs =
-                info.compCompHnd->getTailCallCopyArgsThunk(call->callSig, call->IsVirtualStub()
-                                                                              ? CORINFO_TAILCALL_STUB_DISPATCH_ARG
-                                                                              : CORINFO_TAILCALL_NORMAL);
-            if (pfnCopyArgs == nullptr)
-            {
-                if (!info.compMatchedVM)
-                {
-                    // If we don't have a matched VM, we won't get valid results when asking for a thunk.
-                    pfnCopyArgs = UlongToPtr(0xCA11CA11); // "callcall"
-                }
-                else
-                {
-                    szFailReason = "TailCallCopyArgsThunk not available.";
-                }
-            }
-        }
-#endif // !defined(_TARGET_X86_) || defined(_TARGET_UNIX_)
-
-        if (szFailReason != nullptr)
-        {
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("\nRejecting tail call late for call ");
-                printTreeID(call);
-                printf(": %s\n", szFailReason);
-            }
-#endif
-
-            // for non user funcs, we have no handles to report
-            info.compCompHnd->reportTailCallDecision(nullptr,
-                                                     (call->gtCallType == CT_USER_FUNC) ? call->gtCallMethHnd : nullptr,
-                                                     isTailPrefixed, TAILCALL_FAIL, szFailReason);
+        assert(!call->CanTailCall());
 
 #if FEATURE_MULTIREG_RET
-            if (fgGlobalMorph && call->HasMultiRegRetVal())
-            {
-                // The tail call has been rejected so we must finish the work deferred
-                // by impFixupCallStructReturn for multi-reg-returning calls and transform
-                //     ret call
-                // into
-                //     temp = call
-                //     ret temp
-
-                // Force re-evaluating the argInfo as the return argument has changed.
-                call->fgArgInfo = nullptr;
-
-                // Create a new temp.
-                unsigned tmpNum =
-                    lvaGrabTemp(false DEBUGARG("Return value temp for multi-reg return (rejected tail call)."));
-                lvaTable[tmpNum].lvIsMultiRegRet = true;
-
-                GenTree* assg = nullptr;
-                if (varTypeIsStruct(callType))
-                {
-                    CORINFO_CLASS_HANDLE structHandle = call->gtRetClsHnd;
-                    assert(structHandle != NO_CLASS_HANDLE);
-                    const bool unsafeValueClsCheck = false;
-                    lvaSetStruct(tmpNum, structHandle, unsafeValueClsCheck);
-                    var_types structType = lvaTable[tmpNum].lvType;
-                    GenTree*  dst        = gtNewLclvNode(tmpNum, structType);
-                    assg                 = gtNewAssignNode(dst, call);
-                }
-                else
-                {
-                    assg = gtNewTempAssign(tmpNum, call);
-                }
-
-                assg = fgMorphTree(assg);
-
-                // Create the assignment statement and insert it before the current statement.
-                GenTreeStmt* assgStmt = gtNewStmt(assg, compCurStmt->gtStmtILoffsx);
-                fgInsertStmtBefore(compCurBB, compCurStmt, assgStmt);
-
-                // Return the temp.
-                GenTree* result = gtNewLclvNode(tmpNum, lvaTable[tmpNum].lvType);
-                result->gtFlags |= GTF_DONT_CSE;
-
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("\nInserting assignment of a multi-reg call result to a temp:\n");
-                    gtDispTree(assgStmt->gtStmtExpr);
-                }
-                result->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
-#endif // DEBUG
-                return result;
-            }
-#endif
-            goto NO_TAIL_CALL;
-        }
-
-#if !FEATURE_TAILCALL_OPT_SHARED_RETURN
-        // We enable shared-ret tail call optimization for recursive calls even if
-        // FEATURE_TAILCALL_OPT_SHARED_RETURN is not defined.
-        if (gtIsRecursiveCall(call))
-#endif
+        if (fgGlobalMorph && call->HasMultiRegRetVal())
         {
-            // Many tailcalls will have call and ret in the same block, and thus be BBJ_RETURN,
-            // but if the call falls through to a ret, and we are doing a tailcall, change it here.
-            if (compCurBB->bbJumpKind != BBJ_RETURN)
-            {
-                compCurBB->bbJumpKind = BBJ_RETURN;
-            }
-        }
+            // The tail call has been rejected so we must finish the work deferred
+            // by impFixupCallStructReturn for multi-reg-returning calls and transform
+            //     ret call
+            // into
+            //     temp = call
+            //     ret temp
 
-        // Set this flag before calling fgMorphCall() to prevent inlining this call.
-        call->gtCallMoreFlags |= GTF_CALL_M_TAILCALL;
-
-        bool fastTailCallToLoop = false;
-#if FEATURE_TAILCALL_OPT
-        // TODO-CQ: enable the transformation when the method has a struct parameter that can be passed in a register
-        // or return type is a struct that can be passed in a register.
-        //
-        // TODO-CQ: if the method being compiled requires generic context reported in gc-info (either through
-        // hidden generic context param or through keep alive thisptr), then while transforming a recursive
-        // call to such a method requires that the generic context stored on stack slot be updated.  Right now,
-        // fgMorphRecursiveFastTailCallIntoLoop() is not handling update of generic context while transforming
-        // a recursive call into a loop.  Another option is to modify gtIsRecursiveCall() to check that the
-        // generic type parameters of both caller and callee generic method are the same.
-        if (opts.compTailCallLoopOpt && canFastTailCall && gtIsRecursiveCall(call) && !lvaReportParamTypeArg() &&
-            !lvaKeepAliveAndReportThis() && !call->IsVirtual() && !hasStructParam &&
-            !varTypeIsStruct(call->TypeGet()) && ((info.compClassAttr & CORINFO_FLG_MARSHAL_BYREF) == 0))
-        {
-            call->gtCallMoreFlags |= GTF_CALL_M_TAILCALL_TO_LOOP;
-            fastTailCallToLoop = true;
-        }
-#endif
-
-        // Do some target-specific transformations (before we process the args, etc.)
-        // This is needed only for tail prefixed calls that cannot be dispatched as
-        // fast calls.
-        if (!canFastTailCall)
-        {
-            fgMorphTailCall(call, pfnCopyArgs);
-
-            // Force re-evaluating the argInfo. fgMorphTailCall will modify the
-            // argument list, invalidating the argInfo.
+            // Force re-evaluating the argInfo as the return argument has changed.
             call->fgArgInfo = nullptr;
-        }
 
-        // Implementation note : If we optimize tailcall to do a direct jump
-        // to the target function (after stomping on the return address, etc),
-        // without using CORINFO_HELP_TAILCALL, we have to make certain that
-        // we don't starve the hijacking logic (by stomping on the hijacked
-        // return address etc).
+            // Create a new temp.
+            unsigned tmpNum =
+                lvaGrabTemp(false DEBUGARG("Return value temp for multi-reg return (rejected tail call)."));
+            lvaTable[tmpNum].lvIsMultiRegRet = true;
 
-        // At this point, we are committed to do the tailcall.
-        compTailCallUsed = true;
-
-        CorInfoTailCall tailCallResult;
-
-        if (fastTailCallToLoop)
-        {
-            tailCallResult = TAILCALL_RECURSIVE;
-        }
-        else if (canFastTailCall)
-        {
-            tailCallResult = TAILCALL_OPTIMIZED;
-        }
-        else
-        {
-            tailCallResult = TAILCALL_HELPER;
-        }
-
-        // for non user funcs, we have no handles to report
-        info.compCompHnd->reportTailCallDecision(nullptr,
-                                                 (call->gtCallType == CT_USER_FUNC) ? call->gtCallMethHnd : nullptr,
-                                                 isTailPrefixed, tailCallResult, nullptr);
-
-        // As we will actually call CORINFO_HELP_TAILCALL, set the callTyp to TYP_VOID.
-        // to avoid doing any extra work for the return value.
-        call->gtType = TYP_VOID;
-
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("\nGTF_CALL_M_TAILCALL bit set for call ");
-            printTreeID(call);
-            printf("\n");
-            if (fastTailCallToLoop)
+            GenTree* assg = nullptr;
+            if (varTypeIsStruct(call->TypeGet()))
             {
-                printf("\nGTF_CALL_M_TAILCALL_TO_LOOP bit set for call ");
-                printTreeID(call);
-                printf("\n");
-            }
-        }
-#endif
-
-        GenTree* stmtExpr = fgMorphStmt->gtStmtExpr;
-
-#ifdef DEBUG
-        // Tail call needs to be in one of the following IR forms
-        //    Either a call stmt or
-        //    GT_RETURN(GT_CALL(..)) or GT_RETURN(GT_CAST(GT_CALL(..)))
-        //    var = GT_CALL(..) or var = (GT_CAST(GT_CALL(..)))
-        //    GT_COMMA(GT_CALL(..), GT_NOP) or GT_COMMA(GT_CAST(GT_CALL(..)), GT_NOP)
-        // In the above,
-        //    GT_CASTS may be nested.
-        genTreeOps stmtOper = stmtExpr->gtOper;
-        if (stmtOper == GT_CALL)
-        {
-            assert(stmtExpr == call);
-        }
-        else
-        {
-            assert(stmtOper == GT_RETURN || stmtOper == GT_ASG || stmtOper == GT_COMMA);
-            GenTree* treeWithCall;
-            if (stmtOper == GT_RETURN)
-            {
-                treeWithCall = stmtExpr->gtGetOp1();
-            }
-            else if (stmtOper == GT_COMMA)
-            {
-                // Second operation must be nop.
-                assert(stmtExpr->gtGetOp2()->IsNothingNode());
-                treeWithCall = stmtExpr->gtGetOp1();
+                CORINFO_CLASS_HANDLE structHandle = call->gtRetClsHnd;
+                assert(structHandle != NO_CLASS_HANDLE);
+                const bool unsafeValueClsCheck = false;
+                lvaSetStruct(tmpNum, structHandle, unsafeValueClsCheck);
+                var_types structType = lvaTable[tmpNum].lvType;
+                GenTree*  dst        = gtNewLclvNode(tmpNum, structType);
+                assg                 = gtNewAssignNode(dst, call);
             }
             else
             {
-                treeWithCall = stmtExpr->gtGetOp2();
+                assg = gtNewTempAssign(tmpNum, call);
             }
 
-            // Peel off casts
-            while (treeWithCall->gtOper == GT_CAST)
+            assg = fgMorphTree(assg);
+
+            // Create the assignment statement and insert it before the current statement.
+            GenTreeStmt* assgStmt = gtNewStmt(assg, compCurStmt->gtStmtILoffsx);
+            fgInsertStmtBefore(compCurBB, compCurStmt, assgStmt);
+
+            // Return the temp.
+            GenTree* result = gtNewLclvNode(tmpNum, lvaTable[tmpNum].lvType);
+            result->gtFlags |= GTF_DONT_CSE;
+
+#ifdef DEBUG
+            if (verbose)
             {
-                assert(!treeWithCall->gtOverflow());
-                treeWithCall = treeWithCall->gtGetOp1();
+                printf("\nInserting assignment of a multi-reg call result to a temp:\n");
+                gtDispTree(assgStmt->gtStmtExpr);
             }
-
-            assert(treeWithCall == call);
+            result->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
+#endif // DEBUG
+            return result;
         }
 #endif
-        GenTreeStmt* nextMorphStmt = fgMorphStmt->gtNextStmt;
-        // Remove all stmts after the call.
-        while (nextMorphStmt != nullptr)
-        {
-            GenTreeStmt* stmtToRemove = nextMorphStmt;
-            nextMorphStmt             = stmtToRemove->gtNextStmt;
-            fgRemoveStmt(compCurBB, stmtToRemove);
-        }
-
-        fgMorphStmt->gtStmtExpr = call;
-
-        // Tail call via helper: The VM can't use return address hijacking if we're
-        // not going to return and the helper doesn't have enough info to safely poll,
-        // so we poll before the tail call, if the block isn't already safe.  Since
-        // tail call via helper is a slow mechanism it doen't matter whether we emit
-        // GC poll.  This is done to be in parity with Jit64. Also this avoids GC info
-        // size increase if all most all methods are expected to be tail calls (e.g. F#).
-        //
-        // Note that we can avoid emitting GC-poll if we know that the current BB is
-        // dominated by a Gc-SafePoint block.  But we don't have dominator info at this
-        // point.  One option is to just add a place holder node for GC-poll (e.g. GT_GCPOLL)
-        // here and remove it in lowering if the block is dominated by a GC-SafePoint.  For
-        // now it not clear whether optimizing slow tail calls is worth the effort.  As a
-        // low cost check, we check whether the first and current basic blocks are
-        // GC-SafePoints.
-        //
-        // Fast Tail call as epilog+jmp - No need to insert GC-poll. Instead, fgSetBlockOrder()
-        // is going to mark the method as fully interruptible if the block containing this tail
-        // call is reachable without executing any call.
-        if (canFastTailCall || (fgFirstBB->bbFlags & BBF_GC_SAFE_POINT) || (compCurBB->bbFlags & BBF_GC_SAFE_POINT) ||
-            !fgCreateGCPoll(GCPOLL_INLINE, compCurBB))
-        {
-            // We didn't insert a poll block, so we need to morph the call now
-            // (Normally it will get morphed when we get to the split poll block)
-            GenTree* temp = fgMorphCall(call);
-            noway_assert(temp == call);
-        }
-
-        // Tail call via helper: we just call CORINFO_HELP_TAILCALL, and it jumps to
-        // the target. So we don't need an epilog - just like CORINFO_HELP_THROW.
-        //
-        // Fast tail call: in case of fast tail calls, we need a jmp epilog and
-        // hence mark it as BBJ_RETURN with BBF_JMP flag set.
-        noway_assert(compCurBB->bbJumpKind == BBJ_RETURN);
-
-        if (canFastTailCall)
-        {
-            compCurBB->bbFlags |= BBF_HAS_JMP;
-        }
-        else
-        {
-            compCurBB->bbJumpKind = BBJ_THROW;
-        }
-
-        // For non-void calls, we return a place holder which will be
-        // used by the parent GT_RETURN node of this call.
-
-        GenTree* result = call;
-        if (callType != TYP_VOID && info.compRetType != TYP_VOID)
-        {
-#ifdef FEATURE_HFA
-            // Return a dummy node, as the return is already removed.
-            if (callType == TYP_STRUCT)
-            {
-                // This is a HFA, use float 0.
-                callType = TYP_FLOAT;
-            }
-#elif defined(UNIX_AMD64_ABI)
-            // Return a dummy node, as the return is already removed.
-            if (varTypeIsStruct(callType))
-            {
-                // This is a register-returned struct. Return a 0.
-                // The actual return registers are hacked in lower and the register allocator.
-                callType = TYP_INT;
-            }
-#endif
-#ifdef FEATURE_SIMD
-            // Return a dummy node, as the return is already removed.
-            if (varTypeIsSIMD(callType))
-            {
-                callType = TYP_DOUBLE;
-            }
-#endif
-            result = gtNewZeroConNode(genActualType(callType));
-            result = fgMorphTree(result);
-        }
-
-        return result;
     }
-
-NO_TAIL_CALL:
 
     if ((call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) == 0 &&
         (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_VIRTUAL_FUNC_PTR)
