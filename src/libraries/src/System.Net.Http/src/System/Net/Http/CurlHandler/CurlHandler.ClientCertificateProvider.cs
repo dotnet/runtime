@@ -15,7 +15,7 @@ namespace System.Net.Http
     {
         internal sealed class ClientCertificateProvider : IDisposable
         {
-            internal readonly GCHandle _gcHandle;
+            internal GCHandle _gcHandle;
             internal readonly Interop.Ssl.ClientCertCallback _callback;
             private readonly X509Certificate2Collection _clientCertificates;
 
