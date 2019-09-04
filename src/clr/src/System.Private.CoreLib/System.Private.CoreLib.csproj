@@ -457,7 +457,7 @@
   </Target>
 
   <!-- This is working around dotnet/coreclr#26371 until dotnet/sourcelink#392 gets solved -->
-  <Target Name="AddUntrackedResourcesForSourceLink"
+  <Target Condition="'$(BuildingInsideVisualStudio)' != 'true'" Name="AddUntrackedResourcesForSourceLink"
     BeforeTargets="CoreCompile"
     DependsOnTargets="SetEmbeddedFilesFromSourceControlManagerUntrackedFiles;
                       _GenerateResxSource" >
