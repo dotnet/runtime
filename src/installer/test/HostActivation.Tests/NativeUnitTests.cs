@@ -10,7 +10,7 @@ using Microsoft.DotNet.Cli.Build.Framework;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeUnitTests
 {
-    public class GivenThatICareAboutNativeUnitTests
+    public class NativeUnitTests
     {
         [Fact]
         public void Native_Test_Fx_Ver()

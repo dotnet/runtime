@@ -32,7 +32,7 @@ Cons:
 Going forward we would keep these tests and add new ones to provide true End-to-End coverage.
 
 ### Native API tests
-Small portion of the tests actually call specific exports on `hostfxr` or `hostpolicy` directly to test these. All these tests are in the `HostActivation` project under the `GivenThatICareAboutNativeHostApi` test class.
+Small portion of the tests actually call specific exports on `hostfxr` or `hostpolicy` directly to test these. All these tests are in the `HostActivation` project under the `NativeHostApis` test class.
 These tests use a special test application (managed) which invokes the selected exports through PInvokes and performs the testing. The `HostActivation` test only prepares this app and executes it, looking for pieces of its output to verify the outcome.
 Ideally we would migrate these over time to the proposed Component tests infra.
 
