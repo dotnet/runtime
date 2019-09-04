@@ -2708,6 +2708,8 @@ mini_exception_id_by_name (const char *name)
 		return MONO_EXC_ARRAY_TYPE_MISMATCH;
 	if (strcmp (name, "ArgumentException") == 0)
 		return MONO_EXC_ARGUMENT;
+	if (strcmp (name, "ArgumentOutOfRangeException") == 0)
+		return MONO_EXC_ARGUMENT_OUT_OF_RANGE;
 	g_error ("Unknown intrinsic exception %s\n", name);
 	return -1;
 }

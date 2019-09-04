@@ -948,41 +948,44 @@ static int ccount = 0;
 /*Object Model related macros*/
 
 /* Default bounds check implementation for most architectures + llvm */
-#define MONO_EMIT_DEFAULT_BOUNDS_CHECK(cfg, array_reg, offset, index_reg, fault) do { \
+#define MONO_EMIT_DEFAULT_BOUNDS_CHECK(cfg, array_reg, offset, index_reg, fault, ex_name) do { \
 			int _length_reg = alloc_ireg (cfg); \
 			if (fault) \
 				MONO_EMIT_NEW_LOAD_MEMBASE_OP_FAULT (cfg, OP_LOADI4_MEMBASE, _length_reg, array_reg, offset); \
 			else \
 				MONO_EMIT_NEW_LOAD_MEMBASE_OP_FLAGS (cfg, OP_LOADI4_MEMBASE, _length_reg, array_reg, offset, MONO_INST_INVARIANT_LOAD); \
 			MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, _length_reg, index_reg); \
-			MONO_EMIT_NEW_COND_EXC (cfg, LE_UN, "IndexOutOfRangeException"); \
+			MONO_EMIT_NEW_COND_EXC (cfg, LE_UN, (const char*)(ex_name ? ex_name : "IndexOutOfRangeException")); \
 	} while (0)
 
 #ifndef MONO_ARCH_EMIT_BOUNDS_CHECK
-#define MONO_ARCH_EMIT_BOUNDS_CHECK(cfg, array_reg, offset, index_reg) MONO_EMIT_DEFAULT_BOUNDS_CHECK ((cfg), (array_reg), (offset), (index_reg), TRUE)
+#define MONO_ARCH_EMIT_BOUNDS_CHECK(cfg, array_reg, offset, index_reg) MONO_EMIT_DEFAULT_BOUNDS_CHECK ((cfg), (array_reg), (offset), (index_reg), TRUE, NULL)
 #endif
 
-#define MONO_EMIT_BOUNDS_CHECK_OFFSET(cfg, array_reg, array_length_offset, index_reg) do { \
-		if (!(cfg->opt & MONO_OPT_UNSAFE)) {							\
-		if (!(cfg->opt & MONO_OPT_ABCREM)) {							\
-			MONO_EMIT_NULL_CHECK (cfg, array_reg, FALSE);						\
-			if (COMPILE_LLVM (cfg)) \
-				MONO_EMIT_DEFAULT_BOUNDS_CHECK ((cfg), (array_reg), (array_length_offset), (index_reg), TRUE); \
-			else \
-				MONO_ARCH_EMIT_BOUNDS_CHECK ((cfg), (array_reg), (array_length_offset), (index_reg)); \
-		} else {														\
-			MonoInst *ins;												\
-			MONO_INST_NEW ((cfg), ins, OP_BOUNDS_CHECK);				\
-			ins->sreg1 = array_reg;										\
-			ins->sreg2 = index_reg;										\
-			ins->inst_imm = (array_length_offset);                      \
-			ins->flags |= MONO_INST_FAULT;								\
-			MONO_ADD_INS ((cfg)->cbb, ins);								\
-			(cfg)->flags |= MONO_CFG_NEEDS_DECOMPOSE;					\
-			(cfg)->cbb->needs_decompose = TRUE;							\
-		}																\
-		}																\
-    } while (0)
+static inline void
+mini_emit_bounds_check_offset (MonoCompile *cfg, int array_reg, int array_length_offset, int index_reg, const char *ex_name)
+{
+	if (!(cfg->opt & MONO_OPT_UNSAFE)) {
+		if (!(cfg->opt & MONO_OPT_ABCREM)) {
+			MONO_EMIT_NULL_CHECK (cfg, array_reg, FALSE);
+			if (COMPILE_LLVM (cfg))
+				MONO_EMIT_DEFAULT_BOUNDS_CHECK ((cfg), (array_reg), (array_length_offset), (index_reg), TRUE, ex_name);
+			else
+				MONO_ARCH_EMIT_BOUNDS_CHECK ((cfg), (array_reg), (array_length_offset), (index_reg));
+		} else {
+			MonoInst *ins;
+			MONO_INST_NEW ((cfg), ins, OP_BOUNDS_CHECK);
+			ins->sreg1 = array_reg;
+			ins->sreg2 = index_reg;
+			ins->inst_p0 = (gpointer)ex_name;
+			ins->inst_imm = (array_length_offset);
+			ins->flags |= MONO_INST_FAULT;
+			MONO_ADD_INS ((cfg)->cbb, ins);
+			(cfg)->flags |= MONO_CFG_NEEDS_DECOMPOSE;
+			(cfg)->cbb->needs_decompose = TRUE;
+		}
+	}
+}
 
 /* cfg is the MonoCompile been used
  * array_reg is the vreg holding the array object
@@ -991,7 +994,7 @@ static int ccount = 0;
  * index_reg is the vreg holding the index
  */
 #define MONO_EMIT_BOUNDS_CHECK(cfg, array_reg, array_type, array_length_field, index_reg) do { \
-		MONO_EMIT_BOUNDS_CHECK_OFFSET ((cfg), (array_reg), MONO_STRUCT_OFFSET (array_type, array_length_field), (index_reg)); \
+	mini_emit_bounds_check_offset ((cfg), (array_reg), MONO_STRUCT_OFFSET (array_type, array_length_field), (index_reg), NULL); \
     } while (0)
 
 #endif
