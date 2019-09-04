@@ -43,7 +43,7 @@ namespace System.Linq
             return ZipIterator(first, second);
         }
 
-        private static IEnumerable<(TFirst, TSecond)> ZipIterator<TFirst, TSecond>(IEnumerable<TFirst> first, IEnumerable<TSecond> second)
+        private static IEnumerable<(TFirst First, TSecond Second)> ZipIterator<TFirst, TSecond>(IEnumerable<TFirst> first, IEnumerable<TSecond> second)
         {
             using (IEnumerator<TFirst> e1 = first.GetEnumerator())
             using (IEnumerator<TSecond> e2 = second.GetEnumerator())

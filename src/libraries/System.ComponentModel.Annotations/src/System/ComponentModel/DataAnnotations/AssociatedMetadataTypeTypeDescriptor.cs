@@ -91,14 +91,14 @@ namespace System.ComponentModel.DataAnnotations
             private static readonly ConcurrentDictionary<Type, Type> s_metadataTypeCache = new ConcurrentDictionary<Type, Type>();
 
             // Stores the attributes for a member info
-            private static readonly ConcurrentDictionary<ValueTuple<Type, string>, Attribute[]> s_typeMemberCache = new ConcurrentDictionary<ValueTuple<Type, string>, Attribute[]>();
+            private static readonly ConcurrentDictionary<(Type, string), Attribute[]> s_typeMemberCache = new ConcurrentDictionary<(Type, string), Attribute[]>();
 
             // Stores whether or not a type and associated metadata type has been checked for validity
-            private static readonly ConcurrentDictionary<ValueTuple<Type, Type>, bool> s_validatedMetadataTypeCache = new ConcurrentDictionary<ValueTuple<Type, Type>, bool>();
+            private static readonly ConcurrentDictionary<(Type, Type), bool> s_validatedMetadataTypeCache = new ConcurrentDictionary<(Type, Type), bool>();
 
             public static void ValidateMetadataType(Type type, Type associatedType)
             {
-                var typeTuple = new ValueTuple<Type, Type>(type, associatedType);
+                (Type, Type) typeTuple = (type, associatedType);
                 if (!s_validatedMetadataTypeCache.ContainsKey(typeTuple))
                 {
                     CheckAssociatedMetadataType(type, associatedType);
@@ -148,7 +148,7 @@ namespace System.ComponentModel.DataAnnotations
 
             public static Attribute[] GetAssociatedMetadata(Type type, string memberName)
             {
-                var memberTuple = new ValueTuple<Type, string>(type, memberName);
+                (Type, string) memberTuple = (type, memberName);
                 Attribute[] attributes;
                 if (s_typeMemberCache.TryGetValue(memberTuple, out attributes))
                 {
