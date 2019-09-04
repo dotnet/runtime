@@ -21,21 +21,6 @@
     <IsShippingPackage>false</IsShippingPackage>
   </PropertyGroup>
 
-  <!-- Temporarily ignore duplicate types until WPF updates. https://github.com/dotnet/core-setup/issues/6838 -->
-  <ItemGroup>
-    <IgnoredDuplicateType Include="
-      System.Xaml.Permissions.XamlAccessLevel;
-      System.Xaml.Permissions.XamlLoadPermission;
-      System.Security.Permissions.MediaPermissionAudio;
-      System.Security.Permissions.MediaPermissionVideo;
-      System.Security.Permissions.MediaPermissionImage;
-      System.Security.Permissions.MediaPermission;
-      System.Security.Permissions.MediaPermissionAttribute;
-      System.Security.Permissions.WebBrowserPermissionLevel;
-      System.Security.Permissions.WebBrowserPermission;
-      System.Security.Permissions.WebBrowserPermissionAttribute" />
-  </ItemGroup>
-
   <ItemGroup>
     <ExcludeFromDuplicateTypes Include="PresentationFramework.Aero" />
     <ExcludeFromDuplicateTypes Include="PresentationFramework.Aero2" />
