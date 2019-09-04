@@ -710,11 +710,22 @@ BOOL TieredCompilationManager::CompileCodeVersion(NativeCodeVersion nativeCodeVe
     EX_TRY
     {
         PrepareCodeConfigBuffer configBuffer(nativeCodeVersion);
-        pCode = pMethod->PrepareCode(configBuffer.GetConfig());
+        PrepareCodeConfig *config = configBuffer.GetConfig();
+        pCode = pMethod->PrepareCode(config);
         LOG((LF_TIEREDCOMPILATION, LL_INFO10000, "TieredCompilationManager::CompileCodeVersion Method=0x%pM (%s::%s), code version id=0x%x, code ptr=0x%p\n",
             pMethod, pMethod->m_pszDebugClassName, pMethod->m_pszDebugMethodName,
             nativeCodeVersion.GetVersionId(),
             pCode));
+
+        if (config->JitSwitchedToMinOpt())
+        {
+            // The JIT decided to switch to min-opts, likely due to the method being very large or complex. The rejitted code
+            // may be slower if the method had been prejitted. Ignore the rejitted code and continue using the tier 0 entry
+            // point.
+            // TODO: In the future, we should get some feedback from images containing pregenerated code and from tier 0 JIT
+            // indicating that the method would not benefit from a rejit and avoid the rejit altogether.
+            pCode = NULL;
+        }
     }
     EX_CATCH
     {
