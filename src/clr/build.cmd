@@ -653,6 +653,13 @@ if %__BuildCoreLib% EQU 1 (
             echo     !__BuildErr!
             exit /b !errorlevel!
         )
+
+        if "%__BuildManagedTools%" == "1" (
+            echo %__MsgPrefix%Publishing crossgen2...
+            call %__ProjectDir%\dotnet.cmd publish --self-contained -r win-%__BuildArch% -c %__BuildType% -o "%__BinDir%\crossgen2" "%__ProjectDir%\src\tools\crossgen2\crossgen2\crossgen2.csproj"
+            copy /Y "%__BinDir%\clrjit.dll" "%__BinDir%\crossgen2\clrjitilc.dll"
+            copy /Y "%__BinDir%\jitinterface.dll" "%__BinDir%\crossgen2\jitinterface.dll"
+        )
     )
     if %__IbcOptimize% EQU 1 (
         echo %__MsgPrefix%Commencing IBCMerge of System.Private.CoreLib for %__BuildOS%.%__BuildArch%.%__BuildType%
