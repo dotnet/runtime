@@ -173,6 +173,15 @@ namespace System.Diagnostics.Tests
                     Assert.Matches("^[0-9a-f][0-9a-f]-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f][0-9a-f]$", traceparent);
                     Assert.Null(startRequest.Headers["tracestate"]);
                     Assert.Null(startRequest.Headers["Request-Id"]);
+
+                    KeyValuePair<string, object> stopEvent;
+                    Assert.True(eventRecords.Records.TryDequeue(out stopEvent));
+                    Assert.Equal("System.Net.Http.Desktop.HttpRequestOut.Stop", stopEvent.Key);
+                    HttpWebRequest stopRequest = ReadPublicProperty<HttpWebRequest>(stopEvent.Value, "Request");
+                    Assert.NotNull(stopRequest);
+
+                    HttpWebResponse stopResponse = ReadPublicProperty<HttpWebResponse>(stopEvent.Value, "Response");
+                    Assert.NotNull(stopResponse);
                 }
             }
             finally
