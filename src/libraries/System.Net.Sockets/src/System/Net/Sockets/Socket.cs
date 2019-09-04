@@ -690,27 +690,6 @@ namespace System.Net.Sockets
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
-        internal void InternalBind(EndPoint localEP)
-        {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, localEP);
-
-            ThrowIfDisposed();
-
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"localEP:{localEP}");
-
-            if (localEP is DnsEndPoint)
-            {
-                NetEventSource.Fail(this, "Calling InternalBind with a DnsEndPoint, about to get NotImplementedException");
-            }
-
-            // Ask the EndPoint to generate a SocketAddress that we can pass down to native code.
-            EndPoint endPointSnapshot = localEP;
-            Internals.SocketAddress socketAddress = SnapshotAndSerialize(ref endPointSnapshot);
-            DoBind(endPointSnapshot, socketAddress);
-
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
-        }
-
         private void DoBind(EndPoint endPointSnapshot, Internals.SocketAddress socketAddress)
         {
             // Mitigation for Blue Screen of Death (Win7, maybe others).
@@ -3776,18 +3755,7 @@ namespace System.Net.Sockets
 
                 e._socketAddress = SnapshotAndSerialize(ref endPointSnapshot);
 
-                // Do wildcard bind if socket not bound.
-                if (_rightEndPoint == null)
-                {
-                    if (endPointSnapshot.AddressFamily == AddressFamily.InterNetwork)
-                    {
-                        InternalBind(new IPEndPoint(IPAddress.Any, 0));
-                    }
-                    else if (endPointSnapshot.AddressFamily != AddressFamily.Unix)
-                    {
-                        InternalBind(new IPEndPoint(IPAddress.IPv6Any, 0));
-                    }
-                }
+                WildcardBindForConnectIfNecessary(endPointSnapshot.AddressFamily);
 
                 // Save the old RightEndPoint and prep new RightEndPoint.
                 EndPoint oldEndPoint = _rightEndPoint;
@@ -3882,6 +3850,9 @@ namespace System.Net.Sockets
             if (NetEventSource.IsEnabled) NetEventSource.Exit(null, pending);
             return pending;
         }
+
+        /// <summary>Binds an unbound socket to "any" if necessary to support a connect.</summary>
+        partial void WildcardBindForConnectIfNecessary(AddressFamily addressFamily);
 
         public static void CancelConnectAsync(SocketAsyncEventArgs e)
         {
@@ -4667,20 +4638,7 @@ namespace System.Net.Sockets
             EndPoint endPointSnapshot = remoteEP;
             Internals.SocketAddress socketAddress = SnapshotAndSerialize(ref endPointSnapshot);
 
-            // The socket must be bound first.
-            // The calling method--BeginConnect--will ensure that this method is only
-            // called if _rightEndPoint is not null, of that the endpoint is an IPEndPoint.
-            if (_rightEndPoint == null)
-            {
-                if (endPointSnapshot.AddressFamily == AddressFamily.InterNetwork)
-                {
-                    InternalBind(new IPEndPoint(IPAddress.Any, 0));
-                }
-                else if (endPointSnapshot.AddressFamily != AddressFamily.Unix)
-                {
-                    InternalBind(new IPEndPoint(IPAddress.IPv6Any, 0));
-                }
-            }
+            WildcardBindForConnectIfNecessary(endPointSnapshot.AddressFamily);
 
             // Allocate the async result and the event we'll pass to the thread pool.
             ConnectOverlappedAsyncResult asyncResult = new ConnectOverlappedAsyncResult(this, endPointSnapshot, state, callback);
