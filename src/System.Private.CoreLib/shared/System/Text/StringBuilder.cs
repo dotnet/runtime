@@ -295,7 +295,7 @@ namespace System.Text
 
         public int Capacity
         {
-            get { return m_ChunkChars.Length + m_ChunkOffset; }
+            get => m_ChunkChars.Length + m_ChunkOffset;
             set
             {
                 if (value < 0)
@@ -440,10 +440,7 @@ namespace System.Text
         /// </summary>
         public int Length
         {
-            get
-            {
-                return m_ChunkOffset + m_ChunkLength;
-            }
+            get => m_ChunkOffset + m_ChunkLength;
             set
             {
                 // If the new length is less than 0 or greater than our Maximum capacity, bail.

@@ -7,9 +7,7 @@ using System.Runtime.CompilerServices;
 
 namespace Internal.Threading.Tasks
 {
-    //
-    // An internal contract that exposes just enough async debugger support needed by the AsTask() extension methods in the WindowsRuntimeSystemExtensions class.
-    //
+    /// <summary>Internal contract exposing just enough async debugger support needed by the AsTask() extension methods in the WindowsRuntimeSystemExtensions class.</summary>
     public static class AsyncCausalitySupport
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -29,28 +27,19 @@ namespace Internal.Threading.Tasks
         public static bool LoggingOn
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return AsyncCausalityTracer.LoggingOn;
-            }
+            get => AsyncCausalityTracer.LoggingOn;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void TraceOperationCreation(Task task, string operationName)
-        {
+        public static void TraceOperationCreation(Task task, string operationName) =>
             AsyncCausalityTracer.TraceOperationCreation(task, operationName);
-        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void TraceOperationCompletedSuccess(Task task)
-        {
+        public static void TraceOperationCompletedSuccess(Task task) =>
             AsyncCausalityTracer.TraceOperationCompletion(task, AsyncCausalityStatus.Completed);
-        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void TraceOperationCompletedError(Task task)
-        {
+        public static void TraceOperationCompletedError(Task task) =>
             AsyncCausalityTracer.TraceOperationCompletion(task, AsyncCausalityStatus.Error);
-        }
     }
 }

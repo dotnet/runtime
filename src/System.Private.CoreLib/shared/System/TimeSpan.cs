@@ -436,20 +436,11 @@ namespace System
             return new TimeSpan(-t._ticks);
         }
 
-        public static TimeSpan operator -(TimeSpan t1, TimeSpan t2)
-        {
-            return t1.Subtract(t2);
-        }
+        public static TimeSpan operator -(TimeSpan t1, TimeSpan t2) => t1.Subtract(t2);
 
-        public static TimeSpan operator +(TimeSpan t)
-        {
-            return t;
-        }
+        public static TimeSpan operator +(TimeSpan t) => t;
 
-        public static TimeSpan operator +(TimeSpan t1, TimeSpan t2)
-        {
-            return t1.Add(t2);
-        }
+        public static TimeSpan operator +(TimeSpan t1, TimeSpan t2) => t1.Add(t2);
 
         public static TimeSpan operator *(TimeSpan timeSpan, double factor)
         {
@@ -493,34 +484,16 @@ namespace System
         // is perhaps less useful, but no less useful than an exception.
         public static double operator /(TimeSpan t1, TimeSpan t2) => t1.Ticks / (double)t2.Ticks;
 
-        public static bool operator ==(TimeSpan t1, TimeSpan t2)
-        {
-            return t1._ticks == t2._ticks;
-        }
+        public static bool operator ==(TimeSpan t1, TimeSpan t2) => t1._ticks == t2._ticks;
 
-        public static bool operator !=(TimeSpan t1, TimeSpan t2)
-        {
-            return t1._ticks != t2._ticks;
-        }
+        public static bool operator !=(TimeSpan t1, TimeSpan t2) => t1._ticks != t2._ticks;
 
-        public static bool operator <(TimeSpan t1, TimeSpan t2)
-        {
-            return t1._ticks < t2._ticks;
-        }
+        public static bool operator <(TimeSpan t1, TimeSpan t2) => t1._ticks < t2._ticks;
 
-        public static bool operator <=(TimeSpan t1, TimeSpan t2)
-        {
-            return t1._ticks <= t2._ticks;
-        }
+        public static bool operator <=(TimeSpan t1, TimeSpan t2) => t1._ticks <= t2._ticks;
 
-        public static bool operator >(TimeSpan t1, TimeSpan t2)
-        {
-            return t1._ticks > t2._ticks;
-        }
+        public static bool operator >(TimeSpan t1, TimeSpan t2) => t1._ticks > t2._ticks;
 
-        public static bool operator >=(TimeSpan t1, TimeSpan t2)
-        {
-            return t1._ticks >= t2._ticks;
-        }
+        public static bool operator >=(TimeSpan t1, TimeSpan t2) => t1._ticks >= t2._ticks;
     }
 }

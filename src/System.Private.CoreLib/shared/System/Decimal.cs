@@ -824,75 +824,36 @@ namespace System
                 DecCalc.InternalRound(ref AsMutable(ref d), (byte)(flags >> ScaleShift), MidpointRounding.ToZero);
         }
 
-        public static implicit operator decimal(byte value)
-        {
-            return new decimal((uint)value);
-        }
+        public static implicit operator decimal(byte value) => new decimal((uint)value);
 
         [CLSCompliant(false)]
-        public static implicit operator decimal(sbyte value)
-        {
-            return new decimal(value);
-        }
+        public static implicit operator decimal(sbyte value) => new decimal(value);
 
-        public static implicit operator decimal(short value)
-        {
-            return new decimal(value);
-        }
+        public static implicit operator decimal(short value) => new decimal(value);
 
         [CLSCompliant(false)]
-        public static implicit operator decimal(ushort value)
-        {
-            return new decimal((uint)value);
-        }
+        public static implicit operator decimal(ushort value) => new decimal((uint)value);
 
-        public static implicit operator decimal(char value)
-        {
-            return new decimal((uint)value);
-        }
+        public static implicit operator decimal(char value) => new decimal((uint)value);
 
-        public static implicit operator decimal(int value)
-        {
-            return new decimal(value);
-        }
+        public static implicit operator decimal(int value) => new decimal(value);
 
         [CLSCompliant(false)]
-        public static implicit operator decimal(uint value)
-        {
-            return new decimal(value);
-        }
+        public static implicit operator decimal(uint value) => new decimal(value);
 
-        public static implicit operator decimal(long value)
-        {
-            return new decimal(value);
-        }
+        public static implicit operator decimal(long value) => new decimal(value);
 
         [CLSCompliant(false)]
-        public static implicit operator decimal(ulong value)
-        {
-            return new decimal(value);
-        }
+        public static implicit operator decimal(ulong value) => new decimal(value);
 
-        public static explicit operator decimal(float value)
-        {
-            return new decimal(value);
-        }
+        public static explicit operator decimal(float value) => new decimal(value);
 
-        public static explicit operator decimal(double value)
-        {
-            return new decimal(value);
-        }
+        public static explicit operator decimal(double value) => new decimal(value);
 
-        public static explicit operator byte(decimal value)
-        {
-            return ToByte(value);
-        }
+        public static explicit operator byte(decimal value) => ToByte(value);
 
         [CLSCompliant(false)]
-        public static explicit operator sbyte(decimal value)
-        {
-            return ToSByte(value);
-        }
+        public static explicit operator sbyte(decimal value) => ToSByte(value);
 
         public static explicit operator char(decimal value)
         {
@@ -908,68 +869,32 @@ namespace System
             return (char)temp;
         }
 
-        public static explicit operator short(decimal value)
-        {
-            return ToInt16(value);
-        }
+        public static explicit operator short(decimal value) => ToInt16(value);
 
         [CLSCompliant(false)]
-        public static explicit operator ushort(decimal value)
-        {
-            return ToUInt16(value);
-        }
+        public static explicit operator ushort(decimal value) => ToUInt16(value);
 
-        public static explicit operator int(decimal value)
-        {
-            return ToInt32(value);
-        }
+        public static explicit operator int(decimal value) => ToInt32(value);
 
         [CLSCompliant(false)]
-        public static explicit operator uint(decimal value)
-        {
-            return ToUInt32(value);
-        }
+        public static explicit operator uint(decimal value) => ToUInt32(value);
 
-        public static explicit operator long(decimal value)
-        {
-            return ToInt64(value);
-        }
+        public static explicit operator long(decimal value) => ToInt64(value);
 
         [CLSCompliant(false)]
-        public static explicit operator ulong(decimal value)
-        {
-            return ToUInt64(value);
-        }
+        public static explicit operator ulong(decimal value) => ToUInt64(value);
 
-        public static explicit operator float(decimal value)
-        {
-            return ToSingle(value);
-        }
+        public static explicit operator float(decimal value) => ToSingle(value);
 
-        public static explicit operator double(decimal value)
-        {
-            return ToDouble(value);
-        }
+        public static explicit operator double(decimal value) => ToDouble(value);
 
-        public static decimal operator +(decimal d)
-        {
-            return d;
-        }
+        public static decimal operator +(decimal d) => d;
 
-        public static decimal operator -(decimal d)
-        {
-            return new decimal(in d, d.flags ^ SignMask);
-        }
+        public static decimal operator -(decimal d) => new decimal(in d, d.flags ^ SignMask);
 
-        public static decimal operator ++(decimal d)
-        {
-            return Add(d, One);
-        }
+        public static decimal operator ++(decimal d) => Add(d, One);
 
-        public static decimal operator --(decimal d)
-        {
-            return Subtract(d, One);
-        }
+        public static decimal operator --(decimal d) => Subtract(d, One);
 
         public static decimal operator +(decimal d1, decimal d2)
         {
@@ -1001,35 +926,17 @@ namespace System
             return d1;
         }
 
-        public static bool operator ==(decimal d1, decimal d2)
-        {
-            return DecCalc.VarDecCmp(in d1, in d2) == 0;
-        }
+        public static bool operator ==(decimal d1, decimal d2) => DecCalc.VarDecCmp(in d1, in d2) == 0;
 
-        public static bool operator !=(decimal d1, decimal d2)
-        {
-            return DecCalc.VarDecCmp(in d1, in d2) != 0;
-        }
+        public static bool operator !=(decimal d1, decimal d2) => DecCalc.VarDecCmp(in d1, in d2) != 0;
 
-        public static bool operator <(decimal d1, decimal d2)
-        {
-            return DecCalc.VarDecCmp(in d1, in d2) < 0;
-        }
+        public static bool operator <(decimal d1, decimal d2) => DecCalc.VarDecCmp(in d1, in d2) < 0;
 
-        public static bool operator <=(decimal d1, decimal d2)
-        {
-            return DecCalc.VarDecCmp(in d1, in d2) <= 0;
-        }
+        public static bool operator <=(decimal d1, decimal d2) => DecCalc.VarDecCmp(in d1, in d2) <= 0;
 
-        public static bool operator >(decimal d1, decimal d2)
-        {
-            return DecCalc.VarDecCmp(in d1, in d2) > 0;
-        }
+        public static bool operator >(decimal d1, decimal d2) => DecCalc.VarDecCmp(in d1, in d2) > 0;
 
-        public static bool operator >=(decimal d1, decimal d2)
-        {
-            return DecCalc.VarDecCmp(in d1, in d2) >= 0;
-        }
+        public static bool operator >=(decimal d1, decimal d2) => DecCalc.VarDecCmp(in d1, in d2) >= 0;
 
         //
         // IConvertible implementation

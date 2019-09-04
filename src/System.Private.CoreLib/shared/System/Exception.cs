@@ -81,26 +81,14 @@ namespace System
         // "file:///C:/Applications/Bazzal/help.html#ErrorNum42"
         public virtual string? HelpLink
         {
-            get
-            {
-                return _helpURL;
-            }
-            set
-            {
-                _helpURL = value;
-            }
+            get => _helpURL;
+            set => _helpURL = value;
         }
 
         public virtual string? Source
         {
-            get
-            {
-                return _source ?? (_source = CreateSourceName());
-            }
-            set
-            {
-                _source = value;
-            }
+            get => _source ?? (_source = CreateSourceName());
+            set => _source = value;
         }
 
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
@@ -162,14 +150,8 @@ namespace System
 
         public int HResult
         {
-            get
-            {
-                return _HResult;
-            }
-            set
-            {
-                _HResult = value;
-            }
+            get => _HResult;
+            set => _HResult = value;
         }
 
         // this method is required so Object.GetType is not made virtual by the compiler

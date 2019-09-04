@@ -31,11 +31,7 @@ namespace System.Text
 
         public DecoderFallback? Fallback
         {
-            get
-            {
-                return _fallback;
-            }
-
+            get => _fallback;
             set
             {
                 if (value == null)

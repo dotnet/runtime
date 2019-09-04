@@ -65,14 +65,8 @@ namespace System.Runtime.InteropServices
             return obj.m_array == m_array && obj.m_offset == m_offset && obj.m_count == m_count;
         }
 
-        public static bool operator ==(ArrayWithOffset a, ArrayWithOffset b)
-        {
-            return a.Equals(b);
-        }
+        public static bool operator ==(ArrayWithOffset a, ArrayWithOffset b) => a.Equals(b);
 
-        public static bool operator !=(ArrayWithOffset a, ArrayWithOffset b)
-        {
-            return !(a == b);
-        }
+        public static bool operator !=(ArrayWithOffset a, ArrayWithOffset b) => !(a == b);
     }
 }

@@ -42,15 +42,11 @@ namespace System.Reflection.Emit
             m_flags = flags;
         }
 
-        internal bool EndsUncondJmpBlk()
-        {
-            return (m_flags & EndsUncondJmpBlkFlag) != 0;
-        }
+        internal bool EndsUncondJmpBlk() =>
+            (m_flags & EndsUncondJmpBlkFlag) != 0;
 
-        internal int StackChange()
-        {
-            return (m_flags >> StackChangeShift);
-        }
+        internal int StackChange() =>
+            m_flags >> StackChangeShift;
 
         public OperandType OperandType => (OperandType)(m_flags & OperandTypeMask);
 
@@ -113,37 +109,17 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override bool Equals(object? obj)
-        {
-            if (obj is OpCode)
-                return Equals((OpCode)obj);
-            else
-                return false;
-        }
+        public override bool Equals(object? obj) =>
+            obj is OpCode other && Equals(other);
 
-        public bool Equals(OpCode obj)
-        {
-            return obj.Value == Value;
-        }
+        public bool Equals(OpCode obj) => obj.Value == Value;
 
-        public static bool operator ==(OpCode a, OpCode b)
-        {
-            return a.Equals(b);
-        }
+        public static bool operator ==(OpCode a, OpCode b) => a.Equals(b);
 
-        public static bool operator !=(OpCode a, OpCode b)
-        {
-            return !(a == b);
-        }
+        public static bool operator !=(OpCode a, OpCode b) => !(a == b);
 
-        public override int GetHashCode()
-        {
-            return Value;
-        }
+        public override int GetHashCode() => Value;
 
-        public override string? ToString()
-        {
-            return Name;
-        }
+        public override string? ToString() => Name;
     }
 }

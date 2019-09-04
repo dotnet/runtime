@@ -65,28 +65,16 @@ namespace System.IO
 
         public override int Capacity
         {
-            get
-            {
-                return (int)_unmanagedStream.Capacity;
-            }
-            set
-            {
-                throw new IOException(SR.IO_FixedCapacity);
-            }
+            get => (int)_unmanagedStream.Capacity;
+            set => throw new IOException(SR.IO_FixedCapacity);
         }
 
         public override long Length => _unmanagedStream.Length;
 
         public override long Position
         {
-            get
-            {
-                return _unmanagedStream.Position;
-            }
-            set
-            {
-                _unmanagedStream.Position = value;
-            }
+            get => _unmanagedStream.Position;
+            set => _unmanagedStream.Position = value;
         }
 
         public override int Read(byte[] buffer, int offset, int count)

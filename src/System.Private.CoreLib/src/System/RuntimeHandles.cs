@@ -68,13 +68,13 @@ namespace System
             return type;
         }
 
-        public static bool operator ==(RuntimeTypeHandle left, object? right) { return left.Equals(right); }
+        public static bool operator ==(RuntimeTypeHandle left, object? right) => left.Equals(right);
 
-        public static bool operator ==(object? left, RuntimeTypeHandle right) { return right.Equals(left); }
+        public static bool operator ==(object? left, RuntimeTypeHandle right) => right.Equals(left);
 
-        public static bool operator !=(RuntimeTypeHandle left, object? right) { return !left.Equals(right); }
+        public static bool operator !=(RuntimeTypeHandle left, object? right) => !left.Equals(right);
 
-        public static bool operator !=(object? left, RuntimeTypeHandle right) { return !right.Equals(left); }
+        public static bool operator !=(object? left, RuntimeTypeHandle right) => !right.Equals(left);
 
 
         // This is the RuntimeType for the type
@@ -751,15 +751,9 @@ namespace System
             return handle.Value == Value;
         }
 
-        public static bool operator ==(RuntimeMethodHandle left, RuntimeMethodHandle right)
-        {
-            return left.Equals(right);
-        }
+        public static bool operator ==(RuntimeMethodHandle left, RuntimeMethodHandle right) => left.Equals(right);
 
-        public static bool operator !=(RuntimeMethodHandle left, RuntimeMethodHandle right)
-        {
-            return !left.Equals(right);
-        }
+        public static bool operator !=(RuntimeMethodHandle left, RuntimeMethodHandle right) => !left.Equals(right);
 
         public bool Equals(RuntimeMethodHandle handle)
         {
@@ -1081,15 +1075,9 @@ namespace System
             return handle.Value == Value;
         }
 
-        public static bool operator ==(RuntimeFieldHandle left, RuntimeFieldHandle right)
-        {
-            return left.Equals(right);
-        }
+        public static bool operator ==(RuntimeFieldHandle left, RuntimeFieldHandle right) => left.Equals(right);
 
-        public static bool operator !=(RuntimeFieldHandle left, RuntimeFieldHandle right)
-        {
-            return !left.Equals(right);
-        }
+        public static bool operator !=(RuntimeFieldHandle left, RuntimeFieldHandle right) => !left.Equals(right);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern string GetName(RtFieldInfo field);
@@ -1193,15 +1181,9 @@ namespace System
             return handle.m_ptr == m_ptr;
         }
 
-        public static bool operator ==(ModuleHandle left, ModuleHandle right)
-        {
-            return left.Equals(right);
-        }
+        public static bool operator ==(ModuleHandle left, ModuleHandle right) => left.Equals(right);
 
-        public static bool operator !=(ModuleHandle left, ModuleHandle right)
-        {
-            return !left.Equals(right);
-        }
+        public static bool operator !=(ModuleHandle left, ModuleHandle right) => !left.Equals(right);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern IRuntimeMethodInfo GetDynamicMethod(System.Reflection.Emit.DynamicMethod method, RuntimeModule module, string name, byte[] sig, Resolver resolver);

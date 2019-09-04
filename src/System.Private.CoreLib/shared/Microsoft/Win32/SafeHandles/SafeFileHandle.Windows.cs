@@ -25,22 +25,13 @@ namespace Microsoft.Win32.SafeHandles
 
         internal bool? IsAsync
         {
-            get
-            {
-                return _isAsync;
-            }
-
-            set
-            {
-                _isAsync = value;
-            }
+            get => _isAsync;
+            set => _isAsync = value;
         }
 
         internal ThreadPoolBoundHandle? ThreadPoolBinding { get; set; }
 
-        protected override bool ReleaseHandle()
-        {
-            return Interop.Kernel32.CloseHandle(handle);
-        }
+        protected override bool ReleaseHandle() =>
+            Interop.Kernel32.CloseHandle(handle);
     }
 }

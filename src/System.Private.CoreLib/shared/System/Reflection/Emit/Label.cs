@@ -26,42 +26,20 @@ namespace System.Reflection.Emit
     {
         internal readonly int m_label;
 
-        internal Label(int label)
-        {
-            m_label = label;
-        }
+        internal Label(int label) => m_label = label;
 
-        internal int GetLabelValue()
-        {
-            return m_label;
-        }
+        internal int GetLabelValue() => m_label;
 
-        public override int GetHashCode()
-        {
-            return m_label;
-        }
+        public override int GetHashCode() => m_label;
 
-        public override bool Equals(object? obj)
-        {
-            if (obj is Label)
-                return Equals((Label)obj);
-            else
-                return false;
-        }
+        public override bool Equals(object? obj) =>
+            obj is Label other && Equals(other);
 
-        public bool Equals(Label obj)
-        {
-            return obj.m_label == m_label;
-        }
+        public bool Equals(Label obj) =>
+            obj.m_label == m_label;
 
-        public static bool operator ==(Label a, Label b)
-        {
-            return a.Equals(b);
-        }
+        public static bool operator ==(Label a, Label b) => a.Equals(b);
 
-        public static bool operator !=(Label a, Label b)
-        {
-            return !(a == b);
-        }
+        public static bool operator !=(Label a, Label b) => !(a == b);
     }
 }

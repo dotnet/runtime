@@ -535,8 +535,8 @@ namespace System.Reflection.Emit
 
         public bool InitLocals
         {
-            get { return m_fInitLocals; }
-            set { m_fInitLocals = value; }
+            get => m_fInitLocals;
+            set => m_fInitLocals = value;
         }
 
         //

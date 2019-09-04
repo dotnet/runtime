@@ -209,40 +209,22 @@ namespace System
         }
 
         [NonVersionable]
-        public static bool operator ==(double left, double right)
-        {
-            return left == right;
-        }
+        public static bool operator ==(double left, double right) => left == right;
 
         [NonVersionable]
-        public static bool operator !=(double left, double right)
-        {
-            return left != right;
-        }
+        public static bool operator !=(double left, double right) => left != right;
 
         [NonVersionable]
-        public static bool operator <(double left, double right)
-        {
-            return left < right;
-        }
+        public static bool operator <(double left, double right) => left < right;
 
         [NonVersionable]
-        public static bool operator >(double left, double right)
-        {
-            return left > right;
-        }
+        public static bool operator >(double left, double right) => left > right;
 
         [NonVersionable]
-        public static bool operator <=(double left, double right)
-        {
-            return left <= right;
-        }
+        public static bool operator <=(double left, double right) => left <= right;
 
         [NonVersionable]
-        public static bool operator >=(double left, double right)
-        {
-            return left >= right;
-        }
+        public static bool operator >=(double left, double right) => left >= right;
 
         public bool Equals(double obj)
         {

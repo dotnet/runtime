@@ -92,14 +92,8 @@ namespace System.Collections.ObjectModel
 
         TValue IDictionary<TKey, TValue>.this[TKey key]
         {
-            get
-            {
-                return m_dictionary[key];
-            }
-            set
-            {
-                ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
-            }
+            get => m_dictionary[key];
+            set => ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
         }
 
         #endregion
@@ -193,10 +187,7 @@ namespace System.Collections.ObjectModel
                 }
                 return null;
             }
-            set
-            {
-                ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
-            }
+            set => ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
         }
 
         void ICollection.CopyTo(Array array, int index)

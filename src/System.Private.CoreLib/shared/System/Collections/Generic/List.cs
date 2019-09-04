@@ -98,10 +98,7 @@ namespace System.Collections.Generic
         //
         public int Capacity
         {
-            get
-            {
-                return _items.Length;
-            }
+            get => _items.Length;
             set
             {
                 if (value < _size)
@@ -177,10 +174,7 @@ namespace System.Collections.Generic
 
         object? IList.this[int index]
         {
-            get
-            {
-                return this[index];
-            }
+            get => this[index];
             set
             {
                 ThrowHelper.IfNullAndNullsAreIllegalThenThrow<T>(value, ExceptionArgument.value);

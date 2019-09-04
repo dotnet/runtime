@@ -31,14 +31,11 @@ namespace System
 
         public ref T Value
         {
+            // Implemented as a JIT intrinsic - This default implementation is for
+            // completeness and to provide a concrete error if called via reflection
+            // or if the intrinsic is missed.
             [Intrinsic]
-            get
-            {
-                // Implemented as a JIT intrinsic - This default implementation is for
-                // completeness and to provide a concrete error if called via reflection
-                // or if the intrinsic is missed.
-                throw new PlatformNotSupportedException();
-            }
+            get => throw new PlatformNotSupportedException();
         }
     }
 }

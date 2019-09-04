@@ -260,8 +260,8 @@ namespace System.Resources
         // GetString or GetObject.
         public virtual bool IgnoreCase
         {
-            get { return _ignoreCase; }
-            set { _ignoreCase = value; }
+            get => _ignoreCase;
+            set => _ignoreCase = value;
         }
 
         // Returns the Type of the ResourceSet the ResourceManager uses
@@ -270,8 +270,8 @@ namespace System.Resources
 
         protected UltimateResourceFallbackLocation FallbackLocation
         {
-            get { return _fallbackLoc; }
-            set { _fallbackLoc = value; }
+            get => _fallbackLoc;
+            set => _fallbackLoc = value;
         }
 
         // Tells the ResourceManager to call Close on all ResourceSets and
@@ -775,37 +775,33 @@ namespace System.Resources
 
             internal CultureInfo? NeutralResourcesCulture
             {
-                get { return _rm._neutralResourcesCulture; }
-                set { _rm._neutralResourcesCulture = value; }
+                get => _rm._neutralResourcesCulture;
+                set => _rm._neutralResourcesCulture = value;
             }
 
-            internal string GetResourceFileName(CultureInfo culture)
-            {
-                return _rm.GetResourceFileName(culture);
-            }
+            internal string GetResourceFileName(CultureInfo culture) =>
+                _rm.GetResourceFileName(culture);
 
             // NEEDED ONLY BY ASSEMBLY-BASED
             internal bool LookedForSatelliteContractVersion
             {
-                get { return _rm._lookedForSatelliteContractVersion; }
-                set { _rm._lookedForSatelliteContractVersion = value; }
+                get => _rm._lookedForSatelliteContractVersion;
+                set => _rm._lookedForSatelliteContractVersion = value;
             }
 
             internal Version? SatelliteContractVersion
             {
-                get { return _rm._satelliteContractVersion; }
-                set { _rm._satelliteContractVersion = value; }
+                get => _rm._satelliteContractVersion;
+                set => _rm._satelliteContractVersion = value;
             }
 
-            internal Version? ObtainSatelliteContractVersion(Assembly a)
-            {
-                return ResourceManager.GetSatelliteContractVersion(a);
-            }
+            internal Version? ObtainSatelliteContractVersion(Assembly a) =>
+                ResourceManager.GetSatelliteContractVersion(a);
 
             internal UltimateResourceFallbackLocation FallbackLoc
             {
-                get { return _rm.FallbackLocation; }
-                set { _rm._fallbackLoc = value; }
+                get => _rm.FallbackLocation;
+                set => _rm._fallbackLoc = value;
             }
 
             internal Assembly? MainAssembly => _rm.MainAssembly;

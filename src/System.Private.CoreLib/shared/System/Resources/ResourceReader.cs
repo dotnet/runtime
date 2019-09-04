@@ -43,8 +43,8 @@ namespace System.Resources
         // resource profiling build.  We could also use WeakReference.
         internal object? Value
         {
-            get { return _value; }
-            set { _value = value; }
+            get => _value;
+            set => _value = value;
         }
 
         internal static bool CanCache(ResourceTypeCode value)
