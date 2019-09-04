@@ -834,7 +834,7 @@ namespace System.Linq
 
         public static MethodInfo Zip_TFirst_TSecond_2(Type TFirst, Type TSecond) =>
             (s_Zip_TFirst_TSecond_2 ??
-            (s_Zip_TFirst_TSecond_2 = new Func<IQueryable<object>, IEnumerable<object>, IQueryable<ValueTuple<object, object>>>(Queryable.Zip).GetMethodInfo().GetGenericMethodDefinition()))
+            (s_Zip_TFirst_TSecond_2 = new Func<IQueryable<object>, IEnumerable<object>, IQueryable<(object, object)>>(Queryable.Zip).GetMethodInfo().GetGenericMethodDefinition()))
             .MakeGenericMethod(TFirst, TSecond);
 
         private static MethodInfo s_Zip_TFirst_TSecond_TResult_3;
