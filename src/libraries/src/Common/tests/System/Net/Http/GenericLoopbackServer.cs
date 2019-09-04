@@ -14,14 +14,14 @@ namespace System.Net.Test.Common
 
     public abstract class LoopbackServerFactory
     {
-        public abstract Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000);
+        public abstract Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000, GenericLoopbackOptions options = null);
 
         public abstract bool IsHttp11 { get; }
         public abstract bool IsHttp2 { get; }
 
         // Common helper methods
 
-        public Task CreateClientAndServerAsync(Func<Uri, Task> clientFunc, Func<GenericLoopbackServer, Task> serverFunc, int millisecondsTimeout = 60_000)
+        public Task CreateClientAndServerAsync(Func<Uri, Task> clientFunc, Func<GenericLoopbackServer, Task> serverFunc, int millisecondsTimeout = 60_000, GenericLoopbackOptions options = null)
         {
             return CreateServerAsync(async (server, uri) =>
             {
@@ -29,19 +29,25 @@ namespace System.Net.Test.Common
                 Task serverTask = serverFunc(server);
 
                 await new Task[] { clientTask, serverTask }.WhenAllOrAnyFailed().ConfigureAwait(false);
-            }).TimeoutAfter(millisecondsTimeout);
+            }, options: options).TimeoutAfter(millisecondsTimeout);
         }
     }
 
     public abstract class GenericLoopbackServer : IDisposable
     {
         // Accept a new connection, process a single request and send the specified response, and gracefully close the connection.
-        public abstract Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = null);
+        public abstract Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "");
 
         // Accept a new connection, and hand it to provided delegate.
         public abstract Task AcceptConnectionAsync(Func<GenericLoopbackConnection, Task> funcAsync);
 
         public abstract void Dispose();
+
+        // Legacy API.
+        public Task<HttpRequestData> AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, string content = "", IList<HttpHeaderData> additionalHeaders = null)
+        {
+            return HandleRequestAsync(statusCode, headers: additionalHeaders, content: content);
+        }
     }
 
     public abstract class GenericLoopbackConnection : IDisposable
@@ -54,22 +60,26 @@ namespace System.Net.Test.Common
         public abstract Task<Byte[]> ReadRequestBodyAsync();
 
         /// <summary>Sends Response back with provided statusCode, headers and content. Can be called multiple times on same response if isFinal was set to false before.</summary>
-        public abstract Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string body = null, bool isFinal = true, int requestId = 0);
+        public abstract Task SendResponseAsync(HttpStatusCode? statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true, int requestId = 0);
         /// <summary>Sends response headers.</summary>
         public abstract Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, int requestId = 0);
         /// <summary>Sends Response body after SendResponse was called with isFinal: false.</summary>
-        public abstract Task SendResponseBodyAsync(byte[] data, bool isFinal = true, int requestId = 0);
+        public abstract Task SendResponseBodyAsync(byte[] content, bool isFinal = true, int requestId = 0);
 
         /// <summary>Waits for the client to signal cancellation.</summary>
         public abstract Task WaitForCancellationAsync(bool ignoreIncomingData = true, int requestId = 0);
 
         /// <summary>Helper function to make it easier to convert old test with strings.</summary>
-        public async Task SendResponseBodyAsync(string data, bool isFinal = true, int requestId = 0)
+        public async Task SendResponseBodyAsync(string content, bool isFinal = true, int requestId = 0)
         {
-            await SendResponseBodyAsync(String.IsNullOrEmpty(data) ? new byte[0] : Encoding.ASCII.GetBytes(data), isFinal, requestId);
+            await SendResponseBodyAsync(String.IsNullOrEmpty(content) ? new byte[0] : Encoding.ASCII.GetBytes(content), isFinal, requestId);
         }
     }
 
+    public class GenericLoopbackOptions
+    {
+        public IPAddress Address { get; set; } = IPAddress.Loopback;
+    }
 
     public struct HttpHeaderData
     {

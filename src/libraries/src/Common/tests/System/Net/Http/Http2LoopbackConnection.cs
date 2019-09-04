@@ -669,11 +669,58 @@ namespace System.Net.Test.Common
             return ReadBodyAsync();
         }
 
-        public override Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string body = null, bool isFinal = true, int requestId = 0)
+        public override async Task SendResponseAsync(HttpStatusCode? statusCode = null, IList<HttpHeaderData> headers = null, string body = null, bool isFinal = true, int requestId = 0)
         {
+            // TODO: Header continuation support.
+            Assert.NotNull(statusCode);
+
+            if (headers != null)
+            {
+                bool hasDate = false;
+                bool stripContentLength = false;
+                foreach (HttpHeaderData headerData in headers)
+                {
+                    // Check if we should inject Date header to match HTTP/1.
+                    if (headerData.Name.Equals("Date", StringComparison.OrdinalIgnoreCase))
+                    {
+                        hasDate = true;
+                    }
+                    else if (headerData.Name.Equals("Content-Length") && headerData.Value == null)
+                    {
+                        // Hack used for Http/1 to avoid sending content-length header.
+                        stripContentLength = true;
+                    }
+                }
+
+                if (!hasDate || stripContentLength)
+                {
+                    var newHeaders = new List<HttpHeaderData>();
+                    foreach (HttpHeaderData headerData in headers)
+                    {
+                        if (headerData.Name.Equals("Content-Length") && headerData.Value == null)
+                        {
+                            continue;
+                        }
+
+                        newHeaders.Add(headerData);
+                    }
+                    newHeaders.Add(new HttpHeaderData("Date", $"{DateTimeOffset.UtcNow:R}"));
+                    headers = newHeaders;
+                }
+            }
+
             int streamId = requestId == 0 ? _lastStreamId : requestId;
             bool endHeaders = body != null || isFinal;
-            return SendResponseHeadersAsync(streamId, endStream : isFinal, statusCode, isTrailingHeader : false, endHeaders : endHeaders, headers);
+
+            if (string.IsNullOrEmpty(body))
+            {
+                await SendResponseHeadersAsync(streamId, endStream: isFinal, (HttpStatusCode)statusCode, endHeaders: endHeaders, headers: headers);
+            }
+            else
+            {
+                await SendResponseHeadersAsync(streamId, endStream: false, (HttpStatusCode)statusCode, endHeaders: endHeaders, headers: headers);
+                await SendResponseBodyAsync(body, isFinal: isFinal, requestId: streamId);
+            }
         }
 
         public override Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, int requestId = 0)

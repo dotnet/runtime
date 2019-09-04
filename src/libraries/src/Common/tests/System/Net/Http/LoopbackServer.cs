@@ -122,34 +122,9 @@ namespace System.Net.Test.Common
 
         public async Task AcceptConnectionAsync(Func<Connection, Task> funcAsync)
         {
-            using (Socket s = await _listenSocket.AcceptAsync().ConfigureAwait(false))
+            using (Connection connection = await EstablishConnectionAsync().ConfigureAwait(false))
             {
-                s.NoDelay = true;
-
-                Stream stream = new NetworkStream(s, ownsSocket: false);
-                if (_options.UseSsl)
-                {
-                    var sslStream = new SslStream(stream, false, delegate { return true; });
-                    using (var cert = Configuration.Certificates.GetServerCertificate())
-                    {
-                        await sslStream.AuthenticateAsServerAsync(
-                            cert,
-                            clientCertificateRequired: true, // allowed but not required
-                            enabledSslProtocols: _options.SslProtocols,
-                            checkCertificateRevocation: false).ConfigureAwait(false);
-                    }
-                    stream = sslStream;
-                }
-
-                if (_options.StreamWrapper != null)
-                {
-                    stream = _options.StreamWrapper(stream);
-                }
-
-                using (var connection = new Connection(s, stream))
-                {
-                    await funcAsync(connection).ConfigureAwait(false);
-                }
+                await funcAsync(connection).ConfigureAwait(false);
             }
         }
 
@@ -400,9 +375,8 @@ namespace System.Net.Test.Common
             "\r\n" +
             content;
 
-        public class Options
+        public class Options : GenericLoopbackOptions
         {
-            public IPAddress Address { get; set; } = IPAddress.Loopback;
             public int ListenBacklog { get; set; } = 1;
             public bool UseSsl { get; set; } = false;
             public SslProtocols SslProtocols { get; set; } =
@@ -761,36 +735,53 @@ namespace System.Net.Test.Common
                 return buffer;
             }
 
-            public override async Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = null, bool isFinal = true, int requestId = 0)
+            public override async Task SendResponseAsync(HttpStatusCode? statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = null, bool isFinal = true, int requestId = 0)
             {
                 string headerString = null;
                 int contentLength = -1;
+                bool isChunked = false;
+                bool hasContentLength  = false;
 
                 if (headers != null)
                 {
+                    // Process given headers and look for some well-known cases.
                     foreach (HttpHeaderData headerData in headers)
                     {
-                        headerString = headerString + $"{headerData.Name}: {headerData.Value}\r\n";
                         if (headerData.Name.Equals("Content-Length", StringComparison.OrdinalIgnoreCase))
                         {
+                            hasContentLength = true;
+                            if (headerData.Value == null)
+                            {
+                                continue;
+                            }
+
                             contentLength = int.Parse(headerData.Value);
                         }
+                        else if (headerData.Name.Equals("Transfer-Encoding", StringComparison.OrdinalIgnoreCase) && headerData.Value.Equals("chunked", StringComparison.OrdinalIgnoreCase))
+                        {
+                            isChunked = true;
+                        }
+
+                        headerString = headerString + $"{headerData.Name}: {headerData.Value}\r\n";
                     }
                 }
 
-                if (contentLength < 0)
+                bool endHeaders = content != null || isFinal;
+                if (statusCode != null)
                 {
-                    // We did not find Content header in headers.
-                    contentLength = String.IsNullOrEmpty(content) ? 0 : content.Length;
-                }
-
-                if (content != null || isFinal)
-                {
-                    headerString = GetHttpResponseHeaders(statusCode, headerString, contentLength, connectionClose: true);
+                    // If we need to send status line, prepped it to headers and possibly add missing headers to the end.
+                    headerString =
+                        $"HTTP/1.1 {(int)statusCode} {GetStatusDescription((HttpStatusCode)statusCode)}\r\n" +
+                        (!hasContentLength && !isChunked && content != null ? $"Content-length: {content.Length}\r\n" : "") +
+                        headerString +
+                        (endHeaders ? "\r\n" : "");
                 }
 
                 await SendResponseAsync(headerString).ConfigureAwait(false);
-                await SendResponseAsync(content).ConfigureAwait(false);
+                if (content != null)
+                {
+                    await SendResponseBodyAsync(content, isFinal: isFinal, requestId: requestId).ConfigureAwait(false);
+                }
             }
 
             public override async Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, int requestId = 0)
@@ -835,13 +826,34 @@ namespace System.Net.Test.Common
             }
         }
 
-        public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = null)
+        public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
         {
             using (Connection connection = await EstablishConnectionAsync().ConfigureAwait(false))
             {
                 HttpRequestData requestData = await connection.ReadRequestDataAsync().ConfigureAwait(false);
-                await connection.SendResponseAsync(statusCode, headers, content: content).ConfigureAwait(false);
 
+                // For historical reasons, we added Date and "Connection: close" (to improve test reliability)
+                bool hasDate = false;
+                List<HttpHeaderData> newHeaders = new List<HttpHeaderData>();
+                if (headers != null)
+                {
+                    foreach (var header in headers)
+                    {
+                        newHeaders.Add(header);
+                        if (header.Name.Equals("Date", StringComparison.OrdinalIgnoreCase))
+                        {
+                            hasDate = true;
+                        }
+                    }
+                }
+
+                newHeaders.Add(new HttpHeaderData("Connection", "Close"));
+                if (!hasDate)
+                {
+                    newHeaders.Add(new HttpHeaderData("Date", "{DateTimeOffset.UtcNow:R}"));
+                }
+
+                await connection.SendResponseAsync(statusCode, newHeaders, content: content).ConfigureAwait(false);
                 return requestData;
             }
         }
@@ -856,9 +868,15 @@ namespace System.Net.Test.Common
     {
         public static readonly Http11LoopbackServerFactory Singleton = new Http11LoopbackServerFactory();
 
-        public override Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000)
+        public override Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000, GenericLoopbackOptions options = null)
         {
-            return LoopbackServer.CreateServerAsync((server, uri) => funcAsync(server, uri));
+            LoopbackServer.Options newOptions = new LoopbackServer.Options();
+            if (options != null)
+            {
+                newOptions.Address = options.Address;
+            }
+
+            return LoopbackServer.CreateServerAsync((server, uri) => funcAsync(server, uri), options: newOptions);
         }
 
         public override bool IsHttp11 => true;
