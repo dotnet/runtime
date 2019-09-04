@@ -16,7 +16,7 @@ namespace System
     {
         private readonly Func<bool>? _callback0;
         private readonly Func<object, bool>? _callback1;
-        private readonly GCHandle _weakTargetObj;
+        private GCHandle _weakTargetObj;
 
         private Gen2GcCallback(Func<bool> callback)
         {
