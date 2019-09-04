@@ -62,19 +62,16 @@ namespace System.Runtime.Intrinsics
         internal static bool IsSupported
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return (typeof(T) == typeof(byte)) ||
-                       (typeof(T) == typeof(sbyte)) ||
-                       (typeof(T) == typeof(short)) ||
-                       (typeof(T) == typeof(ushort)) ||
-                       (typeof(T) == typeof(int)) ||
-                       (typeof(T) == typeof(uint)) ||
-                       (typeof(T) == typeof(long)) ||
-                       (typeof(T) == typeof(ulong)) ||
-                       (typeof(T) == typeof(float)) ||
-                       (typeof(T) == typeof(double));
-            }
+            get => (typeof(T) == typeof(byte)) ||
+                   (typeof(T) == typeof(sbyte)) ||
+                   (typeof(T) == typeof(short)) ||
+                   (typeof(T) == typeof(ushort)) ||
+                   (typeof(T) == typeof(int)) ||
+                   (typeof(T) == typeof(uint)) ||
+                   (typeof(T) == typeof(long)) ||
+                   (typeof(T) == typeof(ulong)) ||
+                   (typeof(T) == typeof(float)) ||
+                   (typeof(T) == typeof(double));
         }
 
         /// <summary>Determines whether the specified <see cref="Vector64{T}" /> is equal to the current instance.</summary>

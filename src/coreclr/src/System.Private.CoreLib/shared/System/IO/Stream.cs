@@ -76,26 +76,14 @@ namespace System.IO
 
         public virtual int ReadTimeout
         {
-            get
-            {
-                throw new InvalidOperationException(SR.InvalidOperation_TimeoutsNotSupported);
-            }
-            set
-            {
-                throw new InvalidOperationException(SR.InvalidOperation_TimeoutsNotSupported);
-            }
+            get => throw new InvalidOperationException(SR.InvalidOperation_TimeoutsNotSupported);
+            set => throw new InvalidOperationException(SR.InvalidOperation_TimeoutsNotSupported);
         }
 
         public virtual int WriteTimeout
         {
-            get
-            {
-                throw new InvalidOperationException(SR.InvalidOperation_TimeoutsNotSupported);
-            }
-            set
-            {
-                throw new InvalidOperationException(SR.InvalidOperation_TimeoutsNotSupported);
-            }
+            get => throw new InvalidOperationException(SR.InvalidOperation_TimeoutsNotSupported);
+            set => throw new InvalidOperationException(SR.InvalidOperation_TimeoutsNotSupported);
         }
 
         public Task CopyToAsync(Stream destination)
@@ -878,7 +866,7 @@ namespace System.IO
 
             public override long Position
             {
-                get { return 0; }
+                get => 0;
                 set { }
             }
 
@@ -1134,26 +1122,14 @@ namespace System.IO
 
             public override int ReadTimeout
             {
-                get
-                {
-                    return _stream.ReadTimeout;
-                }
-                set
-                {
-                    _stream.ReadTimeout = value;
-                }
+                get => _stream.ReadTimeout;
+                set => _stream.ReadTimeout = value;
             }
 
             public override int WriteTimeout
             {
-                get
-                {
-                    return _stream.WriteTimeout;
-                }
-                set
-                {
-                    _stream.WriteTimeout = value;
-                }
+                get => _stream.WriteTimeout;
+                set => _stream.WriteTimeout = value;
             }
 
             // In the off chance that some wrapped stream has different

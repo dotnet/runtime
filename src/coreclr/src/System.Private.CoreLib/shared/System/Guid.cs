@@ -939,23 +939,18 @@ namespace System
             return 0;
         }
 
-        public static bool operator ==(Guid a, Guid b)
-        {
-            // Now compare each of the elements
-            return a._a == b._a &&
+        public static bool operator ==(Guid a, Guid b) =>
+            a._a == b._a &&
                 Unsafe.Add(ref a._a, 1) == Unsafe.Add(ref b._a, 1) &&
                 Unsafe.Add(ref a._a, 2) == Unsafe.Add(ref b._a, 2) &&
                 Unsafe.Add(ref a._a, 3) == Unsafe.Add(ref b._a, 3);
-        }
 
-        public static bool operator !=(Guid a, Guid b)
-        {
+        public static bool operator !=(Guid a, Guid b) =>
             // Now compare each of the elements
-            return a._a != b._a ||
+            a._a != b._a ||
                 Unsafe.Add(ref a._a, 1) != Unsafe.Add(ref b._a, 1) ||
                 Unsafe.Add(ref a._a, 2) != Unsafe.Add(ref b._a, 2) ||
                 Unsafe.Add(ref a._a, 3) != Unsafe.Add(ref b._a, 3);
-        }
 
         public string ToString(string? format)
         {

@@ -23,11 +23,8 @@ namespace System.Reflection
         internal INVOCATION_FLAGS InvocationFlags
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return (m_invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED) != 0 ?
+            get => (m_invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED) != 0 ?
                     m_invocationFlags : InitializeInvocationFlags();
-            }
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -241,10 +238,7 @@ namespace System.Reflection
         public override Type FieldType
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return m_fieldType ?? InitializeFieldType();
-            }
+            get => m_fieldType ?? InitializeFieldType();
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

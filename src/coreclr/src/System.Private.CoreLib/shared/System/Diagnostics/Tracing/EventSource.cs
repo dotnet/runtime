@@ -1103,18 +1103,30 @@ namespace System.Diagnostics.Tracing
             /// Address where the one argument lives (if this points to managed memory you must ensure the
             /// managed object is pinned.
             /// </summary>
-            public unsafe IntPtr DataPointer { get { return (IntPtr)(void*)m_Ptr; } set { m_Ptr = unchecked((ulong)(void*)value); } }
+            public unsafe IntPtr DataPointer
+            {
+                get => (IntPtr)(void*)m_Ptr;
+                set => m_Ptr = unchecked((ulong)(void*)value);
+            }
 
             /// <summary>
             /// Size of the argument referenced by DataPointer
             /// </summary>
-            public int Size { get { return m_Size; } set { m_Size = value; } }
+            public int Size
+            {
+                get => m_Size;
+                set => m_Size = value;
+            }
 
             /// <summary>
             /// Reserved by ETW.  This property is present to ensure that we can zero it
             /// since System.Private.CoreLib uses are not zero'd.
             /// </summary>
-            internal int Reserved { get { return m_Reserved; } set { m_Reserved = value; } }
+            internal int Reserved
+            {
+                get => m_Reserved;
+                set => m_Reserved = value;
+            }
 
 #region private
             /// <summary>
@@ -4676,10 +4688,7 @@ namespace System.Diagnostics.Tracing
                     return m_eventSource.m_eventData[EventId].Name;
                 }
             }
-            internal set
-            {
-                m_eventName = value;
-            }
+            internal set => m_eventName = value;
         }
 
         /// <summary>
@@ -4702,10 +4711,7 @@ namespace System.Diagnostics.Tracing
 
                 return activityId;
             }
-            internal set
-            {
-                m_activityId = value;
-            }
+            internal set => m_activityId = value;
         }
 
         /// <summary>
@@ -4748,10 +4754,7 @@ namespace System.Diagnostics.Tracing
                 return m_payloadNames;
             }
 
-            internal set
-            {
-                m_payloadNames = value;
-            }
+            internal set => m_payloadNames = value;
         }
 
         /// <summary>
@@ -4836,10 +4839,7 @@ namespace System.Diagnostics.Tracing
                     return m_eventSource.m_eventData[EventId].Message;
                 }
             }
-            internal set
-            {
-                m_message = value;
-            }
+            internal set => m_message = value;
         }
 
 
@@ -4908,10 +4908,7 @@ namespace System.Diagnostics.Tracing
 
                 return m_osThreadId.Value;
             }
-            internal set
-            {
-                m_osThreadId = value;
-            }
+            internal set => m_osThreadId = value;
         }
 
         /// <summary>
@@ -5005,10 +5002,7 @@ namespace System.Diagnostics.Tracing
         /// <summary>Event's operation code: allows defining operations, generally used with Tasks</summary>
         public EventOpcode Opcode
         {
-            get
-            {
-                return m_opcode;
-            }
+            get => m_opcode;
             set
             {
                 this.m_opcode = value;
@@ -5247,31 +5241,21 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        public static SessionMask operator |(SessionMask m1, SessionMask m2)
-        {
-            return new SessionMask(m1.m_mask | m2.m_mask);
-        }
+        public static SessionMask operator |(SessionMask m1, SessionMask m2) =>
+            new SessionMask(m1.m_mask | m2.m_mask);
 
-        public static SessionMask operator &(SessionMask m1, SessionMask m2)
-        {
-            return new SessionMask(m1.m_mask & m2.m_mask);
-        }
+        public static SessionMask operator &(SessionMask m1, SessionMask m2) =>
+            new SessionMask(m1.m_mask & m2.m_mask);
 
-        public static SessionMask operator ^(SessionMask m1, SessionMask m2)
-        {
-            return new SessionMask(m1.m_mask ^ m2.m_mask);
-        }
+        public static SessionMask operator ^(SessionMask m1, SessionMask m2) =>
+            new SessionMask(m1.m_mask ^ m2.m_mask);
 
-        public static SessionMask operator ~(SessionMask m)
-        {
-            return new SessionMask(MASK & ~(m.m_mask));
-        }
+        public static SessionMask operator ~(SessionMask m) =>
+            new SessionMask(MASK & ~(m.m_mask));
 
-        public static explicit operator ulong(SessionMask m)
-        { return m.m_mask; }
+        public static explicit operator ulong(SessionMask m) => m.m_mask;
 
-        public static explicit operator uint(SessionMask m)
-        { return m.m_mask; }
+        public static explicit operator uint(SessionMask m) => m.m_mask;
 
         private uint m_mask;
 

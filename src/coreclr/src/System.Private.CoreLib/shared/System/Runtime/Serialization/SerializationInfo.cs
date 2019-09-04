@@ -196,7 +196,7 @@ namespace System.Runtime.Serialization
 
         public string FullTypeName
         {
-            get { return _rootTypeName; }
+            get => _rootTypeName;
             set
             {
                 if (null == value)
@@ -211,7 +211,7 @@ namespace System.Runtime.Serialization
 
         public string AssemblyName
         {
-            get { return _rootTypeAssemblyName; }
+            get => _rootTypeAssemblyName;
             set
             {
                 if (null == value)

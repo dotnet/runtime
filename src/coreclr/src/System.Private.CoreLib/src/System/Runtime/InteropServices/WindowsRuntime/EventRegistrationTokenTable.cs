@@ -34,10 +34,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // in this table.  If the property is set, the new value will replace any existing token registrations.
         public T? InvocationList
         {
-            get
-            {
-                return m_invokeList;
-            }
+            get => m_invokeList;
             set
             {
                 lock (m_tokens)

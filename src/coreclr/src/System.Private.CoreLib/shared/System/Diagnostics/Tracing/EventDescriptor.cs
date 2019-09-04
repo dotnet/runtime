@@ -121,42 +121,25 @@ namespace System.Diagnostics.Tracing
 
         internal int TraceLoggingId => m_traceloggingId;
 
-        public override bool Equals(object? obj)
-        {
-            if (!(obj is EventDescriptor))
-                return false;
+        public override bool Equals(object? obj) =>
+            obj is EventDescriptor ed && Equals(ed);
 
-            return Equals((EventDescriptor)obj);
-        }
+        public override int GetHashCode() =>
+            m_id ^ m_version ^ m_channel ^ m_level ^ m_opcode ^ m_task ^ (int)m_keywords;
 
-        public override int GetHashCode()
-        {
-            return m_id ^ m_version ^ m_channel ^ m_level ^ m_opcode ^ m_task ^ (int)m_keywords;
-        }
+        public bool Equals(EventDescriptor other) =>
+            m_id == other.m_id &&
+            m_version == other.m_version &&
+            m_channel == other.m_channel &&
+            m_level == other.m_level &&
+            m_opcode == other.m_opcode &&
+            m_task == other.m_task &&
+            m_keywords == other.m_keywords;
 
-        public bool Equals(EventDescriptor other)
-        {
-            if ((m_id != other.m_id) ||
-                (m_version != other.m_version) ||
-                (m_channel != other.m_channel) ||
-                (m_level != other.m_level) ||
-                (m_opcode != other.m_opcode) ||
-                (m_task != other.m_task) ||
-                (m_keywords != other.m_keywords))
-            {
-                return false;
-            }
-            return true;
-        }
+        public static bool operator ==(EventDescriptor event1, EventDescriptor event2) =>
+            event1.Equals(event2);
 
-        public static bool operator ==(EventDescriptor event1, EventDescriptor event2)
-        {
-            return event1.Equals(event2);
-        }
-
-        public static bool operator !=(EventDescriptor event1, EventDescriptor event2)
-        {
-            return !event1.Equals(event2);
-        }
+        public static bool operator !=(EventDescriptor event1, EventDescriptor event2) =>
+            !event1.Equals(event2);
     }
 }

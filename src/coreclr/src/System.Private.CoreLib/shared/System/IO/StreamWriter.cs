@@ -293,7 +293,7 @@ namespace System.IO
 
         public virtual bool AutoFlush
         {
-            get { return _autoFlush; }
+            get => _autoFlush;
 
             set
             {

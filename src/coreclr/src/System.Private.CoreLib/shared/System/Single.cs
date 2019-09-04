@@ -188,40 +188,22 @@ namespace System
         }
 
         [NonVersionable]
-        public static bool operator ==(float left, float right)
-        {
-            return left == right;
-        }
+        public static bool operator ==(float left, float right) => left == right;
 
         [NonVersionable]
-        public static bool operator !=(float left, float right)
-        {
-            return left != right;
-        }
+        public static bool operator !=(float left, float right) => left != right;
 
         [NonVersionable]
-        public static bool operator <(float left, float right)
-        {
-            return left < right;
-        }
+        public static bool operator <(float left, float right) => left < right;
 
         [NonVersionable]
-        public static bool operator >(float left, float right)
-        {
-            return left > right;
-        }
+        public static bool operator >(float left, float right) => left > right;
 
         [NonVersionable]
-        public static bool operator <=(float left, float right)
-        {
-            return left <= right;
-        }
+        public static bool operator <=(float left, float right) => left <= right;
 
         [NonVersionable]
-        public static bool operator >=(float left, float right)
-        {
-            return left >= right;
-        }
+        public static bool operator >=(float left, float right) => left >= right;
 
         public override bool Equals(object? obj)
         {

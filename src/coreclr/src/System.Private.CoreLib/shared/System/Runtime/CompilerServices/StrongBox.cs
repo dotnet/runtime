@@ -37,14 +37,8 @@ namespace System.Runtime.CompilerServices
 
         object? IStrongBox.Value
         {
-            get
-            {
-                return Value;
-            }
-            set
-            {
-                Value = (T)value!;
-            }
+            get => Value;
+            set => Value = (T)value!;
         }
     }
 

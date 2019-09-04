@@ -180,33 +180,33 @@ namespace System.Threading
 
         public IAsyncResult? AsyncResult
         {
-            get { return _overlappedData!._asyncResult; }
-            set { _overlappedData!._asyncResult = value; }
+            get => _overlappedData!._asyncResult;
+            set => _overlappedData!._asyncResult = value;
         }
 
         public int OffsetLow
         {
-            get { return _overlappedData!.OffsetLow; }
-            set { _overlappedData!.OffsetLow = value; }
+            get => _overlappedData!.OffsetLow;
+            set => _overlappedData!.OffsetLow = value;
         }
 
         public int OffsetHigh
         {
-            get { return _overlappedData!.OffsetHigh; }
-            set { _overlappedData!.OffsetHigh = value; }
+            get => _overlappedData!.OffsetHigh;
+            set => _overlappedData!.OffsetHigh = value;
         }
 
         [Obsolete("This property is not 64-bit compatible.  Use EventHandleIntPtr instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
         public int EventHandle
         {
-            get { return EventHandleIntPtr.ToInt32(); }
-            set { EventHandleIntPtr = new IntPtr(value); }
+            get => EventHandleIntPtr.ToInt32();
+            set => EventHandleIntPtr = new IntPtr(value);
         }
 
         public IntPtr EventHandleIntPtr
         {
-            get { return _overlappedData!.EventHandle; }
-            set { _overlappedData!.EventHandle = value; }
+            get => _overlappedData!.EventHandle;
+            set => _overlappedData!.EventHandle = value;
         }
 
         /*====================================================================

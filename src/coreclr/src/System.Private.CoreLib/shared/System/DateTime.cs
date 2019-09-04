@@ -1418,40 +1418,19 @@ namespace System
             return new DateTime((ulong)(ticks - valueTicks) | d.InternalKind);
         }
 
-        public static TimeSpan operator -(DateTime d1, DateTime d2)
-        {
-            return new TimeSpan(d1.InternalTicks - d2.InternalTicks);
-        }
+        public static TimeSpan operator -(DateTime d1, DateTime d2) => new TimeSpan(d1.InternalTicks - d2.InternalTicks);
 
-        public static bool operator ==(DateTime d1, DateTime d2)
-        {
-            return d1.InternalTicks == d2.InternalTicks;
-        }
+        public static bool operator ==(DateTime d1, DateTime d2) => d1.InternalTicks == d2.InternalTicks;
 
-        public static bool operator !=(DateTime d1, DateTime d2)
-        {
-            return d1.InternalTicks != d2.InternalTicks;
-        }
+        public static bool operator !=(DateTime d1, DateTime d2) => d1.InternalTicks != d2.InternalTicks;
 
-        public static bool operator <(DateTime t1, DateTime t2)
-        {
-            return t1.InternalTicks < t2.InternalTicks;
-        }
+        public static bool operator <(DateTime t1, DateTime t2) => t1.InternalTicks < t2.InternalTicks;
 
-        public static bool operator <=(DateTime t1, DateTime t2)
-        {
-            return t1.InternalTicks <= t2.InternalTicks;
-        }
+        public static bool operator <=(DateTime t1, DateTime t2) => t1.InternalTicks <= t2.InternalTicks;
 
-        public static bool operator >(DateTime t1, DateTime t2)
-        {
-            return t1.InternalTicks > t2.InternalTicks;
-        }
+        public static bool operator >(DateTime t1, DateTime t2) => t1.InternalTicks > t2.InternalTicks;
 
-        public static bool operator >=(DateTime t1, DateTime t2)
-        {
-            return t1.InternalTicks >= t2.InternalTicks;
-        }
+        public static bool operator >=(DateTime t1, DateTime t2) => t1.InternalTicks >= t2.InternalTicks;
 
 
         // Returns a string array containing all of the known date and time options for the

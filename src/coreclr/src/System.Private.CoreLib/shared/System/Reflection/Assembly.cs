@@ -174,10 +174,7 @@ namespace System.Reflection
             return (left is null) ? false : left.Equals(right);
         }
 
-        public static bool operator !=(Assembly? left, Assembly? right)
-        {
-            return !(left == right);
-        }
+        public static bool operator !=(Assembly? left, Assembly? right) => !(left == right);
 
         public static string CreateQualifiedName(string? assemblyName, string? typeName) => typeName + ", " + assemblyName;
 
