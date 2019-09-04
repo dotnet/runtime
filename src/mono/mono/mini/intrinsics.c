@@ -109,69 +109,124 @@ llvm_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 {
 	MonoInst *ins = NULL;
 	int opcode = 0;
+	// Convert Math and MathF methods into LLVM intrinsics, e.g. MathF.Sin -> @llvm.sin.f32
+	if (in_corlib && !strcmp (m_class_get_name (cmethod->klass), "MathF") && cfg->r4fp) {
+		// (float)
+		if (fsig->param_count == 1 && fsig->params [0]->type == MONO_TYPE_R4) {
+			if (!strcmp (cmethod->name, "Ceiling")) {
+				opcode = OP_CEILF;
+			} else if (!strcmp (cmethod->name, "Cos")) {
+				opcode = OP_COSF;
+			} else if (!strcmp (cmethod->name, "Exp")) {
+				opcode = OP_EXPF;
+			} else if (!strcmp (cmethod->name, "Floor")) {
+				opcode = OP_FLOORF;
+			} else if (!strcmp (cmethod->name, "Log2")) {
+				opcode = OP_LOG2F;
+			} else if (!strcmp (cmethod->name, "Log10")) {
+				opcode = OP_LOG10F;
+			} else if (!strcmp (cmethod->name, "Sin")) {
+				opcode = OP_SINF;
+			} else if (!strcmp (cmethod->name, "Sqrt")) {
+				opcode = OP_SQRTF;
+			} else if (!strcmp (cmethod->name, "Truncate")) {
+				opcode = OP_TRUNCF;
+			}
+		}
+		// (float, float)
+		if (fsig->param_count == 2 && fsig->params [0]->type == MONO_TYPE_R4 && fsig->params [1]->type == MONO_TYPE_R4) {
+			if (!strcmp (cmethod->name, "Pow")) {
+				opcode = OP_RPOW;
+			} else if (!strcmp (cmethod->name, "CopySign")) {
+				opcode = OP_RCOPYSIGN;
+			}
+		}
+		// (float, float, float)
+		if (fsig->param_count == 3 && fsig->params [0]->type == MONO_TYPE_R4 && fsig->params [1]->type == MONO_TYPE_R4 && fsig->params [2]->type == MONO_TYPE_R4) {
+			if (!strcmp (cmethod->name, "FusedMultiplyAdd")) {
+				opcode = OP_FMAF;
+			}
+		}
 
-	if (in_corlib && !strcmp (m_class_get_name (cmethod->klass), "MathF") && fsig->param_count && fsig->params [0]->type == MONO_TYPE_R4 && cfg->r4fp) {
-		if (!strcmp (cmethod->name, "Sin"))
-			opcode = OP_SINF;
-		else if (!strcmp (cmethod->name, "Cos"))
-			opcode = OP_COSF;
-		else if (!strcmp (cmethod->name, "Abs"))
-			opcode = OP_ABSF;
-		else if (!strcmp (cmethod->name, "Sqrt"))
-			opcode = OP_SQRTF;
-		else if (!strcmp (cmethod->name, "Floor"))
-			opcode = OP_FLOORF;
-		else if (!strcmp (cmethod->name, "Ceiling"))
-			opcode = OP_CEILF;
-		else if (!strcmp (cmethod->name, "FusedMultiplyAdd"))
-			opcode = OP_FMAF;
-		else if (!strcmp (cmethod->name, "Pow"))
-			opcode = OP_RPOW;
-		if (opcode && fsig->param_count > 0) {
+		if (opcode) {
 			MONO_INST_NEW (cfg, ins, opcode);
 			ins->type = STACK_R8;
 			ins->dreg = mono_alloc_dreg (cfg, (MonoStackType)ins->type);
 			ins->sreg1 = args [0]->dreg;
-			if (fsig->param_count > 1) { // POW
+			if (fsig->param_count > 1) {
 				ins->sreg2 = args [1]->dreg;
 			}
-			if (fsig->param_count > 2) { // FMA
+			if (fsig->param_count > 2) {
 				ins->sreg3 = args [2]->dreg;
 			}
 			g_assert (fsig->param_count <= 3);
 			MONO_ADD_INS (cfg->cbb, ins);
 		}
 	}
-	/* The LLVM backend supports these intrinsics */
+
 	if (cmethod->klass == mono_class_try_get_math_class ()) {
-		if (strcmp (cmethod->name, "Sin") == 0) {
-			opcode = OP_SIN;
-		} else if (strcmp (cmethod->name, "Cos") == 0) {
-			opcode = OP_COS;
-		} else if (strcmp (cmethod->name, "Sqrt") == 0) {
-			opcode = OP_SQRT;
-		} else if (strcmp (cmethod->name, "Floor") == 0) {
-			opcode = OP_FLOOR;
-		} else if (strcmp (cmethod->name, "Ceiling") == 0) {
-			opcode = OP_CEIL;
-		} else if (strcmp (cmethod->name, "FusedMultiplyAdd") == 0) {
-			opcode = OP_FMA;
-		} else if (strcmp (cmethod->name, "Abs") == 0 && fsig->params [0]->type == MONO_TYPE_R8) {
-			opcode = OP_ABS;
+		// (double)
+		if (fsig->param_count == 1 && fsig->params [0]->type == MONO_TYPE_R8) {
+			if (!strcmp (cmethod->name, "Abs")) {
+				opcode = OP_ABS;
+			} else if (!strcmp (cmethod->name, "Ceiling")) {
+				opcode = OP_CEIL;
+			} else if (!strcmp (cmethod->name, "Cos")) {
+				opcode = OP_COS;
+			} else if (!strcmp (cmethod->name, "Exp")) {
+				opcode = OP_EXP;
+			} else if (!strcmp (cmethod->name, "Floor")) {
+				opcode = OP_FLOOR;
+			} else if (!strcmp (cmethod->name, "Log")) {
+				opcode = OP_LOG;
+			} else if (!strcmp (cmethod->name, "Log2")) {
+				opcode = OP_LOG2;
+			} else if (!strcmp (cmethod->name, "Log10")) {
+				opcode = OP_LOG10;
+			} else if (!strcmp (cmethod->name, "Sin")) {
+				opcode = OP_SIN;
+			} else if (!strcmp (cmethod->name, "Sqrt")) {
+				opcode = OP_SQRT;
+			} else if (!strcmp (cmethod->name, "Truncate")) {
+				opcode = OP_TRUNC;
+			}
 		}
-		// Max and Min can only be optimized in fast math mode
-		else if (strcmp (cmethod->name, "Max") == 0 && mono_use_fast_math && fsig->params [0]->type == MONO_TYPE_R8) {
-			opcode = OP_FMAX; 
-		} else if (strcmp (cmethod->name, "Min") == 0 && mono_use_fast_math && fsig->params [0]->type == MONO_TYPE_R8) {
-			opcode = OP_FMIN;
+		// (double, double)
+		if (fsig->param_count == 2 && fsig->params [0]->type == MONO_TYPE_R8 && fsig->params [1]->type == MONO_TYPE_R8) {
+			// Max and Min can only be optimized in fast math mode
+			if (!strcmp (cmethod->name, "Max") && mono_use_fast_math) {
+				opcode = OP_FMAX; 
+			} else if (!strcmp (cmethod->name, "Min") && mono_use_fast_math) {
+				opcode = OP_FMIN;
+			} else if (!strcmp (cmethod->name, "Pow")) {
+				opcode = OP_FPOW;
+			} else if (!strcmp (cmethod->name, "CopySign")) {
+				opcode = OP_FCOPYSIGN;
+			}
 		}
-		// Math.Max/Min also have float overloads (MathF.Max/Min just redirect to them)
-		else if (strcmp (cmethod->name, "Max") == 0 && mono_use_fast_math && fsig->params [0]->type == MONO_TYPE_R4) {
-			opcode = OP_RMAX; 
-		} else if (strcmp (cmethod->name, "Min") == 0 && mono_use_fast_math && fsig->params [0]->type == MONO_TYPE_R4) {
-			opcode = OP_RMIN;
-		} else if (strcmp (cmethod->name, "Pow") == 0) {
-			opcode = OP_FPOW;
+		// (double, double, double)
+		if (fsig->param_count == 3 && fsig->params [0]->type == MONO_TYPE_R8 && fsig->params [1]->type == MONO_TYPE_R8 && fsig->params [2]->type == MONO_TYPE_R8) {
+			if (!strcmp (cmethod->name, "FusedMultiplyAdd")) {
+				opcode = OP_FMA;
+			}
+		}
+
+		// Math also contains overloads for floats (MathF inlines them)
+		// (float)
+		if (fsig->param_count == 1 && fsig->params [0]->type == MONO_TYPE_R4) {
+			if (!strcmp (cmethod->name, "Abs")) {
+				opcode = OP_ABSF;
+			}
+		}
+		// (float, float)
+		if (fsig->param_count == 2 && fsig->params [0]->type == MONO_TYPE_R4 && fsig->params [1]->type == MONO_TYPE_R4) {
+			if (!strcmp (cmethod->name, "Max") && mono_use_fast_math) {
+				opcode = OP_RMAX; 
+			} else if (!strcmp (cmethod->name, "Min") && mono_use_fast_math) {
+				opcode = OP_RMIN;
+			} else if (!strcmp (cmethod->name, "Pow")) {
+				opcode = OP_RPOW;
+			}
 		}
 
 		if (opcode && fsig->param_count > 0) {
@@ -179,10 +234,10 @@ llvm_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			ins->type = STACK_R8;
 			ins->dreg = mono_alloc_dreg (cfg, (MonoStackType)ins->type);
 			ins->sreg1 = args [0]->dreg;
-			if (fsig->param_count > 1) { // POW, MIN, MAX
+			if (fsig->param_count > 1) {
 				ins->sreg2 = args [1]->dreg;
 			}
-			if (fsig->param_count > 2) { // FMA
+			if (fsig->param_count > 2) {
 				ins->sreg3 = args [2]->dreg;
 			}
 			g_assert (fsig->param_count <= 3);
