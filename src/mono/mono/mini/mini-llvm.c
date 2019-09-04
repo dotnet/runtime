@@ -6435,7 +6435,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			args [1] = LLVMConstInt (LLVMInt1Type (), 1, FALSE);
 			cmp = LLVMBuildCall (ctx->builder, get_intrins (ctx, INTRINS_EXPECT_I1), args, 2, "");
 
-			LLVMBuildCondBr (builder, cmp, cont_bb, poll_bb);
+			mono_llvm_build_weighted_branch (builder, cmp, cont_bb, poll_bb, 64, 4);
 
 			ctx->builder = builder = create_builder (ctx);
 			LLVMPositionBuilderAtEnd (builder, poll_bb);

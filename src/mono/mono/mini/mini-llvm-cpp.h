@@ -88,6 +88,12 @@ mono_llvm_replace_uses_of (LLVMValueRef var, LLVMValueRef v);
 LLVMValueRef
 mono_llvm_build_cmpxchg (LLVMBuilderRef builder, LLVMValueRef addr, LLVMValueRef comparand, LLVMValueRef value);
 
+LLVMValueRef
+mono_llvm_build_weighted_branch (LLVMBuilderRef builder, LLVMValueRef cond, LLVMBasicBlockRef t, LLVMBasicBlockRef f, uint32_t t_weight, uint32_t f_weight);
+
+void
+mono_llvm_set_implicit_branch (LLVMBuilderRef builder, LLVMValueRef branch);
+
 void
 mono_llvm_set_must_tailcall (LLVMValueRef call_ins);
 
