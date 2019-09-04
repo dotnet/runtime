@@ -11,7 +11,7 @@ namespace System.Runtime.Serialization
 
         public int VersionAdded
         {
-            get { return _versionAdded; }
+            get => _versionAdded;
             set
             {
                 if (value < 1)

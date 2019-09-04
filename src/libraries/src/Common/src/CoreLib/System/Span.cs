@@ -26,10 +26,7 @@ namespace System
         public int Length
         {
             [NonVersionable]
-            get
-            {
-                return _length;
-            }
+            get => _length;
         }
 
         /// <summary>
@@ -38,11 +35,7 @@ namespace System
         public bool IsEmpty
         {
             [NonVersionable]
-            get
-            {
-                // Workaround for https://github.com/dotnet/coreclr/issues/19620
-                return 0 >= (uint)_length;
-            }
+            get => 0 >= (uint)_length; // Workaround for https://github.com/dotnet/coreclr/issues/19620
         }
 
         /// <summary>
@@ -59,10 +52,8 @@ namespace System
         /// </summary>
         [Obsolete("Equals() on Span will always throw an exception. Use == instead.")]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public override bool Equals(object? obj)
-        {
+        public override bool Equals(object? obj) =>
             throw new NotSupportedException(SR.NotSupported_CannotCallEqualsOnSpan);
-        }
 
         /// <summary>
         /// This method is not supported as spans cannot be boxed.
@@ -72,10 +63,8 @@ namespace System
         /// </summary>
         [Obsolete("GetHashCode() on Span will always throw an exception.")]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public override int GetHashCode()
-        {
+        public override int GetHashCode() =>
             throw new NotSupportedException(SR.NotSupported_CannotCallGetHashCodeOnSpan);
-        }
 
         /// <summary>
         /// Defines an implicit conversion of an array to a <see cref="Span{T}"/>
@@ -85,8 +74,8 @@ namespace System
         /// <summary>
         /// Defines an implicit conversion of a <see cref="ArraySegment{T}"/> to a <see cref="Span{T}"/>
         /// </summary>
-        public static implicit operator Span<T>(ArraySegment<T> segment)
-            => new Span<T>(segment.Array, segment.Offset, segment.Count);
+        public static implicit operator Span<T>(ArraySegment<T> segment) =>
+            new Span<T>(segment.Array, segment.Offset, segment.Count);
 
         /// <summary>
         /// Returns an empty <see cref="Span{T}"/>

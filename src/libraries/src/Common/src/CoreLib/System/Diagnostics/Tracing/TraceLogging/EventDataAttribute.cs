@@ -83,8 +83,8 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         internal EventLevel Level
         {
-            get { return this.level; }
-            set { this.level = value; }
+            get => this.level;
+            set => this.level = value;
         }
 
         /// <summary>
@@ -109,8 +109,8 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         internal EventOpcode Opcode
         {
-            get { return this.opcode; }
-            set { this.opcode = value; }
+            get => this.opcode;
+            set => this.opcode = value;
         }
 
         /// <summary>

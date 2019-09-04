@@ -73,19 +73,12 @@ namespace System
             info.AddValue("value", ToInt64());
         }
 
-        public override unsafe bool Equals(object? obj)
-        {
-            if (obj is IntPtr)
-            {
-                return (_value == ((IntPtr)obj)._value);
-            }
-            return false;
-        }
+        public override unsafe bool Equals(object? obj) =>
+            obj is IntPtr other &&
+            _value == other._value;
 
-        unsafe bool IEquatable<IntPtr>.Equals(IntPtr other)
-        {
-            return _value == other._value;
-        }
+        unsafe bool IEquatable<IntPtr>.Equals(IntPtr other) =>
+            _value == other._value;
 
         public override unsafe int GetHashCode()
         {
@@ -111,40 +104,30 @@ namespace System
 
         [Intrinsic]
         [NonVersionable]
-        public unsafe long ToInt64()
-        {
-            return (nint)_value;
-        }
+        public unsafe long ToInt64() =>
+            (nint)_value;
 
         [Intrinsic]
         [NonVersionable]
-        public static unsafe explicit operator IntPtr(int value)
-        {
-            return new IntPtr(value);
-        }
+        public static unsafe explicit operator IntPtr(int value) =>
+            new IntPtr(value);
 
         [Intrinsic]
         [NonVersionable]
-        public static unsafe explicit operator IntPtr(long value)
-        {
-            return new IntPtr(value);
-        }
+        public static unsafe explicit operator IntPtr(long value) =>
+            new IntPtr(value);
 
         [CLSCompliant(false)]
         [Intrinsic]
         [NonVersionable]
-        public static unsafe explicit operator IntPtr(void* value)
-        {
-            return new IntPtr(value);
-        }
+        public static unsafe explicit operator IntPtr(void* value) =>
+            new IntPtr(value);
 
         [CLSCompliant(false)]
         [Intrinsic]
         [NonVersionable]
-        public static unsafe explicit operator void*(IntPtr value)
-        {
-            return value._value;
-        }
+        public static unsafe explicit operator void*(IntPtr value) =>
+            value._value;
 
         [Intrinsic]
         [NonVersionable]
@@ -160,77 +143,53 @@ namespace System
 
         [Intrinsic]
         [NonVersionable]
-        public static unsafe explicit operator long(IntPtr value)
-        {
-            return (nint)value._value;
-        }
+        public static unsafe explicit operator long(IntPtr value) =>
+            (nint)value._value;
 
         [Intrinsic]
         [NonVersionable]
-        public static unsafe bool operator ==(IntPtr value1, IntPtr value2)
-        {
-            return value1._value == value2._value;
-        }
+        public static unsafe bool operator ==(IntPtr value1, IntPtr value2) =>
+            value1._value == value2._value;
 
         [Intrinsic]
         [NonVersionable]
-        public static unsafe bool operator !=(IntPtr value1, IntPtr value2)
-        {
-            return value1._value != value2._value;
-        }
+        public static unsafe bool operator !=(IntPtr value1, IntPtr value2) =>
+            value1._value != value2._value;
 
         [NonVersionable]
-        public static IntPtr Add(IntPtr pointer, int offset)
-        {
-            return pointer + offset;
-        }
+        public static IntPtr Add(IntPtr pointer, int offset) =>
+            pointer + offset;
 
         [Intrinsic]
         [NonVersionable]
-        public static unsafe IntPtr operator +(IntPtr pointer, int offset)
-        {
-            return new IntPtr((nint)pointer._value + offset);
-        }
+        public static unsafe IntPtr operator +(IntPtr pointer, int offset) =>
+            new IntPtr((nint)pointer._value + offset);
 
         [NonVersionable]
-        public static IntPtr Subtract(IntPtr pointer, int offset)
-        {
-            return pointer - offset;
-        }
+        public static IntPtr Subtract(IntPtr pointer, int offset) =>
+            pointer - offset;
 
         [Intrinsic]
         [NonVersionable]
-        public static unsafe IntPtr operator -(IntPtr pointer, int offset)
-        {
-            return new IntPtr((nint)pointer._value - offset);
-        }
+        public static unsafe IntPtr operator -(IntPtr pointer, int offset) =>
+            new IntPtr((nint)pointer._value - offset);
 
         public static int Size
         {
             [Intrinsic]
             [NonVersionable]
-            get
-            {
-                return sizeof(nint);
-            }
+            get => sizeof(nint);
         }
 
         [CLSCompliant(false)]
         [Intrinsic]
         [NonVersionable]
-        public unsafe void* ToPointer()
-        {
-            return _value;
-        }
+        public unsafe void* ToPointer() => _value;
 
-        public override unsafe string ToString()
-        {
-            return ((nint)_value).ToString(CultureInfo.InvariantCulture);
-        }
+        public override unsafe string ToString() =>
+            ((nint)_value).ToString(CultureInfo.InvariantCulture);
 
-        public unsafe string ToString(string format)
-        {
-            return ((nint)_value).ToString(format, CultureInfo.InvariantCulture);
-        }
+        public unsafe string ToString(string format) =>
+            ((nint)_value).ToString(format, CultureInfo.InvariantCulture);
     }
 }

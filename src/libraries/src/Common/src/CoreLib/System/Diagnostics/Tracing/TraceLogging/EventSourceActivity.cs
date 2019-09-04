@@ -40,7 +40,8 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// You can make an activity out of just an EventSource.
         /// </summary>
-        public static implicit operator EventSourceActivity(EventSource eventSource) { return new EventSourceActivity(eventSource); }
+        public static implicit operator EventSourceActivity(EventSource eventSource) =>
+            new EventSourceActivity(eventSource);
 
         /* Properties */
         /// <summary>

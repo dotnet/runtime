@@ -53,10 +53,7 @@ namespace System.Diagnostics.Tracing
 
                 throw new System.Collections.Generic.KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key));
             }
-            set
-            {
-                throw new System.NotSupportedException();
-            }
+            set => throw new System.NotSupportedException();
         }
 
         public void Add(string key, object? value)

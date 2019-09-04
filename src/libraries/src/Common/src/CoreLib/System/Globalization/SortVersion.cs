@@ -77,9 +77,7 @@ namespace System.Globalization
             return right.Equals(left);
         }
 
-        public static bool operator !=(SortVersion? left, SortVersion? right)
-        {
-            return !(left == right);
-        }
+        public static bool operator !=(SortVersion? left, SortVersion? right) =>
+            !(left == right);
     }
 }

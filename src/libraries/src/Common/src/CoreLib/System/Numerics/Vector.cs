@@ -71,10 +71,7 @@ namespace System.Numerics
         public static Vector<T> Zero
         {
             [Intrinsic]
-            get
-            {
-                return s_zero;
-            }
+            get => s_zero;
         }
         private static readonly Vector<T> s_zero = new Vector<T>();
 
@@ -84,20 +81,14 @@ namespace System.Numerics
         public static Vector<T> One
         {
             [Intrinsic]
-            get
-            {
-                return s_one;
-            }
+            get => s_one;
         }
         private static readonly Vector<T> s_one = new Vector<T>(GetOneValue());
 
         internal static Vector<T> AllOnes
         {
             [Intrinsic]
-            get
-            {
-                return s_allOnes;
-            }
+            get => s_allOnes;
         }
         private static readonly Vector<T> s_allOnes = new Vector<T>(GetAllBitsSetValue());
         #endregion Static Members
@@ -2253,10 +2244,8 @@ namespace System.Numerics
         /// <param name="factor">The scalar value.</param>
         /// <returns>The scaled vector.</returns>
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> operator *(Vector<T> value, T factor)
-        {
-            return new Vector<T>(factor) * value;
-        }
+        public static Vector<T> operator *(Vector<T> value, T factor) =>
+            new Vector<T>(factor) * value;
 
         /// <summary>
         /// Multiplies a vector by the given scalar.
@@ -2265,10 +2254,8 @@ namespace System.Numerics
         /// <param name="value">The source vector.</param>
         /// <returns>The scaled vector.</returns>
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> operator *(T factor, Vector<T> value)
-        {
-            return new Vector<T>(factor) * value;
-        }
+        public static Vector<T> operator *(T factor, Vector<T> value) =>
+            new Vector<T>(factor) * value;
 
         // This method is intrinsic only for certain types. It cannot access fields directly unless we are sure the context is unaccelerated.
         /// <summary>
@@ -2488,10 +2475,7 @@ namespace System.Numerics
         /// </summary>
         /// <param name="value">The source vector.</param>
         /// <returns>The negated vector.</returns>
-        public static Vector<T> operator -(Vector<T> value)
-        {
-            return Zero - value;
-        }
+        public static Vector<T> operator -(Vector<T> value) => Zero - value;
         #endregion Arithmetic Operators
 
         #region Bitwise Operators
@@ -2594,10 +2578,8 @@ namespace System.Numerics
         /// <param name="value">The source vector.</param>
         /// <returns>The one's complement vector.</returns>
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> operator ~(Vector<T> value)
-        {
-            return s_allOnes ^ value;
-        }
+        public static Vector<T> operator ~(Vector<T> value) =>
+            s_allOnes ^ value;
         #endregion Bitwise Operators
 
         #region Logical Operators
@@ -2609,10 +2591,8 @@ namespace System.Numerics
         /// <returns>True if all elements are equal; False otherwise.</returns>
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static bool operator ==(Vector<T> left, Vector<T> right)
-        {
-            return left.Equals(right);
-        }
+        public static bool operator ==(Vector<T> left, Vector<T> right) =>
+            left.Equals(right);
 
         /// <summary>
         /// Returns a boolean indicating whether any single pair of elements in the given vectors are not equal.
@@ -2622,10 +2602,7 @@ namespace System.Numerics
         /// <returns>True if left and right are not equal; False otherwise.</returns>
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static bool operator !=(Vector<T> left, Vector<T> right)
-        {
-            return !(left == right);
-        }
+        public static bool operator !=(Vector<T> left, Vector<T> right) => !(left == right);
         #endregion Logical Operators
 
         #region Conversions
@@ -2635,10 +2612,8 @@ namespace System.Numerics
         /// <param name="value">The source vector</param>
         /// <returns>The reinterpreted vector.</returns>
         [Intrinsic]
-        public static explicit operator Vector<byte>(Vector<T> value)
-        {
-            return new Vector<byte>(ref value.register);
-        }
+        public static explicit operator Vector<byte>(Vector<T> value) =>
+            new Vector<byte>(ref value.register);
 
         /// <summary>
         /// Reinterprets the bits of the given vector into those of another type.
@@ -2647,10 +2622,8 @@ namespace System.Numerics
         /// <returns>The reinterpreted vector.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
-        public static explicit operator Vector<sbyte>(Vector<T> value)
-        {
-            return new Vector<sbyte>(ref value.register);
-        }
+        public static explicit operator Vector<sbyte>(Vector<T> value) =>
+            new Vector<sbyte>(ref value.register);
 
         /// <summary>
         /// Reinterprets the bits of the given vector into those of another type.
@@ -2659,10 +2632,8 @@ namespace System.Numerics
         /// <returns>The reinterpreted vector.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
-        public static explicit operator Vector<ushort>(Vector<T> value)
-        {
-            return new Vector<ushort>(ref value.register);
-        }
+        public static explicit operator Vector<ushort>(Vector<T> value) =>
+            new Vector<ushort>(ref value.register);
 
         /// <summary>
         /// Reinterprets the bits of the given vector into those of another type.
@@ -2670,33 +2641,8 @@ namespace System.Numerics
         /// <param name="value">The source vector</param>
         /// <returns>The reinterpreted vector.</returns>
         [Intrinsic]
-        public static explicit operator Vector<short>(Vector<T> value)
-        {
-            return new Vector<short>(ref value.register);
-        }
-
-        /// <summary>
-        /// Reinterprets the bits of the given vector into those of another type.
-        /// </summary>
-        /// <param name="value">The source vector</param>
-        /// <returns>The reinterpreted vector.</returns>
-        [CLSCompliant(false)]
-        [Intrinsic]
-        public static explicit operator Vector<uint>(Vector<T> value)
-        {
-            return new Vector<uint>(ref value.register);
-        }
-
-        /// <summary>
-        /// Reinterprets the bits of the given vector into those of another type.
-        /// </summary>
-        /// <param name="value">The source vector</param>
-        /// <returns>The reinterpreted vector.</returns>
-        [Intrinsic]
-        public static explicit operator Vector<int>(Vector<T> value)
-        {
-            return new Vector<int>(ref value.register);
-        }
+        public static explicit operator Vector<short>(Vector<T> value) =>
+            new Vector<short>(ref value.register);
 
         /// <summary>
         /// Reinterprets the bits of the given vector into those of another type.
@@ -2705,10 +2651,8 @@ namespace System.Numerics
         /// <returns>The reinterpreted vector.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
-        public static explicit operator Vector<ulong>(Vector<T> value)
-        {
-            return new Vector<ulong>(ref value.register);
-        }
+        public static explicit operator Vector<uint>(Vector<T> value) =>
+            new Vector<uint>(ref value.register);
 
         /// <summary>
         /// Reinterprets the bits of the given vector into those of another type.
@@ -2716,10 +2660,18 @@ namespace System.Numerics
         /// <param name="value">The source vector</param>
         /// <returns>The reinterpreted vector.</returns>
         [Intrinsic]
-        public static explicit operator Vector<long>(Vector<T> value)
-        {
-            return new Vector<long>(ref value.register);
-        }
+        public static explicit operator Vector<int>(Vector<T> value) =>
+            new Vector<int>(ref value.register);
+
+        /// <summary>
+        /// Reinterprets the bits of the given vector into those of another type.
+        /// </summary>
+        /// <param name="value">The source vector</param>
+        /// <returns>The reinterpreted vector.</returns>
+        [CLSCompliant(false)]
+        [Intrinsic]
+        public static explicit operator Vector<ulong>(Vector<T> value) =>
+            new Vector<ulong>(ref value.register);
 
         /// <summary>
         /// Reinterprets the bits of the given vector into those of another type.
@@ -2727,10 +2679,8 @@ namespace System.Numerics
         /// <param name="value">The source vector</param>
         /// <returns>The reinterpreted vector.</returns>
         [Intrinsic]
-        public static explicit operator Vector<float>(Vector<T> value)
-        {
-            return new Vector<float>(ref value.register);
-        }
+        public static explicit operator Vector<long>(Vector<T> value) =>
+            new Vector<long>(ref value.register);
 
         /// <summary>
         /// Reinterprets the bits of the given vector into those of another type.
@@ -2738,10 +2688,17 @@ namespace System.Numerics
         /// <param name="value">The source vector</param>
         /// <returns>The reinterpreted vector.</returns>
         [Intrinsic]
-        public static explicit operator Vector<double>(Vector<T> value)
-        {
-            return new Vector<double>(ref value.register);
-        }
+        public static explicit operator Vector<float>(Vector<T> value) =>
+            new Vector<float>(ref value.register);
+
+        /// <summary>
+        /// Reinterprets the bits of the given vector into those of another type.
+        /// </summary>
+        /// <param name="value">The source vector</param>
+        /// <returns>The reinterpreted vector.</returns>
+        [Intrinsic]
+        public static explicit operator Vector<double>(Vector<T> value) =>
+            new Vector<double>(ref value.register);
 
         #endregion Conversions
 

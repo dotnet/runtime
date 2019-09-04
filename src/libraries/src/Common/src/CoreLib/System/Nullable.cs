@@ -29,10 +29,7 @@ namespace System
         public bool HasValue
         {
             [NonVersionable]
-            get
-            {
-                return hasValue;
-            }
+            get => hasValue;
         }
 
         public T Value
@@ -48,16 +45,11 @@ namespace System
         }
 
         [NonVersionable]
-        public T GetValueOrDefault()
-        {
-            return value;
-        }
+        public T GetValueOrDefault() => value;
 
         [NonVersionable]
-        public T GetValueOrDefault(T defaultValue)
-        {
-            return hasValue ? value : defaultValue;
-        }
+        public T GetValueOrDefault(T defaultValue) =>
+            hasValue ? value : defaultValue;
 
         public override bool Equals(object? other)
         {
@@ -66,27 +58,16 @@ namespace System
             return value.Equals(other);
         }
 
-        public override int GetHashCode()
-        {
-            return hasValue ? value.GetHashCode() : 0;
-        }
+        public override int GetHashCode() => hasValue ? value.GetHashCode() : 0;
 
-        public override string? ToString()
-        {
-            return hasValue ? value.ToString() : "";
-        }
+        public override string? ToString() => hasValue ? value.ToString() : "";
 
         [NonVersionable]
-        public static implicit operator Nullable<T>(T value)
-        {
-            return new Nullable<T>(value);
-        }
+        public static implicit operator Nullable<T>(T value) =>
+            new Nullable<T>(value);
 
         [NonVersionable]
-        public static explicit operator T(Nullable<T> value)
-        {
-            return value!.Value;
-        }
+        public static explicit operator T(Nullable<T> value) => value!.Value;
     }
 
     public static class Nullable
