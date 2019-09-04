@@ -1526,6 +1526,12 @@ MethodTableBuilder::BuildMethodTableThrowing(
             {
                 // Disable AOT compiling for managed implementation of hardware intrinsics.
                 // We specially treat them here to ensure correct ISA features are set during compilation
+                //
+                // When a hardware intrinsic is not supported, the JIT can generate a PlatformNotSupportedException
+                // at runtime. We cannot do the same in AOT. AOT generated ones would cause illegal instruction traps.
+                //
+                // To avoid it, one must make sure all usages are protected under IsSupported. We can guarantee this for 
+                // CoreLib. That's why we can allow these to AOT compile in CoreLib:
                 COMPlusThrow(kTypeLoadException, IDS_EE_HWINTRINSIC_NGEN_DISALLOWED);
             }
 #endif // defined(CROSSGEN_COMPILE)
