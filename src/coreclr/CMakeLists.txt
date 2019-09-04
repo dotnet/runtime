@@ -171,6 +171,8 @@ if(WIN32)
   add_subdirectory(src/gc/sample)
 endif()
 
+add_subdirectory(src/tools/crossgen2/jitinterface)
+
 # Above projects do not build with these compile options
 # All of the compiler options are specified in file compileoptions.cmake
 # Do not add any new options here. They should be added in compileoptions.cmake
