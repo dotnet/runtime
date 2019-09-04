@@ -1536,16 +1536,16 @@ namespace System.Net.Http.Tests
 
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/xml"));
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("*/xml"));
-            expected += HttpKnownHeaderNames.Accept + ": application/xml, */xml\r\n";
+            expected += HttpKnownHeaderNames.Accept + ": application/xml, */xml" + Environment.NewLine;
 
             request.Headers.Authorization = new AuthenticationHeaderValue("Basic");
-            expected += HttpKnownHeaderNames.Authorization + ": Basic\r\n";
+            expected += HttpKnownHeaderNames.Authorization + ": Basic" + Environment.NewLine;
 
             request.Headers.ExpectContinue = true;
-            expected += HttpKnownHeaderNames.Expect + ": 100-continue\r\n";
+            expected += HttpKnownHeaderNames.Expect + ": 100-continue" + Environment.NewLine;
 
             request.Headers.TransferEncodingChunked = true;
-            expected += HttpKnownHeaderNames.TransferEncoding + ": chunked\r\n";
+            expected += HttpKnownHeaderNames.TransferEncoding + ": chunked" + Environment.NewLine;
 
             Assert.Equal(expected, request.Headers.ToString());
         }

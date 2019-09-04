@@ -260,8 +260,7 @@ namespace System.Net.Http.Headers
                 sb.Append(header.Key);
                 sb.Append(": ");
 
-                sb.Append(header.Value);
-                sb.Append("\r\n");
+                sb.AppendLine(header.Value);
             }
 
             return sb.ToString();

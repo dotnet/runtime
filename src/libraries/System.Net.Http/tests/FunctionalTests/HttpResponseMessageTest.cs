@@ -252,7 +252,7 @@ namespace System.Net.Http.Functional.Tests
         {
             using (var rm = new HttpResponseMessage())
             {
-                Assert.Equal("StatusCode: 200, ReasonPhrase: 'OK', Version: 1.1, Content: <null>, Headers:\r\n{\r\n}", rm.ToString());
+                Assert.Equal($"StatusCode: 200, ReasonPhrase: 'OK', Version: 1.1, Content: <null>, Headers:{Environment.NewLine}{{{Environment.NewLine}}}", rm.ToString());
 
                 rm.StatusCode = HttpStatusCode.BadRequest;
                 rm.ReasonPhrase = null;
@@ -262,9 +262,9 @@ namespace System.Net.Http.Functional.Tests
                 // Note that there is no Content-Length header: The reason is that the value for Content-Length header
                 // doesn't get set by StringContent..ctor, but only if someone actually accesses the ContentLength property.
                 Assert.Equal(
-                    "StatusCode: 400, ReasonPhrase: 'Bad Request', Version: 1.0, Content: " + typeof(StringContent).ToString() + ", Headers:\r\n" +
-                    "{\r\n" +
-                    "  Content-Type: text/plain; charset=utf-8\r\n" +
+                    "StatusCode: 400, ReasonPhrase: 'Bad Request', Version: 1.0, Content: " + typeof(StringContent).ToString() + ", Headers:" + Environment.NewLine +
+                    "{" + Environment.NewLine +
+                    "  Content-Type: text/plain; charset=utf-8" + Environment.NewLine +
                     "}", rm.ToString());
 
                 rm.Headers.AcceptRanges.Add("bytes");
@@ -273,28 +273,28 @@ namespace System.Net.Http.Functional.Tests
                 rm.Content.Headers.Add("Custom-Content-Header", "value2");
 
                 Assert.Equal(
-                    "StatusCode: 400, ReasonPhrase: 'Bad Request', Version: 1.0, Content: " + typeof(StringContent).ToString() + ", Headers:\r\n" +
-                    "{\r\n" +
-                    "  Accept-Ranges: bytes\r\n" +
-                    "  Accept-Ranges: pages\r\n" +
-                    "  Custom-Response-Header: value1\r\n" +
-                    "  Content-Type: text/plain; charset=utf-8\r\n" +
-                    "  Custom-Content-Header: value2\r\n" +
+                    "StatusCode: 400, ReasonPhrase: 'Bad Request', Version: 1.0, Content: " + typeof(StringContent).ToString() + ", Headers:" + Environment.NewLine +
+                    "{" + Environment.NewLine +
+                    "  Accept-Ranges: bytes" + Environment.NewLine +
+                    "  Accept-Ranges: pages" + Environment.NewLine +
+                    "  Custom-Response-Header: value1" + Environment.NewLine +
+                    "  Content-Type: text/plain; charset=utf-8" + Environment.NewLine +
+                    "  Custom-Content-Header: value2" + Environment.NewLine +
                     "}", rm.ToString());
 
                 rm.TrailingHeaders.Add("Custom-Trailing-Header", "value3");
 
                 Assert.Equal(
-                    "StatusCode: 400, ReasonPhrase: 'Bad Request', Version: 1.0, Content: " + typeof(StringContent).ToString() + ", Headers:\r\n" +
-                    "{\r\n" +
-                    "  Accept-Ranges: bytes\r\n" +
-                    "  Accept-Ranges: pages\r\n" +
-                    "  Custom-Response-Header: value1\r\n" +
-                    "  Content-Type: text/plain; charset=utf-8\r\n" +
-                    "  Custom-Content-Header: value2\r\n" +
-                    "}, Trailing Headers:\r\n" +
-                    "{\r\n" +
-                    "  Custom-Trailing-Header: value3\r\n" +
+                    "StatusCode: 400, ReasonPhrase: 'Bad Request', Version: 1.0, Content: " + typeof(StringContent).ToString() + ", Headers:" + Environment.NewLine +
+                    "{" + Environment.NewLine +
+                    "  Accept-Ranges: bytes" + Environment.NewLine +
+                    "  Accept-Ranges: pages" + Environment.NewLine +
+                    "  Custom-Response-Header: value1" + Environment.NewLine +
+                    "  Content-Type: text/plain; charset=utf-8" + Environment.NewLine +
+                    "  Custom-Content-Header: value2" + Environment.NewLine +
+                    "}, Trailing Headers:" + Environment.NewLine +
+                    "{" + Environment.NewLine +
+                    "  Custom-Trailing-Header: value3" + Environment.NewLine +
                     "}", rm.ToString());
             }
         }

@@ -205,7 +205,7 @@ namespace System.Net.Http.Tests
 
             Assert.Equal(2, headers.Parser.TryParseValueCallCount);
 
-            string expected = headers.Descriptor.Name + ": " + parsedPrefix + ", " + invalidHeaderValue + "\r\n";
+            string expected = headers.Descriptor.Name + ": " + parsedPrefix + ", " + invalidHeaderValue + Environment.NewLine;
             Assert.Equal(expected, headers.ToString());
         }
 
