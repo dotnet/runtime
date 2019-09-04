@@ -32,7 +32,7 @@ namespace System.Net.WebSockets
         // Indicates the range of the pinned byte[] that can be used by the WSPC (nativeBuffer + pinnedSendBuffer)
         private readonly long _startAddress;
         private readonly long _endAddress;
-        private readonly GCHandle _gcHandle;
+        private GCHandle _gcHandle;
         private readonly ArraySegment<byte> _internalBuffer;
         private readonly ArraySegment<byte> _nativeBuffer;
         private readonly ArraySegment<byte> _payloadBuffer;
