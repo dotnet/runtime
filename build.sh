@@ -443,6 +443,13 @@ build_CoreLib()
         exit $exit_code
     fi
 
+    if [[ "$__BuildManagedTools" -eq "1" ]]; then
+        echo "Publishing crossgen2 for $__DistroRid"
+        "$__ProjectRoot/dotnet.sh" publish --self-contained -r $__DistroRid -c $__BuildType -o "$__BinDir/crossgen2" "$__ProjectRoot/src/tools/crossgen2/crossgen2/crossgen2.csproj"
+        cp "$__BinDir/libclrjit.so" "$__BinDir/crossgen2/libclrjitilc.so"
+        cp "$__BinDir/libjitinterface.so" "$__BinDir/crossgen2/libjitinterface.so"
+    fi
+
     local __CoreLibILDir=$__BinDir/IL
 
     if [ $__SkipCrossgen == 1 ]; then
