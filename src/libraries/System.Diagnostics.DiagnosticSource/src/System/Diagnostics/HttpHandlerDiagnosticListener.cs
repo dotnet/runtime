@@ -658,7 +658,8 @@ namespace System.Diagnostics
             // Response event could be received several times for the same request in case it was redirected
             // IsLastResponse checks if response is the last one (no more redirects will happen)
             // based on response StatusCode and number or redirects done so far
-            if (request.Headers.Get(RequestIdHeaderName) != null && IsLastResponse(request, response.StatusCode))
+            bool wasRequestInstrumented = request.Headers.Get(TraceParentHeaderName) != null || request.Headers.Get(RequestIdHeaderName) != null;
+            if (wasRequestInstrumented && IsLastResponse(request, response.StatusCode))
             {
                 // only send Stop if request was instrumented
                 this.Write(RequestStopName, new { Request = request, Response = response });
