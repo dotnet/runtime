@@ -164,17 +164,13 @@
     <Delete Files="@(ToDelete)" />
   </Target>
 
-  <!-- Preserve symbol files for compressed symbol archive. -->
+  <!-- Preserve symbol files for compressed symbol archive. Specific to NETCoreApp. -->
   <Target Name="CopySymbolsToPublishFolder"
           Condition="'$(SfxIdentity)' == 'Microsoft.NETCore.App'"
           AfterTargets="Publish">
     <PropertyGroup>
-      <!--
-        Microsoft.NETCore.App is the name of the shared framework, but the internal package is
-        the one doing the crossgen.
-      -->
-      <CrossgennedPackageId>Microsoft.NETCore.App.Internal</CrossgennedPackageId>
-      <CrossgennedPackageSymbolDir>$(PackageSymbolsBinDir)$(CrossgennedPackageId)/</CrossgennedPackageSymbolDir>
+      <!-- Get crossgen-generated and redist symbols from the depproj. -->
+      <CrossgennedPackageSymbolDir>$(PackageSymbolsBinDir)netcoreapp/</CrossgennedPackageSymbolDir>
     </PropertyGroup>
 
     <ItemGroup>

@@ -4,7 +4,12 @@
   -->
 
   <!-- Fetches all the file items from the packages that we want to redist -->
-  <Target Name="GetFilesFromPackages">
+  <Target Name="GetFilesFromPackages"
+          DependsOnTargets="
+            GetFilesFromPackageResolve;
+            GetSymbolFilesFromPackages" />
+
+  <Target Name="GetFilesFromPackageResolve">
     <ItemGroup>
       <!-- RID-specific: include all runtime files. -->
       <RidSpecificFilesToPackage Include="@(ReferenceCopyLocalPaths)">
@@ -40,20 +45,36 @@
       </FilesToPackage>
     </ItemGroup>
 
-    <!-- Mark files with symbol file extensions as symbol files: allows filtering them out. -->
-    <ItemGroup>
-      <FilesToPackage
-        Condition="
-          '%(FilesToPackage.Extension)' == '.pdb' or
-          '%(FilesToPackage.Extension)' == '$(SymbolFileExtension)'"
-        IsSymbolFile="true" />
-    </ItemGroup>
-
     <!-- Add versions file with the hashes of the repos we consume -->
     <ItemGroup Condition="'$(FrameworkPackageName)' != ''">
       <FilesToPackage Include="$(IntermediateOutputPath)\$(FrameworkPackageName).versions.txt">
         <TargetPath></TargetPath>
       </FilesToPackage>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="SetupFindSiblingSymbolFilesByName"
+          DependsOnTargets="GetFilesFromPackageResolve">
+    <ItemGroup>
+      <FindSiblingSymbolsForFile Include="@(RidSpecificFilesToPackage)" />
+    </ItemGroup>
+  </Target>
+
+  <!--
+    Include symbol files and mark them as such. Ensures they are redistributed correctly, and that
+    they can be filtered out when necessary.
+  -->
+  <Target Name="GetSymbolFilesFromPackages"
+          DependsOnTargets="
+            SetupFindSiblingSymbolFilesByName;
+            FindSiblingSymbolFilesByName">
+    <ItemGroup>
+      <!--
+        Discovered symbol files might already be in File, without IsSymbolFile set. Make sure we
+        keep the discovered one, which has IsSymbolFile=true.
+      -->
+      <FilesToPackage Remove="@(SiblingSymbolFile)" />
+      <FilesToPackage Include="@(SiblingSymbolFile)" />
     </ItemGroup>
   </Target>
 
@@ -472,6 +493,19 @@
     </ItemGroup>
   </Target>
 
+  <Target Name="GenerateRedistributeSymbolArchiveLayout"
+          DependsOnTargets="GetFilesToPackage">
+    <ItemGroup>
+      <RedistributeSymbolFile
+        Include="@(FilesToPackage)"
+        Condition="'%(FilesToPackage.IsSymbolFile)' == 'true'" />
+    </ItemGroup>
+
+    <Copy
+      SourceFiles="@(RedistributeSymbolFile)"
+      DestinationFolder="$(PackageSymbolsBinDir)$(MSBuildProjectName)\%(TargetPath)\" />
+  </Target>
+
   <Target Name="GetRuntimeFilesToPackage"
           BeforeTargets="GetFilesToPackage"
           DependsOnTargets="PrepareForCrossGen;GetCrossGenSymbolsFiles" />
@@ -492,7 +526,8 @@
             GetFilesToPackage;
             CrossGen;
             GenerateHashVersionsFile;
-            GenerateFileVersionProps"
+            GenerateFileVersionProps;
+            GenerateRedistributeSymbolArchiveLayout"
           Condition="'$(SkipBuild)' != 'true'" />
 
 </Project>

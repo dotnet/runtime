@@ -142,6 +142,65 @@
   </Target>
 
   <!--
+    For each file in @(FindSiblingSymbolsForFile), finds symbol files in the same directory as the
+    file ("sibling") and puts them in @(SiblingSymbolFile). The inputs are not included in the
+    outputs, and the output paths are normalized. Symbol files are found by looking in the file's
+    directory for other files with the appropriate changed extensions.
+  -->
+  <Target Name="FindSiblingSymbolFilesByName">
+    <ItemGroup>
+      <!-- Normalize file paths up front (preserving metadata) for easier duplicate detection. -->
+      <FindSiblingSymbolsForFile NormalizedIdentity="$([MSBuild]::NormalizePath('%(Identity)'))" />
+      <FindSiblingSymbolsForFileNormalized
+        Include="@(FindSiblingSymbolsForFile -> '%(NormalizedIdentity)')"
+        RemoveMetadata="NormalizedIdentity" />
+
+      <FindSiblingSymbolsForFile Remove="@(FindSiblingSymbolsForFile)" />
+      <FindSiblingSymbolsForFile Include="@(FindSiblingSymbolsForFileNormalized)" />
+
+      <WindowsNativeFile
+        Include="@(FindSiblingSymbolsForFile)"
+        Condition="
+          '%(FindSiblingSymbolsForFile.Extension)' == '.dll' or
+          '%(FindSiblingSymbolsForFile.Extension)' == '.exe'" />
+
+      <!-- Don't include *.pdb for export libraries or headers -->
+      <WindowsSymbolFile
+        Include="@(FindSiblingSymbolsForFile -> '%(RootDir)%(Directory)%(Filename).pdb')"
+        Condition="
+          '%(FindSiblingSymbolsForFile.Extension)' != '.lib' and
+          '%(FindSiblingSymbolsForFile.Extension)' != '.h'" />
+
+      <!--
+        Crossgened files (on windows) have both a *.pdb and a *.ni.pdb symbol file. Include the
+        *.ni.pdb file as well if it exists.
+      -->
+      <WindowsSymbolFile
+        Include="@(FindSiblingSymbolsForFile -> '%(RootDir)%(Directory)%(Filename).ni.pdb')" />
+
+      <ExistingWindowsSymbolFile Include="@(WindowsSymbolFile)" Condition="Exists('%(Identity)')" />
+
+      <!-- Create list of potentially native non-Windows files, check for related symbol files. -->
+      <NonWindowsNativeFile
+        Include="@(FindSiblingSymbolsForFile)"
+        Exclude="@(WindowsNativeFile)" />
+      <NonWindowsSymbolFile
+        Include="@(NonWindowsNativeFile -> '%(Identity)$(SymbolFileExtension)')" />
+
+      <ExistingNonWindowsSymbolFile Include="@(NonWindowsSymbolFile)" Condition="Exists('%(Identity)')" />
+
+      <DiscoveredSymbolFile
+        Include="@(ExistingWindowsSymbolFile);@(ExistingNonWindowsSymbolFile)"
+        IsSymbolFile="true" />
+    </ItemGroup>
+
+    <!-- Remove any duplicates in symbol files found by the above searches. -->
+    <RemoveDuplicates Inputs="@(DiscoveredSymbolFile)">
+      <Output TaskParameter="Filtered" ItemName="SiblingSymbolFile"/>
+    </RemoveDuplicates>
+  </Target>
+
+  <!--
     By default, shared frameworks are generated based on the package. This can be overridden by the
     project, and in the future, the runtime pack is likely to be used to assemble the sfx.
   -->
