@@ -85,6 +85,36 @@ namespace System.Net.Sockets
             return disconnectEx_Blocking(socketHandle, overlapped, flags, reserved);
         }
 
+        partial void WildcardBindForConnectIfNecessary(AddressFamily addressFamily)
+        {
+            if (_rightEndPoint != null)
+            {
+                return;
+            }
+
+            // The socket must be bound before using ConnectEx.
+
+            IPAddress address;
+            switch (addressFamily)
+            {
+                case AddressFamily.InterNetwork:
+                    address = IsDualMode ? IPAddress.Any.MapToIPv6() : IPAddress.Any;
+                    break;
+
+                case AddressFamily.InterNetworkV6:
+                    address = IPAddress.IPv6Any;
+                    break;
+
+                default:
+                    return;
+            }
+
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, address);
+
+            var endPoint = new IPEndPoint(address, 0);
+            DoBind(endPoint, IPEndPointExtensions.Serialize(endPoint));
+        }
+
         internal unsafe bool ConnectEx(SafeSocketHandle socketHandle,
             IntPtr socketAddress,
             int socketAddressSize,
