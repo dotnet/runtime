@@ -260,8 +260,8 @@ namespace System
 
         object? IList.this[int index]
         {
-            get { return GetValue(index); }
-            set { SetValue(value, index); }
+            get => GetValue(index);
+            set => SetValue(value, index);
         }
 
         int IList.Add(object? value)

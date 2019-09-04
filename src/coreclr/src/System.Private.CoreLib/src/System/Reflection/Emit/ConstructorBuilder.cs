@@ -189,8 +189,8 @@ namespace System.Reflection.Emit
 
         public bool InitLocals
         {
-            get { return m_methodBuilder.InitLocals; }
-            set { m_methodBuilder.InitLocals = value; }
+            get => m_methodBuilder.InitLocals;
+            set => m_methodBuilder.InitLocals = value;
         }
 
         #endregion

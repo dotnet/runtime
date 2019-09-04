@@ -1094,15 +1094,9 @@ namespace System.Reflection.Emit
                 other.m_kind == m_kind;
         }
 
-        public static bool operator ==(ExceptionHandler left, ExceptionHandler right)
-        {
-            return left.Equals(right);
-        }
+        public static bool operator ==(ExceptionHandler left, ExceptionHandler right) => left.Equals(right);
 
-        public static bool operator !=(ExceptionHandler left, ExceptionHandler right)
-        {
-            return !left.Equals(right);
-        }
+        public static bool operator !=(ExceptionHandler left, ExceptionHandler right) => !left.Equals(right);
 
         #endregion
     }

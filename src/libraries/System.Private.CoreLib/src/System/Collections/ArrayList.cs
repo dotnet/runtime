@@ -90,10 +90,7 @@ namespace System.Collections
         //
         public virtual int Capacity
         {
-            get
-            {
-                return _items.Length;
-            }
+            get => _items.Length;
             set
             {
                 if (value < _size)
@@ -766,7 +763,7 @@ namespace System.Collections
 
             public override int Capacity
             {
-                get { return _list.Count; }
+                get => _list.Count;
                 set
                 {
                     if (value < Count) throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_SmallCapacity);
@@ -784,10 +781,7 @@ namespace System.Collections
 
             public override object? this[int index]
             {
-                get
-                {
-                    return _list[index];
-                }
+                get => _list[index];
                 set
                 {
                     _list[index] = value;
@@ -1680,14 +1674,8 @@ namespace System.Collections
 
             public virtual object? this[int index]
             {
-                get
-                {
-                    return _list[index];
-                }
-                set
-                {
-                    _list[index] = value;
-                }
+                get => _list[index];
+                set => _list[index] = value;
             }
 
             public virtual object SyncRoot => _list.SyncRoot;
@@ -1758,10 +1746,7 @@ namespace System.Collections
 
             public override object? this[int index]
             {
-                get
-                {
-                    return _list[index];
-                }
+                get => _list[index];
                 set
                 {
                     _list[index] = value;
@@ -1789,10 +1774,9 @@ namespace System.Collections
 
             public override int Capacity
             {
-                get { return _list.Capacity; }
+                get => _list.Capacity;
                 [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
-                set
-                { throw new NotSupportedException(SR.NotSupported_FixedSizeCollection); }
+                set => throw new NotSupportedException(SR.NotSupported_FixedSizeCollection);
             }
 
             public override void Clear()
@@ -1962,14 +1946,8 @@ namespace System.Collections
 
             public virtual object? this[int index]
             {
-                get
-                {
-                    return _list[index];
-                }
-                set
-                {
-                    throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
-                }
+                get => _list[index];
+                set => throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
             }
 
             public virtual object SyncRoot => _list.SyncRoot;
@@ -2039,14 +2017,8 @@ namespace System.Collections
 
             public override object? this[int index]
             {
-                get
-                {
-                    return _list[index];
-                }
-                set
-                {
-                    throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
-                }
+                get => _list[index];
+                set => throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
             }
 
             public override object SyncRoot => _list.SyncRoot;
@@ -2070,10 +2042,9 @@ namespace System.Collections
 
             public override int Capacity
             {
-                get { return _list.Capacity; }
+                get => _list.Capacity;
                 [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
-                set
-                { throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection); }
+                set => throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
             }
 
             public override void Clear()
@@ -2355,10 +2326,7 @@ namespace System.Collections
 
             public override int Capacity
             {
-                get
-                {
-                    return _baseList.Capacity;
-                }
+                get => _baseList.Capacity;
 
                 set
                 {

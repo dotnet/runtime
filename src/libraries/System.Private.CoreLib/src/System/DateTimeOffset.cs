@@ -828,55 +828,35 @@ namespace System
 
         // Operators
 
-        public static implicit operator DateTimeOffset(DateTime dateTime)
-        {
-            return new DateTimeOffset(dateTime);
-        }
+        public static implicit operator DateTimeOffset(DateTime dateTime) =>
+            new DateTimeOffset(dateTime);
 
-        public static DateTimeOffset operator +(DateTimeOffset dateTimeOffset, TimeSpan timeSpan)
-        {
-            return new DateTimeOffset(dateTimeOffset.ClockDateTime + timeSpan, dateTimeOffset.Offset);
-        }
+        public static DateTimeOffset operator +(DateTimeOffset dateTimeOffset, TimeSpan timeSpan) =>
+            new DateTimeOffset(dateTimeOffset.ClockDateTime + timeSpan, dateTimeOffset.Offset);
 
 
-        public static DateTimeOffset operator -(DateTimeOffset dateTimeOffset, TimeSpan timeSpan)
-        {
-            return new DateTimeOffset(dateTimeOffset.ClockDateTime - timeSpan, dateTimeOffset.Offset);
-        }
+        public static DateTimeOffset operator -(DateTimeOffset dateTimeOffset, TimeSpan timeSpan) =>
+            new DateTimeOffset(dateTimeOffset.ClockDateTime - timeSpan, dateTimeOffset.Offset);
 
-        public static TimeSpan operator -(DateTimeOffset left, DateTimeOffset right)
-        {
-            return left.UtcDateTime - right.UtcDateTime;
-        }
+        public static TimeSpan operator -(DateTimeOffset left, DateTimeOffset right) =>
+            left.UtcDateTime - right.UtcDateTime;
 
-        public static bool operator ==(DateTimeOffset left, DateTimeOffset right)
-        {
-            return left.UtcDateTime == right.UtcDateTime;
-        }
+        public static bool operator ==(DateTimeOffset left, DateTimeOffset right) =>
+            left.UtcDateTime == right.UtcDateTime;
 
-        public static bool operator !=(DateTimeOffset left, DateTimeOffset right)
-        {
-            return left.UtcDateTime != right.UtcDateTime;
-        }
+        public static bool operator !=(DateTimeOffset left, DateTimeOffset right) =>
+            left.UtcDateTime != right.UtcDateTime;
 
-        public static bool operator <(DateTimeOffset left, DateTimeOffset right)
-        {
-            return left.UtcDateTime < right.UtcDateTime;
-        }
+        public static bool operator <(DateTimeOffset left, DateTimeOffset right) =>
+            left.UtcDateTime < right.UtcDateTime;
 
-        public static bool operator <=(DateTimeOffset left, DateTimeOffset right)
-        {
-            return left.UtcDateTime <= right.UtcDateTime;
-        }
+        public static bool operator <=(DateTimeOffset left, DateTimeOffset right) =>
+            left.UtcDateTime <= right.UtcDateTime;
 
-        public static bool operator >(DateTimeOffset left, DateTimeOffset right)
-        {
-            return left.UtcDateTime > right.UtcDateTime;
-        }
+        public static bool operator >(DateTimeOffset left, DateTimeOffset right) =>
+            left.UtcDateTime > right.UtcDateTime;
 
-        public static bool operator >=(DateTimeOffset left, DateTimeOffset right)
-        {
-            return left.UtcDateTime >= right.UtcDateTime;
-        }
+        public static bool operator >=(DateTimeOffset left, DateTimeOffset right) =>
+            left.UtcDateTime >= right.UtcDateTime;
     }
 }

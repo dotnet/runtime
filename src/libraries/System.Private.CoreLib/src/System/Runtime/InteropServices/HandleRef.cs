@@ -22,14 +22,8 @@ namespace System.Runtime.InteropServices
 
         public IntPtr Handle => _handle;
 
-        public static explicit operator IntPtr(HandleRef value)
-        {
-            return value._handle;
-        }
+        public static explicit operator IntPtr(HandleRef value) => value._handle;
 
-        public static IntPtr ToIntPtr(HandleRef value)
-        {
-            return value._handle;
-        }
+        public static IntPtr ToIntPtr(HandleRef value) => value._handle;
     }
 }

@@ -57,11 +57,8 @@ namespace System.Collections.ObjectModel
 
         T IList<T>.this[int index]
         {
-            get { return list[index]; }
-            set
-            {
-                ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
-            }
+            get => list[index];
+            set => ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
         }
 
         void ICollection<T>.Add(T value)
@@ -176,11 +173,8 @@ namespace System.Collections.ObjectModel
 
         object? IList.this[int index]
         {
-            get { return list[index]; }
-            set
-            {
-                ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
-            }
+            get => list[index];
+            set => ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
         }
 
         int IList.Add(object? value)

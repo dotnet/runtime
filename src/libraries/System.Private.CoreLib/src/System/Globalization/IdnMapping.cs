@@ -42,21 +42,19 @@ namespace System.Globalization
 
         public bool AllowUnassigned
         {
-            get { return _allowUnassigned; }
-            set { _allowUnassigned = value; }
+            get => _allowUnassigned;
+            set => _allowUnassigned = value;
         }
 
         public bool UseStd3AsciiRules
         {
-            get { return _useStd3AsciiRules; }
-            set { _useStd3AsciiRules = value; }
+            get => _useStd3AsciiRules;
+            set => _useStd3AsciiRules = value;
         }
 
         // Gets ASCII (Punycode) version of the string
-        public string GetAscii(string unicode)
-        {
-            return GetAscii(unicode, 0);
-        }
+        public string GetAscii(string unicode) =>
+            GetAscii(unicode, 0);
 
         public string GetAscii(string unicode, int index)
         {
@@ -100,10 +98,8 @@ namespace System.Globalization
         }
 
         // Gets Unicode version of the string.  Normalized and limited to IDNA characters.
-        public string GetUnicode(string ascii)
-        {
-            return GetUnicode(ascii, 0);
-        }
+        public string GetUnicode(string ascii) =>
+            GetUnicode(ascii, 0);
 
         public string GetUnicode(string ascii, int index)
         {
@@ -143,26 +139,19 @@ namespace System.Globalization
             }
         }
 
-        public override bool Equals(object? obj)
-        {
-            return
-                obj is IdnMapping that &&
-                _allowUnassigned == that._allowUnassigned &&
-                _useStd3AsciiRules == that._useStd3AsciiRules;
-        }
+        public override bool Equals(object? obj) =>
+            obj is IdnMapping that &&
+            _allowUnassigned == that._allowUnassigned &&
+            _useStd3AsciiRules == that._useStd3AsciiRules;
 
-        public override int GetHashCode()
-        {
-            return (_allowUnassigned ? 100 : 200) + (_useStd3AsciiRules ? 1000 : 2000);
-        }
+        public override int GetHashCode() =>
+            (_allowUnassigned ? 100 : 200) + (_useStd3AsciiRules ? 1000 : 2000);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe string GetStringForOutput(string originalString, char* input, int inputLength, char* output, int outputLength)
-        {
-            return originalString.Length == inputLength && new ReadOnlySpan<char>(input, inputLength).SequenceEqual(new ReadOnlySpan<char>(output, outputLength)) ?
+        private static unsafe string GetStringForOutput(string originalString, char* input, int inputLength, char* output, int outputLength) =>
+            originalString.Length == inputLength && new ReadOnlySpan<char>(input, inputLength).SequenceEqual(new ReadOnlySpan<char>(output, outputLength)) ?
                 originalString :
                 new string(output, 0, outputLength);
-        }
 
         //
         // Invariant implementation
@@ -183,7 +172,7 @@ namespace System.Globalization
 
 
         // Legal "dot" separators (i.e: . in www.microsoft.com)
-        private static readonly char[] c_Dots = { '.', '\u3002', '\uFF0E', '\uFF61' };
+        private static readonly char[] s_dotSeparators = { '.', '\u3002', '\uFF0E', '\uFF61' };
 
         private string GetAsciiInvariant(string unicode, int index, int count)
         {
@@ -321,7 +310,7 @@ namespace System.Globalization
             while (iNextDot < unicode.Length)
             {
                 // Find end of this segment
-                iNextDot = unicode.IndexOfAny(c_Dots, iAfterLastDot);
+                iNextDot = unicode.IndexOfAny(s_dotSeparators, iAfterLastDot);
                 Debug.Assert(iNextDot <= unicode.Length, "[IdnMapping.punycode_encode]IndexOfAny is broken");
                 if (iNextDot < 0)
                     iNextDot = unicode.Length;
@@ -521,21 +510,15 @@ namespace System.Globalization
         // are we U+002E (., full stop), U+3002 (ideographic full stop), U+FF0E (fullwidth full stop), or
         // U+FF61 (halfwidth ideographic full stop).
         // Note: IDNA Normalization gets rid of dots now, but testing for last dot is before normalization
-        private static bool IsDot(char c)
-        {
-            return c == '.' || c == '\u3002' || c == '\uFF0E' || c == '\uFF61';
-        }
+        private static bool IsDot(char c) =>
+            c == '.' || c == '\u3002' || c == '\uFF0E' || c == '\uFF61';
 
-        private static bool IsSupplementary(int cTest)
-        {
-            return cTest >= 0x10000;
-        }
+        private static bool IsSupplementary(int cTest) =>
+            cTest >= 0x10000;
 
-        private static bool Basic(uint cp)
-        {
+        private static bool Basic(uint cp) =>
             // Is it in ASCII range?
-            return cp < 0x80;
-        }
+            cp < 0x80;
 
         // Validate Std3 rules for a character
         private static void ValidateStd3(char c, bool bNextToDot)
@@ -868,10 +851,8 @@ namespace System.Globalization
         }
 
         // Return whether a punycode code point is flagged as being upper case.
-        private static bool HasUpperCaseFlag(char punychar)
-        {
-            return (punychar >= 'A' && punychar <= 'Z');
-        }
+        private static bool HasUpperCaseFlag(char punychar) =>
+            punychar >= 'A' && punychar <= 'Z';
 
         /* EncodeDigit(d,flag) returns the basic code point whose value      */
         /* (when used for representing integers) is d, which needs to be in   */

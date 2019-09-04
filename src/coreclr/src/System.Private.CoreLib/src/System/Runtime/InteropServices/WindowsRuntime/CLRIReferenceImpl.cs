@@ -99,15 +99,8 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         //
         object? IList.this[int index]
         {
-            get
-            {
-                return _list[index];
-            }
-
-            set
-            {
-                _list[index] = value;
-            }
+            get => _list[index];
+            set => _list[index] = value;
         }
 
         int IList.Add(object? value)
