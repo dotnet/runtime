@@ -95,7 +95,7 @@ bool NearDiffer::InitAsmDiff()
         HMODULE hCoreDisToolsLib = ::LoadLibraryW(coreDisToolsLibrary);
         if (hCoreDisToolsLib == 0)
         {
-            LogError("LoadLibrary(%s) failed (0x%08x)", ::GetLastError());
+            LogError("LoadLibrary(%s) failed (0x%08x)", MAKEDLLNAME_A("coredistools"), ::GetLastError());
             return false;
         }
         
