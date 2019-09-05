@@ -1055,33 +1055,12 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
 
         if (arg->OperGet() == GT_OBJ)
         {
-            BYTE*       gcLayout = nullptr;
-            unsigned    numRefs  = 0;
-            GenTreeObj* argObj   = arg->AsObj();
-
-            if (argObj->IsGCInfoInitialized())
-            {
-                gcLayout = argObj->gtGcPtrs;
-                numRefs  = argObj->GetGcPtrCount();
-            }
-            else
-            {
-                // Set GC Pointer info
-                gcLayout = new (comp, CMK_Codegen) BYTE[info->numSlots + info->numRegs];
-                numRefs  = comp->info.compCompHnd->getClassGClayout(arg->gtObj.gtClass, gcLayout);
-                argSplit->setGcPointers(numRefs, gcLayout);
-            }
+            ClassLayout* layout = arg->AsObj()->GetLayout();
 
             // Set type of registers
             for (unsigned index = 0; index < info->numRegs; index++)
             {
-                var_types regType = comp->getJitGCType(gcLayout[index]);
-                // Account for the possibility that float fields may be passed in integer registers.
-                if (varTypeIsFloating(regType) && !genIsValidFloatReg(argSplit->GetRegNumByIdx(index)))
-                {
-                    regType = (regType == TYP_FLOAT) ? TYP_INT : TYP_LONG;
-                }
-                argSplit->m_regType[index] = regType;
+                argSplit->m_regType[index] = layout->GetGCPtrType(index);
             }
         }
         else
@@ -1190,11 +1169,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
                 }
                 else if (arg->OperIs(GT_OBJ))
                 {
-                    unsigned numRefs  = 0;
-                    BYTE*    gcLayout = new (comp, CMK_Codegen) BYTE[info->numSlots];
                     assert(!varTypeIsSIMD(arg));
-                    numRefs = comp->info.compCompHnd->getClassGClayout(arg->gtObj.gtClass, gcLayout);
-                    putArg->AsPutArgStk()->setGcPointers(numRefs, gcLayout);
 
 #ifdef _TARGET_X86_
                     // On x86 VM lies about the type of a struct containing a pointer sized

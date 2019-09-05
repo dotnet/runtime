@@ -233,7 +233,7 @@ void Lowering::LowerStoreIndir(GenTreeIndir* node)
 void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 {
     GenTree*  dstAddr  = blkNode->Addr();
-    unsigned  size     = blkNode->gtBlkSize;
+    unsigned  size     = blkNode->Size();
     GenTree*  source   = blkNode->Data();
     Compiler* compiler = comp;
 
@@ -244,7 +244,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
     if (!isInitBlk)
     {
         // CopyObj or CopyBlk
-        if ((blkNode->OperGet() == GT_STORE_OBJ) && ((blkNode->AsObj()->gtGcPtrCount == 0) || blkNode->gtBlkOpGcUnsafe))
+        if (blkNode->OperIs(GT_STORE_OBJ) && (!blkNode->AsObj()->GetLayout()->HasGCPtr() || blkNode->gtBlkOpGcUnsafe))
         {
             blkNode->SetOper(GT_STORE_BLK);
         }
@@ -312,17 +312,16 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             // CopyObj
             GenTreeObj* objNode = blkNode->AsObj();
 
-            unsigned slots = objNode->gtSlots;
+            unsigned slots = objNode->GetLayout()->GetSlotCount();
 
 #ifdef DEBUG
             // CpObj must always have at least one GC-Pointer as a member.
-            assert(objNode->gtGcPtrCount > 0);
+            assert(objNode->GetLayout()->HasGCPtr());
 
             assert(dstAddr->gtType == TYP_BYREF || dstAddr->gtType == TYP_I_IMPL);
 
-            CORINFO_CLASS_HANDLE clsHnd    = objNode->gtClass;
-            size_t               classSize = compiler->info.compCompHnd->getClassSize(clsHnd);
-            size_t               blkSize   = roundUp(classSize, TARGET_POINTER_SIZE);
+            size_t classSize = objNode->GetLayout()->GetSize();
+            size_t blkSize   = roundUp(classSize, TARGET_POINTER_SIZE);
 
             // Currently, the EE always round up a class data structure so
             // we are not handling the case where we have a non multiple of pointer sized
@@ -331,7 +330,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             // handle this case.
             assert(classSize == blkSize);
             assert((blkSize / TARGET_POINTER_SIZE) == slots);
-            assert(objNode->HasGCPtr());
 #endif
 
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;

@@ -412,7 +412,7 @@ void Compiler::lvaInitThisPtr(InitVarDscInfo* varDscInfo)
             if (supportSIMDTypes())
             {
                 var_types simdBaseType = TYP_UNKNOWN;
-                var_types type         = impNormStructType(info.compClassHnd, nullptr, nullptr, &simdBaseType);
+                var_types type         = impNormStructType(info.compClassHnd, &simdBaseType);
                 if (simdBaseType != TYP_UNKNOWN)
                 {
                     assert(varTypeIsSIMD(type));
@@ -1290,11 +1290,6 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
         }
 
         varDsc->lvOverlappingFields = StructHasOverlappingFields(cFlags);
-    }
-
-    if (varTypeIsGC(type))
-    {
-        varDsc->lvStructGcCount = 1;
     }
 
 #if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
@@ -2504,43 +2499,14 @@ void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool 
     }
     if (varDsc->lvExactSize == 0)
     {
-        BOOL isValueClass = info.compCompHnd->isValueClass(typeHnd);
+        ClassLayout* layout = typGetObjLayout(typeHnd);
+        varDsc->SetLayout(layout);
+        varDsc->lvExactSize = layout->GetSize();
 
-        if (isValueClass)
+        if (layout->IsValueClass())
         {
-            varDsc->lvExactSize = info.compCompHnd->getClassSize(typeHnd);
-        }
-        else
-        {
-            varDsc->lvExactSize = info.compCompHnd->getHeapClassSize(typeHnd);
-        }
-
-        // Normalize struct types, and fill in GC info for all types
-        unsigned lvSize = varDsc->lvSize();
-        // The struct needs to be a multiple of TARGET_POINTER_SIZE bytes for getClassGClayout() to be valid.
-        assert((lvSize % TARGET_POINTER_SIZE) == 0);
-        varDsc->lvGcLayout     = getAllocator(CMK_LvaTable).allocate<BYTE>(lvSize / TARGET_POINTER_SIZE);
-        unsigned  numGCVars    = 0;
-        var_types simdBaseType = TYP_UNKNOWN;
-        if (isValueClass)
-        {
-            varDsc->lvType = impNormStructType(typeHnd, varDsc->lvGcLayout, &numGCVars, &simdBaseType);
-        }
-        else
-        {
-            numGCVars = info.compCompHnd->getClassGClayout(typeHnd, varDsc->lvGcLayout);
-        }
-
-        // We only save the count of GC vars in a struct up to 7.
-        if (numGCVars >= 8)
-        {
-            numGCVars = 7;
-        }
-
-        varDsc->lvStructGcCount = numGCVars;
-
-        if (isValueClass)
-        {
+            var_types simdBaseType = TYP_UNKNOWN;
+            varDsc->lvType         = impNormStructType(typeHnd, &simdBaseType);
 
 #if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
             // Mark implicit byref struct parameters
@@ -2575,7 +2541,7 @@ void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool 
                     varDsc->SetHfaType(hfaType);
 
                     // hfa variables can never contain GC pointers
-                    assert(varDsc->lvStructGcCount == 0);
+                    assert(!layout->HasGCPtr());
                     // The size of this struct should be evenly divisible by 4 or 8
                     assert((varDsc->lvExactSize % genTypeSize(hfaType)) == 0);
                     // The number of elements in the HFA should fit into our MAX_ARG_REG_COUNT limit
@@ -2836,17 +2802,6 @@ void Compiler::lvaUpdateClass(unsigned varNum, GenTree* tree, CORINFO_CLASS_HAND
     {
         lvaUpdateClass(varNum, stackHnd);
     }
-}
-
-/*****************************************************************************
- * Returns the array of BYTEs containing the GC layout information
- */
-
-BYTE* Compiler::lvaGetGcLayout(unsigned varNum)
-{
-    assert(varTypeIsStruct(lvaTable[varNum].lvType) && (lvaTable[varNum].lvExactSize >= TARGET_POINTER_SIZE));
-
-    return lvaTable[varNum].lvGcLayout;
 }
 
 //------------------------------------------------------------------------
@@ -3618,25 +3573,8 @@ var_types LclVarDsc::lvaArgType()
                 type = TYP_INT;
                 break;
             case 8:
-                switch (*lvGcLayout)
-                {
-                    case TYPE_GC_NONE:
-                        type = TYP_I_IMPL;
-                        break;
-
-                    case TYPE_GC_REF:
-                        type = TYP_REF;
-                        break;
-
-                    case TYPE_GC_BYREF:
-                        type = TYP_BYREF;
-                        break;
-
-                    default:
-                        unreached();
-                }
+                type = m_layout->GetGCPtrType(0);
                 break;
-
             default:
                 type = TYP_BYREF;
                 break;
