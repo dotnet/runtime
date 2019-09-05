@@ -36,7 +36,7 @@ namespace
     // Tracks the hostpolicy context. This is the one and only hostpolicy context. It represents the information
     // that hostpolicy will use or has already used to load and initialize coreclr. It will be set once a context
     // is initialized and updated to hold coreclr once the runtime is loaded.
-    std::unique_ptr<hostpolicy_context_t> g_context;
+    std::shared_ptr<hostpolicy_context_t> g_context;
 
     // Tracks whether the hostpolicy context is initializing (from start of creation of the first context
     // to loading coreclr). It will be false before initialization starts and after it succeeds or fails.
@@ -139,10 +139,11 @@ namespace
         return StatusCode::Success;
     }
 
-    const hostpolicy_context_t* get_hostpolicy_context(bool require_runtime)
+    const std::shared_ptr<hostpolicy_context_t> get_hostpolicy_context(bool require_runtime)
     {
         std::lock_guard<std::mutex> lock{ g_context_lock };
-        const hostpolicy_context_t *existing_context = g_context.get();
+
+        const std::shared_ptr<hostpolicy_context_t> existing_context = g_context;
         if (existing_context == nullptr)
         {
             trace::error(_X("Hostpolicy context has not been created"));
@@ -268,7 +269,7 @@ int run_app_for_context(
 
 int run_app(const int argc, const pal::char_t *argv[])
 {
-    const hostpolicy_context_t *context = get_hostpolicy_context(/*require_runtime*/ true);
+    const std::shared_ptr<hostpolicy_context_t> context = get_hostpolicy_context(/*require_runtime*/ true);
     if (context == nullptr)
         return StatusCode::HostInvalidState;
 
@@ -444,7 +445,7 @@ namespace
         if (delegate == nullptr)
             return StatusCode::InvalidArgFailure;
 
-        const hostpolicy_context_t *context = get_hostpolicy_context(/*require_runtime*/ true);
+        const std::shared_ptr<hostpolicy_context_t> context = get_hostpolicy_context(/*require_runtime*/ true);
         if (context == nullptr)
             return StatusCode::HostInvalidState;
 
@@ -497,7 +498,7 @@ namespace
         if (key == nullptr)
             return StatusCode::InvalidArgFailure;
 
-        const hostpolicy_context_t *context = get_hostpolicy_context(/*require_runtime*/ false);
+        const std::shared_ptr<hostpolicy_context_t> context = get_hostpolicy_context(/*require_runtime*/ false);
         if (context == nullptr)
             return StatusCode::HostInvalidState;
 
@@ -536,7 +537,7 @@ namespace
         if (count == nullptr)
             return StatusCode::InvalidArgFailure;
 
-        const hostpolicy_context_t *context = get_hostpolicy_context(/*require_runtime*/ false);
+        const std::shared_ptr<hostpolicy_context_t> context = get_hostpolicy_context(/*require_runtime*/ false);
         if (context == nullptr)
             return StatusCode::HostInvalidState;
 
@@ -558,13 +559,9 @@ namespace
         return StatusCode::Success;
     }
 
-    bool matches_existing_properties(const corehost_initialize_request_t *init_request)
+    bool matches_existing_properties(const coreclr_property_bag_t &properties, const corehost_initialize_request_t *init_request)
     {
-        const hostpolicy_context_t *context = get_hostpolicy_context(/*require_runtime*/ true);
-        assert(context != nullptr);
-
         bool hasDifferentProperties = false;
-        const coreclr_property_bag_t &properties = context->coreclr_properties;
         size_t len = init_request->config_keys.len;
         for (size_t i = 0; i < len; ++i)
         {
@@ -708,7 +705,7 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_initialize(const corehost_initialize
     }
     else if (get_contract)
     {
-        const hostpolicy_context_t *context = get_hostpolicy_context(/*require_runtime*/ true);
+        const std::shared_ptr<hostpolicy_context_t> context = get_hostpolicy_context(/*require_runtime*/ true);
         if (context == nullptr)
         {
             trace::error(_X("Option to get the contract for the initialized hostpolicy was set, but hostpolicy has not been initialized"));
@@ -730,8 +727,12 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_initialize(const corehost_initialize
             && init_request->version >= offsetof(corehost_initialize_request_t, config_values) + sizeof(init_request->config_values)
             && init_request->config_keys.len == init_request->config_values.len);
 
+        const std::shared_ptr<hostpolicy_context_t> context = get_hostpolicy_context(/*require_runtime*/ true);
+        if (context == nullptr)
+            return StatusCode::HostInvalidState;
+
         // Compare the current context with this request (properties)
-        if (!matches_existing_properties(init_request))
+        if (!matches_existing_properties(context->coreclr_properties, init_request))
             rc = StatusCode::Success_DifferentRuntimeProperties;
     }
 
