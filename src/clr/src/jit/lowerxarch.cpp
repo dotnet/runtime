@@ -146,7 +146,7 @@ void Lowering::LowerStoreIndir(GenTreeIndir* node)
 void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 {
     GenTree* dstAddr       = blkNode->Addr();
-    unsigned size          = blkNode->gtBlkSize;
+    unsigned size          = blkNode->Size();
     GenTree* source        = blkNode->Data();
     GenTree* srcAddrOrFill = nullptr;
     bool     isInitBlk     = blkNode->OperIsInitBlkOp();
@@ -154,7 +154,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
     if (!isInitBlk)
     {
         // CopyObj or CopyBlk
-        if ((blkNode->OperGet() == GT_STORE_OBJ) && ((blkNode->AsObj()->gtGcPtrCount == 0) || blkNode->gtBlkOpGcUnsafe))
+        if (blkNode->OperIs(GT_STORE_OBJ) && (!blkNode->AsObj()->GetLayout()->HasGCPtr() || blkNode->gtBlkOpGcUnsafe))
         {
             blkNode->SetOper(GT_STORE_BLK);
         }
@@ -247,15 +247,15 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
             GenTreeObj* cpObjNode = blkNode->AsObj();
 
-            unsigned slots = cpObjNode->gtSlots;
+            unsigned slots = cpObjNode->GetLayout()->GetSlotCount();
 
 #ifdef DEBUG
             // CpObj must always have at least one GC-Pointer as a member.
-            assert(cpObjNode->gtGcPtrCount > 0);
+            assert(cpObjNode->GetLayout()->HasGCPtr());
 
             assert(dstAddr->gtType == TYP_BYREF || dstAddr->gtType == TYP_I_IMPL);
 
-            CORINFO_CLASS_HANDLE clsHnd    = cpObjNode->gtClass;
+            CORINFO_CLASS_HANDLE clsHnd    = cpObjNode->GetLayout()->GetClassHandle();
             size_t               classSize = comp->info.compCompHnd->getClassSize(clsHnd);
             size_t               blkSize   = roundUp(classSize, TARGET_POINTER_SIZE);
 
@@ -266,7 +266,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             // handle this case.
             assert(classSize == blkSize);
             assert((blkSize / TARGET_POINTER_SIZE) == slots);
-            assert(cpObjNode->HasGCPtr());
 #endif
 
             bool IsRepMovsProfitable = false;
@@ -279,20 +278,20 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
                 // Let's inspect the struct/class layout and determine if it's profitable
                 // to use rep movsq for copying non-gc memory instead of using single movsq
                 // instructions for each memory slot.
-                unsigned i      = 0;
-                BYTE*    gcPtrs = cpObjNode->gtGcPtrs;
+                unsigned     i      = 0;
+                ClassLayout* layout = cpObjNode->GetLayout();
 
                 do
                 {
                     unsigned nonGCSlots = 0;
                     // Measure a contiguous non-gc area inside the struct and note the maximum.
-                    while (i < slots && gcPtrs[i] == TYPE_GC_NONE)
+                    while ((i < slots) && !layout->IsGCPtr(i))
                     {
                         nonGCSlots++;
                         i++;
                     }
 
-                    while (i < slots && gcPtrs[i] != TYPE_GC_NONE)
+                    while ((i < slots) && layout->IsGCPtr(i))
                     {
                         i++;
                     }
@@ -412,8 +411,7 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
 #ifdef _TARGET_X86_
     if (putArgStk->gtOp1->gtOper == GT_FIELD_LIST)
     {
-        putArgStk->gtNumberReferenceSlots = 0;
-        putArgStk->gtPutArgStkKind        = GenTreePutArgStk::Kind::Invalid;
+        putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Invalid;
 
         GenTreeFieldList* fieldList = putArgStk->gtOp1->AsFieldList();
 
@@ -498,11 +496,6 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
             if (!fieldIsSlot)
             {
                 allFieldsAreSlots = false;
-            }
-
-            if (varTypeIsGC(fieldType))
-            {
-                putArgStk->gtNumberReferenceSlots++;
             }
 
             // For x86 we must mark all integral fields as contained or reg-optional, and handle them
@@ -606,6 +599,8 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
         assert(varTypeIsSIMD(putArgStk));
     }
 
+    ClassLayout* layout = src->AsObj()->GetLayout();
+
     // In case of a CpBlk we could use a helper call. In case of putarg_stk we
     // can't do that since the helper call could kill some already set up outgoing args.
     // TODO-Amd64-Unix: converge the code for putarg_stk with cpyblk/cpyobj.
@@ -623,7 +618,7 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
     // If we have a buffer between XMM_REGSIZE_BYTES and CPBLK_UNROLL_LIMIT bytes, we'll use SSE2.
     // Structs and buffer with sizes <= CPBLK_UNROLL_LIMIT bytes are occurring in more than 95% of
     // our framework assemblies, so this is the main code generation scheme we'll use.
-    if (size <= CPBLK_UNROLL_LIMIT && putArgStk->gtNumberReferenceSlots == 0)
+    if (size <= CPBLK_UNROLL_LIMIT && !layout->HasGCPtr())
     {
 #ifdef _TARGET_X86_
         if (size < XMM_REGSIZE_BYTES)
@@ -637,7 +632,7 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
         }
     }
 #ifdef _TARGET_X86_
-    else if (putArgStk->gtNumberReferenceSlots != 0)
+    else if (layout->HasGCPtr())
     {
         // On x86, we must use `push` to store GC references to the stack in order for the emitter to properly update
         // the function's GC info. These `putargstk` nodes will generate a sequence of `push` instructions.

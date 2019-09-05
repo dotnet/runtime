@@ -906,7 +906,7 @@ regMaskTP LinearScan::getKillSetForBlockStore(GenTreeBlk* blkNode)
 
     if ((blkNode->OperGet() == GT_STORE_OBJ) && blkNode->OperIsCopyBlkOp())
     {
-        assert(blkNode->AsObj()->gtGcPtrCount != 0);
+        assert(blkNode->AsObj()->GetLayout()->HasGCPtr());
         killMask = compiler->compHelperCallKillSet(CORINFO_HELP_ASSIGN_BYREF);
     }
     else
@@ -3236,7 +3236,7 @@ int LinearScan::BuildPutArgReg(GenTreeUnOp* node)
     {
         GenTreeObj* obj  = op1->AsObj();
         GenTree*    addr = obj->Addr();
-        unsigned    size = obj->gtBlkSize;
+        unsigned    size = obj->GetLayout()->GetSize();
         assert(size <= MAX_PASS_SINGLEREG_BYTES);
         if (addr->OperIsLocalAddr())
         {

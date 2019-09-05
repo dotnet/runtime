@@ -2647,7 +2647,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
 
     // This GenTree node has data about GC pointers, this means we're dealing
     // with CpObj.
-    assert(cpObjNode->gtGcPtrCount > 0);
+    assert(cpObjNode->GetLayout()->HasGCPtr());
 #endif // DEBUG
 
     // Consume the operands and get them into the right registers.
@@ -2656,7 +2656,8 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
     gcInfo.gcMarkRegPtrVal(REG_WRITE_BARRIER_SRC_BYREF, srcAddrType);
     gcInfo.gcMarkRegPtrVal(REG_WRITE_BARRIER_DST_BYREF, dstAddr->TypeGet());
 
-    unsigned slots = cpObjNode->gtSlots;
+    ClassLayout* layout = cpObjNode->GetLayout();
+    unsigned     slots  = layout->GetSlotCount();
 
     // Temp register(s) used to perform the sequence of loads and stores.
     regNumber tmpReg  = cpObjNode->ExtractTempReg();
@@ -2683,8 +2684,6 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
 
     emitter* emit = getEmitter();
 
-    BYTE* gcPtrs = cpObjNode->gtGcPtrs;
-
     // If we can prove it's on the stack we don't need to use the write barrier.
     if (dstOnStack)
     {
@@ -2692,8 +2691,8 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
         // Check if two or more remaining slots and use a ldp/stp sequence
         while (i < slots - 1)
         {
-            emitAttr attr0 = emitTypeSize(compiler->getJitGCType(gcPtrs[i + 0]));
-            emitAttr attr1 = emitTypeSize(compiler->getJitGCType(gcPtrs[i + 1]));
+            emitAttr attr0 = emitTypeSize(layout->GetGCPtrType(i + 0));
+            emitAttr attr1 = emitTypeSize(layout->GetGCPtrType(i + 1));
 
             emit->emitIns_R_R_R_I(INS_ldp, attr0, tmpReg, tmpReg2, REG_WRITE_BARRIER_SRC_BYREF, 2 * TARGET_POINTER_SIZE,
                                   INS_OPTS_POST_INDEX, attr1);
@@ -2705,7 +2704,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
         // Use a ldr/str sequence for the last remainder
         if (i < slots)
         {
-            emitAttr attr0 = emitTypeSize(compiler->getJitGCType(gcPtrs[i + 0]));
+            emitAttr attr0 = emitTypeSize(layout->GetGCPtrType(i + 0));
 
             emit->emitIns_R_R_I(INS_ldr, attr0, tmpReg, REG_WRITE_BARRIER_SRC_BYREF, TARGET_POINTER_SIZE,
                                 INS_OPTS_POST_INDEX);
@@ -2715,38 +2714,35 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
     }
     else
     {
-        unsigned gcPtrCount = cpObjNode->gtGcPtrCount;
+        unsigned gcPtrCount = cpObjNode->GetLayout()->GetGCPtrCount();
 
         unsigned i = 0;
         while (i < slots)
         {
-            switch (gcPtrs[i])
+            if (!layout->IsGCPtr(i))
             {
-                case TYPE_GC_NONE:
-                    // Check if the next slot's type is also TYP_GC_NONE and use ldp/stp
-                    if ((i + 1 < slots) && (gcPtrs[i + 1] == TYPE_GC_NONE))
-                    {
-                        emit->emitIns_R_R_R_I(INS_ldp, EA_8BYTE, tmpReg, tmpReg2, REG_WRITE_BARRIER_SRC_BYREF,
-                                              2 * TARGET_POINTER_SIZE, INS_OPTS_POST_INDEX);
-                        emit->emitIns_R_R_R_I(INS_stp, EA_8BYTE, tmpReg, tmpReg2, REG_WRITE_BARRIER_DST_BYREF,
-                                              2 * TARGET_POINTER_SIZE, INS_OPTS_POST_INDEX);
-                        ++i; // extra increment of i, since we are copying two items
-                    }
-                    else
-                    {
-                        emit->emitIns_R_R_I(INS_ldr, EA_8BYTE, tmpReg, REG_WRITE_BARRIER_SRC_BYREF, TARGET_POINTER_SIZE,
-                                            INS_OPTS_POST_INDEX);
-                        emit->emitIns_R_R_I(INS_str, EA_8BYTE, tmpReg, REG_WRITE_BARRIER_DST_BYREF, TARGET_POINTER_SIZE,
-                                            INS_OPTS_POST_INDEX);
-                    }
-                    break;
-
-                default:
-                    // In the case of a GC-Pointer we'll call the ByRef write barrier helper
-                    genEmitHelperCall(CORINFO_HELP_ASSIGN_BYREF, 0, EA_PTRSIZE);
-
-                    gcPtrCount--;
-                    break;
+                // Check if the next slot's type is also TYP_GC_NONE and use ldp/stp
+                if ((i + 1 < slots) && !layout->IsGCPtr(i + 1))
+                {
+                    emit->emitIns_R_R_R_I(INS_ldp, EA_8BYTE, tmpReg, tmpReg2, REG_WRITE_BARRIER_SRC_BYREF,
+                                          2 * TARGET_POINTER_SIZE, INS_OPTS_POST_INDEX);
+                    emit->emitIns_R_R_R_I(INS_stp, EA_8BYTE, tmpReg, tmpReg2, REG_WRITE_BARRIER_DST_BYREF,
+                                          2 * TARGET_POINTER_SIZE, INS_OPTS_POST_INDEX);
+                    ++i; // extra increment of i, since we are copying two items
+                }
+                else
+                {
+                    emit->emitIns_R_R_I(INS_ldr, EA_8BYTE, tmpReg, REG_WRITE_BARRIER_SRC_BYREF, TARGET_POINTER_SIZE,
+                                        INS_OPTS_POST_INDEX);
+                    emit->emitIns_R_R_I(INS_str, EA_8BYTE, tmpReg, REG_WRITE_BARRIER_DST_BYREF, TARGET_POINTER_SIZE,
+                                        INS_OPTS_POST_INDEX);
+                }
+            }
+            else
+            {
+                // In the case of a GC-Pointer we'll call the ByRef write barrier helper
+                genEmitHelperCall(CORINFO_HELP_ASSIGN_BYREF, 0, EA_PTRSIZE);
+                gcPtrCount--;
             }
             ++i;
         }

@@ -1628,9 +1628,8 @@ void fgArgInfo::ArgsComplete()
                 //
                 else if (argx->OperGet() == GT_OBJ)
                 {
-                    GenTreeObj*          argObj     = argx->AsObj();
-                    CORINFO_CLASS_HANDLE objClass   = argObj->gtClass;
-                    unsigned             structSize = compiler->info.compCompHnd->getClassSize(objClass);
+                    GenTreeObj* argObj     = argx->AsObj();
+                    unsigned    structSize = argObj->GetLayout()->GetSize();
                     switch (structSize)
                     {
                         case 3:
@@ -3193,8 +3192,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                 switch (actualArg->OperGet())
                 {
                     case GT_OBJ:
-                        // Get the size off the OBJ node.
-                        structSize = actualArg->AsObj()->gtBlkSize;
+                        structSize = actualArg->AsObj()->GetLayout()->GetSize();
                         assert(structSize == info.compCompHnd->getClassSize(objClass));
                         break;
                     case GT_LCL_VAR:
@@ -3838,7 +3836,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                 if (argObj->OperIs(GT_OBJ))
                 {
                     // Get the size off the OBJ node.
-                    originalSize = argObj->AsObj()->gtBlkSize;
+                    originalSize = argObj->AsObj()->GetLayout()->GetSize();
                     assert(originalSize == info.compCompHnd->getClassSize(objClass));
                 }
                 else
@@ -4403,7 +4401,7 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
                     unsigned  structSize;
                     if (argx->OperIs(GT_OBJ))
                     {
-                        structSize = argx->AsObj()->gtBlkSize;
+                        structSize = argx->AsObj()->GetLayout()->GetSize();
                     }
                     else
                     {
@@ -4545,7 +4543,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
     else if (arg->OperGet() == GT_OBJ)
     {
         GenTreeObj* argObj = arg->AsObj();
-        structSize         = argObj->Size();
+        structSize         = argObj->GetLayout()->GetSize();
         assert(structSize == info.compCompHnd->getClassSize(objClass));
 
         // If we have a GT_OBJ of a GT_ADDR then we set argValue to the child node of the GT_ADDR.
@@ -4730,14 +4728,14 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
 
             for (unsigned inx = 0; inx < elemCount; inx++)
             {
-                CorInfoGCType currentGcLayoutType = (CorInfoGCType)varDsc->lvGcLayout[inx];
+                var_types currentGcLayoutType = varDsc->GetLayout()->GetGCPtrType(inx);
 
                 // We setup the type[inx] value above using the GC info from 'objClass'
                 // This GT_LCL_VAR must have the same GC layout info
                 //
-                if (currentGcLayoutType != TYPE_GC_NONE)
+                if (varTypeIsGC(currentGcLayoutType))
                 {
-                    noway_assert(type[inx] == getJitGCType((BYTE)currentGcLayoutType));
+                    noway_assert(type[inx] == currentGcLayoutType);
                 }
                 else
                 {
@@ -4891,21 +4889,21 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
             // The allocated size of our LocalVar must be at least as big as lastOffset
             assert(varDsc->lvSize() >= lastOffset);
 
-            if (varDsc->lvStructGcCount > 0)
+            if (varDsc->HasGCPtr())
             {
                 // alignment of the baseOffset is required
                 noway_assert((baseOffset % TARGET_POINTER_SIZE) == 0);
 #ifndef UNIX_AMD64_ABI
                 noway_assert(elemSize == TARGET_POINTER_SIZE);
 #endif
-                unsigned    baseIndex = baseOffset / TARGET_POINTER_SIZE;
-                const BYTE* gcPtrs    = varDsc->lvGcLayout; // Get the GC layout for the local variable
+                unsigned     baseIndex = baseOffset / TARGET_POINTER_SIZE;
+                ClassLayout* layout    = varDsc->GetLayout();
                 for (unsigned inx = 0; (inx < elemCount); inx++)
                 {
                     // The GC information must match what we setup using 'objClass'
-                    if ((gcPtrs[baseIndex + inx] != TYPE_GC_NONE) || varTypeGCtype(type[inx]))
+                    if (layout->IsGCPtr(baseIndex + inx) || varTypeGCtype(type[inx]))
                     {
-                        noway_assert(type[inx] == getJitGCType(gcPtrs[baseIndex + inx]));
+                        noway_assert(type[inx] == layout->GetGCPtrType(baseIndex + inx));
                     }
                 }
             }
@@ -8307,7 +8305,7 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
             {
                 var_types lclType            = varDsc->TypeGet();
                 bool      isUserLocal        = (varNum < info.compLocalsCount);
-                bool      structWithGCFields = ((lclType == TYP_STRUCT) && (varDsc->lvStructGcCount > 0));
+                bool      structWithGCFields = ((lclType == TYP_STRUCT) && varDsc->GetLayout()->HasGCPtr());
                 if (isUserLocal || structWithGCFields)
                 {
                     GenTree* lcl  = gtNewLclvNode(varNum, lclType);
@@ -8973,7 +8971,7 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
         }
         if (lhsBlk->OperGet() == GT_OBJ)
         {
-            clsHnd = lhsBlk->AsObj()->gtClass;
+            clsHnd = lhsBlk->AsObj()->GetLayout()->GetClassHandle();
         }
     }
     else
@@ -9814,7 +9812,7 @@ GenTree* Compiler::fgMorphBlkNode(GenTree* tree, bool isDest)
         }
         else
         {
-            tree = new (this, GT_BLK) GenTreeBlk(GT_BLK, structType, addr, genTypeSize(structType));
+            tree = new (this, GT_BLK) GenTreeBlk(GT_BLK, structType, addr, typGetBlkLayout(genTypeSize(structType)));
         }
 
         gtUpdateNodeSideEffects(tree);
@@ -9839,7 +9837,7 @@ GenTree* Compiler::fgMorphBlkNode(GenTree* tree, bool isDest)
             {
                 blkNode->AsDynBlk()->gtDynamicSize = nullptr;
                 blkNode->ChangeOper(GT_BLK);
-                blkNode->gtBlkSize = size;
+                blkNode->SetLayout(typGetBlkLayout(size));
             }
             else
             {
@@ -9971,7 +9969,7 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
                     CORINFO_CLASS_HANDLE clsHnd = gtGetStructHandleIfPresent(effectiveVal);
                     if (clsHnd == NO_CLASS_HANDLE)
                     {
-                        newTree = new (this, GT_BLK) GenTreeBlk(GT_BLK, TYP_STRUCT, addr, blockWidth);
+                        newTree = new (this, GT_BLK) GenTreeBlk(GT_BLK, TYP_STRUCT, addr, typGetBlkLayout(blockWidth));
                     }
                     else
                     {
@@ -10012,8 +10010,8 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
 void Compiler::fgMorphUnsafeBlk(GenTreeObj* dest)
 {
 #if defined(CPBLK_UNROLL_LIMIT) && !defined(JIT32_GCENCODER)
-    assert(dest->gtGcPtrCount != 0);
-    unsigned blockWidth = dest->AsBlk()->gtBlkSize;
+    assert(dest->GetLayout()->HasGCPtr());
+    unsigned blockWidth = dest->GetLayout()->GetSize();
 #ifdef DEBUG
     bool     destOnStack = false;
     GenTree* destAddr    = dest->Addr();
@@ -10135,7 +10133,7 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                 {
                     blockWidth = genTypeSize(destLclVar->lvType);
                 }
-                hasGCPtrs = destLclVar->lvStructGcCount != 0;
+                hasGCPtrs = destLclVar->HasGCPtr();
             }
             else
             {
@@ -10164,7 +10162,7 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                 assert(effectiveDest->OperIsBlk());
                 GenTreeBlk* blk = effectiveDest->AsBlk();
 
-                blockWidth        = blk->gtBlkSize;
+                blockWidth        = blk->Size();
                 blockWidthIsConst = (blk->gtOper != GT_DYN_BLK);
                 if ((dest == effectiveDest) && ((dest->gtFlags & GTF_IND_ARR_INDEX) == 0))
                 {
@@ -18554,7 +18552,7 @@ private:
                     m_compiler->info.compCompHnd->getFieldClass(indir->AsField()->gtFldHnd));
             case GT_BLK:
             case GT_OBJ:
-                return indir->AsBlk()->gtBlkSize;
+                return indir->AsBlk()->GetLayout()->GetSize();
             default:
                 assert(indir->OperIs(GT_IND, GT_DYN_BLK));
                 return 0;
