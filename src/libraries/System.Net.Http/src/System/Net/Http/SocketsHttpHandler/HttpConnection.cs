@@ -720,7 +720,7 @@ namespace System.Net.Http
                 {
                     // For consistency with other handlers we wrap the exception in an HttpRequestException.
                     // If the request is retryable, indicate that on the exception.
-                    throw new HttpRequestException(SR.net_http_client_execution_error, ioe, _canRetry);
+                    throw new HttpRequestException(SR.net_http_client_execution_error, ioe, _canRetry ? RequestRetryType.RetryOnSameOrNextProxy : RequestRetryType.NoRetry);
                 }
                 else
                 {

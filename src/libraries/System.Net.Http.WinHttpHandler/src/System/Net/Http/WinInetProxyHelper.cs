@@ -14,6 +14,8 @@ namespace System.Net.Http
     internal class WinInetProxyHelper
     {
         private const int RecentAutoDetectionInterval = 120_000; // 2 minutes in milliseconds.
+        private readonly string _autoConfigUrl, _proxy, _proxyBypass;
+        private readonly bool _autoDetect;
         private readonly bool _useProxy = false;
         private bool _autoDetectionFailed;
         private int _lastTimeAutoDetectionFailed; // Environment.TickCount units (milliseconds).
@@ -26,10 +28,10 @@ namespace System.Net.Http
             {
                 if (Interop.WinHttp.WinHttpGetIEProxyConfigForCurrentUser(out proxyConfig))
                 {
-                    AutoConfigUrl = Marshal.PtrToStringUni(proxyConfig.AutoConfigUrl);
-                    AutoDetect = proxyConfig.AutoDetect;
-                    Proxy = Marshal.PtrToStringUni(proxyConfig.Proxy);
-                    ProxyBypass = Marshal.PtrToStringUni(proxyConfig.ProxyBypass);
+                    _autoConfigUrl = Marshal.PtrToStringUni(proxyConfig.AutoConfigUrl);
+                    _autoDetect = proxyConfig.AutoDetect;
+                    _proxy = Marshal.PtrToStringUni(proxyConfig.Proxy);
+                    _proxyBypass = Marshal.PtrToStringUni(proxyConfig.ProxyBypass);
 
                     if (NetEventSource.IsEnabled)
                     {
@@ -57,9 +59,9 @@ namespace System.Net.Http
             }
         }
 
-        public string AutoConfigUrl { get; }
+        public string AutoConfigUrl => _autoConfigUrl;
 
-        public bool AutoDetect { get; }
+        public bool AutoDetect => _autoDetect;
 
         public bool AutoSettingsUsed => AutoDetect || !string.IsNullOrEmpty(AutoConfigUrl);
 
@@ -67,9 +69,9 @@ namespace System.Net.Http
 
         public bool ManualSettingsOnly => !AutoSettingsUsed && ManualSettingsUsed;
 
-        public string Proxy { get; }
+        public string Proxy => _proxy;
 
-        public string ProxyBypass { get; }
+        public string ProxyBypass => _proxyBypass;
 
         public bool RecentAutoDetectionFailure =>
             _autoDetectionFailed &&

@@ -53,7 +53,7 @@ namespace System.Net.Http
             // processed the request in any way, and thus the request can be retried.
             // This will be caught in HttpConnectionPool.SendWithRetryAsync and the retry logic will kick in.
             // The user should never see this exception.
-            throw new HttpRequestException(null, null, allowRetry: true);
+            throw new HttpRequestException(null, null, allowRetry: RequestRetryType.RetryOnSameOrNextProxy);
         }
 
         internal static bool IsDigit(byte c) => (uint)(c - '0') <= '9' - '0';

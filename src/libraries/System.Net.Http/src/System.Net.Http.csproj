@@ -44,6 +44,7 @@
     <Compile Include="System\Net\Http\MultipartFormDataContent.cs" />
     <Compile Include="System\Net\Http\NetEventSource.Http.cs" />
     <Compile Include="System\Net\Http\ReadOnlyMemoryContent.cs" />
+    <Compile Include="System\Net\Http\RequestRetryType.cs" />
     <Compile Include="System\Net\Http\StreamContent.cs" />
     <Compile Include="System\Net\Http\StreamToStreamCopy.cs" />
     <Compile Include="System\Net\Http\StringContent.cs" />
@@ -164,6 +165,9 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\RawConnectionStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\RedirectHandler.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\TaskCompletionSourceWithCancellation.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\FailedProxyCache.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\IMultiWebProxy.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\MultiProxy.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\Collections\Concurrent\ConcurrentQueueSegment.cs">
       <Link>Common\CoreLib\System\Collections\Concurrent\ConcurrentQueueSegment.cs</Link>
     </Compile>
