@@ -17,6 +17,7 @@ namespace Tracing.Tests.ExceptionThrown_V1
             var providers = new List<Provider>()
             {
                 new Provider("Microsoft-DotNETCore-SampleProfiler"),
+                //ExceptionKeyword (0x8000): 0b1000_0000_0000_0000
                 new Provider("Microsoft-Windows-DotNETRuntime", 0b1000_0000_0000_0000, EventLevel.Warning)
             };
 
