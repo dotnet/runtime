@@ -713,10 +713,7 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
             {
                 // Get the updated SigPointer location, so we can calculate the size of the blob,
                 // in order to skip the blob and find the entry point data.
-                PCCOR_SIGNATURE pSigNew;
-                DWORD cbSigNew;
-                sig.GetSignature(&pSigNew, &cbSigNew);
-                offset = entryParser.GetOffset() + (uint)(pSigNew - pBlob);
+                offset = entryParser.GetOffset() + (uint)(sig.GetPtr() - pBlob);
                 break;
             }
         }
