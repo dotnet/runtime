@@ -842,7 +842,7 @@ namespace System.Diagnostics.Tracing
         {
             if (m_eventSourceEnabled)
             {
-                if (arg1 == null) arg1 = "";
+                arg1 ??= "";
                 fixed (char* string1Bytes = arg1)
                 {
                     EventSource.EventData* descrs = stackalloc EventSource.EventData[1];
@@ -858,8 +858,8 @@ namespace System.Diagnostics.Tracing
         {
             if (m_eventSourceEnabled)
             {
-                if (arg1 == null) arg1 = "";
-                if (arg2 == null) arg2 = "";
+                arg1 ??= "";
+                arg2 ??= "";
                 fixed (char* string1Bytes = arg1)
                 fixed (char* string2Bytes = arg2)
                 {
@@ -879,9 +879,9 @@ namespace System.Diagnostics.Tracing
         {
             if (m_eventSourceEnabled)
             {
-                if (arg1 == null) arg1 = "";
-                if (arg2 == null) arg2 = "";
-                if (arg3 == null) arg3 = "";
+                arg1 ??= "";
+                arg2 ??= "";
+                arg3 ??= "";
                 fixed (char* string1Bytes = arg1)
                 fixed (char* string2Bytes = arg2)
                 fixed (char* string3Bytes = arg3)
@@ -906,7 +906,7 @@ namespace System.Diagnostics.Tracing
         {
             if (m_eventSourceEnabled)
             {
-                if (arg1 == null) arg1 = "";
+                arg1 ??= "";
                 fixed (char* string1Bytes = arg1)
                 {
                     EventSource.EventData* descrs = stackalloc EventSource.EventData[2];
@@ -925,7 +925,7 @@ namespace System.Diagnostics.Tracing
         {
             if (m_eventSourceEnabled)
             {
-                if (arg1 == null) arg1 = "";
+                arg1 ??= "";
                 fixed (char* string1Bytes = arg1)
                 {
                     EventSource.EventData* descrs = stackalloc EventSource.EventData[3];
@@ -948,7 +948,7 @@ namespace System.Diagnostics.Tracing
         {
             if (m_eventSourceEnabled)
             {
-                if (arg1 == null) arg1 = "";
+                arg1 ??= "";
                 fixed (char* string1Bytes = arg1)
                 {
                     EventSource.EventData* descrs = stackalloc EventSource.EventData[2];
@@ -968,7 +968,7 @@ namespace System.Diagnostics.Tracing
         {
             if (m_eventSourceEnabled)
             {
-                if (arg2 == null) arg2 = "";
+                arg2 ??= "";
                 fixed (char* string2Bytes = arg2)
                 {
                     EventSource.EventData* descrs = stackalloc EventSource.EventData[2];
@@ -988,7 +988,7 @@ namespace System.Diagnostics.Tracing
         {
             if (m_eventSourceEnabled)
             {
-                if (arg2 == null) arg2 = "";
+                arg2 ??= "";
                 fixed (char* string2Bytes = arg2)
                 {
                     EventSource.EventData* descrs = stackalloc EventSource.EventData[2];
@@ -1143,7 +1143,7 @@ namespace System.Diagnostics.Tracing
         ///    {
         ///        if (IsEnabled())
         ///        {
-        ///            if (arg2 == null) arg2 = "";
+        ///            arg2 ??= "";
         ///            fixed (char* string2Bytes = arg2)
         ///            {
         ///                EventSource.EventData* descrs = stackalloc EventSource.EventData[2];
@@ -1176,7 +1176,7 @@ namespace System.Diagnostics.Tracing
         ///    {
         ///        if (IsEnabled())
         ///        {
-        ///            if (arg2 == null) arg2 = "";
+        ///            arg2 ??= "";
         ///            fixed (char* string2Bytes = arg2)
         ///            {
         ///                EventSource.EventData* descrs = stackalloc EventSource.EventData[2];
@@ -1505,8 +1505,7 @@ namespace System.Diagnostics.Tracing
             }
             catch (Exception e)
             {
-                if (m_constructionException == null)
-                    m_constructionException = e;
+                m_constructionException ??= e;
                 ReportOutOfBandMessage("ERROR: Exception during construction of EventSource " + Name + ": " + e.Message, true);
             }
 
@@ -1555,10 +1554,7 @@ namespace System.Diagnostics.Tracing
             /// </summary>
             public void Start()
             {
-                if (this.w == null)
-                {
-                    this.w = new uint[85];
-                }
+                this.w ??= new uint[85];
 
                 this.length = 0;
                 this.pos = 0;
@@ -2635,7 +2631,9 @@ namespace System.Diagnostics.Tracing
                 {
                     // We can't do the command, simply remember it and we do it when we are fully constructed.
                     if (m_deferredCommands == null)
+                    {
                         m_deferredCommands = commandArgs;       // create the first entry
+                    }
                     else
                     {
                         // We have one or more entries, find the last one and add it to that.
@@ -2683,8 +2681,7 @@ namespace System.Diagnostics.Tracing
                     throw new ArgumentException(SR.EventSource_ListenerNotFound);
                 }
 
-                if (commandArgs.Arguments == null)
-                    commandArgs.Arguments = new Dictionary<string, string?>();
+                commandArgs.Arguments ??= new Dictionary<string, string?>();
 
                 if (commandArgs.Command == EventCommand.Update)
                 {
@@ -2921,8 +2918,7 @@ namespace System.Diagnostics.Tracing
                 EventDispatcher? dispatcher = m_Dispatchers;
                 while (dispatcher != null)
                 {
-                    if (dispatcher.m_EventEnabled == null)
-                        dispatcher.m_EventEnabled = new bool[m_eventData.Length];
+                    dispatcher.m_EventEnabled ??= new bool[m_eventData.Length];
                     dispatcher = dispatcher.m_Next;
                 }
 #if FEATURE_PERFTRACING
@@ -3660,8 +3656,7 @@ namespace System.Diagnostics.Tracing
             //     throw new WarningException(SR.EventSource_EventNameDoesNotEqualTaskPlusOpcode);
             // }
 
-            if (eventsByName == null)
-                eventsByName = new Dictionary<string, string>();
+            eventsByName ??= new Dictionary<string, string>();
 
             if (eventsByName.ContainsKey(evtName))
             {
@@ -4237,8 +4232,7 @@ namespace System.Diagnostics.Tracing
         {
             lock (EventListenersLock)
             {
-                if (s_EventSources == null)
-                    s_EventSources = new List<WeakReference>(2);
+                s_EventSources ??= new List<WeakReference>(2);
 
                 if (!s_EventSourceShutdownRegistered)
                 {
@@ -5354,8 +5348,10 @@ namespace System.Diagnostics.Tracing
                     ManifestError(SR.Format(SR.EventSource_OpcodeCollision, name, prevName, value));
                 }
             }
+
             opcodeTab[value] = name;
         }
+
         public void AddTask(string name, int value)
         {
             if ((flags & EventManifestOptions.Strict) != 0)
@@ -5370,10 +5366,11 @@ namespace System.Diagnostics.Tracing
                     ManifestError(SR.Format(SR.EventSource_TaskCollision, name, prevName, value));
                 }
             }
-            if (taskTab == null)
-                taskTab = new Dictionary<int, string>();
+
+            taskTab ??= new Dictionary<int, string>();
             taskTab[value] = name;
         }
+
         public void AddKeyword(string name, ulong value)
         {
             if ((value & (value - 1)) != 0)   // Is it a power of 2?
@@ -5392,8 +5389,8 @@ namespace System.Diagnostics.Tracing
                     ManifestError(SR.Format(SR.EventSource_KeywordCollision, name, prevName, "0x" + value.ToString("x", CultureInfo.CurrentCulture)));
                 }
             }
-            if (keywordTab == null)
-                keywordTab = new Dictionary<ulong, string>();
+
+            keywordTab ??= new Dictionary<ulong, string>();
             keywordTab[value] = name;
         }
 
@@ -5419,8 +5416,7 @@ namespace System.Diagnostics.Tracing
 
             ulong kwd = GetChannelKeyword(chValue);
 
-            if (channelTab == null)
-                channelTab = new Dictionary<int, ChannelInfo>(4);
+            channelTab ??= new Dictionary<int, ChannelInfo>(4);
             channelTab[value] = new ChannelInfo { Name = name, Keywords = kwd, Attribs = channelAttribute };
         }
 
@@ -5509,8 +5505,7 @@ namespace System.Diagnostics.Tracing
             {
                 // mark this index as "extraneous" (it has no parallel in the managed signature)
                 // we use these values in TranslateToManifestConvention()
-                if (byteArrArgIndices == null)
-                    byteArrArgIndices = new List<int>(4);
+                byteArrArgIndices ??= new List<int>(4);
                 byteArrArgIndices.Add(numParams);
 
                 // add an extra field to the template representing the length of the binary blob
@@ -5530,8 +5525,7 @@ namespace System.Diagnostics.Tracing
             if (type.IsEnum() && Enum.GetUnderlyingType(type) != typeof(ulong) && Enum.GetUnderlyingType(type) != typeof(long))
             {
                 templates.Append(" map=\"").Append(type.Name).Append("\"");
-                if (mapsTab == null)
-                    mapsTab = new Dictionary<string, Type>();
+                mapsTab ??= new Dictionary<string, Type>();
                 if (!mapsTab.ContainsKey(type.Name))
                     mapsTab.Add(type.Name, type);        // Remember that we need to dump the type enumeration
             }
@@ -5580,10 +5574,7 @@ namespace System.Diagnostics.Tracing
         {
             // strip off any non-channel keywords, since we are only interested in channels here.
             channelKeyword &= ValidPredefinedChannelKeywords;
-            if (channelTab == null)
-            {
-                channelTab = new Dictionary<int, ChannelInfo>(4);
-            }
+            channelTab ??= new Dictionary<int, ChannelInfo>(4);
 
             if (channelTab.Count == MaxCountChannels)
                 ManifestError(SR.EventSource_MaxChannelExceeded);
@@ -5671,8 +5662,8 @@ namespace System.Diagnostics.Tracing
                         access = attribs.Access;
 #endif
                     }
-                    if (fullName == null)
-                        fullName = providerName + "/" + channelInfo.Name;
+
+                    fullName ??= providerName + "/" + channelInfo.Name;
 
                     sb.Append("  <").Append(elementName);
                     sb.Append(" chid=\"").Append(channelInfo.Name).Append("\"");
@@ -5923,8 +5914,7 @@ namespace System.Diagnostics.Tracing
 
                 // allow channels to be auto-defined.  The well known ones get their well known names, and the
                 // rest get names Channel<N>.  This allows users to modify the Manifest if they want more advanced features.
-                if (channelTab == null)
-                    channelTab = new Dictionary<int, ChannelInfo>(4);
+                channelTab ??= new Dictionary<int, ChannelInfo>(4);
 
                 string channelName = channel.ToString();        // For well know channels this is a nice name, otherwise a number
                 if (EventChannel.Debug < channel)
@@ -5935,8 +5925,8 @@ namespace System.Diagnostics.Tracing
                     ManifestError(SR.Format(SR.EventSource_UndefinedChannel, channel, eventName));
             }
             // events that specify admin channels *must* have non-null "Message" attributes
-            if (resources != null && eventMessage == null)
-                eventMessage = resources.GetString("event_" + eventName, CultureInfo.InvariantCulture);
+            if (resources != null)
+                eventMessage ??= resources.GetString("event_" + eventName, CultureInfo.InvariantCulture);
 
             Debug.Assert(info!.Attribs != null);
             if (info.Attribs.EventChannelType == EventChannelType.Admin && eventMessage == null)
@@ -5950,8 +5940,7 @@ namespace System.Diagnostics.Tracing
                 return "";
 
             string? ret;
-            if (taskTab == null)
-                taskTab = new Dictionary<int, string>();
+            taskTab ??= new Dictionary<int, string>();
             if (!taskTab.TryGetValue((int)task, out ret))
                 ret = taskTab[(int)task] = eventName;
             return ret;
@@ -6082,8 +6071,7 @@ namespace System.Diagnostics.Tracing
 
         private static void UpdateStringBuilder([NotNull] ref StringBuilder? stringBuilder, string eventMessage, int startIndex, int count)
         {
-            if (stringBuilder == null)
-                stringBuilder = new StringBuilder();
+            stringBuilder ??= new StringBuilder();
             stringBuilder.Append(eventMessage, startIndex, count);
         }
 

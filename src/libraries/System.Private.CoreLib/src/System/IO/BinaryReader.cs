@@ -148,10 +148,7 @@ namespace System.IO
                 posSav = _stream.Position;
             }
 
-            if (_charBytes == null)
-            {
-                _charBytes = new byte[MaxCharBytesSize];
-            }
+            _charBytes ??= new byte[MaxCharBytesSize];
 
             Span<char> singleChar = stackalloc char[1];
 
@@ -289,15 +286,8 @@ namespace System.IO
                 return string.Empty;
             }
 
-            if (_charBytes == null)
-            {
-                _charBytes = new byte[MaxCharBytesSize];
-            }
-
-            if (_charBuffer == null)
-            {
-                _charBuffer = new char[_maxCharsSize];
-            }
+            _charBytes ??= new byte[MaxCharBytesSize];
+            _charBuffer ??= new char[_maxCharsSize];
 
             StringBuilder? sb = null;
             do
@@ -409,10 +399,7 @@ namespace System.IO
                 }
                 else
                 {
-                    if (_charBytes == null)
-                    {
-                        _charBytes = new byte[MaxCharBytesSize];
-                    }
+                    _charBytes ??= new byte[MaxCharBytesSize];
 
                     if (numBytes > MaxCharBytesSize)
                     {

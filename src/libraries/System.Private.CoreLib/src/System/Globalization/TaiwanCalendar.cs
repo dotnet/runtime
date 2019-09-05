@@ -32,10 +32,7 @@ namespace System.Globalization
 
         private readonly GregorianCalendarHelper _helper;
 
-        internal static Calendar GetDefaultInstance()
-        {
-            return s_defaultInstance ?? (s_defaultInstance = new TaiwanCalendar());
-        }
+        internal static Calendar GetDefaultInstance() => s_defaultInstance ??= new TaiwanCalendar();
 
         private static readonly DateTime s_calendarMinValue = new DateTime(1912, 1, 1);
 

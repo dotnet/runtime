@@ -812,11 +812,9 @@ namespace System.IO
                     }
                     i++;
                 } while (i < _charLen);
+
                 i = _charLen - _charPos;
-                if (sb == null)
-                {
-                    sb = new StringBuilder(i + 80);
-                }
+                sb ??= new StringBuilder(i + 80);
                 sb.Append(_charBuffer, _charPos, i);
             } while (ReadBuffer() > 0);
             return sb.ToString();
@@ -896,10 +894,7 @@ namespace System.IO
                 } while (i < tmpCharLen);
 
                 i = tmpCharLen - tmpCharPos;
-                if (sb == null)
-                {
-                    sb = new StringBuilder(i + 80);
-                }
+                sb ??= new StringBuilder(i + 80);
                 sb.Append(tmpCharBuffer, tmpCharPos, i);
             } while (await ReadBufferAsync().ConfigureAwait(false) > 0);
 

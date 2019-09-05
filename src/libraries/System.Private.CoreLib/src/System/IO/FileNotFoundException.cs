@@ -85,8 +85,7 @@ namespace System.IO
 
             if (FusionLog != null)
             {
-                if (s == null)
-                    s = " ";
+                s ??= " ";
                 s += Environment.NewLine;
                 s += Environment.NewLine;
                 s += FusionLog;

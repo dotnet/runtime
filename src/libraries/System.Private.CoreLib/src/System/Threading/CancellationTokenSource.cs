@@ -697,7 +697,7 @@ namespace System.Threading
                         catch (Exception ex) when (!throwOnFirstException)
                         {
                             // Store the exception and continue
-                            (exceptionList ?? (exceptionList = new List<Exception>())).Add(ex);
+                            (exceptionList ??= new List<Exception>()).Add(ex);
                         }
 
                         // Drop the node. While we could add it to the free list, doing so has cost (we'd need to take the lock again)

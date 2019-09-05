@@ -245,8 +245,7 @@ namespace System.Security
             if (child == null)
                 throw new ArgumentNullException(nameof(child));
 
-            if (_children == null)
-                _children = new ArrayList(ChildrenTypical);
+            _children ??= new ArrayList(ChildrenTypical);
 
             _children.Add(child);
         }
@@ -405,8 +404,7 @@ namespace System.Security
                 }
                 else
                 {
-                    if (sb == null)
-                        sb = new StringBuilder();
+                    sb ??= new StringBuilder();
 
                     sb.Append(str, newIndex, index - newIndex);
                     sb.Append(GetEscapeSequence(str[index]));
@@ -470,8 +468,7 @@ namespace System.Security
                 }
                 else
                 {
-                    if (sb == null)
-                        sb = new StringBuilder();
+                    sb ??= new StringBuilder();
 
                     sb.Append(str, newIndex, index - newIndex);
                     sb.Append(GetUnescapeSequence(str, index, out newIndex)); // updates the newIndex too
