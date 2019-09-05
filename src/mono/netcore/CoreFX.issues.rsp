@@ -894,10 +894,6 @@
 # https://github.com/mono/mono/issues/15344
 -nomethod System.Reflection.Tests.TypeInvariants.TestInvariantCode
 
-# System.TypeLoadException : Could not find type 'Typ\\W\[t\]S\+r\*n\&e\,haracters' in assembly ''.
-# https://github.com/mono/mono/issues/15349
--nomethod System.Reflection.Tests.TypeTests.TypesWithStrangeCharacters
-
 # flaky tests
 -nomethod System.Reflection.Tests.TypeInfoDeclaredImplementedInterfacesTests.*
 
