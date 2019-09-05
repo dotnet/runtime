@@ -233,3 +233,4 @@ xunit-summary:
 endif
 
 distdir:
+distclean:

@@ -46,6 +46,7 @@ EXTRA_DIST= \
 	winconfig.h 		\
 	code_of_conduct.md 	\
 	external		\
+	netcore/Makefile	\
 	mcs/class/referencesource
 
 DISTCHECK_CONFIGURE_FLAGS = EXTERNAL_RUNTIME=false
