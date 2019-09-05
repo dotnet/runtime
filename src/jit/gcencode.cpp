@@ -2238,43 +2238,45 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
                     totalSize += sz;
                 }
             }
-
-            else if (varDsc->lvType == TYP_STRUCT && varDsc->lvOnFrame && (varDsc->lvExactSize >= TARGET_POINTER_SIZE))
+            else if ((varDsc->TypeGet() == TYP_STRUCT) && varDsc->lvOnFrame && varDsc->HasGCPtr())
             {
-                // A struct will have gcSlots only if it is at least TARGET_POINTER_SIZE.
-                unsigned slots  = compiler->lvaLclSize(varNum) / TARGET_POINTER_SIZE;
-                BYTE*    gcPtrs = compiler->lvaGetGcLayout(varNum);
+                ClassLayout* layout = varDsc->GetLayout();
+                unsigned     slots  = layout->GetSlotCount();
 
-                // walk each member of the array
                 for (unsigned i = 0; i < slots; i++)
                 {
-                    if (gcPtrs[i] == TYPE_GC_NONE) // skip non-gc slots
-                        continue;
-
+                    if (!layout->IsGCPtr(i))
                     {
+                        continue;
+                    }
 
-                        unsigned offset = varDsc->lvStkOffs + i * TARGET_POINTER_SIZE;
+                    unsigned offset = varDsc->lvStkOffs + i * TARGET_POINTER_SIZE;
 #if DOUBLE_ALIGN
-                        // For genDoubleAlign(), locals are addressed relative to ESP and
-                        // arguments are addressed relative to EBP.
+                    // For genDoubleAlign(), locals are addressed relative to ESP and
+                    // arguments are addressed relative to EBP.
 
-                        if (compiler->genDoubleAlign() && varDsc->lvIsParam && !varDsc->lvIsRegArg)
-                            offset += compiler->codeGen->genTotalFrameSize();
+                    if (compiler->genDoubleAlign() && varDsc->lvIsParam && !varDsc->lvIsRegArg)
+                    {
+                        offset += compiler->codeGen->genTotalFrameSize();
+                    }
 #endif
-                        if (gcPtrs[i] == TYPE_GC_BYREF)
-                            offset |= byref_OFFSET_FLAG; // indicate it is a byref GC pointer
+                    if (layout->GetGCPtrType(i) == TYP_BYREF)
+                    {
+                        offset |= byref_OFFSET_FLAG; // indicate it is a byref GC pointer
+                    }
 
-                        int encodedoffset = lastoffset - offset;
-                        lastoffset        = offset;
+                    int encodedoffset = lastoffset - offset;
+                    lastoffset        = offset;
 
-                        if (mask == 0)
-                            totalSize += encodeSigned(NULL, encodedoffset);
-                        else
-                        {
-                            unsigned sz = encodeSigned(dest, encodedoffset);
-                            dest += sz;
-                            totalSize += sz;
-                        }
+                    if (mask == 0)
+                    {
+                        totalSize += encodeSigned(NULL, encodedoffset);
+                    }
+                    else
+                    {
+                        unsigned sz = encodeSigned(dest, encodedoffset);
+                        dest += sz;
+                        totalSize += sz;
                     }
                 }
             }
@@ -4166,16 +4168,15 @@ void GCInfo::gcMakeRegPtrTable(
 
         // If this is a TYP_STRUCT, handle its GC pointers.
         // Note that the enregisterable struct types cannot have GC pointers in them.
-        if ((varDsc->lvType == TYP_STRUCT) && varDsc->lvOnFrame && (varDsc->lvExactSize >= TARGET_POINTER_SIZE))
+        if ((varDsc->TypeGet() == TYP_STRUCT) && varDsc->lvOnFrame && (varDsc->lvExactSize >= TARGET_POINTER_SIZE))
         {
-            unsigned slots  = compiler->lvaLclSize(varNum) / TARGET_POINTER_SIZE;
-            BYTE*    gcPtrs = compiler->lvaGetGcLayout(varNum);
+            ClassLayout* layout = varDsc->GetLayout();
+            unsigned     slots  = layout->GetSlotCount();
 
-            // walk each member of the array
             for (unsigned i = 0; i < slots; i++)
             {
-                if (gcPtrs[i] == TYPE_GC_NONE)
-                { // skip non-gc slots
+                if (!layout->IsGCPtr(i))
+                {
                     continue;
                 }
 
@@ -4188,7 +4189,7 @@ void GCInfo::gcMakeRegPtrTable(
                     offset += compiler->codeGen->genTotalFrameSize();
 #endif
                 GcSlotFlags flags = GC_SLOT_UNTRACKED;
-                if (gcPtrs[i] == TYPE_GC_BYREF)
+                if (layout->GetGCPtrType(i) == TYP_BYREF)
                 {
                     flags = (GcSlotFlags)(flags | GC_SLOT_INTERIOR);
                 }

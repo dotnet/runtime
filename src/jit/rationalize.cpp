@@ -373,13 +373,10 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
                 GenTreeBlk*  storeBlk = nullptr;
                 unsigned int size     = varDsc->lvExactSize;
 
-                if (varDsc->lvStructGcCount != 0)
+                if (varDsc->HasGCPtr())
                 {
                     CORINFO_CLASS_HANDLE structHnd = varDsc->lvVerTypeInfo.GetClassHandle();
                     GenTreeObj*          objNode   = comp->gtNewObjNode(structHnd, location)->AsObj();
-                    unsigned int         slots     = roundUp(size, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;
-
-                    objNode->SetGCInfo(varDsc->lvGcLayout, varDsc->lvStructGcCount, slots);
                     objNode->ChangeOper(GT_STORE_OBJ);
                     objNode->SetData(value);
                     comp->fgMorphUnsafeBlk(objNode);
@@ -387,7 +384,8 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
                 }
                 else
                 {
-                    storeBlk = new (comp, GT_STORE_BLK) GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, location, value, size);
+                    storeBlk = new (comp, GT_STORE_BLK)
+                        GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, location, value, comp->typGetBlkLayout(size));
                 }
                 storeBlk->gtFlags |= GTF_ASG;
                 storeBlk->gtFlags |= ((location->gtFlags | value->gtFlags) & GTF_ALL_EFFECT);

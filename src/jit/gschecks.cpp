@@ -423,8 +423,11 @@ void Compiler::gsParamsToShadows()
         lvaTable[shadowVar].lvLclFieldExpr     = varDsc->lvLclFieldExpr;
         lvaTable[shadowVar].lvLiveAcrossUCall  = varDsc->lvLiveAcrossUCall;
 #endif
-        lvaTable[shadowVar].lvVerTypeInfo    = varDsc->lvVerTypeInfo;
-        lvaTable[shadowVar].lvGcLayout       = varDsc->lvGcLayout;
+        lvaTable[shadowVar].lvVerTypeInfo = varDsc->lvVerTypeInfo;
+        if (varTypeIsStruct(type))
+        {
+            lvaTable[shadowVar].SetLayout(varDsc->GetLayout());
+        }
         lvaTable[shadowVar].lvIsUnsafeBuffer = varDsc->lvIsUnsafeBuffer;
         lvaTable[shadowVar].lvIsPtr          = varDsc->lvIsPtr;
 

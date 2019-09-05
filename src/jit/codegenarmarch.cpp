@@ -849,18 +849,10 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             // the xor ensures that only one of the two is setup, not both
             assert((varNode != nullptr) ^ (addrNode != nullptr));
 
-            BYTE  gcPtrArray[MAX_ARG_REG_COUNT] = {}; // TYPE_GC_NONE = 0
-            BYTE* gcPtrs                        = gcPtrArray;
+            ClassLayout* layout;
+            unsigned     structSize;
+            bool         isHfa;
 
-            unsigned gcPtrCount; // The count of GC pointers in the struct
-            unsigned structSize;
-            bool     isHfa;
-
-#ifdef _TARGET_ARM_
-            // On ARM32, size of reference map can be larger than MAX_ARG_REG_COUNT
-            gcPtrs     = treeNode->gtGcPtrs;
-            gcPtrCount = treeNode->gtNumberReferenceSlots;
-#endif
             // Setup the structSize, isHFa, and gcPtrCount
             if (source->OperGet() == GT_LCL_VAR)
             {
@@ -874,12 +866,8 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 
                 structSize = varDsc->lvSize(); // This yields the roundUp size, but that is fine
                                                // as that is how much stack is allocated for this LclVar
-                isHfa = varDsc->lvIsHfa();
-#ifdef _TARGET_ARM64_
-                gcPtrCount = varDsc->lvStructGcCount;
-                for (unsigned i = 0; i < gcPtrCount; ++i)
-                    gcPtrs[i]   = varDsc->lvGcLayout[i];
-#endif // _TARGET_ARM_
+                isHfa  = varDsc->lvIsHfa();
+                layout = varDsc->GetLayout();
             }
             else // we must have a GT_OBJ
             {
@@ -889,9 +877,9 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 // it provides (size and GC layout) even if the node wraps a lclvar. Due
                 // to struct reinterpretation (e.g. Unsafe.As<X, Y>) it is possible that
                 // the OBJ node has a different type than the lclvar.
-                CORINFO_CLASS_HANDLE objClass = source->gtObj.gtClass;
+                layout = source->AsObj()->GetLayout();
 
-                structSize = compiler->info.compCompHnd->getClassSize(objClass);
+                structSize = layout->GetSize();
 
                 // The codegen code below doesn't have proper support for struct sizes
                 // that are not multiple of the slot size. Call arg morphing handles this
@@ -908,22 +896,14 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                     assert((structSize % TARGET_POINTER_SIZE) == 0);
                 }
 
-                isHfa = compiler->IsHfa(objClass);
-
-#ifdef _TARGET_ARM64_
-                // On ARM32, Lowering places the correct GC layout information in the
-                // GenTreePutArgStk node and the code above already use that. On ARM64,
-                // this information is not available (in order to keep GenTreePutArgStk
-                // nodes small) and we need to retrieve it from the VM here.
-                gcPtrCount = compiler->info.compCompHnd->getClassGClayout(objClass, &gcPtrs[0]);
-#endif
+                isHfa = compiler->IsHfa(layout->GetClassHandle());
             }
 
             // If we have an HFA we can't have any GC pointers,
             // if not then the max size for the the struct is 16 bytes
             if (isHfa)
             {
-                noway_assert(gcPtrCount == 0);
+                noway_assert(!layout->HasGCPtr());
             }
 #ifdef _TARGET_ARM64_
             else
@@ -945,8 +925,8 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 
             while (remainingSize >= 2 * TARGET_POINTER_SIZE)
             {
-                var_types type0 = compiler->getJitGCType(gcPtrs[nextIndex + 0]);
-                var_types type1 = compiler->getJitGCType(gcPtrs[nextIndex + 1]);
+                var_types type0 = layout->GetGCPtrType(nextIndex + 0);
+                var_types type1 = layout->GetGCPtrType(nextIndex + 1);
 
                 if (varNode != nullptr)
                 {
@@ -981,7 +961,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             //             str     r2, [sp, #16]
             while (remainingSize >= TARGET_POINTER_SIZE)
             {
-                var_types type = compiler->getJitGCType(gcPtrs[nextIndex]);
+                var_types type = layout->GetGCPtrType(nextIndex);
 
                 if (varNode != nullptr)
                 {
@@ -1018,7 +998,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             {
                 if (remainingSize >= TARGET_POINTER_SIZE)
                 {
-                    var_types nextType = compiler->getJitGCType(gcPtrs[nextIndex]);
+                    var_types nextType = layout->GetGCPtrType(nextIndex);
                     emitAttr  nextAttr = emitTypeSize(nextType);
                     remainingSize -= TARGET_POINTER_SIZE;
 
@@ -1051,7 +1031,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                     assert(varNode == nullptr);
 
                     // the left over size is smaller than a pointer and thus can never be a GC type
-                    assert(varTypeIsGC(compiler->getJitGCType(gcPtrs[nextIndex])) == false);
+                    assert(!layout->IsGCPtr(nextIndex));
 
                     var_types loadType = TYP_UINT;
                     if (loadSize == 1)
@@ -1224,11 +1204,6 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
         // the xor ensures that only one of the two is setup, not both
         assert((varNode != nullptr) ^ (addrNode != nullptr));
 
-        // Setup the structSize, isHFa, and gcPtrCount
-        BYTE*    gcPtrs     = treeNode->gtGcPtrs;
-        unsigned gcPtrCount = treeNode->gtNumberReferenceSlots; // The count of GC pointers in the struct
-        int      structSize = treeNode->getArgSize();
-
         // This is the varNum for our load operations,
         // only used when we have a struct with a LclVar source
         unsigned srcVarNum = BAD_VAR_NUM;
@@ -1263,8 +1238,11 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
             assert(baseReg != addrReg);
 
             // We don't split HFA struct
-            assert(!compiler->IsHfa(source->gtObj.gtClass));
+            assert(!compiler->IsHfa(source->AsObj()->GetLayout()->GetClassHandle()));
         }
+
+        int          structSize = treeNode->getArgSize();
+        ClassLayout* layout     = source->AsObj()->GetLayout();
 
         // Put on stack first
         unsigned nextIndex     = treeNode->gtNumRegs;
@@ -1275,7 +1253,7 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
         assert(remainingSize % TARGET_POINTER_SIZE == 0);
         while (remainingSize > 0)
         {
-            var_types type = compiler->getJitGCType(gcPtrs[nextIndex]);
+            var_types type = layout->GetGCPtrType(nextIndex);
 
             if (varNode != nullptr)
             {
@@ -2804,7 +2782,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
                     // Must be <= 16 bytes or else it wouldn't be passed in registers, except for HFA,
                     // which can be bigger (and is handled above).
                     noway_assert(EA_SIZE_IN_BYTES(varDsc->lvSize()) <= 16);
-                    loadType = compiler->getJitGCType(varDsc->lvGcLayout[0]);
+                    loadType = varDsc->GetLayout()->GetGCPtrType(0);
                 }
                 else
                 {
@@ -2825,7 +2803,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
                     // Restore the second register.
                     argRegNext = genRegArgNext(argReg);
 
-                    loadType = compiler->getJitGCType(varDsc->lvGcLayout[1]);
+                    loadType = varDsc->GetLayout()->GetGCPtrType(1);
                     loadSize = emitActualTypeSize(loadType);
                     getEmitter()->emitIns_R_S(ins_Load(loadType), loadSize, argRegNext, varNum, TARGET_POINTER_SIZE);
 
@@ -2918,7 +2896,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
             for (unsigned ofs = 0; ofs < maxSize; ofs += REGSIZE_BYTES)
             {
                 unsigned idx = ofs / REGSIZE_BYTES;
-                loadType     = compiler->getJitGCType(varDsc->lvGcLayout[idx]);
+                loadType     = varDsc->GetLayout()->GetGCPtrType(idx);
 
                 if (varDsc->lvRegNum != argReg)
                 {
@@ -3389,7 +3367,7 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 
     if (blkOp->OperIs(GT_STORE_OBJ) && blkOp->OperIsCopyBlkOp())
     {
-        assert(blkOp->AsObj()->gtGcPtrCount != 0);
+        assert(blkOp->AsObj()->GetLayout()->HasGCPtr());
         genCodeForCpObj(blkOp->AsObj());
         return;
     }

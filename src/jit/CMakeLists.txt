@@ -27,6 +27,7 @@ set( JIT_SOURCES
   assertionprop.cpp
   bitset.cpp
   block.cpp
+  layout.cpp
   codegencommon.cpp
   codegenlinear.cpp
   compiler.cpp
@@ -97,6 +98,7 @@ if (WIN32)
     alloc.h
     arraystack.h
     bitset.h
+    layout.h
     bitsetasshortlong.h
     bitsetasuint64.h
     bitsetasuint64inclass.h
