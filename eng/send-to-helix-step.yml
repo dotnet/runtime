@@ -17,6 +17,7 @@ parameters:
   runCrossGen: ''
   helixProjectArguments: ''
   runInUnloadableContext: ''
+  longRunningGcTests: ''
 
 steps:
 - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
@@ -43,6 +44,7 @@ steps:
       _HelixType: ${{ parameters.helixType }}
       _RunCrossGen: ${{ parameters.runCrossGen }}
       _RunInUnloadableContext: ${{ parameters.runInUnloadableContext }}
+      _LongRunningGcTests: ${{ parameters.longRunningGcTests }}
       _Scenarios: ${{ join(',', parameters.scenarios) }}
       _TimeoutPerTestCollectionInMinutes: ${{ parameters.timeoutPerTestCollectionInMinutes }}
       _TimeoutPerTestInMinutes: ${{ parameters.timeoutPerTestInMinutes }}
@@ -79,6 +81,7 @@ steps:
       _HelixType: ${{ parameters.helixType }}
       _RunCrossGen: ${{ parameters.runCrossGen }}
       _RunInUnloadableContext: ${{ parameters.runInUnloadableContext }}
+      _LongRunningGcTests: ${{ parameters.longRunningGcTests }}
       _Scenarios: ${{ join(',', parameters.scenarios) }}
       _TimeoutPerTestCollectionInMinutes: ${{ parameters.timeoutPerTestCollectionInMinutes }}
       _TimeoutPerTestInMinutes: ${{ parameters.timeoutPerTestInMinutes }}
