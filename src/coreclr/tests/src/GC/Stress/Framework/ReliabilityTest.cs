@@ -42,7 +42,7 @@ public class TestAssemblyLoadContext : AssemblyLoadContext
 
     public int ExecuteAssemblyByName(string name, string[] args)
     {
-        return ExecuteAssembly(name + ".exe", args);
+        return ExecuteAssembly(name + ".dll", args);
 
     }
 

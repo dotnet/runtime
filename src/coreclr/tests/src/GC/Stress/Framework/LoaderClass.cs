@@ -146,7 +146,7 @@ public class LoaderClass
 #if !PROJECTK_BUILD
             assem = Assembly.Load(an);
 #else
-            LoadFrom(assemblyName + ".exe", paths);
+            LoadFrom(assemblyName + ".dll", paths);
 #endif
         }
         catch
@@ -200,7 +200,7 @@ public class LoaderClass
         }
         catch (System.Reflection.ReflectionTypeLoadException e)
         {
-            if (assembly.ToLower().IndexOf(".exe") != -1)
+            if (assembly.ToLower().IndexOf(".dll") != -1)
                 return (assembly);
             throw new Exception(String.Format("Couldn't GetTypes for {0} ({1})", assembly, e.Message));
         }
