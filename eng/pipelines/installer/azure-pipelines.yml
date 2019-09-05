@@ -183,12 +183,22 @@ stages:
       #     bar: <Name of the Arcade variable that contains the ID of this channel in BAR>
       #     storage: <Name of the Latest channel to publish to in dotnetcli blob storage>
       dependsOnPublishStages:
-      - dependsOn: PublishValidation
+      - dependsOn: NetCore_Dev30_Publish_Validation
         channel:
           name: .NET Core 3 Dev
           bar: PublicDevRelease_30_Channel_Id
           storage: release/3.0
-      - dependsOn: NetCore_Dev5_PublishValidation
+      - dependsOn: NetCore_Dev31_Publish_Validation
+        channel:
+          name: .NET Core 3.1 Dev
+          bar: PublicDevRelease_31_Channel_Id
+          storage: release/3.1
+      - dependsOn: NetCore_Release31_Publish_Validation
+        channel:
+          name: .NET Core 3.1 Release
+          bar: PublicRelease_31_Channel_Id
+          storage: release/3.1-preview1
+      - dependsOn: NetCore_Dev5_Publish_Validation
         channel:
           name: .NET Core 5 Dev
           bar: NetCore_5_Dev_Channel_Id
