@@ -147,8 +147,6 @@ ValueNumFuncDef(LE_UN, 2, false, false, false)
 ValueNumFuncDef(GE_UN, 2, false, false, false)
 ValueNumFuncDef(GT_UN, 2, false, false, false)
 
-ValueNumFuncDef(MUL64_UN, 2, true, false, false)    // unsigned multiplication (used by 32-bit targets)
-
 // currently we won't constant fold the next six
 
 ValueNumFuncDef(ADD_OVF, 2, true, false, false)     // overflow checking operations

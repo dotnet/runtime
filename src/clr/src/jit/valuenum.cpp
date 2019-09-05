@@ -257,215 +257,102 @@ TFp FpRem(TFp dividend, TFp divisor)
 }
 
 //--------------------------------------------------------------------------------
-// VNGetOperKind:   - Given two bools: isUnsigned and overFlowCheck
-//                    return the correct VNOperKind for them.
+// GetVNFuncForNode: Given a GenTree node, this returns the proper VNFunc to use
+// for ValueNumbering
 //
 // Arguments:
-//    isUnsigned    - The operKind returned should have the unsigned property
-//    overflowCheck - The operKind returned should have the overflow check property
+//    node - The GenTree node that we need the VNFunc for.
 //
 // Return Value:
-//                  - The VNOperKind to use for this pair of (isUnsigned, overflowCheck)
+//    The VNFunc to use for this GenTree node
 //
-VNOperKind VNGetOperKind(bool isUnsigned, bool overflowCheck)
-{
-    if (!isUnsigned)
-    {
-        if (!overflowCheck)
-        {
-            return VOK_Default;
-        }
-        else
-        {
-            return VOK_OverflowCheck;
-        }
-    }
-    else // isUnsigned
-    {
-        if (!overflowCheck)
-        {
-            return VOK_Unsigned;
-        }
-        else
-        {
-            return VOK_Unsigned_OverflowCheck;
-        }
-    }
-}
-
-//--------------------------------------------------------------------------------
-// GetVNFuncForOper:  - Given a genTreeOper this function Returns the correct
-//                         VNFunc to use for ValueNumbering
-//
-// Arguments:
-//    oper            - The gtOper value from the GenTree node
-//    operKind        - An enum that supports Normal, Unsigned, OverflowCheck,
-//                      and Unsigned_OverflowCheck,
-//
-// Return Value:
-//               - The VNFunc to use for this pair of (oper, operKind)
-//
-// Notes:        - An assert will fire when the oper does not support
-//                 the operKInd that is supplied.
-//
-VNFunc GetVNFuncForOper(genTreeOps oper, VNOperKind operKind)
-{
-    VNFunc result  = VNF_COUNT; // An illegal value
-    bool   invalid = false;
-
-    // For most genTreeOpers we just use the VNFunc with the same enum value as the oper
-    //
-    if (operKind == VOK_Default)
-    {
-        // We can directly use the enum value of oper
-        result = VNFunc(oper);
-    }
-    else if ((oper == GT_EQ) || (oper == GT_NE))
-    {
-        if (operKind == VOK_Unsigned)
-        {
-            // We will permit unsignedOper to be used with GT_EQ and GT_NE (as it is a no-op)
-            //
-            // Again we directly use the enum value of oper
-            result = VNFunc(oper);
-        }
-        else
-        {
-            invalid = true;
-        }
-    }
-    else // We will need to use a VNF_ function
-    {
-        switch (oper)
-        {
-            case GT_LT:
-                if (operKind == VOK_Unsigned)
-                {
-                    result = VNF_LT_UN;
-                }
-                else
-                {
-                    invalid = true;
-                }
-                break;
-
-            case GT_LE:
-                if (operKind == VOK_Unsigned)
-                {
-                    result = VNF_LE_UN;
-                }
-                else
-                {
-                    invalid = true;
-                }
-                break;
-
-            case GT_GE:
-                if (operKind == VOK_Unsigned)
-                {
-                    result = VNF_GE_UN;
-                }
-                else
-                {
-                    invalid = true;
-                }
-                break;
-
-            case GT_GT:
-                if (operKind == VOK_Unsigned)
-                {
-                    result = VNF_GT_UN;
-                }
-                else
-                {
-                    invalid = true;
-                }
-                break;
-
-            case GT_ADD:
-                if (operKind == VOK_OverflowCheck)
-                {
-                    result = VNF_ADD_OVF;
-                }
-                else if (operKind == VOK_Unsigned_OverflowCheck)
-                {
-                    result = VNF_ADD_UN_OVF;
-                }
-                else
-                {
-                    invalid = true;
-                }
-                break;
-
-            case GT_SUB:
-                if (operKind == VOK_OverflowCheck)
-                {
-                    result = VNF_SUB_OVF;
-                }
-                else if (operKind == VOK_Unsigned_OverflowCheck)
-                {
-                    result = VNF_SUB_UN_OVF;
-                }
-                else
-                {
-                    invalid = true;
-                }
-                break;
-
-            case GT_MUL:
-                if (operKind == VOK_OverflowCheck)
-                {
-                    result = VNF_MUL_OVF;
-                }
-                else if (operKind == VOK_Unsigned_OverflowCheck)
-                {
-                    result = VNF_MUL_UN_OVF;
-                }
-#ifndef _TARGET_64BIT_
-                else if (operKind == VOK_Unsigned)
-                {
-                    // This is the special 64-bit unsigned multiply used on 32-bit targets
-                    result = VNF_MUL64_UN;
-                }
-#endif
-                else
-                {
-                    invalid = true;
-                }
-                break;
-
-            default:
-                // Will trigger the noway_assert below.
-                break;
-        }
-    }
-    noway_assert(!invalid && (result != VNF_COUNT));
-
-    return result;
-}
-
-//--------------------------------------------------------------------------------
-// GetVNFuncForNode:  - Given a GenTree node, this returns the proper
-//                      VNFunc to use for ValueNumbering
-//
-// Arguments:
-//    node            - The GenTree node that we need the VNFunc for.
-//
-// Return Value:
-//               - The VNFunc to use for this GenTree node
-//
-// Notes:        - The gtFlags from the node are used to set operKind
-//                 to one of Normal, Unsigned, OverflowCheck,
-//                 or Unsigned_OverflowCheck. Also see GetVNFuncForOper()
+// Notes:
+//    Some opers have their semantics affected by GTF flags so they need to be
+//    replaced by special VNFunc values:
+//      - relops are affected by GTF_UNSIGNED/GTF_RELOP_NAN_UN
+//      - ADD/SUB/MUL are affected by GTF_OVERFLOW and GTF_UNSIGNED
 //
 VNFunc GetVNFuncForNode(GenTree* node)
 {
-    bool       isUnsignedOper   = ((node->gtFlags & GTF_UNSIGNED) != 0);
-    bool       hasOverflowCheck = node->gtOverflowEx();
-    VNOperKind operKind         = VNGetOperKind(isUnsignedOper, hasOverflowCheck);
-    VNFunc     result           = GetVNFuncForOper(node->gtOper, operKind);
+    static const VNFunc relopUnFuncs[]{VNF_LT_UN, VNF_LE_UN, VNF_GE_UN, VNF_GT_UN};
+    static_assert_no_msg(GT_LE - GT_LT == 1);
+    static_assert_no_msg(GT_GE - GT_LT == 2);
+    static_assert_no_msg(GT_GT - GT_LT == 3);
 
-    return result;
+    static const VNFunc binopOvfFuncs[]{VNF_ADD_OVF, VNF_SUB_OVF, VNF_MUL_OVF};
+    static const VNFunc binopUnOvfFuncs[]{VNF_ADD_UN_OVF, VNF_SUB_UN_OVF, VNF_MUL_UN_OVF};
+    static_assert_no_msg(GT_SUB - GT_ADD == 1);
+    static_assert_no_msg(GT_MUL - GT_ADD == 2);
+
+    switch (node->OperGet())
+    {
+        case GT_EQ:
+            if (varTypeIsFloating(node->gtGetOp1()))
+            {
+                assert(varTypeIsFloating(node->gtGetOp2()));
+                assert((node->gtFlags & GTF_RELOP_NAN_UN) == 0);
+            }
+            break;
+
+        case GT_NE:
+            if (varTypeIsFloating(node->gtGetOp1()))
+            {
+                assert(varTypeIsFloating(node->gtGetOp2()));
+                assert((node->gtFlags & GTF_RELOP_NAN_UN) != 0);
+            }
+            break;
+
+        case GT_LT:
+        case GT_LE:
+        case GT_GT:
+        case GT_GE:
+            if (varTypeIsFloating(node->gtGetOp1()))
+            {
+                assert(varTypeIsFloating(node->gtGetOp2()));
+                if ((node->gtFlags & GTF_RELOP_NAN_UN) != 0)
+                {
+                    return relopUnFuncs[node->OperGet() - GT_LT];
+                }
+            }
+            else
+            {
+                assert(varTypeIsIntegralOrI(node->gtGetOp1()));
+                assert(varTypeIsIntegralOrI(node->gtGetOp2()));
+                if (node->IsUnsigned())
+                {
+                    return relopUnFuncs[node->OperGet() - GT_LT];
+                }
+            }
+            break;
+
+        case GT_ADD:
+        case GT_SUB:
+        case GT_MUL:
+            if (varTypeIsIntegralOrI(node->gtGetOp1()) && node->gtOverflow())
+            {
+                assert(varTypeIsIntegralOrI(node->gtGetOp2()));
+                if (node->IsUnsigned())
+                {
+                    return binopUnOvfFuncs[node->OperGet() - GT_ADD];
+                }
+                else
+                {
+                    return binopOvfFuncs[node->OperGet() - GT_ADD];
+                }
+            }
+            break;
+
+        case GT_CAST:
+            // GT_CAST can overflow but it has special handling and it should not appear here.
+            unreached();
+
+        default:
+            // Make sure we don't miss an onverflow oper, if a new one is ever added.
+            assert(!GenTree::OperMayOverflow(node->OperGet()));
+            break;
+    }
+
+    return VNFunc(node->OperGet());
 }
 
 unsigned ValueNumStore::VNFuncArity(VNFunc vnf)
@@ -3520,55 +3407,48 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                 break;
 
             case GT_EQ:
+                // (null == non-null) == false
+                // (non-null == null) == false
+                if (((arg0VN == VNForNull()) && IsKnownNonNull(arg1VN)) ||
+                    ((arg1VN == VNForNull()) && IsKnownNonNull(arg0VN)))
+                {
+                    resultVN = VNZeroForType(typ);
+                    break;
+                }
+                // (x == x) == true (integer only)
+                __fallthrough;
             case GT_GE:
             case GT_LE:
-                // (x == x) == true,  (null == non-null) == false,  (non-null == null) == false
-                // (x <= x) == true,  (null <= non-null) == false,  (non-null <= null) == false
-                // (x >= x) == true,  (null >= non-null) == false,  (non-null >= null) == false
-                //
-                // This identity does not apply for floating point (when x == NaN)
-                //
-
-                if (arg0VN == arg1VN)
+                // (x <= x) == true (integer only)
+                // (x >= x) == true (integer only)
+                if ((arg0VN == arg1VN) && varTypeIsIntegralOrI(TypeOfVN(arg0VN)))
                 {
-                    if (varTypeIsIntegralOrI(TypeOfVN(arg0VN)))
-                    {
-                        resultVN = VNOneForType(typ);
-                    }
-                }
-                else
-                {
-                    if (((arg0VN == VNForNull()) && IsKnownNonNull(arg1VN)) ||
-                        (IsKnownNonNull(arg0VN) && (arg1VN == VNForNull())))
-                    {
-                        resultVN = VNZeroForType(typ);
-                    }
+                    resultVN = VNOneForType(typ);
                 }
                 break;
 
             case GT_NE:
+                // (null != non-null) == true
+                // (non-null != null) == true
+                if (((arg0VN == VNForNull()) && IsKnownNonNull(arg1VN)) ||
+                    ((arg1VN == VNForNull()) && IsKnownNonNull(arg0VN)))
+                {
+                    resultVN = VNOneForType(typ);
+                }
+                // (x != x) == false (integer only)
+                else if ((arg0VN == arg1VN) && varTypeIsIntegralOrI(TypeOfVN(arg0VN)))
+                {
+                    resultVN = VNZeroForType(typ);
+                }
+                break;
+
             case GT_GT:
             case GT_LT:
-                // (x != x) == false,  (null != non-null) == true,  (non-null != null) == true
-                // (x > x)  == false,  (null > non-null) == true,  (non-null > null) == true
-                // (x < x)  == false,  (null < non-null) == true,  (non-null < null) == true
-                //
-                // This identity does not apply for floating point (when x == NaN)
-                //
+                // (x > x) == false (integer & floating point)
+                // (x < x) == false (integer & floating point)
                 if (arg0VN == arg1VN)
                 {
-                    if (varTypeIsIntegralOrI(TypeOfVN(arg0VN)))
-                    {
-                        resultVN = VNZeroForType(typ);
-                    }
-                }
-                else
-                {
-                    if (((arg0VN == VNForNull()) && IsKnownNonNull(arg1VN)) ||
-                        (IsKnownNonNull(arg0VN) && (arg1VN == VNForNull())))
-                    {
-                        resultVN = VNOneForType(typ);
-                    }
+                    resultVN = VNZeroForType(typ);
                 }
                 break;
 
@@ -3606,17 +3486,10 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
             case VNF_LE_UN:
                 // (0 <= x) == true
                 // (x <= x) == true
-                // TODO-Bug: Unlike (x < x) and (x > x), (x >= x) and (x <= x) also apply to
-                // floating point comparisons: x is either equal to itself or is unordered
-                // if it's NaN.
-                // However, GetVNFuncForNode is broken for floating point comparisons and creates
-                // VNF_LT/GT/GE/LE_UN based on the GTF_UNSIGNED flag instead of the GTF_RELOP_NAN_UN
-                // flag. This happens to work in many cases because the importer sets both but
-                // sometimes the 2 flags can get out of sync (e.g. gtReverseCond flips only
-                // GTF_RELOP_NAN_UN).
-                // In summary - attempting to eval floating point comparisons here triggers a bug.
-                if (varTypeIsIntegralOrI(TypeOfVN(arg0VN)) &&
-                    ((arg0VN == VNZeroForType(TypeOfVN(arg0VN))) || (arg0VN == arg1VN)))
+                // Unlike (x < x) and (x > x), (x >= x) and (x <= x) also apply to floating
+                // point comparisons: x is either equal to itself or is unordered if it's NaN.
+                if ((varTypeIsIntegralOrI(TypeOfVN(arg0VN)) && (arg0VN == VNZeroForType(TypeOfVN(arg0VN)))) ||
+                    (arg0VN == arg1VN))
                 {
                     resultVN = VNOneForType(typ);
                 }
