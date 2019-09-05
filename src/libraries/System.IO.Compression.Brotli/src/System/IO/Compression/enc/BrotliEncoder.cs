@@ -92,19 +92,19 @@ namespace System.IO.Compression
             }
         }
 
-        public static int GetMaxCompressedLength(int length)
+        public static int GetMaxCompressedLength(int inputSize)
         {
-            if (length < 0 || length > BrotliUtils.MaxInputSize)
+            if (inputSize < 0 || inputSize > BrotliUtils.MaxInputSize)
             {
-                throw new ArgumentOutOfRangeException(nameof(length));
+                throw new ArgumentOutOfRangeException(nameof(inputSize));
             }
-            if (length == 0)
+            if (inputSize == 0)
                 return 1;
-            int numLargeBlocks = length >> 24;
-            int tail = length & 0xFFFFFF;
+            int numLargeBlocks = inputSize >> 24;
+            int tail = inputSize & 0xFFFFFF;
             int tailOverhead = (tail > (1 << 20)) ? 4 : 3;
             int overhead = 2 + (4 * numLargeBlocks) + tailOverhead + 1;
-            int result = length + overhead;
+            int result = inputSize + overhead;
             return result;
         }
 
