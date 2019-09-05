@@ -43,9 +43,9 @@ namespace System.Reflection.Tests
             VerifyIsAssignableFrom("G<string>&G<string>", typeof(G<string>).Project().GetTypeInfo(), typeof(G<string>).Project().GetTypeInfo(), true);
 
             VerifyIsAssignableFrom("G<string>&G<object>", typeof(G<string>).Project().GetTypeInfo(), typeof(G<object>).Project().GetTypeInfo(), false);
-            VerifyIsAssignableFrom("G<object>&G<stgring>", typeof(G<object>).Project().GetTypeInfo(), typeof(G<string>).Project().GetTypeInfo(), false);
+            VerifyIsAssignableFrom("G<object>&G<string>", typeof(G<object>).Project().GetTypeInfo(), typeof(G<string>).Project().GetTypeInfo(), false);
             VerifyIsAssignableFrom("G2<object>&G<object>", typeof(G2<object>).Project().GetTypeInfo(), typeof(G<object>).Project().GetTypeInfo(), false);
-            VerifyIsAssignableFrom("G<string>&I<String>", typeof(G<string>).Project().GetTypeInfo(), typeof(I<string>).Project().GetTypeInfo(), false);
+            VerifyIsAssignableFrom("G<string>&I<string>", typeof(G<string>).Project().GetTypeInfo(), typeof(I<string>).Project().GetTypeInfo(), false);
         }
 
         // Verify IsAssignableFrom for Interfaces
@@ -93,12 +93,12 @@ namespace System.Reflection.Tests
             TypeInfo theT = typeof(Gen2<>).Project().Gp(0);
             VerifyIsAssignableFrom("I1 T", typeof(I1).Project().GetTypeInfo(), theT, true);
             VerifyIsAssignableFrom("I2 T", typeof(I2).Project().GetTypeInfo(), theT, true);
-            VerifyIsAssignableFrom("Object T", typeof(object).Project().GetTypeInfo(), theT, true);
+            VerifyIsAssignableFrom("object T", typeof(object).Project().GetTypeInfo(), theT, true);
             VerifyIsAssignableFrom("Gen<T> T", typeof(Gen<>).Project().MakeGenericType(theT.AsType()).GetTypeInfo(), theT, true);
             VerifyIsAssignableFrom("String T", typeof(string).Project().GetTypeInfo(), theT, false);
 
             TypeInfo theTWithStructConstraint = typeof(Gen4<>).Project().Gp(0);
-            VerifyIsAssignableFrom("Object T", typeof(object).Project().GetTypeInfo(), theTWithStructConstraint, true);
+            VerifyIsAssignableFrom("object T", typeof(object).Project().GetTypeInfo(), theTWithStructConstraint, true);
             VerifyIsAssignableFrom("ValueType T", typeof(ValueType).Project().GetTypeInfo(), theTWithStructConstraint, true);
 
             TypeInfo theTThatDerivesFromU = typeof(Gen5<,>).Project().Gp(0);
