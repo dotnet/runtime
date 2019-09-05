@@ -84,10 +84,7 @@ namespace System.Globalization
         internal static volatile Calendar? s_defaultInstance;
         internal GregorianCalendarHelper _helper;
 
-        internal static Calendar GetDefaultInstance()
-        {
-            return s_defaultInstance ?? (s_defaultInstance = new JapaneseCalendar());
-        }
+        internal static Calendar GetDefaultInstance() => s_defaultInstance ??= new JapaneseCalendar();
 
         public JapaneseCalendar()
         {

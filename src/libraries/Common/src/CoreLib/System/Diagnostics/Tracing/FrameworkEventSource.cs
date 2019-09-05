@@ -37,7 +37,7 @@ namespace System.Diagnostics.Tracing
         {
             if (IsEnabled())
             {
-                if (arg3 == null) arg3 = "";
+                arg3 ??= "";
                 fixed (char* string3Bytes = arg3)
                 {
                     EventSource.EventData* descrs = stackalloc EventSource.EventData[6];
@@ -70,7 +70,7 @@ namespace System.Diagnostics.Tracing
         {
             if (IsEnabled())
             {
-                if (arg3 == null) arg3 = "";
+                arg3 ??= "";
                 fixed (char* string3Bytes = arg3)
                 {
                     EventSource.EventData* descrs = stackalloc EventSource.EventData[3];

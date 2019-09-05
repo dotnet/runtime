@@ -39,10 +39,7 @@ namespace System.Globalization
         /// Internal method to provide a default intance of GregorianCalendar.
         /// Used by NLS+ implementation
         /// </summary>
-        internal static Calendar GetDefaultInstance()
-        {
-            return s_defaultInstance ?? (s_defaultInstance = new GregorianCalendar());
-        }
+        internal static Calendar GetDefaultInstance() => s_defaultInstance ??= new GregorianCalendar();
 
         public GregorianCalendar() : this(GregorianCalendarTypes.Localized)
         {

@@ -214,10 +214,8 @@ namespace System.Globalization
 
                 if (KnownWords.TryGetValue(str, out _) == false)
                 {
-                    if (m_dateWords == null)
-                    {
-                        m_dateWords = new List<string>();
-                    }
+                    m_dateWords ??= new List<string>();
+
                     if (formatPostfix == "MMMM")
                     {
                         // Add the word into the ArrayList as "\xfffe" + real month postfix.

@@ -1333,10 +1333,8 @@ namespace System.Threading.Tasks
         /// ASSUMES THAT m_stateFlags IS ALREADY SET!
         /// </summary>
         /// <returns>The initialized contingent properties object.</returns>
-        internal ContingentProperties EnsureContingentPropertiesInitializedUnsafe()
-        {
-            return m_contingentProperties ?? (m_contingentProperties = new ContingentProperties());
-        }
+        internal ContingentProperties EnsureContingentPropertiesInitializedUnsafe() =>
+            m_contingentProperties ??= new ContingentProperties();
 
         /// <summary>
         /// This internal property provides access to the CancellationToken that was set on the task
@@ -4777,7 +4775,7 @@ namespace System.Threading.Tasks
         /// <param name="initSize">The size to which to initialize the list if the list is null.</param>
         private static void AddToList<T>(T item, ref List<T>? list, int initSize)
         {
-            if (list == null) list = new List<T>(initSize);
+            list ??= new List<T>(initSize);
             list.Add(item);
         }
 
@@ -4863,11 +4861,7 @@ namespace System.Threading.Tasks
                 // this will make sure it won't throw again in the implicit wait
                 t.UpdateExceptionObservedStatus();
 
-                if (exceptions == null)
-                {
-                    exceptions = new List<Exception>(ex.InnerExceptions.Count);
-                }
-
+                exceptions ??= new List<Exception>(ex.InnerExceptions.Count);
                 exceptions.AddRange(ex.InnerExceptions);
             }
         }
@@ -5690,12 +5684,12 @@ namespace System.Threading.Tasks
 
                         if (task.IsFaulted)
                         {
-                            if (observedExceptions == null) observedExceptions = new List<ExceptionDispatchInfo>();
+                            observedExceptions ??= new List<ExceptionDispatchInfo>();
                             observedExceptions.AddRange(task.GetExceptionDispatchInfos());
                         }
                         else if (task.IsCanceled)
                         {
-                            if (canceledTask == null) canceledTask = task; // use the first task that's canceled
+                            canceledTask ??= task; // use the first task that's canceled
                         }
 
                         // Regardless of completion state, if the task has its debug bit set, transfer it to the
@@ -5924,12 +5918,12 @@ namespace System.Threading.Tasks
 
                         if (task.IsFaulted)
                         {
-                            if (observedExceptions == null) observedExceptions = new List<ExceptionDispatchInfo>();
+                            observedExceptions ??= new List<ExceptionDispatchInfo>();
                             observedExceptions.AddRange(task.GetExceptionDispatchInfos());
                         }
                         else if (task.IsCanceled)
                         {
-                            if (canceledTask == null) canceledTask = task; // use the first task that's canceled
+                            canceledTask ??= task; // use the first task that's canceled
                         }
                         else
                         {
