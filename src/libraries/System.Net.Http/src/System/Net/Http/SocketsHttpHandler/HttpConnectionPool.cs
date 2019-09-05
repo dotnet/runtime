@@ -540,7 +540,7 @@ namespace System.Net.Http
                         return await connection.SendAsync(request, cancellationToken).ConfigureAwait(false);
                     }
                 }
-                catch (HttpRequestException e) when (!isNewConnection && e.AllowRetry)
+                catch (HttpRequestException e) when (!isNewConnection && e.AllowRetry == RequestRetryType.RetryOnSameOrNextProxy)
                 {
                     if (NetEventSource.IsEnabled)
                     {

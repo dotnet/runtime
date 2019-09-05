@@ -758,7 +758,7 @@ namespace System.Net.Http
                 {
                     if (_canRetry)
                     {
-                        throw new HttpRequestException(SR.net_http_request_aborted, _resetException, allowRetry: true);
+                        throw new HttpRequestException(SR.net_http_request_aborted, _resetException, allowRetry: RequestRetryType.RetryOnSameOrNextProxy);
                     }
 
                     throw new IOException(SR.net_http_request_aborted, _resetException);
