@@ -2,11 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
-
 namespace System.Reflection.TypeLoading.Ecma
 {
-    // This type provider is used to parse local variable signatures (whicj can have the PINNED constraint.)
+    // This type provider is used to parse local variable signatures (which can have the PINNED constraint.)
     internal sealed class EcmaPinnedTypeProvider : EcmaWrappedTypeProvider
     {
         internal EcmaPinnedTypeProvider(EcmaModule module)
