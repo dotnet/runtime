@@ -187,7 +187,7 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
         throw new Exception(String.Format("Unknown option value for {0}: {1}", configSettingName, value));
     }
 
-
+    // returns time in minutes
     public static int ConvertTimeValueToTestRunTime(string timeValue)
     {
         int returnValue;
@@ -381,7 +381,15 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
 
                                 _curTestSet = new ReliabilityTestSet();
 
-                                while (currentXML.MoveToNextAttribute())
+                                // when running as an ordinary test, limit run time to 10 min.
+                                bool limitTime = ReliabilityFramework.IsRunningAsUnitTest && !ReliabilityFramework.IsRunningLongGCTests;
+
+                                if (limitTime)
+                                {
+                                    _curTestSet.MaximumTime = 10;
+                                }
+
+                                    while (currentXML.MoveToNextAttribute())
                                 {
                                     XmlDebugOut(" " + currentXML.Name + "=\"" + currentXML.Value + "\"");
                                     switch (currentXML.Name)
@@ -391,7 +399,12 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
                                             break;
                                         case "maximumExecutionTime":
                                             string timeValue = currentXML.Value;
-                                            _curTestSet.MaximumTime = ConvertTimeValueToTestRunTime(timeValue);
+
+                                            if (!limitTime)
+                                            {
+                                                _curTestSet.MaximumTime = ConvertTimeValueToTestRunTime(timeValue);
+                                            }
+
                                             break;
                                         case "id":
                                             _curTestSet.FriendlyName = currentXML.Value;
