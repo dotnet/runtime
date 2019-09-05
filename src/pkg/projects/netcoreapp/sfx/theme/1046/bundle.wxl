@@ -4,7 +4,7 @@
   <String Id="Title">[BUNDLEMONIKER]</String>
   <String Id="Motto">Você só precisa de um shell, um editor de texto e 10 minutos de seu tempo.
 
-Preparado? Tudo definido? Vamos nessa!</String>
+Tudo pronto? Então, vamos nessa!</String>
   <String Id="ConfirmCancelMessage">Tem certeza de que deseja cancelar?</String>
   <String Id="ExecuteUpgradeRelatedBundleMessage">Versão anterior</String>
   <String Id="HelpHeader">Ajuda de Instalação</String>
@@ -58,8 +58,8 @@ Preparado? Tudo definido? Vamos nessa!</String>
   <String Id="FilesInUseDontCloseRadioButton">&amp;Não feche os aplicativos. Será necessária uma reinicialização.</String>
   <String Id="FilesInUseOkButton">&amp;OK</String>
   <String Id="FilesInUseCancelButton">&amp;Cancelar</String>
-  <String Id="WelcomeHeaderMessage">Tempo de Execução do .NET Core</String>
-  <String Id="WelcomeDescription">O .NET Core é uma plataforma de desenvolvimento que você pode usar para criar aplicativos de linha de comando, microsserviços e sites modernos. É software livre, multiplataforma e com suporte da Microsoft. Esperamos que você goste!</String>
+  <String Id="WelcomeHeaderMessage">Runtime do .NET Core</String>
+  <String Id="WelcomeDescription">O .NET Core é uma plataforma de desenvolvimento que você pode usar para criar aplicativos de linha de comando, microsserviços e sites modernos. Trata-se de um software livre, multiplataforma que conta com o suporte da Microsoft. Esperamos que você goste dele!</String>
   <String Id="LearnMoreTitle">Saiba mais sobre o .NET Core</String>
   <String Id="SuccessInstallLocation">O seguinte foi instalado em [DOTNETHOME]</String>
   <String Id="SuccessInstallProductName"> - [BUNDLEMONIKER] </String>
