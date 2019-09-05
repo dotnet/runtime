@@ -78,7 +78,7 @@ internal class CustomAssemblyResolver : AssemblyLoadContext
         else
         {
             Console.WriteLine("CustomAssemblyLoader: this looks like a test");
-            strPath = Path.Combine(_testsPath, assemblyName.Name + ".exe");
+            strPath = Path.Combine(_testsPath, assemblyName.Name + ".dll");
         }
 
         Console.WriteLine("Incoming AssemblyName: {0}", assemblyName.ToString());
@@ -147,6 +147,10 @@ public class ReliabilityFramework
     // constants
     private const string waitingText = "Waiting for all tests to finish loading, Remaining Tests: ";
 
+    // support for running in automation
+    internal static bool IsRunningAsUnitTest = false;
+    internal static bool IsRunningLongGCTests = false;
+
     /// <summary>
     /// Our main execution routine for the reliability framework.  Here we create an instance of the framework & run the reliability tests
     /// in it.  All code in here will execute in our starting app domain.
@@ -173,6 +177,10 @@ public class ReliabilityFramework
                 {
                     doReplay = true;
                 }
+                else if (String.Compare(arg.Substring(1), "unittest", true) == 0)
+                {
+                    IsRunningAsUnitTest = true;
+                }
                 else if (String.Compare(arg.Substring(1, arg.IndexOf(':') - 1), sTests, true) == 0)
                 {
                     String testlist = arg.Substring(sTests.Length + 2);
@@ -188,6 +196,7 @@ public class ReliabilityFramework
                 {
                     timeValue = arg.Substring(exectime.Length + 2);
                 }
+
                 else
                 {
                     Console.WriteLine("Unknown option: {0}", arg);
@@ -199,12 +208,28 @@ public class ReliabilityFramework
                 configFile = arg;
             }
         }
+
+        IsRunningLongGCTests = System.Environment.GetEnvironmentVariable("RunningLongGCTests") == "1";
+
+        // if no config file specified, check for [something]_gc.config in the current folder.
+        if (configFile == null)
+        {
+            var config = IsRunningAsUnitTest ? 
+                "*_gc_ci.config" : 
+                "*_gc.config";
+
+            configFile = Directory.GetFiles(Environment.CurrentDirectory, config).SingleOrDefault();
+        }
+
         if (configFile == null)
         {
             okToContinue = false;
             Console.WriteLine("You must specify a config file!");
             rf._logger.WriteToInstrumentationLog(null, LoggingLevels.StartupShutdown, "No configuration file specified.");
         }
+
+        System.Console.WriteLine("Using config file: " + configFile);
+
         if (!okToContinue)
         {
             Console.WriteLine("\r\nHost Interface Reliability Harness\r\n");
@@ -215,6 +240,7 @@ public class ReliabilityFramework
             Console.WriteLine(" -replay     -   Replay from log file");
             Console.WriteLine(" -{0}:<tests>	-	Comma delimited list of tests to run (no spaces)", sTests);
             Console.WriteLine(" -{0}:<seed>	-	Random Number seed for replays", sSeed);
+            Console.WriteLine(" -unittest   -   Set when run via unit test harness");
             rf._logger.WriteToInstrumentationLog(null, LoggingLevels.StartupShutdown, "Not ok to continue.");
 
 #if PROJECTK_BUILD
@@ -250,11 +276,18 @@ public class ReliabilityFramework
 
                     eTemp = e.InnerException;
                 }
+
+                string err = String.Format("Exception while running tests: {0}", e);
+
                 if (eTemp == null)
                 {
-                    rf._logger.WriteToInstrumentationLog(null, LoggingLevels.Tests, String.Format("Exception while running tests: {0}", e));
+                    rf._logger.WriteToInstrumentationLog(null, LoggingLevels.Tests, err);
                     Console.WriteLine("There was an exception while attempting to run the tests: See Instrumentation Log for details. (Exception: {0})", e);
                 }
+
+                // crash on exceptions when running as a unit test.
+                if (IsRunningAsUnitTest)
+                    Environment.FailFast(err, e);
             }
         }
         finally
@@ -1182,6 +1215,10 @@ public class ReliabilityFramework
                         }
                         catch (Exception e)
                         {
+                            // crash on exceptions when running as a unit test.
+                            if (IsRunningAsUnitTest)
+                                Environment.FailFast("Test failed", e);
+
                             Console.WriteLine(e);
                         }
                         Interlocked.Increment(ref _testsRanCount);
@@ -1420,11 +1457,17 @@ public class ReliabilityFramework
                                     eTemp = eTemp.InnerException;
                                 }
 
+                                string err = String.Format("Error in executing test {0}: {1}", daTest.RefOrID, e);
+
                                 if (eTemp == null)
                                 {
-                                    _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, String.Format("Error in executing test {0}: {1}", daTest.RefOrID, e));
+                                    _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, err);
                                     AddFailure("Failed to ExecuteAssembly (" + e.ToString() + ")", daTest, -1);
                                 }
+
+                                // crash on exceptions when running as a unit test.
+                                if (IsRunningAsUnitTest)
+                                    Environment.FailFast(err, e);
 
 #if !PROJECTK_BUILD
                                 if ((Thread.CurrentThread.ThreadState & System.Threading.ThreadState.AbortRequested) != 0)
@@ -1452,8 +1495,14 @@ public class ReliabilityFramework
                             }
                             catch (Exception e)
                             {
-                                Console.WriteLine("Error in executing ISingleReliabilityTest: {0}", e);
+                                string err = $"Error in executing ISingleReliabilityTest: {e}";
+
+                                Console.WriteLine(err);
                                 AddFailure("ISingleReliabilityTest threw exception!", daTest, -1);
+
+                                // crash on exceptions when running as a unit test.
+                                if (IsRunningAsUnitTest)
+                                    Environment.FailFast(err, e);
                             }
                         }
                         else if (daTest.TestObject is IMultipleReliabilityTest)
@@ -1471,8 +1520,14 @@ public class ReliabilityFramework
                             }
                             catch (Exception ex)
                             {
-                                Console.WriteLine("Error in executing IMultipleReliabilityTest: {0}", ex);
+                                string err = $"Error in executing IMultipleReliabilityTest: {ex}";
+
+                                Console.WriteLine(err);
                                 AddFailure("IMultipleReliabilityTest threw exception!", daTest, -1);
+
+                                // crash on exceptions when running as a unit test.
+                                if (IsRunningAsUnitTest)
+                                    Environment.FailFast(err, ex);
                             }
                         }
 
@@ -1569,7 +1624,12 @@ public class ReliabilityFramework
         }
         catch (Exception e)
         {
-            _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, String.Format("Unexpected exception on StartTestWorker: {0}", e));
+            string err = String.Format("Unexpected exception on StartTestWorker: {0}", e);
+            _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, err);
+
+            // crash on exceptions when running as a unit test.
+            if (IsRunningAsUnitTest)
+                Environment.FailFast(err, e);
         }
     }
 
@@ -1701,6 +1761,10 @@ public class ReliabilityFramework
             {
                 BadTestDebugBreak(msg);
             }
+
+            // crash on exceptions when running as a unit test.
+            if (IsRunningAsUnitTest)
+                Environment.FailFast(msg, e);
         }
         Interlocked.Decrement(ref LoadingCount);
     }
