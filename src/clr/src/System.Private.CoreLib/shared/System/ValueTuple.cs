@@ -137,13 +137,7 @@ namespace System
         /// <summary>
         /// Get the element at position <param name="index"/>.
         /// </summary>
-        object? ITuple.this[int index]
-        {
-            get
-            {
-                throw new IndexOutOfRangeException();
-            }
-        }
+        object? ITuple.this[int index] => throw new IndexOutOfRangeException();
 
         /// <summary>Creates a new struct 0-tuple.</summary>
         /// <returns>A 0-tuple.</returns>
@@ -654,18 +648,13 @@ namespace System
         /// <summary>
         /// Get the element at position <param name="index"/>.
         /// </summary>
-        object? ITuple.this[int index]
-        {
-            get
+        object? ITuple.this[int index] =>
+            index switch
             {
-                return index switch
-                {
-                    0 => Item1,
-                    1 => Item2,
-                    _ => throw new IndexOutOfRangeException(),
-                };
-            }
-        }
+                0 => Item1,
+                1 => Item2,
+                _ => throw new IndexOutOfRangeException(),
+            };
     }
 
     /// <summary>
@@ -857,19 +846,14 @@ namespace System
         /// <summary>
         /// Get the element at position <param name="index"/>.
         /// </summary>
-        object? ITuple.this[int index]
-        {
-            get
+        object? ITuple.this[int index] =>
+            index switch
             {
-                return index switch
-                {
-                    0 => Item1,
-                    1 => Item2,
-                    2 => Item3,
-                    _ => throw new IndexOutOfRangeException(),
-                };
-            }
-        }
+                0 => Item1,
+                1 => Item2,
+                2 => Item3,
+                _ => throw new IndexOutOfRangeException(),
+            };
     }
 
     /// <summary>
@@ -1078,20 +1062,15 @@ namespace System
         /// <summary>
         /// Get the element at position <param name="index"/>.
         /// </summary>
-        object? ITuple.this[int index]
-        {
-            get
+        object? ITuple.this[int index] =>
+            index switch
             {
-                return index switch
-                {
-                    0 => Item1,
-                    1 => Item2,
-                    2 => Item3,
-                    3 => Item4,
-                    _ => throw new IndexOutOfRangeException(),
-                };
-            }
-        }
+                0 => Item1,
+                1 => Item2,
+                2 => Item3,
+                3 => Item4,
+                _ => throw new IndexOutOfRangeException(),
+            };
     }
 
     /// <summary>
@@ -1317,21 +1296,16 @@ namespace System
         /// <summary>
         /// Get the element at position <param name="index"/>.
         /// </summary>
-        object? ITuple.this[int index]
-        {
-            get
+        object? ITuple.this[int index] =>
+            index switch
             {
-                return index switch
-                {
-                    0 => Item1,
-                    1 => Item2,
-                    2 => Item3,
-                    3 => Item4,
-                    4 => Item5,
-                    _ => throw new IndexOutOfRangeException(),
-                };
-            }
-        }
+                0 => Item1,
+                1 => Item2,
+                2 => Item3,
+                3 => Item4,
+                4 => Item5,
+                _ => throw new IndexOutOfRangeException(),
+            };
     }
 
     /// <summary>
@@ -1574,22 +1548,17 @@ namespace System
         /// <summary>
         /// Get the element at position <param name="index"/>.
         /// </summary>
-        object? ITuple.this[int index]
-        {
-            get
+        object? ITuple.this[int index] =>
+            index switch
             {
-                return index switch
-                {
-                    0 => Item1,
-                    1 => Item2,
-                    2 => Item3,
-                    3 => Item4,
-                    4 => Item5,
-                    5 => Item6,
-                    _ => throw new IndexOutOfRangeException(),
-                };
-            }
-        }
+                0 => Item1,
+                1 => Item2,
+                2 => Item3,
+                3 => Item4,
+                4 => Item5,
+                5 => Item6,
+                _ => throw new IndexOutOfRangeException(),
+            };
     }
 
     /// <summary>
@@ -1849,23 +1818,18 @@ namespace System
         /// <summary>
         /// Get the element at position <param name="index"/>.
         /// </summary>
-        object? ITuple.this[int index]
-        {
-            get
+        object? ITuple.this[int index] =>
+            index switch
             {
-                return index switch
-                {
-                    0 => Item1,
-                    1 => Item2,
-                    2 => Item3,
-                    3 => Item4,
-                    4 => Item5,
-                    5 => Item6,
-                    6 => Item7,
-                    _ => throw new IndexOutOfRangeException(),
-                };
-            }
-        }
+                0 => Item1,
+                1 => Item2,
+                2 => Item3,
+                3 => Item4,
+                4 => Item5,
+                5 => Item6,
+                6 => Item7,
+                _ => throw new IndexOutOfRangeException(),
+            };
     }
 
     /// <summary>
