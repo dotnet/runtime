@@ -1366,7 +1366,7 @@ interp_to_native_trampoline (gpointer addr, gpointer ccontext)
 #pragma optimize ("", off)
 #endif
 static MONO_NO_OPTIMIZATION MONO_NEVER_INLINE void
-ves_pinvoke_method (InterpFrame *frame, MonoMethodSignature *sig, MonoFuncV addr, gboolean string_ctor, ThreadContext *context, gboolean save_last_error)
+ves_pinvoke_method (InterpFrame *frame, MonoMethodSignature *sig, MonoFuncV addr, ThreadContext *context, gboolean save_last_error)
 {
 	MonoLMFExt ext;
 	gpointer args;
@@ -3574,7 +3574,7 @@ main_loop:
 				mono_interp_calli_nat_dynamic_pinvoke (&child_frame, code, context, csignature, error);
 			} else {
 				const gboolean save_last_error = *(guint16 *)(ip - 3 + 2);
-				ves_pinvoke_method (&child_frame, csignature, (MonoFuncV) code, FALSE, context, save_last_error);
+				ves_pinvoke_method (&child_frame, csignature, (MonoFuncV) code, context, save_last_error);
 			}
 
 			CHECK_RESUME_STATE (context);
