@@ -2,6 +2,14 @@ trigger: none
 
 pr: none
 
+schedules:
+- cron: "30 19 * * 6"
+  displayName: Sat at 11:30 AM (UTC-8:00)
+  branches:
+    include:
+    - master
+  always: true
+
 jobs:
 - template: /eng/platform-matrix.yml
   parameters:
