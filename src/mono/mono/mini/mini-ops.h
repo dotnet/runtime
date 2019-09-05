@@ -1389,6 +1389,7 @@ MINI_OP(OP_XBINOP, "xbinop", XREG, XREG, XREG)
 MINI_OP(OP_XCAST, "xcast", XREG, XREG, NONE)
 /* Extract element of vector */
 /* The index is assumed to be in range */
+/* inst_i0 is the element type */
 MINI_OP(OP_XEXTRACT_I32, "xextract_i32", IREG, XREG, IREG)
 MINI_OP(OP_XEXTRACT_I64, "xextract_i64", LREG, XREG, IREG)
 MINI_OP(OP_XEXTRACT_R8, "xextract_r8", FREG, XREG, IREG)

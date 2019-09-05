@@ -7420,6 +7420,15 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = LLVMBuildPhi (builder, LLVMTypeOf (phi_values [0]), "");
 			LLVMAddIncoming (values [ins->dreg], phi_values, bbs, nelems);
 
+			MonoTypeEnum type = (MonoTypeEnum)ins->inst_c0;
+			switch (type) {
+			case MONO_TYPE_U1:
+			case MONO_TYPE_U2:
+				values [ins->dreg] = LLVMBuildZExt (ctx->builder, values [ins->dreg], LLVMInt32Type (), "");
+				break;
+			default:
+				break;
+			}
 			ctx->bblocks [bb->block_num].end_bblock = cbb;
 			break;
 		}
