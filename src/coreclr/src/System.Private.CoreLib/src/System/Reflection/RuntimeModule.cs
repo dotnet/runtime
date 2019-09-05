@@ -365,16 +365,7 @@ namespace System.Reflection
         #endregion
 
         #region Internal Members
-        internal RuntimeType RuntimeType
-        {
-            get
-            {
-                if (m_runtimeType == null)
-                    m_runtimeType = ModuleHandle.GetModuleType(this);
-
-                return m_runtimeType;
-            }
-        }
+        internal RuntimeType RuntimeType => m_runtimeType ??= ModuleHandle.GetModuleType(this);
 
         internal bool IsTransientInternal()
         {
@@ -382,16 +373,7 @@ namespace System.Reflection
             return RuntimeModule.nIsTransientInternal(JitHelpers.GetQCallModuleOnStack(ref thisAsLocal));
         }
 
-        internal MetadataImport MetadataImport
-        {
-            get
-            {
-                unsafe
-                {
-                    return ModuleHandle.GetMetadataImport(this);
-                }
-            }
-        }
+        internal MetadataImport MetadataImport => ModuleHandle.GetMetadataImport(this);
         #endregion
 
         #region ICustomAttributeProvider Members
@@ -475,12 +457,8 @@ namespace System.Reflection
         {
             get
             {
-                unsafe
-                {
-                    Guid mvid;
-                    MetadataImport.GetScopeProps(out mvid);
-                    return mvid;
-                }
+                MetadataImport.GetScopeProps(out Guid mvid);
+                return mvid;
             }
         }
 

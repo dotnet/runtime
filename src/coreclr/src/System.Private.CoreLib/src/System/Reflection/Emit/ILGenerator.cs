@@ -851,15 +851,8 @@ namespace System.Reflection.Emit
             // EndExceptionBlock
 
             // Delay init
-            if (m_exceptions == null)
-            {
-                m_exceptions = new __ExceptionInfo[DefaultExceptionArraySize];
-            }
-
-            if (m_currExcStack == null)
-            {
-                m_currExcStack = new __ExceptionInfo[DefaultExceptionArraySize];
-            }
+            m_exceptions ??= new __ExceptionInfo[DefaultExceptionArraySize];
+            m_currExcStack ??= new __ExceptionInfo[DefaultExceptionArraySize];
 
             if (m_exceptionCount >= m_exceptions.Length)
             {
@@ -1024,10 +1017,7 @@ namespace System.Reflection.Emit
             // Mark Label.
 
             // Delay init the lable array in case we dont use it
-            if (m_labelList == null)
-            {
-                m_labelList = new int[DefaultLabelArraySize];
-            }
+            m_labelList ??= new int[DefaultLabelArraySize];
 
             if (m_labelCount >= m_labelList.Length)
             {
@@ -1560,21 +1550,14 @@ namespace System.Reflection.Emit
             int endOffset)
         {
             int i = GetCurrentActiveScopeIndex();
-            if (m_localSymInfos[i] == null)
-            {
-                m_localSymInfos[i] = new LocalSymInfo();
-            }
+            m_localSymInfos[i] ??= new LocalSymInfo();
             m_localSymInfos[i]!.AddLocalSymInfo(strName, signature, slot, startOffset, endOffset); // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
         }
 
-        internal void AddUsingNamespaceToCurrentScope(
-            string strNamespace)
+        internal void AddUsingNamespaceToCurrentScope(string strNamespace)
         {
             int i = GetCurrentActiveScopeIndex();
-            if (m_localSymInfos[i] == null)
-            {
-                m_localSymInfos[i] = new LocalSymInfo();
-            }
+            m_localSymInfos[i] ??= new LocalSymInfo();
             m_localSymInfos[i]!.AddUsingNamespace(strNamespace); // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
         }
 

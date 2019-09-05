@@ -1000,8 +1000,7 @@ namespace System
 
             // If they asked to replace oldValue with a null, replace all occurrences
             // with the empty string.
-            if (newValue == null)
-                newValue = string.Empty;
+            newValue ??= string.Empty;
 
             CultureInfo referenceCulture = culture ?? CultureInfo.CurrentCulture;
             StringBuilder result = StringBuilderCache.Acquire();
@@ -1119,8 +1118,7 @@ namespace System
                 throw new ArgumentException(SR.Argument_StringZeroLength, nameof(oldValue));
 
             // Api behavior: if newValue is null, instances of oldValue are to be removed.
-            if (newValue == null)
-                newValue = string.Empty;
+            newValue ??= string.Empty;
 
             Span<int> initialSpan = stackalloc int[StackallocIntBufferSizeLimit];
             var replacementIndices = new ValueListBuilder<int>(initialSpan);

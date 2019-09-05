@@ -89,21 +89,10 @@ namespace System.Reflection
         #region NonPublic Methods
         RuntimeMethodHandleInternal IRuntimeMethodInfo.Value => new RuntimeMethodHandleInternal(m_handle);
 
-        internal override bool CacheEquals(object? o)
-        {
-            return o is RuntimeConstructorInfo m && m.m_handle == m_handle;
-        }
+        internal override bool CacheEquals(object? o) =>
+            o is RuntimeConstructorInfo m && m.m_handle == m_handle;
 
-        private Signature Signature
-        {
-            get
-            {
-                if (m_signature == null)
-                    m_signature = new Signature(this, m_declaringType);
-
-                return m_signature;
-            }
-        }
+        private Signature Signature => m_signature ??= new Signature(this, m_declaringType);
 
         private RuntimeType ReflectedTypeInternal => m_reflectedTypeCache.GetRuntimeType();
 
@@ -209,13 +198,8 @@ namespace System.Reflection
         // This seems to always returns System.Void.
         internal override Type GetReturnType() { return Signature.ReturnType; }
 
-        internal override ParameterInfo[] GetParametersNoCopy()
-        {
-            if (m_parameters == null)
-                m_parameters = RuntimeParameterInfo.GetParameters(this, this, Signature);
-
-            return m_parameters;
-        }
+        internal override ParameterInfo[] GetParametersNoCopy() =>
+            m_parameters ??= RuntimeParameterInfo.GetParameters(this, this, Signature);
 
         public override ParameterInfo[] GetParameters()
         {

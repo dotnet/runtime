@@ -370,9 +370,9 @@ namespace System.Resources
                 if (!_haveReadFromReader)
                 {
                     // If necessary, init our case insensitive hash table.
-                    if (ignoreCase && _caseInsensitiveTable == null)
+                    if (ignoreCase)
                     {
-                        _caseInsensitiveTable = new Dictionary<string, ResourceLocator>(StringComparer.OrdinalIgnoreCase);
+                        _caseInsensitiveTable ??= new Dictionary<string, ResourceLocator>(StringComparer.OrdinalIgnoreCase);
                     }
 
                     if (_defaultReader == null)

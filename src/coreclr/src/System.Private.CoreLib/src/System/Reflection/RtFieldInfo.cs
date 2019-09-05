@@ -107,16 +107,7 @@ namespace System.Reflection
         #endregion
 
         #region MemberInfo Overrides
-        public override string Name
-        {
-            get
-            {
-                if (m_name == null)
-                    m_name = RuntimeFieldHandle.GetName(this);
-
-                return m_name;
-            }
-        }
+        public override string Name => m_name ??= RuntimeFieldHandle.GetName(this);
 
         internal string FullName => DeclaringType!.FullName + "." + Name;
 

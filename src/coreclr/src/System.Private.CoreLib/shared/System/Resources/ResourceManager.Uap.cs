@@ -154,8 +154,7 @@ namespace System.Resources
             // an empty string. We may in fact fail earlier for another reason, but otherwise we will
             // throw a MissingManifestResourceException when GetString is called indicating that a
             // resW filename called "" could not be found.
-            if (reswFilename == null)
-                reswFilename = string.Empty;
+            reswFilename ??= string.Empty;
 
             // At this point it is important NOT to set _useUapResourceManagement to false
             // if the PRI file does not exist because we are now certain we need to load PRI

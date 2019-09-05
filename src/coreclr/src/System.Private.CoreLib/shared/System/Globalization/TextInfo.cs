@@ -126,7 +126,7 @@ namespace System.Globalization
         /// </summary>
         public virtual string ListSeparator
         {
-            get => _listSeparator ?? (_listSeparator = _cultureData.ListSeparator);
+            get => _listSeparator ??= _cultureData.ListSeparator;
             set
             {
                 if (value == null)

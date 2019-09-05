@@ -437,12 +437,7 @@ namespace System.Threading.Tasks
         /// to be passed as state.
         /// </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ContextCallback GetPostActionCallback()
-        {
-            ContextCallback? callback = s_postActionCallback;
-            if (callback == null) { s_postActionCallback = callback = PostAction; } // lazily initialize SecurityCritical delegate
-            return callback;
-        }
+        private static ContextCallback GetPostActionCallback() => s_postActionCallback ??= PostAction;
     }
 
     /// <summary>Task continuation for awaiting with a task scheduler.</summary>

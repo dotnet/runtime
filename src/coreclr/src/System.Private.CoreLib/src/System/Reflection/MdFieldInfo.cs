@@ -40,16 +40,7 @@ namespace System.Reflection
         #endregion
 
         #region MemberInfo Overrides
-        public override string Name
-        {
-            get
-            {
-                if (m_name == null)
-                    m_name = GetRuntimeModule().MetadataImport.GetName(m_tkField).ToString();
-
-                return m_name;
-            }
-        }
+        public override string Name => m_name ??= GetRuntimeModule().MetadataImport.GetName(m_tkField).ToString();
 
         public override int MetadataToken => m_tkField;
         internal override RuntimeModule GetRuntimeModule() { return m_declaringType.GetRuntimeModule(); }

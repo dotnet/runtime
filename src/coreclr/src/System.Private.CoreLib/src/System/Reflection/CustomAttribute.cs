@@ -1415,7 +1415,7 @@ namespace System.Reflection
 
             if (mustBeInheritable)
             {
-                attributeUsageAttribute = CustomAttribute.GetAttributeUsage(attributeType);
+                attributeUsageAttribute = GetAttributeUsage(attributeType);
 
                 if (!attributeUsageAttribute.Inherited)
                     return false;
@@ -1429,9 +1429,7 @@ namespace System.Reflection
             {
                 if (derivedAttributes[i].GetType() == attributeType)
                 {
-                    if (attributeUsageAttribute == null)
-                        attributeUsageAttribute = CustomAttribute.GetAttributeUsage(attributeType);
-
+                    attributeUsageAttribute ??= GetAttributeUsage(attributeType);
                     return attributeUsageAttribute.AllowMultiple;
                 }
             }

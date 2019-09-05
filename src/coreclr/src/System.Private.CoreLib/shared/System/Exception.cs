@@ -87,7 +87,7 @@ namespace System
 
         public virtual string? Source
         {
-            get => _source ?? (_source = CreateSourceName());
+            get => _source ??= CreateSourceName();
             set => _source = value;
         }
 

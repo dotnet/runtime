@@ -107,8 +107,7 @@ namespace System
 
             if (_fusionLog != null)
             {
-                if (s == null)
-                    s = " ";
+                s ??= " ";
                 s += Environment.NewLine;
                 s += Environment.NewLine;
                 s += _fusionLog;

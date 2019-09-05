@@ -61,7 +61,7 @@ namespace System.Runtime.CompilerServices
                     if (eventArgs.Unwind)
                     {
                         // unwind
-                        if (innerException == null) { innerException = eventArgs.thrownDuringHandler; }
+                        innerException ??= eventArgs.thrownDuringHandler;
                         throw new ContractException(failureKind, displayMessage, userMessage, conditionText, innerException);
                     }
                 }

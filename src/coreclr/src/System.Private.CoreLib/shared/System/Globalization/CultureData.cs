@@ -1880,10 +1880,7 @@ namespace System.Globalization
             int calendarIndex = (int)calendarId - 1;
 
             // Have to have calendars
-            if (_calendars == null)
-            {
-                _calendars = new CalendarData[CalendarData.MAX_CALENDARS];
-            }
+            _calendars ??= new CalendarData[CalendarData.MAX_CALENDARS];
 
             // we need the following local variable to avoid returning null
             // when another thread creates a new array of CalendarData (above)
@@ -2157,16 +2154,10 @@ namespace System.Globalization
                 switch (str[i])
                 {
                     case '\'':
-                        if (result == null)
-                        {
-                            result = new StringBuilder(str, start, i - start, str.Length);
-                        }
+                        result ??= new StringBuilder(str, start, i - start, str.Length);
                         break;
                     case '\\':
-                        if (result == null)
-                        {
-                            result = new StringBuilder(str, start, i - start, str.Length);
-                        }
+                        result ??= new StringBuilder(str, start, i - start, str.Length);
                         ++i;
                         if (i < str.Length)
                         {
@@ -2174,10 +2165,7 @@ namespace System.Globalization
                         }
                         break;
                     default:
-                        if (result != null)
-                        {
-                            result.Append(str[i]);
-                        }
+                        result?.Append(str[i]);
                         break;
                 }
             }
