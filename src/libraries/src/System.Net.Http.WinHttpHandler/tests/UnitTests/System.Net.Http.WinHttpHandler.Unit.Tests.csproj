@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{A2ECDEDB-12B7-402C-9230-152B7601179F}</ProjectGuid>
     <NoWarn>$(NoWarn);0436</NoWarn>
@@ -129,6 +129,15 @@
     </Compile>
     <Compile Include="..\..\..\System.Net.Http\src\System\Net\Http\SocketsHttpHandler\HttpWindowsProxy.cs">
       <Link>ProductionCode\HttpWindowsProxy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\System.Net.Http\src\System\Net\Http\SocketsHttpHandler\FailedProxyCache.cs">
+      <Link>ProductionCode\FailedProxyCache.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\System.Net.Http\src\System\Net\Http\SocketsHttpHandler\IMultiWebProxy.cs">
+      <Link>ProductionCode\IMultiWebProxy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\System.Net.Http\src\System\Net\Http\SocketsHttpHandler\MultiProxy.cs">
+      <Link>ProductionCode\MultiProxy.cs</Link>
     </Compile>
     <Compile Include="APICallHistory.cs" />
     <Compile Include="ClientCertificateHelper.cs" />

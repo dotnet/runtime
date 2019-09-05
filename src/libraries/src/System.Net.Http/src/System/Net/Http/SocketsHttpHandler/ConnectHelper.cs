@@ -72,7 +72,7 @@ namespace System.Net.Http
             {
                 throw CancellationHelper.ShouldWrapInOperationCanceledException(error, cancellationToken) ?
                     CancellationHelper.CreateOperationCanceledException(error, cancellationToken) :
-                    new HttpRequestException(error.Message, error);
+                    new HttpRequestException(error.Message, error, RequestRetryType.RetryOnNextProxy);
             }
             finally
             {

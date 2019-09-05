@@ -1112,7 +1112,7 @@ namespace System.Net.Http
                 innerException = new ObjectDisposedException(nameof(Http2Connection));
             }
 
-            return new HttpRequestException(SR.net_http_client_execution_error, innerException, allowRetry: true);
+            return new HttpRequestException(SR.net_http_client_execution_error, innerException, allowRetry: RequestRetryType.RetryOnSameOrNextProxy);
         }
 
         private async ValueTask<Http2Stream> SendHeadersAsync(HttpRequestMessage request, CancellationToken cancellationToken, bool mustFlush)
