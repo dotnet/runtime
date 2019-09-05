@@ -47,26 +47,7 @@ enum VNFunc
     VNF_COUNT
 };
 
-enum VNOperKind
-{
-    VOK_Default,
-    VOK_Unsigned,
-    VOK_OverflowCheck,
-    VOK_Unsigned_OverflowCheck
-};
-
-// Given the bool values isUnsigned and overflowCheck return the proper VNOperKInd enum
-//
-VNOperKind VNGetOperKind(bool isUnsigned, bool overflowCheck);
-
-// Given an "oper" and associated flags with it, transform the oper into a
-// more accurate oper that can be used in evaluation.
-// For example, (GT_ADD, true, false) transforms to GT_ADD_UN
-// and (GT_ADD, false, true) transforms to GT_ADD_OVF
-//
-VNFunc GetVNFuncForOper(genTreeOps oper, VNOperKind operKind);
-
-// Given a GenTree node return the VNFunc that shodul be used when value numbering
+// Given a GenTree node return the VNFunc that should be used when value numbering
 //
 VNFunc GetVNFuncForNode(GenTree* node);
 

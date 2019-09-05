@@ -17267,16 +17267,15 @@ void GenTree::ParseArrayAddress(
             // Perform ((inxVN / elemSizeVN) + vnForConstInd)
             if (!canFoldDiv)
             {
-                ValueNum vnForElemSize = vnStore->VNForPtrSizeIntCon(elemSize);
-                ValueNum vnForScaledInx =
-                    vnStore->VNForFunc(TYP_I_IMPL, GetVNFuncForOper(GT_DIV, VOK_Default), inxVN, vnForElemSize);
-                *pInxVN = vnForScaledInx;
+                ValueNum vnForElemSize  = vnStore->VNForPtrSizeIntCon(elemSize);
+                ValueNum vnForScaledInx = vnStore->VNForFunc(TYP_I_IMPL, VNFunc(GT_DIV), inxVN, vnForElemSize);
+                *pInxVN                 = vnForScaledInx;
             }
 
             if (constInd != 0)
             {
                 ValueNum vnForConstInd = comp->GetValueNumStore()->VNForPtrSizeIntCon(constInd);
-                VNFunc   vnFunc        = GetVNFuncForOper(GT_ADD, VOK_Default);
+                VNFunc   vnFunc        = VNFunc(GT_ADD);
 
                 *pInxVN = comp->GetValueNumStore()->VNForFunc(TYP_I_IMPL, vnFunc, *pInxVN, vnForConstInd);
             }
@@ -17394,7 +17393,7 @@ void GenTree::ParseArrayAddressWork(Compiler*       comp,
         if (inputMul != 1)
         {
             ValueNum mulVN = comp->GetValueNumStore()->VNForLongCon(inputMul);
-            vn = comp->GetValueNumStore()->VNForFunc(TypeGet(), GetVNFuncForOper(GT_MUL, VOK_Default), mulVN, vn);
+            vn             = comp->GetValueNumStore()->VNForFunc(TypeGet(), VNFunc(GT_MUL), mulVN, vn);
         }
         if (*pInxVN == ValueNumStore::NoVN)
         {
@@ -17402,8 +17401,7 @@ void GenTree::ParseArrayAddressWork(Compiler*       comp,
         }
         else
         {
-            *pInxVN =
-                comp->GetValueNumStore()->VNForFunc(TypeGet(), GetVNFuncForOper(GT_ADD, VOK_Default), *pInxVN, vn);
+            *pInxVN = comp->GetValueNumStore()->VNForFunc(TypeGet(), VNFunc(GT_ADD), *pInxVN, vn);
         }
     }
 }
