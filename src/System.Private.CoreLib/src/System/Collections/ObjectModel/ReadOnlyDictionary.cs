@@ -53,13 +53,7 @@ namespace System.Collections.ObjectModel
 
         ICollection<TValue> IDictionary<TKey, TValue>.Values => Values;
 
-        public TValue this[TKey key]
-        {
-            get
-            {
-                return m_dictionary[key];
-            }
-        }
+        public TValue this[TKey key] => m_dictionary[key];
 
         void IDictionary<TKey, TValue>.Add(TKey key, TValue value) =>
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
