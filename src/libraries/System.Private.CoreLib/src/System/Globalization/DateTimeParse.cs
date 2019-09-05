@@ -5896,13 +5896,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         internal DTSubStringType type;
         internal int value;
 
-        internal char this[int relativeIndex]
-        {
-            get
-            {
-                return s[index + relativeIndex];
-            }
-        }
+        internal char this[int relativeIndex] => s[index + relativeIndex];
     }
 
     //
