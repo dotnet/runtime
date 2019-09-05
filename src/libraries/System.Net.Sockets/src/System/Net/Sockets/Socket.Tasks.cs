@@ -376,7 +376,7 @@ namespace System.Net.Sockets
                 saea.SetBuffer(MemoryMarshal.AsMemory(buffer));
                 saea.SocketFlags = socketFlags;
                 saea.WrapExceptionsInIOExceptions = true;
-                return saea.SendAsyncForNetworkStream(this);
+                return saea.SendAsyncForNetworkStream(this, cancellationToken);
             }
             else
             {
@@ -929,12 +929,13 @@ namespace System.Net.Sockets
                     new ValueTask<int>(Task.FromException<int>(CreateException(error)));
             }
 
-            public ValueTask SendAsyncForNetworkStream(Socket socket)
+            public ValueTask SendAsyncForNetworkStream(Socket socket, CancellationToken cancellationToken)
             {
                 Debug.Assert(Volatile.Read(ref _continuation) == null, $"Expected null continuation to indicate reserved for use");
 
-                if (socket.SendAsync(this))
+                if (socket.SendAsync(this, cancellationToken))
                 {
+                    _cancellationToken = cancellationToken;
                     return new ValueTask(this, _token);
                 }
 
