@@ -49,7 +49,7 @@ namespace System.Text.Json
             }
         }
 
-        public void WriteObjectOrArrayStart(ClassType classType, Utf8JsonWriter writer, bool writeNull = false)
+        public void WriteObjectOrArrayStart(ClassType classType, Utf8JsonWriter writer, JsonSerializerOptions options, bool writeNull = false)
         {
             if (JsonPropertyInfo?.EscapedName.HasValue == true)
             {
@@ -57,7 +57,7 @@ namespace System.Text.Json
             }
             else if (KeyName != null)
             {
-                JsonEncodedText propertyName = JsonEncodedText.Encode(KeyName);
+                JsonEncodedText propertyName = JsonEncodedText.Encode(KeyName, options.Encoder);
                 WriteObjectOrArrayStart(classType, propertyName, writer, writeNull);
             }
             else

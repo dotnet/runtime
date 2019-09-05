@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Text.Encodings.Web;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -47,6 +48,22 @@ namespace System.Text.Json.Serialization.Tests
                 // Verify Path is not repeated.
                 Assert.True(e.Message.IndexOf("Path:") == e.Message.LastIndexOf("Path:"));
             }
+        }
+
+        [Fact]
+        public static void TypeMismatchIDictionaryExceptionWithCustomEscaperThrown()
+        {
+            var options = new JsonSerializerOptions();
+            options.Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
+
+            JsonException e = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<string, int>>("{\"Key\u0467\":1", options));
+            Assert.Equal(0, e.LineNumber);
+            Assert.Equal(10, e.BytePositionInLine);
+            Assert.Contains("LineNumber: 0 | BytePositionInLine: 10.", e.Message);
+            Assert.Contains("$.Key\u0467", e.Path);
+
+            // Verify Path is not repeated.
+            Assert.True(e.Message.IndexOf("Path:") == e.Message.LastIndexOf("Path:"));
         }
 
         [Fact]
@@ -112,6 +129,66 @@ namespace System.Text.Json.Serialization.Tests
                 // Key2 is not yet a valid key name since there is no : delimiter.
                 Assert.Equal("$.Key1", e.Path);
             }
+        }
+
+        [Fact]
+        public static void DeserializePathForDictionaryFails()
+        {
+            const string Json = "{\"Key1\u0467\":1, \"Key2\u0467\":bad}";
+            const string JsonEscaped = "{\"Key1\\u0467\":1, \"Key2\\u0467\":bad}";
+            const string Expected = "$.Key2\u0467";
+
+            JsonException e;
+
+            // Without custom escaper.
+            e = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<string, int>>(Json));
+            Assert.Equal(Expected, e.Path);
+
+            e = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<string, int>>(JsonEscaped));
+            Assert.Equal(Expected, e.Path);
+
+            // Custom escaper should not change Path.
+            var options = new JsonSerializerOptions();
+            options.Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
+
+            e = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<string, int>>(Json, options));
+            Assert.Equal(Expected, e.Path);
+
+            e = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<string, int>>(JsonEscaped, options));
+            Assert.Equal(Expected, e.Path);
+        }
+
+        private class ClassWithUnicodePropertyName
+        {
+            public int Property\u04671 { get; set; } // contains a trailing "1"
+        }
+
+        [Fact]
+        public static void DeserializePathForObjectFails()
+        {
+            const string GoodJson = "{\"Property\u04671\":1}";
+            const string GoodJsonEscaped = "{\"Property\\u04671\":1}";
+            const string BadJson = "{\"Property\u04671\":bad}";
+            const string BadJsonEscaped = "{\"Property\\u04671\":bad}";
+            const string Expected = "$.Property\u04671";
+
+            ClassWithUnicodePropertyName obj;
+
+            // Baseline.
+            obj = JsonSerializer.Deserialize<ClassWithUnicodePropertyName>(GoodJson);
+            Assert.Equal(1, obj.Property\u04671);
+
+            obj = JsonSerializer.Deserialize<ClassWithUnicodePropertyName>(GoodJsonEscaped);
+            Assert.Equal(1, obj.Property\u04671);
+
+            JsonException e;
+
+            // Exception.
+            e = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithUnicodePropertyName>(BadJson));
+            Assert.Equal(Expected, e.Path);
+
+            e = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithUnicodePropertyName>(BadJsonEscaped));
+            Assert.Equal(Expected, e.Path);
         }
 
         [Fact]
@@ -282,7 +359,7 @@ namespace System.Text.Json.Serialization.Tests
             }
             catch (JsonException e)
             {
-                Assert.Equal(@"$.A\u0467", e.Path);
+                Assert.Equal("$.A\u0467", e.Path);
             }
         }
 
