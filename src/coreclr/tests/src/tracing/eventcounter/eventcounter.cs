@@ -41,6 +41,7 @@ namespace BasicEventSourceTests
             public string displayName;
             public string displayUnits;
             public int callbackCount;
+            public ManualResetEvent sawEvent;
             
             public SimpleEventListener(string targetSourceName, EventLevel level)
             {
@@ -53,6 +54,7 @@ namespace BasicEventSourceTests
                 means = new HashSet<int>(); 
                 args = new Dictionary<string, string>();
                 args.Add("EventCounterIntervalSec", "1");
+                sawEvent = new ManualResetEvent(false);
             }
             
             protected override void OnEventSourceCreated(EventSource source)
@@ -89,6 +91,7 @@ namespace BasicEventSourceTests
                             }
                         }
                     }
+                    sawEvent.Set();
                     callbackCount++;
                 }
             }
@@ -108,6 +111,7 @@ namespace BasicEventSourceTests
 
         public static int Main(string[] args)
         {
+
             // Create an EventListener.
             using (SimpleEventListener myListener = new SimpleEventListener("SimpleEventSource", EventLevel.Verbose))
             {
@@ -123,7 +127,7 @@ namespace BasicEventSourceTests
                     eventSource.WriteOne();
                 }
 
-                Thread.Sleep(3000);
+                myListener.sawEvent.WaitOne(-1); // Block until we see at least one event
 
                 if (!myListener.validateMean())
                 {
