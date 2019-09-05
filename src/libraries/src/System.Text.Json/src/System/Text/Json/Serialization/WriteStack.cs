@@ -101,18 +101,16 @@ namespace System.Text.Json
         {
             if (propertyName != null)
             {
-                JsonEncodedText encodedPropertyName = JsonEncodedText.Encode(propertyName);
-
                 if (propertyName.IndexOfAny(ReadStack.SpecialCharacters) != -1)
                 {
                     sb.Append(@"['");
-                    sb.Append(encodedPropertyName);
+                    sb.Append(propertyName);
                     sb.Append(@"']");
                 }
                 else
                 {
                     sb.Append('.');
-                    sb.Append(encodedPropertyName);
+                    sb.Append(propertyName);
                 }
             }
         }

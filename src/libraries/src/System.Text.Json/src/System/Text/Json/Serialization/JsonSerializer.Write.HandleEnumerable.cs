@@ -28,7 +28,7 @@ namespace System.Text.Json
                         !state.Current.JsonPropertyInfo.IgnoreNullValues)
                     {
                         // Write a null object or enumerable.
-                        state.Current.WriteObjectOrArrayStart(ClassType.Enumerable, writer, writeNull: true);
+                        state.Current.WriteObjectOrArrayStart(ClassType.Enumerable, writer, options, writeNull: true);
                     }
 
                     if (state.Current.PopStackOnEndCollection)
@@ -41,7 +41,7 @@ namespace System.Text.Json
 
                 state.Current.CollectionEnumerator = enumerable.GetEnumerator();
 
-                state.Current.WriteObjectOrArrayStart(ClassType.Enumerable, writer);
+                state.Current.WriteObjectOrArrayStart(ClassType.Enumerable, writer, options);
             }
 
             if (state.Current.CollectionEnumerator.MoveNext())

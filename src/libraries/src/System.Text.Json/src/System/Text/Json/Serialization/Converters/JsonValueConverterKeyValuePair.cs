@@ -11,8 +11,11 @@ namespace System.Text.Json.Serialization.Converters
         private const string KeyName = "Key";
         private const string ValueName = "Value";
 
-        private static readonly JsonEncodedText _keyName = JsonEncodedText.Encode(KeyName);
-        private static readonly JsonEncodedText _valueName = JsonEncodedText.Encode(ValueName);
+        // "encoder: null" is used since the literal values of "Key" and "Value" should not normally be escaped
+        // unless a custom encoder is used that escapes these ASCII characters (rare).
+        // Also by not specifying an encoder allows the values to be cached statically here.
+        private static readonly JsonEncodedText _keyName = JsonEncodedText.Encode(KeyName, encoder: null);
+        private static readonly JsonEncodedText _valueName = JsonEncodedText.Encode(ValueName, encoder: null);
 
         public override KeyValuePair<TKey, TValue> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
