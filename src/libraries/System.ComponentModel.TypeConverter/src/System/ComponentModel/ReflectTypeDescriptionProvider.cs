@@ -136,6 +136,7 @@ namespace System.ComponentModel
             //
             [typeof(Array)] = typeof(ArrayConverter),
             [typeof(ICollection)] = typeof(CollectionConverter),
+            [typeof(IComponent)] = typeof(ComponentConverter),
             [typeof(Enum)] = typeof(EnumConverter),
             [s_intrinsicNullableKey] = typeof(NullableConverter),
         });
