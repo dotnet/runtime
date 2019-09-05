@@ -62,10 +62,7 @@ namespace System
 
         public int Length => _args.Length;
 
-        public object? this[int index]
-        {
-            get { return index == 0 ? _arg0 : GetAtSlow(index); }
-        }
+        public object? this[int index] => index == 0 ? _arg0 : GetAtSlow(index);
 
         private object? GetAtSlow(int index)
         {
