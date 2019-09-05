@@ -41,17 +41,7 @@ namespace System.IO
             FileName = fileName;
         }
 
-        public override string Message
-        {
-            get
-            {
-                if (_message == null)
-                {
-                    _message = FormatFileLoadExceptionMessage(FileName, HResult);
-                }
-                return _message;
-            }
-        }
+        public override string Message => _message ??= FormatFileLoadExceptionMessage(FileName, HResult);
 
         public string? FileName { get; }
         public string? FusionLog { get; }
@@ -71,8 +61,7 @@ namespace System.IO
 
             if (FusionLog != null)
             {
-                if (s == null)
-                    s = " ";
+                s ??= " ";
                 s += Environment.NewLine;
                 s += Environment.NewLine;
                 s += FusionLog;

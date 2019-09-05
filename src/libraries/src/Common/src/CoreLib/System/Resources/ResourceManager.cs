@@ -608,10 +608,7 @@ namespace System.Resources
             }
 #endif
 
-            if (culture == null)
-            {
-                culture = CultureInfo.CurrentUICulture;
-            }
+            culture ??= CultureInfo.CurrentUICulture;
 
             ResourceSet? last = GetFirstResourceSet(culture);
 

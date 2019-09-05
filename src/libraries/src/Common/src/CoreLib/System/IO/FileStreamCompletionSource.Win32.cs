@@ -77,8 +77,7 @@ namespace System.IO
                 // Quick check to make sure the IO hasn't completed
                 if (_overlapped != null)
                 {
-                    Action<object?>? cancelCallback = s_cancelCallback;
-                    if (cancelCallback == null) s_cancelCallback = cancelCallback = Cancel;
+                    Action<object?>? cancelCallback = s_cancelCallback ??= Cancel;
 
                     // Register the cancellation only if the IO hasn't completed
                     long packedResult = Interlocked.CompareExchange(ref _result, RegisteringCancellation, NoResult);

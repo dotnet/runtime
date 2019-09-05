@@ -150,31 +150,11 @@ namespace System.Globalization
 
         private DateTimeFormatFlags formatFlags = DateTimeFormatFlags.NotInitialized;
 
-        private string CultureName => _name ?? (_name = _cultureData.CultureName);
+        private string CultureName => _name ??= _cultureData.CultureName;
 
-        private CultureInfo Culture
-        {
-            get
-            {
-                if (_cultureInfo == null)
-                {
-                    _cultureInfo = CultureInfo.GetCultureInfo(CultureName);
-                }
-                return _cultureInfo;
-            }
-        }
+        private CultureInfo Culture => _cultureInfo ??= CultureInfo.GetCultureInfo(CultureName);
 
-        private string LanguageName
-        {
-            get
-            {
-                if (_langName == null)
-                {
-                    _langName = _cultureData.TwoLetterISOLanguageName;
-                }
-                return _langName;
-            }
-        }
+        private string LanguageName => _langName ??= _cultureData.TwoLetterISOLanguageName;
 
         /// <summary>
         /// Create an array of string which contains the abbreviated day names.
@@ -1898,62 +1878,25 @@ namespace System.Globalization
 
         // Decimal separator used by positive TimeSpan pattern
         private string? _decimalSeparator;
-        internal string DecimalSeparator
-        {
-            get
-            {
-                if (_decimalSeparator == null)
-                {
-                    CultureData? cultureDataWithoutUserOverrides = _cultureData.UseUserOverride ?
-                        CultureData.GetCultureData(_cultureData.CultureName, false) :
-                        _cultureData;
-                    _decimalSeparator = new NumberFormatInfo(cultureDataWithoutUserOverrides).NumberDecimalSeparator;
-                }
-                return _decimalSeparator;
-            }
-        }
+        internal string DecimalSeparator =>
+            _decimalSeparator ??=
+            new NumberFormatInfo(_cultureData.UseUserOverride ? CultureData.GetCultureData(_cultureData.CultureName, false) : _cultureData).NumberDecimalSeparator;
 
         // Positive TimeSpan Pattern
         private string? _fullTimeSpanPositivePattern;
-        internal string FullTimeSpanPositivePattern
-        {
-            get
-            {
-                if (_fullTimeSpanPositivePattern == null)
-                {
-                    _fullTimeSpanPositivePattern = "d':'h':'mm':'ss'" + DecimalSeparator + "'FFFFFFF";
-                }
-                return _fullTimeSpanPositivePattern;
-            }
-        }
+        internal string FullTimeSpanPositivePattern =>
+            _fullTimeSpanPositivePattern ??= "d':'h':'mm':'ss'" + DecimalSeparator + "'FFFFFFF";
 
         // Negative TimeSpan Pattern
         private string? _fullTimeSpanNegativePattern;
-        internal string FullTimeSpanNegativePattern
-        {
-            get
-            {
-                if (_fullTimeSpanNegativePattern == null)
-                    _fullTimeSpanNegativePattern = "'-'" + FullTimeSpanPositivePattern;
-                return _fullTimeSpanNegativePattern;
-            }
-        }
+        internal string FullTimeSpanNegativePattern =>
+            _fullTimeSpanNegativePattern ??= "'-'" + FullTimeSpanPositivePattern;
 
         // Get suitable CompareInfo from current DTFI object.
-        internal CompareInfo CompareInfo
-        {
-            get
-            {
-                if (_compareInfo == null)
-                {
-                    // We use the regular GetCompareInfo here to make sure the created CompareInfo object is stored in the
-                    // CompareInfo cache. otherwise we would just create CompareInfo using _cultureData.
-                    _compareInfo = CompareInfo.GetCompareInfo(_cultureData.SortName);
-                }
-
-                return _compareInfo;
-            }
-        }
+        internal CompareInfo CompareInfo =>
+            // We use the regular GetCompareInfo here to make sure the created CompareInfo object is stored in the
+            // CompareInfo cache. otherwise we would just create CompareInfo using _cultureData.
+            _compareInfo ??= CompareInfo.GetCompareInfo(_cultureData.SortName);
 
         internal const DateTimeStyles InvalidDateTimeStyles = ~(DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite
                                                                | DateTimeStyles.AllowInnerWhite | DateTimeStyles.NoCurrentDateDefault

@@ -477,7 +477,7 @@ namespace System
             if (array.Rank != 1)
                 ThrowHelper.ThrowRankException(ExceptionResource.Rank_MultiDimNotSupported);
 
-            if (comparer == null) comparer = Comparer.Default;
+            comparer ??= Comparer.Default;
 #if CORECLR
             if (comparer == Comparer.Default)
             {
