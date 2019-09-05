@@ -55,6 +55,7 @@ CompMemKindMacro(CopyProp)
 CompMemKindMacro(SideEffects)
 CompMemKindMacro(ObjectAllocator)
 CompMemKindMacro(VariableLiveRanges)
+CompMemKindMacro(ClassLayout)
 //clang-format on
 
 #undef CompMemKindMacro

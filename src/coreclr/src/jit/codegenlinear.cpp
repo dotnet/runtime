@@ -1093,7 +1093,6 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
                 unsigned flags = splitArg->GetRegSpillFlagByIdx(i);
                 if ((flags & GTF_SPILLED) != 0)
                 {
-                    BYTE*     gcPtrs  = splitArg->gtGcPtrs;
                     var_types dstType = splitArg->GetRegType(i);
                     regNumber dstReg  = splitArg->GetRegNumByIdx(i);
 

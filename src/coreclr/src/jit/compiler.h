@@ -381,12 +381,10 @@ public:
     unsigned char lvIsRegArg : 1;          // is this an argument that was passed by register?
     unsigned char lvFramePointerBased : 1; // 0 = off of REG_SPBASE (e.g., ESP), 1 = off of REG_FPBASE (e.g., EBP)
 
-    unsigned char lvStructGcCount : 3; // if struct, how many GC pointer (stop counting at 7). The only use of values >1
-                                       // is to help determine whether to use block init in the prolog.
-    unsigned char lvOnFrame : 1;       // (part of) the variable lives on the frame
-    unsigned char lvRegister : 1;      // assigned to live in a register? For RyuJIT backend, this is only set if the
-                                       // variable is in the same register for the entire function.
-    unsigned char lvTracked : 1;       // is this a tracked variable?
+    unsigned char lvOnFrame : 1;  // (part of) the variable lives on the frame
+    unsigned char lvRegister : 1; // assigned to live in a register? For RyuJIT backend, this is only set if the
+                                  // variable is in the same register for the entire function.
+    unsigned char lvTracked : 1;  // is this a tracked variable?
     bool          lvTrackedNonStruct()
     {
         return lvTracked && lvType != TYP_STRUCT;
@@ -853,8 +851,10 @@ public:
 
     CORINFO_FIELD_HANDLE lvFieldHnd; // field handle for promoted struct fields
 
-    BYTE* lvGcLayout; // GC layout info for structs
+private:
+    ClassLayout* m_layout; // layout info for structs
 
+public:
 #if ASSERTION_PROP
     BlockSet     lvRefBlks;          // Set of blocks that contain refs
     GenTreeStmt* lvDefStmt;          // Pointer to the statement with the single definition
@@ -910,6 +910,26 @@ public:
     }
 
     var_types lvaArgType();
+
+    // Returns true if this variable contains GC pointers (including being a GC pointer itself).
+    bool HasGCPtr()
+    {
+        return varTypeIsGC(lvType) || ((lvType == TYP_STRUCT) && m_layout->HasGCPtr());
+    }
+
+    // Returns the layout of a struct variable.
+    ClassLayout* GetLayout()
+    {
+        assert(varTypeIsStruct(lvType));
+        return m_layout;
+    }
+
+    // Sets the layout of a struct variable.
+    void SetLayout(ClassLayout* layout)
+    {
+        assert(varTypeIsStruct(lvType));
+        m_layout = layout;
+    }
 
     SsaDefArray<LclSsaVarDsc> lvPerSsaData;
 
@@ -3378,8 +3398,6 @@ public:
     }
 #endif // defined(FEATURE_SIMD)
 
-    BYTE* lvaGetGcLayout(unsigned varNum);
-    bool lvaTypeIsGC(unsigned varNum);
     unsigned lvaGSSecurityCookie; // LclVar number
     bool     lvaTempsHaveLargerOffsetThanVars();
 
@@ -3723,10 +3741,7 @@ public:
 
     GenTree* impGetStructAddr(GenTree* structVal, CORINFO_CLASS_HANDLE structHnd, unsigned curLevel, bool willDeref);
 
-    var_types impNormStructType(CORINFO_CLASS_HANDLE structHnd,
-                                BYTE*                gcLayout     = nullptr,
-                                unsigned*            numGCVars    = nullptr,
-                                var_types*           simdBaseType = nullptr);
+    var_types impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types* simdBaseType = nullptr);
 
     GenTree* impNormStructVal(GenTree*             structVal,
                               CORINFO_CLASS_HANDLE structHnd,
@@ -8857,12 +8872,6 @@ public:
 #endif // FEATURE_MULTIREG_RET
     }
 
-#if FEATURE_MULTIREG_ARGS
-    // Given a GenTree node of TYP_STRUCT that represents a pass by value argument
-    // return the gcPtr layout for the pointers sized fields
-    void getStructGcPtrsFromOp(GenTree* op, BYTE* gcPtrsOut);
-#endif // FEATURE_MULTIREG_ARGS
-
     // Returns true if the method being compiled returns a value
     bool compMethodHasRetVal()
     {
@@ -8875,6 +8884,26 @@ public:
     void compDispLocalVars();
 
 #endif // DEBUG
+
+private:
+    class ClassLayoutTable* m_classLayoutTable;
+
+    class ClassLayoutTable* typCreateClassLayoutTable();
+    class ClassLayoutTable* typGetClassLayoutTable();
+
+public:
+    // Get the layout having the specified layout number.
+    ClassLayout* typGetLayoutByNum(unsigned layoutNum);
+    // Get the layout number of the specified layout.
+    unsigned typGetLayoutNum(ClassLayout* layout);
+    // Get the layout having the specified size but no class handle.
+    ClassLayout* typGetBlkLayout(unsigned blockSize);
+    // Get the number of a layout having the specified size but no class handle.
+    unsigned typGetBlkLayoutNum(unsigned blockSize);
+    // Get the layout for the specified class handle.
+    ClassLayout* typGetObjLayout(CORINFO_CLASS_HANDLE classHandle);
+    // Get the number of a layout for the specified class handle.
+    unsigned typGetObjLayoutNum(CORINFO_CLASS_HANDLE classHandle);
 
 //-------------------------- Global Compiler Data ------------------------------------
 

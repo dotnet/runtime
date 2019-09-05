@@ -469,61 +469,6 @@ var_types Compiler::getJitGCType(BYTE gcType)
     return result;
 }
 
-#if FEATURE_MULTIREG_ARGS
-//---------------------------------------------------------------------------
-// getStructGcPtrsFromOp: Given a GenTree node of TYP_STRUCT that represents
-//                        a pass by value argument, return the gcPtr layout
-//                        for the pointers sized fields
-// Arguments:
-//    op         - the operand of TYP_STRUCT that is passed by value
-//    gcPtrsOut  - an array of BYTES that are written by this method
-//                 they will contain the VM's CorInfoGCType values
-//                 for each pointer sized field
-// Return Value:
-//     Two [or more] values are written into the gcPtrs array
-//
-// Note that for ARM64 there will always be exactly two pointer sized fields
-
-void Compiler::getStructGcPtrsFromOp(GenTree* op, BYTE* gcPtrsOut)
-{
-    assert(op->TypeGet() == TYP_STRUCT);
-
-#ifdef _TARGET_ARM64_
-    if (op->OperGet() == GT_OBJ)
-    {
-        CORINFO_CLASS_HANDLE objClass = op->gtObj.gtClass;
-
-        int structSize = info.compCompHnd->getClassSize(objClass);
-        assert(structSize <= 2 * TARGET_POINTER_SIZE);
-
-        BYTE gcPtrsTmp[2] = {TYPE_GC_NONE, TYPE_GC_NONE};
-
-        info.compCompHnd->getClassGClayout(objClass, &gcPtrsTmp[0]);
-
-        gcPtrsOut[0] = gcPtrsTmp[0];
-        gcPtrsOut[1] = gcPtrsTmp[1];
-    }
-    else if (op->OperGet() == GT_LCL_VAR)
-    {
-        GenTreeLclVarCommon* varNode = op->AsLclVarCommon();
-        unsigned             varNum  = varNode->gtLclNum;
-        assert(varNum < lvaCount);
-        LclVarDsc* varDsc = &lvaTable[varNum];
-
-        // At this point any TYP_STRUCT LclVar must be a 16-byte pass by value argument
-        assert(varDsc->lvSize() == 2 * TARGET_POINTER_SIZE);
-
-        gcPtrsOut[0] = varDsc->lvGcLayout[0];
-        gcPtrsOut[1] = varDsc->lvGcLayout[1];
-    }
-    else
-#endif
-    {
-        noway_assert(!"Unsupported Oper for getStructGcPtrsFromOp");
-    }
-}
-#endif // FEATURE_MULTIREG_ARGS
-
 #ifdef ARM_SOFTFP
 //---------------------------------------------------------------------------
 // IsSingleFloat32Struct:
@@ -1926,6 +1871,8 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
 
     // We start with the flow graph in tree-order
     fgOrder = FGOrderTree;
+
+    m_classLayoutTable = nullptr;
 
 #ifdef FEATURE_SIMD
     m_simdHandleCache = nullptr;
@@ -4989,28 +4936,12 @@ bool Compiler::compQuirkForPPP()
         // This fixes the PPP backward compat issue
         varDscExposedStruct->lvExactSize += 32;
 
-        // Update the GC info to indicate that the padding area does
-        // not contain any GC pointers.
-        //
         // The struct is now 64 bytes.
-        //
         // We're on x64 so this should be 8 pointer slots.
         assert((varDscExposedStruct->lvExactSize / TARGET_POINTER_SIZE) == 8);
 
-        BYTE* oldGCPtrs = varDscExposedStruct->lvGcLayout;
-        BYTE* newGCPtrs = getAllocator(CMK_LvaTable).allocate<BYTE>(8);
-
-        for (int i = 0; i < 4; i++)
-        {
-            newGCPtrs[i] = oldGCPtrs[i];
-        }
-
-        for (int i = 4; i < 8; i++)
-        {
-            newGCPtrs[i] = TYPE_GC_NONE;
-        }
-
-        varDscExposedStruct->lvGcLayout = newGCPtrs;
+        varDscExposedStruct->SetLayout(
+            varDscExposedStruct->GetLayout()->GetPPPQuirkLayout(getAllocator(CMK_ClassLayout)));
 
         return true;
     }
@@ -9240,7 +9171,7 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
 
             case GT_OBJ:
             case GT_STORE_OBJ:
-                if (tree->AsObj()->HasGCPtr())
+                if (tree->AsObj()->GetLayout()->HasGCPtr())
                 {
                     chars += printf("[BLK_HASGCPTR]");
                 }

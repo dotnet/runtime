@@ -28,6 +28,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "jithashtable.h"
 #include "simd.h"
 #include "namedintrinsiclist.h"
+#include "layout.h"
 
 // Debugging GenTree is much easier if we add a magic virtual function to make the debugger able to figure out what type
 // it's got. This is enabled by default in DEBUG. To enable it in RET builds (temporarily!), you need to change the
@@ -4738,7 +4739,21 @@ protected:
 
 struct GenTreeBlk : public GenTreeIndir
 {
+private:
+    ClassLayout* m_layout;
+
 public:
+    ClassLayout* GetLayout() const
+    {
+        return m_layout;
+    }
+
+    void SetLayout(ClassLayout* layout)
+    {
+        assert((layout != nullptr) || OperIs(GT_DYN_BLK, GT_STORE_DYN_BLK));
+        m_layout = layout;
+    }
+
     // The data to be stored (null for GT_BLK)
     GenTree*& Data()
     {
@@ -4752,13 +4767,9 @@ public:
     // The size of the buffer to be copied.
     unsigned Size() const
     {
-        return gtBlkSize;
+        assert((m_layout != nullptr) || OperIs(GT_DYN_BLK, GT_STORE_DYN_BLK));
+        return (m_layout != nullptr) ? m_layout->GetSize() : 0;
     }
-
-    unsigned gtBlkSize;
-
-    // Return true iff the object being copied contains one or more GC pointers.
-    bool HasGCPtr();
 
     // True if this BlkOpNode is a volatile memory operation.
     bool IsVolatile() const
@@ -4784,20 +4795,22 @@ public:
 
     bool gtBlkOpGcUnsafe;
 
-    GenTreeBlk(genTreeOps oper, var_types type, GenTree* addr, unsigned size)
+    GenTreeBlk(genTreeOps oper, var_types type, GenTree* addr, ClassLayout* layout)
         : GenTreeIndir(oper, type, addr, nullptr)
-        , gtBlkSize(size)
+        , m_layout(layout)
         , gtBlkOpKind(BlkOpKindInvalid)
         , gtBlkOpGcUnsafe(false)
     {
         assert(OperIsBlk(oper));
+        assert((layout != nullptr) || OperIs(GT_DYN_BLK, GT_STORE_DYN_BLK));
         gtFlags |= (addr->gtFlags & GTF_ALL_EFFECT);
     }
 
-    GenTreeBlk(genTreeOps oper, var_types type, GenTree* addr, GenTree* data, unsigned size)
-        : GenTreeIndir(oper, type, addr, data), gtBlkSize(size), gtBlkOpKind(BlkOpKindInvalid), gtBlkOpGcUnsafe(false)
+    GenTreeBlk(genTreeOps oper, var_types type, GenTree* addr, GenTree* data, ClassLayout* layout)
+        : GenTreeIndir(oper, type, addr, data), m_layout(layout), gtBlkOpKind(BlkOpKindInvalid), gtBlkOpGcUnsafe(false)
     {
         assert(OperIsBlk(oper));
+        assert((layout != nullptr) || OperIs(GT_DYN_BLK, GT_STORE_DYN_BLK));
         gtFlags |= (addr->gtFlags & GTF_ALL_EFFECT);
         gtFlags |= (data->gtFlags & GTF_ALL_EFFECT);
     }
@@ -4817,68 +4830,6 @@ protected:
 
 struct GenTreeObj : public GenTreeBlk
 {
-    CORINFO_CLASS_HANDLE gtClass; // the class of the object
-
-    // If non-null, this array represents the gc-layout of the class.
-    // This may be simply copied when cloning this node, because it is not changed once computed.
-    BYTE* gtGcPtrs;
-
-    // If non-zero, this is the number of slots in the class layout that
-    // contain gc-pointers.
-    __declspec(property(get = GetGcPtrCount)) unsigned gtGcPtrCount;
-    unsigned GetGcPtrCount() const
-    {
-        assert(_gtGcPtrCount != UINT32_MAX);
-        return _gtGcPtrCount;
-    }
-    unsigned _gtGcPtrCount;
-
-    // If non-zero, the number of pointer-sized slots that constitutes the class token.
-    unsigned gtSlots;
-
-    bool IsGCInfoInitialized()
-    {
-        return (_gtGcPtrCount != UINT32_MAX);
-    }
-
-    void SetGCInfo(BYTE* gcPtrs, unsigned gcPtrCount, unsigned slots)
-    {
-        gtGcPtrs      = gcPtrs;
-        _gtGcPtrCount = gcPtrCount;
-        gtSlots       = slots;
-        if (gtGcPtrCount != 0)
-        {
-            // We assume that we cannot have a struct with GC pointers that is not a multiple
-            // of the register size.
-            // The EE currently does not allow this, but it could change.
-            // Let's assert it just to be safe.
-            noway_assert(roundUp(gtBlkSize, REGSIZE_BYTES) == gtBlkSize);
-        }
-        else
-        {
-            genTreeOps newOper = GT_BLK;
-            if (gtOper == GT_STORE_OBJ)
-            {
-                newOper = GT_STORE_BLK;
-            }
-            else
-            {
-                assert(gtOper == GT_OBJ);
-            }
-            SetOper(newOper);
-        }
-    }
-
-    void CopyGCInfo(GenTreeObj* srcObj)
-    {
-        if (srcObj->IsGCInfoInitialized())
-        {
-            gtGcPtrs      = srcObj->gtGcPtrs;
-            _gtGcPtrCount = srcObj->gtGcPtrCount;
-            gtSlots       = srcObj->gtSlots;
-        }
-    }
-
     void Init()
     {
         // By default, an OBJ is assumed to be a global reference, unless it is local.
@@ -4887,18 +4838,16 @@ struct GenTreeObj : public GenTreeBlk
         {
             gtFlags |= GTF_GLOB_REF;
         }
-        noway_assert(gtClass != NO_CLASS_HANDLE);
-        _gtGcPtrCount = UINT32_MAX;
+        noway_assert(GetLayout()->GetClassHandle() != NO_CLASS_HANDLE);
     }
 
-    GenTreeObj(var_types type, GenTree* addr, CORINFO_CLASS_HANDLE cls, unsigned size)
-        : GenTreeBlk(GT_OBJ, type, addr, size), gtClass(cls)
+    GenTreeObj(var_types type, GenTree* addr, ClassLayout* layout) : GenTreeBlk(GT_OBJ, type, addr, layout)
     {
         Init();
     }
 
-    GenTreeObj(var_types type, GenTree* addr, GenTree* data, CORINFO_CLASS_HANDLE cls, unsigned size)
-        : GenTreeBlk(GT_STORE_OBJ, type, addr, data, size), gtClass(cls)
+    GenTreeObj(var_types type, GenTree* addr, GenTree* data, ClassLayout* layout)
+        : GenTreeBlk(GT_STORE_OBJ, type, addr, data, layout)
     {
         Init();
     }
@@ -4922,7 +4871,7 @@ public:
     bool     gtEvalSizeFirst;
 
     GenTreeDynBlk(GenTree* addr, GenTree* dynamicSize)
-        : GenTreeBlk(GT_DYN_BLK, TYP_STRUCT, addr, 0), gtDynamicSize(dynamicSize), gtEvalSizeFirst(false)
+        : GenTreeBlk(GT_DYN_BLK, TYP_STRUCT, addr, nullptr), gtDynamicSize(dynamicSize), gtEvalSizeFirst(false)
     {
         // Conservatively the 'addr' could be null or point into the global heap.
         gtFlags |= GTF_EXCEPT | GTF_GLOB_REF;
@@ -5238,8 +5187,6 @@ struct GenTreePutArgStk : public GenTreeUnOp
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
         , gtPutArgStkKind(Kind::Invalid)
         , gtNumSlots(numSlots)
-        , gtNumberReferenceSlots(0)
-        , gtGcPtrs(nullptr)
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 #if defined(DEBUG) || defined(UNIX_X86_ABI)
         , gtCall(callNode)
@@ -5301,28 +5248,6 @@ struct GenTreePutArgStk : public GenTreeUnOp
         return (varTypeIsSIMD(gtOp1) && (gtNumSlots == 3));
     }
 
-    //------------------------------------------------------------------------
-    // setGcPointers: Sets the number of references and the layout of the struct object returned by the VM.
-    //
-    // Arguments:
-    //    numPointers - Number of pointer references.
-    //    pointers    - layout of the struct (with pointers marked.)
-    //
-    // Return Value:
-    //    None
-    //
-    // Notes:
-    //    This data is used in the codegen for GT_PUTARG_STK to decide how to copy the struct to the stack by value.
-    //    If no pointer references are used, block copying instructions are used.
-    //    Otherwise the pointer reference slots are copied atomically in a way that gcinfo is emitted.
-    //    Any non pointer references between the pointer reference slots are copied in block fashion.
-    //
-    void setGcPointers(unsigned numPointers, BYTE* pointers)
-    {
-        gtNumberReferenceSlots = numPointers;
-        gtGcPtrs               = pointers;
-    }
-
     // Instruction selection: during codegen time, what code sequence we will be using
     // to encode this operation.
     // TODO-Throughput: The following information should be obtained from the child
@@ -5338,9 +5263,7 @@ struct GenTreePutArgStk : public GenTreeUnOp
         return (gtPutArgStkKind == Kind::Push) || (gtPutArgStkKind == Kind::PushAllSlots);
     }
 
-    unsigned gtNumSlots;             // Number of slots for the argument to be passed on stack
-    unsigned gtNumberReferenceSlots; // Number of reference slots.
-    BYTE*    gtGcPtrs;               // gcPointers
+    unsigned gtNumSlots; // Number of slots for the argument to be passed on stack
 
 #else  // !FEATURE_PUT_STRUCT_ARG_STK
     unsigned getArgSize();
@@ -6668,27 +6591,6 @@ inline var_types GenTree::CastFromType()
 inline var_types& GenTree::CastToType()
 {
     return this->gtCast.gtCastType;
-}
-
-//-----------------------------------------------------------------------------------
-// HasGCPtr: determine whether this block op involves GC pointers
-//
-// Arguments:
-//     None
-//
-// Return Value:
-//    Returns true iff the object being copied contains one or more GC pointers.
-//
-// Notes:
-//    Of the block nodes, only GT_OBJ and ST_STORE_OBJ are allowed to have GC pointers.
-//
-inline bool GenTreeBlk::HasGCPtr()
-{
-    if ((gtOper == GT_OBJ) || (gtOper == GT_STORE_OBJ))
-    {
-        return (AsObj()->gtGcPtrCount != 0);
-    }
-    return false;
 }
 
 inline bool GenTree::isUsedFromSpillTemp() const

@@ -1269,7 +1269,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
 int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 {
     GenTree* dstAddr  = blkNode->Addr();
-    unsigned size     = blkNode->gtBlkSize;
+    unsigned size     = blkNode->Size();
     GenTree* source   = blkNode->Data();
     int      srcCount = 0;
 
@@ -1524,10 +1524,6 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
             }
 #endif // _TARGET_X86_
 
-            if (varTypeIsGC(fieldType))
-            {
-                putArgStk->gtNumberReferenceSlots++;
-            }
             prevOffset = fieldOffset;
         }
 
@@ -1565,8 +1561,7 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
         return BuildSimple(putArgStk);
     }
 
-    GenTree* dst     = putArgStk;
-    GenTree* srcAddr = nullptr;
+    ClassLayout* layout = src->AsObj()->GetLayout();
 
     // If we have a buffer between XMM_REGSIZE_BYTES and CPBLK_UNROLL_LIMIT bytes, we'll use SSE2.
     // Structs and buffer with sizes <= CPBLK_UNROLL_LIMIT bytes are occurring in more than 95% of
@@ -1582,7 +1577,7 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
             // x86 specific note: if the size is odd, the last copy operation would be of size 1 byte.
             // But on x86 only RBM_BYTE_REGS could be used as byte registers.  Therefore, exclude
             // RBM_NON_BYTE_REGS from internal candidates.
-            if ((putArgStk->gtNumberReferenceSlots == 0) && (size & (XMM_REGSIZE_BYTES - 1)) != 0)
+            if (!layout->HasGCPtr() && (size & (XMM_REGSIZE_BYTES - 1)) != 0)
             {
                 regMaskTP regMask = allRegs(TYP_INT);
 
