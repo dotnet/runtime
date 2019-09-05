@@ -4,7 +4,7 @@
   <String Id="Title">[BUNDLEMONIKER]</String>
   <String Id="Motto">Você só precisa de um shell, um editor de texto e 10 minutos de seu tempo.
 
-Preparado? Tudo definido? Vamos nessa!</String>
+Tudo pronto? Então, vamos nessa!</String>
   <String Id="ConfirmCancelMessage">Tem certeza de que deseja cancelar?</String>
   <String Id="ExecuteUpgradeRelatedBundleMessage">Versão anterior</String>
   <String Id="HelpHeader">Ajuda de Instalação</String>
