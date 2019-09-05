@@ -12,6 +12,12 @@
 # https://github.com/mono/mono/issues/14854
 -nomethod Microsoft.VisualBasic.Tests.ErrObjectTests.Clear
 
+# Windows-only tests, incorrect platform guards (https://github.com/dotnet/corefx/pull/40365)
+-nomethod Microsoft.VisualBasic.Tests.InteractionTests.SaveSetting
+-nomethod Microsoft.VisualBasic.Tests.InteractionTests.DeleteSetting
+-nomethod Microsoft.VisualBasic.Tests.InteractionTests.GetAllSettings
+-nomethod Microsoft.VisualBasic.Tests.InteractionTests.GetSetting
+
 ####################################################################
 ##  System.CodeDom.Tests
 ####################################################################
@@ -734,12 +740,14 @@
 -nomethod System.Reflection.Context.Tests.CustomReflectionContextTests.MapType_Interface_Throws
 
 ####################################################################
-##  System.Reflection.TypeExtensions.CoreCLR.Tests
+##  System.Reflection.Metadata.Tests
 ####################################################################
 
 # Assertion... Expected true, got false
 # https://github.com/mono/mono/issues/15194
 -nomethod System.Reflection.Tests.MetadataTokenTests.SuccessImpliesNonNilWithCorrectTable
+# Test broken on Mono, added in https://github.com/dotnet/corefx/pull/40581
+-nomethod System.Reflection.Tests.MetadataLoadContextTests.RelocatableAssembly
 
 ####################################################################
 ##  System.Runtime.Loader.DefaultContext.Tests
@@ -978,3 +986,13 @@
 
 # Flaky test
 -nomethod System.Security.Cryptography.Rsa.Tests.RSAKeyFileTests.ReadEncryptedRsa16384
+
+####################################################################
+##  System.Security.Cryptography.Encoding.Tests
+####################################################################
+
+# Broken array copying (https://github.com/mono/mono/issues/16686)
+-nomethod System.Security.Cryptography.Encoding.Tests.OidTests.LookupOidByFriendlyName_Method_InverseCase
+-nomethod System.Security.Cryptography.Encoding.Tests.OidTests.LookupOidByValue_Ctor
+-nomethod System.Security.Cryptography.Encoding.Tests.OidTests.Oid_StringString_NullFriendlyName
+-nomethod System.Security.Cryptography.Encoding.Tests.OidTests.LookupOidByFriendlyName_Ctor
