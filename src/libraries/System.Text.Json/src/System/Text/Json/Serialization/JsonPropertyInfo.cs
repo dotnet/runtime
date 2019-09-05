@@ -114,8 +114,8 @@ namespace System.Text.Json
             // At this point propertyName is valid UTF16, so just call the simple UTF16->UTF8 encoder.
             Name = Encoding.UTF8.GetBytes(NameAsString);
 
-            // Cache the escaped name.
-            EscapedName = JsonEncodedText.Encode(Name);
+            // Cache the escaped property name.
+            EscapedName = JsonEncodedText.Encode(Name, Options.Encoder);
 
             ulong key = JsonClassInfo.GetKey(Name);
             PropertyNameKey = key;

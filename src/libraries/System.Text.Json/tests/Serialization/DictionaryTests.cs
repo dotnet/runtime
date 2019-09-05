@@ -5,6 +5,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Text.Encodings.Web;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -799,13 +800,27 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void UnicodePropertyNames()
         {
+            var options = new JsonSerializerOptions();
+            options.Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
+
             {
-                Dictionary<string, int> obj = JsonSerializer.Deserialize<Dictionary<string, int>>(@"{""A\u0467"":1}");
+                Dictionary<string, int> obj;
+
+                obj = JsonSerializer.Deserialize<Dictionary<string, int>>(@"{""A\u0467"":1}");
                 Assert.Equal(1, obj["A\u0467"]);
 
+                // Specifying encoder on options does not impact deserialize.
+                obj = JsonSerializer.Deserialize<Dictionary<string, int>>(@"{""A\u0467"":1}", options);
+                Assert.Equal(1, obj["A\u0467"]);
+
+                string json;
                 // Verify the name is escaped after serialize.
-                string json = JsonSerializer.Serialize(obj);
+                json = JsonSerializer.Serialize(obj);
                 Assert.Equal(@"{""A\u0467"":1}", json);
+
+                // Verify with encoder.
+                json = JsonSerializer.Serialize(obj, options);
+                Assert.Equal("{\"A\u0467\":1}", json);
             }
 
             {
@@ -830,6 +845,24 @@ namespace System.Text.Json.Serialization.Tests
                 obj = JsonSerializer.Deserialize<Dictionary<string, int>>(json);
                 Assert.Equal(1, obj[longPropertyName]);
             }
+        }
+
+        [Fact]
+        public static void CustomEscapingOnPropertyNameAndValue()
+        {
+            var dict = new Dictionary<string, string>();
+            dict.Add("A\u046701","Value\u0467");
+
+            // Baseline with no escaping.
+            var json = JsonSerializer.Serialize(dict);
+            Assert.Equal("{\"A\\u046701\":\"Value\\u0467\"}", json);
+
+            // Enable escaping.
+            var options = new JsonSerializerOptions();
+            options.Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
+
+            json = JsonSerializer.Serialize(dict, options);
+            Assert.Equal("{\"A\u046701\":\"Value\u0467\"}", json);
         }
 
         [Fact]

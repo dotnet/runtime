@@ -30,7 +30,7 @@ namespace System.Text.Json
                         state.Current.ExtensionDataStatus != ExtensionDataWriteStatus.Writing) // Ignore null extension property (which is a dictionary)
                     {
                         // Write a null object or enumerable.
-                        state.Current.WriteObjectOrArrayStart(ClassType.Dictionary, writer, writeNull: true);
+                        state.Current.WriteObjectOrArrayStart(ClassType.Dictionary, writer, options, writeNull: true);
                     }
 
                     if (state.Current.PopStackOnEndCollection)
@@ -52,7 +52,7 @@ namespace System.Text.Json
 
                 if (state.Current.ExtensionDataStatus != ExtensionDataWriteStatus.Writing)
                 {
-                    state.Current.WriteObjectOrArrayStart(ClassType.Dictionary, writer);
+                    state.Current.WriteObjectOrArrayStart(ClassType.Dictionary, writer, options);
                 }
             }
 
@@ -161,7 +161,7 @@ namespace System.Text.Json
                     }
                 }
 
-                JsonEncodedText escapedKey = JsonEncodedText.Encode(key);
+                JsonEncodedText escapedKey = JsonEncodedText.Encode(key, options.Encoder);
                 writer.WritePropertyName(escapedKey);
                 converter.Write(writer, value, options);
             }
