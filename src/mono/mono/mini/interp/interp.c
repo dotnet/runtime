@@ -3258,7 +3258,6 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 {
 	InterpFrame child_frame;
 	GSList *finally_ips = NULL;
-	const guint16 *endfinally_ip = NULL;
 	const guint16 *ip = NULL;
 	stackval *sp;
 #if DEBUG_INTERP
@@ -5944,12 +5943,12 @@ main_loop:
 			opcode = *ip; // Refetch to avoid register/stack pressure.
 			gboolean const short_offset = opcode == MINT_LEAVE_S || opcode == MINT_LEAVE_S_CHECK;
 			ip += short_offset ? (short)*(ip + 1) : (gint32)READ32 (ip + 1);
-			endfinally_ip = ip;
+			const guint16 *endfinally_ip = ip;
 			GSList *old_list = finally_ips;
 			MonoMethod *method = frame->imethod->method;
 #if DEBUG_INTERP
 			if (tracing)
-				g_print ("* Handle finally IL_%04x\n", endfinally_ip == NULL ? 0 : endfinally_ip - frame->imethod->code);
+				g_print ("* Handle finally IL_%04x\n", endfinally_ip - frame->imethod->code);
 #endif
 			// FIXME Null check for frame->imethod follows deref.
 			if (frame->imethod == NULL || (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
@@ -5958,12 +5957,11 @@ main_loop:
 			}
 			guint32 const ip_offset = frame->ip - frame->imethod->code;
 
-			if (endfinally_ip != NULL)
-				finally_ips = g_slist_prepend (finally_ips, (void *)endfinally_ip);
+			finally_ips = g_slist_prepend (finally_ips, (void *)endfinally_ip);
 
 			for (int i = frame->imethod->num_clauses - 1; i >= 0; i--) {
 				MonoExceptionClause* const clause = &frame->imethod->clauses [i];
-				if (MONO_OFFSET_IN_CLAUSE (clause, ip_offset) && (endfinally_ip == NULL || !(MONO_OFFSET_IN_CLAUSE (clause, endfinally_ip - frame->imethod->code)))) {
+				if (MONO_OFFSET_IN_CLAUSE (clause, ip_offset) && !(MONO_OFFSET_IN_CLAUSE (clause, endfinally_ip - frame->imethod->code))) {
 					if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY) {
 						ip = frame->imethod->code + clause->handler_offset;
 						finally_ips = g_slist_prepend (finally_ips, (gpointer) ip);
@@ -5974,8 +5972,6 @@ main_loop:
 					}
 				}
 			}
-
-			endfinally_ip = NULL;
 
 			if (old_list != finally_ips && finally_ips) {
 				ip = (const guint16*)finally_ips->data;
