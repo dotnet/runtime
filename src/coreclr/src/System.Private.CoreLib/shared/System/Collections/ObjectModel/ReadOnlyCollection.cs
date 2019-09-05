@@ -26,10 +26,7 @@ namespace System.Collections.ObjectModel
 
         public int Count => list.Count;
 
-        public T this[int index]
-        {
-            get { return list[index]; }
-        }
+        public T this[int index] => list[index];
 
         public bool Contains(T value)
         {
