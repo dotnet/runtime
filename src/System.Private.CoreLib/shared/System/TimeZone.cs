@@ -59,14 +59,12 @@ namespace System
                 {
                     lock (InternalSyncObject)
                     {
-                        if (currentTimeZone == null)
-                        {
-                            currentTimeZone = new CurrentSystemTimeZone();
-                        }
+                        currentTimeZone ??= new CurrentSystemTimeZone();
                         tz = currentTimeZone;
                     }
                 }
-                return (tz);
+
+                return tz;
             }
         }
 

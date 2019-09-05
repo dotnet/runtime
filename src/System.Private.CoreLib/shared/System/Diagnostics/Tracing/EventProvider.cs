@@ -434,8 +434,7 @@ namespace System.Diagnostics.Tracing
             if (val > 1)
                 return;
 
-            if (sessionList == null)
-                sessionList = new List<SessionInfo>(8);
+            sessionList ??= new List<SessionInfo>(8);
 
             if (val == 1)
             {

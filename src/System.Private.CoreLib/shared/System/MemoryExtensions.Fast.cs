@@ -227,8 +227,7 @@ namespace System
             if (source.Overlaps(destination))
                 throw new InvalidOperationException(SR.InvalidOperation_SpanOverlappedOperation);
 
-            if (culture == null)
-                culture = CultureInfo.CurrentCulture;
+            culture ??= CultureInfo.CurrentCulture;
 
             // Assuming that changing case does not affect length
             if (destination.Length < source.Length)
@@ -280,8 +279,7 @@ namespace System
             if (source.Overlaps(destination))
                 throw new InvalidOperationException(SR.InvalidOperation_SpanOverlappedOperation);
 
-            if (culture == null)
-                culture = CultureInfo.CurrentCulture;
+            culture ??= CultureInfo.CurrentCulture;
 
             // Assuming that changing case does not affect length
             if (destination.Length < source.Length)

@@ -877,16 +877,7 @@ namespace System.Reflection.Emit
                 module, m_method.Name, (byte[])m_scope[m_methodSignature]!, new DynamicResolver(this));
         }
 
-        internal byte[] LocalSignature
-        {
-            get
-            {
-                if (m_localSignature == null)
-                    m_localSignature = SignatureHelper.GetLocalVarSigHelper().InternalGetSignatureArray();
-
-                return m_localSignature;
-            }
-        }
+        internal byte[] LocalSignature => m_localSignature ??= SignatureHelper.GetLocalVarSigHelper().InternalGetSignatureArray();
         internal byte[] Exceptions => m_exceptions;
         internal byte[] Code => m_code;
         internal int MaxStackSize => m_maxStackSize;

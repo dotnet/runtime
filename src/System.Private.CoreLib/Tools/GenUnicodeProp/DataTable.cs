@@ -67,8 +67,10 @@ namespace GenUnicodeProp
             var level3RowData = new byte[level3block];
             var level2RowData = new ushort[level2block];
 
-            if (cutOff && level1Index == null)
-                level1Index = new List<byte>();
+            if (cutOff)
+            {
+                level1Index ??= new List<byte>();
+            }
 
             // Process plan 0 ~ 16.
             var ch = 0u;

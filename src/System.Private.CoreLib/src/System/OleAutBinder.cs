@@ -20,8 +20,7 @@ namespace System
         public override object ChangeType(object value, Type type, CultureInfo? cultureInfo)
         {
             Variant myValue = new Variant(value);
-            if (cultureInfo == null)
-                cultureInfo = CultureInfo.CurrentCulture;
+            cultureInfo ??= CultureInfo.CurrentCulture;
 
 #if DISPLAY_DEBUG_INFO
             Console.WriteLine("In OleAutBinder::ChangeType converting variant of type: {0} to type: {1}", myValue.VariantType, type.Name);

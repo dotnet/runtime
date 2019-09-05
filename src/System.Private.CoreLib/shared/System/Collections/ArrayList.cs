@@ -811,8 +811,7 @@ namespace System.Collections
                 if (Count - index < count)
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
 
-                if (comparer == null)
-                    comparer = Comparer.Default;
+                comparer ??= Comparer.Default;
 
                 int lo = index;
                 int hi = index + count - 1;

@@ -488,10 +488,7 @@ namespace System
                                 // we're returning directories.
                                 if (isDir)
                                 {
-                                    if (toExplore == null)
-                                    {
-                                        toExplore = new List<string>();
-                                    }
+                                    toExplore ??= new List<string>();
                                     toExplore.Add(fullPath);
                                 }
                                 else if (condition(fullPath))

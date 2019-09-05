@@ -115,16 +115,7 @@ namespace System.Reflection
 
         #region MemberInfo Overrides
         public override MemberTypes MemberType => MemberTypes.Event;
-        public override string Name
-        {
-            get
-            {
-                if (m_name == null)
-                    m_name = new MdUtf8String(m_utf8name).ToString();
-
-                return m_name;
-            }
-        }
+        public override string Name => m_name ??= new MdUtf8String(m_utf8name).ToString();
         public override Type? DeclaringType => m_declaringType;
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => HasSameMetadataDefinitionAsCore<RuntimeEventInfo>(other);
         public override Type? ReflectedType => ReflectedTypeInternal;

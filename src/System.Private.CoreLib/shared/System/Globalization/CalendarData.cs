@@ -112,23 +112,23 @@ namespace System.Globalization
 
                 // Something failed, try invariant for missing parts
                 // This is really not good, but we don't want the callers to crash.
-                if (this.sNativeName == null) this.sNativeName = string.Empty;           // Calendar Name for the locale.
+                this.sNativeName ??= string.Empty;           // Calendar Name for the locale.
 
                 // Formats
-                if (this.saShortDates == null) this.saShortDates = Invariant.saShortDates; // Short Data format, default first
-                if (this.saYearMonths == null) this.saYearMonths = Invariant.saYearMonths; // Year/Month Data format, default first
-                if (this.saLongDates == null) this.saLongDates = Invariant.saLongDates;  // Long Data format, default first
-                if (this.sMonthDay == null) this.sMonthDay = Invariant.sMonthDay;    // Month/Day format
+                this.saShortDates ??= Invariant.saShortDates; // Short Data format, default first
+                this.saYearMonths ??= Invariant.saYearMonths; // Year/Month Data format, default first
+                this.saLongDates ??= Invariant.saLongDates;  // Long Data format, default first
+                this.sMonthDay ??= Invariant.sMonthDay;    // Month/Day format
 
                 // Calendar Parts Names
-                if (this.saEraNames == null) this.saEraNames = Invariant.saEraNames;              // Names of Eras
-                if (this.saAbbrevEraNames == null) this.saAbbrevEraNames = Invariant.saAbbrevEraNames;        // Abbreviated Era Names
-                if (this.saAbbrevEnglishEraNames == null) this.saAbbrevEnglishEraNames = Invariant.saAbbrevEnglishEraNames; // Abbreviated Era Names in English
-                if (this.saDayNames == null) this.saDayNames = Invariant.saDayNames;              // Day Names, null to use locale data, starts on Sunday
-                if (this.saAbbrevDayNames == null) this.saAbbrevDayNames = Invariant.saAbbrevDayNames;        // Abbrev Day Names, null to use locale data, starts on Sunday
-                if (this.saSuperShortDayNames == null) this.saSuperShortDayNames = Invariant.saSuperShortDayNames;    // Super short Day of week names
-                if (this.saMonthNames == null) this.saMonthNames = Invariant.saMonthNames;            // Month Names (13)
-                if (this.saAbbrevMonthNames == null) this.saAbbrevMonthNames = Invariant.saAbbrevMonthNames;      // Abbrev Month Names (13)
+                this.saEraNames ??= Invariant.saEraNames;              // Names of Eras
+                this.saAbbrevEraNames ??= Invariant.saAbbrevEraNames;        // Abbreviated Era Names
+                this.saAbbrevEnglishEraNames ??= Invariant.saAbbrevEnglishEraNames; // Abbreviated Era Names in English
+                this.saDayNames ??= Invariant.saDayNames;              // Day Names, null to use locale data, starts on Sunday
+                this.saAbbrevDayNames ??= Invariant.saAbbrevDayNames;        // Abbrev Day Names, null to use locale data, starts on Sunday
+                this.saSuperShortDayNames ??= Invariant.saSuperShortDayNames;    // Super short Day of week names
+                this.saMonthNames ??= Invariant.saMonthNames;            // Month Names (13)
+                this.saAbbrevMonthNames ??= Invariant.saAbbrevMonthNames;      // Abbrev Month Names (13)
                 // Genitive and Leap names can follow the fallback below
             }
 
