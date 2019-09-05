@@ -78,8 +78,7 @@ namespace System.Reflection
 
                 if (arg == Type.Missing)
                 {
-                    if (p == null)
-                        p = GetParametersNoCopy();
+                    p ??= GetParametersNoCopy();
                     if (p[i].DefaultValue == System.DBNull.Value)
                         throw new ArgumentException(SR.Arg_VarMissNull, nameof(parameters));
                     arg = p[i].DefaultValue!;

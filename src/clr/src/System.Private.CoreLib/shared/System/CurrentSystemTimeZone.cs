@@ -136,14 +136,12 @@ namespace System
 
         private static DaylightTime CreateDaylightChanges(int year)
         {
-            DaylightTime? currentDaylightChanges = null;
+            DateTime start = DateTime.MinValue;
+            DateTime end = DateTime.MinValue;
+            TimeSpan delta = TimeSpan.Zero;
 
             if (TimeZoneInfo.Local.SupportsDaylightSavingTime)
             {
-                DateTime start;
-                DateTime end;
-                TimeSpan delta;
-
                 foreach (TimeZoneInfo.AdjustmentRule rule in TimeZoneInfo.Local.GetAdjustmentRules())
                 {
                     if (rule.DateStart.Year <= year && rule.DateEnd.Year >= year && rule.DaylightDelta != TimeSpan.Zero)
@@ -151,19 +149,12 @@ namespace System
                         start = TimeZoneInfo.TransitionTimeToDateTime(year, rule.DaylightTransitionStart);
                         end = TimeZoneInfo.TransitionTimeToDateTime(year, rule.DaylightTransitionEnd);
                         delta = rule.DaylightDelta;
-
-                        currentDaylightChanges = new DaylightTime(start, end, delta);
                         break;
                     }
                 }
             }
 
-            if (currentDaylightChanges == null)
-            {
-                currentDaylightChanges = new DaylightTime(DateTime.MinValue, DateTime.MinValue, TimeSpan.Zero);
-            }
-
-            return currentDaylightChanges;
+            return new DaylightTime(start, end, delta);
         }
 
         public override TimeSpan GetUtcOffset(DateTime time)

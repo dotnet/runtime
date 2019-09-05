@@ -33,10 +33,7 @@ namespace System.Threading
             Debug.Assert(s_scheduledTimers == null);
 
             var timers = new List<TimerQueue>(Instances.Length);
-            if (s_scheduledTimersToFire == null)
-            {
-                s_scheduledTimersToFire = new List<TimerQueue>(Instances.Length);
-            }
+            s_scheduledTimersToFire ??= new List<TimerQueue>(Instances.Length);
 
             Thread timerThread = new Thread(TimerThread);
             timerThread.IsBackground = true;

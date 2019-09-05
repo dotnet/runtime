@@ -82,10 +82,7 @@ namespace System
                 members = GetMember(defaultMemberName);
             }
 
-            if (members == null)
-                members = Array.Empty<MemberInfo>();
-
-            return members;
+            return members ?? Array.Empty<MemberInfo>();
         }
 
         public override Type GetElementType() => RuntimeTypeHandle.GetElementType(this);

@@ -226,7 +226,7 @@ namespace System.Threading.Tasks
 
             // Store the faulted task's exceptions
             CompletionState cs = EnsureCompletionStateInitialized();
-            if (cs.m_exceptions == null) cs.m_exceptions = new List<Exception>();
+            cs.m_exceptions ??= new List<Exception>();
             cs.m_exceptions.AddRange(faultedTask.Exception.InnerExceptions);
 
             // Now that we're doomed, request completion
@@ -339,7 +339,7 @@ namespace System.Threading.Tasks
         {
             if (TaskScheduler.Default == m_underlyingTaskScheduler)
             {
-                IThreadPoolWorkItem workItem = m_threadPoolWorkItem ?? (m_threadPoolWorkItem = new SchedulerWorkItem(this));
+                IThreadPoolWorkItem workItem = m_threadPoolWorkItem ??= new SchedulerWorkItem(this);
                 ThreadPool.UnsafeQueueUserWorkItemInternal(workItem, preferLocal: !fairly);
                 return true;
             }

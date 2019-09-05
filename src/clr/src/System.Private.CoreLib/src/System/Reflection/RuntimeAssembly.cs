@@ -604,16 +604,10 @@ namespace System.Reflection
                                                        Version? version,
                                                        bool throwOnFileNotFound)
         {
-            AssemblyName an = new AssemblyName();
-
+            var an = new AssemblyName();
             an.SetPublicKey(GetPublicKey());
             an.Flags = GetFlags() | AssemblyNameFlags.PublicKey;
-
-            if (version == null)
-                an.Version = GetVersion();
-            else
-                an.Version = version;
-
+            an.Version = version ?? GetVersion();
             an.CultureInfo = culture;
             an.Name = GetSimpleName() + ".resources";
 

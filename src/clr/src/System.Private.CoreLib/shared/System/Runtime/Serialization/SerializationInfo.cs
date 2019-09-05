@@ -34,15 +34,8 @@ namespace System.Runtime.Serialization
         [ThreadStatic]
         private static DeserializationTracker? t_deserializationTracker;
 
-        private static DeserializationTracker GetThreadDeserializationTracker()
-        {
-            if (t_deserializationTracker == null)
-            {
-                t_deserializationTracker = new DeserializationTracker();
-            }
-
-            return t_deserializationTracker;
-        }
+        private static DeserializationTracker GetThreadDeserializationTracker() =>
+            t_deserializationTracker ??= new DeserializationTracker();
 #endif // !CORECLR
 
         // Returns true if deserialization is currently in progress

@@ -305,13 +305,7 @@ namespace System.Reflection.Emit
             m_exceptions = null;
         }
 
-        internal override Type[] GetParameterTypes()
-        {
-            if (m_parameterTypes == null)
-                m_parameterTypes = Array.Empty<Type>();
-
-            return m_parameterTypes;
-        }
+        internal override Type[] GetParameterTypes() => m_parameterTypes ??= Array.Empty<Type>();
 
         internal static Type? GetMethodBaseReturnType(MethodBase? method)
         {
@@ -349,8 +343,7 @@ namespace System.Reflection.Emit
 
         internal SignatureHelper GetMethodSignature()
         {
-            if (m_parameterTypes == null)
-                m_parameterTypes = Array.Empty<Type>();
+            m_parameterTypes ??= Array.Empty<Type>();
 
             m_signature = SignatureHelper.GetMethodSigHelper(m_module, m_callingConvention, m_inst != null ? m_inst.Length : 0,
                 m_returnType, m_returnTypeRequiredCustomModifiers, m_returnTypeOptionalCustomModifiers,
@@ -779,9 +772,7 @@ namespace System.Reflection.Emit
             ThrowIfGeneric();
             ThrowIfShouldNotHaveBody();
 
-            if (m_ilGenerator == null)
-                m_ilGenerator = new ILGenerator(this);
-            return m_ilGenerator;
+            return m_ilGenerator ??= new ILGenerator(this);
         }
 
         public ILGenerator GetILGenerator(int size)
@@ -789,9 +780,7 @@ namespace System.Reflection.Emit
             ThrowIfGeneric();
             ThrowIfShouldNotHaveBody();
 
-            if (m_ilGenerator == null)
-                m_ilGenerator = new ILGenerator(this, size);
-            return m_ilGenerator;
+            return m_ilGenerator ??= new ILGenerator(this, size);
         }
 
         private void ThrowIfShouldNotHaveBody()

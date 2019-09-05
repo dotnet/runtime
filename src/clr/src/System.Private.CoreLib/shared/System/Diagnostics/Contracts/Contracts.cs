@@ -640,8 +640,7 @@ namespace System.Diagnostics.Contracts
                 }
             }
 
-            if (probablyNotRewritten == null)
-                probablyNotRewritten = thisAssembly;
+            probablyNotRewritten ??= thisAssembly;
             string? simpleName = probablyNotRewritten.GetName().Name;
             ContractHelper.TriggerFailure(kind, SR.Format(SR.MustUseCCRewrite, contractKind, simpleName), null, null, null);
         }

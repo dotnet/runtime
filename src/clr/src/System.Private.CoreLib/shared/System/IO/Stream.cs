@@ -645,8 +645,7 @@ namespace System.IO
                 {
                     _context = null;
 
-                    ContextCallback? invokeAsyncCallback = s_invokeAsyncCallback;
-                    if (invokeAsyncCallback == null) s_invokeAsyncCallback = invokeAsyncCallback = InvokeAsyncCallback; // benign race condition
+                    ContextCallback? invokeAsyncCallback = s_invokeAsyncCallback ??= InvokeAsyncCallback;
 
                     ExecutionContext.RunInternal(context, invokeAsyncCallback, this);
                 }

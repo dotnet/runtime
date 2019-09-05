@@ -1434,14 +1434,8 @@ namespace System
             #endregion
 
             #region Private Members
-            private string ConstructName([NotNull] ref string? name, TypeNameFormatFlags formatFlags)
-            {
-                if (name == null)
-                {
-                    name = new RuntimeTypeHandle(m_runtimeType).ConstructName(formatFlags);
-                }
-                return name;
-            }
+            private string ConstructName([NotNull] ref string? name, TypeNameFormatFlags formatFlags) =>
+                name ??= new RuntimeTypeHandle(m_runtimeType).ConstructName(formatFlags);
 
             private T[] GetMemberList<T>(ref MemberInfoCache<T>? m_cache, MemberListType listType, string? name, CacheType cacheType)
                 where T : MemberInfo
@@ -1459,8 +1453,7 @@ namespace System
                 {
                     MemberInfoCache<T> newCache = new MemberInfoCache<T>(this);
                     existingCache = Interlocked.CompareExchange(ref m_cache, newCache, null);
-                    if (existingCache == null)
-                        existingCache = newCache;
+                    existingCache ??= newCache;
                 }
 
                 return existingCache;
@@ -1581,10 +1574,7 @@ namespace System
                 return m_defaultMemberName;
             }
 
-            internal object[] GetEmptyArray()
-            {
-                return _emptyArray ?? (_emptyArray = (object[])Array.CreateInstance(m_runtimeType, 0));
-            }
+            internal object[] GetEmptyArray() => _emptyArray ??= (object[])Array.CreateInstance(m_runtimeType, 0);
             #endregion
 
             #region Caches Accessors
@@ -1749,8 +1739,7 @@ namespace System
 
             RuntimeType[]? methodInstantiation = null;
 
-            if (reflectedType == null)
-                reflectedType = declaredType as RuntimeType;
+            reflectedType ??= declaredType as RuntimeType;
 
             if (reflectedType != declaredType && !reflectedType.IsSubclassOf(declaredType))
             {
@@ -2775,9 +2764,7 @@ namespace System
                 }
             }
 
-            if (binder == null)
-                binder = DefaultBinder;
-
+            binder ??= DefaultBinder;
             return binder.SelectMethod(bindingAttr, candidates.ToArray(), types, modifiers) as MethodInfo;
         }
 
@@ -2805,9 +2792,7 @@ namespace System
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
                 return System.DefaultBinder.ExactBinding(candidates.ToArray(), types, modifiers) as ConstructorInfo;
 
-            if (binder == null)
-                binder = DefaultBinder;
-
+            binder ??= DefaultBinder;
             return binder.SelectMethod(bindingAttr, candidates.ToArray(), types, modifiers) as ConstructorInfo;
         }
 
@@ -2845,9 +2830,7 @@ namespace System
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
                 return System.DefaultBinder.ExactPropertyBinding(candidates.ToArray(), returnType, types, modifiers);
 
-            if (binder == null)
-                binder = DefaultBinder;
-
+            binder ??= DefaultBinder;
             return binder.SelectProperty(bindingAttr, candidates.ToArray(), returnType, types, modifiers);
         }
 
@@ -3243,11 +3226,7 @@ namespace System
         public override Type[] GetGenericArguments()
         {
             Type[] types = GetRootElementType().GetTypeHandleInternal().GetInstantiationPublic();
-
-            if (types == null)
-                types = Array.Empty<Type>();
-
-            return types;
+            return types ?? Array.Empty<Type>();
         }
 
         public override Type MakeGenericType(Type[] instantiation)
@@ -3332,11 +3311,7 @@ namespace System
                 throw new InvalidOperationException(SR.Arg_NotGenericParameter);
 
             Type[] constraints = new RuntimeTypeHandle(this).GetConstraints();
-
-            if (constraints == null)
-                constraints = Array.Empty<Type>();
-
-            return constraints;
+            return constraints ?? Array.Empty<Type>();
         }
         #endregion
 
@@ -3564,9 +3539,7 @@ namespace System
 
             int argCnt = (providedArgs != null) ? providedArgs.Length : 0;
 
-            if (binder == null)
-                binder = DefaultBinder;
-
+            binder ??= DefaultBinder;
             bool bDefaultBinder = (binder == DefaultBinder);
 
             // Delegate to Activator.CreateInstance
@@ -3826,15 +3799,9 @@ namespace System
                     return finalist.Invoke(target, bindingFlags, binder, providedArgs, culture);
                 }
 
-                if (finalists == null)
-                    finalists = new MethodInfo[] { finalist };
-
-                if (providedArgs == null)
-                    providedArgs = Array.Empty<object>();
-
+                finalists ??= new MethodInfo[] { finalist };
+                providedArgs ??= Array.Empty<object>();
                 object? state = null;
-
-
                 MethodBase? invokeMethod = null;
 
                 try { invokeMethod = binder.BindToMethod(bindingFlags, finalists, ref providedArgs!, modifiers, culture, namedParams, out state); }
@@ -3897,12 +3864,10 @@ namespace System
 
             object server;
 
-            if (args is null)
-                args = Array.Empty<object>();
+            args ??= Array.Empty<object>();
 
             // Without a binder we need to do use the default binder...
-            if (binder is null)
-                binder = DefaultBinder;
+            binder ??= DefaultBinder;
 
             // deal with the __COMObject case first. It is very special because from a reflection point of view it has no ctors
             // so a call to GetMemberCons would fail
@@ -4003,7 +3968,7 @@ namespace System
                     _ctorAttributes = RuntimeMethodHandle.GetAttributes(_hCtorMethodHandle);
 
                     // The default ctor path is optimized for reference types only
-                    ConstructorInfo delegateCtorInfo = s_delegateCtorInfo ?? (s_delegateCtorInfo = typeof(CtorDelegate).GetConstructor(new Type[] { typeof(object), typeof(IntPtr) })!);
+                    ConstructorInfo delegateCtorInfo = s_delegateCtorInfo ??= typeof(CtorDelegate).GetConstructor(new Type[] { typeof(object), typeof(IntPtr) })!;
 
                     // No synchronization needed here. In the worst case we create extra garbage
                     _ctor = (CtorDelegate)delegateCtorInfo.Invoke(new object?[] { null, RuntimeMethodHandle.GetFunctionPointer(_hCtorMethodHandle) });
@@ -4297,10 +4262,7 @@ namespace System
         }
 
         private static OleAutBinder? s_ForwardCallBinder;
-        private OleAutBinder ForwardCallBinder
-        {
-            get => s_ForwardCallBinder ?? (s_ForwardCallBinder = new OleAutBinder());
-        }
+        private OleAutBinder ForwardCallBinder => s_ForwardCallBinder ??= new OleAutBinder();
 
         [Flags]
         private enum DispatchWrapperType : int

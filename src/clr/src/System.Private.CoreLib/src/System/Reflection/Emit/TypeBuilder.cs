@@ -697,9 +697,7 @@ namespace System.Reflection.Emit
 
         private void SetGenParamCustomAttributeNoLock(CustAttr ca)
         {
-            if (m_ca == null)
-                m_ca = new List<TypeBuilder.CustAttr>();
-
+            m_ca ??= new List<TypeBuilder.CustAttr>();
             m_ca.Add(ca);
         }
         #endregion
@@ -752,16 +750,7 @@ namespace System.Reflection.Emit
 
         public override RuntimeTypeHandle TypeHandle => throw new NotSupportedException(SR.NotSupported_DynamicModule);
 
-        public override string? FullName
-        {
-            get
-            {
-                if (m_strFullQualName == null)
-                    m_strFullQualName = TypeNameBuilder.ToString(this, TypeNameBuilder.Format.FullName);
-
-                return m_strFullQualName;
-            }
-        }
+        public override string? FullName => m_strFullQualName ??= TypeNameBuilder.ToString(this, TypeNameBuilder.Format.FullName);
 
         public override string? Namespace => m_strNameSpace;
 
@@ -1892,8 +1881,7 @@ namespace System.Reflection.Emit
             if (IsCreated())
                 return m_bakedRuntimeType;
 
-            if (m_typeInterfaces == null)
-                m_typeInterfaces = new List<Type>();
+            m_typeInterfaces ??= new List<Type>();
 
             int[] interfaceTokens = new int[m_typeInterfaces.Count];
             for (int i = 0; i < m_typeInterfaces.Count; i++)

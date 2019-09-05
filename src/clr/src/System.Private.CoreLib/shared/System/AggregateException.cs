@@ -339,11 +339,7 @@ namespace System
                 // exceptions (to be rethrown later) and add it.
                 if (!predicate(m_innerExceptions[i]))
                 {
-                    if (unhandledExceptions == null)
-                    {
-                        unhandledExceptions = new List<Exception>();
-                    }
-
+                    unhandledExceptions ??= new List<Exception>();
                     unhandledExceptions.Add(m_innerExceptions[i]);
                 }
             }

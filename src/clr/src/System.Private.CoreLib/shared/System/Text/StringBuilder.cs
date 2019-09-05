@@ -1781,9 +1781,9 @@ namespace System.Text
                     // Otherwise, fallback to trying IFormattable or calling ToString.
                     if (arg is IFormattable formattableArg)
                     {
-                        if (itemFormatSpan.Length != 0 && itemFormat == null)
+                        if (itemFormatSpan.Length != 0)
                         {
-                            itemFormat = new string(itemFormatSpan);
+                            itemFormat ??= new string(itemFormatSpan);
                         }
                         s = formattableArg.ToString(itemFormat, provider);
                     }

@@ -96,8 +96,8 @@ namespace System
                     string message = $"Infinite recursion during resource lookup within {System.CoreLib.Name}.  This may be a bug in {System.CoreLib.Name}, or potentially in certain extensibility points such as assembly resolve events or CultureInfo names.  Resource name: {key}";
                     Environment.FailFast(message);
                 }
-                if (_currentlyLoading == null)
-                    _currentlyLoading = new List<string>();
+
+                _currentlyLoading ??= new List<string>();
 
                 // Call class constructors preemptively, so that we cannot get into an infinite
                 // loop constructing a TypeInitializationException.  If this were omitted,

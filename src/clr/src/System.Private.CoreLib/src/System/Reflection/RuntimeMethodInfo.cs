@@ -95,39 +95,18 @@ namespace System.Reflection
 
         private RuntimeType ReflectedTypeInternal => m_reflectedTypeCache.GetRuntimeType();
 
-        private ParameterInfo[] FetchNonReturnParameters()
-        {
-            if (m_parameters == null)
-                m_parameters = RuntimeParameterInfo.GetParameters(this, this, Signature);
+        private ParameterInfo[] FetchNonReturnParameters() =>
+            m_parameters ??= RuntimeParameterInfo.GetParameters(this, this, Signature);
 
-            return m_parameters;
-        }
-
-        private ParameterInfo FetchReturnParameter()
-        {
-            if (m_returnParameter == null)
-                m_returnParameter = RuntimeParameterInfo.GetReturnParameter(this, this, Signature);
-
-            return m_returnParameter;
-        }
+        private ParameterInfo FetchReturnParameter() =>
+            m_returnParameter ??= RuntimeParameterInfo.GetReturnParameter(this, this, Signature);
         #endregion
 
         #region Internal Members
-        internal override bool CacheEquals(object? o)
-        {
-            return o is RuntimeMethodInfo m && m.m_handle == m_handle;
-        }
+        internal override bool CacheEquals(object? o) =>
+            o is RuntimeMethodInfo m && m.m_handle == m_handle;
 
-        internal Signature Signature
-        {
-            get
-            {
-                if (m_signature == null)
-                    m_signature = new Signature(this, m_declaringType);
-
-                return m_signature;
-            }
-        }
+        internal Signature Signature => m_signature ??= new Signature(this, m_declaringType);
 
         internal BindingFlags BindingFlags => m_bindingFlags;
 
@@ -273,16 +252,7 @@ namespace System.Reflection
         #endregion
 
         #region MemberInfo Overrides
-        public override string Name
-        {
-            get
-            {
-                if (m_name == null)
-                    m_name = RuntimeMethodHandle.GetName(this);
-
-                return m_name;
-            }
-        }
+        public override string Name => m_name ??= RuntimeMethodHandle.GetName(this);
 
         public override Type? DeclaringType
         {

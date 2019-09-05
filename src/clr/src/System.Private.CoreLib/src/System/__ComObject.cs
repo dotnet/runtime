@@ -77,10 +77,7 @@ namespace System
             lock (this)
             {
                 // If the map hasn't been allocated yet, allocate it.
-                if (m_ObjectToDataMap == null)
-                {
-                    m_ObjectToDataMap = new Hashtable();
-                }
+                m_ObjectToDataMap ??= new Hashtable();
 
                 // If there isn't already data in the map then add it.
                 if (m_ObjectToDataMap[key] == null)

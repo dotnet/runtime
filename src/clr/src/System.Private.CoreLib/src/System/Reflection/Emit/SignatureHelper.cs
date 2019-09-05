@@ -87,8 +87,7 @@ namespace System.Reflection.Emit
             SignatureHelper sigHelp;
             MdSigCallingConvention intCall;
 
-            if (returnType == null)
-                returnType = typeof(void);
+            returnType ??= typeof(void);
 
             if (unmanagedCallConv == CallingConvention.Cdecl)
             {
