@@ -18,19 +18,14 @@ namespace System.Net.Security.Tests
     {
         private readonly ITestOutputHelper _output;
         private readonly X509Certificate2 _clientCertificate;
-        private readonly X509Certificate2Collection _clientCertificateCollection;
         private readonly X509Certificate2 _serverCertificate;
-        private readonly X509Certificate2Collection _serverCertificateCollection;
         private bool _clientCertificateRemovedByFilter;
 
         public CertificateValidationClientServer(ITestOutputHelper output)
         {
             _output = output;
 
-            _serverCertificateCollection = Configuration.Certificates.GetServerCertificateCollection();
             _serverCertificate = Configuration.Certificates.GetServerCertificate();
-
-            _clientCertificateCollection = Configuration.Certificates.GetClientCertificateCollection();
             _clientCertificate = Configuration.Certificates.GetClientCertificate();
         }
 
@@ -38,8 +33,6 @@ namespace System.Net.Security.Tests
         {
             _serverCertificate.Dispose();
             _clientCertificate.Dispose();
-            foreach (X509Certificate2 cert in _serverCertificateCollection) cert.Dispose();
-            foreach (X509Certificate2 cert in _clientCertificateCollection) cert.Dispose();
         }
 
         [Theory]
