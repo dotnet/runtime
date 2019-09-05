@@ -9,7 +9,7 @@
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="ExceptionThrown_V1.cs" />
+    <Compile Include="GCEvents.cs" />
     <ProjectReference Include="../common/common.csproj" />
   </ItemGroup>
 </Project>

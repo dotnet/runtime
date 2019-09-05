@@ -9,7 +9,7 @@ using Microsoft.Diagnostics.Tools.RuntimeClient;
 using Microsoft.Diagnostics.Tracing;
 using Tracing.Tests.Common;
 
-namespace Tracing.Tests.GCStartStop
+namespace Tracing.Tests.GCFinalizers
 {
     public class ProviderValidation
     {
@@ -18,6 +18,7 @@ namespace Tracing.Tests.GCStartStop
             var providers = new List<Provider>()
             {
                 new Provider("Microsoft-DotNETCore-SampleProfiler"),
+                //GCKeyword (0x1): 0b1
                 new Provider("Microsoft-Windows-DotNETRuntime", 0b1, EventLevel.Informational)
             };
             
@@ -37,24 +38,27 @@ namespace Tracing.Tests.GCStartStop
             for (int i = 0; i < 1000; i++)
             {
                 if (i % 100 == 0)
-                    Logger.logger.Log($"Called GC.Collect() {i} times...");
+                    Logger.logger.Log($"Called GC.WaitForPendingFinalizers() {i} times...");
                 ProviderValidation providerValidation = new ProviderValidation();
                 providerValidation = null;
-                GC.Collect();
+                GC.WaitForPendingFinalizers();
             }
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
         };
 
         private static Func<EventPipeEventSource, Func<int>> _DoesTraceContainEvents = (source) => 
         {
-            int GCStartEvents = 0;
-            int GCEndEvents = 0;
-            source.Clr.GCStart += (eventData) => GCStartEvents += 1;
-            source.Clr.GCStop += (eventData) => GCEndEvents += 1;
+            int GCFinalizersEndEvents = 0;
+            source.Clr.GCFinalizersStop += (eventData) => GCFinalizersEndEvents += 1;
+            int GCFinalizersStartEvents = 0;
+            source.Clr.GCFinalizersStart += (eventData) => GCFinalizersStartEvents += 1;
             return () => {
                 Logger.logger.Log("Event counts validation");
-                Logger.logger.Log("GCStartEvents: " + GCStartEvents);
-                Logger.logger.Log("GCEndEvents: " + GCEndEvents);
-                return GCStartEvents >= 1000 && GCEndEvents >= 1000 && GCStartEvents == GCEndEvents ? 100 : -1;
+                Logger.logger.Log("GCFinalizersEndEvents: " + GCFinalizersEndEvents);
+                Logger.logger.Log("GCFinalizersStartEvents: " + GCFinalizersStartEvents);
+                return GCFinalizersEndEvents >= 1000 && GCFinalizersStartEvents >= 1000 ? 100 : -1;
             };
         };
     }
