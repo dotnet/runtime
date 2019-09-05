@@ -36,8 +36,8 @@ namespace System.IO.Compression.Tests
         [Fact]
         public void GetMaxCompressedSize_Basic()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("length", () => BrotliEncoder.GetMaxCompressedLength(-1));
-            Assert.Throws<ArgumentOutOfRangeException>("length", () => BrotliEncoder.GetMaxCompressedLength(2147483133));
+            Assert.Throws<ArgumentOutOfRangeException>("inputSize", () => BrotliEncoder.GetMaxCompressedLength(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("inputSize", () => BrotliEncoder.GetMaxCompressedLength(2147483133));
             Assert.InRange(BrotliEncoder.GetMaxCompressedLength(2147483132), 0, int.MaxValue);
             Assert.Equal(1, BrotliEncoder.GetMaxCompressedLength(0));
         }
