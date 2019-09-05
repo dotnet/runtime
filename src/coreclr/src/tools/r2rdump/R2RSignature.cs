@@ -502,6 +502,11 @@ namespace R2RDump
             return (CorElementType)(ReadByte() & 0x7F);
         }
 
+        public CorElementType PeekElementType()
+        {
+            return (CorElementType)(_image[_offset] & 0x7F);
+        }
+
         /// <summary>
         /// Decode a R2R import signature. The signature starts with the fixup type followed
         /// by custom encoding per fixup type.
@@ -1072,6 +1077,24 @@ namespace R2RDump
                     throw new NotImplementedException();
             }
         }
+
+        public MetadataReader GetMetadataReaderFromModuleOverride()
+        {
+            if (PeekElementType() == CorElementType.ELEMENT_TYPE_MODULE_ZAPSIG)
+            {
+                var currentOffset = _offset;
+
+                ReadElementType();
+                int moduleIndex = (int)ReadUInt();
+                EcmaMetadataReader refAsmReader = _contextReader.OpenReferenceAssembly(moduleIndex);
+
+                _offset = currentOffset;
+
+                return refAsmReader.MetadataReader;
+            }
+            return null;
+        }
+
         private void ParseGenericTypeInstance(StringBuilder builder)
         {
             ParseType(builder);
