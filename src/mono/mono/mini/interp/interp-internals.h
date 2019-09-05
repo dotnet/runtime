@@ -145,20 +145,21 @@ struct _InterpFrame {
 #endif
 	/* exception info */
 	const unsigned short  *ip;
-	MonoException     *ex;
 };
 
 #define frame_locals(frame) (((guchar*)((frame)->stack)) + (frame)->imethod->stack_size + (frame)->imethod->vt_stack_size)
 
 typedef struct {
-	/* Resume state for resuming execution in mixed mode */
-	gboolean       has_resume_state;
+	/* Lets interpreter know it has to resume execution after EH */
+	gboolean has_resume_state;
 	/* Frame to resume execution at */
 	InterpFrame *handler_frame;
 	/* IP to resume execution at */
 	const guint16 *handler_ip;
 	/* Clause that we are resuming to */
 	MonoJitExceptionInfo *handler_ei;
+	/* Exception that is being thrown. Set with rest of resume state */
+	guint32 exc_gchandle;
 } ThreadContext;
 
 typedef struct {
