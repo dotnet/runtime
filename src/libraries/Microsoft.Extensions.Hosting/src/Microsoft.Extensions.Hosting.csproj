@@ -2,14 +2,13 @@
 
   <PropertyGroup>
     <Description>.NET Core hosting and startup infrastructures for applications.</Description>
-    <TargetFrameworks>netstandard2.0;netcoreapp5.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netstandard2.1;netcoreapp5.0</TargetFrameworks>
     <TargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true'">netcoreapp5.0</TargetFrameworks>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageTags>hosting</PackageTags>
     <IsPackable>true</IsPackable>
     <IsShipping>true</IsShipping>
-    <DefineConstants Condition="'$(TargetFramework)' == 'netcoreapp5.0'">$(DefineConstants);DISPOSE_ASYNC</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -25,6 +24,10 @@
     <Reference Include="Microsoft.Extensions.Logging.Debug" />
     <Reference Include="Microsoft.Extensions.Logging.EventSource" />
     <Reference Include="Microsoft.Extensions.Logging.EventLog" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <Reference Include="Microsoft.Bcl.AsyncInterfaces" />
   </ItemGroup>
 
 </Project>
