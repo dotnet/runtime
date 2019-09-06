@@ -45,7 +45,7 @@ PEImageLayout* PEImageLayout::Load(PEImage* pOwner, BOOL bNTSafeLoad, BOOL bThro
     STANDARD_VM_CONTRACT;
 
 #if defined(CROSSGEN_COMPILE) || defined(FEATURE_PAL)
-    return PEImageLayout::Map(pOwner->GetFileHandle(), pOwner);
+    return PEImageLayout::Map(pOwner);
 #else
     PEImageLayoutHolder pAlloc(new LoadedImageLayout(pOwner,bNTSafeLoad,bThrowOnError));
     if (pAlloc->GetBase()==NULL)
@@ -54,13 +54,13 @@ PEImageLayout* PEImageLayout::Load(PEImage* pOwner, BOOL bNTSafeLoad, BOOL bThro
 #endif
 }
 
-PEImageLayout* PEImageLayout::LoadFlat(HANDLE hFile,PEImage* pOwner)
+PEImageLayout* PEImageLayout::LoadFlat(PEImage* pOwner)
 {
     STANDARD_VM_CONTRACT;
-    return new FlatImageLayout(hFile,pOwner);
+    return new FlatImageLayout(pOwner);
 }
 
-PEImageLayout* PEImageLayout::Map(HANDLE hFile, PEImage* pOwner)
+PEImageLayout* PEImageLayout::Map(PEImage* pOwner)
 {
     CONTRACT(PEImageLayout*)
     {
@@ -73,11 +73,11 @@ PEImageLayout* PEImageLayout::Map(HANDLE hFile, PEImage* pOwner)
     }
     CONTRACT_END;
 
-    PEImageLayoutHolder pAlloc(new MappedImageLayout(hFile,pOwner));
+    PEImageLayoutHolder pAlloc(new MappedImageLayout(pOwner));
     if (pAlloc->GetBase()==NULL)
     {
         //cross-platform or a bad image
-        PEImageLayoutHolder pFlat(new FlatImageLayout(hFile, pOwner));
+        PEImageLayoutHolder pFlat(new FlatImageLayout(pOwner));
         if (!pFlat->CheckFormat())
             ThrowHR(COR_E_BADIMAGEFORMAT);
 
@@ -410,7 +410,7 @@ ConvertedImageLayout::ConvertedImageLayout(PEImageLayout* source)
 #endif
 }
 
-MappedImageLayout::MappedImageLayout(HANDLE hFile, PEImage* pOwner)
+MappedImageLayout::MappedImageLayout(PEImage* pOwner)
 {
     CONTRACTL
     {
@@ -420,6 +420,8 @@ MappedImageLayout::MappedImageLayout(HANDLE hFile, PEImage* pOwner)
     CONTRACTL_END;
     m_Layout=LAYOUT_MAPPED;
     m_pOwner=pOwner;
+
+    HANDLE hFile = pOwner->GetFileHandle();
 
     // If mapping was requested, try to do SEC_IMAGE mapping
     LOG((LF_LOADER, LL_INFO100, "PEImage: Opening OS mapped %S (hFile %p)\n", (LPCWSTR) GetPath(), hFile));
@@ -591,7 +593,7 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, BOOL bNTSafeLoad, BOOL bTh
 }
 #endif // !CROSSGEN_COMPILE && !FEATURE_PAL
 
-FlatImageLayout::FlatImageLayout(HANDLE hFile, PEImage* pOwner)
+FlatImageLayout::FlatImageLayout(PEImage* pOwner)
 {
     CONTRACTL
     {
@@ -602,6 +604,9 @@ FlatImageLayout::FlatImageLayout(HANDLE hFile, PEImage* pOwner)
     CONTRACTL_END;
     m_Layout=LAYOUT_FLAT;
     m_pOwner=pOwner;
+
+    HANDLE hFile = pOwner->GetFileHandle();
+
     LOG((LF_LOADER, LL_INFO100, "PEImage: Opening flat %S\n", (LPCWSTR) GetPath()));
 
     COUNT_T size = SafeGetFileSize(hFile, NULL);
