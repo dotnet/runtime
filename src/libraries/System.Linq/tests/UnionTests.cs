@@ -414,19 +414,5 @@ namespace System.Linq.Tests
             Assert.Equal(new[] { "A", "a" }, input2.Union(input1, EqualityComparer<string>.Default));
             Assert.Equal(new[] { "A" }, input2.Union(input1, StringComparer.OrdinalIgnoreCase));
         }
-
-        [Fact]
-        public void UnionFollowedBySelectOnEmptyEnumerableInvokesDispose()
-        {
-            var enum1 = new DisposeTrackingEnumerable<int>();
-            var enum2 = new DisposeTrackingEnumerable<int>();
-            Assert.False(enum1.EnumeratorDisposed);
-            Assert.False(enum2.EnumeratorDisposed);
-
-            foreach (int value in enum1.Union(enum2)) { }
-
-            Assert.True(enum1.EnumeratorDisposed);
-            Assert.True(enum2.EnumeratorDisposed);
-        }
     }
 }
