@@ -11,7 +11,6 @@ namespace Microsoft.VisualBasic.Tests
 {
     public class InteractionTests
     {
-        private static readonly bool s_SupportRegistry = !PlatformDetection.IsUap;
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
         public void AppActivate_ProcessId()
@@ -141,7 +140,7 @@ namespace Microsoft.VisualBasic.Tests
         [Fact]
         public void DeleteSetting()
         {
-            if (s_SupportRegistry)
+            if (!PlatformDetection.IsUap)
             {
                 Assert.Throws<ArgumentException>(() => Interaction.DeleteSetting(AppName: "", Section: null, Key: null));
             }
@@ -210,7 +209,7 @@ namespace Microsoft.VisualBasic.Tests
         [Fact]
         public void GetAllSettings()
         {
-            if (s_SupportRegistry)
+            if (!PlatformDetection.IsUap)
             {
                 Assert.Throws<ArgumentException>(() => Interaction.GetAllSettings(AppName: "", Section: ""));
             }
@@ -224,7 +223,7 @@ namespace Microsoft.VisualBasic.Tests
         [Fact]
         public void GetSetting()
         {
-            if (s_SupportRegistry)
+            if (!PlatformDetection.IsUap)
             {
                 Assert.Throws<ArgumentException>(() => Interaction.GetSetting(AppName: "", Section: "", Key: "", Default: ""));
             }
@@ -306,7 +305,7 @@ namespace Microsoft.VisualBasic.Tests
         [Fact]
         public void SaveSetting()
         {
-            if (s_SupportRegistry)
+            if (!PlatformDetection.IsUap)
             {
                 Assert.Throws<ArgumentException>(() => Interaction.SaveSetting(AppName: "", Section: "", Key: "", Setting: ""));
 
