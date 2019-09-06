@@ -212,7 +212,6 @@ namespace System.Threading
                 }
             }
 
-            [SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "Reviewed for thread safety")]
             public bool LocalFindAndPop(object obj)
             {
                 // Fast path: check the tail. If equal, we can skip the lock.
@@ -271,7 +270,6 @@ namespace System.Threading
 
             public object? LocalPop() => m_headIndex < m_tailIndex ? LocalPopCore() : null;
 
-            [SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "Reviewed for thread safety")]
             private object? LocalPopCore()
             {
                 while (true)

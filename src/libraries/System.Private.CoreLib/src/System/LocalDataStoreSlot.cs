@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace System
@@ -16,7 +17,7 @@ namespace System
 
         internal ThreadLocal<object?> Data { get; private set; }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA1821", Justification = "Finalizer preserved for compat, it is suppressed by the constructor.")]
+        [SuppressMessage("Microsoft.Security", "CA1821", Justification = "Finalizer preserved for compat, it is suppressed by the constructor.")]
         ~LocalDataStoreSlot()
         {
         }
