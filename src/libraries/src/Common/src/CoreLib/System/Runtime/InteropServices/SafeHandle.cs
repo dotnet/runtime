@@ -23,7 +23,6 @@ namespace System.Runtime.InteropServices
         //   manipulating _state.
 
         /// <summary>Specifies the handle to be wrapped.</summary>
-        [SuppressMessage("Microsoft.Security", "CA2111:PointersShouldNotBeVisible")]
         protected IntPtr handle;
         /// <summary>Combined ref count and closed/disposed flags (so we can atomically modify them).</summary>
         private volatile int _state;
