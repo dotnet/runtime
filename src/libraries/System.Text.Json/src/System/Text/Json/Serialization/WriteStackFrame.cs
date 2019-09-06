@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
 
@@ -32,7 +33,7 @@ namespace System.Text.Json
         // The current property.
         public bool PropertyEnumeratorActive;
         public ExtensionDataWriteStatus ExtensionDataStatus;
-        public IEnumerator PropertyEnumerator;
+        public Dictionary<string, JsonPropertyInfo>.Enumerator PropertyEnumerator;
         public JsonPropertyInfo JsonPropertyInfo;
 
         public void Initialize(Type type, JsonSerializerOptions options)
@@ -110,7 +111,7 @@ namespace System.Text.Json
             ExtensionDataStatus = ExtensionDataWriteStatus.NotStarted;
             IsIDictionaryConstructible = false;
             JsonClassInfo = null;
-            PropertyEnumerator = null;
+            PropertyEnumerator = default;
             PropertyEnumeratorActive = false;
             PopStackOnEndCollection = false;
             PopStackOnEndObject = false;
