@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <Description>Default implementation of dependency injection for Microsoft.Extensions.DependencyInjection.</Description>
-    <TargetFrameworks>netcoreapp3.0;net461;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.0;net461;netstandard2.0;netstandard2.1</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageTags>dependencyinjection;di</PackageTags>
     <IsPackable>true</IsPackable>
@@ -10,7 +10,6 @@
 
     <ILEmitBackend Condition="$(TargetFramework) != 'netstandard2.0'">True</ILEmitBackend>
     <DefineConstants Condition="'$(ILEmitBackend)' == 'True'">$(DefineConstants);IL_EMIT</DefineConstants>
-    <DefineConstants Condition="'$(TargetFramework)' == 'netcoreapp3.0'">$(DefineConstants);DISPOSE_ASYNC</DefineConstants>
 
     <!-- Debug IL generation -->
     <ILEmitBackendSaveAssemblies>False</ILEmitBackendSaveAssemblies>
@@ -24,6 +23,10 @@
 
   <ItemGroup>
     <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461' Or '$(TargetFramework)' == 'netstandard2.0'">
+    <Reference Include="Microsoft.Bcl.AsyncInterfaces" />
   </ItemGroup>
 
   <ItemGroup>
