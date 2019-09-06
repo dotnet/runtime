@@ -46,6 +46,7 @@ namespace System.Drawing.Tests
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Ctor_FileName_TestData))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void Ctor_FileName(string fileName, Size size)
         {
             var attribute = new ToolboxBitmapAttribute(fileName);
