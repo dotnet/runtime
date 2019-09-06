@@ -3250,6 +3250,7 @@ static gint32 isFixedSizeArray (MonoClassField *f)
 					goto leave;
 				}
 				ret = *(gint32*)typed_args [1];
+				g_free (typed_args [1]);
 				g_free (typed_args);
 				g_free (named_args);
 				g_free (arginfo);

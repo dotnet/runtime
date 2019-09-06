@@ -3934,7 +3934,9 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 				} else {
 					g_assert_not_reached ();
 				}
+				g_free (named_args [i]);
 			}
+			g_free (typed_args [0]);
 			g_free (typed_args);
 			g_free (named_args);
 			g_free (arginfo);

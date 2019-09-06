@@ -182,6 +182,7 @@ get_fixed_buffer_attr (MonoClassField *field, MonoType **out_etype, int *out_len
 			return FALSE;
 		*out_etype = (MonoType*)typed_args [0];
 		*out_len = *(gint32*)typed_args [1];
+		g_free (typed_args [1]);
 		g_free (typed_args);
 		g_free (named_args);
 		g_free (arginfo);
