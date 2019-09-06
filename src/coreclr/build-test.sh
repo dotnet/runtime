@@ -180,7 +180,7 @@ precompile_coreroot_fx()
 
     local overlayDir=$CORE_ROOT
 
-    filesToPrecompile=$(find -L $overlayDir -iname \*.dll -not -iname \*.ni.dll -not -iname \*-ms-win-\* -not -iname xunit.\* -type f)
+    filesToPrecompile=$(find -L $overlayDir -iname \*.dll -not -iname \*.ni.dll -not -iname \*-ms-win-\* -not -iname xunit.\* -type f -maxdepth 0)
     for fileToPrecompile in ${filesToPrecompile}
     do
         local filename=${fileToPrecompile}
