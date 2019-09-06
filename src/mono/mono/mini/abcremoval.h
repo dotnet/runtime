@@ -15,6 +15,20 @@
 
 #include "mini.h"
 
+typedef enum {
+	MONO_VALUE_MAYBE_NULL = 0,
+	MONO_VALUE_NOT_NULL = 1,
+
+	MONO_VALUE_NULLNESS_MASK = 1,
+
+	/*
+	 * If this bit is set, and the enclosing MonoSummarizedValue is a
+	 * MONO_VARIABLE_SUMMARIZED_VALUE, then the "nullness" value is related
+	 * to the variable referenced in MonoSummarizedVariableValue. Otherwise,
+	 * the "nullness" value is constant.
+	 */
+	MONO_VALUE_IS_VARIABLE = 2,
+} MonoValueNullness;
 
 /**
  * All handled value types (expressions) in variable definitions and branch
@@ -37,6 +51,7 @@ typedef enum {
  */
 typedef struct MonoSummarizedConstantValue {
 	int value;
+	MonoValueNullness nullness;
 } MonoSummarizedConstantValue;
 
 /**
@@ -47,6 +62,7 @@ typedef struct MonoSummarizedConstantValue {
 typedef struct MonoSummarizedVariableValue {
 	int variable;
 	int delta;
+	MonoValueNullness nullness;
 } MonoSummarizedVariableValue;
 
 /**
@@ -166,6 +182,7 @@ typedef enum {
 typedef struct MonoRelationsEvaluationRange {
 	int lower;
 	int upper;
+	MonoValueNullness nullness;
 } MonoRelationsEvaluationRange;
 
 /**
@@ -197,6 +214,7 @@ typedef struct MonoRelationsEvaluationContext {
 #define MONO_MAKE_RELATIONS_EVALUATION_RANGE_WEAK(r) do{\
 		(r).lower = INT_MIN;\
 		(r).upper = INT_MAX;\
+		(r).nullness = MONO_VALUE_MAYBE_NULL; \
 	} while (0)
 #define MONO_MAKE_RELATIONS_EVALUATION_RANGES_WEAK(rs) do{\
 		MONO_MAKE_RELATIONS_EVALUATION_RANGE_WEAK ((rs).zero); \
@@ -205,6 +223,7 @@ typedef struct MonoRelationsEvaluationContext {
 #define MONO_MAKE_RELATIONS_EVALUATION_RANGE_IMPOSSIBLE(r) do{\
 		(r).lower = INT_MAX;\
 		(r).upper = INT_MIN;\
+		(r).nullness = MONO_VALUE_MAYBE_NULL; \
 	} while (0)
 #define MONO_MAKE_RELATIONS_EVALUATION_RANGES_IMPOSSIBLE(rs) do{\
 		MONO_MAKE_RELATIONS_EVALUATION_RANGE_IMPOSSIBLE ((rs).zero); \

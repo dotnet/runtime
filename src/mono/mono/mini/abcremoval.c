@@ -102,10 +102,10 @@ print_summarized_value (MonoSummarizedValue *value) {
 		printf ("ANY");
 		break;
 	case MONO_CONSTANT_SUMMARIZED_VALUE:
-		printf ("CONSTANT %d", value->value.constant.value);
+		printf ("CONSTANT %d, not-null = %d", value->value.constant.value, value->value.constant.nullness);
 		break;
 	case MONO_VARIABLE_SUMMARIZED_VALUE:
-		printf ("VARIABLE %d, delta %d", value->value.variable.variable, value->value.variable.delta);
+		printf ("VARIABLE %d, delta %d, not-null = %d", value->value.variable.variable, value->value.variable.delta, value->value.variable.nullness);
 		break;
 	case MONO_PHI_SUMMARIZED_VALUE: {
 		int phi;
@@ -182,7 +182,9 @@ print_evaluation_context_status (MonoRelationsEvaluationStatus status) {
 
 static void
 print_evaluation_context_ranges (MonoRelationsEvaluationRanges *ranges) {
-	printf ("(ranges: zero [%d,%d], variable [%d,%d])", ranges->zero.lower, ranges->zero.upper, ranges->variable.lower, ranges->variable.upper);
+	printf ("(ranges: zero [%d,%d] (not-null = %d), variable [%d,%d])",
+		ranges->zero.lower, ranges->zero.upper, ranges->zero.nullness,
+		ranges->variable.lower, ranges->variable.upper);
 }
 
 static void
@@ -271,16 +273,19 @@ get_relation_from_ins (MonoVariableRelationsEvaluationArea *area, MonoInst *ins,
 	case OP_ICONST:
 		value->type = MONO_CONSTANT_SUMMARIZED_VALUE;
 		value->value.constant.value = ins->inst_c0;
+		value->value.constant.nullness = MONO_VALUE_MAYBE_NULL;
 		break;
 	case OP_MOVE:
 		value->type = MONO_VARIABLE_SUMMARIZED_VALUE;
 		value->value.variable.variable = ins->sreg1;
 		value->value.variable.delta = 0;
+		value->value.variable.nullness = (MonoValueNullness) (MONO_VALUE_IS_VARIABLE | MONO_VALUE_MAYBE_NULL);
 		break;
 	case OP_SEXT_I4:
 		value->type = MONO_VARIABLE_SUMMARIZED_VALUE;
 		value->value.variable.variable = ins->sreg1;
 		value->value.variable.delta = 0;
+		value->value.variable.nullness = MONO_VALUE_MAYBE_NULL;
 		value_kind = MONO_INTEGER_VALUE_SIZE_8;
 		break;
 	case OP_PHI:
@@ -292,6 +297,7 @@ get_relation_from_ins (MonoVariableRelationsEvaluationArea *area, MonoInst *ins,
 		value->type = MONO_VARIABLE_SUMMARIZED_VALUE;
 		value->value.variable.variable = ins->sreg1;
 		value->value.variable.delta = ins->inst_imm;
+		value->value.variable.nullness = MONO_VALUE_MAYBE_NULL;
 		/* FIXME: */
 		//check_delta_safety (area, result);
 		break;
@@ -299,6 +305,7 @@ get_relation_from_ins (MonoVariableRelationsEvaluationArea *area, MonoInst *ins,
 		value->type = MONO_VARIABLE_SUMMARIZED_VALUE;
 		value->value.variable.variable = ins->sreg1;
 		value->value.variable.delta = -ins->inst_imm;
+		value->value.variable.nullness = MONO_VALUE_MAYBE_NULL;
 		/* FIXME: */
 		//check_delta_safety (area, result);
 		break;
@@ -308,6 +315,7 @@ get_relation_from_ins (MonoVariableRelationsEvaluationArea *area, MonoInst *ins,
 		value->type = MONO_VARIABLE_SUMMARIZED_VALUE;
 		value->value.variable.variable = ins->sreg2;
 		value->value.variable.delta = 0;
+		value->value.variable.nullness = MONO_VALUE_MAYBE_NULL;
 		value_kind = MONO_UNSIGNED_INTEGER_VALUE_SIZE_4;
 		break;
 	case OP_LDLEN:
@@ -318,19 +326,22 @@ get_relation_from_ins (MonoVariableRelationsEvaluationArea *area, MonoInst *ins,
 		value->type = MONO_VARIABLE_SUMMARIZED_VALUE;
 		value->value.variable.variable = ins->sreg1;
 		value->value.variable.delta = 0;
+		value->value.variable.nullness = MONO_VALUE_MAYBE_NULL;
 		value_kind = MONO_UNSIGNED_INTEGER_VALUE_SIZE_4;
 		break;
 	case OP_NEWARR:
 		value->type = MONO_VARIABLE_SUMMARIZED_VALUE;
 		value->value.variable.variable = ins->sreg1;
 		value->value.variable.delta = 0;
+		value->value.variable.nullness = MONO_VALUE_NOT_NULL;
 		area->defs [ins->dreg] = ins;
 		break;
 	case OP_LDADDR:
 		/* The result is non-null */
-		result->relation = MONO_GT_RELATION;
+		result->relation = MONO_GE_RELATION;
 		value->type = MONO_CONSTANT_SUMMARIZED_VALUE;
-		value->value.constant.value = 0;
+		value->value.constant.value = INT_MIN;
+		value->value.constant.nullness = MONO_VALUE_NOT_NULL;
 		break;
 
 		/* FIXME: Add more opcodes */
@@ -487,17 +498,20 @@ get_relations_from_previous_bb (MonoVariableRelationsEvaluationArea *area, MonoB
 				relations->relation1.relation.related_value.type = MONO_VARIABLE_SUMMARIZED_VALUE;
 				relations->relation1.relation.related_value.value.variable.variable = compare->sreg2;
 				relations->relation1.relation.related_value.value.variable.delta = 0;
+				relations->relation1.relation.related_value.value.variable.nullness = MONO_VALUE_MAYBE_NULL;
 
 				relations->relation2.variable = compare->sreg2;
 				relations->relation2.relation.relation = symmetric_relation;
 				relations->relation2.relation.related_value.type = MONO_VARIABLE_SUMMARIZED_VALUE;
 				relations->relation2.relation.related_value.value.variable.variable = compare->sreg1;
 				relations->relation2.relation.related_value.value.variable.delta = 0;
+				relations->relation1.relation.related_value.value.variable.nullness = MONO_VALUE_MAYBE_NULL;
 			} else if (compare->opcode == OP_ICOMPARE_IMM) {
 				relations->relation1.variable = compare->sreg1;
 				relations->relation1.relation.relation = branch_relation;
 				relations->relation1.relation.related_value.type = MONO_CONSTANT_SUMMARIZED_VALUE;
 				relations->relation1.relation.related_value.value.constant.value = compare->inst_imm;
+				relations->relation1.relation.related_value.value.constant.nullness = MONO_VALUE_MAYBE_NULL;
 			}
 		}
 	}
@@ -544,6 +558,25 @@ clean_contexts (MonoVariableRelationsEvaluationArea *area, int number)
 	memset(area->statuses, MONO_RELATIONS_EVALUATION_NOT_STARTED, number * sizeof(MonoRelationsEvaluationStatus));
 }
 
+static void
+union_nullness (MonoRelationsEvaluationRange *range, MonoValueNullness n)
+{
+	range->nullness = (MonoValueNullness) (range->nullness & (MONO_VALUE_NULLNESS_MASK & n));
+}
+
+static void
+intersect_nullness (MonoRelationsEvaluationRange *range, MonoValueNullness n, MonoValueRelation relation)
+{
+	switch (relation) {
+	case MONO_NO_RELATION:
+	case MONO_ANY_RELATION:
+	case MONO_NE_RELATION:
+		range->nullness = MONO_VALUE_MAYBE_NULL;
+		break;
+	default:
+		range->nullness = (MonoValueNullness) (range->nullness | (MONO_VALUE_NULLNESS_MASK & n));
+	}
+}
 
 /*
  * Perform the intersection of a range and a constant value (taking into
@@ -553,7 +586,7 @@ clean_contexts (MonoVariableRelationsEvaluationArea *area, int number)
  * relation: the relation between the range and the value
  */
 static void
-intersect_value( MonoRelationsEvaluationRange *range, int value, MonoValueRelation relation )
+intersect_value( MonoRelationsEvaluationRange *range, MonoSummarizedConstantValue value, MonoValueRelation relation )
 {
 	switch (relation) {
 	case MONO_NO_RELATION:
@@ -562,28 +595,29 @@ intersect_value( MonoRelationsEvaluationRange *range, int value, MonoValueRelati
 	case MONO_ANY_RELATION:
 		break;
 	case MONO_EQ_RELATION:
-		MONO_UPPER_EVALUATION_RANGE_INTERSECTION (range->upper, value);
-		MONO_LOWER_EVALUATION_RANGE_INTERSECTION (range->lower, value);
+		MONO_UPPER_EVALUATION_RANGE_INTERSECTION (range->upper, value.value);
+		MONO_LOWER_EVALUATION_RANGE_INTERSECTION (range->lower, value.value);
 		break;
 	case MONO_NE_RELATION: {
 		/* IMPROVEMENT Figure this out! (ignoring it is safe anyway) */
 		break;
 	}
 	case MONO_LT_RELATION:
-		MONO_UPPER_EVALUATION_RANGE_INTERSECTION (range->upper, MONO_UPPER_EVALUATION_RANGE_NOT_EQUAL (value));
+		MONO_UPPER_EVALUATION_RANGE_INTERSECTION (range->upper, MONO_UPPER_EVALUATION_RANGE_NOT_EQUAL (value.value));
 		break;
 	case MONO_LE_RELATION:
-		MONO_UPPER_EVALUATION_RANGE_INTERSECTION (range->upper, value);
+		MONO_UPPER_EVALUATION_RANGE_INTERSECTION (range->upper, value.value);
 		break;
 	case MONO_GT_RELATION:
-		MONO_LOWER_EVALUATION_RANGE_INTERSECTION (range->lower, MONO_LOWER_EVALUATION_RANGE_NOT_EQUAL (value));
+		MONO_LOWER_EVALUATION_RANGE_INTERSECTION (range->lower, MONO_LOWER_EVALUATION_RANGE_NOT_EQUAL (value.value));
 		break;
 	case MONO_GE_RELATION:
-		MONO_LOWER_EVALUATION_RANGE_INTERSECTION (range->lower, value);
+		MONO_LOWER_EVALUATION_RANGE_INTERSECTION (range->lower, value.value);
 		break;
 	default:
 		g_assert_not_reached();
 	}
+	intersect_nullness (range, value.nullness, relation);
 }
 
 
@@ -596,9 +630,9 @@ intersect_value( MonoRelationsEvaluationRange *range, int value, MonoValueRelati
  * relation: the relation between the pairs of ranges
  */
 static void
-intersect_ranges( MonoRelationsEvaluationRanges *ranges, MonoRelationsEvaluationRanges *other_ranges, int delta, MonoValueRelation relation )
+intersect_ranges (MonoRelationsEvaluationRanges *ranges, MonoRelationsEvaluationRanges *other_ranges, MonoSummarizedVariableValue value, MonoValueRelation relation)
 {
-	if (delta == 0) {
+	if (value.delta == 0) {
 		switch (relation) {
 		case MONO_NO_RELATION:
 			MONO_MAKE_RELATIONS_EVALUATION_RANGES_IMPOSSIBLE (*ranges);
@@ -631,10 +665,15 @@ intersect_ranges( MonoRelationsEvaluationRanges *ranges, MonoRelationsEvaluation
 		default:
 			g_assert_not_reached();
 		}
+		if (value.nullness & MONO_VALUE_IS_VARIABLE)
+			intersect_nullness (&ranges->zero, other_ranges->zero.nullness, relation);
+		intersect_nullness (&ranges->zero, value.nullness, relation);
 	} else {
 		MonoRelationsEvaluationRanges translated_ranges = *other_ranges;
-		MONO_ADD_DELTA_SAFELY_TO_RANGES (translated_ranges, delta);
-		intersect_ranges( ranges, &translated_ranges, FALSE, relation );
+		MONO_ADD_DELTA_SAFELY_TO_RANGES (translated_ranges, value.delta);
+		MonoSummarizedVariableValue translated_value = value;
+		translated_value.delta = 0;
+		intersect_ranges (ranges, &translated_ranges, translated_value, relation);
 	}
 }
 
@@ -666,7 +705,7 @@ evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *are
 		MonoSummarizedValueRelation *relation = &(area->relations [variable]);
 		
 		if (TRACE_ABC_REMOVAL) {
-			printf ("Evaluating variable %d (target variable %d)\n", variable, target_variable);
+			printf ("Evaluating variable %d (target variable %d); ", variable, target_variable);
 			print_summarized_value_relation (relation);
 			printf ("\n");
 		}
@@ -704,7 +743,7 @@ evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *are
 				break;
 			case MONO_CONSTANT_SUMMARIZED_VALUE:
 				// Intersect range with constant (taking into account the relation)
-				intersect_value (&(context->ranges.zero), relation->related_value.value.constant.value, relation->relation);
+				intersect_value (&(context->ranges.zero), relation->related_value.value.constant, relation->relation);
 				break;
 			case MONO_VARIABLE_SUMMARIZED_VALUE:
 				// Generally, evaluate related variable and intersect ranges.
@@ -754,7 +793,7 @@ evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *are
 							}
 						} else {
 							// If we are not (the common case) intersect the result
-							intersect_ranges( &(context->ranges), &(related_context->ranges), relation->related_value.value.variable.delta, relation->relation );
+							intersect_ranges (&(context->ranges), &(related_context->ranges), relation->related_value.value.variable, relation->relation);
 						}
 					} else {
 						if (TRACE_ABC_REMOVAL) {
@@ -773,6 +812,7 @@ evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *are
 				gboolean is_descending = FALSE;
 				
 				MONO_MAKE_RELATIONS_EVALUATION_RANGES_IMPOSSIBLE (phi_ranges);
+				phi_ranges.zero.nullness = relation->related_value.value.phi.number_of_alternatives > 0 ? MONO_VALUE_NOT_NULL : MONO_VALUE_MAYBE_NULL;
 				for (phi = 0; phi < relation->related_value.value.phi.number_of_alternatives; phi++) {
 					int phi_alternative = relation->related_value.value.phi.phi_alternatives [phi];
 					evaluate_relation_with_target_variable (area, phi_alternative, target_variable, context);
@@ -794,11 +834,13 @@ evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *are
 							is_ascending = TRUE;
 							is_descending = TRUE;
 						}
+						phi_ranges.zero.nullness = MONO_VALUE_MAYBE_NULL;
 						
 						// Clear "recursivity" bits in the status (recursion has been handled)
 						*status = MONO_RELATIONS_EVALUATION_IN_PROGRESS;
 					} else {
 						MONO_RELATIONS_EVALUATION_RANGES_UNION (phi_ranges, area->contexts [phi_alternative].ranges);
+						union_nullness (&phi_ranges.zero, area->contexts [phi_alternative].ranges.zero.nullness);
 					}
 				}
 				
@@ -814,6 +856,7 @@ evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *are
 				
 				// Intersect final result
 				MONO_RELATIONS_EVALUATION_RANGES_INTERSECTION (context->ranges, phi_ranges);
+				intersect_nullness (&context->ranges.zero, phi_ranges.zero.nullness, MONO_EQ_RELATION);
 				break;
 			}
 			default:
@@ -1023,7 +1066,7 @@ eval_non_null (MonoVariableRelationsEvaluationArea *area, int reg)
 	clean_contexts (area, area->cfg->next_vreg);
 	evaluate_relation_with_target_variable (area, reg, reg, NULL);
 				
-	return context->ranges.zero.lower > 0;
+	return context->ranges.zero.nullness == MONO_VALUE_NOT_NULL;
 }
 
 static void
@@ -1034,9 +1077,10 @@ add_non_null (MonoVariableRelationsEvaluationArea *area, MonoCompile *cfg, int r
 
 	rel = (MonoAdditionalVariableRelation *)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoAdditionalVariableRelation));
 	rel->variable = reg;
-	rel->relation.relation = MONO_GT_RELATION;
+	rel->relation.relation = MONO_GE_RELATION;
 	rel->relation.related_value.type = MONO_CONSTANT_SUMMARIZED_VALUE;
-	rel->relation.related_value.value.constant.value = 0;
+	rel->relation.related_value.value.constant.value = INT_MIN;
+	rel->relation.related_value.value.constant.nullness = MONO_VALUE_NOT_NULL;
 
 	apply_change_to_evaluation_area (area, rel);
 
@@ -1107,6 +1151,7 @@ process_block (MonoCompile *cfg, MonoBasicBlock *bb, MonoVariableRelationsEvalua
 				rel->relation.related_value.type = MONO_VARIABLE_SUMMARIZED_VALUE;
 				rel->relation.related_value.value.variable.variable = array_var;
 				rel->relation.related_value.value.variable.delta = 0;
+				rel->relation.related_value.value.variable.nullness = MONO_VALUE_MAYBE_NULL;
 
 				apply_change_to_evaluation_area (area, rel);
 
@@ -1117,6 +1162,7 @@ process_block (MonoCompile *cfg, MonoBasicBlock *bb, MonoVariableRelationsEvalua
 				rel->relation.relation = MONO_GE_RELATION;
 				rel->relation.related_value.type = MONO_CONSTANT_SUMMARIZED_VALUE;
 				rel->relation.related_value.value.constant.value = 0;
+				rel->relation.related_value.value.constant.nullness = MONO_VALUE_MAYBE_NULL;
 
 				apply_change_to_evaluation_area (area, rel);
 
@@ -1127,7 +1173,7 @@ process_block (MonoCompile *cfg, MonoBasicBlock *bb, MonoVariableRelationsEvalua
 		if (ins->opcode == OP_CHECK_THIS) {
 			if (eval_non_null (area, ins->sreg1)) {
 				if (REPORT_ABC_REMOVAL)
-					printf ("ARRAY-ACCESS: removed check_this instruction.\n");
+					printf ("ARRAY-ACCESS: removed check_this instruction for R%d.\n", ins->sreg1);
 				NULLIFY_INS (ins);
 			}
 		}
@@ -1138,16 +1184,12 @@ process_block (MonoCompile *cfg, MonoBasicBlock *bb, MonoVariableRelationsEvalua
 		if (ins->opcode == OP_COMPARE_IMM && ins->inst_imm == 0 && ins->next && ins->next->opcode == OP_COND_EXC_EQ) {
 			if (eval_non_null (area, ins->sreg1)) {
 				if (REPORT_ABC_REMOVAL)
-					printf ("ARRAY-ACCESS: Removed null check.\n");
+					printf ("ARRAY-ACCESS: Removed null check for R%d.\n", ins->sreg1);
 				NULLIFY_INS (ins->next);
 				NULLIFY_INS (ins);
 			}
 		}
 
-		/* 
-		 * FIXME: abcrem equates an array with its length,
-		 * so a = new int [100] implies a != null, but a = new int [0] doesn't.
-		 */
 		/*
 		 * Eliminate MONO_INST_FAULT flags if possible.
 		 */
@@ -1367,12 +1409,17 @@ mono_perform_abc_removal (MonoCompile *cfg)
 		if (area.relations [i].related_value.type == MONO_VARIABLE_SUMMARIZED_VALUE) {
 			int related_index = cfg->next_vreg + i;
 			int related_variable = area.relations [i].related_value.value.variable.variable;
+			MonoValueNullness symmetric_nullness = MONO_VALUE_MAYBE_NULL;
+			if (area.relations [i].related_value.value.variable.nullness & MONO_VALUE_IS_VARIABLE) {
+				symmetric_nullness = area.relations [i].related_value.value.variable.nullness;
+			}
 			
 			area.relations [related_index].relation = MONO_EQ_RELATION;
 			area.relations [related_index].relation_is_static_definition = TRUE;
 			area.relations [related_index].related_value.type = MONO_VARIABLE_SUMMARIZED_VALUE;
 			area.relations [related_index].related_value.value.variable.variable = i;
 			area.relations [related_index].related_value.value.variable.delta = - area.relations [i].related_value.value.variable.delta;
+			area.relations [related_index].related_value.value.variable.nullness = symmetric_nullness;
 			
 			area.relations [related_index].next = area.relations [related_variable].next;
 			area.relations [related_variable].next = &(area.relations [related_index]);

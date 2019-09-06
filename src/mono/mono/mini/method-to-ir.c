@@ -9738,6 +9738,7 @@ field_access_end:
 			MONO_ADD_INS (cfg->cbb, ins);
 			cfg->flags |= MONO_CFG_NEEDS_DECOMPOSE;
 			cfg->cbb->needs_decompose = TRUE;
+			MONO_EMIT_NEW_UNALU (cfg, OP_NOT_NULL, -1, sp [0]->dreg);
 			*sp++ = ins;
 			break;
 		case MONO_CEE_LDELEMA:
