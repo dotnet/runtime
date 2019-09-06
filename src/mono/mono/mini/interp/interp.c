@@ -5866,8 +5866,8 @@ main_loop:
 			ip ++;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ENDFINALLY) {
-			ip ++;
 			gboolean pending_abort = mono_threads_end_abort_protected_block ();
+			ip ++;
 
 			// After mono_threads_end_abort_protected_block to conserve stack.
 			const int clause_index = *ip;
