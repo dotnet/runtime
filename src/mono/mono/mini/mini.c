@@ -3164,13 +3164,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	cfg->use_current_cpu = (flags & JIT_FLAG_USE_CURRENT_CPU) != 0;
 	cfg->backend = current_backend;
 
-#ifdef HOST_ANDROID
-	if (cfg->method->wrapper_type != MONO_WRAPPER_NONE) {
-		/* FIXME: Why is this needed */
-		cfg->gen_seq_points = FALSE;
-		cfg->gen_sdb_seq_points = FALSE;
-	}
-#endif
 	if (cfg->method->wrapper_type == MONO_WRAPPER_ALLOC) {
 		/* We can't have seq points inside gc critical regions */
 		cfg->gen_seq_points = FALSE;
