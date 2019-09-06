@@ -246,20 +246,15 @@ namespace System.Threading.Tasks
 
         /// <summary>Gets the number of tasks waiting to run concurrently.</summary>
         /// <remarks>This does not take the necessary lock, as it's only called from under the debugger.</remarks>
-        [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         private int ConcurrentTaskCountForDebugger => m_concurrentTaskScheduler.m_tasks.Count;
 
         /// <summary>Gets the number of tasks waiting to run exclusively.</summary>
         /// <remarks>This does not take the necessary lock, as it's only called from under the debugger.</remarks>
-        [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         private int ExclusiveTaskCountForDebugger => m_exclusiveTaskScheduler.m_tasks.Count;
 
         /// <summary>Notifies the pair that new work has arrived to be processed.</summary>
         /// <param name="fairly">Whether tasks should be scheduled fairly with regards to other tasks.</param>
         /// <remarks>Must only be called while holding the lock.</remarks>
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        [SuppressMessage("Microsoft.Performance", "CA1804:RemoveUnusedLocals")]
-        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         private void ProcessAsyncIfNecessary(bool fairly = false)
         {
             ContractAssertMonitorStatus(ValueLock, held: true);
@@ -467,7 +462,6 @@ namespace System.Threading.Tasks
         /// state in one of those conditions or if the user explicitly asks for
         /// the Completion.
         /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1812:AvoidUninstantiatedInternalClasses")]
         private sealed class CompletionState : Task
         {
             /// <summary>Whether the scheduler has had completion requested.</summary>
@@ -622,7 +616,6 @@ namespace System.Threading.Tasks
             /// </summary>
             /// <param name="task">The task to execute inline if possible.</param>
             /// <returns>true if the task was inlined successfully; otherwise, false.</returns>
-            [SuppressMessage("Microsoft.Performance", "CA1804:RemoveUnusedLocals", MessageId = "ignored")]
             private bool TryExecuteTaskInlineOnTargetScheduler(Task task)
             {
                 // We'd like to simply call TryExecuteTaskInline here, but we can't.
@@ -669,7 +662,6 @@ namespace System.Threading.Tasks
             protected override IEnumerable<Task> GetScheduledTasks() { return m_tasks; }
 
             /// <summary>Gets the number of tasks queued to this scheduler.</summary>
-            [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
             private int CountForDebugger => m_tasks.Count;
 
             /// <summary>Provides a debug view for ConcurrentExclusiveTaskScheduler.</summary>

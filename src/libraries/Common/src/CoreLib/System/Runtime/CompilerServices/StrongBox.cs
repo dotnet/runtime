@@ -16,7 +16,6 @@ namespace System.Runtime.CompilerServices
         /// Gets the strongly typed value associated with the <see cref = "StrongBox{T}"></see>
         /// <remarks>This is explicitly exposed as a field instead of a property to enable loading the address of the field.</remarks>
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1051:DoNotDeclareVisibleInstanceFields")]
         [MaybeNull] public T Value = default!;
 
         /// <summary>

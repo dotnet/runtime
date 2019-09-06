@@ -12,6 +12,8 @@
 **
 ===========================================================*/
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Runtime.ConstrainedExecution
 {
     public abstract class CriticalFinalizerObject
@@ -20,7 +22,7 @@ namespace System.Runtime.ConstrainedExecution
         {
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1821:RemoveEmptyFinalizers")]
+        [SuppressMessage("Microsoft.Performance", "CA1821:RemoveEmptyFinalizers")]
         ~CriticalFinalizerObject()
         {
         }
