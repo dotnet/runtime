@@ -388,6 +388,7 @@ namespace System.Buffers
         public partial struct Enumerator
         {
             private object _dummy;
+            private int _dummyPrimitive;
             public Enumerator(in System.Buffers.ReadOnlySequence<T> sequence) { throw null; }
             public System.ReadOnlyMemory<T> Current { get { throw null; } }
             public bool MoveNext() { throw null; }
