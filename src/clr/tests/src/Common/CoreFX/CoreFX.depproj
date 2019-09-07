@@ -88,6 +88,9 @@
       <!-- Don't include all the nuget files -->
       <TestDependenciesToExclude Include="$(CORE_ROOT)\.nuget\**\*"/>
 
+      <!-- Don't include internal crossgen2 dependencies -->
+      <TestDependenciesToExclude Include="$(CORE_ROOT)\crossgen2\**\*"/>
+
       <CoreCLRBinariesToExclude Include="@(NetCoreAppPackagedAssemblies);@(TestDependenciesToExclude -> '%(Identity)')" />
     </ItemGroup>
 
