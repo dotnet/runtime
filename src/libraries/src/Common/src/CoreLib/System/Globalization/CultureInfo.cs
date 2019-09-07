@@ -134,9 +134,8 @@ namespace System.Globalization
             s_currentThreadUICulture = args.CurrentValue;
         }
 
-        private static readonly object _lock = new object();
-        private static volatile Dictionary<string, CultureInfo>? s_NameCachedCultures;
-        private static volatile Dictionary<int, CultureInfo>? s_LcidCachedCultures;
+        private static volatile Dictionary<string, CultureInfo>? s_cachedCulturesByName;
+        private static volatile Dictionary<int, CultureInfo>? s_cachedCulturesByLcid;
 
         // The parent culture.
         private CultureInfo? _parent;
@@ -253,11 +252,8 @@ namespace System.Globalization
                 throw new ArgumentNullException(nameof(cultureName), SR.ArgumentNull_String);
             }
 
-            CultureData? cultureData = CultureData.GetCultureData(cultureName, false);
-            if (cultureData == null)
-            {
+            CultureData? cultureData = CultureData.GetCultureData(cultureName, false) ??
                 throw new CultureNotFoundException(nameof(cultureName), cultureName, SR.Argument_CultureNotSupported);
-            }
 
             _cultureData = cultureData;
 
@@ -871,8 +867,8 @@ namespace System.Globalization
             TimeZone.ResetTimeZone();
 #pragma warning restore 0618
             TimeZoneInfo.ClearCachedData();
-            s_LcidCachedCultures = null;
-            s_NameCachedCultures = null;
+            s_cachedCulturesByLcid = null;
+            s_cachedCulturesByName = null;
 
             CultureData.ClearCachedData();
         }
@@ -1095,169 +1091,42 @@ namespace System.Globalization
         internal bool HasInvariantCultureName => Name == InvariantCulture.Name;
 
         /// <summary>
-        /// Helper function overloads of GetCachedReadOnlyCulture.  If lcid is 0, we use the name.
-        /// If lcid is -1, use the altName and create one of those special SQL cultures.
-        /// </summary>
-        internal static CultureInfo? GetCultureInfoHelper(int lcid, string? name, string? altName)
-        {
-            // retval is our return value.
-            CultureInfo? retval;
-
-            // Temporary hashtable for the names.
-            Dictionary<string, CultureInfo>? tempNameHT = s_NameCachedCultures;
-
-            if (name != null)
-            {
-                name = CultureData.AnsiToLower(name);
-            }
-
-            if (altName != null)
-            {
-                altName = CultureData.AnsiToLower(altName);
-            }
-
-            // We expect the same result for both hashtables, but will test individually for added safety.
-            if (tempNameHT == null)
-            {
-                tempNameHT = new Dictionary<string, CultureInfo>();
-            }
-            else
-            {
-                // If we are called by name, check if the object exists in the hashtable.  If so, return it.
-                if (lcid == -1 || lcid == 0)
-                {
-                    Debug.Assert(name != null && (lcid != -1 || altName != null));
-                    bool ret;
-                    lock (_lock)
-                    {
-                        ret = tempNameHT.TryGetValue(lcid == 0 ? name! : name! + '\xfffd' + altName!, out retval);
-                    }
-
-                    if (ret && retval != null)
-                    {
-                        return retval;
-                    }
-                }
-            }
-
-            // Next, the Lcid table.
-            Dictionary<int, CultureInfo>? tempLcidHT = s_LcidCachedCultures;
-
-            if (tempLcidHT == null)
-            {
-                // Case insensitive is not an issue here, save the constructor call.
-                tempLcidHT = new Dictionary<int, CultureInfo>();
-            }
-            else
-            {
-                // If we were called by Lcid, check if the object exists in the table.  If so, return it.
-                if (lcid > 0)
-                {
-                    bool ret;
-                    lock (_lock)
-                    {
-                        ret = tempLcidHT.TryGetValue(lcid, out retval);
-                    }
-                    if (ret && retval != null)
-                    {
-                        return retval;
-                    }
-                }
-            }
-
-            // We now have two temporary hashtables and the desired object was not found.
-            // We'll construct it.  We catch any exceptions from the constructor call and return null.
-            try
-            {
-                switch (lcid)
-                {
-                    case -1:
-                        // call the private constructor
-                        Debug.Assert(name != null && altName != null);
-                        retval = new CultureInfo(name!, altName!);
-                        break;
-
-                    case 0:
-                        Debug.Assert(name != null);
-                        retval = new CultureInfo(name!, false);
-                        break;
-
-                    default:
-                        retval = new CultureInfo(lcid, false);
-                        break;
-                }
-            }
-            catch (ArgumentException)
-            {
-                return null;
-            }
-
-            // Set it to read-only
-            retval._isReadOnly = true;
-
-            if (lcid == -1)
-            {
-                lock (_lock)
-                {
-                    // This new culture will be added only to the name hash table.
-                    tempNameHT[name + '\xfffd' + altName] = retval;
-                }
-                // when lcid == -1 then TextInfo object is already get created and we need to set it as read only.
-                retval.TextInfo.SetReadOnlyState(true);
-            }
-            else if (lcid == 0)
-            {
-                // Remember our name (as constructed).  Do NOT use alternate sort name versions because
-                // we have internal state representing the sort.  (So someone would get the wrong cached version)
-                string newName = CultureData.AnsiToLower(retval._name);
-
-                // We add this new culture info object to both tables.
-                lock (_lock)
-                {
-                    tempNameHT[newName] = retval;
-                }
-            }
-            else
-            {
-                lock (_lock)
-                {
-                    tempLcidHT[lcid] = retval;
-                }
-            }
-
-            // Copy the two hashtables to the corresponding member variables.  This will potentially overwrite
-            // new tables simultaneously created by a new thread, but maximizes thread safety.
-            if (-1 != lcid)
-            {
-                // Only when we modify the lcid hash table, is there a need to overwrite.
-                s_LcidCachedCultures = tempLcidHT;
-            }
-
-            s_NameCachedCultures = tempNameHT;
-
-            // Finally, return our new CultureInfo object.
-            return retval;
-        }
-
-        /// <summary>
         /// Gets a cached copy of the specified culture from an internal
         /// hashtable (or creates it if not found). (LCID version)
         /// </summary>
         public static CultureInfo GetCultureInfo(int culture)
         {
-            // Must check for -1 now since the helper function uses the value to signal
-            // the altCulture code path for SQL Server.
-            // Also check for zero as this would fail trying to add as a key to the hash.
             if (culture <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(culture), SR.ArgumentOutOfRange_NeedPosNum);
             }
-            CultureInfo? retval = GetCultureInfoHelper(culture, null, null);
-            if (null == retval)
+
+            Dictionary<int, CultureInfo> lcidTable = CachedCulturesByLcid;
+            CultureInfo? result;
+
+            lock (lcidTable)
+            {
+                if (lcidTable.TryGetValue(culture, out result))
+                {
+                    return result;
+                }
+            }
+
+            try
+            {
+                result = new CultureInfo(culture, useUserOverride: false) { _isReadOnly = true };
+            }
+            catch (ArgumentException)
             {
                 throw new CultureNotFoundException(nameof(culture), culture, SR.Argument_CultureNotSupported);
             }
-            return retval;
+
+            lock (lcidTable)
+            {
+                lcidTable[culture] = result;
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -1267,18 +1136,37 @@ namespace System.Globalization
         public static CultureInfo GetCultureInfo(string name)
         {
             // Make sure we have a valid, non-zero length string as name
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
 
-            CultureInfo? retval = GetCultureInfoHelper(0, name, null);
-            if (retval == null)
+            name = CultureData.AnsiToLower(name);
+            Dictionary<string, CultureInfo> nameTable = CachedCulturesByName;
+            CultureInfo? result;
+
+            lock (nameTable)
             {
-                throw new CultureNotFoundException(
-                    nameof(name), name, SR.Argument_CultureNotSupported);
+                if (nameTable.TryGetValue(name, out result))
+                {
+                    return result;
+                }
             }
-            return retval;
+
+            result = CreateCultureInfoNoThrow(name, useUserOverride: false) ??
+                throw new CultureNotFoundException(nameof(name), name, SR.Argument_CultureNotSupported);
+            result._isReadOnly = true;
+
+            // Remember our name as constructed.  Do NOT use alternate sort name versions because
+            // we have internal state representing the sort (so someone would get the wrong cached version).
+            name = CultureData.AnsiToLower(result._name);
+
+            lock (nameTable)
+            {
+                nameTable[name] = result;
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -1287,22 +1175,75 @@ namespace System.Globalization
         /// </summary>
         public static CultureInfo GetCultureInfo(string name, string altName)
         {
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
-            if (altName == null)
+            if (altName is null)
             {
                 throw new ArgumentNullException(nameof(altName));
             }
 
-            CultureInfo? retval = GetCultureInfoHelper(-1, name, altName);
-            if (retval == null)
+            name = CultureData.AnsiToLower(name);
+            altName = CultureData.AnsiToLower(altName);
+            string nameAndAltName = name + "\xfffd" + altName;
+            Dictionary<string, CultureInfo> nameTable = CachedCulturesByName;
+            CultureInfo? result;
+
+            lock (nameTable)
             {
-                throw new CultureNotFoundException("name or altName",
-                                        SR.Format(SR.Argument_OneOfCulturesNotSupported, name, altName));
+                if (nameTable.TryGetValue(nameAndAltName, out result))
+                {
+                    return result;
+                }
             }
-            return retval;
+
+            try
+            {
+                result = new CultureInfo(name, altName) { _isReadOnly = true };
+                result.TextInfo.SetReadOnlyState(readOnly: true); // TextInfo object is already created; we need to set it as read only.
+            }
+            catch (ArgumentException)
+            {
+                throw new CultureNotFoundException("name/altName", SR.Format(SR.Argument_OneOfCulturesNotSupported, name, altName));
+            }
+
+            lock (nameTable)
+            {
+                nameTable[nameAndAltName] = result;
+            }
+
+            return result;
+        }
+
+        private static Dictionary<string, CultureInfo> CachedCulturesByName
+        {
+            get
+            {
+                Dictionary<string, CultureInfo>? cache = s_cachedCulturesByName;
+                if (cache is null)
+                {
+                    cache = new Dictionary<string, CultureInfo>();
+                    cache = Interlocked.CompareExchange(ref s_cachedCulturesByName, cache, null) ?? cache;
+                }
+
+                return cache;
+            }
+        }
+
+        private static Dictionary<int, CultureInfo> CachedCulturesByLcid
+        {
+            get
+            {
+                Dictionary<int, CultureInfo>? cache = s_cachedCulturesByLcid;
+                if (cache is null)
+                {
+                    cache = new Dictionary<int, CultureInfo>();
+                    cache = Interlocked.CompareExchange(ref s_cachedCulturesByLcid, cache, null) ?? cache;
+                }
+
+                return cache;
+            }
         }
 
         public static CultureInfo GetCultureInfoByIetfLanguageTag(string name)
