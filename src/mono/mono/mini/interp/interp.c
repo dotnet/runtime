@@ -5905,7 +5905,9 @@ main_loop:
 			// but not have to change how exception handling macros access labels and locals.
 
 			g_assert (sp >= frame->stack);
-			sp = frame->stack;
+			sp = frame->stack; /* spec says stack should be empty at endfinally so it should be at the start too */
+			vt_sp = (unsigned char*)sp + frame->imethod->stack_size;
+
 			frame->ip = ip;
 
 			int opcode = *ip;
@@ -5955,8 +5957,6 @@ main_loop:
 			if (old_list != finally_ips && finally_ips) {
 				ip = (const guint16*)finally_ips->data;
 				finally_ips = g_slist_remove (finally_ips, ip);
-				sp = frame->stack; /* spec says stack should be empty at endfinally so it should be at the start too */
-				vt_sp = (unsigned char *) sp + frame->imethod->stack_size;
 				// goto main_loop instead of MINT_IN_DISPATCH helps the compiler and therefore conserves stack.
 				// This is a slow/rare path and conserving stack is preferred over its performance otherwise.
 				goto main_loop;
