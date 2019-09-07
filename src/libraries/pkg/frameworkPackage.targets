@@ -27,20 +27,6 @@
       <Version>$(PackageVersion)</Version>
     </_buildRIDWithMetadata>
     <Dependency Include="@(_buildRIDWithMetadata->'runtime.%(Identity).$(Id)')" />
-
-    <Dependency Include="Microsoft.NETCore.Platforms">
-      <Version>$(MicrosoftNETCorePlatformsPackageVersion)</Version>
-      <TargetFramework>$(TargetFramework)</TargetFramework>
-    </Dependency>
-
-    <!-- Include the update to v1 lineup package, which now has no runtime package mappings.
-         This will reduce the number of packages downloaded when mixing v1 and later
-         packages as well as reduce our dependence on conflict resolution for dropping
-         those v1 runtime packages -->
-    <Dependency Condition="'$(IsLineupPackage)' == 'true'" Include="Microsoft.NETCore.Targets">
-      <Version>2.0.0</Version>
-      <TargetFramework>$(TargetFramework)</TargetFramework>
-    </Dependency>
   </ItemGroup>
 
   <!-- Bring in lib content from binplaced lib props -->
