@@ -17,13 +17,13 @@ struct MonoInterpOpnameCharacters {
 };
 #undef OPDEF
 
-extern const MonoInterpOpnameCharacters mono_interp_opname_characters = {
+const MonoInterpOpnameCharacters mono_interp_opname_characters = {
 #define OPDEF(a,b,c,d,e,f) b,
 #include "mintops.def"
 };
 #undef OPDEF
 
-extern const guint16 mono_interp_opname_offsets [] = {
+const guint16 mono_interp_opname_offsets [] = {
 #define OPDEF(a,b,c,d,e,f) offsetof (MonoInterpOpnameCharacters, a),
 #include "mintops.def"
 #undef OPDEF
