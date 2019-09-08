@@ -107,6 +107,8 @@ stages:
           name: Hosted VS2017
 
         submitToHelix: true
+        # Temporarily until we increase the Windows ARM64 queue, https://github.com/dotnet/core-eng/issues/7756
+        timeoutInMinutes: 180
         buildExtraArguments: /p:RuntimeOS=win10
 
         variables:
