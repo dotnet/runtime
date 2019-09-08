@@ -955,23 +955,24 @@ static int ccount = 0;
 			else \
 				MONO_EMIT_NEW_LOAD_MEMBASE_OP_FLAGS (cfg, OP_LOADI4_MEMBASE, _length_reg, array_reg, offset, MONO_INST_INVARIANT_LOAD); \
 			MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, _length_reg, index_reg); \
-			MONO_EMIT_NEW_COND_EXC (cfg, LE_UN, (const char*)(ex_name ? ex_name : "IndexOutOfRangeException")); \
+			MONO_EMIT_NEW_COND_EXC (cfg, LE_UN, ex_name); \
 	} while (0)
 
 #ifndef MONO_ARCH_EMIT_BOUNDS_CHECK
-#define MONO_ARCH_EMIT_BOUNDS_CHECK(cfg, array_reg, offset, index_reg) MONO_EMIT_DEFAULT_BOUNDS_CHECK ((cfg), (array_reg), (offset), (index_reg), TRUE, NULL)
+#define MONO_ARCH_EMIT_BOUNDS_CHECK(cfg, array_reg, offset, index_reg, ex_name) MONO_EMIT_DEFAULT_BOUNDS_CHECK ((cfg), (array_reg), (offset), (index_reg), TRUE, ex_name)
 #endif
 
 static inline void
 mini_emit_bounds_check_offset (MonoCompile *cfg, int array_reg, int array_length_offset, int index_reg, const char *ex_name)
 {
 	if (!(cfg->opt & MONO_OPT_UNSAFE)) {
+		ex_name = ex_name ? ex_name : "IndexOutOfRangeException";
 		if (!(cfg->opt & MONO_OPT_ABCREM)) {
 			MONO_EMIT_NULL_CHECK (cfg, array_reg, FALSE);
 			if (COMPILE_LLVM (cfg))
 				MONO_EMIT_DEFAULT_BOUNDS_CHECK ((cfg), (array_reg), (array_length_offset), (index_reg), TRUE, ex_name);
 			else
-				MONO_ARCH_EMIT_BOUNDS_CHECK ((cfg), (array_reg), (array_length_offset), (index_reg));
+				MONO_ARCH_EMIT_BOUNDS_CHECK ((cfg), (array_reg), (array_length_offset), (index_reg), ex_name);
 		} else {
 			MonoInst *ins;
 			MONO_INST_NEW ((cfg), ins, OP_BOUNDS_CHECK);

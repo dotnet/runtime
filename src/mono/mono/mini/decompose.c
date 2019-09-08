@@ -1557,7 +1557,7 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 						MONO_EMIT_NEW_UNALU (cfg, OP_SEXT_I4, index2_reg, ins->sreg2);
 						MONO_EMIT_DEFAULT_BOUNDS_CHECK (cfg, ins->sreg1, ins->inst_imm, index2_reg, ins->flags & MONO_INST_FAULT, ins->inst_p0);
 					} else {
-						MONO_ARCH_EMIT_BOUNDS_CHECK (cfg, ins->sreg1, ins->inst_imm, ins->sreg2);
+						MONO_ARCH_EMIT_BOUNDS_CHECK (cfg, ins->sreg1, ins->inst_imm, ins->sreg2, ins->inst_p0);
 					}
 					break;
 				case OP_NEWARR:

@@ -1165,6 +1165,9 @@ typedef union {
 
 #define amd64_sse_prefetch_reg_membase(inst, arg, basereg, disp) emit_sse_reg_membase_op2((inst), (arg), (basereg), (disp), 0x0f, 0x18)
 
+#define amd64_sse_lzcnt_reg_reg_size(inst, dreg, reg, size) emit_sse_reg_reg_size((inst), (dreg), (reg), 0xf3, 0x0f, 0xbd, (size))
+#define amd64_sse_popcnt_reg_reg_size(inst, dreg, reg, size) emit_sse_reg_reg_size((inst), (dreg), (reg), 0xf3, 0x0f, 0xb8, (size))
+
 /* Generated from x86-codegen.h */
 
 #define amd64_breakpoint_size(inst,size) do { x86_breakpoint(inst); } while (0)

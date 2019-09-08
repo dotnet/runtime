@@ -2823,6 +2823,7 @@ enum {
 
 const char *mono_arch_xregname (int reg);
 guint32     mono_arch_cpu_enumerate_simd_versions (void);
+MonoCPUFeatures mono_arch_get_cpu_features (void);
 
 #ifdef MONO_ARCH_SIMD_INTRINSICS
 void        mono_simd_simplify_indirection (MonoCompile *cfg);

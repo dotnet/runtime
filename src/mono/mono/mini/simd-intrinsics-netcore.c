@@ -59,6 +59,8 @@ get_cpu_features (void)
 {
 #ifdef ENABLE_LLVM
 	return mono_llvm_get_cpu_features ();
+#elif defined(TARGET_AMD64)
+	return mono_arch_get_cpu_features ();
 #else
 	return (MonoCPUFeatures)0;
 #endif
@@ -311,6 +313,8 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		return emit_xcompare (cfg, klass, etype, ins, ins);
 	}
 	case SN_get_Item:
+		if (!COMPILE_LLVM (cfg))
+			return NULL;
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, len);
 		MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "IndexOutOfRangeException");
 		int opcode = -1;
@@ -438,7 +442,8 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		if (id == SN_op_Inequality) {
 			int sreg = ins->dreg;
 			int dreg = alloc_ireg (cfg);
-			EMIT_NEW_UNALU (cfg, ins, OP_INOT, dreg, sreg);
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, sreg, 0);
+			EMIT_NEW_UNALU (cfg, ins, OP_CEQ, dreg, -1);
 		}
 		return ins;
 	case SN_GreaterThan:
@@ -477,6 +482,7 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		if (!(fsig->param_count == 2 && mono_metadata_type_equal (fsig->ret, type) && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type)))
 			return NULL;
 		ins = emit_simd_ins (cfg, klass, OP_XBINOP, args [0]->dreg, args [1]->dreg);
+		ins->inst_c1 = etype->type;
 		if (etype->type == MONO_TYPE_R4 || etype->type == MONO_TYPE_R8) {
 			switch (id) {
 			case SN_op_Addition:
@@ -622,6 +628,8 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		// We only support the subset used by corelib
 		if (m_class_get_image (cfg->method->klass) != mono_get_corlib ())
 			return NULL;
+		if (!COMPILE_LLVM (cfg))
+			return NULL;
 		id = lookup_intrins (bmi1_methods, sizeof (bmi1_methods), cmethod);
 		g_assert (id != -1);
 		supported = (get_cpu_features () & MONO_CPU_X86_BMI1) != 0;
@@ -646,6 +654,8 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 	if (!strcmp (class_name, "Bmi2") || (!strcmp (class_name, "X64") && cmethod->klass->nested_in && !strcmp (m_class_get_name (cmethod->klass->nested_in), "Bmi2"))) {
 		// We only support the subset used by corelib
 		if (m_class_get_image (cfg->method->klass) != mono_get_corlib ())
+			return NULL;
+		if (!COMPILE_LLVM (cfg))
 			return NULL;
 		id = lookup_intrins (bmi2_methods, sizeof (bmi2_methods), cmethod);
 		g_assert (id != -1);
@@ -781,8 +791,6 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	MonoImage *image = m_class_get_image (cmethod->klass);
 
 	if (image != mono_get_corlib ())
-		return NULL;
-	if (!COMPILE_LLVM (cfg))
 		return NULL;
 	// FIXME:
 	if (cfg->compile_aot)
