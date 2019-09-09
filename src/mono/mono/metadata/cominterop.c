@@ -2017,6 +2017,46 @@ cominterop_setup_marshal_context (EmitMarshalContext *m, MonoMethod *method)
 	m->csig = csig;
 }
 
+static MonoMarshalSpec*
+cominterop_get_ccw_default_mspec (const MonoType *param_type)
+{
+	MonoMarshalVariant elem_type;
+	MonoMarshalNative native;
+	MonoMarshalSpec *result;
+
+	switch (param_type->type) {
+	case MONO_TYPE_OBJECT:
+		native = MONO_NATIVE_STRUCT;
+		break;
+	case MONO_TYPE_STRING:
+		native = MONO_NATIVE_BSTR;
+		break;
+	case MONO_TYPE_CLASS:
+		native = MONO_NATIVE_INTERFACE;
+		break;
+	case MONO_TYPE_BOOLEAN:
+		native = MONO_NATIVE_VARIANTBOOL;
+		break;
+	case MONO_TYPE_SZARRAY:
+		/* object[] -> SAFEARRAY(VARIANT) */
+		native = MONO_NATIVE_SAFEARRAY;
+		if (param_type->data.array->eklass == mono_defaults.object_class)
+			elem_type = MONO_VARIANT_VARIANT;
+		else
+			return NULL;
+		break;
+	default:
+		return NULL;
+	}
+
+	result = g_new0 (MonoMarshalSpec, 1);
+	result->native = native;
+	if (native == MONO_NATIVE_SAFEARRAY)
+		result->data.safearray_data.elem_type = elem_type;
+
+	return result;
+}
+
 /**
  * cominterop_get_ccw_checked:
  * @object: a pointer to the object
@@ -2159,22 +2199,7 @@ cominterop_get_ccw_checked (MonoObjectHandle object, MonoClass* itf, MonoError *
 				mspecs [mspec_index] = mspecs [param_index];
 
 				if (mspecs[mspec_index] == NULL) {
-					if (sig_adjusted->params[param_index]->type == MONO_TYPE_OBJECT) {
-						mspecs[mspec_index] = g_new0 (MonoMarshalSpec, 1);
-						mspecs[mspec_index]->native = MONO_NATIVE_STRUCT;
-					}
-					else if (sig_adjusted->params[param_index]->type == MONO_TYPE_STRING) {
-						mspecs[mspec_index] = g_new0 (MonoMarshalSpec, 1);
-						mspecs[mspec_index]->native = MONO_NATIVE_BSTR;
-					}
-					else if (sig_adjusted->params[param_index]->type == MONO_TYPE_CLASS) {
-						mspecs[mspec_index] = g_new0 (MonoMarshalSpec, 1);
-						mspecs[mspec_index]->native = MONO_NATIVE_INTERFACE;
-					}
-					else if (sig_adjusted->params[param_index]->type == MONO_TYPE_BOOLEAN) {
-						mspecs[mspec_index] = g_new0 (MonoMarshalSpec, 1);
-						mspecs[mspec_index]->native = MONO_NATIVE_VARIANTBOOL;
-					}
+					mspecs[mspec_index] = cominterop_get_ccw_default_mspec (sig_adjusted->params[param_index]);
 				} else {
 					/* increase SizeParamIndex since we've added a param */
 					if (sig_adjusted->params[param_index]->type == MONO_TYPE_ARRAY ||
@@ -2189,24 +2214,8 @@ cominterop_get_ccw_checked (MonoObjectHandle object, MonoClass* itf, MonoError *
 
 			/* move return spec to last param */
 			if (!preserve_sig && !MONO_TYPE_IS_VOID (sig->ret)) {
-				if (mspecs [0] == NULL) {
-					if (sig_adjusted->params[sig_adjusted->param_count-1]->type == MONO_TYPE_OBJECT) {
-						mspecs[0] = g_new0 (MonoMarshalSpec, 1);
-						mspecs[0]->native = MONO_NATIVE_STRUCT;
-					}
-					else if (sig_adjusted->params[sig_adjusted->param_count-1]->type == MONO_TYPE_STRING) {
-						mspecs[0] = g_new0 (MonoMarshalSpec, 1);
-						mspecs[0]->native = MONO_NATIVE_BSTR;
-					}
-					else if (sig_adjusted->params[sig_adjusted->param_count-1]->type == MONO_TYPE_CLASS) {
-						mspecs[0] = g_new0 (MonoMarshalSpec, 1);
-						mspecs[0]->native = MONO_NATIVE_INTERFACE;
-					}
-					else if (sig_adjusted->params[sig_adjusted->param_count-1]->type == MONO_TYPE_BOOLEAN) {
-						mspecs[0] = g_new0 (MonoMarshalSpec, 1);
-						mspecs[0]->native = MONO_NATIVE_VARIANTBOOL;
-					}
-				}
+				if (mspecs [0] == NULL)
+					mspecs[0] = cominterop_get_ccw_default_mspec (sig_adjusted->params[sig_adjusted->param_count-1]);
 
 				mspecs [sig_adjusted->param_count] = mspecs [0];
 				mspecs [0] = NULL;
