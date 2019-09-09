@@ -19,7 +19,7 @@ namespace System.Threading.Channels
         /// </summary>
         public virtual Task Completion => ChannelUtilities.s_neverCompletingTask;
 
-        /// <summary>Attempts to read an item to the channel.</summary>
+        /// <summary>Attempts to read an item from the channel.</summary>
         /// <param name="item">The read item, or a default value if no item could be read.</param>
         /// <returns>true if an item was read; otherwise, false if no item was read.</returns>
         public abstract bool TryRead([MaybeNullWhen(false)] out T item);
