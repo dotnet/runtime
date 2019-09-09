@@ -20,8 +20,6 @@
     <Compile Include="JsonElementWriteTests.cs" />
     <Compile Include="JsonEncodedTextTests.cs" />
     <Compile Include="JsonGuidTestData.cs" />
-    <Compile Include="JsonNodeToJsonElementTests.cs" />
-    <Compile Include="JsonNodeCloneTests.cs" />
     <Compile Include="JsonNumberTestData.cs" />
     <Compile Include="JsonPropertyTests.cs" />
     <Compile Include="JsonReaderStateAndOptionsTests.cs" />
@@ -120,8 +118,12 @@
   <ItemGroup>
     <Compile Include="JsonArrayTests.cs" />
     <Compile Include="JsonBooleanTests.cs" />
+    <Compile Include="JsonElementWithNodeParentTests.cs" />
     <Compile Include="JsonNodeTestData.cs" />
-    <Compile Include="JsonNodeParseTests.cs" />
+    <Compile Include="JsonNode.AsJsonElementTests.cs" />
+    <Compile Include="JsonNode.CloneTests.cs" />
+    <Compile Include="JsonNode.TraversalTests.cs" />
+    <Compile Include="JsonNullTests.cs" />
     <Compile Include="JsonNumberTests.cs" />
     <Compile Include="JsonObjectTests.cs" />
     <Compile Include="JsonStringTests.cs" />

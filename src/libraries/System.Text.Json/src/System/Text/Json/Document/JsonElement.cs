@@ -64,11 +64,6 @@ namespace System.Text.Json
 
                 var jsonNode = (JsonNode)_parent;
 
-                if (jsonNode == null)
-                {
-                    return JsonValueKind.Null;
-                }
-
                 return jsonNode.ValueKind;
             }
         }
@@ -1453,8 +1448,11 @@ namespace System.Text.Json
         ///   Gets the original input data backing this value, returning it as a <see cref="string"/>.
         /// </summary>
         /// <returns>
-        ///  The original input data backing this value, returning it as a <see cref="string"/>.
+        ///   The original input data backing this value, returning it as a <see cref="string"/>.
         /// </returns>
+        /// <remarks>
+        ///   For JsonElement built from <see cref="JsonNode"/>, the value of <see cref="JsonNode.ToJsonString"/> is returned.
+        /// </remarks>
         /// <exception cref="ObjectDisposedException">
         ///   The parent <see cref="JsonDocument"/> has been disposed.
         /// </exception>
@@ -1468,7 +1466,7 @@ namespace System.Text.Json
             }
 
             var jsonNode = (JsonNode)_parent;
-            return jsonNode.ToString();
+            return jsonNode.ToJsonString();
         }
 
         internal string GetPropertyRawText()
@@ -1601,8 +1599,14 @@ namespace System.Text.Json
 
             CheckValidInstance();
 
-            var document = (JsonDocument)_parent;
-            document.WriteElementTo(_idx, writer);
+            if (_parent is JsonDocument document)
+            {
+                document.WriteElementTo(_idx, writer);
+                return;
+            }
+
+            var jsonNode = (JsonNode)_parent;
+            jsonNode.WriteTo(writer);
         }
 
         /// <summary>
@@ -1681,6 +1685,7 @@ namespace System.Text.Json
         ///   Gets a string representation for the current value appropriate to the value type.
         /// </summary>
         /// <remarks>
+        ///   For JsonElement built from <see cref="JsonDocument"/>:
         ///   <para>
         ///     For <see cref="JsonValueKind.Null"/>, <see cref="string.Empty"/> is returned.
         ///   </para>
@@ -1701,6 +1706,9 @@ namespace System.Text.Json
         ///     For other types, the value of <see cref="GetRawText"/>() is returned.
         ///   </para>
         /// </remarks>
+        /// <remarks>
+        ///   For JsonElement built from <see cref="JsonNode"/>, the value of <see cref="JsonNode.ToJsonString"/> is returned.
+        /// </remarks>
         /// <returns>
         ///   A string representation for the current value appropriate to the value type.
         /// </returns>
@@ -1709,6 +1717,11 @@ namespace System.Text.Json
         /// </exception>
         public override string ToString()
         {
+            if (_parent is JsonNode jsonNode)
+            {
+                return jsonNode.ToJsonString();
+            }
+
             switch (TokenType)
             {
                 case JsonTokenType.None:
@@ -1724,13 +1737,7 @@ namespace System.Text.Json
                     {
                         // null parent should have hit the None case
                         Debug.Assert(_parent != null);
-                        if (_parent is JsonDocument document)
-                        {
-                            return document.GetRawValueAsString(_idx);
-                        }
-
-                        var jsonNode = (JsonNode)_parent;
-                        return jsonNode.ToString();
+                        return ((JsonDocument)_parent).GetRawValueAsString(_idx);
                     }
                 case JsonTokenType.String:
                     return GetString();
@@ -1755,6 +1762,9 @@ namespace System.Text.Json
         ///   If this JsonElement is itself the output of a previous call to Clone, or
         ///   a value contained within another JsonElement which was the output of a previous
         ///   call to Clone, this method results in no additional memory allocation.
+        /// </remarks>
+        /// <remarks>
+        ///   For <see cref="JsonElement"/> built from <see cref="JsonNode"/> performs <see cref="JsonNode.Clone"/>.
         /// </remarks>
         public JsonElement Clone()
         {

@@ -9,11 +9,12 @@ using System.Text.Encodings.Web;
 
 namespace System.Text.Json.Tests
 {
-    public sealed class JsonDocumentWriteTests : JsonReadonlyDomWriteTests
+    public sealed class JsonDocumentWriteTests : JsonDomWriteTests
     {
         protected override JsonDocument PrepareDocument(string jsonIn)
         {
-            return JsonDocument.Parse(jsonIn, s_options);
+            var jsonDocument = JsonDocument.Parse(jsonIn, s_options);
+            return jsonDocument;
         }
 
         protected override void WriteSingleValue(JsonDocument document, Utf8JsonWriter writer)
@@ -36,7 +37,45 @@ namespace System.Text.Json.Tests
         }
     }
 
-    public sealed class JsonElementWriteTests : JsonReadonlyDomWriteTests
+    public sealed class JsonNodeWriteTests : JsonDomWriteTests
+    {
+        protected override JsonDocument PrepareDocument(string jsonIn)
+        {
+            JsonNode jsonNode = JsonNode.Parse(jsonIn, s_options);
+
+            using (MemoryStream stream = new MemoryStream())
+            {
+                using (Utf8JsonWriter writer = new Utf8JsonWriter(stream))
+                {
+                    jsonNode.WriteTo(writer);
+                    stream.Seek(0, SeekOrigin.Begin);
+                    var jsonDocument = JsonDocument.Parse(stream, s_options);
+                    return jsonDocument;
+                }
+            }
+        }
+
+        protected override void WriteSingleValue(JsonDocument document, Utf8JsonWriter writer)
+        {
+            document.WriteTo(writer);
+        }
+
+        protected override void WriteDocument(JsonDocument document, Utf8JsonWriter writer)
+        {
+            document.WriteTo(writer);
+        }
+
+        [Fact]
+        public static void CheckByPassingNullWriter()
+        {
+            using (JsonDocument doc = JsonDocument.Parse("true", default))
+            {
+                AssertExtensions.Throws<ArgumentNullException>("writer", () => doc.WriteTo(null));
+            }
+        }
+    }
+
+    public sealed class JsonElementWriteTests : JsonDomWriteTests
     {
         protected override JsonDocument PrepareDocument(string jsonIn)
         {
@@ -168,7 +207,7 @@ namespace System.Text.Json.Tests
         }
     }
 
-    public abstract class JsonReadonlyDomWriteTests
+    public abstract class JsonDomWriteTests
     {
         protected static readonly JsonDocumentOptions s_options =
             new JsonDocumentOptions
