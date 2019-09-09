@@ -11,6 +11,9 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tools.RuntimeClient;
+using System.Runtime.InteropServices;
+using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Tracing.Tests.Common
 {
@@ -170,6 +173,10 @@ namespace Tracing.Tests.Common
 
         private int Validate()
         {
+            var isClean = EnsureCleanEnvironment();
+            if (!isClean)
+                return -1;
+
             var processId = Process.GetCurrentProcess().Id;
             Logger.logger.Log("Connecting to EventPipe...");
             var binaryReader = EventPipeClient.CollectTracing(processId, _sessionConfiguration, out var eventpipeSessionId);
@@ -282,6 +289,66 @@ namespace Tracing.Tests.Common
             {
                 return 100;
             }
+        }
+
+        // Ensure that we have a clean environment for running the test.
+        // Specifically check that we don't have more than one match for 
+        // Diagnostic IPC sockets in the TempPath.  These can be left behind
+        // by bugs, catastrophic test failures, etc. from previous testing.
+        // The tmp directory is only cleared on reboot, so it is possible to
+        // run into these zombie pipes if there are failures over time.
+        // Note: Windows has some guarantees about named pipes not living longer
+        // the process that created them, so we don't need to check on that platform.
+        private bool EnsureCleanEnvironment()
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Logger.logger.Log("Validating clean environment...");
+                // mimic the RuntimeClient's code for finding OS Transports
+                IEnumerable<FileInfo> ipcPorts = Directory.GetFiles(Path.GetTempPath())
+                    .Select(namedPipe => new FileInfo(namedPipe))
+                    .Where(input => Regex.IsMatch(input.Name, $"^dotnet-diagnostic-{System.Diagnostics.Process.GetCurrentProcess().Id}-(\\d+)-socket$"));
+                
+                if (ipcPorts.Count() > 1)
+                {
+                    Logger.logger.Log($"Found {ipcPorts.Count()} OS transports for pid {System.Diagnostics.Process.GetCurrentProcess().Id}:");
+                    foreach (var match in ipcPorts)
+                    {
+                        Logger.logger.Log($"\t{match.Name}");
+                    }
+
+                    // Get everything _except_ the newest pipe
+                    var duplicates = ipcPorts.OrderBy(fileInfo => fileInfo.CreationTime.Ticks).SkipLast(1);
+                    foreach (var duplicate in duplicates)
+                    {
+                        Logger.logger.Log($"Attempting to delete the oldest pipe: {duplicate.FullName}");
+                        duplicate.Delete(); // should throw if we can't delete and be caught in Validate
+                        Logger.logger.Log($"Deleted");
+                    }
+
+                    var afterIpcPorts = Directory.GetFiles(Path.GetTempPath())
+                        .Select(namedPipe => new FileInfo(namedPipe))
+                        .Where(input => Regex.IsMatch(input.Name, $"^dotnet-diagnostic-{System.Diagnostics.Process.GetCurrentProcess().Id}-(\\d+)-socket$"));
+
+                    if (afterIpcPorts.Count() == 1)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        Logger.logger.Log($"Unable to clean the environment.  The following transports are on the system:");
+                        foreach(var transport in afterIpcPorts)
+                        {
+                            Logger.logger.Log($"\t{transport.FullName}");
+                        }
+                        return false;
+                    }
+                }
+                Logger.logger.Log("Environment was clean.");
+                return true;
+            }
+
+            return true;
         }
 
         public static int RunAndValidateEventCounts(
