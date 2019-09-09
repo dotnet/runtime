@@ -193,7 +193,6 @@ FCFuncEnd()
 
 FCFuncStart(gTypedReferenceFuncs)
     FCFuncElement("InternalToObject", ReflectionInvocation::TypedReferenceToObject)
-    FCFuncElement("InternalSetTypedReference", ReflectionInvocation::SetTypedReference)
     FCFuncElement("InternalMakeTypedReference", ReflectionInvocation::MakeTypedReference)
 FCFuncEnd()
 
