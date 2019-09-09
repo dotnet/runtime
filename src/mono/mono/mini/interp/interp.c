@@ -228,9 +228,7 @@ int mono_interp_traceopt = 0;
 #define MINT_IN_DEFAULT default:
 #endif
 
-// FIXME The inlining of this needs to be reevaluated in the context of later changes.
-// Also there is now only one caller, so consider inlining it manually.
-static MONO_NEVER_INLINE GSList* // Inlining this causes caller to use more stack.
+static GSList*
 clear_resume_state (ThreadContext *context, InterpFrame *frame, GSList* finally_ips)
 {
 	/* We have thrown an exception from a finally block. Some of the leave targets were unwound already */
