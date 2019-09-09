@@ -143,8 +143,10 @@ namespace System
         {
             bool nextMustBeStartChar = true;
 
-            if (value.Length == 0)
+            if (string.IsNullOrEmpty(value))
+            {
                 return false;
+            }
 
             // each char must be Lu, Ll, Lt, Lm, Lo, Nd, Mn, Mc, Pc
             //

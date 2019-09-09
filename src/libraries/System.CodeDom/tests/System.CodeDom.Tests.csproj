@@ -20,14 +20,15 @@
     <Compile Include="System\CodeDom\CodeTypeParameterCollectionTests.cs" />
     <Compile Include="System\CodeDom\CodeTypeReferenceCollectionTests.cs" />
     <Compile Include="System\CodeDom\Compiler\ExecutorTests.cs" />
-    <Compile Include="System\CodeDom\Compiler\CodeGeneratorTests.cs" />
-    <Compile Include="System\CodeDom\Compiler\CompilerInfoTests.cs" />
-    <Compile Include="System\CodeDom\Compiler\CodeGeneratorOptionsTests.cs" />
-    <Compile Include="System\CodeDom\Compiler\CompilerErrorCollectionTests.cs" />
-    <Compile Include="System\CodeDom\Compiler\CompilerParametersTests.cs" />
-    <Compile Include="System\CodeDom\Compiler\CompilerErrorTests.cs" />
-    <Compile Include="System\CodeDom\Compiler\CompilerResultsTests.cs" />
     <Compile Include="System\CodeDom\Compiler\CodeCompilerTests.cs" />
+    <Compile Include="System\CodeDom\Compiler\CodeGeneratorTests.cs" />
+    <Compile Include="System\CodeDom\Compiler\CodeGeneratorOptionsTests.cs" />
+    <Compile Include="System\CodeDom\Compiler\CodeValidatorTests.cs" />
+    <Compile Include="System\CodeDom\Compiler\CompilerErrorCollectionTests.cs" />
+    <Compile Include="System\CodeDom\Compiler\CompilerErrorTests.cs" />
+    <Compile Include="System\CodeDom\Compiler\CompilerInfoTests.cs" />
+    <Compile Include="System\CodeDom\Compiler\CompilerParametersTests.cs" />
+    <Compile Include="System\CodeDom\Compiler\CompilerResultsTests.cs" />
     <Compile Include="System\CodeDom\TempFileCollectionTests.cs" />
     <Compile Include="System\CodeDom\CodeObjectCreateExpressionTests.cs" />
     <Compile Include="System\CodeDom\CodeParameterDeclarationExpressionTests.cs" />
@@ -110,6 +111,9 @@
     </Compile>
     <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
       <Link>Common\System\IO\TempFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
+      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>
   </ItemGroup>
 </Project>

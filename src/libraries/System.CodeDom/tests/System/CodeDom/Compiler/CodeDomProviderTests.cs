@@ -5,6 +5,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.Serialization.Formatters.Tests;
 using Microsoft.CSharp;
 using Microsoft.VisualBasic;
 using Xunit;
@@ -132,6 +134,15 @@ namespace System.CodeDom.Compiler.Tests
 
             Exception ex2 = Assert.ThrowsAny<Exception>(() => CodeDomProvider.CreateProvider(language, new Dictionary<string, string>()));
             AssertIsConfigurationErrorsException(ex2);
+        }
+
+        [Fact]
+        public void CreateProvider_SerializeConfigurationErrorsException_ThrowsPlatformNotSupportedException()
+        {
+            Exception ex = Assert.ThrowsAny<Exception>(() => CodeDomProvider.CreateProvider(string.Empty));
+            AssertIsConfigurationErrorsException(ex);
+
+            BinaryFormatterHelpers.AssertExceptionDeserializationFails(ex.GetType());
         }
 
         [Theory]
