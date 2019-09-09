@@ -37,6 +37,7 @@ namespace System.ComponentModel
             {
                 return true;
             }
+
             return base.CanConvertFrom(context, sourceType);
         }
 
@@ -45,15 +46,13 @@ namespace System.ComponentModel
         /// </summary>
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
-            if (value is string)
+            if (value is string text)
             {
-                string text = ((string)value).Trim();
-
+                text = text.Trim();
                 if (!string.Equals(text, s_none) && context != null)
                 {
                     // Try the reference service first.
-                    IReferenceService refSvc = (IReferenceService)context.GetService(typeof(IReferenceService));
-                    if (refSvc != null)
+                    if (context.GetService(typeof(IReferenceService)) is IReferenceService refSvc)
                     {
                         object obj = refSvc.GetReference(text);
                         if (obj != null)
@@ -73,29 +72,24 @@ namespace System.ComponentModel
                         }
                     }
                 }
+
                 return null;
             }
+
             return base.ConvertFrom(context, culture, value);
         }
 
         /// <summary>
-        /// Converts the given value object to the reference type
-        /// using the specified context and arguments.
+        /// Converts the given value object to the reference type using the specified context and arguments.
         /// </summary>
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
-            if (destinationType == null)
-            {
-                throw new ArgumentNullException(nameof(destinationType));
-            }
-
             if (destinationType == typeof(string))
             {
                 if (value != null)
                 {
                     // Try the reference service first.
-                    IReferenceService refSvc = (IReferenceService)context?.GetService(typeof(IReferenceService));
-                    if (refSvc != null)
+                    if (context?.GetService(typeof(IReferenceService)) is IReferenceService refSvc)
                     {
                         string name = refSvc.GetName(value);
                         if (name != null)
@@ -105,9 +99,8 @@ namespace System.ComponentModel
                     }
 
                     // Now see if this is an IComponent.
-                    if (!Marshal.IsComObject(value) && value is IComponent)
+                    if (!Marshal.IsComObject(value) && value is IComponent comp)
                     {
-                        IComponent comp = (IComponent)value;
                         ISite site = comp.Site;
                         string name = site?.Name;
                         if (name != null)
@@ -119,6 +112,7 @@ namespace System.ComponentModel
                     // Couldn't find it.
                     return string.Empty;
                 }
+
                 return s_none;
             }
 
@@ -130,23 +124,25 @@ namespace System.ComponentModel
         /// </summary>
         public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context)
         {
-            object[] components = null;
+            List<object> components = null;
 
             if (context != null)
             {
-                var list = new List<object> { null };
+                components = new List<object> { null };
 
                 // Try the reference service first.
-                IReferenceService refSvc = (IReferenceService)context.GetService(typeof(IReferenceService));
-                if (refSvc != null)
+                if (context.GetService(typeof(IReferenceService)) is IReferenceService refSvc)
                 {
                     object[] objs = refSvc.GetReferences(_type);
-                    int count = objs.Length;
-
-                    for (int i = 0; i < count; i++)
+                    if (objs != null)
                     {
-                        if (IsValueAllowed(context, objs[i]))
-                            list.Add(objs[i]);
+                        for (int i = 0; i < objs.Length; i++)
+                        {
+                            if (IsValueAllowed(context, objs[i]))
+                            {
+                                components.Add(objs[i]);
+                            }
+                        }
                     }
                 }
                 else
@@ -156,20 +152,17 @@ namespace System.ComponentModel
                     if (cont != null)
                     {
                         ComponentCollection objs = cont.Components;
-
                         foreach (IComponent obj in objs)
                         {
-                            if (obj != null && _type.IsInstanceOfType(obj) &&
-                                IsValueAllowed(context, obj))
+                            if (obj != null && _type != null && _type.IsInstanceOfType(obj) && IsValueAllowed(context, obj))
                             {
-                                list.Add(obj);
+                                components.Add(obj);
                             }
                         }
                     }
                 }
 
-                components = list.ToArray();
-                Array.Sort(components, 0, components.Length, new ReferenceComparer(this));
+                components.Sort(new ReferenceComparer(this));
             }
 
             return new StandardValuesCollection(components);
@@ -196,7 +189,7 @@ namespace System.ComponentModel
         /// <summary>
         /// IComparer object used for sorting references
         /// </summary>
-        private class ReferenceComparer : IComparer
+        private struct ReferenceComparer : IComparer<object>
         {
             private readonly ReferenceConverter _converter;
 
@@ -210,7 +203,7 @@ namespace System.ComponentModel
                 string itemName1 = _converter.ConvertToString(item1);
                 string itemName2 = _converter.ConvertToString(item2);
 
-                return string.Compare(itemName1, itemName2, false, CultureInfo.InvariantCulture);
+                return string.Compare(itemName1, itemName2, StringComparison.InvariantCulture);
             }
         }
     }

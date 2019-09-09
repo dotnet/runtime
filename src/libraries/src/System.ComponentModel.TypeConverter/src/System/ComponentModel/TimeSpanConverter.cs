@@ -64,19 +64,14 @@ namespace System.ComponentModel
         /// </summary>
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
-            if (destinationType == null)
-            {
-                throw new ArgumentNullException(nameof(destinationType));
-            }
-
             if (destinationType == typeof(InstanceDescriptor) && value is TimeSpan)
             {
-                MethodInfo method = typeof(TimeSpan).GetMethod("Parse", new Type[] { typeof(string) });
-                if (method != null)
-                {
-                    return new InstanceDescriptor(method, new object[] { value.ToString() });
-                }
+                return new InstanceDescriptor(
+                    typeof(TimeSpan).GetMethod(nameof(TimeSpan.Parse), new Type[] { typeof(string) }),
+                    new object[] { value.ToString() }
+                );
             }
+
             return base.ConvertTo(context, culture, value, destinationType);
         }
     }
