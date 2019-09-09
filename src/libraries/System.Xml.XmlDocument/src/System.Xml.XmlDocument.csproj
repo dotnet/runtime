@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{EC0F9F33-3D4E-470A-90E6-AE9D005F023A}</ProjectGuid>
     <AssemblyName>System.Xml.XmlDocument</AssemblyName>
     <RootNamespace>System.Xml.XmlDocument</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

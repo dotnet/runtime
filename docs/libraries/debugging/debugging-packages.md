@@ -77,10 +77,7 @@ To validate the content of the nupkg, change the extension to .zip. As before, u
 Ensure that the test is referencing the correct pkg. For example:
 ```
   <ItemGroup>
-    <ProjectReference Include="..\pkg\System.Net.ServicePoint.pkgproj">
-      <Name>System.Net.ServicePoint</Name>
-      <Project>{53D09AF4-0C13-4197-B8AD-9746F0374E88}</Project>
-    </ProjectReference>
+    <ProjectReference Include="..\pkg\System.Net.ServicePoint.pkgproj" />
   </ItemGroup>
 ```
 

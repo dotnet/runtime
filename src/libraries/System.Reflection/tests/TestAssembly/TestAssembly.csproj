@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{0CD33916-DD1D-4DF3-B579-2896ACE43E45}</ProjectGuid>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>

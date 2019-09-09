@@ -5,7 +5,6 @@
     <DefineConstants>$(DefineConstants);RESOURCES_EXTENSIONS;INTERNAL_NULLABLE_ATTRIBUTES</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>
-    <ProjectGuid>{6773D354-A573-4D9C-9A67-C7FAE579DA50}</ProjectGuid>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)\System\Resources\ResourceWriter.cs" Link="System\Resources\Extensions\ResourceWriter.cs" />

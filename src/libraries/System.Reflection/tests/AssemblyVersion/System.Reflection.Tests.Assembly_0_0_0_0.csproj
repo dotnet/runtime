@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{5B003EB4-DD06-4BC6-B2E9-A9F0E445CB86}</ProjectGuid>
     <AssemblyVersion>0.0.0.0</AssemblyVersion>
     <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>

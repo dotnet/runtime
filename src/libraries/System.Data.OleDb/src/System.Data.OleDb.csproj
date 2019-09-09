@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{D909B69D-8F3B-4551-A355-8FFF6A308CF6}</ProjectGuid>
     <RootNamespace>System.Data.OleDb</RootNamespace>
     <AssemblyName>System.Data.OleDb</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

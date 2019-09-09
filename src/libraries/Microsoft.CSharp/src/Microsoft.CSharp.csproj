@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{149D7DFE-2FAC-4A38-89AD-E24CE63AACB8}</ProjectGuid>
     <AssemblyName>Microsoft.CSharp</AssemblyName>
     <RootNamespace>Microsoft.CSharp</RootNamespace>
     <!-- dotnet/corefx#3128 tracks removing this exclusion -->

@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{701CB3BC-00DC-435D-BDE4-C5FC29A708A7}</ProjectGuid>
     <RootNamespace>System.Runtime.Loader.Tests</RootNamespace>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Debug;uap-Release</Configurations>
     <TestRuntime>true</TestRuntime>
@@ -18,24 +17,15 @@
     <EmbeddedResource Include="MainStrings*.resx" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="System.Runtime.Loader.Test.Assembly\System.Runtime.Loader.Test.Assembly.csproj">
-      <Project>{b402782f-de0a-41fa-b364-60612a786fb2}</Project>
-      <Name>System.Runtime.Loader.Test.Assembly</Name>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>EmbeddedResource</OutputItemType>
-    </ProjectReference>
-    <ProjectReference Include="System.Runtime.Loader.Test.Assembly2\System.Runtime.Loader.Test.Assembly2.csproj">
-      <Project>{b402782f-de0a-41fa-b364-60612a786fb2}</Project>
-      <Name>System.Runtime.Loader.Test.Assembly2</Name>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>EmbeddedResource</OutputItemType>
-    </ProjectReference>
-    <ProjectReference Include="System.Runtime.Loader.Test.AssemblyNotSupported\System.Runtime.Loader.Test.AssemblyNotSupported.csproj">
-      <Project>{b402782f-de0a-41fa-b364-60612a786fb2}</Project>
-      <Name>System.Runtime.Loader.Test.AssemblyNotSupported</Name>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>EmbeddedResource</OutputItemType>
-    </ProjectReference>
+    <ProjectReference Include="System.Runtime.Loader.Test.Assembly\System.Runtime.Loader.Test.Assembly.csproj"
+                      ReferenceOutputAssembly="false"
+                      OutputItemType="EmbeddedResource" />
+    <ProjectReference Include="System.Runtime.Loader.Test.Assembly2\System.Runtime.Loader.Test.Assembly2.csproj"
+                      ReferenceOutputAssembly="false"
+                      OutputItemType="EmbeddedResource" />
+    <ProjectReference Include="System.Runtime.Loader.Test.AssemblyNotSupported\System.Runtime.Loader.Test.AssemblyNotSupported.csproj"
+                      ReferenceOutputAssembly="false"
+                      OutputItemType="EmbeddedResource" />
     <ProjectReference Include="ContextualReflectionDependency\System.Runtime.Loader.Test.ContextualReflectionDependency.csproj" />
     <ProjectReference Include="ReferencedClassLib\ReferencedClassLib.csproj" />
     <ProjectReference Include="ReferencedClassLibNeutralIsSatellite\ReferencedClassLibNeutralIsSatellite.csproj" />

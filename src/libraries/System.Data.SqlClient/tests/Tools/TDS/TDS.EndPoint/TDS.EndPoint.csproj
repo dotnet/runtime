@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{1FF891B4-D3DE-4CCE-887C-CB48F5351A45}</ProjectGuid>
     <RootNamespace>Microsoft.SqlServer.TDS.EndPoint</RootNamespace>
     <AssemblyName>Microsoft.SqlServer.TDS.EndPoint</AssemblyName>
     <ClsCompliant>false</ClsCompliant>
@@ -49,8 +48,6 @@
     <Compile Include="SSPI\SSPIContext.Unix.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\TDS\TDS.csproj">
-      <Name>TDS</Name>
-    </ProjectReference>
+    <ProjectReference Include="..\TDS\TDS.csproj" />
   </ItemGroup>
 </Project>

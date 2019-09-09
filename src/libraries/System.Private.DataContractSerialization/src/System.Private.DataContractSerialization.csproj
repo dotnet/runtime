@@ -4,7 +4,6 @@
     <RootNamespace>System.Private.DataContractSerialization</RootNamespace>
     <NoWarn>$(NoWarn);1634;1691;649</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <ProjectGuid>{6B4C1660-D158-4820-BE1C-D7A29CEBEC9B}</ProjectGuid>
     <FileAlignment>512</FileAlignment>
     <DebugSymbols>true</DebugSymbols>
     <PlatformTarget>AnyCPU</PlatformTarget>

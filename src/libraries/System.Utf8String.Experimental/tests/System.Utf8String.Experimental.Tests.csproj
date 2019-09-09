@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <ProjectGuid>{72E9FB32-4692-4692-A10B-9F053F8F1A88}</ProjectGuid>
     <IncludePartialFacadeTests>true</IncludePartialFacadeTests>
     <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
     <TestRuntime>true</TestRuntime>

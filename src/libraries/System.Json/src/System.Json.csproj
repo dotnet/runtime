@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{B11B5B76-F583-44EA-A4B7-3ABD990594F6}</ProjectGuid>
     <!--
         System.Json is a library for compat purposes so we want to keep the same identity as it originally shipped with in Silverlight
     -->

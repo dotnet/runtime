@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{A28B0064-EFB2-4B77-B97C-DECF5DAB074E}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <HaveDSA Condition="'$(TargetsNetCoreApp)' == 'true' or '$(TargetsUap)' == 'true'">true</HaveDSA>
     <HaveCertificateCreation Condition="'$(TargetsNetCoreApp)' == 'true' or '$(TargetsUap)' == 'true'">true</HaveCertificateCreation>

@@ -1,6 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{2D694AC8-A12F-4622-9405-74E20EC40C3A}</ProjectGuid>
     <AssemblyName>System.ComponentModel.Composition</AssemblyName>
     <RootNamespace>
     </RootNamespace>

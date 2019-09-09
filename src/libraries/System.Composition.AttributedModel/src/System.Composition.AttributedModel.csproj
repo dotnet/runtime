@@ -1,6 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{C6257381-C624-494A-A9D9-5586E60856EA}</ProjectGuid>
     <AssemblyName>System.Composition.AttributedModel</AssemblyName>
     <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
