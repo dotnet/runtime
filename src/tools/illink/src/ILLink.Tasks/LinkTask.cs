@@ -95,6 +95,8 @@ namespace ILLink.Tasks
 
 
 		/// ToolTask implementation
+		
+		protected override MessageImportance StandardErrorLoggingImportance => MessageImportance.High;
 
 		protected override string ToolName => Path.GetFileName (DotNetPath);
 
