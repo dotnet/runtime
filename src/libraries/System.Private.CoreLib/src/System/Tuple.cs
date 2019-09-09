@@ -8,10 +8,6 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 
-//
-// Note: F# compiler depends on the exact tuple hashing algorithm. Do not ever change it.
-//
-
 namespace System
 {
     /// <summary>
@@ -64,6 +60,8 @@ namespace System
         {
             return new Tuple<T1, T2, T3, T4, T5, T6, T7, Tuple<T8>>(item1, item2, item3, item4, item5, item6, item7, new Tuple<T8>(item8));
         }
+
+        // Note: F# compiler depends on the exact tuple hashing algorithm. Do not ever change it.
 
         // From System.Web.Util.HashCodeCombiner
         internal static int CombineHashCodes(int h1, int h2)
