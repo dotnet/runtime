@@ -2280,21 +2280,6 @@ FCIMPL4(void, ReflectionInvocation::MakeTypedReference, TypedByRef * value, Obje
 }
 FCIMPLEND
 
-FCIMPL2(void, ReflectionInvocation::SetTypedReference, TypedByRef * target, Object* objUNSAFE) {
-    FCALL_CONTRACT;
-    
-    // <TODO>@TODO: We fixed serious bugs in this method very late in the endgame
-    // for V1 RTM. So it was decided to disable this API (nobody would seem to
-    // be using it anyway). If this API is enabled again, the implementation should 
-    // be similar to COMArrayInfo::SetValue.
-    // </TODO>
-    HELPER_METHOD_FRAME_BEGIN_0();
-    COMPlusThrow(kNotSupportedException);
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-
 // This is an internal helper function to TypedReference class.
 // It extracts the object from the typed reference.
 FCIMPL1(Object*, ReflectionInvocation::TypedReferenceToObject, TypedByRef * value) {

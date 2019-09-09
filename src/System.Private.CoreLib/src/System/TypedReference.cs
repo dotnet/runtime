@@ -101,14 +101,9 @@ namespace System
             return __reftype(value).TypeHandle;
         }
 
-        // This may cause the type to be changed.
-        [CLSCompliant(false)]
-        public static unsafe void SetTypedReference(TypedReference target, object? value)
+        public static void SetTypedReference(TypedReference target, object? value)
         {
-            InternalSetTypedReference(&target, value);
+            throw new NotSupportedException();
         }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void InternalSetTypedReference(void* target, object? value);
     }
 }
