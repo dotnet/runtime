@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{16EE6633-F557-5C9E-9EF3-B5334B044F47}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>System.Text.Encoding.CodePages</RootNamespace>
     <AssemblyName>System.Text.Encoding.CodePages</AssemblyName>

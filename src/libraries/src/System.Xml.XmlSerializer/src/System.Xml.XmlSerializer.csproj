@@ -2,7 +2,6 @@
   <PropertyGroup>
     <AssemblyName>System.Xml.XmlSerializer</AssemblyName>
     <RootNamespace>System.Xml.XmlSerializer</RootNamespace>
-    <ProjectGuid>{D62A6082-5229-4845-8BE9-75753E08C65A}</ProjectGuid>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>

@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{4852A19F-C05C-478D-BFA0-59FD03DE0E3F}</ProjectGuid>
     <RootNamespace>System.Composition.Lightweight.UnitTests</RootNamespace>
     <AssemblyName>System.Composition.Tests</AssemblyName>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release;uap-Debug;uap-Release</Configurations>
@@ -37,13 +36,7 @@
     <Compile Include="Util\AssertX.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="Microsoft.Composition.Demos.ExtendedCollectionImports\Microsoft.Composition.Demos.ExtendedCollectionImports.csproj">
-      <Project>{44c7e52c-3873-4c64-875c-8a23a8376d60}</Project>
-      <Name>Microsoft.Composition.Demos.ExtendedCollectionImports</Name>
-    </ProjectReference>
-    <ProjectReference Include="TestLibrary\TestLibrary.csproj">
-      <Project>{da6841a5-0344-4cc7-98b0-89cbee18dee3}</Project>
-      <Name>TestLibrary</Name>
-    </ProjectReference>
+    <ProjectReference Include="Microsoft.Composition.Demos.ExtendedCollectionImports\Microsoft.Composition.Demos.ExtendedCollectionImports.csproj" />
+    <ProjectReference Include="TestLibrary\TestLibrary.csproj" />
   </ItemGroup>
 </Project>

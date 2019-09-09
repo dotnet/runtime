@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{C8049356-559D-4F34-AC17-56F3AE62C897}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
@@ -14,9 +13,6 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\TestExe\System.Reflection.TestExe.csproj">
-      <Project>{8c19b991-41e9-4b38-9602-e19375397f1d}</Project>
-      <Name>System.Reflection.Tests.TestExe</Name>
-    </ProjectReference>
+    <ProjectReference Include="..\TestExe\System.Reflection.TestExe.csproj" />
   </ItemGroup>
 </Project>

@@ -2,7 +2,6 @@
   <PropertyGroup>
     <AssemblyName>System.Reflection</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <ProjectGuid>{68F87E68-E13F-4354-A6D6-B44727FE53EE}</ProjectGuid>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>

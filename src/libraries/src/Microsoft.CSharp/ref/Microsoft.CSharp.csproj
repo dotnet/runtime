@@ -3,7 +3,6 @@
     <!-- Must match version supported by frameworks which support 4.0.* inbox.
          Can be removed when API is added and this assembly is versioned to 4.1.* -->
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
-    <ProjectGuid>{1427906B-FF3D-422A-8278-F2B7E89DE12A}</ProjectGuid>
     <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>

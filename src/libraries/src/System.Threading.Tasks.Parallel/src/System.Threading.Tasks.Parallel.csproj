@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{A6BA5DF2-772E-4DA1-BC2D-89FF4A21EE4F}</ProjectGuid>
     <RootNamespace>System.Threading.Tasks.Parallel</RootNamespace>
     <AssemblyName>System.Threading.Tasks.Parallel</AssemblyName>
     <FileAlignment>512</FileAlignment>

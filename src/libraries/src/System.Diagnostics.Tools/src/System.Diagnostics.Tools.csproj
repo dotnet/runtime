@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{0B68298B-4672-4CA0-AD25-2F9ABEA1FF95}</ProjectGuid>
     <AssemblyName>System.Diagnostics.Tools</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <DefineConstants>$(DefineConstants);SYSTEM_DIAGNOSTICS_TOOLS</DefineConstants>

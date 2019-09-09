@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{9758106C-5D4E-475D-B5E7-B7ABC46B1DDA}</ProjectGuid>
     <RootNamespace>System.Diagnostics.PerformanceCounter</RootNamespace>
     <AssemblyName>System.Diagnostics.PerformanceCounter</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

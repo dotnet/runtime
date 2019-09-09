@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{2B8FECC6-34A1-48FE-BA75-99572D2D6DB2}</ProjectGuid>
     <AssemblyName>System.Composition.Hosting</AssemblyName>
     <RootNamespace>
     </RootNamespace>
@@ -36,9 +35,6 @@
     <Compile Include="System\Composition\Hosting\Util\SmallSparseInitonlyArray.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Composition.Runtime\src\System.Composition.Runtime.csproj">
-      <Project>{2711dfd2-8541-4628-bc53-eb784a14cdcf}</Project>
-      <Name>System.Composition.Runtime</Name>
-    </ProjectReference>
+    <ProjectReference Include="..\..\System.Composition.Runtime\src\System.Composition.Runtime.csproj" />
   </ItemGroup>
 </Project>

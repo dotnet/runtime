@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{950923D8-EC99-4F90-9BA6-8EB64582C555}</ProjectGuid>
     <AssemblyName>System.Management</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);0618</NoWarn>

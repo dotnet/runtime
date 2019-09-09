@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{17DBE1D4-FCB5-4D55-805C-C4A22EE8C032}</ProjectGuid>
     <AssemblyName>System.Composition.Convention.Tests</AssemblyName>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>

@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{96AF3242-A368-4F13-B006-A722CC3B8517}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>436</NoWarn>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>

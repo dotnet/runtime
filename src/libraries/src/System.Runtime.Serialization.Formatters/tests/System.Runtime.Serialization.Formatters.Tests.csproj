@@ -1,6 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{13CE5E71-D373-4EA6-B3CB-166FF089A42A}</ProjectGuid>
     <SkipIncludeNewtonsoftJson>true</SkipIncludeNewtonsoftJson>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>

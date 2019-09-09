@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{33F5A50E-B823-4FDD-8571-365C909ACEAE}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
@@ -17,14 +16,8 @@
     <Compile Include="$(CommonTestPath)\System\Threading\ThreadTestHelpers.cs">
       <Link>CommonTest\System\Threading\ThreadTestHelpers.cs</Link>
     </Compile>
-    <ProjectReference Include="STAMain\STAMain.csproj">
-      <Name>STAMain</Name>
-    </ProjectReference>
-    <ProjectReference Include="MTAMain\MTAMain.csproj">
-      <Name>MTAMain</Name>
-    </ProjectReference>
-    <ProjectReference Include="DefaultApartmentStateMain\DefaultApartmentStateMain.csproj">
-      <Name>DefaultApartmentStateMain</Name>
-    </ProjectReference>
+    <ProjectReference Include="STAMain\STAMain.csproj" />
+    <ProjectReference Include="MTAMain\MTAMain.csproj" />
+    <ProjectReference Include="DefaultApartmentStateMain\DefaultApartmentStateMain.csproj" />
   </ItemGroup>
 </Project>

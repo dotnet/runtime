@@ -1,6 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="Current">
   <PropertyGroup>
-    <ProjectGuid>{96A7CE75-B5E8-421B-BDF0-C4651D97D8CA}</ProjectGuid>
     <Configurations>net461-Debug;net461-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release;netstandard2.1-Debug;netstandard2.1-Release</Configurations>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' != 'netstandard' AND '$(TargetsNetFx)' != 'true'">true</IsPartialFacadeAssembly>
   </PropertyGroup>

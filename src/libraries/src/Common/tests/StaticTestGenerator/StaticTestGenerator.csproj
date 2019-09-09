@@ -11,7 +11,6 @@
     <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
   <PropertyGroup>
-    <ProjectGuid>{67648882-2D9D-451A-BAC2-D16DE96895C2}</ProjectGuid>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />

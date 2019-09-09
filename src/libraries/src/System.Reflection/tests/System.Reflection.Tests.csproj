@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{B027C72E-F04E-42E0-A7F7-993AEF8400D2}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
     <TestRuntime>true</TestRuntime>
     <!-- LoadFrom_SameIdentityAsAssemblyWithDifferentPath_ReturnsEqualAssemblies test relies on no deps.json -->
@@ -54,20 +53,6 @@
     <Compile Include="TypeInfoTests.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="TestAssembly\TestAssembly.csproj">
-      <Project>{66805D20-6565-47FA-BFD4-05B8E0D17AFC}</Project>
-      <Name>TestAssembly</Name>
-    </ProjectReference>
-    <ProjectReference Include="ForwardedTypesAssembly\ForwardedTypesAssembly.csproj">
-      <Project>{FA12CC14-C4A5-495D-B7AA-651E4BCC1027}</Project>
-      <Name>ForwardedTypesAssembly</Name>
-    </ProjectReference>
-    <ProjectReference Include="UnloadableAssembly\UnloadableAssembly.csproj">
-      <Project>{7FFD1B55-D69A-4469-B775-6CBEB1CE50B0}</Project>
-      <Name>UnloadableAssembly</Name>
-    </ProjectReference>    
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="AssemblyVersion\System.Reflection.Tests.Assembly_0_0_0_0.csproj" />
     <ProjectReference Include="AssemblyVersion\System.Reflection.Tests.Assembly_1_0_0_0.csproj" />
     <ProjectReference Include="AssemblyVersion\System.Reflection.Tests.Assembly_1_1_0_0.csproj" />
@@ -79,9 +64,9 @@
     <ProjectReference Include="AssemblyVersion\System.Reflection.Tests.Assembly_1_2_0_0.csproj" />
     <ProjectReference Include="AssemblyVersion\System.Reflection.Tests.Assembly_1_3_0_0.csproj" />
     <ProjectReference Include="AssemblyVersion\System.Reflection.Tests.Assembly_3_0_0_0.csproj" />
-    <ProjectReference Include="TestExe\System.Reflection.TestExe.csproj">
-      <Project>{8c19b991-41e9-4b38-9602-e19375397f1d}</Project>
-      <Name>System.Reflection.Tests.TestExe</Name>
-    </ProjectReference>
+    <ProjectReference Include="ForwardedTypesAssembly\ForwardedTypesAssembly.csproj" />
+    <ProjectReference Include="UnloadableAssembly\UnloadableAssembly.csproj" />
+    <ProjectReference Include="TestExe\System.Reflection.TestExe.csproj" />
+    <ProjectReference Include="TestAssembly\TestAssembly.csproj" />
   </ItemGroup>
 </Project>

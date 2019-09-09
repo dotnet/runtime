@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{6D9B0285-5E8A-4C20-9C53-9E2084EF64C4}</ProjectGuid>
     <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
   <ItemGroup>

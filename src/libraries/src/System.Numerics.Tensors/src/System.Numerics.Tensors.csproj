@@ -6,7 +6,6 @@
     <RootNamespace>System.Numerics.Tensors</RootNamespace>
   </PropertyGroup>
   <PropertyGroup>
-    <ProjectGuid>{BE0F13BE-9140-49A8-9FDD-994D0D8A3805}</ProjectGuid>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Properties\InternalsVisibleTo.cs" />

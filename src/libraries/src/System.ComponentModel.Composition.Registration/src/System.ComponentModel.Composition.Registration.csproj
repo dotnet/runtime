@@ -1,6 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{E3663E26-6819-4997-B372-94454DB4D60E}</ProjectGuid>
     <AssemblyName>System.ComponentModel.Composition.Registration</AssemblyName>
     <Configurations>netstandard2.1-Debug;netstandard2.1-Release</Configurations>
   </PropertyGroup>

@@ -10,7 +10,6 @@
                        match the output assembly name 'System.Runtime.WindowsRuntime, Version=4.0.10.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.
      -->
     <NoWarn>$(NoWarn);1698</NoWarn>
-    <ProjectGuid>{FDDA3E4A-B182-4CD1-B624-EBD72D8A05DA}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>

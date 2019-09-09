@@ -3,7 +3,6 @@
     <RootNamespace>System.ServiceProcess.ServiceController</RootNamespace>
     <AssemblyName>System.ServiceProcess.ServiceController</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <ProjectGuid>{F4821CB6-91A3-4546-BC4F-E00DBFBDAA05}</ProjectGuid>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
     <OmitResources Condition="'$(TargetsNetFx)' == 'true'">true</OmitResources>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard' AND '$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_ServiceController</GeneratePlatformNotSupportedAssemblyMessage>

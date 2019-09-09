@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{E6592FAD-10B5-4B56-9287-D72DD136992F}</ProjectGuid>
     <AssemblyName>System.Composition.Convention</AssemblyName>
     <RootNamespace>
     </RootNamespace>
@@ -31,9 +30,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Composition.AttributedModel\src\System.Composition.AttributedModel.csproj">
-      <Project>{c6257381-c624-494a-a9d9-5586e60856ea}</Project>
-      <Name>System.Composition.AttributedModel</Name>
-    </ProjectReference>
+    <ProjectReference Include="..\..\System.Composition.AttributedModel\src\System.Composition.AttributedModel.csproj" />
   </ItemGroup>
 </Project>

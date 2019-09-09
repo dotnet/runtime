@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{C559743A-762E-4D9D-B986-E77BDB97652E}</ProjectGuid>
     <AssemblyName>System.Xml.ReaderWriter</AssemblyName>
     <RootNamespace>System.Xml</RootNamespace>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>

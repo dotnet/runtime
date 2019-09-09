@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{00EDA5FD-E802-40D3-92D5-56C27612D36D}</ProjectGuid>
     <AssemblyName>System.Diagnostics.FileVersionInfo</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CS1573</NoWarn>

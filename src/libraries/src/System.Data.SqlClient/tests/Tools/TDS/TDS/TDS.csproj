@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{8DC9D1A0-351B-47BC-A90F-B9DA542550E9}</ProjectGuid>
     <RootNamespace>Microsoft.SqlServer.TDS</RootNamespace>
     <AssemblyName>Microsoft.SqlServer.TDS</AssemblyName>
     <ClsCompliant>false</ClsCompliant>

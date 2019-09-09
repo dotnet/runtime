@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{2711DFD2-8541-4628-BC53-EB784A14CDCF}</ProjectGuid>
     <RootNamespace>System.Composition</RootNamespace>
     <AssemblyName>System.Composition.Runtime</AssemblyName>
     <Configurations>netstandard-Debug;netstandard-Release</Configurations>

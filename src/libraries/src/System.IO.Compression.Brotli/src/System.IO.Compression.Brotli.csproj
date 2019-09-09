@@ -2,7 +2,6 @@
   <PropertyGroup>
     <AssemblyName>System.IO.Compression.Brotli</AssemblyName>
     <OutputType>Library</OutputType>
-    <ProjectGuid>{5471BFE8-8071-466F-838E-5ADAA779E742}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
   </PropertyGroup>

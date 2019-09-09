@@ -4,7 +4,6 @@
     <!-- To be consistent between netfx and others we override the SDK behavior which defaults to .dll -->
     <TargetExt>.exe</TargetExt>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <ProjectGuid>{8045E634-C181-4C6C-AE48-71AC18D1C637}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>

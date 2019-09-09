@@ -1,6 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{6C314C9B-3D28-4B05-9B4C-B57A00A9B3B9}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants Condition="'$(TargetsUnix)' == 'true'">$(DefineConstants);Unix</DefineConstants>
     <TestRuntime>true</TestRuntime>
@@ -102,21 +101,9 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="AssemblyResolveTestApp\AssemblyResolveTestApp.csproj">
-      <Project>{ad83807c-8be5-4f27-85df-9793613233e1}</Project>
-      <Name>AssemblyResolveTestApp</Name>
-    </ProjectReference>
-    <ProjectReference Include="TestAppOutsideOfTPA\TestAppOutsideOfTPA.csproj">
-      <Project>{c44b33e3-f89f-40b9-b353-d380c1524988}</Project>
-      <Name>TestAppOutsideOfTPA</Name>
-    </ProjectReference>
-    <ProjectReference Include="VoidMainWithExitCodeApp\VoidMainWithExitCodeApp.csproj">
-      <Project>{9F312D76-9AF1-4E90-B3B0-815A1EC6C346}</Project>
-      <Name>VoidMainWithExitCodeApp</Name>
-    </ProjectReference>
-    <ProjectReference Include="TestApp\TestApp.csproj">
-      <Project>{9F312D76-9AF1-4E90-B3B0-815A1EC6C346}</Project>
-      <Name>TestApp</Name>
-    </ProjectReference>
+    <ProjectReference Include="AssemblyResolveTestApp\AssemblyResolveTestApp.csproj" />
+    <ProjectReference Include="TestAppOutsideOfTPA\TestAppOutsideOfTPA.csproj" />
+    <ProjectReference Include="VoidMainWithExitCodeApp\VoidMainWithExitCodeApp.csproj" />
+    <ProjectReference Include="TestApp\TestApp.csproj" />
   </ItemGroup>
 </Project>

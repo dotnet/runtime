@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{F80C478C-48EE-46A5-89C4-EE0CFB23A14F}</ProjectGuid>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
     <!-- Must match version supported by frameworks which support 4.1.* inbox.
          Can be removed when API is added and this assembly is versioned to 4.2.* -->

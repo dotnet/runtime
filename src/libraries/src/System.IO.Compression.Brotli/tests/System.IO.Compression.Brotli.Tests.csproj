@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{BC2E1649-291D-412E-9529-EDDA94FA7AD6}</ProjectGuid>
     <DefineConstants Condition="'$(TargetsNetCoreApp)' == 'true' or '$(TargetsUap)' == 'true'">$(DefineConstants);STREAM_MEMORY_OVERLOADS_AVAILABLE</DefineConstants>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
   </PropertyGroup>

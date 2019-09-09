@@ -2,7 +2,6 @@
   <PropertyGroup>
     <AssemblyName>System.Threading.Timer</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <ProjectGuid>{0F8B87B4-0E61-4DC6-9E90-CD4863025272}</ProjectGuid>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
