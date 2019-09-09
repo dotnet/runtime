@@ -854,6 +854,7 @@ typedef struct _DISPATCHER_CONTEXT {
 
 #ifdef FEATURE_EH_FUNCLETS
 #include "win64unwind.h"
+#include "daccess.h"
 
 FORCEINLINE
 DWORD

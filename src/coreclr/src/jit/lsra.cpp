@@ -5892,6 +5892,8 @@ void LinearScan::allocateRegisters()
                                 ref->moveReg    = false;
                             }
                             break;
+                        default:
+                            break;
                     }
                 }
             }
