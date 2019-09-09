@@ -2,33 +2,25 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.ComponentModel.Tests
 {
-    public class StringConverterTests : ConverterTestBase
+    public class StringConverterTests : TypeConverterTestBase
     {
-        private static StringConverter s_converter = new StringConverter();
+        public override TypeConverter Converter => new StringConverter();
 
-        [Fact]
-        public static void CanConvertFrom_WithContext()
-        {
-            CanConvertFrom_WithContext(new object[1, 2]
-                {
-                    { typeof(string), true }
-                },
-                StringConverterTests.s_converter);
-        }
+        public override bool CanConvertFromNull => true;
 
-        [Fact]
-        public static void ConvertFrom_WithContext()
+        public override IEnumerable<ConvertTest> ConvertFromTestData()
         {
-            ConvertFrom_WithContext(new object[2, 3]
-                {
-                    { "some string", "some string", null },
-                    { null, string.Empty, null }
-                },
-                StringConverterTests.s_converter);
+            yield return ConvertTest.Valid("string", "string");
+            yield return ConvertTest.Valid(string.Empty, string.Empty);
+            yield return ConvertTest.Valid(null, string.Empty);
+
+            yield return ConvertTest.CantConvertFrom(1);
+            yield return ConvertTest.CantConvertFrom(new object());
         }
     }
 }

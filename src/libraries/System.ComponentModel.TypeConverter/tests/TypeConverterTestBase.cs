@@ -21,9 +21,11 @@ namespace System.ComponentModel.Tests
         public virtual IEnumerable<ConvertTest> ConvertToTestData() => Enumerable.Empty<ConvertTest>();
         public virtual IEnumerable<ConvertTest> ConvertFromTestData() => Enumerable.Empty<ConvertTest>();
 
-        public virtual bool PropertiesSupported { get; } = false;
-        public virtual bool StandardValuesSupported { get; } = false;
-        public virtual bool StandardValuesExclusive { get; } = false;
+        public virtual bool PropertiesSupported => false;
+        public virtual bool StandardValuesSupported => false;
+        public virtual bool StandardValuesExclusive => false;
+        public virtual bool CanConvertFromNull => false;
+        public virtual bool CanConvertToString => true;
 
         [Fact]
         public void ConvertTo_DestinationType_Success()
@@ -74,9 +76,22 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
+        public void ConvertTo_String_ReturnsExpected()
+        {
+            Assert.Equal(CanConvertToString ? nameof(CustomToString) : string.Empty, Converter.ConvertTo(new CustomToString(), typeof(string)));
+        }
+
+        [Fact]
         public void ConvertTo_NullDestinationType_ThrowsArgumentNullException()
         {
+            AssertExtensions.Throws<ArgumentNullException>("destinationType", () => Converter.ConvertTo(null, null));
             AssertExtensions.Throws<ArgumentNullException>("destinationType", () => Converter.ConvertTo(TypeConverterTests.s_context, null, "", null));
+        }
+
+        [Fact]
+        public void CanConvertTo_StringDestinationType_ReturnsTrue()
+        {
+            Assert.True(Converter.CanConvertTo(typeof(string)));
         }
 
         [Fact]
@@ -137,6 +152,27 @@ namespace System.ComponentModel.Tests
                     }, this.GetType().AssemblyQualifiedName, convertTest.GetSerializedString()).Dispose();
                 }
             });
+        }
+
+        [Fact]
+        public void ConvertFrom_NullValue_ThrowsNotSupportedException()
+        {
+            if (!CanConvertFromNull)
+            {
+                Assert.Throws<NotSupportedException>(() => Converter.ConvertFrom(null));
+            }
+        }
+
+        [Fact]
+        public void CanConvertFrom_InstanceDescriptorSourceType_ReturnsTrue()
+        {
+            Assert.True(Converter.CanConvertFrom(typeof(InstanceDescriptor)));
+        }
+
+        [Fact]
+        public void CanConvertFrom_NullSourceType_ReturnsFalse()
+        {
+            Assert.False(Converter.CanConvertFrom(null));
         }
 
         [Fact]
@@ -357,6 +393,11 @@ namespace System.ComponentModel.Tests
                     return Convert.ToBase64String(stream.ToArray());
                 }
             }
+        }
+
+        private class CustomToString
+        {
+            public override string ToString() => nameof(CustomToString);
         }
     }
 }

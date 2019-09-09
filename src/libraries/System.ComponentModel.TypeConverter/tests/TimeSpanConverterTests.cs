@@ -2,41 +2,52 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+using System.ComponentModel.Design.Serialization;
 using System.Globalization;
 using Xunit;
 
 namespace System.ComponentModel.Tests
 {
-    public class TimeSpanConverterTests : ConverterTestBase
+    public class TimeSpanConverterTests : TypeConverterTestBase
     {
-        private static TimeSpanConverter s_converter = new TimeSpanConverter();
+        public override TypeConverter Converter => new TimeSpanConverter();
 
-        [Fact]
-        public static void CanConvertFrom_WithContext()
+        public override IEnumerable<ConvertTest> ConvertFromTestData()
         {
-            CanConvertFrom_WithContext(new object[1, 2]
-                {
-                    { typeof(string), true }
-                },
-                TimeSpanConverterTests.s_converter);
+            yield return ConvertTest.Valid("  1000.00:00:00  ", new TimeSpan(1000, 0, 0, 0, 0), CultureInfo.InvariantCulture);
+            yield return ConvertTest.Valid("1000", new TimeSpan(1000, 0, 0, 0, 0));
+
+            yield return ConvertTest.Throws<FormatException>("invalid");
+            yield return ConvertTest.Throws<FormatException>("  ");
+            yield return ConvertTest.Throws<FormatException>(string.Empty);
+
+            yield return ConvertTest.CantConvertFrom(1);
+            yield return ConvertTest.CantConvertFrom(new object());
         }
 
-        [Fact]
-        public static void ConvertFrom_WithContext()
+        public override IEnumerable<ConvertTest> ConvertToTestData()
         {
-            ConvertFrom_WithContext(new object[2, 3]
-                {
-                    {"1000.00:00:00   ", new TimeSpan(1000, 0, 0, 0, 0),  CultureInfo.InvariantCulture},
-                    {"1000", new TimeSpan(1000, 0, 0, 0, 0),  null}
-                },
-                TimeSpanConverterTests.s_converter);
+            var timeSpan = new TimeSpan(1000, 0, 0, 0, 0);
+            yield return ConvertTest.Valid(timeSpan, timeSpan.ToString());
+
+            yield return ConvertTest.Valid(
+                timeSpan,
+                new InstanceDescriptor(
+                    typeof(TimeSpan).GetMethod(nameof(TimeSpan.Parse), new Type[] { typeof(string) }),
+                    new object[] { timeSpan.ToString() }
+                )
+            );
+
+            yield return ConvertTest.CantConvertTo(new TimeSpan(1000, 0, 0, 0, 0), typeof(object));
         }
 
-        [Fact]
-        public static void ConvertFrom_WithContext_Negative()
+        [Theory]
+        [InlineData(typeof(InstanceDescriptor))]
+        [InlineData(typeof(int))]
+        public void ConvertTo_InvalidValue_ThrowsNotSupportedException(Type destinationType)
         {
-            Assert.Throws<FormatException>(
-                () => TimeSpanConverterTests.s_converter.ConvertFrom(TypeConverterTests.s_context, null, "random string"));
+            Assert.Throws<NotSupportedException>(() => Converter.ConvertTo(new object(), destinationType));
         }
     }
 }
