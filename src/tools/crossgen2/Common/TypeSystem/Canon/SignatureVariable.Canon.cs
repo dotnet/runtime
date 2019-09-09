@@ -1,0 +1,40 @@
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using Debug = System.Diagnostics.Debug;
+
+namespace Internal.TypeSystem
+{
+    // Implements canonicalization of generic type parameters
+    partial class SignatureTypeVariable
+    {
+        public override bool IsCanonicalSubtype(CanonicalFormKind policy)
+        {
+            Debug.Fail("IsCanonicalSubtype of an indefinite type");
+            return false;
+        }
+
+        protected override TypeDesc ConvertToCanonFormImpl(CanonicalFormKind kind)
+        {
+            Debug.Fail("ConvertToCanonFormImpl for an indefinite type");
+            return this;
+        }
+    }
+
+    // Implements canonicalization of generic method parameters
+    partial class SignatureMethodVariable
+    {
+        public override bool IsCanonicalSubtype(CanonicalFormKind policy)
+        {
+            Debug.Fail("IsCanonicalSubtype of an indefinite type");
+            return false;
+        }
+
+        protected override TypeDesc ConvertToCanonFormImpl(CanonicalFormKind kind)
+        {
+            Debug.Fail("ConvertToCanonFormImpl for an indefinite type");
+            return this;
+        }
+    }
+}
