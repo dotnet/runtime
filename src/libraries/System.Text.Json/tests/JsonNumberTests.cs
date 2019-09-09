@@ -18,7 +18,7 @@ namespace System.Text.Json.Tests
                 Action<JsonNumber, T> setter,
                 Func<JsonNumber, T> getter,
                 TryGetValue<T> tryGetter,
-                Func<T, JsonNumber> implicitCaster)
+                Func<T, JsonNode> implicitCaster)
         {
             // Default constructor:
             JsonNumber number = new JsonNumber();
@@ -41,7 +41,7 @@ namespace System.Text.Json.Tests
             AssertValue(value, number, getter, tryGetter);
             
             // Implicit cast:
-            number = implicitCaster(value);
+            number = (JsonNumber)implicitCaster(value);
             AssertValue(value, number, getter, tryGetter);
         }
 
@@ -525,6 +525,7 @@ namespace System.Text.Json.Tests
         public static void TestFloatInfinities(float value)
         {
             Assert.Throws<ArgumentException>(() => new JsonNumber(value));
+            Assert.Equal(value.ToString(), (JsonNode)value);
         }
 
         [InlineData(double.PositiveInfinity)]
@@ -533,6 +534,7 @@ namespace System.Text.Json.Tests
         public static void TestDoubleIninities(double value)
         {
             Assert.Throws<ArgumentException> (() => new JsonNumber(value));
+            Assert.Equal(value.ToString(), (JsonNode)value);
         }
 
         [Fact]
@@ -676,6 +678,12 @@ namespace System.Text.Json.Tests
             Assert.NotEqual(jsonNumber.GetHashCode(), jsonNumberObject.GetHashCode());
 
             Assert.Equal(new JsonNumber().GetHashCode(), new JsonNumber().GetHashCode());
+        }
+
+        [Fact]
+        public static void TestValueKind()
+        {
+            Assert.Equal(JsonValueKind.Number, new JsonNumber().ValueKind);
         }
     }
 }

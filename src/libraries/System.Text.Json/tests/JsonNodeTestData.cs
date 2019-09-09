@@ -40,8 +40,8 @@ namespace System.Text.Json.Tests
         ///         {
         ///             "software developers" :
         ///             {
-        ///                 "full time employees" : /JsonObject of 3 employees fromk database/ 
-        ///                 "intern employees" : /JsonObject of 2 employees fromk database/ 
+        ///                 "full time employees" : /JsonObject of 3 employees from database/ 
+        ///                 "intern employees" : /JsonObject of 2 employees from database/ 
         ///             },
         ///             "HR" : /JsonObject of 10 employees fromk database/ 
         ///         }
