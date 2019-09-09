@@ -584,20 +584,23 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static FormatException GetFormatException(DateType dateType)
+        public static FormatException GetFormatException(DataType dateType)
         {
             string message = "";
 
             switch (dateType)
             {
-                case DateType.DateTime:
+                case DataType.DateTime:
                     message = SR.FormatDateTime;
                     break;
-                case DateType.DateTimeOffset:
+                case DataType.DateTimeOffset:
                     message = SR.FormatDateTimeOffset;
                     break;
-                case DateType.Base64String:
+                case DataType.Base64String:
                     message = SR.CannotDecodeInvalidBase64;
+                    break;
+                case DataType.Guid:
+                    message = SR.FormatGuid;
                     break;
                 default:
                     Debug.Fail($"The DateType enum value: {dateType} is not part of the switch. Add the appropriate case and exception message.");
@@ -670,10 +673,11 @@ namespace System.Text.Json
         Decimal
     }
 
-    internal enum DateType
+    internal enum DataType
     {
         DateTime,
         DateTimeOffset,
-        Base64String
+        Base64String,
+        Guid,
     }
 }

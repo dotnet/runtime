@@ -108,7 +108,7 @@ namespace System.Text.Json
         {
             if (!TryGetBytesFromBase64(out byte[] value))
             {
-                throw ThrowHelper.GetFormatException(DateType.Base64String);
+                throw ThrowHelper.GetFormatException(DataType.Base64String);
             }
             return value;
         }
@@ -395,7 +395,7 @@ namespace System.Text.Json
         {
             if (!TryGetDateTime(out DateTime value))
             {
-                throw ThrowHelper.GetFormatException(DateType.DateTime);
+                throw ThrowHelper.GetFormatException(DataType.DateTime);
             }
 
             return value;
@@ -418,7 +418,7 @@ namespace System.Text.Json
         {
             if (!TryGetDateTimeOffset(out DateTimeOffset value))
             {
-                throw ThrowHelper.GetFormatException(DateType.DateTimeOffset);
+                throw ThrowHelper.GetFormatException(DataType.DateTimeOffset);
             }
 
             return value;
@@ -441,7 +441,7 @@ namespace System.Text.Json
         {
             if (!TryGetGuid(out Guid value))
             {
-                throw new FormatException(SR.FormatGuid);
+                throw ThrowHelper.GetFormatException(DataType.Guid);
             }
 
             return value;
