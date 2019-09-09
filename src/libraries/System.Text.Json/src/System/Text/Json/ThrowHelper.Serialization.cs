@@ -153,7 +153,7 @@ namespace System.Text.Json
         {
             Debug.Assert(ex.Path == null);
 
-            string path = readStack.JsonPath;
+            string path = readStack.JsonPath();
             string message = ex.Message;
 
             // Insert the "Path" portion before "LineNumber" and "BytePositionInLine".
@@ -186,7 +186,7 @@ namespace System.Text.Json
             long bytePositionInLine = reader.CurrentState._bytePositionInLine;
             ex.BytePositionInLine = bytePositionInLine;
 
-            string path = readStack.JsonPath;
+            string path = readStack.JsonPath();
             ex.Path = path;
 
             // If the message is empty, use a default message with Path, LineNumber and BytePositionInLine.
@@ -212,7 +212,7 @@ namespace System.Text.Json
 
         public static void AddExceptionInformation(in WriteStack writeStack, JsonException ex)
         {
-            string path = writeStack.PropertyPath;
+            string path = writeStack.PropertyPath();
             ex.Path = path;
 
             // If the message is empty, use a default message with the Path.

@@ -35,7 +35,7 @@ namespace System.Text.Json
                     jsonPropertyInfo.ElementClassInfo.Type != typeof(object) &&
                     jsonPropertyInfo.ElementClassInfo.Type != typeof(JsonElement))
                 {
-                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(state.Current.JsonClassInfo.Type, reader, state.JsonPath);
+                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(state.Current.JsonClassInfo.Type, reader, state.JsonPath());
                 }
 
                 JsonClassInfo classInfo = state.Current.JsonClassInfo;
@@ -48,7 +48,7 @@ namespace System.Text.Json
                 {
                     if (classInfo.CreateObject == null)
                     {
-                        ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(classInfo.Type, reader, state.JsonPath);
+                        ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(classInfo.Type, reader, state.JsonPath());
                         return;
                     }
                     state.Current.ReturnValue = classInfo.CreateObject();

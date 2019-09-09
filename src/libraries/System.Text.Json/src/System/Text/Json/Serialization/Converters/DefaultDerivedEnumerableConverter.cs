@@ -12,7 +12,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             JsonPropertyInfo collectionPropertyInfo = state.Current.JsonPropertyInfo;
             JsonPropertyInfo elementPropertyInfo = options.GetJsonPropertyInfoFromClassInfo(collectionPropertyInfo.ElementType, options);
-            return elementPropertyInfo.CreateDerivedEnumerableInstance(collectionPropertyInfo, sourceList, state.JsonPath, options);
+            return elementPropertyInfo.CreateDerivedEnumerableInstance(ref state, collectionPropertyInfo, sourceList);
         }
     }
 }

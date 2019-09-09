@@ -13,7 +13,7 @@ namespace System.Text.Json.Serialization.Converters
             Type enumerableType = state.Current.JsonPropertyInfo.RuntimePropertyType;
             Type elementType = state.Current.JsonPropertyInfo.ElementType;
             JsonPropertyInfo propertyInfo = options.GetJsonPropertyInfoFromClassInfo(elementType, options);
-            return propertyInfo.CreateIEnumerableInstance(enumerableType, sourceList, state.JsonPath, options);
+            return propertyInfo.CreateIEnumerableInstance(ref state, enumerableType, sourceList);
         }
     }
 }
