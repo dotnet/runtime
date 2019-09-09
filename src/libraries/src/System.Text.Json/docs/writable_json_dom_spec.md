@@ -8,6 +8,7 @@ It is the base class for the following concrete types representing all possible 
 * `JsonString` - representing JSON text value
 * `JsonBoolean` - representing JSON boolean value (`true` or `false`)
 * `JsonNumber` - representing JSON numeric value, can be created from and converted to all possible built-in numeric types
+* `JsonNull` - representing JSON null value
 * `JsonArray` - representing the array of JSON nodes
 * `JsonObject` - representing the set of properties - named JSON nodes
 
@@ -93,10 +94,9 @@ var preferences = new JsonObject()
 {
     { "colours", new JsonArray { "red", "green", "purple" } },
     { "numbers", new JsonArray { 4, 123, 88 } },
-    { "prime numbers", new JsonNumber[] { 19, 37 } },
+    { "varia", new JsonArray { 1, "value", false } },
     { "dishes", new JsonArray(dishes) },
-    { "sports", new JsonArray(sports) },
-    { "strange words", strangeWords.Where(word => ((JsonString)word).Value.Length < 10) },
+    { "sports", new JsonArray(sports) }
 };
 ```
 
@@ -107,7 +107,7 @@ The main goal of the new API is to allow users to modify existing instance of `J
 One may change the existing property to have a different value:
 ```csharp
  var options = new JsonObject { { "use caching", true } };
- options["use caching"] = (JsonBoolean)false;
+ options["use caching"] = false;
 ```
 
 Add a value to existing JSON array or property to existing JSON object:
@@ -123,7 +123,7 @@ foreach (KeyValuePair<string, JsonNode> employee in EmployeesDatabase.GetTenBest
 }
 ```
 
-Easily access nested objects:
+And easily access nested objects:
 ```csharp
 var issues = new JsonObject()
 {
@@ -133,14 +133,7 @@ var issues = new JsonObject()
 };
 
 issues.GetJsonArrayProperty("bugs").Add("bug 12356");
-((JsonString)issues.GetJsonArrayProperty("features")[0]).Value = "feature 1569";
-```
-
-And modify the exisitng property name:
-```csharp
-JsonObject manager = EmployeesDatabase.GetManager();
-JsonObject reportingEmployees = manager.GetJsonObjectProperty("reporting employees");
-reportingEmployees.ModifyPropertyName("software developers", "software engineers");
+issues.GetJsonArrayProperty("features")[0] = "feature 1569";
 ```
 
 ### Transforming to and from JsonElement
@@ -198,77 +191,48 @@ Mailbox.SendAllEmployeesData(employees.AsJsonElement());
 * Higher emphasis on usability over allocations/performance.
 * No advanced methods for looking up properties like `GetAllValuesByPropertyName` or `GetAllPrimaryTypedValues`, because they would be too specialized.
 * Support for LINQ style quering capability.
-* `null` reference to node instead of `JsonNull` class.
-
-* Initializing JsonArray with additional constructors accepting `IEnumerables` of all primary types (bool, string, int, double,  long...).
-
-    Considered solutions:
-
-    1. One additional constructor in JsonArray
-    ```csharp
-    public JsonArray(IEnumerable<object> jsonValues) { }
-    ``` 
-    2. Implicit operator from Array in JsonArray
-
-    3. More additional constructors in JsonArray (chosen)
-    ```csharp
-    public JsonArray(IEnumerable<string> jsonValues) { }
-    public JsonArray(IEnumerable<bool> jsonValues) { }
-    public JsonArray(IEnumerable<sbyte> jsonValues) { }
-    ...
-    public JsonArray(IEnumerable<double> jsonValues) { }
-    ``` 
-
-    | Solution | Pros | Cons | Comment |
-    |----------|:-------------|:------|--------:|
-    | 1 | - only one additional method <br> - accepts collection of different types <br> - accepts `IEnumerable` <br> - IntelliSense (autocompletion and showing suggestions) | - accepts collection of types not deriving from `JsonNode` <br> - needs to check it in runtime  | accepts too much, <br> array of different primary types wouldn't be returned from method |
-    | 2 | - only one additional method <br> - accepts collection of different types <br > | - works  only in C# <br> - no IntelliSense <br> - users may not be aware of it <br> - accepts only `Array` <br> - accepts collection of types not deriving from `JsonNode` <br> - needs to check it in runtime | from {1,2}, <br>2 seems worse |
-    | 3 | - accepts IEnumerable <br> - does not accept collection of  types not deriving from `JsonNode` <br> - no checks in runtime <br> - IntelliSense | - a lot of additional methods <br> - does not accept a collection of different types | gives less possibilities than {1,2}, but requiers no additional checks |
-
-* Implicit operators for `JsonString`, `JsonBoolean` and `JsonNumber` as an additional feature.
+* `JsonNull` class instead of `null` reference to node.
+* No additional overloads of Add methods for primary types (bool, string, int, double,  long...) for `JsonObject` and `JsonArray`. Instead - implicit cast operators in JsonNode.
 * `Sort` not implemented for `JsonArray`, beacuse there is no right way to compare `JsonObjects`. If a user wants to sort a `JsonArray` of `JsonNumbers`, `JsonBooleans` or `JsonStrings` they now needs to do the following: convert the `JsonArray` to a regular array (by iterating through all elements), call sort (and convert back to `JsonArray` if needed).
-* No support for duplicates of property names. Possibly, adding an option for the user to choose from: "first value", "last value", or throw-on-duplicate.
+* Property names duplicates handling method possible to chose during parsing to `JsonNode`. When creating `JsonObject` Add method throws an exception for duplicates and indexer replaces old property value with new one. 
 * No support for escaped characters when creating `JsonNumber` from string.
-* Transformation API:
-    * `DeepCopy` method in JsonElement allowing to change JsonElement into JsonNode recursively transforming all of the elements
-    * `AsJsonElement` method in JsonNode allowing to change JsonNode into JsonElement with IsImmutable property set to false
-    * `IsImmutable` property informing if JsonElement is keeping JsonDocument or JsonNode underneath
-    * `Parse(string)` in JsonNode to be able to parse a JSON string right into JsonNode if the user knows they wants mutable version
-    * `DeepCopy` in JsonNode to make a copy of the whole tree
-    * `GetNode` and TryGetNode in JsonNode allowing to retrieve it from JsonElement
-    * `WriteTo(Utf8JsonWriter)` in JsonNode for writing a JsonNode to a Utf8JsonWriter without having to go through JsonElement
 * `JsonValueKind` property that a caller can inspect and cast to the right concrete type
+* Transformation API:
+    * `DeepCopy` method allowing to change JsonElement into JsonNode recursively transforming all of the elements.
+    * `AsJsonElement`method allowing to change JsonNode into JsonElement with IsImmutable property set to false.
+    * `IsImmutable` property informing if JsonElement is keeping JsonDocument or JsonNode underneath.
+    * `Parse(string)` method to be able to parse a JSON string right into JsonNode if the user knows they wants mutable version. It allows chosing duplicates handling method.
+    * `Clone` method to make a copy of the whole JsonNode tree.
+    * `GetNode` and TryGetNode methods allowing to retrieve it from JsonElement.
+    * Internal `WriteTo(Utf8JsonWriter)` method for writing a JsonNode to a Utf8JsonWriter without having to go through JsonElement.
+    * `ToJsonString` method transforming JsonNode to string representation using WriteTo.
+* No recursive equals for `JsonArray` and `JsonObject`.
+* `JsonNode` derived types does not implement `IComparable`.
+* `JsonObject` does not implement `IDictionary`, but `JsonArray` implements `IList`. 
+* We support order preservation when adding/removing values in `JsonArray`/`JsonObject`.
+* We do not support creating `JsonNumber` from `BigInterger` without changing it to string.
+* `ToString` returns:
+    * Unescaped string for `JsonString`.
+    * String representation of number for `JsonNumber`.
+    * "true" / "false" (JSON representation) for `JsonBoolean`.
+    * Is not overloaded for `JsonArray` and `JsonObject`.
 
 ## Open questions
-* Do we want to add recursive equals on `JsonArray` and `JsonObject`?
-* Do we want to make `JsonNode` derived types implement `IComparable` (which ones)?
-* Do we want `JsonObject` to implement `IDictionary` and `JsonArray` to implement `IList` (currently JsonArray does, but JsonObject not)? 
 * Do we want `JsonArray` to support `Contains`, `IndexOf` and `LastIndexOf` if we keep reference equality for `JsonArray`/`JsonObject` and don't have a good way of comparing numbers? 
-* Would escaped characters be supported for creating `JsonNumber` from string? 
-* Is the API for `JsonNode` and `JsonElement` interactions sufficient? 
-* Do we want to support duplicate and order preservation/control when adding/removing values in `JsonArray`/`JsonObject`?
 * Should nodes track their own position in the JSON graph? Do we want to allow properties like Parent, Next and Previous?
 
     | Solution | Pros | Cons |
     |----------|:-------------|--------|
     |current API| - no additional checks need to be made | - creating recursive loop by the user may be problematic |
     |tracking nodes | - handles recursive loop problem | - when node is added to a parent, it needs to be checked <br>  if it already has a parent and make a copy if it has |
-* Do we want to change `JsonNumber`'s backing field to something different than `string`?     
+
+* Do we want to change JsonNumber's backing field to something different than string?
+
     Suggestions: 
     - `Span<byte>` or array of `Utf8String`/`Char8` (once they come online in the future) / `byte`  
     - Internal types that are specific to each numeric type in .NET with factories to create JsonNumber 
     - Internal struct field which has all the supported numeric types
     - Unsigned long field accompanying string to store types that are <= 8 bytes long
-* Do we want to support creating `JsonNumber` from `BigInterger` without changing it to string?
-* Should `ToString` on `JsonBoolean` and `JsonString` return the .NET or JSON representation?
-* Do we want to keep implicit cast operators (even though for `JsonNumber` it would mean throwing in some cases, which is against FDG)?
-* Do we want overloads that take a `StringComparison` enum for methods retrieving properties? It would make API easier to use where case is not important.
-* Where do we want to enable user to set handling properties manner? Do we want to support it as `JsonElement` does not?
-* Do we want to support transforming `JsonObject` into JSON string? Should `ToString` behave this way or do we want an additional method - e.g. `GetJsonString` (it might be confusing as we have a type `JsonString`) or `GetJsonRepresenation`?
-* `AsJsonElement` function on `JsonNode` currently does not work for `null` node. Do we want to support null case somehow?
-* Do we want both `Clone` and `DeepCopy` methods for `JsonNode`? 
-* Are we OK with needing to cast `JsonArray` to `JsonNode` in order to add it to `JsonObject`? (there's an ambiguous call between `JsonArray` and `IEnumerable<JsonNode>` right now)
-* Do we want `IsImmutable` property for `JsonElement`?
 
 ## Useful links
 

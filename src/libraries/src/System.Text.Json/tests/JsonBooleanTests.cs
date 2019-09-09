@@ -28,10 +28,12 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void TestImplicitOperator()
         {
-            JsonBoolean jsonBoolean = true;
+            JsonNode jsonNode = true;
+            JsonBoolean jsonBoolean = (JsonBoolean)jsonNode;
             Assert.True(jsonBoolean.Value);
 
-            jsonBoolean = false;
+            jsonNode = false;
+            jsonBoolean = (JsonBoolean)jsonNode;
             Assert.False(jsonBoolean.Value);
         }
 
@@ -87,17 +89,17 @@ namespace System.Text.Json.Tests
 
             Assert.False(jsonBooleanTrue.Equals(null));
 
-            object jsonNumberCopyTrue = jsonBooleanTrue;
-            object jsonNumberObjectTrue = new JsonBoolean(true);
-            Assert.True(jsonNumberCopyTrue.Equals(jsonNumberObjectTrue));
-            Assert.True(jsonNumberCopyTrue.Equals(jsonNumberObjectTrue));
-            Assert.True(jsonNumberObjectTrue.Equals(jsonBooleanTrue));
+            object jsonBooleanCopyTrue = jsonBooleanTrue;
+            object jsonBooleanObjectTrue = new JsonBoolean(true);
+            Assert.True(jsonBooleanCopyTrue.Equals(jsonBooleanObjectTrue));
+            Assert.True(jsonBooleanCopyTrue.Equals(jsonBooleanObjectTrue));
+            Assert.True(jsonBooleanObjectTrue.Equals(jsonBooleanTrue));
 
-            object jsonNumberCopyFalse = jsonBooleanFalse;
-            object jsonNumberObjectFalse = new JsonBoolean(false);
-            Assert.True(jsonNumberCopyFalse.Equals(jsonNumberObjectFalse));
-            Assert.True(jsonNumberCopyFalse.Equals(jsonBooleanFalse));
-            Assert.True(jsonNumberObjectFalse.Equals(jsonBooleanFalse));
+            object jsonBooleanCopyFalse = jsonBooleanFalse;
+            object jsonBooleanObjectFalse = new JsonBoolean(false);
+            Assert.True(jsonBooleanCopyFalse.Equals(jsonBooleanObjectFalse));
+            Assert.True(jsonBooleanCopyFalse.Equals(jsonBooleanFalse));
+            Assert.True(jsonBooleanObjectFalse.Equals(jsonBooleanFalse));
 
             Assert.False(jsonBooleanTrue.Equals(new Exception()));
 
@@ -138,18 +140,25 @@ namespace System.Text.Json.Tests
             IEquatable<JsonBoolean> jsonBooleanIEquatableFalse = jsonBooleanFalse;
             Assert.Equal(jsonBooleanIEquatableFalse.GetHashCode(), jsonBooleanFalse.GetHashCode());
 
-            object jsonNumberCopyTrue = jsonBooleanTrue;
-            object jsonNumberObjectTrue = new JsonBoolean(true);
-            Assert.Equal(jsonBooleanTrue.GetHashCode(), jsonNumberCopyTrue.GetHashCode());
-            Assert.Equal(jsonBooleanTrue.GetHashCode(), jsonNumberObjectTrue.GetHashCode());
+            object jsonBooleanCopyTrue = jsonBooleanTrue;
+            object jsonBooleanObjectTrue = new JsonBoolean(true);
+            Assert.Equal(jsonBooleanTrue.GetHashCode(), jsonBooleanCopyTrue.GetHashCode());
+            Assert.Equal(jsonBooleanTrue.GetHashCode(), jsonBooleanObjectTrue.GetHashCode());
 
-            object jsonNumberCopyFalse = jsonBooleanFalse;
-            object jsonNumberObjectFalse = new JsonBoolean(false);
-            Assert.Equal(jsonNumberCopyFalse.GetHashCode(), jsonBooleanFalse.GetHashCode());
-            Assert.Equal(jsonNumberObjectFalse.GetHashCode(), jsonBooleanFalse.GetHashCode());
+            object jsonBooleanCopyFalse = jsonBooleanFalse;
+            object jsonBooleanObjectFalse = new JsonBoolean(false);
+            Assert.Equal(jsonBooleanCopyFalse.GetHashCode(), jsonBooleanFalse.GetHashCode());
+            Assert.Equal(jsonBooleanObjectFalse.GetHashCode(), jsonBooleanFalse.GetHashCode());
 
             Assert.Equal(0, jsonBooleanFalse.GetHashCode());
             Assert.Equal(1, jsonBooleanTrue.GetHashCode());
+        }
+
+        [Fact]
+        public static void TestValueKind()
+        {
+            Assert.Equal(JsonValueKind.True, new JsonBoolean(true).ValueKind);
+            Assert.Equal(JsonValueKind.False, new JsonBoolean(false).ValueKind);
         }
     }
 }

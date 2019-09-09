@@ -38,19 +38,11 @@ namespace System.Text.Json
         ///   Initializes a new instance of the <see cref="JsonArray"/> class representing the specified collection of <see cref="string"/>s.
         /// </summary>
         /// <param name="values">Collection to represent.</param>
-        /// <exception cref="ArgumentNullException">
-        ///   Some of provided values are null.
-        /// </exception>
         public JsonArray(IEnumerable<string> values) : this()
         {
             foreach (string value in values)
             {
-                if (value == null)
-                {
-                    _list.Add(null);
-                }
-
-                _list.Add(new JsonString(value));
+                _list.Add(value);
             }
         }
 
@@ -62,7 +54,7 @@ namespace System.Text.Json
         {
             foreach (bool value in values)
             {
-                _list.Add(new JsonBoolean(value));
+                _list.Add(value);
             }
         }
 
@@ -74,7 +66,7 @@ namespace System.Text.Json
         {
             foreach (byte value in values)
             {
-                _list.Add(new JsonNumber(value));
+                _list.Add(value);
             }
         }
 
@@ -86,7 +78,7 @@ namespace System.Text.Json
         {
             foreach (short value in values)
             {
-                _list.Add(new JsonNumber(value));
+                _list.Add(value);
             }
         }
 
@@ -98,7 +90,7 @@ namespace System.Text.Json
         {
             foreach (int value in values)
             {
-                _list.Add(new JsonNumber(value));
+                _list.Add(value);
             }
         }
 
@@ -110,7 +102,7 @@ namespace System.Text.Json
         {
             foreach (long value in values)
             {
-                _list.Add(new JsonNumber(value));
+                _list.Add(value);
             }
         }
 
@@ -125,7 +117,7 @@ namespace System.Text.Json
         {
             foreach (float value in values)
             {
-                _list.Add(new JsonNumber(value));
+                _list.Add(value);
             }
         }
 
@@ -140,7 +132,7 @@ namespace System.Text.Json
         {
             foreach (double value in values)
             {
-                _list.Add(new JsonNumber(value));
+                _list.Add(value);
             }
         }
 
@@ -153,7 +145,7 @@ namespace System.Text.Json
         {
             foreach (sbyte value in values)
             {
-                _list.Add(new JsonNumber(value));
+                _list.Add(value);
             }
         }
 
@@ -166,7 +158,7 @@ namespace System.Text.Json
         {
             foreach (ushort value in values)
             {
-                _list.Add(new JsonNumber(value));
+                _list.Add(value);
             }
         }
 
@@ -179,7 +171,7 @@ namespace System.Text.Json
         {
             foreach (uint value in values)
             {
-                _list.Add(new JsonNumber(value));
+                _list.Add(value);
             }
         }
 
@@ -192,7 +184,7 @@ namespace System.Text.Json
         {
             foreach (ulong value in values)
             {
-                _list.Add(new JsonNumber(value));
+                _list.Add(value);
             }
         }
 
@@ -204,7 +196,7 @@ namespace System.Text.Json
         {
             foreach (decimal value in values)
             {
-                _list.Add(new JsonNumber(value));
+                _list.Add(value);
             }
         }
 
@@ -215,12 +207,13 @@ namespace System.Text.Json
         /// <exception cref="ArgumentOutOfRangeException">
         ///   Index is less than 0.
         /// </exception>
+        /// <remarks>Null value is allowed and will be converted to the <see cref="JsonNull"/> instance.</remarks>
         public JsonNode this[int idx]
         {
             get => _list[idx];
             set
             {
-                _list[idx] = value;
+                _list[idx] = value ?? new JsonNull();
                 _version++;
             }
         }
@@ -229,224 +222,24 @@ namespace System.Text.Json
         ///   Adds the specified <see cref="JsonNode"/> value as the last item in this collection.
         /// </summary>
         /// <param name="value">The value to add.</param>
-        /// <remarks>Null value is allowed and represents the JSON null value.</remarks>
+        /// <remarks>Null value is allowed and will be converted to the <see cref="JsonNull"/> instance.</remarks>
         public void Add(JsonNode value)
         {
-            _list.Add(value);
+            _list.Add(value ?? new JsonNull());
             _version++;
         }
-
-        /// <summary>
-        ///   Adds the specified value as a <see cref="JsonString"/> as the last item in this collection.
-        /// </summary>
-        /// <param name="value">The value to add.</param>
-        /// <remarks>Null value is allowed and represents the JSON null value.</remarks>
-        public void Add(string value)
-        {
-            if (value == null)
-            {
-                Add((JsonNode)null);
-            }
-            else
-            {
-                Add(new JsonString(value));
-            }
-        }
-
-        /// <summary>
-        ///   Adds the specified value as a <see cref="JsonBoolean"/> as the last item in this collection.
-        /// </summary>
-        /// <param name="value">The value to add.</param>
-        public void Add(bool value) => Add(new JsonBoolean(value));
-
-        /// <summary>
-        ///   Adds the specified value as a <see cref="JsonNumber"/> as the last item in this collection.
-        /// </summary>
-        /// <param name="value">The value to add.</param>
-        public void Add(byte value) => Add(new JsonNumber(value));
-
-        /// <summary>
-        ///   Adds the specified value as a <see cref="JsonNumber"/> as the last item in this collection.
-        /// </summary>
-        /// <param name="value">The value to add.</param>
-        public void Add(short value) => Add(new JsonNumber(value));
-
-        /// <summary>
-        ///   Adds the specified value as a <see cref="JsonNumber"/> as the last item in this collection.
-        /// </summary>
-        /// <param name="value">The value to add.</param>
-        public void Add(int value) => Add(new JsonNumber(value));
-
-        /// <summary>
-        ///   Adds the specified value as a <see cref="JsonNumber"/> as the last item in this collection.
-        /// </summary>
-        /// <param name="value">The value to add.</param>
-        public void Add(long value) => Add(new JsonNumber(value));
-
-        /// <summary>
-        ///   Adds the specified value as a <see cref="JsonNumber"/> as the last item in this collection.
-        /// </summary>
-        /// <param name="value">The value to add.</param>
-        /// <exception cref="ArgumentException">
-        ///   Provided value is not in a legal JSON number format.
-        /// </exception>
-        public void Add(float value) => Add(new JsonNumber(value));
-
-        /// <summary>
-        ///   Adds the specified value as a <see cref="JsonNumber"/> as the last item in this collection.
-        /// </summary>
-        /// <param name="value">The value to add.</param>
-        /// <exception cref="ArgumentException">
-        ///   Provided value is not in a legal JSON number format.
-        /// </exception>
-        public void Add(double value) => Add(new JsonNumber(value));
-
-        /// <summary>
-        ///   Adds the specified value as a <see cref="JsonNumber"/> as the last item in this collection.
-        /// </summary>
-        /// <param name="value">The value to add.</param>
-        [CLSCompliant(false)]
-        public void Add(sbyte value) => Add(new JsonNumber(value));
-
-        /// <summary>
-        ///   Adds the specified value as a <see cref="JsonNumber"/> as the last item in this collection.
-        /// </summary>
-        /// <param name="value">The value to add.</param>
-        [CLSCompliant(false)]
-        public void Add(ushort value) => Add(new JsonNumber(value));
-
-        /// <summary>
-        ///   Adds the specified value as a <see cref="JsonNumber"/> as the last item in this collection.
-        /// </summary>
-        /// <param name="value">The value to add.</param>
-        [CLSCompliant(false)]
-        public void Add(uint value) => Add(new JsonNumber(value));
-
-        /// <summary>
-        ///   Adds the specified value as a <see cref="JsonNumber"/> as the last item in this collection.
-        /// </summary>
-        /// <param name="value">The value to add.</param>
-        [CLSCompliant(false)]
-        public void Add(ulong value) => Add(new JsonNumber(value));
-
-        /// <summary>
-        ///   Adds the specified value as a <see cref="JsonNumber"/> as the last item in this collection.
-        /// </summary>
-        /// <param name="value">The value to add.</param>
-        public void Add(decimal value) => Add(new JsonNumber(value));
 
         /// <summary>
         ///   Inserts the specified item at the specified index of the JSON array.
         /// </summary>
         /// <param name="index">The zero-based index at which <paramref name="item"/> should be inserted.</param>
         /// <param name="item">The item to add.</param>
-        /// <remarks>The <paramref name="item"/> parameter may be <see langword="null" />, which represents the JSON null value.</remarks>
+        /// <remarks>Null value is allowed and will be converted to the <see cref="JsonNull"/> instance.</remarks>
         public void Insert(int index, JsonNode item)
         {
-            _list.Insert(index, item);
+            _list.Insert(index, item ?? new JsonNull());
             _version++;
         }
-
-        /// <summary>
-        ///   Inserts the specified item as a <see cref="JsonString"/> at the specified index of the collection.
-        /// </summary>
-        /// <param name="index">The zero-based index at which <paramref name="item"/> should be inserted.</param>
-        /// <param name="item">The item to add.</param>
-        public void Insert(int index, string item) => Insert(index, new JsonString(item));
-
-        /// <summary>
-        ///   Inserts the specified item as a <see cref="JsonBoolean"/> at the specified index of the collection.
-        /// </summary>
-        /// <param name="index">The zero-based index at which <paramref name="item"/> should be inserted.</param>
-        /// <param name="item">The item to add.</param>
-        public void Insert(int index, bool item) => Insert(index, new JsonBoolean(item));
-
-        /// <summary>
-        ///   Inserts the specified item as a <see cref="JsonNumber"/> at the specified index of the collection.
-        /// </summary>
-        /// <param name="index">The zero-based index at which <paramref name="item"/> should be inserted.</param>
-        /// <param name="item">The item to add.</param>
-        public void Insert(int index, byte item) => Insert(index, new JsonNumber(item));
-
-        /// <summary>
-        ///   Inserts the specified item as a <see cref="JsonNumber"/> at the specified index of the collection.
-        /// </summary>
-        /// <param name="index">The zero-based index at which <paramref name="item"/> should be inserted.</param>
-        /// <param name="item">The item to add.</param>
-        public void Insert(int index, short item) => Insert(index, new JsonNumber(item));
-
-        /// <summary>
-        ///   Inserts the specified item as a <see cref="JsonNumber"/> at the specified index of the collection.
-        /// </summary>
-        /// <param name="index">The zero-based index at which <paramref name="item"/> should be inserted.</param>
-        /// <param name="item">The item to add.</param>
-        public void Insert(int index, int item) => Insert(index, new JsonNumber(item));
-
-        /// <summary>
-        ///   Inserts the specified item as a <see cref="JsonNumber"/> at the specified index of the collection.
-        /// </summary>
-        /// <param name="index">The zero-based index at which <paramref name="item"/> should be inserted.</param>
-        /// <param name="item">The item to add.</param>
-        public void Insert(int index, long item) => Insert(index, new JsonNumber(item));
-
-        /// <summary>
-        ///   Inserts the specified item as a <see cref="JsonNumber"/> at the specified index of the collection.
-        /// </summary>
-        /// <param name="index">The zero-based index at which <paramref name="item"/> should be inserted.</param>
-        /// <param name="item">The item to add.</param>
-        /// <exception cref="ArgumentException">
-        ///   Provided value is not in a legal JSON number format.
-        /// </exception>
-        public void Insert(int index, float item) => Insert(index, new JsonNumber(item));
-
-        /// <summary>
-        ///   Inserts the specified item as a <see cref="JsonNumber"/> at the specified index of the collection.
-        /// </summary>
-        /// <param name="index">The zero-based index at which <paramref name="item"/> should be inserted.</param>
-        /// <param name="item">The item to add.</param>
-        /// <exception cref="ArgumentException">
-        ///   Provided value is not in a legal JSON number format.
-        /// </exception>
-        public void Insert(int index, double item) => Insert(index, new JsonNumber(item));
-
-        /// <summary>
-        ///   Inserts the specified item as a <see cref="JsonNumber"/> at the specified index of the collection.
-        /// </summary>
-        /// <param name="index">The zero-based index at which <paramref name="item"/> should be inserted.</param>
-        /// <param name="item">The item to add.</param>
-        [CLSCompliant(false)]
-        public void Insert(int index, sbyte item) => Insert(index, new JsonNumber(item));
-
-        /// <summary>
-        ///   Inserts the specified item as a <see cref="JsonNumber"/> at the specified index of the collection.
-        /// </summary>
-        /// <param name="index">The zero-based index at which <paramref name="item"/> should be inserted.</param>
-        /// <param name="item">The item to add.</param>
-        [CLSCompliant(false)]
-        public void Insert(int index, ushort item) => Insert(index, new JsonNumber(item));
-
-        /// <summary>
-        ///   Inserts the specified item as a <see cref="JsonNumber"/> at the specified index of the collection.
-        /// </summary>
-        /// <param name="index">The zero-based index at which <paramref name="item"/> should be inserted.</param>
-        /// <param name="item">The item to add.</param>
-        [CLSCompliant(false)]
-        public void Insert(int index, uint item) => Insert(index, new JsonNumber(item));
-
-        /// <summary>
-        ///   Inserts the specified item as a <see cref="JsonNumber"/> at the specified index of the collection.
-        /// </summary>
-        /// <param name="index">The zero-based index at which <paramref name="item"/> should be inserted.</param>
-        /// <param name="item">The item to add.</param>
-        [CLSCompliant(false)]
-        public void Insert(int index, ulong item) => Insert(index, new JsonNumber(item));
-
-        /// <summary>
-        ///   Inserts the specified item as a <see cref="JsonNumber"/> at the specified index of the collection.
-        /// </summary>
-        /// <param name="index">The zero-based index at which <paramref name="item"/> should be inserted.</param>
-        /// <param name="item">The item to add.</param>
-        public void Insert(int index, decimal item) => Insert(index, new JsonNumber(item));
 
         /// <summary>
         ///   Determines whether a specified <see cref="JsonNode"/> element is in a collection.
@@ -456,7 +249,8 @@ namespace System.Text.Json
         ///   <see langword="true"/> if the value is successfully found in a collection,
         ///   <see langword="false"/> otherwise.
         /// </returns>
-        public bool Contains(JsonNode value) => _list.Contains(value);
+        /// <remarks>Null value is allowed and will be converted to the <see cref="JsonNull"/> instance.</remarks>
+        public bool Contains(JsonNode value) => _list.Contains(value ?? new JsonNull());
 
         /// <summary>
         ///   Gets the number of elements contained in the collection.
@@ -473,14 +267,16 @@ namespace System.Text.Json
         /// </summary>
         /// <param name="item">Item to find.</param>
         /// <returns>The zero-based starting index of the search. 0 (zero) is valid in an empty collection.</returns>
-        public int IndexOf(JsonNode item) => _list.IndexOf(item);
+        /// <remarks>Null value is allowed and will be converted to the <see cref="JsonNull"/> instance.</remarks>
+        public int IndexOf(JsonNode item) => _list.IndexOf(item ?? new JsonNull());
 
         /// <summary>
         ///   Returns the zero-based index of the last occurrence of a specified item in the collection.
         /// </summary>
         /// <param name="item">Item to find.</param>
         /// <returns>The zero-based starting index of the search. 0 (zero) is valid in an empty collection.</returns>
-        public int LastIndexOf(JsonNode item) => _list.LastIndexOf(item);
+        /// <remarks>Null value is allowed and will be converted to the <see cref="JsonNull"/> instance.</remarks>
+        public int LastIndexOf(JsonNode item) => _list.LastIndexOf(item ?? new JsonNull());
 
         /// <summary>
         ///   Removes all elements from the JSON array.
@@ -501,10 +297,11 @@ namespace System.Text.Json
         ///   <see langword="true"/> if the item is successfully found in a collection and removed,
         ///   <see langword="false"/> otherwise.
         /// </returns>
+        /// <remarks>Null value is allowed and will be converted to the <see cref="JsonNull"/> instance.</remarks>
         public bool Remove(JsonNode item)
         {
             _version++;
-            return _list.Remove(item);
+            return _list.Remove(item ?? new JsonNull());
         }
 
         /// <summary>

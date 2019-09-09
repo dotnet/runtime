@@ -140,12 +140,6 @@ namespace System.Text.Json
         public bool TryGetGuid(out Guid value) => Guid.TryParseExact(_value, "D", out value);
 
         /// <summary>
-        ///   Converts a <see cref="string"/> to a <see cref="JsonString"/>.
-        /// </summary>
-        /// <param name="value">The value to convert.</param>
-        public static implicit operator JsonString(string value) => new JsonString(value);
-
-        /// <summary>
         ///   Compares <paramref name="obj"/> to the value of this instance.
         /// </summary>
         /// <param name="obj">The object to compare against.</param>

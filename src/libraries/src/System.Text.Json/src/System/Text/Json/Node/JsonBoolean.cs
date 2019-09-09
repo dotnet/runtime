@@ -31,12 +31,6 @@ namespace System.Text.Json
         public override string ToString() => Value ? "true" : "false";
 
         /// <summary>
-        ///   Converts a <see cref="bool"/> to a <see cref="JsonBoolean"/>.
-        /// </summary>
-        /// <param name="value">The value to convert.</param>
-        public static implicit operator JsonBoolean(bool value) => new JsonBoolean(value);
-
-        /// <summary>
         ///   Compares <paramref name="obj"/> to the value of this instance.
         /// </summary>
         /// <param name="obj">The object to compare against.</param>

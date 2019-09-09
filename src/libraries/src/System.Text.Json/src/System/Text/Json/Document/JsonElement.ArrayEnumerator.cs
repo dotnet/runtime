@@ -34,7 +34,6 @@ namespace System.Text.Json
                 else
                 {
                     var jsonArray = (JsonArray)target._parent;
-
                     _endIdxOrVersion = jsonArray._version;
                 }
             }

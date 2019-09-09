@@ -40,6 +40,11 @@ namespace System.Text.Json
         /// <summary>
         ///   Sets the enumerator to its initial position, which is before the first element in the JSON array.
         /// </summary>
-        void IEnumerator.Reset() => ((IEnumerator)_enumerator).Reset();
+        void IEnumerator.Reset()
+        {
+            IEnumerator enumerator = _enumerator;
+            enumerator.Reset();
+            _enumerator = (List<JsonNode>.Enumerator)enumerator;
+        }
     }
 }
