@@ -15306,6 +15306,13 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
         return CORDBG_E_ILLEGAL_AT_GC_UNSAFE_POINT;
     }
 
+    if (::GetSP(filterContext) != ALIGN_DOWN(::GetSP(filterContext), STACK_ALIGN_SIZE))
+    {
+        // SP is not aligned, we cannot do a FuncEval here
+        LOG((LF_CORDB, LL_INFO1000, "D::FES SP is unaligned"));
+        return CORDBG_E_FUNC_EVAL_BAD_START_POINT;
+    }
+
     // Create a DebuggerEval to hold info about this eval while its in progress. Constructor copies the thread's
     // CONTEXT.
     DebuggerEval *pDE = new (interopsafe, nothrow) DebuggerEval(filterContext, pEvalInfo, fInException);
@@ -15437,6 +15444,13 @@ HRESULT Debugger::FuncEvalSetupReAbort(Thread *pThread, Thread::ThreadAbortReque
     if (filterContext == NULL)
     {
         return CORDBG_E_ILLEGAL_AT_GC_UNSAFE_POINT;
+    }
+
+    if (::GetSP(filterContext) != ALIGN_DOWN(::GetSP(filterContext), STACK_ALIGN_SIZE))
+    {
+        // SP is not aligned, we cannot do a FuncEval here
+        LOG((LF_CORDB, LL_INFO1000, "D::FESRA: SP is unaligned"));
+        return CORDBG_E_FUNC_EVAL_BAD_START_POINT;
     }
 
     // Create a DebuggerEval to hold info about this eval while its in progress. Constructor copies the thread's
