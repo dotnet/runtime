@@ -45,8 +45,14 @@
 static guint64 stat_objects_alloced = 0;
 static guint64 stat_bytes_alloced = 0;
 static guint64 stat_bytes_alloced_los = 0;
-
 #endif
+
+/* The total number of bytes allocated so far in program exection by all attached threads.
+ * This is not constantly syncrhonized, but only updated on each GC. */
+static guint64 bytes_allocated_attached = 0;
+
+/* Total bytes allocated so far in program exevution by detached threads */ 
+static guint64 bytes_allocated_detached = 0;
 
 /*
  * Allocation is done from a Thread Local Allocation Buffer (TLAB). TLABs are allocated
@@ -533,6 +539,34 @@ void sgen_update_allocation_count (void)
 	} FOREACH_THREAD_END
 
 	sgen_set_bytes_allocated_attached (total_bytes_allocated_globally);
+}
+
+void
+sgen_set_bytes_allocated_attached (guint64 bytes)
+{
+	bytes_allocated_attached = bytes;
+}
+
+void
+increment_bytes_allocated_detached(guint64 bytes) 
+{
+	bytes_allocated_detached += bytes;
+}
+
+guint64
+sgen_get_total_allocated_bytes (MonoBoolean precise)
+{
+	if (precise) {	
+		LOCK_GC;
+		sgen_stop_world (0, FALSE);
+
+		sgen_update_allocation_count ();
+		
+		sgen_restart_world (0, FALSE);
+		UNLOCK_GC;
+	}
+	
+	return bytes_allocated_attached + bytes_allocated_detached;
 }
 
 

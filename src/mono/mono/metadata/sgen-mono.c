@@ -56,13 +56,6 @@ gboolean sgen_mono_xdomain_checks = FALSE;
 /* Functions supplied by the runtime to be called by the GC */
 static MonoGCCallbacks gc_callbacks;
 
-/* The total number of bytes allocated so far in program exection by all attached threads.
- * This is not constantly syncrhonized, but only updated on each GC. */
-static guint64 bytes_allocated_attached = 0;
-
-/* Total bytes allocated so far in program exevution by detached threads */ 
-static guint64 bytes_allocated_detached = 0;
-
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \
 	a = i,
 
@@ -2062,7 +2055,7 @@ sgen_client_thread_detach_with_lock (SgenThreadInfo *p)
 
 	mono_tls_set_sgen_thread_info (NULL);
 
-	bytes_allocated_detached += p->total_bytes_allocated;
+	increment_bytes_allocated_detached(p->total_bytes_allocated);
 
 	tid = mono_thread_info_get_tid (p);
 
@@ -2504,11 +2497,7 @@ mono_gc_get_los_limit (void)
 	return SGEN_MAX_SMALL_OBJ_SIZE;
 }
 
-void
-sgen_set_bytes_allocated_attached (guint64 bytes)
-{
-	bytes_allocated_attached = bytes;
-}
+
 
 guint64
 mono_gc_get_allocated_bytes_for_current_thread (void)
@@ -2523,17 +2512,7 @@ mono_gc_get_allocated_bytes_for_current_thread (void)
 guint64
 mono_gc_get_total_allocated_bytes (MonoBoolean precise)
 {
-	if (precise) {	
-		LOCK_GC;
-		sgen_stop_world (0, FALSE);
-
-		sgen_update_allocation_count ();
-		
-		sgen_restart_world (0, FALSE);
-		UNLOCK_GC;
-	}
-	
-	return bytes_allocated_attached + bytes_allocated_detached;
+	return sgen_get_total_allocated_bytes (precise);
 }
 
 

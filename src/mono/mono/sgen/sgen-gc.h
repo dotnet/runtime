@@ -477,7 +477,8 @@ int sgen_get_current_collection_generation (void);
 gboolean sgen_collection_is_concurrent (void);
 gboolean sgen_get_concurrent_collection_in_progress (void);
 
-void sgen_set_bytes_allocated_attached (guint64);
+void sgen_set_bytes_allocated_attached (guint64 bytes);
+void increment_bytes_allocated_detached(guint64 bytes);
 
 typedef struct _SgenFragment SgenFragment;
 
@@ -1078,6 +1079,7 @@ typedef enum {
 
 void sgen_clear_tlabs (void);
 void sgen_update_allocation_count (void);
+guint64 sgen_get_total_allocated_bytes (MonoBoolean precise);
 
 GCObject* sgen_alloc_obj (GCVTable vtable, size_t size)
 	MONO_PERMIT (need (sgen_lock_gc, sgen_stop_world));
