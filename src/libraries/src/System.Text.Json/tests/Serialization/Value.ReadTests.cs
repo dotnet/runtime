@@ -76,6 +76,29 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<int[]>(Encoding.UTF8.GetBytes(@"[1,a]")));
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<int>(@"null"));
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<int>(@""""""));
+
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DateTime>("\"abc\""));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DateTimeOffset>("\"abc\""));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Guid>("\"abc\""));
+
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<byte>("\"abc\""));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<byte>("1.1"));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<sbyte>("\"abc\""));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<sbyte>("1.1"));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<short>("\"abc\""));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<short>("1.1"));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ushort>("\"abc\""));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ushort>("1.1"));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<int>("\"abc\""));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<int>("1.1"));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<uint>("\"abc\""));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<uint>("1.1"));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<long>("\"abc\""));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<long>("1.1"));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ulong>("\"abc\""));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ulong>("1.1"));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<float>("\"abc\""));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<double>("\"abc\""));
         }
 
         [Theory]
