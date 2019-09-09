@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using Xunit;
 
 namespace System.ComponentModel.Design.Tests
@@ -20,57 +21,277 @@ namespace System.ComponentModel.Design.Tests
         public void Ctor_EventHandler_CommandID(EventHandler handler, CommandID commandId)
         {
             var command = new MenuCommand(handler, commandId);
-            Assert.Same(commandId, command.CommandID);
-            Assert.Empty(command.Properties);
-
-            Assert.True(command.Enabled);
             Assert.False(command.Checked);
+            Assert.Same(commandId, command.CommandID);
+            Assert.True(command.Enabled);
+            Assert.Equal(3, command.OleStatus);
+            Assert.IsType<HybridDictionary>(command.Properties);
+            Assert.Empty(command.Properties);
+            Assert.Same(command.Properties, command.Properties);
             Assert.True(command.Supported);
             Assert.True(command.Visible);
-            Assert.Equal(3, command.OleStatus);
+        }
+
+        [Theory]
+        [InlineData(true, 7, 3)]
+        [InlineData(false, 3, 7)]
+        public void Checked_Set_GetReturnsExpected(bool value, int expectedOleStatus1, int expectedOleStatus2)
+        {
+            var command = new MenuCommand(null, null)
+            {
+                Checked = value 
+            };
+            Assert.Equal(value, command.Checked);
+            Assert.Equal(expectedOleStatus1, command.OleStatus);
+
+            // Set same.
+            command.Checked = value;
+            Assert.Equal(value, command.Checked);
+            Assert.Equal(expectedOleStatus1, command.OleStatus);
+
+            // Set different.
+            command.Checked = !value;
+            Assert.Equal(!value, command.Checked);
+            Assert.Equal(expectedOleStatus2, command.OleStatus);
         }
 
         [Fact]
-        public void Properties_GetMultipleTimes_ReturnsEmpty()
+        public void Checked_SetWithCommandChanged_CallsHandler()
         {
             var command = new MenuCommand(null, null);
-            Assert.Same(command.Properties, command.Properties);
+            int callCount = 0;
+            EventHandler handler = (sender, e) =>
+            {
+                Assert.Same(command, sender);
+                Assert.Same(EventArgs.Empty, e);
+                callCount++;
+            };
+            command.CommandChanged += handler;
+
+            // Set different.
+            command.Checked = true;
+            Assert.True(command.Checked);
+            Assert.Equal(1, callCount);
+
+            // Set same.
+            command.Checked = true;
+            Assert.True(command.Checked);
+            Assert.Equal(1, callCount);
+
+            // Set different.
+            command.Checked = false;
+            Assert.False(command.Checked);
+            Assert.Equal(2, callCount);
+
+            // Remove handler.
+            command.CommandChanged -= handler;
+            command.Checked = true;
+            Assert.True(command.Checked);
+            Assert.Equal(2, callCount);
         }
 
         [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public void Enabled_Set_GetReturnsExpected(bool value)
+        [InlineData(true, 3, 1)]
+        [InlineData(false, 1, 3)]
+        public void Enabled_Set_GetReturnsExpected(bool value, int expectedOleStatus1, int expectedOleStatus2)
         {
-            var command = new MenuCommand(null, null) { Enabled = value };
+            var command = new MenuCommand(null, null)
+            {
+                Enabled = value
+            };
             Assert.Equal(value, command.Enabled);
+            Assert.Equal(expectedOleStatus1, command.OleStatus);
+
+            // Set same.
+            command.Enabled = value;
+            Assert.Equal(value, command.Enabled);
+            Assert.Equal(expectedOleStatus1, command.OleStatus);
+
+            // Set different.
+            command.Enabled = !value;
+            Assert.Equal(!value, command.Enabled);
+            Assert.Equal(expectedOleStatus2, command.OleStatus);
+        }
+
+        [Fact]
+        public void Enabled_SetWithCommandChanged_CallsHandler()
+        {
+            var command = new MenuCommand(null, null);
+            int callCount = 0;
+            EventHandler handler = (sender, e) =>
+            {
+                Assert.Same(command, sender);
+                Assert.Same(EventArgs.Empty, e);
+                callCount++;
+            };
+            command.CommandChanged += handler;
+
+            // Set different.
+            command.Enabled = false;
+            Assert.False(command.Enabled);
+            Assert.Equal(1, callCount);
+
+            // Set same.
+            command.Enabled = false;
+            Assert.False(command.Enabled);
+            Assert.Equal(1, callCount);
+
+            // Set different.
+            command.Enabled = true;
+            Assert.True(command.Enabled);
+            Assert.Equal(2, callCount);
+
+            // Remove handler.
+            command.CommandChanged -= handler;
+            command.Enabled = false;
+            Assert.False(command.Enabled);
+            Assert.Equal(2, callCount);
         }
 
         [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public void Checked_Set_GetReturnsExpected(bool value)
+        [InlineData(true, 3, 2)]
+        [InlineData(false, 2, 3)]
+        public void Supported_Set_GetReturnsExpected(bool value, int expectedOleStatus1, int expectedOleStatus2)
         {
-            var command = new MenuCommand(null, null) { Checked = value };
-            Assert.Equal(value, command.Checked);
-        }
-
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public void Supported_Set_GetReturnsExpected(bool value)
-        {
-            var command = new MenuCommand(null, null) { Supported = value };
+            var command = new MenuCommand(null, null)
+            {
+                Supported = value
+            };
             Assert.Equal(value, command.Supported);
+            Assert.Equal(expectedOleStatus1, command.OleStatus);
+
+            // Set same.
+            command.Supported = value;
+            Assert.Equal(value, command.Supported);
+            Assert.Equal(expectedOleStatus1, command.OleStatus);
+
+            // Set different.
+            command.Supported = !value;
+            Assert.Equal(!value, command.Supported);
+            Assert.Equal(expectedOleStatus2, command.OleStatus);
+        }
+
+        [Fact]
+        public void Supported_SetWithCommandChanged_CallsHandler()
+        {
+            var command = new MenuCommand(null, null);
+            int callCount = 0;
+            EventHandler handler = (sender, e) =>
+            {
+                Assert.Same(command, sender);
+                Assert.Same(EventArgs.Empty, e);
+                callCount++;
+            };
+            command.CommandChanged += handler;
+
+            // Set different.
+            command.Supported = false;
+            Assert.False(command.Supported);
+            Assert.Equal(1, callCount);
+
+            // Set same.
+            command.Supported = false;
+            Assert.False(command.Supported);
+            Assert.Equal(1, callCount);
+
+            // Set different.
+            command.Supported = true;
+            Assert.True(command.Supported);
+            Assert.Equal(2, callCount);
+
+            // Remove handler.
+            command.CommandChanged -= handler;
+            command.Supported = false;
+            Assert.False(command.Supported);
+            Assert.Equal(2, callCount);
         }
 
         [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public void Visible_Set_GetReturnsExpected(bool value)
+        [InlineData(true, 3, 19)]
+        [InlineData(false, 19, 3)]
+        public void Visible_Set_GetReturnsExpected(bool value, int expectedOleStatus1, int expectedOleStatus2)
         {
-            var command = new MenuCommand(null, null) { Visible = value };
+            var command = new MenuCommand(null, null)
+            {
+                Visible = value
+            };
             Assert.Equal(value, command.Visible);
+            Assert.Equal(expectedOleStatus1, command.OleStatus);
+
+            // Set same.
+            command.Visible = value;
+            Assert.Equal(value, command.Visible);
+            Assert.Equal(expectedOleStatus1, command.OleStatus);
+
+            // Set different.
+            command.Visible = !value;
+            Assert.Equal(!value, command.Visible);
+            Assert.Equal(expectedOleStatus2, command.OleStatus);
+        }
+
+        [Fact]
+        public void Visible_SetWithCommandChanged_CallsHandler()
+        {
+            var command = new MenuCommand(null, null);
+            int callCount = 0;
+            EventHandler handler = (sender, e) =>
+            {
+                Assert.Same(command, sender);
+                Assert.Same(EventArgs.Empty, e);
+                callCount++;
+            };
+            command.CommandChanged += handler;
+
+            // Set different.
+            command.Visible = false;
+            Assert.False(command.Visible);
+            Assert.Equal(1, callCount);
+
+            // Set same.
+            command.Visible = false;
+            Assert.False(command.Visible);
+            Assert.Equal(1, callCount);
+
+            // Set different.
+            command.Visible = true;
+            Assert.True(command.Visible);
+            Assert.Equal(2, callCount);
+
+            // Remove handler.
+            command.CommandChanged -= handler;
+            command.Visible = false;
+            Assert.False(command.Visible);
+            Assert.Equal(2, callCount);
+        }
+
+        public static IEnumerable<object[]> OnCommandChanged_TestData()
+        {
+            yield return new object[] { null };
+            yield return new object[] { new EventArgs() };
+        }
+
+        [Theory]
+        [MemberData(nameof(OnCommandChanged_TestData))]
+        public void OnCommandChanged_Invoke_CallsCommandChanged(EventArgs eventArgs)
+        {
+            var command = new SubMenuCommand(null, null);
+            int callCount = 0;
+            EventHandler handler = (sender, e) =>
+            {
+                Assert.Same(command, sender);
+                Assert.Same(eventArgs, e);
+                callCount++;
+            };
+            command.CommandChanged += handler;
+
+            // Call with handler.
+            command.OnCommandChanged(eventArgs);
+            Assert.Equal(1, callCount);
+
+            // Remove handler.
+            command.CommandChanged -= handler;
+            command.OnCommandChanged(eventArgs);
+            Assert.Equal(1, callCount);
         }
 
         public static IEnumerable<object[]> ToString_TestData()
@@ -141,52 +362,12 @@ namespace System.ComponentModel.Design.Tests
             command.Invoke("arg");
         }
 
-        [Fact]
-        public void SetStatus_CommandChanged_Invokes()
-        {
-            int calledCommandChanged = 0;
-
-            var command = new MenuCommand(null, null);
-            command.CommandChanged += (sender, e) =>
-            {
-                calledCommandChanged++;
-
-                Assert.Same(command, sender);
-                Assert.Equal(EventArgs.Empty, e);
-            };
-
-            command.Checked = false;
-            Assert.Equal(0, calledCommandChanged);
-
-            command.Checked = true;
-            Assert.Equal(1, calledCommandChanged);
-
-            command.Enabled = true;
-            Assert.Equal(1, calledCommandChanged);
-
-            command.Enabled = false;
-            Assert.Equal(2, calledCommandChanged);
-
-            command.Visible = true;
-            Assert.Equal(2, calledCommandChanged);
-
-            command.Visible = false;
-            Assert.Equal(3, calledCommandChanged);
-
-            command.Supported = true;
-            Assert.Equal(3, calledCommandChanged);
-
-            command.Supported = false;
-            Assert.Equal(4, calledCommandChanged);
-        }
-
         private static object CalledEventSender { get; set; }
 
         private static void EventHandler(object sender, EventArgs e)
         {
             CalledEventSender = sender;
-
-            Assert.Equal(EventArgs.Empty, e);
+            Assert.Same(EventArgs.Empty, e);
         }
 
         private static void ThrowCanceledCheckoutException(object sender, EventArgs e)
@@ -197,6 +378,15 @@ namespace System.ComponentModel.Design.Tests
         private static void ThrowNonCanceledCheckoutException(object sender, EventArgs e)
         {
             throw new CheckoutException();
+        }
+
+        private class SubMenuCommand : MenuCommand
+        {
+            public SubMenuCommand(EventHandler handler, CommandID command) : base(handler, command)
+            {
+            }
+
+            public new void OnCommandChanged(EventArgs e) => base.OnCommandChanged(e);
         }
     }
 }

@@ -133,7 +133,7 @@ namespace System.ComponentModel
                 return _parent.GetFullComponentName(component);
             }
 
-            return GetTypeDescriptor(component).GetComponentName();
+            return GetTypeDescriptor(component)?.GetComponentName();
         }
 
         /// <summary>
