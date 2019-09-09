@@ -124,6 +124,7 @@
     <Compile Include="TypeConverterAttributeTests.cs" />
     <Compile Include="TypeConverterTests.cs" />
     <Compile Include="TypeConverterTestBase.cs" />
+    <Compile Include="TypeDescriptionProviderTests.cs" />
     <Compile Include="TypeDescriptionProviderAttributeTests.cs" />
     <Compile Include="TypeDescriptorTests.cs" />
     <Compile Include="TypeDescriptorTests.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
@@ -157,6 +158,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.ComponentModel.TypeConverter.TestData" Version="$(SystemComponentModelTypeConverterTestDataPackageVersion)" />
+    <PackageReference Include="Moq" Version="$(MoqPackageVersion)" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\TestResx.resx">
