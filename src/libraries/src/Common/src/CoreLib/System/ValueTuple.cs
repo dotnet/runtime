@@ -9,7 +9,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
-using HashHelpers = System.Numerics.Hashing.HashHelpers;
 
 namespace System
 {
@@ -255,41 +254,6 @@ namespace System
         /// <returns>An 8-tuple (octuple) whose value is (item1, item2, item3, item4, item5, item6, item7, item8).</returns>
         public static ValueTuple<T1, T2, T3, T4, T5, T6, T7, ValueTuple<T8>> Create<T1, T2, T3, T4, T5, T6, T7, T8>(T1 item1, T2 item2, T3 item3, T4 item4, T5 item5, T6 item6, T7 item7, T8 item8) =>
             new ValueTuple<T1, T2, T3, T4, T5, T6, T7, ValueTuple<T8>>(item1, item2, item3, item4, item5, item6, item7, ValueTuple.Create(item8));
-
-        internal static int CombineHashCodes(int h1, int h2)
-        {
-            return HashHelpers.Combine(HashHelpers.Combine(HashHelpers.RandomSeed, h1), h2);
-        }
-
-        internal static int CombineHashCodes(int h1, int h2, int h3)
-        {
-            return HashHelpers.Combine(CombineHashCodes(h1, h2), h3);
-        }
-
-        internal static int CombineHashCodes(int h1, int h2, int h3, int h4)
-        {
-            return HashHelpers.Combine(CombineHashCodes(h1, h2, h3), h4);
-        }
-
-        internal static int CombineHashCodes(int h1, int h2, int h3, int h4, int h5)
-        {
-            return HashHelpers.Combine(CombineHashCodes(h1, h2, h3, h4), h5);
-        }
-
-        internal static int CombineHashCodes(int h1, int h2, int h3, int h4, int h5, int h6)
-        {
-            return HashHelpers.Combine(CombineHashCodes(h1, h2, h3, h4, h5), h6);
-        }
-
-        internal static int CombineHashCodes(int h1, int h2, int h3, int h4, int h5, int h6, int h7)
-        {
-            return HashHelpers.Combine(CombineHashCodes(h1, h2, h3, h4, h5, h6), h7);
-        }
-
-        internal static int CombineHashCodes(int h1, int h2, int h3, int h4, int h5, int h6, int h7, int h8)
-        {
-            return HashHelpers.Combine(CombineHashCodes(h1, h2, h3, h4, h5, h6, h7), h8);
-        }
     }
 
     /// <summary>Represents a 1-tuple, or singleton, as a value type.</summary>
@@ -600,8 +564,8 @@ namespace System
         /// <returns>A 32-bit signed integer hash code.</returns>
         public override int GetHashCode()
         {
-            return ValueTuple.CombineHashCodes(Item1?.GetHashCode() ?? 0,
-                                               Item2?.GetHashCode() ?? 0);
+            return HashCode.Combine(Item1?.GetHashCode() ?? 0,
+                                    Item2?.GetHashCode() ?? 0);
         }
 
         int IStructuralEquatable.GetHashCode(IEqualityComparer comparer)
@@ -611,8 +575,8 @@ namespace System
 
         private int GetHashCodeCore(IEqualityComparer comparer)
         {
-            return ValueTuple.CombineHashCodes(comparer.GetHashCode(Item1!),
-                                               comparer.GetHashCode(Item2!));
+            return HashCode.Combine(comparer.GetHashCode(Item1!),
+                                    comparer.GetHashCode(Item2!));
         }
 
         int IValueTupleInternal.GetHashCode(IEqualityComparer comparer)
@@ -798,9 +762,9 @@ namespace System
         /// <returns>A 32-bit signed integer hash code.</returns>
         public override int GetHashCode()
         {
-            return ValueTuple.CombineHashCodes(Item1?.GetHashCode() ?? 0,
-                                               Item2?.GetHashCode() ?? 0,
-                                               Item3?.GetHashCode() ?? 0);
+            return HashCode.Combine(Item1?.GetHashCode() ?? 0,
+                                    Item2?.GetHashCode() ?? 0,
+                                    Item3?.GetHashCode() ?? 0);
         }
 
         int IStructuralEquatable.GetHashCode(IEqualityComparer comparer)
@@ -810,9 +774,9 @@ namespace System
 
         private int GetHashCodeCore(IEqualityComparer comparer)
         {
-            return ValueTuple.CombineHashCodes(comparer.GetHashCode(Item1!),
-                                               comparer.GetHashCode(Item2!),
-                                               comparer.GetHashCode(Item3!));
+            return HashCode.Combine(comparer.GetHashCode(Item1!),
+                                    comparer.GetHashCode(Item2!),
+                                    comparer.GetHashCode(Item3!));
         }
 
         int IValueTupleInternal.GetHashCode(IEqualityComparer comparer)
@@ -1012,10 +976,10 @@ namespace System
         /// <returns>A 32-bit signed integer hash code.</returns>
         public override int GetHashCode()
         {
-            return ValueTuple.CombineHashCodes(Item1?.GetHashCode() ?? 0,
-                                               Item2?.GetHashCode() ?? 0,
-                                               Item3?.GetHashCode() ?? 0,
-                                               Item4?.GetHashCode() ?? 0);
+            return HashCode.Combine(Item1?.GetHashCode() ?? 0,
+                                    Item2?.GetHashCode() ?? 0,
+                                    Item3?.GetHashCode() ?? 0,
+                                    Item4?.GetHashCode() ?? 0);
         }
 
         int IStructuralEquatable.GetHashCode(IEqualityComparer comparer)
@@ -1025,10 +989,10 @@ namespace System
 
         private int GetHashCodeCore(IEqualityComparer comparer)
         {
-            return ValueTuple.CombineHashCodes(comparer.GetHashCode(Item1!),
-                                               comparer.GetHashCode(Item2!),
-                                               comparer.GetHashCode(Item3!),
-                                               comparer.GetHashCode(Item4!));
+            return HashCode.Combine(comparer.GetHashCode(Item1!),
+                                    comparer.GetHashCode(Item2!),
+                                    comparer.GetHashCode(Item3!),
+                                    comparer.GetHashCode(Item4!));
         }
 
         int IValueTupleInternal.GetHashCode(IEqualityComparer comparer)
@@ -1244,11 +1208,11 @@ namespace System
         /// <returns>A 32-bit signed integer hash code.</returns>
         public override int GetHashCode()
         {
-            return ValueTuple.CombineHashCodes(Item1?.GetHashCode() ?? 0,
-                                               Item2?.GetHashCode() ?? 0,
-                                               Item3?.GetHashCode() ?? 0,
-                                               Item4?.GetHashCode() ?? 0,
-                                               Item5?.GetHashCode() ?? 0);
+            return HashCode.Combine(Item1?.GetHashCode() ?? 0,
+                                    Item2?.GetHashCode() ?? 0,
+                                    Item3?.GetHashCode() ?? 0,
+                                    Item4?.GetHashCode() ?? 0,
+                                    Item5?.GetHashCode() ?? 0);
         }
 
         int IStructuralEquatable.GetHashCode(IEqualityComparer comparer)
@@ -1258,11 +1222,11 @@ namespace System
 
         private int GetHashCodeCore(IEqualityComparer comparer)
         {
-            return ValueTuple.CombineHashCodes(comparer.GetHashCode(Item1!),
-                                               comparer.GetHashCode(Item2!),
-                                               comparer.GetHashCode(Item3!),
-                                               comparer.GetHashCode(Item4!),
-                                               comparer.GetHashCode(Item5!));
+            return HashCode.Combine(comparer.GetHashCode(Item1!),
+                                    comparer.GetHashCode(Item2!),
+                                    comparer.GetHashCode(Item3!),
+                                    comparer.GetHashCode(Item4!),
+                                    comparer.GetHashCode(Item5!));
         }
 
         int IValueTupleInternal.GetHashCode(IEqualityComparer comparer)
@@ -1494,12 +1458,12 @@ namespace System
         /// <returns>A 32-bit signed integer hash code.</returns>
         public override int GetHashCode()
         {
-            return ValueTuple.CombineHashCodes(Item1?.GetHashCode() ?? 0,
-                                               Item2?.GetHashCode() ?? 0,
-                                               Item3?.GetHashCode() ?? 0,
-                                               Item4?.GetHashCode() ?? 0,
-                                               Item5?.GetHashCode() ?? 0,
-                                               Item6?.GetHashCode() ?? 0);
+            return HashCode.Combine(Item1?.GetHashCode() ?? 0,
+                                    Item2?.GetHashCode() ?? 0,
+                                    Item3?.GetHashCode() ?? 0,
+                                    Item4?.GetHashCode() ?? 0,
+                                    Item5?.GetHashCode() ?? 0,
+                                    Item6?.GetHashCode() ?? 0);
         }
 
         int IStructuralEquatable.GetHashCode(IEqualityComparer comparer)
@@ -1509,12 +1473,12 @@ namespace System
 
         private int GetHashCodeCore(IEqualityComparer comparer)
         {
-            return ValueTuple.CombineHashCodes(comparer.GetHashCode(Item1!),
-                                               comparer.GetHashCode(Item2!),
-                                               comparer.GetHashCode(Item3!),
-                                               comparer.GetHashCode(Item4!),
-                                               comparer.GetHashCode(Item5!),
-                                               comparer.GetHashCode(Item6!));
+            return HashCode.Combine(comparer.GetHashCode(Item1!),
+                                    comparer.GetHashCode(Item2!),
+                                    comparer.GetHashCode(Item3!),
+                                    comparer.GetHashCode(Item4!),
+                                    comparer.GetHashCode(Item5!),
+                                    comparer.GetHashCode(Item6!));
         }
 
         int IValueTupleInternal.GetHashCode(IEqualityComparer comparer)
@@ -1762,13 +1726,13 @@ namespace System
         /// <returns>A 32-bit signed integer hash code.</returns>
         public override int GetHashCode()
         {
-            return ValueTuple.CombineHashCodes(Item1?.GetHashCode() ?? 0,
-                                                Item2?.GetHashCode() ?? 0,
-                                                Item3?.GetHashCode() ?? 0,
-                                                Item4?.GetHashCode() ?? 0,
-                                                Item5?.GetHashCode() ?? 0,
-                                                Item6?.GetHashCode() ?? 0,
-                                                Item7?.GetHashCode() ?? 0);
+            return HashCode.Combine(Item1?.GetHashCode() ?? 0,
+                                    Item2?.GetHashCode() ?? 0,
+                                    Item3?.GetHashCode() ?? 0,
+                                    Item4?.GetHashCode() ?? 0,
+                                    Item5?.GetHashCode() ?? 0,
+                                    Item6?.GetHashCode() ?? 0,
+                                    Item7?.GetHashCode() ?? 0);
         }
 
         int IStructuralEquatable.GetHashCode(IEqualityComparer comparer)
@@ -1778,13 +1742,13 @@ namespace System
 
         private int GetHashCodeCore(IEqualityComparer comparer)
         {
-            return ValueTuple.CombineHashCodes(comparer.GetHashCode(Item1!),
-                                               comparer.GetHashCode(Item2!),
-                                               comparer.GetHashCode(Item3!),
-                                               comparer.GetHashCode(Item4!),
-                                               comparer.GetHashCode(Item5!),
-                                               comparer.GetHashCode(Item6!),
-                                               comparer.GetHashCode(Item7!));
+            return HashCode.Combine(comparer.GetHashCode(Item1!),
+                                    comparer.GetHashCode(Item2!),
+                                    comparer.GetHashCode(Item3!),
+                                    comparer.GetHashCode(Item4!),
+                                    comparer.GetHashCode(Item5!),
+                                    comparer.GetHashCode(Item6!),
+                                    comparer.GetHashCode(Item7!));
         }
 
         int IValueTupleInternal.GetHashCode(IEqualityComparer comparer)
@@ -2057,13 +2021,13 @@ namespace System
             // We want to have a limited hash in this case.  We'll use the last 8 elements of the tuple
             if (!(Rest is IValueTupleInternal rest))
             {
-                return ValueTuple.CombineHashCodes(Item1?.GetHashCode() ?? 0,
-                                                   Item2?.GetHashCode() ?? 0,
-                                                   Item3?.GetHashCode() ?? 0,
-                                                   Item4?.GetHashCode() ?? 0,
-                                                   Item5?.GetHashCode() ?? 0,
-                                                   Item6?.GetHashCode() ?? 0,
-                                                   Item7?.GetHashCode() ?? 0);
+                return HashCode.Combine(Item1?.GetHashCode() ?? 0,
+                                        Item2?.GetHashCode() ?? 0,
+                                        Item3?.GetHashCode() ?? 0,
+                                        Item4?.GetHashCode() ?? 0,
+                                        Item5?.GetHashCode() ?? 0,
+                                        Item6?.GetHashCode() ?? 0,
+                                        Item7?.GetHashCode() ?? 0);
             }
 
             int size = rest.Length;
@@ -2074,48 +2038,48 @@ namespace System
             switch (k)
             {
                 case 1:
-                    return ValueTuple.CombineHashCodes(Item7?.GetHashCode() ?? 0,
-                                                       rest.GetHashCode());
+                    return HashCode.Combine(Item7?.GetHashCode() ?? 0,
+                                            rest.GetHashCode());
                 case 2:
-                    return ValueTuple.CombineHashCodes(Item6?.GetHashCode() ?? 0,
-                                                       Item7?.GetHashCode() ?? 0,
-                                                       rest.GetHashCode());
+                    return HashCode.Combine(Item6?.GetHashCode() ?? 0,
+                                            Item7?.GetHashCode() ?? 0,
+                                            rest.GetHashCode());
                 case 3:
-                    return ValueTuple.CombineHashCodes(Item5?.GetHashCode() ?? 0,
-                                                       Item6?.GetHashCode() ?? 0,
-                                                       Item7?.GetHashCode() ?? 0,
-                                                       rest.GetHashCode());
+                    return HashCode.Combine(Item5?.GetHashCode() ?? 0,
+                                            Item6?.GetHashCode() ?? 0,
+                                            Item7?.GetHashCode() ?? 0,
+                                            rest.GetHashCode());
                 case 4:
-                    return ValueTuple.CombineHashCodes(Item4?.GetHashCode() ?? 0,
-                                                       Item5?.GetHashCode() ?? 0,
-                                                       Item6?.GetHashCode() ?? 0,
-                                                       Item7?.GetHashCode() ?? 0,
-                                                       rest.GetHashCode());
+                    return HashCode.Combine(Item4?.GetHashCode() ?? 0,
+                                            Item5?.GetHashCode() ?? 0,
+                                            Item6?.GetHashCode() ?? 0,
+                                            Item7?.GetHashCode() ?? 0,
+                                            rest.GetHashCode());
                 case 5:
-                    return ValueTuple.CombineHashCodes(Item3?.GetHashCode() ?? 0,
-                                                       Item4?.GetHashCode() ?? 0,
-                                                       Item5?.GetHashCode() ?? 0,
-                                                       Item6?.GetHashCode() ?? 0,
-                                                       Item7?.GetHashCode() ?? 0,
-                                                       rest.GetHashCode());
+                    return HashCode.Combine(Item3?.GetHashCode() ?? 0,
+                                            Item4?.GetHashCode() ?? 0,
+                                            Item5?.GetHashCode() ?? 0,
+                                            Item6?.GetHashCode() ?? 0,
+                                            Item7?.GetHashCode() ?? 0,
+                                            rest.GetHashCode());
                 case 6:
-                    return ValueTuple.CombineHashCodes(Item2?.GetHashCode() ?? 0,
-                                                       Item3?.GetHashCode() ?? 0,
-                                                       Item4?.GetHashCode() ?? 0,
-                                                       Item5?.GetHashCode() ?? 0,
-                                                       Item6?.GetHashCode() ?? 0,
-                                                       Item7?.GetHashCode() ?? 0,
-                                                       rest.GetHashCode());
+                    return HashCode.Combine(Item2?.GetHashCode() ?? 0,
+                                            Item3?.GetHashCode() ?? 0,
+                                            Item4?.GetHashCode() ?? 0,
+                                            Item5?.GetHashCode() ?? 0,
+                                            Item6?.GetHashCode() ?? 0,
+                                            Item7?.GetHashCode() ?? 0,
+                                            rest.GetHashCode());
                 case 7:
                 case 8:
-                    return ValueTuple.CombineHashCodes(Item1?.GetHashCode() ?? 0,
-                                                       Item2?.GetHashCode() ?? 0,
-                                                       Item3?.GetHashCode() ?? 0,
-                                                       Item4?.GetHashCode() ?? 0,
-                                                       Item5?.GetHashCode() ?? 0,
-                                                       Item6?.GetHashCode() ?? 0,
-                                                       Item7?.GetHashCode() ?? 0,
-                                                       rest.GetHashCode());
+                    return HashCode.Combine(Item1?.GetHashCode() ?? 0,
+                                            Item2?.GetHashCode() ?? 0,
+                                            Item3?.GetHashCode() ?? 0,
+                                            Item4?.GetHashCode() ?? 0,
+                                            Item5?.GetHashCode() ?? 0,
+                                            Item6?.GetHashCode() ?? 0,
+                                            Item7?.GetHashCode() ?? 0,
+                                            rest.GetHashCode());
             }
 
             Debug.Fail("Missed all cases for computing ValueTuple hash code");
@@ -2132,9 +2096,9 @@ namespace System
             // We want to have a limited hash in this case.  We'll use the last 8 elements of the tuple
             if (!(Rest is IValueTupleInternal rest))
             {
-                return ValueTuple.CombineHashCodes(comparer.GetHashCode(Item1!), comparer.GetHashCode(Item2!), comparer.GetHashCode(Item3!),
-                                                   comparer.GetHashCode(Item4!), comparer.GetHashCode(Item5!), comparer.GetHashCode(Item6!),
-                                                   comparer.GetHashCode(Item7!));
+                return HashCode.Combine(comparer.GetHashCode(Item1!), comparer.GetHashCode(Item2!), comparer.GetHashCode(Item3!),
+                                        comparer.GetHashCode(Item4!), comparer.GetHashCode(Item5!), comparer.GetHashCode(Item6!),
+                                        comparer.GetHashCode(Item7!));
             }
 
             int size = rest.Length;
@@ -2145,27 +2109,27 @@ namespace System
             switch (k)
             {
                 case 1:
-                    return ValueTuple.CombineHashCodes(comparer.GetHashCode(Item7!), rest.GetHashCode(comparer));
+                    return HashCode.Combine(comparer.GetHashCode(Item7!), rest.GetHashCode(comparer));
                 case 2:
-                    return ValueTuple.CombineHashCodes(comparer.GetHashCode(Item6!), comparer.GetHashCode(Item7!), rest.GetHashCode(comparer));
+                    return HashCode.Combine(comparer.GetHashCode(Item6!), comparer.GetHashCode(Item7!), rest.GetHashCode(comparer));
                 case 3:
-                    return ValueTuple.CombineHashCodes(comparer.GetHashCode(Item5!), comparer.GetHashCode(Item6!), comparer.GetHashCode(Item7!),
-                                                       rest.GetHashCode(comparer));
+                    return HashCode.Combine(comparer.GetHashCode(Item5!), comparer.GetHashCode(Item6!), comparer.GetHashCode(Item7!),
+                                            rest.GetHashCode(comparer));
                 case 4:
-                    return ValueTuple.CombineHashCodes(comparer.GetHashCode(Item4!), comparer.GetHashCode(Item5!), comparer.GetHashCode(Item6!),
-                                                       comparer.GetHashCode(Item7!), rest.GetHashCode(comparer));
+                    return HashCode.Combine(comparer.GetHashCode(Item4!), comparer.GetHashCode(Item5!), comparer.GetHashCode(Item6!),
+                                            comparer.GetHashCode(Item7!), rest.GetHashCode(comparer));
                 case 5:
-                    return ValueTuple.CombineHashCodes(comparer.GetHashCode(Item3!), comparer.GetHashCode(Item4!), comparer.GetHashCode(Item5!),
-                                                       comparer.GetHashCode(Item6!), comparer.GetHashCode(Item7!), rest.GetHashCode(comparer));
+                    return HashCode.Combine(comparer.GetHashCode(Item3!), comparer.GetHashCode(Item4!), comparer.GetHashCode(Item5!),
+                                            comparer.GetHashCode(Item6!), comparer.GetHashCode(Item7!), rest.GetHashCode(comparer));
                 case 6:
-                    return ValueTuple.CombineHashCodes(comparer.GetHashCode(Item2!), comparer.GetHashCode(Item3!), comparer.GetHashCode(Item4!),
-                                                       comparer.GetHashCode(Item5!), comparer.GetHashCode(Item6!), comparer.GetHashCode(Item7!),
-                                                       rest.GetHashCode(comparer));
+                    return HashCode.Combine(comparer.GetHashCode(Item2!), comparer.GetHashCode(Item3!), comparer.GetHashCode(Item4!),
+                                            comparer.GetHashCode(Item5!), comparer.GetHashCode(Item6!), comparer.GetHashCode(Item7!),
+                                            rest.GetHashCode(comparer));
                 case 7:
                 case 8:
-                    return ValueTuple.CombineHashCodes(comparer.GetHashCode(Item1!), comparer.GetHashCode(Item2!), comparer.GetHashCode(Item3!),
-                                                       comparer.GetHashCode(Item4!), comparer.GetHashCode(Item5!), comparer.GetHashCode(Item6!),
-                                                       comparer.GetHashCode(Item7!), rest.GetHashCode(comparer));
+                    return HashCode.Combine(comparer.GetHashCode(Item1!), comparer.GetHashCode(Item2!), comparer.GetHashCode(Item3!),
+                                            comparer.GetHashCode(Item4!), comparer.GetHashCode(Item5!), comparer.GetHashCode(Item6!),
+                                            comparer.GetHashCode(Item7!), rest.GetHashCode(comparer));
             }
 
             Debug.Fail("Missed all cases for computing ValueTuple hash code");
