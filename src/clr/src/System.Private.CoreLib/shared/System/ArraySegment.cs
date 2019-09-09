@@ -95,22 +95,8 @@ namespace System
             return new Enumerator(this);
         }
 
-        public override int GetHashCode()
-        {
-            if (_array == null)
-            {
-                return 0;
-            }
-
-            int hash = 5381;
-            hash = System.Numerics.Hashing.HashHelpers.Combine(hash, _offset);
-            hash = System.Numerics.Hashing.HashHelpers.Combine(hash, _count);
-
-            // The array hash is expected to be an evenly-distributed mixture of bits,
-            // so rather than adding the cost of another rotation we just xor it.
-            hash ^= _array.GetHashCode();
-            return hash;
-        }
+        public override int GetHashCode() =>
+            _array is null ? 0 : HashCode.Combine(_offset, _count, _array.GetHashCode());
 
         public void CopyTo(T[] destination) => CopyTo(destination, 0);
 
