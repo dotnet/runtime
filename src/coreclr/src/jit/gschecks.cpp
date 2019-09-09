@@ -196,13 +196,13 @@ Compiler::fgWalkResult Compiler::gsMarkPtrsAndAssignGroups(GenTree** pTree, fgWa
                     comp->fgWalkTreePre(&tree->gtCall.gtCallObjp, gsMarkPtrsAndAssignGroups, (void*)&newState);
                 }
 
-                for (GenTreeArgList* args = tree->gtCall.gtCallArgs; args; args = args->Rest())
+                for (GenTreeCall::Use& use : tree->AsCall()->Args())
                 {
-                    comp->fgWalkTreePre(&args->Current(), gsMarkPtrsAndAssignGroups, (void*)&newState);
+                    comp->fgWalkTreePre(&use.NodeRef(), gsMarkPtrsAndAssignGroups, (void*)&newState);
                 }
-                for (GenTreeArgList* args = tree->gtCall.gtCallLateArgs; args; args = args->Rest())
+                for (GenTreeCall::Use& use : tree->AsCall()->LateArgs())
                 {
-                    comp->fgWalkTreePre(&args->Current(), gsMarkPtrsAndAssignGroups, (void*)&newState);
+                    comp->fgWalkTreePre(&use.NodeRef(), gsMarkPtrsAndAssignGroups, (void*)&newState);
                 }
 
                 if (tree->gtCall.gtCallType == CT_INDIRECT)

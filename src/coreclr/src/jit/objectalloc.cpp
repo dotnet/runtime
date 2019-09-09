@@ -453,7 +453,7 @@ GenTree* ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* alloc
     unsigned int helper               = allocObj->gtNewHelper;
     bool         helperHasSideEffects = allocObj->gtHelperHasSideEffects;
 
-    GenTreeArgList* args;
+    GenTreeCall::Use* args;
 #ifdef FEATURE_READYTORUN_COMPILER
     CORINFO_CONST_LOOKUP entryPoint = allocObj->gtEntryPoint;
     if (helper == CORINFO_HELP_READYTORUN_NEW)
@@ -463,7 +463,7 @@ GenTree* ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* alloc
     else
 #endif
     {
-        args = comp->gtNewArgList(op1);
+        args = comp->gtNewCallArgs(op1);
     }
 
     const bool morphArgs  = false;

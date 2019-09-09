@@ -6865,13 +6865,11 @@ Compiler::NodeToIntMap* Compiler::FindReachableNodesInNodeTestData()
                 // For call nodes, translate late args to what they stand for.
                 if (tree->OperGet() == GT_CALL)
                 {
-                    GenTreeCall*    call = tree->AsCall();
-                    GenTreeArgList* args = call->gtCallArgs;
-                    unsigned        i    = 0;
-                    while (args != nullptr)
+                    GenTreeCall* call = tree->AsCall();
+                    unsigned     i    = 0;
+                    for (GenTreeCall::Use& use : call->Args())
                     {
-                        GenTree* arg = args->Current();
-                        if (arg->gtFlags & GTF_LATE_ARG)
+                        if ((use.GetNode()->gtFlags & GTF_LATE_ARG) != 0)
                         {
                             // Find the corresponding late arg.
                             GenTree* lateArg = call->fgArgInfo->GetArgNode(i);
@@ -6881,7 +6879,6 @@ Compiler::NodeToIntMap* Compiler::FindReachableNodesInNodeTestData()
                             }
                         }
                         i++;
-                        args = args->Rest();
                     }
                 }
 
