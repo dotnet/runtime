@@ -54,6 +54,10 @@ namespace System.CodeDom.Compiler
             {
                 ValidateCodeDirective((CodeDirective)e);
             }
+            else if (e == null)
+            {
+                throw new ArgumentNullException(nameof(e));
+            }
             else
             {
                 throw new ArgumentException(SR.Format(SR.InvalidElementType, e.GetType().FullName), nameof(e));
@@ -159,7 +163,11 @@ namespace System.CodeDom.Compiler
         {
             foreach (CodeNamespaceImport imp in e.Imports)
             {
-                if (imp.LinePragma != null) ValidateLinePragmaStart(imp.LinePragma);
+                if (imp.LinePragma != null)
+                {
+                    ValidateLinePragmaStart(imp.LinePragma);
+                }
+
                 ValidateNamespaceImport(imp);
             }
         }
@@ -395,9 +403,8 @@ namespace System.CodeDom.Compiler
             }
 
             ValidateIdentifier(e, nameof(e.Name), e.Name);
-            if (IsCurrentDelegate)
+            if (e is CodeTypeDelegate del)
             {
-                CodeTypeDelegate del = (CodeTypeDelegate)e;
                 ValidateTypeReference(del.ReturnType);
                 ValidateParameters(del.Parameters);
             }
@@ -429,6 +436,11 @@ namespace System.CodeDom.Compiler
 
         private void ValidateStatement(CodeStatement e)
         {
+            if (e == null)
+            {
+                throw new ArgumentNullException(nameof(e));
+            }
+
             ValidateCodeDirectives(e.StartDirectives);
             ValidateCodeDirectives(e.EndDirectives);
 
@@ -684,7 +696,7 @@ namespace System.CodeDom.Compiler
             // Check if we have zero type args for open types.
             if ((totalTypeArgs != e.TypeArguments.Count) && (e.TypeArguments.Count != 0))
             {
-                throw new ArgumentException(SR.Format(SR.ArityDoesntMatch, baseType, e.TypeArguments.Count));
+                throw new ArgumentException(SR.Format(SR.ArityDoesntMatch, baseType, e.TypeArguments.Count), nameof(e));
             }
         }
 
@@ -693,7 +705,7 @@ namespace System.CodeDom.Compiler
             if (!CodeGenerator.IsValidLanguageIndependentTypeName(typeName))
             {
                 string message = SR.Format(SR.InvalidTypeName, typeName, propertyName, e.GetType().FullName);
-                throw new ArgumentException(message, nameof(typeName));
+                throw new ArgumentException(message, nameof(e));
             }
         }
 
@@ -702,7 +714,7 @@ namespace System.CodeDom.Compiler
             if (!CodeGenerator.IsValidLanguageIndependentIdentifier(identifier))
             {
                 string message = SR.Format(SR.InvalidLanguageIdentifier, identifier, propertyName, e.GetType().FullName);
-                throw new ArgumentException(message, nameof(identifier));
+                throw new ArgumentException(message, nameof(e));
             }
         }
 
@@ -1014,19 +1026,17 @@ namespace System.CodeDom.Compiler
         private static void ValidateChecksumPragma(CodeChecksumPragma e)
         {
             if (e.FileName.IndexOfAny(Path.GetInvalidPathChars()) != -1)
-                throw new ArgumentException(SR.Format(SR.InvalidPathCharsInChecksum, e.FileName));
+                throw new ArgumentException(SR.Format(SR.InvalidPathCharsInChecksum, e.FileName), nameof(e));
         }
 
         private static void ValidateRegionDirective(CodeRegionDirective e)
         {
             if (e.RegionText.IndexOfAny(s_newLineChars) != -1)
-                throw new ArgumentException(SR.Format(SR.InvalidRegion, e.RegionText));
+                throw new ArgumentException(SR.Format(SR.InvalidRegion, e.RegionText), nameof(e));
         }
 
         private bool IsCurrentInterface => _currentClass != null && !(_currentClass is CodeTypeDelegate) ? _currentClass.IsInterface : false;
 
         private bool IsCurrentEnum => _currentClass != null && !(_currentClass is CodeTypeDelegate) ? _currentClass.IsEnum : false;
-
-        private bool IsCurrentDelegate => _currentClass != null && _currentClass is CodeTypeDelegate;
     }
 }
