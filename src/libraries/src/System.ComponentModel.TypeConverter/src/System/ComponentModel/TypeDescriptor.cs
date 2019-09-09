@@ -2839,7 +2839,9 @@ namespace System.ComponentModel
 
             public int Compare(object left, object right)
             {
-                return CultureInfo.InvariantCulture.CompareInfo.Compare(((MemberDescriptor)left).Name, ((MemberDescriptor)right).Name);
+                MemberDescriptor leftMember = left as MemberDescriptor;
+                MemberDescriptor rightMember = right as MemberDescriptor;
+                return CultureInfo.InvariantCulture.CompareInfo.Compare(leftMember?.Name, rightMember?.Name);
             }
         }
 
