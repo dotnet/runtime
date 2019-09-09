@@ -181,13 +181,6 @@ if(WIN32)
   add_compile_options(/Zl) # omit default library name in .OBJ
 endif(WIN32)
 
-#------------------------------
-# Add Test Directory
-#------------------------------
-if(CLR_CMAKE_BUILD_TESTS)
-  add_subdirectory(tests)
-endif(CLR_CMAKE_BUILD_TESTS)
-
 #--------------------------------
 # Definition directives
 #  - all clr specific compile definitions should be included in this file
