@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Numerics.Hashing;
 using System.Runtime.CompilerServices;
 
 namespace System.Drawing
@@ -580,8 +579,7 @@ namespace System.Drawing
             if (name != null & !IsKnownColor)
                 return name.GetHashCode();
 
-            return HashHelpers.Combine(
-                HashHelpers.Combine(value.GetHashCode(), state.GetHashCode()), knownColor.GetHashCode());
+            return HashCode.Combine(value.GetHashCode(), state.GetHashCode(), knownColor.GetHashCode());
         }
     }
 }
