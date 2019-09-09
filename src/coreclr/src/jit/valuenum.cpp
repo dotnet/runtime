@@ -8393,9 +8393,9 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
 {
     unsigned nArgs = ValueNumStore::VNFuncArity(vnf);
     assert(vnf != VNF_Boundary);
-    GenTreeArgList* args                    = call->gtCallArgs;
-    bool            generateUniqueVN        = false;
-    bool            useEntryPointAddrAsArg0 = false;
+    GenTreeCall::Use* args                    = call->gtCallArgs;
+    bool              generateUniqueVN        = false;
+    bool              useEntryPointAddrAsArg0 = false;
 
     switch (vnf)
     {
@@ -8409,7 +8409,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         case VNF_JitNewArr:
         {
             generateUniqueVN  = true;
-            ValueNumPair vnp1 = vnStore->VNPNormalPair(args->Rest()->Current()->gtVNPair);
+            ValueNumPair vnp1 = vnStore->VNPNormalPair(args->GetNext()->GetNode()->gtVNPair);
 
             // The New Array helper may throw an overflow exception
             vnpExc = vnStore->VNPExcSetSingleton(vnStore->VNPairForFunc(TYP_REF, VNF_NewArrOverflowExc, vnp1));
@@ -8440,7 +8440,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         case VNF_JitReadyToRunNewArr:
         {
             generateUniqueVN  = true;
-            ValueNumPair vnp1 = vnStore->VNPNormalPair(args->Current()->gtVNPair);
+            ValueNumPair vnp1 = vnStore->VNPNormalPair(args->GetNode()->gtVNPair);
 
             // The New Array helper may throw an overflow exception
             vnpExc = vnStore->VNPExcSetSingleton(vnStore->VNPairForFunc(TYP_REF, VNF_NewArrOverflowExc, vnp1));
@@ -8480,7 +8480,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
     if (call->IsR2RRelativeIndir())
     {
 #ifdef DEBUG
-        assert(args->Current()->OperGet() == GT_ARGPLACE);
+        assert(args->GetNode()->OperGet() == GT_ARGPLACE);
 
         // Find the corresponding late arg.
         GenTree* indirectCellAddress = call->fgArgInfo->GetArgNode(0);
@@ -8507,7 +8507,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
     else
     {
         auto getCurrentArg = [call, &args, useEntryPointAddrAsArg0](int currentIndex) {
-            GenTree* arg = args->Current();
+            GenTree* arg = args->GetNode();
             if ((arg->gtFlags & GTF_LATE_ARG) != 0)
             {
                 // This arg is a setup node that moves the arg into position.
@@ -8544,7 +8544,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
             // Also include in the argument exception sets
             vnpExc = vnStore->VNPExcSetUnion(vnpExc, vnp0x);
 
-            args = args->Rest();
+            args = args->GetNext();
         }
         if (nArgs == 1)
         {
@@ -8566,7 +8566,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
             vnStore->VNPUnpackExc(vnp1wx, &vnp1, &vnp1x);
             vnpExc = vnStore->VNPExcSetUnion(vnpExc, vnp1x);
 
-            args = args->Rest();
+            args = args->GetNext();
             if (nArgs == 2)
             {
                 if (generateUniqueVN)
@@ -8586,7 +8586,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
                 vnStore->VNPUnpackExc(vnp2wx, &vnp2, &vnp2x);
                 vnpExc = vnStore->VNPExcSetUnion(vnpExc, vnp2x);
 
-                args = args->Rest();
+                args = args->GetNext();
                 assert(nArgs == 3); // Our current maximum.
                 assert(args == nullptr);
                 if (generateUniqueVN)
@@ -8610,19 +8610,16 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
 {
     // First: do value numbering of any argument placeholder nodes in the argument list
     // (by transferring from the VN of the late arg that they are standing in for...)
-    unsigned        i               = 0;
-    GenTreeArgList* args            = call->gtCallArgs;
-    bool            updatedArgPlace = false;
-    while (args != nullptr)
+    unsigned i = 0;
+    for (GenTreeCall::Use& use : call->Args())
     {
-        GenTree* arg = args->Current();
+        GenTree* arg = use.GetNode();
         if (arg->OperGet() == GT_ARGPLACE)
         {
             // Find the corresponding late arg.
             GenTree* lateArg = call->fgArgInfo->GetArgNode(i);
             assert(lateArg->gtVNPair.BothDefined());
-            arg->gtVNPair   = lateArg->gtVNPair;
-            updatedArgPlace = true;
+            arg->gtVNPair = lateArg->gtVNPair;
 #ifdef DEBUG
             if (verbose)
             {
@@ -8635,13 +8632,6 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
 #endif
         }
         i++;
-        args = args->Rest();
-    }
-    if (updatedArgPlace)
-    {
-        // Now we have to update the VN's of the argument list nodes, since that will be used in determining
-        // loop-invariance.
-        fgUpdateArgListVNs(call->gtCallArgs);
     }
 
     if (call->gtCallType == CT_HELPER)
@@ -8668,17 +8658,6 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
         // For now, arbitrary side effect on GcHeap/ByrefExposed.
         fgMutateGcHeap(call DEBUGARG("CALL"));
     }
-}
-
-void Compiler::fgUpdateArgListVNs(GenTreeArgList* args)
-{
-    if (args == nullptr)
-    {
-        return;
-    }
-    // Otherwise...
-    fgUpdateArgListVNs(args->Rest());
-    fgValueNumberTree(args);
 }
 
 VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)

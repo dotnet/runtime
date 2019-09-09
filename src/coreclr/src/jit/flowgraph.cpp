@@ -279,8 +279,8 @@ void Compiler::fgInstrumentMethod()
         {
             // In such cases we still want to add the method entry callback node
 
-            GenTreeArgList* args = gtNewArgList(gtNewIconEmbMethHndNode(info.compMethodHnd));
-            GenTree*        call = gtNewHelperCallNode(CORINFO_HELP_BBT_FCN_ENTER, TYP_VOID, args);
+            GenTreeCall::Use* args = gtNewCallArgs(gtNewIconEmbMethHndNode(info.compMethodHnd));
+            GenTree*          call = gtNewHelperCallNode(CORINFO_HELP_BBT_FCN_ENTER, TYP_VOID, args);
 
             stmt = gtNewStmt(call);
         }
@@ -361,8 +361,8 @@ void Compiler::fgInstrumentMethod()
             arg = gtNewIconEmbMethHndNode(info.compMethodHnd);
         }
 
-        GenTreeArgList* args = gtNewArgList(arg);
-        GenTree*        call = gtNewHelperCallNode(CORINFO_HELP_BBT_FCN_ENTER, TYP_VOID, args);
+        GenTreeCall::Use* args = gtNewCallArgs(arg);
+        GenTree*          call = gtNewHelperCallNode(CORINFO_HELP_BBT_FCN_ENTER, TYP_VOID, args);
 
         // Get the address of the first blocks ExecutionCount
         size_t addrOfFirstExecutionCount = (size_t)&profileBlockCountsStart->ExecutionCount;
@@ -7127,7 +7127,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
             break;
     }
 
-    GenTreeArgList* argList = nullptr;
+    GenTreeCall::Use* argList = nullptr;
 
     GenTree* opModuleIDArg;
     GenTree* opClassIDArg;
@@ -7171,11 +7171,11 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
         }
 
         // call the helper to get the base
-        argList = gtNewArgList(opModuleIDArg, opClassIDArg);
+        argList = gtNewCallArgs(opModuleIDArg, opClassIDArg);
     }
     else
     {
-        argList = gtNewArgList(opModuleIDArg);
+        argList = gtNewCallArgs(opModuleIDArg);
     }
 
     GenTreeCall* result = gtNewHelperCallNode(helper, type, argList);
@@ -7337,7 +7337,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
     CORINFO_METHOD_HANDLE methHnd = call->gtCallMethHnd;
     CORINFO_CLASS_HANDLE  clsHnd  = info.compCompHnd->getMethodClass(methHnd);
 
-    GenTree* targetMethod = call->gtCallArgs->Rest()->Current();
+    GenTree* targetMethod = call->gtCallArgs->GetNext()->GetNode();
     noway_assert(targetMethod->TypeGet() == TYP_I_IMPL);
     genTreeOps            oper            = targetMethod->OperGet();
     CORINFO_METHOD_HANDLE targetMethodHnd = nullptr;
@@ -7348,7 +7348,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
     }
     else if (oper == GT_CALL && targetMethod->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_VIRTUAL_FUNC_PTR))
     {
-        GenTree* handleNode = targetMethod->gtCall.gtCallArgs->Rest()->Rest()->Current();
+        GenTree* handleNode = targetMethod->AsCall()->gtCallArgs->GetNext()->GetNext()->GetNode();
 
         if (handleNode->OperGet() == GT_CNS_INT)
         {
@@ -7387,7 +7387,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
         GenTreeCall* runtimeLookupCall = qmarkNode->gtOp.gtOp2->gtOp.gtOp1->AsCall();
 
         // This could be any of CORINFO_HELP_RUNTIMEHANDLE_(METHOD|CLASS)(_LOG?)
-        GenTree* tokenNode = runtimeLookupCall->gtCallArgs->gtOp.gtOp2->gtOp.gtOp1;
+        GenTree* tokenNode = runtimeLookupCall->gtCallArgs->GetNext()->GetNode();
         noway_assert(tokenNode->OperGet() == GT_CNS_INT);
         targetMethodHnd = CORINFO_METHOD_HANDLE(tokenNode->gtIntCon.gtCompileTimeHandle);
     }
@@ -7420,14 +7420,14 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
                 JITDUMP("optimized\n");
 
                 GenTree*             thisPointer       = call->gtCallObjp;
-                GenTree*             targetObjPointers = call->gtCallArgs->Current();
-                GenTreeArgList*      helperArgs        = nullptr;
+                GenTree*             targetObjPointers = call->gtCallArgs->GetNode();
+                GenTreeCall::Use*    helperArgs        = nullptr;
                 CORINFO_LOOKUP       pLookup;
                 CORINFO_CONST_LOOKUP entryPoint;
                 info.compCompHnd->getReadyToRunDelegateCtorHelper(ldftnToken, clsHnd, &pLookup);
                 if (!pLookup.lookupKind.needsRuntimeLookup)
                 {
-                    helperArgs = gtNewArgList(thisPointer, targetObjPointers);
+                    helperArgs = gtNewCallArgs(thisPointer, targetObjPointers);
                     entryPoint = pLookup.constLookup;
                 }
                 else
@@ -7437,7 +7437,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
                     info.compCompHnd->getReadyToRunHelper(ldftnToken, &pLookup.lookupKind,
                                                           CORINFO_HELP_READYTORUN_GENERIC_HANDLE, &genericLookup);
                     GenTree* ctxTree = getRuntimeContextTree(pLookup.lookupKind.runtimeLookupKind);
-                    helperArgs       = gtNewArgList(thisPointer, targetObjPointers, ctxTree);
+                    helperArgs       = gtNewCallArgs(thisPointer, targetObjPointers, ctxTree);
                     entryPoint       = genericLookup;
                 }
                 call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, helperArgs);
@@ -7453,9 +7453,9 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
         {
             JITDUMP("optimized\n");
 
-            GenTree*        thisPointer       = call->gtCallObjp;
-            GenTree*        targetObjPointers = call->gtCallArgs->Current();
-            GenTreeArgList* helperArgs        = gtNewArgList(thisPointer, targetObjPointers);
+            GenTree*          thisPointer       = call->gtCallObjp;
+            GenTree*          targetObjPointers = call->gtCallArgs->GetNode();
+            GenTreeCall::Use* helperArgs        = gtNewCallArgs(thisPointer, targetObjPointers);
 
             call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, helperArgs);
 
@@ -7490,24 +7490,24 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
 
             call->gtCallMethHnd = alternateCtor;
 
-            noway_assert(call->gtCallArgs->Rest()->Rest() == nullptr);
-            GenTreeArgList* addArgs = nullptr;
+            noway_assert(call->gtCallArgs->GetNext()->GetNext() == nullptr);
+            GenTreeCall::Use* addArgs = nullptr;
             if (ctorData.pArg5)
             {
                 GenTree* arg5 = gtNewIconHandleNode(size_t(ctorData.pArg5), GTF_ICON_FTN_ADDR);
-                addArgs       = gtNewListNode(arg5, addArgs);
+                addArgs       = gtPrependNewCallArg(arg5, addArgs);
             }
             if (ctorData.pArg4)
             {
                 GenTree* arg4 = gtNewIconHandleNode(size_t(ctorData.pArg4), GTF_ICON_FTN_ADDR);
-                addArgs       = gtNewListNode(arg4, addArgs);
+                addArgs       = gtPrependNewCallArg(arg4, addArgs);
             }
             if (ctorData.pArg3)
             {
                 GenTree* arg3 = gtNewIconHandleNode(size_t(ctorData.pArg3), GTF_ICON_FTN_ADDR);
-                addArgs       = gtNewListNode(arg3, addArgs);
+                addArgs       = gtPrependNewCallArg(arg3, addArgs);
             }
-            call->gtCallArgs->Rest()->Rest() = addArgs;
+            call->gtCallArgs->GetNext()->SetNext(addArgs);
         }
         else
         {
@@ -7856,7 +7856,7 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
                 tree = gtNewLclvNode(info.compTypeCtxtArg, TYP_I_IMPL);
                 // Call helper CORINFO_HELP_GETCLASSFROMMETHODPARAM to get the class handle
                 // from the method handle.
-                tree = gtNewHelperCallNode(CORINFO_HELP_GETCLASSFROMMETHODPARAM, TYP_I_IMPL, gtNewArgList(tree));
+                tree = gtNewHelperCallNode(CORINFO_HELP_GETCLASSFROMMETHODPARAM, TYP_I_IMPL, gtNewCallArgs(tree));
                 break;
             }
 
@@ -7870,7 +7870,7 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
         noway_assert(tree); // tree should now contain the CORINFO_CLASS_HANDLE for the exact class.
 
         // Given the class handle, get the pointer to the Monitor.
-        tree = gtNewHelperCallNode(CORINFO_HELP_GETSYNCFROMCLASSHANDLE, TYP_I_IMPL, gtNewArgList(tree));
+        tree = gtNewHelperCallNode(CORINFO_HELP_GETSYNCFROMCLASSHANDLE, TYP_I_IMPL, gtNewCallArgs(tree));
     }
 
     noway_assert(tree);
@@ -8153,13 +8153,13 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
     {
         tree = fgGetCritSectOfStaticMethod();
         tree = gtNewHelperCallNode(enter ? CORINFO_HELP_MON_ENTER_STATIC : CORINFO_HELP_MON_EXIT_STATIC, TYP_VOID,
-                                   gtNewArgList(tree, varAddrNode));
+                                   gtNewCallArgs(tree, varAddrNode));
     }
     else
     {
         tree = gtNewLclvNode(lvaThisVar, TYP_REF);
         tree = gtNewHelperCallNode(enter ? CORINFO_HELP_MON_ENTER : CORINFO_HELP_MON_EXIT, TYP_VOID,
-                                   gtNewArgList(tree, varAddrNode));
+                                   gtNewCallArgs(tree, varAddrNode));
     }
 
 #ifdef DEBUG
@@ -8286,7 +8286,7 @@ void Compiler::fgAddReversePInvokeEnterExit()
 
     tree = gtNewOperNode(GT_ADDR, TYP_I_IMPL, gtNewLclvNode(lvaReversePInvokeFrameVar, TYP_BLK));
 
-    tree = gtNewHelperCallNode(CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER, TYP_VOID, gtNewArgList(tree));
+    tree = gtNewHelperCallNode(CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER, TYP_VOID, gtNewCallArgs(tree));
 
     fgEnsureFirstBBisScratch();
 
@@ -8306,7 +8306,7 @@ void Compiler::fgAddReversePInvokeEnterExit()
 
     tree = gtNewOperNode(GT_ADDR, TYP_I_IMPL, gtNewLclvNode(lvaReversePInvokeFrameVar, TYP_BLK));
 
-    tree = gtNewHelperCallNode(CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT, TYP_VOID, gtNewArgList(tree));
+    tree = gtNewHelperCallNode(CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT, TYP_VOID, gtNewCallArgs(tree));
 
     assert(genReturnBB != nullptr);
 
@@ -9084,8 +9084,8 @@ void Compiler::fgAddInternal()
         tree = gtNewIconEmbMethHndNode(info.compMethodHnd);
 
         tree = gtNewHelperCallNode(info.compCompHnd->getSecurityPrologHelper(info.compMethodHnd), TYP_VOID,
-                                   gtNewArgList(tree, gtNewOperNode(GT_ADDR, TYP_BYREF,
-                                                                    gtNewLclvNode(lvaSecurityObject, TYP_REF))));
+                                   gtNewCallArgs(tree, gtNewOperNode(GT_ADDR, TYP_BYREF,
+                                                                     gtNewLclvNode(lvaSecurityObject, TYP_REF))));
 
         /* Create a new basic block and stick the call in it */
 
@@ -9120,7 +9120,7 @@ void Compiler::fgAddInternal()
         {
             tree = fgGetCritSectOfStaticMethod();
 
-            tree = gtNewHelperCallNode(CORINFO_HELP_MON_ENTER_STATIC, TYP_VOID, gtNewArgList(tree));
+            tree = gtNewHelperCallNode(CORINFO_HELP_MON_ENTER_STATIC, TYP_VOID, gtNewCallArgs(tree));
         }
         else
         {
@@ -9128,7 +9128,7 @@ void Compiler::fgAddInternal()
 
             tree = gtNewLclvNode(info.compThisArg, TYP_REF);
 
-            tree = gtNewHelperCallNode(CORINFO_HELP_MON_ENTER, TYP_VOID, gtNewArgList(tree));
+            tree = gtNewHelperCallNode(CORINFO_HELP_MON_ENTER, TYP_VOID, gtNewCallArgs(tree));
         }
 
         /* Create a new basic block and stick the call in it */
@@ -9157,13 +9157,13 @@ void Compiler::fgAddInternal()
         {
             tree = fgGetCritSectOfStaticMethod();
 
-            tree = gtNewHelperCallNode(CORINFO_HELP_MON_EXIT_STATIC, TYP_VOID, gtNewArgList(tree));
+            tree = gtNewHelperCallNode(CORINFO_HELP_MON_EXIT_STATIC, TYP_VOID, gtNewCallArgs(tree));
         }
         else
         {
             tree = gtNewLclvNode(info.compThisArg, TYP_REF);
 
-            tree = gtNewHelperCallNode(CORINFO_HELP_MON_EXIT, TYP_VOID, gtNewArgList(tree));
+            tree = gtNewHelperCallNode(CORINFO_HELP_MON_EXIT, TYP_VOID, gtNewCallArgs(tree));
         }
 
         fgNewStmtNearEnd(genReturnBB, tree);
@@ -9194,7 +9194,7 @@ void Compiler::fgAddInternal()
 
         tree = gtNewIconEmbMethHndNode(info.compMethodHnd);
 
-        tree = gtNewHelperCallNode(CORINFO_HELP_VERIFICATION_RUNTIME_CHECK, TYP_VOID, gtNewArgList(tree));
+        tree = gtNewHelperCallNode(CORINFO_HELP_VERIFICATION_RUNTIME_CHECK, TYP_VOID, gtNewCallArgs(tree));
 
         /* Create a new basic block and stick the call in it */
 
@@ -18747,21 +18747,14 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
                 fgSetTreeSeqHelper(tree->gtCall.gtCallObjp, isLIR);
             }
 
-            /* We'll evaluate the arguments next, left to right
-             * NOTE: setListOrder needs cleanup - eliminate the #ifdef afterwards */
-
-            if (tree->gtCall.gtCallArgs)
+            for (GenTreeCall::Use& use : tree->AsCall()->Args())
             {
-                fgSetTreeSeqHelper(tree->gtCall.gtCallArgs, isLIR);
+                fgSetTreeSeqHelper(use.GetNode(), isLIR);
             }
 
-            /* Evaluate the temp register arguments list
-             * This is a "hidden" list and its only purpose is to
-             * extend the life of temps until we make the call */
-
-            if (tree->gtCall.gtCallLateArgs)
+            for (GenTreeCall::Use& use : tree->AsCall()->LateArgs())
             {
-                fgSetTreeSeqHelper(tree->gtCall.gtCallLateArgs, isLIR);
+                fgSetTreeSeqHelper(use.GetNode(), isLIR);
             }
 
             if ((tree->gtCall.gtCallType == CT_INDIRECT) && (tree->gtCall.gtCallCookie != nullptr))
@@ -21298,8 +21291,6 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
         {
             case GT_CALL:
 
-                GenTree*     args;
-                GenTree*     argx;
                 GenTreeCall* call;
 
                 call = tree->AsCall();
@@ -21315,27 +21306,25 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                     }
                 }
 
-                for (args = call->gtCallArgs; args; args = args->gtOp.gtOp2)
+                for (GenTreeCall::Use& use : call->Args())
                 {
-                    argx = args->gtOp.gtOp1;
-                    fgDebugCheckFlags(argx);
+                    fgDebugCheckFlags(use.GetNode());
 
-                    chkFlags |= (argx->gtFlags & GTF_SIDE_EFFECT);
+                    chkFlags |= (use.GetNode()->gtFlags & GTF_SIDE_EFFECT);
 
-                    if (argx->gtFlags & GTF_ASG)
+                    if ((use.GetNode()->gtFlags & GTF_ASG) != 0)
                     {
                         treeFlags |= GTF_ASG;
                     }
                 }
 
-                for (args = call->gtCallLateArgs; args; args = args->gtOp.gtOp2)
+                for (GenTreeCall::Use& use : call->LateArgs())
                 {
-                    argx = args->gtOp.gtOp1;
-                    fgDebugCheckFlags(argx);
+                    fgDebugCheckFlags(use.GetNode());
 
-                    chkFlags |= (argx->gtFlags & GTF_SIDE_EFFECT);
+                    chkFlags |= (use.GetNode()->gtFlags & GTF_SIDE_EFFECT);
 
-                    if (argx->gtFlags & GTF_ASG)
+                    if ((use.GetNode()->gtFlags & GTF_ASG) != 0)
                     {
                         treeFlags |= GTF_ASG;
                     }
@@ -21355,15 +21344,15 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 
                 if (call->IsUnmanaged() && (call->gtCallMoreFlags & GTF_CALL_M_UNMGD_THISCALL))
                 {
-                    if (call->gtCallArgs->gtOp.gtOp1->OperGet() == GT_NOP)
+                    if (call->gtCallArgs->GetNode()->OperGet() == GT_NOP)
                     {
-                        noway_assert(call->gtCallLateArgs->gtOp.gtOp1->TypeGet() == TYP_I_IMPL ||
-                                     call->gtCallLateArgs->gtOp.gtOp1->TypeGet() == TYP_BYREF);
+                        noway_assert(call->gtCallLateArgs->GetNode()->TypeGet() == TYP_I_IMPL ||
+                                     call->gtCallLateArgs->GetNode()->TypeGet() == TYP_BYREF);
                     }
                     else
                     {
-                        noway_assert(call->gtCallArgs->gtOp.gtOp1->TypeGet() == TYP_I_IMPL ||
-                                     call->gtCallArgs->gtOp.gtOp1->TypeGet() == TYP_BYREF);
+                        noway_assert(call->gtCallArgs->GetNode()->TypeGet() == TYP_I_IMPL ||
+                                     call->gtCallArgs->GetNode()->TypeGet() == TYP_BYREF);
                     }
                 }
                 break;

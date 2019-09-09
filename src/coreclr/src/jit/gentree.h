@@ -2385,7 +2385,7 @@ class GenTreeUseEdgeIterator final
     AdvanceFn m_advance;
     GenTree*  m_node;
     GenTree** m_edge;
-    // Pointer sized state storage, GenTreeArgList* or GenTreePhi::Use* currently.
+    // Pointer sized state storage, GenTreeArgList* or GenTreePhi::Use* or GenTreeCall::Use* currently.
     void* m_statePtr;
     // Integer sized state storage, usually the operand index for non-list based nodes.
     int m_state;
@@ -3315,12 +3315,120 @@ class fgArgInfo;
 
 struct GenTreeCall final : public GenTree
 {
-    GenTree*        gtCallObjp;     // The instance argument ('this' pointer)
-    GenTreeArgList* gtCallArgs;     // The list of arguments in original evaluation order
-    GenTreeArgList* gtCallLateArgs; // On x86:     The register arguments in an optimal order
-                                    // On ARM/x64: - also includes any outgoing arg space arguments
-                                    //             - that were evaluated into a temp LclVar
+    class Use
+    {
+        GenTree* m_node;
+        Use*     m_next;
+
+    public:
+        Use(GenTree* node, Use* next = nullptr) : m_node(node), m_next(next)
+        {
+        }
+
+        GenTree*& NodeRef()
+        {
+            return m_node;
+        }
+
+        GenTree* GetNode() const
+        {
+            return m_node;
+        }
+
+        void SetNode(GenTree* node)
+        {
+            assert(node != nullptr);
+            m_node = node;
+        }
+
+        Use*& NextRef()
+        {
+            return m_next;
+        }
+
+        Use* GetNext() const
+        {
+            return m_next;
+        }
+
+        void SetNext(Use* next)
+        {
+            m_next = next;
+        }
+    };
+
+    class UseIterator
+    {
+        Use* m_use;
+
+    public:
+        UseIterator(Use* use) : m_use(use)
+        {
+        }
+
+        Use& operator*() const
+        {
+            return *m_use;
+        }
+
+        Use* operator->() const
+        {
+            return m_use;
+        }
+
+        UseIterator& operator++()
+        {
+            m_use = m_use->GetNext();
+            return *this;
+        }
+
+        bool operator==(const UseIterator& i) const
+        {
+            return m_use == i.m_use;
+        }
+
+        bool operator!=(const UseIterator& i) const
+        {
+            return m_use != i.m_use;
+        }
+    };
+
+    class UseList
+    {
+        Use* m_uses;
+
+    public:
+        UseList(Use* uses) : m_uses(uses)
+        {
+        }
+
+        UseIterator begin() const
+        {
+            return UseIterator(m_uses);
+        }
+
+        UseIterator end() const
+        {
+            return UseIterator(nullptr);
+        }
+    };
+
+    GenTree* gtCallObjp;     // The instance argument ('this' pointer)
+    Use*     gtCallArgs;     // The list of arguments in original evaluation order
+    Use*     gtCallLateArgs; // On x86:     The register arguments in an optimal order
+                             // On ARM/x64: - also includes any outgoing arg space arguments
+                             //             - that were evaluated into a temp LclVar
     fgArgInfo* fgArgInfo;
+
+    UseList Args()
+    {
+        return UseList(gtCallArgs);
+    }
+
+    UseList LateArgs()
+    {
+        return UseList(gtCallLateArgs);
+    }
 
 #if !FEATURE_FIXED_OUT_ARGS
     int     regArgListCount;
