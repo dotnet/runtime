@@ -2896,7 +2896,7 @@ mono_interp_load_remote_field (
 	g_assert (o); // Caller checks and throws exception properly.
 
 	void* addr;
-	MonoClassField* const field = (MonoClassField*)imethod->data_items[* (guint16 *)(ip + 1)];
+	MonoClassField* const field = (MonoClassField*)imethod->data_items[ip [1]];
 
 #ifndef DISABLE_REMOTING
 	gpointer tmp;
@@ -2926,7 +2926,7 @@ mono_interp_load_remote_field_vt (
 	g_assert (o); // Caller checks and throws exception properly.
 
 	void* addr;
-	MonoClassField* const field = (MonoClassField*)imethod->data_items[* (guint16 *)(ip + 1)];
+	MonoClassField* const field = (MonoClassField*)imethod->data_items[ip [1]];
 	MonoClass* klass = mono_class_from_mono_type_internal (field->type);
 	int const i32 = mono_class_value_size (klass, NULL);
 
@@ -3151,11 +3151,11 @@ static MONO_NEVER_INLINE int
 mono_interp_box_nullable (InterpFrame* frame, const guint16* ip, stackval* sp, MonoError* error)
 {
 	InterpMethod* const imethod = frame->imethod;
-	MonoClass* const c = (MonoClass*)imethod->data_items [*(const guint16*)(ip + 1)];
+	MonoClass* const c = (MonoClass*)imethod->data_items [ip [1]];
 
 	int const size = mono_class_value_size (c, NULL);
 
-	guint16 offset = *(const guint16*)(ip + 2);
+	guint16 offset = ip [2];
 	gboolean const pop_vt_sp = !(offset & BOX_NOT_CLEAR_VT_SP);
 	offset &= ~BOX_NOT_CLEAR_VT_SP;
 
@@ -3171,12 +3171,12 @@ mono_interp_box_vt (InterpFrame* frame, const guint16* ip, stackval* sp)
 	InterpMethod* const imethod = frame->imethod;
 
 	MonoObject* o; // See the comment about GC safety.
-	MonoVTable * const vtable = (MonoVTable*)imethod->data_items [*(const guint16*)(ip + 1)];
+	MonoVTable * const vtable = (MonoVTable*)imethod->data_items [ip [1]];
 	MonoClass* const c = vtable->klass;
 
 	int const size = mono_class_value_size (c, NULL);
 
-	guint16 offset = *(const guint16*)(ip + 2);
+	guint16 offset = ip [2];
 	gboolean const pop_vt_sp = !(offset & BOX_NOT_CLEAR_VT_SP);
 	offset &= ~BOX_NOT_CLEAR_VT_SP;
 
@@ -3191,11 +3191,11 @@ static MONO_NEVER_INLINE void
 mono_interp_box (InterpFrame* frame, const guint16* ip, stackval* sp)
 {
 	MonoObject* o; // See the comment about GC safety.
-	MonoVTable * const vtable = (MonoVTable*)frame->imethod->data_items [*(const guint16*)(ip + 1)];
+	MonoVTable * const vtable = (MonoVTable*)frame->imethod->data_items [ip [1]];
 
 	frame_objref (frame) = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
 
-	guint16 const offset = *(const guint16*)(ip + 2);
+	guint16 const offset = ip [2];
 
 	stackval_to_data (m_class_get_byval_arg (vtable->klass), &sp [-1 - offset], mono_object_get_data (frame_objref (frame)), FALSE);
 
@@ -3210,7 +3210,7 @@ mono_interp_store_remote_field_vt (InterpFrame* frame, const guint16* ip, stackv
 
 	MonoObject* const o = sp [-2].data.o;
 
-	field = (MonoClassField*)imethod->data_items[* (guint16 *)(ip + 1)];
+	field = (MonoClassField*)imethod->data_items[ip [1]];
 	MonoClass *klass = mono_class_from_mono_type_internal (field->type);
 	int const i32 = mono_class_value_size (klass, NULL);
 
@@ -3336,7 +3336,7 @@ main_loop:
 			++sp;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_VTRESULT) {
-			int ret_size = * (guint16 *)(ip + 1);
+			int ret_size = ip [1];
 			unsigned char *ret_vt_sp = vt_sp;
 			vt_sp -= READ32(ip + 2);
 			if (ret_size > 0) {
@@ -3379,7 +3379,7 @@ main_loop:
 			LDC(8);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDC_I4_S) 
-			sp->data.i = *(const short *)(ip + 1);
+			sp->data.i = (short)ip [1];
 			ip += 2;
 			++sp;
 			MINT_IN_BREAK;
@@ -3396,7 +3396,7 @@ main_loop:
 			++sp;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDC_I8_S)
-			sp->data.l = *(const short *)(ip + 1);
+			sp->data.l = (short)ip [1];
 			ip += 2;
 			++sp;
 			MINT_IN_BREAK;
@@ -3429,7 +3429,7 @@ main_loop:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_POP) {
-			guint16 u16 = (* (guint16 *)(ip + 1)) + 1;
+			guint16 u16 = (ip [1]) + 1;
 			if (u16 > 1)
 				memmove (sp - u16, sp - 1, (u16 - 1) * sizeof (stackval));
 			sp--;
@@ -3437,7 +3437,7 @@ main_loop:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_JMP) {
-			InterpMethod *new_method = (InterpMethod*)frame->imethod->data_items [* (guint16 *)(ip + 1)];
+			InterpMethod *new_method = (InterpMethod*)frame->imethod->data_items [ip [1]];
 
 			if (frame->imethod->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_TAIL_CALL)
 				MONO_PROFILER_RAISE (method_tail_call, (frame->imethod->method, new_method->method));
@@ -3477,7 +3477,7 @@ main_loop:
 
 			frame->ip = ip;
 			
-			csignature = (MonoMethodSignature*)frame->imethod->data_items [* (guint16 *)(ip + 1)];
+			csignature = (MonoMethodSignature*)frame->imethod->data_items [ip [1]];
 			ip += 2;
 			--sp;
 			child_frame.imethod = (InterpMethod*)sp->data.p;
@@ -3517,9 +3517,9 @@ main_loop:
 		}
 		MINT_IN_CASE(MINT_CALLI_NAT_FAST) {
 			gpointer target_ip = sp [-1].data.p;
-			MonoMethodSignature *csignature = (MonoMethodSignature*)frame->imethod->data_items [* (guint16 *)(ip + 1)];
-			int opcode = *(guint16 *)(ip + 2);
-			gboolean save_last_error = *(guint16 *)(ip + 3);
+			MonoMethodSignature *csignature = (MonoMethodSignature*)frame->imethod->data_items [ip [1]];
+			int opcode = ip [2];
+			gboolean save_last_error = ip [3];
 
 			sp--;
 			frame->ip = ip;
@@ -3534,7 +3534,7 @@ main_loop:
 
 			frame->ip = ip;
 
-			MonoMethodSignature* csignature = (MonoMethodSignature*)frame->imethod->data_items [* (guint16 *)(ip + 1)];
+			MonoMethodSignature* csignature = (MonoMethodSignature*)frame->imethod->data_items [ip [1]];
 
 			ip += 3;
 			--sp;
@@ -3552,7 +3552,7 @@ main_loop:
 			if (frame->imethod->method->dynamic && csignature->pinvoke) {
 				mono_interp_calli_nat_dynamic_pinvoke (&child_frame, code, context, csignature, error);
 			} else {
-				const gboolean save_last_error = *(guint16 *)(ip - 3 + 2);
+				const gboolean save_last_error = ip [-3 + 2];
 				ves_pinvoke_method (&child_frame, csignature, (MonoFuncV) code, context, save_last_error);
 			}
 
@@ -3575,8 +3575,8 @@ main_loop:
 
 			frame->ip = ip;
 
-			target_imethod = (InterpMethod*)frame->imethod->data_items [* (guint16 *)(ip + 1)];
-			slot = *(gint16*)(ip + 2);
+			target_imethod = (InterpMethod*)frame->imethod->data_items [ip [1]];
+			slot = (gint16)ip [2];
 			ip += 3;
 			sp->data.p = vt_sp;
 			child_frame.retval = sp;
@@ -3612,9 +3612,9 @@ main_loop:
 
 			frame->ip = ip;
 
-			child_frame.imethod = (InterpMethod*)frame->imethod->data_items [* (guint16 *)(ip + 1)];
+			child_frame.imethod = (InterpMethod*)frame->imethod->data_items [ip [1]];
 			/* The real signature for vararg calls */
-			csig = (MonoMethodSignature*) frame->imethod->data_items [* (guint16*) (ip + 2)];
+			csig = (MonoMethodSignature*) frame->imethod->data_items [ip [2]];
 			/* Push all vararg arguments from normal sp to vt_sp together with the signature */
 			num_varargs = csig->param_count - csig->sentinelpos;
 			vt_sp = copy_varargs_vtstack (csig, sp, vt_sp);
@@ -3644,7 +3644,7 @@ main_loop:
 
 			frame->ip = ip;
 
-			child_frame.imethod = (InterpMethod*)frame->imethod->data_items [* (guint16 *)(ip + 1)];
+			child_frame.imethod = (InterpMethod*)frame->imethod->data_items [ip [1]];
 			ip += 2;
 			sp->data.p = vt_sp;
 			child_frame.retval = sp;
@@ -3678,7 +3678,7 @@ main_loop:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_JIT_CALL) {
-			InterpMethod *rmethod = (InterpMethod*)frame->imethod->data_items [* (guint16 *)(ip + 1)];
+			InterpMethod *rmethod = (InterpMethod*)frame->imethod->data_items [ip [1]];
 			MONO_API_ERROR_INIT (error);
 			frame->ip = ip;
 			sp = do_jit_call (sp, vt_sp, context, frame, rmethod, error);
@@ -3696,8 +3696,8 @@ main_loop:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CALLRUN) {
-			MonoMethod *target_method = (MonoMethod*) frame->imethod->data_items [* (guint16 *)(ip + 1)];
-			MonoMethodSignature *sig = (MonoMethodSignature*) frame->imethod->data_items [* (guint16 *)(ip + 2)];
+			MonoMethod *target_method = (MonoMethod*) frame->imethod->data_items [ip [1]];
+			MonoMethodSignature *sig = (MonoMethodSignature*) frame->imethod->data_items [ip [2]];
 			stackval *retval;
 
 			sp->data.p = vt_sp;
@@ -3745,7 +3745,7 @@ main_loop:
 #define ZEROP_S(datamem, op) \
 	--sp; \
 	if (sp->data.datamem op 0) \
-		ip += * (gint16 *)(ip + 1); \
+		ip += (gint16)ip [1]; \
 	else \
 		ip += 2;
 
@@ -3807,7 +3807,7 @@ main_loop:
 #define CONDBR_S(cond) \
 	sp -= 2; \
 	if (cond) \
-		ip += * (gint16 *)(ip + 1); \
+		ip += (gint16)ip [1]; \
 	else \
 		ip += 2;
 #define BRELOP_S(datamem, op) \
@@ -3971,7 +3971,7 @@ main_loop:
 #define BRELOP_S_CAST(datamem, op, type) \
 	sp -= 2; \
 	if ((type) sp[0].data.datamem op (type) sp[1].data.datamem) \
-		ip += * (gint16 *)(ip + 1); \
+		ip += (gint16)ip [1]; \
 	else \
 		ip += 2;
 
@@ -4133,13 +4133,13 @@ main_loop:
 			sp[-1].data.l = *(gint64*)sp[-1].data.p;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDIND_I) {
-			guint16 offset = * (guint16 *)(ip + 1);
+			guint16 offset = ip [1];
 			sp[-1 - offset].data.p = *(gpointer*)sp[-1 - offset].data.p;
 			ip += 2;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDIND_I8) {
-			guint16 offset = * (guint16 *)(ip + 1);
+			guint16 offset = ip [1];
 #ifdef NO_UNALIGNED_ACCESS
 			if ((gsize)sp [-1 - offset].data.p % SIZEOF_VOID_P)
 				memcpy (&sp [-1 - offset].data.l, sp [-1 - offset].data.p, sizeof (gint64));
@@ -4599,7 +4599,7 @@ main_loop:
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CPOBJ) {
-			MonoClass* const c = (MonoClass*)frame->imethod->data_items[* (guint16 *)(ip + 1)];
+			MonoClass* const c = (MonoClass*)frame->imethod->data_items[ip [1]];
 			g_assert (m_class_is_valuetype (c));
 			/* if this assertion fails, we need to add a write barrier */
 			g_assert (!MONO_TYPE_IS_REFERENCE (m_class_get_byval_arg (c)));
@@ -4609,7 +4609,7 @@ main_loop:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CPOBJ_VT) {
-			MonoClass* const c = (MonoClass*)frame->imethod->data_items[* (guint16 *)(ip + 1)];
+			MonoClass* const c = (MonoClass*)frame->imethod->data_items[ip [1]];
 			mono_value_copy_internal (sp [-2].data.vt, sp [-1].data.vt, c);
 			ip += 2;
 			sp -= 2;
@@ -4624,13 +4624,13 @@ main_loop:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDSTR)
-			sp->data.p = frame->imethod->data_items [* (guint16 *)(ip + 1)];
+			sp->data.p = frame->imethod->data_items [ip [1]];
 			++sp;
 			ip += 2;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDSTR_TOKEN) {
 			MonoString *s = NULL;
-			guint32 strtoken = (guint32)(gsize)frame->imethod->data_items [* (guint16 *)(ip + 1)];
+			guint32 strtoken = (guint32)(gsize)frame->imethod->data_items [ip [1]];
 
 			MonoMethod *method = frame->imethod->method;
 			if (method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD) {
@@ -4647,8 +4647,8 @@ main_loop:
 		}
 		MINT_IN_CASE(MINT_NEWOBJ_ARRAY) {
 			MonoClass *newobj_class;
-			guint32 token = * (guint16 *)(ip + 1);
-			guint16 param_count = * (guint16 *)(ip + 2);
+			guint32 token = ip [1];
+			guint16 param_count = ip [2];
 
 			newobj_class = (MonoClass*) frame->imethod->data_items [token];
 
@@ -4663,16 +4663,16 @@ main_loop:
 		}
 		MINT_IN_CASE(MINT_NEWOBJ_FAST) {
 
-			MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [*(guint16*)(ip + 3)];
+			MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [ip [3]];
 			INIT_VTABLE (vtable);
 
 			MonoObject* o = NULL; // See the comment about GC safety above.
 			guint16 param_count;
-			guint16 imethod_index = *(guint16*) (ip + 1);
+			guint16 imethod_index = ip [1];
 
 			const gboolean is_inlined = imethod_index == 0xffff;
 
-			param_count = *(guint16*)(ip + 2);
+			param_count = ip [2];
 
 			if (param_count) {
 				sp -= param_count;
@@ -4713,8 +4713,8 @@ main_loop:
 			//  - keep exception handling and resume mostly in the main function
 
 			frame->ip = ip;
-			child_frame.imethod = (InterpMethod*) frame->imethod->data_items [*(guint16*)(ip + 1)];
-			guint16 const param_count = *(guint16*)(ip + 2);
+			child_frame.imethod = (InterpMethod*) frame->imethod->data_items [ip [1]];
+			guint16 const param_count = ip [2];
 
 			if (param_count) {
 				sp -= param_count;
@@ -4723,7 +4723,7 @@ main_loop:
 			child_frame.stack_args = sp;
 			gboolean const vtst = *ip == MINT_NEWOBJ_VTST_FAST;
 			if (vtst) {
-				memset (vt_sp, 0, *(guint16*)(ip + 3));
+				memset (vt_sp, 0, ip [3]);
 				sp->data.p = vt_sp;
 				ip += 4;
 
@@ -4749,7 +4749,7 @@ main_loop:
 
 			frame->ip = ip;
 
-			guint32 const token = * (guint16 *)(ip + 1);
+			guint32 const token = ip [1];
 			ip += 2; // FIXME: Do this after throw?
 
 			child_frame.ip = NULL;
@@ -4783,7 +4783,7 @@ main_loop:
 			guint32 token;
 
 			frame->ip = ip;
-			token = * (guint16 *)(ip + 1);
+			token = ip [1];
 			ip += 2;
 
 			InterpMethod *cmethod = (InterpMethod*)frame->imethod->data_items [token];
@@ -4831,7 +4831,7 @@ main_loop:
 		MINT_IN_CASE(MINT_ISINST_INTERFACE) {
 			MonoObject* const o = sp [-1].data.o; // See the comment about GC safety above.
 			if (o) {
-				MonoClass* const c = (MonoClass*)frame->imethod->data_items [*(guint16 *)(ip + 1)];
+				MonoClass* const c = (MonoClass*)frame->imethod->data_items [ip [1]];
 				gboolean isinst;
 				if (MONO_VTABLE_IMPLEMENTS_INTERFACE (o->vtable, m_class_get_interface_id (c))) {
 					isinst = TRUE;
@@ -4857,7 +4857,7 @@ main_loop:
 		MINT_IN_CASE(MINT_ISINST_COMMON) {
 			MonoObject* const o = sp [-1].data.o; // See the comment about GC safety above
 			if (o) {
-				MonoClass* const c = (MonoClass*)frame->imethod->data_items [*(guint16 *)(ip + 1)];
+				MonoClass* const c = (MonoClass*)frame->imethod->data_items [ip [1]];
 				gboolean isinst = mono_class_has_parent_fast (o->vtable->klass, c);
 
 				if (!isinst) {
@@ -4875,7 +4875,7 @@ main_loop:
 		MINT_IN_CASE(MINT_ISINST) {
 			MonoObject* const o = sp [-1].data.o; // See the comment about GC safety above
 			if (o) {
-				MonoClass* const c = (MonoClass*)frame->imethod->data_items [*(guint16 *)(ip + 1)];
+				MonoClass* const c = (MonoClass*)frame->imethod->data_items [ip [1]];
 				if (!mono_interp_isinst (o, c)) { // FIXME: do not swallow the error
 					gboolean const isinst_instr = *ip == MINT_ISINST;
 					if (isinst_instr)
@@ -4898,7 +4898,7 @@ main_loop:
 		MINT_IN_CASE(MINT_UNBOX) {
 			MonoObject* const o = sp [-1].data.o; // See the comment about GC safety above
 			NULL_CHECK (o);
-			MonoClass* const c = (MonoClass*)frame->imethod->data_items[*(guint16 *)(ip + 1)];
+			MonoClass* const c = (MonoClass*)frame->imethod->data_items[ip [1]];
 
 			if (!(m_class_get_rank (o->vtable->klass) == 0 && m_class_get_element_class (o->vtable->klass) == m_class_get_element_class (c)))
 				goto invalid_cast_label;
@@ -4927,20 +4927,20 @@ main_loop:
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDFLDA_UNSAFE) {
-			sp[-1].data.p = (char*)sp [-1].data.o + * (guint16 *)(ip + 1);
+			sp[-1].data.p = (char*)sp [-1].data.o + ip [1];
 			ip += 2;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDFLDA) {
 			MonoObject* const o = sp [-1].data.o; // See the comment about GC safety above.
 			NULL_CHECK (o);
-			sp[-1].data.p = (char *)o + * (guint16 *)(ip + 1);
+			sp[-1].data.p = (char *)o + ip [1];
 			ip += 2;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CKNULL_N) {
 			/* Same as CKNULL, but further down the stack */
-			int const n = *(guint16*)(ip + 1);
+			int const n = ip [1];
 			MonoObject* const o = sp [-n].data.o; // See the comment about GC safety above.
 			NULL_CHECK (o);
 			ip += 2;
@@ -4951,9 +4951,9 @@ main_loop:
 	MonoObject* const o = sp [-1].data.o; \
 	NULL_CHECK (o); \
 	if (unaligned) \
-		memcpy (&sp[-1].data.datamem, (char *)o + * (guint16 *)(ip + 1), sizeof (fieldtype)); \
+		memcpy (&sp[-1].data.datamem, (char *)o + ip [1], sizeof (fieldtype)); \
 	else \
-		sp[-1].data.datamem = * (fieldtype *)((char *)o + * (guint16 *)(ip + 1)) ; \
+		sp[-1].data.datamem = * (fieldtype *)((char *)o + ip [1]) ; \
 	ip += 2; \
 } while (0)
 
@@ -4978,7 +4978,7 @@ main_loop:
 
 			int size = READ32(ip + 2);
 			sp [-1].data.p = vt_sp;
-			memcpy (sp [-1].data.p, (char *)o + * (guint16 *)(ip + 1), size);
+			memcpy (sp [-1].data.p, (char *)o + ip [1], size);
 			vt_sp += ALIGN_TO (size, MINT_VT_ALIGNMENT);
 			ip += 4;
 			MINT_IN_BREAK;
@@ -5004,9 +5004,9 @@ main_loop:
 	NULL_CHECK (o); \
 	sp -= 2; \
 	if (unaligned) \
-		memcpy ((char *)o + * (guint16 *)(ip + 1), &sp[1].data.datamem, sizeof (fieldtype)); \
+		memcpy ((char *)o + ip [1], &sp[1].data.datamem, sizeof (fieldtype)); \
 	else \
-		* (fieldtype *)((char *)o + * (guint16 *)(ip + 1)) = sp[1].data.datamem; \
+		* (fieldtype *)((char *)o + ip [1]) = sp[1].data.datamem; \
 	ip += 2; \
 } while (0)
 
@@ -5025,7 +5025,7 @@ main_loop:
 			MonoObject* const o = sp [-2].data.o; // See the comment about GC safety above.
 			NULL_CHECK (o);
 			sp -= 2;
-			mono_gc_wbarrier_set_field_internal (o, (char *) o + * (guint16 *)(ip + 1), sp [1].data.o);
+			mono_gc_wbarrier_set_field_internal (o, (char *) o + ip [1], sp [1].data.o);
 			ip += 2;
 			MINT_IN_BREAK;
 		}
@@ -5037,10 +5037,10 @@ main_loop:
 			NULL_CHECK (o);
 			sp -= 2;
 
-			MonoClass *klass = (MonoClass*)frame->imethod->data_items[* (guint16 *)(ip + 2)];
+			MonoClass *klass = (MonoClass*)frame->imethod->data_items[ip [2]];
 			int const i32 = mono_class_value_size (klass, NULL);
 
-			guint16 offset = * (guint16 *)(ip + 1);
+			guint16 offset = ip [1];
 			mono_value_copy_internal ((char *) o + offset, sp [1].data.p, klass);
 
 			vt_sp -= ALIGN_TO (i32, MINT_VT_ALIGNMENT);
@@ -5053,7 +5053,7 @@ main_loop:
 			MonoObject* const o = sp [-2].data.o; // See the comment about GC safety above.
 			NULL_CHECK (o);
 			
-			field = (MonoClassField*)frame->imethod->data_items[* (guint16 *)(ip + 1)];
+			field = (MonoClassField*)frame->imethod->data_items[ip [1]];
 			ip += 2;
 
 #ifndef DISABLE_REMOTING
@@ -5077,9 +5077,9 @@ main_loop:
 			MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_LDSFLDA) {
-			MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [*(guint16*)(ip + 1)];
+			MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [ip [1]];
 			INIT_VTABLE (vtable);
-			sp->data.p = frame->imethod->data_items [*(guint16*)(ip + 2)];
+			sp->data.p = frame->imethod->data_items [ip [2]];
 			ip += 3;
 			++sp;
 			MINT_IN_BREAK;
@@ -5095,9 +5095,9 @@ main_loop:
 
 /* We init class here to preserve cctor order */
 #define LDSFLD(datamem, fieldtype) { \
-	MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [*(guint16*)(ip + 1)]; \
+	MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [ip [1]]; \
 	INIT_VTABLE (vtable); \
-	sp[0].data.datamem = * (fieldtype *)(frame->imethod->data_items [* (guint16 *)(ip + 2)]) ; \
+	sp[0].data.datamem = * (fieldtype *)(frame->imethod->data_items [ip [2]]) ; \
 	ip += 3; \
 	sp++; \
 	}
@@ -5114,11 +5114,11 @@ main_loop:
 		MINT_IN_CASE(MINT_LDSFLD_P) LDSFLD(p, gpointer); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_LDSFLD_VT) {
-			MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [*(guint16*)(ip + 1)];
+			MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [ip [1]];
 			INIT_VTABLE (vtable);
 			sp->data.p = vt_sp;
 
-			gpointer addr = frame->imethod->data_items [*(guint16*)(ip + 2)];
+			gpointer addr = frame->imethod->data_items [ip [2]];
 			int const i32 = READ32 (ip + 3);
 			memcpy (vt_sp, addr, i32);
 			vt_sp += ALIGN_TO (i32, MINT_VT_ALIGNMENT);
@@ -5149,7 +5149,7 @@ main_loop:
 		MINT_IN_CASE(MINT_LDSSFLD) {
 			guint32 offset = READ32(ip + 2);
 			gpointer addr = mono_get_special_static_data (offset);
-			MonoClassField *field = (MonoClassField*)frame->imethod->data_items [* (guint16 *)(ip + 1)];
+			MonoClassField *field = (MonoClassField*)frame->imethod->data_items [ip [1]];
 			stackval_from_data (field->type, sp, addr, FALSE);
 			ip += 4;
 			++sp;
@@ -5168,10 +5168,10 @@ main_loop:
 			MINT_IN_BREAK;
 		}
 #define STSFLD(datamem, fieldtype) { \
-	MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [*(guint16*)(ip + 1)]; \
+	MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [ip [1]]; \
 	INIT_VTABLE (vtable); \
 	sp --; \
-	* (fieldtype *)(frame->imethod->data_items [* (guint16 *)(ip + 2)]) = sp[0].data.datamem; \
+	* (fieldtype *)(frame->imethod->data_items [ip [2]]) = sp[0].data.datamem; \
 	ip += 3; \
 	}
 
@@ -5187,10 +5187,10 @@ main_loop:
 		MINT_IN_CASE(MINT_STSFLD_O) STSFLD(p, gpointer); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_STSFLD_VT) {
-			MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [*(guint16*)(ip + 1)];
+			MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [ip [1]];
 			INIT_VTABLE (vtable);
 			int const i32 = READ32 (ip + 3);
-			gpointer addr = frame->imethod->data_items [*(guint16*)(ip + 2)];
+			gpointer addr = frame->imethod->data_items [ip [2]];
 
 			memcpy (addr, sp [-1].data.vt, i32);
 			vt_sp -= ALIGN_TO (i32, MINT_VT_ALIGNMENT);
@@ -5222,7 +5222,7 @@ main_loop:
 		MINT_IN_CASE(MINT_STSSFLD) {
 			guint32 offset = READ32(ip + 2);
 			gpointer addr = mono_get_special_static_data (offset);
-			MonoClassField *field = (MonoClassField*)frame->imethod->data_items [* (guint16 *)(ip + 1)];
+			MonoClassField *field = (MonoClassField*)frame->imethod->data_items [ip [1]];
 			--sp;
 			stackval_to_data (field->type, sp, addr, FALSE);
 			ip += 4;
@@ -5241,7 +5241,7 @@ main_loop:
 
 		MINT_IN_CASE(MINT_STOBJ_VT) {
 			int size;
-			MonoClass* const c = (MonoClass*)frame->imethod->data_items[* (guint16 *)(ip + 1)];
+			MonoClass* const c = (MonoClass*)frame->imethod->data_items[ip [1]];
 			ip += 2;
 			size = mono_class_value_size (c, NULL);
 			mono_value_copy_internal (sp [-2].data.p, sp [-1].data.p, c);
@@ -5329,7 +5329,7 @@ main_loop:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_NEWARR) {
-			MonoVTable *vtable = (MonoVTable*)frame->imethod->data_items[*(guint16 *)(ip + 1)];
+			MonoVTable *vtable = (MonoVTable*)frame->imethod->data_items[ip [1]];
 			sp [-1].data.o = (MonoObject*) mono_array_new_specific_checked (vtable, sp [-1].data.i, error);
 			if (!is_ok (error)) {
 				goto throw_error_label;
@@ -5353,7 +5353,7 @@ main_loop:
 		MINT_IN_CASE(MINT_LDLEN_SPAN) {
 			MonoObject* const o = sp [-1].data.o; // See the comment about GC safety above.
 			NULL_CHECK (o);
-			gsize offset_length = (gsize) *(gint16 *) (ip + 1);
+			gsize offset_length = (gsize)(gint16)ip [1];
 			sp [-1].data.nati = *(gint32 *) ((guint8 *) o + offset_length);
 			ip += 2;
 			MINT_IN_BREAK;
@@ -5377,14 +5377,14 @@ main_loop:
 
 			NULL_CHECK (span);
 
-			const gsize offset_length = (gsize) *(gint16 *) (ip + 2);
+			const gsize offset_length = (gsize)(gint16)ip [2];
 
 			const gint32 length = *(gint32 *) (span + offset_length);
 			if (index < 0 || index >= length)
 				THROW_EX (mono_get_exception_index_out_of_range (), ip);
 
-			const gsize element_size = (gsize) *(gint16 *) (ip + 1);
-			const gsize offset_pointer = (gsize) *(gint16 *) (ip + 3);
+			const gsize element_size = (gsize)(gint16)ip [1];
+			const gsize offset_pointer = (gsize)(gint16)ip [3];
 
 			const gpointer pointer = *(gpointer *)(span + offset_pointer);
 			sp [-1].data.p = (guint8 *) pointer + index * element_size;
@@ -5423,14 +5423,14 @@ main_loop:
 		MINT_IN_CASE(MINT_LDELEMA)
 		MINT_IN_CASE(MINT_LDELEMA_TC) {
 			
-			guint16 numargs = *(guint16 *) (ip + 2);
+			guint16 numargs = ip [2];
 			ip += 3;
 			sp -= numargs;
 
 			MonoObject* const o = sp [0].data.o; // See the comment about GC safety above.
 			NULL_CHECK (o);
 
-			MonoClass *klass = (MonoClass*)frame->imethod->data_items [*(guint16 *) (ip - 3 + 1)];
+			MonoClass *klass = (MonoClass*)frame->imethod->data_items [ip [-3 + 1]];
 			const gboolean needs_typecheck = ip [-3] == MINT_LDELEMA_TC;
 			MonoException *ex = ves_array_element_address (frame, klass, (MonoArray *) o, &sp [1], needs_typecheck);
 			if (ex)
@@ -5579,7 +5579,7 @@ main_loop:
 				break;
 			}
 			case MINT_STELEM_VT: {
-				MonoClass *klass_vt = (MonoClass*)frame->imethod->data_items [*(guint16 *) (ip + 1)];
+				MonoClass *klass_vt = (MonoClass*)frame->imethod->data_items [ip [1]];
 				int const i32 = READ32 (ip + 2);
 				char *dst_addr = mono_array_addr_with_size_fast ((MonoArray *) o, i32, aindex);
 
@@ -5755,7 +5755,7 @@ main_loop:
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MKREFANY) {
-			MonoClass* const c = (MonoClass*)frame->imethod->data_items [*(guint16 *)(ip + 1)];
+			MonoClass* const c = (MonoClass*)frame->imethod->data_items [ip [1]];
 
 			/* The value address is on the stack */
 			gpointer addr = sp [-1].data.p;
@@ -5786,7 +5786,7 @@ main_loop:
 			MonoTypedRef *tref = (MonoTypedRef*)sp [-1].data.p;
 			gpointer addr = tref->value;
 
-			MonoClass* const c = (MonoClass*)frame->imethod->data_items [*(guint16 *)(ip + 1)];
+			MonoClass* const c = (MonoClass*)frame->imethod->data_items [ip [1]];
 			if (c != tref->klass)
 				goto invalid_cast_label;
 
@@ -5799,7 +5799,7 @@ main_loop:
 		MINT_IN_CASE(MINT_LDTOKEN)
 			sp->data.p = vt_sp;
 			vt_sp += 8;
-			* (gpointer *)sp->data.p = frame->imethod->data_items[*(guint16 *)(ip + 1)];
+			* (gpointer *)sp->data.p = frame->imethod->data_items[ip [1]];
 			ip += 2;
 			++sp;
 			MINT_IN_BREAK;
@@ -5980,18 +5980,18 @@ main_loop:
 		MINT_IN_CASE(MINT_ICALL_PPPPPP_V)
 		MINT_IN_CASE(MINT_ICALL_PPPPPP_P)
 			frame->ip = ip;
-			sp = do_icall_wrapper (frame, NULL, *ip, sp, frame->imethod->data_items [*(guint16 *)(ip + 1)], FALSE);
+			sp = do_icall_wrapper (frame, NULL, *ip, sp, frame->imethod->data_items [ip [1]], FALSE);
 			EXCEPTION_CHECKPOINT;
 			CHECK_RESUME_STATE (context);
 			ip += 2;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MONO_LDPTR) 
-			sp->data.p = frame->imethod->data_items [*(guint16 *)(ip + 1)];
+			sp->data.p = frame->imethod->data_items [ip [1]];
 			ip += 2;
 			++sp;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MONO_NEWOBJ)
-			sp->data.o = mono_interp_new (frame->imethod->domain, (MonoClass*)frame->imethod->data_items [*(guint16 *)(ip + 1)]); // FIXME: do not swallow the error
+			sp->data.o = mono_interp_new (frame->imethod->domain, (MonoClass*)frame->imethod->data_items [ip [1]]); // FIXME: do not swallow the error
 			ip += 2;
 			sp++;
 			MINT_IN_BREAK;
@@ -6208,13 +6208,13 @@ main_loop:
 #undef RELOP_CAST
 
 		MINT_IN_CASE(MINT_LDFTN) {
-			sp->data.p = frame->imethod->data_items [* (guint16 *)(ip + 1)];
+			sp->data.p = frame->imethod->data_items [ip [1]];
 			++sp;
 			ip += 2;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDVIRTFTN) {
-			InterpMethod *m = (InterpMethod*)frame->imethod->data_items [* (guint16 *)(ip + 1)];
+			InterpMethod *m = (InterpMethod*)frame->imethod->data_items [ip [1]];
 			--sp;
 			NULL_CHECK (sp->data.p);
 				
@@ -6233,7 +6233,7 @@ main_loop:
 		}
 
 #define LDARG(datamem, argtype) \
-	sp->data.datamem = (argtype) frame->stack_args [*(guint16 *)(ip + 1)].data.datamem; \
+	sp->data.datamem = (argtype) frame->stack_args [ip [1]].data.datamem; \
 	ip += 2; \
 	++sp; 
 	
@@ -6251,7 +6251,7 @@ main_loop:
 		MINT_IN_CASE(MINT_LDARG_VT) {
 			sp->data.p = vt_sp;
 			int const i32 = READ32 (ip + 2);
-			memcpy(sp->data.p, frame->stack_args [* (guint16 *)(ip + 1)].data.p, i32);
+			memcpy(sp->data.p, frame->stack_args [ip [1]].data.p, i32);
 			vt_sp += ALIGN_TO (i32, MINT_VT_ALIGNMENT);
 			ip += 4;
 			++sp;
@@ -6260,7 +6260,7 @@ main_loop:
 
 #define STARG(datamem, argtype) \
 	--sp; \
-	frame->stack_args [*(guint16 *)(ip + 1)].data.datamem = (argtype) sp->data.datamem; \
+	frame->stack_args [ip [1]].data.datamem = (argtype) sp->data.datamem; \
 	ip += 2; \
 	
 		MINT_IN_CASE(MINT_STARG_I1) STARG(i, gint8); MINT_IN_BREAK;
@@ -6277,7 +6277,7 @@ main_loop:
 		MINT_IN_CASE(MINT_STARG_VT) {
 			int const i32 = READ32 (ip + 2);
 			--sp;
-			memcpy(frame->stack_args [* (guint16 *)(ip + 1)].data.p, sp->data.p, i32);
+			memcpy(frame->stack_args [ip [1]].data.p, sp->data.p, i32);
 			vt_sp -= ALIGN_TO (i32, MINT_VT_ALIGNMENT);
 			ip += 4;
 			MINT_IN_BREAK;
@@ -6334,19 +6334,19 @@ main_loop:
 		}
 
 		MINT_IN_CASE(MINT_LDARGA)
-			sp->data.p = &frame->stack_args [* (guint16 *)(ip + 1)];
+			sp->data.p = &frame->stack_args [ip [1]];
 			ip += 2;
 			++sp;
 			MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_LDARGA_VT)
-			sp->data.p = frame->stack_args [* (guint16 *)(ip + 1)].data.p;
+			sp->data.p = frame->stack_args [ip [1]].data.p;
 			ip += 2;
 			++sp;
 			MINT_IN_BREAK;
 
 #define LDLOC(datamem, argtype) \
-	sp->data.datamem = * (argtype *)(locals + * (guint16 *)(ip + 1)); \
+	sp->data.datamem = * (argtype *)(locals + ip [1]); \
 	ip += 2; \
 	++sp; 
 	
@@ -6364,21 +6364,21 @@ main_loop:
 		MINT_IN_CASE(MINT_LDLOC_VT) {
 			sp->data.p = vt_sp;
 			int const i32 = READ32 (ip + 2);
-			memcpy(sp->data.p, locals + * (guint16 *)(ip + 1), i32);
+			memcpy(sp->data.p, locals + ip [1], i32);
 			vt_sp += ALIGN_TO (i32, MINT_VT_ALIGNMENT);
 			ip += 4;
 			++sp;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDLOCA_S)
-			sp->data.p = locals + * (guint16 *)(ip + 1);
+			sp->data.p = locals + ip [1];
 			ip += 2;
 			++sp;
 			MINT_IN_BREAK;
 
 #define STLOC(datamem, argtype) \
 	--sp; \
-	* (argtype *)(locals + * (guint16 *)(ip + 1)) = sp->data.datamem; \
+	* (argtype *)(locals + ip [1]) = sp->data.datamem; \
 	ip += 2;
 	
 		MINT_IN_CASE(MINT_STLOC_I1) STLOC(i, gint8); MINT_IN_BREAK;
@@ -6393,7 +6393,7 @@ main_loop:
 		MINT_IN_CASE(MINT_STLOC_P) STLOC(p, gpointer); MINT_IN_BREAK;
 
 #define STLOC_NP(datamem, argtype) \
-	* (argtype *)(locals + * (guint16 *)(ip + 1)) = sp [-1].data.datamem; \
+	* (argtype *)(locals + ip [1]) = sp [-1].data.datamem; \
 	ip += 2;
 
 		MINT_IN_CASE(MINT_STLOC_NP_I4) STLOC_NP(i, gint32); MINT_IN_BREAK;
@@ -6402,14 +6402,14 @@ main_loop:
 		MINT_IN_CASE(MINT_STLOC_VT) {
 			int const i32 = READ32 (ip + 2);
 			--sp;
-			memcpy(locals + * (guint16 *)(ip + 1), sp->data.p, i32);
+			memcpy(locals + ip [1], sp->data.p, i32);
 			vt_sp -= ALIGN_TO (i32, MINT_VT_ALIGNMENT);
 			ip += 4;
 			MINT_IN_BREAK;
 		}
 
 #define MOVLOC(argtype) \
-	* (argtype *)(locals + * (guint16 *)(ip + 2)) = * (argtype *)(locals + * (guint16 *)(ip + 1)); \
+	* (argtype *)(locals + ip [2]) = * (argtype *)(locals + ip [1]); \
 	ip += 3;
 
 		MINT_IN_CASE(MINT_MOVLOC_1) MOVLOC(guint8); MINT_IN_BREAK;
@@ -6419,7 +6419,7 @@ main_loop:
 
 		MINT_IN_CASE(MINT_MOVLOC_VT) {
 			int const i32 = READ32(ip + 3);
-			memcpy (locals + * (guint16 *)(ip + 2), locals + * (guint16*)(ip + 1), i32);
+			memcpy (locals + ip [2], locals + ip [1], i32);
 			ip += 5;
 			MINT_IN_BREAK;
 		}
@@ -6477,7 +6477,7 @@ main_loop:
 			MINT_IN_BREAK;
 #endif
 	   MINT_IN_CASE(MINT_RETHROW) {
-			int exvar_offset = *(guint16*)(ip + 1);
+			int exvar_offset = ip [1];
 			THROW_EX_GENERAL (*(MonoException**)(frame_locals (frame) + exvar_offset), ip, TRUE);
 			MINT_IN_BREAK;
 	   }
@@ -6517,7 +6517,7 @@ main_loop:
 	   }
 		MINT_IN_CASE(MINT_LD_DELEGATE_INVOKE_IMPL) {
 			MonoDelegate *del;
-			int n = *(guint16*)(ip + 1);
+			int n = ip [1];
 			del = (MonoDelegate*)sp [-n].data.p;
 			if (!del->interp_invoke_impl) {
 				/*
@@ -6556,7 +6556,7 @@ main_loop:
 		MINT_IN_CASE(MINT_TANH) MATH_UNOP(tanh); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_INTRINS_ENUM_HASFLAG) {
-			MonoClass *klass = (MonoClass*)frame->imethod->data_items[* (guint16 *)(ip + 1)];
+			MonoClass *klass = (MonoClass*)frame->imethod->data_items[ip [1]];
 			mono_interp_enum_hasflag (sp, klass);
 			sp--;
 			ip += 2;
