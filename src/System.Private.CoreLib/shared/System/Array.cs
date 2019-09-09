@@ -369,11 +369,6 @@ namespace System
             return true;
         }
 
-        private static int CombineHashCodes(int h1, int h2)
-        {
-            return (((h1 << 5) + h1) ^ h2);
-        }
-
         int IStructuralEquatable.GetHashCode(IEqualityComparer comparer)
         {
             if (comparer == null)
@@ -383,7 +378,7 @@ namespace System
 
             for (int i = (this.Length >= 8 ? this.Length - 8 : 0); i < this.Length; i++)
             {
-                ret = CombineHashCodes(ret, comparer.GetHashCode(GetValue(i)!));
+                ret = HashCode.Combine(ret, comparer.GetHashCode(GetValue(i)!));
             }
 
             return ret;

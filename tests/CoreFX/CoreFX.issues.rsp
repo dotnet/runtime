@@ -79,3 +79,15 @@
 
 # Test failure: https://github.com/dotnet/corefx/issues/39223
 -nomethod System.ComponentModel.TypeConverterTests.FontConverterTest.TestConvertFrom
+
+# corefx tests need to be updated for changes to GetHashCode
+-nomethod System.Numerics.Tests.GenericVectorTests.GetHashCodeInt16
+-nomethod System.Numerics.Tests.GenericVectorTests.GetHashCodeInt32
+-nomethod System.Numerics.Tests.GenericVectorTests.GetHashCodeDouble
+-nomethod System.Numerics.Tests.GenericVectorTests.GetHashCodeByte
+-nomethod System.Numerics.Tests.GenericVectorTests.GetHashCodeSByte
+-nomethod System.Numerics.Tests.GenericVectorTests.GetHashCodeUInt64
+-nomethod System.Numerics.Tests.GenericVectorTests.GetHashCodeUInt16
+-nomethod System.Numerics.Tests.GenericVectorTests.GetHashCodeInt64
+-nomethod System.Numerics.Tests.GenericVectorTests.GetHashCodeSingle
+-nomethod System.Numerics.Tests.GenericVectorTests.GetHashCodeUInt32
