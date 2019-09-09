@@ -61,7 +61,6 @@ public:
 
     // TypedReference functions, should go somewhere else
     static FCDECL4(void, MakeTypedReference, TypedByRef * value, Object* targetUNSAFE, ArrayBase* fldsUNSAFE, ReflectClassBaseObject *pFieldType);
-    static FCDECL2(void, SetTypedReference, TypedByRef * target, Object* objUNSAFE);
     static FCDECL1(Object*, TypedReferenceToObject, TypedByRef * value);
 
 #ifdef FEATURE_COMINTEROP
