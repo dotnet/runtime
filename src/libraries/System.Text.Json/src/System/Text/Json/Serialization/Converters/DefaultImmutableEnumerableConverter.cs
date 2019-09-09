@@ -110,7 +110,7 @@ namespace System.Text.Json.Serialization.Converters
             string delegateKey = GetDelegateKey(immutableCollectionType, elementType, out _, out _);
 
             JsonPropertyInfo propertyInfo = options.GetJsonPropertyInfoFromClassInfo(elementType, options);
-            return propertyInfo.CreateImmutableCollectionInstance(immutableCollectionType, delegateKey, sourceList, state.JsonPath, options);
+            return propertyInfo.CreateImmutableCollectionInstance(ref state, immutableCollectionType, delegateKey, sourceList, options);
         }
     }
 }

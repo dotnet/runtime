@@ -38,7 +38,7 @@ namespace System.Text.Json
             Type arrayType = jsonPropertyInfo.RuntimePropertyType;
             if (!typeof(IEnumerable).IsAssignableFrom(arrayType))
             {
-                ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(arrayType, reader, state.JsonPath);
+                ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(arrayType, reader, state.JsonPath());
             }
 
             Debug.Assert(state.Current.IsProcessingEnumerableOrDictionary);
@@ -162,7 +162,7 @@ namespace System.Text.Json
                 {
                     if (!(state.Current.ReturnValue is IList list))
                     {
-                        ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(value.GetType(), reader, state.JsonPath);
+                        ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(value.GetType(), reader, state.JsonPath());
                         return;
                     }
                     list.Add(value);
