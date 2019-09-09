@@ -55,6 +55,8 @@ enum {
 
 #define MINT_IS_LDLOC(op) ((op) >= MINT_LDLOC_I1 && (op) <= MINT_LDLOC_VT)
 #define MINT_IS_STLOC(op) ((op) >= MINT_STLOC_I1 && (op) <= MINT_STLOC_VT)
+#define MINT_IS_MOVLOC(op) ((op) >= MINT_MOVLOC_1 && (op) <= MINT_MOVLOC_VT)
+#define MINT_IS_STLOC_NP(op) ((op) >= MINT_STLOC_NP_I4 && (op) <= MINT_STLOC_NP_O)
 
 #define MINT_POP_ALL	-2
 #define MINT_VAR_PUSH	-1
