@@ -7,6 +7,7 @@ using System.Diagnostics;
 
 namespace System.Text.Json
 {
+    [DebuggerDisplay("Path:{PropertyPath()} Current: ClassType.{Current.JsonClassInfo.ClassType}, {Current.JsonClassInfo.Type.Name}")]
     internal struct WriteStack
     {
         // Fields are used instead of properties to avoid value semantics.
@@ -74,20 +75,17 @@ namespace System.Text.Json
         // Return a property path as a simple JSONPath using dot-notation when possible. When special characters are present, bracket-notation is used:
         // $.x.y.z
         // $['PropertyName.With.Special.Chars']
-        public string PropertyPath
+        public string PropertyPath()
         {
-            get
+            StringBuilder sb = new StringBuilder("$");
+
+            for (int i = 0; i < _index; i++)
             {
-                StringBuilder sb = new StringBuilder("$");
-
-                for (int i = 0; i < _index; i++)
-                {
-                    AppendStackFrame(sb, _previous[i]);
-                }
-
-                AppendStackFrame(sb, Current);
-                return sb.ToString();
+                AppendStackFrame(sb, _previous[i]);
             }
+
+            AppendStackFrame(sb, Current);
+            return sb.ToString();
         }
 
         private void AppendStackFrame(StringBuilder sb, in WriteStackFrame frame)

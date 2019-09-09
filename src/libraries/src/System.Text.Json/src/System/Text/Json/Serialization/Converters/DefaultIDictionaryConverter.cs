@@ -13,7 +13,7 @@ namespace System.Text.Json.Serialization.Converters
             Type dictionaryType = state.Current.JsonPropertyInfo.RuntimePropertyType;
             Type elementType = state.Current.JsonPropertyInfo.ElementType;
             JsonPropertyInfo propertyInfo = options.GetJsonPropertyInfoFromClassInfo(elementType, options);
-            return propertyInfo.CreateIDictionaryInstance(dictionaryType, sourceDictionary, state.JsonPath, options);
+            return propertyInfo.CreateIDictionaryInstance(ref state, dictionaryType, sourceDictionary);
         }
     }
 }
