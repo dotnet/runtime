@@ -139,7 +139,7 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
 #ifdef FEATURE_READYTORUN_COMPILER
                                      CORINFO_CONST_LOOKUP entryPoint,
 #endif
-                                     GenTreeArgList* args)
+                                     GenTreeCall::Use* args)
 {
     GenTree* const tree           = *use;
     GenTree* const treeFirstNode  = comp->fgGetFirstNode(tree);
@@ -209,14 +209,14 @@ void Rationalizer::RewriteIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTree*
 {
     GenTreeIntrinsic* intrinsic = (*use)->AsIntrinsic();
 
-    GenTreeArgList* args;
+    GenTreeCall::Use* args;
     if (intrinsic->gtOp.gtOp2 == nullptr)
     {
-        args = comp->gtNewArgList(intrinsic->gtGetOp1());
+        args = comp->gtNewCallArgs(intrinsic->gtGetOp1());
     }
     else
     {
-        args = comp->gtNewArgList(intrinsic->gtGetOp1(), intrinsic->gtGetOp2());
+        args = comp->gtNewCallArgs(intrinsic->gtGetOp1(), intrinsic->gtGetOp2());
     }
 
     RewriteNodeAsCall(use, parents, intrinsic->gtMethodHandle,

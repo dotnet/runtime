@@ -5344,11 +5344,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     }
 
     // Consume all the arg regs
-    for (GenTree* list = call->gtCallLateArgs; list; list = list->MoveNext())
+    for (GenTreeCall::Use& use : call->LateArgs())
     {
-        assert(list->OperIsList());
-
-        GenTree* argNode = list->Current();
+        GenTree* argNode = use.GetNode();
 
         fgArgTabEntry* curArgTabEntry = compiler->gtArgEntryByNode(call, argNode->gtSkipReloadOrCopy());
         assert(curArgTabEntry);
@@ -5418,40 +5416,35 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 #if defined(_TARGET_X86_) || defined(UNIX_AMD64_ABI)
     // The call will pop its arguments.
     // for each putarg_stk:
-    ssize_t  stackArgBytes = 0;
-    GenTree* args          = call->gtCallArgs;
-    while (args)
+    ssize_t stackArgBytes = 0;
+    for (GenTreeCall::Use& use : call->Args())
     {
-        GenTree* arg = args->gtOp.gtOp1;
-        if (arg->OperGet() != GT_ARGPLACE && !(arg->gtFlags & GTF_LATE_ARG))
+        GenTree* arg = use.GetNode();
+        if (arg->OperIs(GT_PUTARG_STK) && ((arg->gtFlags & GTF_LATE_ARG) == 0))
         {
-            if (arg->OperGet() == GT_PUTARG_STK)
-            {
-                GenTree* source = arg->gtOp.gtOp1;
-                unsigned size   = arg->AsPutArgStk()->getArgSize();
-                stackArgBytes += size;
+            GenTree* source = arg->AsPutArgStk()->gtGetOp1();
+            unsigned size   = arg->AsPutArgStk()->getArgSize();
+            stackArgBytes += size;
 #ifdef DEBUG
-                fgArgTabEntry* curArgTabEntry = compiler->gtArgEntryByNode(call, arg);
-                assert(curArgTabEntry);
-                assert(size == (curArgTabEntry->numSlots * TARGET_POINTER_SIZE));
+            fgArgTabEntry* curArgTabEntry = compiler->gtArgEntryByNode(call, arg);
+            assert(curArgTabEntry != nullptr);
+            assert(size == (curArgTabEntry->numSlots * TARGET_POINTER_SIZE));
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
-                if (source->TypeGet() == TYP_STRUCT)
-                {
-                    GenTreeObj* obj      = source->AsObj();
-                    unsigned    argBytes = roundUp(obj->GetLayout()->GetSize(), TARGET_POINTER_SIZE);
+            if (source->TypeGet() == TYP_STRUCT)
+            {
+                GenTreeObj* obj      = source->AsObj();
+                unsigned    argBytes = roundUp(obj->GetLayout()->GetSize(), TARGET_POINTER_SIZE);
 #ifdef _TARGET_X86_
-                    // If we have an OBJ, we must have created a copy if the original arg was not a
-                    // local and was not a multiple of TARGET_POINTER_SIZE.
-                    // Note that on x64/ux this will be handled by unrolling in genStructPutArgUnroll.
-                    assert((argBytes == obj->GetLayout()->GetSize()) || obj->Addr()->IsLocalAddrExpr());
+                // If we have an OBJ, we must have created a copy if the original arg was not a
+                // local and was not a multiple of TARGET_POINTER_SIZE.
+                // Note that on x64/ux this will be handled by unrolling in genStructPutArgUnroll.
+                assert((argBytes == obj->GetLayout()->GetSize()) || obj->Addr()->IsLocalAddrExpr());
 #endif // _TARGET_X86_
-                    assert((curArgTabEntry->numSlots * TARGET_POINTER_SIZE) == argBytes);
-                }
+                assert((curArgTabEntry->numSlots * TARGET_POINTER_SIZE) == argBytes);
+            }
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 #endif // DEBUG
-            }
         }
-        args = args->gtOp.gtOp2;
     }
 #endif // defined(_TARGET_X86_) || defined(UNIX_AMD64_ABI)
 

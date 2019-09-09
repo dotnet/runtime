@@ -1496,18 +1496,16 @@ void Lowering::LowerArgsForCall(GenTreeCall* call)
         LowerArg(call, &call->gtCallObjp);
     }
 
-    GenTreeArgList* args = call->gtCallArgs;
-
     JITDUMP("\nargs:\n======\n");
-    for (; args; args = args->Rest())
+    for (GenTreeCall::Use& use : call->Args())
     {
-        LowerArg(call, &args->Current());
+        LowerArg(call, &use.NodeRef());
     }
 
     JITDUMP("\nlate:\n======\n");
-    for (args = call->gtCallLateArgs; args; args = args->Rest())
+    for (GenTreeCall::Use& use : call->LateArgs())
     {
-        LowerArg(call, &args->Current());
+        LowerArg(call, &use.NodeRef());
     }
 }
 
@@ -1724,14 +1722,13 @@ void Lowering::CheckVSQuirkStackPaddingNeeded(GenTreeCall* call)
     {
         bool     paddingNeeded  = false;
         GenTree* firstPutArgReg = nullptr;
-        for (GenTreeArgList* args = call->gtCallLateArgs; args; args = args->Rest())
+        for (GenTreeCall::Use& use : call->LateArgs())
         {
-            GenTree* tmp = args->Current();
-            if (tmp->OperGet() == GT_PUTARG_REG)
+            if (use.GetNode()->OperIs(GT_PUTARG_REG))
             {
                 if (firstPutArgReg == nullptr)
                 {
-                    firstPutArgReg = tmp;
+                    firstPutArgReg = use.GetNode();
                     GenTree* op1   = firstPutArgReg->gtOp.gtOp1;
 
                     if (op1->OperGet() == GT_LCL_VAR_ADDR)
@@ -1826,28 +1823,26 @@ void Lowering::InsertProfTailCallHook(GenTreeCall* call, GenTree* insertionPoint
 
     if (insertionPoint == nullptr)
     {
-        GenTree* tmp = nullptr;
-        for (GenTreeArgList* args = call->gtCallArgs; args; args = args->Rest())
+        for (GenTreeCall::Use& use : call->Args())
         {
-            tmp = args->Current();
-            assert(tmp->OperGet() != GT_PUTARG_REG); // We don't expect to see these in gtCallArgs
-            if (tmp->OperGet() == GT_PUTARG_STK)
+            assert(!use.GetNode()->OperIs(GT_PUTARG_REG)); // We don't expect to see these in gtCallArgs
+
+            if (use.GetNode()->OperIs(GT_PUTARG_STK))
             {
                 // found it
-                insertionPoint = tmp;
+                insertionPoint = use.GetNode();
                 break;
             }
         }
 
         if (insertionPoint == nullptr)
         {
-            for (GenTreeArgList* args = call->gtCallLateArgs; args; args = args->Rest())
+            for (GenTreeCall::Use& use : call->LateArgs())
             {
-                tmp = args->Current();
-                if ((tmp->OperGet() == GT_PUTARG_REG) || (tmp->OperGet() == GT_PUTARG_STK))
+                if (use.GetNode()->OperIs(GT_PUTARG_REG, GT_PUTARG_STK))
                 {
                     // found it
-                    insertionPoint = tmp;
+                    insertionPoint = use.GetNode();
                     break;
                 }
             }
@@ -1916,24 +1911,21 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
     // calls subsequently in execution order to setup other args, because the nested
     // call could over-write the stack arg that is setup earlier.
     GenTree*             firstPutArgStk = nullptr;
-    GenTreeArgList*      args;
     ArrayStack<GenTree*> putargs(comp->getAllocator(CMK_ArrayStack));
 
-    for (args = call->gtCallArgs; args; args = args->Rest())
+    for (GenTreeCall::Use& use : call->Args())
     {
-        GenTree* tmp = args->Current();
-        if (tmp->OperGet() == GT_PUTARG_STK)
+        if (use.GetNode()->OperIs(GT_PUTARG_STK))
         {
-            putargs.Push(tmp);
+            putargs.Push(use.GetNode());
         }
     }
 
-    for (args = call->gtCallLateArgs; args; args = args->Rest())
+    for (GenTreeCall::Use& use : call->LateArgs())
     {
-        GenTree* tmp = args->Current();
-        if (tmp->OperGet() == GT_PUTARG_STK)
+        if (use.GetNode()->OperIs(GT_PUTARG_STK))
         {
-            putargs.Push(tmp);
+            putargs.Push(use.GetNode());
         }
     }
 
@@ -3355,9 +3347,9 @@ void Lowering::InsertPInvokeMethodProlog()
     CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(_TARGET_X86_) || defined(_TARGET_ARM_)
-    GenTreeArgList* argList = comp->gtNewArgList(frameAddr);
+    GenTreeCall::Use* argList = comp->gtNewCallArgs(frameAddr);
 #else
-    GenTreeArgList*    argList = comp->gtNewArgList(frameAddr, PhysReg(REG_SECRET_STUB_PARAM));
+    GenTreeCall::Use*  argList = comp->gtNewCallArgs(frameAddr, PhysReg(REG_SECRET_STUB_PARAM));
 #endif
 
     GenTree* call = comp->gtNewHelperCallNode(CORINFO_HELP_INIT_PINVOKE_FRAME, TYP_I_IMPL, argList);
@@ -3540,7 +3532,7 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
 
         // Insert call to CORINFO_HELP_JIT_PINVOKE_BEGIN
         GenTree* helperCall =
-            comp->gtNewHelperCallNode(CORINFO_HELP_JIT_PINVOKE_BEGIN, TYP_VOID, comp->gtNewArgList(frameAddr));
+            comp->gtNewHelperCallNode(CORINFO_HELP_JIT_PINVOKE_BEGIN, TYP_VOID, comp->gtNewCallArgs(frameAddr));
 
         comp->fgMorphTree(helperCall);
         BlockRange().InsertBefore(insertBefore, LIR::SeqTree(comp, helperCall));
@@ -3697,7 +3689,7 @@ void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
 
         // Insert call to CORINFO_HELP_JIT_PINVOKE_END
         GenTreeCall* helperCall =
-            comp->gtNewHelperCallNode(CORINFO_HELP_JIT_PINVOKE_END, TYP_VOID, comp->gtNewArgList(frameAddr));
+            comp->gtNewHelperCallNode(CORINFO_HELP_JIT_PINVOKE_END, TYP_VOID, comp->gtNewCallArgs(frameAddr));
 
         comp->fgMorphTree(helperCall);
         BlockRange().InsertAfter(call, LIR::SeqTree(comp, helperCall));
@@ -5264,14 +5256,14 @@ void Lowering::CheckCall(GenTreeCall* call)
         CheckCallArg(call->gtCallObjp);
     }
 
-    for (GenTreeArgList* args = call->gtCallArgs; args != nullptr; args = args->Rest())
+    for (GenTreeCall::Use& use : call->Args())
     {
-        CheckCallArg(args->Current());
+        CheckCallArg(use.GetNode());
     }
 
-    for (GenTreeArgList* args = call->gtCallLateArgs; args != nullptr; args = args->Rest())
+    for (GenTreeCall::Use& use : call->LateArgs())
     {
-        CheckCallArg(args->Current());
+        CheckCallArg(use.GetNode());
     }
 }
 
