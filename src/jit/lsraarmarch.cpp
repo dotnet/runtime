@@ -225,18 +225,16 @@ int LinearScan::BuildCall(GenTreeCall* call)
     // Each register argument corresponds to one source.
     bool callHasFloatRegArgs = false;
 
-    for (GenTree* list = call->gtCallLateArgs; list; list = list->MoveNext())
+    for (GenTreeCall::Use& arg : call->LateArgs())
     {
-        assert(list->OperIsList());
-
-        GenTree* argNode = list->Current();
+        GenTree* argNode = arg.GetNode();
 
 #ifdef DEBUG
         // During Build, we only use the ArgTabEntry for validation,
         // as getting it is rather expensive.
         fgArgTabEntry* curArgTabEntry = compiler->gtArgEntryByNode(call, argNode);
         regNumber      argReg         = curArgTabEntry->regNum;
-        assert(curArgTabEntry);
+        assert(curArgTabEntry != nullptr);
 #endif
 
         if (argNode->gtOper == GT_PUTARG_STK)
@@ -311,6 +309,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
         }
     }
 
+#ifdef DEBUG
     // Now, count stack args
     // Note that these need to be computed into a register, but then
     // they're just stored to the stack - so the reg doesn't
@@ -318,18 +317,15 @@ int LinearScan::BuildCall(GenTreeCall* call)
     // because the code generator doesn't actually consider it live,
     // so it can't be spilled.
 
-    GenTree* args = call->gtCallArgs;
-    while (args)
+    for (GenTreeCall::Use& use : call->Args())
     {
-        GenTree* arg = args->gtGetOp1();
+        GenTree* arg = use.GetNode();
 
         // Skip arguments that have been moved to the Late Arg list
-        if (!(args->gtFlags & GTF_LATE_ARG))
+        if ((arg->gtFlags & GTF_LATE_ARG) == 0)
         {
-#ifdef DEBUG
             fgArgTabEntry* curArgTabEntry = compiler->gtArgEntryByNode(call, arg);
-            assert(curArgTabEntry);
-#endif
+            assert(curArgTabEntry != nullptr);
 #if FEATURE_ARG_SPLIT
             // PUTARG_SPLIT nodes must be in the gtCallLateArgs list, since they
             // define registers used by the call.
@@ -344,8 +340,8 @@ int LinearScan::BuildCall(GenTreeCall* call)
                 assert(!arg->IsValue() || arg->IsUnusedValue());
             }
         }
-        args = args->gtGetOp2();
     }
+#endif // DEBUG
 
     // If it is a fast tail call, it is already preferenced to use IP0.
     // Therefore, no need set src candidates on call tgt again.

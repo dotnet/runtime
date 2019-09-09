@@ -428,25 +428,19 @@ private:
         //
         void AddHiddenArgument(GenTreeCall* fatCall, GenTree* hiddenArgument)
         {
-            GenTreeArgList* oldArgs = fatCall->gtCallArgs;
-            GenTreeArgList* newArgs;
 #if USER_ARGS_COME_LAST
             if (fatCall->HasRetBufArg())
             {
-                GenTree*        retBuffer = oldArgs->Current();
-                GenTreeArgList* rest      = oldArgs->Rest();
-                newArgs                   = compiler->gtNewListNode(hiddenArgument, rest);
-                newArgs                   = compiler->gtNewListNode(retBuffer, newArgs);
+                GenTreeCall::Use* retBufArg = fatCall->gtCallArgs;
+                compiler->gtInsertNewCallArgAfter(hiddenArgument, retBufArg);
             }
             else
             {
-                newArgs = compiler->gtNewListNode(hiddenArgument, oldArgs);
+                fatCall->gtCallArgs = compiler->gtPrependNewCallArg(hiddenArgument, fatCall->gtCallArgs);
             }
 #else
-            newArgs = oldArgs;
-            AddArgumentToTail(newArgs, hiddenArgument);
+            AddArgumentToTail(fatCall->gtCallArgs, hiddenArgument);
 #endif
-            fatCall->gtCallArgs = newArgs;
         }
 
         //------------------------------------------------------------------------
@@ -456,14 +450,14 @@ private:
         //    argList - fat call node
         //    hiddenArgument - generic context hidden argument
         //
-        void AddArgumentToTail(GenTreeArgList* argList, GenTree* hiddenArgument)
+        void AddArgumentToTail(GenTreeCall::Use* argList, GenTree* hiddenArgument)
         {
-            GenTreeArgList* iterator = argList;
-            while (iterator->Rest() != nullptr)
+            GenTreeCall::Use* iterator = argList;
+            while (iterator->GetNext() != nullptr)
             {
-                iterator = iterator->Rest();
+                iterator = iterator->GetNext();
             }
-            iterator->Rest() = compiler->gtNewArgList(hiddenArgument);
+            iterator->SetNext(compiler->gtNewCallArgs(hiddenArgument));
         }
 
     private:
