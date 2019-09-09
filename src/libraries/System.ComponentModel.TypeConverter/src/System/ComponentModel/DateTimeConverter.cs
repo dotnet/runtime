@@ -83,7 +83,6 @@ namespace System.ComponentModel
             if (destinationType == typeof(string) && value is DateTime)
             {
                 DateTime dt = (DateTime)value;
-
                 if (dt == DateTime.MinValue)
                 {
                     return string.Empty;
@@ -94,10 +93,8 @@ namespace System.ComponentModel
                     culture = CultureInfo.CurrentCulture;
                 }
 
-                DateTimeFormatInfo formatInfo = null;
-                formatInfo = (DateTimeFormatInfo)culture.GetFormat(typeof(DateTimeFormatInfo));
+                DateTimeFormatInfo formatInfo = (DateTimeFormatInfo)culture.GetFormat(typeof(DateTimeFormatInfo));
 
-                string format;
                 if (culture == CultureInfo.InvariantCulture)
                 {
                     if (dt.TimeOfDay.TotalSeconds == 0)
@@ -109,6 +106,8 @@ namespace System.ComponentModel
                         return dt.ToString(culture);
                     }
                 }
+
+                string format;
                 if (dt.TimeOfDay.TotalSeconds == 0)
                 {
                     format = formatInfo.ShortDatePattern;
@@ -124,32 +123,18 @@ namespace System.ComponentModel
             if (destinationType == typeof(InstanceDescriptor) && value is DateTime)
             {
                 DateTime dt = (DateTime)value;
-
                 if (dt.Ticks == 0)
                 {
-                    // Special case for empty DateTime
-                    ConstructorInfo ctr = typeof(DateTime).GetConstructor(new Type[] { typeof(long) });
-
-                    if (ctr != null)
-                    {
-                        return new InstanceDescriptor(ctr, new object[] {
-                            dt.Ticks });
-                    }
+                    return new InstanceDescriptor(
+                        typeof(DateTime).GetConstructor(new Type[] { typeof(long) }),
+                        new object[] { dt.Ticks }
+                    );
                 }
 
-                ConstructorInfo ctor = typeof(DateTime).GetConstructor(new Type[]
-                    {
-                        typeof(int), typeof(int), typeof(int), typeof(int),
-                        typeof(int), typeof(int), typeof(int)
-                    });
-
-                if (ctor != null)
-                {
-                    return new InstanceDescriptor(ctor, new object[]
-                        {
-                            dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, dt.Second, dt.Millisecond
-                        });
-                }
+                return new InstanceDescriptor(
+                    typeof(DateTime).GetConstructor(new Type[] { typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int) }),
+                    new object[] { dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, dt.Second, dt.Millisecond }
+                );
             }
 
             return base.ConvertTo(context, culture, value, destinationType);
