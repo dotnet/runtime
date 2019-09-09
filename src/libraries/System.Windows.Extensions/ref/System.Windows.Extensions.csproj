@@ -1,6 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{36A0298D-E01E-411D-A19B-19EEC60B9A8A}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp3.0-Debug;netcoreapp3.0-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>

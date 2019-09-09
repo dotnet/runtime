@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{EC6AA4D9-B3E8-4CCA-8AB1-8BBFD89266AE}</ProjectGuid>
     <AssemblyName>System.Runtime.InteropServices</AssemblyName>
     <OutputType>Library</OutputType>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>

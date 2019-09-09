@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{56F67E92-E606-435E-A00F-003CBFB26945}</ProjectGuid>
     <AssemblyName>System.Diagnostics.Debug.Tests</AssemblyName>
     <RootNamespace>System.Diagnostics.Tests</RootNamespace>
     <IgnoreArchitectureMismatches>true</IgnoreArchitectureMismatches>

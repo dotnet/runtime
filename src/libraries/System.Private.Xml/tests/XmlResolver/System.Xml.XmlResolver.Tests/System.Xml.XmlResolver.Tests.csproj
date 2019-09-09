@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="$(CommonTestPath)\Tests.props" />
   <PropertyGroup>
-    <ProjectGuid>{F011A6F5-BA48-4F8D-A20F-79CCE01CDE0E}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>

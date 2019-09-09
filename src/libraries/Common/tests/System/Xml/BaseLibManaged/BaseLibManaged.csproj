@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{42F10363-C2A2-42B5-B7B9-1B5DBB0BC71E}</ProjectGuid>
     <RootNamespace>WebData.BaseLib</RootNamespace>
     <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>

@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{6F8576C2-6CD0-4DF3-8394-00B002D82E40}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Security.Cryptography.X509Certificates</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

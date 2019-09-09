@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{FB037640-0591-4DF4-A331-0BEFE50A200B}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>

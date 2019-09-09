@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{EA610394-CBA3-4E5C-B3DB-AAEA7F640E89}</ProjectGuid>
     <AssemblyName>System.Collections.Concurrent</AssemblyName>
     <RootNamespace>System.Collections.Concurrent</RootNamespace>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>

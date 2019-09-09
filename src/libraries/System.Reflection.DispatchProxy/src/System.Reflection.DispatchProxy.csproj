@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{1E689C1B-690C-4799-BDE9-6E7990585894}</ProjectGuid>
     <AssemblyName>System.Reflection.DispatchProxy</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- this library depends on Ref.Emit which is not available for netstandard -->

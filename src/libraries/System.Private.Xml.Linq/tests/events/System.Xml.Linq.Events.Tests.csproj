@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{C560E194-5B14-4112-ABC6-3208491E53E6}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
@@ -11,10 +10,7 @@
     <Compile Include="EventsValue.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\XDocument.Common\XDocument.Common.csproj">
-      <Project>{52666206-b6c9-49fa-a1d7-d0a0c68807b0}</Project>
-      <Name>XDocument.Common</Name>
-    </ProjectReference>
+    <ProjectReference Include="..\XDocument.Common\XDocument.Common.csproj" />
     <ProjectReference Include="..\XDocument.Test.ModuleCore\XDocument.Test.ModuleCore.csproj" />
   </ItemGroup>
 </Project>

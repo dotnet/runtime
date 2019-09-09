@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <ProjectGuid>{0D8C8BAE-E5A5-4E9F-B101-3D18BD81D261}</ProjectGuid>
     <!-- CS0067: unused event, reference assembly does not care -->
     <NoWarn>$(NoWarn);0067</NoWarn>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>

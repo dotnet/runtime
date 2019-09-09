@@ -3,7 +3,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AssemblyName>System.Resources.Writer</AssemblyName>
     <RootNamespace>System.Resources</RootNamespace>
-    <ProjectGuid>{98CA9A7F-AD5C-418B-BC22-735AC2BE21A6}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>

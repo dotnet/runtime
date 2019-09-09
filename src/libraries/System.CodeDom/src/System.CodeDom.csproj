@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{53D09AF4-0C13-4197-B8AD-9746F0374E88}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)'=='true'">true</IsPartialFacadeAssembly>
     <DefineConstants>$(DefineConstants);CODEDOM</DefineConstants>

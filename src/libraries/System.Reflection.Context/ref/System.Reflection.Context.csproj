@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{C3C70597-F192-430D-9BA6-287B1A974BF7}</ProjectGuid>
     <!-- this assembly is inbox in desktop, do not version it unless you
          plan on shipping a new desktop version out of band. Instead add API
          to a different assembly. -->

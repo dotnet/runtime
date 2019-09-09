@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>System.Runtime.Caching</AssemblyName>
-    <ProjectGuid>{A7B6FB6E-F484-42D7-8A5E-F7D0DCC03829}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Although we have a netstandard configuration, we know we are not currently UAP compatible-->
     <UWPCompatible>false</UWPCompatible>

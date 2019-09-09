@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{135980AC-4583-44EC-894E-CB3B1A481920}</ProjectGuid>
     <AssemblyName>System.DirectoryServices.Protocols</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);0649;CA1810</NoWarn>

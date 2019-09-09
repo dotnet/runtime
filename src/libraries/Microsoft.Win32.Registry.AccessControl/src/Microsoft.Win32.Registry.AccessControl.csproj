@@ -4,7 +4,6 @@
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <OmitResources Condition="'$(TargetsNetFx)' == 'true'">true</OmitResources>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_RegistryAccessControl</GeneratePlatformNotSupportedAssemblyMessage>
-    <ProjectGuid>{0E23F29E-6BB0-4B94-A5DA-B5E50601E0F2}</ProjectGuid>
     <Configurations>net461-Windows_NT-Debug;net461-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;netstandard-Debug;netstandard-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">

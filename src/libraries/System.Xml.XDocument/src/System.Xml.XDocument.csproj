@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{442C5A88-29C2-4B00-B1DF-730D646D3861}</ProjectGuid>
     <AssemblyName>System.Xml.XDocument</AssemblyName>
     <RootNamespace>System.Xml</RootNamespace>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>

@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>System.Runtime.CompilerServices.VisualC</AssemblyName>
-    <ProjectGuid>{F8C8FBFC-CA6E-4BDA-A1B3-FA4E17C10D9E}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <!-- Shared CoreCLR -->

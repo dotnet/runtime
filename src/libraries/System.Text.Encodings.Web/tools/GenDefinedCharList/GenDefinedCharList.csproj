@@ -6,7 +6,6 @@
     <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
   <PropertyGroup>
-    <ProjectGuid>{95CFCE9E-509A-4D39-B7E3-9B2D2B05BB22}</ProjectGuid>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />

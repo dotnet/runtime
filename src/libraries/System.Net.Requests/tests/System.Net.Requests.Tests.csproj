@@ -1,6 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{E520B5FD-C6FF-46CF-8079-6C8098013EA3}</ProjectGuid>
     <StringResourcesPath>../src/Resources/Strings.resx</StringResourcesPath>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>

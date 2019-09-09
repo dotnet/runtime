@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>System.Runtime.InteropServices</RootNamespace>
-    <ProjectGuid>{1CBC030D-B5D3-4AB5-A9FD-24EC5F6F38D2}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>

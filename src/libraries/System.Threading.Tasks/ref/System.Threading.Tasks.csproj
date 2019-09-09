@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{27675CCE-B6F9-4E2F-9BF2-5E623173BD5C}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
     <Nullable>enable</Nullable>
   </PropertyGroup>

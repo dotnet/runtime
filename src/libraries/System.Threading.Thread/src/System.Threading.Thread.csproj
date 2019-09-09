@@ -3,7 +3,6 @@
     <AssemblyName>System.Threading.Thread</AssemblyName>
     <OutputType>Library</OutputType>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <ProjectGuid>{06197EED-FF48-43F3-976D-463839D43E8C}</ProjectGuid>
     <Nullable>enable</Nullable>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>

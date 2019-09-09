@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>System.Security.Claims</AssemblyName>
-    <ProjectGuid>{A70BEC0D-5A1C-4DA0-8A0F-69F3BF565D52}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->

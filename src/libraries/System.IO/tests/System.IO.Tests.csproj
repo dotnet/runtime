@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{492EC54D-D2C4-4B3F-AC1F-646B3F7EBB02}</ProjectGuid>
     <RootNamespace>System.IO</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TestRuntime>true</TestRuntime>

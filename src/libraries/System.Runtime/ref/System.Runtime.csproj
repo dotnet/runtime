@@ -3,7 +3,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- It is a core assembly because it defines System.Object so we need to pass RuntimeMetadataVersion to the compiler -->
     <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
-    <ProjectGuid>{ADBCF120-3454-4A3C-9D1D-AC4293E795D6}</ProjectGuid>
     <!-- disable warnings about obsolete APIs -->
     <NoWarn>$(NoWarn);0809;0618</NoWarn>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>

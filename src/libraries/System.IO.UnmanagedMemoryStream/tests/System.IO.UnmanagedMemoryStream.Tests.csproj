@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{55F26FB1-D4AF-48CA-A470-83113AE7BFDB}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
     <TestRuntime>true</TestRuntime>

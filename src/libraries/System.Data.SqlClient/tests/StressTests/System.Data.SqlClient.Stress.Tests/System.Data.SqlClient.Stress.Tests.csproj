@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{B94B8E6D-3E41-4046-B758-4A2E281F74EE}</ProjectGuid>
     <RootNamespace>Stress.Data.SqlClient</RootNamespace>
     <AssemblyName>System.Data.SqlClient.Stress.Tests</AssemblyName>
     <!-- These should not run in Helix: they produce no outputs and are only run manually -->

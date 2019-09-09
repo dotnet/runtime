@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{59E9B218-81D0-4A80-A4B7-66C716136D82}</ProjectGuid>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>

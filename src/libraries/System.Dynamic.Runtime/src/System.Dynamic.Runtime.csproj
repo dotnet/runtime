@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{C4E89B8C-07DB-40CA-8C99-82A23E8F5F39}</ProjectGuid>
     <AssemblyName>System.Dynamic.Runtime</AssemblyName>
     <RootNamespace>System.Dynamic.Runtime</RootNamespace>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>

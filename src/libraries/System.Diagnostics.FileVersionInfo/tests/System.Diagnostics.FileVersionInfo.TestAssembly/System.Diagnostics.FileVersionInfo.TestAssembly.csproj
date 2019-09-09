@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{28EB14BE-3BC9-4543-ABA6-A932424DFBD0}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <TargetExt>.dll</TargetExt>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>

@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{11AE73F7-3532-47B9-8FF6-B4F22D76456D}</ProjectGuid>
     <!-- Must match version supported by frameworks which support 4.0.* inbox.
          Can be removed when API is added and this assembly is versioned to 4.1.* -->
     <AssemblyVersion>4.0.3.0</AssemblyVersion>

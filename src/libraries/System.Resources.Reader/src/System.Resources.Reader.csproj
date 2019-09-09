@@ -3,7 +3,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AssemblyName>System.Resources.Reader</AssemblyName>
     <RootNamespace>System.Resources</RootNamespace>
-    <ProjectGuid>{5C13260D-C55D-46AF-9DCB-1B015D48E2E4}</ProjectGuid>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>

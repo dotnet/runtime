@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{FF53459F-66F7-4F00-8D36-DF440CE18419}</ProjectGuid>
     <DefineConstants>$(DefineConstants);TESTING_CNG_IMPLEMENTATION</DefineConstants>
     <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>

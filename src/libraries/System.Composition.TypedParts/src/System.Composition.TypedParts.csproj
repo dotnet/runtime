@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{B4B5E15C-E6B9-48EA-94C2-F067484D4D3E}</ProjectGuid>
     <RootNamespace>System.Composition</RootNamespace>
     <AssemblyName>System.Composition.TypedParts</AssemblyName>
     <Configurations>netstandard-Debug;netstandard-Release</Configurations>
@@ -32,17 +31,8 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Composition.AttributedModel\src\System.Composition.AttributedModel.csproj">
-      <Project>{c6257381-c624-494a-a9d9-5586e60856ea}</Project>
-      <Name>System.Composition.AttributedModel</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\System.Composition.Hosting\src\System.Composition.Hosting.csproj">
-      <Project>{2b8fecc6-34a1-48fe-ba75-99572d2d6db2}</Project>
-      <Name>System.Composition.Hosting</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\System.Composition.Runtime\src\System.Composition.Runtime.csproj">
-      <Project>{2711dfd2-8541-4628-bc53-eb784a14cdcf}</Project>
-      <Name>System.Composition.Runtime</Name>
-    </ProjectReference>
+    <ProjectReference Include="..\..\System.Composition.AttributedModel\src\System.Composition.AttributedModel.csproj" />
+    <ProjectReference Include="..\..\System.Composition.Hosting\src\System.Composition.Hosting.csproj" />
+    <ProjectReference Include="..\..\System.Composition.Runtime\src\System.Composition.Runtime.csproj" />
   </ItemGroup>
 </Project>

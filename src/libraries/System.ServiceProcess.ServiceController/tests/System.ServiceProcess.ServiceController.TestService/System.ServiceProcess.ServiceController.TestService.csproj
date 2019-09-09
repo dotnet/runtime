@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{E62B874D-1A0D-41BC-8CFC-9E09D0860A77}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputType>Exe</OutputType>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release</Configurations>

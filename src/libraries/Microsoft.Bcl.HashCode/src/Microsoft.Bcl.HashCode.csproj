@@ -1,6 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="Current">
   <PropertyGroup>
-    <ProjectGuid>{B77D0212-D53C-4F7F-8CEC-2E067AC6FCAB}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetFramework)' != 'netstandard2.0' AND '$(TargetsNetFx)' != 'true'">true</IsPartialFacadeAssembly>
     <OmitResources>$(IsPartialFacadeAssembly)</OmitResources>
