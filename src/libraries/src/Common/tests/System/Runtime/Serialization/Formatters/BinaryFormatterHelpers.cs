@@ -45,6 +45,11 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
         public static void AssertExceptionDeserializationFails<T>() where T : Exception
         {
+            AssertExceptionDeserializationFails(typeof(T));
+        }
+
+        public static void AssertExceptionDeserializationFails(Type exceptionType)
+        {
             // .NET Core and .NET Native throw PlatformNotSupportedExceptions when deserializing many exceptions.
             // The .NET Framework supports full deserialization.
             if (PlatformDetection.IsFullFramework)
@@ -55,7 +60,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             // Construct a valid serialization payload. This is necessary as most constructors call
             // the base constructor before throwing a PlatformNotSupportedException, and the base
             // constructor validates the SerializationInfo passed.
-            var info = new SerializationInfo(typeof(T), new FormatterConverter());
+            var info = new SerializationInfo(exceptionType, new FormatterConverter());
             info.AddValue("ClassName", "ClassName");
             info.AddValue("Message", "Message");
             info.AddValue("InnerException", null);
@@ -69,7 +74,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
             // Serialization constructors are of the form .ctor(SerializationInfo, StreamingContext).
             ConstructorInfo constructor = null;
-            foreach (ConstructorInfo c in typeof(T).GetTypeInfo().DeclaredConstructors)
+            foreach (ConstructorInfo c in exceptionType.GetTypeInfo().DeclaredConstructors)
             {
                 ParameterInfo[] parameters = c.GetParameters();
                 if (parameters.Length == 2 && parameters[0].ParameterType == typeof(SerializationInfo) && parameters[1].ParameterType == typeof(StreamingContext))
