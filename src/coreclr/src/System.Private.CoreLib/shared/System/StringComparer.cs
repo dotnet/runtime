@@ -61,7 +61,7 @@ namespace System
         {
             if (culture == null)
             {
-                throw new ArgumentException(nameof(culture));
+                throw new ArgumentNullException(nameof(culture));
             }
 
             return new CultureAwareComparer(culture, options);
