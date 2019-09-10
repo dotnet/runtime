@@ -106,6 +106,12 @@ get_method_nofail (MonoClass *klass, const char *method_name, int param_count, i
 #define EMIT_WIN32_UNWIND_INFO
 #endif
 
+#if defined(TARGET_ANDROID) || defined(__linux__)
+#define RODATA_REL_SECT ".data.rel.ro"
+#else
+#define RODATA_REL_SECT ".text"
+#endif
+
 #if defined(__linux__)
 #define RODATA_SECT ".rodata"
 #elif defined(TARGET_MACH)
@@ -1594,6 +1600,21 @@ arch_emit_direct_call (MonoAotCompile *acfg, const char *target, gboolean extern
 #else
 	g_assert_not_reached ();
 #endif
+}
+
+static void
+arch_emit_label_address (MonoAotCompile *acfg, const char *target, gboolean external_call, gboolean thumb, MonoJumpInfo *ji, int *call_size)
+{
+#if defined(TARGET_ARM) && defined(TARGET_ANDROID)
+	/* binutils ld does not support branch islands on arm32 */
+	if (!thumb) {
+		emit_unset_mode (acfg);
+		fprintf (acfg->fp, "ldr pc,=%s\n", target);
+		fprintf (acfg->fp, ".ltorg\n");
+		*call_size = 8;
+	} else
+#endif
+	arch_emit_direct_call (acfg, target, external_call, thumb, ji, call_size);
 }
 #endif
 
@@ -9923,13 +9944,18 @@ emit_code (MonoAotCompile *acfg)
 	 * To work around linker issues, we emit a table of branches, and disassemble them at runtime.
 	 * This is PIE code, and the linker can update it if needed.
 	 */
-	
+#if defined(TARGET_ANDROID) || defined(__linux__)
+	gboolean is_func = FALSE;
+#else
+	gboolean is_func = TRUE;
+#endif
+
 	sprintf (symbol, "method_addresses");
-	emit_section_change (acfg, ".text", 1);
+	emit_section_change (acfg, RODATA_REL_SECT, !!is_func);
 	emit_alignment_code (acfg, 8);
-	emit_info_symbol (acfg, symbol, TRUE);
+	emit_info_symbol (acfg, symbol, is_func);
 	if (acfg->aot_opts.write_symbols)
-		emit_local_symbol (acfg, symbol, "method_addresses_end", TRUE);
+		emit_local_symbol (acfg, symbol, "method_addresses_end", is_func);
 	emit_unset_mode (acfg);
 	if (acfg->need_no_dead_strip)
 		fprintf (acfg->fp, "	.no_dead_strip %s\n", symbol);
@@ -9939,9 +9965,9 @@ emit_code (MonoAotCompile *acfg)
 		int call_size;
 
 		if (!ignore_cfg (acfg->cfgs [i])) {
-			arch_emit_direct_call (acfg, acfg->cfgs [i]->asm_symbol, FALSE, acfg->thumb_mixed && acfg->cfgs [i]->compile_llvm, NULL, &call_size);
+			arch_emit_label_address (acfg, acfg->cfgs [i]->asm_symbol, FALSE, acfg->thumb_mixed && acfg->cfgs [i]->compile_llvm, NULL, &call_size);
 		} else {
-			arch_emit_direct_call (acfg, symbol, FALSE, FALSE, NULL, &call_size);
+			arch_emit_label_address (acfg, symbol, FALSE, FALSE, NULL, &call_size);
 		}
 #endif
 	}
