@@ -252,6 +252,16 @@ namespace ILCompiler.PEWriter
         int _corHeaderSize;
 
         /// <summary>
+        /// Symbol representing the start of the win32 resources
+        /// </summary>
+        ISymbolNode _win32ResourcesSymbol;
+
+        /// <summary>
+        /// Size of the win32 resources
+        /// </summary>
+        int _win32ResourcesSize;
+
+        /// <summary>
         /// Padding 4-byte sequence to use in code section. Typically corresponds
         /// to some interrupt to be thrown at "invalid" IP addresses.
         /// </summary>
@@ -370,6 +380,12 @@ namespace ILCompiler.PEWriter
         {
             _corHeaderSymbol = symbol;
             _corHeaderSize = headerSize;
+        }
+
+        public void SetWin32Resources(ISymbolNode symbol, int resourcesSize)
+        {
+            _win32ResourcesSymbol = symbol;
+            _win32ResourcesSize = resourcesSize;
         }
 
         private CoreRTNameMangler _nameMangler;
@@ -737,6 +753,14 @@ namespace ILCompiler.PEWriter
                 Section section = _sections[symbolTarget.SectionIndex];
                 Debug.Assert(section.RVAWhenPlaced != 0);
                 directoriesBuilder.CorHeaderTable = new DirectoryEntry(section.RVAWhenPlaced + symbolTarget.Offset, _corHeaderSize);
+            }
+
+            if (_win32ResourcesSymbol != null)
+            {
+                SymbolTarget symbolTarget = _symbolMap[_win32ResourcesSymbol];
+                Section section = _sections[symbolTarget.SectionIndex];
+                Debug.Assert(section.RVAWhenPlaced != 0);
+                directoriesBuilder.ResourceTable = new DirectoryEntry(section.RVAWhenPlaced + symbolTarget.Offset, _win32ResourcesSize);
             }
 
             if (_exportDirectoryEntry.Size != 0)
