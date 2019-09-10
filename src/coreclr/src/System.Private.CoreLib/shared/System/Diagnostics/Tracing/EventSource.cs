@@ -5675,7 +5675,7 @@ namespace System.Diagnostics.Tracing
                         sb.Append(" value=\"").Append(channel).Append("\"");
                         if (channelType != null)
                             sb.Append(" type=\"").Append(channelType).Append("\"");
-                        sb.Append(" enabled=\"").Append(enabled.ToString().ToLower()).Append("\"");
+                        sb.Append(" enabled=\"").Append(enabled ? "true" : "false").Append("\"");
 #if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
                         if (access != null)
                             sb.Append(" access=\"").Append(access).Append("\"");
