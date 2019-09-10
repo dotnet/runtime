@@ -123,7 +123,7 @@ namespace System.Diagnostics.Tracing
 
         internal void ReportOutOfBandMessage(string message)
         {
-            EventSource.ReportOutOfBandMessage(message, true);
+            EventSource.ReportOutOfBandMessage(message);
         }
 
         internal string GetMetadataString()
