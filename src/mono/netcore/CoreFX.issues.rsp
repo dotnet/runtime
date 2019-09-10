@@ -998,7 +998,7 @@
 -nomethod System.Security.Cryptography.Encoding.Tests.OidTests.LookupOidByFriendlyName_Ctor
 
 
-# corefx tests need to be updated for changes to GetHashCode
+# corefx tests need to be updated
 -nomethod System.Numerics.Tests.GenericVectorTests.GetHashCodeInt16
 -nomethod System.Numerics.Tests.GenericVectorTests.GetHashCodeInt32
 -nomethod System.Numerics.Tests.GenericVectorTests.GetHashCodeDouble
@@ -1009,3 +1009,5 @@
 -nomethod System.Numerics.Tests.GenericVectorTests.GetHashCodeInt64
 -nomethod System.Numerics.Tests.GenericVectorTests.GetHashCodeSingle
 -nomethod System.Numerics.Tests.GenericVectorTests.GetHashCodeUInt32
+
+-nomethod System.Tests.StringComparerTests.CreateCultureOptions_InvalidArguments_Throws
