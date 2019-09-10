@@ -679,7 +679,7 @@ namespace Mono.Linker.Steps {
 			if (property != null)
 				MarkMethod (property.SetMethod);
 
-			MarkIfType (namedArgument.Argument);
+			MarkCustomAttributeArgument (namedArgument.Argument);
 			Tracer.Pop ();
 		}
 
@@ -711,7 +711,7 @@ namespace Mono.Linker.Steps {
 			if (field != null)
 				MarkField (field);
 
-			MarkIfType (namedArgument.Argument);
+			MarkCustomAttributeArgument (namedArgument.Argument);
 		}
 
 		FieldDefinition GetField (TypeDefinition type, string fieldname)
@@ -746,26 +746,39 @@ namespace Mono.Linker.Steps {
 				return;
 
 			foreach (var argument in ca.ConstructorArguments)
-				MarkIfType (argument);
+				MarkCustomAttributeArgument (argument);
 		}
 
-		void MarkIfType (CustomAttributeArgument argument)
+		void MarkCustomAttributeArgument (CustomAttributeArgument argument)
 		{
 			var at = argument.Type;
+
 			if (at.IsArray) {
 				var et = at.GetElementType ();
-				if (et.Namespace != "System" || et.Name != "Type")
-					return;
 
 				MarkType (et);
 				if (argument.Value == null)
 					return;
 
-				foreach (var cac in (CustomAttributeArgument[]) argument.Value)
-					MarkWithResolvedScope ((TypeReference) cac.Value);
-			} else if (at.Namespace == "System" && at.Name == "Type") {
-				MarkType (argument.Type);
-				MarkWithResolvedScope ((TypeReference) argument.Value);
+				foreach (var caa in (CustomAttributeArgument [])argument.Value)
+					MarkCustomAttributeArgument (caa);
+
+				return;
+			}
+
+			if (at.Namespace == "System") {
+				switch (at.Name) {
+				case "Type":
+					MarkType (argument.Type);
+					MarkWithResolvedScope ((TypeReference)argument.Value);
+					return;
+
+				case "Object":
+					var boxed_value = (CustomAttributeArgument)argument.Value;
+					MarkType (boxed_value.Type);
+					MarkCustomAttributeArgument (boxed_value);
+					return;
+				}
 			}
 		}
 
