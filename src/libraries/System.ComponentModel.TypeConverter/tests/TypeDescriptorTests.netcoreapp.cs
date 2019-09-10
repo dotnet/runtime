@@ -10,6 +10,7 @@ namespace System.ComponentModel.Tests
     {
         [Theory]
         [InlineData(typeof(Version), typeof(VersionConverter))]
+        [InlineData(typeof(IComponent), typeof(ComponentConverter))]
         public static void GetConverter_NetCoreApp(Type targetType, Type resultConverterType) =>
             GetConverter(targetType, resultConverterType);
     }
