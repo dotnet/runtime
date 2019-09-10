@@ -35,9 +35,9 @@ namespace Tracing.Tests.GCFinalizers
 
         private static Action _eventGeneratingAction = () => 
         {
-            for (int i = 0; i < 1000; i++)
+            for (int i = 0; i < 50; i++)
             {
-                if (i % 100 == 0)
+                if (i % 10 == 0)
                     Logger.logger.Log($"Called GC.WaitForPendingFinalizers() {i} times...");
                 ProviderValidation providerValidation = new ProviderValidation();
                 providerValidation = null;
@@ -58,7 +58,7 @@ namespace Tracing.Tests.GCFinalizers
                 Logger.logger.Log("Event counts validation");
                 Logger.logger.Log("GCFinalizersEndEvents: " + GCFinalizersEndEvents);
                 Logger.logger.Log("GCFinalizersStartEvents: " + GCFinalizersStartEvents);
-                return GCFinalizersEndEvents >= 1000 && GCFinalizersStartEvents >= 1000 ? 100 : -1;
+                return GCFinalizersEndEvents >= 50 && GCFinalizersStartEvents >= 50 ? 100 : -1;
             };
         };
     }
