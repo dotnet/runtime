@@ -408,7 +408,7 @@ HRESULT CEECompileInfo::LoadTypeRefWinRT(
             {
                 LPCSTR psznamespace;
                 LPCSTR pszname;
-                pAssemblyImport->GetNameOfTypeRef(ref, &psznamespace, &pszname);
+                IfFailThrow(pAssemblyImport->GetNameOfTypeRef(ref, &psznamespace, &pszname));
                 AssemblySpec spec;
                 spec.InitializeSpec(tkResolutionScope, pAssemblyImport, NULL);
                 spec.SetWindowsRuntimeType(psznamespace, pszname);
