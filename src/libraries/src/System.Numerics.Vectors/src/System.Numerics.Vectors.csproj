@@ -31,26 +31,6 @@
     <Compile Include="System\Numerics\VectorMath.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="$(CommonPath)\CoreLib\System\Numerics\GenerationConfig.ttinclude">
-      <Link>System\Numerics\GenerationConfig.ttinclude</Link>
-    </None>
-    <Content Include="$(CommonPath)\CoreLib\System\Numerics\ConstantHelper.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>ConstantHelper.cs</LastGenOutput>
-      <Link>System\Numerics\ConstantHelper.tt</Link>
-    </Content>
-    <Content Include="$(CommonPath)\CoreLib\System\Numerics\Register.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>Register.cs</LastGenOutput>
-      <Link>System\Numerics\Register.tt</Link>
-    </Content>
-    <Content Include="$(CommonPath)\CoreLib\System\Numerics\Vector.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>Vector.cs</LastGenOutput>
-      <Link>System\Numerics\Vector.tt</Link>
-    </Content>
-  </ItemGroup>
-  <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
   </ItemGroup>
   <ItemGroup>
