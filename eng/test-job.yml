@@ -2,7 +2,7 @@ parameters:
   buildConfig: ''
   archType: ''
   osGroup: ''
-  osIdentifier: ''
+  osSubgroup: ''
   container: ''
   testGroup: ''
   readyToRun: false
@@ -26,7 +26,7 @@ jobs:
     buildConfig:                 ${{ parameters.buildConfig }}
     archType:                    ${{ parameters.archType }}
     osGroup:                     ${{ parameters.osGroup }}
-    osIdentifier:                ${{ parameters.osIdentifier }}
+    osSubgroup:                  ${{ parameters.osSubgroup }}
     container:                   ${{ parameters.container }}
     testGroup:                   ${{ parameters.testGroup }}
     readyToRun:                  ${{ parameters.readyToRun }}
@@ -41,7 +41,7 @@ jobs:
     buildConfig:            ${{ parameters.buildConfig }}
     archType:               ${{ parameters.archType }}
     osGroup:                ${{ parameters.osGroup }}
-    osIdentifier:           ${{ parameters.osIdentifier }}
+    osSubgroup:             ${{ parameters.osSubgroup }}
     container:              ${{ parameters.container }}
     testGroup:              ${{ parameters.testGroup }}
     readyToRun:             ${{ parameters.readyToRun }}

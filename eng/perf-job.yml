@@ -2,7 +2,7 @@ parameters:
   buildConfig: ''
   archType: ''
   osGroup: ''
-  osIdentifier: ''
+  osSubgroup: ''
   container: ''
   framework: netcoreapp5.0 # Specify the appropriate framework when running release branches (ie netcoreapp3.0 for release/3.0)
 
@@ -15,8 +15,8 @@ jobs:
 - template: /eng/common/templates/job/performance.yml
   parameters:
     # Compute job name from template parameters
-    jobName: ${{ format('perfbuild_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
-    displayName: ${{ format('Performance {0} {1} {2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+    jobName: ${{ format('perfbuild_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    displayName: ${{ format('Performance {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
     pool: 
       # Public Linux Build Pool
       ${{ if and(eq(parameters.osGroup, 'Linux'), eq(variables['System.TeamProject'], 'public')) }}:
@@ -28,7 +28,7 @@ jobs:
         queue: BuildPool.Windows.10.Amd64.VS2017.Open
 
     # Test job depends on the corresponding build job
-    dependsOn: ${{ format('build_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+    dependsOn: ${{ format('build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
     # Run all steps in the container.
     ${{ if ne(parameters.container, '') }}:
@@ -53,7 +53,7 @@ jobs:
       inputs:
         buildType: current
         downloadType: single
-        artifactName: ${{ format('BinDir_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+        artifactName: ${{ format('BinDir_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
         downloadPath: $(System.ArtifactsDirectory)
 
 
@@ -61,7 +61,7 @@ jobs:
     - task: CopyFiles@2
       displayName: Populate Product directory
       inputs:
-        sourceFolder: $(System.ArtifactsDirectory)/${{ format('BinDir_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+        sourceFolder: $(System.ArtifactsDirectory)/${{ format('BinDir_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
         contents: '**'
         targetFolder: $(Build.SourcesDirectory)/bin/Product/${{ parameters.osGroup }}.${{ parameters.archType }}.Release
 
