@@ -910,10 +910,6 @@ DEFINE_CLASS(WINDOWSRUNTIMEMETATADA, WinRT, WindowsRuntimeMetadata)
 DEFINE_METHOD(WINDOWSRUNTIMEMETATADA,  ON_DESIGNER_NAMESPACE_RESOLVE, OnDesignerNamespaceResolve, SM_Str_RetArrStr)
 #endif //FEATURE_COMINTEROP
 
-DEFINE_CLASS(LAZY,              System,     Lazy`1)
-
-DEFINE_CLASS(LAZY_INITIALIZER,  Threading,  LazyInitializer)
-
 DEFINE_CLASS(VALUE_TYPE,            System,                 ValueType)
 DEFINE_METHOD(VALUE_TYPE,           GET_HASH_CODE,          GetHashCode,            IM_RetInt)
 DEFINE_METHOD(VALUE_TYPE,           EQUALS,                 Equals,                 IM_Obj_RetBool)
