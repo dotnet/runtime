@@ -24,6 +24,9 @@ internal static partial class Interop
         internal const uint LOCALE_RETURN_NUMBER        = 0x20000000;
         internal const uint LOCALE_NOUSEROVERRIDE       = 0x80000000;
 
+        internal const uint LCMAP_SORTHANDLE            = 0x20000000;
+        internal const uint LCMAP_HASH                  = 0x00040000;
+
         internal const int  COMPARE_STRING              = 0x0001;
 
         internal const uint TIME_NOSECONDS = 0x00000002;
