@@ -2,7 +2,7 @@ parameters:
   buildConfig: ''
   archType: ''
   osGroup: ''
-  osIdentifier: ''
+  osSubgroup: ''
   name: ''
   helixType: '(unspecified)'
   container: ''
@@ -27,7 +27,7 @@ jobs:
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
-    osIdentifier: ${{ parameters.osIdentifier }}
+    osSubgroup: ${{ parameters.osSubgroup }}
     name: ${{ parameters.name }}
     helixType: ${{ parameters.helixType }}
     container: ${{ parameters.container }}
@@ -45,11 +45,11 @@ jobs:
     variables:
     - ${{ if ne(parameters.testGroup, '') }}:
       - name: testArtifactRootName
-        value: ${{ parameters.osIdentifier}}_${{ parameters.archType }}_${{ parameters.buildConfig }}_${{ parameters.testGroup }}
+        value: ${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_${{ parameters.testGroup }}
 
     - ${{ if eq(parameters.testGroup, '') }}:
       - name: testArtifactRootName
-        value: ${{ parameters.osIdentifier}}_${{ parameters.archType }}_${{ parameters.buildConfig }}
+        value: ${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}
 
     - name: binTestsPath
       value: $(Build.SourcesDirectory)/bin/tests
