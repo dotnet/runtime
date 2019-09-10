@@ -2,7 +2,7 @@ parameters:
   buildConfig: ''
   archType: ''
   osGroup: ''
-  osIdentifier: ''
+  osSubgroup: ''
   container: ''
   helixQueues: ''
   crossrootfsDir: ''
@@ -18,12 +18,12 @@ jobs:
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
-    osIdentifier: ${{ parameters.osIdentifier }}
+    osSubgroup: ${{ parameters.osSubgroup }}
     helixType: 'test/crossgen-comparison/'
 
     # Compute job name from template parameters
-    name: ${{ format('test_crossgen_comparison_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
-    displayName: ${{ format('Test crossgen-comparison {0} {1} {2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+    name: ${{ format('test_crossgen_comparison_{0}{1}_{1}_{2}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    displayName: ${{ format('Test crossgen-comparison {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
 
@@ -48,7 +48,7 @@ jobs:
         value: $(Build.SourcesDirectory)\bin\Product
 
     # Test job depends on the corresponding build job
-    dependsOn: ${{ format('build_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+    dependsOn: ${{ format('build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
     # Run all steps in the container.
     # Note that the containers are defined in platform-matrix.yml
@@ -65,7 +65,7 @@ jobs:
       inputs:
         buildType: current
         downloadType: single
-        artifactName: ${{ format('BinDir_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+        artifactName: ${{ format('BinDir_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
         downloadPath: $(System.ArtifactsDirectory)
 
 
@@ -73,7 +73,7 @@ jobs:
     - task: CopyFiles@2
       displayName: Populate Product directory
       inputs:
-        sourceFolder: $(System.ArtifactsDirectory)/${{ format('BinDir_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+        sourceFolder: $(System.ArtifactsDirectory)/${{ format('BinDir_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
         contents: '**'
         targetFolder: $(productDirectory)/$(targetFlavor)
 
@@ -164,6 +164,6 @@ jobs:
       displayName: Publish Logs
       inputs:
         pathtoPublish: $(binDirectory)/Logs
-        artifactName: ${{ format('TestLogs_crossgen_comparison_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+        artifactName: ${{ format('TestLogs_crossgen_comparison_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       continueOnError: true
       condition: always()

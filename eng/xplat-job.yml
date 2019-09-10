@@ -2,7 +2,7 @@ parameters:
   buildConfig: ''
   archType: ''
   osGroup: ''
-  osIdentifier: ''
+  osSubgroup: ''
   name: ''
   helixType: '(unspecified)'
   container: ''
@@ -121,8 +121,8 @@ jobs:
     - name: osGroup
       value: ${{ parameters.osGroup }}
 
-    - name: osIdentifier
-      value: ${{ parameters.osIdentifier }}
+    - name: osSubgroup
+      value: ${{ parameters.osSubgroup }}
       
     - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - name: _HelixSource
