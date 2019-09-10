@@ -15,6 +15,7 @@ using Internal.JitInterface;
 using Internal.TypeSystem;
 using Internal.Text;
 using Internal.TypeSystem.Ecma;
+using ILCompiler.Win32Resources;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -214,7 +215,8 @@ namespace ILCompiler.DependencyAnalysis
             NameMangler nameMangler,
             ModuleTokenResolver moduleTokenResolver,
             SignatureContext signatureContext,
-            CopiedCorHeaderNode corHeaderNode)
+            CopiedCorHeaderNode corHeaderNode,
+            ResourceData win32Resources)
             : base(context,
                   compilationModuleGroup,
                   nameMangler,
@@ -225,6 +227,8 @@ namespace ILCompiler.DependencyAnalysis
             Resolver = moduleTokenResolver;
             InputModuleContext = signatureContext;
             CopiedCorHeaderNode = corHeaderNode;
+            if (!win32Resources.IsEmpty)
+                Win32ResourcesNode = new Win32ResourcesNode(win32Resources);
         }
 
         public SignatureContext InputModuleContext;
@@ -232,6 +236,8 @@ namespace ILCompiler.DependencyAnalysis
         public ModuleTokenResolver Resolver;
 
         public CopiedCorHeaderNode CopiedCorHeaderNode;
+
+        public Win32ResourcesNode Win32ResourcesNode;
 
         public HeaderNode Header;
 
@@ -556,6 +562,9 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(StringImports, "String imports are always generated");
             graph.AddRoot(Header, "ReadyToRunHeader is always generated");
             graph.AddRoot(CopiedCorHeaderNode, "MSIL COR header is always generated");
+
+            if (Win32ResourcesNode != null)
+                graph.AddRoot(Win32ResourcesNode, "Win32 Resources are placed if not empty");
 
             MetadataManager.AttachToDependencyGraph(graph);
         }

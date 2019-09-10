@@ -256,6 +256,15 @@ namespace ILCompiler.DependencyAnalysis
             _data[offset + 3] = (byte)((emit >> 24) & 0xFF);
         }
 
+        public void EmitUInt(Reservation reservation, uint emit)
+        {
+            int offset = ReturnReservationTicket(reservation);
+            _data[offset] = (byte)(emit & 0xFF);
+            _data[offset + 1] = (byte)((emit >> 8) & 0xFF);
+            _data[offset + 2] = (byte)((emit >> 16) & 0xFF);
+            _data[offset + 3] = (byte)((emit >> 24) & 0xFF);
+        }
+
         public void EmitReloc(ISymbolNode symbol, RelocType relocType, int delta = 0)
         {
 #if DEBUG
@@ -320,6 +329,16 @@ namespace ILCompiler.DependencyAnalysis
         public void AddSymbol(ISymbolDefinitionNode node)
         {
             _definedSymbols.Add(node);
+        }
+
+        public void PadAlignment(int align)
+        {
+            Debug.Assert((align == 2) || (align == 4) || (align == 8) || (align == 16));
+            int misalignment = _data.Count & (align - 1);
+            if (misalignment != 0)
+            {
+                EmitZeros(align - misalignment);
+            }
         }
     }
 }

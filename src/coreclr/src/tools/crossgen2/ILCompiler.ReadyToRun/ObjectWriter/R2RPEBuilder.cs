@@ -7,10 +7,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Reflection;
 using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 
 using ILCompiler.DependencyAnalysis;
@@ -77,11 +74,6 @@ namespace ILCompiler.PEWriter
         /// Name of the initialized data section.
         /// </summary>
         public const string SDataSectionName = ".sdata";
-
-        /// <summary>
-        /// Name of the resource section.
-        /// </summary>
-        public const string RsrcSectionName = ".rsrc";
         
         /// <summary>
         /// Name of the relocation section.
@@ -196,14 +188,6 @@ namespace ILCompiler.PEWriter
                 _customSections.Add(section.SectionName);
             }
 
-            foreach (SectionHeader sectionHeader in peReader.PEHeaders.SectionHeaders)
-            {
-                if (_sectionBuilder.FindSection(sectionHeader.Name) == null)
-                {
-                    _sectionBuilder.AddSection(sectionHeader.Name, sectionHeader.SectionCharacteristics, peReader.PEHeaders.PEHeader.SectionAlignment);
-                }
-            }
-
             if (_sectionBuilder.FindSection(R2RPEBuilder.RelocSectionName) == null)
             {
                 // Always inject the relocation section to the end of section list
@@ -231,6 +215,11 @@ namespace ILCompiler.PEWriter
         public void SetCorHeader(ISymbolNode symbol, int headerSize)
         {
             _sectionBuilder.SetCorHeader(symbol, headerSize);
+        }
+
+        public void SetWin32Resources(ISymbolNode symbol, int resourcesSize)
+        {
+            _sectionBuilder.SetWin32Resources(symbol, resourcesSize);
         }
 
         /// <summary>
@@ -407,8 +396,6 @@ namespace ILCompiler.PEWriter
         protected override PEDirectoriesBuilder GetDirectories()
         {
             PEDirectoriesBuilder builder = new PEDirectoriesBuilder();
-            builder.CorHeaderTable = RelocateDirectoryEntry(_peReader.PEHeaders.PEHeader.CorHeaderTableDirectory);
-            builder.ResourceTable = RelocateDirectoryEntry(_peReader.PEHeaders.PEHeader.ResourceTableDirectory);
 
             _sectionBuilder.UpdateDirectories(builder);
 
@@ -502,57 +489,6 @@ namespace ILCompiler.PEWriter
                 _sectionRVAs[outputSectionIndex] = sectionStartRva;
             }
 
-            int inputSectionIndex = _peReader.PEHeaders.SectionHeaders.Count() - 1;
-            while (inputSectionIndex >= 0 && _peReader.PEHeaders.SectionHeaders[inputSectionIndex].Name != name)
-            {
-                inputSectionIndex--;
-            }
-            if (inputSectionIndex >= 0)
-            {
-                SectionHeader sectionHeader = _peReader.PEHeaders.SectionHeaders[inputSectionIndex];
-                int sectionOffset = (_peReader.IsLoadedImage ? sectionHeader.VirtualAddress : sectionHeader.PointerToRawData);
-                int rvaDelta = location.RelativeVirtualAddress - sectionHeader.VirtualAddress;
-                
-                _sectionRvaDeltas.Add(new SectionRVADelta(
-                    startRVA: sectionHeader.VirtualAddress,
-                    endRVA: sectionHeader.VirtualAddress + Math.Max(sectionHeader.VirtualSize, sectionHeader.SizeOfRawData),
-                    deltaRVA: rvaDelta));
-                
-                
-                int bytesToRead = Math.Min(sectionHeader.SizeOfRawData, sectionHeader.VirtualSize);
-                BlobReader inputSectionReader = _peReader.GetEntireImage().GetReader(sectionOffset, bytesToRead);
-                        
-                if (name == RsrcSectionName)
-                {
-                    // There seems to be a bug in BlobBuilder - when we LinkSuffix to an empty blob builder,
-                    // the blob data goes out of sync and WriteContentTo outputs garbage.
-                    sectionDataBuilder = PEResourceHelper.Relocate(inputSectionReader, rvaDelta);
-                }
-
-                int alignedSize = sectionHeader.VirtualSize;
-                    
-                // When custom section data is present, align the section size to 4K to prevent
-                // pre-generated MSIL relocations from tampering with native relocations.
-                if (_customSections.Contains(name))
-                {
-                    alignedSize = (alignedSize + 0xFFF) & ~0xFFF;
-                }
-
-                if (sectionDataBuilder != null)
-                {
-                    if (alignedSize > bytesToRead)
-                    {
-                        // If the number of bytes read from the source PE file is less than the virtual size,
-                        // zero pad to the end of virtual size before emitting extra section data
-                        sectionDataBuilder.WriteBytes(0, alignedSize - bytesToRead);
-                    }
-
-                    location = new SectionLocation(
-                        location.RelativeVirtualAddress + sectionDataBuilder.Count,
-                        location.PointerToRawData + sectionDataBuilder.Count);
-                }
-            }
-
             BlobBuilder extraData = _sectionBuilder.SerializeSection(name, location);
             if (extraData != null)
             {
@@ -585,170 +521,6 @@ namespace ILCompiler.PEWriter
             }
 
             return sectionDataBuilder;
-        }
-    }
-
-    /// <summary>
-    /// When copying PE contents we may need to move the resource section, however its internal
-    /// ResourceDataEntry records hold RVA's so they need to be relocated. Thankfully the resource
-    /// data model is very simple so that we just traverse the structure using offset constants.
-    /// </summary>
-    unsafe sealed class PEResourceHelper
-    {
-        /// <summary>
-        /// Field offsets in the resource directory table.
-        /// </summary>
-        private static class DirectoryTable
-        {
-            public const int Characteristics = 0x0;
-            public const int TimeDateStamp = 0x04;
-            public const int MajorVersion = 0x08;
-            public const int MinorVersion = 0x0A;
-            public const int NumberOfNameEntries = 0x0C;
-            public const int NumberOfIDEntries = 0x0E;
-            public const int Size = 0x10;
-        }
-        
-        /// <summary>
-        /// Field offsets in the resource directory entry.
-        /// </summary>
-        private static class DirectoryEntry
-        {
-            public const int NameOffsetOrID = 0x0;
-            public const int DataOrSubdirectoryOffset = 0x4;
-            public const int Size = 0x8;
-        }
-
-        /// <summary>
-        /// When the 4-byte value at the offset DirectoryEntry.DataOrSubdirectoryOffset
-        /// has 31-st bit set, it's a subdirectory table entry; when it's clear, it's a
-        /// resource data entry.
-        /// </summary>
-        private const int EntryOffsetIsSubdirectory = unchecked((int)0x80000000u);
-        
-        /// <summary>
-        /// Field offsets in the resource data entry.
-        /// </summary>
-        private static class DataEntry
-        {
-            public const int RVA = 0x0;
-            public const int Size = 0x4;
-            public const int Codepage = 0x8;
-            public const int Reserved = 0xC;
-        }
-        
-        /// <summary>
-        /// Blob reader representing the input resource section.
-        /// </summary>
-        private BlobReader _reader;
-
-        /// <summary>
-        /// This BlobBuilder holds the relocated resource section after the ctor finishes.
-        /// </summary>
-        private BlobBuilder _builder;
-
-        /// <summary>
-        /// Relocation delta (the difference between input and output RVA of the resource section).
-        /// </summary>
-        private int _delta;
-
-        /// <summary>
-        /// Offsets within the resource section representing RVA's in the resource data entries
-        /// that need relocating.
-        /// </summary>
-        private List<int> _offsetsOfRvasToRelocate;
-        
-        /// <summary>
-        /// Public API receives the input resource section reader and the relocation delta
-        /// and returns a blob builder representing the relocated resource section.
-        /// </summary>
-        /// <param name="reader">Blob reader representing the input resource section</param>
-        /// <param name="delta">Relocation delta to apply (value to add to RVA's)</param>
-        public static BlobBuilder Relocate(BlobReader reader, int delta)
-        {
-            return new PEResourceHelper(reader, delta)._builder;
-        }
-        
-        /// <summary>
-        /// Private constructor first traverses the internal graph of resource tables
-        /// and collects offsets to RVA's that need relocation; after that we sort the list of
-        /// offsets and do a linear copying pass patching the RVA cells with the updated values.
-        /// </summary>
-        /// <param name="reader">Blob reader representing the input resource section</param>
-        /// <param name="delta">Relocation delta to apply (value to add to RVA's)</param>
-        private PEResourceHelper(BlobReader reader, int delta)
-        {
-            _reader = reader;
-            _builder = new BlobBuilder();
-            _delta = delta;
-            
-            _offsetsOfRvasToRelocate = new List<int>();
-            
-            TraverseDirectoryTable(tableOffset: 0);
-
-            _offsetsOfRvasToRelocate.Sort();
-            int currentOffset = 0;
-            
-            _reader.Reset();
-            foreach (int offsetOfRvaToRelocate in _offsetsOfRvasToRelocate)
-            {
-                int bytesToCopy = offsetOfRvaToRelocate - currentOffset;
-                Debug.Assert(bytesToCopy >= 0);
-                if (bytesToCopy > 0)
-                {
-                    _builder.WriteBytes(_reader.CurrentPointer, bytesToCopy);
-                    _reader.Offset += bytesToCopy;
-                    currentOffset += bytesToCopy;
-                }
-                int rva = _reader.ReadInt32();
-                _builder.WriteInt32(rva + delta);
-                currentOffset += sizeof(int);
-            }
-            if (_reader.RemainingBytes > 0)
-            {
-                _builder.WriteBytes(_reader.CurrentPointer, _reader.RemainingBytes);
-            }
-        }
-        
-        /// <summary>
-        /// Traverse a single directory table at a given offset within the resource section.
-        /// Please note the method might end up calling itself recursively through the call graph
-        /// TraverseDirectoryTable -&gt; TraverseDirectoryEntry -&gt; TraverseDirectoryTable.
-        /// Maximum depth is equal to depth of the table graph - today resources use 3.
-        /// </summary>
-        /// <param name="tableOffset">Offset of the resource directory table within the resource section</param>
-        private void TraverseDirectoryTable(int tableOffset)
-        {
-            _reader.Offset = tableOffset + DirectoryTable.NumberOfNameEntries;
-            int numberOfNameEntries = _reader.ReadInt16();
-            int numberOfIDEntries = _reader.ReadInt16();
-            int totalEntries = numberOfNameEntries + numberOfIDEntries;
-            for (int entryIndex = 0; entryIndex < totalEntries; entryIndex++)
-            {
-                TraverseDirectoryEntry(tableOffset + DirectoryTable.Size + entryIndex * DirectoryEntry.Size);
-            }
-        }
-        
-        /// <summary>
-        /// Traverse a single directory entry (name- and ID-based directory entries are processed
-        /// the same way as we're not really interested in the entry identifier, just in the
-        /// data / table pointers.
-        /// </summary>
-        /// <param name="entryOffset">Offset of the resource directory entry within the resource section</param>
-        private void TraverseDirectoryEntry(int entryOffset)
-        {
-            _reader.Offset = entryOffset + DirectoryEntry.DataOrSubdirectoryOffset;
-            int dataOrSubdirectoryOffset = _reader.ReadInt32();
-            if ((dataOrSubdirectoryOffset & EntryOffsetIsSubdirectory) != 0)
-            {
-                // subdirectory offset
-                TraverseDirectoryTable(dataOrSubdirectoryOffset & ~EntryOffsetIsSubdirectory);
-            }
-            else
-            {
-                // data entry offset
-                _offsetsOfRvasToRelocate.Add(dataOrSubdirectoryOffset + DataEntry.RVA);
-            }
         }
     }
     
