@@ -85,7 +85,6 @@ namespace System
             new Dictionary<object, Guid>();
             new Dictionary<object, int>();
             new Dictionary<object, long>(); // Added for Visual Studio 2010
-            new Dictionary<uint, WeakReference>();  // NCL team needs this
             new Dictionary<object, uint>();
             new Dictionary<uint, object>();
             new Dictionary<long, object>();
@@ -133,7 +132,6 @@ namespace System
             new List<ulong>();
             new List<IntPtr>();
             new List<KeyValuePair<object, object>>();
-            new List<GCHandle>();  // NCL team needs this
             new List<DateTimeOffset>();
 
             new KeyValuePair<char, ushort>('\0', ushort.MinValue);
