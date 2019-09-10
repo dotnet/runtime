@@ -28,7 +28,7 @@ namespace System.Resources
 
     internal struct ResourceLocator
     {
-        internal object? _value;  // Can be null.  Consider WeakReference instead?
+        internal object? _value;  // Can be null.
         internal int _dataPos;
 
         internal ResourceLocator(int dataPos, object? value)

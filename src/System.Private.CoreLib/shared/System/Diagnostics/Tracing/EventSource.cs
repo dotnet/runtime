@@ -387,9 +387,9 @@ namespace System.Diagnostics.Tracing
             {
                 Debug.Assert(EventListener.s_EventSources != null);
 
-                foreach (WeakReference eventSourceRef in EventListener.s_EventSources)
+                foreach (WeakReference<EventSource> eventSourceRef in EventListener.s_EventSources)
                 {
-                    if (eventSourceRef.Target is EventSource eventSource && !eventSource.IsDisposed)
+                    if (eventSourceRef.TryGetTarget(out EventSource? eventSource) && !eventSource.IsDisposed)
                         ret.Add(eventSource);
                 }
             }
@@ -2903,9 +2903,9 @@ namespace System.Diagnostics.Tracing
                 }
                 // TODO Enforce singleton pattern
                 Debug.Assert(EventListener.s_EventSources != null, "should be called within lock on EventListener.EventListenersLock which ensures s_EventSources to be initialized");
-                foreach (WeakReference eventSourceRef in EventListener.s_EventSources)
+                foreach (WeakReference<EventSource> eventSourceRef in EventListener.s_EventSources)
                 {
-                    if (eventSourceRef.Target is EventSource eventSource && eventSource.Guid == m_guid && !eventSource.IsDisposed)
+                    if (eventSourceRef.TryGetTarget(out EventSource? eventSource) && eventSource.Guid == m_guid && !eventSource.IsDisposed)
                     {
                         if (eventSource != this)
                         {
@@ -4232,7 +4232,7 @@ namespace System.Diagnostics.Tracing
         {
             lock (EventListenersLock)
             {
-                s_EventSources ??= new List<WeakReference>(2);
+                s_EventSources ??= new List<WeakReference<EventSource>>(2);
 
                 if (!s_EventSourceShutdownRegistered)
                 {
@@ -4255,11 +4255,11 @@ namespace System.Diagnostics.Tracing
                     while (0 < i)
                     {
                         --i;
-                        WeakReference weakRef = s_EventSources[i];
-                        if (!weakRef.IsAlive)
+                        WeakReference<EventSource> weakRef = s_EventSources[i];
+                        if (!weakRef.TryGetTarget(out _))
                         {
                             newIndex = i;
-                            weakRef.Target = newEventSource;
+                            weakRef.SetTarget(newEventSource);
                             break;
                         }
                     }
@@ -4267,7 +4267,7 @@ namespace System.Diagnostics.Tracing
                 if (newIndex < 0)
                 {
                     newIndex = s_EventSources.Count;
-                    s_EventSources.Add(new WeakReference(newEventSource));
+                    s_EventSources.Add(new WeakReference<EventSource>(newEventSource));
                 }
                 newEventSource.m_id = newIndex;
 
@@ -4306,9 +4306,9 @@ namespace System.Diagnostics.Tracing
             lock (EventListenersLock)
             {
                 Debug.Assert(s_EventSources != null);
-                foreach (WeakReference esRef in s_EventSources)
+                foreach (WeakReference<EventSource> esRef in s_EventSources)
                 {
-                    if (esRef.Target is EventSource es)
+                    if (esRef.TryGetTarget(out EventSource? es))
                         es.Dispose();
                 }
             }
@@ -4327,9 +4327,9 @@ namespace System.Diagnostics.Tracing
 #endif
             // Foreach existing EventSource in the appdomain
             Debug.Assert(s_EventSources != null);
-            foreach (WeakReference eventSourceRef in s_EventSources)
+            foreach (WeakReference<EventSource> eventSourceRef in s_EventSources)
             {
-                if (eventSourceRef.Target is EventSource eventSource)
+                if (eventSourceRef.TryGetTarget(out EventSource? eventSource))
                 {
                     Debug.Assert(eventSource.m_Dispatchers != null);
                     // Is the first output dispatcher the dispatcher we are removing?
@@ -4392,10 +4392,10 @@ namespace System.Diagnostics.Tracing
 
                 // For all eventSources
                 int id = -1;
-                foreach (WeakReference eventSourceRef in s_EventSources)
+                foreach (WeakReference<EventSource> eventSourceRef in s_EventSources)
                 {
                     id++;
-                    if (!(eventSourceRef.Target is EventSource eventSource))
+                    if (!(eventSourceRef.TryGetTarget(out EventSource? eventSource)))
                         continue;
                     Debug.Assert(eventSource.m_id == id, "Unexpected event source ID.");
 
@@ -4425,15 +4425,14 @@ namespace System.Diagnostics.Tracing
 
         /// <summary>
         /// Gets a global lock that is intended to protect the code:s_Listeners linked list and the
-        /// code:s_EventSources WeakReference list.  (We happen to use the s_EventSources list as
-        /// the lock object)
+        /// code:s_EventSources list.  (We happen to use the s_EventSources list as the lock object)
         /// </summary>
         internal static object EventListenersLock
         {
             get
             {
                 if (s_EventSources == null)
-                    Interlocked.CompareExchange(ref s_EventSources, new List<WeakReference>(2), null);
+                    Interlocked.CompareExchange(ref s_EventSources, new List<WeakReference<EventSource>>(2), null);
                 return s_EventSources;
             }
         }
@@ -4469,7 +4468,7 @@ namespace System.Diagnostics.Tracing
                         // We tolerate this by iterating over a copy of the list here. New event sources will take care of adding listeners themselves
                         // EventSources are not guaranteed to be added at the end of the s_EventSource list -- We re-use slots when a new source
                         // is created.
-                        WeakReference[] eventSourcesSnapshot = s_EventSources.ToArray();
+                        WeakReference<EventSource>[] eventSourcesSnapshot = s_EventSources.ToArray();
 
 #if DEBUG
                         bool previousValue = s_ConnectingEventSourcesAndListener;
@@ -4479,8 +4478,8 @@ namespace System.Diagnostics.Tracing
 #endif
                             for (int i = 0; i < eventSourcesSnapshot.Length; i++)
                             {
-                                WeakReference eventSourceRef = eventSourcesSnapshot[i];
-                                if (eventSourceRef.Target is EventSource eventSource)
+                                WeakReference<EventSource> eventSourceRef = eventSourcesSnapshot[i];
+                                if (eventSourceRef.TryGetTarget(out EventSource? eventSource))
                                 {
                                     EventSourceCreatedEventArgs args = new EventSourceCreatedEventArgs();
                                     args.EventSource = eventSource;
@@ -4522,7 +4521,7 @@ namespace System.Diagnostics.Tracing
         /// not have happened yet.  Thus it can contain event sources that are dead (thus you have
         /// to filter those out.
         /// </summary>
-        internal static List<WeakReference>? s_EventSources;
+        internal static List<WeakReference<EventSource>>? s_EventSources;
 
         /// <summary>
         /// Used to disallow reentrancy.
