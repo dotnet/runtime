@@ -198,8 +198,7 @@ namespace System.Diagnostics.Tracing
                 configuration.OutputFile,
                 configuration.Format,
                 configuration.CircularBufferSizeInMB,
-                providers,
-                (uint)providers.Length);
+                providers);
         }
 
         internal static void Disable()
@@ -210,16 +209,80 @@ namespace System.Diagnostics.Tracing
 
     internal static class EventPipeInternal
     {
+        private unsafe struct EventPipeProviderConfigurationNative
+        {
+            private char* m_pProviderName;
+            private ulong m_keywords;
+            private uint m_loggingLevel;
+            private char* m_pFilterData;
+
+            internal static void MarshalToNative(EventPipeProviderConfiguration managed, ref EventPipeProviderConfigurationNative native)
+            {
+                native.m_pProviderName = (char*)Marshal.StringToCoTaskMemUni(managed.ProviderName);
+                native.m_keywords = managed.Keywords;
+                native.m_loggingLevel = managed.LoggingLevel;
+                native.m_pFilterData = (char*)Marshal.StringToCoTaskMemUni(managed.FilterData);
+            }
+
+            internal void Release()
+            {
+                if (m_pProviderName != null)
+                {
+                    Marshal.FreeCoTaskMem((IntPtr)m_pProviderName);
+                }
+                if (m_pFilterData != null)
+                {
+                    Marshal.FreeCoTaskMem((IntPtr)m_pFilterData);
+                }
+            }
+        }
+
         //
         // These PInvokes are used by the configuration APIs to interact with EventPipe.
         //
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        internal static extern ulong Enable(
+        private static unsafe extern ulong Enable(
+            char* outputFile,
+            EventPipeSerializationFormat format,
+            uint circularBufferSizeInMB,
+            EventPipeProviderConfigurationNative* providers,
+            uint numProviders);
+
+        internal static unsafe ulong Enable(
             string? outputFile,
             EventPipeSerializationFormat format,
             uint circularBufferSizeInMB,
-            EventPipeProviderConfiguration[] providers,
-            uint numProviders);
+            EventPipeProviderConfiguration[] providers)
+        {
+            Span<EventPipeProviderConfigurationNative> providersNative = new Span<EventPipeProviderConfigurationNative>((void*)Marshal.AllocCoTaskMem(sizeof(EventPipeProviderConfigurationNative) * providers.Length), providers.Length);
+            providersNative.Clear();
+
+            try
+            {
+                for (int i = 0; i < providers.Length; i++)
+                {
+                    EventPipeProviderConfigurationNative.MarshalToNative(providers[i], ref providersNative[i]);
+                }
+
+                fixed (char* outputFilePath = outputFile)
+                fixed (EventPipeProviderConfigurationNative* providersNativePointer = providersNative)
+                {
+                    return Enable(outputFilePath, format, circularBufferSizeInMB, providersNativePointer, (uint)providersNative.Length);
+                }
+            }
+            finally
+            {
+                for (int i = 0; i < providers.Length; i++)
+                {
+                    providersNative[i].Release();
+                }
+
+                fixed (EventPipeProviderConfigurationNative* providersNativePointer = providersNative)
+                {
+                    Marshal.FreeCoTaskMem((IntPtr)providersNativePointer);
+                }
+            }
+        }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern void Disable(ulong sessionID);
