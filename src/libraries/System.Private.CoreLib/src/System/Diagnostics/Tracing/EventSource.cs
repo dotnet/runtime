@@ -1506,7 +1506,7 @@ namespace System.Diagnostics.Tracing
             catch (Exception e)
             {
                 m_constructionException ??= e;
-                ReportOutOfBandMessage("ERROR: Exception during construction of EventSource " + Name + ": " + e.Message, true);
+                ReportOutOfBandMessage("ERROR: Exception during construction of EventSource " + Name + ": " + e.Message);
             }
 
             // Once m_completelyInited is set, you can have concurrency, so all work is under the lock.
@@ -1898,7 +1898,7 @@ namespace System.Diagnostics.Tracing
                         }
                     }
 
-                    LogEventArgsMismatches(m_eventData[eventId].Parameters, args);
+                    LogEventArgsMismatches(eventId, args);
 
                     Guid* pActivityId = null;
                     Guid activityId = Guid.Empty;
@@ -2012,8 +2012,9 @@ namespace System.Diagnostics.Tracing
                                                         m_eventData[eventId].Parameters);
                 Interlocked.CompareExchange(ref m_eventData[eventId].TraceLoggingEventTypes, eventTypes, null);
             }
+            int paramCount = Math.Min(eventTypes.typeInfos.Length, args.Length); // parameter count mismatch get logged in LogEventArgsMismatches
             var eventData = new object?[eventTypes.typeInfos.Length];
-            for (int i = 0; i < eventTypes.typeInfos.Length; i++)
+            for (int i = 0; i < paramCount; i++)
             {
                 eventData[i] = eventTypes.typeInfos[i].GetData(args[i]);
             }
@@ -2024,40 +2025,38 @@ namespace System.Diagnostics.Tracing
         /// We expect that the arguments to the Event method and the arguments to WriteEvent match. This function
         /// checks that they in fact match and logs a warning to the debugger if they don't.
         /// </summary>
-        /// <param name="infos"></param>
+        /// <param name="eventId"></param>
         /// <param name="args"></param>
-        private void LogEventArgsMismatches(ParameterInfo[] infos, object?[] args)
+        private void LogEventArgsMismatches(int eventId, object?[] args)
         {
-#if (!ES_BUILD_PCL && !ES_BUILD_PN)
-            // It would be nice to have this on PCL builds, but it would be pointless since there isn't support for
-            // writing to the debugger log on PCL.
-            bool typesMatch = args.Length == infos.Length;
+            Debug.Assert(m_eventData != null);
+            ParameterInfo[] infos = m_eventData[eventId].Parameters;
+
+            if (args.Length != infos.Length)
+            {
+                ReportOutOfBandMessage(SR.Format(SR.EventSource_EventParametersMismatch, eventId, args.Length, infos.Length));
+                return;
+            }
 
             int i = 0;
-            while (typesMatch && i < args.Length)
+            while (i < args.Length)
             {
                 Type pType = infos[i].ParameterType;
-
-                Type? argType = args[i]?.GetType();
+                object? arg = args[i];
 
                 // Checking to see if the Parameter types (from the Event method) match the supplied argument types.
                 // Fail if one of two things hold : either the argument type is not equal or assignable to the parameter type, or the
                 // argument is null and the parameter type is a non-Nullable<T> value type.
-                if ((args[i] != null && !pType.IsAssignableFrom(argType))
-                    || (args[i] == null && !((pType.IsGenericType && pType.GetGenericTypeDefinition() == typeof(Nullable<>)) || !pType.IsValueType)))
+                if ((arg != null && !pType.IsAssignableFrom(arg.GetType()))
+                    || (arg == null && (pType.IsValueType && !(pType.IsGenericType && pType.GetGenericTypeDefinition() == typeof(Nullable<>))))
+                    )
                 {
-                    typesMatch = false;
-                    break;
+                    ReportOutOfBandMessage(SR.Format(SR.EventSource_VarArgsParameterMismatch, eventId, infos[i].Name));
+                    return;
                 }
 
                 ++i;
             }
-
-            if (!typesMatch)
-            {
-                System.Diagnostics.Debugger.Log(0, null, SR.EventSource_VarArgsParameterMismatch + "\r\n");
-            }
-#endif //!ES_BUILD_PCL
         }
 
         private unsafe void WriteToAllListeners(int eventId, Guid* activityID, Guid* childActivityID, int eventDataCount, EventSource.EventData* data)
@@ -2083,7 +2082,7 @@ namespace System.Diagnostics.Tracing
             }
             if (eventDataCount != modifiedParamCount)
             {
-                ReportOutOfBandMessage(SR.Format(SR.EventSource_EventParametersMismatch, eventId, eventDataCount, paramCount), true);
+                ReportOutOfBandMessage(SR.Format(SR.EventSource_EventParametersMismatch, eventId, eventDataCount, paramCount));
                 paramCount = Math.Min(paramCount, eventDataCount);
             }
 
@@ -2139,7 +2138,7 @@ namespace System.Diagnostics.Tracing
                         catch (Exception e)
                         {
                             ReportOutOfBandMessage("ERROR: Exception during EventSource.OnEventWritten: "
-                                 + e.Message, false);
+                                 + e.Message);
                             lastThrownException = e;
                         }
                     }
@@ -2319,29 +2318,29 @@ namespace System.Diagnostics.Tracing
                 switch (EventProvider.GetLastWriteEventError())
                 {
                     case EventProvider.WriteEventErrorCode.EventTooBig:
-                        ReportOutOfBandMessage(errorPrefix + ": " + SR.EventSource_EventTooBig, true);
+                        ReportOutOfBandMessage(errorPrefix + ": " + SR.EventSource_EventTooBig);
                         if (ThrowOnEventWriteErrors) throw new EventSourceException(SR.EventSource_EventTooBig, innerEx);
                         break;
                     case EventProvider.WriteEventErrorCode.NoFreeBuffers:
-                        ReportOutOfBandMessage(errorPrefix + ": " + SR.EventSource_NoFreeBuffers, true);
+                        ReportOutOfBandMessage(errorPrefix + ": " + SR.EventSource_NoFreeBuffers);
                         if (ThrowOnEventWriteErrors) throw new EventSourceException(SR.EventSource_NoFreeBuffers, innerEx);
                         break;
                     case EventProvider.WriteEventErrorCode.NullInput:
-                        ReportOutOfBandMessage(errorPrefix + ": " + SR.EventSource_NullInput, true);
+                        ReportOutOfBandMessage(errorPrefix + ": " + SR.EventSource_NullInput);
                         if (ThrowOnEventWriteErrors) throw new EventSourceException(SR.EventSource_NullInput, innerEx);
                         break;
                     case EventProvider.WriteEventErrorCode.TooManyArgs:
-                        ReportOutOfBandMessage(errorPrefix + ": " + SR.EventSource_TooManyArgs, true);
+                        ReportOutOfBandMessage(errorPrefix + ": " + SR.EventSource_TooManyArgs);
                         if (ThrowOnEventWriteErrors) throw new EventSourceException(SR.EventSource_TooManyArgs, innerEx);
                         break;
                     default:
                         if (innerEx != null)
                         {
                             innerEx = innerEx.GetBaseException();
-                            ReportOutOfBandMessage(errorPrefix + ": " + innerEx.GetType() + ":" + innerEx.Message, true);
+                            ReportOutOfBandMessage(errorPrefix + ": " + innerEx.GetType() + ":" + innerEx.Message);
                         }
                         else
-                            ReportOutOfBandMessage(errorPrefix, true);
+                            ReportOutOfBandMessage(errorPrefix);
                         if (ThrowOnEventWriteErrors) throw new EventSourceException(innerEx);
                         break;
                 }
@@ -2811,7 +2810,7 @@ namespace System.Diagnostics.Tracing
             {
                 // When the ETW session is created after the EventSource has registered with the ETW system
                 // we can send any error messages here.
-                ReportOutOfBandMessage("ERROR: Exception in Command Processing for EventSource " + Name + ": " + e.Message, true);
+                ReportOutOfBandMessage("ERROR: Exception in Command Processing for EventSource " + Name + ": " + e.Message);
                 // We never throw when doing a command.
             }
         }
@@ -3804,9 +3803,8 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// Sends an error message to the debugger (outputDebugString), as well as the EventListeners
         /// It will do this even if the EventSource is not enabled.
-        /// TODO remove flush parameter it is not used.
         /// </summary>
-        internal void ReportOutOfBandMessage(string msg, bool flush)
+        internal void ReportOutOfBandMessage(string msg)
         {
             try
             {
