@@ -458,7 +458,7 @@ HRESULT MDTOKENMAP::Init(
             }
             else
             {   // It has tokens, so we may see a token for every row.
-                pITables->GetTableInfo(ixTbl, 0, &cRows, 0,0,0);
+                IfFailGo(pITables->GetTableInfo(ixTbl, 0, &cRows, 0,0,0));
                 // Safe: cTotal += cRows
                 if (!ClrSafeInt<ULONG>::addition(cTotal, cRows, cTotal))
                 {

@@ -520,7 +520,7 @@ CordbGenericValue::CordbGenericValue(CordbAppDomain *              pAppdomain,
     _ASSERTE(pType->m_elementType < ELEMENT_TYPE_MAX);
 
     // We can fill in the size now for generic values.
-    ULONG32 size;
+    ULONG32 size = 0;
     HRESULT hr;
     hr = pType->GetUnboxedObjectSize(&size);
     _ASSERTE (!FAILED(hr));
@@ -551,7 +551,7 @@ CordbGenericValue::CordbGenericValue(CordbType * pType)
       m_pValueHome(NULL)
 {
     // The only purpose of a literal value is to hold a RS literal value.
-    ULONG32 size;
+    ULONG32 size = 0;
     HRESULT hr;
     hr = pType->GetUnboxedObjectSize(&size);
     _ASSERTE (!FAILED(hr));
@@ -3413,7 +3413,7 @@ HRESULT CordbBoxValue::GetObject(ICorDebugObjectValue **ppObject)
     FAIL_IF_NEUTERED(this);
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
 
-    ULONG32 size;
+    ULONG32 size = 0;
     m_type->GetUnboxedObjectSize(&size);
 
     HRESULT hr = S_OK;

@@ -110,7 +110,7 @@ HRESULT GetSidFromProcessWorker(DWORD dwProcessId, SidType sidType, PSID *ppSid)
     TOKEN_USER                  *pTokUser = NULL;
     HANDLE                      hProc = INVALID_HANDLE_VALUE;
     HANDLE                      hToken = INVALID_HANDLE_VALUE;
-    DWORD                       dwRetLength;
+    DWORD                       dwRetLength = 0;
     LPVOID                      pvTokenInfo = NULL;
     TOKEN_INFORMATION_CLASS     tokenInfoClass;
     PSID                        pSidFromTokenInfo = NULL;

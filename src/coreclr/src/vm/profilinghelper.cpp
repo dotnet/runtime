@@ -284,12 +284,8 @@ void CurrentProfilerStatus::Set(ProfilerStatus newProfStatus)
 //---------------------------------------------------------------------------------------
 // ProfilingAPIUtility members
 
-
 // See code:#LoadUnloadCallbackSynchronization.
 CRITSEC_COOKIE ProfilingAPIUtility::s_csStatus = NULL;
-
-
-SidBuffer * ProfilingAPIUtility::s_pSidBuffer = NULL;
 
 // ----------------------------------------------------------------------------
 // ProfilingAPIUtility::AppendSupplementaryInformation
@@ -1464,14 +1460,7 @@ void ProfilingAPIUtility::TerminateProfiling()
             g_profControlBlock.pProfInterface.Store(NULL);
         }
 
-        // NOTE: Intentionally not deleting s_pSidBuffer. Doing so can cause annoying races
-        // with other threads that lazily create and initialize it when needed. (Example:
-        // it's used to fill out the "User" field of profiler event log entries.) Keeping
-        // s_pSidBuffer around after a profiler detaches and before a new one attaches
-        // consumes a bit more memory unnecessarily, but it'll get paged out if another
-        // profiler doesn't attach.
-
-        // NOTE: Similarly, intentionally not destroying / NULLing s_csStatus. If
+        // NOTE: Intentionally not destroying / NULLing s_csStatus. If
         // s_csStatus is already initialized, we can reuse it each time we do another
         // attach / detach, so no need to destroy it.
 
@@ -1493,68 +1482,5 @@ void ProfilingAPIUtility::TerminateProfiling()
         g_profControlBlock.curProfStatus.Set(kProfStatusNone);
     }
 }
-
-#ifndef FEATURE_PAL
-
-// ----------------------------------------------------------------------------
-// ProfilingAPIUtility::GetCurrentProcessUserSid
-// 
-// Description:
-//    Generates a SID of the current user from the current process's token. SID is
-//    returned in an [out] param, and is also cached for future use. The SID is used for
-//    two purposes: event log entries (for filling out the User field) and the ACL used
-//    on the globally named pipe object for attaching profilers.
-//    
-// Arguments:
-//    * ppsid - [out] Generated (or cached) SID
-//        
-// Return Value:
-//    HRESULT indicating success or failure.
-//    
-
-// static
-HRESULT ProfilingAPIUtility::GetCurrentProcessUserSid(PSID * ppsid)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (s_pSidBuffer == NULL)
-    {
-        HRESULT hr;
-        NewHolder<SidBuffer> pSidBuffer(new (nothrow) SidBuffer);
-        if (pSidBuffer == NULL)
-        {
-            return E_OUTOFMEMORY;
-        }
-
-        // This gets the SID of the user from the process token
-        hr = pSidBuffer->InitFromProcessUserNoThrow(GetCurrentProcessId());
-        if (FAILED(hr))
-        {
-            return hr;
-        }
-
-        if (FastInterlockCompareExchangePointer(
-            &s_pSidBuffer, 
-            pSidBuffer.GetValue(), 
-            NULL) == NULL)
-        {
-            // Lifetime successfully transferred to s_pSidBuffer, so don't delete it here
-            pSidBuffer.SuppressRelease();
-        }
-    }
-
-    _ASSERTE(s_pSidBuffer != NULL);
-    _ASSERTE(s_pSidBuffer->GetSid().RawSid() != NULL);
-    *ppsid = s_pSidBuffer->GetSid().RawSid();
-    return S_OK;
-}
-
-#endif // !FEATURE_PAL
 
 #endif // PROFILING_SUPPORTED
