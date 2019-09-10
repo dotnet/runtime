@@ -35,9 +35,9 @@ namespace Tracing.Tests.GCEvents
 
         private static Action _eventGeneratingAction = () => 
         {
-            for (int i = 0; i < 1000; i++)
+            for (int i = 0; i < 50; i++)
             {
-                if (i % 100 == 0)
+                if (i % 10 == 0)
                     Logger.logger.Log($"Called GC.Collect() {i} times...");
                 ProviderValidation providerValidation = new ProviderValidation();
                 providerValidation = null;
@@ -67,17 +67,17 @@ namespace Tracing.Tests.GCEvents
 
                 Logger.logger.Log("GCStartEvents: " + GCStartEvents);
                 Logger.logger.Log("GCEndEvents: " + GCEndEvents);
-                bool GCStartStopResult = GCStartEvents >= 1000 && GCEndEvents >= 1000 && GCStartEvents == GCEndEvents;
+                bool GCStartStopResult = GCStartEvents >= 50 && GCEndEvents >= 50 && Math.Abs(GCStartEvents - GCEndEvents) <=2;
                 Logger.logger.Log("GCStartStopResult check: " + GCStartStopResult);
 
                 Logger.logger.Log("GCRestartEEStartEvents: " + GCRestartEEStartEvents);
                 Logger.logger.Log("GCRestartEEStopEvents: " + GCRestartEEStopEvents);
-                bool GCRestartEEStartStopResult = GCRestartEEStartEvents >= 1000 && GCRestartEEStopEvents >= 1000;
+                bool GCRestartEEStartStopResult = GCRestartEEStartEvents >= 50 && GCRestartEEStopEvents >= 50;
                 Logger.logger.Log("GCRestartEEStartStopResult check: " + GCRestartEEStartStopResult);
 
                 Logger.logger.Log("GCSuspendEEEvents: " + GCSuspendEEEvents);
                 Logger.logger.Log("GCSuspendEEEndEvents: " + GCSuspendEEEndEvents);
-                bool GCSuspendEEStartStopResult = GCSuspendEEEvents >= 1000 && GCSuspendEEEndEvents >= 1000;
+                bool GCSuspendEEStartStopResult = GCSuspendEEEvents >= 50 && GCSuspendEEEndEvents >= 50;
                 Logger.logger.Log("GCSuspendEEStartStopResult check: " + GCSuspendEEStartStopResult);
 
                 return GCStartStopResult && GCRestartEEStartStopResult && GCSuspendEEStartStopResult ? 100 : -1;
