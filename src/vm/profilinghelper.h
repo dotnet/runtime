@@ -37,8 +37,6 @@ enum ProfAPIFaultFlags
 };
 #endif // _DEBUG
 
-class SidBuffer;
-
 //---------------------------------------------------------------------------------------
 // Static-only class to coordinate initialization of the various profiling API
 // structures, plus other utility stuff.
@@ -73,9 +71,6 @@ public:
     static void LogProfInfo(int iStringResourceID, ...);
     static void LogNoInterfaceError(REFIID iidRequested, LPCWSTR wszClsid);
     INDEBUG(static BOOL ShouldInjectProfAPIFault(ProfAPIFaultFlags faultFlag);)
-#ifndef FEATURE_PAL
-    static HRESULT GetCurrentProcessUserSid(PSID * ppsid);
-#endif // !FEATURE_PAL
 
 #ifdef FEATURE_PROFAPI_ATTACH_DETACH
     // ----------------------------------------------------------------------------
@@ -128,10 +123,6 @@ private:
         kStartupLoad,
         kAttachLoad,
     };
-
-    // Allocated lazily the first time it's needed, and then remains allocated until the
-    // process exits.
-    static SidBuffer * s_pSidBuffer;
 
     // See code:ProfilingAPIUtility::InitializeProfiling#LoadUnloadCallbackSynchronization
     static CRITSEC_COOKIE s_csStatus;

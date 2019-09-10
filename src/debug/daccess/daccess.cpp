@@ -859,7 +859,10 @@ SplitName::FindType(IMDInternalImport* mdInternal)
 
     ULONG32 length;
     WCHAR   wszName[MAX_CLASS_NAME];
-    ConvertUtf8(m_typeName, MAX_CLASS_NAME, &length, wszName);
+    if (ConvertUtf8(m_typeName, MAX_CLASS_NAME, &length, wszName) != S_OK)
+    {
+        return false;
+    }
 
     WCHAR *pHead;
 
