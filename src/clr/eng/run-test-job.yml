@@ -2,7 +2,7 @@ parameters:
   buildConfig: ''
   archType: ''
   osGroup: ''
-  osIdentifier: ''
+  osSubgroup: ''
   container: ''
   testGroup: ''
   readyToRun: false
@@ -23,7 +23,7 @@ jobs:
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
-    osIdentifier: ${{ parameters.osIdentifier }}
+    osSubgroup: ${{ parameters.osSubgroup }}
     readyToRun: ${{ parameters.readyToRun }}
     corefxTests: ${{ parameters.corefxTests }}
     helixType: 'build/tests/'
@@ -34,24 +34,24 @@ jobs:
 
     # Compute job name from template parameters
     ${{ if and(eq(parameters.testGroup, 'innerloop'), eq(parameters.displayNameArgs, '')) }}:
-      name: 'run_test_p0_${{ parameters.osIdentifier }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
-      dependsOn: 'build_test_p0_${{ parameters.osIdentifier }}_${{ parameters.archType }}_${{parameters.buildConfig }}'      
-      displayName: 'Run Test Pri0 ${{ parameters.osIdentifier }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
+      name: 'run_test_p0_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
+      dependsOn: 'build_test_p0_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'      
+      displayName: 'Run Test Pri0 ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
 
     ${{ if and(ne(parameters.testGroup, 'innerloop'), eq(parameters.displayNameArgs, '')) }}:
-      name: 'run_test_p1_${{ parameters.osIdentifier }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
-      dependsOn: 'build_test_p1_${{ parameters.osIdentifier }}_${{ parameters.archType }}_${{parameters.buildConfig }}'      
-      displayName: 'Run Test Pri1 ${{ parameters.osIdentifier }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
+      name: 'run_test_p1_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
+      dependsOn: 'build_test_p1_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'      
+      displayName: 'Run Test Pri1 ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
 
     ${{ if and(eq(parameters.testGroup, 'innerloop'), ne(parameters.displayNameArgs, '')) }}:
-      name: 'run_test_p0_${{ parameters.displayNameArgs }}_${{ parameters.osIdentifier }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
-      dependsOn: 'build_test_p0_${{ parameters.displayNameArgs }}_${{ parameters.osIdentifier }}_${{ parameters.archType }}_${{parameters.buildConfig }}'      
-      displayName: 'Run Test Pri0 ${{ parameters.displayNameArgs }} ${{ parameters.osIdentifier }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
+      name: 'run_test_p0_${{ parameters.displayNameArgs }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
+      dependsOn: 'build_test_p0_${{ parameters.displayNameArgs }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'      
+      displayName: 'Run Test Pri0 ${{ parameters.displayNameArgs }} ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
 
     ${{ if and(ne(parameters.testGroup, 'innerloop'), ne(parameters.displayNameArgs, '')) }}:
-      name: 'run_test_p1_${{ parameters.displayNameArgs }}_${{ parameters.osIdentifier }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
-      dependsOn: 'build_test_p1_${{ parameters.displayNameArgs }}_${{ parameters.osIdentifier }}_${{ parameters.archType }}_${{parameters.buildConfig }}'      
-      displayName: 'Run Test Pri1 ${{ parameters.displayNameArgs }} ${{ parameters.osIdentifier }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
+      name: 'run_test_p1_${{ parameters.displayNameArgs }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
+      dependsOn: 'build_test_p1_${{ parameters.displayNameArgs }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'      
+      displayName: 'Run Test Pri1 ${{ parameters.displayNameArgs }} ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
 
     variables:
     - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
