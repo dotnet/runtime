@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
-
+using ILCompiler.Win32Resources;
 using Internal.IL;
 using Internal.JitInterface;
 using Internal.TypeSystem;
@@ -81,13 +81,31 @@ namespace ILCompiler
             SignatureContext signatureContext = new SignatureContext(_inputModule, moduleTokenResolver);
             CopiedCorHeaderNode corHeaderNode = new CopiedCorHeaderNode(_inputModule);
 
+            // Produce a ResourceData where the IBC PROFILE_DATA entry has been filtered out
+            ResourceData win32Resources = new ResourceData(_inputModule, (object type, object name, ushort language) =>
+            {
+                if (!(type is string) || !(name is string))
+                    return true;
+                if (language != 0)
+                    return true;
+
+                string typeString = (string)type;
+                string nameString = (string)name;
+
+                if ((typeString == "IBC") && (nameString == "PROFILE_DATA"))
+                    return false;
+
+                return true;
+            });
+
             ReadyToRunCodegenNodeFactory factory = new ReadyToRunCodegenNodeFactory(
                 _context,
                 _compilationGroup,
                 _nameMangler,
                 moduleTokenResolver,
                 signatureContext,
-                corHeaderNode);
+                corHeaderNode,
+                win32Resources);
 
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory);
 

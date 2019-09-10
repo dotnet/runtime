@@ -4,14 +4,14 @@
 
 using System;
 using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 
 namespace ILCompiler.Win32Resources
 {
     public unsafe partial class ResourceData
     {
-        private void ReadResourceData()
+        private void ReadResourceData(BlobReader resourceReader, PEReader peFile, Func<object, object, ushort, bool> resourceFilter)
         {
-            BlobReader resourceReader = _resourceDataBlob;
             DoResourceDirectoryRead(resourceReader, 0, ProcessOuterResource);
             return;
 
@@ -43,9 +43,15 @@ namespace ILCompiler.Win32Resources
                         IMAGE_RESOURCE_DATA_ENTRY resourceData = new IMAGE_RESOURCE_DATA_ENTRY(ref resourceReader);
 
                         // The actual resource data offset is relative to the start address of the file
-                        BlobReader resourceDataBlob = _peFile.GetSectionData(checked((int)resourceData.OffsetToData)).GetReader(0, checked((int)resourceData.Size));
+                        BlobReader resourceDataBlob = peFile.GetSectionData(checked((int)resourceData.OffsetToData)).GetReader(0, checked((int)resourceData.Size));
                         byte[] data = resourceDataBlob.ReadBytes((int)resourceData.Size);
 
+                        if (resourceFilter != null)
+                        {
+                            // If the filter returns false, don't add this resource to the model
+                            if (!resourceFilter(typeName, name, (ushort)languageName))
+                                return;
+                        }
                         AddResource(typeName, name, (ushort)languageName, data);
                     }
                 }

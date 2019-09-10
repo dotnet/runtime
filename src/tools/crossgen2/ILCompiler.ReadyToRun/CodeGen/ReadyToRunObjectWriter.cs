@@ -114,6 +114,12 @@ namespace ILCompiler.DependencyAnalysis
 
                 r2rPeBuilder.SetCorHeader(_nodeFactory.CopiedCorHeaderNode, _nodeFactory.CopiedCorHeaderNode.Size);
 
+                if (_nodeFactory.Win32ResourcesNode != null)
+                {
+                    Debug.Assert(_nodeFactory.Win32ResourcesNode.Size != 0);
+                    r2rPeBuilder.SetWin32Resources(_nodeFactory.Win32ResourcesNode, _nodeFactory.Win32ResourcesNode.Size);
+                }
+
                 using (var peStream = File.Create(_objectFilePath))
                 {
                     r2rPeBuilder.Write(peStream);
