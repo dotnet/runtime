@@ -824,7 +824,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 }
 
 /*static*/ BOOL CPUGroupInfo::SetThreadGroupAffinity(HANDLE h, 
-                        GROUP_AFFINITY *groupAffinity, GROUP_AFFINITY *previousGroupAffinity)
+                        const GROUP_AFFINITY *groupAffinity, GROUP_AFFINITY *previousGroupAffinity)
 {
     LIMITED_METHOD_CONTRACT;
     return ::SetThreadGroupAffinity(h, groupAffinity, previousGroupAffinity);
