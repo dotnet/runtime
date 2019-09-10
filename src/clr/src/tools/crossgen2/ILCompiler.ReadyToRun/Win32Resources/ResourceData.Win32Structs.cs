@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Reflection.Metadata;
+
+using ILCompiler.DependencyAnalysis;
 
 namespace ILCompiler.Win32Resources
 {
@@ -19,6 +22,16 @@ namespace ILCompiler.Win32Resources
                 MinorVersion = blobReader.ReadUInt16();
                 NumberOfNamedEntries = blobReader.ReadUInt16();
                 NumberOfIdEntries = blobReader.ReadUInt16();
+            }
+
+            public static void Write(ref ObjectDataBuilder builder, ushort namedEntries, ushort idEntries)
+            {
+                builder.EmitUInt(0); // Characteristics
+                builder.EmitUInt(0); // TimeDateStamp
+                builder.EmitUShort(4); // MajorVersion
+                builder.EmitUShort(0); // MinorVersion
+                builder.EmitUShort(namedEntries);
+                builder.EmitUShort(idEntries);
             }
 
             public readonly uint Characteristics;
@@ -37,6 +50,24 @@ namespace ILCompiler.Win32Resources
                 OffsetToData = blobReader.ReadUInt32();
             }
 
+            public static ObjectDataBuilder.Reservation Write(ref ObjectDataBuilder dataBuilder, string name, IDictionary<string, List<ObjectDataBuilder.Reservation>> nameTable)
+            {
+                List<ObjectDataBuilder.Reservation> relatedNameReferences;
+                if (!nameTable.TryGetValue(name, out relatedNameReferences))
+                {
+                    relatedNameReferences = new List<ObjectDataBuilder.Reservation>();
+                    nameTable[name] = relatedNameReferences;
+                }
+                relatedNameReferences.Add(dataBuilder.ReserveInt());
+                return dataBuilder.ReserveInt();
+            }
+
+            public static ObjectDataBuilder.Reservation Write(ref ObjectDataBuilder dataBuilder, ushort id)
+            {
+                dataBuilder.EmitInt(id);
+                return dataBuilder.ReserveInt();
+            }
+
             public readonly uint Name;
             public readonly uint OffsetToData;
         }
@@ -50,6 +81,14 @@ namespace ILCompiler.Win32Resources
                 Size = blobReader.ReadUInt32();
                 CodePage = blobReader.ReadUInt32();
                 Reserved = blobReader.ReadUInt32();
+            }
+
+            public static void Write(ref ObjectDataBuilder dataBuilder, ISymbolNode node, int offsetFromSymbol, int sizeOfData)
+            {
+                dataBuilder.EmitReloc(node, RelocType.IMAGE_REL_BASED_ADDR32NB, offsetFromSymbol);
+                dataBuilder.EmitInt(sizeOfData);
+                dataBuilder.EmitInt(1252);  // CODEPAGE = DEFAULT_CODEPAGE
+                dataBuilder.EmitInt(0); // RESERVED
             }
 
             public uint OffsetToData;
