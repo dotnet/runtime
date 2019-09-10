@@ -295,20 +295,35 @@
   <Target Name="GenerateVSInsertionNupkg"
           DependsOnTargets="
             GetInstallerGenerationFlags;
-            GenerateVSInsertionNupkgCore" />
+            EnsureMsiBuilt">
+    <!--
+      Run the nupkg creation code with IsShipping=false to use prerelease versions: this package
+      must not be stable to avoid mutation conflicts, even though the project itself may be shipping
+      and therefore stabilized.
+
+      Also pass in the path to the MSI file to pack up because its file name is based on
+      stabilization status.
+    -->
+    <MSBuild
+      Condition="'$(GenerateMSI)' == 'true'"
+      Projects="$(MSBuildProjectFullPath)"
+      Targets="GenerateVSInsertionNupkgCore"
+      Properties="
+        IsShipping=false;
+        ComponentMsiFile=$(OutInstallerFile)" />
+  </Target>
 
   <!--
     When using the CreateVSInsertionNupkg entry point target, we have to make sure this project's
     MSI was created first.
   -->
-  <Target Name="EnsureMsiBuilt">
+  <Target Name="EnsureMsiBuilt"
+          Condition="'$(GenerateMSI)' == 'true'">
     <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="Build" />
   </Target>
 
   <Target Name="GenerateVSInsertionNupkgCore"
-          Condition="'$(GenerateMSI)' == 'true'"
           DependsOnTargets="
-            EnsureMsiBuilt;
             AcquireNuGetExe;
             GetInstallerProperties;
             GetWixBuildConfiguration">
@@ -321,7 +336,7 @@
       <ProjectUrlForVS>https://github.com/dotnet/core-setup</ProjectUrlForVS>
 
       <PackProperties />
-      <PackProperties>$(PackProperties)COMPONENT_MSI=$(OutInstallerFile);</PackProperties>
+      <PackProperties>$(PackProperties)COMPONENT_MSI=$(ComponentMsiFile);</PackProperties>
       <PackProperties>$(PackProperties)ARCH=$(MsiArch);</PackProperties>
       <PackProperties>$(PackProperties)COMPONENT_NAME=$(VSInsertionComponentName);</PackProperties>
       <PackProperties>$(PackProperties)FRIENDLY_NAME=$(VSInsertionComponentFriendlyName);</PackProperties>
