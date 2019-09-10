@@ -52,7 +52,7 @@ namespace System.Runtime.Loader
 			}
 		}
 
-		public static Assembly[] GetLoadedAssemblies ()
+		internal static Assembly[] GetLoadedAssemblies ()
 		{
 			return InternalGetLoadedAssemblies ();
 		}

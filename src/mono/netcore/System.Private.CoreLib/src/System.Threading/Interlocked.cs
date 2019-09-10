@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Threading
 {
@@ -48,7 +49,8 @@ namespace System.Threading
 		public extern static double CompareExchange (ref double location1, double value, double comparand);
 
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
-		public extern static T CompareExchange<T> (ref T location1, T value, T comparand) where T : class;
+		[return: NotNullIfNotNull("location1")]
+		public extern static T CompareExchange<T> (ref T location1, T value, T comparand) where T : class?;
 
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
 		public extern static long Exchange (ref long location1, long value);
@@ -60,7 +62,8 @@ namespace System.Threading
 		public extern static double Exchange (ref double location1, double value);
 
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
-		public extern static T Exchange<T> (ref T location1, T value) where T : class;
+		[return: NotNullIfNotNull("location1")]
+		public extern static T Exchange<T> (ref T location1, T value) where T : class?;
 
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
 		public extern static long Read (ref long location);
