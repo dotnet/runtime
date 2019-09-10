@@ -19,7 +19,7 @@ using System.Threading.Tasks;
 
 using Xunit;
 
-namespace Sytem.Threading.Tasks.Tests
+namespace System.Threading.Tasks.Tests
 {
     public sealed class RespectParentCancellationTest
     {
