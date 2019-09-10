@@ -2222,7 +2222,7 @@
     <value>Event {0} specifies an illegal or unsupported formatting message ("{1}").</value>
   </data>
   <data name="EventSource_VarArgsParameterMismatch" xml:space="preserve">
-    <value>The parameters to the Event method do not match the parameters to the WriteEvent method. This may cause the event to be displayed incorrectly.</value>
+    <value>Event {0} was called with a different type as defined (argument "{1}"). This may cause the event to be displayed incorrectly.</value>
   </data>
   <data name="Exception_EndOfInnerExceptionStack" xml:space="preserve">
     <value>--- End of inner exception stack trace ---</value>
