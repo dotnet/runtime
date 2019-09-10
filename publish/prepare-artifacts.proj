@@ -65,6 +65,7 @@
       ManifestBranch="$(BUILD_SOURCEBRANCH)"
       ManifestBuildId="$(BUILD_BUILDNUMBER)"
       ManifestCommit="$(BUILD_SOURCEVERSION)"
+      IsStableBuild="$(IsStableBuild)"
       AssetManifestPath="$(AssetManifestFile)"
       AssetsTemporaryDirectory="$(TempWorkingDir)" />
 
@@ -109,6 +110,7 @@
       ManifestBranch="$(BUILD_SOURCEBRANCH)"
       ManifestBuildId="$(BUILD_BUILDNUMBER)"
       ManifestCommit="$(BUILD_SOURCEVERSION)"
+      IsStableBuild="$(IsStableBuild)"
       PublishFlatContainer="true"
       AssetManifestPath="$(AssetManifestFile)"
       AssetsTemporaryDirectory="$(TempWorkingDir)" />
