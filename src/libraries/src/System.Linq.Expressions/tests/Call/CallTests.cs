@@ -665,6 +665,37 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
+        [Fact]
+        public static void EnumReturnType0()
+        {
+            Expression<Func<DayOfWeek[]>> expr = () => new[] { ToDayOfWeek0() };
+
+            Assert.Equal(DayOfWeek.Monday, expr.Compile(false)()[0]);
+            Assert.Equal(DayOfWeek.Monday, expr.Compile(true)()[0]);
+        }
+
+        [Fact]
+        public static void EnumReturnType1()
+        {
+            Expression<Func<DayOfWeek[]>> expr = () => new[] { ToDayOfWeek1(1) };
+
+            Assert.Equal(DayOfWeek.Monday, expr.Compile(false)()[0]);
+            Assert.Equal(DayOfWeek.Monday, expr.Compile(true)()[0]);
+        }
+
+        [Fact]
+        public static void EnumReturnType2()
+        {
+            Expression<Func<DayOfWeek[]>> expr = () => new[] { ToDayOfWeek2(0, 1) };
+
+            Assert.Equal(DayOfWeek.Monday, expr.Compile(false)()[0]);
+            Assert.Equal(DayOfWeek.Monday, expr.Compile(true)()[0]);
+        }
+
+        private static DayOfWeek ToDayOfWeek0() => DayOfWeek.Monday;
+        private static DayOfWeek ToDayOfWeek1(int i) => (DayOfWeek)i;
+        private static DayOfWeek ToDayOfWeek2(int i, int j) => (DayOfWeek)(i + j);
+
         public class GenericClass<T>
         {
             public static void NonGenericMethod() { }
