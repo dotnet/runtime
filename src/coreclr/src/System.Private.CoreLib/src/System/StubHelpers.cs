@@ -78,18 +78,29 @@ namespace System.StubHelpers
             }
             else
             {
-                // Otherwise we use a slower "2-pass" mode where we first marshal the string into an intermediate buffer
-                // (managed byte array) and then allocate exactly the right amount of unmanaged memory. This is to avoid
-                // wasting memory on systems with multibyte character sets where the buffer we end up with is often much
-                // smaller than the upper bound for the given managed string.
+                if (strManaged.Length == 0)
+                {
+                    nb = 0;
+                    pbNativeBuffer = (byte*)Marshal.AllocCoTaskMem(2);
+                }
+                else
+                {
+                    // Otherwise we use a slower "2-pass" mode where we first marshal the string into an intermediate buffer
+                    // (managed byte array) and then allocate exactly the right amount of unmanaged memory. This is to avoid
+                    // wasting memory on systems with multibyte character sets where the buffer we end up with is often much
+                    // smaller than the upper bound for the given managed string.
 
-                byte[] bytes = AnsiCharMarshaler.DoAnsiConversion(strManaged,
-                    fBestFit: 0 != (flags & 0xFF), fThrowOnUnmappableChar: 0 != (flags >> 8), out nb);
+                    byte[] bytes = AnsiCharMarshaler.DoAnsiConversion(strManaged,
+                        fBestFit: 0 != (flags & 0xFF), fThrowOnUnmappableChar: 0 != (flags >> 8), out nb);
 
-                // + 1 for the null character from the user.  + 1 for the null character we put in.
-                pbNativeBuffer = (byte*)Marshal.AllocCoTaskMem(nb + 2);
+                    // + 1 for the null character from the user.  + 1 for the null character we put in.
+                    pbNativeBuffer = (byte*)Marshal.AllocCoTaskMem(nb + 2);
 
-                Buffer.Memcpy(pbNativeBuffer, 0, bytes, 0, nb);
+                    fixed (byte* pBytes = &bytes[0])
+                    {
+                        Buffer.Memcpy(pbNativeBuffer, pBytes, nb);
+                    }
+                }
             }
 
             pbNativeBuffer[nb] = 0x00;
@@ -357,7 +368,10 @@ namespace System.StubHelpers
                 byte[] bytes = AnsiCharMarshaler.DoAnsiConversion(strManaged, fBestFit, fThrowOnUnmappableChar, out nbytesused);
 
                 Debug.Assert(nbytesused < nbytes, "Insufficient buffer allocated in VBByValStrMarshaler.ConvertToNative");
-                Buffer.Memcpy(pNative, 0, bytes, 0, nbytesused);
+                fixed (byte* pBytes = &bytes[0])
+                {
+                    Buffer.Memcpy(pNative, pBytes, nbytesused);
+                }
 
                 pNative[nbytesused] = 0;
                 *pLength = nbytesused;
