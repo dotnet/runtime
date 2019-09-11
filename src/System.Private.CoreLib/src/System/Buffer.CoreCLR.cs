@@ -59,5 +59,20 @@ namespace System
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern unsafe void __Memmove(byte* dest, byte* src, nuint len);
+
+        // Used by ilmarshalers.cpp
+        internal static unsafe void Memcpy(byte* pDest, int destIndex, byte[] src, int srcIndex, int len)
+        {
+            Debug.Assert((srcIndex >= 0) && (destIndex >= 0) && (len >= 0), "Index and length must be non-negative!");
+            Debug.Assert(src.Length - srcIndex >= len, "not enough bytes in src");
+            // If dest has 0 elements, the fixed statement will throw an
+            // IndexOutOfRangeException.  Special-case 0-byte copies.
+            if (len == 0)
+                return;
+            fixed (byte* pSrc = src)
+            {
+                Memcpy(pDest + destIndex, pSrc + srcIndex, len);
+            }
+        }
     }
 }
