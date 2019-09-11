@@ -2055,7 +2055,7 @@ sgen_client_thread_detach_with_lock (SgenThreadInfo *p)
 
 	mono_tls_set_sgen_thread_info (NULL);
 
-	increment_bytes_allocated_detached (p->total_bytes_allocated);
+	sgen_increment_bytes_allocated_detached (p->total_bytes_allocated);
 
 	tid = mono_thread_info_get_tid (p);
 
@@ -2497,8 +2497,6 @@ mono_gc_get_los_limit (void)
 	return SGEN_MAX_SMALL_OBJ_SIZE;
 }
 
-
-
 guint64
 mono_gc_get_allocated_bytes_for_current_thread (void)
 {
@@ -2514,9 +2512,6 @@ mono_gc_get_total_allocated_bytes (MonoBoolean precise)
 {
 	return sgen_get_total_allocated_bytes (precise);
 }
-
-
-
 
 gpointer
 sgen_client_default_metadata (void)

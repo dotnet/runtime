@@ -548,7 +548,7 @@ sgen_set_bytes_allocated_attached (guint64 bytes)
 }
 
 void
-increment_bytes_allocated_detached(guint64 bytes) 
+sgen_increment_bytes_allocated_detached (guint64 bytes) 
 {
 	bytes_allocated_detached += bytes;
 }
