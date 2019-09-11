@@ -1725,17 +1725,18 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [ConditionalTheory(nameof(SupportsAlpn))]
+        [Theory]
         [InlineData(true)]
         [InlineData(false)]
         public async Task Http2_PendingReceive_SendsReset(bool doRead)
         {
             var cts = new CancellationTokenSource();
-            bool isCanceled = false;
+            var doCancel = new TaskCompletionSource<bool>();
             HttpResponseMessage response = null;
-            await Http2LoopbackServer.CreateClientAndServerAsync(async url =>
+
+            using (HttpClient client = CreateHttpClient())
             {
-                using (HttpClient client = CreateHttpClient())
+                await Http2LoopbackServer.CreateClientAndServerAsync(async url =>
                 {
                     var request = new HttpRequestMessage(HttpMethod.Get, url);
                     request.Version = new Version(2,0);
@@ -1743,57 +1744,56 @@ namespace System.Net.Http.Functional.Tests
                     response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cts.Token);
                     using (Stream stream = await response.Content.ReadAsStreamAsync())
                     {
+                        byte[] buffer = new byte[100];
+
+                        if (doRead)
+                        {
+                            // Start reading response as variation.
+                            _ = await stream.ReadAsync(buffer, cts.Token);
+                        }
+
+                        doCancel.SetResult(true);
+                        _output.WriteLine($"{DateTime.Now} cancellation requested.");
+
+                        // Keep reading response.
                         if (doRead)
                         {
                             try
                             {
-                                int readLength;
-                                do {
-                                    byte[] buffer = new byte[100];
-
-                                    readLength = await stream.ReadAsync(buffer, cts.Token);
-                                } while (readLength != 0);
+                                while (true)
+                                {
+                                    _ = await stream.ReadAsync(buffer, cts.Token);
+                                }
                             }
                             catch (OperationCanceledException) { };
                         }
-
-                        isCanceled = true;
                     }
-                }
-            },
-            async server =>
-            {
-                Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
-
-                (int streamId, HttpRequestData requestData) = await connection.ReadAndParseRequestHeaderAsync(readBody : false);
-                _output.WriteLine($"{DateTime.Now} Connection established");
-                // Cancel client after receiving Headers.
-                await connection.SendResponseHeadersAsync(streamId, endStream: false, HttpStatusCode.OK);
-
-                // Start streaming response
-                DataFrame dataFrame = new DataFrame(new byte[100], FrameFlags.None, 0, streamId);
-                await connection.WriteFrameAsync(dataFrame);
-
-                // Keep sending data until clients cancels
-                while (!isCanceled)
+                },
+                async server =>
                 {
-                    if (response != null)
-                    {
-                        cts.Cancel();
-                    }
+                    Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
+
+                    (int streamId, HttpRequestData requestData) = await connection.ReadAndParseRequestHeaderAsync(readBody : false);
+                    _output.WriteLine($"{DateTime.Now} Connection established");
+
+                    await connection.SendResponseHeadersAsync(streamId, endStream: false, HttpStatusCode.OK);
+                    // Start streaming response
+                    DataFrame dataFrame = new DataFrame(new byte[100], FrameFlags.None, 0, streamId);
                     await connection.WriteFrameAsync(dataFrame);
-                    await Task.Delay(100);
-                }
+                    // Wait for client to start processing response and cancel it.
+                    await doCancel.Task;
+                    cts.Cancel();
 
-                _output.WriteLine($"{DateTime.Now} HttpRequest was canceled");
-                Frame frame;
-                do
-                {
-                    frame = await connection.ReadFrameAsync(TimeSpan.FromMilliseconds(TestHelper.PassingTestTimeoutMilliseconds));
-                    Assert.NotNull(frame); // We should get Rst before closing connection.
-                    Assert.Equal(0, (int)(frame.Flags & FrameFlags.EndStream));
-                 } while (frame.Type != FrameType.RstStream);
-            });
+                    _output.WriteLine($"{DateTime.Now} HttpRequest was canceled");
+                    Frame frame;
+                    do
+                    {
+                        frame = await connection.ReadFrameAsync(TimeSpan.FromMilliseconds(TestHelper.PassingTestTimeoutMilliseconds));
+                        Assert.NotNull(frame); // We should get Rst before closing connection.
+                        Assert.Equal(0, (int)(frame.Flags & FrameFlags.EndStream));
+                    } while (frame.Type != FrameType.RstStream);
+                });
+            }
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
@@ -2816,7 +2816,16 @@ namespace System.Net.Http.Functional.Tests
                 int maxCount = 120;
                 while (!stopSending && maxCount != 0)
                 {
-                    await connection.SendResponseDataAsync(streamId, Encoding.ASCII.GetBytes(responseContent), endStream: false);
+                   try
+                    {
+                        await connection.SendResponseDataAsync(streamId, Encoding.ASCII.GetBytes(responseContent), endStream: false);
+                    }
+                    catch (IOException)
+                    {
+                        // When client sets stopSending, client will be disposed and sending may fail.
+                        Assert.True(stopSending);
+                        break;
+                    }
                     await Task.Delay(500);
                     maxCount --;
                 }
