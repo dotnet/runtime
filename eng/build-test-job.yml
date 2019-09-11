@@ -11,7 +11,7 @@ parameters:
   corefxTests: false
   displayNameArgs: ''
   condition: true
-  ignoreDependencyOnBuildJobs: false
+  stagedBuild: false
 
 ### Test build job
 
@@ -27,6 +27,7 @@ jobs:
     osSubgroup: ${{ parameters.osSubgroup }}
     readyToRun: ${{ parameters.readyToRun }}
     corefxTests: ${{ parameters.corefxTests }}
+    stagedBuild: ${{ parameters.stagedBuild }}
 
     # Test jobs should continue on error for internal builds
     ${{ if eq(variables['System.TeamProject'], 'internal') }}:
@@ -94,7 +95,7 @@ jobs:
     condition: and(succeeded(), ${{ parameters.condition }})
 
     # Test job depends on the corresponding build job
-    ${{ if ne(parameters.ignoreDependencyOnBuildJobs, true) }}:
+    ${{ if ne(parameters.stagedBuild, true) }}:
       dependsOn: ${{ format('build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
     # Run all steps in the container.

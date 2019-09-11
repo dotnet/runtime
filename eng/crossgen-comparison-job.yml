@@ -6,6 +6,7 @@ parameters:
   container: ''
   helixQueues: ''
   crossrootfsDir: ''
+  stagedBuild: false
 
 ### Crossgen-comparison job
 ###
@@ -19,6 +20,7 @@ jobs:
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
+    stagedBuild: ${{ parameters.stagedBuild }}
     helixType: 'test/crossgen-comparison/'
 
     # Compute job name from template parameters

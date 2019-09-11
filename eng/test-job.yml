@@ -13,7 +13,7 @@ parameters:
   displayNameArgs: ''
   runInUnloadableContext: false
   condition: true
-  ignoreDependencyOnBuildJobs: false
+  stagedBuild: false
 
 ### Test job
 
@@ -34,7 +34,7 @@ jobs:
     corefxTests:                 ${{ parameters.coreFxTests }}
     displayNameArgs:             ${{ parameters.displayNameArgs }}
     condition:                   ${{ parameters.condition }}
-    ignoreDependencyOnBuildJobs: ${{ parameters.ignoreDependencyOnBuildJobs }}
+    stagedBuild:                 ${{ parameters.stagedBuild }}
 
 - template: run-test-job.yml
   parameters:
@@ -48,4 +48,5 @@ jobs:
     helixQueues:            ${{ parameters.helixQueues }}
     corefxTests:            ${{ parameters.coreFxTests }}
     displayNameArgs:        ${{ parameters.displayNameArgs }}
+    stagedBuild:            ${{ parameters.stagedBuild }}
     runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
