@@ -247,6 +247,7 @@
       <Compile Include="src\System.Runtime.InteropServices\GCHandle.cs" />
       <Compile Include="src\System.Runtime.InteropServices\Marshal.cs" />
       <Compile Include="src\System.Runtime.InteropServices\MarshalAsAttribute.cs" />
+      <Compile Include="src\System.Runtime.InteropServices\SafeHandle.cs" />
       <Compile Include="src\System.Runtime.Loader\AssemblyLoadContext.cs" />
       <Compile Include="src\System.Runtime.Loader\AssemblyDependencyResolver.cs" />
       <Compile Include="src\System.Runtime.Remoting.Contexts\Context.cs" />

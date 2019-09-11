@@ -866,10 +866,6 @@
 -nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.SetX_NullInput_ThrowsArgumentNullException
 -nomethod System.Reflection.Emit.Tests.DynamicMethodctor1.InvalidOwner_ThrowsArgumentException
 
-# Exception string is different (Expect System.String vs actual String)
-# https://github.com/mono/mono/issues/15323
--nomethod System.Reflection.Emit.Tests.DynamicMethodToString.ToStringTest
-
 # Expected: typeof(System.ArgumentOutOfRangeException)
 # Actual:   typeof(System.OverflowException): Arithmetic operation resulted in an overflow.
 # https://github.com/mono/mono/issues/15334

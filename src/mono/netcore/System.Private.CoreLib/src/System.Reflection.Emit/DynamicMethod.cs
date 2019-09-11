@@ -36,6 +36,7 @@
 #if MONO_FEATURE_SRE
 
 using System;
+using System.Text;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Globalization;
@@ -319,14 +320,14 @@ namespace System.Reflection.Emit {
 		}
 
 		public override string ToString () {
-			string parms = String.Empty;
-			ParameterInfo[] p = GetParametersInternal ();
-			for (int i = 0; i < p.Length; ++i) {
-				if (i > 0)
-					parms = parms + ", ";
-				parms = parms + p [i].ParameterType.Name;
-			}
-			return ReturnType.Name+" "+Name+"("+parms+")";
+			var sbName = new ValueStringBuilder (MethodNameBufferSize);
+			sbName.Append (ReturnType.FormatTypeName ());
+			sbName.Append (' ');
+			sbName.Append (Name);
+			sbName.Append ('(');
+			AppendParameters (ref sbName, parameters ?? Array.Empty<Type> (), CallingConvention);
+			sbName.Append (')');
+			return sbName.ToString ();
 		}
 
 		public override MethodAttributes Attributes {
