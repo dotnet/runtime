@@ -8,6 +8,7 @@ parameters:
   timeoutInMinutes: ''
   signBinaries: false
   publishToBlobFeed: false
+  stagedBuild: false
 
 ### Product build
 jobs:
@@ -19,6 +20,7 @@ jobs:
     osSubgroup: ${{ parameters.osSubgroup }}
     helixType: 'build/product/'
     enableMicrobuild: true
+    stagedBuild: ${{ parameters.stagedBuild }}
 
     # Compute job name from template parameters
     name: ${{ format('build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}

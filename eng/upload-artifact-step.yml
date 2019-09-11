@@ -5,11 +5,12 @@ parameters:
   archiveType: ''
   tarCompression: ''
   artifactName: ''
+  displayName: ''
 
 steps:
   # Zip Artifact
   - task: ArchiveFiles@2
-    displayName: Zip Tests
+    displayName: 'Zip ${{ parameters.displayName }}'
     inputs:
       rootFolderOrFile:  ${{ parameters.rootFolder }}
       archiveFile:       ${{ parameters.archiveFile }}
@@ -18,7 +19,7 @@ steps:
       includeRootFolder: ${{ parameters.includeRootFolder }}
 
   - task: PublishBuildArtifacts@1
-    displayName: Publish Artifact
+    displayName: 'Publish ${{ parameters.displayName }}'
     inputs:
       pathtoPublish: ${{ parameters.archiveFile }}
       artifactName:  ${{ parameters.artifactName }}

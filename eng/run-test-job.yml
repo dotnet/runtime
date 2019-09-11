@@ -9,6 +9,7 @@ parameters:
   helixQueues: ''
   # If true, run the corefx tests instead of the coreclr ones
   corefxTests: false
+  stagedBuild: false
   displayNameArgs: ''
   runInUnloadableContext: false
 
@@ -26,6 +27,7 @@ jobs:
     osSubgroup: ${{ parameters.osSubgroup }}
     readyToRun: ${{ parameters.readyToRun }}
     corefxTests: ${{ parameters.corefxTests }}
+    stagedBuild: ${{ parameters.stagedBuild }}
     helixType: 'build/tests/'
 
     # Test jobs should continue on error for internal builds

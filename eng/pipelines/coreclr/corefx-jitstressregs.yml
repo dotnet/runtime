@@ -11,6 +11,11 @@ schedules:
   always: true
 
 jobs:
+#
+# Checkout repository
+#
+- template: /eng/checkout-job.yml
+
 - template: /eng/platform-matrix.yml
   parameters:
     jobTemplate: build-job.yml
