@@ -13,8 +13,7 @@ using System.Threading;
 namespace System.Text.Json
 {
     /// <summary>
-    ///   Provides a mechanism for examining the structural content of a JSON value without
-    ///   automatically instantiating data values.
+    ///   Represents the structure of a JSON value in a lightweight, read-only form.
     /// </summary>
     /// <remarks>
     ///   This class utilizes resources from pooled memory to minimize the garbage collector (GC)
