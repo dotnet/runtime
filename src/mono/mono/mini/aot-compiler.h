@@ -23,9 +23,6 @@ char*    mono_aot_get_direct_call_symbol    (MonoJumpInfoType type, gconstpointe
 int      mono_aot_get_method_index          (MonoMethod *method) MONO_LLVM_INTERNAL;
 MonoJumpInfo* mono_aot_patch_info_dup       (MonoJumpInfo* ji) MONO_LLVM_INTERNAL;
 gboolean mono_aot_can_specialize (MonoMethod *method) MONO_LLVM_INTERNAL;
+gboolean mono_aot_can_enter_interp (MonoMethod *method) MONO_LLVM_INTERNAL;
 
 #endif
-
-
-
-

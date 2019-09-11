@@ -409,6 +409,7 @@ typedef struct {
 
 /* This points to the current acfg in LLVM mode */
 static MonoAotCompile *llvm_acfg;
+static MonoAotCompile *current_acfg;
 
 /* Cache of decoded method external icall symbol names. */
 /* Owned by acfg, but kept in this static as well since it is */
@@ -4434,6 +4435,17 @@ cleanup_true:
 	return TRUE;
 }
 
+gboolean
+mono_aot_can_enter_interp (MonoMethod *method)
+{
+	MonoAotCompile *acfg = current_acfg;
+
+	g_assert (acfg);
+	if (acfg->aot_opts.profile_only && !g_hash_table_lookup (acfg->profile_methods, method))
+		return TRUE;
+	return FALSE;
+}
+
 static void
 add_wrappers (MonoAotCompile *acfg)
 {
@@ -8444,8 +8456,24 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	if (method->wrapper_type == MONO_WRAPPER_COMINTEROP)
 		return;
 
-	if (acfg->aot_opts.profile_only && !method->is_inflated && !g_hash_table_lookup (acfg->profile_methods, method))
-		return;
+	if (acfg->aot_opts.profile_only && !g_hash_table_lookup (acfg->profile_methods, method)) {
+		if (acfg->aot_opts.llvm_only) {
+			/* Keep wrappers */
+			if (!method->wrapper_type)
+				return;
+			WrapperInfo *info = mono_marshal_get_wrapper_info (method);
+			switch (info->subtype) {
+			case WRAPPER_SUBTYPE_PTR_TO_STRUCTURE:
+			case WRAPPER_SUBTYPE_STRUCTURE_TO_PTR:
+				return;
+			default:
+				break;
+			}
+		} else {
+			if (!method->is_inflated)
+				return;
+		}
+	}
 
 	mono_atomic_inc_i32 (&acfg->stats.mcount);
 
@@ -13555,6 +13583,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 	acfg->plt_offset = 1;
 	add_preinit_got_slots (acfg);
 
+	current_acfg = acfg;
+
 #ifdef ENABLE_LLVM
 	if (acfg->llvm) {
 		llvm_acfg = acfg;
@@ -13615,6 +13645,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 	if (acfg->aot_opts.dedup_include && !is_dedup_dummy)
 		/* We only collected methods from this assembly */
 		return 0;
+
+	current_acfg = NULL;
 
 	return emit_aot_image (acfg);
 }
@@ -13983,6 +14015,12 @@ mono_aot_direct_icalls_enabled_for_method (MonoCompile *cfg, MonoMethod *method)
 {
 	g_assert_not_reached ();
 	return 0;
+}
+
+gboolean
+mono_aot_can_enter_interp (MonoMethod *method)
+{
+	return FALSE;
 }
 
 #endif
