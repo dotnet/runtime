@@ -2055,7 +2055,7 @@ sgen_client_thread_detach_with_lock (SgenThreadInfo *p)
 
 	mono_tls_set_sgen_thread_info (NULL);
 
-	increment_bytes_allocated_detached(p->total_bytes_allocated);
+	increment_bytes_allocated_detached (p->total_bytes_allocated);
 
 	tid = mono_thread_info_get_tid (p);
 
