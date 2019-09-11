@@ -11,7 +11,7 @@ namespace System
     // around lack of first class support for byref fields in C# and IL. The JIT and
     // type loader has special handling for it that turns it into a thin wrapper around ref T.
     [NonVersionable]
-    internal ref struct ByReference<T>
+    internal readonly ref struct ByReference<T>
     {
         // CS0169: The private field '{blah}' is never used
 #pragma warning disable 169
