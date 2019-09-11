@@ -9368,9 +9368,12 @@ mono_vtype_get_field_addr (gpointer vtype, MonoClassField *field)
  * Value Type version: This sets the \p index's element of the \p array
  * with elements of size sizeof(type) to the provided \p value.
  *
- * This macro does not attempt to perform type checking or bounds checking.
+ * This macro does not attempt to perform type checking or bounds checking
+ * and it doesn't execute any write barriers.
  *
- * Use this to set value types in a \c MonoArray.
+ * Use this to set value types in a \c MonoArray. This shouldn't be used if
+ * the copied value types contain references. Use \c mono_gc_wbarrier_value_copy
+ * instead when also copying references.
  */
 void mono_array_set(MonoArray *array, Type element_type, uintptr_t index, Value value)
 {

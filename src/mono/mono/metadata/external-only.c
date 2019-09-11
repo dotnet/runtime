@@ -107,6 +107,11 @@ mono_gchandle_free (uint32_t gchandle)
 
 /**
  * mono_gc_wbarrier_set_field:
+ * \param obj object containing the destination field
+ * \param field_ptr address of field inside the object
+ * \param value reference to the object to be stored
+ * Stores an object reference inside another object, executing a write barrier
+ * if needed.
  */
 void
 mono_gc_wbarrier_set_field (MonoObject *obj, void* field_ptr, MonoObject* value)
@@ -116,6 +121,11 @@ mono_gc_wbarrier_set_field (MonoObject *obj, void* field_ptr, MonoObject* value)
 
 /**
  * mono_gc_wbarrier_set_arrayref:
+ * \param arr array containing the destination slot
+ * \param slot_ptr address of slot inside the array
+ * \param value reference to the object to be stored
+ * Stores an object reference inside an array of objects, executing a write
+ * barrier if needed.
  */
 void
 mono_gc_wbarrier_set_arrayref (MonoArray *arr, void* slot_ptr, MonoObject* value)
@@ -123,6 +133,14 @@ mono_gc_wbarrier_set_arrayref (MonoArray *arr, void* slot_ptr, MonoObject* value
 	MONO_EXTERNAL_ONLY_GC_UNSAFE_VOID (mono_gc_wbarrier_set_arrayref_internal (arr, slot_ptr, value));
 }
 
+/**
+ * mono_gc_wbarrier_arrayref_copy:
+ * \param dest_ptr destination slot address
+ * \param src_ptr source slot address
+ * \param count number of references to copy
+ * Copies \p count references from one array to another, executing a write
+ * barrier if needed.
+ */
 void
 mono_gc_wbarrier_arrayref_copy (void* dest_ptr, /*const*/ void* src_ptr, int count)
 {
@@ -131,6 +149,10 @@ mono_gc_wbarrier_arrayref_copy (void* dest_ptr, /*const*/ void* src_ptr, int cou
 
 /**
  * mono_gc_wbarrier_generic_store:
+ * \param ptr address of field
+ * \param obj object to store
+ * Stores the \p value object inside the field represented by \p ptr,
+ * executing a write barrier if needed.
  */
 void
 mono_gc_wbarrier_generic_store (void* ptr, MonoObject* value)
@@ -139,7 +161,7 @@ mono_gc_wbarrier_generic_store (void* ptr, MonoObject* value)
 }
 
 /**
- * mono_gc_wbarrier_generic_store_atomic_internal:
+ * mono_gc_wbarrier_generic_store_atomic:
  * Same as \c mono_gc_wbarrier_generic_store but performs the store
  * as an atomic operation with release semantics.
  */
@@ -149,12 +171,26 @@ mono_gc_wbarrier_generic_store_atomic (void *ptr, MonoObject *value)
 	MONO_EXTERNAL_ONLY_GC_UNSAFE_VOID (mono_gc_wbarrier_generic_store_atomic_internal (ptr, value));
 }
 
+/**
+ * mono_gc_wbarrier_generic_nostore:
+ * Executes a write barrier for an address, informing the GC that
+ * the reference stored at that address has been changed.
+ */
 void
 mono_gc_wbarrier_generic_nostore (void* ptr)
 {
 	MONO_EXTERNAL_ONLY_GC_UNSAFE_VOID (mono_gc_wbarrier_generic_nostore_internal (ptr));
 }
 
+/**
+ * mono_gc_wbarrier_object_copy:
+ * \param dest destination address
+ * \param src source address
+ * \param count number of elements to copy
+ * \param klass type of elements to copy
+ * Copies \p count elements of type \p klass from \p src address to
+ * \dest address, executing any necessary write barriers.
+ */
 void
 mono_gc_wbarrier_value_copy (void* dest, /*const*/ void* src, int count, MonoClass *klass)
 {
@@ -163,8 +199,10 @@ mono_gc_wbarrier_value_copy (void* dest, /*const*/ void* src, int count, MonoCla
 
 /**
  * mono_gc_wbarrier_object_copy:
- *
- * Write barrier to call when \p obj is the result of a clone or copy of an object.
+ * \param obj destination object
+ * \param src source object
+ * Copies contents of \p src to \p obj, executing any necessary write
+ * barriers.
  */
 void
 mono_gc_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
