@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO.PortsTests;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using Legacy.Support;
 using Xunit;
 
@@ -247,6 +248,36 @@ namespace System.IO.Ports.Tests
                 com1.Handshake = Handshake.RequestToSend;
 
                 com1.BaseStream.Write(new byte[8], 0, 0);
+            }
+        }
+
+        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        public void WriteBreakSequenceDoesNotCorruptData()
+        {
+            using (SerialPort com1 = TCSupport.InitFirstSerialPort())
+            using (SerialPort com2 = TCSupport.InitSecondSerialPort(com1))
+            {
+                com1.Open();
+                if (!com2.IsOpen) // This is necessary since com1 and com2 might be the same port if we are using a loopback
+                    com2.Open();
+
+                byte[] msg = new byte[] { 0x1B, 0x40, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64 };
+
+                Task writingTask = Task.Run(() => {
+                    com1.BaseStream.Write(msg, 0, msg.Length);
+                    com1.BaseStream.Flush();
+                });
+
+                byte[] bytes = new byte[msg.Length];
+                int totalBytesRead = 0;
+                while (totalBytesRead < bytes.Length)
+                {
+                    int bytesRead = com2.BaseStream.Read(bytes, totalBytesRead, bytes.Length - totalBytesRead);
+                    totalBytesRead += bytesRead;
+                }
+
+                writingTask.Wait();
+                Assert.Equal(msg, bytes);
             }
         }
         #endregion
