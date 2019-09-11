@@ -362,7 +362,14 @@ namespace System.IO.Ports
         public override void Flush()
         {
             if (_handle == null) InternalResources.FileNotOpen();
-            Interop.Termios.TermiosDiscard(_handle, Interop.Termios.Queue.AllQueues);
+
+            SpinWait sw = new SpinWait();
+            while (!_writeQueue.IsEmpty)
+            {
+                sw.SpinOnce();
+            }
+
+            Interop.Termios.TermiosDrain(_handle);
         }
 
         internal int ReadByte(int timeout)
