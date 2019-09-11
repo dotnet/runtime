@@ -16,7 +16,7 @@
 
     <BuildRuntimePackages>false</BuildRuntimePackages>
 
-    <IsShippingPackage>false</IsShippingPackage>
+    <IsShipping>false</IsShipping>
   </PropertyGroup>
 
   <ItemGroup>
