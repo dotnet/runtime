@@ -94,6 +94,7 @@ runtime.
 ```XML
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <!-- Ensure that the target framework is correct e.g. 'netcoreapp5.0' -->
     <TargetFramework>netcoreapp3.0</TargetFramework>
     <!-- modify version in this line with one reported by `dotnet --info` under ".NET Core runtimes installed" -> Microsoft.NETCore.App -->
     <RuntimeFrameworkVersion>3.0.0-preview-27225-1</RuntimeFrameworkVersion>
@@ -111,16 +112,17 @@ In this case, the .NET Core runtime will be published along with your applicatio
 
 1. You still need to install the prerequisite .NET Core SDK from above.
 2. Modify your .csproj to reference the nightly build of Microsoft.NETCore.App *and*
-make it self-contained
+make it self-contained by adding a RuntimeIdentifier (RID).
 
 ```XML
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <!-- Ensure that the target framework is correct e.g. 'netcoreapp5.0' -->
     <TargetFramework>netcoreapp3.0</TargetFramework>
     <!-- modify build in this line with version reported by `dotnet --info` as above under ".NET Core runtimes installed" -> Microsoft.NETCore.App -->
     <!-- moreover, this can be any valid Microsoft.NETCore.App package version from https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json -->
     <RuntimeFrameworkVersion>3.0.0-preview-27218-01</RuntimeFrameworkVersion>
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier> <!-- make self-contained -->
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier> <!-- RID to make it self-contained -->
   </PropertyGroup>
 ```
 
@@ -159,7 +161,7 @@ you need to tell the tooling to use the assets from your local package. To do th
   </PropertyGroup>
 ```
 
-Replacing the RID in `runtime.win-x64.Microsoft.Private.CoreFx.NETCoreApp` with the RID of your current build.
+Replacing the RID (`win-x64` in this case) in `runtime.win-x64.Microsoft.Private.CoreFx.NETCoreApp` with the RID of your current build.
 
 Note these instructions above were only about updates to the binaries that are part of Microsoft.NETCore.App, if you want to test a package for library that ships in its own nuget package you can follow the same steps above but instead add a package reference to that package instead of "Microsoft.Private.CoreFx.NETCoreApp".
 
