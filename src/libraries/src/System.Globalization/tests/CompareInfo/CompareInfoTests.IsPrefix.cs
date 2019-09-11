@@ -29,6 +29,9 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "dzsdzsfoobar", "ddzsf", CompareOptions.None, false };
             yield return new object[] { s_invariantCompare, "dzsdzsfoobar", "ddzsf", CompareOptions.Ordinal, false };
             yield return new object[] { s_hungarianCompare, "dzsdzsfoobar", "ddzsf", CompareOptions.Ordinal, false };
+            yield return new object[] { s_invariantCompare, "dz", "d", CompareOptions.None, true };
+            yield return new object[] { s_hungarianCompare, "dz", "d", CompareOptions.None, false };
+            yield return new object[] { s_hungarianCompare, "dz", "d", CompareOptions.Ordinal, true };
 
             // Turkish
             yield return new object[] { s_turkishCompare, "interesting", "I", CompareOptions.None, false };
@@ -49,6 +52,7 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "\u00C0nimal", "a\u0300", CompareOptions.OrdinalIgnoreCase, false };
             yield return new object[] { s_invariantCompare, "FooBar", "Foo\u0400Bar", CompareOptions.Ordinal, false };
             yield return new object[] { s_invariantCompare, "FooBA\u0300R", "FooB\u00C0R", CompareOptions.IgnoreNonSpace, true };
+            yield return new object[] { s_invariantCompare, "o\u0308", "o", CompareOptions.None, false };
 
             // Ignore symbols
             yield return new object[] { s_invariantCompare, "Test's can be interesting", "Tests", CompareOptions.IgnoreSymbols, true };
