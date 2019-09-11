@@ -79,13 +79,18 @@ namespace System.Text.Json
             return idx;
         }
 
-        public static int NeedsEscaping(ReadOnlySpan<char> value, JavaScriptEncoder encoder)
+        public static unsafe int NeedsEscaping(ReadOnlySpan<char> value, JavaScriptEncoder encoder)
         {
             int idx;
 
-            if (encoder != null)
+            // Some implementations of JavascriptEncoder.FindFirstCharacterToEncode may not accept
+            // null pointers and gaurd against that. Hence, check up-front and fall down to return -1.
+            if (encoder != null && !value.IsEmpty)
             {
-                idx = encoder.FindFirstCharacterToEncodeUtf8(MemoryMarshal.Cast<char, byte>(value));
+                fixed (char* ptr = value)
+                {
+                    idx = encoder.FindFirstCharacterToEncode(ptr, value.Length);
+                }
                 goto Return;
             }
 
