@@ -12,6 +12,7 @@ namespace System.Globalization.Tests
         private static CompareInfo s_invariantCompare = CultureInfo.InvariantCulture.CompareInfo;
         private static CompareInfo s_hungarianCompare = new CultureInfo("hu-HU").CompareInfo;
         private static CompareInfo s_turkishCompare = new CultureInfo("tr-TR").CompareInfo;
+        private static CompareInfo s_frenchCompare = new CultureInfo("fr-FR").CompareInfo;
 
         public static IEnumerable<object[]> IsPrefix_TestData()
         {
@@ -55,6 +56,8 @@ namespace System.Globalization.Tests
 
             // Platform differences
             yield return new object[] { s_hungarianCompare, "dzsdzsfoobar", "ddzsf", CompareOptions.None, PlatformDetection.IsWindows ? true : false };
+            yield return new object[] { s_invariantCompare, "''Tests", "Tests", CompareOptions.IgnoreSymbols, PlatformDetection.IsWindows ? true : false };
+            yield return new object[] { s_frenchCompare, "\u0153", "oe", CompareOptions.None, PlatformDetection.IsWindows ? true : false };
         }
 
         [Theory]
