@@ -9,6 +9,7 @@ parameters:
   crossrootfsDir: ''
   corefxTests: false
   readyToRun: false
+  stagedBuild: false
 
   # arcade-specific parameters
   condition: ''
@@ -32,6 +33,7 @@ jobs:
     helixType: ${{ parameters.helixType }}
     container: ${{ parameters.container }}
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
+    stagedBuild: ${{ parameters.stagedBuild }}
   
     # arcade-specific parameters
     condition: ${{ parameters.condition }}

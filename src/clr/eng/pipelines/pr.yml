@@ -9,6 +9,11 @@ pr:
 
 jobs:
 #
+# Checkout repository
+#
+- template: /eng/checkout-job.yml
+
+#
 # Debug builds
 #
 - template: /eng/platform-matrix.yml

@@ -7,6 +7,7 @@ parameters:
   helixType: '(unspecified)'
   container: ''
   crossrootfsDir: ''
+  stagedBuild: false
 
   # arcade-specific parameters
   condition: ''
@@ -27,7 +28,15 @@ jobs:
     displayName: ${{ parameters.displayName }}
 
     condition: ${{ parameters.condition }}
-    dependsOn: ${{ parameters.dependsOn }}
+    dependsOn:
+      - ${{ if ne(parameters.stagedBuild, true) }}:
+        - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+          - 'checkout_windows'
+        - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+          - 'checkout_unix'
+      - ${{ if ne(parameters.dependsOn, '') }}:
+        - ${{ parameters.dependsOn }}
+
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     continueOnError: ${{ parameters.continueOnError }}
 
@@ -151,4 +160,22 @@ jobs:
     - ${{ each variable in parameters.variables }}:
       - ${{insert}}: ${{ variable }}
 
-    steps: ${{ parameters.steps }}
+    steps:
+    - checkout: none
+      clean: true
+
+    # Download the GIT repository
+    - template: /eng/download-artifact-step.yml
+      parameters:
+        displayName: 'GIT repository'
+        downloadFolder: $(Build.SourcesDirectory)/download/
+        cleanUnpackFolder: false
+        unpackFolder: $(Build.SourcesDirectory)
+        ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+          artifactFileName: repo_windows.zip
+          artifactName: repo_windows
+        ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+          artifactFileName: repo_unix.tar.gz
+          artifactName: repo_unix
+
+    - ${{ parameters.steps }}

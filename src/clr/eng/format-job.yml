@@ -6,6 +6,7 @@ parameters:
   container: ''
   crossrootfsDir: ''
   timeoutInMinutes: ''
+  stagedBuild: false
 
 ### Format job
 jobs:
@@ -17,6 +18,7 @@ jobs:
     osSubgroup: ${{ parameters.osSubgroup }}
     container: ${{ parameters.container }}
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
+    stagedBuild: ${{ parameters.stagedBuild }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     name: ${{ format('format_{0}{1}_{2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
     displayName: ${{ format('Formatting {0}{1} {2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}

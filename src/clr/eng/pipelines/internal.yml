@@ -27,7 +27,16 @@ variables:
   value: CORECLR
 
 stages:
+  - stage: checkout
+    displayName: GIT Checkout
+    jobs:
+    #
+    # Checkout repository
+    #
+    - template: /eng/checkout-job.yml
+
   - stage: build
+    displayName: Build
     jobs:
     #
     # Release builds
@@ -37,6 +46,7 @@ stages:
         jobTemplate: build-job.yml
         buildConfig: release
         platformGroup: all
+        stagedBuild: true
         jobParameters:
           # Publishing packages to blob feeds sometimes takes a long time
           # due to waiting for an exclusive lock on the feed.
@@ -86,7 +96,7 @@ stages:
         buildConfig: release
         platformGroup: all
         helixQueueGroup: all
-        ignoreDependencyOnBuildJobs: true
+        stagedBuild: true
         jobParameters:
           testGroup: outerloop
           condition: ne(variables['_BypassTesting'], 'true')
@@ -100,7 +110,7 @@ stages:
         buildConfig: release
         platformGroup: all
         helixQueueGroup: all
-        ignoreDependencyOnBuildJobs: true
+        stagedBuild: true
         jobParameters:
           testGroup: outerloop
           readyToRun: true
