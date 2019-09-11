@@ -35,11 +35,11 @@ using Mono.Cecil.Cil;
 
 namespace Mono.Linker.Steps {
 
-	public class SweepStep : BaseStep {
-
+	public class SweepStep : BaseStep
+	{
 		AssemblyDefinition [] assemblies;
-		HashSet<AssemblyDefinition> resolvedTypeReferences;
 		readonly bool sweepSymbols;
+		readonly HashSet<AssemblyDefinition> BypassNGenToSave = new HashSet<AssemblyDefinition> ();
 
 		public SweepStep (bool sweepSymbols = true)
 		{
@@ -49,61 +49,68 @@ namespace Mono.Linker.Steps {
 		protected override void Process ()
 		{
 			assemblies = Context.Annotations.GetAssemblies ().ToArray ();
+
+			foreach (var assembly in assemblies) {
+				RemoveUnusedAssembly (assembly);
+			}
+
 			foreach (var assembly in assemblies) {
 				ProcessAssemblyAction (assembly);
-				if ((Annotations.GetAction (assembly) == AssemblyAction.Copy) &&
-					!Context.KeepTypeForwarderOnlyAssemblies) {
-						// Copy assemblies can still contain Type references with
-						// type forwarders from Delete assemblies
-						// thus try to resolve all the type references and see
-						// if some changed the scope. if yes change the action to Save
-						if (ResolveAllTypeReferences (assembly))
-							Annotations.SetAction (assembly, AssemblyAction.Save);
-				}
+			}
+		}
 
-				AssemblyAction currentAction = Annotations.GetAction (assembly);
+		void RemoveUnusedAssembly (AssemblyDefinition assembly)
+		{
+			switch (Annotations.GetAction (assembly)) {
+			case AssemblyAction.AddBypassNGenUsed:
+			case AssemblyAction.CopyUsed:
+			case AssemblyAction.Link:
+				if (!IsUsedAssembly (assembly))
+					RemoveAssembly (assembly);
 
-				if ((currentAction == AssemblyAction.Link) || (currentAction == AssemblyAction.Save)) {
-					// if we save (only or by linking) then unmarked exports (e.g. forwarders) must be cleaned
-					// or they can point to nothing which will break later (e.g. when re-loading for stripping IL)
-					// reference: https://bugzilla.xamarin.com/show_bug.cgi?id=36577
-					if (assembly.MainModule.HasExportedTypes)
-						SweepCollectionNonAttributable (assembly.MainModule.ExportedTypes);
-				}
+				break;
 			}
 		}
 
 		protected void ProcessAssemblyAction (AssemblyDefinition assembly)
 		{
 			switch (Annotations.GetAction (assembly)) {
-				case AssemblyAction.Link:
-					if (!IsMarkedAssembly (assembly)) {
-						RemoveAssembly (assembly);
-						return;
-					}
-					break;
+			case AssemblyAction.AddBypassNGenUsed:
+				Annotations.SetAction (assembly, AssemblyAction.AddBypassNGen);
+				goto case AssemblyAction.AddBypassNGen;
 
-				case AssemblyAction.AddBypassNGenUsed:
-					if (!IsMarkedAssembly (assembly)) {
-						RemoveAssembly (assembly);
-					} else {
-						Annotations.SetAction (assembly, AssemblyAction.AddBypassNGen);
-					}
-					return;
+			case AssemblyAction.AddBypassNGen:
+				// FIXME: AddBypassNGen is just wrong, it should not be action as we need to
+				// turn it to Action.Save here to e.g. correctly update debug symbols
+				if (!Context.KeepTypeForwarderOnlyAssemblies || BypassNGenToSave.Contains (assembly)) {
+					goto case AssemblyAction.Save;
+				}
 
-				case AssemblyAction.CopyUsed:
-					if (!IsMarkedAssembly (assembly)) {
-						RemoveAssembly (assembly);
-					} else {
-						Annotations.SetAction (assembly, AssemblyAction.Copy);
-					}
-					return;
+				break;
 
-				default:
-					return;
+			case AssemblyAction.CopyUsed:
+				Annotations.SetAction (assembly, AssemblyAction.Copy);
+				goto case AssemblyAction.Copy;
+
+			case AssemblyAction.Copy:
+				// Copy assemblies can still contain Type references with
+				// type forwarders from Delete assemblies
+				// thus try to resolve all the type references and see
+				// if some changed the scope. if yes change the action to Save
+				if (!Context.KeepTypeForwarderOnlyAssemblies && SweepTypeForwarders (assembly)) {
+					Annotations.SetAction (assembly, AssemblyAction.Save);
+				}
+
+				break;
+
+			case AssemblyAction.Link:
+				SweepAssembly (assembly);
+				break;
+
+			case AssemblyAction.Save:
+				SweepTypeForwarders (assembly);
+				break;
 			}
-			
-			SweepAssembly (assembly);
 		}
 
 		protected virtual void SweepAssembly (AssemblyDefinition assembly)
@@ -132,6 +139,19 @@ namespace Mono.Linker.Steps {
 
 			foreach (var module in assembly.Modules)
 				SweepCustomAttributes (module);
+
+			SweepTypeForwarders (assembly);
+		}
+
+		bool IsUsedAssembly (AssemblyDefinition assembly)
+		{
+			if (IsMarkedAssembly (assembly))
+				return true;
+
+			if (assembly.MainModule.HasExportedTypes && Context.KeepTypeForwarderOnlyAssemblies)
+				return true;
+
+			return false;
 		}
 
 		bool IsMarkedAssembly (AssemblyDefinition assembly)
@@ -143,7 +163,15 @@ namespace Mono.Linker.Steps {
 		{
 			Annotations.SetAction (assembly, AssemblyAction.Delete);
 
-			SweepReferences (assembly);
+			foreach (var a in assemblies) {
+				switch (Annotations.GetAction (a)) {
+				case AssemblyAction.Skip:
+				case AssemblyAction.Delete:
+					continue;
+				}
+
+				SweepReferences (a, assembly);
+			}
 		}
 
 		void SweepResources (AssemblyDefinition assembly)
@@ -163,115 +191,117 @@ namespace Mono.Linker.Steps {
 			}
 		}
 
-		void SweepReferences (AssemblyDefinition target)
+		void SweepReferences (AssemblyDefinition assembly, AssemblyDefinition referenceToRemove)
 		{
-			foreach (var assembly in assemblies)
-				SweepReferences (assembly, target);
-		}
-
-		void SweepReferences (AssemblyDefinition assembly, AssemblyDefinition target)
-		{
-			if (assembly == target)
+			if (assembly == referenceToRemove)
 				return;
+
+			bool reference_removed = false;
 
 			var references = assembly.MainModule.AssemblyReferences;
 			for (int i = 0; i < references.Count; i++) {
 				var reference = references [i];
-				AssemblyDefinition r = Context.Resolver.Resolve (reference);
-				if (r == null)
-					continue;
-				if (!AreSameReference (r.Name, target.Name))
+
+				AssemblyDefinition ad = Context.Resolver.Resolve (reference);
+				if (ad == null || !AreSameReference (ad.Name, referenceToRemove.Name))
 					continue;
 
 				ReferenceRemoved (assembly, reference);
-				// removal from `references` requires an adjustment to `i`
 				references.RemoveAt (i--);
-				// Removing the reference does not mean it will be saved back to disk!
-				// That depends on the AssemblyAction set for the `assembly`
+				reference_removed = true;
+			}
+
+			if (reference_removed) {
 				switch (Annotations.GetAction (assembly)) {
+				case AssemblyAction.CopyUsed:
+					if (IsUsedAssembly (assembly)) {
+						goto case AssemblyAction.Copy;
+					}
+					break;
+
 				case AssemblyAction.Copy:
 					// We need to save the assembly if a reference was removed, otherwise we can end up
 					// with an assembly that references an assembly that no longer exists
 					Annotations.SetAction (assembly, AssemblyAction.Save);
-					// Copy means even if "unlinked" we still want that assembly to be saved back 
-					// to disk (OutputStep) without the (removed) reference
-					if (!Context.KeepTypeForwarderOnlyAssemblies) {
-						ResolveAllTypeReferences (assembly);
-					}
 					break;
 
-				case AssemblyAction.CopyUsed:
-					if (IsMarkedAssembly (assembly) && !Context.KeepTypeForwarderOnlyAssemblies) {
-						Annotations.SetAction (assembly, AssemblyAction.Save);
-						ResolveAllTypeReferences (assembly);
-					}
-					break;
-
-				case AssemblyAction.Save:
-				case AssemblyAction.Link:
-				case AssemblyAction.AddBypassNGen:
 				case AssemblyAction.AddBypassNGenUsed:
-					if (!Context.KeepTypeForwarderOnlyAssemblies) {
-						ResolveAllTypeReferences (assembly);
+					if (IsUsedAssembly (assembly)) {
+						Annotations.SetAction (assembly, AssemblyAction.AddBypassNGen);
+						goto case AssemblyAction.AddBypassNGen;
 					}
+					break;
+
+				case AssemblyAction.AddBypassNGen:
+					BypassNGenToSave.Add (assembly);
 					break;
 				}
 			}
 		}
 
-		bool ResolveAllTypeReferences (AssemblyDefinition assembly)
+		bool SweepTypeForwarders (AssemblyDefinition assembly)
 		{
-			if (resolvedTypeReferences == null)
-				resolvedTypeReferences = new HashSet<AssemblyDefinition> ();
-			if (resolvedTypeReferences.Contains (assembly))
-				return false;
-			resolvedTypeReferences.Add (assembly);
+			bool any_change = false;
 
-			var hash = new Dictionary<TypeReference,IMetadataScope> ();
-			bool changes = false;
+			// if we save (only or by linking) then unmarked exports (e.g. forwarders) must be cleaned
+			// or they can point to nothing which will break later (e.g. when re-loading for stripping IL)
+			// reference: https://bugzilla.xamarin.com/show_bug.cgi?id=36577
+			if (assembly.MainModule.HasExportedTypes) {
+
+				// TODO: This sweeps only type forwarders of types which are not marked. The types
+				// which are have their type forwarders keept even if they are unused
+				any_change = SweepCollectionMetadata (assembly.MainModule.ExportedTypes);
+			}
+
+			any_change |= UpdateForwardedTypesScope (assembly);
+			return any_change;
+		}
+
+		bool UpdateForwardedTypesScope (AssemblyDefinition assembly)
+		{
+			var changed_types = new Dictionary<TypeReference, IMetadataScope> ();
 
 			foreach (TypeReference tr in assembly.MainModule.GetTypeReferences ()) {
-				if (hash.ContainsKey (tr))
-					continue;
 				if (tr.IsWindowsRuntimeProjection)
 					continue;
+
 				var td = tr.Resolve ();
-				IMetadataScope scope = tr.Scope;
 				// at this stage reference might include things that can't be resolved
 				// and if it is (resolved) it needs to be kept only if marked (#16213)
-				if ((td != null) && Annotations.IsMarked (td)) {
-					scope = assembly.MainModule.ImportReference (td).Scope;
-					if (tr.Scope != scope)
-						changes = true;
-					hash.Add (tr, scope);
-				}
-			}
-			if (assembly.MainModule.HasExportedTypes) {
-				foreach (var et in assembly.MainModule.ExportedTypes) {
-					var td = et.Resolve ();
-					IMetadataScope scope = et.Scope;
-					if ((td != null) && Annotations.IsMarked (td)) {
-						scope = assembly.MainModule.ImportReference (td).Scope;
-						et.Scope = scope;
-					}
-				}
+				if (td == null || !Annotations.IsMarked (td))
+					continue;
+
+				IMetadataScope scope = assembly.MainModule.ImportReference (td).Scope;
+				if (tr.Scope != scope)
+					changed_types.Add (tr, scope);
 			}
 
-			// Resolve everything first before updating scopes.
+			//
+			// Resolved everything first before updating scopes.
 			// If we set the scope to null, then calling Resolve() on any of its
 			// nested types would crash.
-
-			foreach (var e in hash) {
+			//
+			foreach (var e in changed_types) {
 				e.Key.Scope = e.Value;
 			}
 
-			return changes;
+			if (assembly.MainModule.HasExportedTypes) {
+				foreach (var et in assembly.MainModule.ExportedTypes) {
+					var td = et.Resolve ();
+					if (td == null)
+						continue;
+
+					et.Scope = assembly.MainModule.ImportReference (td).Scope;
+				}
+			}
+
+			return changed_types.Count != 0;
 		}
 
 		protected virtual void SweepType (TypeDefinition type)
 		{
 			if (type.HasFields)
-				SweepCollection (type.Fields);
+				SweepCollectionWithCustomAttributes (type.Fields);
 
 			if (type.HasMethods)
 				SweepMethods (type.Methods);
@@ -398,7 +428,7 @@ namespace Mono.Linker.Steps {
 
 		protected virtual void SweepMethods (Collection<MethodDefinition> methods)
 		{
-			SweepCollection (methods);
+			SweepCollectionWithCustomAttributes (methods);
 			if (sweepSymbols)
 				SweepDebugInfo (methods);
 
@@ -461,7 +491,7 @@ namespace Mono.Linker.Steps {
 			}
 		}
 
-		protected void SweepCollection (IList<MethodDefinition> list)
+		protected void SweepCollectionWithCustomAttributes<T> (IList<T> list) where T : ICustomAttributeProvider
 		{
 			for (int i = 0; i < list.Count; i++)
 				if (ShouldRemove (list [i])) {
@@ -472,24 +502,19 @@ namespace Mono.Linker.Steps {
 				}
 		}
 
-		protected void SweepCollection<T> (IList<T> list) where T : ICustomAttributeProvider
+		protected bool SweepCollectionMetadata<T> (IList<T> list) where T : IMetadataTokenProvider
 		{
-			for (int i = 0; i < list.Count; i++)
-				if (ShouldRemove (list [i])) {
-					ElementRemoved (list [i]);
-					list.RemoveAt (i--);
-				} else {
-					SweepCustomAttributes (list [i]);
-				}
-		}
+			bool removed = false;
 
-		protected void SweepCollectionNonAttributable<T> (IList<T> list) where T : IMetadataTokenProvider
-		{
-			for (int i = 0; i < list.Count; i++)
+			for (int i = 0; i < list.Count; i++) {
 				if (ShouldRemove (list [i])) {
 					ElementRemoved (list [i]);
 					list.RemoveAt (i--);
+					removed = true;
 				}
+			}
+
+			return removed;
 		}
 
 		protected virtual bool ShouldRemove<T> (T element) where T : IMetadataTokenProvider

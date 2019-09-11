@@ -21,6 +21,7 @@
     <Compile Remove="Attributes\OnlyKeepUsed\Dependencies\UnusedAttributeWithTypeForwarderIsRemoved_Forwarder.cs" />
     <Compile Remove="LinkXml\Dependencies\CanPreserveAnExportedType_Forwarder.cs" />
     <Compile Remove="TypeForwarding\Dependencies\ForwarderLibrary.cs" />
+    <Compile Remove="TypeForwarding\Dependencies\ForwarderLibrary_2.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Attributes\OnlyKeepUsed\Dependencies\UnusedAttributeWithTypeForwarderIsRemoved_Forwarder.cs" />
