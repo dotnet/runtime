@@ -37,6 +37,7 @@ Project Docs
 - [Public Signing](project-docs/public-signing.md)
 - [Repo Organization](project-docs/repo-organization.md)
 - [Project NuGet Dependencies](https://github.com/dotnet/buildtools/blob/master/Documentation/project-nuget-dependencies.md)
+- [Profiling CoreFX](https://github.com/dotnet/performance/blob/master/docs/profiling-workflow-corefx.md)
 
 Coding Guidelines
 =================
