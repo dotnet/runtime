@@ -57,6 +57,128 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
+        public static void WritingNullStringsWithCustomEscaping()
+        {
+            var writerOptions = new JsonWriterOptions();
+            WriteNullStringsHelper(writerOptions);
+
+            writerOptions = new JsonWriterOptions { Encoder = JavaScriptEncoder.Default };
+            WriteNullStringsHelper(writerOptions);
+
+            writerOptions = new JsonWriterOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+            WriteNullStringsHelper(writerOptions);
+        }
+
+        [Fact]
+        public static void WritingNullStringsWithBuggyJavascriptEncoder()
+        {
+            var writerOptions = new JsonWriterOptions { Encoder = new BuggyJavaScriptEncoder() };
+            WriteNullStringsHelper(writerOptions);
+        }
+
+        private static void WriteNullStringsHelper(JsonWriterOptions writerOptions)
+        {
+            var output = new ArrayBufferWriter<byte>();
+            string str = null;
+
+            using (var writer = new Utf8JsonWriter(output, writerOptions))
+            {
+                writer.WriteStringValue(str);
+            }
+            JsonTestHelper.AssertContents("null", output);
+
+            output.Clear();
+            using (var writer = new Utf8JsonWriter(output, writerOptions))
+            {
+                writer.WriteStringValue(str.AsSpan());
+            }
+            JsonTestHelper.AssertContents("\"\"", output);
+
+            byte[] utf8Str = null;
+            output.Clear();
+            using (var writer = new Utf8JsonWriter(output, writerOptions))
+            {
+                writer.WriteStringValue(utf8Str.AsSpan());
+            }
+            JsonTestHelper.AssertContents("\"\"", output);
+
+            JsonEncodedText jsonText = JsonEncodedText.Encode(utf8Str.AsSpan());
+            output.Clear();
+            using (var writer = new Utf8JsonWriter(output, writerOptions))
+            {
+                writer.WriteStringValue(jsonText);
+            }
+            JsonTestHelper.AssertContents("\"\"", output);
+        }
+
+        public class BuggyJavaScriptEncoder : JavaScriptEncoder
+        {
+            public override int MaxOutputCharactersPerInputCharacter => throw new NotImplementedException();
+
+            public override unsafe int FindFirstCharacterToEncode(char* text, int textLength)
+            {
+                // Access the text pointer even though it might be null and text length is 0.
+                return *text;
+            }
+
+            public override unsafe bool TryEncodeUnicodeScalar(int unicodeScalar, char* buffer, int bufferLength, out int numberOfCharactersWritten)
+            {
+                numberOfCharactersWritten = 0;
+                return false;
+            }
+
+            public override bool WillEncode(int unicodeScalar) => false;
+        }
+
+        [Fact]
+        public static void WritingStringsWithCustomEscaping()
+        {
+            var output = new ArrayBufferWriter<byte>();
+            var writerOptions = new JsonWriterOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+
+            using (var writer = new Utf8JsonWriter(output))
+            {
+                writer.WriteStringValue("\u6D4B\u8A6611");
+            }
+            JsonTestHelper.AssertContents("\"\\u6D4B\\u8A6611\"", output);
+
+            output.Clear();
+            using (var writer = new Utf8JsonWriter(output, writerOptions))
+            {
+                writer.WriteStringValue("\u6D4B\u8A6611");
+            }
+            JsonTestHelper.AssertContents("\"\u6D4B\u8A6611\"", output);
+
+            output.Clear();
+            using (var writer = new Utf8JsonWriter(output))
+            {
+                writer.WriteStringValue("\u00E9\"");
+            }
+            JsonTestHelper.AssertContents("\"\\u00E9\\u0022\"", output);
+
+            output.Clear();
+            using (var writer = new Utf8JsonWriter(output, writerOptions))
+            {
+                writer.WriteStringValue("\u00E9\"");
+            }
+            JsonTestHelper.AssertContents("\"\u00E9\\\"\"", output);
+
+            output.Clear();
+            using (var writer = new Utf8JsonWriter(output))
+            {
+                writer.WriteStringValue("\u2020\"");
+            }
+            JsonTestHelper.AssertContents("\"\\u2020\\u0022\"", output);
+
+            output.Clear();
+            using (var writer = new Utf8JsonWriter(output, writerOptions))
+            {
+                writer.WriteStringValue("\u2020\"");
+            }
+            JsonTestHelper.AssertContents("\"\u2020\\\"\"", output);
+        }
+
+        [Fact]
         public void WriteJsonWritesToIBWOnDemand_Dispose()
         {
             var output = new ArrayBufferWriter<byte>();
