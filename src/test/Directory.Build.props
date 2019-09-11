@@ -4,6 +4,7 @@
   <PropertyGroup>
     <TestDir>$(ProjectDir)src\test\</TestDir>
     <TestAssetsDir>$(TestDir)Assets\</TestAssetsDir>
+    <TestStabilizedLegacyPackagesDir>$(ObjDir)TestStabilizedPackages\</TestStabilizedLegacyPackagesDir>
     <TestRestorePackagesPath>$(ObjDir)TestPackageCache\</TestRestorePackagesPath>
     <TestArchitectures>$(TargetArchitecture)</TestArchitectures>
     <TestInfraTargetFramework>netcoreapp3.0</TestInfraTargetFramework>
