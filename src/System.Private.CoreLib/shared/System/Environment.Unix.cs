@@ -444,5 +444,24 @@ namespace System
             }
             return (int)result;
         }
+
+        public static long WorkingSet
+        {
+            get
+            {
+                Type? processType = Type.GetType("System.Diagnostics.Process, System.Diagnostics.Process, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
+                if (processType?.GetMethod("GetCurrentProcess")?.Invoke(null, BindingFlags.DoNotWrapExceptions, null, null, null) is IDisposable currentProcess)
+                {
+                    using (currentProcess)
+                    {
+                        object? result = processType!.GetMethod("get_WorkingSet64")?.Invoke(currentProcess, BindingFlags.DoNotWrapExceptions, null, null, null);
+                        if (result is long) return (long)result;
+                    }
+                }
+
+                // Could not get the current working set.
+                return 0;
+            }
+        }
     }
 }
