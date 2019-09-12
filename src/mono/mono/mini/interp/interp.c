@@ -207,7 +207,7 @@ int mono_interp_traceopt = 0;
 
 #endif
 
-#if defined(__GNUC__) && !defined(TARGET_WASM) && !COUNT_OPS
+#if defined(__GNUC__) && !defined(TARGET_WASM) && !COUNT_OPS && !DEBUG_INTERP
 #define USE_COMPUTED_GOTO 1
 #endif
 
