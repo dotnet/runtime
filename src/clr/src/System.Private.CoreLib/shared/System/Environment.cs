@@ -153,29 +153,6 @@ namespace System
             }
         }
 
-        public static long WorkingSet
-        {
-            get
-            {
-                // Use reflection to access the implementation in System.Diagnostics.Process.dll.  While far from ideal,
-                // we do this to avoid duplicating the Windows, Linux, macOS, and potentially other platform-specific implementations
-                // present in Process.  If it proves important, we could look at separating that functionality out of Process into
-                // Common files which could also be included here.
-                Type? processType = Type.GetType("System.Diagnostics.Process, System.Diagnostics.Process, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
-                if (processType?.GetMethod("GetCurrentProcess")?.Invoke(null, BindingFlags.DoNotWrapExceptions, null, null, null) is IDisposable currentProcess)
-                {
-                    using (currentProcess)
-                    {
-                        object? result = processType!.GetMethod("get_WorkingSet64")?.Invoke(currentProcess, BindingFlags.DoNotWrapExceptions, null, null, null);
-                        if (result is long) return (long)result;
-                    }
-                }
-
-                // Could not get the current working set.
-                return 0;
-            }
-        }
-
         private static bool ValidateAndConvertRegistryTarget(EnvironmentVariableTarget target)
         {
             Debug.Assert(target != EnvironmentVariableTarget.Process);
