@@ -11,6 +11,11 @@ using Xunit.Abstractions;
 
 namespace System.Net.Sockets.Tests
 {
+
+    // Define test collection for tests to avoid all other tests.
+    [CollectionDefinition("NoParallelTests", DisableParallelization = true)]
+    public partial class NoParallelTests { }
+
     // Abstract base class for various different socket "modes" (sync, async, etc)
     // See SendReceive.cs for usage
     public abstract class SocketHelperBase

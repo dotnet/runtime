@@ -420,32 +420,6 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
-        public void BindDuringTcpWait_Succeeds()
-        {
-            int port = 0;
-            using (Socket a = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                a.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-                port = (a.LocalEndPoint as IPEndPoint).Port;
-                a.Listen(10);
-
-                // Connect a client
-                using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-                {
-                    client.Connect(new IPEndPoint(IPAddress.Loopback, port));
-                    // accept socket and close it with zero linger time.
-                    a.Accept().Close(0);
-                }
-            }
-
-            // Bind a socket to the same address we just used.
-            using (Socket b = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                b.Bind(new IPEndPoint(IPAddress.Loopback, port));
-            }
-        }
-
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
         public void ExclusiveAddressUseTcp()
         {
@@ -545,6 +519,38 @@ namespace System.Net.Sockets.Tests
             using (var socket = new Socket(family, SocketType.Stream, ProtocolType.Tcp))
             {
                 AssertExtensions.Throws<ArgumentException>("level", () => socket.SetIPProtectionLevel(IPProtectionLevel.Unspecified));
+            }
+        }
+    }
+
+    [Collection("NoParallelTests")]
+    // Set of tests to not run  together with any other tests.
+    public partial class NoParallelTests
+    {
+        [Fact]
+        public void BindDuringTcpWait_Succeeds()
+        {
+            int port = 0;
+            using (Socket a = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                a.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                port = (a.LocalEndPoint as IPEndPoint).Port;
+                a.Listen(10);
+
+                // Connect a client
+                using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                {
+                    client.Connect(new IPEndPoint(IPAddress.Loopback, port));
+                    // accept socket and close it with zero linger time.
+                    a.Accept().Close(0);
+                }
+            }
+
+            // Bind a socket to the same address we just used.
+            // To avoid conflict with other tests, this is part of the NoParallelTests test collection.
+            using (Socket b = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                b.Bind(new IPEndPoint(IPAddress.Loopback, port));
             }
         }
     }
