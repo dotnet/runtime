@@ -207,25 +207,26 @@ int mono_interp_traceopt = 0;
 
 #endif
 
-#if defined(__GNUC__) && !defined(TARGET_WASM)
+#if defined(__GNUC__) && !defined(TARGET_WASM) && !COUNT_OPS
 #define USE_COMPUTED_GOTO 1
 #endif
+
 #if USE_COMPUTED_GOTO
-#define MINT_IN_SWITCH(op) COUNT_OP(op); goto *in_labels[op];
+
+#define MINT_IN_SWITCH(op) goto *in_labels[op];
 #define MINT_IN_CASE(x) LAB_ ## x:
 #define MINT_IN_DISPATCH(op) goto *in_labels[op];
-#if DEBUG_INTERP
-#define MINT_IN_BREAK if (tracing > 1) { MINT_IN_DISPATCH(*ip); } else { COUNT_OP(*ip); goto *in_labels[*ip]; }
-#else
-#define MINT_IN_BREAK { COUNT_OP(*ip); goto *in_labels[*ip]; }
-#endif
+#define MINT_IN_BREAK { goto *in_labels[*ip]; }
 #define MINT_IN_DEFAULT mint_default: if (0) goto mint_default; /* make gcc shut up */
+
 #else
-#define MINT_IN_SWITCH(op) switch (op)
+
+#define MINT_IN_SWITCH(op) COUNT_OP(op); switch (op)
 #define MINT_IN_CASE(x) case x:
 #define MINT_IN_DISPATCH(op) goto main_loop;
 #define MINT_IN_BREAK break
 #define MINT_IN_DEFAULT default:
+
 #endif
 
 static GSList*
@@ -2834,7 +2835,7 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 }
 
 #if COUNT_OPS
-static int opcode_counts[512];
+static long opcode_counts[MINT_LASTOP];
 
 #define COUNT_OP(op) opcode_counts[op]++
 #else
@@ -6947,6 +6948,46 @@ static void
 interp_stop_single_stepping (void)
 {
 	ss_enabled = FALSE;
+}
+
+#if COUNT_OPS
+
+static int
+opcode_count_comparer (const void * pa, const void * pb)
+{
+	long counta = opcode_counts [*(int*)pa];
+	long countb = opcode_counts [*(int*)pb];
+
+	if (counta < countb)
+		return 1;
+	else if (counta > countb)
+		return -1;
+	else
+		return 0;
+}
+
+static void
+interp_print_op_count (void)
+{
+	int ordered_ops [MINT_LASTOP];
+	int i;
+
+	for (i = 0; i < MINT_LASTOP; i++)
+		ordered_ops [i] = i;
+	qsort (ordered_ops, MINT_LASTOP, sizeof (int), opcode_count_comparer);
+
+	for (i = 0; i < MINT_LASTOP; i++) {
+		g_print ("%s : %ld\n", mono_interp_opname (ordered_ops [i]), opcode_counts [ordered_ops [i]]);
+	}
+}
+#endif
+
+static void
+interp_cleanup (void)
+{
+#if COUNT_OPS
+	interp_print_op_count ();
+#endif
 }
 
 static void

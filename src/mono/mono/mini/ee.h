@@ -57,6 +57,7 @@ typedef gpointer MonoInterpFrameHandle;
 	MONO_EE_CALLBACK (MonoInterpFrameHandle, frame_get_parent, (MonoInterpFrameHandle frame)) \
 	MONO_EE_CALLBACK (void, start_single_stepping, (void)) \
 	MONO_EE_CALLBACK (void, stop_single_stepping, (void)) \
+	MONO_EE_CALLBACK (void, cleanup, (void)) \
 
 typedef struct _MonoEECallbacks {
 

@@ -4780,6 +4780,8 @@ mini_cleanup (MonoDomain *domain)
 
 	mini_jit_cleanup ();
 
+	mini_get_interp_callbacks ()->cleanup ();
+
 	mono_tramp_info_cleanup ();
 
 	mono_arch_cleanup ();
