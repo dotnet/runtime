@@ -3435,6 +3435,7 @@ main_loop:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_JMP) {
+			g_assert (sp == frame->stack);
 			InterpMethod *new_method = (InterpMethod*)frame->imethod->data_items [ip [1]];
 
 			if (frame->imethod->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_TAIL_CALL)
