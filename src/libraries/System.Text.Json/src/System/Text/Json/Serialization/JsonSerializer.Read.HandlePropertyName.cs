@@ -5,11 +5,14 @@
 using System.Buffers;
 using System.Collections;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.Json
 {
     public static partial class JsonSerializer
     {
+        // AggressiveInlining used although a large method it is only called from one locations and is on a hot path.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void HandlePropertyName(
             JsonSerializerOptions options,
             ref Utf8JsonReader reader,
@@ -52,7 +55,7 @@ namespace System.Text.Json
                 }
 
                 JsonPropertyInfo jsonPropertyInfo = state.Current.JsonClassInfo.GetProperty(propertyName, ref state.Current);
-                if (jsonPropertyInfo == null)
+                if (jsonPropertyInfo == JsonPropertyInfo.s_missingProperty)
                 {
                     JsonPropertyInfo dataExtProperty = state.Current.JsonClassInfo.DataExtensionProperty;
                     if (dataExtProperty == null)
@@ -94,9 +97,10 @@ namespace System.Text.Json
                             state.Current.JsonPropertyInfo.JsonPropertyName = propertyNameArray;
                         }
                     }
-
-                    state.Current.PropertyIndex++;
                 }
+
+                // Increment the PropertyIndex so JsonClassInfo.GetProperty() starts with the next property.
+                state.Current.PropertyIndex++;
             }
         }
 
