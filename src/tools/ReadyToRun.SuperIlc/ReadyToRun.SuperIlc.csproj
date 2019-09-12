@@ -1,19 +1,31 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(dir.props))" />
 
   <PropertyGroup>
+    <AssemblyName>ReadyToRun.SuperIlc</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
-    <NoWarn>$(NoWarn);NU1701</NoWarn>
-    <!-- Force C# 7.1 so we can use async Main -->
-    <LangVersion>latest</LangVersion>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <NoWarn>8002,NU1701</NoWarn>
+    <Platforms>x64;x86</Platforms>
+    <OutputPath>$(BinDir)\ReadyToRun.SuperIlc</OutputPath>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Build" Version="16.0.461" />
-    <PackageReference Include="Microsoft.Build.Framework" Version="16.0.461" />
-    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="2.0.38" />
-    <PackageReference Include="System.CommandLine.Experimental" Version="0.2.0-alpha.19174.3" />
-    <PackageReference Include="System.Reflection.Metadata" Version="1.6.0" />
+    <PackageReference Include="Microsoft.Build">
+      <Version>16.0.461</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Build.Framework">
+      <Version>16.0.461</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent">
+      <Version>2.0.38</Version>
+    </PackageReference>
+    <PackageReference Include="System.CommandLine.Experimental">
+      <Version>0.2.0-alpha.19174.3</Version>
+    </PackageReference>
+    <PackageReference Include="System.Reflection.Metadata">
+      <Version>1.6.0</Version>
+    </PackageReference>
   </ItemGroup>
-
 </Project>
