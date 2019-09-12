@@ -6298,7 +6298,7 @@ interp_cprop (TransformData *td)
 				if (ins->opcode - MINT_LDLOC_I1 == mt) {
 					if (mt == MINT_TYPE_I4)
 						replace_op = MINT_STLOC_NP_I4;
-					else if (mt == MINT_TYPE_O)
+					else if (mt == MINT_TYPE_O || mt == MINT_TYPE_P)
 						replace_op = MINT_STLOC_NP_O;
 					if (replace_op) {
 						if (td->verbose_level)
@@ -6306,6 +6306,7 @@ interp_cprop (TransformData *td)
 						interp_clear_ins (td, ins->prev);
 						ins->opcode = replace_op;
 						mono_interp_stats.killed_instructions++;
+						// FIXME We know what local is on the stack now. Track it
 					}
 				}
 			}
