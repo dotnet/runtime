@@ -229,7 +229,7 @@ int mono_interp_traceopt = 0;
 #endif
 
 static GSList*
-clear_resume_state (ThreadContext *context, InterpFrame *frame, GSList* finally_ips)
+clear_resume_state (ThreadContext *context, GSList *finally_ips)
 {
 	/* We have thrown an exception from a finally block. Some of the leave targets were unwound already */
 	while (finally_ips &&
@@ -1884,7 +1884,7 @@ interp_entry (InterpEntryData *data)
 }
 
 static stackval *
-do_icall (InterpFrame *frame, MonoMethodSignature *sig, int op, stackval *sp, gpointer ptr, gboolean save_last_error)
+do_icall (MonoMethodSignature *sig, int op, stackval *sp, gpointer ptr, gboolean save_last_error)
 {
 #ifdef ENABLE_NETCORE
 	if (save_last_error)
@@ -2012,7 +2012,7 @@ do_icall_wrapper (InterpFrame *frame, MonoMethodSignature *sig, int op, stackval
 	MonoLMFExt ext;
 	INTERP_PUSH_LMF_WITH_CTX (frame, ext, exit_icall);
 
-	sp = do_icall (frame, sig, op, sp, ptr, save_last_error);
+	sp = do_icall (sig, op, sp, ptr, save_last_error);
 
 	interp_pop_lmf (&ext);
 
@@ -6606,7 +6606,7 @@ resume:
 		sp->data.p = mono_gchandle_get_target_internal (context->exc_gchandle);
 		++sp;
 
-		finally_ips = clear_resume_state (context, frame, finally_ips);
+		finally_ips = clear_resume_state (context, finally_ips);
 		// goto main_loop instead of MINT_IN_DISPATCH helps the compiler and therefore conserves stack.
 		// This is a slow/rare path and conserving stack is preferred over its performance otherwise.
 		goto main_loop;
