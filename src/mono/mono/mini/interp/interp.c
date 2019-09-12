@@ -6971,13 +6971,17 @@ interp_print_op_count (void)
 {
 	int ordered_ops [MINT_LASTOP];
 	int i;
+	long total_ops = 0;
 
-	for (i = 0; i < MINT_LASTOP; i++)
+	for (i = 0; i < MINT_LASTOP; i++) {
 		ordered_ops [i] = i;
+		total_ops += opcode_counts [i];
+	}
 	qsort (ordered_ops, MINT_LASTOP, sizeof (int), opcode_count_comparer);
 
 	for (i = 0; i < MINT_LASTOP; i++) {
-		g_print ("%s : %ld\n", mono_interp_opname (ordered_ops [i]), opcode_counts [ordered_ops [i]]);
+		long count = opcode_counts [ordered_ops [i]];
+		g_print ("%s : %ld (%.2lf%%)\n", mono_interp_opname (ordered_ops [i]), count, (double)count / total_ops * 100);
 	}
 }
 #endif
