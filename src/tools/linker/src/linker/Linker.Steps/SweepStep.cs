@@ -298,6 +298,61 @@ namespace Mono.Linker.Steps {
 			return changed_types.Count != 0;
 		}
 
+		static void UpdateForwardedTypesScope (CustomAttribute attribute)
+		{
+			if (attribute.HasConstructorArguments) {
+				foreach (var ca in attribute.ConstructorArguments)
+					UpdateForwardedTypesScope (ca);
+			}
+
+			if (attribute.HasFields) {
+				foreach (var field in attribute.Fields)
+					UpdateForwardedTypesScope (field.Argument);
+			}
+
+			if (attribute.HasProperties) {
+				foreach (var property in attribute.Properties)
+					UpdateForwardedTypesScope (property.Argument);
+			}
+		}
+
+		static void UpdateForwardedTypesScope (CustomAttributeArgument attributeArgument)
+		{
+			UpdateTypeScope (attributeArgument.Type);
+
+			switch (attributeArgument.Value) {
+			case TypeReference tr:
+				UpdateTypeScope (tr);
+				break;
+			case CustomAttributeArgument caa:
+				UpdateForwardedTypesScope (caa);
+				break;
+			case CustomAttributeArgument[] array:
+				foreach (var item in array)
+					UpdateForwardedTypesScope (item);
+				break;
+			}
+		}
+
+		static void UpdateTypeScope (TypeReference type)
+		{
+			if (type is GenericInstanceType git && git.HasGenericArguments) {
+				UpdateTypeScope (git.ElementType);
+				foreach (var ga in git.GenericArguments)
+					UpdateTypeScope (ga);
+				return;
+			}
+
+			if (type is ArrayType at) {
+				UpdateTypeScope (at.ElementType);
+				return;
+			}
+
+			TypeDefinition td = type.Resolve ();
+			if (td != null)
+				type.Scope = td.Scope;
+		}
+
 		protected virtual void SweepType (TypeDefinition type)
 		{
 			if (type.HasFields)
@@ -410,7 +465,9 @@ namespace Mono.Linker.Steps {
 
 			for (int i = provider.CustomAttributes.Count - 1; i >= 0; i--) {
 				var attribute = provider.CustomAttributes [i];
-				if (!Annotations.IsMarked (attribute)) {
+				if (Annotations.IsMarked (attribute)) {
+					UpdateForwardedTypesScope (attribute);
+				} else {
 					CustomAttributeUsageRemoved (provider, attribute);
 					removed.Add (provider.CustomAttributes [i]);
 					provider.CustomAttributes.RemoveAt (i);
