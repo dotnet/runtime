@@ -19,17 +19,6 @@
     <NETCoreAppFrameworkVersion>$(MajorVersion).$(MinorVersion)</NETCoreAppFrameworkVersion>
     <NETCoreAppFramework>netcoreapp$(NETCoreAppFrameworkVersion)</NETCoreAppFramework>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(DotNetBuildOffline)' != 'true'">
-    <!-- list of nuget package sources passed to NuGet -->
-    <RestoreSources>
-      $(OverridePackageSource);
-      https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json;
-      https://dotnetfeed.blob.core.windows.net/dotnet-coreclr/index.json;
-      https://dotnetfeed.blob.core.windows.net/dotnet-windowsdesktop/index.json;
-      https://api.nuget.org/v3/index.json;
-      $(RestoreSources);
-    </RestoreSources>
-  </PropertyGroup>
   <PropertyGroup>
     <MicrosoftDotNetMaestroTasksVersion>1.0.0-beta.18619.4</MicrosoftDotNetMaestroTasksVersion>
   </PropertyGroup>
