@@ -770,7 +770,7 @@ namespace Mono.Linker.Steps {
 				switch (at.Name) {
 				case "Type":
 					MarkType (argument.Type);
-					MarkWithResolvedScope ((TypeReference)argument.Value);
+					MarkType ((TypeReference)argument.Value);
 					return;
 
 				case "Object":
@@ -780,34 +780,6 @@ namespace Mono.Linker.Steps {
 					return;
 				}
 			}
-		}
-
-		// custom attributes encoding means it's possible to have a scope that will point into a PCL facade
-		// even if we (just before saving) will resolve all type references (bug #26752)
-		void MarkWithResolvedScope (TypeReference type)
-		{
-			if (type == null)
-				return;
-
-			// a GenericInstanceType can could contains generic arguments with scope that
-			// needs to be updated out of the PCL facade (bug #28823)
-			var git = (type as GenericInstanceType);
-			if ((git != null) && git.HasGenericArguments) {
-				foreach (var ga in git.GenericArguments)
-					MarkWithResolvedScope (ga);
-			}
-			// we cannot set the Scope of a TypeSpecification but it's element type can be set
-			// e.g. System.String[] -> System.String
-			var ts = (type as TypeSpecification);
-			if (ts != null) {
-				MarkWithResolvedScope (ts.ElementType);
-				return;
-			}
-
-			var td = type.Resolve ();
-			if (td != null)
-				type.Scope = td.Scope;
-			MarkType (type);
 		}
 
 		protected bool CheckProcessed (IMetadataTokenProvider provider)
