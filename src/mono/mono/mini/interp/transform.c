@@ -1812,6 +1812,9 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 	prev_param_area = (StackInfo*)g_malloc (nargs * sizeof (StackInfo));
 	memcpy (prev_param_area, &td->sp [-nargs], nargs * sizeof (StackInfo));
 
+	int const prev_code_size = td->code_size;
+	td->code_size = header->code_size;
+
 	if (td->verbose_level)
 		g_print ("Inline start method %s.%s\n", m_class_get_name (target_method->klass), target_method->name);
 	ret = generate_code (td, target_method, header, generic_context, error);
@@ -1857,6 +1860,7 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 	td->in_start = prev_in_start;
 	td->il_code = prev_il_code;
 	td->inlined_method = prev_inlined_method;
+	td->code_size = prev_code_size;
 
 	g_free (td->in_offsets);
 	td->in_offsets = prev_in_offsets;
@@ -3282,7 +3286,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			PUSH_SIMPLE_TYPE(td, STACK_TYPE_I4);
 			break;
 		case CEE_LDC_I4_0:
-			if (!td->is_bb_start[td->ip + 1 - td->il_code] && td->ip [1] == 0xfe && td->ip [2] == CEE_CEQ && 
+			// Only single basic block functions are inlined.
+			if (td->ip - td->il_code + 2 < td->code_size && (inlining || !td->is_bb_start [td->ip + 1 - td->il_code]) && td->ip [1] == 0xfe && td->ip [2] == CEE_CEQ &&
 				td->sp > td->stack && td->sp [-1].type == STACK_TYPE_I4) {
 				SIMPLE_OP(td, MINT_CEQ0_I4);
 				td->ip += 2;
@@ -3292,7 +3297,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			}
 			break;
 		case CEE_LDC_I4_1:
-			if (!td->is_bb_start[td->ip + 1 - td->il_code] && 
+			// Only single basic block functions are inlined.
+			if (td->ip - td->il_code + 1 < td->code_size && (inlining || !td->is_bb_start [td->ip + 1 - td->il_code]) &&
 				(td->ip [1] == CEE_ADD || td->ip [1] == CEE_SUB) && td->sp [-1].type == STACK_TYPE_I4) {
 				interp_add_ins (td, td->ip [1] == CEE_ADD ? MINT_ADD1_I4 : MINT_SUB1_I4);
 				td->ip += 2;
@@ -5341,7 +5347,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			const unsigned char *next_ip = td->ip + 5;
 			MonoMethod *cmethod;
 			if (next_ip < end &&
-					!td->is_bb_start [next_ip - td->il_code] &&
+					(inlining || !td->is_bb_start [next_ip - td->il_code]) &&
 					(*next_ip == CEE_CALL || *next_ip == CEE_CALLVIRT) &&
 					(cmethod = mono_get_method_checked (image, read32 (next_ip + 1), NULL, generic_context, error)) &&
 					(cmethod->klass == mono_defaults.systemtype_class) &&
@@ -5391,8 +5397,13 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			td->sp = td->stack;
 			SIMPLE_OP (td, MINT_ENDFINALLY);
 			td->last_ins->data [0] = td->clause_indexes [in_offset];
-			// next instructions are always part of new bb
-			td->is_bb_start [td->ip - header->code] = 1;
+			// next instructions, if they exist, are always part of new bb
+			// endfinally can be the last instruction in a function.
+			// functions with clauses/endfinally are never inlined.
+			// is_bb_start is not valid while inlining.
+			g_assert (!inlining);
+			if (td->ip - td->il_code < td->code_size)
+				td->is_bb_start [td->ip - header->code] = 1;
 			break;
 		}
 		case CEE_LEAVE:
