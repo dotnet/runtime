@@ -2149,6 +2149,8 @@ sgen_client_thread_detach_with_lock (SgenThreadInfo *p)
 
 	mono_tls_set_sgen_thread_info (NULL);
 
+	sgen_increment_bytes_allocated_detached (p->total_bytes_allocated);
+
 	tid = mono_thread_info_get_tid (p);
 
 	mono_threads_add_joinable_runtime_thread (&p->client_info.info);
@@ -2589,6 +2591,12 @@ mono_gc_get_allocated_bytes_for_current_thread (void)
 
 	/*There are some more allocated bytes in the current tlab that have not been recorded yet */
 	return info->total_bytes_allocated + info->tlab_next - info->tlab_start;
+}
+
+guint64
+mono_gc_get_total_allocated_bytes (MonoBoolean precise)
+{
+	return sgen_get_total_allocated_bytes (precise);
 }
 
 gpointer

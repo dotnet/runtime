@@ -45,8 +45,14 @@
 static guint64 stat_objects_alloced = 0;
 static guint64 stat_bytes_alloced = 0;
 static guint64 stat_bytes_alloced_los = 0;
-
 #endif
+
+/* The total number of bytes allocated so far in program execution by all attached threads.
+ * This is not constantly syncrhonized, but only updated on each GC. */
+static guint64 bytes_allocated_attached = 0;
+
+/* Total bytes allocated so far in program execution by detached threads */ 
+static guint64 bytes_allocated_detached = 0;
 
 /*
  * Allocation is done from a Thread Local Allocation Buffer (TLAB). TLABs are allocated
@@ -446,6 +452,7 @@ sgen_alloc_obj (GCVTable vtable, size_t size)
 	LOCK_GC;
 	res = sgen_alloc_obj_nolock (vtable, size);
 	UNLOCK_GC;
+
 	return res;
 }
 
@@ -507,15 +514,61 @@ sgen_alloc_obj_mature (GCVTable vtable, size_t size)
 void
 sgen_clear_tlabs (void)
 {
+	guint64 total_bytes_allocated_globally = 0;
+
 	FOREACH_THREAD_ALL (info) {
 		/* A new TLAB will be allocated when the thread does its first allocation */
 		info->total_bytes_allocated += info->tlab_next - info->tlab_start;
+		total_bytes_allocated_globally += info->total_bytes_allocated;
 		info->tlab_start = NULL;
 		info->tlab_next = NULL;
 		info->tlab_temp_end = NULL;
 		info->tlab_real_end = NULL;
 	} FOREACH_THREAD_END
+
+	sgen_set_bytes_allocated_attached (total_bytes_allocated_globally);
+} 
+
+void sgen_update_allocation_count (void)
+{
+	guint64 total_bytes_allocated_globally = 0;
+
+	FOREACH_THREAD_ALL (info) {
+		total_bytes_allocated_globally += info->tlab_next - info->tlab_start;
+		total_bytes_allocated_globally += info->total_bytes_allocated;
+	} FOREACH_THREAD_END
+
+	sgen_set_bytes_allocated_attached (total_bytes_allocated_globally);
 }
+
+void
+sgen_set_bytes_allocated_attached (guint64 bytes)
+{
+	bytes_allocated_attached = bytes;
+}
+
+void
+sgen_increment_bytes_allocated_detached (guint64 bytes) 
+{
+	bytes_allocated_detached += bytes;
+}
+
+guint64
+sgen_get_total_allocated_bytes (MonoBoolean precise)
+{
+	if (precise) {	
+		LOCK_GC;
+		sgen_stop_world (0, FALSE);
+
+		sgen_update_allocation_count ();
+		
+		sgen_restart_world (0, FALSE);
+		UNLOCK_GC;
+	}
+	
+	return bytes_allocated_attached + bytes_allocated_detached;
+}
+
 
 void
 sgen_init_allocator (void)

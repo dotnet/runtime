@@ -48,8 +48,8 @@ namespace System
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		public static extern long GetAllocatedBytesForCurrentThread ();
 
-		// TODO: Implement
-		public static long GetTotalAllocatedBytes (bool precise = false) => 0;
+		[MethodImplAttribute (MethodImplOptions.InternalCall)]
+		public static extern long GetTotalAllocatedBytes (bool precise = false);
 
 		public static void AddMemoryPressure (long bytesAllocated)
 		{

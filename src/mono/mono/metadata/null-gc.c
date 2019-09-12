@@ -606,6 +606,11 @@ mono_gc_ephemeron_array_add (MonoObject *obj)
 	return TRUE;
 }
 
+guint64 mono_gc_get_total_allocated_bytes (MonoBoolean precise) 
+{
+	return 0;
+}
+
 #else
 
 MONO_EMPTY_SOURCE_FILE (null_gc);
