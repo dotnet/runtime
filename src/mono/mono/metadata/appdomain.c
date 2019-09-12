@@ -3004,6 +3004,8 @@ mono_domain_is_unloading (MonoDomain *domain)
 		return FALSE;
 }
 
+#ifndef ENABLE_NETCORE
+
 static void
 clear_cached_vtable (MonoVTable *vtable)
 {
@@ -3326,6 +3328,8 @@ exit:
 	unload_data_unref (thread_data);
 	HANDLE_FUNCTION_RETURN ();
 }
+
+#endif /* ENABLE_NETCORE */
 
 #ifdef ENABLE_NETCORE
 
