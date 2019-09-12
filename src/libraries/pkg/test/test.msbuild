@@ -6,6 +6,7 @@
   <PropertyGroup>
     <PackageTestProjectsDir Condition="'$(PackageTestProjectsDir)' == ''">$(MSBuildThisFileDirectory)..\projects</PackageTestProjectsDir>
     <_projectProperties>SupportFilesDir=$(MSBuildThisFileDirectory)</_projectProperties>
+    <LocalPackagesPath Condition="'$(LocalPackagesPath)' == ''">$(MSBuildThisFileDirectory)\packages</LocalPackagesPath>
   </PropertyGroup>
 
   <Target Name="GetProjects">
@@ -19,7 +20,7 @@
           Inputs="@(Project)"
           Outputs="@(Project->'%(RootDir)%(Directory)obj\project.assets.json')"
           DependsOnTargets="GetProjects">
-    <MSBuild Projects="@(Project)" Targets="Restore" BuildInParallel="true" Properties="$(_projectProperties)" />
+    <MSBuild Projects="@(Project)" Targets="Restore" BuildInParallel="true" Properties="$(_projectProperties);LocalPackagesPath=$(LocalPackagesPath)" />
     <Touch Files="@(Project->'%(RootDir)%(Directory)obj\project.assets.json')" />
   </Target>
 
