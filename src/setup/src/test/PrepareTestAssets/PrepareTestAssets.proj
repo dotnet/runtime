@@ -7,6 +7,7 @@
             GetNETCoreAppInternalPackageVersion;
             GetNETCoreAppRuntimePackVersion;
             CleanTestAssets;
+            GenerateTestRestoreSourcesNuGetConfig;
             PrepareStabilizedLegacyPackages;
             RestoreTestAssetProjects" />
 
@@ -42,6 +43,29 @@
     <MakeDir Directories="$(TestStabilizedLegacyPackagesDir)" />
   </Target>
 
+  <Target Name="GenerateTestRestoreSourcesNuGetConfig">
+    <ItemGroup>
+      <RestoreTestSource Include="$(ArtifactsShippingPackagesDir)" Key="artifacts-shipping-packages" />
+      <RestoreTestSource Include="$(ArtifactsNonShippingPackagesDir)" Key="artifacts-nonshipping-packages" />
+      <RestoreTestSource Include="$(TestStabilizedLegacyPackagesDir)" Key="stabilized-legacy-packages" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <TemplateNuGetConfigFile>$(ProjectDir)NuGet.config</TemplateNuGetConfigFile>
+
+      <RestoreTestSourceConfigLines>@(RestoreTestSource -> '&lt;add key="%(Key)" value="%(Identity)" /&gt;', '%0A    ')</RestoreTestSourceConfigLines>
+
+      <TestRestoreNuGetConfigContent>$([System.IO.File]::ReadAllText('$(TemplateNuGetConfigFile)').Replace(
+        '&lt;!-- TEST_RESTORE_SOURCES_INSERTION_LINE --&gt;',
+        '$(RestoreTestSourceConfigLines)'))</TestRestoreNuGetConfigContent>
+    </PropertyGroup>
+
+    <WriteLinesToFile
+      File="$(TestRestoreNuGetConfigFile)"
+      Lines="$(TestRestoreNuGetConfigContent)"
+      Overwrite="true" />
+  </Target>
+
   <Target Name="PrepareStabilizedLegacyPackages"
           Condition="'$(NETCoreAppInternalPackageVersion)' != '$(NETCoreAppRuntimePackVersion)'">
     <ItemGroup>
@@ -74,9 +98,7 @@
       Projects="@(TestAssetProjectToRestore)"
       Targets="Restore"
       Properties="
-        ArtifactsShippingPackagesDir=$(ArtifactsShippingPackagesDir);
-        ArtifactsNonShippingPackagesDir=$(ArtifactsNonShippingPackagesDir);
-        TestStabilizedLegacyPackagesDir=$(TestStabilizedLegacyPackagesDir);
+        RestoreConfigFile=$(TestRestoreNuGetConfigFile);
         TestRestorePackagesPath=$(TestRestorePackagesPath);
         TestTargetRid=$(TestTargetRid);
         MNAVersion=$(NETCoreAppRuntimePackVersion)" />
