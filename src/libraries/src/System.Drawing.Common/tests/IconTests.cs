@@ -26,6 +26,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -822,6 +823,57 @@ namespace System.Drawing.Tests
                                 Assert.Equal(e.G, a.G);
                                 Assert.Equal(e.B, a.B);
                             }
+                        }
+                    }
+                }
+            }
+        }
+
+        [ConditionalFact(Helpers.IsDrawingSupported)]
+        public void CorrectColorDepthExtracted()
+        {
+            using (var stream = File.OpenRead(Helpers.GetTestBitmapPath("pngwithheight_icon.ico")))
+            {
+                using (var icon = new Icon(stream, new Size(32, 32)))
+                {
+                    // The first 32x32 icon isn't 32 bit. Checking a few pixels that are in the 32 bit entry.
+                    using (Bitmap bitmap = icon.ToBitmap())
+                    {
+                        Assert.Equal(new Size(32, 32), bitmap.Size);
+
+                        int expectedBitDepth;
+                        if (!PlatformDetection.IsWindows)
+                        {
+                            // The Unix implementation currently doesn't try to match the display,
+                            // it will just pick the highest color depth when creating the bitmap.
+                            // (see SaveBestSingleIcon()).
+                            expectedBitDepth = 32;
+                        }
+                        else
+                        {
+                            string fieldName = PlatformDetection.IsFullFramework ? "bitDepth" : "s_bitDepth";
+                            FieldInfo fi = typeof(Icon).GetField(fieldName, BindingFlags.Static | BindingFlags.NonPublic);
+                            expectedBitDepth = (int)fi.GetValue(null);
+                        }
+
+                        // If the first icon entry was picked, the color would be black: 0xFF000000?
+
+                        switch (expectedBitDepth)
+                        {
+                            case 32:
+                                Assert.Equal(0x879EE532u, (uint)bitmap.GetPixel(0, 0).ToArgb());
+                                Assert.Equal(0x661CD8B7u, (uint)bitmap.GetPixel(0, 31).ToArgb());
+                                break;
+                            case 16:
+                            case 8:
+                                // There is no 16 bit 32x32 icon in this file, 8 will be picked
+                                // as the closest match.
+                                Assert.Equal(0x00000000u, (uint)bitmap.GetPixel(0, 0).ToArgb());
+                                Assert.Equal(0xFF000000u, (uint)bitmap.GetPixel(0, 31).ToArgb());
+                                break;
+                            default:
+                                Assert.False(true, $"Unexpected bitmap depth: {expectedBitDepth}");
+                                break;
                         }
                     }
                 }
