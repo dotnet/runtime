@@ -118,7 +118,7 @@ public class ProcessRunner : IDisposable
 
         _logWriter = new StreamWriter(_processInfo.Parameters.LogPath);
 
-        if (_processInfo.Parameters.ProcessPath.Contains(' '))
+        if (_processInfo.Parameters.ProcessPath.IndexOf(' ') >= 0)
         {
             _logWriter.Write($"\"{_processInfo.Parameters.ProcessPath}\"");
         }
