@@ -458,6 +458,23 @@
         "fedora-x64"
       ]
     },
+    "fedora.32": {
+      "#import": [
+        "fedora"
+      ]
+    },
+    "fedora.32-arm64": {
+      "#import": [
+        "fedora.32",
+        "fedora-arm64"
+      ]
+    },
+    "fedora.32-x64": {
+      "#import": [
+        "fedora.32",
+        "fedora-x64"
+      ]
+    },
     "freebsd": {
       "#import": [
         "unix"
