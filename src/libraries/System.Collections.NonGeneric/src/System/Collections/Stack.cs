@@ -24,7 +24,7 @@ namespace System.Collections
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class Stack : ICollection, ICloneable
     {
-        private object[] _array; // Storage for stack elements. Do not rename (binary serialization)
+        private object?[] _array; // Storage for stack elements. Do not rename (binary serialization)
         private int _size; // Number of items in the stack. Do not rename (binary serialization)
         private int _version; // Used to keep enumerator in sync w/ collection. Do not rename (binary serialization)
 
@@ -96,7 +96,7 @@ namespace System.Collections
             return s;
         }
 
-        public virtual bool Contains(object obj)
+        public virtual bool Contains(object? obj)
         {
             int count = _size;
 
@@ -107,7 +107,7 @@ namespace System.Collections
                     if (_array[count] == null)
                         return true;
                 }
-                else if (_array[count] != null && _array[count].Equals(obj))
+                else if (_array[count] != null && _array[count]!.Equals(obj))
                 {
                     return true;
                 }
@@ -128,7 +128,7 @@ namespace System.Collections
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
             int i = 0;
-            object[] objArray = array as object[];
+            object?[]? objArray = array as object[];
             if (objArray != null)
             {
                 while (i < _size)
@@ -155,7 +155,7 @@ namespace System.Collections
 
         // Returns the top object on the stack without removing it.  If the stack
         // is empty, Peek throws an InvalidOperationException.
-        public virtual object Peek()
+        public virtual object? Peek()
         {
             if (_size == 0)
                 throw new InvalidOperationException(SR.InvalidOperation_EmptyStack);
@@ -165,20 +165,20 @@ namespace System.Collections
 
         // Pops an item from the top of the stack.  If the stack is empty, Pop
         // throws an InvalidOperationException.
-        public virtual object Pop()
+        public virtual object? Pop()
         {
             if (_size == 0)
                 throw new InvalidOperationException(SR.InvalidOperation_EmptyStack);
 
             _version++;
-            object obj = _array[--_size];
+            object? obj = _array[--_size];
             _array[_size] = null;     // Free memory quicker.
             return obj;
         }
 
         // Pushes an item to the top of the stack.
         //
-        public virtual void Push(object obj)
+        public virtual void Push(object? obj)
         {
             if (_size == _array.Length)
             {
@@ -202,12 +202,12 @@ namespace System.Collections
 
 
         // Copies the Stack to an array, in the same order Pop would return the items.
-        public virtual object[] ToArray()
+        public virtual object?[] ToArray()
         {
             if (_size == 0)
                 return Array.Empty<object>();
 
-            object[] objArray = new object[_size];
+            object?[] objArray = new object[_size];
             int i = 0;
             while (i < _size)
             {
@@ -252,7 +252,7 @@ namespace System.Collections
                 }
             }
 
-            public override bool Contains(object obj)
+            public override bool Contains(object? obj)
             {
                 lock (_root)
                 {
@@ -284,7 +284,7 @@ namespace System.Collections
                 }
             }
 
-            public override void Push(object value)
+            public override void Push(object? value)
             {
                 lock (_root)
                 {
@@ -292,7 +292,7 @@ namespace System.Collections
                 }
             }
 
-            public override object Pop()
+            public override object? Pop()
             {
                 lock (_root)
                 {
@@ -308,7 +308,7 @@ namespace System.Collections
                 }
             }
 
-            public override object Peek()
+            public override object? Peek()
             {
                 lock (_root)
                 {
@@ -316,7 +316,7 @@ namespace System.Collections
                 }
             }
 
-            public override object[] ToArray()
+            public override object?[] ToArray()
             {
                 lock (_root)
                 {
@@ -330,7 +330,7 @@ namespace System.Collections
             private readonly Stack _stack;
             private int _index;
             private readonly int _version;
-            private object _currentElement;
+            private object? _currentElement;
 
             internal StackEnumerator(Stack stack)
             {
@@ -367,7 +367,7 @@ namespace System.Collections
                 return retval;
             }
 
-            public virtual object Current
+            public virtual object? Current
             {
                 get
                 {
@@ -398,7 +398,7 @@ namespace System.Collections
             }
 
             [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-            public object[] Items
+            public object?[] Items
             {
                 get
                 {

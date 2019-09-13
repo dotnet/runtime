@@ -17,7 +17,7 @@ namespace System.Collections
     // Useful base class for typed read/write collections where items derive from object
     public abstract class DictionaryBase : IDictionary
     {
-        private Hashtable _hashtable;
+        private Hashtable? _hashtable;
 
         protected Hashtable InnerHashtable
         {
@@ -75,11 +75,11 @@ namespace System.Collections
             InnerHashtable.CopyTo(array, index);
         }
 
-        object IDictionary.this[object key]
+        object? IDictionary.this[object key]
         {
             get
             {
-                object currentValue = InnerHashtable[key];
+                object? currentValue = InnerHashtable[key];
                 OnGet(key, currentValue);
                 return currentValue;
             }
@@ -87,7 +87,7 @@ namespace System.Collections
             {
                 OnValidate(key, value);
                 bool keyExists = true;
-                object temp = InnerHashtable[key];
+                object? temp = InnerHashtable[key];
                 if (temp == null)
                 {
                     keyExists = InnerHashtable.Contains(key);
@@ -119,7 +119,7 @@ namespace System.Collections
             return InnerHashtable.Contains(key);
         }
 
-        void IDictionary.Add(object key, object value)
+        void IDictionary.Add(object key, object? value)
         {
             OnValidate(key, value);
             OnInsert(key, value);
@@ -146,7 +146,7 @@ namespace System.Collections
         {
             if (InnerHashtable.Contains(key))
             {
-                object temp = InnerHashtable[key];
+                object? temp = InnerHashtable[key];
                 OnValidate(key, temp);
                 OnRemove(key, temp);
 
@@ -173,16 +173,16 @@ namespace System.Collections
             return InnerHashtable.GetEnumerator();
         }
 
-        protected virtual object OnGet(object key, object currentValue)
+        protected virtual object? OnGet(object key, object? currentValue)
         {
             return currentValue;
         }
 
-        protected virtual void OnSet(object key, object oldValue, object newValue)
+        protected virtual void OnSet(object key, object? oldValue, object? newValue)
         {
         }
 
-        protected virtual void OnInsert(object key, object value)
+        protected virtual void OnInsert(object key, object? value)
         {
         }
 
@@ -190,19 +190,19 @@ namespace System.Collections
         {
         }
 
-        protected virtual void OnRemove(object key, object value)
+        protected virtual void OnRemove(object key, object? value)
         {
         }
 
-        protected virtual void OnValidate(object key, object value)
+        protected virtual void OnValidate(object key, object? value)
         {
         }
 
-        protected virtual void OnSetComplete(object key, object oldValue, object newValue)
+        protected virtual void OnSetComplete(object key, object? oldValue, object? newValue)
         {
         }
 
-        protected virtual void OnInsertComplete(object key, object value)
+        protected virtual void OnInsertComplete(object key, object? value)
         {
         }
 
@@ -210,7 +210,7 @@ namespace System.Collections
         {
         }
 
-        protected virtual void OnRemoveComplete(object key, object value)
+        protected virtual void OnRemoveComplete(object key, object? value)
         {
         }
     }
