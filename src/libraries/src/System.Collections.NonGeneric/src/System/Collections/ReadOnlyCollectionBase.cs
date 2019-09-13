@@ -17,7 +17,7 @@ namespace System.Collections
     // Useful base class for typed readonly collections where items derive from object
     public abstract class ReadOnlyCollectionBase : ICollection
     {
-        private ArrayList _list;
+        private ArrayList? _list;
 
         protected ArrayList InnerList
         {
