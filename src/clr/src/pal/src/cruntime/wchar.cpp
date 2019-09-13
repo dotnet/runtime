@@ -31,14 +31,7 @@ Abstract:
 #include "config.h"
 #endif
 
-#if HAVE_COREFOUNDATION
-#define CF_EXCLUDE_CSTD_HEADERS
-#include <CoreFoundation/CoreFoundation.h>
 #include <wctype.h>
-#else
-#include <wctype.h>
-#endif
-
 #include <errno.h>
 #include <algorithm>
 

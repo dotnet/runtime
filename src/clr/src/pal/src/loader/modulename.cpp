@@ -24,11 +24,7 @@ Abstract:
 #include "pal/dbgmsg.h"
 #include "pal/modulename.h"
 
-#if NEED_DLCOMPAT
-#include "dlcompat.h"
-#else   // NEED_DLCOMPAT
 #include <dlfcn.h>
-#endif  // NEED_DLCOMPAT
 
 using namespace CorUnix;
 
