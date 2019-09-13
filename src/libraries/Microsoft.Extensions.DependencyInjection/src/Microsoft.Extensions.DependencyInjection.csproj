@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <Description>Default implementation of dependency injection for Microsoft.Extensions.DependencyInjection.</Description>
-    <TargetFrameworks>netcoreapp3.0;net461;netstandard2.0;netstandard2.1</TargetFrameworks>
+    <TargetFrameworks>$(DefaultNetCoreTargetFramework);net461;netstandard2.0;netstandard2.1</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageTags>dependencyinjection;di</PackageTags>
     <IsPackable>true</IsPackable>
