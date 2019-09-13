@@ -969,8 +969,8 @@ void Compiler::fgExtendDbgLifetimes()
         {
             /* Create initialization tree */
 
-            unsigned   varNum = lvaTrackedToVarNum[varIndex];
-            LclVarDsc* varDsc = &lvaTable[varNum];
+            unsigned   varNum = lvaTrackedIndexToLclNum(varIndex);
+            LclVarDsc* varDsc = lvaGetDesc(varNum);
             var_types  type   = varDsc->TypeGet();
 
             // Don't extend struct lifetimes -- they aren't enregistered, anyway.

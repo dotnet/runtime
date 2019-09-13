@@ -17,9 +17,10 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #ifdef _MSC_VER
 #pragma hdrstop
 #endif
-#include "emit.h"
 
+#include "emit.h"
 #include "register_arg_convention.h"
+#include "jitstd/algorithm.h"
 
 /*****************************************************************************/
 
@@ -39,7 +40,8 @@ void Compiler::lvaInit()
 
     lvaGenericsContextUseCount = 0;
 
-    lvaTrackedToVarNum = nullptr;
+    lvaTrackedToVarNumSize = 0;
+    lvaTrackedToVarNum     = nullptr;
 
     lvaTrackedFixed = false; // false: We can still add new tracked variables
 
@@ -2982,297 +2984,199 @@ BasicBlock::weight_t BasicBlock::getBBWeight(Compiler* comp)
     }
 }
 
-/*****************************************************************************
- *
- *  Compare function passed to qsort() by Compiler::lclVars.lvaSortByRefCount().
- *  when generating SMALL_CODE.
- *    Return positive if dsc2 has a higher ref count
- *    Return negative if dsc1 has a higher ref count
- *    Return zero     if the ref counts are the same
- */
-
-/* static */
-int __cdecl Compiler::RefCntCmp(const void* op1, const void* op2)
+// LclVarDsc "less" comparer used to compare the weight of two locals, when optimizing for small code.
+class LclVarDsc_SmallCode_Less
 {
-    LclVarDsc* dsc1 = *(LclVarDsc**)op1;
-    LclVarDsc* dsc2 = *(LclVarDsc**)op2;
+    const LclVarDsc* m_lvaTable;
+    INDEBUG(unsigned m_lvaCount;)
 
-    /* Make sure we preference tracked variables over untracked variables */
-
-    if (dsc1->lvTracked != dsc2->lvTracked)
-    {
-        return (dsc2->lvTracked) ? +1 : -1;
-    }
-
-    unsigned weight1 = dsc1->lvRefCnt();
-    unsigned weight2 = dsc2->lvRefCnt();
-
-#ifndef _TARGET_ARM_
-    // ARM-TODO: this was disabled for ARM under !FEATURE_FP_REGALLOC; it was probably a left-over from
-    // legacy backend. It should be enabled and verified.
-
-    /* Force integer candidates to sort above float candidates */
-
-    bool isFloat1 = isFloatRegType(dsc1->lvType);
-    bool isFloat2 = isFloatRegType(dsc2->lvType);
-
-    if (isFloat1 != isFloat2)
-    {
-        if (weight2 && isFloat1)
-        {
-            return +1;
-        }
-        if (weight1 && isFloat2)
-        {
-            return -1;
-        }
-    }
-#endif
-
-    int diff = weight2 - weight1;
-
-    if (diff != 0)
-    {
-        return diff;
-    }
-
-    /* The unweighted ref counts were the same */
-    /* If the weighted ref counts are different then use their difference */
-    diff = dsc2->lvRefCntWtd() - dsc1->lvRefCntWtd();
-
-    if (diff != 0)
-    {
-        return diff;
-    }
-
-    /* We have equal ref counts and weighted ref counts */
-
-    /* Break the tie by: */
-    /* Increasing the weight by 2   if we are a register arg */
-    /* Increasing the weight by 0.5 if we are a GC type */
-    /* Increasing the weight by 0.5 if we were enregistered in the previous pass  */
-
-    if (weight1)
-    {
-        if (dsc1->lvIsRegArg)
-        {
-            weight2 += 2 * BB_UNITY_WEIGHT;
-        }
-
-        if (varTypeIsGC(dsc1->TypeGet()))
-        {
-            weight1 += BB_UNITY_WEIGHT / 2;
-        }
-
-        if (dsc1->lvRegister)
-        {
-            weight1 += BB_UNITY_WEIGHT / 2;
-        }
-    }
-
-    if (weight2)
-    {
-        if (dsc2->lvIsRegArg)
-        {
-            weight2 += 2 * BB_UNITY_WEIGHT;
-        }
-
-        if (varTypeIsGC(dsc2->TypeGet()))
-        {
-            weight2 += BB_UNITY_WEIGHT / 2;
-        }
-
-        if (dsc2->lvRegister)
-        {
-            weight2 += BB_UNITY_WEIGHT / 2;
-        }
-    }
-
-    diff = weight2 - weight1;
-
-    if (diff != 0)
-    {
-        return diff;
-    }
-
-    /* To achieve a Stable Sort we use the LclNum (by way of the pointer address) */
-
-    if (dsc1 < dsc2)
-    {
-        return -1;
-    }
-    if (dsc1 > dsc2)
-    {
-        return +1;
-    }
-
-    return 0;
-}
-
-/*****************************************************************************
- *
- *  Compare function passed to qsort() by Compiler::lclVars.lvaSortByRefCount().
- *  when not generating SMALL_CODE.
- *    Return positive if dsc2 has a higher weighted ref count
- *    Return negative if dsc1 has a higher weighted ref count
- *    Return zero     if the ref counts are the same
- */
-
-/* static */
-int __cdecl Compiler::WtdRefCntCmp(const void* op1, const void* op2)
-{
-    LclVarDsc* dsc1 = *(LclVarDsc**)op1;
-    LclVarDsc* dsc2 = *(LclVarDsc**)op2;
-
-    /* Make sure we preference tracked variables over untracked variables */
-
-    if (dsc1->lvTracked != dsc2->lvTracked)
-    {
-        return (dsc2->lvTracked) ? +1 : -1;
-    }
-
-    unsigned weight1 = dsc1->lvRefCntWtd();
-    unsigned weight2 = dsc2->lvRefCntWtd();
-
-#ifndef _TARGET_ARM_
-    // ARM-TODO: this was disabled for ARM under !FEATURE_FP_REGALLOC; it was probably a left-over from
-    // legacy backend. It should be enabled and verified.
-
-    /* Force integer candidates to sort above float candidates */
-
-    bool isFloat1 = isFloatRegType(dsc1->lvType);
-    bool isFloat2 = isFloatRegType(dsc2->lvType);
-
-    if (isFloat1 != isFloat2)
-    {
-        if (weight2 && isFloat1)
-        {
-            return +1;
-        }
-        if (weight1 && isFloat2)
-        {
-            return -1;
-        }
-    }
-#endif
-
-    if (weight1 && dsc1->lvIsRegArg)
-    {
-        weight1 += 2 * BB_UNITY_WEIGHT;
-    }
-
-    if (weight2 && dsc2->lvIsRegArg)
-    {
-        weight2 += 2 * BB_UNITY_WEIGHT;
-    }
-
-    if (weight2 > weight1)
-    {
-        return 1;
-    }
-    else if (weight2 < weight1)
-    {
-        return -1;
-    }
-
-    // Otherwise, we have equal weighted ref counts.
-
-    /* If the unweighted ref counts are different then use their difference */
-    int diff = (int)dsc2->lvRefCnt() - (int)dsc1->lvRefCnt();
-
-    if (diff != 0)
-    {
-        return diff;
-    }
-
-    /* If one is a GC type and the other is not the GC type wins */
-    if (varTypeIsGC(dsc1->TypeGet()) != varTypeIsGC(dsc2->TypeGet()))
-    {
-        if (varTypeIsGC(dsc1->TypeGet()))
-        {
-            diff = -1;
-        }
-        else
-        {
-            diff = +1;
-        }
-
-        return diff;
-    }
-
-    /* If one was enregistered in the previous pass then it wins */
-    if (dsc1->lvRegister != dsc2->lvRegister)
-    {
-        if (dsc1->lvRegister)
-        {
-            diff = -1;
-        }
-        else
-        {
-            diff = +1;
-        }
-
-        return diff;
-    }
-
-    /* We have a tie! */
-
-    /* To achieve a Stable Sort we use the LclNum (by way of the pointer address) */
-
-    if (dsc1 < dsc2)
-    {
-        return -1;
-    }
-    if (dsc1 > dsc2)
-    {
-        return +1;
-    }
-
-    return 0;
-}
-
-/*****************************************************************************
- *
- *  Sort the local variable table by refcount and assign tracking indices.
- */
-
-void Compiler::lvaSortOnly()
-{
-    /* Now sort the variable table by ref-count */
-
-    qsort(lvaRefSorted, lvaCount, sizeof(*lvaRefSorted), (compCodeOpt() == SMALL_CODE) ? RefCntCmp : WtdRefCntCmp);
-    lvaDumpRefCounts();
-}
-
-void Compiler::lvaDumpRefCounts()
-{
+public:
+    LclVarDsc_SmallCode_Less(const LclVarDsc* lvaTable DEBUGARG(unsigned lvaCount))
+        : m_lvaTable(lvaTable)
 #ifdef DEBUG
-
-    if (verbose && lvaCount)
+        , m_lvaCount(lvaCount)
+#endif
     {
-        printf("refCnt table for '%s':\n", info.compMethodName);
-
-        for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
-        {
-            unsigned refCnt = lvaRefSorted[lclNum]->lvRefCnt();
-            if (refCnt == 0)
-            {
-                break;
-            }
-            unsigned refCntWtd = lvaRefSorted[lclNum]->lvRefCntWtd();
-
-            printf("   ");
-            gtDispLclVar((unsigned)(lvaRefSorted[lclNum] - lvaTable));
-            printf(" [%6s]: refCnt = %4u, refCntWtd = %6s", varTypeName(lvaRefSorted[lclNum]->TypeGet()), refCnt,
-                   refCntWtd2str(refCntWtd));
-            printf("\n");
-        }
-
-        printf("\n");
     }
 
+    bool operator()(unsigned n1, unsigned n2)
+    {
+        assert(n1 < m_lvaCount);
+        assert(n2 < m_lvaCount);
+
+        const LclVarDsc* dsc1 = &m_lvaTable[n1];
+        const LclVarDsc* dsc2 = &m_lvaTable[n2];
+
+        // We should not be sorting untracked variables
+        assert(dsc1->lvTracked);
+        assert(dsc2->lvTracked);
+        // We should not be sorting after registers have been allocated
+        assert(!dsc1->lvRegister);
+        assert(!dsc2->lvRegister);
+
+        unsigned weight1 = dsc1->lvRefCnt();
+        unsigned weight2 = dsc2->lvRefCnt();
+
+#ifndef _TARGET_ARM_
+        // ARM-TODO: this was disabled for ARM under !FEATURE_FP_REGALLOC; it was probably a left-over from
+        // legacy backend. It should be enabled and verified.
+
+        // Force integer candidates to sort above float candidates.
+        const bool isFloat1 = isFloatRegType(dsc1->lvType);
+        const bool isFloat2 = isFloatRegType(dsc2->lvType);
+
+        if (isFloat1 != isFloat2)
+        {
+            if ((weight2 != 0) && isFloat1)
+            {
+                return false;
+            }
+
+            if ((weight1 != 0) && isFloat2)
+            {
+                return true;
+            }
+        }
 #endif
-}
+
+        if (weight1 != weight2)
+        {
+            return weight1 > weight2;
+        }
+
+        // If the weighted ref counts are different then use their difference.
+        if (dsc1->lvRefCntWtd() != dsc2->lvRefCntWtd())
+        {
+            return dsc1->lvRefCntWtd() > dsc2->lvRefCntWtd();
+        }
+
+        // We have equal ref counts and weighted ref counts.
+        // Break the tie by:
+        //   - Increasing the weight by 2   if we are a register arg.
+        //   - Increasing the weight by 0.5 if we are a GC type.
+
+        if (weight1 != 0)
+        {
+            if (dsc1->lvIsRegArg)
+            {
+                weight2 += 2 * BB_UNITY_WEIGHT;
+            }
+
+            if (varTypeIsGC(dsc1->TypeGet()))
+            {
+                weight1 += BB_UNITY_WEIGHT / 2;
+            }
+        }
+
+        if (weight2 != 0)
+        {
+            if (dsc2->lvIsRegArg)
+            {
+                weight2 += 2 * BB_UNITY_WEIGHT;
+            }
+
+            if (varTypeIsGC(dsc2->TypeGet()))
+            {
+                weight2 += BB_UNITY_WEIGHT / 2;
+            }
+        }
+
+        if (weight1 != weight2)
+        {
+            return weight1 > weight2;
+        }
+
+        // To achieve a stable sort we use the LclNum (by way of the pointer address).
+        return dsc1 < dsc2;
+    }
+};
+
+// LclVarDsc "less" comparer used to compare the weight of two locals, when optimizing for blended code.
+class LclVarDsc_BlendedCode_Less
+{
+    const LclVarDsc* m_lvaTable;
+    INDEBUG(unsigned m_lvaCount;)
+
+public:
+    LclVarDsc_BlendedCode_Less(const LclVarDsc* lvaTable DEBUGARG(unsigned lvaCount))
+        : m_lvaTable(lvaTable)
+#ifdef DEBUG
+        , m_lvaCount(lvaCount)
+#endif
+    {
+    }
+
+    bool operator()(unsigned n1, unsigned n2)
+    {
+        assert(n1 < m_lvaCount);
+        assert(n2 < m_lvaCount);
+
+        const LclVarDsc* dsc1 = &m_lvaTable[n1];
+        const LclVarDsc* dsc2 = &m_lvaTable[n2];
+
+        // We should not be sorting untracked variables
+        assert(dsc1->lvTracked);
+        assert(dsc2->lvTracked);
+        // We should not be sorting after registers have been allocated
+        assert(!dsc1->lvRegister);
+        assert(!dsc2->lvRegister);
+
+        unsigned weight1 = dsc1->lvRefCntWtd();
+        unsigned weight2 = dsc2->lvRefCntWtd();
+
+#ifndef _TARGET_ARM_
+        // ARM-TODO: this was disabled for ARM under !FEATURE_FP_REGALLOC; it was probably a left-over from
+        // legacy backend. It should be enabled and verified.
+
+        // Force integer candidates to sort above float candidates.
+        const bool isFloat1 = isFloatRegType(dsc1->lvType);
+        const bool isFloat2 = isFloatRegType(dsc2->lvType);
+
+        if (isFloat1 != isFloat2)
+        {
+            if ((weight2 != 0) && isFloat1)
+            {
+                return false;
+            }
+
+            if ((weight1 != 0) && isFloat2)
+            {
+                return true;
+            }
+        }
+#endif
+
+        if ((weight1 != 0) && dsc1->lvIsRegArg)
+        {
+            weight1 += 2 * BB_UNITY_WEIGHT;
+        }
+
+        if ((weight2 != 0) && dsc2->lvIsRegArg)
+        {
+            weight2 += 2 * BB_UNITY_WEIGHT;
+        }
+
+        if (weight1 != weight2)
+        {
+            return weight1 > weight2;
+        }
+
+        // If the weighted ref counts are different then try the unweighted ref counts.
+        if (dsc1->lvRefCnt() != dsc2->lvRefCnt())
+        {
+            return dsc1->lvRefCnt() > dsc2->lvRefCnt();
+        }
+
+        // If one is a GC type and the other is not the GC type wins.
+        if (varTypeIsGC(dsc1->TypeGet()) != varTypeIsGC(dsc2->TypeGet()))
+        {
+            return varTypeIsGC(dsc1->TypeGet());
+        }
+
+        // To achieve a stable sort we use the LclNum (by way of the pointer address).
+        return dsc1 < dsc2;
+    }
+};
 
 /*****************************************************************************
  *
@@ -3293,31 +3197,29 @@ void Compiler::lvaSortByRefCount()
         return;
     }
 
-    unsigned   lclNum;
-    LclVarDsc* varDsc;
-
-    LclVarDsc** refTab;
-
     /* We'll sort the variables by ref count - allocate the sorted table */
 
-    lvaRefSorted = refTab = new (this, CMK_LvaTable) LclVarDsc*[lvaCount];
-
-    /* Fill in the table used for sorting */
-
-    for (lclNum = 0, varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
+    if (lvaTrackedToVarNumSize < lvaCount)
     {
-        /* Append this variable to the table for sorting */
+        lvaTrackedToVarNumSize = lvaCount;
+        lvaTrackedToVarNum     = new (getAllocator(CMK_LvaTable)) unsigned[lvaTrackedToVarNumSize];
+    }
 
-        *refTab++ = varDsc;
+    unsigned  trackedCount = 0;
+    unsigned* tracked      = lvaTrackedToVarNum;
 
-        /* For now assume we'll be able to track all locals */
+    // Fill in the table used for sorting
 
+    for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
+    {
+        LclVarDsc* varDsc = lvaGetDesc(lclNum);
+
+        // Start by assuming that the variable will be tracked.
         varDsc->lvTracked = 1;
 
-        /* If the ref count is zero */
         if (varDsc->lvRefCnt() == 0)
         {
-            /* Zero ref count, make this untracked */
+            // Zero ref count, make this untracked.
             varDsc->lvTracked = 0;
             varDsc->setLvRefCntWtd(0);
         }
@@ -3399,84 +3301,82 @@ void Compiler::lvaSortByRefCount()
         if (opts.MinOpts() && compHndBBtabCount > 0)
         {
             lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_LiveInOutOfHandler));
-            continue;
         }
-
-        var_types type = genActualType(varDsc->TypeGet());
-
-        switch (type)
+        else
         {
+            var_types type = genActualType(varDsc->TypeGet());
+
+            switch (type)
+            {
 #if CPU_HAS_FP_SUPPORT
-            case TYP_FLOAT:
-            case TYP_DOUBLE:
+                case TYP_FLOAT:
+                case TYP_DOUBLE:
 #endif
-            case TYP_INT:
-            case TYP_LONG:
-            case TYP_REF:
-            case TYP_BYREF:
+                case TYP_INT:
+                case TYP_LONG:
+                case TYP_REF:
+                case TYP_BYREF:
 #ifdef FEATURE_SIMD
-            case TYP_SIMD8:
-            case TYP_SIMD12:
-            case TYP_SIMD16:
-            case TYP_SIMD32:
+                case TYP_SIMD8:
+                case TYP_SIMD12:
+                case TYP_SIMD16:
+                case TYP_SIMD32:
 #endif // FEATURE_SIMD
-            case TYP_STRUCT:
-                break;
+                case TYP_STRUCT:
+                    break;
 
-            case TYP_UNDEF:
-            case TYP_UNKNOWN:
-                noway_assert(!"lvType not set correctly");
-                varDsc->lvType = TYP_INT;
+                case TYP_UNDEF:
+                case TYP_UNKNOWN:
+                    noway_assert(!"lvType not set correctly");
+                    varDsc->lvType = TYP_INT;
 
-                __fallthrough;
+                    __fallthrough;
 
-            default:
-                varDsc->lvTracked = 0;
+                default:
+                    varDsc->lvTracked = 0;
+            }
         }
-    }
 
-    /* Now sort the variable table by ref-count */
-
-    lvaSortOnly();
-
-    /* Decide which variables will be worth tracking */
-
-    if (lvaCount > lclMAX_TRACKED)
-    {
-        /* Mark all variables past the first 'lclMAX_TRACKED' as untracked */
-
-        for (lclNum = lclMAX_TRACKED; lclNum < lvaCount; lclNum++)
-        {
-            lvaRefSorted[lclNum]->lvTracked = 0;
-        }
-    }
-
-    if (lvaTrackedToVarNum == nullptr)
-    {
-        lvaTrackedToVarNum = new (getAllocator(CMK_LvaTable)) unsigned[lclMAX_TRACKED];
-    }
-
-#ifdef DEBUG
-    // Re-Initialize to -1 for safety in debug build.
-    memset(lvaTrackedToVarNum, -1, lclMAX_TRACKED * sizeof(unsigned));
-#endif
-
-    /* Assign indices to all the variables we've decided to track */
-
-    for (lclNum = 0; lclNum < min(lvaCount, lclMAX_TRACKED); lclNum++)
-    {
-        varDsc = lvaRefSorted[lclNum];
         if (varDsc->lvTracked)
         {
-            noway_assert(varDsc->lvRefCnt() > 0);
-
-            /* This variable will be tracked - assign it an index */
-
-            lvaTrackedToVarNum[lvaTrackedCount] = (unsigned)(varDsc - lvaTable); // The type of varDsc and lvaTable
-            // is LclVarDsc. Subtraction will give us
-            // the index.
-            varDsc->lvVarIndex = lvaTrackedCount++;
+            tracked[trackedCount++] = lclNum;
         }
+    }
+
+    // Now sort the tracked variable table by ref-count
+    if (compCodeOpt() == SMALL_CODE)
+    {
+        jitstd::sort(tracked, tracked + trackedCount, LclVarDsc_SmallCode_Less(lvaTable DEBUGARG(lvaCount)));
+    }
+    else
+    {
+        jitstd::sort(tracked, tracked + trackedCount, LclVarDsc_BlendedCode_Less(lvaTable DEBUGARG(lvaCount)));
+    }
+
+    lvaTrackedCount = min(lclMAX_TRACKED, trackedCount);
+
+    JITDUMP("Tracked variable (%u out of %u) table:\n", lvaTrackedCount, lvaCount);
+
+    // Assign indices to all the variables we've decided to track
+    for (unsigned varIndex = 0; varIndex < lvaTrackedCount; varIndex++)
+    {
+        LclVarDsc* varDsc = lvaGetDesc(tracked[varIndex]);
+        assert(varDsc->lvTracked);
+        varDsc->lvVarIndex = static_cast<unsigned short>(varIndex);
+
+        INDEBUG(if (verbose) { gtDispLclVar(tracked[varIndex]); })
+        JITDUMP(" [%6s]: refCnt = %4u, refCntWtd = %6s\n", varTypeName(varDsc->TypeGet()), varDsc->lvRefCnt(),
+                refCntWtd2str(varDsc->lvRefCntWtd()));
+    }
+
+    JITDUMP("\n");
+
+    // Mark all variables past the first 'lclMAX_TRACKED' as untracked
+    for (unsigned varIndex = lvaTrackedCount; varIndex < trackedCount; varIndex++)
+    {
+        LclVarDsc* varDsc = lvaGetDesc(tracked[varIndex]);
+        assert(varDsc->lvTracked);
+        varDsc->lvTracked = 0;
     }
 
     // We have a new epoch, and also cache the tracked var count in terms of size_t's sufficient to hold that many bits.
@@ -4034,8 +3934,6 @@ void Compiler::lvaMarkLocalVars()
     {
         lvaTable[info.compTypeCtxtArg].lvImplicitlyReferenced = 1;
     }
-
-    lvaSortByRefCount();
 }
 
 //------------------------------------------------------------------------
