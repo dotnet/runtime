@@ -5858,7 +5858,7 @@ void LinearScan::allocateRegisters()
     if (enregisterLocalVars && compiler->lvaKeepAliveAndReportThis())
     {
         LclVarDsc* thisVarDsc = compiler->lvaGetDesc(compiler->info.compThisArg);
-        if (!thisVarDsc->lvDoNotEnregister)
+        if (thisVarDsc->lvLRACandidate)
         {
             Interval* interval = getIntervalForLocalVar(thisVarDsc->lvVarIndex);
             if (interval->isSplit)
