@@ -331,7 +331,7 @@ int load_assembly_and_get_function_pointer_fn(
 Calling this function will load the specified assembly in isolation (into its own `AssemblyLoadContext`) and it will use `AssemblyDependencyResolver` on it to provide dependency resolution. Once loaded it will find the specified type and method and return a native function pointer to that method. The method's signature can be specified via the delegate type name.
 * `assembly_path` - Path to the assembly to load. In case of complex component, this should be the main assembly of the component (the one with the `.deps.json` next to it). Note that this does not have to be the assembly from which the `type_name` and `method_name` are.
 * `type_name` - Assembly qualified type name to find
-* `method_name` - Name of the method on the `type_name` to find. The method must be `public static` and must match the signature of `delegate_type_name`.
+* `method_name` - Name of the method on the `type_name` to find. The method must be `static` and must match the signature of `delegate_type_name`.
 * `delegate_type_name` - Assembly qualified delegate type name for the method signature, or null. If this is null, the method signature is assumed to be:
 ```C#
 public delegate int ComponentEntryPoint(IntPtr args, int sizeBytes);
