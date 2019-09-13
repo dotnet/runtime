@@ -23,6 +23,12 @@ namespace ReadyToRun.SuperIlc
                 return 1;
             }
 
+            if (options.CoreRootDirectory == null)
+            {
+                Console.Error.WriteLine("--core-root-directory (--cr) is a required argument.");
+                return 1;
+            }
+
             if (options.OutputDirectory == null)
             {
                 options.OutputDirectory = options.InputDirectory;
@@ -36,7 +42,10 @@ namespace ReadyToRun.SuperIlc
 
             IEnumerable<CompilerRunner> runners = options.CompilerRunners(isFramework: false);
 
-            PathExtensions.DeleteOutputFolders(options.OutputDirectory.FullName, options.CoreRootDirectory.FullName, recursive: true);
+            if (!options.Exe)
+            {
+                PathExtensions.DeleteOutputFolders(options.OutputDirectory.FullName, options.CoreRootDirectory.FullName, recursive: true);
+            }
 
             string[] directories = LocateSubtree(
                 options.InputDirectory.FullName,

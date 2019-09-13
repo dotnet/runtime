@@ -27,6 +27,12 @@ namespace ReadyToRun.SuperIlc
                 return 1;
             }
 
+            if (options.CoreRootDirectory == null)
+            {
+                Console.Error.WriteLine("--core-root-directory (--cr) is a required argument.");
+                return 1;
+            }
+
             if (options.OutputDirectory == null)
             {
                 if (options.InputDirectory != null)
