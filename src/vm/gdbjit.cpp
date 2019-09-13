@@ -1067,7 +1067,7 @@ PrimitiveTypeInfo::PrimitiveTypeInfo(TypeHandle typeHandle)
     if (corType == ELEMENT_TYPE_CHAR)
     {
         m_type_name = new char[9];
-        strcpy(m_type_name, "char16_t");
+        strcpy(m_type_name, "WCHAR");
     }
     else
     {

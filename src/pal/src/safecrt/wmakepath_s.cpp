@@ -21,7 +21,7 @@
 
 #define _FUNC_PROLOGUE
 #define _FUNC_NAME _wmakepath_s
-#define _CHAR wchar_t
+#define _CHAR char16_t
 #define _DEST _Dst
 #define _SIZE _SizeInWords
 #define _T(_Character) L##_Character

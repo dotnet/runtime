@@ -52,8 +52,8 @@
 #define _TCHAR CRT_TCHAR
 #define TCHAR CRTTCHAR
 
-typedef wchar_t     _TCHAR;
-typedef wchar_t     TCHAR;
+typedef char16_t     _TCHAR;
+typedef char16_t     TCHAR;
 #define _T(x)       L##x
 
 #include "output.inl"

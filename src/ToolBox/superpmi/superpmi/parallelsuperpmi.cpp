@@ -342,8 +342,8 @@ void addJitOptionArgument(LightWeightMap<DWORD, DWORD>* jitOptions,
     {
         for (unsigned i = 0; i < jitOptions->GetCount(); i++)
         {
-            wchar_t* key   = (wchar_t*)jitOptions->GetBuffer(jitOptions->GetKey(i));
-            wchar_t* value = (wchar_t*)jitOptions->GetBuffer(jitOptions->GetItem(i));
+            WCHAR* key   = (WCHAR*)jitOptions->GetBuffer(jitOptions->GetKey(i));
+            WCHAR* value = (WCHAR*)jitOptions->GetBuffer(jitOptions->GetItem(i));
             bytesWritten += sprintf_s(spmiArgs + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " -%s %S=%S",
                                       optionName, key, value);
         }

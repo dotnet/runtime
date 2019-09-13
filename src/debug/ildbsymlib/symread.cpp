@@ -451,10 +451,10 @@ HRESULT SymReader::VerifyPEDebugInfo(const WCHAR* szFileName)
 
     // We need to change the .pdb extension to .ildb
     // compatible with VS7
-    wchar_t fullpath[_MAX_PATH];
-    wchar_t drive[_MAX_DRIVE];
-    wchar_t dir[_MAX_DIR];
-    wchar_t fname[_MAX_FNAME];
+    WCHAR fullpath[_MAX_PATH];
+    WCHAR drive[_MAX_DRIVE];
+    WCHAR dir[_MAX_DIR];
+    WCHAR fname[_MAX_FNAME];
 
     IMAGE_NT_HEADERS*pNT;
 
@@ -547,10 +547,10 @@ SymReader::InitializeFromFile(
     const WCHAR* szsearchPath)
 {
     HRESULT hr = S_OK;
-    wchar_t fullpath[_MAX_PATH];
-    wchar_t drive[_MAX_DRIVE];
-    wchar_t dir[_MAX_DIR];
-    wchar_t fname[_MAX_FNAME];
+    WCHAR fullpath[_MAX_PATH];
+    WCHAR drive[_MAX_DRIVE];
+    WCHAR dir[_MAX_DIR];
+    WCHAR fname[_MAX_FNAME];
     HANDLE hFile = INVALID_HANDLE_VALUE;
     HANDLE hMapFile = INVALID_HANDLE_VALUE;
     HMODULE hMod = NULL;

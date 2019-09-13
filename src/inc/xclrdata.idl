@@ -374,10 +374,10 @@ interface IXCLRLibrarySupport : IUnknown
 };
 
 interface IXCLRDisassemblySupport;
-typedef  SIZE_T (__stdcall *CDSTranslateAddrCB)(IXCLRDisassemblySupport *, CLRDATA_ADDRESS, wchar_t *, SIZE_T, DWORDLONG *);
-typedef  SIZE_T (__stdcall *CDSTranslateFixupCB)(IXCLRDisassemblySupport *, CLRDATA_ADDRESS, SIZE_T, wchar_t *, SIZE_T, DWORDLONG *);
-typedef  SIZE_T (__stdcall *CDSTranslateConstCB)(IXCLRDisassemblySupport *, DWORD, wchar_t *, SIZE_T);
-typedef  SIZE_T (__stdcall *CDSTranslateRegrelCB)(IXCLRDisassemblySupport *, unsigned rega, CLRDATA_ADDRESS, wchar_t *, SIZE_T, DWORD *);
+typedef  SIZE_T (__stdcall *CDSTranslateAddrCB)(IXCLRDisassemblySupport *, CLRDATA_ADDRESS, WCHAR *, SIZE_T, DWORDLONG *);
+typedef  SIZE_T (__stdcall *CDSTranslateFixupCB)(IXCLRDisassemblySupport *, CLRDATA_ADDRESS, SIZE_T, WCHAR *, SIZE_T, DWORDLONG *);
+typedef  SIZE_T (__stdcall *CDSTranslateConstCB)(IXCLRDisassemblySupport *, DWORD, WCHAR *, SIZE_T);
+typedef  SIZE_T (__stdcall *CDSTranslateRegrelCB)(IXCLRDisassemblySupport *, unsigned rega, CLRDATA_ADDRESS, WCHAR *, SIZE_T, DWORD *);
 
 [
     object,
@@ -392,7 +392,7 @@ interface IXCLRDisassemblySupport : IUnknown
     SIZE_T CbDisassemble(CLRDATA_ADDRESS, const void *, SIZE_T);
     SIZE_T Cinstruction();
     BOOL FSelectInstruction(SIZE_T);
-    SIZE_T CchFormatInstr(wchar_t *, SIZE_T);
+    SIZE_T CchFormatInstr(WCHAR *, SIZE_T);
     void *PvClient();
     HRESULT SetTranslateFixupCallback([in]CDSTranslateFixupCB cb);
     HRESULT SetTranslateConstCallback([in]CDSTranslateConstCB cb);

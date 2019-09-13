@@ -15,7 +15,7 @@
 #define ___VSNWPRINTF_H__
 
 /* These functions leaks memory a lot. C'est la vie. */
-int TestVsnwprintf_s(wchar_t* buf, size_t count, const wchar_t* format, ...)
+int TestVsnwprintf_s(char16_t* buf, size_t count, const char16_t* format, ...)
 {
     int retVal = 0;
     va_list arglist;

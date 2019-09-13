@@ -275,7 +275,7 @@ extern void **__piob;
 
 FILE * __cdecl _getstream(void);
 FILE * __cdecl _openfile(__in_z const char * _Filename, __in_z const char * _Mode, __in int _ShFlag, __out FILE * _File);
-FILE * __cdecl _wopenfile(__in_z const wchar_t * _Filename, __in_z const wchar_t * _Mode, __in int _ShFlag, __out FILE * _File);
+FILE * __cdecl _wopenfile(__in_z const char16_t * _Filename, __in_z const char16_t * _Mode, __in int _ShFlag, __out FILE * _File);
 void __cdecl _getbuf(__out FILE * _File);
 int __cdecl _filwbuf (__inout FILE * _File);
 int __cdecl _flswbuf(__in int _Ch, __inout FILE * _File);
@@ -286,44 +286,44 @@ void __cdecl _ftbuf(int _Flag, __inout FILE * _File);
 #ifdef _SAFECRT_IMPL
 
 int __cdecl _output(__inout FILE * _File, __in_z __format_string const char *_Format, va_list _ArgList);
-int __cdecl _woutput(__inout FILE * _File, __in_z __format_string const wchar_t *_Format, va_list _ArgList);
+int __cdecl _woutput(__inout FILE * _File, __in_z __format_string const char16_t *_Format, va_list _ArgList);
 int __cdecl _output_s(__inout FILE * _File, __in_z __format_string const char *_Format, va_list _ArgList);
 int __cdecl _output_p(__inout FILE * _File, __in_z __format_string const char *_Format, va_list _ArgList);
-int __cdecl _woutput_s(__inout FILE * _File, __in_z __format_string const wchar_t *_Format, va_list _ArgList);
-int __cdecl _woutput_p(__inout FILE * _File, __in_z __format_string const wchar_t *_Format, va_list _ArgList);
+int __cdecl _woutput_s(__inout FILE * _File, __in_z __format_string const char16_t *_Format, va_list _ArgList);
+int __cdecl _woutput_p(__inout FILE * _File, __in_z __format_string const char16_t *_Format, va_list _ArgList);
 typedef int (*OUTPUTFN)(FILE *, const char *, va_list);
-typedef int (*WOUTPUTFN)(FILE *, const wchar_t *, va_list);
+typedef int (*WOUTPUTFN)(FILE *, const char16_t *, va_list);
 
 #else  /* _SAFECRT_IMPL */
 
 int __cdecl _output_l(__inout FILE * _File, __in_z __format_string const char *_Format, __in_opt _locale_t _Locale, va_list _ArgList);
-int __cdecl _woutput_l(__inout FILE * _File, __in_z __format_string const wchar_t *_Format, __in_opt _locale_t _Locale, va_list _ArgList);
+int __cdecl _woutput_l(__inout FILE * _File, __in_z __format_string const char16_t *_Format, __in_opt _locale_t _Locale, va_list _ArgList);
 int __cdecl _output_s_l(__inout FILE * _File, __in_z __format_string const char *_Format, __in_opt _locale_t _Locale, va_list _ArgList);
 int __cdecl _output_p_l(__inout FILE * _File, __in_z __format_string const char *_Format, __in_opt _locale_t _Locale, va_list _ArgList);
-int __cdecl _woutput_s_l(__inout FILE * _File, __in_z __format_string const wchar_t *_Format, __in_opt _locale_t _Locale, va_list _ArgList);
-int __cdecl _woutput_p_l(__inout FILE * _File, __in_z __format_string const wchar_t *_Format, __in_opt _locale_t _Locale, va_list _ArgList);
+int __cdecl _woutput_s_l(__inout FILE * _File, __in_z __format_string const char16_t *_Format, __in_opt _locale_t _Locale, va_list _ArgList);
+int __cdecl _woutput_p_l(__inout FILE * _File, __in_z __format_string const char16_t *_Format, __in_opt _locale_t _Locale, va_list _ArgList);
 typedef int (*OUTPUTFN)(__inout FILE * _File, const char *, _locale_t, va_list);
-typedef int (*WOUTPUTFN)(__inout FILE * _File, const wchar_t *, _locale_t, va_list);
+typedef int (*WOUTPUTFN)(__inout FILE * _File, const char16_t *, _locale_t, va_list);
 
 #endif  /* _SAFECRT_IMPL */
 
 #ifdef _SAFECRT_IMPL
 
 int __cdecl _input(__in FILE * _File, __in_z __format_string const unsigned char * _Format, va_list _ArgList);
-int __cdecl _winput(__in FILE * _File, __in_z __format_string const wchar_t * _Format, va_list _ArgList);
+int __cdecl _winput(__in FILE * _File, __in_z __format_string const char16_t * _Format, va_list _ArgList);
 int __cdecl _input_s(__in FILE * _File, __in_z __format_string const unsigned char * _Format, va_list _ArgList);
-int __cdecl _winput_s(__in FILE * _File, __in_z __format_string const wchar_t * _Format, va_list _ArgList);
+int __cdecl _winput_s(__in FILE * _File, __in_z __format_string const char16_t * _Format, va_list _ArgList);
 typedef int (*INPUTFN)(FILE *, const unsigned char *, va_list);
-typedef int (*WINPUTFN)(FILE *, const wchar_t *, va_list);
+typedef int (*WINPUTFN)(FILE *, const char16_t *, va_list);
 
 #else  /* _SAFECRT_IMPL */
 
 int __cdecl _input_l(__inout FILE * _File, __in_z __format_string const unsigned char *, __in_opt _locale_t _Locale, va_list _ArgList);
-int __cdecl _winput_l(__inout FILE * _File, __in_z __format_string const wchar_t *, __in_opt _locale_t _Locale, va_list _ArgList);
+int __cdecl _winput_l(__inout FILE * _File, __in_z __format_string const char16_t *, __in_opt _locale_t _Locale, va_list _ArgList);
 int __cdecl _input_s_l(__inout FILE * _File, __in_z __format_string const unsigned char *, __in_opt _locale_t _Locale, va_list _ArgList);
-int __cdecl _winput_s_l(__inout FILE * _File, __in_z __format_string const wchar_t *, __in_opt _locale_t _Locale, va_list _ArgList);
+int __cdecl _winput_s_l(__inout FILE * _File, __in_z __format_string const char16_t *, __in_opt _locale_t _Locale, va_list _ArgList);
 typedef int (*INPUTFN)(FILE *, const unsigned char *, _locale_t, va_list);
-typedef int (*WINPUTFN)(FILE *, const wchar_t *, _locale_t, va_list);
+typedef int (*WINPUTFN)(FILE *, const char16_t *, _locale_t, va_list);
 
 #ifdef _UNICODE
 #define TINPUTFN WINPUTFN
@@ -339,7 +339,7 @@ void __cdecl _endstdio(void);
 errno_t __cdecl _sopen_helper(__in_z const char * _Filename,
     __in int _OFlag, __in int _ShFlag, __in int _PMode,
     __out int * _PFileHandle, int _BSecure);
-errno_t __cdecl _wsopen_helper(__in_z const wchar_t * _Filename,
+errno_t __cdecl _wsopen_helper(__in_z const char16_t * _Filename,
     __in int _OFlag, __in int _ShFlag, __in int _PMode,
     __out int * _PFileHandle, int _BSecure);
 
@@ -360,7 +360,7 @@ extern char _exitflag;      /* callable termination flag */
 extern int _C_Termination_Done; /* termination done flag */
 
 char * __cdecl _getpath(__in_z const char * _Src, __out_ecount_z(_SizeInChars) char * _Dst, __in size_t _SizeInChars);
-wchar_t * __cdecl _wgetpath(__in_z const wchar_t * _Src, __out_ecount_z(_SizeInWords) wchar_t * _Dst, __in size_t _SizeInWords);
+char16_t * __cdecl _wgetpath(__in_z const char16_t * _Src, __out_ecount_z(_SizeInWords) char16_t * _Dst, __in size_t _SizeInWords);
 
 extern int _dowildcard;     /* flag to enable argv[] wildcard expansion */
 
@@ -384,7 +384,7 @@ extern int _newmode;    /* malloc new() handler mode */
 
 /* pointer to initial environment block that is passed to [w]main */
 #ifndef _M_CEE_PURE
-extern _CRTIMP wchar_t **__winitenv;
+extern _CRTIMP char16_t **__winitenv;
 extern _CRTIMP char **__initenv;
 #endif  /* _M_CEE_PURE */
 
@@ -393,17 +393,17 @@ extern _CRTIMP char **__initenv;
 
 /* startup set values */
 extern char *_aenvptr;      /* environment ptr */
-extern wchar_t *_wenvptr;   /* wide environment ptr */
+extern char16_t *_wenvptr;   /* wide environment ptr */
 
 /* command line */
 
 #if defined (_DLL)
 _CRTIMP char ** __cdecl __p__acmdln(void);
-_CRTIMP wchar_t ** __cdecl __p__wcmdln(void);
+_CRTIMP char16_t ** __cdecl __p__wcmdln(void);
 #endif  /* defined (_DLL) */
 #ifndef _M_CEE_PURE
 _CRTIMP extern char *_acmdln;
-_CRTIMP extern wchar_t *_wcmdln;
+_CRTIMP extern char16_t *_wcmdln;
 #else  /* _M_CEE_PURE */
 #define _acmdln (*__p__acmdln())
 #define _wcmdln (*__p__wcmdln())
@@ -475,7 +475,7 @@ int  __cdecl __initmbctable(void);      /* mbctype.c */
 
 #ifndef _MANAGED_MAIN
 int __CRTDECL main(__in int _Argc, __in_ecount_z(_Argc) char ** _Argv, __in_z char ** _Env);
-int __CRTDECL wmain(__in int _Argc, __in_ecount_z(_Argc) wchar_t ** _Argv, __in_z wchar_t ** _Env);
+int __CRTDECL wmain(__in int _Argc, __in_ecount_z(_Argc) char16_t ** _Argv, __in_z char16_t ** _Env);
 #endif  /* _MANAGED_MAIN */
 
 /* helper functions for wide/multibyte environment conversion */
@@ -485,11 +485,11 @@ int __cdecl __wtomb_environ (void);
 /* These two functions take a char ** for the environment option
    At some point during their execution, they take ownership of the
    memory block passed in using option. At this point, they
-   NULL out the incoming char * / wchar_t * to ensure there is no
+   NULL out the incoming char * / char16_t * to ensure there is no
    double-free
 */
 int __cdecl __crtsetenv (__deref_inout_opt char ** _POption, __in const int _Primary);
-int __cdecl __crtwsetenv (__deref_inout_opt wchar_t ** _POption, __in const int _Primary);
+int __cdecl __crtwsetenv (__deref_inout_opt char16_t ** _POption, __in const int _Primary);
 
 #ifndef _M_CEE_PURE
 _CRTIMP extern void (__cdecl * _aexit_rtn)(int);
@@ -509,8 +509,8 @@ _CRTIMP int __cdecl __getmainargs(__out int * _Argc, __deref_out_ecount(*_Argc) 
                                   __deref_out_opt char *** _Env, __in int _DoWildCard,
                                   __in _startupinfo * _StartInfo);
 
-_CRTIMP int __cdecl __wgetmainargs(__out int * _Argc, __deref_out_ecount(*_Argc)wchar_t *** _Argv,
-                                   __deref_out_opt wchar_t *** _Env, __in int _DoWildCard,
+_CRTIMP int __cdecl __wgetmainargs(__out int * _Argc, __deref_out_ecount(*_Argc)char16_t *** _Argv,
+                                   __deref_out_opt char16_t *** _Env, __in int _DoWildCard,
                                                                    __in _startupinfo * _StartInfo);
 
 #endif  /* defined (_DLL) || defined (CRTDLL) */
@@ -625,14 +625,14 @@ extern int __cdecl _get_errno_from_oserr(unsigned long);
  */
 
 extern intptr_t __cdecl _dospawn(__in int _Mode, __in_z_opt const char * _Name, __inout_z char * _Cmd, __in_z_opt char * _Env);
-extern intptr_t __cdecl _wdospawn(__in int _Mode, __in_z_opt const wchar_t * _Name, __inout_z wchar_t * _Cmd, __in_z_opt wchar_t * _Env);
+extern intptr_t __cdecl _wdospawn(__in int _Mode, __in_z_opt const char16_t * _Name, __inout_z char16_t * _Cmd, __in_z_opt char16_t * _Env);
 extern int __cdecl _cenvarg(__in_z const char * const * _Argv, __in_z_opt const char * const * _Env,
         __deref_out_opt char ** _ArgBlk, __deref_out_opt char ** _EnvBlk, __in_z const char *_Name);
-extern int __cdecl _wcenvarg(__in_z const wchar_t * const * _Argv, __in_z_opt const wchar_t * const * _Env,
-        __deref_out_opt wchar_t ** _ArgBlk, __deref_out_opt wchar_t ** _EnvBlk, __in_z const wchar_t * _Name);
+extern int __cdecl _wcenvarg(__in_z const char16_t * const * _Argv, __in_z_opt const char16_t * const * _Env,
+        __deref_out_opt char16_t ** _ArgBlk, __deref_out_opt char16_t ** _EnvBlk, __in_z const char16_t * _Name);
 #ifndef _M_IX86
 extern char ** _capture_argv(__in va_list *, __in_z const char * _FirstArg, __out_ecount_z(_MaxCount) char ** _Static_argv, __in size_t _MaxCount);
-extern wchar_t ** _wcapture_argv(__in va_list *, __in_z const wchar_t * _FirstArg, __out_ecount_z(_MaxCount) wchar_t ** _Static_argv, __in size_t _MaxCount);
+extern char16_t ** _wcapture_argv(__in va_list *, __in_z const char16_t * _FirstArg, __out_ecount_z(_MaxCount) char16_t ** _Static_argv, __in size_t _MaxCount);
 #endif  /* _M_IX86 */
 
 /*
@@ -689,23 +689,23 @@ typedef LONG NTSTATUS;
 
 #ifndef _SAFECRT_IMPL
 /* _invalid_parameter is already defined in safecrt.h and safecrt.lib */
-#if !defined (_NATIVE_WCHAR_T_DEFINED) && defined (_M_CEE_PURE)
+#if !defined (_NATIVE_char16_t_DEFINED) && defined (_M_CEE_PURE)
 extern "C++"
-#endif  /* !defined (_NATIVE_WCHAR_T_DEFINED) && defined (_M_CEE_PURE) */
+#endif  /* !defined (_NATIVE_char16_t_DEFINED) && defined (_M_CEE_PURE) */
 _CRTIMP
 #endif  /* _SAFECRT_IMPL */
-void __cdecl _invalid_parameter(__in_z_opt const wchar_t *, __in_z_opt const wchar_t *, __in_z_opt const wchar_t *, unsigned int, uintptr_t);
+void __cdecl _invalid_parameter(__in_z_opt const char16_t *, __in_z_opt const char16_t *, __in_z_opt const char16_t *, unsigned int, uintptr_t);
 
-#if !defined (_NATIVE_WCHAR_T_DEFINED) && defined (_M_CEE_PURE)
+#if !defined (_NATIVE_char16_t_DEFINED) && defined (_M_CEE_PURE)
 extern "C++"
-#endif  /* !defined (_NATIVE_WCHAR_T_DEFINED) && defined (_M_CEE_PURE) */
+#endif  /* !defined (_NATIVE_char16_t_DEFINED) && defined (_M_CEE_PURE) */
 _CRTIMP
-void __cdecl _invoke_watson(__in_z_opt const wchar_t *, __in_z_opt const wchar_t *, __in_z_opt const wchar_t *, unsigned int, uintptr_t);
+void __cdecl _invoke_watson(__in_z_opt const char16_t *, __in_z_opt const char16_t *, __in_z_opt const char16_t *, unsigned int, uintptr_t);
 
 #ifndef _DEBUG
-#if !defined (_NATIVE_WCHAR_T_DEFINED) && defined (_M_CEE_PURE)
+#if !defined (_NATIVE_char16_t_DEFINED) && defined (_M_CEE_PURE)
 extern "C++"
-#endif  /* !defined (_NATIVE_WCHAR_T_DEFINED) && defined (_M_CEE_PURE) */
+#endif  /* !defined (_NATIVE_char16_t_DEFINED) && defined (_M_CEE_PURE) */
 _CRTIMP
 void __cdecl _invalid_parameter_noinfo(void);
 #endif  /* _DEBUG */
@@ -714,9 +714,9 @@ void __cdecl _invalid_parameter_noinfo(void);
 __forceinline
 void _invoke_watson_if_error(
     errno_t _ExpressionError,
-    const wchar_t *_Expression,
-    const wchar_t *_Function,
-    const wchar_t *_File,
+    const char16_t *_Expression,
+    const char16_t *_Function,
+    const char16_t *_File,
     unsigned int _Line,
     uintptr_t _Reserved
     )
@@ -734,9 +734,9 @@ errno_t _invoke_watson_if_oneof(
     errno_t _ExpressionError,
     errno_t _ErrorValue1,
     errno_t _ErrorValue2,
-    const wchar_t *_Expression,
-    const wchar_t *_Function,
-    const wchar_t *_File,
+    const char16_t *_Expression,
+    const char16_t *_Function,
+    const char16_t *_File,
     unsigned int _Line,
     uintptr_t _Reserved
     )
@@ -1078,7 +1078,7 @@ BOOL DebuggerKnownHandle();
     }
 
 /* internal helper function to access environment variable in read-only mode */
-const wchar_t * __cdecl _wgetenv_helper_nolock(const wchar_t *);
+const char16_t * __cdecl _wgetenv_helper_nolock(const char16_t *);
 const char * __cdecl _getenv_helper_nolock(const char *);
 
 /* internal helper routines used to query a PE image header. */

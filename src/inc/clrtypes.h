@@ -180,7 +180,6 @@
 typedef char                    CHAR;
 typedef signed char             SCHAR;
 typedef unsigned char           UCHAR;
-typedef wchar_t                 WCHAR;
 
 typedef CHAR                    ASCII;
 typedef CHAR                    ANSI;

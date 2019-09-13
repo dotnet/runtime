@@ -168,7 +168,7 @@ public:
     bool Contains(class ICorJitInfo* info, CORINFO_METHOD_HANDLE method);
 
     // Ensure the range string has been parsed.
-    void EnsureInit(const wchar_t* rangeStr, unsigned capacity = DEFAULT_CAPACITY)
+    void EnsureInit(const WCHAR* rangeStr, unsigned capacity = DEFAULT_CAPACITY)
     {
         // Make sure that the memory was zero initialized
         assert(m_inited == 0 || m_inited == 1);
@@ -197,7 +197,7 @@ private:
         unsigned m_high;
     };
 
-    void InitRanges(const wchar_t* rangeStr, unsigned capacity);
+    void InitRanges(const WCHAR* rangeStr, unsigned capacity);
 
     unsigned m_entries;   // number of entries in the range array
     unsigned m_lastRange; // count of low-high pairs
@@ -536,7 +536,7 @@ class AssemblyNamesList2
 
 public:
     // Take a Unicode string list of assembly names, parse it, and store it.
-    AssemblyNamesList2(const wchar_t* list, HostAllocator alloc);
+    AssemblyNamesList2(const WCHAR* list, HostAllocator alloc);
 
     ~AssemblyNamesList2();
 
@@ -584,7 +584,7 @@ class MethodSet
 
 public:
     // Take a Unicode string with the filename containing a list of function names, parse it, and store it.
-    MethodSet(const wchar_t* filename, HostAllocator alloc);
+    MethodSet(const WCHAR* filename, HostAllocator alloc);
 
     ~MethodSet();
 

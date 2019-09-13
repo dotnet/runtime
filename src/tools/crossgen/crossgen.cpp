@@ -274,7 +274,7 @@ bool ComputeMscorlibPathFromTrustedPlatformAssemblies(SString& pwzMscorlibPath, 
 {
     LPWSTR wszTrustedPathCopy = new WCHAR[wcslen(pwzTrustedPlatformAssemblies) + 1];
     wcscpy_s(wszTrustedPathCopy, wcslen(pwzTrustedPlatformAssemblies) + 1, pwzTrustedPlatformAssemblies);
-    wchar_t *context;
+    WCHAR *context;
     LPWSTR wszSingleTrustedPath = wcstok_s(wszTrustedPathCopy, PATH_SEPARATOR_STR_W, &context);
     
     while (wszSingleTrustedPath != NULL)
@@ -995,11 +995,11 @@ int main(int argc, char *argv[])
         return FAILURE_RESULT;
     }
 
-    wchar_t **wargv = new wchar_t*[argc];
+    WCHAR **wargv = new WCHAR*[argc];
     for (int i = 0; i < argc; i++)
     {
         size_t len = strlen(argv[i]) + 1;
-        wargv[i] = new wchar_t[len];
+        wargv[i] = new WCHAR[len];
         WszMultiByteToWideChar(CP_ACP, 0, argv[i], -1, wargv[i], len);
     }
 

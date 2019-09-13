@@ -420,31 +420,31 @@ void JitInstance::timeResult(CORINFO_METHOD_INFO info, unsigned flags)
 
 /*-------------------------- Misc ---------------------------------------*/
 
-const wchar_t* JitInstance::getForceOption(const wchar_t* key)
+const WCHAR* JitInstance::getForceOption(const WCHAR* key)
 {
     return getOption(key, forceOptions);
 }
 
-const wchar_t* JitInstance::getOption(const wchar_t* key)
+const WCHAR* JitInstance::getOption(const WCHAR* key)
 {
     return getOption(key, options);
 }
 
-const wchar_t* JitInstance::getOption(const wchar_t* key, LightWeightMap<DWORD, DWORD>* options)
+const WCHAR* JitInstance::getOption(const WCHAR* key, LightWeightMap<DWORD, DWORD>* options)
 {
     if (options == nullptr)
     {
         return nullptr;
     }
 
-    size_t keyLenInBytes = sizeof(wchar_t) * (wcslen(key) + 1);
+    size_t keyLenInBytes = sizeof(WCHAR) * (wcslen(key) + 1);
     int    keyIndex      = options->Contains((unsigned char*)key, (unsigned int)keyLenInBytes);
     if (keyIndex == -1)
     {
         return nullptr;
     }
 
-    return (const wchar_t*)options->GetBuffer(options->Get(keyIndex));
+    return (const WCHAR*)options->GetBuffer(options->Get(keyIndex));
 }
 
 // Used to allocate memory that needs to handed to the EE.

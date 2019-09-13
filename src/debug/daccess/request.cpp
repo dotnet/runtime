@@ -579,19 +579,19 @@ ClrDataAccess::GetStackLimits(CLRDATA_ADDRESS threadPtr, CLRDATA_ADDRESS *lower,
 }
 
 HRESULT
-ClrDataAccess::GetRegisterName(int regNum, unsigned int count, __out_z __inout_ecount(count) wchar_t *buffer, unsigned int *pNeeded)
+ClrDataAccess::GetRegisterName(int regNum, unsigned int count, __out_z __inout_ecount(count) WCHAR *buffer, unsigned int *pNeeded)
 {
     if (!buffer && !pNeeded)
         return E_POINTER;
 
 #ifdef _TARGET_AMD64_
-    static const wchar_t *regs[] = 
+    static const WCHAR *regs[] = 
     {
         W("rax"), W("rcx"), W("rdx"), W("rbx"), W("rsp"), W("rbp"), W("rsi"), W("rdi"),
         W("r8"), W("r9"), W("r10"), W("r11"), W("r12"), W("r13"), W("r14"), W("r15"),
     };
 #elif defined(_TARGET_ARM_)
-    static const wchar_t *regs[] = 
+    static const WCHAR *regs[] = 
     {
         W("r0"),
         W("r1"),
@@ -604,7 +604,7 @@ ClrDataAccess::GetRegisterName(int regNum, unsigned int count, __out_z __inout_e
         W("r8"), W("r9"), W("r10"), W("r11"), W("r12"), W("sp"), W("lr")
     };
 #elif defined(_TARGET_ARM64_)
-    static const wchar_t *regs[] = 
+    static const WCHAR *regs[] = 
     {
         W("X0"),
         W("X1"),
@@ -619,7 +619,7 @@ ClrDataAccess::GetRegisterName(int regNum, unsigned int count, __out_z __inout_e
         W("X28"), W("Fp"),  W("Lr"),  W("Sp")
     };
 #elif defined(_TARGET_X86_)
-    static const wchar_t *regs[] = 
+    static const WCHAR *regs[] = 
     {
         W("eax"), W("ecx"), W("edx"), W("ebx"), W("esp"), W("ebp"), W("esi"), W("edi"),
     };
@@ -634,7 +634,7 @@ ClrDataAccess::GetRegisterName(int regNum, unsigned int count, __out_z __inout_e
         return E_UNEXPECTED;
     
     
-    const wchar_t caller[] = W("caller.");
+    const WCHAR caller[] = W("caller.");
     unsigned int needed = (callerFrame?(unsigned int)wcslen(caller):0) + (unsigned int)wcslen(regs[regNum]) + 1;
     if (pNeeded)
         *pNeeded = needed;
@@ -1321,7 +1321,7 @@ ClrDataAccess::GetMethodDescPtrFromIP(CLRDATA_ADDRESS ip, CLRDATA_ADDRESS * ppMD
 }
 
 HRESULT
-ClrDataAccess::GetMethodDescName(CLRDATA_ADDRESS methodDesc, unsigned int count, __out_z __inout_ecount(count) wchar_t *name, unsigned int *pNeeded)
+ClrDataAccess::GetMethodDescName(CLRDATA_ADDRESS methodDesc, unsigned int count, __out_z __inout_ecount(count) WCHAR *name, unsigned int *pNeeded)
 {
     if (methodDesc == 0)
         return E_INVALIDARG;
@@ -1397,7 +1397,7 @@ ClrDataAccess::GetMethodDescName(CLRDATA_ADDRESS methodDesc, unsigned int count,
     if (SUCCEEDED(hr))
     {
 
-        const wchar_t *val = str.GetUnicode();
+        const WCHAR *val = str.GetUnicode();
 
         if (pNeeded)
             *pNeeded = str.GetCount() + 1;
@@ -1429,7 +1429,7 @@ ClrDataAccess::GetDomainFromContext(CLRDATA_ADDRESS contextAddr, CLRDATA_ADDRESS
 
 
 HRESULT
-ClrDataAccess::GetObjectStringData(CLRDATA_ADDRESS obj, unsigned int count, __out_z __inout_ecount(count) wchar_t *stringData, unsigned int *pNeeded)
+ClrDataAccess::GetObjectStringData(CLRDATA_ADDRESS obj, unsigned int count, __out_z __inout_ecount(count) WCHAR *stringData, unsigned int *pNeeded)
 {
     if (obj == 0)
         return E_INVALIDARG;
@@ -1460,7 +1460,7 @@ ClrDataAccess::GetObjectStringData(CLRDATA_ADDRESS obj, unsigned int count, __ou
                 count = needed;
 
             TADDR pszStr = TO_TADDR(obj)+offsetof(StringObject, m_FirstChar);
-            hr = m_pTarget->ReadVirtual(pszStr, (PBYTE)stringData, count * sizeof(wchar_t), &needed);
+            hr = m_pTarget->ReadVirtual(pszStr, (PBYTE)stringData, count * sizeof(WCHAR), &needed);
         
             if (SUCCEEDED(hr))
                 stringData[count - 1] = W('\0');
@@ -1481,7 +1481,7 @@ ClrDataAccess::GetObjectStringData(CLRDATA_ADDRESS obj, unsigned int count, __ou
 }
 
 HRESULT
-ClrDataAccess::GetObjectClassName(CLRDATA_ADDRESS obj, unsigned int count, __out_z __inout_ecount(count) wchar_t *className, unsigned int *pNeeded)
+ClrDataAccess::GetObjectClassName(CLRDATA_ADDRESS obj, unsigned int count, __out_z __inout_ecount(count) WCHAR *className, unsigned int *pNeeded)
 {
     if (obj == 0)
         return E_INVALIDARG;
@@ -1518,7 +1518,7 @@ ClrDataAccess::GetObjectClassName(CLRDATA_ADDRESS obj, unsigned int count, __out
         {
             StackSString s;
             TypeString::AppendType(s, TypeHandle(mt), TypeString::FormatNamespace|TypeString::FormatFullInst);
-            const wchar_t *val = s.GetUnicode();
+            const WCHAR *val = s.GetUnicode();
 
             if (pNeeded)
                 *pNeeded = s.GetCount() + 1;
@@ -1748,7 +1748,7 @@ ClrDataAccess::GetMethodTableData(CLRDATA_ADDRESS mt, struct DacpMethodTableData
 }
 
 HRESULT
-ClrDataAccess::GetMethodTableName(CLRDATA_ADDRESS mt, unsigned int count, __out_z __inout_ecount(count) wchar_t *mtName, unsigned int *pNeeded)
+ClrDataAccess::GetMethodTableName(CLRDATA_ADDRESS mt, unsigned int count, __out_z __inout_ecount(count) WCHAR *mtName, unsigned int *pNeeded)
 {
     if (mt == 0)
         return E_INVALIDARG;
@@ -1811,7 +1811,7 @@ ClrDataAccess::GetMethodTableName(CLRDATA_ADDRESS mt, unsigned int count, __out_
             }
             else
             {
-                const wchar_t *val = s.GetUnicode();
+                const WCHAR *val = s.GetUnicode();
 
                 if (pNeeded)
                     *pNeeded = s.GetCount() + 1;
@@ -2011,7 +2011,7 @@ ClrDataAccess::GetMethodTableForEEClass(CLRDATA_ADDRESS eeClass, CLRDATA_ADDRESS
 }
 
 HRESULT
-ClrDataAccess::GetFrameName(CLRDATA_ADDRESS vtable, unsigned int count, __out_z __inout_ecount(count) wchar_t *frameName, unsigned int *pNeeded)
+ClrDataAccess::GetFrameName(CLRDATA_ADDRESS vtable, unsigned int count, __out_z __inout_ecount(count) WCHAR *frameName, unsigned int *pNeeded)
 {
     if (vtable == 0)
         return E_INVALIDARG;
@@ -2051,7 +2051,7 @@ ClrDataAccess::GetFrameName(CLRDATA_ADDRESS vtable, unsigned int count, __out_z 
 }
 
 HRESULT
-ClrDataAccess::GetPEFileName(CLRDATA_ADDRESS addr, unsigned int count, __out_z __inout_ecount(count) wchar_t *fileName, unsigned int *pNeeded)
+ClrDataAccess::GetPEFileName(CLRDATA_ADDRESS addr, unsigned int count, __out_z __inout_ecount(count) WCHAR *fileName, unsigned int *pNeeded)
 {
     if (addr == 0 || (fileName == NULL && pNeeded == NULL) || (fileName != NULL && count == 0))
         return E_INVALIDARG;
@@ -2380,7 +2380,7 @@ ClrDataAccess::GetFailedAssemblyData(CLRDATA_ADDRESS assembly, unsigned int *pCo
 
 HRESULT
 ClrDataAccess::GetFailedAssemblyLocation(CLRDATA_ADDRESS assembly, unsigned int count,
-                                         __out_z __inout_ecount(count) wchar_t *location, unsigned int *pNeeded)
+                                         __out_z __inout_ecount(count) WCHAR *location, unsigned int *pNeeded)
 {
     if (assembly == NULL || (location == NULL && pNeeded == NULL) || (location != NULL && count == 0))
         return E_INVALIDARG;
@@ -2410,7 +2410,7 @@ ClrDataAccess::GetFailedAssemblyLocation(CLRDATA_ADDRESS assembly, unsigned int 
 }
 
 HRESULT
-ClrDataAccess::GetFailedAssemblyDisplayName(CLRDATA_ADDRESS assembly, unsigned int count, __out_z __inout_ecount(count) wchar_t *name, unsigned int *pNeeded)
+ClrDataAccess::GetFailedAssemblyDisplayName(CLRDATA_ADDRESS assembly, unsigned int count, __out_z __inout_ecount(count) WCHAR *name, unsigned int *pNeeded)
 {
     if (assembly == NULL || (name == NULL && pNeeded == NULL) || (name != NULL && count == 0))
         return E_INVALIDARG;
@@ -2520,7 +2520,7 @@ ClrDataAccess::GetFailedAssemblyList(CLRDATA_ADDRESS appDomain, int count,
 }
 
 HRESULT
-ClrDataAccess::GetAppDomainName(CLRDATA_ADDRESS addr, unsigned int count, __out_z __inout_ecount(count) wchar_t *name, unsigned int *pNeeded)
+ClrDataAccess::GetAppDomainName(CLRDATA_ADDRESS addr, unsigned int count, __out_z __inout_ecount(count) WCHAR *name, unsigned int *pNeeded)
 {
     SOSDacEnter();
 
@@ -2561,7 +2561,7 @@ ClrDataAccess::GetAppDomainName(CLRDATA_ADDRESS addr, unsigned int count, __out_
 
 HRESULT
 ClrDataAccess::GetApplicationBase(CLRDATA_ADDRESS appDomain, int count,
-                                  __out_z __inout_ecount(count) wchar_t *base, unsigned int *pNeeded)
+                                  __out_z __inout_ecount(count) WCHAR *base, unsigned int *pNeeded)
 {
     // Method is not supported on CoreCLR
 
@@ -2570,7 +2570,7 @@ ClrDataAccess::GetApplicationBase(CLRDATA_ADDRESS appDomain, int count,
 
 HRESULT
 ClrDataAccess::GetPrivateBinPaths(CLRDATA_ADDRESS appDomain, int count,
-                                  __out_z __inout_ecount(count) wchar_t *paths, unsigned int *pNeeded)
+                                  __out_z __inout_ecount(count) WCHAR *paths, unsigned int *pNeeded)
 {
     // Method is not supported on CoreCLR
 
@@ -2579,7 +2579,7 @@ ClrDataAccess::GetPrivateBinPaths(CLRDATA_ADDRESS appDomain, int count,
 
 HRESULT
 ClrDataAccess::GetAppDomainConfigFile(CLRDATA_ADDRESS appDomain, int count,
-                                      __out_z __inout_ecount(count) wchar_t *configFile, unsigned int *pNeeded)
+                                      __out_z __inout_ecount(count) WCHAR *configFile, unsigned int *pNeeded)
 {
     // Method is not supported on CoreCLR
 
@@ -2631,7 +2631,7 @@ ClrDataAccess::GetAssemblyData(CLRDATA_ADDRESS cdBaseDomainPtr, CLRDATA_ADDRESS 
 }
 
 HRESULT
-ClrDataAccess::GetAssemblyName(CLRDATA_ADDRESS assembly, unsigned int count, __out_z __inout_ecount(count) wchar_t *name, unsigned int *pNeeded)
+ClrDataAccess::GetAssemblyName(CLRDATA_ADDRESS assembly, unsigned int count, __out_z __inout_ecount(count) WCHAR *name, unsigned int *pNeeded)
 {
     SOSDacEnter();
     Assembly* pAssembly = PTR_Assembly(TO_TADDR(assembly));
@@ -2651,7 +2651,7 @@ ClrDataAccess::GetAssemblyName(CLRDATA_ADDRESS assembly, unsigned int count, __o
         StackSString displayName;
         pAssembly->GetManifestFile()->GetDisplayName(displayName, 0);
         
-        const wchar_t *val = displayName.GetUnicode();
+        const WCHAR *val = displayName.GetUnicode();
         
         if (pNeeded)
             *pNeeded = displayName.GetCount() + 1;
@@ -2672,7 +2672,7 @@ ClrDataAccess::GetAssemblyName(CLRDATA_ADDRESS assembly, unsigned int count, __o
 }
 
 HRESULT
-ClrDataAccess::GetAssemblyLocation(CLRDATA_ADDRESS assembly, int count, __out_z __inout_ecount(count) wchar_t *location, unsigned int *pNeeded)
+ClrDataAccess::GetAssemblyLocation(CLRDATA_ADDRESS assembly, int count, __out_z __inout_ecount(count) WCHAR *location, unsigned int *pNeeded)
 {
     if ((assembly == NULL) || (location == NULL && pNeeded == NULL) || (location != NULL && count == 0))
     {

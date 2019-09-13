@@ -226,7 +226,7 @@ HRESULT FillErrorInfo(                  // Return status.
 
     // Set the help file and help context.
     //<TODO>@todo: we don't have a help file yet.</TODO>
-    if (FAILED(hr = pICreateErr->SetHelpFile(const_cast<wchar_t*>(W("complib.hlp")))) ||
+    if (FAILED(hr = pICreateErr->SetHelpFile(const_cast<WCHAR*>(W("complib.hlp")))) ||
         FAILED(hr = pICreateErr->SetHelpContext(dwHelpContext)))
         goto Exit1;
 

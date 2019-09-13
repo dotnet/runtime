@@ -159,7 +159,7 @@ unsigned GetDoubleW(__in __nullterminated char* begNum, unsigned L, double** ppR
     memcpy(dbuff,begNum,L);
     dbuff[L] = 0;
     dbuff[L+1] = 0;
-    *ppRes = new double(wcstod((const wchar_t*)dbuff, (wchar_t**)&pdummy));
+    *ppRes = new double(wcstod((const WCHAR*)dbuff, (WCHAR**)&pdummy));
     return ((unsigned)(pdummy - dbuff));
 }
 /*--------------------------------------------------------------------------*/

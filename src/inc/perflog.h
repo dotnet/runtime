@@ -68,7 +68,7 @@ typedef enum
 //-----------------------------------------------------------------------------
 // Widechar strings representing the above units. *** Keep in sync  *** with the 
 // array defined in PerfLog.cpp
-extern const wchar_t * const wszUnitOfMeasureDescr[MAX_UNITS_OF_MEASURE];
+extern const WCHAR * const wszUnitOfMeasureDescr[MAX_UNITS_OF_MEASURE];
 
 //-----------------------------------------------------------------------------
 // Widechar strings representing the "direction" property of above units.
@@ -77,7 +77,7 @@ extern const wchar_t * const wszUnitOfMeasureDescr[MAX_UNITS_OF_MEASURE];
 // a degrade.
 // "Direction" property is true if an increase in the value of the counter indicates
 // an improvement.
-extern const wchar_t * const wszIDirection[MAX_UNITS_OF_MEASURE];
+extern const WCHAR * const wszIDirection[MAX_UNITS_OF_MEASURE];
 
 //-----------------------------------------------------------------------------
 // Namespace for perf log. Don't create perf log objects (private ctor).
@@ -102,19 +102,19 @@ public:
 
     // Overloaded member functions to print different data types. Grow as needed.
     // wszName is the name of thet perf counter, val is the perf counter value,
-    static void Log(__in_z wchar_t const *wszName, UINT val, UnitOfMeasure unit, __in_opt const wchar_t *wszDescr = 0);
-    static void Log(__in_z wchar_t const *wszName, UINT64 val, UnitOfMeasure unit, __in_opt const wchar_t *wszDescr = 0);
-    static void Log(__in_z wchar_t const *wszName, double val, UnitOfMeasure unit, __in_opt const wchar_t *wszDescr = 0);
+    static void Log(__in_z WCHAR const *wszName, UINT val, UnitOfMeasure unit, __in_opt const WCHAR *wszDescr = 0);
+    static void Log(__in_z WCHAR const *wszName, UINT64 val, UnitOfMeasure unit, __in_opt const WCHAR *wszDescr = 0);
+    static void Log(__in_z WCHAR const *wszName, double val, UnitOfMeasure unit, __in_opt const WCHAR *wszDescr = 0);
     
 private:
     PerfLog();
     ~PerfLog();
     
     // Helper routine to hide some details of the perf automation
-    static void OutToPerfFile(__in_z const wchar_t *wszName, UnitOfMeasure unit, __in_opt const wchar_t *wszDescr = 0);
+    static void OutToPerfFile(__in_z const WCHAR *wszName, UnitOfMeasure unit, __in_opt const WCHAR *wszDescr = 0);
     
     // Helper routine to hide some details of output to stdout
-    static void OutToStdout(__in_z const wchar_t *wszName, UnitOfMeasure unit, __in_opt const wchar_t *wszDescr = 0);
+    static void OutToStdout(__in_z const WCHAR *wszName, UnitOfMeasure unit, __in_opt const WCHAR *wszDescr = 0);
 
     // Perf log initialized ?
     static bool m_perfLogInit;
@@ -126,7 +126,7 @@ private:
     static bool m_commaSeparatedFormat;
 
     // Temp storage to convert wide char to multibyte for file IO.
-    static wchar_t m_wszOutStr_1[PRINT_STR_LEN];
+    static WCHAR m_wszOutStr_1[PRINT_STR_LEN];
     static DWORD m_dwWriteByte;
 
     // State of the env var PERF_OUTPUT

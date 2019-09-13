@@ -1655,8 +1655,8 @@ interface ISymNGenWriter : IUnknown
 ]
 interface ISymNGenWriter2 : ISymNGenWriter
 {
-    HRESULT OpenModW([in] const wchar_t* wszModule, 
-                     [in] const wchar_t* wszObjFile, 
+    HRESULT OpenModW([in] LPCWSTR wszModule,
+                     [in] LPCWSTR wszObjFile,
                      [out] BYTE** ppmod);
 
     HRESULT CloseMod([in] BYTE* pmod);
@@ -1673,7 +1673,7 @@ interface ISymNGenWriter2 : ISymNGenWriter
         [in] DWORD dwRelocCrc);
 
     HRESULT QueryPDBNameExW(
-        [out, size_is(cchMax)] wchar_t wszPDB[],
+        [out, size_is(cchMax)] WCHAR wszPDB[],
         [in] SIZE_T cchMax);
 };
 

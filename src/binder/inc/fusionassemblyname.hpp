@@ -18,7 +18,7 @@ struct FusionProperty
 {
     union {
         LPVOID pv;
-        wchar_t* asStr;        // For debugging.
+        WCHAR* asStr;        // For debugging.
     };
     DWORD  cb;
 };

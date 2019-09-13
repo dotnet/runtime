@@ -204,7 +204,7 @@ void ILFormatter::formatInstrArgs(OpInfo op, OpArgsVal arg, OutString* out, size
             break;
         case InlineString: {
             ULONG numChars;
-            wchar_t str[84];
+            WCHAR str[84];
 
             hr = meta->GetUserString(arg.i, str, 80, &numChars);
             _ASSERTE(SUCCEEDED(hr));
@@ -212,7 +212,7 @@ void ILFormatter::formatInstrArgs(OpInfo op, OpArgsVal arg, OutString* out, size
                 str[numChars] = 0;
             wcscpy_s(&str[79], 4, W("..."));
             *out << '"';
-            wchar_t* ptr = str;
+            WCHAR* ptr = str;
             while(*ptr != 0) {
                 if (*ptr == '\n')
                     *out << "\\n";

@@ -6240,7 +6240,7 @@ bool MethodContext::repIsFieldStatic(CORINFO_FIELD_HANDLE fhld)
     return result;
 }
 
-void MethodContext::recGetIntConfigValue(const wchar_t* name, int defaultValue, int result)
+void MethodContext::recGetIntConfigValue(const WCHAR* name, int defaultValue, int result)
 {
     if (GetIntConfigValue == nullptr)
         GetIntConfigValue = new LightWeightMap<Agnostic_ConfigIntInfo, DWORD>();
@@ -6251,7 +6251,7 @@ void MethodContext::recGetIntConfigValue(const wchar_t* name, int defaultValue, 
     ZeroMemory(&key, sizeof(Agnostic_ConfigIntInfo));
 
     DWORD index =
-        (DWORD)GetIntConfigValue->AddBuffer((unsigned char*)name, sizeof(wchar_t) * ((unsigned int)wcslen(name) + 1));
+        (DWORD)GetIntConfigValue->AddBuffer((unsigned char*)name, sizeof(WCHAR) * ((unsigned int)wcslen(name) + 1));
 
     key.nameIndex    = index;
     key.defaultValue = defaultValue;
@@ -6262,12 +6262,12 @@ void MethodContext::recGetIntConfigValue(const wchar_t* name, int defaultValue, 
 
 void MethodContext::dmpGetIntConfigValue(const Agnostic_ConfigIntInfo& key, int value)
 {
-    const wchar_t* name = (const wchar_t*)GetIntConfigValue->GetBuffer(key.nameIndex);
+    const WCHAR* name = (const WCHAR*)GetIntConfigValue->GetBuffer(key.nameIndex);
     printf("GetIntConfigValue name %S, default value %d, value %d", name, key.defaultValue, value);
     GetIntConfigValue->Unlock();
 }
 
-int MethodContext::repGetIntConfigValue(const wchar_t* name, int defaultValue)
+int MethodContext::repGetIntConfigValue(const WCHAR* name, int defaultValue)
 {
     if (GetIntConfigValue == nullptr)
         return defaultValue;
@@ -6277,7 +6277,7 @@ int MethodContext::repGetIntConfigValue(const wchar_t* name, int defaultValue)
     Agnostic_ConfigIntInfo key;
     ZeroMemory(&key, sizeof(Agnostic_ConfigIntInfo));
 
-    size_t nameLenInBytes = sizeof(wchar_t) * (wcslen(name) + 1);
+    size_t nameLenInBytes = sizeof(WCHAR) * (wcslen(name) + 1);
     int    nameIndex      = GetIntConfigValue->Contains((unsigned char*)name, (unsigned int)nameLenInBytes);
     if (nameIndex == -1) // config name not in map
         return defaultValue;
@@ -6290,7 +6290,7 @@ int MethodContext::repGetIntConfigValue(const wchar_t* name, int defaultValue)
     return (int)result;
 }
 
-void MethodContext::recGetStringConfigValue(const wchar_t* name, const wchar_t* result)
+void MethodContext::recGetStringConfigValue(const WCHAR* name, const WCHAR* result)
 {
     if (GetStringConfigValue == nullptr)
         GetStringConfigValue = new LightWeightMap<DWORD, DWORD>();
@@ -6298,12 +6298,12 @@ void MethodContext::recGetStringConfigValue(const wchar_t* name, const wchar_t* 
     AssertCodeMsg(name != nullptr, EXCEPTIONCODE_MC, "Name can not be nullptr");
 
     DWORD nameIndex = (DWORD)GetStringConfigValue->AddBuffer((unsigned char*)name,
-                                                             sizeof(wchar_t) * ((unsigned int)wcslen(name) + 1));
+                                                             sizeof(WCHAR) * ((unsigned int)wcslen(name) + 1));
 
     DWORD resultIndex = (DWORD)-1;
     if (result != nullptr)
         resultIndex = (DWORD)GetStringConfigValue->AddBuffer((unsigned char*)result,
-                                                             sizeof(wchar_t) * ((unsigned int)wcslen(result) + 1));
+                                                             sizeof(WCHAR) * ((unsigned int)wcslen(result) + 1));
 
     GetStringConfigValue->Add(nameIndex, resultIndex);
     DEBUG_REC(dmpGetStringConfigValue(nameIndex, resultIndex));
@@ -6311,26 +6311,26 @@ void MethodContext::recGetStringConfigValue(const wchar_t* name, const wchar_t* 
 
 void MethodContext::dmpGetStringConfigValue(DWORD nameIndex, DWORD resultIndex)
 {
-    const wchar_t* name   = (const wchar_t*)GetStringConfigValue->GetBuffer(nameIndex);
-    const wchar_t* result = (const wchar_t*)GetStringConfigValue->GetBuffer(resultIndex);
+    const WCHAR* name   = (const WCHAR*)GetStringConfigValue->GetBuffer(nameIndex);
+    const WCHAR* result = (const WCHAR*)GetStringConfigValue->GetBuffer(resultIndex);
     printf("GetStringConfigValue name %S, result %S", name, result);
     GetStringConfigValue->Unlock();
 }
 
-const wchar_t* MethodContext::repGetStringConfigValue(const wchar_t* name)
+const WCHAR* MethodContext::repGetStringConfigValue(const WCHAR* name)
 {
     if (GetStringConfigValue == nullptr)
         return nullptr;
 
     AssertCodeMsg(name != nullptr, EXCEPTIONCODE_MC, "Name can not be nullptr");
 
-    size_t nameLenInBytes = sizeof(wchar_t) * (wcslen(name) + 1);
+    size_t nameLenInBytes = sizeof(WCHAR) * (wcslen(name) + 1);
     int    nameIndex      = GetStringConfigValue->Contains((unsigned char*)name, (unsigned int)nameLenInBytes);
     if (nameIndex == -1) // config name not in map
         return nullptr;
 
     int            resultIndex = GetStringConfigValue->Get(nameIndex);
-    const wchar_t* value       = (const wchar_t*)GetStringConfigValue->GetBuffer(resultIndex);
+    const WCHAR* value       = (const WCHAR*)GetStringConfigValue->GetBuffer(resultIndex);
 
     DEBUG_REP(dmpGetStringConfigValue(nameIndex, resultIndex));
 
