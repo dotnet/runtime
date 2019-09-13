@@ -93,10 +93,12 @@ namespace Mono.Linker.Steps {
 				goto case AssemblyAction.Copy;
 
 			case AssemblyAction.Copy:
-				// Copy assemblies can still contain Type references with
-				// type forwarders from Delete assemblies
-				// thus try to resolve all the type references and see
-				// if some changed the scope. if yes change the action to Save
+				//
+				// Copy assemblies can contain type references with
+				// type forwarders from delete assemblies (facades) when
+				// facade assemblies are not kept. For that reason we need to
+				// rewrite the copy to save to update the scopes references.
+				//
 				if (!Context.KeepTypeForwarderOnlyAssemblies && SweepTypeForwarders (assembly)) {
 					Annotations.SetAction (assembly, AssemblyAction.Save);
 				}
@@ -220,8 +222,10 @@ namespace Mono.Linker.Steps {
 					break;
 
 				case AssemblyAction.Copy:
-					// We need to save the assembly if a reference was removed, otherwise we can end up
-					// with an assembly that references an assembly that no longer exists
+					//
+					// Assembly has a reference to another assembly which has been fully removed. This can
+					// happen when for example the reference assembly is 'copy-used' and it's not needed.
+					//
 					Annotations.SetAction (assembly, AssemblyAction.Save);
 					break;
 
