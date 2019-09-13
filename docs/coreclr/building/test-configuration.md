@@ -43,13 +43,10 @@ Test cases are categorized by priority level. The most important subset should b
     * `<GCStressIncompatible>true</GCStressIncompatible>`
 * Exclude test from JIT stress runs runs by adding the following to the csproj:
     * `<JitOptimizationSensitive>true</JitOptimizationSensitive>`
-* Add NuGet/MyGet references by updating the following [test project](https://github.com/dotnet/coreclr/blob/master/tests/src/Common/test_dependencies/test_dependencies.csproj).
-* Build against the `mscorlib` facade by adding `<ReferenceLocalMscorlib>true</ReferenceLocalMscorlib>` to the test project.
-* Update relevent exclusion lists:
-  There are currently three different exclude lists. Tests.lst is currently only used by CI.
-    - `tests/issues.targets`
-    - `tests/arm/Tests.lst` - Used by Windows arm32 testing
-    - `tests/arm64/Tests.lst` - Used by Windows arm64 testing
+* Add NuGet references by updating the following [test project](https://github.com/dotnet/coreclr/blob/master/tests/src/Common/test_dependencies/test_dependencies.csproj).
+* Get access to System.Private.CoreLib types and methods that are not exposed via public surface by adding the following to the csproj:
+    * `<ReferenceSystemPrivateCoreLib>true</ReferenceSystemPrivateCoreLib>`
+* Update exclusion list at [tests/issues.targets](https://github.com/dotnet/coreclr/blob/master/tests/issues.targets) if the test fails due to active bug.
 
 ### Creating a C# test project
 
