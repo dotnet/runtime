@@ -26,14 +26,9 @@ Revision History:
 #include "pal/dbgmsg.h"
 #include "pal/file.h"
 #include "pal/utf8.h"
-#include "pal/locale.h"
 #include "pal/cruntime.h"
 #include "pal/stackstring.hpp"
 #include "pal/unicodedata.h"
-
-#if !(HAVE_PTHREAD_RWLOCK_T || HAVE_COREFOUNDATION)
-#error Either pthread rwlocks or Core Foundation are required for Unicode support
-#endif /* !(HAVE_PTHREAD_RWLOCK_T || HAVE_COREFOUNDATION) */
 
 #include <pthread.h>
 #include <locale.h>
@@ -41,44 +36,12 @@ Revision History:
 #include <libintl.h>
 #endif // HAVE_LIBINTL_H
 #include <errno.h>
-#if HAVE_COREFOUNDATION
-#include <CoreFoundation/CoreFoundation.h>
-#endif // HAVE_COREFOUNDATION
 
 #include <debugmacrosext.h>
 
 using namespace CorUnix;
 
 SET_DEFAULT_DEBUG_CHANNEL(UNICODE);
-
-#if HAVE_COREFOUNDATION
-
-static CP_MAPPING CP_TO_NATIVE_TABLE[] = {
-    { 65001, kCFStringEncodingUTF8, 4, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },
-    { 1252, kCFStringEncodingWindowsLatin1, 1, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },
-    { 1251, kCFStringEncodingWindowsCyrillic, 1, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },
-    { 1253, kCFStringEncodingWindowsGreek, 1, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },
-    { 1254, kCFStringEncodingWindowsLatin5, 1, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },
-    { 1258, kCFStringEncodingWindowsVietnamese, 1, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },
-    { 932, kCFStringEncodingDOSJapanese, 2, { 129, 159, 224, 252, 0, 0, 0, 0, 0, 0, 0, 0 } },
-    { 949, kCFStringEncodingDOSKorean, 2, { 129, 254, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },
-    { 950, kCFStringEncodingDOSChineseTrad, 2, { 129, 254, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } }
-};
-
-#else // HAVE_COREFOUNDATION
-
-static const CP_MAPPING CP_TO_NATIVE_TABLE[] = {
-    { 65001, "utf8", 4, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } }
-};
-
-#endif // HAVE_COREFOUNDATION
-
-// We hardcode the system's default codepage to be UTF-8.
-// There are several reasons for this:
-// - On OSX, HFS+ file names are encoded as UTF-8.
-// - On OSX, When writing strings to the console, the Terminal.app will interpret them as UTF-8.
-// - We want Ansi marshalling to mean marshal to UTF-8 on Mac and Linux
-static const UINT PAL_ACP = 65001;
 
 /*++
 Function:
@@ -214,61 +177,6 @@ PAL_ToLowerInvariant( wchar_16 c )
 
 /*++
 Function:
-CODEPAGEGetData
-
-    IN UINT CodePage - The code page the caller
-    is attempting to retrieve data on.
-
-    Returns a pointer to structure, NULL otherwise.
---*/
-const CP_MAPPING *
-CODEPAGEGetData( IN UINT CodePage )
-{
-    UINT nSize = sizeof( CP_TO_NATIVE_TABLE ) / sizeof( CP_TO_NATIVE_TABLE[ 0 ] );
-    UINT nIndex = 0;
-
-    if ( CP_ACP == CodePage )
-    {
-        CodePage = PAL_ACP;
-    }
-
-    /* checking if the CodePage is ACP and returning true if so */
-    while (nIndex < nSize)
-    {
-        if ( ( CP_TO_NATIVE_TABLE[ nIndex ] ).nCodePage == CodePage )
-        {
-            return &(CP_TO_NATIVE_TABLE[ nIndex ]);
-        }
-        nIndex++;
-    }
-    return NULL;
-}
-
-#if HAVE_COREFOUNDATION
-/*++
-Function :
-
-CODEPAGECPToCFStringEncoding - Gets the CFStringEncoding for
-the given codepage.
-
-Returns the CFStringEncoding for the given codepage.
---*/
-CFStringEncoding CODEPAGECPToCFStringEncoding(UINT codepage)
-{
-    const CP_MAPPING *cp_mapping = CODEPAGEGetData(codepage);
-    if (cp_mapping == NULL)
-    {
-        return kCFStringEncodingInvalidId;
-    }
-    else
-    {
-        return cp_mapping->nCFEncoding;
-    }
-}
-#endif // HAVE_COREFOUNDATION
-
-/*++
-Function:
 CharNextA
 
 Parameters
@@ -352,56 +260,6 @@ GetConsoleOutputCP(
     return nRet;
 }
 
-
-/*++
-Function:
-IsValidCodePage
-
-See MSDN doc.
-
-Notes :
-"pseudo code pages", like CP_ACP, aren't considered 'valid' in this context.
-CP_UTF7 and CP_UTF8, however, *are* considered valid code pages, even though
-MSDN fails to mention them in the IsValidCodePage entry.
-Note : CP_UTF7 support isn't required for CoreCLR
---*/
-BOOL
-PALAPI
-IsValidCodePage(
-    IN UINT CodePage)
-{
-    BOOL retval = FALSE;
-
-    PERF_ENTRY(IsValidCodePage);
-    ENTRY("IsValidCodePage(%d)\n", CodePage );
-
-    switch(CodePage)
-    {
-    case CP_ACP       : /* fall through */
-    case CP_OEMCP      : /* fall through */
-    case CP_MACCP      : /* fall through */
-    case CP_THREAD_ACP:
-        /* 'pseudo code pages' : not valid */
-        retval = FALSE;
-        break;
-    case CP_UTF7:
-        /* valid in Win32, but not supported in the PAL */
-        retval = FALSE;
-        break;
-    case CP_UTF8:
-        /* valid, but not part of CODEPAGEGetData's tables */
-        retval = TRUE;
-        break;
-    default:
-        retval = (NULL != CODEPAGEGetData( CodePage ));
-        break;
-    }
-
-    LOGEXIT("IsValidCodePage returns BOOL %d\n",retval);
-    PERF_EXIT(IsValidCodePage);
-    return retval;
-}
-
 /*++
 Function:
 GetCPInfo
@@ -414,14 +272,13 @@ GetCPInfo(
   IN UINT CodePage,
   OUT LPCPINFO lpCPInfo)
 {
-    const CP_MAPPING * lpStruct = NULL;
     BOOL bRet = FALSE;
 
     PERF_ENTRY(GetCPInfo);
     ENTRY("GetCPInfo(CodePage=%hu, lpCPInfo=%p)\n", CodePage, lpCPInfo);
 
     /*check if the input code page is valid*/
-    if( CP_ACP != CodePage && !IsValidCodePage( CodePage ) )
+    if( CP_ACP != CodePage && CP_UTF8 != CodePage )
     {
         /* error, invalid argument */
         ERROR("CodePage(%d) parameter is invalid\n",CodePage);
@@ -438,16 +295,13 @@ GetCPInfo(
         goto done;
     }
 
-    if ( NULL != ( lpStruct = CODEPAGEGetData( CodePage ) ) )
-    {
-        lpCPInfo->MaxCharSize = lpStruct->nMaxByteSize;;
-        memcpy( lpCPInfo->LeadByte, lpStruct->LeadByte , MAX_LEADBYTES );
+    lpCPInfo->MaxCharSize = 4;
+    memset( lpCPInfo->LeadByte, 0, MAX_LEADBYTES );
 
-        /* Don't need to be set, according to the spec. */
-        memset( lpCPInfo->DefaultChar, '?', MAX_DEFAULTCHAR );
+    /* Don't need to be set, according to the spec. */
+    memset( lpCPInfo->DefaultChar, '?', MAX_DEFAULTCHAR );
 
-        bRet = TRUE;
-    }
+    bRet = TRUE;
 
 done:
     LOGEXIT("GetCPInfo returns BOOL %d \n",bRet);
@@ -469,10 +323,10 @@ GetACP(VOID)
     PERF_ENTRY(GetACP);
     ENTRY("GetACP(VOID)\n");
 
-    LOGEXIT("GetACP returning UINT %d\n", PAL_ACP );
+    LOGEXIT("GetACP returning UINT %d\n", CP_UTF8);
     PERF_EXIT(GetACP);
 
-    return PAL_ACP;
+    return CP_UTF8;
 }
 
 
@@ -557,11 +411,6 @@ MultiByteToWideChar(
         IN int cchWideChar)
 {
     INT retval =0;
-#if HAVE_COREFOUNDATION
-    CFStringRef cfString = NULL;
-    CFStringEncoding cfEncoding;
-    int bytesToConvert;
-#endif /* HAVE_COREFOUNDATION */
 
     PERF_ENTRY(MultiByteToWideChar);
     ENTRY("MultiByteToWideChar(CodePage=%u, dwFlags=%#x, lpMultiByteStr=%p (%s),"
@@ -589,7 +438,7 @@ MultiByteToWideChar(
 
     // Use UTF8ToUnicode on all systems, since it replaces
     // invalid characters and Core Foundation doesn't do that.
-    if (CodePage == CP_UTF8 || (CodePage == CP_ACP && GetACP() == CP_UTF8))
+    if (CodePage == CP_UTF8 || CodePage == CP_ACP)
     {
         if (cbMultiByte <= -1)
         {
@@ -600,63 +449,9 @@ MultiByteToWideChar(
         goto EXIT;
     }
 
-#if !HAVE_COREFOUNDATION
     ERROR( "This code page is not in the system.\n" );
     SetLastError( ERROR_INVALID_PARAMETER );
     goto EXIT;
-#else /* !HAVE_COREFOUNDATION */
-    bytesToConvert = cbMultiByte;
-    if (bytesToConvert == -1)
-    {
-        /* Plus one for the trailing '\0', which will end up
-        * in the CFString. */
-        bytesToConvert = strlen(lpMultiByteStr) + 1;
-    }
-
-    cfEncoding = CODEPAGECPToCFStringEncoding(CodePage);
-    if (cfEncoding == kCFStringEncodingInvalidId)
-    {
-        ERROR( "This code page is not in the system.\n" );
-        SetLastError( ERROR_INVALID_PARAMETER );
-        goto EXIT;
-    }
-
-    cfString = CFStringCreateWithBytes(kCFAllocatorDefault, (UInt8*)lpMultiByteStr,
-                     bytesToConvert, cfEncoding, TRUE);
-    if (cfString == NULL)
-    {
-        ERROR( "Failed to convert the string to the specified encoding.\n" );
-        SetLastError( ERROR_NO_UNICODE_TRANSLATION );
-        goto EXIT;
-    }
-
-    if (cchWideChar != 0)
-    {
-        /* Do the conversion. */
-        CFIndex length = CFStringGetLength(cfString);
-        if (length > cchWideChar)
-        {
-            ERROR("Error insufficient buffer\n");
-            SetLastError(ERROR_INSUFFICIENT_BUFFER);
-            retval = 0;
-            goto ReleaseString;
-        }
-        CFStringGetCharacters(cfString, CFRangeMake(0, length),
-                (UniChar*)lpWideCharStr);
-        retval = length;
-    }
-    else
-    {
-        /* Just return the number of wide characters needed. */
-        retval = CFStringGetLength(cfString);
-    }
-
-ReleaseString:
-    if (cfString != NULL)
-    {
-        CFRelease(cfString);
-    }
-#endif /* !HAVE_COREFOUNDATION */
 
 EXIT:
 
@@ -688,13 +483,6 @@ WideCharToMultiByte(
     INT retval =0;
     char defaultChar = '?';
     BOOL usedDefaultChar = FALSE;
-#if HAVE_COREFOUNDATION
-    CFStringRef cfString = NULL;
-    CFStringEncoding cfEncoding;
-    int charsToConvert;
-    CFIndex charsConverted;
-    CFIndex bytesConverted;
-#endif /* !HAVE_COREFOUNDATION */
 
     PERF_ENTRY(WideCharToMultiByte);
     ENTRY("WideCharToMultiByte(CodePage=%u, dwFlags=%#x, lpWideCharStr=%p (%S), "
@@ -735,7 +523,7 @@ WideCharToMultiByte(
 
     // Use UnicodeToUTF8 on all systems because we use
     // UTF8ToUnicode in MultiByteToWideChar() on all systems.
-    if (CodePage == CP_UTF8 || (CodePage == CP_ACP && GetACP() == CP_UTF8))
+    if (CodePage == CP_UTF8 || CodePage == CP_ACP)
     {
         if (cchWideChar == -1)
         {
@@ -745,78 +533,9 @@ WideCharToMultiByte(
         goto EXIT;
     }
 
-#if HAVE_COREFOUNDATION
-    charsToConvert = cchWideChar;
-    if (charsToConvert == -1)
-    {
-        LPCWSTR ptr = lpWideCharStr;
-
-        charsToConvert = 0;
-        while(*ptr++ != 0)
-        {
-            charsToConvert++;
-        }
-        charsToConvert++;   /* For the terminating '\0' */
-    }
-
-    cfEncoding = CODEPAGECPToCFStringEncoding(CodePage);
-    if (cfEncoding == kCFStringEncodingInvalidId)
-    {
-        ERROR( "This code page is not in the system.\n" );
-        SetLastError(ERROR_INVALID_PARAMETER);
-        goto EXIT;
-    }
-
-    cfString = CFStringCreateWithCharacters(kCFAllocatorDefault,
-                      (const UniChar*)lpWideCharStr, charsToConvert);
-    if (cfString == NULL)
-    {
-        ERROR("CFString creation failed.\n");
-        SetLastError(ERROR_INVALID_PARAMETER);
-        goto EXIT;
-    }
-
-    if (cbMultiByte == 0)
-    {
-        lpMultiByteStr = NULL;
-    }
-    charsConverted = CFStringGetBytes(cfString,
-                    CFRangeMake(0, charsToConvert),
-                    cfEncoding, '?', TRUE, (UInt8*)lpMultiByteStr,
-                    cbMultiByte, &bytesConverted);
-    if (charsConverted != charsToConvert)
-    {
-        if (lpMultiByteStr != NULL)
-        {
-            // CFStringGetBytes can fail due to an insufficient buffer or for
-            // other reasons. We need to check if we're out of buffer space.
-            charsConverted = CFStringGetBytes(cfString,
-                        CFRangeMake(0, charsToConvert),
-                        cfEncoding, '?', TRUE, NULL,
-                        0, &bytesConverted);
-            if (cbMultiByte < bytesConverted)
-            {
-                ERROR("Insufficient buffer for CFStringGetBytes.\n");
-                SetLastError(ERROR_INSUFFICIENT_BUFFER);
-                goto ReleaseString;
-            }
-        }
-        ERROR("Not all characters were converted.\n");
-        SetLastError(ERROR_INVALID_PARAMETER);
-        goto ReleaseString;
-    }
-    retval = bytesConverted;
-
-ReleaseString:
-    if (cfString != NULL)
-    {
-        CFRelease(cfString);
-    }
-#else /*HAVE_COREFOUNDATION */
     ERROR( "This code page is not in the system.\n" );
     SetLastError( ERROR_INVALID_PARAMETER );
     goto EXIT;
-#endif /* HAVE_COREFOUNDATION */
 
 EXIT:
 

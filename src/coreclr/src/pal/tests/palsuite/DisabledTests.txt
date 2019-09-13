@@ -42,12 +42,6 @@ This test will be useful in future versions for testing various
 languages (code pages).  Currently only U.S. English (tested by -
 test1) is supported.
 
-locale_info/isvalidcodepage/test2:
-=======================================
-This test will be useful in future versions for testing various
-languages (code pages).  Currently only U.S. English (tested by -
-test1) is supported.
-
 pal_specific/pal_get_stdin/test1 :
 =======================================
 This test case should be run manually.  Requires user input.

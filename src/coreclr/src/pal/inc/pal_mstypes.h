@@ -700,13 +700,6 @@ typedef struct _FILETIME {
 
 /* Code Page Default Values */
 #define CP_ACP          0   /* default to ANSI code page */
-#define CP_OEMCP        1   /* default to OEM code page */
-#define CP_MACCP        2   /* default to MAC code page */
-#define CP_THREAD_ACP   3   /* current thread's ANSI code page */
-#define CP_WINUNICODE   1200
-#define CP_UNICODE      1200 /* Unicode */
-#define CP_UNICODESWAP  1201 /* Unicode Big-Endian */
-#define CP_UTF7     65000   /* UTF-7 translation */
 #define CP_UTF8     65001   /* UTF-8 translation */
 
 typedef PVOID PSID;

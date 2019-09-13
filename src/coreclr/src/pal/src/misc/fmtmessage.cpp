@@ -31,11 +31,7 @@ Revision History:
 #include "errorstrings.h"
 
 #include <stdarg.h>
-#if NEED_DLCOMPAT
-#include "dlcompat.h"
-#else   // NEED_DLCOMPAT
 #include <dlfcn.h>
-#endif  // NEED_DLCOMPAT
 #include <errno.h>
 #include <wctype.h>
 
