@@ -20,6 +20,12 @@ namespace ReadyToRun.SuperIlc
                 return 1;
             }
 
+            if (options.CoreRootDirectory == null)
+            {
+                Console.Error.WriteLine("--core-root-directory (--cr) is a required argument.");
+                return 1;
+            }
+
             if (options.OutputDirectory == null)
             {
                 options.OutputDirectory = options.InputDirectory;
@@ -33,7 +39,10 @@ namespace ReadyToRun.SuperIlc
 
             IEnumerable<CompilerRunner> runners = options.CompilerRunners(isFramework: false);
 
-            PathExtensions.DeleteOutputFolders(options.OutputDirectory.FullName, options.CoreRootDirectory.FullName, recursive: false);
+            if (!options.Exe)
+            {
+                PathExtensions.DeleteOutputFolders(options.OutputDirectory.FullName, options.CoreRootDirectory.FullName, recursive: false);
+            }
 
             BuildFolder folder = BuildFolder.FromDirectory(options.InputDirectory.FullName, runners, options.OutputDirectory.FullName, options);
             if (folder == null)
@@ -45,7 +54,7 @@ namespace ReadyToRun.SuperIlc
             bool success = folderSet.Build(runners);
             folderSet.WriteLogs();
 
-            if (!options.NoCleanup)
+            if (!options.NoCleanup && !options.Exe)
             {
                 PathExtensions.DeleteOutputFolders(options.OutputDirectory.FullName, options.CoreRootDirectory.FullName, recursive: false);
             }

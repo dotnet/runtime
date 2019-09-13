@@ -32,6 +32,7 @@ namespace ReadyToRun.SuperIlc
                         CpaotDirectory(),
                         Crossgen(),
                         NoJit(),
+                        Exe(),
                         NoExe(),
                         NoEtw(),
                         NoCleanup(),
@@ -59,6 +60,7 @@ namespace ReadyToRun.SuperIlc
                         CpaotDirectory(),
                         Crossgen(),
                         NoJit(),
+                        Exe(),
                         NoExe(),
                         NoEtw(),
                         NoCleanup(),
@@ -135,11 +137,14 @@ namespace ReadyToRun.SuperIlc
             Option NoJit() =>
                 new Option(new[] { "--nojit" }, "Don't run tests in JITted mode", new Argument<bool>());
 
-            Option NoEtw() =>
-                new Option(new[] { "--noetw" }, "Don't capture jitted methods using ETW", new Argument<bool>());
+            Option Exe() =>
+                new Option(new[] { "--exe" }, "Don't compile tests, just execute them", new Argument<bool>());
 
             Option NoExe() =>
                 new Option(new[] { "--noexe" }, "Compilation-only mode (don't execute the built apps)", new Argument<bool>());
+
+            Option NoEtw() =>
+                new Option(new[] { "--noetw" }, "Don't capture jitted methods using ETW", new Argument<bool>());
 
             Option NoCleanup() =>
                 new Option(new[] { "--nocleanup" }, "Don't clean up compilation artifacts after test runs", new Argument<bool>());

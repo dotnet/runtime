@@ -16,10 +16,12 @@ namespace ReadyToRun.SuperIlc
     {
         public override CompilerIndex Index => CompilerIndex.Jit;
 
+        protected override string CompilerRelativePath => ".";
+
         protected override string CompilerFileName => "clrjit.dll";
 
         public JitRunner(BuildOptions options) 
-            : base(options, null, new string[] { options.CoreRootDirectory.FullName }.Concat(options.ReferencePaths())) { }
+            : base(options, new string[] { options.CoreRootDirectory.FullName }.Concat(options.ReferencePaths())) { }
 
         /// <summary>
         /// JIT runner has no compilation process as it doesn't transform the source IL code in any manner.
