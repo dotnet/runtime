@@ -73,8 +73,8 @@ namespace System.Collections
         {
             if (index < 0 || index >= Count)
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
-            object temp = InnerList[index];
-            OnValidate(temp);
+            object? temp = InnerList[index];
+            OnValidate(temp!);
             OnRemove(index, temp);
             InnerList.RemoveAt(index);
             try
@@ -113,7 +113,7 @@ namespace System.Collections
             InnerList.CopyTo(array, index);
         }
 
-        object IList.this[int index]
+        object? IList.this[int index]
         {
             get
             {
@@ -125,8 +125,8 @@ namespace System.Collections
             {
                 if (index < 0 || index >= Count)
                     throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
-                OnValidate(value);
-                object temp = InnerList[index];
+                OnValidate(value!);
+                object? temp = InnerList[index];
                 OnSet(index, temp, value);
                 InnerList[index] = value;
                 try
@@ -141,14 +141,14 @@ namespace System.Collections
             }
         }
 
-        bool IList.Contains(object value)
+        bool IList.Contains(object? value)
         {
             return InnerList.Contains(value);
         }
 
-        int IList.Add(object value)
+        int IList.Add(object? value)
         {
-            OnValidate(value);
+            OnValidate(value!);
             OnInsert(InnerList.Count, value);
             int index = InnerList.Add(value);
             try
@@ -164,9 +164,9 @@ namespace System.Collections
         }
 
 
-        void IList.Remove(object value)
+        void IList.Remove(object? value)
         {
-            OnValidate(value);
+            OnValidate(value!);
             int index = InnerList.IndexOf(value);
             if (index < 0) throw new ArgumentException(SR.Arg_RemoveArgNotFound);
             OnRemove(index, value);
@@ -182,16 +182,16 @@ namespace System.Collections
             }
         }
 
-        int IList.IndexOf(object value)
+        int IList.IndexOf(object? value)
         {
             return InnerList.IndexOf(value);
         }
 
-        void IList.Insert(int index, object value)
+        void IList.Insert(int index, object? value)
         {
             if (index < 0 || index > Count)
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
-            OnValidate(value);
+            OnValidate(value!);
             OnInsert(index, value);
             InnerList.Insert(index, value);
             try
@@ -210,11 +210,11 @@ namespace System.Collections
             return InnerList.GetEnumerator();
         }
 
-        protected virtual void OnSet(int index, object oldValue, object newValue)
+        protected virtual void OnSet(int index, object? oldValue, object? newValue)
         {
         }
 
-        protected virtual void OnInsert(int index, object value)
+        protected virtual void OnInsert(int index, object? value)
         {
         }
 
@@ -222,7 +222,7 @@ namespace System.Collections
         {
         }
 
-        protected virtual void OnRemove(int index, object value)
+        protected virtual void OnRemove(int index, object? value)
         {
         }
 
@@ -231,11 +231,11 @@ namespace System.Collections
             if (value == null) throw new ArgumentNullException(nameof(value));
         }
 
-        protected virtual void OnSetComplete(int index, object oldValue, object newValue)
+        protected virtual void OnSetComplete(int index, object? oldValue, object? newValue)
         {
         }
 
-        protected virtual void OnInsertComplete(int index, object value)
+        protected virtual void OnInsertComplete(int index, object? value)
         {
         }
 
@@ -243,7 +243,7 @@ namespace System.Collections
         {
         }
 
-        protected virtual void OnRemoveComplete(int index, object value)
+        protected virtual void OnRemoveComplete(int index, object? value)
         {
         }
     }
