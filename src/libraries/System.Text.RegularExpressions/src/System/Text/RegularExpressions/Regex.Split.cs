@@ -12,23 +12,17 @@ namespace System.Text.RegularExpressions
         /// Splits the <paramref name="input "/>string at the position defined
         /// by <paramref name="pattern"/>.
         /// </summary>
-        public static string[] Split(string input, string pattern)
-        {
-            return Split(input, pattern, RegexOptions.None, s_defaultMatchTimeout);
-        }
+        public static string[] Split(string input, string pattern) =>
+            new Regex(pattern, addToCache: true).Split(input);
 
         /// <summary>
         /// Splits the <paramref name="input "/>string at the position defined by <paramref name="pattern"/>.
         /// </summary>
-        public static string[] Split(string input, string pattern, RegexOptions options)
-        {
-            return Split(input, pattern, options, s_defaultMatchTimeout);
-        }
+        public static string[] Split(string input, string pattern, RegexOptions options) =>
+            Split(input, pattern, options, s_defaultMatchTimeout);
 
-        public static string[] Split(string input, string pattern, RegexOptions options, TimeSpan matchTimeout)
-        {
-            return new Regex(pattern, options, matchTimeout, true).Split(input);
-        }
+        public static string[] Split(string input, string pattern, RegexOptions options, TimeSpan matchTimeout) =>
+            new Regex(pattern, options, matchTimeout, addToCache: true).Split(input);
 
         /// <summary>
         /// Splits the <paramref name="input"/> string at the position defined by a

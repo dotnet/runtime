@@ -9,25 +9,19 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Searches the input string for one or more occurrences of the text supplied in the given pattern.
         /// </summary>
-        public static bool IsMatch(string input, string pattern)
-        {
-            return IsMatch(input, pattern, RegexOptions.None, s_defaultMatchTimeout);
-        }
+        public static bool IsMatch(string input, string pattern) =>
+            new Regex(pattern, addToCache: true).IsMatch(input);
 
         /// <summary>
         /// Searches the input string for one or more occurrences of the text
         /// supplied in the pattern parameter with matching options supplied in the options
         /// parameter.
         /// </summary>
-        public static bool IsMatch(string input, string pattern, RegexOptions options)
-        {
-            return IsMatch(input, pattern, options, s_defaultMatchTimeout);
-        }
+        public static bool IsMatch(string input, string pattern, RegexOptions options) =>
+            IsMatch(input, pattern, options, s_defaultMatchTimeout);
 
-        public static bool IsMatch(string input, string pattern, RegexOptions options, TimeSpan matchTimeout)
-        {
-            return new Regex(pattern, options, matchTimeout, true).IsMatch(input);
-        }
+        public static bool IsMatch(string input, string pattern, RegexOptions options, TimeSpan matchTimeout) =>
+            new Regex(pattern, options, matchTimeout, addToCache: true).IsMatch(input);
 
         /*
          * Returns true if the regex finds a match within the specified string
@@ -64,25 +58,19 @@ namespace System.Text.RegularExpressions
         /// Searches the input string for one or more occurrences of the text
         /// supplied in the pattern parameter.
         /// </summary>
-        public static Match Match(string input, string pattern)
-        {
-            return Match(input, pattern, RegexOptions.None, s_defaultMatchTimeout);
-        }
+        public static Match Match(string input, string pattern) =>
+            new Regex(pattern, addToCache: true).Match(input);
 
         /// <summary>
         /// Searches the input string for one or more occurrences of the text
         /// supplied in the pattern parameter. Matching is modified with an option
         /// string.
         /// </summary>
-        public static Match Match(string input, string pattern, RegexOptions options)
-        {
-            return Match(input, pattern, options, s_defaultMatchTimeout);
-        }
+        public static Match Match(string input, string pattern, RegexOptions options) =>
+            Match(input, pattern, options, s_defaultMatchTimeout);
 
-        public static Match Match(string input, string pattern, RegexOptions options, TimeSpan matchTimeout)
-        {
-            return new Regex(pattern, options, matchTimeout, true).Match(input);
-        }
+        public static Match Match(string input, string pattern, RegexOptions options, TimeSpan matchTimeout) =>
+            new Regex(pattern, options, matchTimeout, addToCache: true).Match(input);
 
         /*
          * Finds the first match for the regular expression starting at the beginning
@@ -134,23 +122,17 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Returns all the successful matches as if Match were called iteratively numerous times.
         /// </summary>
-        public static MatchCollection Matches(string input, string pattern)
-        {
-            return Matches(input, pattern, RegexOptions.None, s_defaultMatchTimeout);
-        }
+        public static MatchCollection Matches(string input, string pattern) =>
+            new Regex(pattern, addToCache: true).Matches(input);
 
         /// <summary>
         /// Returns all the successful matches as if Match were called iteratively numerous times.
         /// </summary>
-        public static MatchCollection Matches(string input, string pattern, RegexOptions options)
-        {
-            return Matches(input, pattern, options, s_defaultMatchTimeout);
-        }
+        public static MatchCollection Matches(string input, string pattern, RegexOptions options) =>
+            Matches(input, pattern, options, s_defaultMatchTimeout);
 
-        public static MatchCollection Matches(string input, string pattern, RegexOptions options, TimeSpan matchTimeout)
-        {
-            return new Regex(pattern, options, matchTimeout, true).Matches(input);
-        }
+        public static MatchCollection Matches(string input, string pattern, RegexOptions options, TimeSpan matchTimeout) =>
+            new Regex(pattern, options, matchTimeout, addToCache: true).Matches(input);
 
         /*
          * Finds the first match for the regular expression starting at the beginning
