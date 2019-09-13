@@ -6980,7 +6980,10 @@ register_interp_stats (void)
 	mono_counters_init ();
 	mono_counters_register ("Total transform time", MONO_COUNTER_INTERP | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_interp_stats.transform_time);
 	mono_counters_register ("Total cprop time", MONO_COUNTER_INTERP | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_interp_stats.cprop_time);
-	mono_counters_register ("Instructions optimized away", MONO_COUNTER_INTERP | MONO_COUNTER_INT, &mono_interp_stats.killed_instructions);
+	mono_counters_register ("STLOC_NP count", MONO_COUNTER_INTERP | MONO_COUNTER_INT, &mono_interp_stats.stloc_nps);
+	mono_counters_register ("MOVLOC count", MONO_COUNTER_INTERP | MONO_COUNTER_INT, &mono_interp_stats.movlocs);
+	mono_counters_register ("Copy propagations", MONO_COUNTER_INTERP | MONO_COUNTER_INT, &mono_interp_stats.copy_propagations);
+	mono_counters_register ("Killed instructions", MONO_COUNTER_INTERP | MONO_COUNTER_INT, &mono_interp_stats.killed_instructions);
 	mono_counters_register ("Methods inlined", MONO_COUNTER_INTERP | MONO_COUNTER_INT, &mono_interp_stats.inlined_methods);
 	mono_counters_register ("Inline failures", MONO_COUNTER_INTERP | MONO_COUNTER_INT, &mono_interp_stats.inline_failures);
 }
@@ -7003,8 +7006,9 @@ mono_ee_interp_init (const char *opts)
 	set_context (NULL);
 
 	interp_parse_options (opts);
+	/* Don't do any optimizations if running under debugger */
 	if (mini_get_debug_options ()->mdb_optimizations)
-		mono_interp_opt &= ~INTERP_OPT_INLINE;
+		mono_interp_opt = 0;
 	mono_interp_transform_init ();
 
 	mini_install_interp_callbacks (&mono_interp_callbacks);
