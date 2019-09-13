@@ -58,6 +58,9 @@
     <Compile Include="$(CommonTestPath)\System\Net\Configuration.Security.cs">
       <Link>Common\System\Net\Configuration.Security.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Configuration.Sockets.cs">
+      <Link>Common\System\Net\Configuration.Sockets.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\TestWebProxies.cs">
       <Link>Common\System\Net\TestWebProxies.cs</Link>
     </Compile>
