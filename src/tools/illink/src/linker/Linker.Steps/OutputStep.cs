@@ -103,7 +103,12 @@ namespace Mono.Linker.Steps {
 				}
 			}
 
-			assembly.Write (GetAssemblyFileName (assembly, directory), writerParameters);
+			string outputName = GetAssemblyFileName (assembly, directory);
+			try {
+				assembly.Write (outputName, writerParameters);
+			} catch (Exception e) {
+				throw new OutputException ($"Failed to write '{outputName}", e);
+			}
 		}
 
 		void OutputAssembly (AssemblyDefinition assembly)
