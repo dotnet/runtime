@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputType>library</OutputType>
   </PropertyGroup>
   <ItemGroup>
