@@ -154,10 +154,10 @@ ULONG                   g_ulMetaInfoFilter = MDInfo::dumpDefault;
 // Validator module type.
 DWORD g_ValModuleType = ValidatorModuleTypeInvalid;
 IMetaDataDispenserEx *g_pDisp = NULL;
-void DisplayFile(__in __nullterminated wchar_t* szFile, 
+void DisplayFile(__in __nullterminated WCHAR* szFile, 
                  BOOL isFile, 
                  ULONG DumpFilter, 
-                 __in_opt __nullterminated wchar_t* szObjFile, 
+                 __in_opt __nullterminated WCHAR* szObjFile, 
                  strPassBackFn pDisplayString);
 extern mdMethodDef      g_tkEntryPoint; // integration with MetaInfo
 
@@ -6917,7 +6917,7 @@ void DumpMetaInfo(__in __nullterminated const WCHAR* pwzFileName, __in_opt __nul
                         memset(pwzObjFileName,0,sizeof(WCHAR)*nLength);
                         WszMultiByteToWideChar(CP_UTF8,0,pszObjFileName,-1,pwzObjFileName,nLength);
                     }
-                    DisplayFile((wchar_t*)pwzFileName, true, g_ulMetaInfoFilter, pwzObjFileName, DumpMI);
+                    DisplayFile((WCHAR*)pwzFileName, true, g_ulMetaInfoFilter, pwzObjFileName, DumpMI);
                     g_pDisp->Release();
                     g_pDisp = NULL;
                     if (pwzObjFileName) VDELETE(pwzObjFileName);

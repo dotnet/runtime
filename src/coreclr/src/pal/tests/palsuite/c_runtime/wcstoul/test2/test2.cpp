@@ -31,7 +31,7 @@ int __cdecl main(int argc, char *argv[])
     }
 
 
-    l = wcstoul((wchar_t*)teststr, &end, 10);
+    l = wcstoul((char16_t*)teststr, &end, 10);
 
     if (l != result)
     {

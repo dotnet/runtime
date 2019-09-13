@@ -2422,7 +2422,7 @@ void SafeReleaseStream(IStream *pStream)
         HRESULT hr = CoReleaseMarshalData(pStream);
     
 #ifdef _DEBUG          
-        wchar_t      logStr[200];
+        WCHAR      logStr[200];
         swprintf_s(logStr, NumItems(logStr), W("Object gone: CoReleaseMarshalData returned %x, file %S, line %d\n"), hr, __FILE__, __LINE__);
         LogInterop(logStr);
         if (hr != S_OK)

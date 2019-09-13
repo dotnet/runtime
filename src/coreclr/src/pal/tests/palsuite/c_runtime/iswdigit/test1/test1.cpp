@@ -27,8 +27,8 @@ int __cdecl main(int argc, char **argv)
     int result;  
     int i;
   
-    wchar_t passTestCases[] = {'1','2','3','4','5','6','7','8','9'};
-    wchar_t failTestCases[] = {'a','b','p','$','?',234};
+    char16_t passTestCases[] = {'1','2','3','4','5','6','7','8','9'};
+    char16_t failTestCases[] = {'a','b','p','$','?',234};
   
     if ((PAL_Initialize(argc, argv)) != 0)
     {
@@ -36,7 +36,7 @@ int __cdecl main(int argc, char **argv)
     }
   
     /* Loop through each case. Testing if each is a digit. */
-    for(i = 0; i < sizeof(passTestCases) / sizeof(wchar_t); i++)
+    for(i = 0; i < sizeof(passTestCases) / sizeof(char16_t); i++)
     {
         result = iswdigit(passTestCases[i]);
      
@@ -51,7 +51,7 @@ int __cdecl main(int argc, char **argv)
     }      
 
     /* Loop through each case. Testing if each is a not a digit. */
-    for(i = 0; i < sizeof(failTestCases) / sizeof(wchar_t); i++)
+    for(i = 0; i < sizeof(failTestCases) / sizeof(char16_t); i++)
     {
         result = iswdigit(failTestCases[i]);
              

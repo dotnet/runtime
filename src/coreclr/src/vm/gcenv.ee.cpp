@@ -1135,7 +1135,7 @@ bool GCToEEInterface::GetIntConfigValue(const char* key, int64_t* value)
             return false;
         }
 
-        wchar_t *end;
+        WCHAR *end;
         uint64_t result;
         errno = 0;
         result = _wcstoui64(out, &end, 16);
@@ -1249,7 +1249,7 @@ namespace
     bool CreateSuspendableThread(
         void (*threadStart)(void*),
         void* argument,
-        const wchar_t* name)
+        const WCHAR* name)
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -1332,7 +1332,7 @@ namespace
     bool CreateNonSuspendableThread(
         void (*threadStart)(void*),
         void* argument,
-        const wchar_t* name)
+        const WCHAR* name)
     {
         LIMITED_METHOD_CONTRACT;
 

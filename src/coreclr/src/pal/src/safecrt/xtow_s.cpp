@@ -23,6 +23,6 @@
 #define _SECURE_ITOA
 
 #define _UNICODE
-#define TCHAR wchar_t
+#define TCHAR char16_t
 #define _T(x)       L##x
 #include "xtox_s.inl"

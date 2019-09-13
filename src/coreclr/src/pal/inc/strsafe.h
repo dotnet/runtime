@@ -37,12 +37,6 @@ typedef __w64 unsigned int  size_t;
 #define _SIZE_T_DEFINED
 #endif  // !_SIZE_T_DEFINED
 
-#if !defined(_WCHAR_T_DEFINED) && !defined(_NATIVE_WCHAR_T_DEFINED)
-#error Unexpected define.
-typedef char16_t WCHAR;
-#define _WCHAR_T_DEFINED
-#endif
-
 #ifndef SUCCEEDED
 #define SUCCEEDED(hr)  ((HRESULT)(hr) >= 0)
 #endif

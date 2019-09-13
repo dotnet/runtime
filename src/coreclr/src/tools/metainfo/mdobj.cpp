@@ -58,7 +58,7 @@ static HRESULT FindObjMetaData(PVOID pImage, PVOID *ppMetaData, long *pcbMetaDat
 
 
 // This function returns the address to the MapView of file and file size.
-void GetMapViewOfFile(__in wchar_t *szFile, PBYTE *ppbMap, DWORD *pdwFileSize)
+void GetMapViewOfFile(__in WCHAR *szFile, PBYTE *ppbMap, DWORD *pdwFileSize)
 {
     HANDLE      hMapFile;
     DWORD       dwHighSize;
@@ -162,7 +162,7 @@ char *GetNameOfObj(PBYTE pbLongNames, PIMAGE_ARCHIVE_MEMBER_HEADER pMemHdr, char
 //
 // Opens the .LIB file, and displays the metadata in the specified object files.
 
-void DisplayArchive(__in_z __in wchar_t* szFile, ULONG DumpFilter, __in_z __in_opt wchar_t* szObjName, strPassBackFn pDisplayString)
+void DisplayArchive(__in_z __in WCHAR* szFile, ULONG DumpFilter, __in_z __in_opt WCHAR* szObjName, strPassBackFn pDisplayString)
 {
     PBYTE       pbMapAddress;
     PBYTE       pbStartAddress;
@@ -171,7 +171,7 @@ void DisplayArchive(__in_z __in wchar_t* szFile, ULONG DumpFilter, __in_z __in_o
     DWORD       dwFileSize;
     PVOID       pvMetaData;
     char        *szName;
-    wchar_t     wzName[1024];
+    WCHAR     wzName[1024];
     char        szBuf[17];
     long        cbMetaData;
     int         i;
@@ -250,7 +250,7 @@ void DisplayArchive(__in_z __in wchar_t* szFile, ULONG DumpFilter, __in_z __in_o
 // Opens the meta data content of a .EXE, .CLB, .CLASS, .TLB, .DLL or .LIB file, and
 // calls RawDisplay()
 
-void DisplayFile(__in_z __in wchar_t* szFile, BOOL isFile, ULONG DumpFilter, __in_z __in_opt wchar_t* szObjName, strPassBackFn pDisplayString)
+void DisplayFile(__in_z __in WCHAR* szFile, BOOL isFile, ULONG DumpFilter, __in_z __in_opt WCHAR* szObjName, strPassBackFn pDisplayString)
 {
     // Open the emit scope
     
@@ -273,7 +273,7 @@ void DisplayFile(__in_z __in wchar_t* szFile, BOOL isFile, ULONG DumpFilter, __i
 
     // print bar that separates different files
     pDisplayString("////////////////////////////////////////////////////////////////\n");
-    wchar_t rcFname[_MAX_FNAME], rcExt[_MAX_EXT];
+    WCHAR rcFname[_MAX_FNAME], rcExt[_MAX_EXT];
 
     _wsplitpath_s(szFile, NULL, 0, NULL, 0, rcFname, _MAX_FNAME, rcExt, _MAX_EXT);
     sprintf_s(szString,1024,"\nFile %S%S: \n",rcFname, rcExt);

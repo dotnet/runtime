@@ -587,13 +587,10 @@ typedef LONG_PTR LPARAM;
 #define _PTRDIFF_T
 #endif
 
-#ifdef PAL_STDCPP_COMPAT
-
 typedef char16_t WCHAR;
 
-#else // PAL_STDCPP_COMPAT
+#ifndef PAL_STDCPP_COMPAT
 
-typedef wchar_t WCHAR;
 #if defined(__linux__) 
 #ifdef BIT64
 typedef long int intptr_t;

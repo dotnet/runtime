@@ -24,17 +24,17 @@ void JitHost::freeMemory(void* block)
     return wrappedHost->freeMemory(block);
 }
 
-int JitHost::getIntConfigValue(const wchar_t* key, int defaultValue)
+int JitHost::getIntConfigValue(const WCHAR* key, int defaultValue)
 {
     return wrappedHost->getIntConfigValue(key, defaultValue);
 }
 
-const wchar_t* JitHost::getStringConfigValue(const wchar_t* key)
+const WCHAR* JitHost::getStringConfigValue(const WCHAR* key)
 {
     return wrappedHost->getStringConfigValue(key);
 }
 
-void JitHost::freeStringConfigValue(const wchar_t* value)
+void JitHost::freeStringConfigValue(const WCHAR* value)
 {
     wrappedHost->freeStringConfigValue(value);
 }

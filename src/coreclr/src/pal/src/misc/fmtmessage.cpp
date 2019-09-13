@@ -185,7 +185,7 @@ Function :
     Returns the LPWSTR string, or NULL on failure.
 */
     
-static LPWSTR FMTMSG_ProcessPrintf( wchar_t c , 
+static LPWSTR FMTMSG_ProcessPrintf( WCHAR c , 
                                  LPWSTR lpPrintfString,
                                  LPWSTR lpInsertString)
 {

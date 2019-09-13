@@ -732,7 +732,7 @@ bool ConfigMethodRange::Contains(ICorJitInfo* info, CORINFO_METHOD_HANDLE method
 //    because of bad characters or too many entries, or had values
 //    that were too large to represent.
 
-void ConfigMethodRange::InitRanges(const wchar_t* rangeStr, unsigned capacity)
+void ConfigMethodRange::InitRanges(const WCHAR* rangeStr, unsigned capacity)
 {
     // Make sure that the memory was zero initialized
     assert(m_inited == 0 || m_inited == 1);
@@ -754,9 +754,9 @@ void ConfigMethodRange::InitRanges(const wchar_t* rangeStr, unsigned capacity)
     m_ranges             = (Range*)jitHost->allocateMemory(capacity * sizeof(Range));
     m_entries            = capacity;
 
-    const wchar_t* p           = rangeStr;
-    unsigned       lastRange   = 0;
-    bool           setHighPart = false;
+    const WCHAR* p           = rangeStr;
+    unsigned     lastRange   = 0;
+    bool         setHighPart = false;
 
     while ((*p != 0) && (lastRange < m_entries))
     {
@@ -1476,7 +1476,7 @@ void HelperCallProperties::init()
 //
 // You must use ';' as a separator; whitespace no longer works
 
-AssemblyNamesList2::AssemblyNamesList2(const wchar_t* list, HostAllocator alloc) : m_alloc(alloc)
+AssemblyNamesList2::AssemblyNamesList2(const WCHAR* list, HostAllocator alloc) : m_alloc(alloc)
 {
     WCHAR          prevChar   = '?';     // dummy
     LPWSTR         nameStart  = nullptr; // start of the name currently being processed. nullptr if no current name
@@ -1563,7 +1563,7 @@ bool AssemblyNamesList2::IsInList(const char* assemblyName)
 // MethodSet
 //=============================================================================
 
-MethodSet::MethodSet(const wchar_t* filename, HostAllocator alloc) : m_pInfos(nullptr), m_alloc(alloc)
+MethodSet::MethodSet(const WCHAR* filename, HostAllocator alloc) : m_pInfos(nullptr), m_alloc(alloc)
 {
     FILE* methodSetFile = _wfopen(filename, W("r"));
     if (methodSetFile == nullptr)

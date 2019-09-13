@@ -22,7 +22,7 @@
 
 #define _FUNC_PROLOGUE
 #define _FUNC_NAME _wsplitpath_s
-#define _CHAR wchar_t
+#define _CHAR char16_t
 #define _TCSNCPY_S wcsncpy_s
 #define _T(_Character) L##_Character
 #define _MBS_SUPPORT 0

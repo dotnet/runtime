@@ -61,7 +61,7 @@ inline UPTR DispID2HashKey(DISPID DispID)
 }
 
 // Typedef for string comparition functions.
-typedef int (__cdecl *UnicodeStringCompareFuncPtr)(const wchar_t *, const wchar_t *);
+typedef int (__cdecl *UnicodeStringCompareFuncPtr)(const WCHAR *, const WCHAR *);
 
 //--------------------------------------------------------------------------------
 // The DispatchMemberInfo class implementation.
