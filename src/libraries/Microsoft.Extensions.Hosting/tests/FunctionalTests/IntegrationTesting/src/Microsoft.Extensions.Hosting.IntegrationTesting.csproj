@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <Description>.NET Core Extensions helpers to deploy applications to for testing.</Description>
-    <TargetFrameworks>netcoreapp3.0;net472</TargetFrameworks>
+    <TargetFrameworks>$(DefaultNetCoreTargetFramework);net472</TargetFrameworks>
     <EnableApiCheck>false</EnableApiCheck>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
