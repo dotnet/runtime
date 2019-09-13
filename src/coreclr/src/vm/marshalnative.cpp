@@ -422,69 +422,6 @@ FCIMPL1(LPVOID, MarshalNative::GetFunctionPointerForDelegateInternal, Object* re
 }
 FCIMPLEND
 
-//====================================================================
-// map a fiber cookie from the hosting APIs into a managed Thread object
-//====================================================================
-FCIMPL1(THREADBASEREF, MarshalNative::GetThreadFromFiberCookie, int cookie)
-{
-    FCALL_CONTRACT;
-
-    _ASSERTE(cookie);
-
-    THREADBASEREF ret = 0;
-    
-    // Set up a frame
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    // Any host who is sophisticated enough to correctly schedule fibers
-    // had better be sophisticated enough to give us a real fiber cookie.
-    Thread  *pThread = *((Thread **) &cookie);
-    
-    // Minimal check that it smells like a thread:
-    _ASSERTE(pThread->m_fPreemptiveGCDisabled.Load() == 0 || pThread->m_fPreemptiveGCDisabled.Load() == 1);
-    
-    ret = (THREADBASEREF)(pThread->GetExposedObject()); 
-    HELPER_METHOD_FRAME_END();
-
-    return ret;
-}
-FCIMPLEND
-
-FCIMPL3(LPVOID, MarshalNative::GetUnmanagedThunkForManagedMethodPtr, LPVOID pfnMethodToWrap, PCCOR_SIGNATURE pbSignature, ULONG cbSignature)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        INJECT_FAULT(FCThrow(kOutOfMemoryException););
-        PRECONDITION(CheckPointer(pfnMethodToWrap, NULL_OK));
-        PRECONDITION(CheckPointer(pbSignature, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    LPVOID pThunk = NULL;
-    return pThunk;
-}
-FCIMPLEND
-
-
-/************************************************************************
- * PInvoke.GetManagedThunkForUnmanagedMethodPtr()
- */
-FCIMPL3(LPVOID, MarshalNative::GetManagedThunkForUnmanagedMethodPtr, LPVOID pfnMethodToWrap, PCCOR_SIGNATURE pbSignature, ULONG cbSignature)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pfnMethodToWrap, NULL_OK));
-        PRECONDITION(CheckPointer(pbSignature, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    LPVOID pThunk = NULL;
-    return pThunk;
-}
-FCIMPLEND
-
 /************************************************************************
  * PInvoke.GetLastWin32Error
  */
