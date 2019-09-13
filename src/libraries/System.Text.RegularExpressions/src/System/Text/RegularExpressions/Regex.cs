@@ -48,37 +48,37 @@ namespace System.Text.RegularExpressions
         /// Creates and compiles a regular expression object for the specified regular
         /// expression.
         /// </summary>
-        public Regex(string pattern)
-            : this(pattern, RegexOptions.None, s_defaultMatchTimeout, false)
-        {
-        }
+        public Regex(string pattern) =>
+            Init(pattern, RegexOptions.None, s_defaultMatchTimeout, addToCache: false);
+
+        /// <summary>
+        /// Creates and compiles a regular expression object for the specified regular
+        /// expression, and adds it to the cache.
+        /// </summary>
+        private Regex(string pattern, bool addToCache) =>
+            Init(pattern, RegexOptions.None, s_defaultMatchTimeout, addToCache);
 
         /// <summary>
         /// Creates and compiles a regular expression object for the
         /// specified regular expression with options that modify the pattern.
         /// </summary>
-        public Regex(string pattern, RegexOptions options)
-            : this(pattern, options, s_defaultMatchTimeout, false)
-        {
-        }
+        public Regex(string pattern, RegexOptions options) =>
+            InitWithPossibleCompilation(pattern, options, s_defaultMatchTimeout, addToCache: false);
 
-        public Regex(string pattern, RegexOptions options, TimeSpan matchTimeout)
-            : this(pattern, options, matchTimeout, false)
-        {
-        }
+        public Regex(string pattern, RegexOptions options, TimeSpan matchTimeout) =>
+            InitWithPossibleCompilation(pattern, options, matchTimeout, addToCache: false);
 
-        protected Regex(SerializationInfo info, StreamingContext context)
-            : this(info.GetString("pattern"), (RegexOptions)info.GetInt32("options"))
-        {
-            throw new PlatformNotSupportedException();
-        }
+        private Regex(string pattern, RegexOptions options, TimeSpan matchTimeout, bool addToCache) =>
+            InitWithPossibleCompilation(pattern, options, matchTimeout, addToCache);
 
-        void ISerializable.GetObjectData(SerializationInfo si, StreamingContext context)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        private Regex(string pattern, RegexOptions options, TimeSpan matchTimeout, bool addToCache)
+        /// <summary>Initializes the instance.</summary>
+        /// <remarks>
+        /// This is separated out of the constructor to allow the Regex ctor that doesn't
+        /// take a RegexOptions to avoid rooting the regex compiler, such that it can be trimmed away.
+        /// If <paramref name="options"/> may possibly include RegexOptions.Compiled, InitWithPossibleCompilation
+        /// must be invoked instead.
+        /// </remarks>
+        private CachedCodeEntry Init(string pattern, RegexOptions options, TimeSpan matchTimeout, bool addToCache)
         {
             if (pattern == null)
             {
@@ -153,6 +153,14 @@ namespace System.Text.RegularExpressions
                 _refsInitialized = true;
             }
 
+            return cached;
+        }
+
+        /// <summary>Initializes the instance.</summary>
+        private void InitWithPossibleCompilation(string pattern, RegexOptions options, TimeSpan matchTimeout, bool addToCache)
+        {
+            CachedCodeEntry cached = Init(pattern, options, matchTimeout, addToCache);
+
 #if FEATURE_COMPILED
             // if the compile option is set, then compile the code if it's not already
             if (UseOptionC() && factory == null)
@@ -168,6 +176,12 @@ namespace System.Text.RegularExpressions
             }
 #endif
         }
+
+        protected Regex(SerializationInfo info, StreamingContext context) =>
+            throw new PlatformNotSupportedException();
+
+        void ISerializable.GetObjectData(SerializationInfo si, StreamingContext context) =>
+            throw new PlatformNotSupportedException();
 
         [CLSCompliant(false)]
         protected IDictionary Caps
