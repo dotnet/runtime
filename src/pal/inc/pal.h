@@ -2979,13 +2979,6 @@ PALAPI
 IsDBCSLeadByte(
         IN BYTE TestChar);
 
-PALIMPORT
-BOOL
-PALAPI
-IsValidCodePage(
-        IN UINT CodePage);
-
-
 #define MB_PRECOMPOSED            0x00000001
 #define MB_ERR_INVALID_CHARS      0x00000008
 

@@ -24,7 +24,6 @@ Revision History:
 
 #include "pal/palinternal.h"
 #include "pal/cruntime.h"
-#include "pal/locale.h"
 #include "pal/printfcpp.hpp"
 #include "pal/thread.hpp"
 
