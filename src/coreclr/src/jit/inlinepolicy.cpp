@@ -2302,8 +2302,8 @@ ReplayPolicy::ReplayPolicy(Compiler* compiler, bool isPrejitRoot)
         if (!s_WroteReplayBanner)
         {
             // Nope, open it up.
-            const wchar_t* replayFileName = JitConfig.JitInlineReplayFile();
-            s_ReplayFile                  = _wfopen(replayFileName, W("r"));
+            const WCHAR* replayFileName = JitConfig.JitInlineReplayFile();
+            s_ReplayFile                = _wfopen(replayFileName, W("r"));
 
             // Display banner to stderr, unless we're dumping inline Xml,
             // in which case the policy name is captured in the Xml.

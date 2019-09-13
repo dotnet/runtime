@@ -70,7 +70,7 @@ extern "C" DLLEXPORT void __stdcall jitStartup(ICorJitHost* jitHost)
     JitConfig.initialize(jitHost);
 
 #ifdef DEBUG
-    const wchar_t* jitStdOutFile = JitConfig.JitStdOutFile();
+    const WCHAR* jitStdOutFile = JitConfig.JitStdOutFile();
     if (jitStdOutFile != nullptr)
     {
         jitstdout = _wfopen(jitStdOutFile, W("a"));
@@ -1410,7 +1410,7 @@ const char* Compiler::eeGetClassName(CORINFO_CLASS_HANDLE clsHnd)
 
 #ifdef DEBUG
 
-const wchar_t* Compiler::eeGetCPString(size_t strHandle)
+const WCHAR* Compiler::eeGetCPString(size_t strHandle)
 {
 #ifdef FEATURE_PAL
     return nullptr;

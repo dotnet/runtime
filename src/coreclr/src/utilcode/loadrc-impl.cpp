@@ -52,16 +52,16 @@ typedef std::wstring::const_iterator MyStringIterator;
 #define MakeString(DST, OBJ, BEG, END) (DST = MyString(BEG, END))
 #define StrEquals(STR1, STR2) (STR1 == STR2)
 #define ClrGetEnvironmentVariable(var, res) GetEnvVar(L##var, res)
-bool FindLast(const MyString &str, MyStringIterator &iter, wchar_t c)
+bool FindLast(const MyString &str, MyStringIterator &iter, WCHAR c)
 {
     size_t pos = str.find_last_of(c);
     iter = (pos == std::wstring::npos) ? str.end() : (str.begin() + pos);
     return pos != std::wstring::npos;
 }
 void SkipChars(const MyString &str, MyStringIterator &i, WCHAR c1, WCHAR c2) { while (*i == c1 || *i == c2) i++; }
-bool GetEnvVar(_In_z_ wchar_t *var, MyString &res)
+bool GetEnvVar(_In_z_ WCHAR *var, MyString &res)
 {
-    wchar_t *buffer;
+    WCHAR *buffer;
     size_t size;
     _wdupenv_s(&buffer, &size, var);
     if (!size || !buffer)
@@ -72,7 +72,7 @@ bool GetEnvVar(_In_z_ wchar_t *var, MyString &res)
 }
 void ClrGetModuleFileName(HMODULE hModule, MyString& value)
 {
-    wchar_t driverpath_tmp[_MAX_PATH];
+    WCHAR driverpath_tmp[_MAX_PATH];
     GetModuleFileNameW(hModule, driverpath_tmp, _MAX_PATH);
     value = driverpath_tmp;
 }
@@ -120,7 +120,7 @@ static bool FileExists(const MyString &file)
 // Little helper function to get the codepage integer ID from the LocaleInfo
 static UINT GetCodePage(LANGID LanguageID, DWORD locale)
 {    
-    wchar_t CodePageInt[12];
+    WCHAR CodePageInt[12];
     GetLocaleInfo(MAKELCID(LanguageID, SORT_DEFAULT), LOCALE_IDEFAULTCODEPAGE, CodePageInt, _countof(CodePageInt));
     return _wtoi(CodePageInt);
 }
@@ -141,7 +141,7 @@ static MyString FindLocaleDirectory(const MyString &path, const MyString &dllNam
     {
         LCID lcid = rglcid[i];
         // Turn the LCID into a string
-        wchar_t wzNumBuf[12];
+        WCHAR wzNumBuf[12];
         _itow_s(lcid, wzNumBuf, _countof(wzNumBuf), 10);
         MyString localePath = MakePath(path, wzNumBuf, dllName);
 

@@ -8,7 +8,7 @@
 
 *
 *Purpose:
-*   wcscat_s() appends one wchar_t string onto another.
+*   wcscat_s() appends one char16_t string onto another.
 *
 *   wcscat() concatenates (appends) a copy of the source string to the
 *   end of the destination string.
@@ -28,7 +28,7 @@
 
 #define _FUNC_PROLOGUE
 #define _FUNC_NAME wcscat_s
-#define _CHAR wchar_t
+#define _CHAR char16_t
 #define _DEST _Dst
 #define _SIZE _SizeInBytes
 #define _SRC _Src

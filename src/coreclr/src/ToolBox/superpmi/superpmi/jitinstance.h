@@ -62,9 +62,9 @@ public:
 
     Result CompileMethod(MethodContext* MethodToCompile, int mcIndex, bool collectThroughput);
 
-    const wchar_t* getForceOption(const wchar_t* key);
-    const wchar_t* getOption(const wchar_t* key);
-    const wchar_t* getOption(const wchar_t* key, LightWeightMap<DWORD, DWORD>* options);
+    const WCHAR* getForceOption(const WCHAR* key);
+    const WCHAR* getOption(const WCHAR* key);
+    const WCHAR* getOption(const WCHAR* key, LightWeightMap<DWORD, DWORD>* options);
 
     const MethodContext::Environment& getEnvironment();
 

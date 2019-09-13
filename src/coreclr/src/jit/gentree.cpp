@@ -10209,7 +10209,7 @@ void Compiler::gtDispConst(GenTree* tree)
         case GT_CNS_INT:
             if (tree->IsIconHandle(GTF_ICON_STR_HDL))
             {
-                const wchar_t* str = eeGetCPString(tree->gtIntCon.gtIconVal);
+                const WCHAR* str = eeGetCPString(tree->gtIntCon.gtIconVal);
                 if (str != nullptr)
                 {
                     printf(" 0x%X \"%S\"", dspPtr(tree->gtIntCon.gtIconVal), str);

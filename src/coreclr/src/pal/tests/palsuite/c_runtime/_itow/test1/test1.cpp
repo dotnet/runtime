@@ -19,7 +19,7 @@
 
 struct testCase
 {
-    wchar_t *CorrectResult;
+    char16_t *CorrectResult;
     int value;
     int radix;
 };
@@ -27,8 +27,8 @@ struct testCase
 int __cdecl main(int argc, char **argv)
 {
 
-    wchar_t result[20];
-    wchar_t *pResult = NULL;
+    char16_t result[20];
+    char16_t *pResult = NULL;
     char *PrintResult = NULL;        /* Use with convertC so we can */
     char *PrintCorrectResult = NULL; /* print out the results       */
     int i = 0;

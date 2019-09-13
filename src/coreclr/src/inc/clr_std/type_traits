@@ -269,14 +269,6 @@ namespace std
     {    // determine whether _Ty is integral
     };
 
- #ifdef _NATIVE_WCHAR_T_DEFINED
-    template<>
-    struct _Is_integral<wchar_t>
-        : true_type
-    {    // determine whether _Ty is integral
-    };
- #endif /* _NATIVE_WCHAR_T_DEFINED */
-
     template<>
     struct _Is_integral<unsigned short>
         : true_type
@@ -515,22 +507,6 @@ namespace std
         false_type {};
 
 #endif
-
-    // Use to determine if a template type parameter is a string.
-    template <typename T>
-    struct is_cstr
-        : public std::false_type
-    {};
-
-    template <typename T>
-    struct is_cstr< T* >
-        : public std::conditional<
-            std::is_same<typename std::remove_cv<T>::type, char>::value ||
-                std::is_same<typename std::remove_cv<T>::type, wchar_t>::value,
-            std::true_type,
-            std::false_type>::type
-        
-    { };
 
 } // namespace std
 

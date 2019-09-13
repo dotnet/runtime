@@ -8,7 +8,7 @@
 
 *
 *Purpose:
-*   defines wcsncpy_s() - copy at most n characters of wchar_t string
+*   defines wcsncpy_s() - copy at most n characters of char16_t string
 *
 *******************************************************************************/
 
@@ -24,7 +24,7 @@
 
 #define _FUNC_PROLOGUE
 #define _FUNC_NAME wcsncpy_s
-#define _CHAR wchar_t
+#define _CHAR char16_t
 #define _DEST _Dst
 #define _SIZE _SizeInWords
 #define _SRC _Src

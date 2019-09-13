@@ -619,7 +619,7 @@ private:
     void ComputeClassLayoutOrder();
     void SortUnprofiledMethodsByClassLayoutOrder();
 
-    HRESULT GetPdbFileNameFromModuleFilePath(__in_z const wchar_t *pwszModuleFilePath,
+    HRESULT GetPdbFileNameFromModuleFilePath(__in_z const WCHAR* pwszModuleFilePath,
                                              __out_ecount(dwPdbFileNameBufferSize) char * pwszPdbFileName,
                                              DWORD dwPdbFileNameBufferSize);
 

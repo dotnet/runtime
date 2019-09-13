@@ -73,7 +73,7 @@ public:
         return(*this);
     }
     
-    OutString& operator<<(const wchar_t* str) {
+    OutString& operator<<(const WCHAR* str) {
         size_t len = wcslen(str);
         if (cur+len > end)
             Realloc(len);

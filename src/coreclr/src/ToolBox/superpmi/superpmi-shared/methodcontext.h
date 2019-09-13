@@ -1310,13 +1310,13 @@ public:
     void dmpIsFieldStatic(DWORDLONG key, DWORD value);
     bool repIsFieldStatic(CORINFO_FIELD_HANDLE fhld);
 
-    void recGetIntConfigValue(const wchar_t* name, int defaultValue, int result);
+    void recGetIntConfigValue(const WCHAR* name, int defaultValue, int result);
     void dmpGetIntConfigValue(const Agnostic_ConfigIntInfo& key, int value);
-    int repGetIntConfigValue(const wchar_t* name, int defaultValue);
+    int repGetIntConfigValue(const WCHAR* name, int defaultValue);
 
-    void recGetStringConfigValue(const wchar_t* name, const wchar_t* result);
+    void recGetStringConfigValue(const WCHAR* name, const WCHAR* result);
     void dmpGetStringConfigValue(DWORD nameIndex, DWORD result);
-    const wchar_t* repGetStringConfigValue(const wchar_t* name);
+    const WCHAR* repGetStringConfigValue(const WCHAR* name);
 
     struct Environment
     {

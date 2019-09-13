@@ -16,14 +16,14 @@
 struct SequencePointInfo
 {
     int lineNumber, ilOffset;
-    char16_t* fileName;
+    WCHAR* fileName;
 };
 
 struct LocalVarInfo
 {
     int startOffset;
     int endOffset;
-    char16_t *name;
+    WCHAR *name;
 };
 
 struct MethodDebugInfo
