@@ -621,8 +621,6 @@ regMaskTP Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
 template <bool ForCodeGen>
 void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
 {
-    LclVarDsc* varDsc;
-
 #ifdef DEBUG
     if (verbose)
     {
@@ -668,10 +666,10 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
     unsigned        deadVarIndex = 0;
     while (deadIter.NextElem(&deadVarIndex))
     {
-        unsigned varNum = lvaTrackedToVarNum[deadVarIndex];
-        varDsc          = lvaTable + varNum;
-        bool isGCRef    = (varDsc->TypeGet() == TYP_REF);
-        bool isByRef    = (varDsc->TypeGet() == TYP_BYREF);
+        unsigned   varNum  = lvaTrackedIndexToLclNum(deadVarIndex);
+        LclVarDsc* varDsc  = lvaGetDesc(varNum);
+        bool       isGCRef = (varDsc->TypeGet() == TYP_REF);
+        bool       isByRef = (varDsc->TypeGet() == TYP_BYREF);
 
         if (varDsc->lvIsInReg())
         {
@@ -704,10 +702,10 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
     unsigned        bornVarIndex = 0;
     while (bornIter.NextElem(&bornVarIndex))
     {
-        unsigned varNum = lvaTrackedToVarNum[bornVarIndex];
-        varDsc          = lvaTable + varNum;
-        bool isGCRef    = (varDsc->TypeGet() == TYP_REF);
-        bool isByRef    = (varDsc->TypeGet() == TYP_BYREF);
+        unsigned   varNum  = lvaTrackedIndexToLclNum(bornVarIndex);
+        LclVarDsc* varDsc  = lvaGetDesc(varNum);
+        bool       isGCRef = (varDsc->TypeGet() == TYP_REF);
+        bool       isByRef = (varDsc->TypeGet() == TYP_BYREF);
 
         if (varDsc->lvIsInReg())
         {
@@ -12177,7 +12175,7 @@ void CodeGenInterface::VariableLiveKeeper::siStartOrCloseVariableLiveRanges(VARS
         unsigned        varIndex = 0;
         while (iter.NextElem(&varIndex))
         {
-            unsigned int     varNum = m_Compiler->lvaTrackedToVarNum[varIndex];
+            unsigned int     varNum = m_Compiler->lvaTrackedIndexToLclNum(varIndex);
             const LclVarDsc* varDsc = m_Compiler->lvaGetDesc(varNum);
             siStartOrCloseVariableLiveRange(varDsc, varNum, isBorn, isDying);
         }
@@ -12306,7 +12304,7 @@ void CodeGenInterface::VariableLiveKeeper::siEndAllVariableLiveRange(VARSET_VALA
             unsigned        varIndex = 0;
             while (iter.NextElem(&varIndex))
             {
-                unsigned int varNum = m_Compiler->lvaTrackedToVarNum[varIndex];
+                unsigned int varNum = m_Compiler->lvaTrackedIndexToLclNum(varIndex);
                 siEndVariableLiveRange(varNum);
             }
         }
