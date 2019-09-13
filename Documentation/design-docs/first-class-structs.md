@@ -258,6 +258,7 @@ systems). They would be normalized in the importer just like the SIMD types.
 
 ###  <a name="Improve-Struct-Promotion"/>Improve Struct Promotion
  * Aggressively promote lclVar struct incoming or outgoing args or returns whose fields match the ABI requirements.
+   * This should address https://github.com/dotnet/coreclr/issues/26710.
  * Aggressively promote pointer-sized fields of structs used as args or returns
  * Allow struct promotion of locals that are passed or returned in a way that doesn't match
    the field types.
