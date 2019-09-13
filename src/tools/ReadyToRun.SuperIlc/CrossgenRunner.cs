@@ -17,10 +17,12 @@ namespace ReadyToRun.SuperIlc
     {
         public override CompilerIndex Index => CompilerIndex.Crossgen;
 
+        protected override string CompilerRelativePath => ".";
+
         protected override string CompilerFileName => "crossgen".OSExeSuffix();
 
         public CrossgenRunner(BuildOptions options, IEnumerable<string> referencePaths)
-            : base(options, options.CoreRootDirectory.FullName, referencePaths) { }
+            : base(options, referencePaths) { }
 
         protected override ProcessParameters ExecutionProcess(IEnumerable<string> modules, IEnumerable<string> folders, bool noEtw)
         {
@@ -40,8 +42,10 @@ namespace ReadyToRun.SuperIlc
             yield return "/out";
             yield return outputFileName;
 
-            if (_options.LargeBubble)
+            if (_options.LargeBubble && Path.GetFileNameWithoutExtension(assemblyFileName) != "System.Private.CoreLib")
             {
+                // There seems to be a bug in Crossgen on Linux we don't intend to fix -
+                // it crashes when trying to compile S.P.C in large version bubble mode.
                 yield return "/largeversionbubble";
             }
 

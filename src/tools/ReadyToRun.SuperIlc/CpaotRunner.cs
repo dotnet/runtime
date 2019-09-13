@@ -17,12 +17,14 @@ namespace ReadyToRun.SuperIlc
     {
         public override CompilerIndex Index => CompilerIndex.CPAOT;
 
+        protected override string CompilerRelativePath => "crossgen2";
+
         protected override string CompilerFileName => "crossgen2".OSExeSuffix();
 
         private List<string> _resolvedReferences;
 
         public CpaotRunner(BuildOptions options, IEnumerable<string> referencePaths)
-            : base(options, options.CpaotDirectory.FullName, referencePaths)
+            : base(options, referencePaths)
         { }
 
         protected override ProcessParameters ExecutionProcess(IEnumerable<string> modules, IEnumerable<string> folders, bool noEtw)
