@@ -1159,8 +1159,7 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
             unsigned        varIndex = 0;
             while (iter.NextElem(&varIndex))
             {
-                unsigned   varNum = compiler->lvaTrackedToVarNum[varIndex];
-                LclVarDsc* varDsc = compiler->lvaTable + varNum;
+                LclVarDsc* varDsc = compiler->lvaGetDescByTrackedIndex(varIndex);
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
                 if (varTypeNeedsPartialCalleeSave(varDsc->lvType))
                 {
@@ -1766,11 +1765,10 @@ void LinearScan::insertZeroInitRefPositions()
     unsigned        varIndex = 0;
     while (iter.NextElem(&varIndex))
     {
-        unsigned   varNum = compiler->lvaTrackedToVarNum[varIndex];
-        LclVarDsc* varDsc = compiler->lvaTable + varNum;
+        LclVarDsc* varDsc = compiler->lvaGetDescByTrackedIndex(varIndex);
         if (!varDsc->lvIsParam && isCandidateVar(varDsc))
         {
-            JITDUMP("V%02u was live in to first block:", varNum);
+            JITDUMP("V%02u was live in to first block:", compiler->lvaTrackedIndexToLclNum(varIndex));
             Interval* interval = getIntervalForLocalVar(varIndex);
             if (compiler->info.compInitMem || varTypeIsGC(varDsc->TypeGet()))
             {
@@ -1966,9 +1964,6 @@ void LinearScan::buildIntervals()
     // Assign these RefPositions to the (nonexistent) BB0.
     curBBNum = 0;
 
-    LclVarDsc*   argDsc;
-    unsigned int lclNum;
-
     RegState* intRegState                   = &compiler->codeGen->intRegState;
     RegState* floatRegState                 = &compiler->codeGen->floatRegState;
     intRegState->rsCalleeRegArgMaskLiveIn   = RBM_NONE;
@@ -1976,8 +1971,7 @@ void LinearScan::buildIntervals()
 
     for (unsigned int varIndex = 0; varIndex < compiler->lvaTrackedCount; varIndex++)
     {
-        lclNum = compiler->lvaTrackedToVarNum[varIndex];
-        argDsc = &(compiler->lvaTable[lclNum]);
+        LclVarDsc* argDsc = compiler->lvaGetDescByTrackedIndex(varIndex);
 
         if (!argDsc->lvIsParam)
         {
@@ -2043,9 +2037,9 @@ void LinearScan::buildIntervals()
     // (We do this here because we want to generate the ParamDef RefPositions in tracked
     // order, so that loop doesn't hit the non-tracked args)
 
-    for (unsigned argNum = 0; argNum < compiler->info.compArgsCount; argNum++, argDsc++)
+    for (unsigned argNum = 0; argNum < compiler->info.compArgsCount; argNum++)
     {
-        argDsc = &(compiler->lvaTable[argNum]);
+        LclVarDsc* argDsc = compiler->lvaGetDesc(argNum);
 
         if (argDsc->lvPromotedStruct())
         {
@@ -2133,8 +2127,7 @@ void LinearScan::buildIntervals()
                 unsigned        varIndex = 0;
                 while (iter.NextElem(&varIndex))
                 {
-                    unsigned   varNum = compiler->lvaTrackedToVarNum[varIndex];
-                    LclVarDsc* varDsc = compiler->lvaTable + varNum;
+                    LclVarDsc* varDsc = compiler->lvaGetDescByTrackedIndex(varIndex);
                     // Add a dummyDef for any candidate vars that are in the "newLiveIn" set.
                     // If this is the entry block, don't add any incoming parameters (they're handled with ParamDefs).
                     if (isCandidateVar(varDsc) && (predBlock != nullptr || !varDsc->lvIsParam))
@@ -2259,14 +2252,13 @@ void LinearScan::buildIntervals()
                 unsigned        varIndex = 0;
                 while (iter.NextElem(&varIndex))
                 {
-                    unsigned   varNum = compiler->lvaTrackedToVarNum[varIndex];
-                    LclVarDsc* varDsc = compiler->lvaTable + varNum;
+                    LclVarDsc* varDsc = compiler->lvaGetDescByTrackedIndex(varIndex);
                     assert(isCandidateVar(varDsc));
                     Interval*    interval = getIntervalForLocalVar(varIndex);
                     RefPosition* pos =
                         newRefPosition(interval, currentLoc, RefTypeExpUse, nullptr, allRegs(interval->registerType));
                     pos->setRegOptional(true);
-                    JITDUMP(" V%02u", varNum);
+                    JITDUMP(" V%02u", compiler->lvaTrackedIndexToLclNum(varIndex));
                 }
                 JITDUMP("\n");
             }
@@ -2278,8 +2270,7 @@ void LinearScan::buildIntervals()
                 unsigned        varIndex = 0;
                 while (iter.NextElem(&varIndex))
                 {
-                    unsigned         varNum = compiler->lvaTrackedToVarNum[varIndex];
-                    LclVarDsc* const varDsc = &compiler->lvaTable[varNum];
+                    LclVarDsc* const varDsc = compiler->lvaGetDescByTrackedIndex(varIndex);
                     assert(isCandidateVar(varDsc));
                     RefPosition* const lastRP = getIntervalForLocalVar(varIndex)->lastRefPosition;
                     // We should be able to assert that lastRP is non-null if it is live-out, but sometimes liveness
@@ -2329,9 +2320,9 @@ void LinearScan::buildIntervals()
 #ifdef DEBUG
         if (getLsraExtendLifeTimes())
         {
-            LclVarDsc* varDsc;
-            for (lclNum = 0, varDsc = compiler->lvaTable; lclNum < compiler->lvaCount; lclNum++, varDsc++)
+            for (unsigned lclNum = 0; lclNum < compiler->lvaCount; lclNum++)
             {
+                LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
                 if (varDsc->lvLRACandidate)
                 {
                     JITDUMP("Adding exposed use of V%02u for LsraExtendLifetimes\n", lclNum);
@@ -2385,7 +2376,7 @@ void LinearScan::validateIntervals()
     {
         for (unsigned i = 0; i < compiler->lvaTrackedCount; i++)
         {
-            if (!compiler->lvaTable[compiler->lvaTrackedToVarNum[i]].lvLRACandidate)
+            if (!compiler->lvaGetDescByTrackedIndex(i)->lvLRACandidate)
             {
                 continue;
             }

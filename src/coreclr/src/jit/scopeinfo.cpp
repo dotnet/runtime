@@ -1001,12 +1001,13 @@ void CodeGen::siBeginBlock(BasicBlock* block)
         unsigned        varIndex = 0;
         while (iter.NextElem(&varIndex))
         {
-            unsigned varNum = compiler->lvaTrackedToVarNum[varIndex];
+            unsigned   varNum = compiler->lvaTrackedIndexToLclNum(varIndex);
+            LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
             // lvRefCnt may go down to 0 after liveness-analysis.
             // So we need to check if this tracked variable is actually used.
-            if (!compiler->lvaTable[varNum].lvIsInReg() && !compiler->lvaTable[varNum].lvOnFrame)
+            if (!varDsc->lvIsInReg() && !varDsc->lvOnFrame)
             {
-                assert(compiler->lvaTable[varNum].lvRefCnt() == 0);
+                assert(varDsc->lvRefCnt() == 0);
                 continue;
             }
 
@@ -1251,11 +1252,7 @@ void CodeGen::siUpdate()
     unsigned        varIndex = 0;
     while (iter.NextElem(&varIndex))
     {
-#ifdef DEBUG
-        unsigned   lclNum = compiler->lvaTrackedToVarNum[varIndex];
-        LclVarDsc* lclVar = &compiler->lvaTable[lclNum];
-        assert(lclVar->lvTracked);
-#endif
+        assert(compiler->lvaGetDescByTrackedIndex(varIndex)->lvTracked);
         siEndTrackedScope(varIndex);
     }
 

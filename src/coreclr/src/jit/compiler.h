@@ -2939,9 +2939,6 @@ public:
                                     //   but its field locals depend on its parent struct local.
     };
 
-    static int __cdecl RefCntCmp(const void* op1, const void* op2);
-    static int __cdecl WtdRefCntCmp(const void* op1, const void* op2);
-
     /*****************************************************************************/
 
     enum FrameLayoutState
@@ -2969,9 +2966,7 @@ public:
     LclVarDsc* lvaTable;    // variable descriptor table
     unsigned   lvaTableCnt; // lvaTable size (>= lvaCount)
 
-    LclVarDsc** lvaRefSorted; // table sorted by refcount
-
-    unsigned short lvaTrackedCount;       // actual # of locals being tracked
+    unsigned lvaTrackedCount;             // actual # of locals being tracked
     unsigned lvaTrackedCountInSizeTUnits; // min # of size_t's sufficient to hold a bit for all the locals being tracked
 
 #ifdef DEBUG
@@ -2992,6 +2987,7 @@ public:
     }
 
     // reverse map of tracked number to var number
+    unsigned  lvaTrackedToVarNumSize;
     unsigned* lvaTrackedToVarNum;
 
 #if DOUBLE_ALIGN
@@ -3204,6 +3200,19 @@ public:
         return &lvaTable[lclVar->GetLclNum()];
     }
 
+    unsigned lvaTrackedIndexToLclNum(unsigned trackedIndex)
+    {
+        assert(trackedIndex < lvaTrackedCount);
+        unsigned lclNum = lvaTrackedToVarNum[trackedIndex];
+        assert(lclNum < lvaCount);
+        return lclNum;
+    }
+
+    LclVarDsc* lvaGetDescByTrackedIndex(unsigned trackedIndex)
+    {
+        return lvaGetDesc(lvaTrackedIndexToLclNum(trackedIndex));
+    }
+
     unsigned lvaLclSize(unsigned varNum);
     unsigned lvaLclExactSize(unsigned varNum);
 
@@ -3213,9 +3222,7 @@ public:
     unsigned lvaGrabTemps(unsigned cnt DEBUGARG(const char* reason));
     unsigned lvaGrabTempWithImplicitUse(bool shortLifetime DEBUGARG(const char* reason));
 
-    void lvaSortOnly();
     void lvaSortByRefCount();
-    void lvaDumpRefCounts();
 
     void lvaMarkLocalVars(); // Local variable ref-counting
     void lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers);
@@ -6861,7 +6868,7 @@ private:
     LinearScanInterface* m_pLinearScan; // Linear Scan allocator
 
     /* raIsVarargsStackArg is called by raMaskStkVars and by
-       lvaSortByRefCount.  It identifies the special case
+       lvaComputeRefCounts.  It identifies the special case
        where a varargs function has a parameter passed on the
        stack, other than the special varargs handle.  Such parameters
        require special treatment, because they cannot be tracked

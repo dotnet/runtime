@@ -1392,10 +1392,9 @@ public:
 #endif
         }
 
-        unsigned sortNum = 0;
-        while (sortNum < m_pCompiler->lvaTrackedCount)
+        for (unsigned trackedIndex = 0; trackedIndex < m_pCompiler->lvaTrackedCount; trackedIndex++)
         {
-            LclVarDsc* varDsc = m_pCompiler->lvaRefSorted[sortNum++];
+            LclVarDsc* varDsc = m_pCompiler->lvaGetDescByTrackedIndex(trackedIndex);
             var_types  varTyp = varDsc->TypeGet();
 
             if (varDsc->lvDoNotEnregister)
