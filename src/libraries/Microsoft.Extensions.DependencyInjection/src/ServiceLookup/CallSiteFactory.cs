@@ -71,11 +71,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         internal ServiceCallSite GetCallSite(Type serviceType, CallSiteChain callSiteChain)
         {
-#if NETCOREAPP2_0
-            return _callSiteCache.GetOrAdd(serviceType, (type, chain) => CreateCallSite(type, chain), callSiteChain);
-#else
             return _callSiteCache.GetOrAdd(serviceType, type => CreateCallSite(type, callSiteChain));
-#endif
         }
 
         internal ServiceCallSite GetCallSite(ServiceDescriptor serviceDescriptor, CallSiteChain callSiteChain)
