@@ -439,7 +439,7 @@ namespace ReadyToRun.SuperIlc
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            bool success = Compile();
+            bool success = _options.Exe || Compile();
 
             if (!_options.NoExe)
             {
@@ -473,7 +473,19 @@ namespace ReadyToRun.SuperIlc
                     ProcessInfo executionProcess = execution[(int)runner.Index];
                     if (executionProcess != null)
                     {
-                        bool compilationsSucceeded = folder.Compilations.All(comp => comp[(int)runner.Index]?.Succeeded ?? true);
+                        bool compilationsSucceeded = true;
+                        if (!_options.Exe)
+                        {
+                            foreach (ProcessInfo[] compilation in folder.Compilations)
+                            {
+                                ProcessInfo runnerCompilation = compilation[(int)runner.Index];
+                                if (!runnerCompilation.Succeeded)
+                                {
+                                    compilationsSucceeded = false;
+                                    break;
+                                }
+                            }
+                        }
                         if (compilationsSucceeded)
                         {
                             executionsToRun.Add(executionProcess);
@@ -559,68 +571,74 @@ namespace ReadyToRun.SuperIlc
             foreach (BuildFolder folder in FoldersToBuild)
             {
                 bool[] compilationFailedPerRunner = new bool[(int)CompilerIndex.Count];
-                foreach (ProcessInfo[] compilation in folder.Compilations)
+                if (!_options.Exe)
                 {
-                    totalCompilations++;
-                    bool anyCompilationFailed = false;
-                    foreach (CompilerRunner runner in _compilerRunners)
+                    foreach (ProcessInfo[] compilation in folder.Compilations)
                     {
-                        if (compilation[(int)runner.Index] != null)
+                        totalCompilations++;
+                        bool anyCompilationFailed = false;
+                        foreach (CompilerRunner runner in _compilerRunners)
                         {
-                            CompilationOutcome outcome = GetCompilationOutcome(compilation[(int)runner.Index]);
-                            compilationOutcomes[(int)outcome, (int)runner.Index]++;
-                            if (outcome != CompilationOutcome.PASS)
+                            if (compilation[(int)runner.Index] != null)
                             {
-                                anyCompilationFailed = true;
-                                compilationFailedPerRunner[(int)runner.Index] = true;
+                                CompilationOutcome outcome = GetCompilationOutcome(compilation[(int)runner.Index]);
+                                compilationOutcomes[(int)outcome, (int)runner.Index]++;
+                                if (outcome != CompilationOutcome.PASS)
+                                {
+                                    anyCompilationFailed = true;
+                                    compilationFailedPerRunner[(int)runner.Index] = true;
+                                }
                             }
                         }
-                    }
-                    if (anyCompilationFailed)
-                    {
-                        compilationOutcomes[(int)CompilationOutcome.FAIL, (int)CompilerIndex.Count]++;
-                    }
-                    else
-                    {
-                        compilationOutcomes[(int)CompilationOutcome.PASS, (int)CompilerIndex.Count]++;
+                        if (anyCompilationFailed)
+                        {
+                            compilationOutcomes[(int)CompilationOutcome.FAIL, (int)CompilerIndex.Count]++;
+                        }
+                        else
+                        {
+                            compilationOutcomes[(int)CompilationOutcome.PASS, (int)CompilerIndex.Count]++;
+                        }
                     }
                 }
 
-                foreach (ProcessInfo[] execution in folder.Executions)
+                if (!_options.NoExe)
                 {
-                    totalExecutions++;
-                    bool anyCompilationFailed = false;
-                    int executionFailureOutcomeMask = 0;
-                    foreach (CompilerRunner runner in _compilerRunners)
+                    foreach (ProcessInfo[] execution in folder.Executions)
                     {
-                        ProcessInfo execProcess = execution[(int)runner.Index];
-                        bool compilationFailed = compilationFailedPerRunner[(int)runner.Index];
-                        anyCompilationFailed |= compilationFailed;
-                        bool executionFailed = !compilationFailed && (execProcess != null && !execProcess.Succeeded);
-                        if (executionFailed)
+                        totalExecutions++;
+                        bool anyCompilationFailed = false;
+                        int executionFailureOutcomeMask = 0;
+                        foreach (CompilerRunner runner in _compilerRunners)
                         {
-                            ExecutionOutcome outcome = GetExecutionOutcome(execProcess);
-                            executionOutcomes[(int)outcome, (int)runner.Index]++;
-                            executionFailureOutcomeMask |= 1 << (int)outcome;
-                        }
-                        if (!compilationFailed && !executionFailed)
-                        {
-                            executionOutcomes[(int)ExecutionOutcome.PASS, (int)runner.Index]++;
-                        }
-                    }
-                    if (executionFailureOutcomeMask != 0)
-                    {
-                        for (int outcomeIndex = 0; outcomeIndex < (int)ExecutionOutcome.Count; outcomeIndex++)
-                        {
-                            if ((executionFailureOutcomeMask & (1 << outcomeIndex)) != 0)
+                            ProcessInfo execProcess = execution[(int)runner.Index];
+                            bool compilationFailed = compilationFailedPerRunner[(int)runner.Index];
+                            anyCompilationFailed |= compilationFailed;
+                            bool executionFailed = !compilationFailed && (execProcess != null && !execProcess.Succeeded);
+                            if (executionFailed)
                             {
-                                executionOutcomes[outcomeIndex, (int)CompilerIndex.Count]++;
+                                ExecutionOutcome outcome = GetExecutionOutcome(execProcess);
+                                executionOutcomes[(int)outcome, (int)runner.Index]++;
+                                executionFailureOutcomeMask |= 1 << (int)outcome;
+                            }
+                            if (!compilationFailed && !executionFailed)
+                            {
+                                executionOutcomes[(int)ExecutionOutcome.PASS, (int)runner.Index]++;
                             }
                         }
-                    }
-                    else
-                    {
-                        executionOutcomes[(int)ExecutionOutcome.PASS, (int)CompilerIndex.Count]++;
+                        if (executionFailureOutcomeMask != 0)
+                        {
+                            for (int outcomeIndex = 0; outcomeIndex < (int)ExecutionOutcome.Count; outcomeIndex++)
+                            {
+                                if ((executionFailureOutcomeMask & (1 << outcomeIndex)) != 0)
+                                {
+                                    executionOutcomes[outcomeIndex, (int)CompilerIndex.Count]++;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            executionOutcomes[(int)ExecutionOutcome.PASS, (int)CompilerIndex.Count]++;
+                        }
                     }
                 }
             }
@@ -631,38 +649,47 @@ namespace ReadyToRun.SuperIlc
             logWriter.WriteLine($"Version bubble:   {(_options.LargeBubble ? "input + all reference assemblies" : "single assembly")}");
             logWriter.WriteLine($"Input folder:     {_options.InputDirectory?.FullName}");
             logWriter.WriteLine($"CORE_ROOT:        {_options.CoreRootDirectory?.FullName}");
-            logWriter.WriteLine($"CPAOT:            {_options.CpaotDirectory?.FullName}");
             logWriter.WriteLine($"Total folders:    {_buildFolders.Count()}");
             logWriter.WriteLine($"Blocked w/issues: {_buildFolders.Count(folder => folder.IsBlockedWithIssue)}");
             int foldersToBuild = FoldersToBuild.Count();
             logWriter.WriteLine($"Folders to build: {foldersToBuild}");
-            logWriter.WriteLine($"# compilations:   {totalCompilations}");
+            if (!_options.Exe)
+            {
+                logWriter.WriteLine($"# compilations:   {totalCompilations}");
+            }
             logWriter.WriteLine($"# executions:     {totalExecutions}");
             logWriter.WriteLine($"Total build time: {_buildMilliseconds} msecs");
-            logWriter.WriteLine($"Framework time:   {_frameworkCompilationMilliseconds} msecs");
-            logWriter.WriteLine($"Compilation time: {_compilationMilliseconds} msecs");
+            if (!_options.Exe)
+            {
+                logWriter.WriteLine($"Framework time:   {_frameworkCompilationMilliseconds} msecs");
+                logWriter.WriteLine($"Compilation time: {_compilationMilliseconds} msecs");
+            }
             logWriter.WriteLine($"Execution time:   {_executionMilliseconds} msecs");
 
             if (foldersToBuild != 0)
             {
-                logWriter.WriteLine();
-                logWriter.Write($"{totalCompilations,7} ILC |");
-                foreach (CompilerRunner runner in _compilerRunners)
-                {
-                    logWriter.Write($"{runner.CompilerName,8} |");
-                }
-                logWriter.WriteLine(" Overall");
                 int lineSize = 10 * _compilerRunners.Count() + 13 + 8;
                 string separator = new string('-', lineSize);
-                logWriter.WriteLine(separator);
-                for (int outcomeIndex = 0; outcomeIndex < (int)CompilationOutcome.Count; outcomeIndex++)
+
+                if (!_options.Exe)
                 {
-                    logWriter.Write($"{((CompilationOutcome)outcomeIndex).ToString(),11} |");
+                    logWriter.WriteLine();
+                    logWriter.Write($"{totalCompilations,7} ILC |");
                     foreach (CompilerRunner runner in _compilerRunners)
                     {
-                        logWriter.Write($"{compilationOutcomes[outcomeIndex, (int)runner.Index],8} |");
+                        logWriter.Write($"{runner.CompilerName,8} |");
                     }
-                    logWriter.WriteLine($"{compilationOutcomes[outcomeIndex, (int)CompilerIndex.Count],8}");
+                    logWriter.WriteLine(" Overall");
+                    logWriter.WriteLine(separator);
+                    for (int outcomeIndex = 0; outcomeIndex < (int)CompilationOutcome.Count; outcomeIndex++)
+                    {
+                        logWriter.Write($"{((CompilationOutcome)outcomeIndex).ToString(),11} |");
+                        foreach (CompilerRunner runner in _compilerRunners)
+                        {
+                            logWriter.Write($"{compilationOutcomes[outcomeIndex, (int)runner.Index],8} |");
+                        }
+                        logWriter.WriteLine($"{compilationOutcomes[outcomeIndex, (int)CompilerIndex.Count],8}");
+                    }
                 }
 
                 if (!_options.NoExe)
@@ -692,11 +719,17 @@ namespace ReadyToRun.SuperIlc
 
                 WriteJittedMethodSummary(logWriter);
 
-                WriteTopRankingProcesses(logWriter, "compilations by duration", EnumerateCompilations());
-                WriteTopRankingProcesses(logWriter, "executions by duration", EnumerateExecutions());
+                if (!_options.Exe)
+                {
+                    WriteTopRankingProcesses(logWriter, "compilations by duration", EnumerateCompilations());
+                }
+                if (!_options.NoExe)
+                {
+                    WriteTopRankingProcesses(logWriter, "executions by duration", EnumerateExecutions());
+                }
             }
 
-            if (_options.Framework)
+            if (_options.Framework && !_options.Exe)
             {
                 logWriter.WriteLine();
                 logWriter.WriteLine("Framework compilation failures:");
@@ -705,9 +738,12 @@ namespace ReadyToRun.SuperIlc
 
             if (foldersToBuild != 0)
             {
-                logWriter.WriteLine();
-                logWriter.WriteLine("Compilation failures:");
-                CompilationFailureBuckets.WriteToStream(logWriter, detailed: false);
+                if (!_options.Exe)
+                {
+                    logWriter.WriteLine();
+                    logWriter.WriteLine("Compilation failures:");
+                    CompilationFailureBuckets.WriteToStream(logWriter, detailed: false);
+                }
 
                 if (!_options.NoExe)
                 {
@@ -749,8 +785,18 @@ namespace ReadyToRun.SuperIlc
             folderList.Sort(StringComparer.OrdinalIgnoreCase);
             logWriter.WriteLine();
             logWriter.WriteLine("Folder statistics:");
-            logWriter.WriteLine("#ILC | PASS | FAIL | #EXE | PASS | FAIL | PATH");
-            logWriter.WriteLine("----------------------------------------------");
+            string title = "";
+            if (!_options.Exe)
+            {
+                title += "#ILC | PASS | FAIL | ";
+            }
+            if (!_options.NoExe)
+            {
+                title += "#EXE | PASS | FAIL | ";
+            }
+            title += "PATH";
+            logWriter.WriteLine(title);
+            logWriter.WriteLine(new string('-', title.Length));
 
             foreach (string relativeFolder in folderList)
             {
@@ -766,43 +812,59 @@ namespace ReadyToRun.SuperIlc
                         buildFolderPath.StartsWith(folder, StringComparison.OrdinalIgnoreCase) &&
                             buildFolderPath[folder.Length] == Path.DirectorySeparatorChar)
                     {
-                        foreach (ProcessInfo[] compilation in buildFolder.Compilations)
+                        if (!_options.Exe)
                         {
-                            bool anyIlcFail = false;
-                            foreach (CompilerRunner runner in _compilerRunners)
+                            foreach (ProcessInfo[] compilation in buildFolder.Compilations)
                             {
-                                if (compilation[(int)runner.Index] != null && !compilation[(int)runner.Index].Succeeded)
+                                bool anyIlcFail = false;
+                                foreach (CompilerRunner runner in _compilerRunners)
                                 {
-                                    anyIlcFail = true;
-                                    break;
+                                    if (compilation[(int)runner.Index] != null && !compilation[(int)runner.Index].Succeeded)
+                                    {
+                                        anyIlcFail = true;
+                                        break;
+                                    }
                                 }
-                            }
-                            ilcCount++;
-                            if (anyIlcFail)
-                            {
-                                ilcFail++;
+                                ilcCount++;
+                                if (anyIlcFail)
+                                {
+                                    ilcFail++;
+                                }
                             }
                         }
-                        foreach (ProcessInfo[] execution in buildFolder.Executions)
+                        if (!_options.NoExe)
                         {
-                            bool anyExeFail = false;
-                            foreach (CompilerRunner runner in _compilerRunners)
+                            foreach (ProcessInfo[] execution in buildFolder.Executions)
                             {
-                                if (execution[(int)runner.Index] != null && !execution[(int)runner.Index].Succeeded)
+                                bool anyExeFail = false;
+                                foreach (CompilerRunner runner in _compilerRunners)
                                 {
-                                    anyExeFail = true;
-                                    break;
+                                    if (execution[(int)runner.Index] != null && !execution[(int)runner.Index].Succeeded)
+                                    {
+                                        anyExeFail = true;
+                                        break;
+                                    }
                                 }
-                            }
-                            exeCount++;
-                            if (anyExeFail)
-                            {
-                                exeFail++;
+                                exeCount++;
+                                if (anyExeFail)
+                                {
+                                    exeFail++;
+                                }
                             }
                         }
                     }
                 }
-                logWriter.WriteLine($"{ilcCount,4} | {(ilcCount - ilcFail),4} | {ilcFail,4} | {exeCount,4} | {(exeCount - exeFail),4} | {exeFail,4} | {relativeFolder}");
+                if (!_options.Exe)
+                {
+                    logWriter.Write($"{ilcCount,4} | {(ilcCount - ilcFail),4} | {ilcFail,4} | ");
+
+                }
+                if (!_options.NoExe)
+                {
+                    logWriter.Write($"{exeCount,4} | {(exeCount - exeFail),4} | {exeFail,4} | ");
+
+                }
+                logWriter.WriteLine($"{relativeFolder}");
             }
         }
 
@@ -1040,35 +1102,38 @@ namespace ReadyToRun.SuperIlc
                 foreach (BuildFolder folder in FoldersToBuild)
                 {
                     bool[] compilationErrorPerRunner = new bool[(int)CompilerIndex.Count];
-                    foreach (ProcessInfo[] compilation in folder.Compilations)
+                    if (!_options.Exe)
                     {
-                        foreach (CompilerRunner runner in _compilerRunners)
+                        foreach (ProcessInfo[] compilation in folder.Compilations)
                         {
-                            ProcessInfo compilationProcess = compilation[(int)runner.Index];
-                            if (compilationProcess != null)
+                            foreach (CompilerRunner runner in _compilerRunners)
                             {
-                                string log = $"\nCOMPILE {runner.CompilerName}:{compilationProcess.Parameters.InputFileName}";
-                                StreamWriter runnerLog = perRunnerLog[(int)runner.Index];
-                                runnerLog.WriteLine(log);
-                                combinedLog.WriteLine(log);
-                                try
+                                ProcessInfo compilationProcess = compilation[(int)runner.Index];
+                                if (compilationProcess != null)
                                 {
-                                    using (Stream input = new FileStream(compilationProcess.Parameters.LogPath, FileMode.Open, FileAccess.Read))
+                                    string log = $"\nCOMPILE {runner.CompilerName}:{compilationProcess.Parameters.InputFileName}";
+                                    StreamWriter runnerLog = perRunnerLog[(int)runner.Index];
+                                    runnerLog.WriteLine(log);
+                                    combinedLog.WriteLine(log);
+                                    try
                                     {
-                                        input.CopyTo(combinedLog.BaseStream);
-                                        input.Seek(0, SeekOrigin.Begin);
-                                        input.CopyTo(runnerLog.BaseStream);
+                                        using (Stream input = new FileStream(compilationProcess.Parameters.LogPath, FileMode.Open, FileAccess.Read))
+                                        {
+                                            input.CopyTo(combinedLog.BaseStream);
+                                            input.Seek(0, SeekOrigin.Begin);
+                                            input.CopyTo(runnerLog.BaseStream);
+                                        }
                                     }
-                                }
-                                catch (Exception ex)
-                                {
-                                    combinedLog.WriteLine(" -> " + ex.Message);
-                                    runnerLog.WriteLine(" -> " + ex.Message);
-                                }
+                                    catch (Exception ex)
+                                    {
+                                        combinedLog.WriteLine(" -> " + ex.Message);
+                                        runnerLog.WriteLine(" -> " + ex.Message);
+                                    }
 
-                                if (!compilationProcess.Succeeded)
-                                {
-                                    compilationErrorPerRunner[(int)runner.Index] = true;
+                                    if (!compilationProcess.Succeeded)
+                                    {
+                                        compilationErrorPerRunner[(int)runner.Index] = true;
+                                    }
                                 }
                             }
                         }
@@ -1141,32 +1206,47 @@ namespace ReadyToRun.SuperIlc
             string combinedSetLogPath = Path.Combine(_options.OutputDirectory.FullName, "combined-" + suffix);
             WriteCombinedLog(combinedSetLogPath);
 
-            string frameworkBucketsFile = Path.Combine(_options.OutputDirectory.FullName, "framework-buckets-" + suffix);
-            FrameworkCompilationFailureBuckets.WriteToFile(frameworkBucketsFile, detailed: true);
+            if (!_options.Exe && _options.Framework)
+            {
+                string frameworkBucketsFile = Path.Combine(_options.OutputDirectory.FullName, "framework-buckets-" + suffix);
+                FrameworkCompilationFailureBuckets.WriteToFile(frameworkBucketsFile, detailed: true);
+            }
 
-            string compilationBucketsFile = Path.Combine(_options.OutputDirectory.FullName, "compilation-buckets-" + suffix);
-            CompilationFailureBuckets.WriteToFile(compilationBucketsFile, detailed: true);
+            if (!_options.Exe)
+            {
+                string compilationBucketsFile = Path.Combine(_options.OutputDirectory.FullName, "compilation-buckets-" + suffix);
+                CompilationFailureBuckets.WriteToFile(compilationBucketsFile, detailed: true);
+            }
 
-            string executionBucketsFile = Path.Combine(_options.OutputDirectory.FullName, "execution-buckets-" + suffix);
-            ExecutionFailureBuckets.WriteToFile(executionBucketsFile, detailed: true);
+            if (!_options.NoExe)
+            {
+                string executionBucketsFile = Path.Combine(_options.OutputDirectory.FullName, "execution-buckets-" + suffix);
+                ExecutionFailureBuckets.WriteToFile(executionBucketsFile, detailed: true);
+            }
 
-            string compilationPassedFile = Path.Combine(_options.OutputDirectory.FullName, "compilation-passed-" + suffix);
-            WriteFileListPerCompilationOutcome(compilationPassedFile, CompilationOutcome.PASS);
+            if (!_options.Exe)
+            {
+                string compilationPassedFile = Path.Combine(_options.OutputDirectory.FullName, "compilation-passed-" + suffix);
+                WriteFileListPerCompilationOutcome(compilationPassedFile, CompilationOutcome.PASS);
 
-            string compilationFailedFile = Path.Combine(_options.OutputDirectory.FullName, "compilation-failed-" + suffix);
-            WriteFileListPerCompilationOutcome(compilationFailedFile, CompilationOutcome.FAIL);
+                string compilationFailedFile = Path.Combine(_options.OutputDirectory.FullName, "compilation-failed-" + suffix);
+                WriteFileListPerCompilationOutcome(compilationFailedFile, CompilationOutcome.FAIL);
+            }
 
-            string executionPassedFile = Path.Combine(_options.OutputDirectory.FullName, "execution-passed-" + suffix);
-            WriteFileListPerExecutionOutcome(executionPassedFile, ExecutionOutcome.PASS);
+            if (!_options.NoExe)
+            {
+                string executionPassedFile = Path.Combine(_options.OutputDirectory.FullName, "execution-passed-" + suffix);
+                WriteFileListPerExecutionOutcome(executionPassedFile, ExecutionOutcome.PASS);
 
-            string executionTimedOutFile = Path.Combine(_options.OutputDirectory.FullName, "execution-timed-out-" + suffix);
-            WriteFileListPerExecutionOutcome(executionTimedOutFile, ExecutionOutcome.TIMED_OUT);
+                string executionTimedOutFile = Path.Combine(_options.OutputDirectory.FullName, "execution-timed-out-" + suffix);
+                WriteFileListPerExecutionOutcome(executionTimedOutFile, ExecutionOutcome.TIMED_OUT);
 
-            string executionCrashedFile = Path.Combine(_options.OutputDirectory.FullName, "execution-crashed-" + suffix);
-            WriteFileListPerExecutionOutcome(executionCrashedFile, ExecutionOutcome.CRASHED);
+                string executionCrashedFile = Path.Combine(_options.OutputDirectory.FullName, "execution-crashed-" + suffix);
+                WriteFileListPerExecutionOutcome(executionCrashedFile, ExecutionOutcome.CRASHED);
 
-            string executionExitCodeFile = Path.Combine(_options.OutputDirectory.FullName, "execution-exit-code-" + suffix);
-            WriteFileListPerExecutionOutcome(executionExitCodeFile, ExecutionOutcome.EXIT_CODE);
+                string executionExitCodeFile = Path.Combine(_options.OutputDirectory.FullName, "execution-exit-code-" + suffix);
+                WriteFileListPerExecutionOutcome(executionExitCodeFile, ExecutionOutcome.EXIT_CODE);
+            }
 
             string cpaotManagedSequentialFile = Path.Combine(_options.OutputDirectory.FullName, "managed-sequential-cpaot-" + suffix);
             WriterMarkerLog(cpaotManagedSequentialFile, _cpaotManagedSequentialResults);

@@ -18,6 +18,12 @@ namespace ReadyToRun.SuperIlc
     {
         public static int CompileNuget(BuildOptions options)
         {
+            if (options.CoreRootDirectory == null)
+            {
+                Console.Error.WriteLine("--core-root-directory (--cr) is a required argument.");
+                return 1;
+            }
+
             // We don't want to launch these apps when building the folder set below
             options.NoExe = true;
             options.NoJit = true;
@@ -34,7 +40,10 @@ namespace ReadyToRun.SuperIlc
             IEnumerable<string> referencePaths = options.ReferencePaths();
             IEnumerable<CompilerRunner> runners = options.CompilerRunners(false);
 
-            PathExtensions.DeleteOutputFolders(options.OutputDirectory.FullName, options.CoreRootDirectory.FullName, recursive: false);
+            if (!options.Exe)
+            {
+                PathExtensions.DeleteOutputFolders(options.OutputDirectory.FullName, options.CoreRootDirectory.FullName, recursive: false);
+            }
 
             string nugetOutputFolder = Path.Combine(options.OutputDirectory.FullName, "nuget.out");
             Directory.CreateDirectory(nugetOutputFolder);
@@ -86,7 +95,7 @@ namespace ReadyToRun.SuperIlc
                 bool success = folderSet.Build(runners);
                 folderSet.WriteLogs();
 
-                if (!options.NoCleanup)
+                if (!options.NoCleanup && !options.Exe)
                 {
                     PathExtensions.DeleteOutputFolders(options.OutputDirectory.FullName, options.CoreRootDirectory.FullName, recursive: false);
                 }
