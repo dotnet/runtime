@@ -2953,25 +2953,6 @@ mono_interp_isinst (MonoObject* object, MonoClass* klass)
 	return isinst;
 }
 
-/*
- * GC SAFETY:
- *
- *  The interpreter executes in gc unsafe (non-preempt) mode. On wasm, the C stack is
- * scannable but the wasm stack is not, so to make the code GC safe, the following rules
- * should be followed:
- * - every objref handled by the code needs to have a copy stored inside InterpFrame,
- *   in stackval->data.o. For objrefs which are not yet on the IL stack, they can be stored
- *   in frame->o. This will ensure the objects are pinned. The 'frame' local is assumed
- *   to be allocated to the C stack and not to registers.
- * - minimalize the number of MonoObject* locals/arguments.
- */
-
-#ifdef TARGET_WASM
-#define frame_objref(frame) (frame)->o
-#else
-#define frame_objref(frame) o
-#endif
-
 // This function is outlined to help save stack in its caller, on the premise
 // that it is relatively rarely called. This also lets it use alloca.
 static MONO_NEVER_INLINE void
@@ -3068,7 +3049,7 @@ mono_interp_newobj (
 	InterpMethod* const imethod = frame->imethod;
 	stackval* const sp = child_frame->stack_args;
 
-	MonoObject* o = NULL; // See the comment about GC safety above.
+	MonoObject* o = NULL; // See the comment about GC safety.
 	stackval valuetype_this;
 	stackval retval;
 
@@ -3100,12 +3081,12 @@ mono_interp_newobj (
 				return exc;
 			}
 			ERROR_DECL (error);
-			frame_objref (frame) = mono_object_new_checked (imethod->domain, newobj_class, error);
+			OBJREF (o) = mono_object_new_checked (imethod->domain, newobj_class, error);
 			mono_error_cleanup (error); // FIXME: do not swallow the error
 			EXCEPTION_CHECKPOINT_IN_HELPER_FUNCTION;
-			sp->data.o = frame_objref (frame);
+			sp->data.o = o;
 #ifndef DISABLE_REMOTING
-			if (mono_object_is_transparent_proxy (frame_objref (frame))) {
+			if (mono_object_is_transparent_proxy (o)) {
 				MonoMethod *remoting_invoke_method = mono_marshal_get_remoting_invoke_with_check (child_frame->imethod->method, error);
 				mono_error_assert_ok (error);
 				child_frame->imethod = mono_interp_get_imethod (imethod->domain, remoting_invoke_method, error);
@@ -3130,7 +3111,7 @@ mono_interp_newobj (
 	} else if (newobj_class == mono_defaults.string_class) {
 		*sp = retval;
 	} else {
-		sp->data.o = frame_objref (frame);
+		sp->data.o = o;
 	}
 resume:
 	return NULL;
@@ -3179,26 +3160,26 @@ mono_interp_box_vt (InterpFrame* frame, const guint16* ip, stackval* sp)
 	gboolean const pop_vt_sp = !(offset & BOX_NOT_CLEAR_VT_SP);
 	offset &= ~BOX_NOT_CLEAR_VT_SP;
 
-	frame_objref (frame) = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
-	mono_value_copy_internal (mono_object_get_data (frame_objref (frame)), sp [-1 - offset].data.p, c);
+	OBJREF (o) = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
+	mono_value_copy_internal (mono_object_get_data (o), sp [-1 - offset].data.p, c);
 
-	sp [-1 - offset].data.p = frame_objref (frame);
+	sp [-1 - offset].data.p = o;
 	return pop_vt_sp ? ALIGN_TO (size, MINT_VT_ALIGNMENT) : 0;
 }
 
 static MONO_NEVER_INLINE void
 mono_interp_box (InterpFrame* frame, const guint16* ip, stackval* sp)
 {
-	MonoObject* o; // See the comment about GC safety.
+	MonoObject *o; // See the comment about GC safety.
 	MonoVTable * const vtable = (MonoVTable*)frame->imethod->data_items [ip [1]];
 
-	frame_objref (frame) = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
+	OBJREF (o) = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
 
 	guint16 const offset = ip [2];
 
-	stackval_to_data (m_class_get_byval_arg (vtable->klass), &sp [-1 - offset], mono_object_get_data (frame_objref (frame)), FALSE);
+	stackval_to_data (m_class_get_byval_arg (vtable->klass), &sp [-1 - offset], mono_object_get_data (o), FALSE);
 
-	sp [-1 - offset].data.p = frame_objref (frame);
+	sp [-1 - offset].data.p = o;
 }
 
 static MONO_NEVER_INLINE int
@@ -4665,8 +4646,7 @@ main_loop:
 
 			MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [ip [3]];
 			INIT_VTABLE (vtable);
-
-			MonoObject* o = NULL; // See the comment about GC safety above.
+			MonoObject *o; // See the comment about GC safety.
 			guint16 param_count;
 			guint16 imethod_index = ip [1];
 
@@ -4679,15 +4659,15 @@ main_loop:
 				memmove (sp + 1 + is_inlined, sp, param_count * sizeof (stackval));
 			}
 
-			frame_objref (frame) = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
-			if (G_UNLIKELY (!frame_objref (frame))) {
+			OBJREF (o) = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
+			if (G_UNLIKELY (!o)) {
 				mono_error_set_out_of_memory (error, "Could not allocate %i bytes", m_class_get_instance_size (vtable->klass));
 				goto throw_error_label;
 			}
 
-			sp [0].data.o = frame_objref (frame);
+			sp [0].data.o = o;
 			if (is_inlined) {
-				sp [1].data.o = frame_objref (frame);
+				sp [1].data.o = o;
 				sp += param_count + 2;
 			} else {
 				InterpMethod *ctor_method = (InterpMethod*) frame->imethod->data_items [imethod_index];
@@ -4698,7 +4678,7 @@ main_loop:
 
 				interp_exec_method (&child_frame, context, error);
 				CHECK_RESUME_STATE (context);
-				sp [0].data.o = frame_objref (frame);
+				sp [0].data.o = o;
 				sp++;
 			}
 			ip += 4;
@@ -4829,7 +4809,7 @@ main_loop:
 		}
 		MINT_IN_CASE(MINT_CASTCLASS_INTERFACE)
 		MINT_IN_CASE(MINT_ISINST_INTERFACE) {
-			MonoObject* const o = sp [-1].data.o; // See the comment about GC safety above.
+			MonoObject* const o = sp [-1].data.o;
 			if (o) {
 				MonoClass* const c = (MonoClass*)frame->imethod->data_items [ip [1]];
 				gboolean isinst;
@@ -4855,7 +4835,7 @@ main_loop:
 		}
 		MINT_IN_CASE(MINT_CASTCLASS_COMMON)
 		MINT_IN_CASE(MINT_ISINST_COMMON) {
-			MonoObject* const o = sp [-1].data.o; // See the comment about GC safety above
+			MonoObject* const o = sp [-1].data.o;
 			if (o) {
 				MonoClass* const c = (MonoClass*)frame->imethod->data_items [ip [1]];
 				gboolean isinst = mono_class_has_parent_fast (o->vtable->klass, c);
@@ -4873,7 +4853,7 @@ main_loop:
 		}
 		MINT_IN_CASE(MINT_CASTCLASS)
 		MINT_IN_CASE(MINT_ISINST) {
-			MonoObject* const o = sp [-1].data.o; // See the comment about GC safety above
+			MonoObject* const o = sp [-1].data.o;
 			if (o) {
 				MonoClass* const c = (MonoClass*)frame->imethod->data_items [ip [1]];
 				if (!mono_interp_isinst (o, c)) { // FIXME: do not swallow the error
@@ -4896,7 +4876,7 @@ main_loop:
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_UNBOX) {
-			MonoObject* const o = sp [-1].data.o; // See the comment about GC safety above
+			MonoObject* const o = sp [-1].data.o;
 			NULL_CHECK (o);
 			MonoClass* const c = (MonoClass*)frame->imethod->data_items[ip [1]];
 
@@ -4932,7 +4912,7 @@ main_loop:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDFLDA) {
-			MonoObject* const o = sp [-1].data.o; // See the comment about GC safety above.
+			MonoObject* const o = sp [-1].data.o;
 			NULL_CHECK (o);
 			sp[-1].data.p = (char *)o + ip [1];
 			ip += 2;
@@ -4941,7 +4921,7 @@ main_loop:
 		MINT_IN_CASE(MINT_CKNULL_N) {
 			/* Same as CKNULL, but further down the stack */
 			int const n = ip [1];
-			MonoObject* const o = sp [-n].data.o; // See the comment about GC safety above.
+			MonoObject* const o = sp [-n].data.o;
 			NULL_CHECK (o);
 			ip += 2;
 			MINT_IN_BREAK;
@@ -4973,7 +4953,7 @@ main_loop:
 		MINT_IN_CASE(MINT_LDFLD_R8_UNALIGNED) LDFLD_UNALIGNED(f, double, TRUE); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_LDFLD_VT) {
-			MonoObject* const o = sp [-1].data.o; // See the comment about GC safety above.
+			MonoObject* const o = sp [-1].data.o;
 			NULL_CHECK (o);
 
 			int size = READ32(ip + 2);
@@ -4985,14 +4965,14 @@ main_loop:
 		}
 
 		MINT_IN_CASE(MINT_LDRMFLD) {
-			MonoObject* const o = sp [-1].data.o; // See the comment about GC safety above.
+			MonoObject* const o = sp [-1].data.o;
 			NULL_CHECK (o);
 			mono_interp_load_remote_field (frame->imethod, o, ip, sp);
 			ip += 2;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDRMFLD_VT) {
-			MonoObject* const o = sp [-1].data.o; // See the comment about GC safety above.
+			MonoObject* const o = sp [-1].data.o;
 			NULL_CHECK (o);
 			vt_sp = mono_interp_load_remote_field_vt (frame->imethod, o, ip, sp, vt_sp);
 			ip += 2;
@@ -5000,7 +4980,7 @@ main_loop:
 		}
 
 #define STFLD_UNALIGNED(datamem, fieldtype, unaligned) do { \
-	MonoObject* const o = sp [-2].data.o; /* See the comment about GC safety above. */ \
+	MonoObject* const o = sp [-2].data.o; \
 	NULL_CHECK (o); \
 	sp -= 2; \
 	if (unaligned) \
@@ -5022,7 +5002,7 @@ main_loop:
 		MINT_IN_CASE(MINT_STFLD_R8) STFLD(f, double); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STFLD_P) STFLD(p, gpointer); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STFLD_O) {
-			MonoObject* const o = sp [-2].data.o; // See the comment about GC safety above.
+			MonoObject* const o = sp [-2].data.o;
 			NULL_CHECK (o);
 			sp -= 2;
 			mono_gc_wbarrier_set_field_internal (o, (char *) o + ip [1], sp [1].data.o);
@@ -5033,7 +5013,7 @@ main_loop:
 		MINT_IN_CASE(MINT_STFLD_R8_UNALIGNED) STFLD_UNALIGNED(f, double, TRUE); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_STFLD_VT) {
-			MonoObject* const o = sp [-2].data.o; // See the comment about GC safety above.
+			MonoObject* const o = sp [-2].data.o;
 			NULL_CHECK (o);
 			sp -= 2;
 
@@ -5050,7 +5030,7 @@ main_loop:
 		MINT_IN_CASE(MINT_STRMFLD) {
 			MonoClassField *field;
 
-			MonoObject* const o = sp [-2].data.o; // See the comment about GC safety above.
+			MonoObject* const o = sp [-2].data.o;
 			NULL_CHECK (o);
 			
 			field = (MonoClassField*)frame->imethod->data_items[ip [1]];
@@ -5344,14 +5324,14 @@ main_loop:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDLEN) {
-			MonoObject* const o = sp [-1].data.o; // See the comment about GC safety above.
+			MonoObject* const o = sp [-1].data.o;
 			NULL_CHECK (o);
 			sp [-1].data.nati = mono_array_length_internal ((MonoArray *)o);
 			++ip;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDLEN_SPAN) {
-			MonoObject* const o = sp [-1].data.o; // See the comment about GC safety above.
+			MonoObject* const o = sp [-1].data.o;
 			NULL_CHECK (o);
 			gsize offset_length = (gsize)(gint16)ip [1];
 			sp [-1].data.nati = *(gint32 *) ((guint8 *) o + offset_length);
@@ -5394,13 +5374,13 @@ main_loop:
 		}
 		MINT_IN_CASE(MINT_STRLEN) {
 			++ip;
-			MonoObject* const o = sp [-1].data.o; // See the comment about GC safety above.
+			MonoObject* const o = sp [-1].data.o;
 			NULL_CHECK (o);
 			sp [-1].data.i = mono_string_length_internal ((MonoString*) o);
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_ARRAY_RANK) {
-			MonoObject* const o = sp [-1].data.o; // See the comment about GC safety above.
+			MonoObject* const o = sp [-1].data.o;
 			NULL_CHECK (o);
 			sp [-1].data.i = m_class_get_rank (mono_object_class (sp [-1].data.p));
 			ip++;
@@ -5427,7 +5407,7 @@ main_loop:
 			ip += 3;
 			sp -= numargs;
 
-			MonoObject* const o = sp [0].data.o; // See the comment about GC safety above.
+			MonoObject* const o = sp [0].data.o;
 			NULL_CHECK (o);
 
 			MonoClass *klass = (MonoClass*)frame->imethod->data_items [ip [-3 + 1]];
@@ -5533,7 +5513,7 @@ main_loop:
 
 			sp -= 3;
 
-			MonoObject* const o = sp [0].data.o; // See the comment about GC safety above.
+			MonoObject* const o = sp [0].data.o;
 			NULL_CHECK (o);
 
 			aindex = sp [1].data.i;
