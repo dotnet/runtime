@@ -10,6 +10,8 @@ using Xunit.Abstractions;
 
 namespace System.Net.Sockets.Tests
 {
+    using Configuration = System.Net.Test.Common.Configuration;
+
     public class DnsEndPointTest : DualModeBase
     {
         private void OnConnectAsyncCompleted(object sender, SocketAsyncEventArgs args)
@@ -60,7 +62,7 @@ namespace System.Net.Sockets.Tests
             {
                 SocketException ex = Assert.ThrowsAny<SocketException>(() =>
                 {
-                    sock.Connect(new DnsEndPoint("notahostname.invalid.corp.microsoft.com", UnusedPort));
+                    sock.Connect(new DnsEndPoint(Configuration.Sockets.InvalidHost, UnusedPort));
                 });
 
                 SocketError errorCode = ex.SocketErrorCode;
@@ -150,7 +152,7 @@ namespace System.Net.Sockets.Tests
             {
                 SocketException ex = Assert.ThrowsAny<SocketException>(() =>
                 {
-                    IAsyncResult result = sock.BeginConnect(new DnsEndPoint("notahostname.invalid.corp.microsoft.com", UnusedPort), null, null);
+                    IAsyncResult result = sock.BeginConnect(new DnsEndPoint(Configuration.Sockets.InvalidHost, UnusedPort), null, null);
                     sock.EndConnect(result);
                 });
 
@@ -256,7 +258,7 @@ namespace System.Net.Sockets.Tests
             Assert.True(Capability.IPv4Support());
 
             SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-            args.RemoteEndPoint = new DnsEndPoint("notahostname.invalid.corp.microsoft.com", UnusedPort);
+            args.RemoteEndPoint = new DnsEndPoint(Configuration.Sockets.InvalidHost, UnusedPort);
             args.Completed += OnConnectAsyncCompleted;
 
             using (Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -356,7 +358,7 @@ namespace System.Net.Sockets.Tests
         public void Socket_StaticConnectAsync_HostNotFound()
         {
             SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-            args.RemoteEndPoint = new DnsEndPoint("notahostname.invalid.corp.microsoft.com", UnusedPort);
+            args.RemoteEndPoint = new DnsEndPoint(Configuration.Sockets.InvalidHost, UnusedPort);
             args.Completed += OnConnectAsyncCompleted;
 
             ManualResetEvent complete = new ManualResetEvent(false);
