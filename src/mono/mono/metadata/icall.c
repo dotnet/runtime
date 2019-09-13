@@ -3754,26 +3754,30 @@ exit:
 
 #ifndef DISABLE_REMOTING
 static void
-internal_execute_field_getter (MonoDomain *domain, MonoObject *this_arg, MonoArray *params, MonoArray **outArgs, MonoError *error)
+internal_execute_field_getter (MonoDomain *domain, MonoObject *this_arg, MonoArray *params, MonoArrayHandleOut outArgs, MonoError *error)
 {
-	error_init (error);
 	MonoArray *out_args;
 	MonoClass *k = mono_object_class (this_arg);
 	MonoString *name;
 	char *str;
-			
+
+	// FIXME Refactor/inline internal_execute_field_setter and internal_execute_field_getter.
+
 	/* If this is a proxy, then it must be a CBO */
 	if (mono_class_is_transparent_proxy (k)) {
 		MonoTransparentProxy *tp = (MonoTransparentProxy*) this_arg;
 		this_arg = tp->rp->unwrapped_server;
+		MONO_HANDLE_NEW (MonoObject, this_arg);
 		g_assert (this_arg);
 		k = mono_object_class (this_arg);
 	}
 			
 	name = mono_array_get_internal (params, MonoString *, 1);
+	MONO_HANDLE_NEW (MonoString, name);
+
 	str = mono_string_to_utf8_checked_internal (name, error);
 	return_if_nok (error);
-		
+
 	do {
 		MonoClassField* field = mono_class_get_field_from_name_full (k, str, NULL);
 		if (field) {
@@ -3786,9 +3790,12 @@ internal_execute_field_getter (MonoDomain *domain, MonoObject *this_arg, MonoArr
 			} else 
 				result = (MonoObject *)*((gpointer *)((char *)this_arg + field->offset));
 
+			MONO_HANDLE_NEW (MonoObject, result);
+
 			out_args = mono_array_new_checked (domain, mono_defaults.object_class, 1, error);
 			return_if_nok (error);
-			mono_gc_wbarrier_generic_store_internal (outArgs, (MonoObject*) out_args);
+			MONO_HANDLE_NEW (MonoArray, out_args); // FIXME? overkill?
+			mono_gc_wbarrier_generic_store_internal (MONO_HANDLE_REF (outArgs), (MonoObject*) out_args);
 			mono_array_setref_internal (out_args, 0, result);
 			return;
 		}
@@ -3800,9 +3807,8 @@ internal_execute_field_getter (MonoDomain *domain, MonoObject *this_arg, MonoArr
 }
 
 static void
-internal_execute_field_setter (MonoDomain *domain, MonoObject *this_arg, MonoArray *params, MonoArray **outArgs, MonoError *error)
+internal_execute_field_setter (MonoDomain *domain, MonoObject *this_arg, MonoArray *params, MonoArrayHandleOut outArgs, MonoError *error)
 {
-	error_init (error);
 	MonoArray *out_args;
 	MonoClass *k = mono_object_class (this_arg);
 	MonoString *name;
@@ -3814,11 +3820,14 @@ internal_execute_field_setter (MonoDomain *domain, MonoObject *this_arg, MonoArr
 	if (mono_class_is_transparent_proxy (k)) {
 		MonoTransparentProxy *tp = (MonoTransparentProxy*) this_arg;
 		this_arg = tp->rp->unwrapped_server;
+		MONO_HANDLE_NEW (MonoObject, this_arg);
 		g_assert (this_arg);
 		k = mono_object_class (this_arg);
 	}
 			
 	name = mono_array_get_internal (params, MonoString *, 1);
+	MONO_HANDLE_NEW (MonoString, name);
+
 	str = mono_string_to_utf8_checked_internal (name, error);
 	return_if_nok (error);
 		
@@ -3828,6 +3837,7 @@ internal_execute_field_setter (MonoDomain *domain, MonoObject *this_arg, MonoArr
 			g_free (str);
 			MonoClass *field_klass = mono_class_from_mono_type_internal (field->type);
 			MonoObject *val = (MonoObject *)mono_array_get_internal (params, gpointer, 2);
+			MONO_HANDLE_NEW (MonoObject, val);
 
 			if (m_class_is_valuetype (field_klass)) {
 				size = mono_type_size (field->type, &align);
@@ -3839,7 +3849,8 @@ internal_execute_field_setter (MonoDomain *domain, MonoObject *this_arg, MonoArr
 
 			out_args = mono_array_new_checked (domain, mono_defaults.object_class, 0, error);
 			return_if_nok (error);
-			mono_gc_wbarrier_generic_store_internal (outArgs, (MonoObject*) out_args);
+			MONO_HANDLE_NEW (MonoArray, out_args); // FIXME? overkill?
+			mono_gc_wbarrier_generic_store_internal (MONO_HANDLE_REF (outArgs), (MonoObject*) out_args);
 			return;
 		}
 				
@@ -3850,10 +3861,16 @@ internal_execute_field_setter (MonoDomain *domain, MonoObject *this_arg, MonoArr
 	g_assert_not_reached ();
 }
 
-MonoObject *
-ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this_arg, MonoArray *params, MonoArray **outArgs) 
+MonoObjectHandle
+ves_icall_InternalExecute (MonoReflectionMethodHandle method_handle, MonoObjectHandle this_arg_handle, MonoArrayHandle params_handle, MonoArrayHandleOut outArgs, MonoError* error)
 {
-	ERROR_DECL (error);
+	MONO_HANDLE_ASSIGN_RAW (outArgs, NULL);
+
+	MonoReflectionMethod* const method = MONO_HANDLE_RAW (method_handle);
+	MonoObject* const this_arg = MONO_HANDLE_RAW (this_arg_handle);
+	MonoArray* const params = MONO_HANDLE_RAW (params_handle);
+	MonoObjectHandle null_handle = NULL_HANDLE_INIT;
+
 	MonoDomain *domain = mono_object_domain (method); 
 	MonoMethod *m = method->method;
 	MonoMethodSignature *sig = mono_method_signature_internal (m);
@@ -3862,14 +3879,13 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this_arg, M
 	int i, j, outarg_count = 0;
 
 	if (m->klass == mono_defaults.object_class) {
+
 		if (!strcmp (m->name, "FieldGetter")) {
 			internal_execute_field_getter (domain, this_arg, params, outArgs, error);
-			mono_error_set_pending_exception (error);
-			return NULL;
+			return null_handle;
 		} else if (!strcmp (m->name, "FieldSetter")) {
 			internal_execute_field_setter (domain, this_arg, params, outArgs, error);
-			mono_error_set_pending_exception (error);
-			return NULL;
+			return null_handle;
 		}
 	}
 
@@ -3879,8 +3895,8 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this_arg, M
 	}
 
 	out_args = mono_array_new_checked (domain, mono_defaults.object_class, outarg_count, error);
-	if (mono_error_set_pending_exception (error))
-		return NULL;
+	return_val_if_nok (error, null_handle);
+	MONO_HANDLE_NEW (MonoArray, out_args);
 
 	/* handle constructors only for objects already allocated */
 	if (!strcmp (method->method->name, ".ctor"))
@@ -3889,21 +3905,24 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this_arg, M
 	/* This can be called only on MBR objects, so no need to unbox for valuetypes. */
 	g_assert (!m_class_is_valuetype (method->method->klass));
 	result = mono_runtime_invoke_array_checked (method->method, this_arg, params, error);
-	if (mono_error_set_pending_exception (error))
-		return NULL;
+	return_val_if_nok (error, null_handle);
+
+	MonoObjectHandle result_handle = MONO_HANDLE_NEW (MonoObject, result);
+	MonoObjectHandle arg_handle = MONO_HANDLE_NEW (MonoObject, NULL);
 
 	for (i = 0, j = 0; i < mono_array_length_internal (params); i++) {
 		if (sig->params [i]->byref) {
 			gpointer arg;
 			arg = mono_array_get_internal (params, gpointer, i);
+			MONO_HANDLE_ASSIGN_RAW (arg_handle, arg); // FIXME? overkill?
 			mono_array_setref_internal (out_args, j, arg);
 			j++;
 		}
 	}
 
-	mono_gc_wbarrier_generic_store_internal (outArgs, (MonoObject*) out_args);
+	mono_gc_wbarrier_generic_store_internal (MONO_HANDLE_REF (outArgs), (MonoObject*)out_args);
 
-	return result;
+	return result_handle;
 }
 #endif
 
