@@ -179,17 +179,9 @@ namespace System.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)] // Throws InvalidOperationException in Uap as NtQuerySystemInformation Pinvoke is not available
         public void WorkingSet_Valid()
         {
             Assert.True(Environment.WorkingSet > 0, "Expected positive WorkingSet value");
-        }
-
-        [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.Uap)]
-        public void WorkingSet_Valid_Uap()
-        {
-            Assert.Throws<PlatformNotSupportedException>(() => Environment.WorkingSet);
         }
 
         [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // fail fast crashes the process
