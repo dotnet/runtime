@@ -506,7 +506,7 @@ protected:
   protected:
     union {
         BYTE     *m_buffer;
-        wchar_t  *m_asStr;     // For debugging, view as a unicode string
+        WCHAR    *m_asStr;     // For debugging, view as a unicode string
     };
     
 #if _DEBUG

@@ -16,7 +16,7 @@
 //-----------------------------------------------------------------------------
 // Widechar strings representing the units in UnitOfMeasure. *** Keep in sync  ***
 // with the array defined in PerfLog.cpp
-const wchar_t * const wszUnitOfMeasureDescr[MAX_UNITS_OF_MEASURE] =
+const WCHAR * const wszUnitOfMeasureDescr[MAX_UNITS_OF_MEASURE] =
 {
     W(""),
     W("sec"),
@@ -33,7 +33,7 @@ const wchar_t * const wszUnitOfMeasureDescr[MAX_UNITS_OF_MEASURE] =
 // a degrade.
 // "Direction" property is true if an increase in the value of the counter indicates
 // an improvement.
-const wchar_t * const wszIDirection[MAX_UNITS_OF_MEASURE] =
+const WCHAR * const wszIDirection[MAX_UNITS_OF_MEASURE] =
 {
     W("false"),
     W("false"),
@@ -46,7 +46,7 @@ const wchar_t * const wszIDirection[MAX_UNITS_OF_MEASURE] =
 //-----------------------------------------------------------------------------
 // Initialize static variables of the PerfLog class.
 bool PerfLog::m_perfLogInit = false;
-wchar_t PerfLog::m_wszOutStr_1[];
+WCHAR PerfLog::m_wszOutStr_1[];
 DWORD PerfLog::m_dwWriteByte = 0;
 int PerfLog::m_fLogPerfData = 0;
 HANDLE PerfLog::m_hPerfLogFileHandle = 0;
@@ -171,11 +171,11 @@ void PerfLog::PerfLogDone()
         CloseHandle (m_hPerfLogFileHandle);
 }
 
-void PerfLog::OutToStdout(__in_z const wchar_t *wszName, UnitOfMeasure unit, __in_opt const wchar_t *wszDescr)
+void PerfLog::OutToStdout(__in_z const WCHAR *wszName, UnitOfMeasure unit, __in_opt const WCHAR *wszDescr)
 {
     LIMITED_METHOD_CONTRACT;
 
-    wchar_t wszOutStr_2[PRINT_STR_LEN];
+    WCHAR wszOutStr_2[PRINT_STR_LEN];
     
     if (wszDescr)
         _snwprintf_s(wszOutStr_2, PRINT_STR_LEN, PRINT_STR_LEN - 1, W(" (%s)\n"), wszDescr);
@@ -186,7 +186,7 @@ void PerfLog::OutToStdout(__in_z const wchar_t *wszName, UnitOfMeasure unit, __i
     printf("%S", wszOutStr_2);
 }
 
-void PerfLog::OutToPerfFile(__in_z const wchar_t *wszName, UnitOfMeasure unit, __in_opt const wchar_t *wszDescr)
+void PerfLog::OutToPerfFile(__in_z const WCHAR *wszName, UnitOfMeasure unit, __in_opt const WCHAR *wszDescr)
 {
     LIMITED_METHOD_CONTRACT;
     
@@ -203,7 +203,7 @@ void PerfLog::OutToPerfFile(__in_z const wchar_t *wszName, UnitOfMeasure unit, _
     }
     else
     {
-        wchar_t wszOutStr_2[PRINT_STR_LEN];
+        WCHAR wszOutStr_2[PRINT_STR_LEN];
     
         // workaround. The formats for ExecTime is slightly different from a custom value.
         if (wcscmp(wszName, W("ExecTime")) == 0)
@@ -235,7 +235,7 @@ void PerfLog::OutToPerfFile(__in_z const wchar_t *wszName, UnitOfMeasure unit, _
 
 // Output stats in pretty print to stdout and perf automation format to file 
 // handle m_hPerfLogFileHandle
-void PerfLog::Log(__in_z const wchar_t *wszName, UINT64 val, UnitOfMeasure unit, __in_opt const wchar_t *wszDescr)
+void PerfLog::Log(__in_z const WCHAR *wszName, UINT64 val, UnitOfMeasure unit, __in_opt const WCHAR *wszDescr)
 {
     LIMITED_METHOD_CONTRACT;
     
@@ -263,7 +263,7 @@ void PerfLog::Log(__in_z const wchar_t *wszName, UINT64 val, UnitOfMeasure unit,
 
 // Output stats in pretty print to stdout and perf automation format to file 
 // handle m_hPerfLogFileHandle
-void PerfLog::Log(__in_z const wchar_t *wszName, double val, UnitOfMeasure unit, __in_opt const wchar_t *wszDescr)
+void PerfLog::Log(__in_z const WCHAR *wszName, double val, UnitOfMeasure unit, __in_opt const WCHAR *wszDescr)
 {
     LIMITED_METHOD_CONTRACT;
     
@@ -291,7 +291,7 @@ void PerfLog::Log(__in_z const wchar_t *wszName, double val, UnitOfMeasure unit,
 
 // Output stats in pretty print to stdout and perf automation format to file 
 // handle m_hPerfLogFileHandle
-void PerfLog::Log(__in_z const wchar_t *wszName, UINT32 val, UnitOfMeasure unit, __in_opt const wchar_t *wszDescr)
+void PerfLog::Log(__in_z const WCHAR *wszName, UINT32 val, UnitOfMeasure unit, __in_opt const WCHAR *wszDescr)
 {
     LIMITED_METHOD_CONTRACT;
     

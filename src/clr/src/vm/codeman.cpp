@@ -4424,7 +4424,7 @@ LPCWSTR ExecutionManager::GetJitName()
 #if !defined(CROSSGEN_COMPILE)
     if (g_CLRJITPath != nullptr)
     {
-        const wchar_t* p = wcsrchr(g_CLRJITPath, DIRECTORY_SEPARATOR_CHAR_W);
+        const WCHAR* p = wcsrchr(g_CLRJITPath, DIRECTORY_SEPARATOR_CHAR_W);
         if (p != nullptr)
         {
             pwzJitName = p + 1; // Return just the filename, not the directory name

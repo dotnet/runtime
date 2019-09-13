@@ -66,7 +66,6 @@ extern "C" {
 #define QUOTE_MACRO_u_HELPER(x)     u###x
 #define QUOTE_MACRO_u(x)            QUOTE_MACRO_u_HELPER(x)
 
-#include <pal_char16.h>
 #include <pal_error.h>
 #include <pal_mstypes.h>
 

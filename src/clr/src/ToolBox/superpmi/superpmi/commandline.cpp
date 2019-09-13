@@ -151,7 +151,7 @@ void CommandLine::DumpHelp(const char* program)
     printf("     ; if there are any failures, record their MC numbers in the file fail.mcl\n");
 }
 
-static bool ParseJitOption(const char* optionString, wchar_t** key, wchar_t** value)
+static bool ParseJitOption(const char* optionString, WCHAR** key, WCHAR** value)
 {
     char tempKey[1024];
 
@@ -169,11 +169,11 @@ static bool ParseJitOption(const char* optionString, wchar_t** key, wchar_t** va
     const char* tempVal = &optionString[i + 1];
 
     const unsigned keyLen = i;
-    wchar_t*       keyBuf = new wchar_t[keyLen + 1];
+    WCHAR*       keyBuf = new WCHAR[keyLen + 1];
     MultiByteToWideChar(CP_UTF8, 0, tempKey, keyLen + 1, keyBuf, keyLen + 1);
 
     const unsigned valLen = (unsigned)strlen(tempVal);
-    wchar_t*       valBuf = new wchar_t[valLen + 1];
+    WCHAR*       valBuf = new WCHAR[valLen + 1];
     MultiByteToWideChar(CP_UTF8, 0, tempVal, valLen + 1, valBuf, valLen + 1);
 
     *key   = keyBuf;
@@ -670,8 +670,8 @@ bool CommandLine::AddJitOption(int&  currArgument,
         targetjitOptions = *pJitOptions;
     }
 
-    wchar_t* key;
-    wchar_t* value;
+    WCHAR* key;
+    WCHAR* value;
     if ((currArgument >= argc) || !ParseJitOption(argv[currArgument], &key, &value))
     {
         DumpHelp(argv[0]);
@@ -679,9 +679,9 @@ bool CommandLine::AddJitOption(int&  currArgument,
     }
 
     DWORD keyIndex =
-        (DWORD)targetjitOptions->AddBuffer((unsigned char*)key, sizeof(wchar_t) * ((unsigned int)wcslen(key) + 1));
+        (DWORD)targetjitOptions->AddBuffer((unsigned char*)key, sizeof(WCHAR) * ((unsigned int)wcslen(key) + 1));
     DWORD valueIndex =
-        (DWORD)targetjitOptions->AddBuffer((unsigned char*)value, sizeof(wchar_t) * ((unsigned int)wcslen(value) + 1));
+        (DWORD)targetjitOptions->AddBuffer((unsigned char*)value, sizeof(WCHAR) * ((unsigned int)wcslen(value) + 1));
     targetjitOptions->Add(keyIndex, valueIndex);
 
     delete[] key;

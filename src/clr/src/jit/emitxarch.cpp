@@ -7973,7 +7973,7 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
     // pretty print string if it looks like one
     if ((id->idGCref() == GCT_GCREF) && (id->idIns() == INS_mov) && (id->idAddr()->iiaAddrMode.amBaseReg == REG_NA))
     {
-        const wchar_t* str = emitComp->eeGetCPString(disp);
+        const WCHAR* str = emitComp->eeGetCPString(disp);
         if (str != nullptr)
         {
             printf("      '%S'", str);

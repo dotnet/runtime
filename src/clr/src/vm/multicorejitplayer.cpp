@@ -232,7 +232,7 @@ public:
     bool MatchWith(ModuleVersion & version, bool & gotVersion, Module * pModule, bool & shortAbort, bool fAppx);
 
 #ifdef MULTICOREJIT_LOGGING    
-    void Dump(const wchar_t * prefix, int index);
+    void Dump(const WCHAR * prefix, int index);
 #endif
 
 };
@@ -267,7 +267,7 @@ bool PlayerModuleInfo::MatchWith(ModuleVersion & version, bool & gotVersion, Mod
 
 #ifdef MULTICOREJIT_LOGGING
 
-void PlayerModuleInfo::Dump(const wchar_t * prefix, int index)
+void PlayerModuleInfo::Dump(const WCHAR * prefix, int index)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -293,7 +293,7 @@ void PlayerModuleInfo::Dump(const wchar_t * prefix, int index)
 
     for (i = 0; i < m_pRecord->ModuleNameLen(); i ++)
     {
-        ssBuff.Append((wchar_t) m_pRecord->GetModuleName()[i]);
+        ssBuff.Append((WCHAR) m_pRecord->GetModuleName()[i]);
     }
 
     while (i < 32)
@@ -1123,7 +1123,7 @@ void MulticoreJitProfilePlayer::TraceSummary()
 }
 
 
-HRESULT MulticoreJitProfilePlayer::ReadCheckFile(const wchar_t * pFileName)
+HRESULT MulticoreJitProfilePlayer::ReadCheckFile(const WCHAR * pFileName)
 {
     CONTRACTL
     {
@@ -1396,7 +1396,7 @@ DWORD WINAPI MulticoreJitProfilePlayer::StaticJITThreadProc(void *args)
 }
 
 
-HRESULT MulticoreJitProfilePlayer::ProcessProfile(const wchar_t * pFileName)
+HRESULT MulticoreJitProfilePlayer::ProcessProfile(const WCHAR * pFileName)
 {
     STANDARD_VM_CONTRACT;
 

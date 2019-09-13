@@ -326,13 +326,6 @@ function_name() to call the system's implementation
 #undef va_copy
 #endif
 
-
-#ifdef _VAC_
-#define wchar_16 wchar_t
-#else
-#define wchar_t wchar_16
-#endif // _VAC_
-
 #define ptrdiff_t PAL_ptrdiff_t
 #define intptr_t PAL_intptr_t
 #define uintptr_t PAL_uintptr_t
@@ -511,7 +504,6 @@ function_name() to call the system's implementation
 #undef open
 #undef glob
 
-#undef wchar_t
 #undef ptrdiff_t
 #undef intptr_t
 #undef uintptr_t
@@ -584,7 +576,6 @@ function_name() to call the system's implementation
 #undef siglongjmp
 
 #undef _SIZE_T_DEFINED
-#undef _WCHAR_T_DEFINED
 
 #define _DONT_USE_CTYPE_INLINE_
 #if HAVE_RUNETYPE_H

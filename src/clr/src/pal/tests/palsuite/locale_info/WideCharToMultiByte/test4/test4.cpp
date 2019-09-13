@@ -15,7 +15,7 @@
 #include <palsuite.h>
 
 /* C with a circumflex */
-wchar_t ustr[2] = { 0x108, 0 };
+char16_t ustr[2] = { 0x108, 0 };
 
 /* expected conversion when best fit is allowed on Windows */
 char* lpBestFitRes = "C";

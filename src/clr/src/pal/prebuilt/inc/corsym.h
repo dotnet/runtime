@@ -5293,8 +5293,8 @@ EXTERN_C const IID IID_ISymNGenWriter2;
     {
     public:
         virtual HRESULT STDMETHODCALLTYPE OpenModW( 
-            /* [in] */ const wchar_t *wszModule,
-            /* [in] */ const wchar_t *wszObjFile,
+            /* [in] */ LPCWSTR wszModule,
+            /* [in] */ LPCWSTR wszObjFile,
             /* [out] */ BYTE **ppmod) = 0;
         
         virtual HRESULT STDMETHODCALLTYPE CloseMod( 
@@ -5315,7 +5315,7 @@ EXTERN_C const IID IID_ISymNGenWriter2;
             /* [in] */ DWORD dwRelocCrc) = 0;
         
         virtual HRESULT STDMETHODCALLTYPE QueryPDBNameExW( 
-            /* [size_is][out] */ wchar_t wszPDB[  ],
+            /* [size_is][out] */ WCHAR wszPDB[  ],
             /* [in] */ SIZE_T cchMax) = 0;
         
     };
@@ -5354,8 +5354,8 @@ EXTERN_C const IID IID_ISymNGenWriter2;
         
         HRESULT ( STDMETHODCALLTYPE *OpenModW )( 
             ISymNGenWriter2 * This,
-            /* [in] */ const wchar_t *wszModule,
-            /* [in] */ const wchar_t *wszObjFile,
+            /* [in] */ const WCHAR *wszModule,
+            /* [in] */ const WCHAR *wszObjFile,
             /* [out] */ BYTE **ppmod);
         
         HRESULT ( STDMETHODCALLTYPE *CloseMod )( 
@@ -5380,7 +5380,7 @@ EXTERN_C const IID IID_ISymNGenWriter2;
         
         HRESULT ( STDMETHODCALLTYPE *QueryPDBNameExW )( 
             ISymNGenWriter2 * This,
-            /* [size_is][out] */ wchar_t wszPDB[  ],
+            /* [size_is][out] */ WCHAR wszPDB[  ],
             /* [in] */ SIZE_T cchMax);
         
         END_INTERFACE

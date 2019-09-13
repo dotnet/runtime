@@ -96,32 +96,12 @@
 #endif
 #endif
 
-/* WCHAR */
-#if defined (SAFECRT_INCLUDE_REDEFINES)
-#if !defined(_WCHAR_T_DEFINED)
-typedef unsigned short WCHAR;
-#define _WCHAR_T_DEFINED
-#endif
-#endif
-
 /* _W64 */
 #if !defined(_W64)
 #if !defined(__midl) && (defined(_X86_) || defined(_M_IX86)) && _MSC_VER >= 1300
 #define _W64 __w64
 #else
 #define _W64
-#endif
-#endif
-
-/* size_t */
-#if defined (SAFECRT_INCLUDE_REDEFINES)
-#if !defined(_SIZE_T_DEFINED)
-#if defined(BIT64)
-typedef unsigned __int64    size_t;
-#else
-typedef _W64 unsigned int   size_t;
-#endif
-#define _SIZE_T_DEFINED
 #endif
 #endif
 
@@ -370,9 +350,6 @@ void __cdecl _invalid_parameter(const WCHAR *_Message, const WCHAR *_FunctionNam
 #if (_SAFECRT_USE_INLINES || _SAFECRT_IMPL) && !defined(_SAFECRT_DO_NOT_DEFINE_INVALID_PARAMETER)
 
 #ifndef STATUS_INVALID_PARAMETER
-#if defined (SAFECRT_INCLUDE_REDEFINES)
-typedef LONG NTSTATUS;
-#endif
 #define STATUS_INVALID_PARAMETER ((NTSTATUS)0xC000000DL)
 #endif
 

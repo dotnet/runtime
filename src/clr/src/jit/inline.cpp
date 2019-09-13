@@ -1723,7 +1723,7 @@ bool InlineStrategy::IsNoInline(ICorJitInfo* info, CORINFO_METHOD_HANDLE method)
 #if defined(DEBUG) || defined(INLINE_DATA)
 
     static ConfigMethodRange range;
-    const wchar_t*           noInlineRange = JitConfig.JitNoInlineRange();
+    const WCHAR*             noInlineRange = JitConfig.JitNoInlineRange();
 
     if (noInlineRange == nullptr)
     {
@@ -1734,7 +1734,7 @@ bool InlineStrategy::IsNoInline(ICorJitInfo* info, CORINFO_METHOD_HANDLE method)
     // number of spaces in our config string to see if there are
     // more. Number of ranges we need is 2x that value.
     unsigned entryCount = 1;
-    for (const wchar_t* p = noInlineRange; *p != 0; p++)
+    for (const WCHAR* p = noInlineRange; *p != 0; p++)
     {
         if (*p == L' ')
         {

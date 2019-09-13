@@ -19,11 +19,6 @@
 #include "../../vm/gdbjithelpers.h"
 #endif // FEATURE_GDBJIT
 
-typedef int (STDMETHODCALLTYPE *HostMain)(
-    const int argc,
-    const wchar_t** argv
-    );
-
 #define ASSERTE_ALL_BUILDS(expr) _ASSERTE_ALL_BUILDS(__FILE__, (expr))
 
 // Holder for const wide strings

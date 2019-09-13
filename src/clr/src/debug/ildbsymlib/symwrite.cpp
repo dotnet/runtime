@@ -148,10 +148,10 @@ COM_METHOD SymWriter::Initialize
     
     if (szFilename != NULL)
     {
-        wchar_t fullpath[_MAX_PATH];
-        wchar_t drive[_MAX_DRIVE];
-        wchar_t dir[_MAX_DIR];
-        wchar_t fname[_MAX_FNAME];
+        WCHAR fullpath[_MAX_PATH];
+        WCHAR drive[_MAX_DRIVE];
+        WCHAR dir[_MAX_DIR];
+        WCHAR fname[_MAX_FNAME];
         _wsplitpath_s( szFilename, drive, COUNTOF(drive), dir, COUNTOF(dir), fname, COUNTOF(fname), NULL, 0 );
         _wmakepath_s( fullpath, COUNTOF(fullpath), drive, dir, fname, W("ildb") );
         if (wcsncpy_s( m_szPath, COUNTOF(m_szPath), fullpath, _TRUNCATE) == STRUNCATE)
@@ -1155,10 +1155,10 @@ COM_METHOD SymWriter::GetDebugCVInfo(
 
     // We need to change the .ildb extension to .pdb to be
     // compatible with VS7
-    wchar_t fullpath[_MAX_PATH];
-    wchar_t drive[_MAX_DRIVE];
-    wchar_t dir[_MAX_DIR];
-    wchar_t fname[_MAX_FNAME];
+    WCHAR fullpath[_MAX_PATH];
+    WCHAR drive[_MAX_DRIVE];
+    WCHAR dir[_MAX_DIR];
+    WCHAR fname[_MAX_FNAME];
     if (_wsplitpath_s( m_szPath, drive, COUNTOF(drive), dir, COUNTOF(dir), fname, COUNTOF(fname), NULL, 0 ))
         return E_FAIL;
     if (_wmakepath_s( fullpath, COUNTOF(fullpath), drive, dir, fname, W("pdb") ))

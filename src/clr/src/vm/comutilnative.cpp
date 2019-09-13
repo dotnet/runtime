@@ -747,7 +747,7 @@ FCIMPL5(VOID, Buffer::BlockCopy, ArrayBase *src, int srcOffset, ArrayBase *dst, 
     }
 
     if (srcOffset < 0 || dstOffset < 0 || count < 0) {
-        const wchar_t* str = W("srcOffset");
+        const WCHAR* str = W("srcOffset");
         if (dstOffset < 0) str = W("dstOffset");
         if (count < 0) str = W("count");
         FCThrowArgumentOutOfRangeVoid(str, W("ArgumentOutOfRange_NeedNonNegNum"));

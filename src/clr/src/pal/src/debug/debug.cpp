@@ -346,7 +346,7 @@ DebugBreakCommand()
             goto FAILED;
         }
 
-        if (snprintf (exe_buf, sizeof (CHAR) * (dwexe_buf + 1), EXE_TEXT "%ls", (wchar_t *)exe_module.lib_name) <= 0)
+        if (snprintf (exe_buf, sizeof (CHAR) * (dwexe_buf + 1), EXE_TEXT "%ls", (wchar_t*)exe_module.lib_name) <= 0)
         {
             goto FAILED;
         }

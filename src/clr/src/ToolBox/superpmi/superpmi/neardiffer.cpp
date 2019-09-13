@@ -67,12 +67,12 @@ bool NearDiffer::InitAsmDiff()
 
     if (UseCoreDisTools)
     {
-        const wchar_t* coreDisToolsLibrary = MAKEDLLNAME_W("coredistools");
+        const WCHAR* coreDisToolsLibrary = MAKEDLLNAME_W("coredistools");
 #ifdef PLATFORM_UNIX
         // Unix will require the full path to coredistools. Assume that the
         // location is next to the full path to the superpmi.so.
         
-        wchar_t coreCLRLoadedPath[MAX_LONGPATH];
+        WCHAR coreCLRLoadedPath[MAX_LONGPATH];
         HMODULE result = 0;
         int returnVal = ::GetModuleFileNameW(result, coreCLRLoadedPath, MAX_LONGPATH);
 
@@ -82,12 +82,12 @@ bool NearDiffer::InitAsmDiff()
             return false;
         }
 
-        wchar_t* ptr = ::wcsrchr(coreCLRLoadedPath, '/');
+        WCHAR* ptr = ::wcsrchr(coreCLRLoadedPath, '/');
 
         // Move past the / character.
         ptr = ptr + 1;
 
-        const wchar_t* coreDisToolsLibraryName = MAKEDLLNAME_W("coredistools");
+        const WCHAR* coreDisToolsLibraryName = MAKEDLLNAME_W("coredistools");
         ::wcscpy_s(ptr, &coreCLRLoadedPath[MAX_LONGPATH] - ptr, coreDisToolsLibraryName);
         coreDisToolsLibrary = coreCLRLoadedPath;
 #endif // PLATFORM_UNIX
@@ -240,7 +240,7 @@ void NearDiffer::DumpCodeBlock(unsigned char* block, ULONG blocksize, void* orig
         }
         disasm->FDecode(&instr, ops, 3);
 
-        wchar_t instrMnemonicWide[64]; // I never know how much to allocate...
+        WCHAR instrMnemonicWide[64]; // I never know how much to allocate...
         disasm->CchFormatInstr(instrMnemonicWide, 64);
         char   instrMnemonic[128];
         size_t count;
@@ -566,9 +566,9 @@ bool NearDiffer::compareCodeSection(MethodContext* mc,
             FDecodeError = true;
         }
 
-        wchar_t instrMnemonic_1[64]; // I never know how much to allocate...
+        WCHAR instrMnemonic_1[64]; // I never know how much to allocate...
         disasm_1->CchFormatInstr(instrMnemonic_1, 64);
-        wchar_t instrMnemonic_2[64]; // I never know how much to allocate...
+        WCHAR instrMnemonic_2[64]; // I never know how much to allocate...
         disasm_2->CchFormatInstr(instrMnemonic_2, 64);
         if (wcscmp(instrMnemonic_1, L"ret") == 0)
             haveSeenRet = true;

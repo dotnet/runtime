@@ -7181,7 +7181,7 @@ public:
     const char* eeGetFieldName(CORINFO_FIELD_HANDLE fieldHnd, const char** classNamePtr = nullptr);
 
 #if defined(DEBUG)
-    const wchar_t* eeGetCPString(size_t stringHandle);
+    const WCHAR* eeGetCPString(size_t stringHandle);
 #endif
 
     const char* eeGetClassName(CORINFO_CLASS_HANDLE clsHnd);

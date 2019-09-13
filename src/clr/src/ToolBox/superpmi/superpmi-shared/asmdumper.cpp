@@ -66,7 +66,7 @@ void ASMDumper::DumpToFile(HANDLE hFile, MethodContext* mc, CompileResult* cr)
         }
         disasm->FDecode(&instr, ops, 3);
 
-        wchar_t instrMnemonic[64]; // I never know how much to allocate...
+        WCHAR instrMnemonic[64]; // I never know how much to allocate...
         disasm->CchFormatInstr(instrMnemonic, 64);
         buff_offset += sprintf_s(&buff[buff_offset], bufflen - buff_offset, "\r\n%p %S",
                                  (void*)((size_t)orig_hotCodeBlock + offset), instrMnemonic);

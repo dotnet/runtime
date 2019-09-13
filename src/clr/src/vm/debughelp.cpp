@@ -339,8 +339,8 @@ MethodDesc* AsMethodDesc(size_t addr)
 //  This function will return NULL if the buffer is not large enough.
 /*******************************************************************/
 
-wchar_t* formatMethodTable(MethodTable* pMT,
-                           __out_z __inout_ecount(bufSize) wchar_t* buff,
+WCHAR* formatMethodTable(MethodTable* pMT,
+                           __out_z __inout_ecount(bufSize) WCHAR* buff,
                            DWORD bufSize)
 {
     CONTRACTL
@@ -379,8 +379,8 @@ wchar_t* formatMethodTable(MethodTable* pMT,
 //  return the buffer position for next write.
 /*******************************************************************/
 
-wchar_t* formatMethodDesc(MethodDesc* pMD,
-                          __out_z __inout_ecount(bufSize) wchar_t* buff,
+WCHAR* formatMethodDesc(MethodDesc* pMD,
+                          __out_z __inout_ecount(bufSize) WCHAR* buff,
                           DWORD bufSize)
 {
     CONTRACTL
@@ -460,14 +460,14 @@ int dumpStack(BYTE* topOfStack, unsigned len)
 
     int nLen = MAX_CLASSNAME_LENGTH * 4 + 400;  // this should be enough
 
-    wchar_t *buff = (wchar_t *) qb.AllocThrows(nLen * sizeof(wchar_t));
-    wchar_t *buffEnd = buff + nLen;
+    WCHAR *buff = (WCHAR *) qb.AllocThrows(nLen * sizeof(WCHAR));
+    WCHAR *buffEnd = buff + nLen;
 
     while (ptr < end)
     {
         buff[nLen - 1] = W('\0');
 
-        wchar_t* buffPtr = buff;
+        WCHAR* buffPtr = buff;
 
         // stop if we hit unmapped pages
         if (!isMemoryReadable((TADDR)ptr, sizeof(TADDR)))
@@ -484,7 +484,7 @@ int dumpStack(BYTE* topOfStack, unsigned len)
 
             buffPtr += wcslen(buffPtr);
 
-            const wchar_t* kind = W("RETADDR ");
+            const WCHAR* kind = W("RETADDR ");
 
             // Is this a stub (is the return address a MethodDesc?
             MethodDesc* ftn = AsMethodDesc(*ptr);
@@ -814,7 +814,7 @@ StackWalkAction PrintStackTraceCallback(CrawlFrame* pCF, VOID* pData)
 
     MethodDesc* pMD = pCF->GetFunction();
     const int nLen = 2048 - 1;    // keep one character for "\n"
-    wchar_t *buff = (wchar_t*)alloca((nLen + 1) * sizeof(wchar_t));
+    WCHAR *buff = (WCHAR*)alloca((nLen + 1) * sizeof(WCHAR));
     buff[0] = 0;
     buff[nLen-1] = W('\0');                    // make sure the buffer is always NULL-terminated
 

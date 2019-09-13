@@ -11,7 +11,7 @@
 
 JitConfigValues JitConfig;
 
-void JitConfigValues::MethodSet::initialize(const wchar_t* list, ICorJitHost* host)
+void JitConfigValues::MethodSet::initialize(const WCHAR* list, ICorJitHost* host)
 {
     assert(m_list == nullptr);
     assert(m_names == nullptr);
@@ -399,7 +399,7 @@ void JitConfigValues::initialize(ICorJitHost* host)
 #define CONFIG_INTEGER(name, key, defaultValue) m_##name = host->getIntConfigValue(key, defaultValue);
 #define CONFIG_STRING(name, key) m_##name = host->getStringConfigValue(key);
 #define CONFIG_METHODSET(name, key)                                                                                    \
-    const wchar_t* name##value = host->getStringConfigValue(key);                                                      \
+    const WCHAR* name##value = host->getStringConfigValue(key);                                                        \
     m_##name.initialize(name##value, host);                                                                            \
     host->freeStringConfigValue(name##value);
 

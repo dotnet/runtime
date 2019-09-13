@@ -291,7 +291,7 @@ private:
 
     bool HandleModuleDependency(unsigned jitInfo);
 
-    HRESULT ReadCheckFile(const wchar_t * pFileName);
+    HRESULT ReadCheckFile(const WCHAR * pFileName);
 
     DomainAssembly * LoadAssembly(SString & assemblyName);
 
@@ -301,7 +301,7 @@ public:
 
     ~MulticoreJitProfilePlayer();
 
-    HRESULT ProcessProfile(const wchar_t * pFileName);
+    HRESULT ProcessProfile(const WCHAR * pFileName);
 
     HRESULT OnModule(Module * pModule);
 };
@@ -432,7 +432,7 @@ public:
 
     PCODE RequestMethodCode(MethodDesc * pMethod, MulticoreJitManager * pManager);
     
-    HRESULT StartProfile(const wchar_t * pRoot, const wchar_t * pFileName, int suffix, LONG nSession);
+    HRESULT StartProfile(const WCHAR * pRoot, const WCHAR * pFileName, int suffix, LONG nSession);
 
     HRESULT StopProfile(bool appDomainShutdown);
 
@@ -468,9 +468,9 @@ inline bool PrivateEtwEnabled()
 #endif // FEATURE_EVENT_TRACE
 }
 
-void MulticoreJitFireEtw(const wchar_t * pAction, const wchar_t * pTarget, int p1, int p2, int p3);
+void MulticoreJitFireEtw(const WCHAR * pAction, const WCHAR * pTarget, int p1, int p2, int p3);
 
-void MulticoreJitFireEtwA(const wchar_t * pAction, const char * pTarget, int p1, int p2, int p3);
+void MulticoreJitFireEtwA(const WCHAR * pAction, const char * pTarget, int p1, int p2, int p3);
 
 void MulticoreJitFireEtwMethodCodeReturned(MethodDesc * pMethod);
 
