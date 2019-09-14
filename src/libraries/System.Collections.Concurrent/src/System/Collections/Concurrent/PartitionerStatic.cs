@@ -68,6 +68,11 @@ namespace System.Collections.Concurrent
     /// </remarks>
     public static class Partitioner
     {
+        // How many chunks do we want to divide the range into?  If this is 1, then the
+        // answer is "one chunk per core".  Generally, though, you'll achieve better
+        // load balancing on a busy system if you make it higher than 1.
+        private const int CoreOversubscriptionRate = 3;
+
         /// <summary>
         /// Creates an orderable partitioner from an <see cref="System.Collections.Generic.IList{T}"/>
         /// instance.
@@ -181,16 +186,13 @@ namespace System.Collections.Concurrent
         /// <returns>A partitioner.</returns>
         /// <exception cref="System.ArgumentOutOfRangeException"> The <paramref name="toExclusive"/> argument is
         /// less than or equal to the <paramref name="fromInclusive"/> argument.</exception>
+        /// <remarks>if ProccessorCount == 1, for correct rangeSize calculation the const CoreOversubscriptionRate must be > 1 (avoid division by 1)</remarks>
         public static OrderablePartitioner<Tuple<long, long>> Create(long fromInclusive, long toExclusive)
         {
-            // How many chunks do we want to divide the range into?  If this is 1, then the
-            // answer is "one chunk per core".  Generally, though, you'll achieve better
-            // load balancing on a busy system if you make it higher than 1.
-            int coreOversubscriptionRate = 3;
-
             if (toExclusive <= fromInclusive) throw new ArgumentOutOfRangeException(nameof(toExclusive));
-            long rangeSize = (toExclusive - fromInclusive) /
-                (PlatformHelper.ProcessorCount * coreOversubscriptionRate);
+            decimal range = (decimal)toExclusive - fromInclusive;
+            long rangeSize = (long)(range /
+                (PlatformHelper.ProcessorCount * CoreOversubscriptionRate));
             if (rangeSize == 0) rangeSize = 1;
             return Partitioner.Create(CreateRanges(fromInclusive, toExclusive, rangeSize), EnumerablePartitionerOptions.NoBuffering); // chunk one range at a time
         }
@@ -238,16 +240,14 @@ namespace System.Collections.Concurrent
         /// <returns>A partitioner.</returns>
         /// <exception cref="System.ArgumentOutOfRangeException"> The <paramref name="toExclusive"/> argument is
         /// less than or equal to the <paramref name="fromInclusive"/> argument.</exception>
+        /// <remarks>if ProccessorCount == 1, for correct rangeSize calculation the const CoreOversubscriptionRate must be > 1 (avoid division by 1),
+        /// and the same issue could occur with rangeSize == -1 when fromInclusive = int.MinValue and toExclusive = int.MaxValue.</remarks>
         public static OrderablePartitioner<Tuple<int, int>> Create(int fromInclusive, int toExclusive)
         {
-            // How many chunks do we want to divide the range into?  If this is 1, then the
-            // answer is "one chunk per core".  Generally, though, you'll achieve better
-            // load balancing on a busy system if you make it higher than 1.
-            int coreOversubscriptionRate = 3;
-
             if (toExclusive <= fromInclusive) throw new ArgumentOutOfRangeException(nameof(toExclusive));
-            int rangeSize = (toExclusive - fromInclusive) /
-                (PlatformHelper.ProcessorCount * coreOversubscriptionRate);
+            long range = (long)toExclusive - fromInclusive;
+            int rangeSize = (int)(range /
+                (PlatformHelper.ProcessorCount * CoreOversubscriptionRate));
             if (rangeSize == 0) rangeSize = 1;
             return Partitioner.Create(CreateRanges(fromInclusive, toExclusive, rangeSize), EnumerablePartitionerOptions.NoBuffering); // chunk one range at a time
         }
