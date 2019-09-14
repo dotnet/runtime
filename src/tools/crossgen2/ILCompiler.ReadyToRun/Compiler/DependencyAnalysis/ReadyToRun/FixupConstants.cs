@@ -173,4 +173,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         ELEMENT_TYPE_SENTINEL = 65,
         ELEMENT_TYPE_PINNED = 69
     }
+
+    public static class ReadyToRunRuntimeConstants
+    {
+        public const int READYTORUN_PInvokeTransitionFrameSizeInPointerUnits = 11;
+    }
 }
