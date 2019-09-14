@@ -11406,7 +11406,7 @@ void CodeGen::genIPmappingGen()
         //block has an IL offset and appears in eeBoundaries.
         for (BasicBlock * block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
         {
-            GenTreeStmt* stmt = block->firstStmt();
+            Statement* stmt = block->firstStmt();
             if ((block->bbRefs > 1) && (stmt != nullptr))
             {
                 bool found = false;

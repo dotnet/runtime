@@ -73,7 +73,7 @@ enum BBjumpKinds : BYTE
 // clang-format on
 
 struct GenTree;
-struct GenTreeStmt;
+struct Statement;
 struct BasicBlock;
 class Compiler;
 class typeInfo;
@@ -745,7 +745,7 @@ struct BasicBlock : private LIR::Range
 
     __declspec(property(get = getBBTreeList, put = setBBTreeList)) GenTree* bbTreeList; // the body of the block.
 
-    GenTreeStmt* bbStmtList;
+    Statement* bbStmtList;
 
     GenTree* getBBTreeList() const
     {
@@ -1060,8 +1060,13 @@ struct BasicBlock : private LIR::Range
         return bbNum - 1;
     }
 
-    GenTreeStmt* firstStmt() const;
-    GenTreeStmt* lastStmt() const;
+    Statement* firstStmt() const;
+    Statement* lastStmt() const;
+
+    StatementList Statements() const
+    {
+        return StatementList(firstStmt());
+    }
 
     GenTree* firstNode();
     GenTree* lastNode();
@@ -1079,8 +1084,8 @@ struct BasicBlock : private LIR::Range
 
     // Returns the first statement in the statement list of "this" that is
     // not an SSA definition (a lcl = phi(...) assignment).
-    GenTreeStmt* FirstNonPhiDef();
-    GenTreeStmt* FirstNonPhiDefOrCatchArgAsg();
+    Statement* FirstNonPhiDef();
+    Statement* FirstNonPhiDefOrCatchArgAsg();
 
     BasicBlock() : bbStmtList(nullptr), bbLiveIn(VarSetOps::UninitVal()), bbLiveOut(VarSetOps::UninitVal())
     {

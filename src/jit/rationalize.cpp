@@ -228,7 +228,7 @@ void Rationalizer::RewriteIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTree*
 
 #ifdef DEBUG
 
-void Rationalizer::ValidateStatement(GenTreeStmt* stmt, BasicBlock* block)
+void Rationalizer::ValidateStatement(Statement* stmt, BasicBlock* block)
 {
     DBEXEC(TRUE, JitTls::GetCompiler()->fgDebugCheckNodeLinks(block, stmt));
 }
@@ -240,7 +240,7 @@ void Rationalizer::SanityCheck()
     BasicBlock* block;
     foreach_block(comp, block)
     {
-        for (GenTreeStmt* statement = block->firstStmt(); statement != nullptr; statement = statement->getNextStmt())
+        for (Statement* statement : block->Statements())
         {
             ValidateStatement(statement, block);
 
@@ -930,14 +930,14 @@ void Rationalizer::DoPhase()
 
         // Establish the first and last nodes for the block. This is necessary in order for the LIR
         // utilities that hang off the BasicBlock type to work correctly.
-        GenTreeStmt* firstStatement = block->firstStmt();
+        Statement* firstStatement = block->firstStmt();
         if (firstStatement == nullptr)
         {
             // No statements in this block; skip it.
             continue;
         }
 
-        for (GenTreeStmt* statement = firstStatement; statement != nullptr; statement = statement->getNextStmt())
+        for (Statement* statement : StatementList(firstStatement))
         {
             assert(statement->gtStmtList != nullptr);
             assert(statement->gtStmtList->gtPrev == nullptr);

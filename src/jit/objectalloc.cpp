@@ -211,7 +211,7 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
 
     foreach_block(comp, block)
     {
-        for (GenTreeStmt* stmt = block->firstStmt(); stmt; stmt = stmt->gtNextStmt)
+        for (Statement* stmt : block->Statements())
         {
             BuildConnGraphVisitor buildConnGraphVisitor(this);
             buildConnGraphVisitor.WalkTree(&stmt->gtStmtExpr, nullptr);
@@ -347,7 +347,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
         }
 #endif // DEBUG
 
-        for (GenTreeStmt* stmt = block->firstStmt(); stmt; stmt = stmt->gtNextStmt)
+        for (Statement* stmt : block->Statements())
         {
             GenTree* stmtExpr = stmt->gtStmtExpr;
             GenTree* op2      = nullptr;
@@ -500,7 +500,7 @@ GenTree* ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* alloc
 
 unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* allocObj,
                                                               BasicBlock*      block,
-                                                              GenTreeStmt*     stmt)
+                                                              Statement*       stmt)
 {
     assert(allocObj != nullptr);
     assert(m_AnalysisDone);
@@ -527,7 +527,7 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* a
         const bool isCopyBlock = false;
         tree = comp->gtNewBlkOpNode(tree, comp->gtNewIconNode(0), structSize, isVolatile, isCopyBlock);
 
-        GenTreeStmt* newStmt = comp->gtNewStmt(tree);
+        Statement* newStmt = comp->gtNewStmt(tree);
 
         comp->fgInsertStmtBefore(block, stmt, newStmt);
     }
@@ -549,7 +549,7 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* a
     tree = comp->gtNewFieldRef(TYP_I_IMPL, FieldSeqStore::FirstElemPseudoField, tree, 0);
     tree = comp->gtNewAssignNode(tree, allocObj->gtGetOp1());
 
-    GenTreeStmt* newStmt = comp->gtNewStmt(tree);
+    Statement* newStmt = comp->gtNewStmt(tree);
 
     comp->fgInsertStmtBefore(block, stmt, newStmt);
 
@@ -908,7 +908,7 @@ void ObjectAllocator::RewriteUses()
 
     foreach_block(comp, block)
     {
-        for (GenTreeStmt* stmt = block->firstStmt(); stmt; stmt = stmt->gtNextStmt)
+        for (Statement* stmt : block->Statements())
         {
             RewriteUsesVisitor rewriteUsesVisitor(this);
             rewriteUsesVisitor.WalkTree(&stmt->gtStmtExpr, nullptr);

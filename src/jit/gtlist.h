@@ -244,7 +244,7 @@ GTNODE(CALL             , GenTreeCall        ,0,(GTK_SPECIAL|GTK_NOCONTAIN))
 //-----------------------------------------------------------------------------
 //  Statement operator nodes:
 //-----------------------------------------------------------------------------
-GTNODE(STMT             , GenTreeStmt        ,0,(GTK_SPECIAL|GTK_NOVALUE))// top-level list nodes in bbTreeList
+GTNODE(STMT             , Statement        ,0,(GTK_SPECIAL|GTK_NOVALUE))// top-level list nodes in bbTreeList
 
 GTNODE(RETURN           , GenTreeOp          ,0,(GTK_UNOP|GTK_NOVALUE))   // return from current function
 GTNODE(SWITCH           , GenTreeOp          ,0,(GTK_UNOP|GTK_NOVALUE))   // switch
@@ -299,7 +299,7 @@ GTNODE(PUTARG_SPLIT     , GenTreePutArgSplit ,0,GTK_UNOP)                       
 #endif // FEATURE_ARG_SPLIT
 GTNODE(RETURNTRAP       , GenTreeOp          ,0,GTK_UNOP|GTK_NOVALUE)            // a conditional call to wait on gc
 GTNODE(SWAP             , GenTreeOp          ,0,GTK_BINOP|GTK_NOVALUE)           // op1 and op2 swap (registers)
-GTNODE(IL_OFFSET        , GenTreeStmt        ,0,GTK_LEAF|GTK_NOVALUE)            // marks an IL offset for debugging purposes
+GTNODE(IL_OFFSET        , Statement        ,0,GTK_LEAF|GTK_NOVALUE)            // marks an IL offset for debugging purposes
 
 /*****************************************************************************/
 #undef  GTNODE

@@ -8,14 +8,14 @@
 class Rationalizer : public Phase
 {
 private:
-    BasicBlock*  m_block;
-    GenTreeStmt* m_statement;
+    BasicBlock* m_block;
+    Statement*  m_statement;
 
 public:
     Rationalizer(Compiler* comp);
 
 #ifdef DEBUG
-    static void ValidateStatement(GenTreeStmt* stmt, BasicBlock* block);
+    static void ValidateStatement(Statement* stmt, BasicBlock* block);
 
     // general purpose sanity checking of de facto standard GenTree
     void SanityCheck();

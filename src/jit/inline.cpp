@@ -568,7 +568,7 @@ void InlineContext::DumpXml(FILE* file, unsigned indent)
 //   stmt          - statement containing the call (if known)
 //   description   - string describing the context of the decision
 
-InlineResult::InlineResult(Compiler* compiler, GenTreeCall* call, GenTreeStmt* stmt, const char* description)
+InlineResult::InlineResult(Compiler* compiler, GenTreeCall* call, Statement* stmt, const char* description)
     : m_RootCompiler(nullptr)
     , m_Policy(nullptr)
     , m_Call(call)
@@ -1197,7 +1197,7 @@ InlineContext* InlineStrategy::NewRoot()
 InlineContext* InlineStrategy::NewSuccess(InlineInfo* inlineInfo)
 {
     InlineContext* calleeContext = new (m_Compiler, CMK_Inlining) InlineContext(this);
-    GenTreeStmt*   stmt          = inlineInfo->iciStmt;
+    Statement*     stmt          = inlineInfo->iciStmt;
     BYTE*          calleeIL      = inlineInfo->inlineCandidateInfo->methInfo.ILCode;
     unsigned       calleeILSize  = inlineInfo->inlineCandidateInfo->methInfo.ILCodeSize;
     InlineContext* parentContext = stmt->gtInlineContext;
@@ -1259,7 +1259,7 @@ InlineContext* InlineStrategy::NewSuccess(InlineInfo* inlineInfo)
 // Return Value:
 //    A new InlineContext for diagnostic purposes
 
-InlineContext* InlineStrategy::NewFailure(GenTreeStmt* stmt, InlineResult* inlineResult)
+InlineContext* InlineStrategy::NewFailure(Statement* stmt, InlineResult* inlineResult)
 {
     // Check for a parent context first. We should now have a parent
     // context for all statements.
