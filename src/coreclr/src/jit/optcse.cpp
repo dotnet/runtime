@@ -394,7 +394,7 @@ void Compiler::optValnumCSE_Init()
 //          we return that index.  There currently is a limit on the number of CSEs
 //          that we can have of MAX_CSE_CNT (64)
 //
-unsigned Compiler::optValnumCSE_Index(GenTree* tree, GenTreeStmt* stmt)
+unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 {
     unsigned key;
     unsigned hash;
@@ -622,7 +622,7 @@ unsigned Compiler::optValnumCSE_Locate()
         noway_assert((block->bbFlags & (BBF_VISITED | BBF_MARKED)) == 0);
 
         /* Walk the statement trees in this basic block */
-        for (GenTreeStmt* stmt = block->FirstNonPhiDef(); stmt != nullptr; stmt = stmt->getNextStmt())
+        for (Statement* stmt : StatementList(block->FirstNonPhiDef()))
         {
             /* We walk the tree in the forwards direction (bottom up) */
             bool stmtHasArrLenCandidate = false;
@@ -1007,7 +1007,7 @@ void Compiler::optValnumCSE_Availablity()
 
         // Walk the statement trees in this basic block
 
-        for (GenTreeStmt* stmt = block->FirstNonPhiDef(); stmt != nullptr; stmt = stmt->getNextStmt())
+        for (Statement* stmt : StatementList(block->FirstNonPhiDef()))
         {
             // We walk the tree in the forwards direction (bottom up)
 
@@ -2129,9 +2129,9 @@ public:
         do
         {
             /* Process the next node in the list */
-            GenTree*     exp  = lst->tslTree;
-            GenTreeStmt* stmt = lst->tslStmt;
-            BasicBlock*  blk  = lst->tslBlock;
+            GenTree*    exp  = lst->tslTree;
+            Statement*  stmt = lst->tslStmt;
+            BasicBlock* blk  = lst->tslBlock;
 
             /* Advance to the next node in the list */
             lst = lst->tslNext;
@@ -2888,7 +2888,7 @@ void Compiler::optCleanupCSEs()
         block->bbFlags &= ~(BBF_VISITED | BBF_MARKED);
 
         // Walk the statement trees in this basic block.
-        for (GenTreeStmt* stmt = block->FirstNonPhiDef(); stmt != nullptr; stmt = stmt->getNextStmt())
+        for (Statement* stmt : StatementList(block->FirstNonPhiDef()))
         {
             // We must clear the gtCSEnum field.
             for (GenTree* tree = stmt->gtStmtExpr; tree; tree = tree->gtPrev)
@@ -2914,9 +2914,8 @@ void Compiler::optEnsureClearCSEInfo()
         assert((block->bbFlags & (BBF_VISITED | BBF_MARKED)) == 0);
 
         // Initialize 'stmt' to the first non-Phi statement
-        GenTreeStmt* stmt = block->FirstNonPhiDef();
         // Walk the statement trees in this basic block
-        for (; stmt != nullptr; stmt = stmt->getNextStmt())
+        for (Statement* stmt : StatementList(block->FirstNonPhiDef()))
         {
             for (GenTree* tree = stmt->gtStmtExpr; tree; tree = tree->gtPrev)
             {

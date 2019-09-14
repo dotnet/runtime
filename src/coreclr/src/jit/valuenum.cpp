@@ -5657,7 +5657,7 @@ void Compiler::fgValueNumber()
         for (BasicBlock* blk = fgFirstBB; blk != nullptr; blk = blk->bbNext)
         {
             // Now iterate over the block's statements, and their trees.
-            for (GenTreeStmt* stmt = blk->FirstNonPhiDef(); stmt != nullptr; stmt = stmt->getNextStmt())
+            for (Statement* stmt : StatementList(blk->FirstNonPhiDef()))
             {
                 for (GenTree* tree = stmt->gtStmtList; tree != nullptr; tree = tree->gtNext)
                 {
@@ -5820,7 +5820,7 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
     compCurStmtNum = blk->bbStmtNum - 1; // Set compCurStmtNum
 #endif
 
-    GenTreeStmt* stmt = blk->firstStmt();
+    Statement* stmt = blk->firstStmt();
 
     // First: visit phi's.  If "newVNForPhis", give them new VN's.  If not,
     // first check to see if all phi args have the same value.

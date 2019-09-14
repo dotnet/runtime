@@ -308,7 +308,7 @@ class InlineResult
 public:
     // Construct a new InlineResult to help evaluate a
     // particular call for inlining.
-    InlineResult(Compiler* compiler, GenTreeCall* call, GenTreeStmt* stmt, const char* description);
+    InlineResult(Compiler* compiler, GenTreeCall* call, Statement* stmt, const char* description);
 
     // Construct a new InlineResult to evaluate a particular
     // method to see if it is inlineable.
@@ -610,7 +610,7 @@ struct InlineInfo
 #endif // FEATURE_SIMD
 
     GenTreeCall* iciCall;  // The GT_CALL node to be inlined.
-    GenTreeStmt* iciStmt;  // The statement iciCall is in.
+    Statement*   iciStmt;  // The statement iciCall is in.
     BasicBlock*  iciBlock; // The basic block iciStmt is in.
 };
 
@@ -767,7 +767,7 @@ public:
     InlineContext* NewSuccess(InlineInfo* inlineInfo);
 
     // Create context for a failing inline.
-    InlineContext* NewFailure(GenTreeStmt* stmt, InlineResult* inlineResult);
+    InlineContext* NewFailure(Statement* stmt, InlineResult* inlineResult);
 
     // Compiler associated with this strategy
     Compiler* GetCompiler() const
