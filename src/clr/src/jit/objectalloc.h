@@ -63,7 +63,7 @@ private:
     bool     MorphAllocObjNodes();
     void     RewriteUses();
     GenTree* MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* allocObj);
-    unsigned int MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* allocObj, BasicBlock* block, GenTreeStmt* stmt);
+    unsigned int MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* allocObj, BasicBlock* block, Statement* stmt);
     struct BuildConnGraphVisitorCallbackData;
     bool CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum);
     void UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType);

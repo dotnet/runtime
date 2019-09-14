@@ -494,7 +494,7 @@ void Compiler::fgPerBlockLocalVarLiveness()
         }
         else
         {
-            for (GenTreeStmt* stmt = block->FirstNonPhiDef(); stmt != nullptr; stmt = stmt->getNextStmt())
+            for (Statement* stmt : StatementList(block->FirstNonPhiDef()))
             {
                 compCurStmt = stmt;
                 for (GenTree* node = stmt->gtStmtList; node != nullptr; node = node->gtNext)
@@ -992,7 +992,7 @@ void Compiler::fgExtendDbgLifetimes()
                     GenTree* initNode = gtNewAssignNode(varNode, zero);
 
                     // Create a statement for the initializer, sequence it, and append it to the current BB.
-                    GenTreeStmt* initStmt = gtNewStmt(initNode);
+                    Statement* initStmt = gtNewStmt(initNode);
                     gtSetStmtInfo(initStmt);
                     fgSetStmtSeq(initStmt);
                     fgInsertStmtNearEnd(block, initStmt);
@@ -2597,7 +2597,7 @@ void Compiler::fgInterBlockLocalVarLiveness()
         {
             /* Get the first statement in the block */
 
-            GenTreeStmt* firstStmt = block->FirstNonPhiDef();
+            Statement* firstStmt = block->FirstNonPhiDef();
 
             if (firstStmt == nullptr)
             {
@@ -2606,7 +2606,7 @@ void Compiler::fgInterBlockLocalVarLiveness()
 
             /* Walk all the statements of the block backwards - Get the LAST stmt */
 
-            GenTreeStmt* nextStmt = block->lastStmt();
+            Statement* nextStmt = block->lastStmt();
 
             do
             {
