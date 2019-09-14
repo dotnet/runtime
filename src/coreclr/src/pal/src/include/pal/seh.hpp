@@ -114,7 +114,6 @@ void SEHHandleControlEvent(DWORD event, LPVOID eip);
 extern "C"
 {
 
-#ifdef FEATURE_PAL_SXS
 /*++
 Function :
     SEHEnable
@@ -144,8 +143,6 @@ Return value :
     an error code, otherwise
 --*/
 CorUnix::PAL_ERROR SEHDisable(CorUnix::CPalThread *pthrCurrent);
-
-#endif // FEATURE_PAL_SXS
 
 }
 

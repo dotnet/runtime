@@ -953,54 +953,34 @@ CorUnix::InternalEndCurrentThread(
         ASSERT("Unable to obtain state controller for thread");
     }
 
-#ifndef FEATURE_PAL_SXS
-    // If this is the last thread then delete the process' data,
-    // but don't exit because the application hosting the PAL
-    // might have its own threads.
-    if (PROCGetNumberOfThreads() == 1)
-    {
-        TRACE("Last thread is exiting\n");
-        TerminateCurrentProcessNoExit(FALSE);
-    }
-    else
-#endif // !FEATURE_PAL_SXS
-    {
-        /* Do this ONLY if we aren't the last thread -> otherwise
-           it gets done by TerminateProcess->
-           PROCCleanupProcess->PALShutdown->PAL_Terminate */
+    //
+    // Add a reference to the thread data before releasing the
+    // thread object, so we can still use it
+    //
 
-        //
-        // Add a reference to the thread data before releasing the
-        // thread object, so we can still use it
-        //
+    pThread->AddThreadReference();
 
-        pThread->AddThreadReference();
+    //
+    // Release the reference to the IPalObject for this thread
+    //
 
-        //
-        // Release the reference to the IPalObject for this thread
-        //
+    pThread->GetThreadObject()->ReleaseReference(pThread);
 
-        pThread->GetThreadObject()->ReleaseReference(pThread);
+    /* Remove thread for the thread list of the process
+        (don't do if this is the last thread -> gets handled by
+        TerminateProcess->PROCCleanupProcess->PROCTerminateOtherThreads) */
 
-        /* Remove thread for the thread list of the process
-           (don't do if this is the last thread -> gets handled by
-            TerminateProcess->PROCCleanupProcess->PROCTerminateOtherThreads) */
+    PROCRemoveThread(pThread, pThread);
 
-        PROCRemoveThread(pThread, pThread);
+    // Ensure that EH is disabled on the current thread
+    SEHDisable(pThread);
 
-#ifdef FEATURE_PAL_SXS
-        // Ensure that EH is disabled on the current thread
-        SEHDisable(pThread);
-#endif // FEATURE_PAL_SXS
+    //
+    // Now release our reference to the thread data. We cannot touch
+    // it after this point
+    //
 
-
-        //
-        // Now release our reference to the thread data. We cannot touch
-        // it after this point
-        //
-
-        pThread->ReleaseThreadReference();
-    }
+    pThread->ReleaseThreadReference();
 }
 
 /*++
@@ -2260,13 +2240,11 @@ CPalThread::RunPostCreateInitializers(
         goto RunPostCreateInitializersExit;
     }
 
-#ifdef FEATURE_PAL_SXS
     palError = SEHEnable(this);
     if (NO_ERROR != palError)
     {
         goto RunPostCreateInitializersExit;
     }
-#endif // FEATURE_PAL_SXS
 
 RunPostCreateInitializersExit:
 

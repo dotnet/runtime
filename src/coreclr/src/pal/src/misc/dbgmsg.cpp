@@ -98,9 +98,7 @@ static const char *dbg_channel_names[]=
     "POLL",
     "CRYPT",
     "SHFOLDER"
-#ifdef FEATURE_PAL_SXS
   , "SXS"
-#endif // FEATURE_PAL_SXS
   , "DCI_NUMA"
 };
 
@@ -420,7 +418,6 @@ void DBG_close_channels()
 }
 
 
-#ifdef FEATURE_PAL_SXS
 static const void *DBG_get_module_id()
 {
     static const void *s_module_id = NULL;
@@ -441,10 +438,6 @@ static const void *DBG_get_module_id()
 
 #define MODULE_ID DBG_get_module_id,
 #define MODULE_FORMAT "-%p"
-#else
-#define MODULE_ID
-#define MODULE_FORMAT
-#endif // FEATURE_PAL_SXS
 
 /*++
 Function :

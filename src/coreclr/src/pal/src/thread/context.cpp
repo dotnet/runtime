@@ -340,10 +340,9 @@ CONTEXT_SetThreadContext(
         
     if (dwProcessId == GetCurrentProcessId())
     {
-#ifdef FEATURE_PAL_SXS
         // Need to implement SetThreadContext(current thread) for the IX architecture; look at common_signal_handler.
         _ASSERT(FALSE);
-#endif // FEATURE_PAL_SXS
+
         ASSERT("SetThreadContext should be called for cross-process only.\n");
         SetLastError(ERROR_INVALID_PARAMETER);
         goto EXIT;
