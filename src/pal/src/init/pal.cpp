@@ -886,40 +886,6 @@ PAL_IsDebuggerPresent()
 
 /*++
 Function:
-  PAL_EntryPoint
-
-Abstract:
-  This function should be used to wrap code that uses PAL library on thread that was not created by PAL.
---*/
-PALIMPORT
-DWORD_PTR
-PALAPI
-PAL_EntryPoint(
-    IN LPTHREAD_START_ROUTINE lpStartAddress,
-    IN LPVOID lpParameter)
-{
-    CPalThread *pThread;
-    DWORD_PTR retval = (DWORD) -1;
-
-    ENTRY("PAL_EntryPoint(lpStartAddress=%p, lpParameter=%p)\n", lpStartAddress, lpParameter);
-
-    pThread = InternalGetCurrentThread();
-    if (NULL == pThread)
-    {
-        /* This function works only for thread that called PAL_Initialize for now. */
-        ERROR( "Unable to get the thread object.\n" );
-        goto done;
-    }
-
-    retval = (*lpStartAddress)(lpParameter);
-
-done:
-    LOGEXIT("PAL_EntryPoint returns int %d\n", retval);
-    return retval;
-}
-
-/*++
-Function:
   PAL_Shutdown
 
 Abstract:
@@ -978,27 +944,6 @@ PAL_TerminateEx(
 
     LOGEXIT("PAL_TerminateEx is exiting the current process.\n");
     exit(exitCode);
-}
-
-/*++
-Function:
-  PAL_InitializeDebug
-
-Abstract:
-  This function is the called when cordbg attaches to the process.
---*/
-void
-PALAPI
-PAL_InitializeDebug(
-    void)
-{
-    PERF_ENTRY(PAL_InitializeDebug);
-    ENTRY("PAL_InitializeDebug()\n");
-#if HAVE_MACH_EXCEPTIONS
-    MachExceptionInitializeDebug();
-#endif
-    LOGEXIT("PAL_InitializeDebug returns\n");
-    PERF_EXIT(PAL_InitializeDebug);
 }
 
 /*++

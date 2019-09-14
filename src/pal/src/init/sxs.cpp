@@ -20,8 +20,6 @@
 
 using namespace CorUnix;
 
-#ifdef FEATURE_PAL_SXS
-
 SET_DEFAULT_DEBUG_CHANNEL(SXS);
 
 PAL_ERROR AllocatePalThread(CPalThread **ppThread);
@@ -98,5 +96,3 @@ exit:
     *ppThread = pThread;
     return palError;
 }
-
-#endif // FEATURE_PAL_SXS

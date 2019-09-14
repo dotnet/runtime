@@ -12,8 +12,6 @@
 #ifndef __PAL_UNWIND_H__
 #define __PAL_UNWIND_H__
 
-#if FEATURE_PAL_SXS
-
 #ifdef __cplusplus
 extern "C"
 {
@@ -85,7 +83,5 @@ extern "C"
 #ifdef __cplusplus
 };
 #endif // __cplusplus
-
-#endif // FEATURE_PAL_SXS
 
 #endif // __PAL_UNWIND_H__

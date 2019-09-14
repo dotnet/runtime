@@ -110,7 +110,6 @@ namespace CorUnix
         OUT LPFILETIME lpKernelTime,
         OUT LPFILETIME lpUserTime);
         
-#ifdef FEATURE_PAL_SXS
 #if HAVE_MACH_EXCEPTIONS
 
     // Structure used to return data about a single handler to a caller.
@@ -153,7 +152,6 @@ namespace CorUnix
         int GetIndexOfHandler(exception_mask_t bmExceptionMask);
     };
 #endif // HAVE_MACH_EXCEPTIONS
-#endif // FEATURE_PAL_SXS
 
     class CThreadCRTInfo : public CThreadInfoInitializer
     {
@@ -297,8 +295,7 @@ namespace CorUnix
         //
 
         static void* ThreadEntry(void * pvParam);
-        
-#ifdef FEATURE_PAL_SXS
+
         //
         // Data for PAL side-by-side support
         //
@@ -309,7 +306,6 @@ namespace CorUnix
         // specific handlers.
         CThreadMachExceptionHandlers m_sMachExceptionHandlers;
 #endif // HAVE_MACH_EXCEPTIONS
-#endif // FEATURE_PAL_SXS
 
     public:
 
@@ -667,9 +663,7 @@ namespace CorUnix
 #endif // HAVE_MACH_EXCEPTIONS
     };
 
-#if defined(FEATURE_PAL_SXS)
     extern "C" CPalThread *CreateCurrentThreadData();
-#endif // FEATURE_PAL_SXS
 
     inline CPalThread *GetCurrentPalThread()
     {
@@ -679,10 +673,8 @@ namespace CorUnix
     inline CPalThread *InternalGetCurrentThread()
     {
         CPalThread *pThread = GetCurrentPalThread();
-#if defined(FEATURE_PAL_SXS)
         if (pThread == nullptr)
             pThread = CreateCurrentThreadData();
-#endif // FEATURE_PAL_SXS
         return pThread;
     }
 

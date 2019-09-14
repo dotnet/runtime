@@ -190,9 +190,7 @@ typedef enum
     DCI_POLL,
     DCI_CRYPT,
     DCI_SHFOLDER,
-#ifdef FEATURE_PAL_SXS
     DCI_SXS,
-#endif // FEATURE_PAL_SXS
     DCI_NUMA,
     // Please make sure to update dbg_channel_names when adding entries here.
 
