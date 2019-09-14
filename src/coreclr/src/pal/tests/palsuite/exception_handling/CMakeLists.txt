@@ -9,5 +9,4 @@ add_subdirectory(pal_sxs)
 #add_subdirectory(PAL_TRY_EXCEPT_EX)
 #add_subdirectory(PAL_TRY_LEAVE_FINALLY)
 add_subdirectory(RaiseException)
-#add_subdirectory(SetUnhandledExceptionFilter)
 

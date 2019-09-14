@@ -34,7 +34,6 @@ extern "C"
 
 // Process and thread initialization/cleanup/context routines
 BOOL SEHInitializeMachExceptions(DWORD flags);
-void SEHCleanupExceptionPort (void);
 void MachExceptionInitializeDebug(void);
 PAL_NORETURN void MachSetThreadContext(CONTEXT *lpContext);
 

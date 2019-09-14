@@ -47,8 +47,6 @@ using namespace CorUnix;
 // The port we use to handle exceptions and to set the thread context
 mach_port_t s_ExceptionPort;
 
-static BOOL s_DebugInitialized = FALSE;
-
 static DWORD s_PalInitializeFlags = 0;
 
 static const char * PAL_MACH_EXCEPTION_MODE = "PAL_MachExceptionMode";
@@ -198,7 +196,6 @@ GetExceptionMask()
         }
         if (!(exMode & MachException_SuppressDebugging) && (s_PalInitializeFlags & PAL_INITIALIZE_DEBUGGER_EXCEPTIONS))
         {
-#ifdef FEATURE_PAL_SXS
             // Always hook exception ports for breakpoint exceptions.
             // The reason is that we don't know when a managed debugger
             // will attach, so we have to be prepared.  We don't want
@@ -206,12 +203,6 @@ GetExceptionMask()
             // ports for exactly those threads that currently are in
             // this PAL.
             machExceptionMask |= PAL_EXC_DEBUGGING_MASK;
-#else // FEATURE_PAL_SXS
-            if (s_DebugInitialized)
-            {
-                machExceptionMask |= PAL_EXC_DEBUGGING_MASK;
-            }
-#endif // FEATURE_PAL_SXS
         }
         if (!(exMode & MachException_SuppressManaged))
         {
@@ -221,8 +212,6 @@ GetExceptionMask()
 
     return machExceptionMask;
 }
-
-#ifdef FEATURE_PAL_SXS
 
 /*++
 Function :
@@ -366,78 +355,6 @@ PAL_ERROR CorUnix::CPalThread::DisableMachExceptions()
 
     return palError;
 }
-
-#else // FEATURE_PAL_SXS
-
-/*++
-Function :
-    SEHEnableMachExceptions 
-
-    Enable SEH-related stuff related to mach exceptions
-
-    (no parameters)
-
-Return value :
-    TRUE  if enabling succeeded
-    FALSE otherwise
---*/
-BOOL SEHEnableMachExceptions()
-{
-    exception_mask_t machExceptionMask = GetExceptionMask();
-    if (machExceptionMask != 0)
-    {
-        kern_return_t MachRet;
-        MachRet = task_set_exception_ports(mach_task_self(),
-                                           machExceptionMask,
-                                           s_ExceptionPort,
-                                           EXCEPTION_DEFAULT,
-                                           MACHINE_THREAD_STATE);
-
-        if (MachRet != KERN_SUCCESS)
-        {
-            ASSERT("task_set_exception_ports failed: %d\n", MachRet);
-            UTIL_SetLastErrorFromMach(MachRet);
-            return FALSE;
-        }
-    }
-    return TRUE;
-}
-
-/*++
-Function :
-    SEHDisableMachExceptions
-
-    Disable SEH-related stuff related to mach exceptions
-
-    (no parameters)
-
-Return value :
-    TRUE  if enabling succeeded
-    FALSE otherwise
---*/
-BOOL SEHDisableMachExceptions()
-{
-    exception_mask_t machExceptionMask = GetExceptionMask();
-    if (machExceptionMask != 0)
-    {
-        kern_return_t MachRet;
-        MachRet = task_set_exception_ports(mach_task_self(),
-                                           machExceptionMask,
-                                           MACH_PORT_NULL,
-                                           EXCEPTION_DEFAULT,
-                                           MACHINE_THREAD_STATE);
-
-        if (MachRet != KERN_SUCCESS)
-        {
-            ASSERT("task_set_exception_ports failed: %d\n", MachRet);
-            UTIL_SetLastErrorFromMach(MachRet);
-            return FALSE;
-        }
-    }
-    return TRUE;
-}
-
-#endif // FEATURE_PAL_SXS
 
 #if !defined(_AMD64_)
 extern "C"
@@ -1049,7 +966,6 @@ Function :
 
     Entry point for the thread that will listen for exception in any other thread.
 
-#ifdef FEATURE_PAL_SXS
     NOTE: This thread is not a PAL thread, and it must not be one.  If it was,
     exceptions on this thread would be delivered to the port this thread itself
     is listening on.
@@ -1065,7 +981,6 @@ Function :
     This means: no printf, no TRACE, no PAL allocation, no ExitProcess,
     no LastError in this function and its helpers.  To report fatal failure,
     use NONPAL_RETAIL_ASSERT.
-#endif // FEATURE_PAL_SXS
 
 Parameters :
     void *args - not used
@@ -1436,13 +1351,6 @@ SEHInitializeMachExceptions(DWORD flags)
             }
         }
 #endif // _DEBUG
-
-#ifndef FEATURE_PAL_SXS
-        if (!SEHEnableMachExceptions())
-        {
-            return FALSE;
-        }
-#endif // !FEATURE_PAL_SXS
     }
 
     // Tell the system to ignore SIGPIPE signals rather than use the default
@@ -1454,60 +1362,6 @@ SEHInitializeMachExceptions(DWORD flags)
 
     // We're done
     return TRUE;
-}
-
-/*++
-Function :
-    MachExceptionInitializeDebug 
-
-    Initialize the mach exception handlers necessary for a managed debugger
-    to work
-
-Return value :
-    None
---*/
-void MachExceptionInitializeDebug(void)
-{
-    if (s_DebugInitialized == FALSE)
-    {
-#ifndef FEATURE_PAL_SXS
-        kern_return_t MachRet;
-        MachRet = task_set_exception_ports(mach_task_self(),
-                                           PAL_EXC_DEBUGGING_MASK,
-                                           s_ExceptionPort,
-                                           EXCEPTION_DEFAULT,
-                                           MACHINE_THREAD_STATE);
-        if (MachRet != KERN_SUCCESS)
-        {
-            ASSERT("task_set_exception_ports failed: %d\n", MachRet);
-            TerminateProcess(GetCurrentProcess(), (UINT)(-1));
-        }
-#endif // !FEATURE_PAL_SXS
-        s_DebugInitialized = TRUE;
-    }
-}
-
-/*++
-Function :
-    SEHCleanupExceptionPort
-
-    Restore default exception port handler
-
-    (no parameters, no return value)
-    
-Note :
-During PAL_Terminate, we reach a point where SEH isn't possible any more
-(handle manager is off, etc). Past that point, we can't avoid crashing on
-an exception.
---*/
-void 
-SEHCleanupExceptionPort(void)
-{
-    TRACE("Restoring default exception ports\n");
-#ifndef FEATURE_PAL_SXS
-    SEHDisableMachExceptions();
-#endif // !FEATURE_PAL_SXS
-    s_DebugInitialized = FALSE;
 }
 
 extern "C" 
