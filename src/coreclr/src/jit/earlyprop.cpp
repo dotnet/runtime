@@ -185,10 +185,10 @@ void Compiler::optEarlyProp()
 
         compCurBB = block;
 
-        for (GenTreeStmt* stmt = block->firstStmt(); stmt != nullptr;)
+        for (Statement* stmt = block->firstStmt(); stmt != nullptr;)
         {
             // Preserve the next link before the propagation and morph.
-            GenTreeStmt* next = stmt->gtNextStmt;
+            Statement* next = stmt->gtNextStmt;
 
             compCurStmt = stmt;
 
@@ -607,8 +607,8 @@ void Compiler::optFoldNullCheck(GenTree* tree)
                                                 // Then walk the statement list in reverse execution order
                                                 // until we get to the statement containing the null check.
                                                 // We only need to check the side effects at the root of each statement.
-                                                GenTreeStmt* curStmt = compCurStmt->getPrevStmt();
-                                                currentTree          = curStmt->gtStmtExpr;
+                                                Statement* curStmt = compCurStmt->getPrevStmt();
+                                                currentTree        = curStmt->gtStmtExpr;
                                                 while (canRemoveNullCheck && (currentTree != defParent))
                                                 {
                                                     if ((nodesWalked++ > maxNodesWalked) ||

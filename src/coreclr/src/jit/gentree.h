@@ -304,7 +304,7 @@ public:
 class GenTreeUseEdgeIterator;
 class GenTreeOperandIterator;
 
-struct GenTreeStmt;
+struct Statement;
 
 /*****************************************************************************/
 
@@ -2977,14 +2977,14 @@ struct GenTreeBox : public GenTreeUnOp
     }
     // This is the statement that contains the assignment tree when the node is an inlined GT_BOX on a value
     // type
-    GenTreeStmt* gtAsgStmtWhenInlinedBoxValue;
+    Statement* gtAsgStmtWhenInlinedBoxValue;
     // And this is the statement that copies from the value being boxed to the box payload
-    GenTreeStmt* gtCopyStmtWhenInlinedBoxValue;
+    Statement* gtCopyStmtWhenInlinedBoxValue;
 
-    GenTreeBox(var_types    type,
-               GenTree*     boxOp,
-               GenTreeStmt* asgStmtWhenInlinedBoxValue,
-               GenTreeStmt* copyStmtWhenInlinedBoxValue)
+    GenTreeBox(var_types  type,
+               GenTree*   boxOp,
+               Statement* asgStmtWhenInlinedBoxValue,
+               Statement* copyStmtWhenInlinedBoxValue)
         : GenTreeUnOp(GT_BOX, type, boxOp)
         , gtAsgStmtWhenInlinedBoxValue(asgStmtWhenInlinedBoxValue)
         , gtCopyStmtWhenInlinedBoxValue(copyStmtWhenInlinedBoxValue)
@@ -5129,7 +5129,7 @@ struct GenTreeILOffset : public GenTree
 #endif
 };
 
-struct GenTreeStmt
+struct Statement
 {
     GenTree*       gtStmtExpr;      // root of the expression tree
     GenTree*       gtStmtList;      // first node (for forward walks)
@@ -5140,16 +5140,16 @@ struct GenTreeStmt
     IL_OFFSET gtStmtLastILoffs; // instr offset at end of stmt
 #endif
 
-    __declspec(property(get = getNextStmt)) GenTreeStmt* gtNextStmt;
+    __declspec(property(get = getNextStmt)) Statement* gtNextStmt;
 
-    __declspec(property(get = getPrevStmt)) GenTreeStmt* gtPrevStmt;
+    __declspec(property(get = getPrevStmt)) Statement* gtPrevStmt;
 
-    GenTreeStmt* gtNext;
-    GenTreeStmt* gtPrev;
+    Statement* gtNext;
+    Statement* gtPrev;
 
     bool compilerAdded;
 
-    GenTreeStmt* getNextStmt()
+    Statement* getNextStmt()
     {
         if (gtNext == nullptr)
         {
@@ -5161,7 +5161,7 @@ struct GenTreeStmt
         }
     }
 
-    GenTreeStmt* getPrevStmt()
+    Statement* getPrevStmt()
     {
         if (gtPrev == nullptr)
         {
@@ -5173,7 +5173,7 @@ struct GenTreeStmt
         }
     }
 
-    GenTreeStmt(GenTree* expr, IL_OFFSETX offset)
+    Statement(GenTree* expr, IL_OFFSETX offset)
         : gtStmtExpr(expr)
         , gtStmtList(nullptr)
         , gtInlineContext(nullptr)
@@ -5187,7 +5187,10 @@ struct GenTreeStmt
     {
     }
 
-    bool IsPhiDefnStmt();
+    bool IsPhiDefnStmt()
+    {
+        return gtStmtExpr->IsPhiDefn();
+    }
 
     unsigned char GetCostSz() const
     {
@@ -5197,6 +5200,52 @@ struct GenTreeStmt
     unsigned char GetCostEx() const
     {
         return gtStmtExpr->GetCostEx();
+    }
+};
+
+class StatementIterator
+{
+    Statement* m_stmt;
+
+public:
+    StatementIterator(Statement* stmt) : m_stmt(stmt)
+    {
+    }
+
+    Statement* operator*() const
+    {
+        return m_stmt;
+    }
+
+    StatementIterator& operator++()
+    {
+        m_stmt = m_stmt->gtNext;
+        return *this;
+    }
+
+    bool operator!=(const StatementIterator& i) const
+    {
+        return m_stmt != i.m_stmt;
+    }
+};
+
+class StatementList
+{
+    Statement* m_stmts;
+
+public:
+    StatementList(Statement* stmts) : m_stmts(stmts)
+    {
+    }
+
+    StatementIterator begin() const
+    {
+        return StatementIterator(m_stmts);
+    }
+
+    StatementIterator end() const
+    {
+        return StatementIterator(nullptr);
     }
 };
 
