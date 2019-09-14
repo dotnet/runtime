@@ -5,6 +5,43 @@
 .assembly castclasspointer { }
 .assembly extern mscorlib { }
 
+.class value MyGen`1<T>
+{
+  .field !T _fld;
+}
+
+.method public static int32 Main<valuetype T>()
+{
+  ldnull
+  castclass !!T*
+  pop
+
+  newobj instance void [mscorlib]System.Object::.ctor()
+  isinst !!T*
+  brtrue BAD
+
+  .try
+  {
+    newobj instance void [mscorlib]System.Object::.ctor()
+    castclass !!T*
+    pop
+    leave BAD
+  }
+  catch [mscorlib]System.InvalidCastException
+  {
+    pop
+    leave OK
+  }
+
+BAD:
+  ldc.i4 2
+  ret
+
+OK:
+  ldc.i4 100
+  ret
+}
+
 .method public static int32 Main()
 {
   .entrypoint
@@ -35,6 +72,7 @@ BAD:
   ret
 
 OK:
-  ldc.i4 100
+
+  call int32 Main<valuetype MyGen`1<object>>()
   ret
 }
