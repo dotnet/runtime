@@ -206,7 +206,6 @@ function_name() to call the system's implementation
 #define srand DUMMY_srand
 #define atoi DUMMY_atoi
 #define atof DUMMY_atof
-#define tm PAL_tm
 #define size_t DUMMY_size_t
 #define time_t PAL_time_t
 #define va_list DUMMY_va_list
@@ -412,7 +411,6 @@ function_name() to call the system's implementation
 #undef qsort
 #undef bsearch
 #undef time
-#undef tm
 #undef FILE
 #undef fclose
 #undef fopen

@@ -13,8 +13,6 @@ debug_api/debugbreak/test1,1
 # dialog
 debug_api/outputdebugstringw/test1,1
 debug_api/outputdebugstringa/test1,1
-# The return code on success is NOT the usual 0, instead it's 3
-exception_handling/setunhandledexceptionfilter/test1,1
 # These tests require user intervention and cannot be automated
 pal_specific/pal_get_stdin/test1,1
 threading/setconsolectrlhandler/test1,1

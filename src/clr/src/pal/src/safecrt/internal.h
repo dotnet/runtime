@@ -193,10 +193,6 @@ extern int _lpdays[];
 extern __time32_t __cdecl __loctotime32_t(int, int, int, int, int, int, int);
 extern __time64_t __cdecl __loctotime64_t(int, int, int, int, int, int, int);
 
-#ifdef _TM_DEFINED
-extern int __cdecl _isindst(__in struct tm * _Time);
-#endif  /* _TM_DEFINED */
-
 extern void __cdecl __tzset(void);
 
 extern int __cdecl _validdrive(unsigned);
@@ -208,11 +204,6 @@ extern int __cdecl _validdrive(unsigned);
  */
 
 #define IS_LEAP_YEAR(y)  (((y) % 4 == 0 && (y) % 100 != 0) || (y) % 400 == 0)
-
-/*
- *      get the buffer used by gmtime
- */
-struct tm * __cdecl __getgmtimebuf ();
 
 /*
  * This variable is in the C start-up; the length must be kept synchronized

@@ -19,10 +19,6 @@ Abstract:
 
 --*/
 
-#ifndef FEATURE_PAL_SXS
-#error FEATURE_PAL_SXS needs to be defined for this file.
-#endif // !FEATURE_PAL_SXS
-
 #include "pal/context.h"
 #include "pal.h"
 #include <dlfcn.h>
