@@ -364,7 +364,7 @@ namespace System.Xml.Schema
                             _regStr.Insert(0, "(");
                             _regStr.Append(")");
                         }
-                        _derivedRestriction.Patterns.Add(new Regex(Preprocess(_regStr.ToString()), RegexOptions.None));
+                        _derivedRestriction.Patterns.Add(new Regex(Preprocess(_regStr.ToString())));
                     }
                     catch (Exception e)
                     {
@@ -1348,7 +1348,7 @@ namespace System.Xml.Schema
             {
                 if (s_languagePattern == null)
                 {
-                    Regex langRegex = new Regex("^([a-zA-Z]{1,8})(-[a-zA-Z0-9]{1,8})*$", RegexOptions.None);
+                    Regex langRegex = new Regex("^([a-zA-Z]{1,8})(-[a-zA-Z0-9]{1,8})*$");
                     Interlocked.CompareExchange(ref s_languagePattern, langRegex, null);
                 }
                 return s_languagePattern;
