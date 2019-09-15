@@ -2018,8 +2018,8 @@ namespace System
         /// <returns>A 32-bit signed integer hash code.</returns>
         public override int GetHashCode()
         {
-            // We want to have a limited hash in this case.  We'll use the last 8 elements of the tuple
-            if (!(Rest is IValueTupleInternal rest))
+            // We want to have a limited hash in this case. We'll use the first 7 elements of the tuple
+            if (!(Rest is IValueTupleInternal))
             {
                 return HashCode.Combine(Item1?.GetHashCode() ?? 0,
                                         Item2?.GetHashCode() ?? 0,
@@ -2030,38 +2030,42 @@ namespace System
                                         Item7?.GetHashCode() ?? 0);
             }
 
-            int size = rest.Length;
-            if (size >= 8) { return rest.GetHashCode(); }
+            int size = ((IValueTupleInternal)Rest).Length;
+            int restHashCode = Rest.GetHashCode();
+            if (size >= 8)
+            {
+                return restHashCode;
+            }
 
-            // In this case, the rest member has less than 8 elements so we need to combine some our elements with the elements in rest
+            // In this case, the rest member has less than 8 elements so we need to combine some of our elements with the elements in rest
             int k = 8 - size;
             switch (k)
             {
                 case 1:
                     return HashCode.Combine(Item7?.GetHashCode() ?? 0,
-                                            rest.GetHashCode());
+                                            restHashCode);
                 case 2:
                     return HashCode.Combine(Item6?.GetHashCode() ?? 0,
                                             Item7?.GetHashCode() ?? 0,
-                                            rest.GetHashCode());
+                                            restHashCode);
                 case 3:
                     return HashCode.Combine(Item5?.GetHashCode() ?? 0,
                                             Item6?.GetHashCode() ?? 0,
                                             Item7?.GetHashCode() ?? 0,
-                                            rest.GetHashCode());
+                                            restHashCode);
                 case 4:
                     return HashCode.Combine(Item4?.GetHashCode() ?? 0,
                                             Item5?.GetHashCode() ?? 0,
                                             Item6?.GetHashCode() ?? 0,
                                             Item7?.GetHashCode() ?? 0,
-                                            rest.GetHashCode());
+                                            restHashCode);
                 case 5:
                     return HashCode.Combine(Item3?.GetHashCode() ?? 0,
                                             Item4?.GetHashCode() ?? 0,
                                             Item5?.GetHashCode() ?? 0,
                                             Item6?.GetHashCode() ?? 0,
                                             Item7?.GetHashCode() ?? 0,
-                                            rest.GetHashCode());
+                                            restHashCode);
                 case 6:
                     return HashCode.Combine(Item2?.GetHashCode() ?? 0,
                                             Item3?.GetHashCode() ?? 0,
@@ -2069,7 +2073,7 @@ namespace System
                                             Item5?.GetHashCode() ?? 0,
                                             Item6?.GetHashCode() ?? 0,
                                             Item7?.GetHashCode() ?? 0,
-                                            rest.GetHashCode());
+                                            restHashCode);
                 case 7:
                 case 8:
                     return HashCode.Combine(Item1?.GetHashCode() ?? 0,
@@ -2079,7 +2083,7 @@ namespace System
                                             Item5?.GetHashCode() ?? 0,
                                             Item6?.GetHashCode() ?? 0,
                                             Item7?.GetHashCode() ?? 0,
-                                            rest.GetHashCode());
+                                            restHashCode);
             }
 
             Debug.Fail("Missed all cases for computing ValueTuple hash code");
@@ -2093,7 +2097,7 @@ namespace System
 
         private int GetHashCodeCore(IEqualityComparer comparer)
         {
-            // We want to have a limited hash in this case.  We'll use the last 8 elements of the tuple
+            // We want to have a limited hash in this case. We'll use the first 7 elements of the tuple
             if (!(Rest is IValueTupleInternal rest))
             {
                 return HashCode.Combine(comparer.GetHashCode(Item1!), comparer.GetHashCode(Item2!), comparer.GetHashCode(Item3!),
@@ -2102,34 +2106,59 @@ namespace System
             }
 
             int size = rest.Length;
-            if (size >= 8) { return rest.GetHashCode(comparer); }
+            int restHashCode = rest.GetHashCode(comparer);
+            if (size >= 8)
+            {
+                return restHashCode;
+            }
 
             // In this case, the rest member has less than 8 elements so we need to combine some our elements with the elements in rest
             int k = 8 - size;
             switch (k)
             {
                 case 1:
-                    return HashCode.Combine(comparer.GetHashCode(Item7!), rest.GetHashCode(comparer));
+                    return HashCode.Combine(comparer.GetHashCode(Item7!),
+                                            restHashCode);
                 case 2:
-                    return HashCode.Combine(comparer.GetHashCode(Item6!), comparer.GetHashCode(Item7!), rest.GetHashCode(comparer));
+                    return HashCode.Combine(comparer.GetHashCode(Item6!),
+                                            comparer.GetHashCode(Item7!),
+                                            restHashCode);
                 case 3:
-                    return HashCode.Combine(comparer.GetHashCode(Item5!), comparer.GetHashCode(Item6!), comparer.GetHashCode(Item7!),
-                                            rest.GetHashCode(comparer));
+                    return HashCode.Combine(comparer.GetHashCode(Item5!),
+                                            comparer.GetHashCode(Item6!),
+                                            comparer.GetHashCode(Item7!),
+                                            restHashCode);
                 case 4:
-                    return HashCode.Combine(comparer.GetHashCode(Item4!), comparer.GetHashCode(Item5!), comparer.GetHashCode(Item6!),
-                                            comparer.GetHashCode(Item7!), rest.GetHashCode(comparer));
+                    return HashCode.Combine(comparer.GetHashCode(Item4!),
+                                            comparer.GetHashCode(Item5!),
+                                            comparer.GetHashCode(Item6!),
+                                            comparer.GetHashCode(Item7!),
+                                            restHashCode);
                 case 5:
-                    return HashCode.Combine(comparer.GetHashCode(Item3!), comparer.GetHashCode(Item4!), comparer.GetHashCode(Item5!),
-                                            comparer.GetHashCode(Item6!), comparer.GetHashCode(Item7!), rest.GetHashCode(comparer));
+                    return HashCode.Combine(comparer.GetHashCode(Item3!),
+                                            comparer.GetHashCode(Item4!),
+                                            comparer.GetHashCode(Item5!),
+                                            comparer.GetHashCode(Item6!),
+                                            comparer.GetHashCode(Item7!),
+                                            restHashCode);
                 case 6:
-                    return HashCode.Combine(comparer.GetHashCode(Item2!), comparer.GetHashCode(Item3!), comparer.GetHashCode(Item4!),
-                                            comparer.GetHashCode(Item5!), comparer.GetHashCode(Item6!), comparer.GetHashCode(Item7!),
-                                            rest.GetHashCode(comparer));
+                    return HashCode.Combine(comparer.GetHashCode(Item2!),
+                                            comparer.GetHashCode(Item3!),
+                                            comparer.GetHashCode(Item4!),
+                                            comparer.GetHashCode(Item5!),
+                                            comparer.GetHashCode(Item6!),
+                                            comparer.GetHashCode(Item7!),
+                                            restHashCode);
                 case 7:
                 case 8:
-                    return HashCode.Combine(comparer.GetHashCode(Item1!), comparer.GetHashCode(Item2!), comparer.GetHashCode(Item3!),
-                                            comparer.GetHashCode(Item4!), comparer.GetHashCode(Item5!), comparer.GetHashCode(Item6!),
-                                            comparer.GetHashCode(Item7!), rest.GetHashCode(comparer));
+                    return HashCode.Combine(comparer.GetHashCode(Item1!),
+                                            comparer.GetHashCode(Item2!),
+                                            comparer.GetHashCode(Item3!),
+                                            comparer.GetHashCode(Item4!),
+                                            comparer.GetHashCode(Item5!),
+                                            comparer.GetHashCode(Item6!),
+                                            comparer.GetHashCode(Item7!),
+                                            restHashCode);
             }
 
             Debug.Fail("Missed all cases for computing ValueTuple hash code");
@@ -2151,9 +2180,9 @@ namespace System
         /// </remarks>
         public override string ToString()
         {
-            if (Rest is IValueTupleInternal rest)
+            if (Rest is IValueTupleInternal)
             {
-                return "(" + Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ", " + Item4?.ToString() + ", " + Item5?.ToString() + ", " + Item6?.ToString() + ", " + Item7?.ToString() + ", " + rest.ToStringEnd();
+                return "(" + Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ", " + Item4?.ToString() + ", " + Item5?.ToString() + ", " + Item6?.ToString() + ", " + Item7?.ToString() + ", " + ((IValueTupleInternal)Rest).ToStringEnd();
             }
 
             return "(" + Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ", " + Item4?.ToString() + ", " + Item5?.ToString() + ", " + Item6?.ToString() + ", " + Item7?.ToString() + ", " + Rest.ToString() + ")";
@@ -2161,9 +2190,9 @@ namespace System
 
         string IValueTupleInternal.ToStringEnd()
         {
-            if (Rest is IValueTupleInternal rest)
+            if (Rest is IValueTupleInternal)
             {
-                return Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ", " + Item4?.ToString() + ", " + Item5?.ToString() + ", " + Item6?.ToString() + ", " + Item7?.ToString() + ", " + rest.ToStringEnd();
+                return Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ", " + Item4?.ToString() + ", " + Item5?.ToString() + ", " + Item6?.ToString() + ", " + Item7?.ToString() + ", " + ((IValueTupleInternal)Rest).ToStringEnd();
             }
 
             return Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ", " + Item4?.ToString() + ", " + Item5?.ToString() + ", " + Item6?.ToString() + ", " + Item7?.ToString() + ", " + Rest.ToString() + ")";
@@ -2172,7 +2201,7 @@ namespace System
         /// <summary>
         /// The number of positions in this data structure.
         /// </summary>
-        int ITuple.Length => Rest is IValueTupleInternal rest ? 7 + rest.Length : 8;
+        int ITuple.Length => Rest is IValueTupleInternal ? 7 + ((IValueTupleInternal)Rest).Length : 8;
 
         /// <summary>
         /// Get the element at position <param name="index"/>.
@@ -2199,9 +2228,9 @@ namespace System
                         return Item7;
                 }
 
-                if (Rest is IValueTupleInternal rest)
+                if (Rest is IValueTupleInternal)
                 {
-                    return rest[index - 7];
+                    return ((IValueTupleInternal)Rest)[index - 7];
                 }
 
 
