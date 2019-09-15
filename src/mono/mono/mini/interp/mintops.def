@@ -55,6 +55,7 @@ OPDEF(MINT_LDARG_R4, "ldarg.r4", 2, Pop0, Push1, MintOpUShortInt)
 OPDEF(MINT_LDARG_R8, "ldarg.r8", 2, Pop0, Push1, MintOpUShortInt)
 OPDEF(MINT_LDARG_O, "ldarg.o", 2, Pop0, Push1, MintOpUShortInt)
 OPDEF(MINT_LDARG_P, "ldarg.p", 2, Pop0, Push1, MintOpUShortInt)
+OPDEF(MINT_LDARG_P0, "ldarg.p0", 1, Pop0, Push1, MintOpNoArgs)
 OPDEF(MINT_LDARG_VT, "ldarg.vt", 4, Pop0, Push1, MintOpShortAndInt)
 
 OPDEF(MINT_STARG_I1, "starg.i1", 2, Pop1, Push0, MintOpUShortInt)

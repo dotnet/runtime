@@ -686,8 +686,7 @@ load_arg(TransformData *td, int n)
 
 		if (hasthis && n == 0) {
 			mt = MINT_TYPE_P;
-			interp_add_ins (td, MINT_LDARG_P);
-			td->last_ins->data [0] = 0;
+			interp_add_ins (td, MINT_LDARG_P0);
 			klass = NULL;
 		} else {
 			PUSH_VT (td, size);
@@ -696,11 +695,9 @@ load_arg(TransformData *td, int n)
 			WRITE32_INS (td->last_ins, 1, &size);
 		}
 	} else {
-		if (hasthis && n == 0) {
+		if ((hasthis || mt == MINT_TYPE_P) && n == 0) {
 			mt = MINT_TYPE_P;
-			interp_add_ins (td, MINT_LDARG_P);
-			td->last_ins->data [0] = n;
-			klass = NULL;
+			interp_add_ins (td, MINT_LDARG_P0);
 		} else {
 			interp_add_ins (td, MINT_LDARG_I1 + (mt - MINT_TYPE_I1));
 			td->last_ins->data [0] = n;

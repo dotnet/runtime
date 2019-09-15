@@ -6216,6 +6216,11 @@ main_loop:
 	sp->data.datamem = (argtype) frame->stack_args [ip [1]].data.datamem; \
 	ip += 2; \
 	++sp; 
+
+#define LDARGn(datamem, argtype, n) \
+	sp->data.datamem = (argtype) frame->stack_args [n].data.datamem; \
+	++ip; \
+	++sp;
 	
 		MINT_IN_CASE(MINT_LDARG_I1) LDARG(i, gint8); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDARG_U1) LDARG(i, guint8); MINT_IN_BREAK;
@@ -6227,6 +6232,8 @@ main_loop:
 		MINT_IN_CASE(MINT_LDARG_R8) LDARG(f, double); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDARG_O) LDARG(p, gpointer); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDARG_P) LDARG(p, gpointer); MINT_IN_BREAK;
+
+		MINT_IN_CASE(MINT_LDARG_P0) LDARGn(p, gpointer, 0); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_LDARG_VT) {
 			sp->data.p = vt_sp;
