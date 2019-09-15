@@ -105,20 +105,11 @@ string_to_utf8 (MonoString *s)
 }
 
 /*
- * cpos (ebp + arg_info[n].offset) points to the beginning of the
- * stack slot for this argument.  On little-endian systems, we can
- * simply dereference it. On big-endian systems, we need to adjust
- * cpos upward first if the datatype we're referencing is smaller than
- * a stack slot. Also - one can't assume that gpointer is also the
- * size of a stack slot - use SIZEOF_REGISTER instead. The following
- * helper macro tries to keep down the mess of all the pointer
- * calculations.
+ * This used to be endianness sensitive due to the stack, but since the change
+ * to using the profiler to get an argument, it can be dereferenced as a
+ * pointer of the specified type, regardless of endian.
  */
-#if (G_BYTE_ORDER == G_LITTLE_ENDIAN)
 #define arg_in_stack_slot(cpos, type) ((type *)(cpos))
-#else
-#define arg_in_stack_slot(cpos, type) ((type *)((sizeof(type) < SIZEOF_REGISTER) ? (((gssize)(cpos)) + SIZEOF_REGISTER - sizeof(type)) : (gssize)(cpos)))
-#endif
 
 void
 mono_trace_enter_method (MonoMethod *method, MonoProfilerCallContext *ctx)
