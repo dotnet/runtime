@@ -4459,6 +4459,11 @@ mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *
 			corlib = load_in_path (corlib_name, (const char**)assemblies_path, &req, status);
 		}
 	}
+	if (!corlib) {
+		/* Maybe its in a bundle */
+		char *corlib_name = g_strdup_printf ("%s.dll", MONO_ASSEMBLY_CORLIB_NAME);
+		corlib = mono_assembly_request_open (corlib_name, &req, status);
+	}
 	g_assert (corlib);
 #else
 	// A nonstandard preload hook may provide a special mscorlib assembly
@@ -4741,6 +4746,18 @@ mono_assembly_request_byname (MonoAssemblyName *aname, const MonoAssemblyByNameR
 	}
 #else
 	result = netcore_load_reference (aname, req->request.alc, req->requesting_assembly, !req->no_postload_search);
+
+	if (!result && bundles != NULL) {
+		MonoImageOpenStatus status;
+		MonoImage *image;
+		image = mono_assembly_open_from_bundle (req->request.alc, aname->name, &status, FALSE);
+		if (!image) {
+			char *name = g_strdup_printf ("%s.dll", aname->name);
+			image = mono_assembly_open_from_bundle (req->request.alc, name, &status, FALSE);
+		}
+		if (image)
+			result = mono_assembly_request_load_from (image, aname->name, &req->request, &status);
+	}
 #endif
 	return result;
 }
