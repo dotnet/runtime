@@ -36,24 +36,21 @@ namespace System.Text.Json
                             current.JsonPropertyInfo.Write(ref state, writer);
                             finishedSerializing = true;
                             break;
-                        case ClassType.Object:
-                            finishedSerializing = WriteObject(options, writer, ref state);
-                            break;
                         case ClassType.Dictionary:
                         case ClassType.IDictionaryConstructible:
                             finishedSerializing = HandleDictionary(current.JsonClassInfo.ElementClassInfo, options, writer, ref state);
                             break;
                         default:
-                            Debug.Assert(state.Current.JsonClassInfo.ClassType == ClassType.Unknown);
+                            Debug.Assert(state.Current.JsonClassInfo.ClassType == ClassType.Object ||
+                                state.Current.JsonClassInfo.ClassType == ClassType.Unknown);
 
-                            // Treat typeof(object) as an empty object.
                             finishedSerializing = WriteObject(options, writer, ref state);
                             break;
                     }
 
                     if (finishedSerializing)
                     {
-                        if (writer.CurrentDepth == 0 || writer.CurrentDepth == originalWriterDepth)
+                        if (writer.CurrentDepth == originalWriterDepth)
                         {
                             break;
                         }
@@ -63,7 +60,7 @@ namespace System.Text.Json
                         ThrowHelper.ThrowInvalidOperationException_SerializerCycleDetected(options.MaxDepth);
                     }
 
-                    // If serialization is not yet end and we surpass beyond flush threshold return false and flush stream.
+                    // If serialization is not finished and we surpass flush threshold then return false which will flush stream.
                     if (flushThreshold >= 0 && writer.BytesPending > flushThreshold)
                     {
                         return false;

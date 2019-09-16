@@ -18,7 +18,7 @@ namespace System.Text.Json
         /// </remarks>
         public static string Serialize<TValue>(TValue value, JsonSerializerOptions options = null)
         {
-            return ToStringInternal(value, typeof(TValue), options);
+            return WriteCoreString(value, typeof(TValue), options);
         }
 
         /// <summary>
@@ -35,12 +35,6 @@ namespace System.Text.Json
         public static string Serialize(object value, Type inputType, JsonSerializerOptions options = null)
         {
             VerifyValueAndType(value, inputType);
-
-            return ToStringInternal(value, inputType, options);
-        }
-
-        private static string ToStringInternal(object value, Type inputType, JsonSerializerOptions options)
-        {
             return WriteCoreString(value, inputType, options);
         }
     }
