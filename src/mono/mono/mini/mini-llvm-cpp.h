@@ -51,6 +51,9 @@ typedef enum {
 void
 mono_llvm_dump_value (LLVMValueRef value);
 
+void
+mono_llvm_dump_module (LLVMModuleRef module);
+
 LLVMValueRef
 mono_llvm_build_alloca (LLVMBuilderRef builder, LLVMTypeRef Ty, 
 						LLVMValueRef ArraySize,
