@@ -1012,7 +1012,15 @@ namespace System.Globalization
                 ci._textInfo = (TextInfo)_textInfo.Clone();
             }
 
-            if (_calendar != null)
+            if (_dateTimeInfo != null && _dateTimeInfo.Calendar == _calendar)
+            {
+                // Usually when we access CultureInfo.DateTimeFormat first time, we create the DateTimeFormatInfo object
+                // using CultureInfo.Calendar. i.e. CultureInfo.DateTimeInfo.Calendar == CultureInfo.calendar.
+                // When cloning CultureInfo, if we know this still the case CultureInfo.DateTimeInfo.Calendar == CultureInfo.calendar
+                // then we can keep the same behavior for the cloned object and no need to create another calendar object.
+                ci._calendar = ci.DateTimeFormat.Calendar;
+            }
+            else if (_calendar != null)
             {
                 ci._calendar = (Calendar)_calendar.Clone();
             }
