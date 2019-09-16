@@ -24,8 +24,12 @@ namespace System.Text.Json
         // The limit to how many property names from the JSON are cached in _propertyRefsSorted before using PropertyCache.
         private const int PropertyNameCountCacheThreshold = 64;
 
-        // All of the serializable properties on a POCO keyed on property name.
+        // All of the serializable properties on a POCO (except the optional extension property) keyed on property name.
         public volatile Dictionary<string, JsonPropertyInfo> PropertyCache;
+
+        // All of the serializable properties on a POCO including the optional extension property.
+        // Used for performance during serialization instead of 'PropertyCache' above.
+        public volatile JsonPropertyInfo[] PropertyCacheArray;
 
         // Fast cache of properties by first JSON ordering; may not contain all properties. Accessed before PropertyCache.
         // Use an array (instead of List<T>) for highest performance.
@@ -159,14 +163,26 @@ namespace System.Text.Json
                             }
                         }
 
+                        JsonPropertyInfo[] cacheArray;
                         if (DetermineExtensionDataProperty(cache))
                         {
                             // Remove from cache since it is handled independently.
                             cache.Remove(DataExtensionProperty.NameAsString);
+
+                            cacheArray = new JsonPropertyInfo[cache.Count + 1];
+
+                            // Set the last element to the extension property.
+                            cacheArray[cache.Count] = DataExtensionProperty;
+                        }
+                        else
+                        {
+                            cacheArray = new JsonPropertyInfo[cache.Count];
                         }
 
-                        // Set as a unit to avoid concurrency issues.
+                        // Set fields when finished to avoid concurrency issues.
                         PropertyCache = cache;
+                        cache.Values.CopyTo(cacheArray, 0);
+                        PropertyCacheArray = cacheArray;
                     }
                     break;
                 case ClassType.Enumerable:
@@ -213,6 +229,7 @@ namespace System.Text.Json
                     // Add a single property that maps to the class type so we can have policies applied.
                     AddPolicyProperty(type, options);
                     PropertyCache = new Dictionary<string, JsonPropertyInfo>();
+                    PropertyCacheArray = Array.Empty<JsonPropertyInfo>();
                     break;
                 default:
                     Debug.Fail($"Unexpected class type: {ClassType}");
