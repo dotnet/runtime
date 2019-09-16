@@ -1016,7 +1016,7 @@ namespace System.Globalization
             {
                 // Usually when we access CultureInfo.DateTimeFormat first time, we create the DateTimeFormatInfo object
                 // using CultureInfo.Calendar. i.e. CultureInfo.DateTimeInfo.Calendar == CultureInfo.calendar.
-                // When cloning CultureInfo, if we know this still the case CultureInfo.DateTimeInfo.Calendar == CultureInfo.calendar
+                // When cloning CultureInfo, if we know it's still the case that CultureInfo.DateTimeInfo.Calendar == CultureInfo.calendar
                 // then we can keep the same behavior for the cloned object and no need to create another calendar object.
                 ci._calendar = ci.DateTimeFormat.Calendar;
             }
