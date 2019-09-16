@@ -5423,7 +5423,7 @@ public:
 
 private:
     GenTree* fgMorphField(GenTree* tree, MorphAddrContext* mac);
-    bool fgCanFastTailCall(GenTreeCall* call);
+    bool fgCanFastTailCall(GenTreeCall* call, const char** failReason);
     bool fgCheckStmtAfterTailCall();
     void fgMorphTailCallViaHelper(GenTreeCall* call, void* pfnCopyArgs);
     GenTree* fgMorphPotentialTailCall(GenTreeCall* call);
