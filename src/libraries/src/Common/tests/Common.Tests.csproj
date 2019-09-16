@@ -57,6 +57,9 @@
     <Compile Include="$(CommonPath)\System\Text\ReusableTextReader.cs">
       <Link>Common\System\Text\ReusableTextReader.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Text\SimpleRegex.cs">
+      <Link>Common\System\Text\SimpleRegex.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\CoreLib\System\Text\ValueStringBuilder.cs">
       <Link>Common\CoreLib\System\Text\ValueStringBuilder.cs</Link>
     </Compile>
@@ -74,6 +77,7 @@
     <Compile Include="Tests\System\Net\HttpDateParserTests.cs" />
     <Compile Include="Tests\System\PasteArgumentsTests.cs" />
     <Compile Include="Tests\System\Security\IdentityHelperTests.cs" />
+    <Compile Include="Tests\System\Text\SimpleRegexTests.cs" />
     <Compile Include="Tests\System\Text\ValueStringBuilderTests.cs" />
     <Compile Include="Tests\System\StringExtensions.Tests.cs" />
     <Compile Include="Tests\System\Collections\Generic\ArrayBuilderTests.cs" />
