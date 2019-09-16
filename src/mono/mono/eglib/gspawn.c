@@ -96,7 +96,7 @@ extern char **environ;
 G_END_DECLS
 #endif
 
-#ifndef G_OS_WIN32
+#if !defined (G_OS_WIN32) && defined (HAVE_FORK) && defined (HAVE_EXECV)
 static int
 safe_read (int fd, gchar *buffer, gint count, GError **gerror)
 {
@@ -135,20 +135,11 @@ read_pipes (int outfd, gchar **out_str, int errfd, gchar **err_str, GError **ger
 		if (out_closed && err_closed)
 			break;
 
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable:4389)
-#endif
-
 		FD_ZERO (&rfds);
 		if (!out_closed && outfd >= 0)
 			FD_SET (outfd, &rfds);
 		if (!err_closed && errfd >= 0)
 			FD_SET (errfd, &rfds);
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
 
 		res = select (MAX (outfd, errfd) + 1, &rfds, NULL, NULL, NULL);
 		if (res > 0) {
@@ -203,7 +194,6 @@ create_pipe (int *fds, GError **gerror)
 	}
 	return TRUE;
 }
-#endif /* G_OS_WIN32 */
 
 static int
 write_all (int fd, const void *vbuf, size_t n)
@@ -225,6 +215,7 @@ write_all (int fd, const void *vbuf, size_t n)
 	
 	return nwritten;
 }
+#endif /* !defined (G_OS_WIN32) && defined (HAVE_FORK) && defined (HAVE_EXECV) */
 
 #if !defined(G_OS_WIN32) && defined(HAVE_GETDTABLESIZE)
 int
@@ -257,6 +248,7 @@ g_spawn_command_line_sync (const gchar *command_line,
 				GError **gerror)
 {
 #ifdef G_OS_WIN32
+	return TRUE;
 #elif !defined (HAVE_FORK) || !defined (HAVE_EXECV)
 	fprintf (stderr, "g_spawn_command_line_sync not supported on this platform\n");
 	return FALSE;
@@ -334,8 +326,8 @@ g_spawn_command_line_sync (const gchar *command_line,
 	if (WIFEXITED (status) && exit_status) {
 		*exit_status = WEXITSTATUS (status);
 	}
-#endif
 	return TRUE;
+#endif
 }
 
 /*
@@ -356,6 +348,7 @@ g_spawn_async_with_pipes (const gchar *working_directory,
 			GError **gerror)
 {
 #ifdef G_OS_WIN32
+	return TRUE;
 #elif !defined (HAVE_FORK) || !defined (HAVE_EXECVE)
 	fprintf (stderr, "g_spawn_async_with_pipes is not supported on this platform\n");
 	return FALSE;
@@ -528,8 +521,6 @@ g_spawn_async_with_pipes (const gchar *working_directory,
 		*standard_output = out_pipe [0];
 	if (standard_error)
 		*standard_error = err_pipe [0];
-#endif
 	return TRUE;
+#endif
 }
-
-
