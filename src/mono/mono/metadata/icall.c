@@ -2295,26 +2295,26 @@ ves_icall_RuntimeFieldInfo_GetParentType (MonoReflectionFieldHandle field, MonoB
 	return mono_type_get_object_handle (domain, m_class_get_byval_arg (parent), error);
 }
 
-MonoObject *
-ves_icall_RuntimeFieldInfo_GetValueInternal (MonoReflectionField *field, MonoObject *obj)
+MonoObjectHandle
+ves_icall_RuntimeFieldInfo_GetValueInternal (MonoReflectionFieldHandle field_handle, MonoObjectHandle obj_handle, MonoError *error)
 {	
-	ERROR_DECL (error);
+	MonoReflectionField * const field = MONO_HANDLE_RAW (field_handle);
 	MonoClass *fklass = field->klass;
 	MonoClassField *cf = field->field;
-	MonoDomain *domain = mono_object_domain (field);
 
 	if (mono_asmctx_get_kind (&m_class_get_image (fklass)->assembly->context) == MONO_ASMCTX_REFONLY) {
 		mono_error_set_invalid_operation (error,
 			"It is illegal to get the value on a field on a type loaded using the ReflectionOnly methods.");
-		mono_error_set_pending_exception (error);
-		return NULL;
+		return NULL_HANDLE;
 	}
 
 	if (mono_security_core_clr_enabled () &&
 	    !mono_security_core_clr_ensure_reflection_access_field (cf, error)) {
-		mono_error_set_pending_exception (error);
-		return NULL;
+		return NULL_HANDLE;
 	}
+
+	MonoObject * const obj = MONO_HANDLE_RAW (obj_handle);
+	MonoObject *result;
 
 #ifndef DISABLE_REMOTING
 	if (G_UNLIKELY (obj != NULL && mono_class_is_transparent_proxy (mono_object_class (obj)))) {
@@ -2322,15 +2322,12 @@ ves_icall_RuntimeFieldInfo_GetValueInternal (MonoReflectionField *field, MonoObj
 		 * System.Reflection.FieldInfo:GetValue on a
 		 * ContextBoundObject's or cross-domain MarshalByRefObject's
 		 * transparent proxy. */
-		MonoObject *result = mono_load_remote_field_new_checked (obj, fklass, cf, error);
-		mono_error_set_pending_exception (error);
-		return result;
-	}
+		result = mono_load_remote_field_new_checked (obj, fklass, cf, error);
+	} else
 #endif
+	result = mono_field_get_value_object_checked (mono_object_domain (field), cf, obj, error);
 
-	MonoObject * result = mono_field_get_value_object_checked (domain, cf, obj, error);
-	mono_error_set_pending_exception (error);
-	return result;
+	return MONO_HANDLE_NEW (MonoObject, result);
 }
 
 void
