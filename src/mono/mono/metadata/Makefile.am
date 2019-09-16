@@ -336,7 +336,6 @@ common_sources = \
 	mono-perfcounters-def.h	\
 	mono-ptr-array.h	\
 	mono-route.c		\
-	mono-route.h		\
 	monitor.h		\
 	normalization-tables.h	\
 	number-formatter.h	\
