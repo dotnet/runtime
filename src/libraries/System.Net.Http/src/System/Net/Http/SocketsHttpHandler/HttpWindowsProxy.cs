@@ -9,7 +9,7 @@ using System.Diagnostics;
 using System.IO.Compression;
 using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
+using System.Text;
 using System.Threading;
 using SafeWinHttpHandle = Interop.WinHttp.SafeWinHttpHandle;
 
@@ -20,7 +20,7 @@ namespace System.Net.Http
         private readonly MultiProxy _insecureProxy;    // URI of the http system proxy if set
         private readonly MultiProxy _secureProxy;      // URI of the https system proxy if set
         private readonly FailedProxyCache _failedProxies = new FailedProxyCache();
-        private readonly List<Regex> _bypass;          // list of domains not to proxy
+        private readonly List<string> _bypass;         // list of domains not to proxy
         private readonly bool _bypassLocal = false;    // we should bypass domain considered local
         private readonly List<IPAddress> _localIp;
         private ICredentials _credentials;
@@ -83,7 +83,7 @@ namespace System.Net.Http
 
                     // Process bypass list for manual setting.
                     // Initial list size is best guess based on string length assuming each entry is at least 5 characters on average.
-                    _bypass = new List<Regex>(proxyHelper.ProxyBypass.Length / 5);
+                    _bypass = new List<string>(proxyHelper.ProxyBypass.Length / 5);
 
                     while (idx < proxyHelper.ProxyBypass.Length)
                     {
@@ -137,20 +137,7 @@ namespace System.Net.Http
                             continue;
                         }
 
-                        try
-                        {
-                            // Escape any special characters and unescape * to get wildcard pattern match.
-                            Regex re = new Regex(Regex.Escape(tmp).Replace("\\*", ".*?") + "$",
-                                            RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-                            _bypass.Add(re);
-                        }
-                        catch (Exception ex)
-                        {
-                            if (NetEventSource.IsEnabled)
-                            {
-                                NetEventSource.Error(this, $"Failed to process {tmp} from bypass list: {ex}");
-                            }
-                        }
+                        _bypass.Add(tmp);
                     }
                     if (_bypass.Count == 0)
                     {
@@ -294,10 +281,10 @@ namespace System.Net.Http
                 // Check if we have other rules for bypass.
                 if (_bypass != null)
                 {
-                    foreach (Regex entry in _bypass)
+                    foreach (string entry in _bypass)
                     {
                         // IdnHost does not have [].
-                        if (entry.IsMatch(uri.IdnHost))
+                        if (SimpleRegex.IsMatchWithStarWildcard(uri.IdnHost, entry))
                         {
                             return MultiProxy.Empty;
                         }
@@ -343,6 +330,6 @@ namespace System.Net.Http
         }
 
         // Access function for unit tests.
-        internal List<Regex> BypassList => _bypass;
+        internal List<string> BypassList => _bypass;
     }
 }
