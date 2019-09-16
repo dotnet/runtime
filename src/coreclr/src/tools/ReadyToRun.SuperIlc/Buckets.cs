@@ -55,7 +55,7 @@ namespace ReadyToRun.SuperIlc
             IEnumerable<KeyValuePair<string, List<ProcessInfo>>> orderedBuckets = _bucketMap.OrderByDescending(bucket => bucket.Value.Count);
             foreach (KeyValuePair<string, List<ProcessInfo>> bucketKvp in orderedBuckets)
             {
-                bucketKvp.Value.Sort((a, b) => a.Parameters.InputFileName.CompareTo(b.Parameters.InputFileName));
+                bucketKvp.Value.Sort((a, b) => a.Parameters.OutputFileName.CompareTo(b.Parameters.OutputFileName));
                 output.WriteLine($@"    [{bucketKvp.Value.Count} failures] {bucketKvp.Key}");
             }
 
@@ -70,7 +70,7 @@ namespace ReadyToRun.SuperIlc
 
                 foreach (ProcessInfo failure in bucketKvp.Value)
                 {
-                    output.WriteLine($@"   {failure.Parameters.InputFileName}");
+                    output.WriteLine($@"   {failure.Parameters.OutputFileName}");
                 }
 
                 if (detailed)
@@ -80,7 +80,7 @@ namespace ReadyToRun.SuperIlc
 
                     foreach (ProcessInfo failure in bucketKvp.Value)
                     {
-                        output.WriteLine($@"Test: {failure.Parameters.InputFileName}");
+                        output.WriteLine($@"Test: {failure.Parameters.OutputFileName}");
                         try
                         {
                             output.WriteLine(File.ReadAllText(failure.Parameters.LogPath));
@@ -169,6 +169,14 @@ namespace ReadyToRun.SuperIlc
                                 break;
                             }
                             line += " " + detailLine;
+                        }
+                        return line;
+                    }
+                    else if (line.StartsWith("Fatal error", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (lineIndex + 1 < lines.Length && lines[lineIndex + 1].TrimStart().StartsWith("at "))
+                        {
+                            line += lines[lineIndex + 1];
                         }
                         return line;
                     }

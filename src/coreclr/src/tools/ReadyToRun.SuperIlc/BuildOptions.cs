@@ -81,10 +81,13 @@ namespace ReadyToRun.SuperIlc
             cpaotReferencePaths.AddRange(overrideReferencePaths != null ? overrideReferencePaths : ReferencePaths());
             runners.Add(new CpaotRunner(this, cpaotReferencePaths));
 
-            List<string> crossgenReferencePaths = new List<string>();
-            crossgenReferencePaths.Add(CoreRootOutputPath(CompilerIndex.Crossgen, isFramework));
-            crossgenReferencePaths.AddRange(overrideReferencePaths != null ? overrideReferencePaths : ReferencePaths());
-            runners.Add(new CrossgenRunner(this, crossgenReferencePaths));
+            if (Crossgen)
+            {
+                List<string> crossgenReferencePaths = new List<string>();
+                crossgenReferencePaths.Add(CoreRootOutputPath(CompilerIndex.Crossgen, isFramework));
+                crossgenReferencePaths.AddRange(overrideReferencePaths != null ? overrideReferencePaths : ReferencePaths());
+                runners.Add(new CrossgenRunner(this, crossgenReferencePaths));
+            }
 
             if (!NoJit)
             {
