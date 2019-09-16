@@ -95,6 +95,22 @@ typedef struct {
 
 #endif
 
+gsize
+mini_magic_type_size (MonoCompile *cfg, MonoType *type)
+{
+	if (type->type == MONO_TYPE_I4 || type->type == MONO_TYPE_U4)
+		return 4;
+	else if (type->type == MONO_TYPE_I8 || type->type == MONO_TYPE_U8)
+		return 8;
+	else if (type->type == MONO_TYPE_R4 && !type->byref && (!cfg || cfg->r4fp))
+		return 4;
+	else if (type->type == MONO_TYPE_R8 && !type->byref)
+		return 8;
+	return TARGET_SIZEOF_VOID_P;
+}
+
+#ifndef DISABLE_JIT
+
 static const IntIntrisic int_binop[] = {
 	{ "op_Addition", { OP_PT_ADD, OP_PT_ADD, OP_FADD, OP_RADD } },
 	{ "op_Subtraction", { OP_PT_SUB, OP_PT_SUB, OP_FSUB, OP_RSUB } },
@@ -131,23 +147,6 @@ static const MagicTypeInfo type_info[] = {
 	//nfloat
 	{ 2, STACK_R8, STACK_R8, STACK_R8, OP_FCONV_TO_R8, OP_FCONV_TO_R4, OP_FMOVE, 0, 0, OP_PT_STORE_FP_MEMBASE_REG, 0 },
 };
-
-
-gsize
-mini_magic_type_size (MonoCompile *cfg, MonoType *type)
-{
-	if (type->type == MONO_TYPE_I4 || type->type == MONO_TYPE_U4)
-		return 4;
-	else if (type->type == MONO_TYPE_I8 || type->type == MONO_TYPE_U8)
-		return 8;
-	else if (type->type == MONO_TYPE_R4 && !type->byref && (!cfg || cfg->r4fp))
-		return 4;
-	else if (type->type == MONO_TYPE_R8 && !type->byref)
-		return 8;
-	return TARGET_SIZEOF_VOID_P;
-}
-
-#ifndef DISABLE_JIT
 
 static MonoInst*
 emit_narrow (MonoCompile *cfg, const MagicTypeInfo *info, int sreg)

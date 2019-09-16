@@ -9012,6 +9012,8 @@ mono_arch_load_function (MonoJitICallId jit_icall_id)
 	MONO_AOT_ICALL (mono_amd64_start_gsharedvt_call)
 	MONO_AOT_ICALL (mono_amd64_throw_corlib_exception)
 	MONO_AOT_ICALL (mono_amd64_throw_exception)
+	default:
+		break;
 	}
 	return target;
 }

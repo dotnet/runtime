@@ -99,9 +99,8 @@ static guint32 jinfo_try_holes_size;
 #define mono_jit_unlock() mono_os_mutex_unlock (&jit_mutex)
 static mono_mutex_t jit_mutex;
 
-static MonoBackend *current_backend;
-
 #ifndef DISABLE_JIT
+static MonoBackend *current_backend;
 
 gpointer
 mono_realloc_native_code (MonoCompile *cfg)

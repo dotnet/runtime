@@ -76,8 +76,8 @@
 static FILE *mini_stats_fd;
 
 static void mini_usage (void);
-static void mono_runtime_set_execution_mode (MonoEEMode mode);
-static void mono_runtime_set_execution_mode_full (MonoEEMode mode, gboolean override);
+static void mono_runtime_set_execution_mode (int mode);
+static void mono_runtime_set_execution_mode_full (int mode, gboolean override);
 static int mono_jit_exec_internal (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[]);
 
 #ifdef HOST_WIN32
@@ -1980,7 +1980,6 @@ mono_main (int argc, char* argv[])
 	MonoAssembly *assembly;
 	MonoMethodDesc *desc;
 	MonoMethod *method;
-	MonoCompile *cfg;
 	MonoDomain *domain;
 	MonoImageOpenStatus open_status;
 	const char* aname, *mname = NULL;
@@ -2651,6 +2650,7 @@ mono_main (int argc, char* argv[])
 	}
 
 #ifndef DISABLE_JIT
+	MonoCompile *cfg;
 	if (action == DO_DRAW) {
 		int part = 0;
 
@@ -2804,7 +2804,7 @@ mono_jit_set_aot_only (gboolean val)
 }
 
 static void
-mono_runtime_set_execution_mode_full (MonoEEMode mode, gboolean override)
+mono_runtime_set_execution_mode_full (int mode, gboolean override)
 {
 	static gboolean mode_initialized = FALSE;
 	if (mode_initialized && !override)
@@ -2871,7 +2871,7 @@ mono_runtime_set_execution_mode_full (MonoEEMode mode, gboolean override)
 }
 
 static void
-mono_runtime_set_execution_mode (MonoEEMode mode)
+mono_runtime_set_execution_mode (int mode)
 {
 	mono_runtime_set_execution_mode_full (mode, TRUE);
 }
@@ -2889,7 +2889,7 @@ mono_jit_set_aot_mode (MonoAotMode mode)
 	mono_aot_mode = mode;
 	inited = TRUE;
 	
-	mono_runtime_set_execution_mode ((MonoEEMode)mode);
+	mono_runtime_set_execution_mode (mode);
 }
 
 mono_bool

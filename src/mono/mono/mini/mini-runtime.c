@@ -1336,6 +1336,8 @@ mono_patch_info_equal (gconstpointer ka, gconstpointer kb)
 	case MONO_PATCH_INFO_GC_SAFE_POINT_FLAG:
 	case MONO_PATCH_INFO_NONE:
 		return 1;
+	default:
+		break;
 	}
 
 	return ji1->data.target == ji2->data.target;
@@ -3285,10 +3287,12 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 {
 	MonoJitInfo *ji = NULL;
 	MonoDomain *domain = mono_domain_get ();
-	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
 	gpointer fault_addr = NULL;
 	MonoContext mctx;
 
+#if defined(HAVE_SIG_INFO) || defined(MONO_ARCH_SIGSEGV_ON_ALTSTACK)
+	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
+#endif
 #ifdef HAVE_SIG_INFO
 	MONO_SIG_HANDLER_INFO_TYPE *info = MONO_SIG_HANDLER_GET_INFO ();
 #else

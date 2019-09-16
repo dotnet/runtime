@@ -94,7 +94,7 @@
 #define MONO_ARCH_CONTEXT_DEF
 #endif
 
-#ifndef HOST_WIN32
+#if !defined(HOST_WIN32) && !defined(DISABLE_CRASH_REPORTING)
 #include <dlfcn.h>
 #endif
 
