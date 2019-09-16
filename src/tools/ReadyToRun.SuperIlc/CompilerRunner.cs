@@ -178,6 +178,7 @@ namespace ReadyToRun.SuperIlc
             }
 
             processParameters.InputFileName = scriptToRun;
+            processParameters.OutputFileName = scriptToRun;
             processParameters.LogPath = scriptToRun + ".log";
             processParameters.EnvironmentOverrides["CORE_ROOT"] = _options.CoreRootOutputPath(Index, isFramework: false);
             return processParameters;
@@ -190,6 +191,7 @@ namespace ReadyToRun.SuperIlc
             processParameters.ProcessPath = _options.CoreRunPath(Index, isFramework: false);
             processParameters.Arguments = exeToRun;
             processParameters.InputFileName = exeToRun;
+            processParameters.OutputFileName = exeToRun;
             processParameters.LogPath = exeToRun + ".log";
             processParameters.ExpectedExitCode = 100;
             return processParameters;
@@ -219,7 +221,7 @@ namespace ReadyToRun.SuperIlc
 
         // <input>\a.dll -> <output>\a.dll
         public string GetOutputFileName(string outputRoot, string fileName) =>
-            Path.Combine(GetOutputPath(outputRoot), $"{Path.GetFileName(fileName)}");
+            Path.Combine(GetOutputPath(outputRoot), Path.GetFileName(fileName));
 
         public string GetResponseFileName(string outputRoot, string assemblyFileName) =>
             Path.Combine(GetOutputPath(outputRoot), Path.GetFileName(assemblyFileName) + ".rsp");
