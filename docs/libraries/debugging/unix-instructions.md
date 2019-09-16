@@ -59,21 +59,3 @@ lldb should start debugging successfully at this point. You should see stacktrac
 ```
 lldb-3.9 -O "settings set target.exec-search-paths /home/parallels/Downloads/System.Drawing.Common.Tests/home/helixbot/dotnetbuild/work/2a74cf82-3018-4e08-9e9a-744bb492869e/Payload/shared/Microsoft.NETCore.App/$(ProductVersion)/" -o "plugin load /home/parallels/Downloads/System.Drawing.Common.Tests/home/helixbot/dotnetbuild/work/2a74cf82-3018-4e08-9e9a-744bb492869e/Payload/shared/Microsoft.NETCore.App/$(ProductVersion)/libsosplugin.so" --core /home/parallels/Downloads/System.Drawing.Common.Tests/home/helixbot/dotnetbuild/work/2a74cf82-3018-4e08-9e9a-744bb492869e/Work/f6414a62-9b41-4144-baed-756321e3e075/Unzip/core /home/parallels/Downloads/System.Drawing.Common.Tests/home/helixbot/dotnetbuild/work/2a74cf82-3018-4e08-9e9a-744bb492869e/Payload/shared/Microsoft.NETCore.App/$(ProductVersion)/dotnet
 ```
-
-## Using Visual Studio Code
-
-- Install [Visual Studio Code](https://code.visualstudio.com/)
-- Install the [C# Extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode.csharp)
-- Open the folder containing the source you want to debug in VS Code - i.e., if you are debugging a test failure in System.Net.Sockets, open `corefx/src/System.Net.Sockets`
-- Open the debug window: `ctrl-shift-D` or click on the button on the left
-- Click the gear button at the top to create a launch configuration, select `.NET Core` from the selection dropdown
-- In the `.NET Core Launch (console)` configuration do the following
-  - delete the `preLaunchTask` property
-  - set `program` to the full path to `dotnet` in the bin directory.
-    - something like `corefx/bin/testhost/netcoreapp-Linux-{Configuration}-{Architecture}`, plus the full path to your corefx directory.
-  - set `cwd` to the test bin directory.
-    - using the System.Net.Sockets example, it should be something like `corefx/bin/tests/System.Net.Sockets.Tests/netcoreapp-Linux-{Configuration}-{Architecture}`, plus the full path to your corefx directory.
-  - set `args` to the command line arguments to pass to the test
-    - something like: `[ "xunit.console.dll", "<test>.dll", "-notrait", .... ]`
-    - to run a specific test, you can append something like: `[ "method", "System.Net.Sockets.Tests.{ClassName}.{TestMethodName}", ...]`
-- Set a breakpoint and launch the debugger, inspecting variables and call stacks will now work
