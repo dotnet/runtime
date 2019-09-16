@@ -164,6 +164,11 @@ gpointer
 ves_icall_System_IO_MonoIO_Open (const gunichar2 *filename, gint32 mode,
 				 gint32 access_mode, gint32 share, gint32 options,
 				 gint32 *error);
+
+ICALL_EXPORT
+MonoBoolean
+ves_icall_System_IO_MonoIO_Cancel (gpointer handle, gint32 *error);
+
 ICALL_EXPORT
 MonoBoolean
 ves_icall_System_IO_MonoIO_Close (gpointer handle, gint32 *error);
@@ -368,6 +373,9 @@ mono_w32file_cleanup (void);
 
 gpointer
 mono_w32file_create(const gunichar2 *name, guint32 fileaccess, guint32 sharemode, guint32 createmode, guint32 attrs);
+
+gboolean
+mono_w32file_cancel (gpointer handle);
 
 gboolean
 mono_w32file_close (gpointer handle);

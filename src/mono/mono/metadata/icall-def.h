@@ -407,7 +407,8 @@ HANDLES(MMAPIMPL_5, "OpenFileInternal", mono_mmap_open_file, gpointer, 9, (const
 HANDLES(MMAPIMPL_6, "OpenHandleInternal", mono_mmap_open_handle, gpointer, 7, (gpointer, const_gunichar2_ptr, int, gint64_ref, int, int, int_ref))
 HANDLES(MMAPIMPL_7, "Unmap", mono_mmap_unmap, MonoBoolean, 1, (gpointer))
 
-ICALL_TYPE(MONOIO, "System.IO.MonoIO", MONOIO_1)
+ICALL_TYPE(MONOIO, "System.IO.MonoIO", MONOIO_39)
+NOHANDLES(ICALL(MONOIO_39, "Cancel_internal", ves_icall_System_IO_MonoIO_Cancel))
 NOHANDLES(ICALL(MONOIO_1, "Close(intptr,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_Close))
 #ifndef PLATFORM_RO_FS
 NOHANDLES(ICALL(MONOIO_2, "CopyFile(char*,char*,bool,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_CopyFile))

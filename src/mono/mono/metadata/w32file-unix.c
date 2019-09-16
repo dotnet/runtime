@@ -2073,6 +2073,13 @@ mono_w32file_create(const gunichar2 *name, guint32 fileaccess, guint32 sharemode
 }
 
 gboolean
+mono_w32file_cancel (gpointer handle)
+{
+	mono_w32error_set_last (ERROR_NOT_SUPPORTED);
+	return FALSE;
+}
+
+gboolean
 mono_w32file_close (gpointer handle)
 {
 	if (!mono_fdhandle_close (GPOINTER_TO_INT (handle))) {

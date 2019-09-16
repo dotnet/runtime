@@ -506,6 +506,19 @@ ves_icall_System_IO_MonoIO_Close (HANDLE handle, gint32 *error)
 	return(ret);
 }
 
+MonoBoolean
+ves_icall_System_IO_MonoIO_Cancel (HANDLE handle, gint32 *error)
+{
+	gboolean ret;
+	*error=ERROR_SUCCESS;
+
+	ret = mono_w32file_cancel (handle);
+	if (ret == FALSE)
+		*error = mono_w32error_get_last ();
+
+	return ret;
+}
+
 gint32 
 ves_icall_System_IO_MonoIO_Read (HANDLE handle, MonoArrayHandle dest,
 				 gint32 dest_offset, gint32 count,
