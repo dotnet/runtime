@@ -47,10 +47,7 @@ namespace ReadyToRun.SuperIlc
                 PathExtensions.DeleteOutputFolders(options.OutputDirectory.FullName, options.CoreRootDirectory.FullName, recursive: true);
             }
 
-            string[] directories = LocateSubtree(
-                options.InputDirectory.FullName,
-                (options.Framework || options.UseFramework) ? options.CoreRootDirectory.FullName : null)
-                .ToArray();
+            string[] directories = LocateSubtree(options.InputDirectory.FullName, options.CoreRootDirectory.FullName).ToArray();
 
             ConcurrentBag<BuildFolder> folders = new ConcurrentBag<BuildFolder>();
             int relativePathOffset = options.InputDirectory.FullName.Length;
@@ -125,12 +122,10 @@ namespace ReadyToRun.SuperIlc
 
         private static async Task LocateSubtreeAsync(string folder, string coreRootFolder, ConcurrentBag<string> directories)
         {
-            if (!Path.GetExtension(folder).Equals(".out", StringComparison.OrdinalIgnoreCase))
+            if (!Path.GetExtension(folder).Equals(".out", StringComparison.OrdinalIgnoreCase) &&
+                !folder.Equals(coreRootFolder, StringComparison.OrdinalIgnoreCase))
             {
-                if (coreRootFolder == null || !folder.Equals(coreRootFolder, StringComparison.OrdinalIgnoreCase))
-                {
-                    directories.Add(folder);
-                }
+                directories.Add(folder);
                 List<Task> subfolderTasks = new List<Task>();
                 foreach (string subdir in Directory.EnumerateDirectories(folder))
                 {
