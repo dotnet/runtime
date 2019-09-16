@@ -3064,118 +3064,118 @@ mono_cominterop_emit_marshal_safearray (EmitMarshalContext *m, int argnum, MonoT
 #ifndef DISABLE_JIT
 	switch (action) {
 	case MARSHAL_ACTION_CONV_IN: {
-		if (t->attrs & PARAM_ATTRIBUTE_IN) {
+		if ((t->attrs & (PARAM_ATTRIBUTE_IN | PARAM_ATTRIBUTE_OUT)) == PARAM_ATTRIBUTE_OUT)
+			break;
 
-			/* Generates IL code for the following algorithm:
+		/* Generates IL code for the following algorithm:
 
-					SafeArray safearray;   // safearray_var
-					IntPtr indices; // indices_var
-					int empty;      // empty_var
-					if (mono_marshal_safearray_create (array, out safearray, out indices, out empty)) {
-						if (!empty) {
-							int index=0; // index_var
-							do { // label3
-								variant elem = Marshal.GetNativeVariantForObject (array.GetValueImpl(index));
-								mono_marshal_safearray_set_value (safearray, indices, elem);
-								++index;
-							} 
-							while (mono_marshal_safearray_next (safearray, indices));
-						} // label2
-						mono_marshal_safearray_free_indices (indices);
-					} // label1
-			*/
+				SafeArray safearray;   // safearray_var
+				IntPtr indices; // indices_var
+				int empty;      // empty_var
+				if (mono_marshal_safearray_create (array, out safearray, out indices, out empty)) {
+					if (!empty) {
+						int index=0; // index_var
+						do { // label3
+							variant elem = Marshal.GetNativeVariantForObject (array.GetValueImpl(index));
+							mono_marshal_safearray_set_value (safearray, indices, elem);
+							++index;
+						}
+						while (mono_marshal_safearray_next (safearray, indices));
+					} // label2
+					mono_marshal_safearray_free_indices (indices);
+				} // label1
+		*/
 
-			int safearray_var, indices_var, empty_var, elem_var, index_var;
-			guint32 label1 = 0, label2 = 0, label3 = 0;
-			static MonoMethod *get_native_variant_for_object = NULL;
-			static MonoMethod *get_value_impl = NULL;
-			static MonoMethod *variant_clear = NULL;
+		int safearray_var, indices_var, empty_var, elem_var, index_var;
+		guint32 label1 = 0, label2 = 0, label3 = 0;
+		static MonoMethod *get_native_variant_for_object = NULL;
+		static MonoMethod *get_value_impl = NULL;
+		static MonoMethod *variant_clear = NULL;
 
-			MonoType *int_type = mono_get_int_type ();
-			conv_arg = safearray_var = mono_mb_add_local (mb, mono_get_object_type ());
-			indices_var = mono_mb_add_local (mb, int_type);
-			empty_var = mono_mb_add_local (mb, int_type);
+		MonoType *int_type = mono_get_int_type ();
+		conv_arg = safearray_var = mono_mb_add_local (mb, mono_get_object_type ());
+		indices_var = mono_mb_add_local (mb, int_type);
+		empty_var = mono_mb_add_local (mb, int_type);
 
-			if (t->byref) {
-				mono_mb_emit_ldarg (mb, argnum);
-				mono_mb_emit_byte (mb, CEE_LDIND_REF);
-			} else
-				mono_mb_emit_ldarg (mb, argnum);
+		if (t->byref) {
+			mono_mb_emit_ldarg (mb, argnum);
+			mono_mb_emit_byte (mb, CEE_LDIND_REF);
+		} else
+			mono_mb_emit_ldarg (mb, argnum);
 
-			mono_mb_emit_ldloc_addr (mb, safearray_var);
-			mono_mb_emit_ldloc_addr (mb, indices_var);
-			mono_mb_emit_ldloc_addr (mb, empty_var);
-			mono_mb_emit_icall (mb, mono_marshal_safearray_create);
+		mono_mb_emit_ldloc_addr (mb, safearray_var);
+		mono_mb_emit_ldloc_addr (mb, indices_var);
+		mono_mb_emit_ldloc_addr (mb, empty_var);
+		mono_mb_emit_icall (mb, mono_marshal_safearray_create);
 
-			label1 = mono_mb_emit_short_branch (mb, CEE_BRFALSE_S);
+		label1 = mono_mb_emit_short_branch (mb, CEE_BRFALSE_S);
 
-			mono_mb_emit_ldloc (mb, empty_var);
+		mono_mb_emit_ldloc (mb, empty_var);
 
-			label2 = mono_mb_emit_short_branch (mb, CEE_BRTRUE_S);
+		label2 = mono_mb_emit_short_branch (mb, CEE_BRTRUE_S);
 
-			index_var = mono_mb_add_local (mb, mono_get_int32_type ());
-			mono_mb_emit_byte (mb, CEE_LDC_I4_0);
-			mono_mb_emit_stloc (mb, index_var);
+		index_var = mono_mb_add_local (mb, mono_get_int32_type ());
+		mono_mb_emit_byte (mb, CEE_LDC_I4_0);
+		mono_mb_emit_stloc (mb, index_var);
 
-			label3 = mono_mb_get_label (mb);
+		label3 = mono_mb_get_label (mb);
 
-			if (!get_value_impl) {
-				ERROR_DECL (error);
-				get_value_impl = mono_class_get_method_from_name_checked (mono_defaults.array_class, "GetValueImpl", 1, 0, error);
-				mono_error_assert_ok (error);
-			}
-			g_assert (get_value_impl);
-
-			if (t->byref) {
-				mono_mb_emit_ldarg (mb, argnum);
-				mono_mb_emit_byte (mb, CEE_LDIND_REF);
-			} else
-				mono_mb_emit_ldarg (mb, argnum);
-
-			mono_mb_emit_ldloc (mb, index_var);
-
-			mono_mb_emit_managed_call (mb, get_value_impl, NULL);
-
-			if (!get_native_variant_for_object) {
-				ERROR_DECL (error);
-				get_native_variant_for_object = mono_class_get_method_from_name_checked (mono_defaults.marshal_class, "GetNativeVariantForObject", 2, 0, error);
-				mono_error_assert_ok (error);
-			}
-			g_assert (get_native_variant_for_object);
-
-			elem_var =  mono_mb_add_local (mb, m_class_get_byval_arg (mono_class_get_variant_class ()));
-			mono_mb_emit_ldloc_addr (mb, elem_var);
-
-			mono_mb_emit_managed_call (mb, get_native_variant_for_object, NULL);
-
-			mono_mb_emit_ldloc (mb, safearray_var);
-			mono_mb_emit_ldloc (mb, indices_var);
-			mono_mb_emit_ldloc_addr (mb, elem_var);
-			mono_mb_emit_icall (mb, mono_marshal_safearray_set_value);
-
-			if (!variant_clear) {
-				ERROR_DECL (error);
-				variant_clear = mono_class_get_method_from_name_checked (mono_class_get_variant_class (), "Clear", 0, 0, error);
-				mono_error_assert_ok (error);
-			}
-
-			mono_mb_emit_ldloc_addr (mb, elem_var);
-			mono_mb_emit_managed_call (mb, variant_clear, NULL);
-
-			mono_mb_emit_add_to_local (mb, index_var, 1);
-
-			mono_mb_emit_ldloc (mb, safearray_var);
-			mono_mb_emit_ldloc (mb, indices_var);
-			mono_mb_emit_icall (mb, mono_marshal_safearray_next);
-			mono_mb_emit_branch_label (mb, CEE_BRTRUE, label3);
-
-			mono_mb_patch_short_branch (mb, label2);
-
-			mono_mb_emit_ldloc (mb, indices_var);
-			mono_mb_emit_icall (mb, mono_marshal_safearray_free_indices);
-
-			mono_mb_patch_short_branch (mb, label1);
+		if (!get_value_impl) {
+			ERROR_DECL (error);
+			get_value_impl = mono_class_get_method_from_name_checked (mono_defaults.array_class, "GetValueImpl", 1, 0, error);
+			mono_error_assert_ok (error);
 		}
+		g_assert (get_value_impl);
+
+		if (t->byref) {
+			mono_mb_emit_ldarg (mb, argnum);
+			mono_mb_emit_byte (mb, CEE_LDIND_REF);
+		} else
+			mono_mb_emit_ldarg (mb, argnum);
+
+		mono_mb_emit_ldloc (mb, index_var);
+
+		mono_mb_emit_managed_call (mb, get_value_impl, NULL);
+
+		if (!get_native_variant_for_object) {
+			ERROR_DECL (error);
+			get_native_variant_for_object = mono_class_get_method_from_name_checked (mono_defaults.marshal_class, "GetNativeVariantForObject", 2, 0, error);
+			mono_error_assert_ok (error);
+		}
+		g_assert (get_native_variant_for_object);
+
+		elem_var =  mono_mb_add_local (mb, m_class_get_byval_arg (mono_class_get_variant_class ()));
+		mono_mb_emit_ldloc_addr (mb, elem_var);
+
+		mono_mb_emit_managed_call (mb, get_native_variant_for_object, NULL);
+
+		mono_mb_emit_ldloc (mb, safearray_var);
+		mono_mb_emit_ldloc (mb, indices_var);
+		mono_mb_emit_ldloc_addr (mb, elem_var);
+		mono_mb_emit_icall (mb, mono_marshal_safearray_set_value);
+
+		if (!variant_clear) {
+			ERROR_DECL (error);
+			variant_clear = mono_class_get_method_from_name_checked (mono_class_get_variant_class (), "Clear", 0, 0, error);
+			mono_error_assert_ok (error);
+		}
+
+		mono_mb_emit_ldloc_addr (mb, elem_var);
+		mono_mb_emit_managed_call (mb, variant_clear, NULL);
+
+		mono_mb_emit_add_to_local (mb, index_var, 1);
+
+		mono_mb_emit_ldloc (mb, safearray_var);
+		mono_mb_emit_ldloc (mb, indices_var);
+		mono_mb_emit_icall (mb, mono_marshal_safearray_next);
+		mono_mb_emit_branch_label (mb, CEE_BRTRUE, label3);
+
+		mono_mb_patch_short_branch (mb, label2);
+
+		mono_mb_emit_ldloc (mb, indices_var);
+		mono_mb_emit_icall (mb, mono_marshal_safearray_free_indices);
+
+		mono_mb_patch_short_branch (mb, label1);
 		break;
 	}
 
@@ -3309,7 +3309,7 @@ mono_cominterop_emit_marshal_safearray (EmitMarshalContext *m, int argnum, MonoT
 		break;
 	}
 	case MARSHAL_ACTION_MANAGED_CONV_IN: {
-		if (!(t->attrs & PARAM_ATTRIBUTE_IN))
+		if ((t->attrs & (PARAM_ATTRIBUTE_IN | PARAM_ATTRIBUTE_OUT)) == PARAM_ATTRIBUTE_OUT)
 			break;
 
 		/* Generates IL code for the following algorithm:
