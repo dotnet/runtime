@@ -738,16 +738,11 @@ private:
 enum ArrayMarshalInfoFlags
 {
     amiRuntime                                  = 0x0001,
-    amiExport32Bit                              = 0x0002,
-    amiExport64Bit                              = 0x0004,
     amiIsPtr                                    = 0x0008,
     amiSafeArraySubTypeExplicitlySpecified      = 0x0010
 };
 
 #define IsAMIRuntime(flags) (flags & amiRuntime)
-#define IsAMIExport(flags) (flags & (amiExport32Bit | amiExport64Bit))
-#define IsAMIExport32Bit(flags) (flags & amiExport32Bit)
-#define IsAMIExport64Bit(flags) (flags & amiExport64Bit)
 #define IsAMIPtr(flags) (flags & amiIsPtr)
 #define IsAMISafeArraySubTypeExplicitlySpecified(flags) (flags & amiSafeArraySubTypeExplicitlySpecified)
 //
@@ -860,14 +855,7 @@ protected:
     {
         LIMITED_METHOD_CONTRACT;
 
-        // If we are exporting, use the pointer size specified via the flags, otherwise use
-        // the current size of a pointer.
-        if (IsAMIExport32Bit(m_flags))
-            return 4;
-        else if (IsAMIExport64Bit(m_flags))
-            return 8;
-        else 
-            return sizeof(LPVOID);
+        return sizeof(LPVOID);
     }
 
 protected:

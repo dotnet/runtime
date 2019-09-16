@@ -5009,7 +5009,7 @@ void ArrayMarshalInfo::InitElementInfo(CorNativeType arrayNativeType, MarshalInf
                 case NATIVE_TYPE_LPTSTR:
                 {
 #ifdef FEATURE_COMINTEROP
-                    if (ms == MarshalInfo::MARSHAL_SCENARIO_COMINTEROP || IsAMIExport(m_flags))
+                    if (ms == MarshalInfo::MARSHAL_SCENARIO_COMINTEROP)
                     {
                         // We disallow NATIVE_TYPE_LPTSTR for COM or if we are exporting. 
                         ReportInvalidArrayMarshalInfo(IDS_EE_BADMARSHALPARAM_NO_LPTSTR);
@@ -5100,22 +5100,7 @@ void ArrayMarshalInfo::InitElementInfo(CorNativeType arrayNativeType, MarshalInf
             }
             else
             {
-                // When exporting, we need to handle enums specially.
-                if (IsAMIExport(m_flags) && m_thElement.IsEnum())
-                {
-                    // Get the element type of the underlying type.
-                    CorElementType et = m_thElement.GetInternalCorElementType();
-                    
-                    // If it is not a 32-bit type, convert as the underlying type.
-                    if ((et == ELEMENT_TYPE_I4) || (et == ELEMENT_TYPE_U4))
-                        m_vtElement = VT_RECORD;             
-                    else
-                        m_vtElement = OleVariant::GetVarTypeForTypeHandle(m_thElement);
-                }             
-                else
-                {                   
-                    m_vtElement = OleVariant::GetVarTypeForTypeHandle(m_thElement);
-                }
+                m_vtElement = OleVariant::GetVarTypeForTypeHandle(m_thElement);
             }
         }
 #ifdef FEATURE_COMINTEROP
@@ -5163,18 +5148,6 @@ void ArrayMarshalInfo::InitElementInfo(CorNativeType arrayNativeType, MarshalInf
        }
         if (set_error)
             COMPlusThrow(kPlatformNotSupportedException, m_resID);
-    }
-
-    // If we are exporting, we need to substitute the VTHACK_* VARTYPE with the actual
-    // types as expressed in the type library.
-    if (IsAMIExport(m_flags))
-    {
-        if (m_vtElement == VTHACK_ANSICHAR)
-            m_vtElement = VT_UI1;
-        else if (m_vtElement == VTHACK_WINBOOL)
-            m_vtElement = VT_I4;
-		else if (m_vtElement == VTHACK_CBOOL)
-		    m_vtElement = VT_UI1;
     }
 
 LExit:;
