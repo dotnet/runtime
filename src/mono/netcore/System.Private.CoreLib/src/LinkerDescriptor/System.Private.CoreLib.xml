@@ -63,6 +63,11 @@
 			<!-- mono_exception_from_name -->
 			<method signature="System.Void .ctor()" />
 		</type>
+
+		<type fullname="System.Security.VerificationException" >
+		  <!-- mini.c:mini_method_verify -->
+		  <method signature="System.Void .ctor()" />
+		</type>
 		
 		<!-- domain.c: mono_defaults.array_class -->
 		<type fullname="System.Array">
@@ -136,6 +141,10 @@
 			<method signature="System.Void .ctor()" />
 		</type>
 
+		<!-- domain.c: mono_defaults.threadabortexception_class -->
+		<type fullname="System.Threading.ThreadAbortException">
+		</type>
+
 		<!-- debugger-agent.c: create_event_list -->
 		<type fullname="System.Diagnostics.DebuggerNonUserCodeAttribute"/>
 		<type fullname="System.Diagnostics.DebuggerHiddenAttribute"/>
@@ -153,7 +162,7 @@
 		-->
 		<type fullname="System.DllNotFoundException">
 			<!-- mono_exception_from_name_msg -->
-			<method signature="System.Void .ctor(System.String)" />
+			<method signature="System.Void .ctor()" />
 		</type>
 		
 		<!-- domain.c: mono_defaults.double_class -->
@@ -185,7 +194,7 @@
 		<!-- exception.c (mono_get_exception_execution_engine) -->
 		<type fullname="System.ExecutionEngineException">
 			<!-- mono_exception_from_name_msg -->
-			<method signature="System.Void .ctor(System.String)" />
+			<method signature="System.Void .ctor()" />
 		</type>
 
 		<type fullname="System.FieldAccessException">
@@ -267,7 +276,7 @@
         
 		<type fullname="System.MissingMethodException">
 			<!-- mini.c (mono_jit_compiler_method_inner) mono_exception_from_name_msg -->
-			<method signature="System.Void .ctor(System.String)" />
+			<method signature="System.Void .ctor()" />
 		</type>
 		
 		<!-- threadpool.c: mono_thread_pool_init (assert) -->
@@ -350,7 +359,10 @@
 		
 		<!-- domain.c: mono_defaults.methodhandle_class -->
 		<type fullname="System.RuntimeMethodHandle" preserve="fields" />
-		
+
+		<!-- domain.c: mono_defaults.runtimetype_class -->
+		<type fullname="System.RuntimeType" preserve="fields" />
+
 		<!-- domain.c: mono_defaults.typehandle_class -->
 		<type fullname="System.RuntimeTypeHandle" preserve="fields" />
 
@@ -760,6 +772,7 @@
 		<type fullname="System.AppContext">
 		  <!-- appdomain.c: mono_runtime_install_appctx_properties -->
 		  <method name="Setup"/>
+		  <method name="OnProcessExit"/>
 		</type>
 
 		<typename fullname="Mono.NullByRefReturnException">

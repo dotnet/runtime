@@ -553,7 +553,7 @@ namespace System
 
 		internal bool InternalArray__ICollection_Contains<T> (T item)
 		{
-			return IndexOf (this, item, 0, Length) >= 0;
+			return IndexOf ((T[])this, item, 0, Length) >= 0;
 		}
 
 		internal void InternalArray__ICollection_CopyTo<T> (T[] array, int arrayIndex)
@@ -588,7 +588,7 @@ namespace System
 
 		internal int InternalArray__IndexOf<T> (T item)
 		{
-			return IndexOf (this, item, 0, Length);
+			return IndexOf ((T[])this, item, 0, Length);
 		}
 
 		internal T InternalArray__get_Item<T> (int index)

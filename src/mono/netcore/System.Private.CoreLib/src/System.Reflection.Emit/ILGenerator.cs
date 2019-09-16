@@ -34,7 +34,6 @@
 
 #if MONO_FEATURE_SRE
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.SymbolStore;
 using System.Runtime.InteropServices;
@@ -231,7 +230,7 @@ namespace System.Reflection.Emit {
 		const int defaultLabelsSize = 4;
 		const int defaultExceptionStackSize = 2;
 		
-		ArrayList sequencePointLists;
+		List<SequencePointList> sequencePointLists;
 		SequencePointList currentSequence;
 
 		internal ILGenerator (Module m, TokenGenerator token_gen, int size)
@@ -908,7 +907,7 @@ namespace System.Reflection.Emit {
 		{
 			if (currentSequence == null || currentSequence.Document != document) {
 				if (sequencePointLists == null)
-					sequencePointLists = new ArrayList ();
+					sequencePointLists = new List<SequencePointList> ();
 				currentSequence = new SequencePointList (document);
 				sequencePointLists.Add (currentSequence);
 			}
