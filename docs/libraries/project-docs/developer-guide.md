@@ -470,3 +470,22 @@ If you prefer, you can use a Debug build of System.Private.CoreLib, but if you d
 If the test project does not set the property `TestRuntime` to `true` and you want to collect code coverage that includes types in System.Private.CoreLib.dll, you'll need to follow the above steps, then
 
 `dotnet msbuild /t:rebuildandtest /p:Coverage=true /p:TestRuntime=true`
+
+
+## Debugging with Visual Studio Code
+
+- Install [Visual Studio Code](https://code.visualstudio.com/)
+- Install the [C# Extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode.csharp)
+- Open the folder containing the source you want to debug in VS Code - i.e., if you are debugging a test failure in System.Net.Sockets, open `corefx/src/System.Net.Sockets`
+- Open the debug window: `ctrl-shift-D` or click on the button on the left
+- Click the gear button at the top to create a launch configuration, select `.NET Core` from the selection dropdown
+- In the `.NET Core Launch (console)` configuration do the following
+  - delete the `preLaunchTask` property
+  - set `program` to the full path to `dotnet` in the artifacts/bin/testhost directory.
+    - something like `corefx/artifacts/bin/testhost/netcoreapp-{OS}-{Configuration}-{Architecture}`, plus the full path to your corefx directory.
+  - set `cwd` to the test bin directory.
+    - using the System.Net.Sockets example, it should be something like `corefx/artifacts/bin/System.Net.Sockets.Tests/netcoreapp-{OS}-{Configuration}-{Architecture}`, plus the full path to your corefx directory.
+  - set `args` to the command line arguments to pass to the test
+    - something like: `[ "exec", "--runtimeconfig", "{TestProjectName}.runtimeconfig.json", "xunit.console.dll", "{TestProjectName}.dll", "-notrait", ... ]`, where TestProjectName would be `System.Net.Sockets.Tests`
+    - to run a specific test, you can append something like: `[ "method", "System.Net.Sockets.Tests.{ClassName}.{TestMethodName}", ...]`
+- Set a breakpoint and launch the debugger, inspecting variables and call stacks will now work
