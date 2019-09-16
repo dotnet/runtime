@@ -90,31 +90,25 @@ namespace System.Text.Json
             return result;
         }
 
-        private static string WriteValueCore(Utf8JsonWriter writer, object value, Type type, JsonSerializerOptions options)
+        private static void WriteValueCore(Utf8JsonWriter writer, object value, Type type, JsonSerializerOptions options)
         {
             if (options == null)
             {
                 options = JsonSerializerOptions.s_defaultOptions;
             }
 
-            string result;
-
-            using (var output = new PooledByteBufferWriter(options.DefaultBufferSize))
-            {
-                WriteCore(writer, output, value, type, options);
-                result = JsonReaderHelper.TranscodeHelper(output.WrittenMemory.Span);
-            }
-
-            return result;
+            WriteCore(writer, value, type, options);
         }
 
         private static void WriteCore(PooledByteBufferWriter output, object value, Type type, JsonSerializerOptions options)
         {
-            using var writer = new Utf8JsonWriter(output, options.GetWriterOptions());
-            WriteCore(writer, output, value, type, options);
+            using (var writer = new Utf8JsonWriter(output, options.GetWriterOptions()))
+            {
+                WriteCore(writer, value, type, options);
+            }
         }
 
-        private static void WriteCore(Utf8JsonWriter writer, PooledByteBufferWriter output, object value, Type type, JsonSerializerOptions options)
+        private static void WriteCore(Utf8JsonWriter writer, object value, Type type, JsonSerializerOptions options)
         {
             Debug.Assert(type != null || value == null);
 

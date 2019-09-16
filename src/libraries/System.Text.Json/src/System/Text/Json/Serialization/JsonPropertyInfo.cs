@@ -237,7 +237,8 @@ namespace System.Text.Json
         public JsonDictionaryConverter DictionaryConverter { get; private set; }
 
         // The escaped name passed to the writer.
-        public JsonEncodedText? EscapedName { get; private set; }
+        // Use a field here (not a property) to avoid value semantics.
+        public JsonEncodedText? EscapedName;
 
         public static TAttribute GetAttribute<TAttribute>(PropertyInfo propertyInfo) where TAttribute : Attribute
         {

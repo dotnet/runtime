@@ -2,13 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.Json
 {
     public static partial class JsonSerializer
     {
+        // AggressiveInlining used although a large method it is only called from one location and is on a hot path.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool WriteObject(
             JsonSerializerOptions options,
             Utf8JsonWriter writer,
@@ -26,32 +28,25 @@ namespace System.Text.Json
                 }
 
                 state.Current.WriteObjectOrArrayStart(ClassType.Object, writer, options);
-                state.Current.PropertyEnumerator = state.Current.JsonClassInfo.PropertyCache.GetEnumerator();
                 state.Current.PropertyEnumeratorActive = true;
-                state.Current.NextProperty();
+                state.Current.MoveToNextProperty = true;
             }
-            else if (state.Current.MoveToNextProperty)
+
+            if (state.Current.MoveToNextProperty)
             {
                 state.Current.NextProperty();
             }
 
             // Determine if we are done enumerating properties.
-            // If the ClassType is unknown, there will be a policy property applied
-            JsonClassInfo classInfo = state.Current.JsonClassInfo;
-            if (classInfo.ClassType != ClassType.Unknown && state.Current.PropertyEnumeratorActive)
+            if (state.Current.PropertyEnumeratorActive)
             {
-                HandleObject(state.Current.PropertyEnumerator.Current.Value, options, writer, ref state);
-                return false;
-            }
+                // If ClassType.Unknown at this point, we are typeof(object) which should not have any properties.
+                Debug.Assert(state.Current.JsonClassInfo.ClassType != ClassType.Unknown);
 
-            if (state.Current.ExtensionDataStatus == Serialization.ExtensionDataWriteStatus.Writing)
-            {
-                JsonPropertyInfo jsonPropertyInfo = state.Current.JsonClassInfo.DataExtensionProperty;
-                if (jsonPropertyInfo != null)
-                {
-                    HandleObject(jsonPropertyInfo, options, writer, ref state);
-                    return false;
-                }
+                JsonPropertyInfo jsonPropertyInfo = state.Current.JsonClassInfo.PropertyCacheArray[state.Current.PropertyEnumeratorIndex - 1];
+                HandleObject(jsonPropertyInfo, options, writer, ref state);
+
+                return false;
             }
 
             writer.WriteEndObject();
@@ -72,11 +67,13 @@ namespace System.Text.Json
             return true;
         }
 
-        private static bool HandleObject(
-                JsonPropertyInfo jsonPropertyInfo,
-                JsonSerializerOptions options,
-                Utf8JsonWriter writer,
-                ref WriteStack state)
+        // AggressiveInlining used although a large method it is only called from one location and is on a hot path.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void HandleObject(
+            JsonPropertyInfo jsonPropertyInfo,
+            JsonSerializerOptions options,
+            Utf8JsonWriter writer,
+            ref WriteStack state)
         {
             Debug.Assert(
                 state.Current.JsonClassInfo.ClassType == ClassType.Object ||
@@ -85,7 +82,7 @@ namespace System.Text.Json
             if (!jsonPropertyInfo.ShouldSerialize)
             {
                 state.Current.MoveToNextProperty = true;
-                return true;
+                return;
             }
 
             bool obtainedValue = false;
@@ -105,7 +102,7 @@ namespace System.Text.Json
             {
                 jsonPropertyInfo.Write(ref state, writer);
                 state.Current.MoveToNextProperty = true;
-                return true;
+                return;
             }
 
             // A property that returns an enumerator keeps the same stack frame.
@@ -117,7 +114,7 @@ namespace System.Text.Json
                     state.Current.MoveToNextProperty = true;
                 }
 
-                return endOfEnumerable;
+                return;
             }
 
             // A property that returns a dictionary keeps the same stack frame.
@@ -129,7 +126,7 @@ namespace System.Text.Json
                     state.Current.MoveToNextProperty = true;
                 }
 
-                return endOfEnumerable;
+                return;
             }
 
             // A property that returns a type that is deserialized by passing an
@@ -144,7 +141,7 @@ namespace System.Text.Json
                     state.Current.MoveToNextProperty = true;
                 }
 
-                return endOfEnumerable;
+                return;
             }
 
             // A property that returns an object.
@@ -174,8 +171,6 @@ namespace System.Text.Json
 
                 state.Current.MoveToNextProperty = true;
             }
-
-            return true;
         }
     }
 }
