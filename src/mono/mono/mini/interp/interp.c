@@ -3206,6 +3206,32 @@ mono_interp_store_remote_field_vt (InterpFrame* frame, const guint16* ip, stackv
 	return ALIGN_TO (i32, MINT_VT_ALIGNMENT);
 }
 
+static MONO_ALWAYS_INLINE stackval*
+mono_interp_call (InterpFrame *frame, ThreadContext *context, InterpFrame *child_frame, const guint16 *ip, stackval *sp, guchar *vt_sp, gboolean is_virtual)
+{
+	frame->ip = ip;
+
+	child_frame->imethod = (InterpMethod*)frame->imethod->data_items [ip [1]];
+	ip += 2;
+	sp->data.p = vt_sp;
+	child_frame->retval = sp;
+
+	/* decrement by the actual number of args */
+	sp -= child_frame->imethod->param_count + child_frame->imethod->hasthis;
+
+	if (is_virtual) {
+		MonoObject *this_arg = (MonoObject*)sp->data.p;
+
+		child_frame->imethod = get_virtual_method (child_frame->imethod, this_arg->vtable);
+		if (m_class_is_valuetype (this_arg->vtable->klass) && m_class_is_valuetype (child_frame->imethod->method->klass)) {
+			/* unbox */
+			gpointer unboxed = mono_object_unbox_internal (this_arg);
+			sp [0].data.p = unboxed;
+		}
+	}
+	return sp;
+}
+
 /*
  * If EXIT_AT_FINALLY is not -1, exit after exiting the finally clause with that index.
  * If BASE_FRAME is not NULL, copy arguments/locals from BASE_FRAME.
@@ -3469,7 +3495,6 @@ main_loop:
 			sp -= csignature->param_count;
 			if (csignature->hasthis)
 				--sp;
-			child_frame.stack_args = sp;
 
 			if (child_frame.imethod->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
 				child_frame.imethod = mono_interp_get_imethod (frame->imethod->domain, mono_marshal_get_native_wrapper (child_frame.imethod->method, FALSE, FALSE), error);
@@ -3485,16 +3510,9 @@ main_loop:
 				}
 			}
 
-			interp_exec_method (&child_frame, context, error);
-
-			CHECK_RESUME_STATE (context);
-
-			/* need to handle typedbyref ... */
-			if (csignature->ret->type != MONO_TYPE_VOID) {
-				*sp = *child_frame.retval;
-				sp++;
-			}
-			MINT_IN_BREAK;
+			if (csignature->ret->type != MONO_TYPE_VOID)
+				goto common_call;
+			goto common_vcall;
 		}
 		MINT_IN_CASE(MINT_CALLI_NAT_FAST) {
 			gpointer target_ip = sp [-1].data.p;
@@ -3537,14 +3555,10 @@ main_loop:
 				ves_pinvoke_method (&child_frame, csignature, (MonoFuncV) code, context, save_last_error);
 			}
 
-			CHECK_RESUME_STATE (context);
-
 			/* need to handle typedbyref ... */
-			if (csignature->ret->type != MONO_TYPE_VOID) {
-				*sp = *child_frame.retval;
-				sp++;
-			}
-			MINT_IN_BREAK;
+			if (csignature->ret->type != MONO_TYPE_VOID)
+				goto call_return;
+			goto vcall_return;
 		}
 		MINT_IN_CASE(MINT_CALLVIRT_FAST)
 		MINT_IN_CASE(MINT_VCALLVIRT_FAST) {
@@ -3564,7 +3578,6 @@ main_loop:
 
 			/* decrement by the actual number of args */
 			sp -= target_imethod->param_count + target_imethod->hasthis;
-			child_frame.stack_args = sp;
 
 			this_arg = (MonoObject*)sp->data.p;
 
@@ -3574,18 +3587,10 @@ main_loop:
 				gpointer unboxed = mono_object_unbox_internal (this_arg);
 				sp [0].data.p = unboxed;
 			}
-
-			interp_exec_method (&child_frame, context, error);
-
-			CHECK_RESUME_STATE (context);
-
 			const gboolean is_void = ip [-3] == MINT_VCALLVIRT_FAST;
-			if (!is_void) {
-				/* need to handle typedbyref ... */
-				*sp = *child_frame.retval;
-				sp++;
-			}
-			MINT_IN_BREAK;
+			if (!is_void)
+				goto common_call;
+			goto common_vcall;
 		}
 		MINT_IN_CASE(MINT_CALL_VARARG) {
 			int num_varargs = 0;
@@ -3606,58 +3611,39 @@ main_loop:
 
 			/* decrement by the actual number of args */
 			sp -= child_frame.imethod->param_count + child_frame.imethod->hasthis + num_varargs;
-			child_frame.stack_args = sp;
 
-			interp_exec_method (&child_frame, context, error);
-
-			CHECK_RESUME_STATE (context);
-
-			if (csig->ret->type != MONO_TYPE_VOID) {
-				*sp = *child_frame.retval;
-				sp++;
-			}
-			MINT_IN_BREAK;
+			if (csig->ret->type != MONO_TYPE_VOID)
+				goto common_call;
+			goto common_vcall;
 		}
 		MINT_IN_CASE(MINT_CALL)
-		MINT_IN_CASE(MINT_VCALL)
-		MINT_IN_CASE(MINT_CALLVIRT)
-		MINT_IN_CASE(MINT_VCALLVIRT) {
-
-			frame->ip = ip;
-
-			child_frame.imethod = (InterpMethod*)frame->imethod->data_items [ip [1]];
-			ip += 2;
-			sp->data.p = vt_sp;
-			child_frame.retval = sp;
-
-			/* decrement by the actual number of args */
-			sp -= child_frame.imethod->param_count + child_frame.imethod->hasthis;
+			sp = mono_interp_call (frame, context, &child_frame, (ip += 2) - 2, sp, vt_sp, FALSE);
+common_call:
 			child_frame.stack_args = sp;
-
-			const gboolean is_virtual = ip [-2] == MINT_CALLVIRT || ip [-2] == MINT_VCALLVIRT;
-			if (is_virtual) {
-				MonoObject *this_arg = (MonoObject*)sp->data.p;
-
-				child_frame.imethod = get_virtual_method (child_frame.imethod, this_arg->vtable);
-				if (m_class_is_valuetype (this_arg->vtable->klass) && m_class_is_valuetype (child_frame.imethod->method->klass)) {
-					/* unbox */
-					gpointer unboxed = mono_object_unbox_internal (this_arg);
-					sp [0].data.p = unboxed;
-				}
-			}
-
 			interp_exec_method (&child_frame, context, error);
-
+call_return:
+			/* need to handle typedbyref ... */
+			*sp = *child_frame.retval;
+			sp++;
+vcall_return:
 			CHECK_RESUME_STATE (context);
-
-			const gboolean is_void = ip [-2] == MINT_VCALL || ip [-2] == MINT_VCALLVIRT;
-			if (!is_void) {
-				/* need to handle typedbyref ... */
-				*sp = *child_frame.retval;
-				sp++;
-			}
 			MINT_IN_BREAK;
-		}
+
+		MINT_IN_CASE(MINT_VCALL)
+			sp = mono_interp_call (frame, context, &child_frame, (ip += 2) - 2, sp, vt_sp, FALSE);
+common_vcall:
+			child_frame.stack_args = sp;
+			interp_exec_method (&child_frame, context, error);
+			goto vcall_return;
+
+		MINT_IN_CASE(MINT_CALLVIRT)
+			sp = mono_interp_call (frame, context, &child_frame, (ip += 2) - 2, sp, vt_sp, TRUE);
+			goto common_call;
+
+		MINT_IN_CASE(MINT_VCALLVIRT)
+			sp = mono_interp_call (frame, context, &child_frame, (ip += 2) - 2, sp, vt_sp, TRUE);
+			goto common_vcall;
+
 		MINT_IN_CASE(MINT_JIT_CALL) {
 			InterpMethod *rmethod = (InterpMethod*)frame->imethod->data_items [ip [1]];
 			MONO_API_ERROR_INIT (error);
