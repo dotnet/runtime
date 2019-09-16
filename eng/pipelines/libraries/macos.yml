@@ -56,4 +56,4 @@ stages:
         submitToHelix: true
 
         variables:
-            - macOSQueues: OSX.1013.Amd64.Open #+OSX.1014.Amd64.Open https://github.com/dotnet/core-eng/issues/7835
+            - macOSQueues: OSX.1013.Amd64.Open+OSX.1014.Amd64.Open
