@@ -8128,7 +8128,6 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 
 		if (command == CMD_TYPE_GET_VALUES_2) {
 			int objid = decode_objid (p, &p, end);
-			ErrorCode err;
 
 			err = get_object (objid, (MonoObject**)&thread_obj);
 			if (err != ERR_NONE)
