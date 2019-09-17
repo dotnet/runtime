@@ -7,6 +7,7 @@
     <TestStabilizedLegacyPackagesDir>$(ObjDir)TestStabilizedPackages\</TestStabilizedLegacyPackagesDir>
     <TestRestorePackagesPath>$(ObjDir)TestPackageCache\</TestRestorePackagesPath>
     <TestRestoreNuGetConfigFile>$(ObjDir)TestNuGetConfig\NuGet.config</TestRestoreNuGetConfigFile>
+    <InternalNupkgCacheDir>$(ObjDir)ExtraNupkgsForTestRestore\</InternalNupkgCacheDir>
     <TestArchitectures>$(TargetArchitecture)</TestArchitectures>
     <TestInfraTargetFramework>netcoreapp3.0</TestInfraTargetFramework>
   </PropertyGroup>
