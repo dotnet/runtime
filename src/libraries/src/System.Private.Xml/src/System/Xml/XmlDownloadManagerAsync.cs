@@ -2,47 +2,50 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.IO;
+using System.Net;
+using System.Net.Http;
+using System.Threading.Tasks;
+
 namespace System.Xml
 {
-    using System;
-    using System.IO;
-    using System.Security;
-    using System.Collections;
-    using System.Net;
-    using System.Net.Cache;
-    using System.Runtime.Versioning;
-    using System.Threading.Tasks;
-    using System.Net.Http;
-    //
-    // XmlDownloadManager
-    //
     internal partial class XmlDownloadManager
     {
-        internal Task<Stream> GetStreamAsync(Uri uri, ICredentials credentials, IWebProxy proxy,
-            RequestCachePolicy cachePolicy)
+        internal Task<Stream> GetStreamAsync(Uri uri, ICredentials credentials, IWebProxy proxy)
         {
             if (uri.Scheme == "file")
             {
-                return Task.Run<Stream>(() => { return new FileStream(uri.LocalPath, FileMode.Open, FileAccess.Read, FileShare.Read, 1, true); });
+                Uri fileUri = uri;
+                return Task.Run<Stream>(() => new FileStream(fileUri.LocalPath, FileMode.Open, FileAccess.Read, FileShare.Read, 1, useAsync: true));
             }
             else
             {
-                return GetNonFileStreamAsync(uri, credentials, proxy, cachePolicy);
+                return GetNonFileStreamAsync(uri, credentials, proxy);
             }
         }
 
-        private async Task<Stream> GetNonFileStreamAsync(Uri uri, ICredentials credentials, IWebProxy proxy,
-            RequestCachePolicy cachePolicy)
+        private async Task<Stream> GetNonFileStreamAsync(Uri uri, ICredentials credentials, IWebProxy proxy)
         {
-            WebRequest req = CreateWebRequestOrThrowIfRemoved(uri, credentials, proxy, cachePolicy);
-
-            using (WebResponse resp = await req.GetResponseAsync().ConfigureAwait(false))
-            using (Stream respStream = resp.GetResponseStream())
+            var handler = new HttpClientHandler();
+            using (var client = new HttpClient(handler))
             {
-                var result = new MemoryStream();
-                await respStream.CopyToAsync(result).ConfigureAwait(false);
-                result.Position = 0;
-                return result;
+                if (credentials != null)
+                {
+                    handler.Credentials = credentials;
+                }
+                if (proxy != null)
+                {
+                    handler.Proxy = proxy;
+                }
+
+                using (Stream respStream = await client.GetStreamAsync(uri).ConfigureAwait(false))
+                {
+                    var result = new MemoryStream();
+                    respStream.CopyTo(result);
+                    result.Position = 0;
+                    return result;
+                }
             }
         }
     }
