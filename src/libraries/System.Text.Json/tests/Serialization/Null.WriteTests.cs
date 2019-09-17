@@ -16,12 +16,15 @@ namespace System.Text.Json.Serialization.Tests
             {
                 MyString = null,
                 MyInt = null,
+                MyDateTime = null,
                 MyIntArray = null,
                 MyIntList = null,
+                MyNullableIntList = null,
                 MyObjectList = new List<object> { null },
                 MyListList = new List<List<object>> { new List<object> { null } },
                 MyDictionaryList = new List<Dictionary<string, string>> { new Dictionary<string, string>() { ["key"] = null } },
                 MyStringDictionary = new Dictionary<string, string>() { ["key"] = null },
+                MyNullableDateTimeDictionary = new Dictionary<string, DateTime?>() { ["key"] = null },
                 MyObjectDictionary = new Dictionary<string, object>() { ["key"] = null },
                 MyStringDictionaryDictionary = new Dictionary<string, Dictionary<string, string>>() { ["key"] = null },
                 MyListDictionary = new Dictionary<string, List<object>>() { ["key"] = null },
@@ -31,12 +34,15 @@ namespace System.Text.Json.Serialization.Tests
             string json = JsonSerializer.Serialize(obj);
             Assert.Contains(@"""MyString"":null", json);
             Assert.Contains(@"""MyInt"":null", json);
+            Assert.Contains(@"""MyDateTime"":null", json);
             Assert.Contains(@"""MyIntArray"":null", json);
             Assert.Contains(@"""MyIntList"":null", json);
+            Assert.Contains(@"""MyNullableIntList"":null", json);
             Assert.Contains(@"""MyObjectList"":[null],", json);
             Assert.Contains(@"""MyListList"":[[null]],", json);
             Assert.Contains(@"""MyDictionaryList"":[{""key"":null}],", json);
             Assert.Contains(@"""MyStringDictionary"":{""key"":null},", json);
+            Assert.Contains(@"""MyNullableDateTimeDictionary"":{""key"":null},", json);
             Assert.Contains(@"""MyObjectDictionary"":{""key"":null},", json);
             Assert.Contains(@"""MyStringDictionaryDictionary"":{""key"":null},", json);
             Assert.Contains(@"""MyListDictionary"":{""key"":null},", json);
@@ -53,12 +59,15 @@ namespace System.Text.Json.Serialization.Tests
             {
                 MyString = null,
                 MyInt = null,
+                MyDateTime = null,
                 MyIntArray = null,
                 MyIntList = null,
+                MyNullableIntList = null,
                 MyObjectList = new List<object> { null },
                 MyListList = new List<List<object>> { new List<object> { null } },
                 MyDictionaryList = new List<Dictionary<string, string>> { new Dictionary<string, string>() { ["key"] = null } },
                 MyStringDictionary = new Dictionary<string, string>() { ["key"] = null },
+                MyNullableDateTimeDictionary = new Dictionary<string, DateTime?>() { ["key"] = null },
                 MyObjectDictionary = new Dictionary<string, object>() { ["key"] = null },
                 MyStringDictionaryDictionary = new Dictionary<string, Dictionary<string, string>>() { ["key"] = new Dictionary<string, string>() { ["key"] = null } },
                 MyListDictionary = new Dictionary<string, List<object>>() { ["key"] = new List<object> { null } },
@@ -71,14 +80,17 @@ namespace System.Text.Json.Serialization.Tests
             TestClassWithInitializedProperties newObj = JsonSerializer.Deserialize<TestClassWithInitializedProperties>(json);
             Assert.Equal("Hello", newObj.MyString);
             Assert.Equal(1, newObj.MyInt);
+            Assert.Equal(new DateTime(1995, 4, 16), newObj.MyDateTime);
             Assert.Equal(1, newObj.MyIntArray[0]);
             Assert.Equal(1, newObj.MyIntList[0]);
+            Assert.Equal(1, newObj.MyNullableIntList[0]);
 
             Assert.Null(newObj.MyObjectList[0]);
             Assert.Null(newObj.MyObjectList[0]);
             Assert.Null(newObj.MyListList[0][0]);
             Assert.Null(newObj.MyDictionaryList[0]["key"]);
             Assert.Null(newObj.MyStringDictionary["key"]);
+            Assert.Null(newObj.MyNullableDateTimeDictionary["key"]);
             Assert.Null(newObj.MyObjectDictionary["key"]);
             Assert.Null(newObj.MyStringDictionaryDictionary["key"]["key"]);
             Assert.Null(newObj.MyListDictionary["key"][0]);
@@ -95,14 +107,17 @@ namespace System.Text.Json.Serialization.Tests
             TestClassWithInitializedProperties nestedObj = newParentObj.MyClass;
             Assert.Equal("Hello", nestedObj.MyString);
             Assert.Equal(1, nestedObj.MyInt);
+            Assert.Equal(new DateTime(1995, 4, 16), nestedObj.MyDateTime);
             Assert.Equal(1, nestedObj.MyIntArray[0]);
             Assert.Equal(1, nestedObj.MyIntList[0]);
+            Assert.Equal(1, nestedObj.MyNullableIntList[0]);
 
             Assert.Null(nestedObj.MyObjectList[0]);
             Assert.Null(nestedObj.MyObjectList[0]);
             Assert.Null(nestedObj.MyListList[0][0]);
             Assert.Null(nestedObj.MyDictionaryList[0]["key"]);
             Assert.Null(nestedObj.MyStringDictionary["key"]);
+            Assert.Null(nestedObj.MyNullableDateTimeDictionary["key"]);
             Assert.Null(nestedObj.MyObjectDictionary["key"]);
             Assert.Null(nestedObj.MyStringDictionaryDictionary["key"]["key"]);
             Assert.Null(nestedObj.MyListDictionary["key"][0]);

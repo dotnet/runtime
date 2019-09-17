@@ -131,6 +131,46 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void CustomNameSerialize_NullableValue()
+        {
+            var options = new JsonSerializerOptions
+            {
+                DictionaryKeyPolicy = new UppercaseNamingPolicy() // e.g. myint -> MYINT.
+            };
+
+            Dictionary<string, int?> obj = new Dictionary<string, int?> { { "myint1", 1 }, { "myint2", 2 } };
+
+            const string Json = @"{""myint1"":1,""myint2"":2}";
+            const string JsonCustomKey = @"{""MYINT1"":1,""MYINT2"":2}";
+
+            // Without key policy option, serialize keys as they are.
+            string json = JsonSerializer.Serialize<object>(obj);
+            Assert.Equal(Json, json);
+
+            // With key policy option, serialize keys honoring the custom key policy.
+            json = JsonSerializer.Serialize<object>(obj, options);
+            Assert.Equal(JsonCustomKey, json);
+        }
+
+        [Fact]
+        public static void NullNamePolicy_NullableValue()
+        {
+            var options = new JsonSerializerOptions
+            {
+                DictionaryKeyPolicy = new NullNamingPolicy()
+            };
+
+            // A naming policy that returns null is not allowed.
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new Dictionary<string, int?> { { "onlyKey", 1 } }, options));
+
+            // We don't use policy on deserialize, so we populate dictionary.
+            Dictionary<string, int?> obj = JsonSerializer.Deserialize<Dictionary<string, int?>>(@"{""onlyKey"": 1}", options);
+
+            Assert.Equal(1, obj.Count);
+            Assert.Equal(1, obj["onlyKey"]);
+        }
+
+        [Fact]
         public static void KeyConflict_Serialize_WriteAll()
         {
             var options = new JsonSerializerOptions

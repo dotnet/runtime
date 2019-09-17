@@ -145,14 +145,17 @@ namespace System.Text.Json.Serialization.Tests
     {
         public string MyString { get; set; } = "Hello";
         public int? MyInt { get; set; } = 1;
+        public DateTime? MyDateTime { get; set; } = new DateTime(1995, 4, 16);
         public int[] MyIntArray { get; set; } = new int[] { 1 };
         public List<int> MyIntList { get; set; } = new List<int> { 1 };
+        public List<int?> MyNullableIntList { get; set; } = new List<int?> { 1 };
         public List<object> MyObjectList { get; set; } = new List<object> { 1 };
         public List<List<object>> MyListList { get; set; } = new List<List<object>> { new List<object> { 1 } };
         public List<Dictionary<string, string>> MyDictionaryList { get; set; } = new List<Dictionary<string, string>> {
             new Dictionary<string, string> { ["key"] = "value" }
         };
         public Dictionary<string, string> MyStringDictionary { get; set; } = new Dictionary<string, string> { ["key"] = "value" };
+        public Dictionary<string, DateTime?> MyNullableDateTimeDictionary { get; set; } = new Dictionary<string, DateTime?> { ["key"] = new DateTime(1995, 04, 16) };
         public Dictionary<string, object> MyObjectDictionary { get; set; } = new Dictionary<string, object> { ["key"] = "value" };
         public Dictionary<string, Dictionary<string, string>> MyStringDictionaryDictionary { get; set; } = new Dictionary<string, Dictionary<string, string>>
         {
@@ -176,12 +179,15 @@ namespace System.Text.Json.Serialization.Tests
                 @"{" +
                     @"""MyString"" : null," +
                     @"""MyInt"" : null," +
+                    @"""MyDateTime"" : null," +
                     @"""MyIntArray"" : null," +
                     @"""MyIntList"" : null," +
+                    @"""MyNullableIntList"" : null," +
                     @"""MyObjectList"" : [null]," +
                     @"""MyListList"" : [[null]]," +
                     @"""MyDictionaryList"" : [{""key"" : null}]," +
                     @"""MyStringDictionary"" : {""key"" : null}," +
+                    @"""MyNullableDateTimeDictionary"" : {""key"" : null}," +
                     @"""MyObjectDictionary"" : {""key"" : null}," +
                     @"""MyStringDictionaryDictionary"" : {""key"" : {""key"" : null}}," +
                     @"""MyListDictionary"" : {""key"" : [null]}," +
