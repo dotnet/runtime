@@ -196,7 +196,7 @@ stages:
           bar: PublicRelease_30_Channel_Id
           storage: release/3.0-preview9
           public: true
-      - dependsOn: NetCore_30_Internal_Servicing_Publish
+      - dependsOn: NetCore_30_Internal_Servicing_Publishing
         channel:
           name: .NET Core 3 Internal Servicing
           bar: InternalServicing_30_Channel_Id
