@@ -123,5 +123,10 @@ namespace System.Text.Json.Serialization
                 }
             }
         }
+
+        public override Type GetDictionaryConcreteType()
+        {
+            return typeof(Dictionary<string, TRuntimeProperty>);
+        }
     }
 }

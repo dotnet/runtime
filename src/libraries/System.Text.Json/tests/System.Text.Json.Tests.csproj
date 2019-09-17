@@ -61,6 +61,7 @@
     <Compile Include="Serialization\JsonElementTests.cs" />
     <Compile Include="Serialization\Null.ReadTests.cs" />
     <Compile Include="Serialization\Null.WriteTests.cs" />
+    <Compile Include="Serialization\NullableTests.cs" />
     <Compile Include="Serialization\Object.ReadTests.cs" />
     <Compile Include="Serialization\Object.WriteTests.cs" />
     <Compile Include="Serialization\OptionsTests.cs" />
