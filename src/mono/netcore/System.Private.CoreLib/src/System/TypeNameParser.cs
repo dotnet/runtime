@@ -167,11 +167,26 @@ namespace System
 			if (name.IndexOfAny (SPECIAL_CHARS) < 0)
 				return name;
 
-			var sb = new StringBuilder ();
+			var sb = new StringBuilder (name.Length);
 			foreach (char c in name) {
 				if (Array.IndexOf<char> (SPECIAL_CHARS, c) >= 0)
 					sb.Append ('\\');
 				sb.Append (c);
+			}
+
+			return sb.ToString ();
+		}
+
+		static string UnescapeTypeName (string name)
+		{
+			if (name.IndexOfAny (SPECIAL_CHARS) < 0)
+				return name;
+
+			var sb = new StringBuilder (name.Length - 1);
+			for (int i = 0; i < name.Length; ++i) {
+				if (name [i] == '\\' && i + 1 < name.Length)
+					i++;
+				sb.Append (name [i]);
 			}
 
 			return sb.ToString ();
@@ -207,7 +222,10 @@ namespace System
 			*/
 		}
 
-		// Ported from the C version in mono_reflection_parse_type ()
+		// Ported from the C version in mono_reflection_parse_type_checked ()
+		// Entries to the Names list are unescaped to internal form while AssemblyName is not, in an effort to maintain
+		// consistency with our native parser. Since this function is just called recursively, that should also be true
+		// for ParsedNames in TypeArguments.
 		static ParsedName ParseName (string name, bool recursed, int pos, out int end_pos)
 		{
 			end_pos = 0;
@@ -223,7 +241,7 @@ namespace System
 			while (pos < name.Length) {
 				switch (name [pos]) {
 				case '+':
-					res.Names.Add (name.Substring (name_start, pos - name_start));
+					res.Names.Add (UnescapeTypeName (name.Substring (name_start, pos - name_start)));
 					name_start = pos + 1;
 					break;
 				case '\\':
@@ -244,7 +262,7 @@ namespace System
 				pos ++;
 			}
 
-			res.Names.Add (name.Substring (name_start, pos - name_start));
+			res.Names.Add (UnescapeTypeName (name.Substring (name_start, pos - name_start)));
 
 			bool isbyref = false;
 			bool isptr = false;
