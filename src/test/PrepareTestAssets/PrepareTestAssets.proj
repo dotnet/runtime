@@ -8,6 +8,7 @@
             GetNETCoreAppRuntimePackVersion;
             CleanTestAssets;
             GenerateTestRestoreSourcesNuGetConfig;
+            CopyPotentiallyInternalPackagesForTestRestore;
             PrepareStabilizedLegacyPackages;
             RestoreTestAssetProjects" />
 
@@ -35,6 +36,7 @@
       <DirsToClean Include="$(TestStabilizedLegacyPackagesDir)" />
       <DirsToClean Include="$(TestRestorePackagesPath)" />
       <DirsToClean Include="$(TempFolderRoot)$(TargetArchitecture)" />
+      <DirsToClean Include="$(InternalNupkgCacheDir)" />
     </ItemGroup>
 
     <RemoveDir Directories="@(DirsToClean)" />
@@ -48,6 +50,11 @@
       <RestoreTestSource Include="$(ArtifactsShippingPackagesDir)" Key="artifacts-shipping-packages" />
       <RestoreTestSource Include="$(ArtifactsNonShippingPackagesDir)" Key="artifacts-nonshipping-packages" />
       <RestoreTestSource Include="$(TestStabilizedLegacyPackagesDir)" Key="stabilized-legacy-packages" />
+
+      <RestoreTestSource
+        Condition="'$(ContinuousIntegrationBuild)' == 'true'"
+        Include="$(InternalNupkgCacheDir)"
+        Key="internal-nupkg-cache-packages" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -58,12 +65,44 @@
       <TestRestoreNuGetConfigContent>$([System.IO.File]::ReadAllText('$(TemplateNuGetConfigFile)').Replace(
         '&lt;!-- TEST_RESTORE_SOURCES_INSERTION_LINE --&gt;',
         '$(RestoreTestSourceConfigLines)'))</TestRestoreNuGetConfigContent>
+
+      <!--
+        Remove Azure DevOps feeds from NuGet.Config because they may require authenticated restore,
+        which is too flaky to use in test restore. See also
+        CopyPotentiallyInternalPackagesForTestRestore. https://github.com/dotnet/arcade/issues/3932
+      -->
+      <TestRestoreNuGetConfigContent>$([System.Text.RegularExpressions.Regex]::Replace(
+        '$(TestRestoreNuGetConfigContent)',
+        '&lt;add key=".+" value="https://pkgs.dev.azure.com/dnceng/.+" /&gt;',
+        ''))</TestRestoreNuGetConfigContent>
     </PropertyGroup>
 
     <WriteLinesToFile
       File="$(TestRestoreNuGetConfigFile)"
       Lines="$(TestRestoreNuGetConfigContent)"
       Overwrite="true" />
+  </Target>
+
+  <!--
+    Workaround for NuGet flakiness during authenticated restore.
+    https://github.com/dotnet/arcade/issues/3932
+
+    The initial Arcade restore is stable enough to grab internal packages, but running restore
+    against an authenticated feed for the test projects is too flaky. Luckily, the Arcade restore
+    happens to include all the packages the test projects requires, so as a workaround, we can copy
+    all nupkgs from the Arcade restore into a directory to use as a source for the test projects.
+  -->
+  <Target Name="CopyPotentiallyInternalPackagesForTestRestore"
+          Condition="'$(ContinuousIntegrationBuild)' == 'true'">
+    <Message
+      Importance="High"
+      Text="Copying all nupkgs in package cache to a local source for test restore..." />
+
+    <ItemGroup>
+      <PackageCacheNupkgFile Include="$(PackagesDir)*\*\*.nupkg" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(PackageCacheNupkgFile)" DestinationFolder="$(InternalNupkgCacheDir)" />
   </Target>
 
   <Target Name="PrepareStabilizedLegacyPackages"

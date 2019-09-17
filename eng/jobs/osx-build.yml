@@ -21,6 +21,10 @@ jobs:
       /p:Configuration=$(_BuildConfig)
       /p:PortableBuild=true
   steps:
+
+  - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+    - task: NuGetAuthenticate@0
+
   - script: >-
       $(Build.SourcesDirectory)/build.sh --ci --test
       /p:OfficialBuildId=$(OfficialBuildId)

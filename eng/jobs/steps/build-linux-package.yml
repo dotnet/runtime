@@ -21,7 +21,7 @@ steps:
 - script: |
     set -x
     df -h
-    $(DockerRunMSBuild) ${{ parameters.image }} ./build.sh \
+    $(DockerRunMSBuild) ${{ parameters.image }} $(BuildScript) \
       --ci \
       /p:Subset=Installer \
       /p:UsePrebuiltPortableBinariesForInstallers=true \
