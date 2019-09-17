@@ -1023,18 +1023,30 @@ namespace Internal.JitInterface
                 //    (c) constraint calls that require runtime context lookup are never resolved 
                 //        to underlying shared generic code
 
+                const CORINFO_CALLINFO_FLAGS LdVirtFtnMask = CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN | CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT;
+                bool unresolvedLdVirtFtn = ((flags & LdVirtFtnMask) == LdVirtFtnMask) && !resolvedCallVirt;
+
                 if (((pResult->exactContextNeedsRuntimeLookup && useInstantiatingStub && (!allowInstParam || resolvedConstraint)) || forceUseRuntimeLookup)
                     && entityFromContext(pResolvedToken.tokenContext) is MethodDesc methodDesc && methodDesc.IsSharedByGenericInstantiations)
                 {
-                    // Handle invalid IL - see comment in code:CEEInfo::ComputeRuntimeLookupForSharedGenericToken
-                    pResult->kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
+                    if (unresolvedLdVirtFtn)
+                    {
+                        // Compensate for always treating delegates as direct calls above.
+                        // Dictionary lookup is computed in embedGenericHandle as part of the LDVIRTFTN code sequence
+                        pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;
+                    }
+                    else
+                    {
+                        // Handle invalid IL - see comment in code:CEEInfo::ComputeRuntimeLookupForSharedGenericToken
+                        pResult->kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
 
-                    // For reference types, the constrained type does not affect method resolution
-                    DictionaryEntryKind entryKind = (constrainedType != null && constrainedType.IsValueType
-                        ? DictionaryEntryKind.ConstrainedMethodEntrySlot
-                        : DictionaryEntryKind.MethodEntrySlot);
+                        // For reference types, the constrained type does not affect method resolution
+                        DictionaryEntryKind entryKind = (constrainedType != null && constrainedType.IsValueType
+                            ? DictionaryEntryKind.ConstrainedMethodEntrySlot
+                            : DictionaryEntryKind.MethodEntrySlot);
 
-                    ComputeRuntimeLookupForSharedGenericToken(entryKind, ref pResolvedToken, pConstrainedResolvedToken, targetMethod, ref pResult->codePointerOrStubLookup);
+                        ComputeRuntimeLookupForSharedGenericToken(entryKind, ref pResolvedToken, pConstrainedResolvedToken, targetMethod, ref pResult->codePointerOrStubLookup);
+                    }
                 }
                 else
                 {
@@ -1047,9 +1059,7 @@ namespace Internal.JitInterface
                     pResult->kind = CORINFO_CALL_KIND.CORINFO_CALL;
 
                     // Compensate for always treating delegates as direct calls above
-                    if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0 &&
-                        (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0 &&
-                        !resolvedCallVirt)
+                    if (unresolvedLdVirtFtn)
                     {
                         pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;
                     }
