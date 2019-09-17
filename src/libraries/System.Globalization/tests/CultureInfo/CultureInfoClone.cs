@@ -25,5 +25,16 @@ namespace System.Globalization.Tests
             Assert.Equal(culture, clone);
             Assert.NotSame(clone, culture);
         }
+
+        [Fact]
+        public void TestCalendarAfterCloning()
+        {
+            CultureInfo ci = new CultureInfo("en-US");
+            Assert.Same(ci.Calendar, ci.DateTimeFormat.Calendar);
+            CultureInfo ci1 = (CultureInfo) ci.Clone();
+            Assert.Same(ci1.Calendar, ci1.DateTimeFormat.Calendar);
+            Assert.NotSame(ci.Calendar, ci1.Calendar);
+            Assert.NotSame(((CultureInfo)(ci.Clone())).Calendar, ((CultureInfo)(ci.Clone())).Calendar);
+        }
     }
 }
