@@ -2,14 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Text;
+using System.Diagnostics;
+
 namespace System.Xml.Schema
 {
-    using System;
-    using System.Collections;
-    using System.Globalization;
-    using System.Text;
-    using System.Diagnostics;
-
     internal sealed class Compiler : BaseProcessor
     {
         private string _restrictionErrorMsg;
@@ -21,7 +22,7 @@ namespace System.Xml.Schema
         private readonly XmlSchemaObjectTable _notations = new XmlSchemaObjectTable();
         private readonly XmlSchemaObjectTable _examplars = new XmlSchemaObjectTable();
         private readonly XmlSchemaObjectTable _identityConstraints = new XmlSchemaObjectTable();
-        private readonly Stack _complexTypeStack = new Stack();
+        private readonly Stack<XmlSchemaComplexType> _complexTypeStack = new Stack<XmlSchemaComplexType>();
         private readonly Hashtable _schemasToCompile = new Hashtable();
 
         private readonly XmlSchema _schemaForSchema;
@@ -228,7 +229,7 @@ namespace System.Xml.Schema
             }
             while (_complexTypeStack.Count > 0)
             {
-                XmlSchemaComplexType type = (XmlSchemaComplexType)_complexTypeStack.Pop();
+                XmlSchemaComplexType type = _complexTypeStack.Pop();
                 CompileComplexTypeElements(type);
             }
 

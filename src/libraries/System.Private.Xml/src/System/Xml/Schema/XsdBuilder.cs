@@ -634,7 +634,7 @@ namespace System.Xml.Schema
         private XsdEntry _nextEntry;
         private bool _hasChild;
         private readonly HWStack _stateHistory = new HWStack(STACK_INCREMENT);
-        private readonly Stack _containerStack = new Stack();
+        private readonly Stack<XmlSchemaObject> _containerStack = new Stack<XmlSchemaObject>();
         private readonly XmlNameTable _nameTable;
         private readonly SchemaNames _schemaNames;
         private readonly XmlNamespaceManager _namespaceManager;
@@ -846,7 +846,7 @@ namespace System.Xml.Schema
 
         private XmlSchemaObject ParentContainer
         {
-            get { return (XmlSchemaObject)_containerStack.Peek(); }
+            get { return _containerStack.Peek(); }
         }
 
         private XmlSchemaObject GetContainer(State state)

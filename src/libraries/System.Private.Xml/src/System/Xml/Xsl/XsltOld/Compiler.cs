@@ -2,26 +2,26 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Reflection;
+using System.Runtime.Versioning;
+using System.Security;
+using System.Text;
+using System.Xml;
+using System.Xml.XPath;
+using System.Xml.Xsl.Runtime;
+using System.Xml.Xsl.XsltOld.Debugger;
+using MS.Internal.Xml.XPath;
+using KeywordsTable = System.Xml.Xsl.Xslt.KeywordsTable;
+
 namespace System.Xml.Xsl.XsltOld
 {
-    using System;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.Xml;
-    using System.Xml.XPath;
-    using System.Xml.Xsl.Runtime;
-    using MS.Internal.Xml.XPath;
-    using System.Xml.Xsl.XsltOld.Debugger;
-    using System.Text;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Collections.Specialized;
-    using System.IO;
-    using System.Reflection;
-    using System.Security;
-    using KeywordsTable = System.Xml.Xsl.Xslt.KeywordsTable;
-    using System.Runtime.Versioning;
-
     internal class Sort
     {
         internal int select;
@@ -73,7 +73,7 @@ namespace System.Xml.Xsl.XsltOld
 
         //
         // Current import stack
-        private Stack _stylesheets;
+        private Stack<Stylesheet> _stylesheets;
 
         private readonly HybridDictionary _documentURIs = new HybridDictionary();
 
@@ -659,12 +659,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void PushStylesheet(Stylesheet stylesheet)
         {
-            if (_stylesheets == null)
-            {
-                _stylesheets = new Stack();
-            }
-            Debug.Assert(_stylesheets != null);
-
+            _stylesheets ??= new Stack<Stylesheet>();
             _stylesheets.Push(stylesheet);
             this.stylesheet = stylesheet;
         }
@@ -672,8 +667,8 @@ namespace System.Xml.Xsl.XsltOld
         internal Stylesheet PopStylesheet()
         {
             Debug.Assert(this.stylesheet == _stylesheets.Peek());
-            Stylesheet stylesheet = (Stylesheet)_stylesheets.Pop();
-            this.stylesheet = (Stylesheet)_stylesheets.Peek();
+            Stylesheet stylesheet = _stylesheets.Pop();
+            this.stylesheet = _stylesheets.Peek();
             return stylesheet;
         }
 

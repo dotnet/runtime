@@ -5,9 +5,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Text;
-using System.Diagnostics;
 
 namespace System.Xml.Schema
 {
@@ -1080,7 +1080,7 @@ namespace System.Xml.Schema
     {
         private SymbolsDictionary _symbols;
         private Positions _positions;
-        private Stack _stack;                        // parsing context
+        private Stack<SyntaxTreeNode> _stack;                        // parsing context
         private SyntaxTreeNode _contentNode;         // content model points to syntax tree
         private bool _isPartial;                     // whether the closure applies to partial or the whole node that is on top of the stack
         private int _minMaxNodesCount;
@@ -1117,7 +1117,7 @@ namespace System.Xml.Schema
         {
             _symbols = new SymbolsDictionary();
             _positions = new Positions();
-            _stack = new Stack();
+            _stack = new Stack<SyntaxTreeNode>();
         }
 
         public void OpenGroup()
@@ -1127,7 +1127,7 @@ namespace System.Xml.Schema
 
         public void CloseGroup()
         {
-            SyntaxTreeNode node = (SyntaxTreeNode)_stack.Pop();
+            SyntaxTreeNode node = _stack.Pop();
             if (node == null)
             {
                 return;
@@ -1192,7 +1192,7 @@ namespace System.Xml.Schema
 
         public void AddChoice()
         {
-            SyntaxTreeNode node = (SyntaxTreeNode)_stack.Pop();
+            SyntaxTreeNode node = _stack.Pop();
             InteriorNode choice = new ChoiceNode();
             choice.LeftChild = node;
             _stack.Push(choice);
@@ -1200,7 +1200,7 @@ namespace System.Xml.Schema
 
         public void AddSequence()
         {
-            SyntaxTreeNode node = (SyntaxTreeNode)_stack.Pop();
+            SyntaxTreeNode node = _stack.Pop();
             InteriorNode sequence = new SequenceNode();
             sequence.LeftChild = node;
             _stack.Push(sequence);
@@ -1242,7 +1242,7 @@ namespace System.Xml.Schema
         {
             if (_stack.Count > 0)
             {
-                SyntaxTreeNode topNode = (SyntaxTreeNode)_stack.Pop();
+                SyntaxTreeNode topNode = _stack.Pop();
                 InteriorNode inNode = topNode as InteriorNode;
                 if (_isPartial && inNode != null)
                 {
@@ -1520,7 +1520,7 @@ namespace System.Xml.Schema
             stateTable.Add(new BitSet(positionsCount), -1);
 
             // lists unmarked states
-            Queue unmarked = new Queue();
+            var unmarked = new Queue<BitSet>();
 
             // initially, the only unmarked state in Dstates is firstpo(root)
             int state = 0;
@@ -1531,7 +1531,7 @@ namespace System.Xml.Schema
             // while there is an umnarked state T in Dstates do begin
             while (unmarked.Count > 0)
             {
-                BitSet statePosSet = (BitSet)unmarked.Dequeue(); // all positions that constitute DFA state
+                BitSet statePosSet = unmarked.Dequeue(); // all positions that constitute DFA state
                 Debug.Assert(state == (int)stateTable[statePosSet]); // just make sure that statePosSet is for correct state
                 int[] transition = (int[])transitionTable[state];
                 if (statePosSet[endMarkerPos])
