@@ -51,7 +51,7 @@ void
 mono_llvm_dump_value (LLVMValueRef value)
 {
 	/* Same as LLVMDumpValue (), but print to stdout */
-	outs () << (*unwrap<Value> (value));
+	outs () << (*unwrap<Value> (value)) << "\n";
 	fflush (stdout);
 }
 

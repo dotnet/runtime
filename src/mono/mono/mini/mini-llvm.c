@@ -3578,9 +3578,16 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 			/* The IR treats these as variables with addresses */
 			ctx->addresses [reg] = LLVMGetParam (ctx->lmethod, pindex);
 			break;
-		default:
-			ctx->values [reg] = convert_full (ctx, ctx->values [reg], llvm_type_to_stack_type (cfg, type_to_llvm_type (ctx, ainfo->type)), type_is_unsigned (ctx, ainfo->type));
+		default: {
+			LLVMTypeRef t;
+			/* Needed to avoid phi argument mismatch errors since operations on pointers produce i32/i64 */
+			if (ainfo->type->byref)
+				t = IntPtrType ();
+			else
+				t = type_to_llvm_type (ctx, ainfo->type);
+			ctx->values [reg] = convert_full (ctx, ctx->values [reg], llvm_type_to_stack_type (cfg, t), type_is_unsigned (ctx, ainfo->type));
 			break;
+		}
 		}
 	}
 	g_free (names);
