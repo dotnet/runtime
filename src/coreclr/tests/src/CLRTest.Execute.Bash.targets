@@ -281,8 +281,8 @@ $(BashLinkerTestCleanupCmds)
       ]]></BashCLRTestLaunchCmds>
       <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'RunOnly'"><![CDATA[
 $(BashCLRTestLaunchCmds)
-echo export CDPATH="$%28dirname "$0")"
-export CDPATH="$%28dirname "$0")"
+echo export CDPATH="$%28dirname "${BASH_SOURCE[0]}")"
+export CDPATH="$%28dirname "${BASH_SOURCE[0]}")"
 echo /usr/bin/env bash $(InputAssemblyName) %24(printf "'%s' " "${CLRTestExecutionArguments[@]}")
 /usr/bin/env bash $(InputAssemblyName) "${CLRTestExecutionArguments[@]}"
 CLRTestExitCode=$?
@@ -371,7 +371,7 @@ ReleaseLock()
         return 3
     fi
 }
-cd "$%28dirname "$0")"
+cd "$%28dirname "${BASH_SOURCE[0]}")"
 LockFile="lock"
 
 

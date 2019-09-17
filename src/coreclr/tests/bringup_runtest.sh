@@ -448,7 +448,6 @@ function create_testhost
     fi
 
     # Initialize test variables
-    local buildToolsDir=$coreClrSrc/Tools
     local dotnetExe=$coreClrSrc/dotnet.sh
     local coreClrSrcTestDir=$coreClrSrc/tests
     
@@ -616,14 +615,14 @@ function read_array {
 
 function load_unsupported_tests {
     # Load the list of tests that are not supported on this platform. These tests are disabled (skipped) permanently.
-    unsupportedTests=($(read_array "$(dirname "$0")/testsUnsupportedOutsideWindows.txt"))
-    unsupportedTests+=($(read_array "$(dirname "$0")/testsUnsupported.$ARCH.txt"))
+    unsupportedTests=($(read_array "$(dirname "${BASH_SOURCE[0]}")/testsUnsupportedOutsideWindows.txt"))
+    unsupportedTests+=($(read_array "$(dirname "${BASH_SOURCE[0]}")/testsUnsupported.$ARCH.txt"))
 }
 
 function load_failing_tests {
     # Load the list of tests that fail on this platform. These tests are disabled (skipped) temporarily, pending investigation.
-    failingTests=($(read_array "$(dirname "$0")/testsFailingOutsideWindows.txt"))
-    failingTests+=($(read_array "$(dirname "$0")/testsFailing.$ARCH.txt"))
+    failingTests=($(read_array "$(dirname "${BASH_SOURCE[0]}")/testsFailingOutsideWindows.txt"))
+    failingTests+=($(read_array "$(dirname "${BASH_SOURCE[0]}")/testsFailing.$ARCH.txt"))
 }
 
 function load_playlist_tests {

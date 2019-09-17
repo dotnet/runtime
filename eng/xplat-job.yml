@@ -108,7 +108,7 @@ jobs:
     variables:
     - name: buildConfig
       value: ${{ parameters.buildConfig }}
-        
+
     - ${{ if eq(parameters.buildConfig, 'checked') }}:
       - name: buildConfigUpper
         value: 'Checked'
@@ -132,7 +132,7 @@ jobs:
 
     - name: osSubgroup
       value: ${{ parameters.osSubgroup }}
-      
+
     - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - name: _HelixSource
         value: official/dotnet/coreclr/$(Build.SourceBranch)

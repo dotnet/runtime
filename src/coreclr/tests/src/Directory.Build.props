@@ -3,4 +3,7 @@
        We include the dir.props for them here so they partake in the old 
        style of build without them needing to explicitly include anything -->
   <Import Project="dir.props" Condition="'$(UsingMicrosoftNETSdk)' == 'true'"  />
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
 </Project>

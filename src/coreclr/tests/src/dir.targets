@@ -64,10 +64,6 @@
     </ProjectReference>
   </ItemGroup>
         
-  <PropertyGroup>
-    <ErrorIfBuildToolsRestoredFromIndividualProject Condition="!Exists('$(ToolsDir)')">true</ErrorIfBuildToolsRestoredFromIndividualProject>
-  </PropertyGroup>
-  
   <Import Project="..\dir.targets" />
 
   <!-- Determine if this project should be built or not -->
@@ -88,11 +84,6 @@
  
   <!-- RunOnly projects have a special build for dependent projects -->
   <Import Project="runonly.targets" Condition="'$(CLRTestKind)' == 'RunOnly'" />
-  
-  <!-- We will use an imported build here in the instance that we're a non-sdk style project, have source that we need to build, and we are the correct priority...OR if we are being asked to build for
-  a test with a higher priority. -->
-  <Import Project="$(ToolsDir)Build.Common.targets" Condition="('$(UsingMicrosoftNETSdk)' != 'true') And ('$(CLRTestKind)'!='RunOnly') And $(_CLRTestCompilesSource) And ('$(_WillCLRTestProjectBuild)' == 'true')"/>
-
 
   <Import Project="..\override.targets" Condition="Exists('..\override.targets')"/>
 

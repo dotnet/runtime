@@ -120,6 +120,16 @@
     <TargetRid Condition="'$(TargetRid)' == ''">$(TestNugetRuntimeId)</TargetRid>
   </PropertyGroup>
 
+  <!-- The IL SDK adds a packagereference to the native ilasm package,
+       but does not detect musl or rhel, so we set the RID
+       ourselves. If we passed in a proper host RID from the build
+       scripts, we could also use that instead of relying on the IL
+       SDK RID detection. -->
+  <PropertyGroup>
+    <MicrosoftNetCoreIlasmPackageRuntimeId Condition=" '$(TargetRid)' == 'linux-musl-x64' ">$(TargetRid)</MicrosoftNetCoreIlasmPackageRuntimeId>
+    <MicrosoftNetCoreIlasmPackageRuntimeId Condition=" '$(TargetRid)' == 'rhel.6-x64' ">$(TargetRid)</MicrosoftNetCoreIlasmPackageRuntimeId>
+  </PropertyGroup>
+
   <PropertyGroup>
     <TargetsUnknownUnix Condition="'$(TargetsUnix)' == 'true' AND '$(OSGroup)' != 'FreeBSD' AND '$(OSGroup)' != 'Linux' AND '$(OSGroup)' != 'OSX'">true</TargetsUnknownUnix>
     <Language Condition="'$(Language)' == '' and  '$(MSBuildProjectExtension)' == '.csproj'">C#</Language>
@@ -135,14 +145,13 @@
   <PropertyGroup>
     <ZapRequire Condition="'$(ZapRequire)' == ''">2</ZapRequire>
   </PropertyGroup>
-  
+
   <PropertyGroup>
     <RestoreOutputPath>$(MSBuildProjectDirectory)\obj</RestoreOutputPath>
 
     <!-- Specify the target framework of the common test dependency project.json. -->
     <NuGetTargetMoniker>.NETCoreApp,Version=v5.0</NuGetTargetMoniker>
     <NuGetTargetMonikerShort>netcoreapp5.0</NuGetTargetMonikerShort>
-    <PrereleaseResolveNuGetPackages>true</PrereleaseResolveNuGetPackages>
   </PropertyGroup>
 
 </Project>
