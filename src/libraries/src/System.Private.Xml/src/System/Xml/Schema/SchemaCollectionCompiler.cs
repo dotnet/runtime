@@ -2,19 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.Text;
+
 namespace System.Xml.Schema
 {
-    using System;
-    using System.Collections;
-    using System.Globalization;
-    using System.Text;
-    using System.Diagnostics;
-
     internal sealed class SchemaCollectionCompiler : BaseProcessor
     {
         private bool _compileContentModel;
         private readonly XmlSchemaObjectTable _examplars = new XmlSchemaObjectTable();
-        private readonly Stack _complexTypeStack = new Stack();
+        private readonly Stack<XmlSchemaComplexType> _complexTypeStack = new Stack<XmlSchemaComplexType>();
         private XmlSchema _schema;
 
         public SchemaCollectionCompiler(XmlNameTable nameTable, ValidationEventHandler eventHandler)
@@ -237,7 +238,7 @@ namespace System.Xml.Schema
             }
             while (_complexTypeStack.Count > 0)
             {
-                XmlSchemaComplexType type = (XmlSchemaComplexType)_complexTypeStack.Pop();
+                XmlSchemaComplexType type = _complexTypeStack.Pop();
                 CompileCompexTypeElements(type);
             }
             foreach (XmlSchemaType type in _schema.SchemaTypes.Values)
