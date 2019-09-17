@@ -170,23 +170,11 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\FailedProxyCache.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\IMultiWebProxy.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\MultiProxy.cs" />
-    <Compile Include="$(CommonPath)\CoreLib\System\Collections\Concurrent\ConcurrentQueueSegment.cs">
-      <Link>Common\CoreLib\System\Collections\Concurrent\ConcurrentQueueSegment.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Internal\Padding.cs">
-      <Link>Common\Internal\Padding.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Net\NTAuthentication.Common.cs">
       <Link>Common\System\Net\NTAuthentication.Common.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\ContextFlagsPal.cs">
       <Link>Common\System\Net\ContextFlagsPal.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\LazyAsyncResult.cs">
-      <Link>Common\System\Net\LazyAsyncResult.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.cs">
-      <Link>Common\System\Net\ContextAwareResult.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\SecurityStatusPal.cs">
       <Link>Common\System\Net\SecurityStatusPal.cs</Link>
@@ -229,9 +217,6 @@
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' And '$(TargetGroup)' == 'netcoreapp'">
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.Unix.cs" />
-    <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.Unix.cs">
-      <Link>Common\System\Net\ContextAwareResult.Unix.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Net\ContextFlagsAdapterPal.Unix.cs">
       <Link>Common\System\Net\ContextFlagsAdapterPal.Unix.cs</Link>
     </Compile>
@@ -330,9 +315,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\Security\SecurityContextTokenHandle.cs">
       <Link>Common\System\Net\Security\SecurityContextTokenHandle.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.Windows.cs">
-      <Link>Common\System\Net\ContextAwareResult.Windows.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\SecurityStatusAdapterPal.Windows.cs">
       <Link>Common\System\Net\SecurityStatusAdapterPal.Windows.cs</Link>
