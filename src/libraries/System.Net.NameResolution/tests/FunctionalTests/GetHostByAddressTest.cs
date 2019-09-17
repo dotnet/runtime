@@ -12,7 +12,6 @@ namespace System.Net.NameResolution.Tests
     public class GetHostByAddressTest
     {
         [Fact]
-
         public void DnsObsoleteGetHostByAddress_BadIPString_Throws()
         {
             Assert.Throws<FormatException>(() => Dns.GetHostByAddress("badIPString"));

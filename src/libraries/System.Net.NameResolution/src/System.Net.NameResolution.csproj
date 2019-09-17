@@ -5,9 +5,8 @@
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System\Net\DNS.cs" />
+    <Compile Include="System\Net\Dns.cs" />
     <Compile Include="System\Net\IPHostEntry.cs" />
-    <Compile Include="System\Net\NameResolutionUtilities.cs" />
     <Compile Include="System\Net\NetEventSource.NameResolution.cs" />
     <!-- Logging -->
     <Compile Include="$(CommonPath)\System\Net\Logging\DebugThreadTracking.cs">
@@ -19,13 +18,10 @@
     <Compile Include="$(CommonPath)\System\Net\InternalException.cs">
       <Link>Common\System\Net\InternalException.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\CoreLib\System\Threading\Tasks\TaskToApm.cs</Link>
+    </Compile>
     <!-- System.Net common -->
-    <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.cs">
-      <Link>Common\System\Net\ContextAwareResult.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\LazyAsyncResult.cs">
-      <Link>Common\System\Net\LazyAsyncResult.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Net\Sockets\ProtocolType.cs">
       <Link>Common\System\Net\Sockets\ProtocolType.cs</Link>
     </Compile>
@@ -41,15 +37,11 @@
     <Compile Include="$(CommonPath)\System\Net\ByteOrder.cs">
       <Link>Common\System\Net\ByteOrder.cs</Link>
     </Compile>
-    <Compile Include="System\Net\DnsResolveAsyncResult.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
     <Compile Include="System\Net\NameResolutionPal.Windows.cs" />
     <Compile Include="System\Net\NameResolutionPal.Win32.cs" Condition="'$(TargetGroup)' != 'uap'" />
     <Compile Include="System\Net\NameResolutionPal.Uap.cs" Condition="'$(TargetGroup)' == 'uap'" />
-    <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.Windows.cs">
-      <Link>Common\System\Net\ContextAwareResult.Windows.cs</Link>
-    </Compile>
     <!-- Debug only -->
     <Compile Include="$(CommonPath)\System\Net\DebugSafeHandle.cs">
       <Link>Common\System\Net\DebugSafeHandle.cs</Link>
@@ -71,9 +63,6 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\AddressInfo.cs">
-      <Link>Interop\Windows\WinSock\AddressInfo.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\WinSock\AddressInfoHints.cs">
       <Link>Interop\Windows\WinSock\AddressInfoHints.cs</Link>
     </Compile>
@@ -92,9 +81,6 @@
     <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.GetAddrInfoW.cs">
       <Link>Interop\Windows\WinSock\Interop.GetAddrInfoW.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.freeaddrinfo.cs">
-      <Link>Interop\Windows\Winsock\Interop.freeaddinfo.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.WSAStartup.cs">
       <Link>Interop\Windows\WinSock\Interop.WSAStartup.cs</Link>
     </Compile>
@@ -106,12 +92,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\Sockets\ProtocolFamily.cs">
       <Link>Common\System\Net\Sockets\ProtocolFamily.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\SafeFreeAddrInfo.cs">
-      <Link>Interop\Windows\WinSock\SafeFreeAddrInfo.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\AddressInfoEx.cs">
-      <Link>Interop\Windows\WinSock\AddressInfoEx.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.GetAddrInfoExW.cs">
       <Link>Interop\Windows\WinSock\Interop.GetAddrInfoExW.cs</Link>
@@ -131,9 +111,6 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="System\Net\NameResolutionPal.Unix.cs" />
-    <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.Unix.cs">
-      <Link>Common\System\Net\ContextAwareResult.Unix.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Net\InteropIPAddressExtensions.Unix.cs">
       <Link>Common\System\Net\InteropIPAddressExtensions.Unix.cs</Link>
     </Compile>
@@ -198,5 +175,6 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Overlapped" />
     <Reference Include="System.Threading.Tasks" />
+    <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
 </Project>
