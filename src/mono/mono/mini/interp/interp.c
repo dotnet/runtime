@@ -5850,7 +5850,6 @@ common_vcall:
 
 			g_assert (sp >= frame->stack);
 			sp = frame->stack; /* spec says stack should be empty at endfinally so it should be at the start too */
-			vt_sp = (unsigned char*)sp + frame->imethod->stack_size;
 
 			frame->ip = ip;
 
@@ -5901,6 +5900,8 @@ common_vcall:
 			if (old_list != finally_ips && finally_ips) {
 				ip = (const guint16*)finally_ips->data;
 				finally_ips = g_slist_remove (finally_ips, ip);
+				// we set vt_sp later here so we relieve stack pressure
+				vt_sp = (unsigned char*)sp + frame->imethod->stack_size;
 				// goto main_loop instead of MINT_IN_DISPATCH helps the compiler and therefore conserves stack.
 				// This is a slow/rare path and conserving stack is preferred over its performance otherwise.
 				goto main_loop;
