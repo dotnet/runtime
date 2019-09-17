@@ -12,18 +12,18 @@ namespace System
 {
 	internal static class TypeNameParser
 	{
-        static readonly char[] SPECIAL_CHARS = {',', '[', ']', '&', '*', '+', '\\'};
+		static readonly char[] SPECIAL_CHARS = {',', '[', ']', '&', '*', '+', '\\'};
 
-        internal static Type GetType (
-            string typeName,
-            Func<AssemblyName, Assembly> assemblyResolver,
-            Func<Assembly, string, bool, Type> typeResolver,
-            bool throwOnError,
-            bool ignoreCase,
-            ref StackCrawlMark stackMark)
+		internal static Type GetType (
+			string typeName,
+			Func<AssemblyName, Assembly> assemblyResolver,
+			Func<Assembly, string, bool, Type> typeResolver,
+			bool throwOnError,
+			bool ignoreCase,
+			ref StackCrawlMark stackMark)
 		{
-            if (typeName == null)
-                throw new ArgumentNullException (nameof (typeName));
+			if (typeName == null)
+				throw new ArgumentNullException (nameof (typeName));
 
 			ParsedName pname = ParseName (typeName, false, 0, out int end_pos);
 			if (pname == null) {
@@ -37,11 +37,11 @@ namespace System
 
 		static Type ConstructType (
 			ParsedName pname,
-            Func<AssemblyName, Assembly> assemblyResolver,
-            Func<Assembly, string, bool, Type> typeResolver,
-            bool throwOnError,
-            bool ignoreCase,
-            ref StackCrawlMark stackMark)
+			Func<AssemblyName, Assembly> assemblyResolver,
+			Func<Assembly, string, bool, Type> typeResolver,
+			bool throwOnError,
+			bool ignoreCase,
+			ref StackCrawlMark stackMark)
 		{
 			// Resolve assembly
 			Assembly assembly = null;
@@ -53,8 +53,8 @@ namespace System
 			}
 
 			// Resolve base type
-            var type = ResolveType (assembly, pname.Names, typeResolver, throwOnError, ignoreCase, ref stackMark);
-            if (type == null)
+			var type = ResolveType (assembly, pname.Names, typeResolver, throwOnError, ignoreCase, ref stackMark);
+			if (type == null)
 				return null;
 
 			// Resolve type arguments
@@ -103,11 +103,11 @@ namespace System
 		{
 			var aname = new AssemblyName (name);
 
-            if (assemblyResolver == null) {
+			if (assemblyResolver == null) {
 				if (throwOnError) {
 					return Assembly.Load (aname, ref stackMark, null);
 				} else {
-                    try {
+					try {
 						return Assembly.Load (aname, ref stackMark, null);
 					} catch (FileNotFoundException) {
 						return null;
@@ -115,37 +115,37 @@ namespace System
 				}
 			} else {
 				var assembly = assemblyResolver (aname);
-                if (assembly == null && throwOnError)
-                    throw new FileNotFoundException (SR.FileNotFound_ResolveAssembly, name);
+				if (assembly == null && throwOnError)
+					throw new FileNotFoundException (SR.FileNotFound_ResolveAssembly, name);
 				return assembly;
 			}
 		}
 
-        static Type ResolveType (Assembly assembly, List<string> names, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark)
+		static Type ResolveType (Assembly assembly, List<string> names, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark)
 		{
-            Type type = null;
+			Type type = null;
 
-            string name = EscapeTypeName (names [0]);
-            // Resolve the top level type.
-            if (typeResolver != null) {
-                type = typeResolver (assembly, name, ignoreCase);
-                if (type == null && throwOnError) {
+			string name = EscapeTypeName (names [0]);
+			// Resolve the top level type.
+			if (typeResolver != null) {
+				type = typeResolver (assembly, name, ignoreCase);
+				if (type == null && throwOnError) {
 					if (assembly == null)
 						throw new TypeLoadException (SR.Format (SR.TypeLoad_ResolveType, name));
 					else
 						throw new TypeLoadException (SR.Format (SR.TypeLoad_ResolveTypeFromAssembly, name, assembly.FullName));
 				}
 			} else {
-                if (assembly == null)
-                    type = RuntimeType.GetType (name, throwOnError, ignoreCase, false, ref stackMark);
-                else
-                    type = assembly.GetType (name, throwOnError, ignoreCase);
+				if (assembly == null)
+					type = RuntimeType.GetType (name, throwOnError, ignoreCase, false, ref stackMark);
+				else
+					type = assembly.GetType (name, throwOnError, ignoreCase);
 			}
 
 			if (type == null)
 				return null;
 
-            // Resolve nested types.
+			// Resolve nested types.
 			BindingFlags bindingFlags = BindingFlags.NonPublic | BindingFlags.Public;
 			if (ignoreCase)
 				bindingFlags |= BindingFlags.IgnoreCase;
@@ -157,25 +157,25 @@ namespace System
 						throw new TypeLoadException (SR.Format (SR.TypeLoad_ResolveNestedType, names[i], names[i-1]));
 					else
 						break;
-                }
+				}
 			}
 			return type;
 		}
 
-        static string EscapeTypeName (string name)
-        {
-            if (name.IndexOfAny (SPECIAL_CHARS) < 0)
-                return name;
+		static string EscapeTypeName (string name)
+		{
+			if (name.IndexOfAny (SPECIAL_CHARS) < 0)
+				return name;
 
 			var sb = new StringBuilder ();
-            foreach (char c in name) {
-                if (Array.IndexOf<char> (SPECIAL_CHARS, c) >= 0)
-                    sb.Append ('\\');
-                sb.Append (c);
-            }
+			foreach (char c in name) {
+				if (Array.IndexOf<char> (SPECIAL_CHARS, c) >= 0)
+					sb.Append ('\\');
+				sb.Append (c);
+			}
 
 			return sb.ToString ();
-        }
+		}
 
 		class ParsedName {
 			public List<string> Names;
