@@ -4,7 +4,7 @@
     <TargetFrameworks>netcoreapp3.0;netstandard2.0;netstandard2.1</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
-    <Compile Include="Microsoft.Extensions.DependencyInjection.netcoreapp3.0.cs" />
+    <Compile Include="Microsoft.Extensions.DependencyInjection.netcoreapp.cs" />
     <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions"  />
   </ItemGroup>
 <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
