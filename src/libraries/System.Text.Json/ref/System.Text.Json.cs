@@ -56,6 +56,7 @@ namespace System.Text.Json
     public partial struct JsonArrayEnumerator : System.Collections.Generic.IEnumerator<System.Text.Json.JsonNode>, System.Collections.IEnumerator, System.IDisposable
     {
         private object _dummy;
+        private int _dummyPrimitive;
         public JsonArrayEnumerator(System.Text.Json.JsonArray jsonArray) { throw null; }
         public System.Text.Json.JsonNode Current { get { throw null; } }
         object System.Collections.IEnumerator.Current { get { throw null; } }
@@ -198,6 +199,7 @@ namespace System.Text.Json
     public readonly partial struct JsonEncodedText : System.IEquatable<System.Text.Json.JsonEncodedText>
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public System.ReadOnlySpan<byte> EncodedUtf8Bytes { get { throw null; } }
         public static System.Text.Json.JsonEncodedText Encode(System.ReadOnlySpan<byte> utf8Value, System.Text.Encodings.Web.JavaScriptEncoder encoder = null) { throw null; }
         public static System.Text.Json.JsonEncodedText Encode(System.ReadOnlySpan<char> value, System.Text.Encodings.Web.JavaScriptEncoder encoder = null) { throw null; }
@@ -381,6 +383,7 @@ namespace System.Text.Json
     public partial struct JsonObjectEnumerator : System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, System.Text.Json.JsonNode>>, System.Collections.IEnumerator, System.IDisposable
     {
         private object _dummy;
+        private int _dummyPrimitive;
         public JsonObjectEnumerator(System.Text.Json.JsonObject jsonObject) { throw null; }
         public System.Collections.Generic.KeyValuePair<string, System.Text.Json.JsonNode> Current { get { throw null; } }
         object System.Collections.IEnumerator.Current { get { throw null; } }
@@ -391,6 +394,7 @@ namespace System.Text.Json
     public readonly partial struct JsonProperty
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public string Name { get { throw null; } }
         public System.Text.Json.JsonElement Value { get { throw null; } }
         public bool NameEquals(System.ReadOnlySpan<byte> utf8Text) { throw null; }

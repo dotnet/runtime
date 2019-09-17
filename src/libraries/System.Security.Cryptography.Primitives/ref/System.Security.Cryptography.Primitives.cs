@@ -125,6 +125,7 @@ namespace System.Security.Cryptography
     public readonly partial struct HashAlgorithmName : System.IEquatable<System.Security.Cryptography.HashAlgorithmName>
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public HashAlgorithmName(string name) { throw null; }
         public static System.Security.Cryptography.HashAlgorithmName MD5 { get { throw null; } }
         public string Name { get { throw null; } }

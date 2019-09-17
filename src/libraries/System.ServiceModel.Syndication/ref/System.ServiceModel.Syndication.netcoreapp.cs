@@ -33,6 +33,7 @@ namespace System.ServiceModel.Syndication
     public partial struct XmlDateTimeData
     {
         private object _dummy;
+        private int _dummyPrimitive;
         public XmlDateTimeData(string dateTimeString, System.Xml.XmlQualifiedName elementQualifiedName) { throw null; }
         public string DateTimeString { get { throw null; } }
         public System.Xml.XmlQualifiedName ElementQualifiedName { get { throw null; } }
