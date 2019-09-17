@@ -1,36 +1,33 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+<Project>
+
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
   <PropertyGroup>
       <RestoreOutputPath>$(SourceDir)Common\CoreFX\obj</RestoreOutputPath>
       <Language>C#</Language>
-      <NugetTargetMoniker>.NETCoreApp,Version=v5.0</NugetTargetMoniker>
-      <TargetFramework>netcoreapp5.0</TargetFramework>
-      <ContainsPackageReferences>true</ContainsPackageReferences>
+      <TargetFramework>netcoreapp3.0</TargetFramework>
       <CLRTestKind>SharedLibrary</CLRTestKind>
       <IsTestProject>false</IsTestProject>
       <MicrosoftDiagnosticsRuntimePackageVersion>1.0.5</MicrosoftDiagnosticsRuntimePackageVersion>
+      <OutputType>Library</OutputType>
+      <SelfContained>true</SelfContained>
+      <ProjectDepsFileName>Microsoft.NETCore.App.deps.json</ProjectDepsFileName>
+      <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+      <IncludeMainProjectInDepsFile>false</IncludeMainProjectInDepsFile>
+      <NuGetTargetMoniker>.NETCoreApp,Version=v3.0</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>netcoreapp3.0</NuGetTargetMonikerShort>
+      <GenerateDependencyFile>true</GenerateDependencyFile>
+      <RuntimeFrameworkVersion>$(MicrosoftNETCoreAppVersion)</RuntimeFrameworkVersion>
   </PropertyGroup>
 
   <!-- Switch RuntimeIdentifier according to currently targeted OSGroup -->
   <PropertyGroup>
-      <RuntimeIdentifier Condition="'$(OSGroup)' == 'Windows_NT'">win-$(Platform)</RuntimeIdentifier>
-      <RuntimeIdentifier Condition="'$(OSGroup)' == 'Linux'">linux-$(Platform)</RuntimeIdentifier>
-      <RuntimeIdentifier Condition="'$(OSGroup)' == 'OSX'">osx-$(Platform)</RuntimeIdentifier>
-      <NugetRuntimeIdentifier>$(RuntimeIdentifier)</NugetRuntimeIdentifier>
-
-      <!-- Set AdditionalRestoreArgs so the _DnuRestoreCommandFull in Tools\packageresolve.targets
-           passes these on to 'dotnet restore'. This is needed so all the various dirs.props files
-           set up the target architecture correctly, so $(Platform) above gets set correctly, among
-           other things. (Note that _DnuRestoreCommandFull doesn't properly set
-           TargetGroup/ConfigurationGroup/ArchGroup, and even if they are set, it isn't used by
-           the various dirs.props files.)
-      -->
-      <AdditionalRestoreArgs>/p:__BuildOS=$(__BuildOS) /p:__BuildType=$(__BuildType) /p:__BuildArch=$(__BuildArch)</AdditionalRestoreArgs>
+    <RuntimeIdentifier Condition="'$(OSGroup)' == 'Windows_NT'">win-$(Platform)</RuntimeIdentifier>
+    <RuntimeIdentifier Condition="'$(OSGroup)' == 'Linux'">linux-$(Platform)</RuntimeIdentifier>
+    <RuntimeIdentifier Condition="'$(OSGroup)' == 'OSX'">osx-$(Platform)</RuntimeIdentifier>
   </PropertyGroup>
 
   <ItemGroup>
-
     <!-- Microsoft.Private.CoreFx.OOB is a meta-package that contains references to most of what we need -->
     <PackageReference Include="Microsoft.Private.CoreFx.OOB" Version="$(MicrosoftPrivateCoreFxNETCoreAppVersion)" />
 
@@ -43,13 +40,19 @@
     <!-- hostpolicy.dll -->
     <PackageReference Include="Microsoft.NETCore.DotNetHostPolicy" Version="$(MicrosoftNETCoreAppVersion)" />
 
+    <KnownFrameworkReference Remove="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
   <!-- Target SetupTestingHost needs to run after "AfterResolveReferences" so @(ReferenceCopyLocalPaths) is
        set up, and before "BeforeCompile" because @(ReferenceCopyLocalPaths) is cleared out during the
        compile phase.
   -->
-  <Target Name="SetupTestingHost" AfterTargets="AfterResolveReferences" BeforeTargets="BeforeCompile">
+
+  <Target Name="SetupTestingHost" DependsOnTargets="ResolveAssemblyReferences">
+
+    <MSBuild Projects="$(MSBuildProjectFile)"
+             Targets="Publish"
+             Properties="RuntimeIdentifier=$(RuntimeIdentifier);PublishDir=$(NETCoreAppTestSharedFrameworkPath)" />
 
     <Error Condition="'$(CORE_ROOT)' == ''"
            Text="CORE_ROOT variable is not set." />
@@ -129,9 +132,16 @@
     <Exec Command="chmod +x $(TestHostRootPath)%(DotnetExe.Filename)%(DotnetExe.Extension)" Condition="'$(OSGroup)' != 'Windows_NT'"/>
   </Target>
 
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
-
   <PropertyGroup>
     <ProjectAssetsFile>$(SourceDir)Common\CoreFX\obj\project.assets.json</ProjectAssetsFile>
   </PropertyGroup>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+
+  <Target Name="CoreCompile">
+    <ItemGroup>
+      <IntermediateAssembly Remove="@(IntermediateAssembly)" />
+    </ItemGroup>
+  </Target>
+
 </Project>

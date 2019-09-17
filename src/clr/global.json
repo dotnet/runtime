@@ -1,6 +1,6 @@
 {
   "tools": {
-    "dotnet": "3.0.100-preview6-012264"
+    "dotnet": "3.0.100-preview7-012821"
   },
   "native-tools": {
     "cmake": "3.11.1",
@@ -11,6 +11,6 @@
     "Microsoft.DotNet.Helix.Sdk": "2.0.0-beta.19463.3",
     "Microsoft.Build.NoTargets": "1.0.53",
     "Microsoft.Build.Traversal": "2.0.2",
-    "Microsoft.NET.Sdk.IL": "3.0.0-preview1-27101-02"
+    "Microsoft.NET.Sdk.IL": "5.0.0-alpha1.19413.7"
   }
 }

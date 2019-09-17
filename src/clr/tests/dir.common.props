@@ -4,7 +4,7 @@
   <!-- This file contains common build properties for projects under
        the test tree, and also generated test projects in
        bin/tests. It currently has only those properties that are
-       shared between buildtools test projects and SDK-style test
+       shared between old-style test projects and SDK-style test
        projects. Eventually every test project should build using the
        SDK. Some test projects still bypass this by importing
        tests/dir.props directly - these should eventually go away. -->

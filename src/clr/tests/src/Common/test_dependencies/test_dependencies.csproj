@@ -1,46 +1,27 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <CLRTestKind>BuildOnly</CLRTestKind>
-    <NugetTargetMoniker>.NETCoreApp,Version=v5.0</NugetTargetMoniker>
-    <NugetTargetMonikerShort>netcoreapp5.0</NugetTargetMonikerShort>
     <IsTestProject>false</IsTestProject>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <TargetFramework Condition="'$(SetTFMForRestore)'=='true'">netcoreapp5.0</TargetFramework>
+    <DisableRarCache>true</DisableRarCache>
+    <DisablePackageAssetsCache>true</DisablePackageAssetsCache>
+    <RuntimeIdentifiers>win-arm;win-arm64;win-x64;win-x86;$(TargetRid)</RuntimeIdentifiers>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Private.CoreFx.NETCoreApp">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.Runtime.CompilerServices.Unsafe">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.Security.Permissions">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.Diagnostics.EventLog">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.Drawing.Common">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.Runtime.Intrinsics.Experimental">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.Diagnostics.Tools.RuntimeClient">
-      <Version>$(MicrosoftDiagnosticsToolsRuntimeClientVersion)</Version>
-    </PackageReference>
+    <PackageReference Include="Microsoft.Private.CoreFx.NETCoreApp" Version="$(MicrosoftPrivateCoreFxNETCoreAppVersion)" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="$(MicrosoftPrivateCoreFxNETCoreAppVersion)" />
+    <PackageReference Include="System.Security.Permissions" Version="$(MicrosoftPrivateCoreFxNETCoreAppVersion)" />
+    <PackageReference Include="System.Diagnostics.EventLog" Version="$(MicrosoftPrivateCoreFxNETCoreAppVersion)" />
+    <PackageReference Include="System.Drawing.Common" Version="$(MicrosoftPrivateCoreFxNETCoreAppVersion)" />
+    <PackageReference Include="System.Runtime.Intrinsics.Experimental" Version="$(MicrosoftPrivateCoreFxNETCoreAppVersion)" />
+    <PackageReference Include="Microsoft.Diagnostics.Tools.RuntimeClient" Version="$(MicrosoftDiagnosticsToolsRuntimeClientVersion)" />
   </ItemGroup>
+
+  <Target Name="Build" DependsOnTargets="$(TraversalBuildDependsOn)" />
+
   <PropertyGroup>
-    <TargetFramework>netcoreapp5.0</TargetFramework>
-    <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
-    <PackageTargetFallback>$(PackageTargetFallback);dnxcore50;netcoreapp1.1;portable-net45+win8</PackageTargetFallback>
-    <RuntimeIdentifiers>win-arm;win-arm64;win-x64;win-x86;$(TargetRid)</RuntimeIdentifiers>
-    <ContainsPackageReferences>true</ContainsPackageReferences>
-    <PrereleaseResolveNuGetPackages>false</PrereleaseResolveNuGetPackages>
+    <ProjectAssetsFile>$(SourceDir)Common\test_dependencies\obj\project.assets.json</ProjectAssetsFile>
   </PropertyGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
-  <Target Name="Build"
-     DependsOnTargets="ResolveReferences" />
+
 </Project>

@@ -7,43 +7,15 @@
     <UseSharedCompilation>true</UseSharedCompilation>
   </PropertyGroup>
 
-    <!--
-     Switching to the .NET Core version of the BuildTools tasks seems to break numerous scenarios, such as VS intellisense and resource designer
-     as well as running the build on mono. Until we can get these sorted out we will continue using the .NET 4.5 version of the tasks.
-     
-     It also breaks building any C# project with dotnet.exe on Windows. The windows version of BuildTools doesn't appear to download the .NET Core
-     Roslyn NuGet package which has a Csc task supporting OverrideToolHost, but the default BuildTools CSharpCore targets file does specify 
-     OverrideToolHost. The result is that building anything in C# when RunningOnCore=true on Windows fails in Csc task with a parameter not supported error.
-     
-     Given that the Windows Core scenario is pretty broken on BuildTools it is currently configured not to use BuildTools at all. This allows ad-hoc usage
-     of the dotnet tool to work in the test tree as a developer convenience. Its not clear that we should invest in improving BuildTools Core support and
-     instead we could just move to using dotnet officially.
-     -->  
-  <PropertyGroup>  
-    <RunningOnCore>false</RunningOnCore>
-    <RunningOnCore Condition="'$(MSBuildRuntimeType)' == 'core'">true</RunningOnCore>
-    <BuildToolsTargetsDesktop>false</BuildToolsTargetsDesktop>
-    <BuildToolsTargetsDesktop Condition="'$(RunningOnCore)' != 'true'">true</BuildToolsTargetsDesktop>
-    <BuildToolsTargets45>$(BuildToolsTargetsDesktop)</BuildToolsTargets45>
+  <PropertyGroup>
     <RunningOnUnix Condition="('$(RunningOnUnix)' == '') And ('$(MSBuildRuntimeType)' == 'Core') And ('$(OS)'!='Windows_NT')">true</RunningOnUnix>
-    <UseBuildTools>true</UseBuildTools>
   </PropertyGroup>  
 
   <!-- Common repo directories -->
   <PropertyGroup>
-    <CopyNuGetImplementations Condition="'$(CopyNuGetImplementations)'==''">false</CopyNuGetImplementations>
     <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
     <SourceDir>$(ProjectDir)src\</SourceDir>
     <PackagesDir>$(ProjectDir)..\.packages\</PackagesDir>
-    <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)..\Tools\</ToolsDir>
-    <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ProjectDir)..\.dotnet\</DotnetCliPath>
-    <BuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true'">$(ToolsDir)net46\</BuildToolsTaskDir>
-    <OverrideToolHost Condition="'$(OS)' != 'Windows_NT'">$(DotnetCliPath)dotnet</OverrideToolHost>
-    <!-- We don't use any of MSBuild's resolution logic for resolving the framework, so just set these two properties to any folder that exists to skip
-         the GenerateReferenceAssemblyPaths task (not target) and to prevent it from outputting a warning (MSB3644). -->
-    <_TargetFrameworkDirectories Condition="'$(BuildToolsTargetsDesktop)' != 'true'">$(MSBuildThisFileDirectory)/Documentation</_TargetFrameworkDirectories>
-    <_FullFrameworkReferenceAssemblyPaths Condition="'$(BuildToolsTargetsDesktop)' != 'true'">$(MSBuildThisFileDirectory)/Documentation</_FullFrameworkReferenceAssemblyPaths>
-    <ExcludeSigningImport>true</ExcludeSigningImport>
   </PropertyGroup>
 
   <!-- Common properties -->
@@ -57,14 +29,6 @@
     <TestWorkingDir Condition="'$(__TestWorkingDir)'==''">$(RootBinDir)tests\$(BuildOS).$(BuildArch).$(BuildType)\</TestWorkingDir>
 
     <AltJitArch>$(__AltJitArch)</AltJitArch>
-  </PropertyGroup>
-
-<!-- Default Test platform to deploy the netstandard compiled tests to -->
-  <PropertyGroup>
-    <!-- we default TestTFM and FilterToTestTFM to netcoreapp1.0 if they are not explicity defined -->
-    <DefaultTestTFM Condition="'$(DefaultTestTFM)'==''">netcoreapp1.0</DefaultTestTFM>
-    <TestTFM Condition="'$(TestTFM)'==''">$(DefaultTestTFM)</TestTFM>
-    <FilterToTestTFM Condition="'$(FilterToTestTFM)'==''">$(DefaultTestTFM)</FilterToTestTFM>
   </PropertyGroup>
 
   <!-- Output paths -->
@@ -81,9 +45,6 @@
     <TargetingPackPath Condition="'$(BaseTargetingPackPath)' == ''">$(RootBinDir)TargetingPack\</TargetingPackPath>
   </PropertyGroup>
 
-  <!-- Import Build tools common props file where repo-independent properties are found -->
-  <Import Condition="Exists('$(ToolsDir)Build.Common.props') And '$(UseBuildTools)'=='true'" Project="$(ToolsDir)Build.Common.props" />
-
   <!-- Provides properties for dependency versions and configures dependency verification/auto-upgrade. -->
   <Import Project="$(ProjectDir)..\dependencies.props" />
 
@@ -98,9 +59,6 @@
       $(RestoreSources)
     </RestoreSources>
   </PropertyGroup>
-
-  <!-- Use Roslyn Compilers to build -->
-  <Import Project="$(RoslynPropsFile)" Condition="Exists('$(RoslynPropsFile)')" />
 
   <PropertyGroup Condition="'$(BuildAllProjects)'=='true'">
     <!-- When we do a traversal build we get all packages up front, don't restore them again -->

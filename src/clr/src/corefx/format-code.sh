@@ -11,7 +11,7 @@ else
    exit 1
 fi
 
-cd $(dirname "$0")
+cd $(dirname "${BASH_SOURCE[0]}")
 
 for D in */; do
     for file in "${D}"*.cpp; do

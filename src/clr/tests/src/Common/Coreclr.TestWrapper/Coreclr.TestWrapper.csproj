@@ -1,18 +1,14 @@
-<Project>
-
-  <Import Project="$([MSBuild]::GetPathOfFileAbove('dependencies.props', '$(MSBuildThisFileDirectory)../'))" />
-  <Import Project="$([MSBuild]::GetPathOfFileAbove('dir.sdkbuild.props', '$(MSBuildThisFileDirectory)../'))" />
-
-  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ProjectAssetsFile>$(SourceDir)Common\Coreclr.TestWrapper\obj\project.assets.json</ProjectAssetsFile>
+    <NuGetTargetMoniker>.NETCoreApp,Version=v3.0</NuGetTargetMoniker>
+    <NuGetTargetMonikerShort>netcoreapp3.0</NuGetTargetMonikerShort>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="CoreclrTestWrapperLib.cs" />
   </ItemGroup>
-
-  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
 
 </Project>

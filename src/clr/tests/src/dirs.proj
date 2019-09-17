@@ -1,16 +1,5 @@
-<Project ToolsVersion="12.0" DefaultTargets="Build" InitialTargets="VerifyBuildTools" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="dir.props" />
-
-  <Target Name="VerifyBuildTools" 
-    Inputs="$(BuildToolsTargetInputs)"
-    Outputs="$(BuildToolsTargetOutputs)"
-    >
-    <Error Condition="!Exists('$(BuildToolsInstallSemaphore)')" 
-      Text="The build tools have not been installed. Please run buildtest.cmd from the root of the repo at least once to get the tools installed." />
-
-    <!-- If we enter this target at all then the inputs are newer then the outputs so give a warning. -->
-    <Warning Text="Looks like there may be an update to the build tools. Please run buildtest.cmd from the root of the repo to refresh the build tools." /> 
-  </Target>
 
   <Target Name="ResolveDisabledProjects" BeforeTargets="BuildAllProjects;CopyAllNativeTestProjectBinaries" >
     <ItemGroup>
@@ -24,6 +13,7 @@
       <DisabledProjects Include="Common\targeting_pack_ref\targeting_pack_ref.csproj" />
       <DisabledProjects Include="Common\external\external.csproj" />
       <DisabledProjects Include="Common\PerfHarness\PerfHarness.csproj" />
+      <DisabledProjects Include="Common\stress_dependencies\stress_dependencies.csproj" />
       <DisabledProjects Include="GC\Performance\Framework\GCPerfTestFramework.csproj" />
       <DisabledProjects Include="JIT\config\**" />
       <DisabledProjects Include="Performance\performance.csproj" />
@@ -31,6 +21,8 @@
       <DisabledProjects Include="Loader\classloader\generics\regressions\DD117522\Test.csproj" />
       <DisabledProjects Include="Loader\classloader\generics\GenericMethods\VSW491668.csproj" /> <!-- issue 5501 -->
       <DisabledProjects Include="reflection\GenericAttribute\GenericAttributeTests.csproj" />
+      <DisabledProjects Include="Common\CoreFX\CoreFX.csproj" />
+      <DisabledProjects Include="Common\ilasm\ilasm.ilproj" />
     </ItemGroup>
 
     <ItemGroup>

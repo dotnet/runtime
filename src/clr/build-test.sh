@@ -680,7 +680,6 @@ export __ProjectDir="$__ProjectRoot"
 __SourceDir="$__ProjectDir/src"
 __PackagesDir="$__ProjectDir/.packages"
 __RootBinDir="$__ProjectDir/bin"
-__BuildToolsDir="$__ProjectDir/Tools"
 __DotNetCli="$__ProjectDir/dotnet.sh"
 __UnprocessedBuildArgs=
 __CommonMSBuildArgs=
@@ -1027,9 +1026,6 @@ initTargetDistroRid
 if [ $__PortableBuild == 0 ]; then
     __CommonMSBuildArgs="$__CommonMSBuildArgs /p:PortableBuild=false"
 fi
-
-# Restore Build Tools
-source $__ProjectRoot/init-tools.sh
 
 if [[ (-z "$__GenerateLayoutOnly") && (-z "$__GenerateTestHostOnly") && (-z "$__BuildTestWrappersOnly") ]]; then
     build_Tests
