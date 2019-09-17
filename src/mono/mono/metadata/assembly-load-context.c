@@ -38,8 +38,8 @@ mono_alc_cleanup (MonoAssemblyLoadContext *alc)
 	 *        be less than optimal on netcore, but its removal is too likely to cause issues for now.
 	 *   2. An ALC will have been removed from the domain before cleanup.
 	 */
-	GSList *tmp;
-	MonoDomain *domain = alc->domain;
+	//GSList *tmp;
+	//MonoDomain *domain = alc->domain;
 
 	/*
 	 * Missing steps:

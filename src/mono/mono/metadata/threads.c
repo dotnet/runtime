@@ -4093,6 +4093,7 @@ mono_threads_perform_thread_dump (void)
 	thread_dump_requested = FALSE;
 }
 
+#ifndef ENABLE_NETCORE
 /* Obtain the thread dump of all threads */
 void
 ves_icall_System_Threading_Thread_GetStackTraces (MonoArrayHandleOut out_threads_handle, MonoArrayHandleOut out_stack_frames_handle, MonoError *error)
@@ -4207,6 +4208,7 @@ leave:
 	mono_gchandle_free_internal (handle);
 	g_free (ud.frames);
 }
+#endif
 
 /**
  * mono_threads_request_thread_dump:

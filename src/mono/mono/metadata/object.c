@@ -8262,6 +8262,8 @@ static MonoObject*
 mono_message_invoke (MonoThreadInfo* mono_thread_info_current_var,
 		     MonoObject* target, MonoMethodMessage* msg,
 		     MonoObject** exc, MonoArray** out_args, MonoError* error);
+
+#ifndef ENABLE_NETCORE
 MonoObjectHandle
 ves_icall_System_Runtime_Remoting_Messaging_AsyncResult_Invoke (MonoAsyncResultHandle aresh, MonoError* error)
 {
@@ -8334,6 +8336,7 @@ ves_icall_System_Runtime_Remoting_Messaging_AsyncResult_Invoke (MonoAsyncResultH
 	}
 	return res;
 }
+#endif
 
 gboolean
 mono_message_init (MonoDomain *domain,

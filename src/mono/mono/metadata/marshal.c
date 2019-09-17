@@ -3045,7 +3045,6 @@ mono_marshal_get_llvm_func_wrapper (MonoLLVMFuncWrapperSubtype subtype)
 	WrapperInfo *info;
 	MonoMethodSignature *csig = NULL;
 	MonoType *void_type = mono_get_void_type ();
-	MonoType *int_type = mono_get_int_type ();
 	char *name = g_strdup_printf ("llvm_func_wrapper_%d", subtype);
 
 	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 0);

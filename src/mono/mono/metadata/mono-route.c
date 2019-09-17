@@ -9,6 +9,7 @@
 
 #include "config.h"
 
+#ifndef ENABLE_NETCORE
 #if HOST_DARWIN || HOST_BSD
 
 #include <sys/types.h>
@@ -154,6 +155,7 @@ gateway_from_rtm(struct rt_msghdr *rtm)
 }
 
 #endif
+#endif
 
 extern const char mono_route_empty_file_no_warning;
-extern const char mono_route_empty_file_no_warning = 0;
+const char mono_route_empty_file_no_warning = 0;
