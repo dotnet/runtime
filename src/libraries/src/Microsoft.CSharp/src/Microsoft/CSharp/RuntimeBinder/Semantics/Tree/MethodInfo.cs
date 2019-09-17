@@ -44,7 +44,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
 
                 // We need to find the associated methodinfo on the instantiated type.
-                foreach (MethodInfo m in type.GetRuntimeMethods())
+                const BindingFlags EverythingBindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
+                foreach (MethodInfo m in type.GetMethods(EverythingBindingFlags))
                 {
                     if (!m.HasSameMetadataDefinitionAs(methodInfo))
                     {
