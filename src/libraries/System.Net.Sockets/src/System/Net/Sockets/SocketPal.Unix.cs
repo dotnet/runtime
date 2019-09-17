@@ -703,6 +703,8 @@ namespace System.Net.Sockets
         public static bool TryCompleteSendTo(SafeSocketHandle socket, ReadOnlySpan<byte> buffer, IList<ArraySegment<byte>> buffers, ref int bufferIndex, ref int offset, ref int count, SocketFlags flags, byte[] socketAddress, int socketAddressLen, ref int bytesSent, out SocketError errorCode)
         {
             bool successfulSend = false;
+            long start = socket.IsUnderlyingBlocking && socket.SendTimeout > 0 ? Environment.TickCount64 : 0; // Get ticks only if timeout is set and socket is blocking.
+
             while (true)
             {
                 int sent;
@@ -743,6 +745,17 @@ namespace System.Net.Sockets
                     errorCode = SocketError.Success;
                     return true;
                 }
+
+                if (socket.IsUnderlyingBlocking && socket.SendTimeout > 0 && (Environment.TickCount64 - start) >= socket.SendTimeout)
+                {
+                    // When socket is truly in blocking mode, we depend on OS to enforce send timeout.
+                    // When we are here we had partial send when we neither completed or failed.
+                    // If we loop again, OS will wait another configured timeout before returning from system call.
+                    // This block check checks is we used all our timer across all iterations.
+                    errorCode = SocketError.TimedOut;
+                    return true;
+                }
+
             }
         }
 

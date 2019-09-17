@@ -144,6 +144,14 @@ namespace System.Net.Sockets
             }
         }
 
+        internal bool IsUnderlyingBlocking
+        {
+            get
+            {
+                return !_underlyingHandleNonBlocking;
+            }
+        }
+
         internal int ReceiveTimeout
         {
             get
