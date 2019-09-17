@@ -213,19 +213,16 @@ int mono_interp_traceopt = 0;
 
 #if USE_COMPUTED_GOTO
 
-#define MINT_IN_SWITCH(op) goto *in_labels[op];
-#define MINT_IN_CASE(x) LAB_ ## x:
-#define MINT_IN_DISPATCH(op) goto *in_labels[op];
-#define MINT_IN_BREAK { goto *in_labels[*ip]; }
-#define MINT_IN_DEFAULT mint_default: if (0) goto mint_default; /* make gcc shut up */
+#define MINT_IN_DISPATCH(op) goto *in_labels [op]
+#define MINT_IN_SWITCH(op)   MINT_IN_DISPATCH (op);
+#define MINT_IN_BREAK        MINT_IN_DISPATCH (*ip)
+#define MINT_IN_CASE(x)      LAB_ ## x:
 
 #else
 
 #define MINT_IN_SWITCH(op) COUNT_OP(op); switch (op)
 #define MINT_IN_CASE(x) case x:
-#define MINT_IN_DISPATCH(op) goto main_loop;
 #define MINT_IN_BREAK break
-#define MINT_IN_DEFAULT default:
 
 #endif
 
@@ -6528,8 +6525,10 @@ common_vcall:
 			MINT_IN_BREAK;
 		}
 
-		MINT_IN_DEFAULT
+#if !USE_COMPUTED_GOTO
+		default:
 			g_error ("Unimplemented opcode: %04x %s at 0x%x\n", *ip, mono_interp_opname (*ip), ip - frame->imethod->code);
+#endif
 		}
 	}
 
