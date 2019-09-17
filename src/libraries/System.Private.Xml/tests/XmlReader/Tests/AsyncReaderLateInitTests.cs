@@ -74,7 +74,7 @@ namespace System.Xml.Tests
         {
             using (XmlReader reader = XmlReader.Create("http://test.test/test.html", new XmlReaderSettings() { Async = true }))
             {
-                Assert.Throws<System.Net.WebException>(() => reader.ReadAsync().GetAwaiter().GetResult());
+                Assert.Throws<System.Net.Http.HttpRequestException>(() => reader.ReadAsync().GetAwaiter().GetResult());
             }
         }
 
@@ -83,14 +83,14 @@ namespace System.Xml.Tests
         {
             using (XmlReader reader = XmlReader.Create("http://test.test/test.html", new XmlReaderSettings() { Async = true }))
             {
-                Assert.Throws<System.Net.WebException>(() => reader.Read());
+                Assert.Throws<System.Net.Http.HttpRequestException>(() => reader.Read());
             }
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
         public static void InitializationWithUriOnNonAsyncReaderTrows()
         {
-            Assert.Throws<System.Net.WebException>(() => XmlReader.Create("http://test.test/test.html", new XmlReaderSettings() { Async = false }));
+            Assert.Throws<System.Net.Http.HttpRequestException>(() => XmlReader.Create("http://test.test/test.html", new XmlReaderSettings() { Async = false }));
         }
 
         [Fact]

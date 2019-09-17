@@ -14,12 +14,10 @@ namespace System.Xml
         {
             if (ofObjectToReturn == null || ofObjectToReturn == typeof(System.IO.Stream) || ofObjectToReturn == typeof(object))
             {
-                return await DownloadManager.GetStreamAsync(absoluteUri, _credentials, _proxy, _cachePolicy).ConfigureAwait(false);
+                return await DownloadManager.GetStreamAsync(absoluteUri, _credentials, _proxy).ConfigureAwait(false);
             }
-            else
-            {
-                throw new XmlException(SR.Xml_UnsupportedClass, string.Empty);
-            }
+
+            throw new XmlException(SR.Xml_UnsupportedClass, string.Empty);
         }
     }
 }

@@ -90,10 +90,13 @@ namespace System.Xml.Tests
             AssertInvalidPath("??");
         }
 
-        [Fact]
-        public static void TestResolveInvalidPath()
+        [Theory]
+        [InlineData("http://notfound.invalid.corp.microsoft.com")]
+        [InlineData("ftp://host.invalid")]
+        [InlineData("notsupported://host.invalid")]
+        public static void TestResolveInvalidPath(string invalidUri)
         {
-            Assert.Throws<System.Net.WebException>(() => XmlReader.Create("ftp://host.invalid"));
+            Assert.ThrowsAny<Exception>(() => XmlReader.Create(invalidUri));
         }
 
         [Fact]
