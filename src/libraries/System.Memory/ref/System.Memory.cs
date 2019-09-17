@@ -647,6 +647,7 @@ namespace System.Text
 {
     public ref partial struct SpanRuneEnumerator
     {
+        private object _dummy;
         private int _dummyPrimitive;
         public System.Text.Rune Current { get { throw null; } }
         public System.Text.SpanRuneEnumerator GetEnumerator() { throw null; }

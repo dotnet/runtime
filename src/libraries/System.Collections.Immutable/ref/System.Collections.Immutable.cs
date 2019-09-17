@@ -98,6 +98,7 @@ namespace System.Collections.Immutable
     {
         private T[] array;
         private object _dummy;
+        private int _dummyPrimitive;
         public static readonly System.Collections.Immutable.ImmutableArray<T> Empty;
         public bool IsDefault { get { throw null; } }
         public bool IsDefaultOrEmpty { get { throw null; } }
@@ -739,6 +740,7 @@ namespace System.Collections.Immutable
         public partial struct Enumerator
         {
             private object _dummy;
+            private int _dummyPrimitive;
             public T Current { get { throw null; } }
             public bool MoveNext() { throw null; }
         }
@@ -1047,6 +1049,7 @@ namespace System.Collections.Immutable
         public partial struct Enumerator
         {
             private object _dummy;
+            private int _dummyPrimitive;
             public T Current { get { throw null; } }
             public bool MoveNext() { throw null; }
         }

@@ -489,6 +489,7 @@ namespace System.Collections.Generic
             public partial struct Enumerator : System.Collections.Generic.IEnumerator<TKey>, System.Collections.IEnumerator, System.IDisposable
             {
                 private object _dummy;
+                private int _dummyPrimitive;
                 public TKey Current { get { throw null; } }
                 object? System.Collections.IEnumerator.Current { get { throw null; } }
                 public void Dispose() { }
@@ -515,6 +516,7 @@ namespace System.Collections.Generic
             public partial struct Enumerator : System.Collections.Generic.IEnumerator<TValue>, System.Collections.IEnumerator, System.IDisposable
             {
                 private object _dummy;
+                private int _dummyPrimitive;
                 public TValue Current { get { throw null; } }
                 object? System.Collections.IEnumerator.Current { get { throw null; } }
                 public void Dispose() { }

@@ -106,6 +106,7 @@ namespace System.Net.Security
     public readonly partial struct SslApplicationProtocol : System.IEquatable<System.Net.Security.SslApplicationProtocol>
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public static readonly System.Net.Security.SslApplicationProtocol Http11;
         public static readonly System.Net.Security.SslApplicationProtocol Http2;
         public SslApplicationProtocol(byte[] protocol) { throw null; }

@@ -2472,6 +2472,7 @@ namespace System.Data.SqlTypes
     public partial struct SqlBinary : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable
     {
         private object _dummy;
+        private int _dummyPrimitive;
         public static readonly System.Data.SqlTypes.SqlBinary Null;
         public SqlBinary(byte[] value) { throw null; }
         public bool IsNull { get { throw null; } }
@@ -2921,6 +2922,7 @@ namespace System.Data.SqlTypes
     public partial struct SqlGuid : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable
     {
         private object _dummy;
+        private int _dummyPrimitive;
         public static readonly System.Data.SqlTypes.SqlGuid Null;
         public SqlGuid(byte[] value) { throw null; }
         public SqlGuid(System.Guid g) { throw null; }

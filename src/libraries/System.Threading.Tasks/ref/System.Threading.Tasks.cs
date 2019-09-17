@@ -24,6 +24,7 @@ namespace System.Runtime.CompilerServices
     public partial struct AsyncIteratorMethodBuilder
     {
         private object _dummy;
+        private int _dummyPrimitive;
         public void AwaitOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : System.Runtime.CompilerServices.INotifyCompletion where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
         public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
         public void Complete() { }
@@ -33,6 +34,7 @@ namespace System.Runtime.CompilerServices
     public partial struct AsyncTaskMethodBuilder
     {
         private object _dummy;
+        private int _dummyPrimitive;
         public System.Threading.Tasks.Task Task { get { throw null; } }
         public void AwaitOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : System.Runtime.CompilerServices.INotifyCompletion where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
         public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
@@ -45,6 +47,7 @@ namespace System.Runtime.CompilerServices
     public partial struct AsyncTaskMethodBuilder<TResult>
     {
         private object _dummy;
+        private int _dummyPrimitive;
         public System.Threading.Tasks.Task<TResult> Task { get { throw null; } }
         public void AwaitOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : System.Runtime.CompilerServices.INotifyCompletion where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
         public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
@@ -57,6 +60,7 @@ namespace System.Runtime.CompilerServices
     public partial struct AsyncVoidMethodBuilder
     {
         private object _dummy;
+        private int _dummyPrimitive;
         public void AwaitOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : System.Runtime.CompilerServices.INotifyCompletion where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
         public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
         public static System.Runtime.CompilerServices.AsyncVoidMethodBuilder Create() { throw null; }

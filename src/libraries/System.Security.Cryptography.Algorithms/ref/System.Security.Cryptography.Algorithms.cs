@@ -183,6 +183,7 @@ namespace System.Security.Cryptography
     public partial struct ECCurve
     {
         private object _dummy;
+        private int _dummyPrimitive;
         public byte[] A;
         public byte[] B;
         public byte[] Cofactor;

@@ -653,6 +653,7 @@ namespace System.Net.Sockets
     public partial struct UdpReceiveResult : System.IEquatable<System.Net.Sockets.UdpReceiveResult>
     {
         private object _dummy;
+        private int _dummyPrimitive;
         public UdpReceiveResult(byte[] buffer, System.Net.IPEndPoint remoteEndPoint) { throw null; }
         public byte[] Buffer { get { throw null; } }
         public System.Net.IPEndPoint RemoteEndPoint { get { throw null; } }

@@ -68,6 +68,7 @@ namespace System.Diagnostics
     public readonly partial struct ActivitySpanId : System.IEquatable<System.Diagnostics.ActivitySpanId>
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public void CopyTo(System.Span<byte> destination) { }
         public static System.Diagnostics.ActivitySpanId CreateFromBytes(System.ReadOnlySpan<byte> idData) { throw null; }
         public static System.Diagnostics.ActivitySpanId CreateFromString(System.ReadOnlySpan<char> idData) { throw null; }
@@ -93,6 +94,7 @@ namespace System.Diagnostics
     public readonly partial struct ActivityTraceId : System.IEquatable<System.Diagnostics.ActivityTraceId>
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public void CopyTo(System.Span<byte> destination) { }
         public static System.Diagnostics.ActivityTraceId CreateFromBytes(System.ReadOnlySpan<byte> idData) { throw null; }
         public static System.Diagnostics.ActivityTraceId CreateFromString(System.ReadOnlySpan<char> idData) { throw null; }

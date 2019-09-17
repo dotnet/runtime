@@ -22,6 +22,7 @@ namespace System.Threading
     public partial struct AsyncFlowControl : System.IDisposable
     {
         private object _dummy;
+        private int _dummyPrimitive;
         public void Dispose() { }
         public override bool Equals(object? obj) { throw null; }
         public bool Equals(System.Threading.AsyncFlowControl obj) { throw null; }
