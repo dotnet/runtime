@@ -556,7 +556,7 @@ namespace System.ComponentModel
         void CancelNew(int itemIndex);
         void EndNew(int itemIndex);
     }
-    [System.ObsoleteAttribute("This interface has been deprecated. Add a TypeDescriptionProvider to handle type TypeDescriptor.ComObjectType instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+    [System.ObsoleteAttribute("This interface has been deprecated. Add a TypeDescriptionProvider to handle type TypeDescriptor.ComObjectType instead. https://go.microsoft.com/fwlink/?linkid=14202")]
     public partial interface IComNativeDescriptorHandler
     {
         System.ComponentModel.AttributeCollection GetAttributes(object component);
@@ -979,7 +979,7 @@ namespace System.ComponentModel
         protected static System.Reflection.MethodInfo FindMethod(System.Type componentClass, string name, System.Type[] args, System.Type returnType, bool publicOnly) { throw null; }
         public override int GetHashCode() { throw null; }
         protected virtual object GetInvocationTarget(System.Type type, object instance) { throw null; }
-        [System.ObsoleteAttribute("This method has been deprecated. Use GetInvocationTarget instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("This method has been deprecated. Use GetInvocationTarget instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         protected static object GetInvokee(System.Type componentClass, object component) { throw null; }
         protected static System.ComponentModel.ISite GetSite(object component) { throw null; }
     }
@@ -1348,7 +1348,7 @@ namespace System.ComponentModel
     public sealed partial class TypeDescriptor
     {
         internal TypeDescriptor() { }
-        [System.ObsoleteAttribute("This property has been deprecated.  Use a type description provider to supply type information for COM types instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("This property has been deprecated. Use a type description provider to supply type information for COM types instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static System.ComponentModel.IComNativeDescriptorHandler ComNativeDescriptorHandler { get { throw null; } set { } }
         public static System.Type ComObjectType { get { throw null; } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
@@ -1906,14 +1906,14 @@ namespace System.ComponentModel.Design
     public enum SelectionTypes
     {
         Auto = 1,
-        [System.ObsoleteAttribute("This value has been deprecated. Use SelectionTypes.Auto instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("This value has been deprecated. Use SelectionTypes.Auto instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         Normal = 1,
         Replace = 2,
-        [System.ObsoleteAttribute("This value has been deprecated.  It is no longer supported. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("This value has been deprecated. It is no longer supported. https://go.microsoft.com/fwlink/?linkid=14202")]
         MouseDown = 4,
-        [System.ObsoleteAttribute("This value has been deprecated.  It is no longer supported. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("This value has been deprecated. It is no longer supported. https://go.microsoft.com/fwlink/?linkid=14202")]
         MouseUp = 8,
-        [System.ObsoleteAttribute("This value has been deprecated. Use SelectionTypes.Primary instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("This value has been deprecated. Use SelectionTypes.Primary instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         Click = 16,
         Primary = 16,
         [System.ObsoleteAttribute("This value has been deprecated. Use Enum class methods to determine valid values, or use a type converter. https://go.microsoft.com/fwlink/?linkid=14202")]
@@ -2017,9 +2017,9 @@ namespace System.ComponentModel.Design
     }
     public enum ViewTechnology
     {
-        [System.ObsoleteAttribute("This value has been deprecated. Use ViewTechnology.Default instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("This value has been deprecated. Use ViewTechnology.Default instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         Passthrough = 0,
-        [System.ObsoleteAttribute("This value has been deprecated. Use ViewTechnology.Default instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("This value has been deprecated. Use ViewTechnology.Default instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         WindowsForms = 1,
         Default = 2,
     }
@@ -2136,6 +2136,7 @@ namespace System.ComponentModel.Design.Serialization
     public readonly partial struct MemberRelationship
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public static readonly System.ComponentModel.Design.Serialization.MemberRelationship Empty;
         public MemberRelationship(object owner, System.ComponentModel.MemberDescriptor member) { throw null; }
         public bool IsEmpty { get { throw null; } }
@@ -2163,7 +2164,7 @@ namespace System.ComponentModel.Design.Serialization
     }
     public delegate void ResolveNameEventHandler(object sender, System.ComponentModel.Design.Serialization.ResolveNameEventArgs e);
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Interface, AllowMultiple=true, Inherited=true)]
-    [System.ObsoleteAttribute("This attribute has been deprecated. Use DesignerSerializerAttribute instead.  For example, to specify a root designer for CodeDom, use DesignerSerializerAttribute(...,typeof(TypeCodeDomSerializer)).  https://go.microsoft.com/fwlink/?linkid=14202")]
+    [System.ObsoleteAttribute("This attribute has been deprecated. Use DesignerSerializerAttribute instead. For example, to specify a root designer for CodeDom, use DesignerSerializerAttribute(...,typeof(TypeCodeDomSerializer)). https://go.microsoft.com/fwlink/?linkid=14202")]
     public sealed partial class RootDesignerSerializerAttribute : System.Attribute
     {
         public RootDesignerSerializerAttribute(string serializerTypeName, string baseSerializerTypeName, bool reloadable) { }

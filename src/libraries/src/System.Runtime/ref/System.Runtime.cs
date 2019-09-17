@@ -1814,6 +1814,7 @@ namespace System
     public partial struct ModuleHandle
     {
         private object _dummy;
+        private int _dummyPrimitive;
         public static readonly System.ModuleHandle EmptyHandle;
         public int MDStreamVersion { get { throw null; } }
         public bool Equals(System.ModuleHandle handle) { throw null; }
@@ -2085,6 +2086,7 @@ namespace System
     public partial struct RuntimeFieldHandle : System.Runtime.Serialization.ISerializable
     {
         private object _dummy;
+        private int _dummyPrimitive;
         public System.IntPtr Value { get { throw null; } }
         public override bool Equals(object? obj) { throw null; }
         public bool Equals(System.RuntimeFieldHandle handle) { throw null; }
@@ -2096,6 +2098,7 @@ namespace System
     public partial struct RuntimeMethodHandle : System.Runtime.Serialization.ISerializable
     {
         private object _dummy;
+        private int _dummyPrimitive;
         public System.IntPtr Value { get { throw null; } }
         public override bool Equals(object? obj) { throw null; }
         public bool Equals(System.RuntimeMethodHandle handle) { throw null; }
@@ -2108,6 +2111,7 @@ namespace System
     public partial struct RuntimeTypeHandle : System.Runtime.Serialization.ISerializable
     {
         private object _dummy;
+        private int _dummyPrimitive;
         public System.IntPtr Value { get { throw null; } }
         public override bool Equals(object? obj) { throw null; }
         public bool Equals(System.RuntimeTypeHandle handle) { throw null; }
@@ -3851,6 +3855,7 @@ namespace System.Collections
     public partial struct DictionaryEntry
     {
         private object _dummy;
+        private int _dummyPrimitive;
         public DictionaryEntry(object key, object? value) { throw null; }
         public object Key { get { throw null; } set { } }
         public object? Value { get { throw null; } set { } }
@@ -5711,6 +5716,7 @@ namespace System.Reflection
     public readonly partial struct CustomAttributeNamedArgument
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public CustomAttributeNamedArgument(System.Reflection.MemberInfo memberInfo, object? value) { throw null; }
         public CustomAttributeNamedArgument(System.Reflection.MemberInfo memberInfo, System.Reflection.CustomAttributeTypedArgument typedArgument) { throw null; }
         public bool IsField { get { throw null; } }
@@ -5726,6 +5732,7 @@ namespace System.Reflection
     public readonly partial struct CustomAttributeTypedArgument
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public CustomAttributeTypedArgument(object value) { throw null; }
         public CustomAttributeTypedArgument(System.Type argumentType, object? value) { throw null; }
         public System.Type ArgumentType { get { throw null; } }
@@ -6213,6 +6220,7 @@ namespace System.Reflection
     public readonly partial struct ParameterModifier
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public ParameterModifier(int parameterCount) { throw null; }
         public bool this[int index] { get { throw null; } set { } }
     }
@@ -6634,6 +6642,7 @@ namespace System.Runtime.CompilerServices
     public readonly partial struct ConfiguredTaskAwaitable
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public System.Runtime.CompilerServices.ConfiguredTaskAwaitable.ConfiguredTaskAwaiter GetAwaiter() { throw null; }
         public readonly partial struct ConfiguredTaskAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
         {
@@ -6648,6 +6657,7 @@ namespace System.Runtime.CompilerServices
     public readonly partial struct ConfiguredTaskAwaitable<TResult>
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public System.Runtime.CompilerServices.ConfiguredTaskAwaitable<TResult>.ConfiguredTaskAwaiter GetAwaiter() { throw null; }
         public readonly partial struct ConfiguredTaskAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
         {
@@ -6662,10 +6672,12 @@ namespace System.Runtime.CompilerServices
     public readonly partial struct ConfiguredValueTaskAwaitable
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable.ConfiguredValueTaskAwaiter GetAwaiter() { throw null; }
         public readonly partial struct ConfiguredValueTaskAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
         {
             private readonly object _dummy;
+            private readonly int _dummyPrimitive;
             public bool IsCompleted { get { throw null; } }
             public void GetResult() { }
             public void OnCompleted(System.Action continuation) { }
@@ -6675,10 +6687,12 @@ namespace System.Runtime.CompilerServices
     public readonly partial struct ConfiguredValueTaskAwaitable<TResult>
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable<TResult>.ConfiguredValueTaskAwaiter GetAwaiter() { throw null; }
         public readonly partial struct ConfiguredValueTaskAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
         {
             private readonly object _dummy;
+            private readonly int _dummyPrimitive;
             public bool IsCompleted { get { throw null; } }
             public TResult GetResult() { throw null; }
             public void OnCompleted(System.Action continuation) { }
@@ -6931,6 +6945,7 @@ namespace System.Runtime.CompilerServices
     public readonly partial struct TaskAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public bool IsCompleted { get { throw null; } }
         public void GetResult() { }
         public void OnCompleted(System.Action continuation) { }
@@ -6939,6 +6954,7 @@ namespace System.Runtime.CompilerServices
     public readonly partial struct TaskAwaiter<TResult> : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public bool IsCompleted { get { throw null; } }
         public TResult GetResult() { throw null; }
         public void OnCompleted(System.Action continuation) { }
@@ -6971,6 +6987,7 @@ namespace System.Runtime.CompilerServices
     public readonly partial struct ValueTaskAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public bool IsCompleted { get { throw null; } }
         public void GetResult() { }
         public void OnCompleted(System.Action continuation) { }
@@ -6979,6 +6996,7 @@ namespace System.Runtime.CompilerServices
     public readonly partial struct ValueTaskAwaiter<TResult> : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public bool IsCompleted { get { throw null; } }
         public TResult GetResult() { throw null; }
         public void OnCompleted(System.Action continuation) { }
@@ -7248,6 +7266,7 @@ namespace System.Runtime.Serialization
     public readonly partial struct SerializationEntry
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public string Name { get { throw null; } }
         public System.Type ObjectType { get { throw null; } }
         public object? Value { get { throw null; } }
@@ -7904,6 +7923,7 @@ namespace System.Text
         public partial struct ChunkEnumerator
         {
             private object _dummy;
+            private int _dummyPrimitive;
             public System.ReadOnlyMemory<char> Current { get { throw null; } }
             [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
             public System.Text.StringBuilder.ChunkEnumerator GetEnumerator() { throw null; }
@@ -7937,6 +7957,7 @@ namespace System.Threading
     public readonly partial struct CancellationToken
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public CancellationToken(bool canceled) { throw null; }
         public bool CanBeCanceled { get { throw null; } }
         public bool IsCancellationRequested { get { throw null; } }

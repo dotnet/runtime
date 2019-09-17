@@ -94,6 +94,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct AssemblyDefinition
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public System.Reflection.Metadata.StringHandle Culture { get { throw null; } }
         public System.Reflection.AssemblyFlags Flags { get { throw null; } }
         public System.Reflection.AssemblyHashAlgorithm HashAlgorithm { get { throw null; } }
@@ -192,6 +193,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct AssemblyReferenceHandleCollection : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.AssemblyReferenceHandle>, System.Collections.Generic.IReadOnlyCollection<System.Reflection.Metadata.AssemblyReferenceHandle>, System.Collections.IEnumerable
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public int Count { get { throw null; } }
         public System.Reflection.Metadata.AssemblyReferenceHandleCollection.Enumerator GetEnumerator() { throw null; }
         System.Collections.Generic.IEnumerator<System.Reflection.Metadata.AssemblyReferenceHandle> System.Collections.Generic.IEnumerable<System.Reflection.Metadata.AssemblyReferenceHandle>.GetEnumerator() { throw null; }
@@ -276,6 +278,7 @@ namespace System.Reflection.Metadata
         public partial struct Blobs : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.Blob>, System.Collections.Generic.IEnumerator<System.Reflection.Metadata.Blob>, System.Collections.IEnumerable, System.Collections.IEnumerator, System.IDisposable
         {
             private object _dummy;
+            private int _dummyPrimitive;
             public System.Reflection.Metadata.Blob Current { get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
             public System.Reflection.Metadata.BlobBuilder.Blobs GetEnumerator() { throw null; }
@@ -525,6 +528,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct CustomAttributeValue<TType>
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public CustomAttributeValue(System.Collections.Immutable.ImmutableArray<System.Reflection.Metadata.CustomAttributeTypedArgument<TType>> fixedArguments, System.Collections.Immutable.ImmutableArray<System.Reflection.Metadata.CustomAttributeNamedArgument<TType>> namedArguments) { throw null; }
         public System.Collections.Immutable.ImmutableArray<System.Reflection.Metadata.CustomAttributeTypedArgument<TType>> FixedArguments { get { throw null; } }
         public System.Collections.Immutable.ImmutableArray<System.Reflection.Metadata.CustomAttributeNamedArgument<TType>> NamedArguments { get { throw null; } }
@@ -1745,6 +1749,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct MetadataStringComparer
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public bool Equals(System.Reflection.Metadata.DocumentNameBlobHandle handle, string value) { throw null; }
         public bool Equals(System.Reflection.Metadata.DocumentNameBlobHandle handle, string value, bool ignoreCase) { throw null; }
         public bool Equals(System.Reflection.Metadata.NamespaceDefinitionHandle handle, string value) { throw null; }
@@ -1954,6 +1959,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct ModuleDefinition
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public System.Reflection.Metadata.GuidHandle BaseGenerationId { get { throw null; } }
         public int Generation { get { throw null; } }
         public System.Reflection.Metadata.GuidHandle GenerationId { get { throw null; } }
@@ -1999,6 +2005,7 @@ namespace System.Reflection.Metadata
     public partial struct NamespaceDefinition
     {
         private object _dummy;
+        private int _dummyPrimitive;
         public System.Collections.Immutable.ImmutableArray<System.Reflection.Metadata.ExportedTypeHandle> ExportedTypes { get { throw null; } }
         public System.Reflection.Metadata.StringHandle Name { get { throw null; } }
         public System.Collections.Immutable.ImmutableArray<System.Reflection.Metadata.NamespaceDefinitionHandle> NamespaceDefinitions { get { throw null; } }
@@ -2488,6 +2495,7 @@ namespace System.Reflection.Metadata.Ecma335
     public readonly partial struct ArrayShapeEncoder
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public ArrayShapeEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null; }
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public void Shape(int rank, System.Collections.Immutable.ImmutableArray<int> sizes, System.Collections.Immutable.ImmutableArray<int> lowerBounds) { }
@@ -2495,6 +2503,7 @@ namespace System.Reflection.Metadata.Ecma335
     public readonly partial struct BlobEncoder
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public BlobEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null; }
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public void CustomAttributeSignature(System.Action<System.Reflection.Metadata.Ecma335.FixedArgumentsEncoder> fixedArguments, System.Action<System.Reflection.Metadata.Ecma335.CustomAttributeNamedArgumentsEncoder> namedArguments) { }
@@ -2537,6 +2546,7 @@ namespace System.Reflection.Metadata.Ecma335
     public readonly partial struct CustomAttributeArrayTypeEncoder
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public CustomAttributeArrayTypeEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null; }
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public System.Reflection.Metadata.Ecma335.CustomAttributeElementTypeEncoder ElementType() { throw null; }
@@ -2545,6 +2555,7 @@ namespace System.Reflection.Metadata.Ecma335
     public readonly partial struct CustomAttributeElementTypeEncoder
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public CustomAttributeElementTypeEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null; }
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public void Boolean() { }
@@ -2567,6 +2578,7 @@ namespace System.Reflection.Metadata.Ecma335
     public readonly partial struct CustomAttributeNamedArgumentsEncoder
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public CustomAttributeNamedArgumentsEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null; }
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public System.Reflection.Metadata.Ecma335.NamedArgumentsEncoder Count(int count) { throw null; }
@@ -2574,6 +2586,7 @@ namespace System.Reflection.Metadata.Ecma335
     public readonly partial struct CustomModifiersEncoder
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public CustomModifiersEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null; }
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public System.Reflection.Metadata.Ecma335.CustomModifiersEncoder AddModifier(System.Reflection.Metadata.EntityHandle type, bool isOptional) { throw null; }
@@ -2618,6 +2631,7 @@ namespace System.Reflection.Metadata.Ecma335
     public readonly partial struct FixedArgumentsEncoder
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public FixedArgumentsEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null; }
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public System.Reflection.Metadata.Ecma335.LiteralEncoder AddArgument() { throw null; }
@@ -2631,6 +2645,7 @@ namespace System.Reflection.Metadata.Ecma335
     public readonly partial struct GenericTypeArgumentsEncoder
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public GenericTypeArgumentsEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null; }
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public System.Reflection.Metadata.Ecma335.SignatureTypeEncoder AddArgument() { throw null; }
@@ -2645,6 +2660,7 @@ namespace System.Reflection.Metadata.Ecma335
     public readonly partial struct InstructionEncoder
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public InstructionEncoder(System.Reflection.Metadata.BlobBuilder codeBuilder, System.Reflection.Metadata.Ecma335.ControlFlowBuilder controlFlowBuilder = null) { throw null; }
         public System.Reflection.Metadata.BlobBuilder CodeBuilder { get { throw null; } }
         public System.Reflection.Metadata.Ecma335.ControlFlowBuilder ControlFlowBuilder { get { throw null; } }
@@ -2686,6 +2702,7 @@ namespace System.Reflection.Metadata.Ecma335
     public readonly partial struct LiteralEncoder
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public LiteralEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null; }
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public System.Reflection.Metadata.Ecma335.ScalarEncoder Scalar() { throw null; }
@@ -2698,6 +2715,7 @@ namespace System.Reflection.Metadata.Ecma335
     public readonly partial struct LiteralsEncoder
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public LiteralsEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null; }
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public System.Reflection.Metadata.Ecma335.LiteralEncoder AddLiteral() { throw null; }
@@ -2705,6 +2723,7 @@ namespace System.Reflection.Metadata.Ecma335
     public readonly partial struct LocalVariablesEncoder
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public LocalVariablesEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null; }
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public System.Reflection.Metadata.Ecma335.LocalVariableTypeEncoder AddVariable() { throw null; }
@@ -2712,6 +2731,7 @@ namespace System.Reflection.Metadata.Ecma335
     public readonly partial struct LocalVariableTypeEncoder
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public LocalVariableTypeEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null; }
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public System.Reflection.Metadata.Ecma335.CustomModifiersEncoder CustomModifiers() { throw null; }
@@ -2887,6 +2907,7 @@ namespace System.Reflection.Metadata.Ecma335
     public readonly partial struct MethodBodyStreamEncoder
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public MethodBodyStreamEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null; }
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public System.Reflection.Metadata.Ecma335.MethodBodyStreamEncoder.MethodBody AddMethodBody(int codeSize, int maxStack, int exceptionRegionCount, bool hasSmallExceptionRegions, System.Reflection.Metadata.StandaloneSignatureHandle localVariablesSignature, System.Reflection.Metadata.Ecma335.MethodBodyAttributes attributes) { throw null; }
@@ -2915,6 +2936,7 @@ namespace System.Reflection.Metadata.Ecma335
     public readonly partial struct NamedArgumentsEncoder
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public NamedArgumentsEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null; }
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public void AddArgument(bool isField, System.Action<System.Reflection.Metadata.Ecma335.NamedArgumentTypeEncoder> type, System.Action<System.Reflection.Metadata.Ecma335.NameEncoder> name, System.Action<System.Reflection.Metadata.Ecma335.LiteralEncoder> literal) { }
@@ -2923,6 +2945,7 @@ namespace System.Reflection.Metadata.Ecma335
     public readonly partial struct NamedArgumentTypeEncoder
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public NamedArgumentTypeEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null; }
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public void Object() { }
@@ -2932,6 +2955,7 @@ namespace System.Reflection.Metadata.Ecma335
     public readonly partial struct NameEncoder
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public NameEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null; }
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public void Name(string name) { }
@@ -2949,6 +2973,7 @@ namespace System.Reflection.Metadata.Ecma335
     public readonly partial struct ParameterTypeEncoder
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public ParameterTypeEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null; }
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public System.Reflection.Metadata.Ecma335.CustomModifiersEncoder CustomModifiers() { throw null; }
@@ -2958,6 +2983,7 @@ namespace System.Reflection.Metadata.Ecma335
     public readonly partial struct PermissionSetEncoder
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public PermissionSetEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null; }
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public System.Reflection.Metadata.Ecma335.PermissionSetEncoder AddPermission(string typeName, System.Collections.Immutable.ImmutableArray<byte> encodedArguments) { throw null; }
@@ -2974,6 +3000,7 @@ namespace System.Reflection.Metadata.Ecma335
     public readonly partial struct ReturnTypeEncoder
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public ReturnTypeEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null; }
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public System.Reflection.Metadata.Ecma335.CustomModifiersEncoder CustomModifiers() { throw null; }
@@ -2984,6 +3011,7 @@ namespace System.Reflection.Metadata.Ecma335
     public readonly partial struct ScalarEncoder
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public ScalarEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null; }
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public void Constant(object value) { }
@@ -3005,6 +3033,7 @@ namespace System.Reflection.Metadata.Ecma335
     public readonly partial struct SignatureTypeEncoder
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public SignatureTypeEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null; }
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public void Array(System.Action<System.Reflection.Metadata.Ecma335.SignatureTypeEncoder> elementType, System.Action<System.Reflection.Metadata.Ecma335.ArrayShapeEncoder> arrayShape) { }
@@ -3095,6 +3124,7 @@ namespace System.Reflection.Metadata.Ecma335
     public readonly partial struct VectorEncoder
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public VectorEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null; }
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public System.Reflection.Metadata.Ecma335.LiteralsEncoder Count(int count) { throw null; }
@@ -3261,6 +3291,7 @@ namespace System.Reflection.PortableExecutable
     public readonly partial struct PdbChecksumDebugDirectoryData
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public string AlgorithmName { get { throw null; } }
         public System.Collections.Immutable.ImmutableArray<byte> Checksum { get { throw null; } }
     }
