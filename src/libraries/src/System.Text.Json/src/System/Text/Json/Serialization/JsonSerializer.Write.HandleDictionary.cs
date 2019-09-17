@@ -113,35 +113,33 @@ namespace System.Text.Json
             ref WriteStackFrame current,
             Utf8JsonWriter writer)
         {
-            if (converter == null)
-            {
-                return;
-            }
-
-            Debug.Assert(current.CollectionEnumerator != null);
+            Debug.Assert(converter != null && current.CollectionEnumerator != null);
 
             string key;
             TProperty value;
             if (current.CollectionEnumerator is IEnumerator<KeyValuePair<string, TProperty>> enumerator)
             {
-                // Avoid boxing for strongly-typed enumerators such as returned from IDictionary<string, TRuntimeProperty>
-                value = enumerator.Current.Value;
                 key = enumerator.Current.Key;
+                value = enumerator.Current.Value;
             }
             else if (current.CollectionEnumerator is IEnumerator<KeyValuePair<string, object>> polymorphicEnumerator)
             {
-                value = (TProperty)polymorphicEnumerator.Current.Value;
                 key = polymorphicEnumerator.Current.Key;
+                value = (TProperty)polymorphicEnumerator.Current.Value;
             }
             else if (current.IsIDictionaryConstructible || current.IsIDictionaryConstructibleProperty)
             {
-                value = (TProperty)((DictionaryEntry)current.CollectionEnumerator.Current).Value;
                 key = (string)((DictionaryEntry)current.CollectionEnumerator.Current).Key;
+                value = (TProperty)((DictionaryEntry)current.CollectionEnumerator.Current).Value;
             }
             else
             {
                 // Todo: support non-generic Dictionary here (IDictionaryEnumerator)
-                throw new NotSupportedException();
+                // https://github.com/dotnet/corefx/issues/41034
+                throw ThrowHelper.GetNotSupportedException_SerializationNotSupportedCollection(
+                    current.JsonPropertyInfo.DeclaredPropertyType,
+                    current.JsonPropertyInfo.ParentClassType,
+                    current.JsonPropertyInfo.PropertyInfo);
             }
 
             if (value == null)
@@ -161,8 +159,7 @@ namespace System.Text.Json
                     }
                 }
 
-                JsonEncodedText escapedKey = JsonEncodedText.Encode(key, options.Encoder);
-                writer.WritePropertyName(escapedKey);
+                writer.WritePropertyName(key);
                 converter.Write(writer, value, options);
             }
         }
