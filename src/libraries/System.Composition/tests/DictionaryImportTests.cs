@@ -83,7 +83,7 @@ namespace System.Composition.UnitTests
 
         [Fact]
         [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
-        public void DictionaryImportsRecieveMetadataFromNestedAdapters()
+        public void DictionaryImportsReceiveMetadataFromNestedAdapters()
         {
             var container = CreateContainer(new[] { typeof(ValueA), typeof(ValueB), typeof(LazyConsumer) });
 
