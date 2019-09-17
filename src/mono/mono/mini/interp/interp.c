@@ -1003,36 +1003,6 @@ ves_array_calculate_index (MonoArray *ao, stackval *sp, gboolean safe)
 	return pos;
 }
 
-static MONO_NEVER_INLINE MonoException*
-ves_array_set (InterpFrame *frame, stackval *sp, MonoMethodSignature *sig)
-{
-	MonoObject *o = sp->data.o;
-	MonoArray *ao = (MonoArray *) o;
-	MonoClass *ac = o->vtable->klass;
-
-	g_assert (m_class_get_rank (ac) >= 1);
-
-	gint32 pos = ves_array_calculate_index (ao, sp + 1, TRUE);
-	if (pos == -1)
-		return mono_get_exception_index_out_of_range ();
-
-	int val_index = 1 + m_class_get_rank (ac);
-	if (sp [val_index].data.p && !m_class_is_valuetype (m_class_get_element_class (mono_object_class (o)))) {
-		ERROR_DECL (error);
-		MonoObject *isinst = mono_object_isinst_checked (sp [val_index].data.o, m_class_get_element_class (mono_object_class (o)), error);
-		mono_error_cleanup (error);
-		if (!isinst)
-			return mono_get_exception_array_type_mismatch ();
-	}
-
-	gint32 esize = mono_array_element_size (ac);
-	gpointer ea = mono_array_addr_with_size_fast (ao, esize, pos);
-
-	MonoType *mt = sig->params [m_class_get_rank (ac)];
-	stackval_to_data (mt, &sp [val_index], ea, FALSE);
-	return NULL;
-}
-
 static MonoException*
 ves_array_get (InterpFrame *frame, stackval *sp, stackval *retval, MonoMethodSignature *sig, gboolean safe)
 {
@@ -1519,14 +1489,6 @@ ves_imethod (InterpFrame *frame, MonoMethod *method, MonoMethodSignature *sig, s
 		}
 		if (!strcmp (name, "UnsafeLoad"))
 			return ves_array_get (frame, sp, retval, sig, FALSE);
-	} else if (mini_class_is_system_array (method->klass)) {
-		MonoObject *obj = (MonoObject*) sp->data.p;
-		if (!obj)
-			return mono_get_exception_null_reference ();
-		if (*name == 'S' && (strcmp (name, "Set") == 0))
-			return ves_array_set (frame, sp, sig);
-		if (*name == 'G' && (strcmp (name, "Get") == 0))
-			return ves_array_get (frame, sp, retval, sig, TRUE);
 	}
 	
 	g_error ("Don't know how to exec runtime method %s.%s::%s", 
@@ -5372,7 +5334,7 @@ common_vcall:
 			ip++;
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_LDELEMA_FAST) {
+		MINT_IN_CASE(MINT_LDELEMA1) {
 			/* No bounds, one direction */
 			MonoArray *ao = (MonoArray*)sp [-2].data.o;
 			NULL_CHECK (ao);
@@ -5386,23 +5348,42 @@ common_vcall:
 
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_LDELEMA)
-		MINT_IN_CASE(MINT_LDELEMA_TC) {
-			
-			guint16 numargs = ip [2];
-			ip += 3;
-			sp -= numargs;
+		MINT_IN_CASE(MINT_LDELEMA) {
+			guint16 rank = ip [1];
+			gint32 const esize = READ32 (ip + 2);
+			ip += 4;
+			sp -= rank;
 
-			MonoObject* const o = sp [0].data.o;
+			MonoArray* const ao = (MonoArray*) sp [-1].data.o;
+			NULL_CHECK (ao);
+
+			g_assert (ao->bounds);
+			guint32 pos = 0;
+			for (int i = 0; i < rank; i++) {
+				guint32 idx = sp [i].data.i;
+				guint32 lower = ao->bounds [i].lower_bound;
+				guint32 len = ao->bounds [i].length;
+				if (idx < lower || (idx - lower) >= len)
+					THROW_EX (mono_get_exception_index_out_of_range (), ip);
+				pos = (pos * len) + idx - lower;
+			}
+
+			sp [-1].data.p = mono_array_addr_with_size_fast (ao, esize, pos);
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_LDELEMA_TC) {
+			guint16 rank = ip [1];
+			ip += 3;
+			sp -= rank;
+
+			MonoObject* const o = sp [-1].data.o;
 			NULL_CHECK (o);
 
-			MonoClass *klass = (MonoClass*)frame->imethod->data_items [ip [-3 + 1]];
+			MonoClass *klass = (MonoClass*)frame->imethod->data_items [ip [-3 + 2]];
 			const gboolean needs_typecheck = ip [-3] == MINT_LDELEMA_TC;
-			MonoException *ex = ves_array_element_address (frame, klass, (MonoArray *) o, &sp [1], needs_typecheck);
+			MonoException *ex = ves_array_element_address (frame, klass, (MonoArray *) o, sp, needs_typecheck);
 			if (ex)
 				THROW_EX (ex, ip);
-			++sp;
-
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDELEM_I1) /* fall through */

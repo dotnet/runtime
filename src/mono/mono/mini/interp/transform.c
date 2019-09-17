@@ -1069,6 +1069,96 @@ interp_get_ldind_for_mt (int mt)
 	return -1;
 }
 
+static void
+interp_emit_ldobj (TransformData *td, MonoClass *klass)
+{
+	int mt = mint_type (m_class_get_byval_arg (klass));
+	int size;
+
+	if (mt == MINT_TYPE_VT) {
+		interp_add_ins (td, MINT_LDOBJ_VT);
+		size = mono_class_value_size (klass, NULL);
+		WRITE32_INS (td->last_ins, 0, &size);
+		PUSH_VT (td, size);
+	} else {
+		int opcode = interp_get_ldind_for_mt (mt);
+		interp_add_ins (td, opcode);
+	}
+
+	SET_TYPE (td->sp - 1, stack_type [mt], klass);
+}
+
+static void
+interp_emit_stobj (TransformData *td, MonoClass *klass)
+{
+	int mt = mint_type (m_class_get_byval_arg (klass));
+
+	if (mt == MINT_TYPE_VT) {
+		int size;
+		interp_add_ins (td, MINT_STOBJ_VT);
+		td->last_ins->data [0] = get_data_item_index(td, klass);
+		size = mono_class_value_size (klass, NULL);
+		POP_VT (td, size);
+	} else {
+		int opcode;
+		switch (mt) {
+			case MINT_TYPE_I1:
+			case MINT_TYPE_U1:
+				opcode = MINT_STIND_I1;
+				break;
+			case MINT_TYPE_I2:
+			case MINT_TYPE_U2:
+				opcode = MINT_STIND_I2;
+				break;
+			case MINT_TYPE_I4:
+				opcode = MINT_STIND_I4;
+				break;
+			case MINT_TYPE_I8:
+				opcode = MINT_STIND_I8;
+				break;
+			case MINT_TYPE_R4:
+				opcode = MINT_STIND_R4;
+				break;
+			case MINT_TYPE_R8:
+				opcode = MINT_STIND_R8;
+				break;
+			case MINT_TYPE_O:
+				opcode = MINT_STIND_REF;
+				break;
+			default: g_assert_not_reached (); break;
+		}
+		interp_add_ins (td, opcode);
+	}
+	td->sp -= 2;
+}
+
+static void
+interp_emit_ldelema (TransformData *td, MonoClass *array_class, MonoClass *check_class)
+{
+	MonoClass *element_class = m_class_get_element_class (array_class);
+	int rank = m_class_get_rank (array_class);
+	int size = mono_class_array_element_size (element_class);
+
+	// We only need type checks when writing to array of references
+	if (!check_class || m_class_is_valuetype (element_class)) {
+		if (rank == 1) {
+			interp_add_ins (td, MINT_LDELEMA1);
+			WRITE32_INS (td->last_ins, 0, &size);
+		} else {
+			interp_add_ins (td, MINT_LDELEMA);
+			td->last_ins->data [0] = rank;
+			WRITE32_INS (td->last_ins, 1, &size);
+		}
+	} else {
+		interp_add_ins (td, MINT_LDELEMA_TC);
+		td->last_ins->data [0] = rank;
+		td->last_ins->data [1] = get_data_item_index (td, check_class);
+	}
+
+	td->sp -= rank;
+	SET_SIMPLE_TYPE (td->sp - 1, STACK_TYPE_MP);
+}
+
 /* Return TRUE if call transformation is finished */
 static gboolean
 interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClass *constrained_class, MonoMethodSignature *csignature, gboolean readonly, int *op)
@@ -1293,9 +1383,34 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 		} else if (!strcmp (tm, "get_Length")) {
 			*op = MINT_LDLEN;
 		} else if (!strcmp (tm, "Address")) {
-			*op = readonly ? MINT_LDELEMA : MINT_LDELEMA_TC;
-		} else if (!strcmp (tm, "UnsafeMov") || !strcmp (tm, "UnsafeLoad") || !strcmp (tm, "Set") || !strcmp (tm, "Get")) {
+			MonoClass *check_class = readonly ? NULL : m_class_get_element_class (target_method->klass);
+			interp_emit_ldelema (td, target_method->klass, check_class);
+			td->ip += 5;
+			return TRUE;
+		} else if (!strcmp (tm, "UnsafeMov") || !strcmp (tm, "UnsafeLoad")) {
 			*op = MINT_CALLRUN;
+		} else if (!strcmp (tm, "Get")) {
+			interp_emit_ldelema (td, target_method->klass, NULL);
+			interp_emit_ldobj (td, m_class_get_element_class (target_method->klass));
+			td->ip += 5;
+			return TRUE;
+		} else if (!strcmp (tm, "Set")) {
+			MonoClass *element_class = m_class_get_element_class (target_method->klass);
+			MonoType *local_type = m_class_get_byval_arg (element_class);
+			MonoClass *value_class = td->sp [-1].klass;
+			// If value_class is NULL it means the top of stack is a simple type (valuetype)
+			// which doesn't require type checks, or that we have no type information because
+			// the code is unsafe (like in some wrappers). In that case we assume the type
+			// of the array and don't do any checks.
+
+			int local = create_interp_local (td, local_type);
+
+			store_local_general (td, local, local_type);
+			interp_emit_ldelema (td, target_method->klass, value_class);
+			load_local_general (td, local, local_type);
+			interp_emit_stobj (td, element_class);
+			td->ip += 5;
+			return TRUE;
 		} else if (!strcmp (tm, "UnsafeStore")) {
 			g_error ("TODO ArrayClass::UnsafeStore");
 		}
@@ -2183,10 +2298,6 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			SET_SIMPLE_TYPE (td->sp - 1, STACK_TYPE_I4);
 #endif
 		}
-		if (op == MINT_LDELEMA || op == MINT_LDELEMA_TC) {
-			td->last_ins->data [0] = get_data_item_index (td, m_class_get_element_class (target_method->klass));
-			td->last_ins->data [1] = 1 + m_class_get_rank (target_method->klass);
-		}
 
 		if (op == MINT_CALLRUN) {
 			td->last_ins->data [0] = get_data_item_index (td, target_method);
@@ -2793,69 +2904,6 @@ interp_handle_isinst (TransformData *td, MonoClass *klass, gboolean isinst_instr
 	}
 	td->last_ins->data [0] = get_data_item_index (td, klass);
 	td->ip += 5;
-}
-
-static void
-interp_emit_ldobj (TransformData *td, MonoClass *klass)
-{
-	int mt = mint_type (m_class_get_byval_arg (klass));
-	int size;
-
-	if (mt == MINT_TYPE_VT) {
-		interp_add_ins (td, MINT_LDOBJ_VT);
-		size = mono_class_value_size (klass, NULL);
-		WRITE32_INS (td->last_ins, 0, &size);
-		PUSH_VT (td, size);
-	} else {
-		int opcode = interp_get_ldind_for_mt (mt);
-		interp_add_ins (td, opcode);
-	}
-
-	SET_TYPE (td->sp - 1, stack_type [mt], klass);
-}
-
-static void
-interp_emit_stobj (TransformData *td, MonoClass *klass)
-{
-	int mt = mint_type (m_class_get_byval_arg (klass));
-
-	if (mt == MINT_TYPE_VT) {
-		int size;
-		interp_add_ins (td, MINT_STOBJ_VT);
-		td->last_ins->data [0] = get_data_item_index(td, klass);
-		size = mono_class_value_size (klass, NULL);
-		POP_VT (td, size);
-	} else {
-		int opcode;
-		switch (mt) {
-			case MINT_TYPE_I1:
-			case MINT_TYPE_U1:
-				opcode = MINT_STIND_I1;
-				break;
-			case MINT_TYPE_I2:
-			case MINT_TYPE_U2:
-				opcode = MINT_STIND_I2;
-				break;
-			case MINT_TYPE_I4:
-				opcode = MINT_STIND_I4;
-				break;
-			case MINT_TYPE_I8:
-				opcode = MINT_STIND_I8;
-				break;
-			case MINT_TYPE_R4:
-				opcode = MINT_STIND_R4;
-				break;
-			case MINT_TYPE_R8:
-				opcode = MINT_STIND_R8;
-				break;
-			case MINT_TYPE_O:
-				opcode = MINT_STIND_REF;
-				break;
-			default: g_assert_not_reached (); break;
-		}
-		interp_add_ins (td, opcode);
-	}
-	td->sp -= 2;
 }
 
 static void
@@ -4787,7 +4835,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			SET_SIMPLE_TYPE (td->sp - 1, STACK_TYPE_I4);
 			interp_add_ins (td, MINT_NEWARR);
 			td->last_ins->data [0] = get_data_item_index (td, vtable);
-			SET_TYPE (td->sp - 1, STACK_TYPE_O, klass);
+			SET_TYPE (td->sp - 1, STACK_TYPE_O, array_class);
 			td->ip += 5;
 			break;
 		}
@@ -4821,10 +4869,10 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				mono_class_setup_vtable (klass);
 				CHECK_TYPELOAD (klass);
 				interp_add_ins (td, MINT_LDELEMA_TC);
-				td->last_ins->data [0] = get_data_item_index (td, klass);
-				td->last_ins->data [1] = 2;
+				td->last_ins->data [0] = 1;
+				td->last_ins->data [1] = get_data_item_index (td, klass);
 			} else {
-				interp_add_ins (td, MINT_LDELEMA_FAST);
+				interp_add_ins (td, MINT_LDELEMA1);
 				mono_class_init_internal (klass);
 				size = mono_class_array_element_size (klass);
 				WRITE32_INS (td->last_ins, 0, &size);
@@ -6049,9 +6097,12 @@ get_inst_stack_usage (TransformData *td, InterpInst *ins, int *pop, int *push)
 		case MINT_NEWOBJ_ARRAY:
 		case MINT_NEWOBJ_VT_FAST:
 		case MINT_NEWOBJ_VTST_FAST:
+			*pop = ins->data [1];
+			*push = 1;
+			break;
 		case MINT_LDELEMA:
 		case MINT_LDELEMA_TC:
-			*pop = ins->data [1];
+			*pop = ins->data [0] + 1;
 			*push = 1;
 			break;
 		case MINT_NEWOBJ: {
