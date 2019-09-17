@@ -107,9 +107,6 @@
   <PropertyGroup>
     <TargetFramework>netstandard1.4</TargetFramework>
     <TargetFrameworkIdentifier>.NETStandard</TargetFrameworkIdentifier>
-    <PackageTargetFallback>$(PackageTargetFallback);dnxcore50;portable-net45+win8</PackageTargetFallback>
-    <ContainsPackageReferences>true</ContainsPackageReferences>
-    <PrereleaseResolveNuGetPackages>false</PrereleaseResolveNuGetPackages>
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <Target Name="Build"

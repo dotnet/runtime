@@ -1,40 +1,26 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <CLRTestKind>BuildOnly</CLRTestKind>
-    <NugetTargetMoniker>.NETCoreApp,Version=v5.0</NugetTargetMoniker>
-    <NugetTargetMonikerShort>netcoreapp5.0</NugetTargetMonikerShort>
     <IsTestProject>false</IsTestProject>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <TargetFramework Condition="'$(SetTFMForRestore)'=='true'">netcoreapp5.0</TargetFramework>
+    <RuntimeIdentifiers>win-arm;win-arm64;win-x64;win-x86;$(TargetRid)</RuntimeIdentifiers>
+    <AssetTargetFallback>$(AssetTargetFallback);dnxcore50;netcoreapp1.1;portable-net45+win8</AssetTargetFallback>
+    <NoWarn>$(NoWarn);NU1603</NoWarn>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.NETCore.Platforms">
-      <Version>$(MicrosoftNETCorePlatformsVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.DotNet.CoreCLR.TestDependencies">
-      <Version>1.0.0-prerelease</Version>
-    </PackageReference>
-    <PackageReference Include="jit-dasm">
-      <Version>0.0.1.4</Version>
-    </PackageReference>
-    <PackageReference Include="cijobs">
-      <Version>0.0.1.2</Version>
-    </PackageReference>
-    <PackageReference Include="jit-analyze">
-      <Version>0.0.1.1</Version>
-    </PackageReference>
+    <PackageReference Include="Microsoft.NETCore.Platforms" Version="$(MicrosoftNETCorePlatformsVersion)" />
+    <PackageReference Include="Microsoft.DotNet.CoreCLR.TestDependencies" Version="1.0.0-prerelease" NoWarn="NU1701" />
+    <PackageReference Include="jit-dasm" Version="0.0.1.4" />
+    <PackageReference Include="cijobs" Version="0.0.1.2" />
+    <PackageReference Include="jit-analyze" Version="0.0.1.1" />
   </ItemGroup>
+
+  <Target Name="Build" DependsOnTargets="$(TraversalBuildDependsOn)" />
+
   <PropertyGroup>
-    <TargetFramework>netcoreapp5.0</TargetFramework>
-    <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
-    <PackageTargetFallback>$(PackageTargetFallback);dnxcore50;portable-net45+win8</PackageTargetFallback>
-    <RuntimeIdentifiers>win-arm;win-arm64;win-x64;win-x86;$(TargetRid)</RuntimeIdentifiers>
-    <ContainsPackageReferences>true</ContainsPackageReferences>
-    <PrereleaseResolveNuGetPackages>false</PrereleaseResolveNuGetPackages>
+    <ProjectAssetsFile>$(SourceDir)Common\test_runtime\obj\project.assets.json</ProjectAssetsFile>
   </PropertyGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
-  <Target Name="Build"
-     DependsOnTargets="ResolveReferences" />
+
 </Project>

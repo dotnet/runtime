@@ -15,7 +15,6 @@
   <PropertyGroup>
     <TraversalBuildDependsOn>
       BatchRestorePackages;
-      BuildTargetingPack;
       $(TraversalBuildDependsOn);
     </TraversalBuildDependsOn>
   </PropertyGroup>
@@ -31,12 +30,17 @@
     <RestoreProjects Include="$(MSBuildThisFileDirectory)src\JIT\config\benchmark\benchmark.csproj" />
     <RestoreProjects Include="$(MSBuildThisFileDirectory)src\JIT\config\benchmark+intrinsic\benchmark+intrinsic.csproj" />
     <RestoreProjects Include="$(MSBuildThisFileDirectory)src\performance\performance.csproj" />
+    <RestoreProjects Include="$(MSBuildThisFileDirectory)src\Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj" />
+    <RestoreProjects Include="$(MSBuildThisFileDirectory)src\Common\CoreFX\CoreFX.csproj" />
+    <RestoreProjects Include="$(MSBuildThisFileDirectory)src\Common\external\external.csproj" />
+    <RestoreProjects Include="$(MSBuildThisFileDirectory)src\Common\ilasm\ilasm.ilproj" />
   </ItemGroup>
 
   <Target Name="BuildTargetingPack" AfterTargets="BatchRestorePackages" Condition="$(__SkipTargetingPackBuild) != 'true'">
     <Message Text="Building Targeting Pack" Importance="High" />
     <Error  Text="BuildOS has not been specified. Please do that then run build again."  Condition="'$(BuildOS)' == 'AnyOS'" />
-    <MSBuild Projects="$(MSBuildThisFileDirectory)\src\Common\external\external.depproj" />
+    <MSBuild Projects="$(MSBuildThisFileDirectory)\src\Common\external\external.csproj"
+             Targets="Build" />
   </Target>
 
   <Target Name="BatchRestorePackages" Condition="$(__SkipPackageRestore) != 'true'">
@@ -51,8 +55,14 @@
   </Target>
 
   <Target Name="RestorePackage">
-    <Exec Condition="'$(__DistroRid)' == ''" Command="$(DotnetRestoreCommand) $(RestoreProj) $(PackageVersionArg)" StandardOutputImportance="Low" />
-    <Exec Condition="'$(__DistroRid)' != ''" Command="$(DotnetRestoreCommand) -r $(__DistroRid) $(RestoreProj) $(PackageVersionArg)" StandardOutputImportance="Low" />
+    <PropertyGroup>
+      <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ProjectDir)..\.dotnet\</DotnetCliPath>
+      <DotnetToolPath Condition="'$(OS)' != 'Windows_NT'">$(DotnetCliPath)dotnet</DotnetToolPath>
+      <DotnetToolPath Condition="'$(OS)' == 'Windows_NT'">$(DotnetCliPath)dotnet.exe</DotnetToolPath>
+      <DotnetRestoreCommand Condition="'$(__DistroRid)' == ''">$(DotnetToolPath) restore $(RestoreProj) $(PackageVersionArg) /p:SetTFMForRestore=true</DotnetRestoreCommand>
+      <DotnetRestoreCommand Condition="'$(__DistroRid)' != ''">$(DotnetToolPath) restore -r $(__DistroRid) $(RestoreProj) $(PackageVersionArg) /p:SetTFMForRestore=true</DotnetRestoreCommand>
+    </PropertyGroup>
+    <Exec Command="$(DotnetRestoreCommand)"/>
   </Target>
 
   <!-- Override RestorePackages from dir.traversal.targets and do a batch restore -->

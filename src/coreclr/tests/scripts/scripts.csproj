@@ -24,9 +24,6 @@
   <PropertyGroup>
     <TargetFramework>netstandard1.3</TargetFramework>
     <TargetFrameworkIdentifier>.NETStandard</TargetFrameworkIdentifier>
-    <PackageTargetFallback>$(PackageTargetFallback);dnxcore50;portable-net45+win8</PackageTargetFallback>
-    <ContainsPackageReferences>true</ContainsPackageReferences>
-    <PrereleaseResolveNuGetPackages>false</PrereleaseResolveNuGetPackages>
     <RuntimeIdentifiers>win7-x86;win7-x64</RuntimeIdentifiers>
     <IsTestProject>false</IsTestProject>
   </PropertyGroup>

@@ -90,9 +90,6 @@ fi
 # This script must be located in coreclr/tests.
 scriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-echo "Running init-tools.sh"
-"${scriptDir}"/../init-tools.sh
-
 dotnet=$"${scriptDir}"/../.dotnet/dotnet
 packageDir="${scriptDir}"/../.packages
 csprojPath="${scriptDir}"/src/Common/stress_dependencies/stress_dependencies.csproj
