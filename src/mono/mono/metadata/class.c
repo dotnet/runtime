@@ -292,31 +292,14 @@ mono_type_name_check_byref (MonoType *type, GString *str)
 		g_string_append_c (str, '&');
 }
 
-/**
- * mono_identifier_escape_type_name_chars:
- * \param str a destination string
- * \param identifier an IDENTIFIER in internal form
- *
- * \returns \p str
- *
- * The displayed form of the identifier is appended to str.
- *
- * The displayed form of an identifier has the characters ,+&*[]\
- * that have special meaning in type names escaped with a preceeding
- * backslash (\) character.
- */
-static GString*
-mono_identifier_escape_type_name_chars (GString* str, const char* identifier)
+static char*
+escape_special_chars (const char* identifier)
 {
-	if (!identifier)
-		return str;
-
-	size_t n = str->len;
-	// reserve space for common case: there will be no escaped characters.
-	g_string_set_size(str, n + strlen(identifier));
-	g_string_set_size(str, n);
-
-	for (const char* s = identifier; *s != 0 ; s++) {
+	size_t id_len = strlen (identifier);
+	// Assume the worst case, and thus only allocate once
+	char *res = g_malloc (id_len * 2 + 1);
+	char *res_ptr = res;
+	for (const char *s = identifier; *s != 0; s++) {
 		switch (*s) {
 		case ',':
 		case '+':
@@ -325,15 +308,46 @@ mono_identifier_escape_type_name_chars (GString* str, const char* identifier)
 		case '[':
 		case ']':
 		case '\\':
-			g_string_append_c (str, '\\');
-			g_string_append_c (str, *s);
-			break;
-		default:
-			g_string_append_c (str, *s);
+			*res_ptr++ = '\\';
 			break;
 		}
+		*res_ptr++ = *s;
 	}
-	return str;
+	*res_ptr = '\0';
+	return res;
+}
+
+/**
+ * mono_identifier_escape_type_name_chars:
+ * \param identifier the display name of a mono type
+ *
+ * \returns The name in external form, that is with escaping backslashes.
+ *
+ * The displayed form of an identifier has the characters ,+&*[]\
+ * that have special meaning in type names escaped with a preceeding
+ * backslash (\) character.
+ */
+char*
+mono_identifier_escape_type_name_chars (const char* identifier)
+{
+	if (!identifier)
+		return NULL;
+
+	// If the string has any special characters escape the whole thing, otherwise just return the input
+	for (const char *s = identifier; *s != 0; s++) {
+		switch (*s) {
+		case ',':
+		case '+':
+		case '&':
+		case '*':
+		case '[':
+		case ']':
+		case '\\':
+			return escape_special_chars (identifier);
+		}
+	}
+
+	return g_strdup (identifier);
 }
 
 static void
@@ -420,8 +434,11 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 			const char *klass_name_space = m_class_get_name_space (klass);
 			if (format == MONO_TYPE_NAME_FORMAT_IL)
 				g_string_append (str, klass_name_space);
-			else
-				mono_identifier_escape_type_name_chars (str, klass_name_space);
+			else {
+				char *escaped = mono_identifier_escape_type_name_chars (klass_name_space);
+				g_string_append (str, escaped);
+				g_free (escaped);
+			}
 			g_string_append_c (str, '.');
 		}
 		const char *klass_name = m_class_get_name (klass);
@@ -430,7 +447,9 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 			gssize len = s ? (s - klass_name) : (gssize)strlen (klass_name);
 			g_string_append_len (str, klass_name, len);
 		} else {
-			mono_identifier_escape_type_name_chars (str, klass_name);
+			char *escaped = mono_identifier_escape_type_name_chars (klass_name);
+			g_string_append (str, escaped);
+			g_free (escaped);
 		}
 		if (is_recursed)
 			break;
