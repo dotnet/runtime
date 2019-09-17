@@ -22,12 +22,6 @@
     <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.Common.cs">
       <Link>Common\System\Net\Logging\NetEventSource.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\System\Net\NameResolutionUtilities.cs">
-      <Link>ProductionCode\System\Net\NameResolutionUtilities.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\DnsResolveAsyncResult.cs">
-      <Link>ProductionCode\System\Net\DnsResolveAsyncResult.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Net\Sockets\ProtocolType.cs" Condition="'$(OSGroup)' == 'Windows_NT'">
       <Link>Common\System\Net\Sockets\ProtocolType.cs</Link>
     </Compile>
@@ -77,9 +71,6 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\AddressInfo.cs">
-      <Link>Interop\Windows\WinSock\AddressInfo.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\WinSock\AddressInfoHints.cs">
       <Link>Interop\Windows\WinSock\AddressInfoHints.cs</Link>
     </Compile>
@@ -98,9 +89,6 @@
     <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.GetAddrInfoW.cs">
       <Link>Interop\Windows\WinSock\Interop.GetAddrInfoW.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.freeaddrinfo.cs">
-      <Link>Interop\Windows\Winsock\Interop.freeaddinfo.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.WSAStartup.cs">
       <Link>Interop\Windows\WinSock\Interop.WSAStartup.cs</Link>
     </Compile>
@@ -112,12 +100,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\Sockets\ProtocolFamily.cs">
       <Link>Common\System\Net\Sockets\ProtocolFamily.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\SafeFreeAddrInfo.cs">
-      <Link>Interop\Windows\WinSock\SafeFreeAddrInfo.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\AddressInfoEx.cs">
-      <Link>Interop\Windows\WinSock\AddressInfoEx.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.GetAddrInfoExW.cs">
       <Link>Interop\Windows\WinSock\Interop.GetAddrInfoExW.cs</Link>
