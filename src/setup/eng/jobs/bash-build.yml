@@ -31,17 +31,31 @@ jobs:
           queue: buildpool.ubuntu.1604.amd64
     strategy: ${{ parameters.strategy }}
     variables:
+      # Preserve the NuGet authentication env vars into the Docker container.
+      # The 'NuGetAuthenticate' build step may have set these.
+      PreserveNuGetAuthDockerArgs: >-
+        -e VSS_NUGET_URI_PREFIXES
+        -e VSS_NUGET_ACCESSTOKEN
 
       ${{ if ne(parameters.name, 'FreeBSD_x64')}}:
         RunArguments: >-
           docker run --privileged --rm
           -v "$(Build.SourcesDirectory):/root/coresetup"
           -w="/root/coresetup"
+          $(PreserveNuGetAuthDockerArgs)
           ${{ parameters.additionalRunArgs }}
           ${{ parameters.dockerImage }}
       
       ${{ if eq(parameters.name, 'FreeBSD_x64')}}:
         RunArguments: export DotNetBootstrapCliTarPath=/dotnet-sdk-freebsd-x64.tar &&
+
+      ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+        BuildScript: ./eng/install-nuget-credprovider-then-build.sh
+        MSBuildScript: /root/coresetup/eng/install-nuget-credprovider-then-msbuild.sh
+
+      ${{ if not(and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'))) }}:
+        BuildScript: ./build.sh
+        MSBuildScript: /root/coresetup/eng/common/msbuild.sh
 
       CommonMSBuildArgs: >-
         /p:Configuration=$(_BuildConfig)
@@ -73,14 +87,17 @@ jobs:
         /p:SharedFrameworkPublishDir=/root/sharedFrameworkPublish/
         /p:InstallerSourceOSPlatformConfig=linux-x64.$(_BuildConfig)
 
-      MSBuildScript: /root/coresetup/eng/common/msbuild.sh
       DockerRunMSBuild: >-
         docker run
         -v $(Build.SourcesDirectory):/root/coresetup
         -v $(Build.StagingDirectory)/sharedFrameworkPublish/:/root/sharedFrameworkPublish/
         -w=/root/coresetup
+        $(PreserveNuGetAuthDockerArgs)
 
     steps:
+
+    - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+      - task: NuGetAuthenticate@0
 
     # Builds don't set user ID, so files might be owned by root and unable to be cleaned up by AzDO.
     # Clean up the build dirs ourselves in another Docker container to avoid failures.
@@ -101,7 +118,7 @@ jobs:
     - script: |
         set -x
         df -h
-        $(RunArguments) ./build.sh $(BuildArguments)
+        $(RunArguments) $(BuildScript) $(BuildArguments)
       displayName: Build
 
     # Only for glibc leg, here we produce RPMs and Debs

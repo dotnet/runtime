@@ -25,23 +25,76 @@ jobs:
   # Only get the secret variable groups if the def has the official name. Reduce dev build def risk.
   - ${{ if eq(variables['Build.DefinitionName'], 'dotnet-core-setup') }}:
     # Used for publishing individual leg assets to azure blob storage
-    - group: DotNet-DotNetCli-Storage
+    - ${{ if eq(parameters.dependency.channel.public, 'true') }}:
+      - group: DotNet-DotNetCli-Storage
+    - ${{ if ne(parameters.dependency.channel.public, 'true') }}:
+      - group: DotNet-MSRC-Storage
     # Used for dotnet/versions update
     - group: DotNet-Versions-Publish
 
-    # Blob storage publish (installers and checksums)
+  - name: _DefaultContainerName
+    value: dotnet
+  - name: _DefaultChecksumsContainerName
+    value: dotnet
+
+  - ${{ if eq(parameters.dependency.channel.public, 'true') }}:
+    - name: _DefaultAzureAccountName
+      value: dotnetcli
+    - name: _DefaultAzureAccessToken
+      value: $(dotnetcli-storage-key)
+    - name: _DefaultChecksumAzureAccountName
+      value: dotnetclichecksums
+    - name: _DefaultChecksumAzureAccessToken
+      value: $(dotnetclichecksums-storage-key)
+    # dotnet/versions update
+    - name: _GitHubUser
+      value: $[ coalesce(variables.GitHubUser, 'dotnet-build-bot') ]
+    - name: _GitHubEmail
+      value: $[ coalesce(variables.GitHubEmail, 'dotnet-build-bot@microsoft.com') ]
+    - name: _GitHubAuthToken
+      value: $[ coalesce(variables.GitHubAuthToken, '$(AccessToken-dotnet-build-bot-public-repo)') ]
+    - name: _VersionsRepoOwner
+      value: $[ coalesce(variables.VersionsRepoOwner, 'dotnet') ]
+    - name: _VersionsRepo
+      value: $[ coalesce(variables.VersionsRepo, 'versions') ]
+    - name: _DotNetVersionsArgs
+      value: >-
+        /p:GitHubUser=$(_GitHubUser)
+        /p:GitHubEmail=$(_GitHubEmail)
+        /p:GitHubAuthToken=$(_GitHubAuthToken)
+        /p:VersionsRepoOwner=$(_VersionsRepoOwner)
+        /p:VersionsRepo=$(_VersionsRepo)
+        /p:VersionsRepoPath=build-info/dotnet/core-setup/$(FullBranchName)
+
+  - ${{ if ne(parameters.dependency.channel.public, 'true') }}:
+    - name: _DefaultAzureAccountName
+      value: dotnetclimsrc
+    - name: _DefaultAzureAccessToken
+      value: $(dotnetclimsrc-access-key)
+    - name: _DefaultChecksumAzureAccountName
+      value: dotnetclimsrc
+    - name: _DefaultChecksumsContainerName
+      value: dotnet-checksums
+    - name: _DefaultChecksumAzureAccessToken
+      value: $(dotnetclimsrc-access-key)
+    # dotnet/versions update (disabled)
+    - name: _DotNetVersionsArgs
+      value: ''
+
+  # Blob storage publish (installers and checksums)
   - name: _AzureAccountName
-    value: $[ coalesce(variables.AzureAccountName, 'dotnetcli') ]
+    value: $[ coalesce(variables.AzureAccountName, '$(_DefaultAzureAccountName)') ]
   - name: _ContainerName
-    value: $[ coalesce(variables.ContainerName, 'dotnet') ]
+    value: $[ coalesce(variables.ContainerName, '$(_DefaultContainerName)') ]
   - name: _AzureAccessToken
-    value: $[ coalesce(variables.AzureAccessToken, '$(dotnetcli-storage-key)') ]
+    value: $[ coalesce(variables.AzureAccessToken, '$(_DefaultAzureAccessToken)') ]
   - name: _ChecksumAzureAccountName
-    value: $[ coalesce(variables.ChecksumAzureAccountName, 'dotnetclichecksums') ]
+    value: $[ coalesce(variables.ChecksumAzureAccountName, '$(_DefaultChecksumAzureAccountName)') ]
   - name: _ChecksumContainerName
-    value: $[ coalesce(variables.ChecksumContainerName, 'dotnet') ]
+    value: $[ coalesce(variables.ChecksumContainerName, '$(_DefaultChecksumsContainerName)') ]
   - name: _ChecksumAzureAccessToken
-    value: $[ coalesce(variables.ChecksumAzureAccessToken, '$(dotnetclichecksums-storage-key)') ]
+    value: $[ coalesce(variables.ChecksumAzureAccessToken, '$(_DefaultChecksumAzureAccessToken)') ]
+
   - name: _CommonPublishArgs
     value: >-
       /p:AzureAccountName=$(_AzureAccountName)
@@ -51,27 +104,10 @@ jobs:
       /p:ChecksumContainerName=$(_ChecksumContainerName)
       /p:ChecksumAzureAccessToken=$(_ChecksumAzureAccessToken)
 
-  # dotnet/versions update
-  - name: _GitHubUser
-    value: $[ coalesce(variables.GitHubUser, 'dotnet-build-bot') ]
-  - name: _GitHubEmail
-    value: $[ coalesce(variables.GitHubEmail, 'dotnet-build-bot@microsoft.com') ]
-  - name: _GitHubAuthToken
-    value: $[ coalesce(variables.GitHubAuthToken, '$(AccessToken-dotnet-build-bot-public-repo)') ]
-  - name: _VersionsRepoOwner
-    value: $[ coalesce(variables.VersionsRepoOwner, 'dotnet') ]
-  - name: _VersionsRepo
-    value: $[ coalesce(variables.VersionsRepo, 'versions') ]
-  - name: _DotNetVersionsArgs
-    value: >-
-      /p:GitHubUser=$(_GitHubUser)
-      /p:GitHubEmail=$(_GitHubEmail)
-      /p:GitHubAuthToken=$(_GitHubAuthToken)
-      /p:VersionsRepoOwner=$(_VersionsRepoOwner)
-      /p:VersionsRepo=$(_VersionsRepo)
-      /p:VersionsRepoPath=build-info/dotnet/core-setup/$(FullBranchName)
-
   steps:
+
+  - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+    - task: NuGetAuthenticate@0
 
   - task: DownloadBuildArtifacts@0
     displayName: Download Artifacts
