@@ -144,6 +144,7 @@ mono_threads_enter_no_safepoints_region (const char *func);
 void
 mono_threads_exit_no_safepoints_region (const char *func);
 
+#if 0
 #define MONO_ENTER_NO_SAFEPOINTS						\
 	do {										\
 		do {									\
@@ -155,6 +156,14 @@ mono_threads_exit_no_safepoints_region (const char *func);
 		if (mono_threads_are_safepoints_enabled ())			\
 			mono_threads_exit_no_safepoints_region (__func__);	\
 	} while (0)
+#else
+
+// With pinned handles, safepoints become not needed, as long as pinned handles are used.
+
+#define MONO_ENTER_NO_SAFEPOINTS   /* nothing */
+#define MONO_EXIT_NO_SAFEPOINTS    /* nothing */
+
+#endif
 
 MONO_API MONO_RT_EXTERNAL_ONLY void
 mono_thread_set_coop_aware (void);
