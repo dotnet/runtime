@@ -12,30 +12,16 @@ namespace System.Xml
     // Resolves external XML resources named by a Uniform Resource Identifier (URI).
     public partial class XmlUrlResolver : XmlResolver
     {
-        private static object s_DownloadManager;
+        private static XmlDownloadManager s_downloadManager;
         private ICredentials _credentials;
         private IWebProxy _proxy;
-        private RequestCachePolicy _cachePolicy;
 
-        private static XmlDownloadManager DownloadManager
-        {
-            get
-            {
-                if (s_DownloadManager == null)
-                {
-                    object dm = new XmlDownloadManager();
-                    Interlocked.CompareExchange<object>(ref s_DownloadManager, dm, null);
-                }
-                return (XmlDownloadManager)s_DownloadManager;
-            }
-        }
+        private static XmlDownloadManager DownloadManager =>
+            s_downloadManager ??
+            Interlocked.CompareExchange(ref s_downloadManager, new XmlDownloadManager(), null) ??
+            s_downloadManager;
 
-        // Construction
-
-        // Creates a new instance of the XmlUrlResolver class.
-        public XmlUrlResolver()
-        {
-        }
+        public XmlUrlResolver() { }
 
         public override ICredentials Credentials
         {
@@ -49,27 +35,21 @@ namespace System.Xml
 
         public RequestCachePolicy CachePolicy
         {
-            set { _cachePolicy = value; }
+            set { } // nop, as caching isn't implemented
         }
-
-        // Resource resolution
 
         // Maps a URI to an Object containing the actual resource.
         public override object GetEntity(Uri absoluteUri, string role, Type ofObjectToReturn)
         {
-            if (ofObjectToReturn == null || ofObjectToReturn == typeof(System.IO.Stream) || ofObjectToReturn == typeof(object))
+            if (ofObjectToReturn is null || ofObjectToReturn == typeof(System.IO.Stream) || ofObjectToReturn == typeof(object))
             {
-                return DownloadManager.GetStream(absoluteUri, _credentials, _proxy, _cachePolicy);
+                return DownloadManager.GetStream(absoluteUri, _credentials, _proxy);
             }
-            else
-            {
-                throw new XmlException(SR.Xml_UnsupportedClass, string.Empty);
-            }
+
+            throw new XmlException(SR.Xml_UnsupportedClass, string.Empty);
         }
 
-        public override Uri ResolveUri(Uri baseUri, string relativeUri)
-        {
-            return base.ResolveUri(baseUri, relativeUri);
-        }
+        public override Uri ResolveUri(Uri baseUri, string relativeUri) =>
+            base.ResolveUri(baseUri, relativeUri);
     }
 }

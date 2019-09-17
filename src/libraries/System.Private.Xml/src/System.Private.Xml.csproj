@@ -580,7 +580,6 @@
     <Reference Include="System.Linq.Expressions" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Net.Http" />
-    <Reference Include="System.Net.Requests" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.ObjectModel" />
     <Reference Include="System.Reflection.Primitives" />
