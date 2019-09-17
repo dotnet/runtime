@@ -4,12 +4,6 @@
 
 using Microsoft.Win32.SafeHandles;
 
-using System.Net.NetworkInformation;
-using System.Net.Sockets;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Threading;
-
 namespace System.Net
 {
 #if DEBUG
@@ -36,8 +30,7 @@ namespace System.Net
         {
             _trace = "WARNING! GC-ed  >>" + this.GetType().ToString() + "<< (should be explicitly closed) \r\n";
 #if TRACE_VERBOSE
-            string stacktrace = Environment.StackTrace;
-            _trace += stacktrace;
+            _trace += Environment.StackTrace;
 #endif
         }
 
