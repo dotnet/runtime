@@ -125,7 +125,7 @@ namespace System
 		{
             Type type = null;
 
-			string name = names [0];
+            string name = EscapeTypeName (names [0]);
             // Resolve the top level type.
             if (typeResolver != null) {
                 type = typeResolver (assembly, name, ignoreCase);
