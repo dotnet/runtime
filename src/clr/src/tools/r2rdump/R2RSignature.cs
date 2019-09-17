@@ -958,7 +958,7 @@ namespace R2RDump
                                 sizes[sizeIndex] = ReadUIntAndEmitInlineSignatureBinary(builder);
                             }
                             uint lowerBoundCount = ReadUIntAndEmitInlineSignatureBinary(builder); // number of lower bounds
-                            int[] lowerBounds = new int[sizeCount];
+                            int[] lowerBounds = new int[lowerBoundCount];
                             for (uint lowerBoundIndex = 0; lowerBoundIndex < lowerBoundCount; lowerBoundIndex++)
                             {
                                 lowerBounds[lowerBoundIndex] = ReadIntAndEmitInlineSignatureBinary(builder);
