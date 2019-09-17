@@ -204,12 +204,12 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	/* ip0 = lmf */
 	arm_addx_imm (code, ARMREG_IP0, ARMREG_FP, lmf_offset);
 	/* lmf->lmf_addr = lmf_addr */
-	arm_strx (code, ARMREG_R0, ARMREG_IP0, MONO_STRUCT_OFFSET (MonoLMF, lmf_addr));
+	arm_strp (code, ARMREG_R0, ARMREG_IP0, MONO_STRUCT_OFFSET (MonoLMF, lmf_addr));
 	/* lmf->previous_lmf = *lmf_addr */
-	arm_ldrx (code, ARMREG_IP1, ARMREG_R0, 0);
-	arm_strx (code, ARMREG_IP1, ARMREG_IP0, MONO_STRUCT_OFFSET (MonoLMF, previous_lmf));
+	arm_ldrp (code, ARMREG_IP1, ARMREG_R0, 0);
+	arm_strp (code, ARMREG_IP1, ARMREG_IP0, MONO_STRUCT_OFFSET (MonoLMF, previous_lmf));
 	/* *lmf_addr = lmf */
-	arm_strx (code, ARMREG_IP0, ARMREG_R0, 0);
+	arm_strp (code, ARMREG_IP0, ARMREG_R0, 0);
 
 	/* Call the C trampoline function */
 	/* Arg 1 = gregs */
@@ -245,11 +245,11 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	/* ip0 = lmf */
 	arm_addx_imm (code, ARMREG_IP0, ARMREG_FP, lmf_offset);
 	/* ip1 = lmf->previous_lmf */
-	arm_ldrx (code, ARMREG_IP1, ARMREG_IP0, MONO_STRUCT_OFFSET (MonoLMF, previous_lmf));
+	arm_ldrp (code, ARMREG_IP1, ARMREG_IP0, MONO_STRUCT_OFFSET (MonoLMF, previous_lmf));
 	/* ip0 = lmf->lmf_addr */
-	arm_ldrx (code, ARMREG_IP0, ARMREG_IP0, MONO_STRUCT_OFFSET (MonoLMF, lmf_addr));
+	arm_ldrp (code, ARMREG_IP0, ARMREG_IP0, MONO_STRUCT_OFFSET (MonoLMF, lmf_addr));
 	/* *lmf_addr = previous_lmf */
-	arm_strx (code, ARMREG_IP1, ARMREG_IP0, 0);
+	arm_strp (code, ARMREG_IP1, ARMREG_IP0, 0);
 
 	/* Check for thread interruption */
 	/* This is not perf critical code so no need to check the interrupt flag */
@@ -663,14 +663,14 @@ mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 	arm_strx (code, ARMREG_R0, ARMREG_FP, off_targetaddr);
 
 	/* allocate the stack space necessary for the call */
-	arm_ldrx (code, ARMREG_R0, ARMREG_R1, MONO_STRUCT_OFFSET (CallContext, stack_size));
+	arm_ldrw (code, ARMREG_R0, ARMREG_R1, MONO_STRUCT_OFFSET (CallContext, stack_size));
 	arm_movspx (code, ARMREG_IP0, ARMREG_SP);
 	arm_subx (code, ARMREG_IP0, ARMREG_IP0, ARMREG_R0);
 	arm_movspx (code, ARMREG_SP, ARMREG_IP0);
 
 	/* copy stack from the CallContext, IP0 = dest, IP1 = source */
 	arm_movspx (code, ARMREG_IP0, ARMREG_SP);
-	arm_ldrx (code, ARMREG_IP1, ARMREG_R1, MONO_STRUCT_OFFSET (CallContext, stack));
+	arm_ldrp (code, ARMREG_IP1, ARMREG_R1, MONO_STRUCT_OFFSET (CallContext, stack));
 
 	label_start_copy = code;
 
@@ -774,12 +774,12 @@ mono_arch_get_native_to_interp_trampoline (MonoTrampInfo **info)
 
 	/* set the stack pointer to the value at call site */
 	arm_addx_imm (code, ARMREG_R0, ARMREG_FP, framesize);
-	arm_strx (code, ARMREG_R0, ARMREG_FP, ccontext_offset + MONO_STRUCT_OFFSET (CallContext, stack));
+	arm_strp (code, ARMREG_R0, ARMREG_FP, ccontext_offset + MONO_STRUCT_OFFSET (CallContext, stack));
 
 	/* call interp_entry with the ccontext and rmethod as arguments */
 	arm_addx_imm (code, ARMREG_R0, ARMREG_FP, ccontext_offset);
-	arm_ldrx (code, ARMREG_R1, MONO_ARCH_RGCTX_REG, MONO_STRUCT_OFFSET (MonoFtnDesc, arg));
-	arm_ldrx (code, ARMREG_IP0, MONO_ARCH_RGCTX_REG, MONO_STRUCT_OFFSET (MonoFtnDesc, addr));
+	arm_ldrp (code, ARMREG_R1, MONO_ARCH_RGCTX_REG, MONO_STRUCT_OFFSET (MonoFtnDesc, arg));
+	arm_ldrp (code, ARMREG_IP0, MONO_ARCH_RGCTX_REG, MONO_STRUCT_OFFSET (MonoFtnDesc, addr));
 	arm_blrx (code, ARMREG_IP0);
 
 	/* load the return values from the context */

@@ -857,4 +857,14 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 
 #define arm_mrs(p, rt, sysreg) arm_format_mrs ((p), (sysreg), (rt))
 
+#ifdef MONO_ARCH_ILP32
+#define arm_strp arm_strw
+#define arm_ldrp arm_ldrw
+#define arm_cmpp arm_cmpw
+#else
+#define arm_strp arm_strx
+#define arm_ldrp arm_ldrx
+#define arm_cmpp arm_cmpx
+#endif
+
 #endif /* __arm_CODEGEN_H__ */

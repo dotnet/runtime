@@ -31,19 +31,12 @@ typedef gssize host_mgreg_t;
 typedef gsize host_umgreg_t;
 #endif
 
-// SIZEOF_REGISTER is target. mgreg_t is usually target, sometimes host.
-// There is a mismatch in cross (AOT) compilers, and the
-// never executed JIT and runtime truncate pointers.
-// When casting to/from pointers, use gsize or gssize.
-// When dealing with register context, use host_mgreg_t.
-// Or ifndef MONO_CROSS_COMPILE out runtime code.
+/* SIZEOF_REGISTER      ... machine register size of target machine
+ * TARGET_SIZEOF_VOID_P ... pointer size of target machine
+ *
+ * SIZEOF_REGISTER is usually the same as TARGET_SIZEOF_VOID_P, except when MONO_ARCH_ILP32 is defined
+ */
 #if SIZEOF_REGISTER == 4
-//typedef gint32 mgreg_t;
-#elif SIZEOF_REGISTER == 8
-//typedef gint64 mgreg_t;
-#endif
-
-#if TARGET_SIZEOF_VOID_P == 4
 typedef gint32 target_mgreg_t;
 #else
 typedef gint64 target_mgreg_t;

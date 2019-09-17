@@ -78,10 +78,14 @@
 #define AS_POINTER_DIRECTIVE ".quad"
 #elif defined(TARGET_ARM64)
 
+#ifdef MONO_ARCH_ILP32
+#define AS_POINTER_DIRECTIVE AS_INT32_DIRECTIVE
+#else
 #ifdef TARGET_ASM_APPLE
 #define AS_POINTER_DIRECTIVE ".quad"
 #else
 #define AS_POINTER_DIRECTIVE ".xword"
+#endif
 #endif
 
 #else
@@ -1862,7 +1866,7 @@ static void
 asm_writer_emit_pointer (MonoImageWriter *acfg, const char *target)
 {
 	asm_writer_emit_unset_mode (acfg);
-	asm_writer_emit_alignment (acfg, sizeof (target_mgreg_t));
+	asm_writer_emit_alignment (acfg, TARGET_SIZEOF_VOID_P);
 	asm_writer_emit_pointer_unaligned (acfg, target);
 }
 
