@@ -1,8 +1,0 @@
-<Project>
-  <!-- 
-    Common files don't take part in the root tests\src\Directory.Build.props
-    This file prevents them from including it as it gets included in its place
-    If they ever need to take part, we can conditionally include them as documented
-    here https://docs.microsoft.com/en-us/visualstudio/msbuild/customize-your-build#directorybuildprops-and-directorybuildtargets
-  -->
-</Project>

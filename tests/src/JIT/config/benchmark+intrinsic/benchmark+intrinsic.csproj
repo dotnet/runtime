@@ -20,10 +20,7 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp5.0</TargetFramework>
     <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
-    <PackageTargetFallback>$(PackageTargetFallback);dnxcore50;netcoreapp1.1;portable-net45+win8</PackageTargetFallback>
     <RuntimeIdentifiers>win-arm;win-arm64;win-x64;win-x86;$(TargetRid)</RuntimeIdentifiers>
-    <ContainsPackageReferences>true</ContainsPackageReferences>
-    <PrereleaseResolveNuGetPackages>false</PrereleaseResolveNuGetPackages>
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <Target Name="Build"

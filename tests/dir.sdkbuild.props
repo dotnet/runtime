@@ -3,7 +3,7 @@
 
   <!-- This file contains build properties that apply only to
        SDK-style test projects. Properties that are shared between SDK
-       and buildtools projects should go in dir.common.props. -->
+       and old-style projects should go in dir.common.props. -->
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.0</TargetFramework>
@@ -11,9 +11,6 @@
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <EnableDefaultItems>false</EnableDefaultItems>
     <Platform>$(BuildArch)</Platform>
-   
-    <!-- Force the CLI to allow us to target higher netcoreapp than it may know about -->
-    <NETCoreAppMaximumVersion>99.0</NETCoreAppMaximumVersion>
 
     <!-- [ARCADE REMOVE] This line should be removed we use the Arcade Sdk. -->
     <DeterministicSourcePaths>false</DeterministicSourcePaths>

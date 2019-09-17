@@ -1457,8 +1457,7 @@ def setup_core_root(host_os,
     if host_os != "Windows_NT":
         os.environ["__DistroRid"] = "%s-%s" % ("osx" if sys.platform == "darwin" else "linux", arch)
 
-    command = [dotnetcli_location, "msbuild", "/nologo", "/verbosity:minimal", "/clp:Summary",
-               "\"/l:BinClashLogger,Tools/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log\""]
+    command = [dotnetcli_location, "msbuild", "/nologo", "/verbosity:minimal", "/clp:Summary"]
 
     if host_os == "Windows_NT":
         command += ["/nodeReuse:false"]
@@ -1522,8 +1521,7 @@ def setup_core_root(host_os,
     os.environ["Core_Root"] = core_root
     os.environ["xUnitTestBinBase"] = os.path.dirname(os.path.dirname(core_root))
 
-    command = [dotnetcli_location, "msbuild", "/nologo", "/verbosity:minimal", "/clp:Summary",
-               "\"/l:BinClashLogger,Tools/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log\""]
+    command = [dotnetcli_location, "msbuild", "/nologo", "/verbosity:minimal", "/clp:Summary"]
 
     if host_os == "Windows_NT":
         command += ["/nodeReuse:false"]
