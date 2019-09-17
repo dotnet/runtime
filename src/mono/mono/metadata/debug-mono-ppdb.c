@@ -172,9 +172,10 @@ mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 		return NULL;
 	}
 
+// Temporarily disabled to unblock Roslyn
+#if HOST_WIN32 //|| HAVE_SYS_ZLIB
 	if (ppdb_data) {
 		/* Embedded PPDB data */
-#if HAVE_SYS_ZLIB || HOST_WIN32
 		/* ppdb_size is the uncompressed size */
 		guint8 *data = g_malloc0 (ppdb_size);
 		z_stream stream;
@@ -194,8 +195,8 @@ mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 		raw_contents = data;
 		size = ppdb_size;
 		to_free = data;
-#endif
 	}
+#endif
 
 	MonoAssemblyLoadContext *alc = mono_image_get_alc (image);
 	if (raw_contents) {

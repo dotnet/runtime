@@ -330,8 +330,11 @@ typedef struct {
 	void *raw_data_handle;
 	char *raw_data;
 	guint32 raw_data_len;
+	/* data was allocated with mono_file_map and must be unmapped */
 	guint8 raw_buffer_used    : 1;
+	/* data was allocated with malloc and must be freed */
 	guint8 raw_data_allocated : 1;
+	/* data was allocated with mono_file_map_fileio */
 	guint8 fileio_used : 1;
 
 #ifdef HOST_WIN32
