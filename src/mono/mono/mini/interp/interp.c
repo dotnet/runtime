@@ -4157,7 +4157,7 @@ common_vcall:
 			MINT_IN_BREAK;
 #define BINOP(datamem, op) \
 	--sp; \
-	sp [-1].data.datamem = sp [-1].data.datamem op sp [0].data.datamem; \
+	sp [-1].data.datamem op ## = sp [0].data.datamem; \
 	++ip;
 		MINT_IN_CASE(MINT_ADD_I4)
 			BINOP(i, +);
@@ -4303,7 +4303,7 @@ common_vcall:
 
 #define SHIFTOP(datamem, op) \
 	--sp; \
-	sp [-1].data.datamem = sp [-1].data.datamem op sp [0].data.i; \
+	sp [-1].data.datamem op ## = sp [0].data.i; \
 	++ip;
 
 		MINT_IN_CASE(MINT_SHL_I4)
