@@ -271,7 +271,14 @@ namespace ILCompiler.IBC
         // externalModule may be null if the exact assembly isn't known
         private uint LookupIbcTypeToken(ref EcmaModule externalModule, uint ibcToken, Dictionary<IBCBlobKey, BlobEntry> blobs)
         {
-            var typeEntry = (BlobEntry.ExternalTypeEntry)blobs[new IBCBlobKey(ibcToken, BlobType.ExternalTypeDef)];
+            if (!blobs.TryGetValue(new IBCBlobKey(ibcToken, BlobType.ExternalTypeDef), out BlobEntry externalTypeDefBlob))
+            {
+                _logger.Writer.WriteLine($"Ibc TypeToken {ibcToken:x} unable to find external typedef");
+                return Cor.Macros.RidToToken(0, CorTokenType.mdtTypeDef); // Nil TypeDef token
+            }
+
+            var typeEntry = (BlobEntry.ExternalTypeEntry)externalTypeDefBlob;
+
             string typeNamespace = null;
             string typeName = Encoding.UTF8.GetString(typeEntry.Name, 0, typeEntry.Name.Length - 1 /* these strings are null terminated */);
             TypeDefinitionHandle enclosingType = default;
@@ -287,7 +294,14 @@ namespace ILCompiler.IBC
                 if (Cor.Macros.TypeFromToken(nameSpaceToken) != CorTokenType.ibcExternalNamespace)
                     throw new Exception($"Ibc TypeToken {ibcToken:x} has Namespace tokens that is not a ibcExternalNamespace");
 
-                var namespaceEntry = (BlobEntry.ExternalNamespaceEntry)blobs[new IBCBlobKey(nameSpaceToken, BlobType.ExternalNamespaceDef)];
+
+                if (!blobs.TryGetValue(new IBCBlobKey(nameSpaceToken, BlobType.ExternalNamespaceDef), out BlobEntry namespaceEntryBlob))
+                {
+                    _logger.Writer.WriteLine($"Ibc TypeToken {ibcToken:x} unable to find external namespace blob '{nameSpaceToken:x}");
+                    return Cor.Macros.RidToToken(0, CorTokenType.mdtTypeDef); // Nil TypeDef token
+                }
+
+                var namespaceEntry = (BlobEntry.ExternalNamespaceEntry)namespaceEntryBlob;
                 typeNamespace = Encoding.UTF8.GetString(namespaceEntry.Name, 0, namespaceEntry.Name.Length - 1 /* these strings are null terminated */);
             }
             else if (!Cor.Macros.IsNilToken(typeEntry.NestedClassToken))
@@ -432,6 +446,10 @@ namespace ILCompiler.IBC
                     return context.GetWellKnownType(WellKnownType.Boolean);
                 case CorElementType.ELEMENT_TYPE_CHAR:
                     return context.GetWellKnownType(WellKnownType.Char);
+                case CorElementType.ELEMENT_TYPE_I: 
+                    return context.GetWellKnownType(WellKnownType.IntPtr); 
+                case CorElementType.ELEMENT_TYPE_U: 
+                    return context.GetWellKnownType(WellKnownType.UIntPtr);
                 case CorElementType.ELEMENT_TYPE_I1:
                     return context.GetWellKnownType(WellKnownType.SByte);
                 case CorElementType.ELEMENT_TYPE_U1:
@@ -542,6 +560,8 @@ namespace ILCompiler.IBC
                 case CorElementType.ELEMENT_TYPE_VOID:
                 case CorElementType.ELEMENT_TYPE_BOOLEAN:
                 case CorElementType.ELEMENT_TYPE_CHAR:
+                case CorElementType.ELEMENT_TYPE_I:
+                case CorElementType.ELEMENT_TYPE_U:
                 case CorElementType.ELEMENT_TYPE_I1:
                 case CorElementType.ELEMENT_TYPE_U1:
                 case CorElementType.ELEMENT_TYPE_I2:

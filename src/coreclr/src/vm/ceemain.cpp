@@ -1449,8 +1449,19 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
             {
                 if (g_IBCLogger.InstrEnabled())
                 {
-                    Thread * pThread = GetThread();
-                    ThreadLocalIBCInfo* pInfo = pThread->GetIBCInfo();
+                    Thread * pThread = GetThreadNULLOk();
+                    ThreadLocalIBCInfo* pInfo = NULL;
+
+                    if (pThread != NULL)
+                    {
+                        pInfo = pThread->GetIBCInfo();
+                        if (pInfo == NULL) 
+                        { 
+                            CONTRACT_VIOLATION( ThrowsViolation | FaultViolation); 
+                            pInfo = new ThreadLocalIBCInfo(); 
+                            pThread->SetIBCInfo(pInfo); 
+                        } 
+                    }
 
                     // Acquire the Crst lock before creating the IBCLoggingDisabler object.
                     // Only one thread at a time can be processing an IBC logging event.
