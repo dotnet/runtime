@@ -2089,8 +2089,6 @@ public:
     void SetProfilerMayHaveActivatedNonDefaultCodeVersion()
     {
         WRAPPER_NO_CONTRACT;
-        _ASSERTE(!m_profilerMayHaveActivatedNonDefaultCodeVersion);
-
         m_profilerMayHaveActivatedNonDefaultCodeVersion = true;
     }
 
