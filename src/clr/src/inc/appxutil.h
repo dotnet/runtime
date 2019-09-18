@@ -11,11 +11,6 @@
 #include "clrtypes.h"
 #include "appmodel.h"
 
-#define PACKAGE_FILTER_CLR_DEFAULT (PACKAGE_FILTER_HEAD|PACKAGE_FILTER_DIRECT)
-
-
-typedef PACKAGE_INFO *              PPACKAGE_INFO;
-typedef PACKAGE_INFO const *        PCPACKAGE_INFO;
 
 //---------------------------------------------------------------------------------------------
 // Forward declarations

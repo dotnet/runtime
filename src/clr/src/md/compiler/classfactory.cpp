@@ -24,8 +24,6 @@
 #include "mscoree.h"
 #include "corhost.h"
 
-#include "clrprivhosting.h"
-
 #include <ndpversion.h>
 
 

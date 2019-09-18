@@ -28,15 +28,13 @@
 
 #include "holder.h"
 
-#include "clrprivhosting.h"
+#include "clrprivbinding.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "activation.h" // WinRT activation.
 #endif
 
 class DangerousNonHostedSpinLock;
-
-#define INVALID_STACK_BASE_MARKER_FOR_CHECK_STATE 2
 
 class AppDomain;
 class Assembly;
@@ -54,10 +52,6 @@ protected:
 
     // Starts the runtime. This is equivalent to CoInitializeCor()
     STDMETHODIMP Start();
-
-    STDMETHODIMP LocksHeldByLogicalThread(      // Return code.
-        DWORD *pCount                           // [out] Number of locks that the current thread holds.
-        );
 
 protected:
     BOOL        m_Started;              // Has START been called?
@@ -81,20 +75,7 @@ public:
 
 };
 
-
-class ConnectionNameTable;
-typedef DPTR(class ConnectionNameTable) PTR_ConnectionNameTable;
-
 class CrstStatic;
-
-// Defines the precedence (in increading oder) of the two symbol reading knobs
-enum ESymbolReadingSetBy
-{
-    eSymbolReadingSetByDefault,
-    eSymbolReadingSetByConfig,  // EEConfig - config file, env var, etc.
-    eSymbolReadingSetByHost,    // Hosting API - highest precedence
-    eSymbolReadingSetBy_COUNT
-};
 
 class CorHost2 :
     public CorRuntimeHostBase
@@ -133,14 +114,6 @@ public:
     STDMETHODIMP ExecuteInAppDomain(DWORD dwAppDomainId,
                                     FExecuteInAppDomainCallback pCallback,
                                     void * cookie);
-
-    STDMETHODIMP LocksHeldByLogicalThread(      // Return code.
-        DWORD *pCount                           // [out] Number of locks that the current thread holds.
-        )
-    {
-        WRAPPER_NO_CONTRACT;
-        return CorRuntimeHostBase::LocksHeldByLogicalThread(pCount);
-    }
 
     // Class factory hook-up.
     static HRESULT CreateObject(REFIID riid, void **ppUnk);
@@ -219,7 +192,7 @@ private:
     BOOL m_fStarted;
     BOOL m_fAppDomainCreated; // this flag is used when an appdomain can only create a single appdomain
 
-    // Helpers for both ICLRRuntimeHost2 and ICLRPrivRuntime
+    // Helpers for both ICLRRuntimeHost2
     HRESULT _CreateAppDomain(
         LPCWSTR wszFriendlyName,
         DWORD  dwFlags,
@@ -255,10 +228,4 @@ HRESULT STDMETHODCALLTYPE DllGetActivationFactoryImpl(
 
 #endif // defined(FEATURE_COMINTEROP)
 
-extern SIZE_T Host_SegmentSize;
-extern SIZE_T Host_MaxGen0Size;
-extern BOOL  Host_fSegmentSizeSet;
-extern BOOL  Host_fMaxGen0SizeSet;
-
-#define PARTIAL_TRUST_VISIBLE_ASSEMBLIES_PROPERTY W("PARTIAL_TRUST_VISIBLE_ASSEMBLIES")
 #endif // __CorHost__h__
