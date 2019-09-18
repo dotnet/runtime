@@ -33,48 +33,16 @@ mono_w32process_try_get_modules (gpointer process, HMODULE *modules, guint32 siz
 	return EnumProcessModules (process, modules, size, needed);
 }
 
-static gunichar2 *
-mono_w32process_module_get_name (gpointer process, gpointer module, guint32 *len)
+static gboolean
+mono_w32process_module_get_name (gpointer process, gpointer module, gunichar2 **str, guint32 *len)
 {
-	gunichar2 *basename = NULL;
-	guint32 size = 260; // reasonable length to start with given historical behavior
-
-	basename = g_new0 (gunichar2, size);
-	*len = GetModuleBaseNameW (process, (HMODULE)module, basename, size);
-	// GetModuleBaseNameW will set the null byte but include it in the returned length
-	while (*len >= size) {
-		if (*len == 0) {
-			g_free (basename);
-			return NULL;
-		}
-		size *= 2; // double the buffer and try again
-		g_free (basename);
-		basename = g_new0 (gunichar2, size);
-		*len = GetModuleBaseNameW (process, (HMODULE)module, basename, size);
-	}
-	return basename;
+	return mono_get_module_basename (process, module, str, len);
 }
 
-static gunichar2 *
-mono_w32process_module_get_filename (gpointer process, gpointer module, guint32 *len)
+static gboolean
+mono_w32process_module_get_filename (gpointer process, gpointer module, gunichar2 **str, guint32 *len)
 {
-	gunichar2 *basename = NULL;
-	guint32 size = 260; // reasonable length to start with given historical behavior
-
-	basename = g_new0 (gunichar2, size);
-	*len = GetModuleFileNameExW (process, (HMODULE)module, basename, size);
-	// GetModuleFileNameExW will set the null byte but _not_ include it in the returned length
-	while (*len >= (size - 1)) {
-		if (*len == 0) {
-			g_free (basename);
-			return NULL;
-		}
-		size *= 2; // double the buffer and try again
-		g_free (basename);
-		basename = g_new0 (gunichar2, size);
-		*len = GetModuleFileNameExW (process, (HMODULE)module, basename, size);
-	}
-	return basename;
+	return mono_get_module_filename_ex (process, module, str, len);
 }
 
 static gboolean
@@ -595,9 +563,7 @@ ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObjectHandle this_
 	return_val_if_nok (error, NULL_HANDLE_ARRAY);
 
 	for (i = 0; i < module_count; i++) {
-		modname = mono_w32process_module_get_name (process, mods [i], &modname_len);
-		filename = mono_w32process_module_get_filename (process, mods [i], &filename_len);
-		if (modname && filename) {
+		if (mono_w32process_module_get_name (process, mods [i], &modname, &modname_len) && mono_w32process_module_get_filename (process, mods [i], &filename, &filename_len)) {
 			process_add_module (module, filever, str, process, mods [i], filename, modname, get_process_module_class (), error);
 			if (is_ok (error))
 				MONO_HANDLE_ARRAY_SETREF (temp_arr, num_added++, module);
@@ -644,8 +610,7 @@ ves_icall_System_Diagnostics_Process_ProcessName_internal (HANDLE process, MonoE
 	if (!mono_w32process_try_get_modules (process, &mod, sizeof (mod), &needed))
 		return NULL_HANDLE_STRING;
 
-	name = mono_w32process_module_get_name (process, mod, &len);
-	if (!name)
+	if (!mono_w32process_module_get_name (process, mod, &name, &len))
 		return NULL_HANDLE_STRING;
 
 	MonoStringHandle res = mono_string_new_utf16_handle (mono_domain_get (), name, len, error);
