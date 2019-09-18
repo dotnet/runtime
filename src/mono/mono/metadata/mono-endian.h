@@ -20,43 +20,9 @@ typedef union {
 
 #if defined(__s390x__)
 
-#define read16(x)	s390x_read16(*(guint16 *)(x))
-#define read32(x)	s390x_read32(*(guint32 *)(x))
-#define read64(x)	s390x_read64(*(guint64 *)(x))
-
-static __inline__ guint16
-s390x_read16(guint16 x)
-{
-	guint16 ret;
-
-	__asm__ ("	lrvr	%0,%1\n"
-		 "	sra	%0,16\n"
-		 : "=r" (ret) : "r" (x));
-
-	return(ret);
-}
-
-static __inline__ guint32
-s390x_read32(guint32 x)
-{
-	guint32 ret;
-
-	__asm__ ("	lrvr	%0,%1\n"
-		 : "=r" (ret) : "r" (x));
-
-	return(ret);
-}
-
-static __inline__ guint64
-s390x_read64(guint64 x)
-{
-	guint64 ret;
-
-	__asm__ ("	lrvgr	%0,%1\n"
-		 : "=r" (ret) : "r" (x));
-
-	return(ret);
-}
+#define read16(x)	__builtin_bswap16(*((guint16 *)(x)))
+#define read32(x)	__builtin_bswap32(*((guint32 *)(x)))
+#define read64(x)	__builtin_bswap64(*((guint64 *)(x)))
 
 #else
 

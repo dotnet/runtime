@@ -905,7 +905,24 @@ typedef struct ucontext MonoContext;
 #define MONO_CONTEXT_GET_CURRENT(ctx)	\
 	__asm__ __volatile__(	\
 		"stmg	%%r0,%%r15,0(%0)\n"	\
-		: : "r" (&(ctx).uc_mcontext.gregs[0])	\
+		"std	%%f0,0(%1)\n"		\
+		"std	%%f1,8(%1)\n"		\
+		"std	%%f2,16(%1)\n"		\
+		"std	%%f3,24(%1)\n"		\
+		"std	%%f4,32(%1)\n"		\
+		"std	%%f5,40(%1)\n"		\
+		"std	%%f6,48(%1)\n"		\
+		"std	%%f7,56(%1)\n"		\
+		"std	%%f8,64(%1)\n"		\
+		"std	%%f9,72(%1)\n"		\
+		"std	%%f10,80(%1)\n"		\
+		"std	%%f11,88(%1)\n"		\
+		"std	%%f12,96(%1)\n"		\
+		"std	%%f13,104(%1)\n"		\
+		"std	%%f14,112(%1)\n"		\
+		"std	%%f15,120(%1)\n"		\
+		: : "r" (&(ctx).uc_mcontext.gregs[0]),		\
+		    "r" (&(ctx).uc_mcontext.fpregs.fprs[0])	\
 		: "memory"			\
 	)
 

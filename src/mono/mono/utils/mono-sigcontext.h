@@ -538,6 +538,7 @@ typedef struct ucontext
 # endif
 
 # define UCONTEXT_GREGS(ctx)	(((ucontext_t *)(ctx))->uc_mcontext.gregs)
+# define UCONTEXT_FREGS(ctx)    (((ucontext_t *)(ctx))->uc_mcontext.fpregs->fprs)
 #endif
 
 #elif defined (TARGET_RISCV)

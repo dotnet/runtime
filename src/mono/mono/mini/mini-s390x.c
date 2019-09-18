@@ -176,16 +176,39 @@ if (ins->inst_true_bb->native_offset) { 					\
 		}							\
 	}
 
-#define CHECK_SRCDST_NCOM_F						\
+#define CHECK_SRCDST_NCOM_F(op)						\
 	if (ins->dreg == ins->sreg2) {					\
-		src2 = s390_f15;					\
-		s390_ldr (code, s390_r13, ins->sreg2);			\
+		s390_lgdr (code, s390_r0, s390_f15);			\
+		s390_ldr (code, s390_f15, ins->sreg2);			\
+		if (ins->dreg != ins->sreg1) {				\
+			s390_ldr (code, ins->dreg, ins->sreg1);		\
+		}							\
+		s390_ ## op (code, ins->dreg, s390_f15);		\
+		s390_ldgr (code, s390_f15, s390_r0);			\
 	} else {							\
-		src2 = ins->sreg2;					\
-	}								\
-	if (ins->dreg != ins->sreg1) {					\
-		s390_ldr (code, ins->dreg, ins->sreg1);			\
+		if (ins->dreg != ins->sreg1) {				\
+			s390_ldr (code, ins->dreg, ins->sreg1);		\
+		}							\
+		s390_ ## op (code, ins->dreg, ins->sreg2);		\
 	}
+
+#define CHECK_SRCDST_NCOM_FR(op, m)					\
+	s390_lgdr (code, s390_r1, s390_f14);				\
+	if (ins->dreg == ins->sreg2) {					\
+		s390_lgdr (code, s390_r0, s390_f15);			\
+		s390_ldr (code, s390_f15, ins->sreg2);			\
+		if (ins->dreg != ins->sreg1) {				\
+			s390_ldr (code, ins->dreg, ins->sreg1);		\
+		}							\
+		s390_ ## op (code, ins->dreg, s390_f15, m, s390_f14);	\
+		s390_ldgr (code, s390_f15, s390_r0);			\
+	} else {							\
+		if (ins->dreg != ins->sreg1) {				\
+			s390_ldr (code, ins->dreg, ins->sreg1);		\
+		}							\
+		s390_ ## op (code, ins->dreg, ins->sreg2, m, s390_f14); \
+	}								\
+	s390_ldgr (code, s390_f14, s390_r1);			
 
 #define MONO_EMIT_NEW_MOVE(cfg,dest,offset,src,imm,size) do { 			\
                 MonoInst *inst; 						\
@@ -2307,13 +2330,15 @@ emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size,
 		}
 	} else {
 		short *o[1];
-		S390_SET    (code, s390_r13, 0x4f000000u);
-		s390_ldgr   (code, s390_f14, s390_r13);
+		s390_lgdr   (code, s390_r14, s390_f14);
+		s390_lgdr   (code, s390_r13, s390_f15);
+		S390_SET    (code, s390_r0, 0x4f000000u);
+		s390_ldgr   (code, s390_f14, s390_r0);
 		s390_ler    (code, s390_f15, sreg);
 		s390_cebr   (code, s390_f15, s390_f14);
 		s390_jl     (code, 0); CODEPTR (code, o[0]);
-		S390_SET    (code, s390_r13, 0x4f800000u);
-		s390_ldgr   (code, s390_f14, s390_r13);
+		S390_SET    (code, s390_r0, 0x4f800000u);
+		s390_ldgr   (code, s390_f14, s390_r0);
 		s390_sebr   (code, s390_f15, s390_f14);
 		s390_cfebr  (code, dreg, 7, s390_f15);
 		s390_j      (code, 4);
@@ -2329,6 +2354,8 @@ emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size,
 			s390_ngr  (code, dreg, s390_r0);
 			break;
 		}
+		s390_ldgr   (code, s390_f14, s390_r14);
+		s390_ldgr   (code, s390_f15, s390_r13);
 	}
 	return code;
 }
@@ -2368,13 +2395,15 @@ emit_double_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size
 		}
 	} else {
 		short *o[1];
-		S390_SET    (code, s390_r13, 0x41e0000000000000llu);
-		s390_ldgr   (code, s390_f14, s390_r13);
+		s390_lgdr   (code, s390_r14, s390_f14);
+		s390_lgdr   (code, s390_r13, s390_f15);
+		S390_SET    (code, s390_r0, 0x41e0000000000000llu);
+		s390_ldgr   (code, s390_f14, s390_r0);
 		s390_ldr    (code, s390_f15, sreg);
 		s390_cdbr   (code, s390_f15, s390_f14);
 		s390_jl     (code, 0); CODEPTR (code, o[0]);
-		S390_SET    (code, s390_r13, 0x41f0000000000000llu);
-		s390_ldgr   (code, s390_f14, s390_r13);
+		S390_SET    (code, s390_r0, 0x41f0000000000000llu);
+		s390_ldgr   (code, s390_f14, s390_r0);
 		s390_sdbr   (code, s390_f15, s390_f14);
 		s390_cfdbr  (code, dreg, 7, s390_f15);
 		s390_j      (code, 4);
@@ -2390,6 +2419,8 @@ emit_double_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size
 			s390_ngr  (code, dreg, s390_r0);
 			break;
 		}
+		s390_ldgr   (code, s390_f14, s390_r14);
+		s390_ldgr   (code, s390_f15, s390_r13);
 	}
 	return code;
 }
@@ -4031,8 +4062,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (*((double *) ins->inst_p0) == 0) {
 				s390_lzdr (code, ins->dreg);
 			} else {
-				S390_SET  (code, s390_r13, ins->inst_p0);
-				s390_ld	  (code, ins->dreg, 0, s390_r13, 0);
+				S390_SET (code, s390_r13, ins->inst_p0);
+				s390_ld  (code, ins->dreg, 0, s390_r13, 0);
 			}
 		}
 			break;
@@ -4067,9 +4098,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				S390_LONG (code, stey, ste, ins->sreg1, 0, 
 					   ins->inst_destbasereg, ins->inst_offset);
 			} else {
+				s390_lgdr (code, s390_r0, s390_f15);
 				s390_ledbr (code, s390_f15, ins->sreg1);
 				S390_LONG (code, stey, ste, s390_f15, 0, 
 					   ins->inst_destbasereg, ins->inst_offset);
+				s390_ldgr (code, s390_f15, s390_r0);
 			}
 		}
 			break;
@@ -4078,9 +4111,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				S390_LONG (code, ley, le, ins->dreg, 0, 
 					   ins->inst_basereg, ins->inst_offset);
 			} else {
-				S390_LONG (code, ley, le, s390_f15, 0, 
+				S390_LONG (code, ley, le, ins->dreg, 0, 
 					   ins->inst_basereg, ins->inst_offset);
-				s390_ldebr (code, ins->dreg, s390_f15);
+				s390_ldebr (code, ins->dreg, ins->dreg);
 			}
 		}
 			break;
@@ -4098,6 +4131,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				s390_cdlgbr (code, ins->dreg, 5, ins->sreg1, 0);
 			} else {
 				short int *jump;
+				s390_lgdr  (code, s390_r0, s390_r15);
+				s390_lgdr  (code, s390_r1, s390_r13);
+				s390_lgdr  (code, s390_r14, s390_r12);
 				s390_cxgbr (code, s390_f12, ins->sreg1);
 				s390_ltgr  (code, ins->sreg1, ins->sreg1);
 				s390_jnl   (code, 0); CODEPTR(code, jump);
@@ -4108,6 +4144,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				PTRSLOT(code, jump);
 				s390_ldxbr (code, s390_f13, s390_f12);
 				s390_ldr   (code, ins->dreg, s390_f13);
+				s390_ldgr  (code, s390_f12, s390_r14);
+				s390_ldgr  (code, s390_f13, s390_r1);
+				s390_ldgr  (code, s390_f15, s390_r0);
 			}
 		}
 			break;
@@ -4277,13 +4316,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 			break;
 		case OP_FSUB: {
-			CHECK_SRCDST_NCOM_F;
-			s390_sdbr (code, ins->dreg, src2);
+			CHECK_SRCDST_NCOM_F(sdbr);
+			// s390_sdbr (code, ins->dreg, src2);
 		}
 			break;		
 		case OP_RSUB: {
-			CHECK_SRCDST_NCOM_F;
-			s390_sebr (code, ins->dreg, src2);
+			CHECK_SRCDST_NCOM_F(sebr);
+			// s390_sebr (code, ins->dreg, src2);
 		}
 			break;		
 		case OP_FMUL: {
@@ -4297,13 +4336,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 			break;		
 		case OP_FDIV: {
-			CHECK_SRCDST_NCOM_F;
-			s390_ddbr (code, ins->dreg, src2);
+			CHECK_SRCDST_NCOM_F(ddbr);
+			// s390_ddbr (code, ins->dreg, src2);
 		}
 			break;		
 		case OP_RDIV: {
-			CHECK_SRCDST_NCOM_F;
-			s390_debr (code, ins->dreg, src2);
+			CHECK_SRCDST_NCOM_F(debr);
+			//s390_debr (code, ins->dreg, src2);
 		}
 			break;		
 		case OP_FNEG: {
@@ -4315,13 +4354,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 			break;		
 		case OP_FREM: {
-			CHECK_SRCDST_NCOM_F;
-			s390_didbr (code, ins->dreg, src2, 5, s390_f15);
+			CHECK_SRCDST_NCOM_FR(didbr, 5);
 		}
 			break;
 		case OP_RREM: {
-			CHECK_SRCDST_NCOM_F;
-			s390_diebr (code, ins->dreg, src2, 5, s390_f15);
+			CHECK_SRCDST_NCOM_FR(diebr, 5);
 		}
 			break;
 		case OP_FCOMPARE: {

@@ -42,6 +42,7 @@
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/tabledefs.h>
+#include <mono/utils/mono-hwcap.h>
 #include <mono/arch/s390x/s390x-codegen.h>
 
 #include "mini.h"
