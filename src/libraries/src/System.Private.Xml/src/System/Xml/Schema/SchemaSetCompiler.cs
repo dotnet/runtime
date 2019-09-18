@@ -1107,19 +1107,6 @@ namespace System.Xml.Schema
                 XmlSchemaParticle baseParticle = CannonicalizePointlessRoot(baseType.ContentTypeParticle);
                 if (!IsValidRestriction(derivedParticle, baseParticle))
                 {
-#if DEBUG
-                    if (complexType.ContentTypeParticle != null && baseType.ContentTypeParticle != null)
-                    {
-                        string position = string.Empty;
-                        if (complexType.SourceUri != null)
-                        {
-                            position = " in " + complexType.SourceUri + "(" + complexType.LineNumber + ", " + complexType.LinePosition + ")";
-                        }
-                        Debug.WriteLineIf(DiagnosticsSwitches.XmlSchema.TraceError, "Invalid complexType content restriction" + position);
-                        Debug.WriteLineIf(DiagnosticsSwitches.XmlSchema.TraceError, "     Base    " + DumpContentModel(baseType.ContentTypeParticle));
-                        Debug.WriteLineIf(DiagnosticsSwitches.XmlSchema.TraceError, "     Derived " + DumpContentModel(complexType.ContentTypeParticle));
-                    }
-#endif
                     if (_restrictionErrorMsg != null)
                     {
                         SendValidationEvent(SR.Sch_InvalidParticleRestrictionDetailed, _restrictionErrorMsg, complexType);
@@ -2230,16 +2217,6 @@ namespace System.Xml.Schema
                         {
                             if (attributeBase.Use == XmlSchemaUse.Prohibited && attribute.Use != XmlSchemaUse.Prohibited)
                             {
-#if DEBUG
-                                string position = string.Empty;
-                                if (derivedType.SourceUri != null)
-                                {
-                                    position = " in " + derivedType.SourceUri + "(" + derivedType.LineNumber + ", " + derivedType.LinePosition + ")";
-                                }
-                                Debug.WriteLineIf(DiagnosticsSwitches.XmlSchema.TraceError, "Invalid complexType attributes restriction" + position);
-                                Debug.WriteLineIf(DiagnosticsSwitches.XmlSchema.TraceError, "     Base    " + DumpAttributes(baseType.AttributeUses, baseType.AttributeWildcard));
-                                Debug.WriteLineIf(DiagnosticsSwitches.XmlSchema.TraceError, "     Derived " + DumpAttributes(derivedType.AttributeUses, derivedType.AttributeWildcard));
-#endif
                                 SendValidationEvent(SR.Sch_AttributeRestrictionProhibited, attribute);
                             }
                             else if (attributeBase.Use == XmlSchemaUse.Required && (attribute.Use != XmlSchemaUse.Required))
@@ -2271,16 +2248,6 @@ namespace System.Xml.Schema
                         }
                         if (baseAttributeWildcard == null || !baseAttributeWildcard.Allows(attribute.QualifiedName))
                         {
-#if DEBUG
-                            string position = string.Empty;
-                            if (derivedType.SourceUri != null)
-                            {
-                                position = " in " + derivedType.SourceUri + "(" + derivedType.LineNumber + ", " + derivedType.LinePosition + ")";
-                            }
-                            Debug.WriteLineIf(DiagnosticsSwitches.XmlSchema.TraceError, "Invalid complexType attributes restriction" + position);
-                            Debug.WriteLineIf(DiagnosticsSwitches.XmlSchema.TraceError, "     Base    " + DumpAttributes(baseType.AttributeUses, baseType.AttributeWildcard));
-                            Debug.WriteLineIf(DiagnosticsSwitches.XmlSchema.TraceError, "     Derived " + DumpAttributes(derivedType.AttributeUses, derivedType.AttributeWildcard));
-#endif
                             SendValidationEvent(SR.Sch_AttributeRestrictionInvalidFromWildcard, attribute);
                         }
                     }
@@ -2346,63 +2313,6 @@ namespace System.Xml.Schema
                 }
             }
         }
-
-#if DEBUG
-        private string DumpAttributes(XmlSchemaObjectTable attributeUses, XmlSchemaAnyAttribute attributeWildcard)
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.Append("[");
-            bool first = true;
-            foreach (XmlSchemaAttribute attribute in attributeUses.Values)
-            {
-                if (attribute.Use != XmlSchemaUse.Prohibited)
-                {
-                    if (first)
-                    {
-                        first = false;
-                    }
-                    else
-                    {
-                        sb.Append(" ");
-                    }
-                    sb.Append(attribute.QualifiedName.Name);
-                    if (attribute.Use == XmlSchemaUse.Optional || attribute.Use == XmlSchemaUse.None)
-                    {
-                        sb.Append("?");
-                    }
-                }
-            }
-            if (attributeWildcard != null)
-            {
-                if (attributeUses.Count != 0)
-                {
-                    sb.Append(" ");
-                }
-                sb.Append("<");
-                sb.Append(attributeWildcard.NamespaceList.ToString());
-                sb.Append(">");
-            }
-            sb.Append("] - [");
-            first = true;
-            foreach (XmlSchemaAttribute attribute in attributeUses.Values)
-            {
-                if (attribute.Use == XmlSchemaUse.Prohibited)
-                {
-                    if (first)
-                    {
-                        first = false;
-                    }
-                    else
-                    {
-                        sb.Append(" ");
-                    }
-                    sb.Append(attribute.QualifiedName.Name);
-                }
-            }
-            sb.Append("]");
-            return sb.ToString();
-        }
-#endif
 
         private bool IsProcessContentsRestricted(XmlSchemaComplexType baseType, XmlSchemaAnyAttribute derivedAttributeWildcard, XmlSchemaAnyAttribute baseAttributeWildcard)
         {
@@ -2901,13 +2811,6 @@ namespace System.Xml.Schema
             else
             {
                 ParticleContentValidator contentValidator = new ParticleContentValidator(complexType.ContentType, CompilationSettings.EnableUpaCheck);
-#if DEBUG
-                if (DiagnosticsSwitches.XmlSchema.TraceVerbose)
-                {
-                    string name = complexType.Name != null ? complexType.Name : string.Empty;
-                    Debug.WriteLine("CompileComplexContent: " + name + DumpContentModel(particle));
-                }
-#endif
                 try
                 {
                     contentValidator.Start();
@@ -2947,98 +2850,6 @@ namespace System.Xml.Schema
                 }
             }
         }
-
-#if DEBUG
-        private string DumpContentModel(XmlSchemaParticle particle)
-        {
-            StringBuilder sb = new StringBuilder();
-            DumpContentModelTo(sb, particle);
-            return sb.ToString();
-        }
-
-        private void DumpContentModelTo(StringBuilder sb, XmlSchemaParticle particle)
-        {
-            if (particle is XmlSchemaElement)
-            {
-                sb.Append(((XmlSchemaElement)particle).QualifiedName);
-            }
-            else if (particle is XmlSchemaAny)
-            {
-                sb.Append("<");
-                sb.Append(((XmlSchemaAny)particle).NamespaceList.ToString());
-                sb.Append(">");
-            }
-            else if (particle is XmlSchemaAll)
-            {
-                XmlSchemaAll all = (XmlSchemaAll)particle;
-                sb.Append("[");
-                bool first = true;
-                for (int i = 0; i < all.Items.Count; ++i)
-                {
-                    XmlSchemaElement localElement = (XmlSchemaElement)all.Items[i];
-                    if (first)
-                    {
-                        first = false;
-                    }
-                    else
-                    {
-                        sb.Append(", ");
-                    }
-                    sb.Append(localElement.QualifiedName.Name);
-                    if (localElement.MinOccurs == decimal.Zero)
-                    {
-                        sb.Append("?");
-                    }
-                }
-                sb.Append("]");
-            }
-            else if (particle is XmlSchemaGroupBase)
-            {
-                XmlSchemaGroupBase gb = (XmlSchemaGroupBase)particle;
-                sb.Append("(");
-                string delimeter = (particle is XmlSchemaChoice) ? " | " : ", ";
-                bool first = true;
-                for (int i = 0; i < gb.Items.Count; ++i)
-                {
-                    if (first)
-                    {
-                        first = false;
-                    }
-                    else
-                    {
-                        sb.Append(delimeter);
-                    }
-                    DumpContentModelTo(sb, (XmlSchemaParticle)gb.Items[i]);
-                }
-                sb.Append(")");
-            }
-            else
-            {
-                Debug.Assert(particle == XmlSchemaParticle.Empty);
-                sb.Append("<>");
-            }
-            if (particle.MinOccurs == decimal.One && particle.MaxOccurs == decimal.One)
-            {
-                // nothing
-            }
-            else if (particle.MinOccurs == decimal.Zero && particle.MaxOccurs == decimal.One)
-            {
-                sb.Append("?");
-            }
-            else if (particle.MinOccurs == decimal.Zero && particle.MaxOccurs == decimal.MaxValue)
-            {
-                sb.Append("*");
-            }
-            else if (particle.MinOccurs == decimal.One && particle.MaxOccurs == decimal.MaxValue)
-            {
-                sb.Append("+");
-            }
-            else
-            {
-                sb.Append("{" + particle.MinOccurs.ToString(NumberFormatInfo.InvariantInfo) + ", " + particle.MaxOccurs.ToString(NumberFormatInfo.InvariantInfo) + "}");
-            }
-        }
-#endif
 
         private bool BuildParticleContentModel(ParticleContentValidator contentValidator, XmlSchemaParticle particle)
         {

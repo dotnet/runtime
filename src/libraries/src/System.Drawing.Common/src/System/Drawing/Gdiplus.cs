@@ -18,16 +18,12 @@ namespace System.Drawing
         // We make this a nested class so that we don't have to initialize GDI+ to access SafeNativeMethods (mostly gdi/user32).
         internal static partial class Gdip
         {
-            private static readonly TraceSwitch s_gdiPlusInitialization = new TraceSwitch("GdiPlusInitialization", "Tracks GDI+ initialization and teardown");
-
             private static readonly IntPtr s_initToken;
             private const string ThreadDataSlotName = "system.drawing.threaddata";
 
             static Gdip()
             {
                 Debug.Assert(s_initToken == IntPtr.Zero, "GdiplusInitialization: Initialize should not be called more than once in the same domain!");
-                Debug.WriteLineIf(s_gdiPlusInitialization.TraceVerbose, "Initialize GDI+ [" + AppDomain.CurrentDomain.FriendlyName + "]");
-                Debug.Indent();
 
                 PlatformInitialize();
 
@@ -37,8 +33,6 @@ namespace System.Drawing
                 // domains are ok, just make sure to pair each w/GdiplusShutdown
                 int status = GdiplusStartup(out s_initToken, ref input, out StartupOutput output);
                 CheckStatus(status);
-
-                Debug.Unindent();
             }
 
             /// <summary>
