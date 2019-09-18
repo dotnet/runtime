@@ -1270,8 +1270,8 @@ namespace System.Tests
                         firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.CurrentCulture),
                         firstSpan.Contains(secondSpan, StringComparison.CurrentCulture));
                     Assert.Equal(
-                        firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.CurrentCulture),
-                        firstSpan.Contains(secondSpan, StringComparison.CurrentCulture));
+                        firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.CurrentCultureIgnoreCase),
+                        firstSpan.Contains(secondSpan, StringComparison.CurrentCultureIgnoreCase));
                     Assert.Equal(
                         firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.InvariantCulture),
                         firstSpan.Contains(secondSpan, StringComparison.InvariantCulture));
@@ -4712,7 +4712,10 @@ namespace System.Tests
 
             // Invalid comparison type
             AssertExtensions.Throws<ArgumentException>("comparisonType", () => s.StartsWith("H", StringComparison.CurrentCulture - 1));
+            AssertExtensions.Throws<ArgumentException>("comparisonType", () => s.AsSpan().StartsWith("H".AsSpan(), StringComparison.CurrentCulture - 1));
+
             AssertExtensions.Throws<ArgumentException>("comparisonType", () => s.StartsWith("H", StringComparison.OrdinalIgnoreCase + 1));
+            AssertExtensions.Throws<ArgumentException>("comparisonType", () => s.AsSpan().StartsWith("H".AsSpan(), StringComparison.OrdinalIgnoreCase + 1));
         }
 
         [Fact]
@@ -4788,6 +4791,11 @@ namespace System.Tests
 
             ReadOnlySpan<char> span = s1.AsSpan();
             ReadOnlySpan<char> slice = s2.AsSpan();
+            c = span.StartsWith<char>(slice);
+            Assert.True(c);
+
+            span = new ReadOnlySpan<char>(a);
+            slice = new ReadOnlySpan<char>(b);
             c = span.StartsWith<char>(slice);
             Assert.True(c);
         }
@@ -6976,6 +6984,10 @@ namespace System.Tests
             Assert.Throws<ArgumentException>(() => s1.StartsWith(s1, StringComparison.CurrentCulture - 1));
             Assert.Throws<ArgumentException>(() => s1.StartsWith(s1, StringComparison.OrdinalIgnoreCase + 1));
             Assert.Throws<ArgumentException>(() => s1.StartsWith(s1, (StringComparison)6));
+
+            Assert.Throws<ArgumentException>(() => s1.AsSpan().StartsWith(s1.AsSpan(), StringComparison.CurrentCulture - 1));
+            Assert.Throws<ArgumentException>(() => s1.AsSpan().StartsWith(s1.AsSpan(), StringComparison.OrdinalIgnoreCase + 1));
+            Assert.Throws<ArgumentException>(() => s1.AsSpan().StartsWith(s1.AsSpan(), (StringComparison)6));
 
             Assert.Throws<ArgumentException>(() => s1.AsSpan().CompareTo(s1.AsSpan(), StringComparison.CurrentCulture - 1));
             Assert.Throws<ArgumentException>(() => s1.AsSpan().CompareTo(s1.AsSpan(), StringComparison.OrdinalIgnoreCase + 1));
