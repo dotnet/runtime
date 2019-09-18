@@ -237,13 +237,25 @@ internal static partial class Interop
             return encoded;
         }
 
-        public static unsafe bool CertGetCertificateChain(ChainEngine hChainEngine, SafeCertContextHandle pCertContext, FILETIME* pTime, SafeCertStoreHandle hStore, [In] ref CERT_CHAIN_PARA pChainPara, CertChainFlags dwFlags, IntPtr pvReserved, out SafeX509ChainHandle ppChainContext)
+        internal static SafeChainEngineHandle CertCreateCertificateChainEngine(ref CERT_CHAIN_ENGINE_CONFIG config)
         {
-            return CertGetCertificateChain((IntPtr)hChainEngine, pCertContext, pTime, hStore, ref pChainPara, dwFlags, pvReserved, out ppChainContext);
+            if (!CertCreateCertificateChainEngine(ref config, out SafeChainEngineHandle chainEngineHandle))
+            {
+                int errorCode = Marshal.GetLastWin32Error();
+                throw errorCode.ToCryptographicException();
+            }
+
+            return chainEngineHandle;
         }
 
         [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        private static extern unsafe bool CertGetCertificateChain(IntPtr hChainEngine, SafeCertContextHandle pCertContext, FILETIME* pTime, SafeCertStoreHandle hStore, [In] ref CERT_CHAIN_PARA pChainPara, CertChainFlags dwFlags, IntPtr pvReserved, out SafeX509ChainHandle ppChainContext);
+        private static extern bool CertCreateCertificateChainEngine(ref CERT_CHAIN_ENGINE_CONFIG pConfig, out SafeChainEngineHandle hChainEngineHandle);
+
+        [DllImport(Libraries.Crypt32)]
+        public static extern void CertFreeCertificateChainEngine(IntPtr hChainEngine);
+
+        [DllImport(Libraries.Crypt32, SetLastError = true)]
+        public static extern unsafe bool CertGetCertificateChain(IntPtr hChainEngine, SafeCertContextHandle pCertContext, FILETIME* pTime, SafeCertStoreHandle hStore, [In] ref CERT_CHAIN_PARA pChainPara, CertChainFlags dwFlags, IntPtr pvReserved, out SafeX509ChainHandle ppChainContext);
 
         [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
         public static extern bool CryptHashPublicKeyInfo(IntPtr hCryptProv, int algId, int dwFlags, CertEncodingType dwCertEncodingType, [In] ref CERT_PUBLIC_KEY_INFO pInfo, [Out] byte[] pbComputedHash, [In, Out] ref int pcbComputedHash);

@@ -30,6 +30,8 @@ namespace Internal.Cryptography.Pal
             OidCollection certificatePolicy,
             X509RevocationMode revocationMode,
             X509RevocationFlag revocationFlag,
+            X509Certificate2Collection customTrustStore,
+            X509ChainTrustMode trustMode,
             DateTime verificationTime,
             TimeSpan timeout)
         {
@@ -57,6 +59,8 @@ namespace Internal.Cryptography.Pal
 
             OpenSslX509ChainProcessor chainPal = OpenSslX509ChainProcessor.InitiateChain(
                 ((OpenSslX509CertificateReader)cert).SafeHandle,
+                customTrustStore,
+                trustMode,
                 verificationTime,
                 remainingDownloadTime);
 

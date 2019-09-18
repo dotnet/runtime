@@ -153,6 +153,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\X509ChainPolicy.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509ChainStatus.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509ChainStatusFlags.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509ChainTrustMode.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509ContentType.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509EnhancedKeyUsageExtension.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Extension.cs" />

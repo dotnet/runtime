@@ -272,6 +272,70 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Theory]
+        // Test with intermediate certificates in CustomTrustStore
+        [InlineData(true, X509ChainStatusFlags.NoError)]
+        // Test with ExtraStore containing root certificate
+        [InlineData(false, X509ChainStatusFlags.UntrustedRoot)]
+        public static void CustomRootTrustDoesNotTrustIntermediates(
+            bool saveAllInCustomTrustStore,
+            X509ChainStatusFlags chainFlags)
+        {
+            TestDataGenerator.MakeTestChain3(
+                out X509Certificate2 endEntityCert,
+                out X509Certificate2 intermediateCert,
+                out X509Certificate2 rootCert);
+
+            using (endEntityCert)
+            using (intermediateCert)
+            using (rootCert)
+            using (ChainHolder chainHolder = new ChainHolder())
+            {
+                X509Chain chain = chainHolder.Chain;
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chain.ChainPolicy.VerificationTime = endEntityCert.NotBefore.AddSeconds(1);
+                chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                chain.ChainPolicy.CustomTrustStore.Add(intermediateCert);
+
+                if (saveAllInCustomTrustStore)
+                {
+                    chain.ChainPolicy.CustomTrustStore.Add(rootCert);
+                }
+                else
+                {
+                    chain.ChainPolicy.ExtraStore.Add(rootCert);
+                }
+
+                Assert.Equal(saveAllInCustomTrustStore, chain.Build(endEntityCert));
+                Assert.Equal(3, chain.ChainElements.Count);
+                Assert.Equal(chainFlags, chain.AllStatusFlags());
+            }
+        }
+
+        [Fact]
+        public static void CustomTrustModeWithNoCustomTrustCerts()
+        {
+            TestDataGenerator.MakeTestChain3(
+                out X509Certificate2 endEntityCert,
+                out X509Certificate2 intermediateCert,
+                out X509Certificate2 rootCert);
+
+            using (endEntityCert)
+            using (intermediateCert)
+            using (rootCert)
+            using (ChainHolder chainHolder = new ChainHolder())
+            {
+                X509Chain chain = chainHolder.Chain;
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chain.ChainPolicy.VerificationTime = endEntityCert.NotBefore.AddSeconds(1);
+                chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+
+                Assert.False(chain.Build(endEntityCert));
+                Assert.Equal(1, chain.ChainElements.Count);
+                Assert.Equal(X509ChainStatusFlags.PartialChain, chain.AllStatusFlags());
+            }
+        }
+
         private static X509Certificate2 TamperSignature(X509Certificate2 input)
         {
             byte[] cert = input.RawData;
