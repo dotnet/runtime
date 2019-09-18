@@ -16,7 +16,7 @@ But for complex methods that have loops it is not a very good metric for measuri
 For such methods we want the JIT to improve the code generated for the innermost loop and are willing to pay extra costs outside the loop.
 The total codesize for the method does not properly classify regressions or improvements for changes to code inside of loops.
 
-Instead of using total codesize as the metric it is better to have the JIT produce an estimate of the the dynamic execution cost of a method.
+Instead of using total codesize as the metric it is better to have the JIT produce an estimate of the dynamic execution cost of a method.
 This new dynamic execution cost of the method is called the "Perf Score" of the method.
 The "jit-analyze" tool would also be changed so that instead of using codeszie it would use the Perf Score to determine the list of methods to display.
 
@@ -34,7 +34,7 @@ We are willing to make several simplfying assumptions that allow us to more quic
 ### Modern CPU Hardware documentation:
 Hardware vendors, such as Intel and ARM,  provide information for assembly lanaguge programmers and compiler writers.
 They typically provide the following details for instructions:
-   - Latency -- The number of clock cyccles that are required for the execution to complete and produce a result after all inputs are available.
+   - Latency -- The number of clock cycles that are required for the execution to complete and produce a result after all inputs are available.
    - Throughput -- The number of clock cycles required to wait before the issue ports are free to accept another instruction. This value is often less than one cycle.
    - Pipeline Ports -- Each instruction uses certain pipeline functions, such as LOad Memory, Store Mmeory, Integer ALU, Floating Point Multiply, etc...
 
