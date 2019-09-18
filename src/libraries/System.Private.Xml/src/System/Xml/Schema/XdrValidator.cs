@@ -605,13 +605,11 @@ namespace System.Xml.Schema
                 attdef.DefaultValueTyped = typedValue;
             }
 #if DEBUG
-            catch (XmlSchemaException ex)
-            {
-                Debug.WriteLineIf(DiagnosticsSwitches.XmlSchema.TraceError, ex.Message);
+            catch (XmlSchemaException)
 #else
             catch
-            {
 #endif
+            {
                 XmlSchemaException e = new XmlSchemaException(SR.Sch_AttributeDefaultDataType, attdef.Name.ToString(), baseUri, lineNo, linePos);
                 if (eventhandler != null)
                 {

@@ -449,12 +449,6 @@ namespace System.Data.Common
                 int index = columnMappings.IndexOf(sourceColumn);
                 if (-1 != index)
                 {
-#if DEBUG
-                    if (AdapterSwitches.DataSchema.TraceInfo)
-                    {
-                        Debug.WriteLine($"mapping match on SourceColumn \"{sourceColumn}\"");
-                    }
-#endif
                     return columnMappings._items[index].GetDataColumnBySchemaAction(dataTable, dataType, schemaAction);
                 }
             }
@@ -465,30 +459,12 @@ namespace System.Data.Common
             switch (mappingAction)
             {
                 case MissingMappingAction.Passthrough:
-#if DEBUG
-                    if (AdapterSwitches.DataSchema.TraceInfo)
-                    {
-                        Debug.WriteLine($"mapping passthrough of SourceColumn \"{sourceColumn}\"");
-                    }
-#endif
                     return DataColumnMapping.GetDataColumnBySchemaAction(sourceColumn, sourceColumn, dataTable, dataType, schemaAction);
 
                 case MissingMappingAction.Ignore:
-#if DEBUG
-                    if (AdapterSwitches.DataSchema.TraceWarning)
-                    {
-                        Debug.WriteLine($"mapping filter of SourceColumn \"{sourceColumn}\"");
-                    }
-#endif
                     return null;
 
                 case MissingMappingAction.Error:
-#if DEBUG
-                    if (AdapterSwitches.DataSchema.TraceError)
-                    {
-                        Debug.WriteLine($"mapping error on SourceColumn \"{sourceColumn}\"");
-                    }
-#endif
                     throw ADP.MissingColumnMapping(sourceColumn);
             }
             throw ADP.InvalidMissingMappingAction(mappingAction);
@@ -502,12 +478,6 @@ namespace System.Data.Common
                 int index = columnMappings.IndexOf(sourceColumn);
                 if (-1 != index)
                 {
-#if DEBUG
-                    if (AdapterSwitches.DataSchema.TraceInfo)
-                    {
-                        Debug.WriteLine($"mapping match on SourceColumn \"{sourceColumn}\"");
-                    }
-#endif
                     return columnMappings._items[index];
                 }
             }
@@ -518,30 +488,12 @@ namespace System.Data.Common
             switch (mappingAction)
             {
                 case MissingMappingAction.Passthrough:
-#if DEBUG
-                    if (AdapterSwitches.DataSchema.TraceInfo)
-                    {
-                        Debug.WriteLine($"mapping passthrough of SourceColumn \"{sourceColumn}\"");
-                    }
-#endif
                     return new DataColumnMapping(sourceColumn, sourceColumn);
 
                 case MissingMappingAction.Ignore:
-#if DEBUG
-                    if (AdapterSwitches.DataSchema.TraceWarning)
-                    {
-                        Debug.WriteLine($"mapping filter of SourceColumn \"{sourceColumn}\"");
-                    }
-#endif
                     return null;
 
                 case MissingMappingAction.Error:
-#if DEBUG
-                    if (AdapterSwitches.DataSchema.TraceError)
-                    {
-                        Debug.WriteLine($"mapping error on SourceColumn \"{sourceColumn}\"");
-                    }
-#endif
                     throw ADP.MissingColumnMapping(sourceColumn);
             }
             throw ADP.InvalidMissingMappingAction(mappingAction);

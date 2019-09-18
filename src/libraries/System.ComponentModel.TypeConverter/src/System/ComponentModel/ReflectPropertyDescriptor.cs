@@ -547,7 +547,6 @@ namespace System.ComponentModel
                 if (site != null)
                 {
                     changeService = (IComponentChangeService)site.GetService(typeof(IComponentChangeService));
-                    Debug.Assert(!ComponentModelSwitches.CommonDesignerServices.Enabled || changeService != null, "IComponentChangeService not found");
                 }
 
                 // Make sure that it is ok to send the onchange events
@@ -595,7 +594,6 @@ namespace System.ComponentModel
                 if (site != null)
                 {
                     changeService = (IComponentChangeService)site.GetService(typeof(IComponentChangeService));
-                    Debug.Assert(!ComponentModelSwitches.CommonDesignerServices.Enabled || changeService != null, "IComponentChangeService not found");
                 }
 
                 // Make sure that it is ok to send the onchange events
@@ -997,7 +995,6 @@ namespace System.ComponentModel
                 if (site != null)
                 {
                     changeService = (IComponentChangeService)site.GetService(typeof(IComponentChangeService));
-                    Debug.Assert(!ComponentModelSwitches.CommonDesignerServices.Enabled || changeService != null, "IComponentChangeService not found");
                 }
 
                 // Make sure that it is ok to send the onchange events
@@ -1060,7 +1057,6 @@ namespace System.ComponentModel
                     if (site != null)
                     {
                         changeService = (IComponentChangeService)site.GetService(typeof(IComponentChangeService));
-                        Debug.Assert(!ComponentModelSwitches.CommonDesignerServices.Enabled || changeService != null, "IComponentChangeService not found");
                     }
 
                     // Make sure that it is ok to send the onchange events

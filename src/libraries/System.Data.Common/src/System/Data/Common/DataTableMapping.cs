@@ -132,54 +132,24 @@ namespace System.Data.Common
 
             if (string.IsNullOrEmpty(dataSetTable))
             {
-#if DEBUG
-                if (AdapterSwitches.DataSchema.TraceWarning)
-                {
-                    Debug.WriteLine("explicit filtering of SourceTable \"" + SourceTable + "\"");
-                }
-#endif
                 return null;
             }
             DataTableCollection tables = dataSet.Tables;
             int index = tables.IndexOf(dataSetTable);
             if ((0 <= index) && (index < tables.Count))
             {
-#if DEBUG
-                if (AdapterSwitches.DataSchema.TraceInfo)
-                {
-                    Debug.WriteLine("schema match on DataTable \"" + dataSetTable);
-                }
-#endif
                 return tables[index];
             }
             switch (schemaAction)
             {
                 case MissingSchemaAction.Add:
                 case MissingSchemaAction.AddWithKey:
-#if DEBUG
-                    if (AdapterSwitches.DataSchema.TraceInfo)
-                    {
-                        Debug.WriteLine("schema add of DataTable \"" + dataSetTable + "\"");
-                    }
-#endif
                     return new DataTable(dataSetTable);
 
                 case MissingSchemaAction.Ignore:
-#if DEBUG
-                    if (AdapterSwitches.DataSchema.TraceWarning)
-                    {
-                        Debug.WriteLine("schema filter of DataTable \"" + dataSetTable + "\"");
-                    }
-#endif
                     return null;
 
                 case MissingSchemaAction.Error:
-#if DEBUG
-                    if (AdapterSwitches.DataSchema.TraceError)
-                    {
-                        Debug.WriteLine("schema error on DataTable \"" + dataSetTable + "\"");
-                    }
-#endif
                     throw ADP.MissingTableSchema(dataSetTable, SourceTable);
             }
             throw ADP.InvalidMissingSchemaAction(schemaAction);

@@ -251,7 +251,6 @@ namespace System.Diagnostics
             string source = sourceData.Source;
             string machineName = sourceData.MachineName;
 
-            Debug.WriteLineIf(CompModSwitches.EventLog.TraceVerbose, "CreateEventSource: Checking arguments");
             if (!SyntaxCheck.CheckMachineName(machineName))
             {
                 throw new ArgumentException(SR.Format(SR.InvalidParameter, nameof(machineName), machineName));
@@ -271,17 +270,13 @@ namespace System.Diagnostics
             try
             {
                 NetFrameworkUtils.EnterMutex(eventLogMutexName, ref mutex);
-                Debug.WriteLineIf(CompModSwitches.EventLog.TraceVerbose, "CreateEventSource: Calling SourceExists");
                 if (SourceExists(source, machineName, true))
                 {
-                    Debug.WriteLineIf(CompModSwitches.EventLog.TraceVerbose, "CreateEventSource: SourceExists returned true");
                     if (".".Equals(machineName))
                         throw new ArgumentException(SR.Format(SR.LocalSourceAlreadyExists, source));
                     else
                         throw new ArgumentException(SR.Format(SR.SourceAlreadyExists, source, machineName));
                 }
-
-                Debug.WriteLineIf(CompModSwitches.EventLog.TraceVerbose, "CreateEventSource: Getting DllPath");
 
                 RegistryKey baseKey = null;
                 RegistryKey eventKey = null;
@@ -290,7 +285,6 @@ namespace System.Diagnostics
                 RegistryKey sourceKey = null;
                 try
                 {
-                    Debug.WriteLineIf(CompModSwitches.EventLog.TraceVerbose, "CreateEventSource: Getting local machine regkey");
                     if (machineName == ".")
                         baseKey = Registry.LocalMachine;
                     else

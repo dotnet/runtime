@@ -107,7 +107,6 @@
     <Compile Include="System\Drawing\Text\TextRenderingHint.cs" />
     <Compile Include="System\Drawing\Text\PrivateFontCollection.cs" />
     <Compile Include="System\Drawing\ClientUtils.cs" />
-    <Compile Include="misc\CompModSwitches.cs" />
     <Compile Include="System\Drawing\Gdiplus.cs" />
     <Compile Include="System\Drawing\NativeMethods.cs" />
     <Compile Include="System\Drawing\UnsafeNativeMethods.cs" />
@@ -325,7 +324,6 @@
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.StackTrace" />
     <Reference Include="System.Diagnostics.Tools" />
-    <Reference Include="System.Diagnostics.TraceSource" />
     <Reference Include="System.Drawing.Primitives" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Memory" />
