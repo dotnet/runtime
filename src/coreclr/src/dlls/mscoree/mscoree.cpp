@@ -22,8 +22,6 @@
 #include "ComCallUnmarshal.h"
 #endif // FEATURE_COMINTEROP
 
-#include "clrprivhosting.h"
-
 #include <dbgenginemetrics.h>
 
 // Locals.
