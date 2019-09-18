@@ -2960,7 +2960,8 @@ public:
     }
 
     bool     lvaTrackedFixed; // true: We cannot add new 'tracked' variable
-    unsigned lvaCount;        // total number of locals
+    unsigned lvaCount;        // total number of locals, which includes function arguments,
+                              // special arguments, IL local variables, and JIT temporary variables
 
     unsigned   lvaRefCount; // total number of references to locals
     LclVarDsc* lvaTable;    // variable descriptor table
@@ -7347,9 +7348,13 @@ public:
     VARSET_TP compCurLife;     // current live variables
     GenTree*  compCurLifeTree; // node after which compCurLife has been computed
 
+    // Compare the given "newLife" with last set of live variables and update
+    // codeGen "gcInfo", siScopes, "regSet" with the new variable's homes/liveness.
     template <bool ForCodeGen>
     void compChangeLife(VARSET_VALARG_TP newLife);
 
+    // Update the GC's masks, register's masks and reports change on variable's homes given a set of
+    // current live variables if changes have happened since "compCurLife".
     template <bool ForCodeGen>
     inline void compUpdateLife(VARSET_VALARG_TP newLife);
 

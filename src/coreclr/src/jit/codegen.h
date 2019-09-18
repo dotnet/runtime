@@ -709,10 +709,15 @@ public:
 #ifdef USING_SCOPE_INFO
     void psiAdjustStackLevel(unsigned size);
 
+    // For EBP-frames, the parameters are accessed via ESP on entry to the function,
+    // but via EBP right after a "mov ebp,esp" instruction.
     void psiMoveESPtoEBP();
 
+    // Close previous psiScope and open a new one on the location described by the registers.
     void psiMoveToReg(unsigned varNum, regNumber reg = REG_NA, regNumber otherReg = REG_NA);
 
+    // Search the open "psiScope" of the "varNum" parameter, close it and open
+    // a new one using "LclVarDsc" fields.
     void psiMoveToStack(unsigned varNum);
 
     /**************************************************************************
@@ -1030,6 +1035,8 @@ protected:
 
 #endif // !defined(_TARGET_64BIT_)
 
+    // Do liveness update for register produced by the current node in codegen after
+    // code has been emitted for it.
     void genProduceReg(GenTree* tree);
     void genUnspillRegIfNeeded(GenTree* tree);
     regNumber genConsumeReg(GenTree* tree);
