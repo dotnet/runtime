@@ -148,11 +148,23 @@ namespace Internal.JitInterface
             throw new NotSupportedException();
         }
 
+        private bool ShouldSkipCompilation(IMethodNode methodCodeNodeNeedingCode)
+        {
+            return methodCodeNodeNeedingCode.Method.IsAggressiveOptimization;
+        }
+
         public void CompileMethod(IReadyToRunMethodCodeNode methodCodeNodeNeedingCode)
         {
             _methodCodeNode = methodCodeNodeNeedingCode;
 
-            CompileMethodInternal(methodCodeNodeNeedingCode);
+            if (!ShouldSkipCompilation(methodCodeNodeNeedingCode))
+            {
+                CompileMethodInternal(methodCodeNodeNeedingCode);
+            }
+            else
+            {
+                PublishEmptyCode();
+            }
         }
 
         private SignatureContext GetSignatureContext()
