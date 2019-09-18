@@ -339,6 +339,12 @@ static bool isIntegerRegister(regNumber reg)
     return (reg >= REG_INT_FIRST) && (reg <= REG_INT_LAST);
 }
 
+//  Returns true if reg encodes for REG_SP or REG_FP
+static bool isStackRegister(regNumber reg)
+{
+    return (reg == REG_ZR) || (reg == REG_FP);
+} // ZR (R31) encodes the SP register
+
 // Returns true if 'value' is a legal unsigned immediate 8 bit encoding (such as for fMOV).
 static bool isValidUimm8(ssize_t value)
 {

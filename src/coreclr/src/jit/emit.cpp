@@ -813,7 +813,8 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         printf("\n      G_M%03u_IG%02u:", Compiler::s_compMethodsCount, ig->igNum);
         if (emitComp->verbose)
         {
-            printf("        ; offs=%06XH, funclet=%02u", ig->igOffs, ig->igFuncIdx);
+            printf("        ; offs=%06XH, funclet=%02u, bbWeight=%s", ig->igOffs, ig->igFuncIdx,
+                   refCntWtd2str(ig->igWeight));
         }
         else
         {
@@ -1080,6 +1081,78 @@ int emitter::instrDesc::idAddrUnion::iiaGetJitDataOffset() const
 {
     assert(iiaIsJitDataOffset());
     return Compiler::eeGetJitDataOffs(iiaFieldHnd);
+}
+
+#if defined(DEBUG) || defined(LATE_DISASM)
+
+//----------------------------------------------------------------------------------------
+// insEvaluateExecutionCost:
+//    Returns the estimate execution cost fortyhe current instruction
+//
+// Arguments:
+//    id  - The current instruction descriptor to be evaluated
+//
+// Return Value:
+//    calls getInsExecutionCharacteristics and uses the result
+//    to compute an estimated execution cost
+//
+// Notes:
+//
+float emitter::insEvaluateExecutionCost(instrDesc* id)
+{
+    insExecutionCharacteristics result        = getInsExecutionCharacteristics(id);
+    float                       throughput    = result.insThroughput;
+    float                       latency       = result.insLatency;
+    unsigned                    memAccessKind = result.insMemoryAccessKind;
+
+    // Check for PERFSCORE_THROUGHPUT_ILLEGAL and PERFSCORE_LATENCY_ILLEGAL
+    assert(throughput > 0.0);
+    assert(latency >= 0.0);
+
+    if ((memAccessKind == PERFSCORE_MEMORY_WRITE) && (latency <= PERFSCORE_LATENCY_WR_GENERAL))
+    {
+        // We assume that we won't read back from memory for any writes
+        // Thus we don't pay latency costs for writes.
+        latency = 0.0;
+    }
+    if (latency >= 1.0)
+    {
+        // We assume that the processor's speculation will typically eliminate one cycle of latency
+        //
+        latency -= 1.0;
+    }
+
+    return max(throughput, latency);
+}
+
+#endif // defined(DEBUG) || defined(LATE_DISASM)
+
+//----------------------------------------------------------------------------------------
+// getCurrentBlockWeight: Return the block weight for the currently active block
+//
+// Arguments:
+//    None
+//
+// Return Value:
+//    The block weight for the current block
+//
+// Notes:
+//    The current block is recorded in emitComp->compCurBB by
+//    CodeGen::genCodeForBBlist() as it walks the blocks.
+//    When we are in the prolog/epilog this value is nullptr.
+//
+BasicBlock::weight_t emitter::getCurrentBlockWeight()
+{
+    // If we have a non-null compCurBB, then use it to get the current block weight
+    if (emitComp->compCurBB != nullptr)
+    {
+        return emitComp->compCurBB->getBBWeight(emitComp);
+    }
+    else // we have a null compCurBB
+    {
+        // prolog or epilog case, so just use the standard weight
+        return BB_UNITY_WEIGHT;
+    }
 }
 
 void emitter::dispIns(instrDesc* id)
@@ -2306,6 +2379,12 @@ void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMas
     {
         emitNxtIG();
     }
+#if defined(DEBUG) || defined(LATE_DISASM)
+    else
+    {
+        emitCurIG->igWeight = getCurrentBlockWeight();
+    }
+#endif
 
     VarSetOps::Assign(emitComp, emitThisGCrefVars, GCvars);
     VarSetOps::Assign(emitComp, emitInitGCrefVars, GCvars);
@@ -3206,7 +3285,7 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
     }
     else
     {
-        printf("offs=%06XH, size=%04XH", ig->igOffs, ig->igSize);
+        printf("offs=%06XH, size=%04XH, bbWeight=%s", ig->igOffs, ig->igSize, refCntWtd2str(ig->igWeight));
 
         if (ig->igFlags & IGF_GC_VARS)
         {
@@ -3328,6 +3407,11 @@ size_t emitter::emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp)
     // printf("[S=%02u] " , emitCurStackLvl);
 
     is = emitOutputInstr(ig, id, dp);
+
+#if defined(DEBUG) || defined(LATE_DISASM)
+    float insExeCost = insEvaluateExecutionCost(id);
+    emitComp->info.compPerfScore += (ig->igWeight / BB_UNITY_WEIGHT) * insExeCost;
+#endif // defined(DEBUG) || defined(LATE_DISASM)
 
 // printf("[S=%02u]\n", emitCurStackLvl);
 
@@ -4764,7 +4848,14 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
             }
             else
             {
-                printf("\nG_M%03u_IG%02u:\n", Compiler::s_compMethodsCount, ig->igNum);
+                printf("\nG_M%03u_IG%02u:", Compiler::s_compMethodsCount, ig->igNum);
+
+                // Display the block weight, but only when it isn't the standard BB_UNITY_WEIGHT
+                if (ig->igWeight != BB_UNITY_WEIGHT)
+                {
+                    printf("\t\t;; bbWeight=%s", refCntWtd2str(ig->igWeight));
+                }
+                printf("\n");
             }
         }
 
@@ -6747,6 +6838,10 @@ insGroup* emitter::emitAllocIG()
 
 #ifdef DEBUG
     ig->igSelf = ig;
+#endif
+
+#if defined(DEBUG) || defined(LATE_DISASM)
+    ig->igWeight = getCurrentBlockWeight();
 #endif
 
 #if EMITTER_STATS

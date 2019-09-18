@@ -13669,6 +13669,1144 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 #pragma warning(pop)
 #endif
 
+emitter::insFormat emitter::getMemoryOperation(instrDesc* id)
+{
+    insFormat   result = IF_NONE;
+    instruction ins    = id->idIns();
+    insFormat   insFmt = id->idInsFmt();
+
+    if (ins == INS_lea)
+    {
+        // an INS_lea instruction doesn't actually read memory
+        insFmt = IF_NONE;
+    }
+
+    switch (insFmt)
+    {
+        case IF_NONE:
+        case IF_LABEL:
+        case IF_RWR_LABEL:
+        case IF_METHOD:
+        case IF_CNS:
+
+        case IF_RRD:
+        case IF_RWR:
+        case IF_RRW:
+        case IF_RRD_CNS:
+        case IF_RWR_CNS:
+        case IF_RRW_CNS:
+        case IF_RRW_SHF:
+        case IF_RRD_RRD:
+        case IF_RWR_RRD:
+        case IF_RRW_RRD:
+        case IF_RRW_RRW:
+        case IF_RRW_RRW_CNS:
+        case IF_RWR_RRD_RRD:
+        case IF_RWR_RRD_RRD_CNS:
+        case IF_RWR_RRD_RRD_RRD:
+            // none, or register only
+            result = IF_NONE;
+            break;
+
+        case IF_ARD:
+        case IF_RRD_ARD:
+        case IF_RWR_ARD:
+        case IF_RRW_ARD:
+        case IF_RWR_ARD_CNS:
+        case IF_RWR_RRD_ARD:
+        case IF_RRW_ARD_CNS:
+        case IF_RWR_ARD_RRD:
+        case IF_RWR_RRD_ARD_CNS:
+        case IF_RWR_RRD_ARD_RRD:
+        case IF_ARD_CNS:
+        case IF_ARD_RRD:
+            // Address [reg+reg*scale+cns] - read
+            result = IF_ARD;
+            break;
+
+        case IF_AWR:
+        case IF_AWR_RRD:
+        case IF_AWR_CNS:
+        case IF_AWR_RRD_CNS:
+        case IF_AWR_RRD_RRD:
+            // Address [reg+reg*scale+cns] - write
+            result = IF_AWR;
+            break;
+
+        case IF_ARW:
+        case IF_ARW_RRD:
+        case IF_ARW_CNS:
+        case IF_ARW_SHF:
+            // Address [reg+reg*scale+cns] - read and write
+            result = IF_ARW;
+            break;
+
+        case IF_MRD:
+        case IF_MRD_CNS:
+        case IF_MRD_OFF:
+        case IF_MRD_RRD:
+        case IF_RRD_MRD:
+        case IF_RRW_MRD:
+        case IF_RWR_MRD:
+        case IF_RWR_MRD_CNS:
+        case IF_RWR_MRD_OFF:
+        case IF_RWR_RRD_MRD:
+        case IF_RRW_MRD_CNS:
+        case IF_RWR_RRD_MRD_CNS:
+        case IF_RWR_RRD_MRD_RRD:
+        case IF_METHPTR:
+            // Address [cns] - read
+            result = IF_MRD;
+            break;
+
+        case IF_MWR:
+        case IF_MWR_CNS:
+        case IF_MWR_RRD:
+        case IF_MWR_RRD_CNS:
+            // Address [cns] - write
+            result = IF_MWR;
+            break;
+
+        case IF_MRW:
+        case IF_MRW_CNS:
+        case IF_MRW_RRD:
+        case IF_MRW_SHF:
+            // Address [cns] - read and write
+            result = IF_MWR;
+            break;
+
+        case IF_SRD:
+        case IF_SRD_CNS:
+        case IF_SRD_RRD:
+
+        case IF_RRD_SRD:
+        case IF_RRW_SRD:
+        case IF_RWR_SRD:
+        case IF_RWR_SRD_CNS:
+        case IF_RWR_RRD_SRD:
+        case IF_RRW_SRD_CNS:
+        case IF_RWR_RRD_SRD_CNS:
+        case IF_RWR_RRD_SRD_RRD:
+            // Stack [RSP] - read
+            result = IF_SRD;
+            break;
+
+        case IF_SWR:
+        case IF_SWR_CNS:
+        case IF_SWR_RRD:
+        case IF_SWR_RRD_CNS:
+        case IF_SWR_LABEL:
+            // Stack [RSP] - write
+            result = IF_SWR;
+            break;
+
+        case IF_SRW:
+        case IF_SRW_CNS:
+        case IF_SRW_RRD:
+        case IF_SRW_SHF:
+            // Stack [RSP] - read and write
+            result = IF_SWR;
+            break;
+
+        default:
+            result = IF_NONE;
+            break;
+    }
+    return result;
+}
+
+#if defined(DEBUG) || defined(LATE_DISASM)
+
+//----------------------------------------------------------------------------------------
+// getInsExecutionCharacteristics:
+//    Returns the current instruction execution characteristics
+//
+// Arguments:
+//    id  - The current instruction descriptor to be evaluated
+//
+// Return Value:
+//    A struct containing the current instruction execution characteristics
+//
+// Notes:
+//
+emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(instrDesc* id)
+{
+    insExecutionCharacteristics result;
+    instruction                 ins    = id->idIns();
+    insFormat                   insFmt = id->idInsFmt();
+    insFormat                   memFmt = getMemoryOperation(id);
+    unsigned                    memAccessKind;
+
+    result.insThroughput = PERFSCORE_THROUGHPUT_ILLEGAL;
+    result.insLatency    = PERFSCORE_LATENCY_ILLEGAL;
+
+    // Model the memory latency
+    switch (memFmt)
+    {
+        // Model a read from stack location, possible def to use latency from L0 cache
+        case IF_SRD:
+            result.insLatency = PERFSCORE_LATENCY_RD_STACK;
+            memAccessKind     = PERFSCORE_MEMORY_READ;
+            break;
+
+        case IF_SWR:
+            result.insLatency = PERFSCORE_LATENCY_WR_STACK;
+            memAccessKind     = PERFSCORE_MEMORY_WRITE;
+            break;
+
+        case IF_SRW:
+            result.insLatency = PERFSCORE_LATENCY_RD_WR_STACK;
+            memAccessKind     = PERFSCORE_MEMORY_READ_WRITE;
+            break;
+
+        // Model a read from a constant location, possible def to use latency from L0 cache
+        case IF_MRD:
+            result.insLatency = PERFSCORE_LATENCY_RD_CONST_ADDR;
+            memAccessKind     = PERFSCORE_MEMORY_READ;
+            break;
+
+        case IF_MWR:
+            result.insLatency = PERFSCORE_LATENCY_WR_CONST_ADDR;
+            memAccessKind     = PERFSCORE_MEMORY_WRITE;
+            break;
+
+        case IF_MRW:
+            result.insLatency = PERFSCORE_LATENCY_RD_WR_CONST_ADDR;
+            memAccessKind     = PERFSCORE_MEMORY_READ_WRITE;
+            break;
+
+        // Model a read from memory location, possible def to use latency from L0 or L1 cache
+        case IF_ARD:
+            result.insLatency = PERFSCORE_LATENCY_RD_GENERAL;
+            memAccessKind     = PERFSCORE_MEMORY_READ;
+            break;
+
+        case IF_AWR:
+            result.insLatency = PERFSCORE_LATENCY_WR_GENERAL;
+            memAccessKind     = PERFSCORE_MEMORY_WRITE;
+            break;
+
+        case IF_ARW:
+            result.insLatency = PERFSCORE_LATENCY_RD_WR_GENERAL;
+            memAccessKind     = PERFSCORE_MEMORY_READ_WRITE;
+            break;
+
+        case IF_NONE:
+            result.insLatency = PERFSCORE_LATENCY_ZERO;
+            memAccessKind     = PERFSCORE_MEMORY_NONE;
+            break;
+
+        default:
+            assert(!"Unhandled insFmt for switch (memFmt)");
+            result.insLatency = PERFSCORE_LATENCY_ZERO;
+            memAccessKind     = PERFSCORE_MEMORY_NONE;
+            break;
+    }
+    result.insMemoryAccessKind = memAccessKind;
+
+    switch (ins)
+    {
+        case INS_nop:
+        case INS_int3:
+            assert(memFmt == IF_NONE);
+            result.insThroughput = PERFSCORE_THROUGHPUT_4X;
+            result.insLatency    = PERFSCORE_LATENCY_ZERO;
+            break;
+
+        case INS_push:
+        case INS_push_hide:
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            if (insFmt == IF_RRD) // push  reg
+            {
+                // For pushes (stack writes) we assume that the full latency will be covered
+                result.insLatency = PERFSCORE_LATENCY_ZERO;
+            }
+            break;
+
+        case INS_pop:
+        case INS_pop_hide:
+            if (insFmt == IF_RWR) // pop   reg
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                // For pops (stack reads) we assume that the full latency will be covered
+                result.insLatency = PERFSCORE_LATENCY_ZERO;
+            }
+            else
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            }
+            break;
+
+        case INS_inc:
+        case INS_dec:
+        case INS_neg:
+        case INS_not:
+            if (memFmt == IF_NONE)
+            {
+                // ins   reg
+                result.insThroughput = PERFSCORE_THROUGHPUT_4X;
+                result.insLatency    = PERFSCORE_LATENCY_1C;
+            }
+            else
+            {
+                // ins   mem
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            }
+            break;
+
+#ifdef _TARGET_AMD64_
+        case INS_movsxd:
+#endif
+        case INS_mov:
+        case INS_movsx:
+        case INS_movzx:
+        case INS_cmp:
+        case INS_test:
+            if (memFmt == IF_NONE)
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_4X;
+            }
+            else if (memAccessKind == PERFSCORE_MEMORY_READ)
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            }
+            else // writes
+            {
+                assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            }
+            break;
+
+        case INS_adc:
+        case INS_sbb:
+            result.insLatency = max(PERFSCORE_LATENCY_1C, result.insLatency);
+            if (memAccessKind == PERFSCORE_MEMORY_READ_WRITE)
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            }
+            else
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            }
+            break;
+
+        case INS_add:
+        case INS_sub:
+        case INS_and:
+        case INS_or:
+        case INS_xor:
+            result.insLatency = max(PERFSCORE_LATENCY_1C, result.insLatency);
+            if (memFmt == IF_NONE)
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_4X;
+            }
+            else if (memAccessKind == PERFSCORE_MEMORY_READ_WRITE)
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            }
+            else
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            }
+            break;
+
+        case INS_lea:
+            // uops.info
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_1C;
+            break;
+
+        case INS_imul_AX:
+        case INS_imul_BX:
+        case INS_imul_CX:
+        case INS_imul_DX:
+        case INS_imul_BP:
+        case INS_imul_SI:
+        case INS_imul_DI:
+#ifdef _TARGET_AMD64_
+        case INS_imul_08:
+        case INS_imul_09:
+        case INS_imul_10:
+        case INS_imul_11:
+        case INS_imul_12:
+        case INS_imul_13:
+        case INS_imul_14:
+        case INS_imul_15:
+#endif // _TARGET_AMD64_
+        case INS_mulEAX:
+        case INS_imulEAX:
+        case INS_imul:
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_3C;
+            break;
+
+        case INS_div:
+            // The integer divide instructions have long latencies
+            if ((id->idOpSize() == EA_8BYTE))
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_52C;
+                result.insLatency    = PERFSCORE_LATENCY_62C;
+            }
+            else
+            {
+                assert(id->idOpSize() == EA_4BYTE);
+                result.insThroughput = PERFSCORE_THROUGHPUT_6C;
+                result.insThroughput = PERFSCORE_LATENCY_26C;
+            }
+            break;
+
+        case INS_idiv:
+            result.insThroughput = PERFSCORE_THROUGHPUT_6C;
+            // The integer divide instructions have long latenies
+            if ((id->idOpSize() == EA_8BYTE))
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_57C;
+                result.insLatency    = PERFSCORE_LATENCY_69C;
+            }
+            else
+            {
+                assert(id->idOpSize() == EA_4BYTE);
+                result.insThroughput = PERFSCORE_THROUGHPUT_6C;
+                result.insThroughput = PERFSCORE_LATENCY_26C;
+            }
+            break;
+
+        case INS_cdq:
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_1C;
+            break;
+
+        case INS_shl:
+        case INS_shr:
+        case INS_sar:
+        case INS_ror:
+        case INS_rol:
+            switch (insFmt)
+            {
+                case IF_RRW_CNS:
+                    // ins   reg, cns
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_1C;
+                    break;
+
+                case IF_MRW_CNS:
+                case IF_SRW_CNS:
+                case IF_ARW_CNS:
+                    // ins   [mem], cns
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                    break;
+
+                case IF_RRW: // probably should use INS_shl_N
+                    // ins   reg, cl
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                    result.insLatency    = PERFSCORE_LATENCY_2C;
+                    break;
+
+                case IF_MRW: // probably should use INS_shr_N
+                case IF_SRW:
+                case IF_ARW:
+                    // ins   [mem], cl
+                    result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+                    break;
+
+                default:
+                    // all others
+                    assert(!"unreached");
+                    result.insThroughput = PERFSCORE_THROUGHPUT_DEFAULT;
+                    result.insLatency    = PERFSCORE_LATENCY_DEFAULT;
+                    break;
+            }
+            break;
+
+        case INS_shl_1:
+        case INS_shr_1:
+        case INS_sar_1:
+            result.insLatency = PERFSCORE_LATENCY_1C;
+            switch (insFmt)
+            {
+                case IF_RRW:
+                    // ins   reg, 1
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    break;
+
+                case IF_MRW:
+                case IF_SRW:
+                case IF_ARW:
+                    // ins   [mem], 1
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                    break;
+
+                default:
+                    // all others
+                    assert(!"unreached");
+                    result.insThroughput = PERFSCORE_THROUGHPUT_DEFAULT;
+            }
+            break;
+
+        case INS_ror_1:
+        case INS_rol_1:
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_1C;
+            break;
+
+        case INS_shl_N:
+        case INS_shr_N:
+        case INS_sar_N:
+        case INS_ror_N:
+        case INS_rol_N:
+            result.insLatency = PERFSCORE_LATENCY_2C;
+            switch (insFmt)
+            {
+                case IF_RRW_SHF:
+                    // ins   reg, cl
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                    break;
+
+                case IF_MRW_SHF:
+                case IF_SRW_SHF:
+                case IF_ARW_SHF:
+                    // ins   [mem], cl
+                    result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+                    break;
+
+                default:
+                    // all others
+                    assert(!"unreached");
+                    result.insThroughput = PERFSCORE_THROUGHPUT_DEFAULT;
+                    break;
+            }
+            break;
+
+        case INS_rcr:
+        case INS_rcl:
+            result.insThroughput = PERFSCORE_THROUGHPUT_6C;
+            result.insLatency    = PERFSCORE_LATENCY_6C;
+            break;
+
+        case INS_rcr_1:
+        case INS_rcl_1:
+            // uops.info
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            break;
+
+        case INS_shld:
+        case INS_shrd:
+            if (insFmt == IF_RRW_RRW_CNS)
+            {
+                // ins   reg, reg, cns
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                result.insLatency    = PERFSCORE_LATENCY_3C;
+            }
+            else
+            {
+                assert(memAccessKind == PERFSCORE_MEMORY_WRITE); // _SHF form never emitted
+                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            }
+            break;
+
+        case INS_bt:
+            if ((insFmt == IF_RRD_RRD) || (insFmt == IF_RRD_CNS))
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                result.insLatency    = PERFSCORE_LATENCY_1C;
+            }
+            else
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            }
+            break;
+
+        case INS_seto:
+        case INS_setno:
+        case INS_setb:
+        case INS_setae:
+        case INS_sete:
+        case INS_setne:
+        case INS_setbe:
+        case INS_seta:
+        case INS_sets:
+        case INS_setns:
+        case INS_setp:
+        case INS_setnp:
+        case INS_setl:
+        case INS_setge:
+        case INS_setle:
+        case INS_setg:
+            result.insLatency = PERFSCORE_LATENCY_1C;
+            if (insFmt == IF_RRD)
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            }
+            else
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            }
+            break;
+
+        case INS_jo:
+        case INS_jno:
+        case INS_jb:
+        case INS_jae:
+        case INS_je:
+        case INS_jne:
+        case INS_jbe:
+        case INS_ja:
+        case INS_js:
+        case INS_jns:
+        case INS_jp:
+        case INS_jnp:
+        case INS_jl:
+        case INS_jge:
+        case INS_jle:
+        case INS_jg:
+            // conditional branch
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_BRANCH_COND;
+            break;
+
+        case INS_jmp:
+        case INS_l_jmp:
+            // branch to a constant address
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            result.insLatency    = PERFSCORE_LATENCY_BRANCH_DIRECT;
+            break;
+
+#ifdef _TARGET_AMD64_
+        case INS_rex_jmp:
+#endif // _TARGET_AMD64_
+        case INS_i_jmp:
+            // branch to register
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            result.insLatency    = PERFSCORE_LATENCY_BRANCH_INDIRECT;
+            break;
+
+        case INS_call:
+            // uops.info
+            result.insLatency = PERFSCORE_LATENCY_ZERO;
+            switch (insFmt)
+            {
+                case IF_LABEL:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    break;
+
+                case IF_METHOD:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    break;
+
+                case IF_METHPTR:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_3C;
+                    break;
+
+                case IF_SRD:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_3C;
+                    break;
+
+                case IF_ARD:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_3C;
+                    break;
+
+                default:
+                    assert(!"Unhandled insFmt for INS_call");
+                    result.insThroughput = PERFSCORE_THROUGHPUT_DEFAULT;
+                    break;
+            }
+            break;
+
+        case INS_ret:
+            if (insFmt == IF_CNS)
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            }
+            else
+            {
+                assert(insFmt == IF_NONE);
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            }
+            break;
+
+        case INS_lock:
+            result.insThroughput = PERFSCORE_THROUGHPUT_13C;
+            break;
+
+        case INS_xadd:
+            // uops.info
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            break;
+
+        case INS_cmpxchg:
+            result.insThroughput = PERFSCORE_THROUGHPUT_5C;
+            break;
+
+        case INS_xchg:
+            // uops.info
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            if (memFmt == IF_NONE)
+            {
+                result.insLatency = PERFSCORE_LATENCY_1C;
+            }
+            else
+            {
+                result.insLatency = PERFSCORE_LATENCY_23C;
+            }
+            break;
+
+#ifdef _TARGET_X86_
+        case INS_fld:
+        case INS_fstp:
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            if (memAccessKind == PERFSCORE_MEMORY_NONE)
+            {
+                result.insLatency = PERFSCORE_LATENCY_1C;
+            }
+            break;
+#endif // _TARGET_X86
+
+#ifdef _TARGET_AMD64_
+        case INS_movsq:
+        case INS_stosq:
+#endif // _TARGET_AMD64_
+        case INS_movsd:
+        case INS_stosd:
+            // uops.info
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            break;
+
+#ifdef _TARGET_AMD64_
+        case INS_r_movsq:
+        case INS_r_stosq:
+#endif // _TARGET_AMD64_
+        case INS_r_movsd:
+        case INS_r_movsb:
+        case INS_r_stosd:
+        case INS_r_stosb:
+            // Actually variable sized: rep stosd, used to zero frame slots
+            // uops.info
+            result.insThroughput = PERFSCORE_THROUGHPUT_25C;
+            break;
+
+        case INS_mov_xmm2i:
+            // movd  reg, xmm
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+
+        case INS_mov_i2xmm:
+            // movd  xmm, reg
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_1C;
+            break;
+
+        case INS_movq:
+            if (memAccessKind == PERFSCORE_MEMORY_NONE)
+            {
+                // movq   reg, reg
+                result.insThroughput = PERFSCORE_THROUGHPUT_3X;
+                result.insLatency    = PERFSCORE_LATENCY_1C;
+            }
+            else if (memAccessKind == PERFSCORE_MEMORY_READ)
+            {
+                // movq   reg, mem
+                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            }
+            else
+            {
+                // movq   mem, reg
+                assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            }
+            break;
+
+        case INS_movdqa:
+        case INS_movdqu:
+            if (memAccessKind == PERFSCORE_MEMORY_NONE)
+            {
+                // ins   reg, reg
+                result.insThroughput = PERFSCORE_THROUGHPUT_4X;
+                result.insLatency    = PERFSCORE_LATENCY_ZERO;
+            }
+            else if (memAccessKind == PERFSCORE_MEMORY_READ)
+            {
+                // ins   reg, mem
+                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            }
+            else
+            {
+                // ins   mem, reg
+                assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            }
+            break;
+
+        case INS_movhps:
+        case INS_movhpd:
+        case INS_movlps:
+        case INS_movlpd:
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            if (memAccessKind == PERFSCORE_MEMORY_READ)
+            {
+                result.insLatency = max(PERFSCORE_LATENCY_4C, result.insLatency);
+            }
+            else
+            {
+                assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
+                result.insLatency = max(PERFSCORE_LATENCY_3C, result.insLatency);
+            }
+            break;
+
+        case INS_movhlps:
+        case INS_movlhps:
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_1C;
+            break;
+
+        case INS_xorps:
+            // uops.info
+            result.insThroughput = PERFSCORE_THROUGHPUT_3X;
+            result.insLatency    = PERFSCORE_LATENCY_ZERO;
+            break;
+
+        case INS_vzeroupper:
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            break;
+
+        case INS_movss:
+        case INS_movsdsse2:
+        case INS_movddup:
+            if (memAccessKind == PERFSCORE_MEMORY_NONE)
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                result.insLatency    = PERFSCORE_LATENCY_1C;
+            }
+            else
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                result.insLatency    = max(PERFSCORE_LATENCY_3C, result.insLatency);
+            }
+            break;
+
+        case INS_ucomiss:
+        case INS_ucomisd:
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            break;
+
+        case INS_addss:
+        case INS_addsd:
+        case INS_subss:
+        case INS_subsd:
+        case INS_mulss:
+        case INS_mulsd:
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_4C;
+            break;
+
+        case INS_divss:
+            result.insThroughput = PERFSCORE_THROUGHPUT_3C;
+            result.insLatency    = PERFSCORE_LATENCY_11C;
+            break;
+
+        case INS_divsd:
+            result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+            result.insLatency    = PERFSCORE_LATENCY_13C;
+            break;
+
+        case INS_sqrtss:
+            result.insThroughput = PERFSCORE_THROUGHPUT_3C;
+            result.insLatency    = PERFSCORE_LATENCY_12C;
+            break;
+
+        case INS_sqrtsd:
+            result.insThroughput = PERFSCORE_THROUGHPUT_6C;
+            result.insLatency    = PERFSCORE_LATENCY_16C;
+            break;
+
+        case INS_roundsd:
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_8C;
+            break;
+
+        case INS_cvttsd2si:
+        case INS_cvtsd2si:
+        case INS_cvttss2si:
+        case INS_cvtss2si:
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_6C;
+            break;
+
+        case INS_cvtsd2ss:
+        case INS_cvtps2pd:
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_5C;
+            break;
+
+        case INS_cvtsi2sd:
+        case INS_cvtsi2ss:
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            result.insLatency    = PERFSCORE_LATENCY_6C;
+            break;
+
+        case INS_cvtss2sd:
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            result.insLatency    = PERFSCORE_LATENCY_5C;
+            break;
+
+        case INS_movaps:
+        case INS_movups:
+        case INS_movapd:
+        case INS_movupd:
+            if (memAccessKind == PERFSCORE_MEMORY_NONE)
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_4X;
+                result.insLatency    = PERFSCORE_LATENCY_1C;
+            }
+            else if (memAccessKind == PERFSCORE_MEMORY_READ)
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                result.insLatency    = max(PERFSCORE_LATENCY_2C, result.insLatency);
+            }
+            else
+            {
+                assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                result.insLatency    = max(PERFSCORE_LATENCY_3C, result.insLatency);
+            }
+            break;
+
+        case INS_andps:
+            if (memAccessKind == PERFSCORE_MEMORY_NONE)
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_3X;
+                result.insLatency    = PERFSCORE_LATENCY_1C;
+            }
+            else
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            }
+            break;
+
+        case INS_lzcnt:
+        case INS_tzcnt:
+        case INS_popcnt:
+        case INS_crc32:
+        case INS_pdep:
+        case INS_pext:
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_3C;
+            break;
+
+        case INS_pmovmskb:
+        case INS_movmskpd:
+        case INS_movmskps:
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+
+        case INS_andn:
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_1C;
+            break;
+
+        case INS_blsi:
+        case INS_blsmsk:
+        case INS_blsr:
+        case INS_bextr:
+        case INS_bzhi:
+            if (memAccessKind == PERFSCORE_MEMORY_NONE)
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                result.insLatency    = PERFSCORE_LATENCY_2C;
+            }
+            else
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            }
+            break;
+
+        case INS_extractps:
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            if (memAccessKind == PERFSCORE_MEMORY_NONE)
+            {
+                result.insLatency = PERFSCORE_LATENCY_3C;
+            }
+            else
+            {
+                result.insLatency = max(PERFSCORE_LATENCY_5C, result.insLatency);
+            }
+            break;
+
+        case INS_mulx:
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_4C;
+            break;
+
+        case INS_pextrb:
+        case INS_pextrd:
+        case INS_pextrq:
+        case INS_pextrw:
+        case INS_pextrw_sse41:
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_1C;
+            break;
+
+        case INS_minps:
+        case INS_minpd:
+        case INS_ptest:
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_3C;
+            break;
+
+        case INS_pminub:
+        case INS_pminsb:
+        case INS_pminuw:
+        case INS_pminsw:
+        case INS_pmaxub:
+        case INS_pmaxsb:
+        case INS_pmaxuw:
+        case INS_pmaxsw:
+        case INS_packuswb:
+        case INS_packusdw:
+        case INS_packsswb:
+        case INS_packssdw:
+        case INS_unpcklps:
+        case INS_unpckhps:
+        case INS_unpcklpd:
+        case INS_unpckhpd:
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_1C;
+            break;
+
+        case INS_pand:
+        case INS_pandn:
+        case INS_por:
+        case INS_pxor:
+            result.insThroughput = PERFSCORE_THROUGHPUT_3X;
+            result.insLatency    = PERFSCORE_LATENCY_1C;
+            break;
+
+        case INS_pcmpeqb:
+        case INS_pcmpeqw:
+        case INS_pcmpeqd:
+        case INS_pcmpeqq:
+        case INS_pcmpgtb:
+        case INS_pcmpgtw:
+        case INS_pcmpgtd:
+        case INS_pcmpgtq:
+        case INS_cmpps:
+        case INS_cmppd:
+        case INS_cmpss:
+        case INS_cmpsd:
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_1C;
+            break;
+
+        case INS_punpckldq:
+        case INS_punpcklwd:
+        case INS_punpcklbw:
+        case INS_punpckhdq:
+        case INS_punpckhwd:
+        case INS_punpckhbw:
+        case INS_punpcklqdq:
+        case INS_pshufb:
+        case INS_pshufd:
+        case INS_pshuflw:
+        case INS_pshufhw:
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_1C;
+            break;
+
+        case INS_vpbroadcastb:
+        case INS_vpbroadcastw:
+            if (memAccessKind == PERFSCORE_MEMORY_NONE)
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                result.insLatency    = PERFSCORE_LATENCY_1C;
+            }
+            else
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                result.insLatency    = max(PERFSCORE_LATENCY_7C, result.insLatency);
+            }
+            break;
+
+        case INS_vpbroadcastd:
+        case INS_vpbroadcastq:
+            if (memAccessKind == PERFSCORE_MEMORY_NONE)
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                result.insLatency    = PERFSCORE_LATENCY_3C;
+            }
+            else
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                result.insLatency    = max(PERFSCORE_LATENCY_4C, result.insLatency);
+            }
+            break;
+
+        case INS_shufps:
+        case INS_shufpd:
+            // uops.info
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            if (memFmt == IF_NONE)
+            {
+                result.insLatency = PERFSCORE_LATENCY_1C;
+            }
+            break;
+
+        case INS_pinsrb:
+        case INS_pinsrw:
+        case INS_pinsrd:
+        case INS_pinsrq:
+            if (memAccessKind == PERFSCORE_MEMORY_NONE)
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                result.insLatency    = PERFSCORE_LATENCY_3C;
+            }
+            else
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            }
+            break;
+
+        case INS_insertps:
+            if (memAccessKind == PERFSCORE_MEMORY_NONE)
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                result.insLatency    = PERFSCORE_LATENCY_1C;
+            }
+            else
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                result.insLatency    = max(PERFSCORE_LATENCY_4C, result.insLatency);
+            }
+            break;
+
+        case INS_bswap:
+            if ((id->idOpSize() == EA_8BYTE))
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                result.insLatency    = PERFSCORE_LATENCY_2C;
+            }
+            else
+            {
+                assert(id->idOpSize() == EA_4BYTE);
+                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                result.insLatency    = PERFSCORE_LATENCY_1C;
+            }
+            break;
+
+        default:
+            // ins = ins;
+            // assert(!"Unhandled ins for getInsExecutionCharacteristics");
+            // all other ins
+            result.insThroughput = PERFSCORE_THROUGHPUT_DEFAULT;
+            result.insLatency    = PERFSCORE_LATENCY_DEFAULT;
+            break;
+    }
+
+    return result;
+}
+
+#endif // defined(DEBUG) || defined(LATE_DISASM)
+
 /*****************************************************************************/
 /*****************************************************************************/
 
