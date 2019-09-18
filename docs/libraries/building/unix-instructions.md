@@ -11,6 +11,8 @@ Calling the script `build.sh` builds both the native and managed code.
 
 For more information about the different options when building, run `build.sh --help` and look at examples in the [developer-guide](../project-docs/developer-guide.md).
 
+To build per project, you can use the script `dotnet msbuild`, e.g. `dotnet msbuild src/System.Console/src /t:rebuild`.
+
 ## Minimum Hardware Requirements
 - 2GB RAM
 
