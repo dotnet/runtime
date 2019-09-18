@@ -1013,6 +1013,7 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     genConsumeReg(data);
     emit->emitIns_S_R(ins, attr, data->gtRegNum, varNum, offset);
 
+    // Updating variable liveness after instruction was emitted
     genUpdateLife(tree);
     varDsc->lvRegNum = REG_STK;
 }
@@ -1065,6 +1066,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
 
             emit->emitIns_S_R(ins, attr, dataReg, varNum, /* offset */ 0);
 
+            // Updating variable liveness after instruction was emitted
             genUpdateLife(tree);
 
             varDsc->lvRegNum = REG_STK;

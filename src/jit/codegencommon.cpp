@@ -618,6 +618,21 @@ regMaskTP Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
     }
 }
 
+//------------------------------------------------------------------------
+// compChangeLife: Compare the given "newLife" with last set of live variables and update
+//  codeGen "gcInfo", siScopes, "regSet" with the new variable's homes/liveness.
+//
+// Arguments:
+//    newLife - the new set of variables that are alive.
+//
+// Assumptions:
+//    The set of live variables reflects the result of only emitted code, it should not be considering the becoming
+//    live/dead of instructions that has not been emitted yet. This is used to ensure [) "VariableLiveRange"
+//    intervals when calling "siStartVariableLiveRange" and "siEndVariableLiveRange".
+//
+// Notes:
+//    If "ForCodeGen" is false, only "compCurLife" set (and no mask) will be setted.
+//
 template <bool ForCodeGen>
 void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
 {
@@ -10582,6 +10597,7 @@ void CodeGen::genSetScopeInfo()
 
     if (varsLocationsCount == 0)
     {
+        // No variable home to report
         compiler->eeSetLVcount(0);
         compiler->eeSetLVdone();
         return;
@@ -10589,6 +10605,7 @@ void CodeGen::genSetScopeInfo()
 
     noway_assert(compiler->opts.compScopeInfo && (compiler->info.compVarScopesCount > 0));
 
+    // Initialize the table where the reported variables' home will be placed.
     compiler->eeSetLVcount(varsLocationsCount);
 
 #ifdef DEBUG

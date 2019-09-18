@@ -1428,6 +1428,7 @@ void CodeGen::genMultiRegCallStoreToLocal(GenTree* treeNode)
             offset += genTypeSize(type);
         }
 
+        // Updating variable liveness after instruction was emitted
         genUpdateLife(treeNode);
         varDsc->lvRegNum = REG_STK;
     }
