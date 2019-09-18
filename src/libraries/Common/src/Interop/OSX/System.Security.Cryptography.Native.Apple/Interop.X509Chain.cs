@@ -46,5 +46,8 @@ internal static partial class Interop
 
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_GetOSStatusForChainStatus")]
         internal static extern int GetOSStatusForChainStatus(X509ChainStatusFlags flag);
+
+        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_X509ChainSetTrustAnchorCertificates")]
+        internal static extern int X509ChainSetTrustAnchorCertificates(SafeX509ChainHandle chain, SafeCreateHandle anchorCertificates);
     }
 }

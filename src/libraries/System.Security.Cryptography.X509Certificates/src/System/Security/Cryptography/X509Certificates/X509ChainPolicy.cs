@@ -11,20 +11,24 @@ namespace System.Security.Cryptography.X509Certificates
         private X509RevocationMode _revocationMode;
         private X509RevocationFlag _revocationFlag;
         private X509VerificationFlags _verificationFlags;
+        private X509ChainTrustMode _trustMode;
         internal OidCollection _applicationPolicy;
         internal OidCollection _certificatePolicy;
         internal X509Certificate2Collection _extraStore;
+        internal X509Certificate2Collection _customTrustStore;
 
         public X509ChainPolicy()
         {
             Reset();
         }
 
-        public OidCollection ApplicationPolicy => _applicationPolicy ?? (_applicationPolicy = new OidCollection());
+        public OidCollection ApplicationPolicy => _applicationPolicy ??= new OidCollection();
 
-        public OidCollection CertificatePolicy => _certificatePolicy ?? (_certificatePolicy = new OidCollection());
+        public OidCollection CertificatePolicy => _certificatePolicy ??= new OidCollection();
 
-        public X509Certificate2Collection ExtraStore => _extraStore ?? (_extraStore = new X509Certificate2Collection());
+        public X509Certificate2Collection ExtraStore => _extraStore ??= new X509Certificate2Collection();
+
+        public X509Certificate2Collection CustomTrustStore => _customTrustStore ??= new X509Certificate2Collection();
 
         public X509RevocationMode RevocationMode
         {
@@ -68,6 +72,20 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        public X509ChainTrustMode TrustMode
+        {
+            get
+            {
+                return _trustMode;
+            }
+            set
+            {
+                if (value < X509ChainTrustMode.System || value > X509ChainTrustMode.CustomRootTrust)
+                    throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, nameof(value)));
+                _trustMode = value;
+            }
+        }
+
         public DateTime VerificationTime { get; set; }
 
         public TimeSpan UrlRetrievalTimeout { get; set; }
@@ -77,9 +95,11 @@ namespace System.Security.Cryptography.X509Certificates
             _applicationPolicy = null;
             _certificatePolicy = null;
             _extraStore = null;
+            _customTrustStore = null;
             _revocationMode = X509RevocationMode.Online;
             _revocationFlag = X509RevocationFlag.ExcludeRoot;
             _verificationFlags = X509VerificationFlags.NoFlag;
+            _trustMode = X509ChainTrustMode.System;
             VerificationTime = DateTime.Now;
             UrlRetrievalTimeout = TimeSpan.Zero; // default timeout
         }

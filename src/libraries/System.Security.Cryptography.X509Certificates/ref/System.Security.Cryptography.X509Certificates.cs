@@ -360,9 +360,11 @@ namespace System.Security.Cryptography.X509Certificates
         public X509ChainPolicy() { }
         public System.Security.Cryptography.OidCollection ApplicationPolicy { get { throw null; } }
         public System.Security.Cryptography.OidCollection CertificatePolicy { get { throw null; } }
+        public System.Security.Cryptography.X509Certificates.X509Certificate2Collection CustomTrustStore { get { throw null; } }
         public System.Security.Cryptography.X509Certificates.X509Certificate2Collection ExtraStore { get { throw null; } }
         public System.Security.Cryptography.X509Certificates.X509RevocationFlag RevocationFlag { get { throw null; } set { } }
         public System.Security.Cryptography.X509Certificates.X509RevocationMode RevocationMode { get { throw null; } set { } }
+        public System.Security.Cryptography.X509Certificates.X509ChainTrustMode TrustMode { get { throw null; } set { } }
         public System.TimeSpan UrlRetrievalTimeout { get { throw null; } set { } }
         public System.Security.Cryptography.X509Certificates.X509VerificationFlags VerificationFlags { get { throw null; } set { } }
         public System.DateTime VerificationTime { get { throw null; } set { } }
@@ -404,6 +406,11 @@ namespace System.Security.Cryptography.X509Certificates
         NoIssuanceChainPolicy = 33554432,
         ExplicitDistrust = 67108864,
         HasNotSupportedCriticalExtension = 134217728,
+    }
+    public enum X509ChainTrustMode
+    {
+        System = 0,
+        CustomRootTrust = 1,
     }
     public enum X509ContentType
     {

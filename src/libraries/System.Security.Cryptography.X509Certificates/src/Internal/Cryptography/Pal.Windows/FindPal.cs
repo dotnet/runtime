@@ -370,6 +370,8 @@ namespace Internal.Cryptography.Pal
                 null, //certificatePolicy
                 X509RevocationMode.NoCheck,
                 X509RevocationFlag.ExcludeRoot,
+                null,
+                X509ChainTrustMode.System,
                 DateTime.Now,
                 new TimeSpan(0, 0, 0));
 
