@@ -31,7 +31,9 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// Read and convert the JSON to T.
         /// </summary>
+        /// <remarks>
         /// A converter may throw any Exception, but should throw <cref>JsonException</cref> when the JSON is invalid.
+        /// </remarks>
         /// <param name="reader">The <see cref="Utf8JsonReader"/> to read from.</param>
         /// <param name="typeToConvert">The <see cref="Type"/> being converted.</param>
         /// <param name="options">The <see cref="JsonSerializerOptions"/> being used.</param>
