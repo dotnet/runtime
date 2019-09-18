@@ -64,10 +64,8 @@ namespace System.Runtime.InteropServices
 			//return !type.IsValueType || RuntimeTypeHandle.HasReferences (type as RuntimeType);
 		}
 
-		// TODO: Should be called from Windows only code
-		internal static void SetLastWin32Error (int error)
-		{
-		}
+		[MethodImplAttribute(MethodImplOptions.InternalCall)]
+		internal static extern void SetLastWin32Error (int error);
 
 		static Exception GetExceptionForHRInternal (int errorCode, IntPtr errorInfo)
 		{

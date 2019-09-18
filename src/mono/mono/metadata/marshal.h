@@ -601,6 +601,10 @@ guint32
 ves_icall_System_Runtime_InteropServices_Marshal_GetLastWin32Error (void);
 
 ICALL_EXPORT
+void
+ves_icall_System_Runtime_InteropServices_Marshal_SetLastWin32Error (guint32 err);
+
+ICALL_EXPORT
 mono_bstr
 ves_icall_System_Runtime_InteropServices_Marshal_BufferToBSTR (const gunichar2 *ptr, int len);
 

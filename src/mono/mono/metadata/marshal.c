@@ -5177,6 +5177,12 @@ ves_icall_System_Runtime_InteropServices_Marshal_GetLastWin32Error (void)
 	return GPOINTER_TO_INT (mono_native_tls_get_value (last_error_tls_id));
 }
 
+void
+ves_icall_System_Runtime_InteropServices_Marshal_SetLastWin32Error (guint32 err)
+{
+	mono_native_tls_set_value (last_error_tls_id, GINT_TO_POINTER (err));
+}
+
 guint32 
 ves_icall_System_Runtime_InteropServices_Marshal_SizeOf (MonoReflectionTypeHandle rtype, MonoError *error)
 {
