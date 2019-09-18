@@ -34,6 +34,8 @@ namespace ReadyToRun.SuperIlc
         public FileInfo CrossgenResponseFile { get; set; }
         public DirectoryInfo[] RewriteOldPath { get;set; }
         public DirectoryInfo[] RewriteNewPath { get;set; }
+        public bool MeasurePerf { get; set; }
+        public string InputFileSearchString { get; set; }
         public string ConfigurationSuffix => (Release ? "-ret.out" : "-chk.out");
 
         public IEnumerable<string> ReferencePaths()
