@@ -6,6 +6,10 @@
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
 
-  <Import Project="$(NuGetPackageRoot)\microsoft.dotnet.versiontools.tasks\$(MicrosoftDotNetVersionToolsTasksPackageVersion)\build\Microsoft.DotNet.VersionTools.Tasks.targets" />
+  <Import Project="$(NuGetPackageRoot)\microsoft.dotnet.versiontools.tasks\$(MicrosoftDotNetVersionToolsTasksVersion)\build\Microsoft.DotNet.VersionTools.Tasks.props" />
+
+  <Import Project="$(NuGetPackageRoot)\microsoft.dotnet.versiontools.tasks\$(MicrosoftDotNetVersionToolsTasksVersion)\build\Microsoft.DotNet.VersionTools.Tasks.targets" />
+
+  <Target Name="Build" DependsOnTargets="UpdatePublishedVersions" />
 
 </Project>
