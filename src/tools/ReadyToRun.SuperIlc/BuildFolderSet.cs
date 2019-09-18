@@ -116,7 +116,7 @@ namespace ReadyToRun.SuperIlc
                 }
             }
 
-            ParallelRunner.Run(compilationsToRun, _options.DegreeOfParallelism);
+            ParallelRunner.Run(compilationsToRun, _options.DegreeOfParallelism, _options.MeasurePerf);
             
             bool success = true;
             List<KeyValuePair<string, string>> failedCompilationsPerBuilder = new List<KeyValuePair<string, string>>();
