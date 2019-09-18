@@ -669,8 +669,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        // `openssl crl -in [MicrosoftDotComRootCrlPem] -noout -hash`.crl
-        private const string MicrosoftDotComRootCrlFilename = "b204d74a.crl";
+        // `openssl crl -in [MicrosoftDotComRootCrlPem] -noout -hash`.[SHA-256(CDPURL)[0..4].ToHex()].crl
+        private const string MicrosoftDotComRootCrlFilename = "b204d74a.daa2bce5.crl";
 
         // This CRL was downloaded 2015-08-31 20:31 PDT
         // It is valid from Jun 17 00:00:00 2015 GMT to Sep 30 23:59:59 2015 GMT
