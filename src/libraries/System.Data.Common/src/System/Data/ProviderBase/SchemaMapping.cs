@@ -856,12 +856,6 @@ namespace System.Data.ProviderBase
                         // if the column is not mapped and it is a key, then don't add any key information
                         if (schemaRow.IsKey)
                         {
-#if DEBUG
-                            if (AdapterSwitches.DataSchema.TraceVerbose)
-                            {
-                                Debug.WriteLine("SetupSchema: partial primary key detected");
-                            }
-#endif
                             // if the hidden key comes from a different table - don't throw away the primary key
                             // example SELECT [T2].[ID], [T2].[ProdID], [T2].[VendorName] FROM [Vendor] AS [T2], [Prod] AS [T1] WHERE (([T1].[ProdID] = [T2].[ProdID]))
                             if (keyFromMultiTable || (schemaRow.BaseTableName == keyBaseTable))
@@ -1022,22 +1016,11 @@ namespace System.Data.ProviderBase
                             keys = new DataColumn[schemaRows.Length];
                         }
                         keys[keyCount++] = dataColumn;
-#if DEBUG
-                        if (AdapterSwitches.DataSchema.TraceVerbose)
-                        {
-                            Debug.WriteLine("SetupSchema: building list of " + ((isPrimary) ? "PrimaryKey" : "UniqueConstraint"));
-                        }
-#endif
+
                         // see case 3 above, we do want dataColumn.AllowDBNull not schemaRow.AllowDBNull
                         // otherwise adding PrimaryKey will change AllowDBNull to false
                         if (isPrimary && dataColumn.AllowDBNull)
                         {
-#if DEBUG
-                            if (AdapterSwitches.DataSchema.TraceVerbose)
-                            {
-                                Debug.WriteLine("SetupSchema: changing PrimaryKey into UniqueContraint");
-                            }
-#endif
                             isPrimary = false;
                         }
                     }
@@ -1092,12 +1075,6 @@ namespace System.Data.ProviderBase
 
                         if (isPrimary)
                         {
-#if DEBUG
-                            if (AdapterSwitches.DataSchema.TraceVerbose)
-                            {
-                                Debug.WriteLine("SetupSchema: set_PrimaryKey");
-                            }
-#endif
                             _dataTable.PrimaryKey = keys;
                         }
                         else
@@ -1109,24 +1086,12 @@ namespace System.Data.ProviderBase
                             {
                                 if (unique.Equals(constraints[i]))
                                 {
-#if DEBUG
-                                    if (AdapterSwitches.DataSchema.TraceVerbose)
-                                    {
-                                        Debug.WriteLine("SetupSchema: duplicate Contraint detected");
-                                    }
-#endif
                                     unique = null;
                                     break;
                                 }
                             }
                             if (null != unique)
                             {
-#if DEBUG
-                                if (AdapterSwitches.DataSchema.TraceVerbose)
-                                {
-                                    Debug.WriteLine("SetupSchema: adding new UniqueConstraint");
-                                }
-#endif
                                 constraints.Add(unique);
                             }
                         }

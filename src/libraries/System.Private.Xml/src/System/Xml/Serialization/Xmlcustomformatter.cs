@@ -237,8 +237,6 @@ namespace System.Xml.Serialization
                 return ToXmlNmTokens(value);
             }
             throw new XmlException(SR.Format(SR.XmlUnsupportedDefaultValue, formatter));
-            //            Debug.WriteLineIf(CompModSwitches.XmlSerialization.TraceVerbose, "XmlSerialization::Unhandled default value " + value + " formatter " + formatter);
-            //            return DBNull.Value;
         }
 
         private static readonly string[] s_allDateTimeFormats = new string[] {

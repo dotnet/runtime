@@ -435,9 +435,6 @@ namespace System.Xml.Serialization
                 {
                     if (!Cache.Match(dest, o, _shareTypes))
                     {
-                        // UNDONE remove denug only code before shipping
-                        Debug.WriteLineIf(DiagnosticsSwitches.XmlSerialization.TraceVerbose, "XmlSerialization::Failed to Merge " + MergeFailedMessage(o, dest, schema.TargetNamespace)
-                            + "' Plase Compare hash:\r\n" + Cache.looks[dest] + "\r\n" + Cache.looks[o]);
                         throw new InvalidOperationException(MergeFailedMessage(o, dest, schema.TargetNamespace));
                     }
                     matchedItems[i] = true;

@@ -544,13 +544,11 @@ namespace System.Xml.Schema
                 attdef.DefaultValueTyped = dtype.ParseValue(value, readerAdapter.NameTable, readerAdapter.NamespaceResolver);
             }
 #if DEBUG
-            catch (XmlSchemaException ex)
-            {
-                Debug.WriteLineIf(DiagnosticsSwitches.XmlSchema.TraceError, ex.Message);
+            catch (XmlSchemaException)
 #else
             catch (Exception)
-            {
 #endif
+            {
                 IValidationEventHandling eventHandling = ((IDtdParserAdapterWithValidation)readerAdapter).ValidationEventHandling;
                 if (eventHandling != null)
                 {
@@ -610,13 +608,11 @@ namespace System.Xml.Schema
                 }
             }
 #if DEBUG
-            catch (XmlSchemaException ex)
-            {
-                Debug.WriteLineIf(DiagnosticsSwitches.XmlSchema.TraceError, ex.Message);
+            catch (XmlSchemaException)
 #else
             catch (Exception)
-            {
 #endif
+            {
 
                 if (eventHandling != null)
                 {

@@ -8,36 +8,8 @@ namespace System.Xml
 
     internal static class DiagnosticsSwitches
     {
-        private static volatile BooleanSwitch s_xmlSchemaContentModel;
-        private static volatile TraceSwitch s_xmlSchema;
         private static volatile BooleanSwitch s_keepTempFiles;
-        private static volatile TraceSwitch s_xmlSerialization;
-        private static volatile TraceSwitch s_xslTypeInference;
         private static volatile BooleanSwitch s_nonRecursiveTypeLoading;
-
-        public static BooleanSwitch XmlSchemaContentModel
-        {
-            get
-            {
-                if (s_xmlSchemaContentModel == null)
-                {
-                    s_xmlSchemaContentModel = new BooleanSwitch("XmlSchemaContentModel", "Enable tracing for the XmlSchema content model.");
-                }
-                return s_xmlSchemaContentModel;
-            }
-        }
-
-        public static TraceSwitch XmlSchema
-        {
-            get
-            {
-                if (s_xmlSchema == null)
-                {
-                    s_xmlSchema = new TraceSwitch("XmlSchema", "Enable tracing for the XmlSchema class.");
-                }
-                return s_xmlSchema;
-            }
-        }
 
         public static BooleanSwitch KeepTempFiles
         {
@@ -51,29 +23,6 @@ namespace System.Xml
             }
         }
 
-        public static TraceSwitch XmlSerialization
-        {
-            get
-            {
-                if (s_xmlSerialization == null)
-                {
-                    s_xmlSerialization = new TraceSwitch("XmlSerialization", "Enable tracing for the System.Xml.Serialization component.");
-                }
-                return s_xmlSerialization;
-            }
-        }
-
-        public static TraceSwitch XslTypeInference
-        {
-            get
-            {
-                if (s_xslTypeInference == null)
-                {
-                    s_xslTypeInference = new TraceSwitch("XslTypeInference", "Enable tracing for the XSLT type inference algorithm.");
-                }
-                return s_xslTypeInference;
-            }
-        }
         public static BooleanSwitch NonRecursiveTypeLoading
         {
             get

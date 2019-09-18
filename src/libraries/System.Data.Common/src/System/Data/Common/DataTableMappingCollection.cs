@@ -383,12 +383,6 @@ namespace System.Data.Common
                 int index = tableMappings.IndexOf(sourceTable);
                 if (-1 != index)
                 {
-#if DEBUG
-                    if (AdapterSwitches.DataSchema.TraceWarning)
-                    {
-                        Debug.WriteLine($"mapping match on SourceTable \"{sourceTable}\"");
-                    }
-#endif
                     return tableMappings._items[index];
                 }
             }
@@ -399,30 +393,12 @@ namespace System.Data.Common
             switch (mappingAction)
             {
                 case MissingMappingAction.Passthrough:
-#if DEBUG
-                    if (AdapterSwitches.DataSchema.TraceInfo)
-                    {
-                        Debug.WriteLine($"mapping passthrough of SourceTable \"{sourceTable}\" -> \"{dataSetTable}\"");
-                    }
-#endif
                     return new DataTableMapping(sourceTable, dataSetTable);
 
                 case MissingMappingAction.Ignore:
-#if DEBUG
-                    if (AdapterSwitches.DataSchema.TraceWarning)
-                    {
-                        Debug.WriteLine($"mapping filter of SourceTable \"{sourceTable}\"\"");
-                    }
-#endif
                     return null;
 
                 case MissingMappingAction.Error:
-#if DEBUG
-                    if (AdapterSwitches.DataSchema.TraceError)
-                    {
-                        Debug.WriteLine($"mapping error on SourceTable \"\"{sourceTable}\"\"");
-                    }
-#endif
                     throw ADP.MissingTableMapping(sourceTable);
 
                 default:

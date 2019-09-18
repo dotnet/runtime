@@ -83,12 +83,6 @@ namespace System.Data.Common
             }
             if (string.IsNullOrEmpty(dataSetColumn))
             {
-#if DEBUG
-                if (AdapterSwitches.DataSchema.TraceWarning)
-                {
-                    Debug.WriteLine("explicit filtering of SourceColumn \"" + sourceColumn + "\"");
-                }
-#endif
                 return null;
             }
             DataColumnCollection columns = dataTable.Columns;
@@ -102,30 +96,14 @@ namespace System.Data.Common
 
                 if (!string.IsNullOrEmpty(dataColumn.Expression))
                 {
-#if DEBUG
-                    if (AdapterSwitches.DataSchema.TraceError)
-                    {
-                        Debug.WriteLine("schema mismatch on DataColumn \"" + dataSetColumn + "\" which is a computed column");
-                    }
-#endif
                     throw ADP.ColumnSchemaExpression(sourceColumn, dataSetColumn);
                 }
+
                 if ((null == dataType) || (dataType.IsArray == dataColumn.DataType.IsArray))
                 {
-#if DEBUG
-                    if (AdapterSwitches.DataSchema.TraceInfo)
-                    {
-                        Debug.WriteLine("schema match on DataColumn \"" + dataSetColumn + "\"");
-                    }
-#endif
                     return dataColumn;
                 }
-#if DEBUG
-                if (AdapterSwitches.DataSchema.TraceWarning)
-                {
-                    Debug.WriteLine("schema mismatch on DataColumn \"" + dataSetColumn + "\" " + dataType.Name + " != " + dataColumn.DataType.Name);
-                }
-#endif
+
                 throw ADP.ColumnSchemaMismatch(sourceColumn, dataType, dataColumn);
             }
 
@@ -144,30 +122,12 @@ namespace System.Data.Common
             {
                 case MissingSchemaAction.Add:
                 case MissingSchemaAction.AddWithKey:
-#if DEBUG
-                    if (AdapterSwitches.DataSchema.TraceInfo)
-                    {
-                        Debug.WriteLine("schema add of DataColumn \"" + dataSetColumn + "\" <" + Convert.ToString(dataType, CultureInfo.InvariantCulture) + ">");
-                    }
-#endif
                     return new DataColumn(dataSetColumn, dataType);
 
                 case MissingSchemaAction.Ignore:
-#if DEBUG
-                    if (AdapterSwitches.DataSchema.TraceWarning)
-                    {
-                        Debug.WriteLine("schema filter of DataColumn \"" + dataSetColumn + "\" <" + Convert.ToString(dataType, CultureInfo.InvariantCulture) + ">");
-                    }
-#endif
                     return null;
 
                 case MissingSchemaAction.Error:
-#if DEBUG
-                    if (AdapterSwitches.DataSchema.TraceError)
-                    {
-                        Debug.WriteLine("schema error on DataColumn \"" + dataSetColumn + "\" <" + Convert.ToString(dataType, CultureInfo.InvariantCulture) + ">");
-                    }
-#endif
                     throw ADP.ColumnSchemaMissing(dataSetColumn, dataTable.TableName, sourceColumn);
             }
             throw ADP.InvalidMissingSchemaAction(schemaAction);

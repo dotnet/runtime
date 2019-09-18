@@ -87,8 +87,6 @@ namespace System.Xml.Xsl.Xslt
                 {
                     this[v2] = null;
                 }
-
-                Debug.WriteLineIf(DiagnosticsSwitches.XslTypeInference.TraceVerbose, v1.TraceName + " -> " + v2.TraceName);
             }
 
             public void PropagateFlag(XslFlags flag)
@@ -247,7 +245,6 @@ namespace System.Xml.Xsl.Xslt
             // Otherwise we can miss case when flag comes to template from attribute-set
             FillModeFlags(compiler.Root.ModeFlags, compiler.Root.Imports[0]);
 
-            TraceResults();
             return result;
         }
 
@@ -299,88 +296,6 @@ namespace System.Xml.Xsl.Xslt
                     parentModeFlags[tmpl.Mode] = modeFlags | templateFlags;
                 }
             }
-        }
-
-        private void TraceResults()
-        {
-#if DEBUG
-            if (DiagnosticsSwitches.XslTypeInference.TraceVerbose)
-            {
-                Debug.WriteLine(string.Empty);
-                foreach (ProtoTemplate tmpl in _compiler.AllTemplates)
-                {
-                    Debug.WriteLine(tmpl.TraceName + " = " + (tmpl.Flags & XslFlags.FocusFilter));
-                }
-
-                Debug.WriteLine(string.Empty);
-                foreach (VarPar varPar in _allVarPars)
-                {
-                    Debug.WriteLine(varPar.TraceName + " = " + (varPar.Flags & XslFlags.TypeFilter));
-                }
-                Debug.WriteLine(string.Empty);
-            }
-
-            if (DiagnosticsSwitches.XslTypeInference.TraceInfo)
-            {
-                int current = 0, position = 0, last = 0;
-
-                foreach (ProtoTemplate tmpl in _compiler.AllTemplates)
-                {
-                    if ((tmpl.Flags & XslFlags.Current) != 0)
-                    {
-                        current++;
-                    }
-                    if ((tmpl.Flags & XslFlags.Position) != 0)
-                    {
-                        position++;
-                    }
-                    if ((tmpl.Flags & XslFlags.Last) != 0)
-                    {
-                        last++;
-                    }
-                }
-
-                int stringType = 0, numberType = 0, booleanType = 0, nodeNotRtfType = 0, nodesetNotRtfType = 0;
-                int nodeType = 0, nodesetType = 0, noneType = 0, anyType = 0, totalVarPars = 0;
-
-                foreach (VarPar varPar in _allVarPars)
-                {
-                    switch (varPar.Flags & XslFlags.TypeFilter)
-                    {
-                        case XslFlags.String: stringType++; break;
-                        case XslFlags.Number: numberType++; break;
-                        case XslFlags.Boolean: booleanType++; break;
-                        case XslFlags.Node: nodeNotRtfType++; break;
-                        case XslFlags.Nodeset: nodesetNotRtfType++; break;
-                        case XslFlags.Rtf: nodeType++; break;
-                        case XslFlags.Node | XslFlags.Rtf: nodeType++; break;
-                        case XslFlags.Node | XslFlags.Nodeset: nodesetNotRtfType++; break;
-                        case XslFlags.Nodeset | XslFlags.Rtf: nodesetType++; break;
-                        case XslFlags.Node | XslFlags.Nodeset | XslFlags.Rtf: nodesetType++; break;
-                        case XslFlags.None: noneType++; break;
-                        default: anyType++; break;
-                    }
-                    totalVarPars++;
-                }
-
-                Debug.WriteLine(string.Format(CultureInfo.InvariantCulture,
-                    "Total => templates/attribute-sets: {0}, variables/parameters: {1}.",
-                    _compiler.AllTemplates.Count, totalVarPars
-                ));
-
-                Debug.WriteLine(string.Format(CultureInfo.InvariantCulture,
-                    "Inferred focus => current: {0}, position: {1}, last: {2}.",
-                    current, position, last
-                ));
-
-                Debug.WriteLine(string.Format(CultureInfo.InvariantCulture,
-                    "Inferred types => string: {0}, number: {1}, boolean: {2}, node: {3}, node-set: {4}, " +
-                    "node-or-rtf: {5}, node-set-or-rtf: {6}, none: {7}, any: {8}.",
-                    stringType, numberType, booleanType, nodeNotRtfType, nodesetNotRtfType,
-                    nodeType, nodesetType, noneType, anyType
-                ));
-            }
-#endif
         }
 
         protected override XslFlags Visit(XslNode node)
@@ -489,11 +404,7 @@ namespace System.Xml.Xsl.Xslt
             XslFlags result = XslFlags.None;
             Template target;
 
-            if (!_compiler.NamedTemplates.TryGetValue(node.Name, out target))
-            {
-                Debug.WriteLineIf(DiagnosticsSwitches.XslTypeInference.TraceError, "Unknown template " + node.Name.QualifiedName, "Error");
-            }
-            else
+            if (_compiler.NamedTemplates.TryGetValue(node.Name, out target))
             {
                 Debug.Assert(target != null);
                 if (_currentTemplate != null)
@@ -717,12 +628,7 @@ namespace System.Xml.Xsl.Xslt
 
         protected override XslFlags VisitUseAttributeSet(XslNode node)
         {
-            AttributeSet attSet;
-            if (!_compiler.AttributeSets.TryGetValue(node.Name, out attSet))
-            {
-                Debug.WriteLineIf(DiagnosticsSwitches.XslTypeInference.TraceError, "Unknown attribute-set " + node.Name.QualifiedName, "Error");
-            }
-            else if (_currentTemplate != null)
+            if (_compiler.AttributeSets.TryGetValue(node.Name, out AttributeSet attSet) && _currentTemplate != null)
             {
                 if (_forEachDepth == 0)
                 {
@@ -735,6 +641,7 @@ namespace System.Xml.Xsl.Xslt
                     _revCall1Graph.AddEdge(attSet, _currentTemplate);
                 }
             }
+
             return XslFlags.HasCalls | XslFlags.Rtf;
         }
 
@@ -1142,7 +1049,6 @@ namespace System.Xml.Xsl.Xslt
                 _typeDonor = ResolveVariable(prefix, name);
                 if (_typeDonor == null)
                 {
-                    Debug.WriteLineIf(DiagnosticsSwitches.XslTypeInference.TraceError, "Unresolved variable " + Compiler.ConstructQName(prefix, name), "Error");
                     return XslFlags.AnyType;
                 }
                 return XslFlags.None;

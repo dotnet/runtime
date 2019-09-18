@@ -43,8 +43,6 @@ namespace System.ComponentModel.Design
 
     internal class RuntimeLicenseContext : LicenseContext
     {
-        private static readonly TraceSwitch s_runtimeLicenseContextSwitch = new TraceSwitch("RuntimeLicenseContextTrace", "RuntimeLicenseContext tracing");
-
         internal Hashtable _savedLicenseKeys;
 
         /// <summary>
@@ -64,7 +62,6 @@ namespace System.ComponentModel.Design
         {
             if (_savedLicenseKeys == null || _savedLicenseKeys[type.AssemblyQualifiedName] == null)
             {
-                Debug.WriteLineIf(s_runtimeLicenseContextSwitch.TraceVerbose, "savedLicenseKey is null or doesn't contain our type");
                 if (_savedLicenseKeys == null)
                 {
                     _savedLicenseKeys = new Hashtable();
@@ -77,7 +74,6 @@ namespace System.ComponentModel.Design
 
                 if (resourceAssembly == null)
                 {
-                    Debug.WriteLineIf(s_runtimeLicenseContextSwitch.TraceVerbose, "resourceAssembly is null");
                     // If Assembly.EntryAssembly returns null, then we will
                     // try everything.
                     foreach (Assembly asm in AppDomain.CurrentDomain.GetAssemblies())
@@ -111,7 +107,6 @@ namespace System.ComponentModel.Design
                 else if (!resourceAssembly.IsDynamic)
                 {
                     // EscapedCodeBase won't be supported by emitted assemblies anyway
-                    Debug.WriteLineIf(s_runtimeLicenseContextSwitch.TraceVerbose, "resourceAssembly is not null");
                     string fileName;
 
                     fileName = GetLocalPath(resourceAssembly.EscapedCodeBase);
@@ -149,7 +144,6 @@ namespace System.ComponentModel.Design
                     }
                 }
             }
-            Debug.WriteLineIf(s_runtimeLicenseContextSwitch.TraceVerbose, $"returning : {(string)_savedLicenseKeys[type.AssemblyQualifiedName]}");
             return (string)_savedLicenseKeys[type.AssemblyQualifiedName];
         }
 
