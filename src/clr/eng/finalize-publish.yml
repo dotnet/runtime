@@ -49,16 +49,17 @@ jobs:
         Write-Host "For Build.SourceBranch $branch, FullBranchName is $branchName"
         Write-Host "##vso[task.setvariable variable=FullBranchName;]$branchName"
         ls -R ${{ parameters.artifactsDir }}/nuget/*.nupkg
-        $(Build.SourcesDirectory)/UpdatePublishedVersions.ps1 `
-        -gitHubUser ${{ parameters.gitHubUser }} `
-        -gitHubEmail ${{ parameters.gitHubEmail }} `
-        -gitHubAuthToken ${{ parameters.gitHubAuthToken }} `
-        -versionsRepoOwner ${{ parameters.versionsRepoOwner }} `
-        -versionsRepo ${{ parameters.versionsRepo }} `
-        -versionsRepoPath build-info/dotnet/coreclr/$branchName `
-        -nupkgPath ${{ parameters.artifactsDir }}/nuget/*.nupkg
+        & $(Build.SourcesDirectory)/eng/common/build.ps1 -restore -build -ci `
+        -projects "$(Build.SourcesDirectory)/eng/updateversions.proj" `
+        /p:GitHubUser="${{ parameters.gitHubUser }}" `
+        /p:GitHubEmail="${{ parameters.gitHubEmail }}" `
+        /p:GitHubAuthToken="${{ parameters.gitHubAuthToken }}" `
+        /p:VersionsRepoOwner="${{ parameters.versionsRepoOwner }}" `
+        /p:VersionsRepo="${{ parameters.versionsRepo }}" `
+        /p:VersionsRepoPath="build-info/dotnet/coreclr/$branchName" `
+        /p:ShippedNuGetPackageGlobPath="${{ parameters.artifactsDir }}/nuget/*.nupkg"
 
-      displayName: Run UpdatePublishedVersions.ps1
+      displayName: Update dotnet/versions
 
     - task: CopyFiles@2
       displayName: Copy Files to $(Build.StagingDirectory)\BuildLogs
