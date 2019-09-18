@@ -323,15 +323,15 @@ void CodeGen::genCodeForBBlist()
         }
 #endif
 
+        // Tell everyone which basic block we're working on
+
+        compiler->compCurBB = block;
+
         block->bbEmitCookie = nullptr;
 
-        if (block->bbFlags & (BBF_JMP_TARGET | BBF_HAS_LABEL))
-        {
-            /* Mark a label and update the current set of live GC refs */
-
-            block->bbEmitCookie = getEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
-                                                             gcInfo.gcRegByrefSetCur, FALSE);
-        }
+        // If this block is a jump target or it requires a label then set 'needLabel' to true,
+        //
+        bool needLabel = (block->bbFlags & (BBF_JMP_TARGET | BBF_HAS_LABEL)) != 0;
 
         if (block == compiler->fgFirstColdBlock)
         {
@@ -344,6 +344,33 @@ void CodeGen::genCodeForBBlist()
             // We should never have a block that falls through into the Cold section
             noway_assert(!block->bbPrev->bbFallsThrough());
 
+            needLabel = true;
+        }
+
+#if defined(DEBUG) || defined(LATE_DISASM)
+        // We also want to start a new Instruction group by calling emitAddLabel below,
+        // when we need accurate bbWeights for this block in the emitter.  We force this
+        // whenever our previous block was a BBJ_COND and it has a different weight than us.
+        //
+        // Note: We need to have set compCurBB before calling emitAddLabel
+        //
+        if ((block->bbPrev != nullptr) && (block->bbPrev->bbJumpKind == BBJ_COND) &&
+            (block->bbWeight != block->bbPrev->bbWeight))
+        {
+            needLabel = true;
+        }
+#endif // DEBUG || LATE_DISASM
+
+        if (needLabel)
+        {
+            // Mark a label and update the current set of live GC refs
+
+            block->bbEmitCookie = getEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
+                                                             gcInfo.gcRegByrefSetCur, FALSE);
+        }
+
+        if (block == compiler->fgFirstColdBlock)
+        {
             // We require the block that starts the Cold section to have a label
             noway_assert(block->bbEmitCookie);
             getEmitter()->emitSetFirstColdIGCookie(block->bbEmitCookie);
@@ -354,10 +381,6 @@ void CodeGen::genCodeForBBlist()
         SetStackLevel(0);
         genAdjustStackLevel(block);
         savedStkLvl = genStackLevel;
-
-        /* Tell everyone which basic block we're working on */
-
-        compiler->compCurBB = block;
 
         // Needed when jitting debug code
         siBeginBlock(block);
