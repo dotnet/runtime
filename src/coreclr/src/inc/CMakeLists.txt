@@ -7,10 +7,7 @@ set( CORGUIDS_IDL_SOURCES
   corprof.idl
   corpub.idl
   mscorsvc.idl
-  clrprivappxhosting.idl
   clrprivbinding.idl
-  clrprivhosting.idl
-  clrprivruntimebinders.idl
   corsym.idl
   sospriv.idl
 )

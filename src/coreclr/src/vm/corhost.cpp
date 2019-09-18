@@ -1069,40 +1069,6 @@ HRESULT CorRuntimeHostBase::UnloadAppDomain2(DWORD dwDomainId, BOOL fWaitUntilDo
 }
 
 //*****************************************************************************
-// Fiber Methods
-//*****************************************************************************
-
-HRESULT CorRuntimeHostBase::LocksHeldByLogicalThread(DWORD *pCount)
-{
-    if (!pCount)
-        return E_POINTER;
-
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        ENTRY_POINT;
-    }
-    CONTRACTL_END;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    Thread* pThread = GetThread();
-    if (pThread == NULL)
-        *pCount = 0;
-    else
-        *pCount = pThread->m_dwLockCount;
-
-    END_ENTRYPOINT_NOTHROW;
-
-    return S_OK;
-}
-
-//*****************************************************************************
-// ICorConfiguration
-//*****************************************************************************
-
-//*****************************************************************************
 // IUnknown
 //*****************************************************************************
 
