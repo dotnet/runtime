@@ -321,6 +321,7 @@ void Compiler::optBlockCopyProp(BasicBlock* block, LclNumToGenTreePtrStack* curS
     }
 #endif
 
+    // We are not generating code so we don't need to deal with liveness change
     TreeLifeUpdater<false> treeLifeUpdater(this);
 
     // There are no definitions at the start of the block. So clear it.
