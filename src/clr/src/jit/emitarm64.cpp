@@ -11840,4 +11840,121 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
     return dst->gtRegNum;
 }
 
+#if defined(DEBUG) || defined(LATE_DISASM)
+
+void emitter::getMemoryOperation(instrDesc* id, unsigned* pMemAccessKind, bool* pIsLocalAccess)
+{
+    unsigned    memAccessKind = PERFSCORE_MEMORY_NONE;
+    bool        isLocalAccess = false;
+    instruction ins           = id->idIns();
+
+    if (emitInsIsLoadOrStore(ins))
+    {
+        if (emitInsIsLoad(ins))
+        {
+            if (emitInsIsStore(ins))
+            {
+                memAccessKind = PERFSCORE_MEMORY_READ_WRITE;
+            }
+            else
+            {
+                memAccessKind = PERFSCORE_MEMORY_READ;
+            }
+        }
+        else
+        {
+            assert(emitInsIsStore(ins));
+            memAccessKind = PERFSCORE_MEMORY_WRITE;
+        }
+
+        insFormat insFmt = id->idInsFmt();
+
+        switch (insFmt)
+        {
+            case IF_LS_1A:
+                isLocalAccess = true;
+                break;
+
+            case IF_LS_2A:
+            case IF_LS_2B:
+            case IF_LS_2C:
+            case IF_LS_3A:
+                if (isStackRegister(id->idReg2()))
+                {
+                    isLocalAccess = true;
+                }
+                break;
+
+            case IF_LS_3B:
+            case IF_LS_3C:
+            case IF_LS_3D:
+            case IF_LS_3E:
+                if (isStackRegister(id->idReg3()))
+                {
+                    isLocalAccess = true;
+                }
+                break;
+
+            default:
+                assert(!"Logic Error");
+                memAccessKind = PERFSCORE_MEMORY_NONE;
+                break;
+        }
+    }
+
+    *pMemAccessKind = memAccessKind;
+    *pIsLocalAccess = isLocalAccess;
+}
+
+//----------------------------------------------------------------------------------------
+// getInsExecutionCharacteristics:
+//    Returns the current instruction execution characteristics
+//
+// Arguments:
+//    id  - The current instruction descriptor to be evaluated
+//
+// Return Value:
+//    A struct containing the current instruction execution characteristics
+//
+// Notes:
+//
+emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(instrDesc* id)
+{
+    insExecutionCharacteristics result;
+    instruction                 ins    = id->idIns();
+    insFormat                   insFmt = id->idInsFmt();
+
+    unsigned memAccessKind;
+    bool     isLocalAccess;
+    getMemoryOperation(id, &memAccessKind, &isLocalAccess);
+
+    result.insThroughput = PERFSCORE_THROUGHPUT_ILLEGAL;
+    result.insLatency    = PERFSCORE_LATENCY_ILLEGAL;
+
+    if (memAccessKind == PERFSCORE_MEMORY_READ)
+    {
+        result.insLatency = PERFSCORE_LATENCY_4C;
+    }
+    else if (memAccessKind == PERFSCORE_MEMORY_WRITE)
+    {
+        result.insLatency = PERFSCORE_LATENCY_1C;
+    }
+    else if (memAccessKind == PERFSCORE_MEMORY_READ_WRITE)
+    {
+        result.insLatency = PERFSCORE_LATENCY_5C;
+    }
+
+    // ToDo: Determine individual instruction throughput as latency
+    //
+    result.insThroughput = PERFSCORE_THROUGHPUT_DEFAULT;
+    if (memAccessKind == PERFSCORE_MEMORY_NONE)
+    {
+        result.insLatency = PERFSCORE_LATENCY_DEFAULT;
+    }
+
+    return result;
+}
+
+#endif // defined(DEBUG) || defined(LATE_DISASM)
+
 #endif // defined(_TARGET_ARM64_)

@@ -248,6 +248,9 @@ struct insGroup
 #ifdef DEBUG
     insGroup* igSelf; // for consistency checking
 #endif
+#if defined(DEBUG) || defined(LATE_DISASM)
+    BasicBlock::weight_t igWeight; // the block weight used for this insGroup
+#endif
 
     UNATIVE_OFFSET igNum;     // for ordering (and display) purposes
     UNATIVE_OFFSET igOffs;    // offset of this group within method
@@ -1208,6 +1211,102 @@ protected:
             return &this->_idAddrUnion;
         }
     }; // End of  struct instrDesc
+
+#if defined(_TARGET_XARCH_)
+    insFormat emitter::getMemoryOperation(instrDesc* id);
+#elif defined(_TARGET_ARM64_)
+    void emitter::getMemoryOperation(instrDesc* id, unsigned* pMemAccessKind, bool* pIsLocalAccess);
+#endif
+
+#if defined(DEBUG) || defined(LATE_DISASM)
+
+#define PERFSCORE_THROUGHPUT_ILLEGAL -1024.0f
+
+#define PERFSCORE_THROUGHPUT_4X 0.25f         // Fastest - Quad issue
+#define PERFSCORE_THROUGHPUT_3X (1.0f / 3.0f) // Faster - Three issue
+#define PERFSCORE_THROUGHPUT_2X 0.5f          // Faster - Dual issue
+
+#define PERFSCORE_THROUGHPUT_1C 1.0f // Single Issue
+
+#define PERFSCORE_THROUGHPUT_2C 2.0f   // slower - 2 cycles
+#define PERFSCORE_THROUGHPUT_3C 3.0f   // slower - 3 cycles
+#define PERFSCORE_THROUGHPUT_4C 4.0f   // slower - 4 cycles
+#define PERFSCORE_THROUGHPUT_5C 5.0f   // slower - 5 cycles
+#define PERFSCORE_THROUGHPUT_6C 6.0f   // slower - 6 cycles
+#define PERFSCORE_THROUGHPUT_10C 10.0f // slower - 10 cycles
+#define PERFSCORE_THROUGHPUT_13C 13.0f // slower - 13 cycles
+#define PERFSCORE_THROUGHPUT_25C 25.0f // slower - 25 cycles
+#define PERFSCORE_THROUGHPUT_52C 52.0f // slower - 52 cycles
+#define PERFSCORE_THROUGHPUT_57C 57.0f // slower - 57 cycles
+
+#define PERFSCORE_THROUGHPUT_DEFAULT PERFSCORE_THROUGHPUT_1C
+
+#define PERFSCORE_LATENCY_ILLEGAL -1024.0f
+
+#define PERFSCORE_LATENCY_DEFAULT 1.0f
+
+#define PERFSCORE_LATENCY_ZERO 0.0f
+#define PERFSCORE_LATENCY_1C 1.0f
+#define PERFSCORE_LATENCY_2C 2.0f
+#define PERFSCORE_LATENCY_3C 3.0f
+#define PERFSCORE_LATENCY_4C 4.0f
+#define PERFSCORE_LATENCY_5C 5.0f
+#define PERFSCORE_LATENCY_6C 6.0f
+#define PERFSCORE_LATENCY_7C 7.0f
+#define PERFSCORE_LATENCY_8C 8.0f
+#define PERFSCORE_LATENCY_11C 11.0f
+#define PERFSCORE_LATENCY_12C 12.0f
+#define PERFSCORE_LATENCY_13C 13.0f
+#define PERFSCORE_LATENCY_16C 16.0f
+#define PERFSCORE_LATENCY_23C 23.0f
+#define PERFSCORE_LATENCY_26C 26.0f
+#define PERFSCORE_LATENCY_62C 62.0f
+#define PERFSCORE_LATENCY_69C 69.0f
+
+#define PERFSCORE_LATENCY_BRANCH_DIRECT 1.0f   // cost of an unconditional branch
+#define PERFSCORE_LATENCY_BRANCH_COND 2.0f     // includes cost of a possible misprediction
+#define PERFSCORE_LATENCY_BRANCH_INDIRECT 2.0f // includes cost of a possible misprediction
+
+// a read,write or modify from stack location, possible def to use latency from L0 cache
+#define PERFSCORE_LATENCY_RD_STACK 2.0f
+#define PERFSCORE_LATENCY_WR_STACK 2.0f
+#define PERFSCORE_LATENCY_RD_WR_STACK 5.0f
+
+// a read, write or modify from constant location, possible def to use latency from L0 cache
+#define PERFSCORE_LATENCY_RD_CONST_ADDR 2.0f
+#define PERFSCORE_LATENCY_WR_CONST_ADDR 2.0f
+#define PERFSCORE_LATENCY_RD_WR_CONST_ADDR 5.0f
+
+// a read, write or modify from memory location, possible def to use latency from L0 or L1 cache
+// plus an extra cost  (of 1.0) for a increased chance  of a cache miss
+#define PERFSCORE_LATENCY_RD_GENERAL 3.0f
+#define PERFSCORE_LATENCY_WR_GENERAL 3.0f
+#define PERFSCORE_LATENCY_RD_WR_GENERAL 6.0f
+
+#define PERFSCORE_MEMORY_NONE 0
+#define PERFSCORE_MEMORY_READ 1
+#define PERFSCORE_MEMORY_WRITE 2
+#define PERFSCORE_MEMORY_READ_WRITE 3
+
+#define PERFSCORE_CODESIZE_COST_HOT 0.10f
+#define PERFSCORE_CODESIZE_COST_COLD 0.01f
+
+#define PERFSCORE_CALLEE_SPILL_COST                                                                                    \
+    0.75f // heuristicly derived - actual cost is one push and one pop, in the prolog/epilog
+
+    struct insExecutionCharacteristics
+    {
+        float    insThroughput;
+        float    insLatency;
+        unsigned insMemoryAccessKind;
+    };
+
+    insExecutionCharacteristics getInsExecutionCharacteristics(instrDesc* id);
+    float insEvaluateExecutionCost(instrDesc* id);
+
+#endif // defined(DEBUG) || defined(LATE_DISASM)
+
+    BasicBlock::weight_t getCurrentBlockWeight();
 
     void dispIns(instrDesc* id);
 
