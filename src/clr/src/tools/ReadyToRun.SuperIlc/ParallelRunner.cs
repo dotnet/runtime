@@ -96,7 +96,7 @@ public sealed class ParallelRunner
     /// </summary>
     /// <param name="processesToRun">Processes to execute in parallel</param>
     /// <param name="degreeOfParallelism">Maximum number of processes to execute in parallel, 0 = logical processor count</param>
-    public static void Run(IEnumerable<ProcessInfo> processesToRun, int degreeOfParallelism = 0)
+    public static void Run(IEnumerable<ProcessInfo> processesToRun, int degreeOfParallelism = 0, bool measurePerf = false)
     {
         if (degreeOfParallelism == 0)
         {
@@ -105,6 +105,7 @@ public sealed class ParallelRunner
 
         List<ProcessInfo> processList = new List<ProcessInfo>();
         bool collectEtwTraces = false;
+        collectEtwTraces |= measurePerf;
         foreach (ProcessInfo process in processesToRun)
         {
             process.Construct();
@@ -139,7 +140,8 @@ public sealed class ParallelRunner
                     totalCount: processCount,
                     failureCount: failureCount,
                     processList,
-                    degreeOfParallelism);
+                    degreeOfParallelism,
+                    measurePerf);
                 
                 for (int processIndex = batchStartIndex; processIndex < batchEndIndex; processIndex++)
                 {
@@ -156,16 +158,46 @@ public sealed class ParallelRunner
         }
     }
 
-    private static void BuildEtwProcesses(int startIndex, int endIndex, int totalCount, int failureCount, List<ProcessInfo> processList, int degreeOfParallelism)
+    private static void BuildEtwProcesses(int startIndex, int endIndex, int totalCount, int failureCount, List<ProcessInfo> processList, int degreeOfParallelism, bool measurePerf)
     {
         using (TraceEventSession traceEventSession = new TraceEventSession("ReadyToRunTestSession"))
         {
             traceEventSession.EnableProvider(ClrTraceEventParser.ProviderGuid, TraceEventLevel.Verbose, (ulong)(ClrTraceEventParser.Keywords.Jit | ClrTraceEventParser.Keywords.Loader));
+            int warmupRuns = 0;
+            int realRuns = 1;
+            PerfEventSourceListener perfMeasurer = null;
+            if (measurePerf)
+            {
+                Debug.Assert(processList.Count == 1);
+                warmupRuns = 1;
+                realRuns = 5;
+                perfMeasurer = new PerfEventSourceListener(traceEventSession, warmupRuns, realRuns);
+            }
             using (ReadyToRunJittedMethods jittedMethods = new ReadyToRunJittedMethods(traceEventSession, processList, startIndex, endIndex))
             {
                 Task.Run(() =>
                 {
-                    BuildProjects(startIndex, endIndex, totalCount, failureCount, processList, jittedMethods, degreeOfParallelism);
+                    // Warmup runs
+                    if (measurePerf)
+                    {
+                        Console.WriteLine("Warmup runs:");
+                        for (int run = 0; run < warmupRuns; ++run)
+                        {
+                            BuildProjects(startIndex, endIndex, totalCount, failureCount, processList, jittedMethods, degreeOfParallelism);
+                        }
+                        // Wait for all the warmup events to come in before starting the real run so there is no interference
+                        perfMeasurer.WaitForWarmupFinished();
+                        Console.WriteLine("Real runs:");
+                    }
+
+                    for (int run = 0; run < realRuns; ++run)
+                    {
+                        BuildProjects(startIndex, endIndex, totalCount, failureCount, processList, jittedMethods, degreeOfParallelism);
+                    }
+                    if (measurePerf)
+                    {
+                        perfMeasurer.PrintPerfResults();
+                    }
                     traceEventSession.Stop();
                 });
             }

@@ -175,6 +175,7 @@
     <Compile Include="Compiler\ReadyToRunTableManager.cs" />
     <Compile Include="IBC\IBCProfileData.cs" />
     <Compile Include="IBC\IBCProfileParser.cs" />
+    <Compile Include="Compiler\PerfEventSource.cs" />
     <Compile Include="Win32Resources\ResourceData.cs" />
     <Compile Include="Win32Resources\ResourceData.Reader.cs" />
     <Compile Include="Win32Resources\ResourceData.ResourcesDataModel.cs" />
