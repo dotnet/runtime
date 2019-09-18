@@ -1,5 +1,5 @@
 name: dotnet-runtime-21
-version: 2.1.12
+version: 2.1.13
 summary: Cross-Platform .NET Core Runtime. 
 description: |
   .NET Core 2.1 Runtime and ASP.NET Core. https://dot.net/core.
@@ -27,8 +27,8 @@ slots:
 parts:
   dotnet-runtime:
     plugin: dump
-    source: https://download.visualstudio.microsoft.com/download/pr/2c78594a-dd2c-488e-b201-b7fd9b78ab00/5f2169b20fc704e069c336114ec653c5/dotnet-runtime-2.1.12-linux-x64.tar.gz
-    source-checksum: sha512/9b6d07e180ba1d19f0b00263af9dcf3147b0869564ef82ec20584b25d801a2d5c353f0f2bd7bd7e92e75ceb4e4bca35ec3eade73a2b25a0306d4d95ef5071a08
+    source: https://download.visualstudio.microsoft.com/download/pr/7085b86a-0888-49b5-a272-6cd317abc4d3/1d5d8107d575e7fc8b14e9ace9f7667b/dotnet-runtime-2.1.13-linux-x64.tar.gz
+    source-checksum: sha512/10c037287a06d901ec5d5cfb2064c341e9b33a46f72ac8606c926499a5ac500e74a7bd1445224df3ac4ac4cd0aea76cc73cc0b8990d4a5ad6272e6261572359f
     stage-packages:
       - libicu60
       - libssl1.0.0
