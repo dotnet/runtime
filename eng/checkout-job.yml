@@ -21,7 +21,7 @@ jobs:
   steps:
   - checkout: self
     clean: true
-    fetchDepth: 1
+    fetchDepth: 5
 
   ### Zip up downloaded repo and publish to Helix
   - template: /eng/upload-artifact-step.yml
@@ -50,7 +50,7 @@ jobs:
   steps:
   - checkout: self
     clean: true
-    fetchDepth: 1
+    fetchDepth: 5
 
   ### Zip up downloaded repo and publish to Helix
   - template: /eng/upload-artifact-step.yml
