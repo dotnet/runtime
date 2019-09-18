@@ -555,10 +555,6 @@
 # GC.GetGCMemoryInfo is not implemented
 -nomethod System.Tests.GCTests.GetGCMemoryInfo
 
-# Could not load type 'System.Nullable`1[[System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]' from assembly 'mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
-# https://github.com/mono/mono/issues/15153
--nomethod System.Tests.ActivatorTests.TestingCreateInstanceObjectHandleFullSignature
-
 # flaky test, System.ArgumentNullException : Key cannot be null. Parameter name: key
 -nomethod System.Tests.GetEnvironmentVariable.EnvironmentVariablesAreHashtable
 
