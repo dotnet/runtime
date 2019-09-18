@@ -140,7 +140,6 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
     coreclr_properties.add(common_property::TrustedPlatformAssemblies, probe_paths.tpa.c_str());
     coreclr_properties.add(common_property::NativeDllSearchDirectories, probe_paths.native.c_str());
     coreclr_properties.add(common_property::PlatformResourceRoots, probe_paths.resources.c_str());
-    coreclr_properties.add(common_property::AppDomainCompatSwitch, _X("UseLatestBehaviorWhenTFMNotSpecified"));
     coreclr_properties.add(common_property::AppContextBaseDirectory, app_base.c_str());
     coreclr_properties.add(common_property::AppContextDepsFiles, app_context_deps_str.c_str());
     coreclr_properties.add(common_property::FxDepsFile, fx_deps_str.c_str());
