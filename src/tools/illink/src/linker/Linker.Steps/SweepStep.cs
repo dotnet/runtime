@@ -94,20 +94,6 @@ namespace Mono.Linker.Steps {
 
 			case AssemblyAction.Copy:
 				//
-				// Assembly can contain type references with
-				// type forwarders to deleted assembly (facade) when
-				// facade assemblies are not kept. For that reason we need to
-				// rewrite the copy to save to update the scopes not to point
-				// forwardning assembly (facade).
-				//
-				//		foo.dll -> facade.dll    -> lib.dll
-				//		copy    |  copy (delete) |  link
-				//
-				if (!Context.KeepTypeForwarderOnlyAssemblies && UpdateForwardedTypesScope (assembly)) {
-					Annotations.SetAction (assembly, AssemblyAction.Save);
-				}
-
-				//
 				// Facade assemblies can have unused forwarders pointing to
 				// removed type (when facades are kept)
 				//
@@ -249,6 +235,17 @@ namespace Mono.Linker.Steps {
 					// Assembly has a reference to another assembly which has been fully removed. This can
 					// happen when for example the reference assembly is 'copy-used' and it's not needed.
 					//
+					// or
+					//
+					// Assembly can contain type references with
+					// type forwarders to deleted assembly (facade) when
+					// facade assemblies are not kept. For that reason we need to
+					// rewrite the copy to save to update the scopes not to point
+					// forwardning assembly (facade).
+					//
+					//		foo.dll -> facade.dll    -> lib.dll
+					//		copy    |  copy (delete) |  link
+					//
 					Annotations.SetAction (assembly, AssemblyAction.Save);
 					break;
 
@@ -275,7 +272,7 @@ namespace Mono.Linker.Steps {
 			return false;
 		}
 
-		bool UpdateForwardedTypesScope (AssemblyDefinition assembly)
+		void UpdateForwardedTypesScope (AssemblyDefinition assembly)
 		{
 			var changed_types = new Dictionary<TypeReference, IMetadataScope> ();
 
@@ -312,8 +309,6 @@ namespace Mono.Linker.Steps {
 					et.Scope = assembly.MainModule.ImportReference (td).Scope;
 				}
 			}
-
-			return changed_types.Count != 0;
 		}
 
 		static void UpdateForwardedTypesScope (CustomAttribute attribute)
