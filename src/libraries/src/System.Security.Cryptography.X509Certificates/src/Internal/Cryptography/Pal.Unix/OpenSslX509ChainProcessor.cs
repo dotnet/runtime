@@ -80,6 +80,8 @@ namespace Internal.Cryptography.Pal
 
         internal static OpenSslX509ChainProcessor InitiateChain(
             SafeX509Handle leafHandle,
+            X509Certificate2Collection customTrustStore,
+            X509ChainTrustMode trustMode,
             DateTime verificationTime,
             TimeSpan remainingDownloadTime)
         {
@@ -93,11 +95,12 @@ namespace Internal.Cryptography.Pal
 
             try
             {
-                store = Interop.Crypto.X509ChainNew(systemTrust, s_userRootStore.GetNativeCollection());
-
                 untrusted = Interop.Crypto.NewX509Stack();
                 Interop.Crypto.X509StackAddMultiple(untrusted, s_userIntermediateStore.GetNativeCollection());
                 Interop.Crypto.X509StackAddMultiple(untrusted, s_userPersonalStore.GetNativeCollection());
+
+                store = GetTrustStore(trustMode, customTrustStore, untrusted, systemTrust);
+
                 Interop.Crypto.X509StackAddMultiple(untrusted, systemIntermediate);
                 Interop.Crypto.X509StoreSetVerifyTime(store, verificationTime);
 
@@ -123,6 +126,29 @@ namespace Internal.Cryptography.Pal
                 storeCtx?.Dispose();
                 throw;
             }
+        }
+
+        private static SafeX509StoreHandle GetTrustStore(
+            X509ChainTrustMode trustMode,
+            X509Certificate2Collection customTrustStore,
+            SafeX509StackHandle untrusted,
+            SafeX509StackHandle systemTrust)
+        {
+            if (trustMode == X509ChainTrustMode.CustomRootTrust)
+            {
+                using (SafeX509StackHandle customTrust = Interop.Crypto.NewX509Stack())
+                {
+                    foreach (X509Certificate2 cert in customTrustStore)
+                    {
+                        SafeX509StackHandle toAdd = cert.SubjectName.RawData.ContentsEqual(cert.IssuerName.RawData) ? customTrust : untrusted;
+                        AddToStackAndUpRef(((OpenSslX509CertificateReader)cert.Pal).SafeHandle, toAdd);
+                    }
+
+                    return Interop.Crypto.X509ChainNew(customTrust, SafeX509StackHandle.InvalidHandle);
+                }
+            }
+
+            return Interop.Crypto.X509ChainNew(systemTrust, s_userRootStore.GetNativeCollection());
         }
 
         internal Interop.Crypto.X509VerifyStatusCode FindFirstChain(X509Certificate2Collection extraCerts)

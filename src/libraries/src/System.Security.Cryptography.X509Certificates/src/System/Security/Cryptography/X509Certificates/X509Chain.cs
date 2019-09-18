@@ -113,6 +113,20 @@ namespace System.Security.Cryptography.X509Certificates
                 if (certificate == null || certificate.Pal == null)
                     throw new ArgumentException(SR.Cryptography_InvalidContextHandle, nameof(certificate));
 
+                if (_chainPolicy != null && _chainPolicy.CustomTrustStore != null)
+                {
+                    if (_chainPolicy.TrustMode == X509ChainTrustMode.System && _chainPolicy.CustomTrustStore.Count > 0)
+                        throw new CryptographicException(SR.Cryptography_CustomTrustCertsInSystemMode, nameof(_chainPolicy.TrustMode));
+
+                    foreach (X509Certificate2 customCertificate in _chainPolicy.CustomTrustStore)
+                    {
+                        if (customCertificate == null || customCertificate.Handle == IntPtr.Zero)
+                        {
+                            throw new CryptographicException(SR.Cryptography_InvalidTrustCertificate, nameof(_chainPolicy.CustomTrustStore));
+                        }
+                    }
+                }
+
                 Reset();
 
                 X509ChainPolicy chainPolicy = ChainPolicy;
@@ -124,6 +138,8 @@ namespace System.Security.Cryptography.X509Certificates
                     chainPolicy._certificatePolicy,
                     chainPolicy.RevocationMode,
                     chainPolicy.RevocationFlag,
+                    chainPolicy.CustomTrustStore,
+                    chainPolicy.TrustMode,
                     chainPolicy.VerificationTime,
                     chainPolicy.UrlRetrievalTimeout
                     );

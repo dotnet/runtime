@@ -150,7 +150,7 @@ namespace Internal.Cryptography.Pal
                     {
                         CERT_CHAIN_PARA chainPara = new CERT_CHAIN_PARA();
                         chainPara.cbSize = sizeof(CERT_CHAIN_PARA);
-                        if (!Interop.crypt32.CertGetCertificateChain(ChainEngine.HCCE_CURRENT_USER, _certContext, (FILETIME*)null, SafeCertStoreHandle.InvalidHandle, ref chainPara, CertChainFlags.None, IntPtr.Zero, out certChainContext))
+                        if (!Interop.crypt32.CertGetCertificateChain((IntPtr)ChainEngine.HCCE_CURRENT_USER, _certContext, (FILETIME*)null, SafeCertStoreHandle.InvalidHandle, ref chainPara, CertChainFlags.None, IntPtr.Zero, out certChainContext))
                             throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
                         if (!Interop.crypt32.CertGetCertificateContextProperty(_certContext, CertContextPropId.CERT_PUBKEY_ALG_PARA_PROP_ID, null, ref cbData))
                             throw Marshal.GetHRForLastWin32Error().ToCryptographicException();

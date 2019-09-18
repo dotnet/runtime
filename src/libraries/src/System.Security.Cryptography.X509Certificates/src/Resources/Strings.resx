@@ -183,6 +183,12 @@
   <data name="Cryptography_InvalidStoreHandle" xml:space="preserve">
     <value>The store handle is invalid.</value>
   </data>
+  <data name="Cryptography_CustomTrustCertsInSystemMode" xml:space="preserve">
+    <value>Custom trust certificates were provided while in System trust mode.</value>
+  </data>
+  <data name="Cryptography_InvalidTrustCertificate" xml:space="preserve">
+    <value>A null or disposed certificate was present in CustomTrustStore.</value>
+  </data>
   <data name="Cryptography_KeyTooSmall" xml:space="preserve">
     <value>The key is too small for the requested operation.</value>
   </data>

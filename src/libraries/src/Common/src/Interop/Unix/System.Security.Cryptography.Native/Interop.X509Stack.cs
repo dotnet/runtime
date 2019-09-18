@@ -80,6 +80,17 @@ namespace Microsoft.Win32.SafeHandles
         {
             get { return handle == IntPtr.Zero; }
         }
+
+        internal static SafeX509StackHandle InvalidHandle =>
+            SafeHandleCache<SafeX509StackHandle>.GetInvalidHandle(() => new SafeX509StackHandle());
+
+        protected override void Dispose(bool disposing)
+        {
+            if (!SafeHandleCache<SafeX509StackHandle>.IsCachedInvalidHandle(this))
+            {
+                base.Dispose(disposing);
+            }
+        }
     }
 
     /// <summary>

@@ -125,3 +125,8 @@ Note that PAL_X509ChainNotTimeValid is an ambiguous code, it could be errSecCert
 errSecCertificateNotValidYet. A caller should resolve that code via other means.
 */
 DLLEXPORT int32_t AppleCryptoNative_GetOSStatusForChainStatus(PAL_X509ChainStatusFlags chainStatusFlag);
+
+/*
+Sets the trusted certificates used when evaluating a chain.
+*/
+DLLEXPORT int32_t AppleCryptoNative_X509ChainSetTrustAnchorCertificates(SecTrustRef chain, CFArrayRef anchorCertificates);
