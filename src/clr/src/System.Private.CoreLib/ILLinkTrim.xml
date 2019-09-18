@@ -1,10 +1,5 @@
 <linker>
   <assembly fullname="System.Private.CoreLib">
-    <type fullname="System.CommonlyUsedGenericInstantiations">
-      <!-- Method is purely an aid for NGen to statically deduce which
-           instantiations to save in the ngen image. -->
-      <method name="CommonlyUsedWinRTRedirectedInterfaceStubs" />
-    </type>
     <type fullname="System.GC">
       <!-- Methods are used to register and unregister frozen segments. They are private and experimental. -->
       <method name="_RegisterFrozenSegment" />
