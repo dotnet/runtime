@@ -3489,7 +3489,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
         if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT) && fgHaveProfileData())
         {
-            printf("OPTIONS: using real profile data\n");
+            printf("OPTIONS: optimized using profile data\n");
         }
 
         if (fgProfileData_ILSizeMismatch)
@@ -5173,7 +5173,8 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
     info.compClassName  = getAllocator(CMK_DebugOnly).allocate<char>(len);
     strcpy_s((char*)info.compClassName, len, classNamePtr);
 
-    info.compFullName = eeGetMethodFullName(methodHnd);
+    info.compFullName  = eeGetMethodFullName(methodHnd);
+    info.compPerfScore = 0.0;
 #endif // defined(DEBUG) || defined(LATE_DISASM)
 
 #ifdef DEBUG

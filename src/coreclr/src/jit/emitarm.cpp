@@ -7966,4 +7966,35 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
     return dst->gtRegNum;
 }
 
+#if defined(DEBUG) || defined(LATE_DISASM)
+
+//----------------------------------------------------------------------------------------
+// getInsExecutionCharacteristics:
+//    Returns the current instruction execution characteristics
+//
+// Arguments:
+//    id  - The current instruction descriptor to be evaluated
+//
+// Return Value:
+//    A struct containing the current instruction execution characteristics
+//
+// Notes:
+//
+emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(instrDesc* id)
+{
+    insExecutionCharacteristics result;
+
+    instruction ins    = id->idIns();
+    insFormat   insFmt = id->idInsFmt();
+
+    // ToDo: Calculate actual throughput and latency values
+    //
+    result.insThroughput = PERFSCORE_THROUGHPUT_DEFAULT;
+    result.insLatency    = PERFSCORE_LATENCY_DEFAULT;
+
+    return result;
+}
+
+#endif // defined(DEBUG) || defined(LATE_DISASM)
+
 #endif // defined(_TARGET_ARM_)
