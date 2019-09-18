@@ -58,7 +58,6 @@ enum class common_property
     TrustedPlatformAssemblies,
     NativeDllSearchDirectories,
     PlatformResourceRoots,
-    AppDomainCompatSwitch,
     AppContextBaseDirectory,
     AppContextDepsFiles,
     FxDepsFile,

@@ -195,7 +195,6 @@ namespace
         _X("TRUSTED_PLATFORM_ASSEMBLIES"),
         _X("NATIVE_DLL_SEARCH_DIRECTORIES"),
         _X("PLATFORM_RESOURCE_ROOTS"),
-        _X("AppDomainCompatSwitch"),
         _X("APP_CONTEXT_BASE_DIRECTORY"),
         _X("APP_CONTEXT_DEPS_FILES"),
         _X("FX_DEPS_FILE"),
