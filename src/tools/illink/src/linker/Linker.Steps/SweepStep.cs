@@ -94,14 +94,30 @@ namespace Mono.Linker.Steps {
 
 			case AssemblyAction.Copy:
 				//
-				// Copy assemblies can contain type references with
-				// type forwarders from delete assemblies (facades) when
+				// Assembly can contain type references with
+				// type forwarders to deleted assembly (facade) when
 				// facade assemblies are not kept. For that reason we need to
-				// rewrite the copy to save to update the scopes references.
+				// rewrite the copy to save to update the scopes not to point
+				// forwardning assembly (facade).
 				//
-				if (!Context.KeepTypeForwarderOnlyAssemblies && SweepTypeForwarders (assembly)) {
+				//		foo.dll -> facade.dll    -> lib.dll
+				//		copy    |  copy (delete) |  link
+				//
+				if (!Context.KeepTypeForwarderOnlyAssemblies && UpdateForwardedTypesScope (assembly)) {
 					Annotations.SetAction (assembly, AssemblyAction.Save);
 				}
+
+				//
+				// Facade assemblies can have unused forwarders pointing to
+				// removed type (when facades are kept)
+				//
+				//		main.exe -> facade.dll -> lib.dll
+				//		link     |  copy       |  link
+				//
+				// when main.exe has unused reference to type in lib.dll
+				//
+				if (SweepTypeForwarders (assembly))
+					Annotations.SetAction (assembly, AssemblyAction.Save);
 
 				break;
 
@@ -110,6 +126,11 @@ namespace Mono.Linker.Steps {
 				break;
 
 			case AssemblyAction.Save:
+				//
+				// Save means we need to rewrite the assembly due to removed assembly
+				// reference. We do any additional removed assembly reference clean up here
+				//
+				UpdateForwardedTypesScope (assembly);
 				SweepTypeForwarders (assembly);
 				break;
 			}
@@ -143,6 +164,8 @@ namespace Mono.Linker.Steps {
 				SweepCustomAttributes (module);
 
 			SweepTypeForwarders (assembly);
+
+			UpdateForwardedTypesScope (assembly);
 		}
 
 		bool IsUsedAssembly (AssemblyDefinition assembly)
@@ -245,20 +268,11 @@ namespace Mono.Linker.Steps {
 
 		bool SweepTypeForwarders (AssemblyDefinition assembly)
 		{
-			bool any_change = false;
-
-			// if we save (only or by linking) then unmarked exports (e.g. forwarders) must be cleaned
-			// or they can point to nothing which will break later (e.g. when re-loading for stripping IL)
-			// reference: https://bugzilla.xamarin.com/show_bug.cgi?id=36577
 			if (assembly.MainModule.HasExportedTypes) {
-
-				// TODO: This sweeps only type forwarders of types which are not marked. The types
-				// which are have their type forwarders keept even if they are unused
-				any_change = SweepCollectionMetadata (assembly.MainModule.ExportedTypes);
+				return SweepCollectionMetadata (assembly.MainModule.ExportedTypes);
 			}
 
-			any_change |= UpdateForwardedTypesScope (assembly);
-			return any_change;
+			return false;
 		}
 
 		bool UpdateForwardedTypesScope (AssemblyDefinition assembly)
