@@ -237,8 +237,11 @@
       <CandleVariables Include="ProductMoniker" Value="$(WixProductMoniker)" />
       <CandleVariables Include="BuildVersion" Value="$(MsiVersionString)" />
       <CandleVariables Include="NugetVersion" Value="$(ProductVersion)" />
-      <CandleVariables Include="TargetArchitecture" Value="$(TargetArchitecture)" />
+      <CandleVariables Include="TargetArchitectureDescription" Value="$(TargetArchitecture)$(CrossArchContentsBuildPart)" />
       <CandleVariables Include="UpgradeCode" Value="$(UpgradeCode)" />
+
+      <!-- If this is a cross-arch MSI, add target arch to the dependency key for uniqueness. -->
+      <CandleVariables Include="CrossArchContentsPlatformPart" Value="$(CrossArchContentsBuildPart.Replace('-', '_'))" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -290,12 +293,17 @@
   </Target>
 
   <!--
-    Entry point for an MSBuild call: creates a NuGet package suitable for VS insertion.
+    Entry point for an MSBuild call: creates NuGet packages suitable for VS insertion.
   -->
   <Target Name="GenerateVSInsertionNupkg"
           DependsOnTargets="
             GetInstallerGenerationFlags;
-            EnsureMsiBuilt">
+            GenerateCurrentArchVSInsertionNupkg;
+            GenerateCrossArchVSInsertionNupkg" />
+
+  <Target Name="GenerateCurrentArchVSInsertionNupkg"
+          Condition="'$(GenerateMSI)' == 'true'"
+          DependsOnTargets="EnsureMsiBuilt">
     <!--
       Run the nupkg creation code with IsShipping=false to use prerelease versions: this package
       must not be stable to avoid mutation conflicts, even though the project itself may be shipping
@@ -305,12 +313,45 @@
       stabilization status.
     -->
     <MSBuild
-      Condition="'$(GenerateMSI)' == 'true'"
       Projects="$(MSBuildProjectFullPath)"
       Targets="GenerateVSInsertionNupkgCore"
       Properties="
         IsShipping=false;
         ComponentMsiFile=$(OutInstallerFile)" />
+  </Target>
+
+  <Target Name="GenerateCrossArchVSInsertionNupkg"
+          Condition="'$(GenerateCrossArchMsi)' == 'true'"
+          DependsOnTargets="
+            GetInstallerProperties;
+            EnsureCrossArchMsiBuilt;
+            GenerateCrossArchVSInsertionNupkgPerArch" />
+
+  <Target Name="GenerateCrossArchVSInsertionNupkgPerArch"
+          Condition="'@(CrossArchMsiToBuild)' != ''"
+          Inputs="%(CrossArchMsiToBuild.Identity)"
+          Outputs="batching-on-CrossArchMsiToBuild">
+    <!--
+      Get the cross-arch MSI to pack into an insertion package. Do this separately from the
+      GenerateVSInsertionNupkgCore call because IsShipping influences the file name.
+    -->
+    <MSBuild
+      Projects="$(MSBuildProjectFullPath)"
+      Targets="GetOutputWixInstallerFile"
+      Properties="
+        TargetArchitecture=%(CrossArchMsiToBuild.Identity);
+        CrossArchContentsArch=$(TargetArchitecture)">
+      <Output TaskParameter="TargetOutputs" PropertyName="CrossArchMsiFile" />
+    </MSBuild>
+
+    <MSBuild
+      Projects="$(MSBuildProjectFullPath)"
+      Targets="GenerateVSInsertionNupkgCore"
+      Properties="
+        TargetArchitecture=%(CrossArchMsiToBuild.Identity);
+        CrossArchContentsArch=$(TargetArchitecture);
+        IsShipping=false;
+        ComponentMsiFile=$(CrossArchMsiFile)" />
   </Target>
 
   <!--
@@ -322,13 +363,20 @@
     <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="Build" />
   </Target>
 
+  <Target Name="EnsureCrossArchMsiBuilt"
+          Condition="
+            '$(GenerateCrossArchMsi)' == 'true' and
+            '@(CrossArchMsiToBuild)' != ''">
+    <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="Build" />
+  </Target>
+
   <Target Name="GenerateVSInsertionNupkgCore"
           DependsOnTargets="
             AcquireNuGetExe;
             GetInstallerProperties;
             GetWixBuildConfiguration">
     <PropertyGroup>
-      <VSInsertionComponentName>$(VSInsertionCommonPrefix).$(VSInsertionProductName).$(VSInsertionShortComponentName).$(TargetArchitecture).$(ProductBandVersion)</VSInsertionComponentName>
+      <VSInsertionComponentName>$(VSInsertionCommonPrefix).$(VSInsertionProductName).$(VSInsertionShortComponentName).$(TargetArchitecture)$(CrossArchContentsBuildPart).$(ProductBandVersion)</VSInsertionComponentName>
       <VSInsertionComponentFriendlyName>$(ProductBandVersion) $(ProductBrandPrefix) $(VSInsertionShortComponentName)</VSInsertionComponentFriendlyName>
 
       <NupkgOutputFile>$(ArtifactsNonShippingPackagesDir)$(VSInsertionComponentName).$(ProductVersion).nupkg</NupkgOutputFile>

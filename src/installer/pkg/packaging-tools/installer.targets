@@ -17,6 +17,7 @@
             GenerateDeb;
             GenerateRpm;
             GenerateMsi;
+            GenerateCrossArchMsi;
             GenerateExeBundle;
             GeneratePkg;
             GenerateCompressedArchive" />
@@ -24,6 +25,7 @@
   <Target Name="GenerateDeb" DependsOnTargets="TestDebuild;CreateDeb" Condition="'$(GenerateDeb)' == 'true'"/>
   <Target Name="GenerateRpm" DependsOnTargets="TestFPMTool;CreateRpm" Condition="'$(GenerateRpm)' == 'true'"/>
   <Target Name="GenerateMsi" DependsOnTargets="CreateWixInstaller" Condition="'$(GenerateMSI)' == 'true'"/>
+  <Target Name="GenerateCrossArchMsi" DependsOnTargets="CreateCrossArchWixInstaller" Condition="'$(GenerateCrossArchMsi)' == 'true'"/>
   <Target Name="GenerateExeBundle" DependsOnTargets="CreateWixInstaller" Condition="'$(GenerateExeBundle)' == 'true'"/>
   <Target Name="GeneratePkg" DependsOnTargets="CreatePkg" Condition="'$(GeneratePkg)' == 'true'"/>
   <Target Name="GenerateCompressedArchive" DependsOnTargets="CreateCompressedArchive" Condition="'$(GenerateCompressedArchive)' == 'true'"/>
@@ -161,6 +163,22 @@
       Text="GenerateExeBundle and GenerateMSI are both set, but only one can be created at a time." />
 
     <Message Text="$(MSBuildProjectName) -> $(OutInstallerFile)" Importance="high" />
+  </Target>
+
+  <!--
+    Create MSI installers that install the current architecture's assets into the proper location
+    for a different architecture's SDK to find.
+  -->
+  <Target Name="CreateCrossArchWixInstaller"
+          DependsOnTargets="GetInstallerProperties">
+    <MSBuild
+      Condition="'@(CrossArchMsiToBuild)' != ''"
+      Projects="$(MSBuildProjectFullPath)"
+      Targets="CreateWixInstaller"
+      Properties="
+        TargetArchitecture=%(CrossArchMsiToBuild.Identity);
+        CrossArchContentsArch=$(TargetArchitecture);
+        PackLayoutDir=$(PackLayoutDir)" />
   </Target>
 
   <Target Name="CreateCompressedArchive"
