@@ -1646,7 +1646,8 @@ start_debugger_thread (MonoError *error)
 
 	thread = mono_thread_create_internal (mono_get_root_domain (), (gpointer)debugger_thread, NULL, MONO_THREAD_CREATE_FLAGS_DEBUGGER, error);
 	return_if_nok (error);
-	
+
+	/* Is it possible for the thread to be dead alreay ? */
 	debugger_thread_handle = mono_threads_open_thread_handle (thread->handle);
 	g_assert (debugger_thread_handle);
 	
@@ -6284,6 +6285,23 @@ clear_types_for_assembly (MonoAssembly *assembly)
 	mono_loader_unlock ();
 }
 
+static void
+dispose_vm (void)
+{
+	/* Clear all event requests */
+	mono_loader_lock ();
+	while (event_requests->len > 0) {
+		EventRequest *req = (EventRequest *)g_ptr_array_index (event_requests, 0);
+
+		clear_event_request (req->id, req->event_kind);
+	}
+	mono_loader_unlock ();
+
+	while (suspend_count > 0)
+		resume_vm ();
+	disconnected = TRUE;
+	vm_start_event_sent = FALSE;
+}
 
 static void
 count_thread_check_gc_finalizer (gpointer key, gpointer value, gpointer user_data)
@@ -6893,19 +6911,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		clear_suspended_objs ();
 		break;
 	case CMD_VM_DISPOSE:
-		/* Clear all event requests */
-		mono_loader_lock ();
-		while (event_requests->len > 0) {
-			EventRequest *req = (EventRequest *)g_ptr_array_index (event_requests, 0);
-
-			clear_event_request (req->id, req->event_kind);
-		}
-		mono_loader_unlock ();
-
-		while (suspend_count > 0)
-			resume_vm ();
-		disconnected = TRUE;
-		vm_start_event_sent = FALSE;
+		dispose_vm ();
 		break;
 	case CMD_VM_EXIT: {
 		MonoInternalThread *thread;
@@ -9994,11 +10000,10 @@ debugger_thread (void *arg)
 		/* This will break if the socket is closed during shutdown too */
 		if (res != HEADER_LENGTH) {
 			DEBUG_PRINTF (1, "[dbg] transport_recv () returned %d, expected %d.\n", res, HEADER_LENGTH);
-			len = HEADER_LENGTH;
-			id = 0;
-			flags = 0;
-			command_set = CMD_SET_VM;
-			command = CMD_VM_DISPOSE;
+			command_set = (CommandSet)0;
+			command = 0;
+			dispose_vm ();
+			break;
 		} else {
 			p = header;
 			end = header + HEADER_LENGTH;
