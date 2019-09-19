@@ -382,7 +382,17 @@ MonoExceptionHandle
 mono_thread_interruption_checkpoint_handle (void);
 
 MonoException* mono_thread_force_interruption_checkpoint_noraise (void);
-gint32* mono_thread_interruption_request_flag (void);
+
+/**
+ * mono_thread_interruption_request_flag:
+ *
+ * Returns the address of a flag that will be non-zero if an interruption has
+ * been requested for a thread. The thread to interrupt may not be the current
+ * thread, so an additional call to mono_thread_interruption_requested () or
+ * mono_thread_interruption_checkpoint () is always needed if the flag is not
+ * zero.
+ */
+extern gint32 mono_thread_interruption_request_flag;
 
 uint32_t mono_alloc_special_static_data (uint32_t static_type, uint32_t size, uint32_t align, uintptr_t *bitmap, int numbits);
 void*    mono_get_special_static_data   (uint32_t offset);

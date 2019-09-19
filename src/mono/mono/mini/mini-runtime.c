@@ -1571,7 +1571,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		}
 		break;
 	case MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG:
-		target = mono_thread_interruption_request_flag ();
+		target = &mono_thread_interruption_request_flag;
 		break;
 	case MONO_PATCH_INFO_METHOD_RGCTX:
 		target = mini_method_get_rgctx (patch_info->data.method);

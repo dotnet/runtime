@@ -242,7 +242,7 @@ static mono_mutex_t interlocked_mutex;
 #endif
 
 /* global count of thread interruptions requested */
-static gint32 thread_interruption_requested = 0;
+gint32 mono_thread_interruption_request_flag;
 
 /* Event signaled when a thread changes its background mode */
 static MonoOSEvent background_change_event;
@@ -321,12 +321,12 @@ mono_threads_begin_abort_protected_block (void)
 
 	/* Defer async request since we won't be able to process until exiting the block */
 	if (new_val == 1 && (new_state & INTERRUPT_ASYNC_REQUESTED_BIT)) {
-		mono_atomic_dec_i32 (&thread_interruption_requested);
-		THREADS_INTERRUPT_DEBUG ("[%d] begin abort protected block old_state %ld new_state %ld, defer tir %d\n", thread->small_id, old_state, new_state, thread_interruption_requested);
-		if (thread_interruption_requested < 0)
-			g_warning ("bad thread_interruption_requested state");
+		mono_atomic_dec_i32 (&mono_thread_interruption_request_flag);
+		THREADS_INTERRUPT_DEBUG ("[%d] begin abort protected block old_state %ld new_state %ld, defer tir %d\n", thread->small_id, old_state, new_state, mono_thread_interruption_request_flag);
+		if (mono_thread_interruption_request_flag < 0)
+			g_warning ("bad mono_thread_interruption_request_flag state");
 	} else {
-		THREADS_INTERRUPT_DEBUG ("[%d] begin abort protected block old_state %ld new_state %ld, tir %d\n", thread->small_id, old_state, new_state, thread_interruption_requested);
+		THREADS_INTERRUPT_DEBUG ("[%d] begin abort protected block old_state %ld new_state %ld, tir %d\n", thread->small_id, old_state, new_state, mono_thread_interruption_request_flag);
 	}
 }
 
@@ -362,10 +362,10 @@ mono_threads_end_abort_protected_block (void)
 	} while (mono_atomic_cas_ptr ((volatile gpointer *)&thread->thread_state, (gpointer)new_state, (gpointer)old_state) != (gpointer)old_state);
 
 	if (new_val == 0 && (new_state & INTERRUPT_ASYNC_REQUESTED_BIT)) {
-		mono_atomic_inc_i32 (&thread_interruption_requested);
-		THREADS_INTERRUPT_DEBUG ("[%d] end abort protected block old_state %ld new_state %ld, restore tir %d\n", thread->small_id, old_state, new_state, thread_interruption_requested);
+		mono_atomic_inc_i32 (&mono_thread_interruption_request_flag);
+		THREADS_INTERRUPT_DEBUG ("[%d] end abort protected block old_state %ld new_state %ld, restore tir %d\n", thread->small_id, old_state, new_state, mono_thread_interruption_request_flag);
 	} else {
-		THREADS_INTERRUPT_DEBUG ("[%d] end abort protected block old_state %ld new_state %ld, tir %d\n", thread->small_id, old_state, new_state, thread_interruption_requested);
+		THREADS_INTERRUPT_DEBUG ("[%d] end abort protected block old_state %ld new_state %ld, tir %d\n", thread->small_id, old_state, new_state, mono_thread_interruption_request_flag);
 	}
 
 	return mono_thread_state_has_interruption (new_state);
@@ -401,10 +401,10 @@ mono_thread_clear_interruption_requested (MonoInternalThread *thread)
 			new_state = old_state & ~INTERRUPT_ASYNC_REQUESTED_BIT;
 	} while (mono_atomic_cas_ptr ((volatile gpointer *)&thread->thread_state, (gpointer)new_state, (gpointer)old_state) != (gpointer)old_state);
 
-	mono_atomic_dec_i32 (&thread_interruption_requested);
-	THREADS_INTERRUPT_DEBUG ("[%d] clear interruption old_state %ld new_state %ld, tir %d\n", thread->small_id, old_state, new_state, thread_interruption_requested);
-	if (thread_interruption_requested < 0)
-		g_warning ("bad thread_interruption_requested state");
+	mono_atomic_dec_i32 (&mono_thread_interruption_request_flag);
+	THREADS_INTERRUPT_DEBUG ("[%d] clear interruption old_state %ld new_state %ld, tir %d\n", thread->small_id, old_state, new_state, mono_thread_interruption_request_flag);
+	if (mono_thread_interruption_request_flag < 0)
+		g_warning ("bad mono_thread_interruption_request_flag state");
 	return TRUE;
 }
 
@@ -461,10 +461,10 @@ mono_thread_set_interruption_requested_flags (MonoInternalThread *thread, gboole
 	} while (mono_atomic_cas_ptr ((volatile gpointer *)&thread->thread_state, (gpointer)new_state, (gpointer)old_state) != (gpointer)old_state);
 
 	if (sync || !(new_state & ABORT_PROT_BLOCK_MASK)) {
-		mono_atomic_inc_i32 (&thread_interruption_requested);
-		THREADS_INTERRUPT_DEBUG ("[%d] set interruption on [%d] old_state %ld new_state %ld, tir %d\n", mono_thread_internal_current ()->small_id, thread->small_id, old_state, new_state, thread_interruption_requested);
+		mono_atomic_inc_i32 (&mono_thread_interruption_request_flag);
+		THREADS_INTERRUPT_DEBUG ("[%d] set interruption on [%d] old_state %ld new_state %ld, tir %d\n", mono_thread_internal_current ()->small_id, thread->small_id, old_state, new_state, mono_thread_interruption_request_flag);
 	} else {
-		THREADS_INTERRUPT_DEBUG ("[%d] set interruption on [%d] old_state %ld new_state %ld, tir deferred %d\n", mono_thread_internal_current ()->small_id, thread->small_id, old_state, new_state, thread_interruption_requested);
+		THREADS_INTERRUPT_DEBUG ("[%d] set interruption on [%d] old_state %ld new_state %ld, tir deferred %d\n", mono_thread_internal_current ()->small_id, thread->small_id, old_state, new_state, mono_thread_interruption_request_flag);
 	}
 
 	return sync || !(new_state & ABORT_PROT_BLOCK_MASK);
@@ -5118,7 +5118,7 @@ mono_thread_resume_interruption (gboolean exec)
 gboolean
 mono_thread_interruption_requested (void)
 {
-	if (thread_interruption_requested) {
+	if (mono_thread_interruption_request_flag) {
 		MonoInternalThread *thread = mono_thread_internal_current ();
 		/* The thread may already be stopping */
 		if (thread != NULL) 
@@ -5248,21 +5248,6 @@ mono_set_pending_exception_handle (MonoExceptionHandle exc)
 	MONO_OBJECT_SETREF_INTERNAL (thread, pending_exception, MONO_HANDLE_RAW (exc));
 
 	mono_thread_request_interruption_native ();
-}
-
-/**
- * mono_thread_interruption_request_flag:
- *
- * Returns the address of a flag that will be non-zero if an interruption has
- * been requested for a thread. The thread to interrupt may not be the current
- * thread, so an additional call to mono_thread_interruption_requested() or
- * mono_thread_interruption_checkpoint() is allways needed if the flag is not
- * zero.
- */
-gint32*
-mono_thread_interruption_request_flag (void)
-{
-	return &thread_interruption_requested;
 }
 
 void 

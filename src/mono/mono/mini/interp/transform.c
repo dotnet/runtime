@@ -5630,7 +5630,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				break;
 			case CEE_MONO_LDPTR_INT_REQ_FLAG:
 				interp_add_ins (td, MINT_MONO_LDPTR);
-				td->last_ins->data [0] = get_data_item_index (td, mono_thread_interruption_request_flag ());
+				td->last_ins->data [0] = get_data_item_index (td, &mono_thread_interruption_request_flag);
 				PUSH_TYPE (td, STACK_TYPE_MP, NULL);
 				++td->ip;
 				break;

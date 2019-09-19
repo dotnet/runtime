@@ -937,7 +937,7 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, con
 
 #define EXCEPTION_CHECKPOINT	\
 	do {										\
-		if (*mono_thread_interruption_request_flag () && !mono_threads_is_critical_method (frame->imethod->method)) { \
+		if (mono_thread_interruption_request_flag && !mono_threads_is_critical_method (frame->imethod->method)) { \
 			MonoException *exc = mono_thread_interruption_checkpoint ();	\
 			if (exc)							\
 				THROW_EX (exc, ip);					\
@@ -947,7 +947,7 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, con
 
 #define EXCEPTION_CHECKPOINT_IN_HELPER_FUNCTION	\
 	do {										\
-		if (*mono_thread_interruption_request_flag () && !mono_threads_is_critical_method (frame->imethod->method)) { \
+		if (mono_thread_interruption_request_flag && !mono_threads_is_critical_method (frame->imethod->method)) { \
 			MonoException *exc = mono_thread_interruption_checkpoint ();	\
 			if (exc)							\
 				return exc;						\
