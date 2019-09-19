@@ -47,6 +47,7 @@
 #include <utime.h>
 #endif
 
+#if defined (HAVE_FORK) && defined (HAVE_EXECVE)
 // For close_my_fds
 #if defined (_AIX)
 #include <procinfo.h>
@@ -56,6 +57,7 @@
 #include <libutil.h>
 #elif defined(__linux__)
 #include <dirent.h>
+#endif
 #endif
 
 #include <mono/metadata/object-internals.h>
@@ -1104,19 +1106,6 @@ mono_w32process_module_get_information (gpointer handle, gpointer module, MODULE
 	return ret;
 }
 
-static void
-switch_dir_separators (char *path)
-{
-	size_t i, pathLength = strlen(path);
-	
-	/* Turn all the slashes round the right way, except for \' */
-	/* There are probably other characters that need to be excluded as well. */
-	for (i = 0; i < pathLength; i++) {
-		if (path[i] == '\\' && i < pathLength - 1 && path[i+1] != '\'' )
-			path[i] = '/';
-	}
-}
-
 #if HAVE_SIGACTION
 
 MONO_SIGNAL_HANDLER_FUNC (static, mono_sigchld_signal_handler, (int _dummy, siginfo_t *info, void *context))
@@ -1183,6 +1172,20 @@ mono_w32process_signal_finished (void)
 	}
 
 	mono_coop_mutex_unlock (&processes_mutex);
+}
+
+#if defined (HAVE_FORK) && defined (HAVE_EXECVE)
+static void
+switch_dir_separators (char *path)
+{
+	size_t i, pathLength = strlen (path);
+
+	/* Turn all the slashes round the right way, except for \' */
+	/* There are probably other characters that need to be excluded as well. */
+	for (i = 0; i < pathLength; i++) {
+		if (path[i] == '\\' && i < pathLength - 1 && path[i + 1] != '\'')
+			path[i] = '/';
+	}
 }
 
 static gboolean
@@ -1460,6 +1463,7 @@ fallback:
 	for (guint32 i = max_fd_count () - 1; i > 2; i--)
 		close (i);
 }
+#endif
 
 static gboolean
 process_create (const gunichar2 *appname, const gunichar2 *cmdline,

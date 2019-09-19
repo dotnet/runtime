@@ -42,19 +42,23 @@
 
 #if defined(__GNUC__)
 
+#ifdef HAVE_GRP_H
 #ifndef HAVE_GETGRGID_R
 	#warning Non-thread safe getgrgid being used!
 #endif
 #ifndef HAVE_GETGRNAM_R
 	#warning Non-thread safe getgrnam being used!
 #endif
+#endif
+
+#ifdef HAVE_PWD_H
 #ifndef HAVE_GETPWNAM_R
 	#warning Non-thread safe getpwnam being used!
 #endif
 #ifndef HAVE_GETPWUID_R
 	#warning Non-thread safe getpwuid being used!
 #endif
-
+#endif
 #endif /* defined(__GNUC__) */
 #endif /* !HOST_WIN32 */
 

@@ -690,6 +690,8 @@ array_set_value_impl (MonoArrayHandle arr_handle, MonoObjectHandle value_handle,
 			INVALID_CAST;
 		}
 		break;
+	default:
+		break;
 	}
 	/* If we can't do a direct copy, let's try a widening conversion. */
 
@@ -4162,6 +4164,8 @@ ves_icall_System_Enum_compare_value_to (MonoObjectHandle enumHandle, MonoObjectH
 #else
 			COMPARE_ENUM_VALUES (gint32);
 #endif
+		default:
+			break;
 	}
 #undef COMPARE_ENUM_VALUES
 	/* indicates that the enum was of an unsupported underlying type */
@@ -7321,7 +7325,7 @@ mono_icall_get_machine_name (MonoError *error)
 #if !defined(DISABLE_SOCKETS)
 	MonoStringHandle result;
 	char *buf;
-	int n, i;
+	int n;
 #if defined _SC_HOST_NAME_MAX
 	n = sysconf (_SC_HOST_NAME_MAX);
 	if (n == -1)
@@ -7332,6 +7336,7 @@ mono_icall_get_machine_name (MonoError *error)
 #if defined(HAVE_GETHOSTNAME)
 	if (gethostname (buf, n) == 0){
 		buf [n] = 0;
+		int i;
 		// try truncating the string at the first dot
 		for (i = 0; i < n; i++) {
 			if (buf [i] == '.') {

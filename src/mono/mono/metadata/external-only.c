@@ -19,6 +19,7 @@
 #include "class-init.h"
 #include "marshal.h"
 #include "object.h"
+#include "external-only.h"
 
 /**
  * mono_gchandle_new:

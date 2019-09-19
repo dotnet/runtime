@@ -582,6 +582,8 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 				if (mono_defaults.int64_class)
 					klass->cast_class = mono_defaults.int64_class;
 				break;
+			default:
+				break;
 		}
 	}
 

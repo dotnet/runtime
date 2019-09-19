@@ -1985,8 +1985,8 @@ ipaddress_handle_to_struct_in6_addr (MonoObjectHandle ipaddr)
 #endif
 #endif
 
+#ifdef HAVE_STRUCT_SOCKADDR_IN6
 #if defined(__APPLE__) || defined(__FreeBSD__)
-
 static int
 get_local_interface_id (int family)
 {
@@ -2017,8 +2017,8 @@ get_local_interface_id (int family)
 	return idx;
 #endif
 }
-
 #endif /* defined(__APPLE__) || defined(__FreeBSD__) */
+#endif /* HAVE_STRUCT_SOCKADDR_IN6 */
 
 #ifndef ENABLE_NETCORE
 void
