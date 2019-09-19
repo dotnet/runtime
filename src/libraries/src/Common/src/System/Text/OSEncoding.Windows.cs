@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Text;
 using System.Collections.Generic;
@@ -11,7 +12,7 @@ namespace System.Text
     internal sealed class OSEncoding : Encoding
     {
         private readonly int _codePage;
-        private string _encodingName;
+        private string? _encodingName;
 
         internal OSEncoding(int codePage) : base(codePage)
         {

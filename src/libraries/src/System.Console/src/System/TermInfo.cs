@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
@@ -163,9 +164,9 @@ namespace System
 
             /// <summary>Read the database for the current terminal as specified by the "TERM" environment variable.</summary>
             /// <returns>The database, or null if it could not be found.</returns>
-            internal static Database ReadActiveDatabase()
+            internal static Database? ReadActiveDatabase()
             {
-                string term = Environment.GetEnvironmentVariable("TERM");
+                string? term = Environment.GetEnvironmentVariable("TERM");
                 return !string.IsNullOrEmpty(term) ? ReadDatabase(term) : null;
             }
 
@@ -183,20 +184,20 @@ namespace System
             /// <summary>Read the database for the specified terminal.</summary>
             /// <param name="term">The identifier for the terminal.</param>
             /// <returns>The database, or null if it could not be found.</returns>
-            private static Database ReadDatabase(string term)
+            private static Database? ReadDatabase(string term)
             {
                 // This follows the same search order as prescribed by ncurses.
-                Database db;
+                Database? db;
 
                 // First try a location specified in the TERMINFO environment variable.
-                string terminfo = Environment.GetEnvironmentVariable("TERMINFO");
+                string? terminfo = Environment.GetEnvironmentVariable("TERMINFO");
                 if (!string.IsNullOrWhiteSpace(terminfo) && (db = ReadDatabase(term, terminfo)) != null)
                 {
                     return db;
                 }
 
                 // Then try in the user's home directory.
-                string home = PersistedFiles.GetHomeDirectory();
+                string? home = PersistedFiles.GetHomeDirectory();
                 if (!string.IsNullOrWhiteSpace(home) && (db = ReadDatabase(term, home + "/.terminfo")) != null)
                 {
                     return db;
@@ -219,7 +220,7 @@ namespace System
             /// <param name="filePath">The path to the file to open.</param>
             /// <param name="fd">If successful, the opened file descriptor; otherwise, -1.</param>
             /// <returns>true if the file was successfully opened; otherwise, false.</returns>
-            private static bool TryOpen(string filePath, out SafeFileHandle fd)
+            private static bool TryOpen(string filePath, [NotNullWhen(true)] out SafeFileHandle? fd)
             {
                 fd = Interop.Sys.Open(filePath, Interop.Sys.OpenFlags.O_RDONLY | Interop.Sys.OpenFlags.O_CLOEXEC, 0);
                 if (fd.IsInvalid)
@@ -236,14 +237,14 @@ namespace System
             /// <param name="term">The identifier for the terminal.</param>
             /// <param name="directoryPath">The path to the directory containing terminfo database files.</param>
             /// <returns>The database, or null if it could not be found.</returns>
-            private static Database ReadDatabase(string term, string directoryPath)
+            private static Database? ReadDatabase(string? term, string? directoryPath)
             {
                 if (string.IsNullOrEmpty(term) || string.IsNullOrEmpty(directoryPath))
                 {
                     return null;
                 }
 
-                SafeFileHandle fd;
+                SafeFileHandle? fd;
                 if (!TryOpen(directoryPath + "/" + term[0].ToString() + "/" + term, out fd) &&          // /directory/termFirstLetter/term      (Linux)
                     !TryOpen(directoryPath + "/" + ((int)term[0]).ToString("X") + "/" + term, out fd))  // /directory/termFirstLetterAsHex/term (Mac)
                 {
@@ -295,7 +296,7 @@ namespace System
             /// <summary>Gets a string from the strings section by the string's well-known index.</summary>
             /// <param name="stringTableIndex">The index of the string to find.</param>
             /// <returns>The string if it's in the database; otherwise, null.</returns>
-            public string GetString(WellKnownStrings stringTableIndex)
+            public string? GetString(WellKnownStrings stringTableIndex)
             {
                 int index = (int)stringTableIndex;
                 Debug.Assert(index >= 0);
@@ -321,11 +322,11 @@ namespace System
             /// <summary>Gets a string from the extended strings section.</summary>
             /// <param name="name">The name of the string as contained in the extended names section.</param>
             /// <returns>The string if it's in the database; otherwise, null.</returns>
-            public string GetExtendedString(string name)
+            public string? GetExtendedString(string name)
             {
                 Debug.Assert(name != null);
 
-                string value;
+                string? value;
                 return _extendedStrings.TryGetValue(name, out value) ?
                     value :
                     null;
@@ -355,7 +356,7 @@ namespace System
             /// defined as the earlier portions, and may not even exist, the parsing is more lenient about
             /// errors, returning an empty collection rather than throwing.
             /// </returns>
-            private static Dictionary<string, string> ParseExtendedStrings(byte[] data, int extendedBeginning, bool readAs32Bit)
+            private static Dictionary<string, string>? ParseExtendedStrings(byte[] data, int extendedBeginning, bool readAs32Bit)
             {
                 const int ExtendedHeaderSize = 10;
                 int sizeOfIntValuesInBytes = (readAs32Bit) ? 4 : 2;
@@ -512,15 +513,15 @@ namespace System
         {
             /// <summary>A cached stack to use to avoid allocating a new stack object for every evaluation.</summary>
             [ThreadStatic]
-            private static Stack<FormatParam> t_cachedStack;
+            private static Stack<FormatParam>? t_cachedStack;
 
             /// <summary>A cached array of arguments to use to avoid allocating a new array object for every evaluation.</summary>
             [ThreadStatic]
-            private static FormatParam[] t_cachedOneElementArgsArray;
+            private static FormatParam[]? t_cachedOneElementArgsArray;
 
             /// <summary>A cached array of arguments to use to avoid allocating a new array object for every evaluation.</summary>
             [ThreadStatic]
-            private static FormatParam[] t_cachedTwoElementArgsArray;
+            private static FormatParam[]? t_cachedTwoElementArgsArray;
 
             /// <summary>Evaluates a terminfo formatting string, using the supplied argument.</summary>
             /// <param name="format">The format string.</param>
@@ -528,7 +529,7 @@ namespace System
             /// <returns>The formatted string.</returns>
             public static string Evaluate(string format, FormatParam arg)
             {
-                FormatParam[] args = t_cachedOneElementArgsArray;
+                FormatParam[]? args = t_cachedOneElementArgsArray;
                 if (args == null)
                 {
                     t_cachedOneElementArgsArray = args = new FormatParam[1];
@@ -546,7 +547,7 @@ namespace System
             /// <returns>The formatted string.</returns>
             public static string Evaluate(string format, FormatParam arg1, FormatParam arg2)
             {
-                FormatParam[] args = t_cachedTwoElementArgsArray;
+                FormatParam[]? args = t_cachedTwoElementArgsArray;
                 if (args == null)
                 {
                     t_cachedTwoElementArgsArray = args = new FormatParam[2];
@@ -574,7 +575,7 @@ namespace System
                 }
 
                 // Initialize the stack to use for processing.
-                Stack<FormatParam> stack = t_cachedStack;
+                Stack<FormatParam>? stack = t_cachedStack;
                 if (stack == null)
                 {
                     t_cachedStack = stack = new Stack<FormatParam>();
@@ -587,7 +588,7 @@ namespace System
                 // "dynamic" and "static" variables are much less often used (the "dynamic" and "static"
                 // terminology appears to just refer to two different collections rather than to any semantic
                 // meaning).  As such, we'll only initialize them if we really need them.
-                FormatParam[] dynamicVars = null, staticVars = null;
+                FormatParam[]? dynamicVars = null, staticVars = null;
 
                 int pos = 0;
                 return EvaluateInternal(format, ref pos, args, stack, ref dynamicVars, ref staticVars);
@@ -610,7 +611,7 @@ namespace System
             /// </returns>
             private static string EvaluateInternal(
                 string format, ref int pos, FormatParam[] args, Stack<FormatParam> stack,
-                ref FormatParam[] dynamicVars, ref FormatParam[] staticVars)
+                ref FormatParam[]? dynamicVars, ref FormatParam[]? staticVars)
             {
                 // Create a StringBuilder to store the output of this processing.  We use the format's length as an
                 // approximation of an upper-bound for how large the output will be, though with parameter processing,
@@ -872,7 +873,7 @@ namespace System
                 Debug.Assert(arg is string || arg is int);
 
                 // Determine how much space is needed to store the formatted string.
-                string stringArg = arg as string;
+                string? stringArg = arg as string;
                 int neededLength = stringArg != null ?
                     Interop.Sys.SNPrintF(null, 0, format, stringArg) :
                     Interop.Sys.SNPrintF(null, 0, format, (int)arg);
@@ -907,7 +908,7 @@ namespace System
             /// <param name="index">The index to use to index into the variables.</param>
             /// <returns>The variables collection.</returns>
             private static FormatParam[] GetDynamicOrStaticVariables(
-                char c, ref FormatParam[] dynamicVars, ref FormatParam[] staticVars, out int index)
+                char c, ref FormatParam[]? dynamicVars, ref FormatParam[]? staticVars, out int index)
             {
                 if (c >= 'A' && c <= 'Z')
                 {
@@ -932,7 +933,7 @@ namespace System
                 /// <summary>The integer stored in the parameter.</summary>
                 private readonly int _int32;
                 /// <summary>The string stored in the parameter.</summary>
-                private readonly string _string; // null means an Int32 is stored
+                private readonly string? _string; // null means an Int32 is stored
 
                 /// <summary>Initializes the parameter with an integer value.</summary>
                 /// <param name="value">The value to be stored in the parameter.</param>
@@ -940,12 +941,12 @@ namespace System
 
                 /// <summary>Initializes the parameter with a string value.</summary>
                 /// <param name="value">The value to be stored in the parameter.</param>
-                public FormatParam(string value) : this(0, value ?? string.Empty) { }
+                public FormatParam(string? value) : this(0, value ?? string.Empty) { }
 
                 /// <summary>Initializes the parameter.</summary>
                 /// <param name="intValue">The integer value.</param>
                 /// <param name="stringValue">The string value.</param>
-                private FormatParam(int intValue, string stringValue)
+                private FormatParam(int intValue, string? stringValue)
                 {
                     _int32 = intValue;
                     _string = stringValue;
@@ -958,7 +959,7 @@ namespace System
                 }
 
                 /// <summary>Implicit converts a string into a parameter.</summary>
-                public static implicit operator FormatParam(string value)
+                public static implicit operator FormatParam(string? value)
                 {
                     return new FormatParam(value);
                 }

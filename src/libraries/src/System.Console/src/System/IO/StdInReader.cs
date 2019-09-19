@@ -16,8 +16,8 @@ namespace System.IO
      */
     internal sealed class StdInReader : TextReader
     {
-        private static string s_moveLeftString; // string written to move the cursor to the left
-        private static string s_clearToEol;     // string written to clear from cursor to end of line
+        private static string? s_moveLeftString; // string written to move the cursor to the left
+        private static string? s_clearToEol;     // string written to clear from cursor to end of line
 
         private readonly StringBuilder _readLineSB; // SB that holds readLine output.  This is a field simply to enable reuse; it's only used in ReadLine.
         private readonly Stack<ConsoleKeyInfo> _tmpKeys = new Stack<ConsoleKeyInfo>(); // temporary working stack; should be empty outside of ReadLine
@@ -78,15 +78,15 @@ namespace System.IO
             return result;
         }
 
-        public override string ReadLine()
+        public override string? ReadLine()
         {
             return ReadLine(consumeKeys: true);
         }
 
-        private string ReadLine(bool consumeKeys)
+        private string? ReadLine(bool consumeKeys)
         {
             Debug.Assert(_tmpKeys.Count == 0);
-            string readLineStr = null;
+            string? readLineStr = null;
 
             Interop.Sys.InitializeConsoleBeforeRead();
             try
@@ -156,7 +156,7 @@ namespace System.IO
                                 {
                                     if (s_moveLeftString == null)
                                     {
-                                        string moveLeft = ConsolePal.TerminalFormatStrings.Instance.CursorLeft;
+                                        string? moveLeft = ConsolePal.TerminalFormatStrings.Instance.CursorLeft;
                                         s_moveLeftString = !string.IsNullOrEmpty(moveLeft) ? moveLeft + " " + moveLeft : string.Empty;
                                     }
 

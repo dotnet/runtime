@@ -36,7 +36,7 @@ namespace System
         public static int WindowLeft { get { throw null; } set { } }
         public static int WindowTop { get { throw null; } set { } }
         public static int WindowWidth { get { throw null; } set { } }
-        public static event System.ConsoleCancelEventHandler CancelKeyPress { add { } remove { } }
+        public static event System.ConsoleCancelEventHandler? CancelKeyPress { add { } remove { } }
         public static void Beep() { }
         public static void Beep(int frequency, int duration) { }
         public static void Clear() { }
@@ -51,7 +51,7 @@ namespace System
         public static int Read() { throw null; }
         public static System.ConsoleKeyInfo ReadKey() { throw null; }
         public static System.ConsoleKeyInfo ReadKey(bool intercept) { throw null; }
-        public static string ReadLine() { throw null; }
+        public static string? ReadLine() { throw null; }
         public static void ResetColor() { }
         public static void SetBufferSize(int width, int height) { }
         public static void SetCursorPosition(int left, int top) { }
@@ -62,19 +62,19 @@ namespace System
         public static void SetWindowSize(int width, int height) { }
         public static void Write(bool value) { }
         public static void Write(char value) { }
-        public static void Write(char[] buffer) { }
+        public static void Write(char[]? buffer) { }
         public static void Write(char[] buffer, int index, int count) { }
         public static void Write(decimal value) { }
         public static void Write(double value) { }
         public static void Write(int value) { }
         public static void Write(long value) { }
-        public static void Write(object value) { }
+        public static void Write(object? value) { }
         public static void Write(float value) { }
-        public static void Write(string value) { }
-        public static void Write(string format, object arg0) { }
-        public static void Write(string format, object arg0, object arg1) { }
-        public static void Write(string format, object arg0, object arg1, object arg2) { }
-        public static void Write(string format, params object[] arg) { }
+        public static void Write(string? value) { }
+        public static void Write(string format, object? arg0) { }
+        public static void Write(string format, object? arg0, object? arg1) { }
+        public static void Write(string format, object? arg0, object? arg1, object? arg2) { }
+        public static void Write(string format, params object?[]? arg) { }
         [System.CLSCompliantAttribute(false)]
         public static void Write(uint value) { }
         [System.CLSCompliantAttribute(false)]
@@ -82,19 +82,19 @@ namespace System
         public static void WriteLine() { }
         public static void WriteLine(bool value) { }
         public static void WriteLine(char value) { }
-        public static void WriteLine(char[] buffer) { }
+        public static void WriteLine(char[]? buffer) { }
         public static void WriteLine(char[] buffer, int index, int count) { }
         public static void WriteLine(decimal value) { }
         public static void WriteLine(double value) { }
         public static void WriteLine(int value) { }
         public static void WriteLine(long value) { }
-        public static void WriteLine(object value) { }
+        public static void WriteLine(object? value) { }
         public static void WriteLine(float value) { }
-        public static void WriteLine(string value) { }
-        public static void WriteLine(string format, object arg0) { }
-        public static void WriteLine(string format, object arg0, object arg1) { }
-        public static void WriteLine(string format, object arg0, object arg1, object arg2) { }
-        public static void WriteLine(string format, params object[] arg) { }
+        public static void WriteLine(string? value) { }
+        public static void WriteLine(string format, object? arg0) { }
+        public static void WriteLine(string format, object? arg0, object? arg1) { }
+        public static void WriteLine(string format, object? arg0, object? arg1, object? arg2) { }
+        public static void WriteLine(string format, params object?[]? arg) { }
         [System.CLSCompliantAttribute(false)]
         public static void WriteLine(uint value) { }
         [System.CLSCompliantAttribute(false)]
@@ -106,7 +106,7 @@ namespace System
         public bool Cancel { get { throw null; } set { } }
         public System.ConsoleSpecialKey SpecialKey { get { throw null; } }
     }
-    public delegate void ConsoleCancelEventHandler(object sender, System.ConsoleCancelEventArgs e);
+    public delegate void ConsoleCancelEventHandler(object? sender, System.ConsoleCancelEventArgs e);
     public enum ConsoleColor
     {
         Black = 0,
@@ -281,7 +281,7 @@ namespace System
         public char KeyChar { get { throw null; } }
         public System.ConsoleModifiers Modifiers { get { throw null; } }
         public bool Equals(System.ConsoleKeyInfo obj) { throw null; }
-        public override bool Equals(object value) { throw null; }
+        public override bool Equals(object? value) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.ConsoleKeyInfo a, System.ConsoleKeyInfo b) { throw null; }
         public static bool operator !=(System.ConsoleKeyInfo a, System.ConsoleKeyInfo b) { throw null; }
