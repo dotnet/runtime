@@ -4894,7 +4894,7 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Sta
     optAssertionProp_Update(newTree, tree, stmt);
 
     JITDUMP("After constant propagation on [%06u]:\n", tree->gtTreeID);
-    DBEXEC(VERBOSE, gtDispTree(stmt->gtStmtExpr));
+    DBEXEC(VERBOSE, gtDispStmt(stmt));
 
     return WALK_SKIP_SUBTREES;
 }
@@ -5163,9 +5163,9 @@ void Compiler::optAssertionPropMain()
                     break;
                 }
 
-                JITDUMP("Propagating %s assertions for " FMT_BB ", stmt [%06d], tree [%06d], tree -> %d\n",
-                        BitVecOps::ToString(apTraits, assertions), block->bbNum, dspTreeID(stmt->gtStmtExpr),
-                        dspTreeID(tree), tree->GetAssertionInfo().GetAssertionIndex());
+                JITDUMP("Propagating %s assertions for " FMT_BB ", stmt " FMT_STMT ", tree [%06d], tree -> %d\n",
+                        BitVecOps::ToString(apTraits, assertions), block->bbNum, stmt->GetID(), dspTreeID(tree),
+                        tree->GetAssertionInfo().GetAssertionIndex());
 
                 GenTree* newTree = optAssertionProp(assertions, tree, stmt);
                 if (newTree)
@@ -5189,7 +5189,7 @@ void Compiler::optAssertionPropMain()
                 if (verbose)
                 {
                     printf("Re-morphing this stmt:\n");
-                    gtDispTree(stmt->gtStmtExpr);
+                    gtDispStmt(stmt);
                     printf("\n");
                 }
 #endif
