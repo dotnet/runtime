@@ -3802,7 +3802,7 @@ void Compiler::lvaMarkLocalVars(BasicBlock* block, bool isRecompute)
     for (Statement* stmt : StatementList(block->FirstNonPhiDef()))
     {
         MarkLocalVarsVisitor visitor(this, block, stmt, isRecompute);
-        DISPTREE(stmt->gtStmtExpr);
+        DISPSTMT(stmt);
         visitor.WalkTree(&stmt->gtStmtExpr, nullptr);
     }
 }
