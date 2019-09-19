@@ -48,7 +48,7 @@
     <Variable Name="DOTNETHOME" Type="string" Value="[$(var.Program_Files)]dotnet" bal:Overridable="no" />
 
     <!-- Variables used solely for localization. -->
-    <Variable Name="BUNDLEMONIKER" Type="string" Value="$(var.ProductMoniker) ($(var.TargetArchitecture))" bal:Overridable="no" />
+    <Variable Name="BUNDLEMONIKER" Type="string" Value="$(var.ProductMoniker) ($(var.TargetArchitectureDescription))" bal:Overridable="no" />
     <Variable Name="PRODUCT_NAME" Type="string" Value="$(var.ProductName)" bal:Overridable="no" />
     <Variable Name="LINK_PREREQ_PAGE" Type="string" Value="https://go.microsoft.com/fwlink/?linkid=846817" bal:Overridable="no" />
 

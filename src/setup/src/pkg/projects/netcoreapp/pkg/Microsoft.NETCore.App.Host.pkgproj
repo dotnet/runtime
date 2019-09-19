@@ -18,4 +18,12 @@
     <HeatOutputFileElementToStabilize Include="native\comhost.dll" ReplacementId="comhosttemplatecomhostdll" />
   </ItemGroup>
 
+  <!--
+    See https://github.com/dotnet/core-setup/issues/7846. Cross-arch MSI installers are needed for
+    C++/CLI project system support.
+  -->
+  <ItemGroup>
+    <CrossArchSdkMsiInstallerArch Include="x64;x86" />
+  </ItemGroup>
+
 </Project>
