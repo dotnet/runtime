@@ -67,7 +67,7 @@ namespace System
             get { return GetConsoleEncoding(); }
         }
 
-        private static SyncTextReader s_stdInReader;
+        private static SyncTextReader? s_stdInReader;
 
         private static SyncTextReader StdInReader
         {
@@ -200,7 +200,7 @@ namespace System
                 if (Console.IsOutputRedirected)
                     return;
 
-                string titleFormat = TerminalFormatStrings.Instance.Title;
+                string? titleFormat = TerminalFormatStrings.Instance.Title;
                 if (!string.IsNullOrEmpty(titleFormat))
                 {
                     string ansiStr = TermInfo.ParameterizedStrings.Evaluate(titleFormat, value);
@@ -244,7 +244,7 @@ namespace System
                     return;
                 }
 
-                string cursorAddressFormat = TerminalFormatStrings.Instance.CursorAddress;
+                string? cursorAddressFormat = TerminalFormatStrings.Instance.CursorAddress;
                 if (!string.IsNullOrEmpty(cursorAddressFormat))
                 {
                     string ansiStr = TermInfo.ParameterizedStrings.Evaluate(cursorAddressFormat, top, left);
@@ -731,7 +731,7 @@ namespace System
         /// <returns>The encoding.</returns>
         private static Encoding GetConsoleEncoding()
         {
-            Encoding enc = EncodingHelper.GetEncodingFromCharset();
+            Encoding? enc = EncodingHelper.GetEncodingFromCharset();
             return enc != null ?
                 enc.RemovePreamble() :
                 new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
@@ -803,7 +803,7 @@ namespace System
             }
 
             // We haven't yet computed a format string.  Compute it, use it, then cache it.
-            string formatString = foreground ? TerminalFormatStrings.Instance.Foreground : TerminalFormatStrings.Instance.Background;
+            string? formatString = foreground ? TerminalFormatStrings.Instance.Foreground : TerminalFormatStrings.Instance.Background;
             if (!string.IsNullOrEmpty(formatString))
             {
                 int maxColors = TerminalFormatStrings.Instance.MaxColors; // often 8 or 16; 0 is invalid
@@ -946,7 +946,7 @@ namespace System
                     // the native lib later to handle signals that require re-entering the mode.
                     if (!Console.IsOutputRedirected)
                     {
-                        string keypadXmit = TerminalFormatStrings.Instance.KeypadXmit;
+                        string? keypadXmit = TerminalFormatStrings.Instance.KeypadXmit;
                         if (keypadXmit != null)
                         {
                             Interop.Sys.SetKeypadXmit(keypadXmit);
@@ -982,11 +982,11 @@ namespace System
             private static readonly Lazy<TerminalFormatStrings> s_instance = new Lazy<TerminalFormatStrings>(() => new TerminalFormatStrings(TermInfo.Database.ReadActiveDatabase()));
 
             /// <summary>The format string to use to change the foreground color.</summary>
-            public readonly string Foreground;
+            public readonly string? Foreground;
             /// <summary>The format string to use to change the background color.</summary>
-            public readonly string Background;
+            public readonly string? Background;
             /// <summary>The format string to use to reset the foreground and background colors.</summary>
-            public readonly string Reset;
+            public readonly string? Reset;
             /// <summary>The maximum number of colors supported by the terminal.</summary>
             public readonly int MaxColors;
             /// <summary>The number of columns in a format.</summary>
@@ -994,21 +994,21 @@ namespace System
             /// <summary>The number of lines in a format.</summary>
             public readonly int Lines;
             /// <summary>The format string to use to make cursor visible.</summary>
-            public readonly string CursorVisible;
+            public readonly string? CursorVisible;
             /// <summary>The format string to use to make cursor invisible</summary>
-            public readonly string CursorInvisible;
+            public readonly string? CursorInvisible;
             /// <summary>The format string to use to set the window title.</summary>
-            public readonly string Title;
+            public readonly string? Title;
             /// <summary>The format string to use for an audible bell.</summary>
-            public readonly string Bell;
+            public readonly string? Bell;
             /// <summary>The format string to use to clear the terminal.</summary>
-            public readonly string Clear;
+            public readonly string? Clear;
             /// <summary>The format string to use to set the position of the cursor.</summary>
-            public readonly string CursorAddress;
+            public readonly string? CursorAddress;
             /// <summary>The format string to use to move the cursor to the left.</summary>
-            public readonly string CursorLeft;
+            public readonly string? CursorLeft;
             /// <summary>The format string to use to clear to the end of line.</summary>
-            public readonly string ClrEol;
+            public readonly string? ClrEol;
             /// <summary>The ANSI-compatible string for the Cursor Position report request.</summary>
             /// <remarks>
             /// This should really be in user string 7 in the terminfo file, but some terminfo databases
@@ -1028,9 +1028,9 @@ namespace System
             /// <summary> Min key length </summary>
             public readonly int MinKeyFormatLength;
             /// <summary>The ANSI string used to enter "application" / "keypad transmit" mode.</summary>
-            public readonly string KeypadXmit;
+            public readonly string? KeypadXmit;
 
-            public TerminalFormatStrings(TermInfo.Database db)
+            public TerminalFormatStrings(TermInfo.Database? db)
             {
                 if (db == null)
                     return;
@@ -1143,8 +1143,8 @@ namespace System
             private static string GetTitle(TermInfo.Database db)
             {
                 // Try to get the format string from tsl/fsl and use it if they're available
-                string tsl = db.GetString(TermInfo.WellKnownStrings.ToStatusLine);
-                string fsl = db.GetString(TermInfo.WellKnownStrings.FromStatusLine);
+                string? tsl = db.GetString(TermInfo.WellKnownStrings.ToStatusLine);
+                string? fsl = db.GetString(TermInfo.WellKnownStrings.FromStatusLine);
                 if (tsl != null && fsl != null)
                 {
                     return tsl + "%p1%s" + fsl;
@@ -1187,7 +1187,7 @@ namespace System
 
             private void AddKey(TermInfo.Database db, TermInfo.WellKnownStrings keyId, ConsoleKey key, bool shift, bool alt, bool control)
             {
-                string keyFormat = db.GetString(keyId);
+                string? keyFormat = db.GetString(keyId);
                 if (!string.IsNullOrEmpty(keyFormat))
                     KeyFormatToConsoleKey[keyFormat] = new ConsoleKeyInfo('\0', key, shift, alt, control);
             }
@@ -1203,7 +1203,7 @@ namespace System
 
             private void AddKey(TermInfo.Database db, string extendedName, ConsoleKey key, bool shift, bool alt, bool control)
             {
-                string keyFormat = db.GetExtendedString(extendedName);
+                string? keyFormat = db.GetExtendedString(extendedName);
                 if (!string.IsNullOrEmpty(keyFormat))
                     KeyFormatToConsoleKey[keyFormat] = new ConsoleKeyInfo('\0', key, shift, alt, control);
             }
@@ -1372,7 +1372,7 @@ namespace System
         /// <summary>Writes a terminfo-based ANSI escape string to stdout.</summary>
         /// <param name="value">The string to write.</param>
         /// <param name="mayChangeCursorPosition">Writing this value may change the cursor position.</param>
-        internal static unsafe void WriteStdoutAnsiString(string value, bool mayChangeCursorPosition = true)
+        internal static unsafe void WriteStdoutAnsiString(string? value, bool mayChangeCursorPosition = true)
         {
             if (string.IsNullOrEmpty(value))
                 return;
@@ -1494,8 +1494,9 @@ namespace System
                 handlerThread.Start(ctrlCode);
             }
 
-            private static void HandleBreakEvent(object state)
+            private static void HandleBreakEvent(object? state)
             {
+                Debug.Assert(state != null);
                 var ctrlCode = (Interop.Sys.CtrlCode)state;
                 ConsoleSpecialKey controlKey = (ctrlCode == Interop.Sys.CtrlCode.Break ? ConsoleSpecialKey.ControlBreak : ConsoleSpecialKey.ControlC);
                 bool cancel = Console.HandleBreakEvent(controlKey);

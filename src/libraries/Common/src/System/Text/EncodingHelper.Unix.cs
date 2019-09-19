@@ -8,9 +8,9 @@ namespace System.Text
     {
         /// <summary>Creates an encoding from the current environment.</summary>
         /// <returns>The encoding, or null if it could not be determined.</returns>
-        internal static Encoding GetEncodingFromCharset()
+        internal static Encoding? GetEncodingFromCharset()
         {
-            string charset = GetCharset();
+            string? charset = GetCharset();
             if (charset != null)
             {
                 try { return Encoding.GetEncoding(charset); }
@@ -31,10 +31,10 @@ namespace System.Text
 
         /// <summary>Gets the current charset name from the environment.</summary>
         /// <returns>The charset name if found; otherwise, null.</returns>
-        private static string GetCharset()
+        private static string? GetCharset()
         {
             // Find the first of the locale environment variables that's set.
-            string locale = null;
+            string? locale = null;
             foreach (string envVar in s_localeEnvVars)
             {
                 locale = Environment.GetEnvironmentVariable(envVar);
