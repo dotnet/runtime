@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -22,17 +23,17 @@ namespace System
         private const int WriteBufferSize = 256;
 
         private static object InternalSyncObject = new object(); // for synchronizing changing of Console's static fields
-        private static TextReader s_in;
-        private static TextWriter s_out, s_error;
-        private static Encoding s_inputEncoding;
-        private static Encoding s_outputEncoding;
+        private static TextReader? s_in;
+        private static TextWriter? s_out, s_error;
+        private static Encoding? s_inputEncoding;
+        private static Encoding? s_outputEncoding;
         private static bool s_isOutTextWriterRedirected = false;
         private static bool s_isErrorTextWriterRedirected = false;
 
-        private static ConsoleCancelEventHandler s_cancelCallbacks;
-        private static ConsolePal.ControlCHandlerRegistrar s_registrar;
+        private static ConsoleCancelEventHandler? s_cancelCallbacks;
+        private static ConsolePal.ControlCHandlerRegistrar? s_registrar;
 
-        internal static T EnsureInitialized<T>(ref T field, Func<T> initializer) where T : class =>
+        internal static T EnsureInitialized<T>([NotNull] ref T? field, Func<T> initializer) where T : class =>
             LazyInitializer.EnsureInitialized(ref field, ref InternalSyncObject, initializer);
 
         public static TextReader In => EnsureInitialized(ref s_in, () => ConsolePal.GetOrCreateReader());
@@ -81,12 +82,12 @@ namespace System
                     // s_out reinitialize the console code page.
                     if (Volatile.Read(ref s_out) != null && !s_isOutTextWriterRedirected)
                     {
-                        s_out.Flush();
+                        s_out!.Flush();
                         Volatile.Write(ref s_out, null);
                     }
                     if (Volatile.Read(ref s_error) != null && !s_isErrorTextWriterRedirected)
                     {
-                        s_error.Flush();
+                        s_error!.Flush();
                         Volatile.Write(ref s_error, null);
                     }
 
@@ -136,9 +137,9 @@ namespace System
                 });
         }
 
-        private static StrongBox<bool> _isStdInRedirected;
-        private static StrongBox<bool> _isStdOutRedirected;
-        private static StrongBox<bool> _isStdErrRedirected;
+        private static StrongBox<bool>? _isStdInRedirected;
+        private static StrongBox<bool>? _isStdOutRedirected;
+        private static StrongBox<bool>? _isStdErrRedirected;
 
         public static bool IsInputRedirected
         {
@@ -326,7 +327,7 @@ namespace System
             ConsolePal.SetCursorPosition(left, top);
         }
 
-        public static event ConsoleCancelEventHandler CancelKeyPress
+        public static event ConsoleCancelEventHandler? CancelKeyPress
         {
             add
             {
@@ -461,7 +462,7 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static string ReadLine()
+        public static string? ReadLine()
         {
             return In.ReadLine();
         }
@@ -485,7 +486,7 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void WriteLine(char[] buffer)
+        public static void WriteLine(char[]? buffer)
         {
             Out.WriteLine(buffer);
         }
@@ -541,37 +542,37 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void WriteLine(object value)
+        public static void WriteLine(object? value)
         {
             Out.WriteLine(value);
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void WriteLine(string value)
+        public static void WriteLine(string? value)
         {
             Out.WriteLine(value);
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void WriteLine(string format, object arg0)
+        public static void WriteLine(string format, object? arg0)
         {
             Out.WriteLine(format, arg0);
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void WriteLine(string format, object arg0, object arg1)
+        public static void WriteLine(string format, object? arg0, object? arg1)
         {
             Out.WriteLine(format, arg0, arg1);
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void WriteLine(string format, object arg0, object arg1, object arg2)
+        public static void WriteLine(string format, object? arg0, object? arg1, object? arg2)
         {
             Out.WriteLine(format, arg0, arg1, arg2);
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void WriteLine(string format, params object[] arg)
+        public static void WriteLine(string format, params object?[]? arg)
         {
             if (arg == null)                       // avoid ArgumentNullException from String.Format
                 Out.WriteLine(format, null, null); // faster than Out.WriteLine(format, (Object)arg);
@@ -580,25 +581,25 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void Write(string format, object arg0)
+        public static void Write(string format, object? arg0)
         {
             Out.Write(format, arg0);
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void Write(string format, object arg0, object arg1)
+        public static void Write(string format, object? arg0, object? arg1)
         {
             Out.Write(format, arg0, arg1);
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void Write(string format, object arg0, object arg1, object arg2)
+        public static void Write(string format, object? arg0, object? arg1, object? arg2)
         {
             Out.Write(format, arg0, arg1, arg2);
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void Write(string format, params object[] arg)
+        public static void Write(string format, params object?[]? arg)
         {
             if (arg == null)                   // avoid ArgumentNullException from String.Format
                 Out.Write(format, null, null); // faster than Out.Write(format, (Object)arg);
@@ -619,7 +620,7 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void Write(char[] buffer)
+        public static void Write(char[]? buffer)
         {
             Out.Write(buffer);
         }
@@ -675,20 +676,20 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void Write(object value)
+        public static void Write(object? value)
         {
             Out.Write(value);
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void Write(string value)
+        public static void Write(string? value)
         {
             Out.Write(value);
         }
 
         internal static bool HandleBreakEvent(ConsoleSpecialKey controlKey)
         {
-            ConsoleCancelEventHandler handler = s_cancelCallbacks;
+            ConsoleCancelEventHandler? handler = s_cancelCallbacks;
             if (handler == null)
             {
                 return false;

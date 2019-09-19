@@ -14,9 +14,9 @@ namespace System.Text
     /// </summary>
     internal readonly struct StringOrCharArray : IEquatable<StringOrCharArray>
     {
-        public readonly string String;
+        public readonly string? String;
 
-        public readonly char[] CharArray;
+        public readonly char[]? CharArray;
         public readonly int CharArrayOffset;
         public readonly int CharArrayCount;
 
@@ -56,7 +56,7 @@ namespace System.Text
             }
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return
                 obj is StringOrCharArray &&
@@ -75,6 +75,7 @@ namespace System.Text
                 {
                     return StringComparer.Ordinal.Equals(this.String, other.String);
                 }
+                Debug.Assert(other.CharArray != null);
 
                 // String vs CharArray
                 if (this.String.Length != other.CharArrayCount)
@@ -88,6 +89,7 @@ namespace System.Text
 
                 return true;
             }
+            Debug.Assert(CharArray != null);
 
             // CharArray vs CharArray
             if (other.CharArray != null)
@@ -103,6 +105,7 @@ namespace System.Text
 
                 return true;
             }
+            Debug.Assert(other.String != null);
 
             // CharArray vs String
             if (this.CharArrayCount != other.String.Length)
