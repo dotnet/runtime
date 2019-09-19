@@ -18,12 +18,22 @@
   <Target Name="GetInstallerGenerationFlags">
     <!-- Filter the installer generation/build flags for the current build machine. -->
     <PropertyGroup>
-      <_supportsWixBasedInstallers>true</_supportsWixBasedInstallers>
-      <_supportsWixBasedInstallers Condition="'$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'arm64'">false</_supportsWixBasedInstallers>
-      <_supportsWixBasedInstallers Condition="'$(OSGroup)' != 'Windows_NT'">false</_supportsWixBasedInstallers>
+      <_osSupportsWixBasedInstallers>true</_osSupportsWixBasedInstallers>
+      <_osSupportsWixBasedInstallers Condition="'$(OSGroup)' != 'Windows_NT'">false</_osSupportsWixBasedInstallers>
 
-      <GenerateMSI Condition="'$(_supportsWixBasedInstallers)' != 'true'">false</GenerateMSI>
-      <GenerateExeBundle Condition="'$(_supportsWixBasedInstallers)' != 'true'">false</GenerateExeBundle>
+      <_osArchSupportsWixBasedInstallers>$(_osSupportsWixBasedInstallers)</_osArchSupportsWixBasedInstallers>
+      <_osArchSupportsWixBasedInstallers Condition="'$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'arm64'">false</_osArchSupportsWixBasedInstallers>
+
+      <!--
+        Save the project's GenerateMSI setting. It's possible the current arch of the current OS
+        doesn't support MSI generation, but we still want to create an MSI across architectures. For
+        example, we want to make an MSI that installs the arm apphost pack into the x64 SDK location
+        on an x64 machine.
+      -->
+      <GenerateCrossArchMsi Condition="'$(_osSupportsWixBasedInstallers)' == 'true'">$(GenerateMSI)</GenerateCrossArchMsi>
+
+      <GenerateMSI Condition="'$(_osArchSupportsWixBasedInstallers)' != 'true'">false</GenerateMSI>
+      <GenerateExeBundle Condition="'$(_osArchSupportsWixBasedInstallers)' != 'true'">false</GenerateExeBundle>
 
       <GeneratePkg Condition="'$(OSGroup)' != 'OSX'">false</GeneratePkg>
     </PropertyGroup>
@@ -60,6 +70,11 @@
       <InstallerPackageVersion>$(ProductionVersion)</InstallerPackageVersion>
     </PropertyGroup>
 
+    <!-- Distinguish the cross-arch installer filename. -->
+    <PropertyGroup Condition="'$(CrossArchContentsArch)' != ''">
+      <CrossArchContentsBuildPart>_$(CrossArchContentsArch)</CrossArchContentsBuildPart>
+    </PropertyGroup>
+
     <PropertyGroup Condition="'$(InstallerExtension)' == '.deb'">
       <InstallerPackageVersion Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">$(ProductionVersion)~$(VersionSuffix)</InstallerPackageVersion>
     </PropertyGroup>
@@ -77,7 +92,7 @@
         >$(ProductVersion)-$(TargetArchitecture)</InstallerBuildPart>
 
       <!-- Location to place the installer, in artifacts. -->
-      <InstallerFileNameWithoutExtension>$(InstallerName)-$(InstallerBuildPart)</InstallerFileNameWithoutExtension>
+      <InstallerFileNameWithoutExtension>$(InstallerName)-$(InstallerBuildPart)$(CrossArchContentsBuildPart)</InstallerFileNameWithoutExtension>
       <InstallerFile Condition="'$(InstallerFile)' == ''">$(AssetOutputPath)$(InstallerFileNameWithoutExtension)$(InstallerExtension)</InstallerFile>
       <ExeBundleInstallerFile>$(AssetOutputPath)$(InstallerFileNameWithoutExtension).exe</ExeBundleInstallerFile>
       <ExeBundleInstallerEngineFile>$(AssetOutputPath)$(InstallerFileNameWithoutExtension)-engine.exe</ExeBundleInstallerEngineFile>
@@ -94,6 +109,10 @@
     <PropertyGroup>
       <SharedFrameworkArchiveSourceDir Condition="'$(SharedFrameworkArchiveSourceDir)' == ''">$(SharedFrameworkLayoutDir)</SharedFrameworkArchiveSourceDir>
     </PropertyGroup>
+
+    <ItemGroup>
+      <CrossArchMsiToBuild Include="@(CrossArchSdkMsiInstallerArch)" Exclude="$(TargetArchitecture)" />
+    </ItemGroup>
   </Target>
 
   <Target Name="GetSkipBuildProps">
