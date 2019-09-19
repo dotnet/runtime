@@ -177,7 +177,7 @@ private:
 
         void Transform()
         {
-            JITDUMP("*** %s: transforming [%06u]\n", Name(), compiler->dspTreeID(stmt->gtStmtExpr));
+            JITDUMP("*** %s: transforming" FMT_STMT "\n", Name(), stmt->GetID());
             FixupRetExpr();
             ClearFlag();
             CreateRemainder();

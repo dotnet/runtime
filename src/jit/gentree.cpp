@@ -11468,6 +11468,47 @@ void Compiler::gtDispArgList(GenTreeCall* call, IndentStack* indentStack)
     }
 }
 
+// gtDispStmt: Print a statement to jitstdout.
+//
+// Arguments:
+//    stmt - the statement to be printed;
+//    msg  - an additional message to print before the statement.
+//
+void Compiler::gtDispStmt(Statement* stmt, const char* msg /* = nullptr */)
+{
+    if (opts.compDbgInfo)
+    {
+        if (msg != nullptr)
+        {
+            printf("%s ", msg);
+        }
+        printStmtID(stmt);
+        IL_OFFSETX firstILOffsx = stmt->gtStmtILoffsx;
+        printf(" (IL ");
+        if (firstILOffsx == BAD_IL_OFFSET)
+        {
+            printf("  ???");
+        }
+        else
+        {
+            printf("0x%03X", jitGetILoffs(firstILOffsx));
+        }
+        printf("...");
+
+        IL_OFFSET lastILOffs = stmt->gtStmtLastILoffs;
+        if (lastILOffs == BAD_IL_OFFSET)
+        {
+            printf("  ???");
+        }
+        else
+        {
+            printf("0x%03X", lastILOffs);
+        }
+        printf(")\n");
+    }
+    gtDispTree(stmt->gtStmtExpr);
+}
+
 //------------------------------------------------------------------------
 // gtDispBlockStmts: dumps all statements inside `block`.
 //
@@ -11478,7 +11519,7 @@ void Compiler::gtDispBlockStmts(BasicBlock* block)
 {
     for (Statement* stmt : block->Statements())
     {
-        gtDispTree(stmt->gtStmtExpr);
+        gtDispStmt(stmt);
         printf("\n");
     }
 }
@@ -12695,10 +12736,10 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
     Statement*  copyStmt = box->gtCopyStmtWhenInlinedBoxValue;
 
     JITDUMP("gtTryRemoveBoxUpstreamEffects: %s to %s of BOX (valuetype)"
-            " [%06u] (assign/newobj [%06u] copy [%06u])\n",
+            " [%06u] (assign/newobj " FMT_STMT " copy " FMT_STMT "\n",
             (options == BR_DONT_REMOVE) ? "checking if it is possible" : "attempting",
             (options == BR_MAKE_LOCAL_COPY) ? "make local unboxed version" : "remove side effects", dspTreeID(op),
-            dspTreeID(asgStmt->gtStmtExpr), dspTreeID(copyStmt->gtStmtExpr));
+            asgStmt->GetID(), copyStmt->GetID());
 
     // If we don't recognize the form of the assign, bail.
     GenTree* asg = asgStmt->gtStmtExpr;

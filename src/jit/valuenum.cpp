@@ -5816,10 +5816,6 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
 {
     compCurBB = blk;
 
-#ifdef DEBUG
-    compCurStmtNum = blk->bbStmtNum - 1; // Set compCurStmtNum
-#endif
-
     Statement* stmt = blk->firstStmt();
 
     // First: visit phi's.  If "newVNForPhis", give them new VN's.  If not,
@@ -5992,10 +5988,9 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
     for (; stmt != nullptr; stmt = stmt->getNextStmt())
     {
 #ifdef DEBUG
-        compCurStmtNum++;
         if (verbose)
         {
-            printf("\n***** " FMT_BB ", stmt %d (before)\n", blk->bbNum, compCurStmtNum);
+            printf("\n***** " FMT_BB ", " FMT_STMT "(before)\n", blk->bbNum, stmt->GetID());
             gtDispTree(stmt->gtStmtExpr);
             printf("\n");
         }
@@ -6009,7 +6004,7 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
 #ifdef DEBUG
         if (verbose)
         {
-            printf("\n***** " FMT_BB ", stmt %d (after)\n", blk->bbNum, compCurStmtNum);
+            printf("\n***** " FMT_BB ", " FMT_STMT "(after)\n", blk->bbNum, stmt->GetID());
             gtDispTree(stmt->gtStmtExpr);
             printf("\n");
             if (stmt->gtNext)
