@@ -280,6 +280,8 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             }
 
             src->AsIntCon()->SetIconValue(fill);
+
+            ContainBlockStoreAddress(blkNode, size, dstAddr);
         }
         else
         {
@@ -327,17 +329,10 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
             if (src->OperIs(GT_IND))
             {
-                GenTree* srcAddr = src->AsIndir()->Addr();
-                if (srcAddr->OperIsLocalAddr())
-                {
-                    srcAddr->SetContained();
-                }
+                ContainBlockStoreAddress(blkNode, size, src->AsIndir()->Addr());
             }
 
-            if (dstAddr->OperIsLocalAddr())
-            {
-                dstAddr->SetContained();
-            }
+            ContainBlockStoreAddress(blkNode, size, dstAddr);
         }
         else
         {
@@ -346,6 +341,66 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindHelper;
         }
     }
+}
+
+//------------------------------------------------------------------------
+// ContainBlockStoreAddress: Attempt to contain an address used by an unrolled block store.
+//
+// Arguments:
+//    blkNode - the block store node
+//    size - the block size
+//    addr - the address node to try to contain
+//
+void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr)
+{
+    assert(blkNode->OperIs(GT_STORE_BLK) && (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll));
+    assert(size < INT32_MAX);
+
+    if (addr->OperIsLocalAddr())
+    {
+        addr->SetContained();
+        return;
+    }
+
+    if (!addr->OperIs(GT_ADD) || addr->gtOverflow() || !addr->AsOp()->gtGetOp2()->OperIs(GT_CNS_INT))
+    {
+        return;
+    }
+
+    GenTreeIntCon* offsetNode = addr->AsOp()->gtGetOp2()->AsIntCon();
+    ssize_t        offset     = offsetNode->IconValue();
+
+    // All integer load/store instructions on both ARM32 and ARM64 support
+    // offsets in range -255..255. Of course, this is a rather conservative
+    // check. For example, if the offset and size are a multiple of 8 we
+    // could allow a combined offset of up to 32760 on ARM64.
+    if ((offset < -255) || (offset > 255) || (offset + static_cast<int>(size) > 256))
+    {
+        return;
+    }
+
+#ifdef _TARGET_ARM64_
+    // If we're going to use LDP/STP we need to ensure that the offset is
+    // a multiple of 8 since these instructions do not have an unscaled
+    // offset variant.
+    if ((size >= 2 * REGSIZE_BYTES) && (offset % REGSIZE_BYTES != 0))
+    {
+        return;
+    }
+#endif
+
+    if (!IsSafeToContainMem(blkNode, addr))
+    {
+        return;
+    }
+
+    BlockRange().Remove(offsetNode);
+
+    addr->ChangeOper(GT_LEA);
+    addr->AsAddrMode()->SetIndex(nullptr);
+    addr->AsAddrMode()->SetScale(0);
+    addr->AsAddrMode()->SetOffset(static_cast<int>(offset));
+    addr->SetContained();
 }
 
 //------------------------------------------------------------------------

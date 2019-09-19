@@ -679,11 +679,22 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
         useCount++;
         BuildUse(dstAddr, dstAddrRegMask);
     }
-
-    if ((srcAddrOrFill != nullptr) && !srcAddrOrFill->isContained())
+    else if (dstAddr->OperIsAddrMode())
     {
-        useCount++;
-        BuildUse(srcAddrOrFill, srcRegMask);
+        useCount += BuildAddrUses(dstAddr->AsAddrMode()->Base());
+    }
+
+    if (srcAddrOrFill != nullptr)
+    {
+        if (!srcAddrOrFill->isContained())
+        {
+            useCount++;
+            BuildUse(srcAddrOrFill, srcRegMask);
+        }
+        else if (srcAddrOrFill->OperIsAddrMode())
+        {
+            useCount += BuildAddrUses(srcAddrOrFill->AsAddrMode()->Base());
+        }
     }
 
     if (blkNode->OperIs(GT_STORE_DYN_BLK))

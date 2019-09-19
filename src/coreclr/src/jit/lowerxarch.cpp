@@ -205,6 +205,8 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
                 }
 
                 src->AsIntCon()->SetIconValue(fill);
+
+                ContainBlockStoreAddress(blkNode, size, dstAddr);
             }
         }
         else
@@ -228,8 +230,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             // Sometimes the GT_IND type is a non-struct type and then GT_IND lowering may contain the
             // address, not knowing that GT_IND is part of a block op that has containment restrictions.
             src->AsIndir()->Addr()->ClearContained();
-
-            TryCreateAddrMode(src->AsIndir()->Addr(), false);
         }
 
         if (blkNode->OperIs(GT_STORE_OBJ))
@@ -303,21 +303,12 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         {
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
 
-            // If src or dst are on stack, we don't have to generate the address
-            // into a register because it's just some constant+SP.
             if (src->OperIs(GT_IND))
             {
-                GenTree* srcAddr = src->AsIndir()->Addr();
-                if (srcAddr->OperIsLocalAddr())
-                {
-                    srcAddr->SetContained();
-                }
+                ContainBlockStoreAddress(blkNode, size, src->AsIndir()->Addr());
             }
 
-            if (dstAddr->OperIsLocalAddr())
-            {
-                dstAddr->SetContained();
-            }
+            ContainBlockStoreAddress(blkNode, size, dstAddr);
         }
         else
         {
@@ -331,6 +322,53 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 #endif
         }
     }
+}
+
+//------------------------------------------------------------------------
+// ContainBlockStoreAddress: Attempt to contain an address used by an unrolled block store.
+//
+// Arguments:
+//    blkNode - the block store node
+//    size - the block size
+//    addr - the address node to try to contain
+//
+void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr)
+{
+    assert(blkNode->OperIs(GT_STORE_BLK) && (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll));
+    assert(size < INT32_MAX);
+
+    if (addr->OperIsLocalAddr())
+    {
+        addr->SetContained();
+        return;
+    }
+
+    if (!addr->OperIsAddrMode() && !TryCreateAddrMode(addr, true))
+    {
+        return;
+    }
+
+    GenTreeAddrMode* addrMode = addr->AsAddrMode();
+
+    // On x64 the address mode displacement is signed so it must not exceed INT32_MAX. This check is
+    // an approximation since the last displacement we generate in an unrolled block operation can be
+    // up to 16 bytes lower than offset + size. But offsets large enough to hit this case are likely
+    // to be extremely rare for this to ever be a CQ issue.
+    // On x86 this shouldn't be needed but then again, offsets large enough to hit this are rare.
+    if (addrMode->Offset() > (INT32_MAX - static_cast<int>(size)))
+    {
+        return;
+    }
+
+    // Note that the parentNode is always the block node, even if we're dealing with the source address.
+    // The source address is not directly used by the block node but by an IND node and that IND node is
+    // always contained.
+    if (!IsSafeToContainMem(blkNode, addrMode))
+    {
+        return;
+    }
+
+    addrMode->SetContained();
 }
 
 //------------------------------------------------------------------------
