@@ -148,13 +148,8 @@ void IpcStream::DiagnosticsIpc::Close(ErrorCallback callback)
     }
 }
 
-//! This helps remove the socket from the filesystem when the runtime exits.
-//! From: http://man7.org/linux/man-pages/man7/unix.7.html#NOTES
-//!   Binding to a socket with a filename creates a socket in the
-//!   filesystem that must be deleted by the caller when it is no longer
-//!   needed (using unlink(2)).  The usual UNIX close-behind semantics
-//!   apply; the socket can be unlinked at any time and will be finally
-//!   removed from the filesystem when the last reference to it is closed.
+// This helps remove the socket from the filesystem when the runtime exits.
+// See: http://man7.org/linux/man-pages/man7/unix.7.html#NOTES
 void IpcStream::DiagnosticsIpc::Unlink(ErrorCallback callback)
 {
     const int fSuccessUnlink = ::unlink(_pServerAddress->sun_path);
