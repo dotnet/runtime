@@ -60,21 +60,3 @@ jobs:
         /p:ShippedNuGetPackageGlobPath="${{ parameters.artifactsDir }}/nuget/*.nupkg"
 
       displayName: Update dotnet/versions
-
-    - task: CopyFiles@2
-      displayName: Copy Files to $(Build.StagingDirectory)\BuildLogs
-      inputs:
-        SourceFolder: '$(Build.SourcesDirectory)'
-        Contents: |
-          *.log
-          *.binlog
-        TargetFolder: '$(Build.StagingDirectory)\BuildLogs'
-      continueOnError: true
-      condition: succeededOrFailed()
-
-    - task: PublishBuildArtifacts@1
-      displayName: Publish Artifact BuildLogs
-      inputs:
-        PathtoPublish: '$(Build.StagingDirectory)\BuildLogs'
-        ArtifactName: Finalize_Publish_Versions
-      condition: succeededOrFailed()
