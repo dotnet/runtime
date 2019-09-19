@@ -74,5 +74,14 @@ namespace System.IO.Tests
             DirectoryInfo testInfo = new DirectoryInfo(testDir + extension + trailing);
             Assert.Equal(trailing, testInfo.Extension);
         }
+
+        [Fact]
+        public void CreateDirectoryWithAttributes()
+        {
+            string testDir = Path.Combine(GetTestFilePath(), "CreateDirectoryWithAttributes");
+            DirectoryInfo testInfo = new DirectoryInfo(testDir);
+            testInfo.Create();
+            testInfo.Attributes = FileAttributes.Directory | FileAttributes.Normal;
+        }
     }
 }

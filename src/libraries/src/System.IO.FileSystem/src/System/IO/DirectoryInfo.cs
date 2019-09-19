@@ -92,7 +92,11 @@ namespace System.IO
             throw new ArgumentException(SR.Format(SR.Argument_InvalidSubPath, path, FullPath), nameof(path));
         }
 
-        public void Create() => FileSystem.CreateDirectory(FullPath);
+        public void Create()
+        {
+            FileSystem.CreateDirectory(FullPath);
+            Invalidate();
+        }
 
         // Returns an array of Files in the DirectoryInfo specified by path
         public FileInfo[] GetFiles() => GetFiles("*", enumerationOptions: EnumerationOptions.Compatible);
