@@ -216,7 +216,7 @@ run-tests-corefx-%: prepare update-tests-corefx
 	@cp corefx/restore/corefx-restore.dll corefx/tests/extracted/$*/corefx-restore.dll
 	@sed -i -e 's/5.0.0\"/$(NETCOREAPP_VERSION)\"/g' corefx/tests/extracted/$*/*.runtimeconfig.json
 	cd corefx/tests/extracted/$* && \
-	COMPlus_DebugWriteToStdErr=1 $(CURDIR)/./dotnet exec \
+	MONO_ENV_OPTIONS="--debug" COMPlus_DebugWriteToStdErr=1 $(CURDIR)/./dotnet exec \
 		--runtimeconfig $*.runtimeconfig.json --additional-deps $*.deps.json \
 		--fx-version "$(NETCOREAPP_VERSION)" xunit.console.dll $*.dll \
 		-html ../../TestResult-$*.html -xml ../../TestResult-$*-netcore-xunit.xml \
