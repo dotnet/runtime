@@ -560,6 +560,9 @@ const bool dspGCtbls = true;
 #define DISPTREE(t)                                                                                                    \
     if (JitTls::GetCompiler()->verbose)                                                                                \
         JitTls::GetCompiler()->gtDispTree(t);
+#define DISPSTMT(t)                                                                                                    \
+    if (JitTls::GetCompiler()->verbose)                                                                                \
+        JitTls::GetCompiler()->gtDispStmt(t);
 #define DISPRANGE(range)                                                                                               \
     if (JitTls::GetCompiler()->verbose)                                                                                \
         JitTls::GetCompiler()->gtDispRange(range);
@@ -574,6 +577,7 @@ const bool dspGCtbls = true;
 #define DBEXEC(flg, expr)
 #define DISPNODE(t)
 #define DISPTREE(t)
+#define DISPSTMT(t)
 #define DISPRANGE(range)
 #define DISPTREERANGE(range, t)
 #define VERBOSE 0
