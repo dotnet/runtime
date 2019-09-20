@@ -2,13 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Text;
+
 namespace Internal.TypeSystem
 {
-    partial class TypeDesc
+    partial class MethodDesc
     {
-        public override string ToString()
-        {
-            return DebugNameFormatter.Instance.FormatName(this, DebugNameFormatter.FormatOptions.Default | DebugNameFormatter.FormatOptions.UseDiagnosticName);
-        }
+        public abstract string DiagnosticName { get; }
     }
 }

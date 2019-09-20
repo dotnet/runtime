@@ -24,6 +24,9 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\Common\TypeSystem\Common\ArrayMethod.Diagnostic.cs">
+      <Link>TypeSystem\Common\ArrayMethod.Diagnostic.cs</Link>
+    </Compile>
     <Compile Include="..\Common\TypeSystem\Canon\ArrayType.Canon.cs">
       <Link>TypeSystem\Canon\ArrayType.Canon.cs</Link>
     </Compile>
@@ -32,6 +35,9 @@
     </Compile>
     <Compile Include="..\Common\TypeSystem\Canon\CanonTypes.cs">
       <Link>TypeSystem\Canon\CanonTypes.cs</Link>
+    </Compile>
+    <Compile Include="..\Common\TypeSystem\Canon\CanonTypes.Diagnostic.cs">
+      <Link>TypeSystem\Canon\CanonTypes.Diagnostic.cs</Link>
     </Compile>
     <Compile Include="..\Common\TypeSystem\Canon\CanonTypes.Interop.cs">
       <Link>TypeSystem\Canon\CanonTypes.Interop.cs</Link>
@@ -138,6 +144,9 @@
     <Compile Include="..\Common\TypeSystem\Common\Utilities\DebugNameFormatter.cs">
       <Link>Utilities\DebugNameFormatter.cs</Link>
     </Compile>
+    <Compile Include="..\Common\TypeSystem\Common\Utilities\DebugNameFormatter.Diagnostic.cs">
+      <Link>Utilities\DebugNameFormatter.Diagnostic.cs</Link>
+    </Compile>
     <Compile Include="..\Common\TypeSystem\Common\Utilities\LockFreeReaderHashtable.cs">
       <Link>Utilities\LockFreeReaderHashtable.cs</Link>
     </Compile>
@@ -152,6 +161,9 @@
     </Compile>
     <Compile Include="..\Common\TypeSystem\Common\GenericParameterDesc.cs">
       <Link>TypeSystem\Common\GenericParameterDesc.cs</Link>
+    </Compile>
+    <Compile Include="..\Common\TypeSystem\Common\GenericParameterDesc.Diagnostic.cs">
+      <Link>TypeSystem\Common\GenericParameterDesc.Diagnostic.cs</Link>
     </Compile>
     <Compile Include="..\Common\TypeSystem\Common\ExceptionStringID.cs">
       <Link>TypeSystem\Common\ExceptionStringID.cs</Link>
@@ -174,8 +186,14 @@
     <Compile Include="..\Common\TypeSystem\Common\InstantiatedMethod.cs">
       <Link>TypeSystem\Common\InstantiatedMethod.cs</Link>
     </Compile>
+    <Compile Include="..\Common\TypeSystem\Common\InstantiatedMethod.Diagnostic.cs">
+      <Link>TypeSystem\Common\InstantiatedMethod.Diagnostic.cs</Link>
+    </Compile>
     <Compile Include="..\Common\TypeSystem\Common\InstantiatedType.cs">
       <Link>TypeSystem\Common\InstantiatedType.cs</Link>
+    </Compile>
+    <Compile Include="..\Common\TypeSystem\Common\InstantiatedType.Diagnostic.cs">
+      <Link>TypeSystem\Common\InstantiatedType.Diagnostic.cs</Link>
     </Compile>
     <Compile Include="..\Common\TypeSystem\Common\InstantiatedType.Interfaces.cs">
       <Link>TypeSystem\Common\InstantiatedType.Interfaces.cs</Link>
@@ -188,6 +206,9 @@
     </Compile>
     <Compile Include="..\Common\TypeSystem\Common\MetadataType.cs">
       <Link>TypeSystem\Common\MetadataType.cs</Link>
+    </Compile>
+    <Compile Include="..\Common\TypeSystem\Common\DefType.Diagnostic.cs">
+      <Link>TypeSystem\Common\DefType.Diagnostic.cs</Link>
     </Compile>
     <Compile Include="..\Common\TypeSystem\Common\MetadataType.Interfaces.cs">
       <Link>TypeSystem\Common\MetadataType.Interfaces.cs</Link>
@@ -206,6 +227,9 @@
     </Compile>
     <Compile Include="..\Common\TypeSystem\Common\MethodForInstantiatedType.cs">
       <Link>TypeSystem\Common\MethodForInstantiatedType.cs</Link>
+    </Compile>
+    <Compile Include="..\Common\TypeSystem\Common\MethodForInstantiatedType.Diagnostic.cs">
+      <Link>TypeSystem\Common\MethodForInstantiatedType.Diagnostic.cs</Link>
     </Compile>
     <Compile Include="..\Common\TypeSystem\Common\ParameterizedType.cs">
       <Link>TypeSystem\Common\ParameterizedType.cs</Link>
@@ -258,11 +282,20 @@
     <Compile Include="..\Common\TypeSystem\Common\MethodDelegator.cs">
       <Link>TypeSystem\Common\MethodDelegator.cs</Link>
     </Compile>
+    <Compile Include="..\Common\TypeSystem\Common\MethodDelegator.Diagnostic.cs">
+      <Link>TypeSystem\Common\MethodDelegator.Diagnostic.cs</Link>
+    </Compile>
     <Compile Include="..\Common\TypeSystem\Common\MethodDesc.cs">
       <Link>TypeSystem\Common\MethodDesc.cs</Link>
     </Compile>
+    <Compile Include="..\Common\TypeSystem\Common\MethodDesc.Diagnostic.cs">
+      <Link>TypeSystem\Common\MethodDesc.Diagnostic.cs</Link>
+    </Compile>
     <Compile Include="..\Common\TypeSystem\Common\MethodDesc.ToString.cs">
       <Link>TypeSystem\Common\MethodDesc.ToString.cs</Link>
+    </Compile>
+    <Compile Include="..\Common\TypeSystem\Common\MethodDesc.ToString.Diagnostic.cs">
+      <Link>TypeSystem\Common\MethodDesc.ToString.Diagnostic.cs</Link>
     </Compile>
     <Compile Include="..\Common\TypeSystem\Common\MetadataVirtualMethodAlgorithm.cs">
       <Link>TypeSystem\Common\StandardVirtualMethodAlgorithm.cs</Link>
@@ -339,7 +372,13 @@
     <Compile Include="..\Common\TypeSystem\Ecma\EcmaGenericParameter.cs">
       <Link>Ecma\EcmaGenericParameter.cs</Link>
     </Compile>
+    <Compile Include="..\Common\TypeSystem\Ecma\EcmaGenericParameter.Diagnostic.cs">
+      <Link>Ecma\EcmaGenericParameter.Diagnostic.cs</Link>
+    </Compile>
     <Compile Include="..\Common\TypeSystem\Ecma\EcmaMethod.cs">
+      <Link>Ecma\EcmaMethod.cs</Link>
+    </Compile>
+    <Compile Include="..\Common\TypeSystem\Ecma\EcmaMethod.Diagnostic.cs">
       <Link>Ecma\EcmaMethod.cs</Link>
     </Compile>
     <Compile Include="..\Common\TypeSystem\Ecma\EcmaModule.cs">
@@ -350,6 +389,9 @@
     </Compile>
     <Compile Include="..\Common\TypeSystem\Ecma\EcmaType.cs">
       <Link>Ecma\EcmaType.cs</Link>
+    </Compile>
+    <Compile Include="..\Common\TypeSystem\Ecma\EcmaType.Diagnostic.cs">
+      <Link>Ecma\EcmaType.Diagnostic.cs</Link>
     </Compile>
     <Compile Include="..\Common\TypeSystem\Ecma\EcmaType.MethodImpls.cs">
       <Link>Ecma\EcmaType.MethodImpls.cs</Link>
@@ -474,6 +516,9 @@
     <Compile Include="..\Common\TypeSystem\RuntimeDetermined\MethodForRuntimeDeterminedType.cs">
       <Link>TypeSystem\RuntimeDetermined\MethodForRuntimeDeterminedType.cs</Link>
     </Compile>
+    <Compile Include="..\Common\TypeSystem\RuntimeDetermined\MethodForRuntimeDeterminedType.Diagnostic.cs">
+      <Link>TypeSystem\RuntimeDetermined\MethodForRuntimeDeterminedType.cs</Link>
+    </Compile>
     <Compile Include="..\Common\TypeSystem\RuntimeDetermined\MethodForRuntimeDeterminedType.Sorting.cs">
       <Link>TypeSystem\RuntimeDetermined\MethodForRuntimeDeterminedType.Sorting.cs</Link>
     </Compile>
@@ -494,6 +539,9 @@
     </Compile>
     <Compile Include="..\Common\TypeSystem\RuntimeDetermined\RuntimeDeterminedType.cs">
       <Link>TypeSystem\RuntimeDetermined\RuntimeDeterminedType.cs</Link>
+    </Compile>
+    <Compile Include="..\Common\TypeSystem\RuntimeDetermined\RuntimeDeterminedType.Diagnostic.cs">
+      <Link>TypeSystem\RuntimeDetermined\RuntimeDeterminedType.Diagnostic.cs</Link>
     </Compile>
     <Compile Include="..\Common\TypeSystem\RuntimeDetermined\RuntimeDeterminedType.Sorting.cs">
       <Link>TypeSystem\RuntimeDetermined\RuntimeDeterminedType.Sorting.cs</Link>
