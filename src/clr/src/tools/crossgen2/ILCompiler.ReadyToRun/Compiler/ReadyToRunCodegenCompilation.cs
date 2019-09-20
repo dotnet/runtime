@@ -6,8 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection.PortableExecutable;
-using System.Reflection.Metadata.Ecma335;
-using System.Text;
 
 using Internal.IL;
 using Internal.JitInterface;
@@ -184,7 +182,7 @@ namespace ILCompiler
         /// </summary>
         private readonly CorInfoImpl _corInfo;
 
-        private bool _doNotFailOnCodegenCompilationExceptions;
+        private bool _resilient;
 
         public new ReadyToRunCodegenNodeFactory NodeFactory { get; }
 
@@ -200,10 +198,10 @@ namespace ILCompiler
             JitConfigProvider configProvider,
             string inputFilePath,
             IEnumerable<ModuleDesc> modulesBeingInstrumented,
-            bool doNotFailOnCodegenCompilationExceptions)
+            bool resilient)
             : base(dependencyGraph, nodeFactory, roots, ilProvider, devirtualizationManager, modulesBeingInstrumented, logger)
         {
-            _doNotFailOnCodegenCompilationExceptions = doNotFailOnCodegenCompilationExceptions;
+            _resilient = resilient;
             NodeFactory = nodeFactory;
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory);
             _jitConfigProvider = configProvider;
@@ -265,7 +263,7 @@ namespace ILCompiler
 
                 if (Logger.IsVerbose)
                 {
-                    string methodName = ResilientNameComputation(method);
+                    string methodName = method.ToString();
                     Logger.Writer.WriteLine("Compiling " + methodName);
                 }
 
@@ -277,122 +275,21 @@ namespace ILCompiler
                 catch (TypeSystemException ex)
                 {
                     // If compilation fails, don't emit code for this method. It will be Jitted at runtime
-                    Logger.Writer.WriteLine($"Warning: Method `{ResilientNameComputation(method)}` was not compiled because: {ex.Message}");
+                    Logger.Writer.WriteLine($"Warning: Method `{method}` was not compiled because: {ex.Message}");
                 }
                 catch (RequiresRuntimeJitException ex)
                 {
-                    Logger.Writer.WriteLine($"Info: Method `{ResilientNameComputation(method)}` was not compiled because `{ex.Message}` requires runtime JIT");
+                    Logger.Writer.WriteLine($"Info: Method `{method}` was not compiled because `{ex.Message}` requires runtime JIT");
                 }
-                catch (CodeGenerationFailedException ex) when (_doNotFailOnCodegenCompilationExceptions)
+                catch (CodeGenerationFailedException ex) when (_resilient)
                 {
-                    Logger.Writer.WriteLine($"Warning: Method `{ResilientNameComputation(method)}` was not compiled because `{ex.Message}` requires runtime JIT");
+                    Logger.Writer.WriteLine($"Warning: Method `{method}` was not compiled because `{ex.Message}` requires runtime JIT");
                 }
                 finally
                 {
                     PerfEventSource.Log.JitStop();
                 }
             }
-        }
-
-        private string ResilientNameComputation(MethodDesc method)
-        {
-            try
-            {
-                return method.ToString();
-            }
-            catch (TypeSystemException)
-            {
-                string typeName = ResilientNameComputation((MetadataType)method.OwningType);
-                if (typeName == null)
-                {
-                    if (method is EcmaMethod)
-                    {
-                        typeName = "";
-                    }
-                    else
-                    {
-                        return "Unknown";
-                    }
-                }
-
-                return $"{typeName}.{ResilientNameComputationMethodNameWorker(method)}";
-            }
-        }
-
-        private string ResilientNameComputationMethodNameWorker(MethodDesc method)
-        {
-            if (method is EcmaMethod ecmaMethod)
-            {
-                return $"MethodDef({ecmaMethod.MetadataReader.GetToken(ecmaMethod.Handle):x8})";
-            }
-            else if (method is InstantiatedMethod instMethod)
-            {
-                StringBuilder nameBuilder = new StringBuilder();
-                nameBuilder.Append(ResilientNameComputationMethodNameWorker(instMethod.GetMethodDefinition()));
-                AppendInstantiation(nameBuilder, instMethod.Instantiation);
-                return nameBuilder.ToString();
-            }
-            return "Unknown";
-        }
-
-        private void AppendInstantiation(StringBuilder nameBuilder, Instantiation instantiation)
-        {
-            nameBuilder.Append('<');
-            bool printedFirst = false;
-            foreach (TypeDesc type in instantiation)
-            {
-                if (printedFirst)
-                    nameBuilder.Append(',');
-                else
-                    printedFirst = true;
-                nameBuilder.Append(ResilientNameComputation(type));
-            }
-            nameBuilder.Append('>');
-        }
-
-        private string ResilientNameComputation(TypeDesc type)
-        {
-            string typeName = null;
-            try
-            {
-                try
-                {
-                    typeName = type.ToString();
-                }
-                catch (TypeSystemException)
-                {
-                    if (type is InstantiatedType instType)
-                    {
-                        StringBuilder nameBuilder = new StringBuilder();
-                        nameBuilder.Append(ResilientNameComputation(instType.UnderlyingType));
-                        AppendInstantiation(nameBuilder, instType.Instantiation);
-                        typeName = nameBuilder.ToString();
-                    }
-                    else if (type is EcmaType ecmaType)
-                    {
-                        typeName = $"[{ecmaType.EcmaModule.Assembly.GetName().Name.ToString()}]TypeDef({ecmaType.MetadataReader.GetToken(ecmaType.Handle):x8})";
-                    }
-                    else if (type is ArrayType arrayType)
-                    {
-                        StringBuilder nameBuilder = new StringBuilder();
-                        nameBuilder.Append(ResilientNameComputation(arrayType));
-                        nameBuilder.Append('[');
-                        for (int i = 1; i < arrayType.Rank; i++)
-                        {
-                            nameBuilder.Append(i);
-                        }
-                        if ((arrayType.Rank == 1) && arrayType.IsMdArray)
-                            nameBuilder.Append('*');
-
-                        nameBuilder.Append(']');
-                    }
-                }
-            }
-            catch (TypeSystemException)
-            {
-            }
-
-            return typeName;
         }
 
         public ISymbolNode GetFieldRvaData(FieldDesc field) => NodeFactory.CopiedFieldRva(field);
