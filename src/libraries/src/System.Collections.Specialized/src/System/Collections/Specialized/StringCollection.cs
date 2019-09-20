@@ -17,11 +17,11 @@ namespace System.Collections.Specialized
         /// <devdoc>
         /// <para>Represents the entry at the specified index of the <see cref='System.Collections.Specialized.StringCollection'/>.</para>
         /// </devdoc>
-        public string this[int index]
+        public string? this[int index]
         {
             get
             {
-                return ((string)data[index]);
+                return ((string?)data[index]);
             }
             set
             {
@@ -62,7 +62,7 @@ namespace System.Collections.Specialized
         ///    <para>Adds a string with the specified value to the
         ///    <see cref='System.Collections.Specialized.StringCollection'/> .</para>
         /// </devdoc>
-        public int Add(string value)
+        public int Add(string? value)
         {
             return data.Add(value);
         }
@@ -93,7 +93,7 @@ namespace System.Collections.Specialized
         ///    <see cref='System.Collections.Specialized.StringCollection'/> contains a string with the specified
         ///       value.</para>
         /// </devdoc>
-        public bool Contains(string value)
+        public bool Contains(string? value)
         {
             return data.Contains(value);
         }
@@ -120,7 +120,7 @@ namespace System.Collections.Specialized
         ///    <para>Returns the index of the first occurrence of a string in
         ///       the <see cref='System.Collections.Specialized.StringCollection'/> .</para>
         /// </devdoc>
-        public int IndexOf(string value)
+        public int IndexOf(string? value)
         {
             return data.IndexOf(value);
         }
@@ -129,7 +129,7 @@ namespace System.Collections.Specialized
         /// <para>Inserts a string into the <see cref='System.Collections.Specialized.StringCollection'/> at the specified
         ///    index.</para>
         /// </devdoc>
-        public void Insert(int index, string value)
+        public void Insert(int index, string? value)
         {
             data.Insert(index, value);
         }
@@ -162,7 +162,7 @@ namespace System.Collections.Specialized
         ///    <para> Removes a specific string from the
         ///    <see cref='System.Collections.Specialized.StringCollection'/> .</para>
         /// </devdoc>
-        public void Remove(string value)
+        public void Remove(string? value)
         {
             data.Remove(value);
         }
@@ -186,7 +186,7 @@ namespace System.Collections.Specialized
             }
         }
 
-        object IList.this[int index]
+        object? IList.this[int index]
         {
             get
             {
@@ -194,34 +194,34 @@ namespace System.Collections.Specialized
             }
             set
             {
-                this[index] = (string)value;
+                this[index] = (string?)value;
             }
         }
 
-        int IList.Add(object value)
+        int IList.Add(object? value)
         {
-            return Add((string)value);
+            return Add((string?)value);
         }
 
-        bool IList.Contains(object value)
+        bool IList.Contains(object? value)
         {
-            return Contains((string)value);
+            return Contains((string?)value);
         }
 
 
-        int IList.IndexOf(object value)
+        int IList.IndexOf(object? value)
         {
-            return IndexOf((string)value);
+            return IndexOf((string?)value);
         }
 
-        void IList.Insert(int index, object value)
+        void IList.Insert(int index, object? value)
         {
-            Insert(index, (string)value);
+            Insert(index, (string?)value);
         }
 
-        void IList.Remove(object value)
+        void IList.Remove(object? value)
         {
-            Remove((string)value);
+            Remove((string?)value);
         }
 
         void ICollection.CopyTo(Array array, int index)
@@ -246,11 +246,11 @@ namespace System.Collections.Specialized
             _baseEnumerator = _temp.GetEnumerator();
         }
 
-        public string Current
+        public string? Current
         {
             get
             {
-                return (string)(_baseEnumerator.Current);
+                return (string?)(_baseEnumerator.Current);
             }
         }
 

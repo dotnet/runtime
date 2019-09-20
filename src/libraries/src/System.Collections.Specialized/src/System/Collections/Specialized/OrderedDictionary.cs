@@ -24,12 +24,12 @@ namespace System.Collections.Specialized
     [System.Runtime.CompilerServices.TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class OrderedDictionary : IOrderedDictionary, ISerializable, IDeserializationCallback
     {
-        private ArrayList _objectsArray;
-        private Hashtable _objectsTable;
+        private ArrayList? _objectsArray;
+        private Hashtable? _objectsTable;
         private int _initialCapacity;
-        private IEqualityComparer _comparer;
+        private IEqualityComparer? _comparer;
         private bool _readOnly;
-        private readonly SerializationInfo _siInfo; //A temporary variable which we need during deserialization.
+        private readonly SerializationInfo? _siInfo; //A temporary variable which we need during deserialization.
 
         private const string KeyComparerName = "KeyComparer"; // Do not rename (binary serialization)
         private const string ArrayListName = "ArrayList"; // Do not rename (binary serialization)
@@ -44,11 +44,11 @@ namespace System.Collections.Specialized
         {
         }
 
-        public OrderedDictionary(IEqualityComparer comparer) : this(0, comparer)
+        public OrderedDictionary(IEqualityComparer? comparer) : this(0, comparer)
         {
         }
 
-        public OrderedDictionary(int capacity, IEqualityComparer comparer)
+        public OrderedDictionary(int capacity, IEqualityComparer? comparer)
         {
             _initialCapacity = capacity;
             _comparer = comparer;
@@ -128,26 +128,14 @@ namespace System.Collections.Specialized
         {
             get
             {
-                EnsureObjectsArray();
-                return new OrderedDictionaryKeyValueCollection(_objectsArray, true);
+                ArrayList objectsArray = EnsureObjectsArray();
+                return new OrderedDictionaryKeyValueCollection(objectsArray, true);
             }
         }
 
-        private void EnsureObjectsArray()
-        {
-            if (_objectsArray == null)
-            {
-                _objectsArray = new ArrayList(_initialCapacity);
-            }
-        }
+        private ArrayList EnsureObjectsArray() => _objectsArray ??= new ArrayList(_initialCapacity);
 
-        private void EnsureObjectsTable()
-        {
-            if (_objectsTable == null)
-            {
-                _objectsTable = new Hashtable(_initialCapacity, _comparer);
-            }
-        }
+        private Hashtable EnsureObjectsTable() => _objectsTable ??= new Hashtable(_initialCapacity, _comparer);
 
         /// <devdoc>
         /// The SyncRoot object.  Not used because IsSynchronized is false
@@ -157,12 +145,12 @@ namespace System.Collections.Specialized
         /// <devdoc>
         /// Gets or sets the object at the specified index
         /// </devdoc>
-        public object this[int index]
+        public object? this[int index]
         {
             get
             {
-                EnsureObjectsArray();
-                return ((DictionaryEntry)_objectsArray[index]).Value;
+                ArrayList objectsArray = EnsureObjectsArray();
+                return ((DictionaryEntry)objectsArray[index]!).Value;
             }
             set
             {
@@ -174,18 +162,18 @@ namespace System.Collections.Specialized
                 {
                     throw new ArgumentOutOfRangeException(nameof(index));
                 }
-                EnsureObjectsArray();
-                EnsureObjectsTable();
-                object key = ((DictionaryEntry)_objectsArray[index]).Key;
-                _objectsArray[index] = new DictionaryEntry(key, value);
-                _objectsTable[key] = value;
+                ArrayList objectsArray = EnsureObjectsArray();
+                Hashtable objectsTable = EnsureObjectsTable();
+                object key = ((DictionaryEntry)objectsArray[index]!).Key;
+                objectsArray[index] = new DictionaryEntry(key, value);
+                objectsTable[key] = value;
             }
         }
 
         /// <devdoc>
         /// Gets or sets the object with the specified key
         /// </devdoc>
-        public object this[object key]
+        public object? this[object key]
         {
             get
             {
@@ -201,12 +189,12 @@ namespace System.Collections.Specialized
                 {
                     throw new NotSupportedException(SR.OrderedDictionary_ReadOnly);
                 }
-                EnsureObjectsTable();
-                if (_objectsTable.Contains(key))
+                Hashtable objectsTable = EnsureObjectsTable();
+                if (objectsTable.Contains(key))
                 {
-                    _objectsTable[key] = value;
-                    EnsureObjectsArray();
-                    _objectsArray[IndexOfKey(key)] = new DictionaryEntry(key, value);
+                    objectsTable[key] = value;
+                    ArrayList objectsArray = EnsureObjectsArray();
+                    objectsArray[IndexOfKey(key)] = new DictionaryEntry(key, value);
                 }
                 else
                 {
@@ -222,24 +210,24 @@ namespace System.Collections.Specialized
         {
             get
             {
-                EnsureObjectsArray();
-                return new OrderedDictionaryKeyValueCollection(_objectsArray, false);
+                ArrayList objectsArray = EnsureObjectsArray();
+                return new OrderedDictionaryKeyValueCollection(objectsArray, false);
             }
         }
 
         /// <devdoc>
         /// Adds a new entry to the table with the lowest-available index.
         /// </devdoc>
-        public void Add(object key, object value)
+        public void Add(object key, object? value)
         {
             if (_readOnly)
             {
                 throw new NotSupportedException(SR.OrderedDictionary_ReadOnly);
             }
-            EnsureObjectsTable();
-            EnsureObjectsArray();
-            _objectsTable.Add(key, value);
-            _objectsArray.Add(new DictionaryEntry(key, value));
+            Hashtable objectsTable = EnsureObjectsTable();
+            ArrayList objectsArray = EnsureObjectsArray();
+            objectsTable.Add(key, value);
+            objectsArray.Add(new DictionaryEntry(key, value));
         }
 
         /// <devdoc>
@@ -290,8 +278,8 @@ namespace System.Collections.Specialized
         /// </devdoc>
         public void CopyTo(Array array, int index)
         {
-            EnsureObjectsTable();
-            _objectsTable.CopyTo(array, index);
+            Hashtable objectsTable = EnsureObjectsTable();
+            objectsTable.CopyTo(array, index);
         }
 
         private int IndexOfKey(object key)
@@ -302,7 +290,7 @@ namespace System.Collections.Specialized
             }
             for (int i = 0; i < _objectsArray.Count; i++)
             {
-                object o = ((DictionaryEntry)_objectsArray[i]).Key;
+                object o = ((DictionaryEntry)_objectsArray[i]!).Key;
                 if (_comparer != null)
                 {
                     if (_comparer.Equals(o, key))
@@ -324,7 +312,7 @@ namespace System.Collections.Specialized
         /// <devdoc>
         /// Inserts a new object at the given index with the given key.
         /// </devdoc>
-        public void Insert(int index, object key, object value)
+        public void Insert(int index, object key, object? value)
         {
             if (_readOnly)
             {
@@ -334,10 +322,10 @@ namespace System.Collections.Specialized
             {
                 throw new ArgumentOutOfRangeException(nameof(index));
             }
-            EnsureObjectsTable();
-            EnsureObjectsArray();
-            _objectsTable.Add(key, value);
-            _objectsArray.Insert(index, new DictionaryEntry(key, value));
+            Hashtable objectsTable = EnsureObjectsTable();
+            ArrayList objectsArray = EnsureObjectsArray();
+            objectsTable.Add(key, value);
+            objectsArray.Insert(index, new DictionaryEntry(key, value));
         }
 
         /// <devdoc>
@@ -353,11 +341,11 @@ namespace System.Collections.Specialized
             {
                 throw new ArgumentOutOfRangeException(nameof(index));
             }
-            // The 'index >= Count' check above ensures
-            // that the '_objectsArray' and '_objectsTable' objects are initialized.
-            object key = ((DictionaryEntry)_objectsArray[index]).Key;
-            _objectsArray.RemoveAt(index);
-            _objectsTable.Remove(key);
+            Hashtable objectsTable = EnsureObjectsTable();
+            ArrayList objectsArray = EnsureObjectsArray();
+            object key = ((DictionaryEntry)objectsArray[index]!).Key;
+            objectsArray.RemoveAt(index);
+            objectsTable.Remove(key);
         }
 
         /// <devdoc>
@@ -380,25 +368,25 @@ namespace System.Collections.Specialized
                 return;
             }
 
-            EnsureObjectsTable();
-            EnsureObjectsArray();
-            _objectsTable.Remove(key);
-            _objectsArray.RemoveAt(index);
+            Hashtable objectsTable = EnsureObjectsTable();
+            ArrayList objectsArray = EnsureObjectsArray();
+            objectsTable.Remove(key);
+            objectsArray.RemoveAt(index);
         }
 
 #region IDictionary implementation
         public virtual IDictionaryEnumerator GetEnumerator()
         {
-            EnsureObjectsArray();
-            return new OrderedDictionaryEnumerator(_objectsArray, OrderedDictionaryEnumerator.DictionaryEntry);
+            ArrayList objectsArray = EnsureObjectsArray();
+            return new OrderedDictionaryEnumerator(objectsArray, OrderedDictionaryEnumerator.DictionaryEntry);
         }
 #endregion
 
 #region IEnumerable implementation
         IEnumerator IEnumerable.GetEnumerator()
         {
-            EnsureObjectsArray();
-            return new OrderedDictionaryEnumerator(_objectsArray, OrderedDictionaryEnumerator.DictionaryEntry);
+            ArrayList objectsArray = EnsureObjectsArray();
+            return new OrderedDictionaryEnumerator(objectsArray, OrderedDictionaryEnumerator.DictionaryEntry);
         }
 #endregion
 
@@ -415,34 +403,34 @@ namespace System.Collections.Specialized
             info.AddValue(InitCapacityName, _initialCapacity);
 
             object[] serArray = new object[Count];
-            EnsureObjectsArray();
-            _objectsArray.CopyTo(serArray);
+            ArrayList objectsArray = EnsureObjectsArray();
+            objectsArray.CopyTo(serArray);
             info.AddValue(ArrayListName, serArray);
         }
 #endregion
 
 #region IDeserializationCallback implementation
-        void IDeserializationCallback.OnDeserialization(object sender)
+        void IDeserializationCallback.OnDeserialization(object? sender)
         {
             OnDeserialization(sender);
         }
 
-        protected virtual void OnDeserialization(object sender)
+        protected virtual void OnDeserialization(object? sender)
         {
             if (_siInfo == null)
             {
                 throw new SerializationException(SR.Serialization_InvalidOnDeser);
             }
-            _comparer = (IEqualityComparer)_siInfo.GetValue(KeyComparerName, typeof(IEqualityComparer));
+            _comparer = (IEqualityComparer?)_siInfo.GetValue(KeyComparerName, typeof(IEqualityComparer));
             _readOnly = _siInfo.GetBoolean(ReadOnlyName);
             _initialCapacity = _siInfo.GetInt32(InitCapacityName);
 
-            object[] serArray = (object[])_siInfo.GetValue(ArrayListName, typeof(object[]));
+            object[]? serArray = (object[]?)_siInfo.GetValue(ArrayListName, typeof(object[]));
 
             if (serArray != null)
             {
-                EnsureObjectsTable();
-                EnsureObjectsArray();
+                Hashtable objectsTable = EnsureObjectsTable();
+                ArrayList objectsArray = EnsureObjectsArray();
                 foreach (object o in serArray)
                 {
                     DictionaryEntry entry;
@@ -455,8 +443,8 @@ namespace System.Collections.Specialized
                     {
                         throw new SerializationException(SR.OrderedDictionary_SerializationMismatch);
                     }
-                    _objectsArray.Add(entry);
-                    _objectsTable.Add(entry.Key, entry.Value);
+                    objectsArray.Add(entry);
+                    objectsTable.Add(entry.Key, entry.Value);
                 }
             }
         }
@@ -483,10 +471,11 @@ namespace System.Collections.Specialized
             /// <devdoc>
             /// Retrieves the current DictionaryEntry.  This is the same as Entry, but not strongly-typed.
             /// </devdoc>
-            public object Current
+            public object? Current
             {
                 get
                 {
+                    Debug.Assert(_arrayEnumerator.Current != null);
                     if (_objectReturnType == Keys)
                     {
                         return ((DictionaryEntry)_arrayEnumerator.Current).Key;
@@ -506,6 +495,7 @@ namespace System.Collections.Specialized
             {
                 get
                 {
+                    Debug.Assert(_arrayEnumerator.Current != null);
                     return new DictionaryEntry(((DictionaryEntry)_arrayEnumerator.Current).Key, ((DictionaryEntry)_arrayEnumerator.Current).Value);
                 }
             }
@@ -517,6 +507,7 @@ namespace System.Collections.Specialized
             {
                 get
                 {
+                    Debug.Assert(_arrayEnumerator.Current != null);
                     return ((DictionaryEntry)_arrayEnumerator.Current).Key;
                 }
             }
@@ -524,10 +515,11 @@ namespace System.Collections.Specialized
             /// <devdoc>
             /// Retrieves the value of the current DictionaryEntry
             /// </devdoc>
-            public object Value
+            public object? Value
             {
                 get
                 {
+                    Debug.Assert(_arrayEnumerator.Current != null);
                     return ((DictionaryEntry)_arrayEnumerator.Current).Value;
                 }
             }
@@ -571,8 +563,9 @@ namespace System.Collections.Specialized
                     throw new ArgumentNullException(nameof(array));
                 if (index < 0)
                     throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum_Index);
-                foreach (object o in _objects)
+                foreach (object? o in _objects)
                 {
+                    Debug.Assert(o != null);
                     array.SetValue(_isKeys ? ((DictionaryEntry)o).Key : ((DictionaryEntry)o).Value, index);
                     index++;
                 }
