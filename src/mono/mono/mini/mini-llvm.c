@@ -3826,6 +3826,8 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 					set_failure (ctx, "can't encode patch");
 					return;
 				}
+			} else if (cfg->method == call->method) {
+				callee = ctx->lmethod;
 			} else {
 				ERROR_DECL (error);
 				static int tramp_index;
