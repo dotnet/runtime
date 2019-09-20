@@ -103,7 +103,7 @@ namespace System.Text.Json.Tests
                 builder.Append("]");
             }
 
-            var options = new JsonDocumentOptions { MaxDepth = 5_000 };
+            var options = new JsonNodeOptions { MaxDepth = 5_000 };
             JsonNode jsonNode = JsonNode.Parse(builder.ToString(), options);
         }
 
@@ -186,17 +186,17 @@ namespace System.Text.Json.Tests
             Assert.Equal(2, jsonObject.GetPropertyValues().Count);
             Assert.Equal("last duplicate value", jsonObject["property"]);
 
-            jsonObject = (JsonObject) JsonNode.Parse(stringWithDuplicates, default, DuplicatePropertyNameHandling.Replace);
+            jsonObject = (JsonObject) JsonNode.Parse(stringWithDuplicates, new JsonNodeOptions() { DuplicatePropertyNameHandling = DuplicatePropertyNameHandlingStrategy.Replace });
             Assert.Equal(2, jsonObject.GetPropertyNames().Count);
             Assert.Equal(2, jsonObject.GetPropertyValues().Count);
             Assert.Equal("last duplicate value", jsonObject["property"]);
 
-            jsonObject = (JsonObject)JsonNode.Parse(stringWithDuplicates, default, DuplicatePropertyNameHandling.Ignore);
+            jsonObject = (JsonObject)JsonNode.Parse(stringWithDuplicates, new JsonNodeOptions() { DuplicatePropertyNameHandling = DuplicatePropertyNameHandlingStrategy.Ignore });
             Assert.Equal(2, jsonObject.GetPropertyNames().Count);
             Assert.Equal(2, jsonObject.GetPropertyValues().Count);
             Assert.Equal("first value", jsonObject["property"]);
 
-            Assert.Throws<ArgumentException>(() => JsonNode.Parse(stringWithDuplicates, default, DuplicatePropertyNameHandling.Error));
+            Assert.Throws<ArgumentException>(() => JsonNode.Parse(stringWithDuplicates, new JsonNodeOptions() { DuplicatePropertyNameHandling = DuplicatePropertyNameHandlingStrategy.Error }));
         }
     }
 }
