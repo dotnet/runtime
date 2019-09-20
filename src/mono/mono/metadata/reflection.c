@@ -968,6 +968,7 @@ static gboolean
 add_parameter_object_to_array (MonoDomain *domain, MonoMethod *method, MonoObjectHandle member, int idx, const char *name, MonoType *sig_param, guint32 blob_type_enum, const char *blob, MonoMarshalSpec *mspec, MonoObjectHandle missing, MonoObjectHandle dbnull, MonoArrayHandle dest,  MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER ();
+
 	error_init (error);
 	MonoReflectionParameterHandle param = MONO_HANDLE_CAST (MonoReflectionParameter, mono_object_new_handle (domain, mono_class_get_mono_parameter_info_class (), error));
 	goto_if_nok (error, leave);
@@ -1013,7 +1014,7 @@ add_parameter_object_to_array (MonoDomain *domain, MonoMethod *method, MonoObjec
 		} else
 			blob_type.data.klass = mono_class_from_mono_type_internal (&blob_type);
 
-		def_value = MONO_HANDLE_NEW (MonoObject, mono_get_object_from_blob (domain, &blob_type, blob, error)); /* FIXME make mono_get_object_from_blob return a handle */
+		def_value = mono_get_object_from_blob (domain, &blob_type, blob, MONO_HANDLE_NEW (MonoString, NULL), error);
 		goto_if_nok (error, leave);
 
 		/* Type in the Constant table is MONO_TYPE_CLASS for nulls */
@@ -1457,34 +1458,39 @@ get_default_param_value_blobs (MonoMethod *method, char **blobs, guint32 *types)
 	return;
 }
 
-MonoObject *
-mono_get_object_from_blob (MonoDomain *domain, MonoType *type, const char *blob, MonoError *error)
+MonoObjectHandle
+mono_get_object_from_blob (MonoDomain *domain, MonoType *type, const char *blob, MonoStringHandleOut string_handle, MonoError *error)
 {
-	void *retval;
-	MonoClass *klass;
-	MonoObject *object;
-	MonoType *basetype = type;
-
 	error_init (error);
 
 	if (!blob)
-		return NULL;
-	
-	klass = mono_class_from_mono_type_internal (type);
+		return NULL_HANDLE;
+
+	HANDLE_FUNCTION_ENTER ();
+
+	MonoObject *object;
+	void *retval = &object;
+	MonoType *basetype = type;
+
+	MonoObjectHandle object_handle = MONO_HANDLE_NEW (MonoObject, NULL);
+
+	MonoClass* const klass = mono_class_from_mono_type_internal (type);
+
 	if (m_class_is_valuetype (klass)) {
 		object = mono_object_new_checked (domain, klass, error);
-		return_val_if_nok (error, NULL);
+		MONO_HANDLE_ASSIGN_RAW (object_handle, object);
+		return_val_if_nok (error, NULL_HANDLE);
 		retval = mono_object_get_data (object);
 		if (m_class_is_enumtype (klass))
 			basetype = mono_class_enum_basetype_internal (klass);
-	} else {
-		retval = &object;
 	}
 			
-	if (!mono_get_constant_value_from_blob (domain, basetype->type,  blob, retval, error))
-		return object;
+	if (mono_get_constant_value_from_blob (domain, basetype->type,  blob, retval, string_handle, error))
+		MONO_HANDLE_ASSIGN_RAW (object_handle, object);
 	else
-		return NULL;
+		object_handle = NULL_HANDLE;
+
+	HANDLE_FUNCTION_RETURN_REF (MonoObject, object_handle);
 }
 
 static int

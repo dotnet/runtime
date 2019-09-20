@@ -7901,6 +7901,8 @@ collect_interfaces (MonoClass *klass, GHashTable *ifaces, MonoError *error)
 static ErrorCode
 type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint8 *p, guint8 *end, Buffer *buf)
 {
+	HANDLE_FUNCTION_ENTER ();
+
 	ERROR_DECL (error);
 	MonoClass *nested;
 	MonoType *type;
@@ -7909,6 +7911,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 	int nnested;
 	ErrorCode err;
 	char *name;
+	MonoStringHandle string_handle = MONO_HANDLE_NEW (MonoString, NULL); // FIXME? Not always needed.
 
 	switch (command) {
 	case CMD_TYPE_GET_INFO: {
@@ -8166,7 +8169,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 			goto_if_nok (error, invalid_fieldid);
 
 			val = (guint8 *)g_malloc (mono_class_instance_size (mono_class_from_mono_type_internal (f->type)));
-			mono_field_static_get_value_for_thread (thread ? thread : mono_thread_internal_current (), vtable, f, val, error);
+			mono_field_static_get_value_for_thread (thread ? thread : mono_thread_internal_current (), vtable, f, val, string_handle, error);
 			goto_if_nok (error, invalid_fieldid);
 
 			buffer_add_value (buf, f->type, val, domain);
@@ -8397,7 +8400,7 @@ loader_error:
 	err = ERR_LOADER_ERROR;
 	goto exit;
 exit:
-	return err;
+	HANDLE_FUNCTION_RETURN_VAL (err);
 }
 
 static ErrorCode
@@ -9431,6 +9434,8 @@ pointer_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 static ErrorCode
 object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 {
+	HANDLE_FUNCTION_ENTER ();
+
 	ERROR_DECL (error);
 	int objid;
 	ErrorCode err;
@@ -9440,6 +9445,7 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	MonoClass *k;
 	gboolean found;
 	gboolean remote_obj = FALSE;
+	MonoStringHandle string_handle = MONO_HANDLE_NEW (MonoString, NULL); // FIXME? Not always needed.
 
 	if (command == CMD_OBJECT_REF_IS_COLLECTED) {
 		objid = decode_objid (p, &p, end);
@@ -9505,7 +9511,7 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 					goto invalid_object;
 				}
 				val = (guint8 *)g_malloc (mono_class_instance_size (mono_class_from_mono_type_internal (f->type)));
-				mono_field_static_get_value_checked (vtable, f, val, error);
+				mono_field_static_get_value_checked (vtable, f, val, string_handle, error);
 				if (!is_ok (error)) {
 					mono_error_cleanup (error); /* FIXME report the error */
 					goto invalid_object;
@@ -9606,7 +9612,7 @@ invalid_object:
 	err = ERR_INVALID_OBJECT;
 	goto exit;
 exit:
-	return err;
+	HANDLE_FUNCTION_RETURN_VAL (err);
 }
 
 static const char*

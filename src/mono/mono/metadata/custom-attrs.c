@@ -2294,8 +2294,6 @@ mono_reflection_get_custom_attrs_data_checked (MonoObjectHandle obj, MonoError *
 	MonoArrayHandle result = MONO_HANDLE_NEW (MonoArray, NULL);
 	MonoCustomAttrInfo *cinfo;
 
-	error_init (error);
-
 	cinfo = mono_reflection_get_custom_attrs_info_checked (obj, error);
 	goto_if_nok (error, leave);
 	if (cinfo) {
