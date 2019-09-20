@@ -241,7 +241,7 @@ mono_arch_init (void)
 
 	mono_arm_gsharedvt_init ();
 
-#if defined(TARGET_IOS)
+#if defined(TARGET_IOS) || defined(TARGET_WATCHOS)
 	ios_abi = TRUE;
 #endif
 }
@@ -1241,17 +1241,28 @@ add_param (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t)
 	case MONO_TYPE_U2:
 		add_general (cinfo, ainfo, 2, FALSE);
 		break;
+#ifdef MONO_ARCH_ILP32
+	case MONO_TYPE_I:
+#endif
 	case MONO_TYPE_I4:
 		add_general (cinfo, ainfo, 4, TRUE);
 		break;
+#ifdef MONO_ARCH_ILP32
+	case MONO_TYPE_U:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
+	case MONO_TYPE_OBJECT:
+#endif
 	case MONO_TYPE_U4:
 		add_general (cinfo, ainfo, 4, FALSE);
 		break;
+#ifndef MONO_ARCH_ILP32
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_FNPTR:
 	case MONO_TYPE_OBJECT:
+#endif
 	case MONO_TYPE_U8:
 	case MONO_TYPE_I8:
 		add_general (cinfo, ainfo, 8, FALSE);
