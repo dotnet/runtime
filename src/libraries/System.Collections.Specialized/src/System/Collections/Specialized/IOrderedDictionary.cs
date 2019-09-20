@@ -19,7 +19,7 @@ namespace System.Collections.Specialized
         /// <devdoc>
         /// Returns the object at the given index
         /// </devdoc>
-        object this[int index] { get; set; }
+        object? this[int index] { get; set; }
 
         // Returns an IDictionaryEnumerator for this dictionary.
         new IDictionaryEnumerator GetEnumerator();
@@ -28,7 +28,7 @@ namespace System.Collections.Specialized
         /// <devdoc>
         /// Inserts the given object, with the given key, at the given index
         /// </devdoc>
-        void Insert(int index, object key, object value);
+        void Insert(int index, object key, object? value);
 
         /// <devdoc>
         /// Removes the object and key at the given index

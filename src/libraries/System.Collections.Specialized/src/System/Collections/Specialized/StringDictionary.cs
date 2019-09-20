@@ -59,7 +59,7 @@ namespace System.Collections.Specialized
         /// <devdoc>
         ///    <para>Gets or sets the value associated with the specified key.</para>
         /// </devdoc>
-        public virtual string this[string key]
+        public virtual string? this[string key]
         {
             get
             {
@@ -68,7 +68,7 @@ namespace System.Collections.Specialized
                     throw new ArgumentNullException(nameof(key));
                 }
 
-                return (string)contents[key.ToLowerInvariant()];
+                return (string?)contents[key.ToLowerInvariant()];
             }
             set
             {
@@ -118,7 +118,7 @@ namespace System.Collections.Specialized
         /// <devdoc>
         /// <para>Adds an entry with the specified key and value into the StringDictionary.</para>
         /// </devdoc>
-        public virtual void Add(string key, string value)
+        public virtual void Add(string key, string? value)
         {
             if (key == null)
             {
@@ -152,7 +152,7 @@ namespace System.Collections.Specialized
         /// <devdoc>
         /// <para>Determines if the StringDictionary contains a specific value.</para>
         /// </devdoc>
-        public virtual bool ContainsValue(string value)
+        public virtual bool ContainsValue(string? value)
         {
             return contents.ContainsValue(value);
         }
