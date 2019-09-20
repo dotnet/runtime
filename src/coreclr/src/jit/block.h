@@ -750,7 +750,7 @@ struct BasicBlock : private LIR::Range
         return m_firstNode;
     }
 
-    void SetBBTreeList(GenTree* tree)
+    void SetFirstLIRNode(GenTree* tree)
     {
         m_firstNode = tree;
     }

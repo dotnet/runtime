@@ -9540,8 +9540,8 @@ BasicBlock* Compiler::fgSplitBlockAtBeginning(BasicBlock* curr)
 
     if (curr->IsLIR())
     {
-        newBlock->SetBBTreeList(curr->GetFirstLIRNode());
-        curr->SetBBTreeList(nullptr);
+        newBlock->SetFirstLIRNode(curr->GetFirstLIRNode());
+        curr->SetFirstLIRNode(nullptr);
     }
     else
     {
