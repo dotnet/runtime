@@ -25,15 +25,17 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestUtils", "src\test\TestU
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.NET.HostModel", "src\managed\Microsoft.NET.HostModel\Microsoft.NET.HostModel.csproj", "{325FB7F2-2E2E-422D-ADAA-F0B63E84CF24}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AppHost.Bundle.Tests", "src\test\BundleTests\AppHost.Bundle.Tests\AppHost.Bundle.Tests.csproj", "{2745A51D-3425-4F68-8349-A8B8BC27DD87}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AppHost.Bundle.Tests", "src\test\Microsoft.NET.HostModel.Tests\AppHost.Bundle.Tests\AppHost.Bundle.Tests.csproj", "{2745A51D-3425-4F68-8349-A8B8BC27DD87}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.NET.HostModel.Bundle.Tests", "src\test\BundleTests\Microsoft.NET.HostModel.Bundle.Tests\Microsoft.NET.HostModel.Bundle.Tests.csproj", "{1E76A78E-9E39-480D-8CD3-B7D0A858FECB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.NET.HostModel.Bundle.Tests", "src\test\Microsoft.NET.HostModel.Tests\Microsoft.NET.HostModel.Bundle.Tests\Microsoft.NET.HostModel.Bundle.Tests.csproj", "{1E76A78E-9E39-480D-8CD3-B7D0A858FECB}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BundleHelper", "src\test\BundleTests\Helpers\BundleHelper.csproj", "{8116F946-FB24-4524-9028-43F5A3A80EE3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BundleHelper", "src\test\Microsoft.NET.HostModel.Tests\Helpers\BundleHelper.csproj", "{8116F946-FB24-4524-9028-43F5A3A80EE3}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.DotNet.CoreSetup.Packaging.Tests", "src\test\Microsoft.DotNet.CoreSetup.Packaging.Tests\Microsoft.DotNet.CoreSetup.Packaging.Tests.csproj", "{F1584324-A41A-4CE7-B23F-DB2252CFE276}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.NET.HostModel.AppHost.Tests", "src\test\BundleTests\Microsoft.NET.HostModel.AppHost.Tests\Microsoft.NET.HostModel.AppHost.Tests.csproj", "{AA3430BA-AE4A-4D52-B29D-B072A646C230}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.NET.HostModel.AppHost.Tests", "src\test\Microsoft.NET.HostModel.Tests\Microsoft.NET.HostModel.AppHost.Tests\Microsoft.NET.HostModel.AppHost.Tests.csproj", "{AA3430BA-AE4A-4D52-B29D-B072A646C230}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.NET.HostModel.ComHost.Tests", "src\test\Microsoft.NET.HostModel.Tests\Microsoft.NET.HostModel.ComHost.Tests\Microsoft.NET.HostModel.ComHost.Tests.csproj", "{35EF7826-6D47-4C91-AFDF-91091C05FB13}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -223,6 +225,22 @@ Global
 		{AA3430BA-AE4A-4D52-B29D-B072A646C230}.RelWithDebInfo|Any CPU.Build.0 = Release|Any CPU
 		{AA3430BA-AE4A-4D52-B29D-B072A646C230}.RelWithDebInfo|x64.ActiveCfg = Release|Any CPU
 		{AA3430BA-AE4A-4D52-B29D-B072A646C230}.RelWithDebInfo|x64.Build.0 = Release|Any CPU
+		{35EF7826-6D47-4C91-AFDF-91091C05FB13}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{35EF7826-6D47-4C91-AFDF-91091C05FB13}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{35EF7826-6D47-4C91-AFDF-91091C05FB13}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{35EF7826-6D47-4C91-AFDF-91091C05FB13}.Debug|x64.Build.0 = Debug|Any CPU
+		{35EF7826-6D47-4C91-AFDF-91091C05FB13}.MinSizeRel|Any CPU.ActiveCfg = Debug|Any CPU
+		{35EF7826-6D47-4C91-AFDF-91091C05FB13}.MinSizeRel|Any CPU.Build.0 = Debug|Any CPU
+		{35EF7826-6D47-4C91-AFDF-91091C05FB13}.MinSizeRel|x64.ActiveCfg = Debug|Any CPU
+		{35EF7826-6D47-4C91-AFDF-91091C05FB13}.MinSizeRel|x64.Build.0 = Debug|Any CPU
+		{35EF7826-6D47-4C91-AFDF-91091C05FB13}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{35EF7826-6D47-4C91-AFDF-91091C05FB13}.Release|Any CPU.Build.0 = Release|Any CPU
+		{35EF7826-6D47-4C91-AFDF-91091C05FB13}.Release|x64.ActiveCfg = Release|Any CPU
+		{35EF7826-6D47-4C91-AFDF-91091C05FB13}.Release|x64.Build.0 = Release|Any CPU
+		{35EF7826-6D47-4C91-AFDF-91091C05FB13}.RelWithDebInfo|Any CPU.ActiveCfg = Release|Any CPU
+		{35EF7826-6D47-4C91-AFDF-91091C05FB13}.RelWithDebInfo|Any CPU.Build.0 = Release|Any CPU
+		{35EF7826-6D47-4C91-AFDF-91091C05FB13}.RelWithDebInfo|x64.ActiveCfg = Release|Any CPU
+		{35EF7826-6D47-4C91-AFDF-91091C05FB13}.RelWithDebInfo|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -239,6 +257,7 @@ Global
 		{8116F946-FB24-4524-9028-43F5A3A80EE3} = {5CE8410C-3100-4F41-8FA9-E6B4132D9703}
 		{F1584324-A41A-4CE7-B23F-DB2252CFE276} = {5CE8410C-3100-4F41-8FA9-E6B4132D9703}
 		{AA3430BA-AE4A-4D52-B29D-B072A646C230} = {5CE8410C-3100-4F41-8FA9-E6B4132D9703}
+		{35EF7826-6D47-4C91-AFDF-91091C05FB13} = {5CE8410C-3100-4F41-8FA9-E6B4132D9703}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {28B9726D-802B-478D-AF7A-B9243B9E180B}
