@@ -20,7 +20,7 @@ namespace System.Drawing
 
         private const int OleSystemColorFlag = unchecked((int)0x80000000);
 
-        private static Dictionary<string, Color> s_htmlSysColorTable;
+        private static Dictionary<string, Color>? s_htmlSysColorTable;
 
         internal static uint COLORREFToARGB(uint value)
             => ((value >> COLORREF_RedShift) & 0xFF) << Color.ARGBRedShift
@@ -260,7 +260,7 @@ namespace System.Drawing
                     InitializeHtmlSysColorTable();
                 }
 
-                s_htmlSysColorTable.TryGetValue(htmlColor.ToLower(CultureInfo.InvariantCulture), out c);
+                s_htmlSysColorTable!.TryGetValue(htmlColor.ToLower(CultureInfo.InvariantCulture), out c);
             }
 
             // resort to type converter which will handle named colors
