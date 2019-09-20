@@ -244,7 +244,7 @@ GTNODE(CALL             , GenTreeCall        ,0,(GTK_SPECIAL|GTK_NOCONTAIN))
 //-----------------------------------------------------------------------------
 //  Statement operator nodes:
 //-----------------------------------------------------------------------------
-GTNODE(STMT             , Statement        ,0,(GTK_SPECIAL|GTK_NOVALUE))// top-level list nodes in bbTreeList
+GTNODE(STMT             , Statement        ,0,(GTK_SPECIAL|GTK_NOVALUE))// top-level list nodes in GetFirstLIRNode()
 
 GTNODE(RETURN           , GenTreeOp          ,0,(GTK_UNOP|GTK_NOVALUE))   // return from current function
 GTNODE(SWITCH           , GenTreeOp          ,0,(GTK_UNOP|GTK_NOVALUE))   // switch
