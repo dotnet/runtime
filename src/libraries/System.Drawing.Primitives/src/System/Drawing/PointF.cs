@@ -107,7 +107,7 @@ namespace System.Drawing
         /// </summary>
         public static PointF Subtract(PointF pt, SizeF sz) => new PointF(pt.X - sz.Width, pt.Y - sz.Height);
 
-        public override bool Equals(object obj) => obj is PointF && Equals((PointF)obj);
+        public override bool Equals(object? obj) => obj is PointF && Equals((PointF)obj);
 
         public bool Equals(PointF other) => this == other;
 

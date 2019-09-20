@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Collections.Generic;
 using System.Reflection;
 
@@ -24,7 +25,7 @@ namespace System.Drawing
             foreach (PropertyInfo prop in typeWithColors.GetProperties(BindingFlags.Public | BindingFlags.Static))
             {
                 if (prop.PropertyType == typeof(Color))
-                    dictionary[prop.Name] = (Color)prop.GetValue(null, null);
+                    dictionary[prop.Name] = (Color)prop.GetValue(null, null)!;
             }
         }
 

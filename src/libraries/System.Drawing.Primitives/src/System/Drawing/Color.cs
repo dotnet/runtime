@@ -325,7 +325,7 @@ namespace System.Drawing
 
         // User supplied name of color. Will not be filled in if
         // we map to a "knowncolor"
-        private readonly string name; // Do not rename (binary serialization)
+        private readonly string? name; // Do not rename (binary serialization)
 
         // Standard 32bit sRGB (ARGB)
         private readonly long value; // Do not rename (binary serialization)
@@ -344,7 +344,7 @@ namespace System.Drawing
             this.knownColor = unchecked((short)knownColor);
         }
 
-        private Color(long value, short state, string name, KnownColor knownColor)
+        private Color(long value, short state, string? name, KnownColor knownColor)
         {
             this.value = value;
             this.state = state;
@@ -383,6 +383,7 @@ namespace System.Drawing
             {
                 if ((state & StateNameValid) != 0)
                 {
+                    Debug.Assert(name != null);
                     return name;
                 }
 
@@ -563,7 +564,7 @@ namespace System.Drawing
 
         public static bool operator !=(Color left, Color right) => !(left == right);
 
-        public override bool Equals(object obj) => obj is Color other && Equals(other);
+        public override bool Equals(object? obj) => obj is Color other && Equals(other);
 
         public bool Equals(Color other) => this == other;
 
@@ -576,7 +577,7 @@ namespace System.Drawing
             // an unnamed color with the same ARGB value.
             // 3. Have an unknown name. Will differ from other unknown-named colors only by name, so we
             // can usefully use the names hash code alone.
-            if (name != null & !IsKnownColor)
+            if (name != null && !IsKnownColor)
                 return name.GetHashCode();
 
             return HashCode.Combine(value.GetHashCode(), state.GetHashCode(), knownColor.GetHashCode());
