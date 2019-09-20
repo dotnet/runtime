@@ -126,9 +126,15 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_ARGPLACE:
         case GT_NO_OP:
         case GT_START_NONGC:
+            srcCount = 0;
+            assert(dstCount == 0);
+            break;
+
         case GT_PROF_HOOK:
             srcCount = 0;
             assert(dstCount == 0);
+            killMask = getKillSetForProfilerHook();
+            BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
             break;
 
         case GT_START_PREEMPTGC:
@@ -176,6 +182,8 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_RETURN:
             srcCount = BuildReturn(tree);
+            killMask = getKillSetForReturn();
+            BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
             break;
 
         case GT_RETFILT:

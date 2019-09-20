@@ -2301,9 +2301,7 @@ bool emitter::emitNoGChelper(CorInfoHelpFunc helpFunc)
 
         case CORINFO_HELP_PROF_FCN_LEAVE:
         case CORINFO_HELP_PROF_FCN_ENTER:
-#if defined(_TARGET_XARCH_)
         case CORINFO_HELP_PROF_FCN_TAILCALL:
-#endif
         case CORINFO_HELP_LLSH:
         case CORINFO_HELP_LRSH:
         case CORINFO_HELP_LRSZ:
@@ -7628,7 +7626,6 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
             assert(!"unknown arch");
 #endif
 
-#if defined(_TARGET_XARCH_) || defined(_TARGET_ARM_)
         case CORINFO_HELP_PROF_FCN_ENTER:
             result = RBM_PROFILER_ENTER_TRASH;
             break;
@@ -7636,12 +7633,10 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
         case CORINFO_HELP_PROF_FCN_LEAVE:
             result = RBM_PROFILER_LEAVE_TRASH;
             break;
-#if defined(_TARGET_XARCH_)
+
         case CORINFO_HELP_PROF_FCN_TAILCALL:
             result = RBM_PROFILER_TAILCALL_TRASH;
             break;
-#endif // defined(_TARGET_XARCH_)
-#endif // defined(_TARGET_XARCH_) || defined(_TARGET_ARM_)
 
 #if defined(_TARGET_ARMARCH_)
         case CORINFO_HELP_ASSIGN_REF:
