@@ -13,6 +13,8 @@ namespace System.Xml
     // XmlReaderSettings class specifies basic features of an XmlReader.
     public sealed class XmlReaderSettings
     {
+        internal static readonly XmlReaderSettings s_defaultReaderSettings = new XmlReaderSettings() { ReadOnly = true };
+
         //
         // Fields
         //
@@ -424,11 +426,7 @@ namespace System.Xml
             }
 
             // resolve and open the url
-            XmlResolver tmpResolver = this.GetXmlResolver();
-            if (tmpResolver == null)
-            {
-                tmpResolver = CreateDefaultResolver();
-            }
+            XmlResolver tmpResolver = this.GetXmlResolver() ?? new XmlUrlResolver();
 
             // create text XML reader
             XmlReader reader = new XmlTextReaderImpl(inputUri, this, inputContext, tmpResolver);
@@ -577,11 +575,6 @@ namespace System.Xml
 
             _isReadOnly = false;
             IsXmlResolverSet = false;
-        }
-
-        private static XmlResolver CreateDefaultResolver()
-        {
-            return new XmlUrlResolver();
         }
 
         internal XmlReader AddValidation(XmlReader reader)
