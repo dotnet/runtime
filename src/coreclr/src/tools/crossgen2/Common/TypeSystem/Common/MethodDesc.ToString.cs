@@ -19,7 +19,7 @@ namespace Internal.TypeSystem
 
             if (includeReturnType)
             {
-                DebugNameFormatter.Instance.AppendName(sb, ReturnType, DebugNameFormatter.FormatOptions.None);
+                DebugNameFormatter.Instance.AppendName(sb, ReturnType, DebugNameFormatter.FormatOptions.None | DebugNameFormatter.FormatOptions.UseDiagnosticName);
                 sb.Append('(');
             }
 
@@ -30,7 +30,7 @@ namespace Internal.TypeSystem
                     first = false;
                 else
                     sb.Append(',');
-                DebugNameFormatter.Instance.AppendName(sb, param, DebugNameFormatter.FormatOptions.None);
+                DebugNameFormatter.Instance.AppendName(sb, param, DebugNameFormatter.FormatOptions.None | DebugNameFormatter.FormatOptions.UseDiagnosticName);
             }
 
             if (includeReturnType)
@@ -49,7 +49,18 @@ namespace Internal.TypeSystem
             // (Skipping return type to keep things short)
             sb.Append(OwningType);
             sb.Append('.');
-            sb.Append(Name);
+            try
+            {
+                sb.Append(Name);
+            }
+            catch
+            {
+                string diagName = null;
+                GetDiagnosticName(ref diagName);
+                if (diagName == null)
+                    throw;
+                sb.Append(diagName);
+            }
 
             bool first = true;
             for (int i = 0; i < Instantiation.Length; i++)
@@ -63,16 +74,25 @@ namespace Internal.TypeSystem
                 {
                     sb.Append(',');
                 }
-                DebugNameFormatter.Instance.AppendName(sb, Instantiation[i], DebugNameFormatter.FormatOptions.None);
+                DebugNameFormatter.Instance.AppendName(sb, Instantiation[i], DebugNameFormatter.FormatOptions.None | DebugNameFormatter.FormatOptions.UseDiagnosticName);
             }
             if (!first)
                 sb.Append('>');
 
             sb.Append('(');
-            sb.Append(Signature.ToString(includeReturnType: false));
+            try
+            {
+                sb.Append(Signature.ToString(includeReturnType: false));
+            }
+            catch
+            {
+                sb.Append("Unknown");
+            }
             sb.Append(')');
 
             return sb.ToString();
         }
+
+        partial void GetDiagnosticName(ref string diagnosticName);
     }
 }
