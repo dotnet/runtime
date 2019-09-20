@@ -40,7 +40,7 @@ EvpDigestUpdate
 
 Direct shim to EVP_DigestUpdate.
 */
-DLLEXPORT int32_t CryptoNative_EvpDigestUpdate(EVP_MD_CTX* ctx, const void* d, size_t cnt);
+DLLEXPORT int32_t CryptoNative_EvpDigestUpdate(EVP_MD_CTX* ctx, const void* d, int32_t cnt);
 
 /*
 Function:
