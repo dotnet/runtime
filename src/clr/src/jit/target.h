@@ -1106,10 +1106,6 @@ typedef unsigned char   regNumberSmall;
   #define RBM_PROFILER_ENTER_ARG           RBM_R0
   #define REG_PROFILER_RET_SCRATCH         REG_R2
   #define RBM_PROFILER_RET_SCRATCH         RBM_R2
-  #define RBM_PROFILER_RET_USED            (RBM_R0 | RBM_R1 | RBM_R2)
-  #define REG_PROFILER_JMP_ARG             REG_R0
-  #define RBM_PROFILER_JMP_USED            RBM_R0
-  #define RBM_PROFILER_TAIL_USED           (RBM_R0 | RBM_R12 | RBM_LR)
   
   // The registers trashed by profiler enter/leave/tailcall hook
   // See vm\arm\asmhelpers.asm for more details.
@@ -1420,14 +1416,19 @@ typedef unsigned char   regNumberSmall;
   #define REG_PREV(reg)           ((regNumber)((unsigned)(reg) - 1))
 
   // The following registers are used in emitting Enter/Leave/Tailcall profiler callbacks
-  #define REG_PROFILER_ENTER_ARG           REG_R0
-  #define RBM_PROFILER_ENTER_ARG           RBM_R0
-  #define REG_PROFILER_RET_SCRATCH         REG_R2
-  #define RBM_PROFILER_RET_SCRATCH         RBM_R2
-  #define RBM_PROFILER_RET_USED            (RBM_R0 | RBM_R1 | RBM_R2)
-  #define REG_PROFILER_JMP_ARG             REG_R0
-  #define RBM_PROFILER_JMP_USED            RBM_R0
-  #define RBM_PROFILER_TAIL_USED           (RBM_R0 | RBM_R12 | RBM_LR)
+  #define REG_PROFILER_ENTER_ARG_FUNC_ID    REG_R10
+  #define RBM_PROFILER_ENTER_ARG_FUNC_ID    RBM_R10
+  #define REG_PROFILER_ENTER_ARG_CALLER_SP  REG_R11
+  #define RBM_PROFILER_ENTER_ARG_CALLER_SP  RBM_R11
+  #define REG_PROFILER_LEAVE_ARG_FUNC_ID    REG_R10
+  #define RBM_PROFILER_LEAVE_ARG_FUNC_ID    RBM_R10
+  #define REG_PROFILER_LEAVE_ARG_CALLER_SP  REG_R11
+  #define RBM_PROFILER_LEAVE_ARG_CALLER_SP  RBM_R11
+
+  // The registers trashed by profiler enter/leave/tailcall hook
+  #define RBM_PROFILER_ENTER_TRASH     (RBM_CALLEE_TRASH & ~(RBM_ARG_REGS|RBM_ARG_RET_BUFF|RBM_FLTARG_REGS|RBM_FP))
+  #define RBM_PROFILER_LEAVE_TRASH     (RBM_CALLEE_TRASH & ~(RBM_ARG_REGS|RBM_ARG_RET_BUFF|RBM_FLTARG_REGS|RBM_FP))
+  #define RBM_PROFILER_TAILCALL_TRASH  RBM_PROFILER_LEAVE_TRASH
 
   // Which register are int and long values returned in ?
   #define REG_INTRET               REG_R0
