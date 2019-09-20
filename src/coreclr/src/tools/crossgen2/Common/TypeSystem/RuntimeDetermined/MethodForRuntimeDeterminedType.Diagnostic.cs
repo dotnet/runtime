@@ -4,11 +4,8 @@
 
 namespace Internal.TypeSystem
 {
-    partial class TypeDesc
+    partial class MethodForRuntimeDeterminedType
     {
-        public override string ToString()
-        {
-            return DebugNameFormatter.Instance.FormatName(this, DebugNameFormatter.FormatOptions.Default | DebugNameFormatter.FormatOptions.UseDiagnosticName);
-        }
+        public override string DiagnosticName => _typicalMethodDef.DiagnosticName;
     }
 }

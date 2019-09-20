@@ -87,7 +87,29 @@ namespace Internal.TypeSystem
     {
         public TState AppendName(StringBuilder sb, TypeDesc type, TOptions options)
         {
-            switch (type.Category)
+            TypeFlags category;
+            bool normalCategoryComputation = false;
+            try
+            {
+                category = type.Category;
+                normalCategoryComputation = true;
+            }
+            catch
+            {
+                category = type switch
+                {
+                    ArrayType t => TypeFlags.Array, // This will get us into the path that works with an ArrayType below
+                    ByRefType t => TypeFlags.ByRef,
+                    PointerType t => TypeFlags.Pointer,
+                    FunctionPointerType t => TypeFlags.FunctionPointer,
+                    GenericParameterDesc t => TypeFlags.GenericParameter,
+                    SignatureTypeVariable t => TypeFlags.SignatureTypeVariable,
+                    SignatureMethodVariable t => TypeFlags.SignatureMethodVariable,
+                    _ => TypeFlags.Class, // This will get us into the DefType path below
+                };
+            }
+
+            switch (category)
             {
                 case TypeFlags.Array:
                 case TypeFlags.SzArray:
@@ -105,7 +127,7 @@ namespace Internal.TypeSystem
                 case TypeFlags.SignatureMethodVariable:
                     return AppendName(sb, (SignatureMethodVariable)type, options);
                 default:
-                    Debug.Assert(type.IsDefType);
+                    Debug.Assert(normalCategoryComputation && type.IsDefType); // Don't call type.IsDefType if Category computation failed
                     return AppendName(sb, (DefType)type, options);
             }
         }
@@ -118,7 +140,8 @@ namespace Internal.TypeSystem
             }
             else
             {
-                DefType containingType = type.ContainingType;
+                DefType containingType = GetContainingType(type, options);
+
                 if (containingType != null)
                     return AppendNameForNestedType(sb, type, containingType, options);
                 else
@@ -137,6 +160,11 @@ namespace Internal.TypeSystem
         protected abstract TState AppendNameForNestedType(StringBuilder sb, DefType nestedType, DefType containingType, TOptions options);
         protected abstract TState AppendNameForNamespaceType(StringBuilder sb, DefType type, TOptions options);
         protected abstract TState AppendNameForInstantiatedType(StringBuilder sb, DefType type, TOptions options);
+
+        protected virtual DefType GetContainingType(DefType possibleInnerType, TOptions options)
+        {
+            return possibleInnerType.ContainingType;
+        }
 
         public string FormatName(TypeDesc type, TOptions options)
         {

@@ -4,11 +4,14 @@
 
 namespace Internal.TypeSystem
 {
-    partial class TypeDesc
+    public sealed partial class InstantiatedMethod
     {
-        public override string ToString()
+        public override string DiagnosticName
         {
-            return DebugNameFormatter.Instance.FormatName(this, DebugNameFormatter.FormatOptions.Default | DebugNameFormatter.FormatOptions.UseDiagnosticName);
+            get
+            {
+                return _methodDef.DiagnosticName;
+            }
         }
     }
 }
