@@ -188,7 +188,7 @@ void Compiler::optEarlyProp()
         for (Statement* stmt = block->firstStmt(); stmt != nullptr;)
         {
             // Preserve the next link before the propagation and morph.
-            Statement* next = stmt->gtNextStmt;
+            Statement* next = stmt->GetNextStmt();
 
             compCurStmt = stmt;
 
