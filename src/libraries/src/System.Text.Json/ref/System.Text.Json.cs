@@ -7,7 +7,7 @@
 
 namespace System.Text.Json
 {
-    public enum DuplicatePropertyNameHandling
+    public enum DuplicatePropertyNameHandlingStrategy
     {
         Replace = 0,
         Ignore = 1,
@@ -257,10 +257,18 @@ namespace System.Text.Json
         public static implicit operator System.Text.Json.JsonNode (uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static implicit operator System.Text.Json.JsonNode (ulong value) { throw null; }
-        public static System.Text.Json.JsonNode Parse(string json, System.Text.Json.JsonDocumentOptions options = default(System.Text.Json.JsonDocumentOptions), System.Text.Json.DuplicatePropertyNameHandling duplicatePropertyNameHandling = System.Text.Json.DuplicatePropertyNameHandling.Replace) { throw null; }
+        public static System.Text.Json.JsonNode Parse(string json, System.Text.Json.JsonNodeOptions options = default(System.Text.Json.JsonNodeOptions)) { throw null; }
         public string ToJsonString() { throw null; }
         public static bool TryGetNode(System.Text.Json.JsonElement jsonElement, out System.Text.Json.JsonNode jsonNode) { throw null; }
         public void WriteTo(System.Text.Json.Utf8JsonWriter writer) { }
+    }
+    public partial struct JsonNodeOptions
+    {
+        private int _dummyPrimitive;
+        public bool AllowTrailingCommas { readonly get { throw null; } set { } }
+        public System.Text.Json.JsonCommentHandling CommentHandling { readonly get { throw null; } set { } }
+        public System.Text.Json.DuplicatePropertyNameHandlingStrategy DuplicatePropertyNameHandling { readonly get { throw null; } set { } }
+        public int MaxDepth { readonly get { throw null; } set { } }
     }
     public sealed partial class JsonNull : System.Text.Json.JsonNode, System.IEquatable<System.Text.Json.JsonNull>
     {

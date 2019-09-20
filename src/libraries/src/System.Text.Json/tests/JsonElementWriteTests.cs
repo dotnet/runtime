@@ -41,7 +41,12 @@ namespace System.Text.Json.Tests
     {
         protected override JsonDocument PrepareDocument(string jsonIn)
         {
-            JsonNode jsonNode = JsonNode.Parse(jsonIn, s_options);
+            JsonNode jsonNode = JsonNode.Parse(jsonIn, new JsonNodeOptions
+            {
+                AllowTrailingCommas = s_options.AllowTrailingCommas,
+                CommentHandling = s_options.CommentHandling,
+                MaxDepth = s_options.MaxDepth
+            });
 
             using (MemoryStream stream = new MemoryStream())
             {

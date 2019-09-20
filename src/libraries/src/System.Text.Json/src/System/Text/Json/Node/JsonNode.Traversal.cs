@@ -122,10 +122,9 @@ namespace System.Text.Json
         ///   Parses a string representing JSON document into <see cref="JsonNode"/>.
         /// </summary>
         /// <param name="json">JSON to parse.</param>
-        /// <param name="options">Options to control the reader behavior during parsing.</param>
-        /// <param name="duplicatePropertyNameHandling">Specifies the way of handling duplicate property names.</param>
+        /// <param name="options">Options to control the parsing behavior.</param>
         /// <returns><see cref="JsonNode"/> representation of <paramref name="json"/>.</returns>
-        public static JsonNode Parse(string json, JsonDocumentOptions options = default, DuplicatePropertyNameHandling duplicatePropertyNameHandling = DuplicatePropertyNameHandling.Replace)
+        public static JsonNode Parse(string json, JsonNodeOptions options = default)
         {
             Utf8JsonReader reader = new Utf8JsonReader(Encoding.UTF8.GetBytes(json), options.GetReaderOptions());
 
@@ -177,7 +176,7 @@ namespace System.Text.Json
                     }
                     else
                     {
-                        AddToParent(newProperty, ref currentNodes, ref toReturn, duplicatePropertyNameHandling);
+                        AddToParent(newProperty, ref currentNodes, ref toReturn, options.DuplicatePropertyNameHandling);
                     }
                 }
 
@@ -190,7 +189,7 @@ namespace System.Text.Json
                         Debug.Assert(currentPair.Value is JsonObject);
 
                         currentNodes.Pop();
-                        AddToParent(currentPair, ref currentNodes, ref toReturn, duplicatePropertyNameHandling);
+                        AddToParent(currentPair, ref currentNodes, ref toReturn, options.DuplicatePropertyNameHandling);
                         break;
                     case JsonTokenType.StartArray:
                         AddNewPair(new JsonArray(), true);
@@ -199,7 +198,7 @@ namespace System.Text.Json
                         Debug.Assert(currentPair.Value is JsonArray);
 
                         currentNodes.Pop();
-                        AddToParent(currentPair, ref currentNodes, ref toReturn, duplicatePropertyNameHandling);
+                        AddToParent(currentPair, ref currentNodes, ref toReturn, options.DuplicatePropertyNameHandling);
                         break;
                     case JsonTokenType.PropertyName:
                         currentNodes.Push(new KeyValuePair<string, JsonNode>(reader.GetString(), null));

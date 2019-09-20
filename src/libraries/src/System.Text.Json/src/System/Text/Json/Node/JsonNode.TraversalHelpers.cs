@@ -17,7 +17,7 @@ namespace System.Text.Json
             KeyValuePair<string, JsonNode> nodePair,
             ref Stack<KeyValuePair<string, JsonNode>> currentNodes,
             ref JsonNode toReturn,
-            DuplicatePropertyNameHandling duplicatePropertyNameHandling = DuplicatePropertyNameHandling.Replace)
+            DuplicatePropertyNameHandlingStrategy duplicatePropertyNameHandling = DuplicatePropertyNameHandlingStrategy.Replace)
         {
             if (currentNodes.Any())
             {
@@ -32,16 +32,16 @@ namespace System.Text.Json
 
                     // Handle duplicate properties accordingly to duplicatePropertyNameHandling:
 
-                    if (duplicatePropertyNameHandling == DuplicatePropertyNameHandling.Replace)
+                    if (duplicatePropertyNameHandling == DuplicatePropertyNameHandlingStrategy.Replace)
                     {
                         jsonObject[nodePair.Key] = nodePair.Value;
                     }
                     else if (jsonObject._dictionary.ContainsKey(nodePair.Key))
                     {
-                        if (duplicatePropertyNameHandling == DuplicatePropertyNameHandling.Error)
+                        if (duplicatePropertyNameHandling == DuplicatePropertyNameHandlingStrategy.Error)
                             throw new ArgumentException(SR.JsonObjectDuplicateKey);
 
-                        Debug.Assert(duplicatePropertyNameHandling == DuplicatePropertyNameHandling.Ignore);
+                        Debug.Assert(duplicatePropertyNameHandling == DuplicatePropertyNameHandlingStrategy.Ignore);
                     }
                     else
                     {
