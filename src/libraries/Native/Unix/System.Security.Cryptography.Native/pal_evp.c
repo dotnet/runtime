@@ -40,9 +40,9 @@ int32_t CryptoNative_EvpDigestReset(EVP_MD_CTX* ctx, const EVP_MD* type)
     return EVP_DigestInit_ex(ctx, type, NULL);
 }
 
-int32_t CryptoNative_EvpDigestUpdate(EVP_MD_CTX* ctx, const void* d, size_t cnt)
+int32_t CryptoNative_EvpDigestUpdate(EVP_MD_CTX* ctx, const void* d, int32_t cnt)
 {
-    return EVP_DigestUpdate(ctx, d, cnt);
+    return EVP_DigestUpdate(ctx, d, (size_t)cnt);
 }
 
 int32_t CryptoNative_EvpDigestFinalEx(EVP_MD_CTX* ctx, uint8_t* md, uint32_t* s)
