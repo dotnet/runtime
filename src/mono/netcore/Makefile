@@ -52,7 +52,7 @@ TEST_ASSETS_PATH := corefx-tests/$(NETCORETESTS_VERSION)/$(TESTS_PLATFORM)/netco
 
 # used to calculate exact version number for generating nupkg
 BLAME = $(shell git blame ../configure.ac | grep AC_INIT | cut -f1 -d' ')
-VERSTUB = .$(shell git rev-list --count $(BLAME)..HEAD)
+VERSTUB = .$(shell git rev-list --count $(BLAME)..HEAD)-preview
 
 all: bcl
 
