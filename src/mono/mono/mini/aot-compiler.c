@@ -11960,10 +11960,10 @@ compile_asm (MonoAotCompile *acfg)
 
 #if defined(sparc)
 #define LD_NAME "ld"
-#define LD_OPTIONS "-shared -G"
+#define LD_OPTIONS "-shared -G -Bsymbolic"
 #elif defined(__ppc__) && defined(TARGET_MACH)
 #define LD_NAME "gcc"
-#define LD_OPTIONS "-dynamiclib"
+#define LD_OPTIONS "-dynamiclib -Wl,-Bsymbolic"
 #elif defined(TARGET_AMD64) && defined(TARGET_MACH)
 #define LD_NAME "clang"
 #define LD_OPTIONS "--shared"
@@ -11973,21 +11973,21 @@ compile_asm (MonoAotCompile *acfg)
 #define LD_DEBUG_OPTIONS LD_OPTIONS " /DEBUG"
 #elif defined(TARGET_WIN32) && !defined(TARGET_ANDROID)
 #define LD_NAME "gcc"
-#define LD_OPTIONS "-shared"
+#define LD_OPTIONS "-shared -Wl,-Bsymbolic"
 #elif defined(TARGET_X86) && defined(TARGET_MACH)
 #define LD_NAME "clang"
 #define LD_OPTIONS "-m32 -dynamiclib"
 #elif defined(TARGET_X86) && !defined(TARGET_MACH)
-#define LD_OPTIONS "-m elf_i386"
+#define LD_OPTIONS "-m elf_i386 -Bsymbolic"
 #elif defined(TARGET_ARM) && !defined(TARGET_ANDROID)
 #define LD_NAME "gcc"
-#define LD_OPTIONS "--shared"
+#define LD_OPTIONS "--shared -Wl,-Bsymbolic"
 #elif defined(TARGET_POWERPC64)
-#define LD_OPTIONS "-m elf64ppc"
+#define LD_OPTIONS "-m elf64ppc -Bsymbolic"
 #endif
 
 #ifndef LD_OPTIONS
-#define LD_OPTIONS ""
+#define LD_OPTIONS "-Bsymbolic"
 #endif
 
 	if (acfg->aot_opts.asm_only) {
