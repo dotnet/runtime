@@ -45,9 +45,6 @@ namespace System.Xml.Xsl
 
     public sealed class XslCompiledTransform
     {
-        // Reader settings used when creating XmlReader from inputUri
-        private static readonly XmlReaderSettings s_readerSettings = new XmlReaderSettings();
-
 #if FEATURE_COMPILED_XSL
         // Version for GeneratedCodeAttribute
         private static readonly Version s_version = typeof(XslCompiledTransform).Assembly.GetName().Version;
@@ -362,7 +359,7 @@ namespace System.Xml.Xsl
         public void Transform(string inputUri, XmlWriter results)
         {
             CheckArguments(inputUri, results);
-            using (XmlReader reader = XmlReader.Create(inputUri, s_readerSettings))
+            using (XmlReader reader = XmlReader.Create(inputUri))
             {
                 Transform(reader, (XsltArgumentList)null, results, CreateDefaultResolver());
             }
@@ -372,7 +369,7 @@ namespace System.Xml.Xsl
         public void Transform(string inputUri, XsltArgumentList arguments, XmlWriter results)
         {
             CheckArguments(inputUri, results);
-            using (XmlReader reader = XmlReader.Create(inputUri, s_readerSettings))
+            using (XmlReader reader = XmlReader.Create(inputUri))
             {
                 Transform(reader, arguments, results, CreateDefaultResolver());
             }
@@ -382,7 +379,7 @@ namespace System.Xml.Xsl
         public void Transform(string inputUri, XsltArgumentList arguments, TextWriter results)
         {
             CheckArguments(inputUri, results);
-            using (XmlReader reader = XmlReader.Create(inputUri, s_readerSettings))
+            using (XmlReader reader = XmlReader.Create(inputUri))
             using (XmlWriter writer = XmlWriter.Create(results, OutputSettings))
             {
                 Transform(reader, arguments, writer, CreateDefaultResolver());
@@ -394,7 +391,7 @@ namespace System.Xml.Xsl
         public void Transform(string inputUri, XsltArgumentList arguments, Stream results)
         {
             CheckArguments(inputUri, results);
-            using (XmlReader reader = XmlReader.Create(inputUri, s_readerSettings))
+            using (XmlReader reader = XmlReader.Create(inputUri))
             using (XmlWriter writer = XmlWriter.Create(results, OutputSettings))
             {
                 Transform(reader, arguments, writer, CreateDefaultResolver());
@@ -412,7 +409,7 @@ namespace System.Xml.Xsl
                 throw new ArgumentNullException(nameof(resultsFile));
 
             // SQLBUDT 276415: Prevent wiping out the content of the input file if the output file is the same
-            using (XmlReader reader = XmlReader.Create(inputUri, s_readerSettings))
+            using (XmlReader reader = XmlReader.Create(inputUri))
             using (XmlWriter writer = XmlWriter.Create(resultsFile, OutputSettings))
             {
                 Transform(reader, (XsltArgumentList)null, writer, CreateDefaultResolver());

@@ -659,68 +659,100 @@ namespace System.Xml
         // Creates an XmlWriter for writing into the provided file.
         public static XmlWriter Create(string outputFileName)
         {
-            return Create(outputFileName, null);
+            if (outputFileName == null)
+            {
+                throw new ArgumentNullException(nameof(outputFileName));
+            }
+
+            // Avoid using XmlWriter.Create(string, XmlReaderSettings), as it references a lot of types
+            // that then can't be trimmed away.
+            var fs = new FileStream(outputFileName, FileMode.Create, FileAccess.Write, FileShare.Read);
+            try
+            {
+                var settings = new XmlWriterSettings() { CloseOutput = true };
+                XmlWriter writer = new XmlEncodedRawTextWriter(fs, settings);
+                return new XmlWellFormedWriter(writer, settings);
+            }
+            catch
+            {
+                fs.Dispose();
+                throw;
+            }
         }
 
         // Creates an XmlWriter for writing into the provided file with the specified settings.
         public static XmlWriter Create(string outputFileName, XmlWriterSettings settings)
         {
-            if (settings == null)
-            {
-                settings = new XmlWriterSettings();
-            }
+            settings ??= XmlWriterSettings.s_defaultWriterSettings;
             return settings.CreateWriter(outputFileName);
         }
 
         // Creates an XmlWriter for writing into the provided stream.
         public static XmlWriter Create(Stream output)
         {
-            return Create(output, null);
+            if (output == null)
+            {
+                throw new ArgumentNullException(nameof(output));
+            }
+
+            // Avoid using XmlWriter.Create(Stream, XmlReaderSettings), as it references a lot of types
+            // that then can't be trimmed away.
+            XmlWriterSettings settings = XmlWriterSettings.s_defaultWriterSettings;
+            XmlWriter writer = new XmlUtf8RawTextWriter(output, settings);
+            return new XmlWellFormedWriter(writer, settings);
         }
 
         // Creates an XmlWriter for writing into the provided stream with the specified settings.
         public static XmlWriter Create(Stream output, XmlWriterSettings settings)
         {
-            if (settings == null)
-            {
-                settings = new XmlWriterSettings();
-            }
+            settings ??= XmlWriterSettings.s_defaultWriterSettings;
             return settings.CreateWriter(output);
         }
 
         // Creates an XmlWriter for writing into the provided TextWriter.
         public static XmlWriter Create(TextWriter output)
         {
-            return Create(output, null);
+            if (output == null)
+            {
+                throw new ArgumentNullException(nameof(output));
+            }
+
+            // Avoid using XmlWriter.Create(TextWriter, XmlReaderSettings), as it references a lot of types
+            // that then can't be trimmed away.
+            XmlWriterSettings settings = XmlWriterSettings.s_defaultWriterSettings;
+            XmlWriter writer = new XmlEncodedRawTextWriter(output, settings);
+            return new XmlWellFormedWriter(writer, settings);
         }
 
         // Creates an XmlWriter for writing into the provided TextWriter with the specified settings.
         public static XmlWriter Create(TextWriter output, XmlWriterSettings settings)
         {
-            if (settings == null)
-            {
-                settings = new XmlWriterSettings();
-            }
+            settings ??= XmlWriterSettings.s_defaultWriterSettings;
             return settings.CreateWriter(output);
         }
 
         // Creates an XmlWriter for writing into the provided StringBuilder.
         public static XmlWriter Create(StringBuilder output)
         {
-            return Create(output, null);
+            if (output == null)
+            {
+                throw new ArgumentNullException(nameof(output));
+            }
+
+            // Avoid using XmlWriter.Create(StringBuilder, XmlReaderSettings), as it references a lot of types
+            // that then can't be trimmed away.
+            return Create(new StringWriter(output, CultureInfo.InvariantCulture));
         }
 
         // Creates an XmlWriter for writing into the provided StringBuilder with the specified settings.
         public static XmlWriter Create(StringBuilder output, XmlWriterSettings settings)
         {
-            if (settings == null)
-            {
-                settings = new XmlWriterSettings();
-            }
             if (output == null)
             {
                 throw new ArgumentNullException(nameof(output));
             }
+
+            settings ??= XmlWriterSettings.s_defaultWriterSettings;
             return settings.CreateWriter(new StringWriter(output, CultureInfo.InvariantCulture));
         }
 
@@ -733,10 +765,7 @@ namespace System.Xml
         // Creates an XmlWriter wrapped around the provided XmlWriter with the specified settings.
         public static XmlWriter Create(XmlWriter output, XmlWriterSettings settings)
         {
-            if (settings == null)
-            {
-                settings = new XmlWriterSettings();
-            }
+            settings ??= XmlWriterSettings.s_defaultWriterSettings;
             return settings.CreateWriter(output);
         }
     }
