@@ -12,6 +12,7 @@ steps:
       set -x
       df -h
       $(DockerRunMSBuild) ${{ parameters.image }} $(MSBuildScript) \
+        --ci \
         /root/coresetup/tools-local/tasks/core-setup.tasks.csproj \
         /t:Restore /t:Build /t:CreateHostMachineInfoFile \
         $(CommonMSBuildArgs) \
