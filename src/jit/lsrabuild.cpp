@@ -1717,7 +1717,7 @@ void LinearScan::buildPhysRegRecords()
 //
 BasicBlock* getNonEmptyBlock(BasicBlock* block)
 {
-    while (block != nullptr && block->bbTreeList == nullptr)
+    while (block != nullptr && block->GetFirstLIRNode() == nullptr)
     {
         BasicBlock* nextBlock = block->bbNext;
         // Note that here we use the version of NumSucc that does not take a compiler.
@@ -1729,7 +1729,7 @@ BasicBlock* getNonEmptyBlock(BasicBlock* block)
         // assert( block->GetSucc(0) == nextBlock);
         block = nextBlock;
     }
-    assert(block != nullptr && block->bbTreeList != nullptr);
+    assert(block != nullptr && block->GetFirstLIRNode() != nullptr);
     return block;
 }
 
