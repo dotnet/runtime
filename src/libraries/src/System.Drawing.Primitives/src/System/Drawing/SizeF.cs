@@ -137,7 +137,7 @@ namespace System.Drawing
         /// Tests to see whether the specified object is a <see cref='System.Drawing.SizeF'/>  with the same dimensions
         /// as this <see cref='System.Drawing.SizeF'/>.
         /// </summary>
-        public override bool Equals(object obj) => obj is SizeF && Equals((SizeF)obj);
+        public override bool Equals(object? obj) => obj is SizeF && Equals((SizeF)obj);
 
         public bool Equals(SizeF other) => this == other;
 
