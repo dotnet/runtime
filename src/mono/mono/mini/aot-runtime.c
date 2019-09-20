@@ -4774,7 +4774,6 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method, MonoError *error)
 		if (method_index == 0xffffff && method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE && method->klass == mono_defaults.array_class && !strcmp (method->name, "GetGenericValueImpl")) {
 			MonoMethod *m;
 			MonoGenericContext ctx;
-			MonoType *args [16];
 
 			if (mono_method_signature_internal (method)->params [1]->type == MONO_TYPE_OBJECT)
 				/* Avoid recursion */
@@ -4785,7 +4784,7 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method, MonoError *error)
 			g_assert (m);
 
 			memset (&ctx, 0, sizeof (ctx));
-			args [0] = m_class_get_byval_arg (mono_defaults.object_class);
+			MonoType *args [ ] = { m_class_get_byval_arg (mono_defaults.object_class) };
 			ctx.method_inst = mono_metadata_get_generic_inst (1, args);
 
 			m = mono_marshal_get_native_wrapper (mono_class_inflate_generic_method_checked (m, &ctx, error), TRUE, TRUE);
@@ -4804,15 +4803,51 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method, MonoError *error)
 
 		const char *klass_name_space = m_class_get_name_space (method->klass);
 		const char *klass_name = m_class_get_name (method->klass);
+
+		gboolean interlocked = FALSE;
+		gboolean volatil = FALSE;
+		MonoMethodSignature *sig;
+
 		/* Same for CompareExchange<T> and Exchange<T> */
 		/* Same for Volatile.Read<T>/Write<T> */
-		if (method_index == 0xffffff && method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE && m_class_get_image (method->klass) == mono_defaults.corlib && 
-			((!strcmp (klass_name_space, "System.Threading") && !strcmp (klass_name, "Interlocked") && (!strcmp (method->name, "CompareExchange") || !strcmp (method->name, "Exchange")) && MONO_TYPE_IS_REFERENCE (mini_type_get_underlying_type (mono_method_signature_internal (method)->params [1]))) ||
-			 (!strcmp (klass_name_space, "System.Threading") && !strcmp (klass_name, "Volatile") && (!strcmp (method->name, "Read") && MONO_TYPE_IS_REFERENCE (mini_type_get_underlying_type (mono_method_signature_internal (method)->ret)))) ||
-			 (!strcmp (klass_name_space, "System.Threading") && !strcmp (klass_name, "Volatile") && (!strcmp (method->name, "Write") && MONO_TYPE_IS_REFERENCE (mini_type_get_underlying_type (mono_method_signature_internal (method)->params [1])))))) {
+
+		if (method_index == 0xffffff
+			&& method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE
+			&& m_class_get_image (method->klass) == mono_defaults.corlib
+			&& !strcmp (klass_name_space, "System.Threading") &&
+
+			(((interlocked = !strcmp (klass_name, "Interlocked"))
+				&& !strcmp (method->name, "CompareExchange_T")
+				&& (sig = mono_method_signature_internal (method))
+				&& sig->param_count
+				//FIXME && sig->param_count == 4
+				//FIXME && MONO_TYPE_IS_REFERENCE (sig->params [0])
+				//FIXME && MONO_TYPE_IS_REFERENCE (sig->params [1])
+				//FIXME && MONO_TYPE_IS_REFERENCE (sig->params [2])
+				//FIXME && MONO_TYPE_IS_REFERENCE (sig->params [3])
+				) ||
+			 (interlocked
+				&& !strcmp (method->name, "Exchange_T")
+				&& (sig = mono_method_signature_internal (method))
+				&& sig->param_count
+				//FIXME && sig->param_count == 3
+				//FIXME && MONO_TYPE_IS_REFERENCE (sig->params [0])
+				//FIXME && MONO_TYPE_IS_REFERENCE (sig->params [1])
+				//FIXME && MONO_TYPE_IS_REFERENCE (sig->params [2])
+				) ||
+			 (!interlocked
+				&& (volatil = !strcmp (klass_name, "Volatile"))
+				&& !strcmp (method->name, "Read")
+				&& (sig = mono_method_signature_internal (method))
+				&& MONO_TYPE_IS_REFERENCE (mini_type_get_underlying_type (sig->ret))
+				) ||
+			 (volatil
+				&& !strcmp (method->name, "Write")
+				&& (sig = mono_method_signature_internal (method))
+				&& MONO_TYPE_IS_REFERENCE (mini_type_get_underlying_type (sig->params [1]))))
+				) {
 			MonoMethod *m;
 			MonoGenericContext ctx;
-			MonoType *args [16];
 			gpointer iter = NULL;
 
 			while ((m = mono_class_get_methods (method->klass, &iter))) {
@@ -4822,7 +4857,7 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method, MonoError *error)
 			g_assert (m);
 
 			memset (&ctx, 0, sizeof (ctx));
-			args [0] = mono_get_object_type ();
+			MonoType *args [ ] = { mono_get_object_type () };
 			ctx.method_inst = mono_metadata_get_generic_inst (1, args);
 
 			m = mono_marshal_get_native_wrapper (mono_class_inflate_generic_method_checked (m, &ctx, error), TRUE, TRUE);
