@@ -937,6 +937,12 @@ PROFILE_ENTER           equ 1
 PROFILE_LEAVE           equ 2
 PROFILE_TAILCALL        equ 4
 
+        ; ------------------------------------------------------------------
+        ; void JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle)
+        LEAF_ENTRY  JIT_ProfilerEnterLeaveTailcallStub
+        bx lr
+        LEAF_END
+
         ; Define the layout of the PROFILE_PLATFORM_SPECIFIC_DATA we push on the stack for all profiler
         ; helpers.
         map 0

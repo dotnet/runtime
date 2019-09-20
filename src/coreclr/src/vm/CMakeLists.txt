@@ -847,6 +847,10 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
         exceptionhandling.h
     )
 
+    set(VM_SOURCES_WKS_ARCH
+        ${ARCH_SOURCES_DIR}/profiler.cpp
+    )
+
     if(CLR_CMAKE_PLATFORM_UNIX)
         list(APPEND VM_SOURCES_DAC_AND_WKS_ARCH
             ${ARCH_SOURCES_DIR}/arm64singlestepper.cpp

@@ -561,6 +561,15 @@ ThePreStubPatchLabel:
 
         .endm
 
+#ifdef PROFILING_SUPPORTED
+
+//
+// EXTERN_C void JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle)
+//
+LEAF_ENTRY JIT_ProfilerEnterLeaveTailcallStub, _TEXT
+    bx lr
+LEAF_END JIT_ProfilerEnterLeaveTailcallStub, _TEXT
+
 //
 // EXTERN_C void ProfileEnterNaked(FunctionIDOrClientID functionIDOrClientID);
 //
@@ -689,6 +698,8 @@ NESTED_ENTRY ProfileTailcallNaked, _TEXT, NoHandler
     EPILOG_STACK_RESTORE_OFFSET r7, #16
     EPILOG_POP "{r1, r2, r4, r5, r7, r11, pc}"
 NESTED_END ProfileTailcallNaked, _TEXT
+
+#endif
 
 // EXTERN_C int __fastcall HelperMethodFrameRestoreState(
 //         INDEBUG_COMMA(HelperMethodFrame *pFrame)
