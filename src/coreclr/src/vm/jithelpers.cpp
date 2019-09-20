@@ -5279,13 +5279,6 @@ HCIMPL0(void, JIT_DbgIsJustMyCode)
 }
 HCIMPLEND
 
-#if !(defined(_TARGET_X86_) || defined(BIT64))
-void JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle)
-{
-    return;
-}
-#endif // !(_TARGET_X86_ || BIT64)
-
 #ifdef PROFILING_SUPPORTED
 
 //---------------------------------------------------------------------------------------
