@@ -35,6 +35,7 @@
       COMPlus_GCStress;
       COMPlus_HeapVerify;
       COMPlus_JITMinOpts;
+      COMPlus_JitELTHookEnabled;
       COMPlus_JitStress;
       COMPlus_JitStressRegs;
       COMPlus_TailcallStress;
@@ -112,6 +113,8 @@
     <TestEnvironment Include="jitstress2_jitstressregs0x10" JitStress="2" JitStressRegs="0x10" />
     <TestEnvironment Include="jitstress2_jitstressregs0x80" JitStress="2" JitStressRegs="0x80" />
     <TestEnvironment Include="jitstress2_jitstressregs0x1000" JitStress="2" JitStressRegs="0x1000" />
+    <TestEnvironment Include="jitelthookenabled" JitELTHookEnabled="1" />
+    <TestEnvironment Include="jitelthookenabled_tiered" JitELTHookEnabled="1" TieredCompilation="1" />
     <TestEnvironment Include="tailcallstress" TailcallStress="1" />
     <TestEnvironment Include="gcstress0x3" GCStress="0x3" />
     <TestEnvironment Include="gcstress0xc" GCStress="0xC" />
