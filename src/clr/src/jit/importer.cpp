@@ -1505,7 +1505,7 @@ GenTree* Compiler::impGetStructAddr(GenTree*             structVal,
             else
             {
                 // Insert after the oldLastStmt before the first inserted for op2.
-                beforeStmt = oldLastStmt->getNextStmt();
+                beforeStmt = oldLastStmt->GetNextStmt();
             }
 
             impInsertTreeBefore(structVal->gtOp.gtOp1, impCurStmtOffs, beforeStmt);

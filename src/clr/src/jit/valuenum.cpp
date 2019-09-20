@@ -5820,7 +5820,7 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
 
     // First: visit phi's.  If "newVNForPhis", give them new VN's.  If not,
     // first check to see if all phi args have the same value.
-    for (; (stmt != nullptr) && stmt->IsPhiDefnStmt(); stmt = stmt->getNextStmt())
+    for (; (stmt != nullptr) && stmt->IsPhiDefnStmt(); stmt = stmt->GetNextStmt())
     {
         GenTree* asg = stmt->gtStmtExpr;
         assert(asg->OperIs(GT_ASG));
@@ -5985,7 +5985,7 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
     }
 
     // Now iterate over the remaining statements, and their trees.
-    for (; stmt != nullptr; stmt = stmt->getNextStmt())
+    for (; stmt != nullptr; stmt = stmt->GetNextStmt())
     {
 #ifdef DEBUG
         if (verbose)

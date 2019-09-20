@@ -625,7 +625,7 @@ void Compiler::fgInsertStmtAtEnd(BasicBlock* block, Statement* stmt)
     {
         // There is at least one statement already.
         Statement* lastStmt = firstStmt->getPrevStmt();
-        noway_assert(lastStmt != nullptr && lastStmt->getNextStmt() == nullptr);
+        noway_assert(lastStmt != nullptr && lastStmt->GetNextStmt() == nullptr);
 
         // Append the statement after the last one.
         lastStmt->gtNext  = stmt;
@@ -845,7 +845,7 @@ Statement* Compiler::fgInsertStmtListAfter(BasicBlock* block, Statement* stmtAft
     noway_assert(stmtLast);
     noway_assert(stmtLast->gtNext == nullptr);
 
-    Statement* stmtNext = stmtAfter->getNextStmt();
+    Statement* stmtNext = stmtAfter->GetNextStmt();
 
     if (stmtNext == nullptr)
     {
@@ -3909,7 +3909,7 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
             //
             //  More formally, if control flow targets an instruction, that instruction must be the
             //  start of a new sequence point.
-            Statement* nextStmt = newStmt->getNextStmt();
+            Statement* nextStmt = newStmt->GetNextStmt();
             if (nextStmt != nullptr)
             {
                 // Is it possible for gtNext to be NULL?
@@ -3968,7 +3968,7 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
             Statement* stmt = top->firstStmt();
             while (stmt->gtNext)
             {
-                stmt = stmt->gtNextStmt;
+                stmt = stmt->GetNextStmt();
             }
             fgRemoveStmt(top, stmt);
             fgInsertStmtAtEnd(bottom, stmt);
@@ -9438,7 +9438,7 @@ BasicBlock* Compiler::fgSplitBlockAfterStatement(BasicBlock* curr, Statement* st
 
     if (stmt != nullptr)
     {
-        newBlock->bbStmtList = stmt->gtNextStmt;
+        newBlock->bbStmtList = stmt->GetNextStmt();
         if (newBlock->bbStmtList != nullptr)
         {
             newBlock->bbStmtList->gtPrev = curr->bbStmtList->gtPrev;
@@ -10044,7 +10044,7 @@ void Compiler::fgRemoveStmt(BasicBlock* block, Statement* stmt)
         }
         else
         {
-            block->bbStmtList         = firstStmt->gtNextStmt;
+            block->bbStmtList         = firstStmt->GetNextStmt();
             block->bbStmtList->gtPrev = firstStmt->gtPrev;
         }
     }
@@ -22971,7 +22971,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
                 {
                     do
                     {
-                        currentDumpStmt = currentDumpStmt->getNextStmt();
+                        currentDumpStmt = currentDumpStmt->GetNextStmt();
 
                         printf("\n");
 
@@ -23012,7 +23012,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     // Split statements between topBlock and bottomBlock.
     // First figure out bottomBlock_Begin
     Statement* bottomBlock_Begin;
-    bottomBlock_Begin = stmtAfter->gtNextStmt;
+    bottomBlock_Begin = stmtAfter->GetNextStmt();
 
     if (topBlock->bbStmtList == nullptr)
     {
@@ -23245,7 +23245,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
     BasicBlock*  block        = inlineInfo->iciBlock;
     Statement*   callStmt     = inlineInfo->iciStmt;
     IL_OFFSETX   callILOffset = callStmt->gtStmtILoffsx;
-    Statement*   postStmt     = callStmt->gtNextStmt;
+    Statement*   postStmt     = callStmt->GetNextStmt();
     Statement*   afterStmt    = callStmt; // afterStmt is the place where the new statements should be inserted after.
     Statement*   newStmt      = nullptr;
     GenTreeCall* call         = inlineInfo->iciCall->AsCall();
@@ -23601,7 +23601,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
     // Update any newly added statements with the appropriate context.
     InlineContext* context = callStmt->gtInlineContext;
     assert(context != nullptr);
-    for (Statement* addedStmt = callStmt->gtNextStmt; addedStmt != postStmt; addedStmt = addedStmt->gtNextStmt)
+    for (Statement* addedStmt = callStmt->GetNextStmt(); addedStmt != postStmt; addedStmt = addedStmt->GetNextStmt())
     {
         assert(addedStmt->gtInlineContext == nullptr);
         addedStmt->gtInlineContext = context;

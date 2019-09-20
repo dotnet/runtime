@@ -6860,7 +6860,7 @@ Compiler::NodeToIntMap* Compiler::FindReachableNodesInNodeTestData()
 
     for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
-        for (Statement* stmt = block->FirstNonPhiDef(); stmt != nullptr; stmt = stmt->getNextStmt())
+        for (Statement* stmt = block->FirstNonPhiDef(); stmt != nullptr; stmt = stmt->GetNextStmt())
         {
             for (GenTree* tree = stmt->gtStmtList; tree != nullptr; tree = tree->gtNext)
             {
