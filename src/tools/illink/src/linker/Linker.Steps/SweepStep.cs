@@ -117,6 +117,7 @@ namespace Mono.Linker.Steps {
 				// reference. We do any additional removed assembly reference clean up here
 				//
 				UpdateForwardedTypesScope (assembly);
+				UpdateCustomAttributesTypesScopes (assembly);
 				SweepTypeForwarders (assembly);
 				break;
 			}
@@ -311,58 +312,126 @@ namespace Mono.Linker.Steps {
 			}
 		}
 
+		static void UpdateCustomAttributesTypesScopes (AssemblyDefinition assembly)
+		{
+			UpdateCustomAttributesTypesScopes ((ICustomAttributeProvider) assembly);
+
+			foreach (var module in assembly.Modules)
+				UpdateCustomAttributesTypesScopes (module);
+
+			foreach (var type in assembly.MainModule.Types)
+				UpdateCustomAttributesTypesScopes (type);
+		}
+
+		static void UpdateCustomAttributesTypesScopes (TypeDefinition typeDefinition)
+		{
+			UpdateCustomAttributesTypesScopes ((ICustomAttributeProvider)typeDefinition);
+
+			if (typeDefinition.HasEvents)
+				UpdateCustomAttributesTypesScopes (typeDefinition.Events);
+
+			if (typeDefinition.HasFields)
+				UpdateCustomAttributesTypesScopes (typeDefinition.Fields);
+
+			if (typeDefinition.HasMethods)
+				UpdateCustomAttributesTypesScopes (typeDefinition.Methods);
+
+			if (typeDefinition.HasProperties)
+				UpdateCustomAttributesTypesScopes (typeDefinition.Properties);
+
+			if (typeDefinition.HasGenericParameters)
+				UpdateCustomAttributesTypesScopes (typeDefinition.GenericParameters);
+
+			if (typeDefinition.HasNestedTypes) {
+				foreach (var nestedType in typeDefinition.NestedTypes) {
+					UpdateCustomAttributesTypesScopes (nestedType);
+				}
+			}
+		}
+
+		static void UpdateCustomAttributesTypesScopes<T> (Collection<T> providers) where T : ICustomAttributeProvider
+		{
+			foreach (var provider in providers)
+				UpdateCustomAttributesTypesScopes (provider);
+		}
+
+		static void UpdateCustomAttributesTypesScopes (Collection<GenericParameter> genericParameters)
+		{
+			foreach (var gp in genericParameters) {
+				UpdateCustomAttributesTypesScopes (gp);
+
+				if (gp.HasConstraints)
+					UpdateCustomAttributesTypesScopes (gp.Constraints);
+			}
+		}
+
+		static void UpdateCustomAttributesTypesScopes (ICustomAttributeProvider customAttributeProvider)
+		{
+			if (!customAttributeProvider.HasCustomAttributes)
+				return;
+
+			foreach (var ca in customAttributeProvider.CustomAttributes)
+				UpdateForwardedTypesScope (ca);
+		}
+
 		static void UpdateForwardedTypesScope (CustomAttribute attribute)
 		{
+			AssemblyDefinition assembly = attribute.Constructor.Module.Assembly;
+
 			if (attribute.HasConstructorArguments) {
 				foreach (var ca in attribute.ConstructorArguments)
-					UpdateForwardedTypesScope (ca);
+					UpdateForwardedTypesScope (ca, assembly);
 			}
 
 			if (attribute.HasFields) {
 				foreach (var field in attribute.Fields)
-					UpdateForwardedTypesScope (field.Argument);
+					UpdateForwardedTypesScope (field.Argument, assembly);
 			}
 
 			if (attribute.HasProperties) {
 				foreach (var property in attribute.Properties)
-					UpdateForwardedTypesScope (property.Argument);
+					UpdateForwardedTypesScope (property.Argument, assembly);
 			}
 		}
 
-		static void UpdateForwardedTypesScope (CustomAttributeArgument attributeArgument)
+		static void UpdateForwardedTypesScope (CustomAttributeArgument attributeArgument, AssemblyDefinition assembly)
 		{
-			UpdateTypeScope (attributeArgument.Type);
+			UpdateTypeScope (attributeArgument.Type, assembly);
 
 			switch (attributeArgument.Value) {
 			case TypeReference tr:
-				UpdateTypeScope (tr);
+				UpdateTypeScope (tr, assembly);
 				break;
 			case CustomAttributeArgument caa:
-				UpdateForwardedTypesScope (caa);
+				UpdateForwardedTypesScope (caa, assembly);
 				break;
 			case CustomAttributeArgument[] array:
 				foreach (var item in array)
-					UpdateForwardedTypesScope (item);
+					UpdateForwardedTypesScope (item, assembly);
 				break;
 			}
 		}
 
-		static void UpdateTypeScope (TypeReference type)
+		static void UpdateTypeScope (TypeReference type, AssemblyDefinition assembly)
 		{
 			if (type is GenericInstanceType git && git.HasGenericArguments) {
-				UpdateTypeScope (git.ElementType);
+				UpdateTypeScope (git.ElementType, assembly);
 				foreach (var ga in git.GenericArguments)
-					UpdateTypeScope (ga);
+					UpdateTypeScope (ga, assembly);
 				return;
 			}
 
 			if (type is ArrayType at) {
-				UpdateTypeScope (at.ElementType);
+				UpdateTypeScope (at.ElementType, assembly);
 				return;
 			}
 
 			TypeDefinition td = type.Resolve ();
-			if (td != null)
+			if (td == null)
+				return;
+
+			IMetadataScope scope = assembly.MainModule.ImportReference (td).Scope;
+			if (type.Scope != scope)
 				type.Scope = td.Scope;
 		}
 
