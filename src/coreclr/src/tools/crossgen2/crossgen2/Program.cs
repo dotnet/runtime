@@ -39,7 +39,7 @@ namespace ILCompiler
         private string _systemModuleName = DefaultSystemModule;
         private bool _tuning;
         private bool _partial;
-        private bool _doNotFailOnCodegenCompilationExceptions;
+        private bool _resilient;
 
         private string _singleMethodTypeName;
         private string _singleMethodName;
@@ -136,7 +136,7 @@ namespace ILCompiler
                 syntax.DefineOption("systemmodule", ref _systemModuleName, "System module name (default: System.Private.CoreLib)");
                 syntax.DefineOption("waitfordebugger", ref waitForDebugger, "Pause to give opportunity to attach debugger");
                 syntax.DefineOptionList("codegenopt", ref _codegenOptions, "Define a codegen option");
-                syntax.DefineOption("doNotFailOnCodegenCompilationExceptions", ref _doNotFailOnCodegenCompilationExceptions, "Disable behavior where unexpected compilation failures cause overall compilation failure");
+                syntax.DefineOption("resilient", ref _resilient, "Disable behavior where unexpected compilation failures cause overall compilation failure");
 
                 syntax.DefineOption("targetarch", ref _targetArchitectureStr, "Target architecture for cross compilation");
                 syntax.DefineOption("targetos", ref _targetOSStr, "Target OS for cross compilation");
@@ -375,7 +375,7 @@ namespace ILCompiler
             }
             CompilationBuilder builder = new ReadyToRunCodegenCompilationBuilder(typeSystemContext, compilationGroup, inputFilePath,
                 ibcTuning: _tuning,
-                doNotFailOnCodegenCompilationExceptions: _doNotFailOnCodegenCompilationExceptions);
+                resilient: _resilient);
 
             string compilationUnitPrefix = "";
             builder.UseCompilationUnitPrefix(compilationUnitPrefix);
