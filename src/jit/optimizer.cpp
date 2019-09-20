@@ -4016,7 +4016,7 @@ static Statement* optFindLoopTermTest(BasicBlock* bottom)
 #ifdef DEBUG
     while (testStmt->gtNext != nullptr)
     {
-        testStmt = testStmt->getNextStmt();
+        testStmt = testStmt->GetNextStmt();
     }
 
     assert(testStmt == result);
