@@ -53,6 +53,17 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "FooBar", "Foo\u0400Bar", CompareOptions.Ordinal, false };
             yield return new object[] { s_invariantCompare, "FooBA\u0300R", "FooB\u00C0R", CompareOptions.IgnoreNonSpace, true };
             yield return new object[] { s_invariantCompare, "o\u0308", "o", CompareOptions.None, false };
+            yield return new object[] { s_invariantCompare, "o\u0308", "o", CompareOptions.Ordinal, true };
+
+            // Surrogates
+            yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uD800\uDC00", CompareOptions.None, true };
+            yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uD800\uDC00", CompareOptions.IgnoreCase, true };
+            yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uD800", CompareOptions.Ordinal, true };
+            yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uD800", CompareOptions.OrdinalIgnoreCase, true };
+
+            // Malformed Unicode - Invalid Surrogates (there is nothing special about them, they don't have a special treatment)
+            yield return new object[] { s_invariantCompare, "\uD800\uD800", "\uD800", CompareOptions.None, true };
+            yield return new object[] { s_invariantCompare, "\uD800\uD800", "\uD800\uD800", CompareOptions.None, true };
 
             // Ignore symbols
             yield return new object[] { s_invariantCompare, "Test's can be interesting", "Tests", CompareOptions.IgnoreSymbols, true };
@@ -62,6 +73,8 @@ namespace System.Globalization.Tests
             yield return new object[] { s_hungarianCompare, "dzsdzsfoobar", "ddzsf", CompareOptions.None, PlatformDetection.IsWindows ? true : false };
             yield return new object[] { s_invariantCompare, "''Tests", "Tests", CompareOptions.IgnoreSymbols, PlatformDetection.IsWindows ? true : false };
             yield return new object[] { s_frenchCompare, "\u0153", "oe", CompareOptions.None, PlatformDetection.IsWindows ? true : false };
+            yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uD800", CompareOptions.None, PlatformDetection.IsWindows ? true : false };
+            yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uD800", CompareOptions.IgnoreCase, PlatformDetection.IsWindows ? true : false };
         }
 
         [Theory]
