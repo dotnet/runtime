@@ -4,11 +4,15 @@
 
 namespace Internal.TypeSystem
 {
-    partial class TypeDesc
+    public partial class ArrayMethod
     {
-        public override string ToString()
+        public override string DiagnosticName
         {
-            return DebugNameFormatter.Instance.FormatName(this, DebugNameFormatter.FormatOptions.Default | DebugNameFormatter.FormatOptions.UseDiagnosticName);
+            get
+            {
+                // The ArrayMethod.Name property is gauranteed to not throw
+                return Name;
+            }
         }
     }
 }
