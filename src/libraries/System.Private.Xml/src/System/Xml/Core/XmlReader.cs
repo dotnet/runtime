@@ -2,14 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.IO;
-using System.Text;
-using System.Security;
-using System.Diagnostics;
 using System.Collections;
+using System.Diagnostics;
 using System.Globalization;
-using System.Xml.Schema;
+using System.IO;
 using System.Runtime.Versioning;
+using System.Security;
+using System.Text;
+using System.Threading;
+using System.Xml.Schema;
 
 namespace System.Xml
 {
@@ -1752,7 +1753,18 @@ namespace System.Xml
         // Creates an XmlReader for parsing XML from the given Uri.
         public static XmlReader Create(string inputUri)
         {
-            return XmlReader.Create(inputUri, (XmlReaderSettings)null, (XmlParserContext)null);
+            if (inputUri == null)
+            {
+                throw new ArgumentNullException(nameof(inputUri));
+            }
+            if (inputUri.Length == 0)
+            {
+                throw new ArgumentException(SR.XmlConvert_BadUri, nameof(inputUri));
+            }
+
+            // Avoid using XmlReader.Create(string, XmlReaderSettings), as it references a lot of types
+            // that then can't be trimmed away.
+            return new XmlTextReaderImpl(inputUri, XmlReaderSettings.s_defaultReaderSettings, null, new XmlUrlResolver());
         }
 
         // Creates an XmlReader according to the settings for parsing XML from the given Uri.
@@ -1764,17 +1776,21 @@ namespace System.Xml
         // Creates an XmlReader according to the settings and parser context for parsing XML from the given Uri.
         public static XmlReader Create(string inputUri, XmlReaderSettings settings, XmlParserContext inputContext)
         {
-            if (settings == null)
-            {
-                settings = new XmlReaderSettings();
-            }
+            settings ??= XmlReaderSettings.s_defaultReaderSettings;
             return settings.CreateReader(inputUri, inputContext);
         }
 
         // Creates an XmlReader according for parsing XML from the given stream.
         public static XmlReader Create(Stream input)
         {
-            return Create(input, (XmlReaderSettings)null, (string)string.Empty);
+            if (input == null)
+            {
+                throw new ArgumentNullException(nameof(input));
+            }
+
+            // Avoid using XmlReader.Create(Stream, XmlReaderSettings), as it references a lot of types
+            // that then can't be trimmed away.
+            return new XmlTextReaderImpl(input, null, 0, XmlReaderSettings.s_defaultReaderSettings, null, string.Empty, null, false);
         }
 
         // Creates an XmlReader according to the settings for parsing XML from the given stream.
@@ -1786,27 +1802,28 @@ namespace System.Xml
         // Creates an XmlReader according to the settings and base Uri for parsing XML from the given stream.
         public static XmlReader Create(Stream input, XmlReaderSettings settings, string baseUri)
         {
-            if (settings == null)
-            {
-                settings = new XmlReaderSettings();
-            }
+            settings ??= XmlReaderSettings.s_defaultReaderSettings;
             return settings.CreateReader(input, null, (string)baseUri, null);
         }
 
         // Creates an XmlReader according to the settings and parser context for parsing XML from the given stream.
         public static XmlReader Create(Stream input, XmlReaderSettings settings, XmlParserContext inputContext)
         {
-            if (settings == null)
-            {
-                settings = new XmlReaderSettings();
-            }
+            settings ??= XmlReaderSettings.s_defaultReaderSettings;
             return settings.CreateReader(input, null, (string)string.Empty, inputContext);
         }
 
         // Creates an XmlReader according for parsing XML from the given TextReader.
         public static XmlReader Create(TextReader input)
         {
-            return Create(input, (XmlReaderSettings)null, (string)string.Empty);
+            if (input == null)
+            {
+                throw new ArgumentNullException(nameof(input));
+            }
+
+            // Avoid using XmlReader.Create(TextReader, XmlReaderSettings), as it references a lot of types
+            // that then can't be trimmed away.
+            return new XmlTextReaderImpl(input, XmlReaderSettings.s_defaultReaderSettings, string.Empty, null);
         }
 
         // Creates an XmlReader according to the settings for parsing XML from the given TextReader.
@@ -1818,30 +1835,21 @@ namespace System.Xml
         // Creates an XmlReader according to the settings and baseUri for parsing XML from the given TextReader.
         public static XmlReader Create(TextReader input, XmlReaderSettings settings, string baseUri)
         {
-            if (settings == null)
-            {
-                settings = new XmlReaderSettings();
-            }
+            settings ??= XmlReaderSettings.s_defaultReaderSettings;
             return settings.CreateReader(input, baseUri, null);
         }
 
         // Creates an XmlReader according to the settings and parser context for parsing XML from the given TextReader.
         public static XmlReader Create(TextReader input, XmlReaderSettings settings, XmlParserContext inputContext)
         {
-            if (settings == null)
-            {
-                settings = new XmlReaderSettings();
-            }
+            settings ??= XmlReaderSettings.s_defaultReaderSettings;
             return settings.CreateReader(input, string.Empty, inputContext);
         }
 
         // Creates an XmlReader according to the settings wrapped over the given reader.
         public static XmlReader Create(XmlReader reader, XmlReaderSettings settings)
         {
-            if (settings == null)
-            {
-                settings = new XmlReaderSettings();
-            }
+            settings ??= XmlReaderSettings.s_defaultReaderSettings;
             return settings.CreateReader(reader);
         }
 
@@ -1854,10 +1862,7 @@ namespace System.Xml
             {
                 throw new ArgumentNullException(nameof(input));
             }
-            if (settings == null)
-            {
-                settings = new XmlReaderSettings();
-            }
+            settings ??= XmlReaderSettings.s_defaultReaderSettings;
 
             XmlReader reader;
 
