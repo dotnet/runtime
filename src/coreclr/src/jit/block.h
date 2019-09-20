@@ -745,7 +745,7 @@ struct BasicBlock : private LIR::Range
 
     Statement* bbStmtList;
 
-    GenTree* GetBBTreeList() const
+    GenTree* GetFirstLIRNode() const
     {
         return m_firstNode;
     }

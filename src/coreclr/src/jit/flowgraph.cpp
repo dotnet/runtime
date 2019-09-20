@@ -9540,7 +9540,7 @@ BasicBlock* Compiler::fgSplitBlockAtBeginning(BasicBlock* curr)
 
     if (curr->IsLIR())
     {
-        newBlock->SetBBTreeList(curr->GetBBTreeList());
+        newBlock->SetBBTreeList(curr->GetFirstLIRNode());
         curr->SetBBTreeList(nullptr);
     }
     else
@@ -21075,7 +21075,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
     // Make sure the one return BB is not changed.
     if (genReturnBB != nullptr)
     {
-        assert(genReturnBB->GetBBTreeList() != nullptr || genReturnBB->bbStmtList != nullptr);
+        assert(genReturnBB->GetFirstLIRNode() != nullptr || genReturnBB->bbStmtList != nullptr);
     }
 
     // The general encoder/decoder (currently) only reports "this" as a generics context as a stack location,
