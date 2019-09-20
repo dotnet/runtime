@@ -187,6 +187,8 @@
 
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <HelixPreCommand Include="set CORE_ROOT=%HELIX_CORRELATION_PAYLOAD%" />
+    <!-- Set _NT_SYMBOL_PATH so VM _ASSERTE() asserts can find the symbol files when doing stack walks -->
+    <HelixPreCommand Include="set _NT_SYMBOL_PATH=%HELIX_CORRELATION_PAYLOAD%\PDB" />
     <HelixPreCommand Include="set RunCrossGen=1" Condition=" '$(RunCrossGen)' == 'true' " />
     <HelixPreCommand Include="set RunningLongGCTests=1" Condition=" '$(LongRunningGCTests)' == 'true' " />
     <HelixPreCommand Include="set RunInUnloadableContext=1" Condition=" '$(RunInUnloadableContext)' == 'true' " />

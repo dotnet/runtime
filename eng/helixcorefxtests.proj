@@ -101,6 +101,12 @@
     <TestHostRootPath>$(TestWorkingDir)testhost\</TestHostRootPath>
     <TestArchiveRuntimeRoot>$(TestWorkingDir)helix\</TestArchiveRuntimeRoot>
 
+    <!-- The VM PDB symbols for Windows live in the same directory as the VM binaries. Set a relative
+         path within TestHostRootPath (root of the correlation payload) that we can use to set the
+         symbol path for the purpose of getting a good stack trace for debug build VM asserts.
+    -->
+    <TestHostPDBPath>shared\$(MicrosoftNETCoreAppPackage)\$(ProductVersion)</TestHostPDBPath>
+
     <TestAssetBlobFeedUrl>https://dotnetfeed.blob.core.windows.net/dotnet-core</TestAssetBlobFeedUrl>
   </PropertyGroup>
 
@@ -216,6 +222,8 @@
     <HelixPreCommand Include="call %__TestEnv%" />
     <!-- Display the interesting COMPlus variables that are set in the environment -->
     <HelixPreCommand Include="set COMPlus" />
+    <!-- Set _NT_SYMBOL_PATH so VM _ASSERTE() asserts can find the symbol files when doing stack walks -->
+    <HelixPreCommand Include="set _NT_SYMBOL_PATH=%HELIX_CORRELATION_PAYLOAD%\$(TestHostPDBPath)" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetsWindows)' != 'true' ">
