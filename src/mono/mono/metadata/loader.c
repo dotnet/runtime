@@ -2670,12 +2670,13 @@ mono_loader_unlock_if_inited (void)
 }
 
 /**
- * mono_method_signature_checked:
+ * mono_method_signature_checked_slow:
  *
  * Return the signature of the method M. On failure, returns NULL, and ERR is set.
+ * Call mono_method_signature_checked instead.
  */
 MonoMethodSignature*
-mono_method_signature_checked (MonoMethod *m, MonoError *error)
+mono_method_signature_checked_slow (MonoMethod *m, MonoError *error)
 {
 	int idx;
 	MonoImage* img;
@@ -2829,11 +2830,12 @@ mono_method_signature_checked (MonoMethod *m, MonoError *error)
 }
 
 /**
- * mono_method_signature_internal:
+ * mono_method_signature_internal_slow:
  * \returns the signature of the method \p m. On failure, returns NULL.
+ * Call mono_method_signature_internal instead.
  */
 MonoMethodSignature*
-mono_method_signature_internal (MonoMethod *m)
+mono_method_signature_internal_slow (MonoMethod *m)
 {
 	ERROR_DECL (error);
 	MonoMethodSignature *sig = mono_method_signature_checked (m, error);
