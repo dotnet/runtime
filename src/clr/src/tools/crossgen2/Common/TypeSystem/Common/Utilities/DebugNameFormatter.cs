@@ -11,9 +11,6 @@ namespace Internal.TypeSystem
 {
     public partial class DebugNameFormatter : TypeNameFormatter<DebugNameFormatter.Void, DebugNameFormatter.FormatOptions>
     {
-        partial void GetDiagnosticName(GenericParameterDesc type, ref string diagnosticName);
-        partial void GetDiagnosticName(DefType type, ref string diagnosticName);
-
         public static readonly DebugNameFormatter Instance = new DebugNameFormatter();
 
         public override Void AppendName(StringBuilder sb, ArrayType type, FormatOptions options)
@@ -74,7 +71,7 @@ namespace Internal.TypeSystem
             {
                 sb.Append(type.Name);
             }
-            catch when ((options & FormatOptions.UseDiagnosticName) != 0)
+            catch
             {
                 string diagnosticName = "Unknown";
                 GetDiagnosticName(type, ref diagnosticName);
@@ -112,7 +109,7 @@ namespace Internal.TypeSystem
             {
                 sb.Append(nestedType.Name);
             }
-            catch when ((options & FormatOptions.UseDiagnosticName) != 0)
+            catch
             {
                 string diagnosticName = "Unknown";
                 GetDiagnosticName(nestedType, ref diagnosticName);
@@ -203,7 +200,7 @@ namespace Internal.TypeSystem
 
                 sb.Append(type.Name);
             }
-            catch when ((options & FormatOptions.UseDiagnosticName) != 0)
+            catch
             {
                 sb.Length = initialLen;
 
@@ -230,7 +227,7 @@ namespace Internal.TypeSystem
                 {
                     assemblyName = ((IAssemblyDesc)mdType.Module).GetName().Name;
                 }
-                catch when ((options & FormatOptions.UseDiagnosticName) != 0)
+                catch
                 {
                     assemblyName = "Unknown";
                 }
@@ -270,10 +267,28 @@ namespace Internal.TypeSystem
             {
                 return possibleInnerType.ContainingType;
             }
-            catch when ((options & FormatOptions.UseDiagnosticName) != 0)
+            catch
             {
                 return null;
             }
+        }
+
+        private void GetDiagnosticName(GenericParameterDesc type, ref string diagnosticName)
+        {
+            try
+            {
+                diagnosticName = type.DiagnosticName;
+            }
+            catch {}
+        }
+
+        private void GetDiagnosticName(DefType type, ref string diagnosticName)
+        {
+            try
+            {
+                diagnosticName = type.DiagnosticName;
+            }
+            catch {}
         }
 
         public struct Void

@@ -88,11 +88,9 @@ namespace Internal.TypeSystem
         public TState AppendName(StringBuilder sb, TypeDesc type, TOptions options)
         {
             TypeFlags category;
-            bool normalCategoryComputation = false;
             try
             {
                 category = type.Category;
-                normalCategoryComputation = true;
             }
             catch
             {
@@ -127,7 +125,6 @@ namespace Internal.TypeSystem
                 case TypeFlags.SignatureMethodVariable:
                     return AppendName(sb, (SignatureMethodVariable)type, options);
                 default:
-                    Debug.Assert(normalCategoryComputation && type.IsDefType); // Don't call type.IsDefType if Category computation failed
                     return AppendName(sb, (DefType)type, options);
             }
         }
