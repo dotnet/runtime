@@ -19,7 +19,7 @@ namespace Internal.TypeSystem
 
             if (includeReturnType)
             {
-                DebugNameFormatter.Instance.AppendName(sb, ReturnType, DebugNameFormatter.FormatOptions.None | DebugNameFormatter.FormatOptions.UseDiagnosticName);
+                DebugNameFormatter.Instance.AppendName(sb, ReturnType, DebugNameFormatter.FormatOptions.None);
                 sb.Append('(');
             }
 
@@ -30,7 +30,7 @@ namespace Internal.TypeSystem
                     first = false;
                 else
                     sb.Append(',');
-                DebugNameFormatter.Instance.AppendName(sb, param, DebugNameFormatter.FormatOptions.None | DebugNameFormatter.FormatOptions.UseDiagnosticName);
+                DebugNameFormatter.Instance.AppendName(sb, param, DebugNameFormatter.FormatOptions.None);
             }
 
             if (includeReturnType)
@@ -55,10 +55,12 @@ namespace Internal.TypeSystem
             }
             catch
             {
-                string diagName = null;
-                GetDiagnosticName(ref diagName);
-                if (diagName == null)
-                    throw;
+                string diagName = "Unknown";
+                try
+                {
+                    diagName = DiagnosticName;
+                }
+                catch {}
                 sb.Append(diagName);
             }
 
@@ -74,7 +76,7 @@ namespace Internal.TypeSystem
                 {
                     sb.Append(',');
                 }
-                DebugNameFormatter.Instance.AppendName(sb, Instantiation[i], DebugNameFormatter.FormatOptions.None | DebugNameFormatter.FormatOptions.UseDiagnosticName);
+                DebugNameFormatter.Instance.AppendName(sb, Instantiation[i], DebugNameFormatter.FormatOptions.None);
             }
             if (!first)
                 sb.Append('>');
@@ -92,7 +94,5 @@ namespace Internal.TypeSystem
 
             return sb.ToString();
         }
-
-        partial void GetDiagnosticName(ref string diagnosticName);
     }
 }
