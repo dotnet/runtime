@@ -4279,4 +4279,28 @@ mono_w32process_signal_finished (void)
 {
 }
 
+guint32
+mono_w32process_ver_language_name (guint32 lang, gunichar2 *lang_out, guint32 lang_len)
+{
+	return 0;
+}
+
+gboolean
+mono_w32process_get_fileversion_info (const gunichar2 *filename, gpointer *data)
+{
+	return FALSE;
+}
+
+gboolean
+mono_w32process_module_get_information (gpointer handle, gpointer module, MODULEINFO *modinfo, guint32 size)
+{
+	return FALSE;
+}
+
+gboolean
+mono_w32process_ver_query_value (gconstpointer datablock, const gunichar2 *subblock, gpointer *buffer, guint32 *len)
+{
+	return FALSE;
+}
+
 #endif /* ENABLE_NETCORE */
