@@ -120,18 +120,94 @@ namespace System.Security.Cryptography.Pkcs
 
         public Oid SignatureAlgorithm => new Oid(_signatureAlgorithm);
 
+        private delegate void WithSelfInfoDelegate(ref SignerInfoAsn mySigned);
+
+        private void WithSelfInfo(WithSelfInfoDelegate action)
+        {
+            if (_parentSignerInfo == null)
+            {
+                int myIdx = _document.SignerInfos.FindIndexForSigner(this);
+
+                if (myIdx < 0)
+                {
+                    throw new CryptographicException(SR.Cryptography_Cms_SignerNotFound);
+                }
+
+                ref SignedDataAsn signedData = ref _document.GetRawData();
+                ref SignerInfoAsn mySigner = ref signedData.SignerInfos[myIdx];
+
+                action(ref mySigner);
+
+                // Re-normalize the document
+                _document.Reencode();
+            }
+            else
+            {
+                // we are one level deep, we need to update signer and counter signer attributes
+                int parentIdx = _document.SignerInfos.FindIndexForSigner(_parentSignerInfo);
+
+                if (parentIdx == -1)
+                {
+                    throw new CryptographicException(SR.Cryptography_Cms_NoSignerAtIndex);
+                }
+
+                ref SignedDataAsn documentData = ref _document.GetRawData();
+                ref SignerInfoAsn parentData = ref documentData.SignerInfos[parentIdx];
+
+                if (parentData.UnsignedAttributes == null)
+                {
+                    throw new CryptographicException(SR.Cryptography_Cms_NoSignerAtIndex);
+                }
+
+                ref AttributeAsn[] unsignedAttrs = ref parentData.UnsignedAttributes;
+
+                for (int i = 0; i < unsignedAttrs.Length; i++)
+                {
+                    ref AttributeAsn attributeAsn = ref unsignedAttrs[i];
+
+                    if (attributeAsn.AttrType.Value == Oids.CounterSigner)
+                    {
+                        for (int j = 0; j < attributeAsn.AttrValues.Length; j++)
+                        {
+                            ref ReadOnlyMemory<byte> counterSignerBytes = ref attributeAsn.AttrValues[j];
+                            SignerInfoAsn counterSigner = SignerInfoAsn.Decode(counterSignerBytes, AsnEncodingRules.BER);
+
+                            var counterSignerId = new SubjectIdentifier(counterSigner.Sid);
+
+                            if (SignerIdentifier.IsEquivalentTo(counterSignerId))
+                            {
+                                // counterSigner represent the current state of `this`
+                                action(ref counterSigner);
+
+                                using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+                                {
+                                    counterSigner.Encode(writer);
+                                    counterSignerBytes = writer.Encode();
+                                }
+
+                                // Re-normalize the document
+                                _document.Reencode();
+
+                                return;
+                            }
+                        }
+                    }
+                }
+
+                throw new CryptographicException(SR.Cryptography_Cms_NoSignerAtIndex);
+            }
+        }
+
         public void AddUnsignedAttribute(AsnEncodedData unsignedAttribute)
         {
-            int myIdx = _document.SignerInfos.FindIndexForSigner(this);
+            WithSelfInfo((ref SignerInfoAsn mySigner) =>
+                {
+                    AddUnsignedAttribute(ref mySigner, unsignedAttribute);
+                });
+        }
 
-            if (myIdx < 0)
-            {
-                throw new CryptographicException(SR.Cryptography_Cms_SignerNotFound);
-            }
-
-            ref SignedDataAsn signedData = ref _document.GetRawData();
-            ref SignerInfoAsn mySigner = ref signedData.SignerInfos[myIdx];
-
+        private static void AddUnsignedAttribute(ref SignerInfoAsn mySigner, AsnEncodedData unsignedAttribute)
+        {
             int existingAttribute = mySigner.UnsignedAttributes == null ? -1 : FindAttributeIndexByOid(mySigner.UnsignedAttributes, unsignedAttribute.Oid);
 
             if (existingAttribute == -1)
@@ -161,23 +237,18 @@ namespace System.Security.Cryptography.Pkcs
                 Array.Resize(ref modifiedAttr.AttrValues, newIndex + 1);
                 modifiedAttr.AttrValues[newIndex] = unsignedAttribute.RawData;
             }
-
-            // Re-normalize the document
-            _document.Reencode();
         }
 
         public void RemoveUnsignedAttribute(AsnEncodedData unsignedAttribute)
         {
-            int myIdx = _document.SignerInfos.FindIndexForSigner(this);
+            WithSelfInfo((ref SignerInfoAsn mySigner) =>
+                {
+                    RemoveUnsignedAttribute(ref mySigner, unsignedAttribute);
+                });
+        }
 
-            if (myIdx < 0)
-            {
-                throw new CryptographicException(SR.Cryptography_Cms_SignerNotFound);
-            }
-
-            ref SignedDataAsn signedData = ref _document.GetRawData();
-            ref SignerInfoAsn mySigner = ref signedData.SignerInfos[myIdx];
-
+        private static void RemoveUnsignedAttribute(ref SignerInfoAsn mySigner, AsnEncodedData unsignedAttribute)
+        {
             (int outerIndex, int innerIndex) = FindAttributeLocation(mySigner.UnsignedAttributes, unsignedAttribute, out bool isOnlyValue);
 
             if (outerIndex == -1 || innerIndex == -1)
@@ -193,9 +264,6 @@ namespace System.Security.Cryptography.Pkcs
             {
                 PkcsHelpers.RemoveAt(ref mySigner.UnsignedAttributes[outerIndex].AttrValues, innerIndex);
             }
-
-            // Re-normalize the document
-            _document.Reencode();
         }
 
         private SignerInfoCollection GetCounterSigners(AttributeAsn[] unsignedAttrs)
@@ -767,11 +835,14 @@ namespace System.Security.Cryptography.Pkcs
 
         private static int FindAttributeIndexByOid(AttributeAsn[] attributes, Oid oid, int startIndex = 0)
         {
-            for (int i = startIndex; i < attributes.Length; i++)
+            if (attributes != null)
             {
-                if (attributes[i].AttrType.Value == oid.Value)
+                for (int i = startIndex; i < attributes.Length; i++)
                 {
-                    return i;
+                    if (attributes[i].AttrType.Value == oid.Value)
+                    {
+                        return i;
+                    }
                 }
             }
 
@@ -780,13 +851,16 @@ namespace System.Security.Cryptography.Pkcs
 
         private static int FindAttributeValueIndexByEncodedData(ReadOnlyMemory<byte>[] attributeValues, ReadOnlySpan<byte> asnEncodedData, out bool isOnlyValue)
         {
-            for (int i = 0; i < attributeValues.Length; i++)
+            if (attributeValues != null)
             {
-                ReadOnlySpan<byte> data = attributeValues[i].Span;
-                if (data.SequenceEqual(asnEncodedData))
+                for (int i = 0; i < attributeValues.Length; i++)
                 {
-                    isOnlyValue = attributeValues.Length == 1;
-                    return i;
+                    ReadOnlySpan<byte> data = attributeValues[i].Span;
+                    if (data.SequenceEqual(asnEncodedData))
+                    {
+                        isOnlyValue = attributeValues.Length == 1;
+                        return i;
+                    }
                 }
             }
 
@@ -796,19 +870,22 @@ namespace System.Security.Cryptography.Pkcs
 
         private static (int, int) FindAttributeLocation(AttributeAsn[] attributes, AsnEncodedData attribute, out bool isOnlyValue)
         {
-            for (int outerIndex = 0; ; outerIndex++)
+            if (attributes != null)
             {
-                outerIndex = FindAttributeIndexByOid(attributes, attribute.Oid, outerIndex);
-
-                if (outerIndex == -1)
+                for (int outerIndex = 0; ; outerIndex++)
                 {
-                    break;
-                }
+                    outerIndex = FindAttributeIndexByOid(attributes, attribute.Oid, outerIndex);
 
-                int innerIndex = FindAttributeValueIndexByEncodedData(attributes[outerIndex].AttrValues, attribute.RawData, out isOnlyValue);
-                if (innerIndex != -1)
-                {
-                    return (outerIndex, innerIndex);
+                    if (outerIndex == -1)
+                    {
+                        break;
+                    }
+
+                    int innerIndex = FindAttributeValueIndexByEncodedData(attributes[outerIndex].AttrValues, attribute.RawData, out isOnlyValue);
+                    if (innerIndex != -1)
+                    {
+                        return (outerIndex, innerIndex);
+                    }
                 }
             }
 
