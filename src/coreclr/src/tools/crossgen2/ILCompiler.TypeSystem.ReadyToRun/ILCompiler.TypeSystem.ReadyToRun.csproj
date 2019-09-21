@@ -144,9 +144,6 @@
     <Compile Include="..\Common\TypeSystem\Common\Utilities\DebugNameFormatter.cs">
       <Link>Utilities\DebugNameFormatter.cs</Link>
     </Compile>
-    <Compile Include="..\Common\TypeSystem\Common\Utilities\DebugNameFormatter.Diagnostic.cs">
-      <Link>Utilities\DebugNameFormatter.Diagnostic.cs</Link>
-    </Compile>
     <Compile Include="..\Common\TypeSystem\Common\Utilities\LockFreeReaderHashtable.cs">
       <Link>Utilities\LockFreeReaderHashtable.cs</Link>
     </Compile>
@@ -293,9 +290,6 @@
     </Compile>
     <Compile Include="..\Common\TypeSystem\Common\MethodDesc.ToString.cs">
       <Link>TypeSystem\Common\MethodDesc.ToString.cs</Link>
-    </Compile>
-    <Compile Include="..\Common\TypeSystem\Common\MethodDesc.ToString.Diagnostic.cs">
-      <Link>TypeSystem\Common\MethodDesc.ToString.Diagnostic.cs</Link>
     </Compile>
     <Compile Include="..\Common\TypeSystem\Common\MetadataVirtualMethodAlgorithm.cs">
       <Link>TypeSystem\Common\StandardVirtualMethodAlgorithm.cs</Link>
