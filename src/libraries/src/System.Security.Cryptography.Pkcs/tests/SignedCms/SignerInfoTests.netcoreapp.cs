@@ -77,6 +77,60 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Assert.Equal(secondSignerCounterSignature, cms.SignerInfos[0].CounterSignerInfos[0].GetSignature());
         }
 
+        [Fact]
+        public static void SignerInfo_RemoveUnsignedAttributeFromCounterSigner_Removes()
+        {
+            SignedCms cms = new SignedCms();
+            cms.Decode(SignedDocuments.OneRsaSignerTwoRsaCounterSigners);
+
+            AsnEncodedData attribute1 = CreateTimestampToken(1);
+            AsnEncodedData attribute2 = CreateTimestampToken(2);
+
+            SignerInfo counterSigner = cms.SignerInfos[0].CounterSignerInfos[0];
+            counterSigner.AddUnsignedAttribute(attribute1);
+            counterSigner.AddUnsignedAttribute(attribute2);
+
+            ReReadSignedCms(ref cms);
+
+            SignerInfo signer = cms.SignerInfos[0];
+
+            // attributes got sorted, therefore number changed
+            Assert.Equal(2, signer.CounterSignerInfos.Count);
+            Assert.Equal(0, signer.CounterSignerInfos[0].UnsignedAttributes.Count);
+            Assert.Equal(1, signer.CounterSignerInfos[1].UnsignedAttributes.Count);
+            Assert.Equal(2, signer.CounterSignerInfos[1].UnsignedAttributes[0].Values.Count);
+
+            counterSigner = signer.CounterSignerInfos[1];
+            counterSigner.RemoveUnsignedAttribute(counterSigner.UnsignedAttributes[0].Values[0]);
+
+            // We didn't modify existing instances
+            Assert.Equal(2, signer.CounterSignerInfos.Count);
+            Assert.Equal(1, counterSigner.UnsignedAttributes.Count);
+            Assert.Equal(2, counterSigner.UnsignedAttributes[0].Values.Count);
+
+            // parent got updated
+            Assert.Equal(0, signer.CounterSignerInfos[0].UnsignedAttributes.Count);
+            Assert.Equal(1, signer.CounterSignerInfos[1].UnsignedAttributes.Count);
+
+            // We did modify the state
+            Assert.Equal(1, cms.SignerInfos[0].CounterSignerInfos[1].UnsignedAttributes.Count);
+            Assert.Equal(1, cms.SignerInfos[0].CounterSignerInfos[1].UnsignedAttributes[0].Values.Count);
+
+            ReReadSignedCms(ref cms);
+
+            counterSigner = cms.SignerInfos[0].CounterSignerInfos[1];
+            Assert.Equal(1, counterSigner.UnsignedAttributes.Count);
+            Assert.Equal(1, counterSigner.UnsignedAttributes[0].Values.Count);
+            counterSigner.RemoveUnsignedAttribute(counterSigner.UnsignedAttributes[0].Values[0]);
+
+            // We didn't modify current instance
+            Assert.Equal(1, counterSigner.UnsignedAttributes.Count);
+            Assert.Equal(1, counterSigner.UnsignedAttributes[0].Values.Count);
+
+            // We did modify the state
+            Assert.Equal(0, cms.SignerInfos[0].CounterSignerInfos[1].UnsignedAttributes.Count);
+        }
+
         [Theory]
         [MemberData(nameof(SignedDocumentsWithAttributesTestData))]
         public static void SignerInfo_RemoveUnsignedAttributes_RemoveAllAttributesFromBeginning(byte[] document)
@@ -219,6 +273,186 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Assert.Equal(1, cms.SignerInfos[0].UnsignedAttributes.Count);
             Assert.Equal(2, cms.SignerInfos[0].UnsignedAttributes[0].Values.Count);
             cms.CheckSignature(true);
+        }
+
+        [Fact]
+        public static void SignerInfo_RemoveNonMatchingUnsignedAttributesFromCounterSigner_Throws()
+        {
+            SignedCms cms = new SignedCms();
+            cms.Decode(SignedDocuments.OneRsaSignerTwoRsaCounterSigners);
+
+            int numberOfAttributes = cms.SignerInfos[0].UnsignedAttributes.Count;
+            Assert.NotEqual(0, numberOfAttributes);
+
+            AsnEncodedData fakeAttribute = new AsnEncodedData(
+                cms.SignerInfos[0].UnsignedAttributes[0].Oid,
+                cms.SignerInfos[0].UnsignedAttributes[0].Values[0].RawData.Skip(1).ToArray());
+            Assert.Throws<CryptographicException>(() => cms.SignerInfos[0].CounterSignerInfos[0].RemoveUnsignedAttribute(fakeAttribute));
+
+            Assert.Equal(numberOfAttributes, cms.SignerInfos[0].UnsignedAttributes.Count);
+        }
+
+        [Fact]
+        public static void SignerInfo_AddOneUnsignedAttributeToCounterSigner_Adds()
+        {
+            SignedCms cms = new SignedCms();
+            cms.Decode(SignedDocuments.OneRsaSignerTwoRsaCounterSigners);
+
+            SignerInfo signer = cms.SignerInfos[0];
+            Assert.Equal(2, signer.UnsignedAttributes.Count);
+            Assert.Equal(2, signer.CounterSignerInfos.Count);
+
+            SignerInfo counterSigner0 = signer.CounterSignerInfos[0];
+            SignerInfo counterSigner1 = signer.CounterSignerInfos[1];
+
+            Assert.Equal(0, counterSigner0.UnsignedAttributes.Count);
+            Assert.Equal(0, counterSigner1.UnsignedAttributes.Count);
+
+            AsnEncodedData attribute = CreateTimestampToken(1);
+            counterSigner0.AddUnsignedAttribute(attribute);
+
+            // we didn't modify existing instances
+            Assert.Equal(2, signer.CounterSignerInfos.Count);
+            Assert.Equal(0, counterSigner0.UnsignedAttributes.Count);
+            Assert.Equal(0, counterSigner1.UnsignedAttributes.Count);
+
+            // inner counter signers did get updated
+            Assert.Equal(1, signer.CounterSignerInfos[0].UnsignedAttributes.Count);
+            Assert.Equal(1, signer.CounterSignerInfos[0].UnsignedAttributes[0].Values.Count);
+            Assert.Equal(0, signer.CounterSignerInfos[1].UnsignedAttributes.Count);
+
+            // verify we didn't modify anything we shouldn't
+            Assert.Equal(1, cms.SignerInfos.Count);
+            Assert.Equal(2, cms.SignerInfos[0].UnsignedAttributes.Count);
+            Assert.Equal(2, cms.SignerInfos[0].CounterSignerInfos.Count);
+
+            // note: counter signers got sorted when encoded
+            Assert.Equal(0, cms.SignerInfos[0].CounterSignerInfos[0].UnsignedAttributes.Count);
+            Assert.Equal(1, cms.SignerInfos[0].CounterSignerInfos[1].UnsignedAttributes.Count);
+            Assert.Equal(1, cms.SignerInfos[0].CounterSignerInfos[1].UnsignedAttributes[0].Values.Count);
+            VerifyAttributesAreEqual(cms.SignerInfos[0].CounterSignerInfos[1].UnsignedAttributes[0].Values[0], attribute);
+
+            ReReadSignedCms(ref cms);
+
+            Assert.Equal(2, cms.SignerInfos[0].UnsignedAttributes.Count);
+            Assert.Equal(2, cms.SignerInfos[0].CounterSignerInfos.Count);
+            Assert.Equal(0, cms.SignerInfos[0].CounterSignerInfos[0].UnsignedAttributes.Count);
+            Assert.Equal(1, cms.SignerInfos[0].CounterSignerInfos[1].UnsignedAttributes.Count);
+            Assert.Equal(1, cms.SignerInfos[0].CounterSignerInfos[1].UnsignedAttributes[0].Values.Count);
+            VerifyAttributesAreEqual(cms.SignerInfos[0].CounterSignerInfos[1].UnsignedAttributes[0].Values[0], attribute);
+        }
+
+        [Fact]
+        public static void SignerInfo_AddMultipleUnsignedAttributeToCounterSigner_Adds()
+        {
+            SignedCms cms = new SignedCms();
+            cms.Decode(SignedDocuments.OneRsaSignerTwoRsaCounterSigners);
+
+            SignerInfo signer = cms.SignerInfos[0];
+            Assert.Equal(2, signer.UnsignedAttributes.Count);
+            Assert.Equal(2, signer.CounterSignerInfos.Count);
+
+            SignerInfo counterSigner0 = signer.CounterSignerInfos[0];
+            SignerInfo counterSigner1 = signer.CounterSignerInfos[1];
+
+            Assert.Equal(0, counterSigner0.UnsignedAttributes.Count);
+            Assert.Equal(0, counterSigner1.UnsignedAttributes.Count);
+
+            AsnEncodedData attribute1 = CreateTimestampToken(1);
+            AsnEncodedData attribute2 = CreateTimestampToken(2);
+
+            // note: using same instance to add
+            counterSigner0.AddUnsignedAttribute(attribute1);
+            SignerInfo signerAfterFirstCall = cms.SignerInfos[0];
+            counterSigner0.AddUnsignedAttribute(attribute2);
+
+            List<AsnEncodedData> expectedAttributes = new List<AsnEncodedData>()
+            {
+                attribute1,
+                attribute2
+            };
+
+            // we didn't modify existing instances
+            Assert.Equal(2, signer.CounterSignerInfos.Count);
+            Assert.Equal(0, counterSigner0.UnsignedAttributes.Count);
+            Assert.Equal(0, counterSigner1.UnsignedAttributes.Count);
+
+            // inner counter signers did get updated
+            Assert.Equal(1, signer.CounterSignerInfos[0].UnsignedAttributes.Count);
+
+            // this is rather less obvious:
+            //   - on first Add call we update the parent so the `signer` gets updated
+            //   - on second Add call we also update the parent but `signer` is not actually the parent anymore
+            Assert.Equal(1, signer.CounterSignerInfos[0].UnsignedAttributes[0].Values.Count);
+            VerifyAttributesAreEqual(signer.CounterSignerInfos[0].UnsignedAttributes[0].Values[0], attribute1);
+            Assert.Equal(0, signer.CounterSignerInfos[1].UnsignedAttributes.Count);
+
+            Assert.Equal(0, signerAfterFirstCall.CounterSignerInfos[0].UnsignedAttributes.Count);
+            Assert.Equal(1, signerAfterFirstCall.CounterSignerInfos[1].UnsignedAttributes.Count);
+            Assert.Equal(2, signerAfterFirstCall.CounterSignerInfos[1].UnsignedAttributes[0].Values.Count);
+            VerifyAttributesContainsAll(signerAfterFirstCall.CounterSignerInfos[1].UnsignedAttributes, expectedAttributes);
+
+            // verify we didn't modify anything we shouldn't
+            Assert.Equal(1, cms.SignerInfos.Count);
+            Assert.Equal(2, cms.SignerInfos[0].UnsignedAttributes.Count);
+            Assert.Equal(2, cms.SignerInfos[0].CounterSignerInfos.Count);
+
+            // note: counter signers got sorted when encoded
+            counterSigner0 = cms.SignerInfos[0].CounterSignerInfos[0];
+            counterSigner1 = cms.SignerInfos[0].CounterSignerInfos[1];
+
+            Assert.Equal(0, counterSigner0.UnsignedAttributes.Count);
+
+            // attributes should be merged into a single one with two values
+            Assert.Equal(1, counterSigner1.UnsignedAttributes.Count);
+            Assert.Equal(2, counterSigner1.UnsignedAttributes[0].Values.Count);
+
+            VerifyAttributesContainsAll(counterSigner1.UnsignedAttributes, expectedAttributes);
+
+            ReReadSignedCms(ref cms);
+
+            Assert.Equal(2, cms.SignerInfos[0].UnsignedAttributes.Count);
+            Assert.Equal(2, cms.SignerInfos[0].CounterSignerInfos.Count);
+            Assert.Equal(0, cms.SignerInfos[0].CounterSignerInfos[0].UnsignedAttributes.Count);
+            Assert.Equal(1, cms.SignerInfos[0].CounterSignerInfos[1].UnsignedAttributes.Count);
+            Assert.Equal(2, cms.SignerInfos[0].CounterSignerInfos[1].UnsignedAttributes[0].Values.Count);
+            VerifyAttributesContainsAll(cms.SignerInfos[0].CounterSignerInfos[1].UnsignedAttributes, expectedAttributes);
+        }
+
+        [Fact]
+        public static void SignerInfo_AddRemoveUnsignedAttributeWithDetachtedCounterSigner_Throws()
+        {
+            SignedCms cms = new SignedCms();
+            cms.Decode(SignedDocuments.OneRsaSignerTwoRsaCounterSigners);
+
+            // Detatch one counter signer
+            SignerInfo counterSigner = cms.SignerInfos[0].CounterSignerInfos[0];
+            cms.SignerInfos[0].RemoveCounterSignature(0);
+
+            // we shouldn't throw
+            Assert.Equal(0, counterSigner.UnsignedAttributes.Count);
+
+            AsnEncodedData attribute = CreateTimestampToken(1);
+            Assert.Throws<CryptographicException>(() => counterSigner.AddUnsignedAttribute(attribute));
+            Assert.Throws<CryptographicException>(() => counterSigner.RemoveUnsignedAttribute(attribute));
+        }
+
+        [Fact]
+        public static void SignerInfo_AddRemoveUnsignedAttributeWithDetachtedSigner_Throws()
+        {
+            SignedCms cms = new SignedCms();
+            cms.Decode(SignedDocuments.OneRsaSignerTwoRsaCounterSigners);
+
+            // Detatch signer (and its counter signers)
+            SignerInfo counterSigner = cms.SignerInfos[0].CounterSignerInfos[0];
+            cms.RemoveSignature(0);
+
+            // we shouldn't throw
+            Assert.Equal(0, counterSigner.UnsignedAttributes.Count);
+
+            AsnEncodedData attribute = CreateTimestampToken(1);
+            Assert.Throws<CryptographicException>(() => counterSigner.AddUnsignedAttribute(attribute));
+            Assert.Throws<CryptographicException>(() => counterSigner.RemoveUnsignedAttribute(attribute));
         }
 
         private static void VerifyAttributesContainsAll(CryptographicAttributeObjectCollection attributes, List<AsnEncodedData> expectedAttributes)
