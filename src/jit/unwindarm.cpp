@@ -1922,7 +1922,7 @@ void UnwindInfo::Split()
 
     // Call the emitter to do the split, and call us back for every split point it chooses.
     uwiComp->GetEmitter()->emitSplit(uwiFragmentLast->ufiEmitLoc, uwiEndLoc, maxFragmentSize, (void*)this,
-                                   EmitSplitCallback);
+                                     EmitSplitCallback);
 
 #ifdef DEBUG
     // Did the emitter split the function/funclet into as many fragments as we asked for?
