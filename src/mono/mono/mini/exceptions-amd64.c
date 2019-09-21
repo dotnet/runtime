@@ -97,7 +97,7 @@ get_win32_restore_stack (void)
 	amd64_call_reg (code, AMD64_R11);
 
 	/* get jit_tls with context to restore */
-	amd64_mov_reg_imm (code, AMD64_R11, mono_tls_get_jit_tls);
+	amd64_mov_reg_imm (code, AMD64_R11, mono_tls_get_jit_tls_extern);
 	amd64_call_reg (code, AMD64_R11);
 
 	/* move jit_tls from return reg to arg reg */

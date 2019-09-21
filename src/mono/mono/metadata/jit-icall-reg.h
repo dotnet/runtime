@@ -48,11 +48,11 @@ MONO_JIT_ICALL (generic_trampoline_generic_virtual_remoting)	\
 MONO_JIT_ICALL (generic_trampoline_vcall)	\
 	\
 /* These must be ordered like MonoTlsKey (alphabetical). */ \
-MONO_JIT_ICALL (mono_tls_get_domain) \
-MONO_JIT_ICALL (mono_tls_get_jit_tls) \
-MONO_JIT_ICALL (mono_tls_get_lmf_addr) \
-MONO_JIT_ICALL (mono_tls_get_sgen_thread_info) \
-MONO_JIT_ICALL (mono_tls_get_thread) \
+MONO_JIT_ICALL (mono_tls_get_domain_extern) \
+MONO_JIT_ICALL (mono_tls_get_jit_tls_extern) \
+MONO_JIT_ICALL (mono_tls_get_lmf_addr_extern) \
+MONO_JIT_ICALL (mono_tls_get_sgen_thread_info_extern) \
+MONO_JIT_ICALL (mono_tls_get_thread_extern) \
 	\
 MONO_JIT_ICALL (__emul_fadd)	\
 MONO_JIT_ICALL (__emul_fcmp_ceq)	\
@@ -341,7 +341,7 @@ MONO_JIT_ICALL (ves_icall_thread_finish_async_abort) \
 	\
 MONO_JIT_ICALL (count) \
 
-#define MONO_JIT_ICALL_mono_get_lmf_addr MONO_JIT_ICALL_mono_tls_get_lmf_addr
+#define MONO_JIT_ICALL_mono_get_lmf_addr MONO_JIT_ICALL_mono_tls_get_lmf_addr_extern
 
 #ifdef __cplusplus
 typedef enum MonoJitICallId : gsize // Widen to gsize for use in MonoJumpInfo union.
