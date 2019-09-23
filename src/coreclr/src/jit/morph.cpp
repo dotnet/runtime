@@ -1573,7 +1573,7 @@ void fgArgInfo::ArgsComplete()
                 // We call gtPrepareCost to measure the cost of evaluating this tree
                 compiler->gtPrepareCost(argx);
 
-                if (isMultiRegArg && (argx->gtCostEx > (6 * IND_COST_EX)))
+                if (isMultiRegArg && (argx->GetCostEx() > (6 * IND_COST_EX)))
                 {
                     // Spill multireg struct arguments that are expensive to evaluate twice
                     curArgTabEntry->needTmp = true;
@@ -1973,10 +1973,10 @@ void fgArgInfo::SortArgs()
                         compiler->gtPrepareCost(argx);
                     }
 
-                    if (argx->gtCostEx > expensiveArgCost)
+                    if (argx->GetCostEx() > expensiveArgCost)
                     {
                         // Remember this arg as the most expensive one that we have yet seen
-                        expensiveArgCost     = argx->gtCostEx;
+                        expensiveArgCost     = argx->GetCostEx();
                         expensiveArg         = curInx;
                         expensiveArgTabEntry = curArgTabEntry;
                     }
