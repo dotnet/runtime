@@ -2079,7 +2079,7 @@ void LinearScan::buildIntervals()
         {
             JITDUMP("\n\nSetting " FMT_BB " as the predecessor for determining incoming variable registers of " FMT_BB
                     "\n",
-                    block->bbNum, predBlock->bbNum);
+                    predBlock->bbNum, block->bbNum);
             assert(predBlock->bbNum <= bbNumMaxBeforeResolution);
             blockInfo[block->bbNum].predBBNum = predBlock->bbNum;
         }
