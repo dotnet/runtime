@@ -1524,11 +1524,8 @@ STDMETHODIMP RegMeta::DefineUserString(       // S_OK or error.
 
     UINT32      nIndex;                 // Index into the user string heap.
     CQuickBytes qb;                     // For storing the string with the byte prefix.
-    ULONG       i;                      // Loop counter.
-    BOOL        bIs80Plus = false;      // Is there an 80+ WCHAR.
     ULONG       ulMemSize;              // Size of memory taken by the string passed in.
     PBYTE       pb;                     // Pointer into memory allocated by qb.
-    WCHAR       c;                      // Temporary used during comparison;
 
     
 
@@ -1541,21 +1538,6 @@ STDMETHODIMP RegMeta::DefineUserString(       // S_OK or error.
     
     _ASSERTE(pstk && szString && cchString != ULONG_MAX);
 
-    //
-    // Walk the entire string looking for characters that would block us from doing
-    // a fast comparison of the string.  These characters include anything greater than
-    // 0x80 or an apostrophe or a hyphen.  Apostrophe and hyphen are excluded because
-    // they would prevent words like coop and co-op from sorting together in a culture-aware
-    // comparison.  We also need to exclude some set of the control characters.  This check
-    // is more restrictive 
-    //
-    for (i=0; i<cchString; i++) {
-        c = szString[i];
-        if (c>=0x80 || HighCharHelper::IsHighChar((int)c)) {
-            bIs80Plus = true;
-            break;
-        }
-    }
 
     // Copy over the string to memory.
     ulMemSize = cchString * sizeof(WCHAR);
@@ -1563,8 +1545,9 @@ STDMETHODIMP RegMeta::DefineUserString(       // S_OK or error.
     pb = reinterpret_cast<PBYTE>(qb.Ptr());
     memcpy(pb, szString, ulMemSize);
     SwapStringLength((WCHAR *) pb, cchString);
-    // Set the last byte of memory to indicate whether there is a 80+ character.
-    *(pb + ulMemSize) = bIs80Plus ? 1 : 0;
+    // Always set the last byte of memory to indicate that there may be a 80+ or special character.
+    // This byte is not used by the runtime.
+    *(pb + ulMemSize) = 1;
 
     IfFailGo(m_pStgdb->m_MiniMd.PutUserString(
         MetaData::DataBlob(pb, ulMemSize + 1), 
