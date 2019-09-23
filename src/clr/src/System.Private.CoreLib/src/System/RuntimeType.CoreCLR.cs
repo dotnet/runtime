@@ -2052,7 +2052,7 @@ namespace System
             {
                 if ((bindingFlags & BindingFlags.IgnoreCase) != 0)
                 {
-                    name = name.ToLower(CultureInfo.InvariantCulture);
+                    name = name.ToLowerInvariant();
                     ignoreCase = true;
                     listType = MemberListType.CaseInsensitive;
                 }
@@ -2108,7 +2108,7 @@ namespace System
             string name, bool prefixLookup)
         {
             Debug.Assert(memberInfo != null);
-            Debug.Assert(name is null || (bindingFlags & BindingFlags.IgnoreCase) == 0 || (name.ToLower(CultureInfo.InvariantCulture).Equals(name)));
+            Debug.Assert(name is null || (bindingFlags & BindingFlags.IgnoreCase) == 0 || (name.ToLowerInvariant().Equals(name)));
 
             // Filter by Public & Private
             if (isPublic)
@@ -4162,7 +4162,7 @@ namespace System
             return ret;
         }
 
-        private void WrapArgsForInvokeCall(object[] aArgs, int[] aArgsWrapperTypes)
+        private static void WrapArgsForInvokeCall(object[] aArgs, int[] aArgsWrapperTypes)
         {
             int cArgs = aArgs.Length;
             for (int i = 0; i < cArgs; i++)
@@ -4262,7 +4262,7 @@ namespace System
         }
 
         private static OleAutBinder? s_ForwardCallBinder;
-        private OleAutBinder ForwardCallBinder => s_ForwardCallBinder ??= new OleAutBinder();
+        private static OleAutBinder ForwardCallBinder => s_ForwardCallBinder ??= new OleAutBinder();
 
         [Flags]
         private enum DispatchWrapperType : int

@@ -2478,19 +2478,19 @@ namespace System.Diagnostics.Tracing
         }
 
 #if !ES_BUILD_PN
-        private int GetParameterCount(EventMetadata eventData)
+        private static int GetParameterCount(EventMetadata eventData)
         {
             return eventData.Parameters.Length;
         }
 
-        private Type GetDataType(EventMetadata eventData, int parameterId)
+        private static Type GetDataType(EventMetadata eventData, int parameterId)
         {
             return eventData.Parameters[parameterId].ParameterType;
         }
 
         private const bool m_EventSourcePreventRecursion = false;
 #else
-        private int GetParameterCount(EventMetadata eventData)
+        private static int GetParameterCount(EventMetadata eventData)
         {
             int paramCount;
             if (eventData.Parameters == null)
@@ -2505,7 +2505,7 @@ namespace System.Diagnostics.Tracing
             return paramCount;
         }
 
-        private Type GetDataType(EventMetadata eventData, int parameterId)
+        private static Type GetDataType(EventMetadata eventData, int parameterId)
         {
             Type dataType;
             if (eventData.Parameters == null)
@@ -5417,14 +5417,15 @@ namespace System.Diagnostics.Tracing
             channelTab[value] = new ChannelInfo { Name = name, Keywords = kwd, Attribs = channelAttribute };
         }
 
-        private EventChannelType EventChannelToChannelType(EventChannel channel)
+        private static EventChannelType EventChannelToChannelType(EventChannel channel)
         {
 #if !ES_BUILD_STANDALONE
             Debug.Assert(channel >= EventChannel.Admin && channel <= EventChannel.Debug);
 #endif
             return (EventChannelType)((int)channel - (int)EventChannel.Admin + (int)EventChannelType.Admin);
         }
-        private EventChannelAttribute GetDefaultChannelAttribute(EventChannel channel)
+
+        private static EventChannelAttribute GetDefaultChannelAttribute(EventChannel channel)
         {
             EventChannelAttribute attrib = new EventChannelAttribute();
             attrib.EventChannelType = EventChannelToChannelType(channel);

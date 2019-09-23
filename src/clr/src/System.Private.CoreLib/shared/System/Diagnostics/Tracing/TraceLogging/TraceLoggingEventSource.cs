@@ -471,7 +471,7 @@ namespace System.Diagnostics.Tracing
                 }
                 finally
                 {
-                    this.WriteCleanup(pins, pinCount);
+                    WriteCleanup(pins, pinCount);
                 }
             }
 #endif // FEATURE_MANAGED_ETW
@@ -695,7 +695,7 @@ namespace System.Diagnostics.Tracing
 #if FEATURE_MANAGED_ETW
                         finally
                         {
-                            this.WriteCleanup(pins, pinCount);
+                            WriteCleanup(pins, pinCount);
                         }
                     }
 #endif // FEATURE_MANAGED_ETW
@@ -741,7 +741,7 @@ namespace System.Diagnostics.Tracing
             System.Runtime.ConstrainedExecution.Cer.Success)]
 #endif
         [NonEvent]
-        private unsafe void WriteCleanup(GCHandle* pPins, int cPins)
+        private static unsafe void WriteCleanup(GCHandle* pPins, int cPins)
         {
             DataCollector.ThreadInstance.Disable();
 

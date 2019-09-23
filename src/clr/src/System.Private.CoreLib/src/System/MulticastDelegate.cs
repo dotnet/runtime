@@ -569,10 +569,8 @@ namespace System
         // this should help inlining
         [DoesNotReturn]
         [System.Diagnostics.DebuggerNonUserCode]
-        private void ThrowNullThisInDelegateToInstance()
-        {
+        private static void ThrowNullThisInDelegateToInstance() =>
             throw new ArgumentException(SR.Arg_DlgtNullInst);
-        }
 
         [System.Diagnostics.DebuggerNonUserCode]
         private void CtorClosed(object target, IntPtr methodPtr)

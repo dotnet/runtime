@@ -777,26 +777,24 @@ namespace System.Globalization
         {
             get
             {
-                CultureTypes types = 0;
+                CultureTypes types = _cultureData.IsNeutralCulture ?
+                    CultureTypes.NeutralCultures :
+                    CultureTypes.SpecificCultures;
 
-                if (_cultureData.IsNeutralCulture)
+                if (_cultureData.IsWin32Installed)
                 {
-                    types |= CultureTypes.NeutralCultures;
-                }
-                else
-                {
-                    types |= CultureTypes.SpecificCultures;
+                    types |= CultureTypes.InstalledWin32Cultures;
                 }
 
-                types |= _cultureData.IsWin32Installed ? CultureTypes.InstalledWin32Cultures : 0;
+                if (_cultureData.IsSupplementalCustomCulture)
+                {
+                    types |= CultureTypes.UserCustomCulture;
+                }
 
-                // Disable  warning 618: System.Globalization.CultureTypes.FrameworkCultures' is obsolete
-#pragma warning disable 618
-                types |= _cultureData.IsFramework ? CultureTypes.FrameworkCultures : 0;
-#pragma warning restore 618
-
-                types |= _cultureData.IsSupplementalCustomCulture ? CultureTypes.UserCustomCulture : 0;
-                types |= _cultureData.IsReplacementCulture ? CultureTypes.ReplacementCultures | CultureTypes.UserCustomCulture : 0;
+                if (_cultureData.IsReplacementCulture)
+                {
+                    types |= CultureTypes.ReplacementCultures;
+                }
 
                 return types;
             }

@@ -525,7 +525,7 @@ namespace System.Collections.Concurrent
         }
 
         /// <summary>Gets the item stored in the <paramref name="i"/>th entry in <paramref name="segment"/>.</summary>
-        private T GetItemWhenAvailable(ConcurrentQueueSegment<T> segment, int i)
+        private static T GetItemWhenAvailable(ConcurrentQueueSegment<T> segment, int i)
         {
             Debug.Assert(segment._preservedForObservation);
 

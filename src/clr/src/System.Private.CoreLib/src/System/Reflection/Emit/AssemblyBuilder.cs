@@ -354,7 +354,7 @@ namespace System.Reflection.Emit
 
         #endregion
 
-        internal void CheckContext(params Type[]?[]? typess)
+        internal static void CheckContext(params Type[]?[]? typess)
         {
             if (typess == null)
             {
@@ -370,7 +370,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        internal void CheckContext(params Type?[]? types)
+        internal static void CheckContext(params Type?[]? types)
         {
             if (types == null)
             {
