@@ -329,6 +329,9 @@
   <data name="AnonMethod" xml:space="preserve">
     <value>anonymous method</value>
   </data>
+  <data name="DynamicBindingComUnsupported" xml:space="preserve">
+    <value>The C# runtime binder cannot dynamically resolve members on COM Runtime Callable Wrappers.</value>
+  </data>
   <data name="ERRORSYM" xml:space="preserve">
     <value>&lt;error&gt;</value>
   </data>
