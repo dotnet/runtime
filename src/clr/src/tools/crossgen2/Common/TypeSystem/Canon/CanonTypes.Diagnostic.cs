@@ -17,7 +17,14 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return FullName;
+                return _Name;
+            }
+        }
+        public override string DiagnosticNamespace
+        {
+            get
+            {
+                return _Namespace;
             }
         }
     }
@@ -28,7 +35,14 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return FullName;
+                return _Name;
+            }
+        }
+        public override string DiagnosticNamespace
+        {
+            get
+            {
+                return _Namespace;
             }
         }
     }

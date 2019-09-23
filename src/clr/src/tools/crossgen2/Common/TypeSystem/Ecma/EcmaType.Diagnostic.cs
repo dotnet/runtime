@@ -23,9 +23,28 @@ namespace Internal.TypeSystem.Ecma
         {
             get
             {
-                if (_typeName == null)
-                    return InitializeName();
-                return _typeName;
+                try
+                {
+                    return Name;
+                }
+                catch
+                {
+                    return $"TypeDef({MetadataReader.GetToken(Handle):x8})";
+                }
+            }
+        }
+        public override string DiagnosticNamespace
+        {
+            get
+            {
+                try
+                {
+                    return Namespace;
+                }
+                catch
+                {
+                    return ""; // If namespace throws, then Name will as well, and it will attach the token as the name instead.
+                }
             }
         }
     }
