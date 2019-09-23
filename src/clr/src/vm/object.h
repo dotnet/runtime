@@ -900,19 +900,6 @@ typedef PTR_Utf8StringObject UTF8STRINGREF;
  */
 
 
-/**
- *  The high bit state can be one of three value: 
- * STRING_STATE_HIGH_CHARS: We've examined the string and determined that it definitely has values greater than 0x80
- * STRING_STATE_FAST_OPS: We've examined the string and determined that it definitely has no chars greater than 0x80
- * STRING_STATE_UNDETERMINED: We've never examined this string.
- * We've also reserved another bit for future use.
- */
-
-#define STRING_STATE_UNDETERMINED     0x00000000
-#define STRING_STATE_HIGH_CHARS       0x40000000
-#define STRING_STATE_FAST_OPS         0x80000000
-#define STRING_STATE_SPECIAL_SORT     0xC0000000
-
 class StringObject : public Object
 {
 #ifdef DACCESS_COMPILE
@@ -940,27 +927,6 @@ class StringObject : public Object
 
     DWORD   GetStringLength()                           { LIMITED_METHOD_DAC_CONTRACT; return( m_StringLength );}
     WCHAR*  GetBuffer()                                 { LIMITED_METHOD_CONTRACT; _ASSERTE(this != nullptr); return (WCHAR*)( dac_cast<TADDR>(this) + offsetof(StringObject, m_FirstChar) );  }
-
-    DWORD GetHighCharState() {
-        WRAPPER_NO_CONTRACT;
-        DWORD ret = GetHeader()->GetBits() & (BIT_SBLK_STRING_HIGH_CHAR_MASK);
-        return ret;
-    }
-
-    VOID SetHighCharState(DWORD value) {
-        WRAPPER_NO_CONTRACT;
-        _ASSERTE(value==STRING_STATE_HIGH_CHARS || value==STRING_STATE_FAST_OPS 
-                 || value==STRING_STATE_UNDETERMINED || value==STRING_STATE_SPECIAL_SORT);
-
-        // you need to clear the present state before going to a new state, but we'll allow multiple threads to set it to the same thing.
-        _ASSERTE((GetHighCharState() == STRING_STATE_UNDETERMINED) || (GetHighCharState()==value));    
-
-        static_assert_no_msg(BIT_SBLK_STRING_HAS_NO_HIGH_CHARS == STRING_STATE_FAST_OPS && 
-                 STRING_STATE_HIGH_CHARS == BIT_SBLK_STRING_HIGH_CHARS_KNOWN &&
-                 STRING_STATE_SPECIAL_SORT == BIT_SBLK_STRING_HAS_SPECIAL_SORT);
-
-        GetHeader()->SetBit(value);
-    }
 
     static UINT GetBufferOffset()
     {
@@ -995,17 +961,10 @@ class StringObject : public Object
 
     static STRINGREF* InitEmptyStringRefPtr();
 
-    DWORD InternalCheckHighChars();
-
     BOOL HasTrailByte();
     BOOL GetTrailByte(BYTE *bTrailByte);
     BOOL SetTrailByte(BYTE bTrailByte);
     static BOOL CaseInsensitiveCompHelper(__in_ecount(aLength) WCHAR * strA, __in_z INT8 * strB, int aLength, int bLength, int *result);
-
-#ifdef VERIFY_HEAP
-    //has to use raw object to avoid recursive validation
-    BOOL ValidateHighChars ();
-#endif //VERIFY_HEAP
 
     /*=================RefInterpretGetStringValuesDangerousForGC======================
     **N.B.: This perfoms no range checking and relies on the caller to have done this.
@@ -1033,19 +992,6 @@ class StringObject : public Object
 private:
     static STRINGREF* EmptyStringRefPtr;
 };
-
-//The first two macros are essentially the same.  I just define both because
-//having both can make the code more readable.
-#define IS_FAST_SORT(state) (((state) == STRING_STATE_FAST_OPS))
-#define IS_SLOW_SORT(state) (((state) != STRING_STATE_FAST_OPS))
-
-//This macro should be used to determine things like indexing, casing, and encoding.
-#define IS_FAST_OPS_EXCEPT_SORT(state) (((state)==STRING_STATE_SPECIAL_SORT) || ((state)==STRING_STATE_FAST_OPS))
-#define IS_ASCII(state) (((state)==STRING_STATE_SPECIAL_SORT) || ((state)==STRING_STATE_FAST_OPS))
-#define IS_FAST_CASING(state) IS_ASCII(state)
-#define IS_FAST_INDEX(state)  IS_ASCII(state)
-#define IS_STRING_STATE_UNDETERMINED(state) ((state)==STRING_STATE_UNDETERMINED)
-#define HAS_HIGH_CHARS(state) ((state)==STRING_STATE_HIGH_CHARS)
 
 /*================================GetEmptyString================================
 **Get a reference to the empty string.  If we haven't already gotten one, we

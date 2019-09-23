@@ -4873,16 +4873,6 @@ BOOL NoGuiOnAssert();
 VOID TerminateOnAssert();
 #endif // _DEBUG
 
-class HighCharHelper {
-public:
-    static inline BOOL IsHighChar(int c) {
-        return (BOOL)HighCharTable[c];
-    }
-
-private:
-    static const BYTE HighCharTable[];
-};
-
 
 BOOL ThreadWillCreateGuardPage(SIZE_T sizeReservedStack, SIZE_T sizeCommitedStack);
 
