@@ -6766,7 +6766,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         lclNum = varDsc->lvFieldLclStart;
                     }
 
-                    if (lcl->gtSsaNum == SsaConfig::RESERVED_SSA_NUM)
+                    if (lcl->GetSsaNum() == SsaConfig::RESERVED_SSA_NUM)
                     {
                         // Not an SSA variable.
 
@@ -6787,7 +6787,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     }
                     else
                     {
-                        ValueNumPair wholeLclVarVNP = varDsc->GetPerSsaData(lcl->gtSsaNum)->m_vnPair;
+                        ValueNumPair wholeLclVarVNP = varDsc->GetPerSsaData(lcl->GetSsaNum())->m_vnPair;
 
                         // Check for mismatched LclVar size
                         //
@@ -6869,10 +6869,10 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     // This flag propagates to the "local" on the RHS.  So we'll assume that this is correct,
                     // and treat it as a def (to a new, unique VN).
                     //
-                    if (lcl->gtSsaNum != SsaConfig::RESERVED_SSA_NUM)
+                    if (lcl->GetSsaNum() != SsaConfig::RESERVED_SSA_NUM)
                     {
                         ValueNum uniqVN = vnStore->VNForExpr(compCurBB, lcl->TypeGet());
-                        varDsc->GetPerSsaData(lcl->gtSsaNum)->m_vnPair.SetBoth(uniqVN);
+                        varDsc->GetPerSsaData(lcl->GetSsaNum())->m_vnPair.SetBoth(uniqVN);
                     }
 
                     lcl->gtVNPair = ValueNumPair(); // Avoid confusion -- we don't set the VN of a lcl being defined.

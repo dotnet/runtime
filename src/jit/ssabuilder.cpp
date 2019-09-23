@@ -1937,7 +1937,7 @@ void Compiler::JitTestCheckSSA()
             {
                 printf("  Node: ");
                 printTreeID(lcl);
-                printf(", SSA name = <%d, %d> -- SSA name class %d.\n", lcl->gtLclNum, lcl->gtSsaNum, tlAndN.m_num);
+                printf(", SSA name = <%d, %d> -- SSA name class %d.\n", lcl->gtLclNum, lcl->GetSsaNum(), tlAndN.m_num);
             }
             SSAName ssaNm;
             if (labelToSSA->Lookup(tlAndN.m_num, &ssaNm))
@@ -1955,20 +1955,20 @@ void Compiler::JitTestCheckSSA()
                 {
                     printf("Node: ");
                     printTreeID(lcl);
-                    printf(", SSA name = <%d, %d> was declared in SSA name class %d,\n", lcl->gtLclNum, lcl->gtSsaNum,
-                           tlAndN.m_num);
+                    printf(", SSA name = <%d, %d> was declared in SSA name class %d,\n", lcl->gtLclNum,
+                           lcl->GetSsaNum(), tlAndN.m_num);
                     printf(
                         "but this SSA name <%d,%d> has already been associated with a different SSA name class: %d.\n",
                         ssaNm.m_lvNum, ssaNm.m_ssaNum, num2);
                     unreached();
                 }
                 // And the current node must be of the specified SSA family.
-                if (!(lcl->gtLclNum == ssaNm.m_lvNum && lcl->gtSsaNum == ssaNm.m_ssaNum))
+                if (!(lcl->gtLclNum == ssaNm.m_lvNum && lcl->GetSsaNum() == ssaNm.m_ssaNum))
                 {
                     printf("Node: ");
                     printTreeID(lcl);
-                    printf(", SSA name = <%d, %d> was declared in SSA name class %d,\n", lcl->gtLclNum, lcl->gtSsaNum,
-                           tlAndN.m_num);
+                    printf(", SSA name = <%d, %d> was declared in SSA name class %d,\n", lcl->gtLclNum,
+                           lcl->GetSsaNum(), tlAndN.m_num);
                     printf("but that name class was previously bound to a different SSA name: <%d,%d>.\n",
                            ssaNm.m_lvNum, ssaNm.m_ssaNum);
                     unreached();
@@ -1977,15 +1977,15 @@ void Compiler::JitTestCheckSSA()
             else
             {
                 ssaNm.m_lvNum  = lcl->gtLclNum;
-                ssaNm.m_ssaNum = lcl->gtSsaNum;
+                ssaNm.m_ssaNum = lcl->GetSsaNum();
                 ssize_t num;
                 // The mapping(s) must be one-to-one: if the label has no mapping, then the ssaNm may not, either.
                 if (ssaToLabel->Lookup(ssaNm, &num))
                 {
                     printf("Node: ");
                     printTreeID(lcl);
-                    printf(", SSA name = <%d, %d> was declared in SSA name class %d,\n", lcl->gtLclNum, lcl->gtSsaNum,
-                           tlAndN.m_num);
+                    printf(", SSA name = <%d, %d> was declared in SSA name class %d,\n", lcl->gtLclNum,
+                           lcl->GetSsaNum(), tlAndN.m_num);
                     printf("but this SSA name has already been associated with a different name class: %d.\n", num);
                     unreached();
                 }

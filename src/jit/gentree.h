@@ -2865,7 +2865,6 @@ public:
     {
         return _gtSsaNum;
     }
-    __declspec(property(get = GetSsaNum)) unsigned gtSsaNum;
 
     void SetSsaNum(unsigned ssaNum)
     {
@@ -2874,7 +2873,7 @@ public:
 
     bool HasSsaName()
     {
-        return (gtSsaNum != SsaConfig::RESERVED_SSA_NUM);
+        return (GetSsaNum() != SsaConfig::RESERVED_SSA_NUM);
     }
 
 #if DEBUGGABLE_GENTREE

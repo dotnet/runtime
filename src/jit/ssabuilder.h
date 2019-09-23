@@ -32,7 +32,7 @@ public:
 
     // Requires stmt nodes to be already sequenced in evaluation order. Analyzes the graph
     // for introduction of phi-nodes as GT_PHI tree nodes at the beginning of each block.
-    // Each GT_LCL_VAR is given its ssa number through its gtSsaNum field in the node.
+    // Each GT_LCL_VAR is given its ssa number through its GetSsaNum() field in the node.
     // Each GT_PHI node will have gtOp1 set to lhs of the phi node and the gtOp2 to be a
     // GT_LIST of GT_PHI_ARG. Each use or def is denoted by the corresponding GT_LCL_VAR
     // tree. For example, to get all uses of a particular variable fully defined by its
