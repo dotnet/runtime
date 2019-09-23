@@ -87,46 +87,19 @@ namespace Internal.TypeSystem
     {
         public TState AppendName(StringBuilder sb, TypeDesc type, TOptions options)
         {
-            TypeFlags category;
-            try
+            // Don't use Category to switch here as it may fail for some types, and the DebugNameFormatter
+            // which is derived from that type cannot tolerate those failures
+            return type switch
             {
-                category = type.Category;
-            }
-            catch
-            {
-                category = type switch
-                {
-                    ArrayType t => TypeFlags.Array, // This will get us into the path that works with an ArrayType below
-                    ByRefType t => TypeFlags.ByRef,
-                    PointerType t => TypeFlags.Pointer,
-                    FunctionPointerType t => TypeFlags.FunctionPointer,
-                    GenericParameterDesc t => TypeFlags.GenericParameter,
-                    SignatureTypeVariable t => TypeFlags.SignatureTypeVariable,
-                    SignatureMethodVariable t => TypeFlags.SignatureMethodVariable,
-                    _ => TypeFlags.Class, // This will get us into the DefType path below
-                };
-            }
-
-            switch (category)
-            {
-                case TypeFlags.Array:
-                case TypeFlags.SzArray:
-                    return AppendName(sb, (ArrayType)type, options);
-                case TypeFlags.ByRef:
-                    return AppendName(sb, (ByRefType)type, options);
-                case TypeFlags.Pointer:
-                    return AppendName(sb, (PointerType)type, options);
-                case TypeFlags.FunctionPointer:
-                    return AppendName(sb, (FunctionPointerType)type, options);
-                case TypeFlags.GenericParameter:
-                    return AppendName(sb, (GenericParameterDesc)type, options);
-                case TypeFlags.SignatureTypeVariable:
-                    return AppendName(sb, (SignatureTypeVariable)type, options);
-                case TypeFlags.SignatureMethodVariable:
-                    return AppendName(sb, (SignatureMethodVariable)type, options);
-                default:
-                    return AppendName(sb, (DefType)type, options);
-            }
+                ArrayType arrayType => AppendName(sb, arrayType, options),
+                ByRefType byRefType => AppendName(sb, byRefType, options),
+                PointerType pointerType => AppendName(sb, pointerType, options),
+                FunctionPointerType functionPointerType => AppendName(sb, functionPointerType, options),
+                GenericParameterDesc genericPointerType => AppendName(sb, genericPointerType, options),
+                SignatureTypeVariable sigTypeVar => AppendName(sb, sigTypeVar, options),
+                SignatureMethodVariable sigMethodVar => AppendName(sb, sigMethodVar, options),
+                _ => AppendName(sb, (DefType)type, options)
+            };
         }
 
         public TState AppendName(StringBuilder sb, DefType type, TOptions options)

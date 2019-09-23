@@ -12,6 +12,14 @@ namespace Internal.TypeSystem
     /// </summary>
     abstract partial class DefType
     {
+        /// <summary>
+        /// Gets the Name of a type. This must not throw
+        /// </summary>
         public abstract string DiagnosticName { get; }
+
+        /// <summary>
+        /// Gets the Namespace of a type. This must not throw
+        /// </summary>
+        public abstract string DiagnosticNamespace { get; }
     }
 }
