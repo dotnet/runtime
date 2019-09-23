@@ -3963,7 +3963,7 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
 #endif // FEATURE_EH_FUNCLETS
 
 #ifdef _TARGET_ARMARCH_
-    if (compiler->codeGen->hasTailCalls)
+    if (compiler->codeGen->GetHasTailCalls())
     {
         gcInfoEncoderWithLog->SetHasTailCalls();
     }
