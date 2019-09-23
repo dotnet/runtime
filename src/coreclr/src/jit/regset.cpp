@@ -201,11 +201,11 @@ void RegSet::SetMaskVars(regMaskTP newMaskVars)
         else
         {
             printRegMaskInt(_rsMaskVars);
-            m_rsCompiler->getEmitter()->emitDispRegSet(_rsMaskVars);
+            m_rsCompiler->GetEmitter()->emitDispRegSet(_rsMaskVars);
             printf(" => ");
         }
         printRegMaskInt(newMaskVars);
-        m_rsCompiler->getEmitter()->emitDispRegSet(newMaskVars);
+        m_rsCompiler->GetEmitter()->emitDispRegSet(newMaskVars);
         printf("\n");
     }
 #endif // DEBUG
@@ -479,7 +479,7 @@ void RegSet::rsSpillFPStack(GenTreeCall* call)
         printf("\n");
 #endif
 
-    m_rsCompiler->codeGen->getEmitter()->emitIns_S(INS_fstp, emitActualTypeSize(treeType), temp->tdTempNum(), 0);
+    m_rsCompiler->codeGen->GetEmitter()->emitIns_S(INS_fstp, emitActualTypeSize(treeType), temp->tdTempNum(), 0);
 
     /* Mark the tree node as having been spilled */
 

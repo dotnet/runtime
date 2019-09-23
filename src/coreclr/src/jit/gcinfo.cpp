@@ -98,11 +98,11 @@ void GCInfo::gcDspGCrefSetChanges(regMaskTP gcRegGCrefSetNew DEBUGARG(bool force
             else
             {
                 printRegMaskInt(gcRegGCrefSetCur);
-                compiler->getEmitter()->emitDispRegSet(gcRegGCrefSetCur);
+                compiler->GetEmitter()->emitDispRegSet(gcRegGCrefSetCur);
                 printf(" => ");
             }
             printRegMaskInt(gcRegGCrefSetNew);
-            compiler->getEmitter()->emitDispRegSet(gcRegGCrefSetNew);
+            compiler->GetEmitter()->emitDispRegSet(gcRegGCrefSetNew);
             printf("\n");
         }
     }
@@ -127,11 +127,11 @@ void GCInfo::gcDspByrefSetChanges(regMaskTP gcRegByrefSetNew DEBUGARG(bool force
             else
             {
                 printRegMaskInt(gcRegByrefSetCur);
-                compiler->getEmitter()->emitDispRegSet(gcRegByrefSetCur);
+                compiler->GetEmitter()->emitDispRegSet(gcRegByrefSetCur);
                 printf(" => ");
             }
             printRegMaskInt(gcRegByrefSetNew);
-            compiler->getEmitter()->emitDispRegSet(gcRegByrefSetNew);
+            compiler->GetEmitter()->emitDispRegSet(gcRegByrefSetNew);
             printf("\n");
         }
     }
@@ -398,7 +398,7 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount, UNALIGNED
                 int offs = varDsc->lvStkOffs;
 
                 printf("GCINFO: untrckd %s lcl at [%s", varTypeGCstring(varDsc->TypeGet()),
-                       compiler->genEmitter->emitGetFrameReg());
+                       compiler->GetEmitter()->emitGetFrameReg());
 
                 if (offs < 0)
                 {
@@ -437,7 +437,7 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount, UNALIGNED
             int offs = tempThis->tdTempOffs();
 
             printf("GCINFO: untrck %s Temp at [%s", varTypeGCstring(varDsc->TypeGet()),
-                   compiler->genEmitter->emitGetFrameReg());
+                   compiler->GetEmitter()->emitGetFrameReg());
 
             if (offs < 0)
             {

@@ -764,7 +764,7 @@ void Compiler::unwindEmitFuncHelper(FuncInfoDsc* func, void* pHotCode, void* pCo
         }
         else
         {
-            startOffset = func->startLoc->CodeOffset(genEmitter);
+            startOffset = func->startLoc->CodeOffset(GetEmitter());
         }
 
         if (func->endLoc == nullptr)
@@ -773,7 +773,7 @@ void Compiler::unwindEmitFuncHelper(FuncInfoDsc* func, void* pHotCode, void* pCo
         }
         else
         {
-            endOffset = func->endLoc->CodeOffset(genEmitter);
+            endOffset = func->endLoc->CodeOffset(GetEmitter());
         }
 
 #ifdef UNIX_AMD64_ABI
@@ -814,7 +814,7 @@ void Compiler::unwindEmitFuncHelper(FuncInfoDsc* func, void* pHotCode, void* pCo
         }
         else
         {
-            startOffset = func->coldStartLoc->CodeOffset(genEmitter);
+            startOffset = func->coldStartLoc->CodeOffset(GetEmitter());
         }
 
         if (func->coldEndLoc == nullptr)
@@ -823,7 +823,7 @@ void Compiler::unwindEmitFuncHelper(FuncInfoDsc* func, void* pHotCode, void* pCo
         }
         else
         {
-            endOffset = func->coldEndLoc->CodeOffset(genEmitter);
+            endOffset = func->coldEndLoc->CodeOffset(GetEmitter());
         }
     }
 

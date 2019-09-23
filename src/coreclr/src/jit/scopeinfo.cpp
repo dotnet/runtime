@@ -676,7 +676,7 @@ CodeGen::siScope* CodeGen::siNewScope(unsigned LVnum, unsigned varNum)
 
     siScope* newScope = compiler->getAllocator(CMK_SiScope).allocate<siScope>(1);
 
-    newScope->scStartLoc.CaptureLocation(getEmitter());
+    newScope->scStartLoc.CaptureLocation(GetEmitter());
     assert(newScope->scStartLoc.Valid());
 
     newScope->scEndLoc.Init();
@@ -749,7 +749,7 @@ void CodeGen::siEndTrackedScope(unsigned varIndex)
         return;
     }
 
-    scope->scEndLoc.CaptureLocation(getEmitter());
+    scope->scEndLoc.CaptureLocation(GetEmitter());
     assert(scope->scEndLoc.Valid());
 
     siRemoveFromOpenScopeList(scope);
@@ -796,7 +796,7 @@ void CodeGen::siEndScope(unsigned varNum)
 
 void CodeGen::siEndScope(siScope* scope)
 {
-    scope->scEndLoc.CaptureLocation(getEmitter());
+    scope->scEndLoc.CaptureLocation(GetEmitter());
     assert(scope->scEndLoc.Valid());
 
     siRemoveFromOpenScopeList(scope);
@@ -1402,7 +1402,7 @@ CodeGen::psiScope* CodeGen::psiNewPrologScope(unsigned LVnum, unsigned slotNum)
 {
     psiScope* newScope = compiler->getAllocator(CMK_SiScope).allocate<psiScope>(1);
 
-    newScope->scStartLoc.CaptureLocation(getEmitter());
+    newScope->scStartLoc.CaptureLocation(GetEmitter());
     assert(newScope->scStartLoc.Valid());
 
     newScope->scEndLoc.Init();
@@ -1427,7 +1427,7 @@ CodeGen::psiScope* CodeGen::psiNewPrologScope(unsigned LVnum, unsigned slotNum)
 
 void CodeGen::psiEndPrologScope(psiScope* scope)
 {
-    scope->scEndLoc.CaptureLocation(getEmitter());
+    scope->scEndLoc.CaptureLocation(GetEmitter());
     assert(scope->scEndLoc.Valid());
 
     // Remove from open-scope list

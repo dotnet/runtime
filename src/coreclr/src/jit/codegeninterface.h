@@ -316,7 +316,7 @@ public:
     TempDsc* getSpillTempDsc(GenTree* tree);
 
 public:
-    emitter* getEmitter() const
+    emitter* GetEmitter() const
     {
         return m_cgEmitter;
     }
