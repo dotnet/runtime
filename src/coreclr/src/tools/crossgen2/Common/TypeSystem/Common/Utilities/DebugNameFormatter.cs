@@ -67,17 +67,7 @@ namespace Internal.TypeSystem
 
         public override Void AppendName(StringBuilder sb, GenericParameterDesc type, FormatOptions options)
         {
-            try
-            {
-                sb.Append(type.Name);
-            }
-            catch
-            {
-                string diagnosticName = "Unknown";
-                GetDiagnosticName(type, ref diagnosticName);
-                sb.Append(diagnosticName);
-            }
-
+            sb.Append(type.DiagnosticName);
             return Void.Value;
         }
 
@@ -105,16 +95,7 @@ namespace Internal.TypeSystem
                 sb.Append('+');
             }
 
-            try
-            {
-                sb.Append(nestedType.Name);
-            }
-            catch
-            {
-                string diagnosticName = "Unknown";
-                GetDiagnosticName(nestedType, ref diagnosticName);
-                sb.Append(diagnosticName);
-            }
+            sb.Append(nestedType.DiagnosticName);
 
             return Void.Value;
         }
@@ -187,27 +168,17 @@ namespace Internal.TypeSystem
                 }
 
                 AssemblyQualify(sb, type, options);
-
-                if ((options & FormatOptions.NamespaceQualify) != 0)
-                {
-                    string ns = type.Namespace;
-                    if (!string.IsNullOrEmpty(ns))
-                    {
-                        sb.Append(ns);
-                        sb.Append('.');
-                    }
-                }
-
-                sb.Append(type.Name);
+                NamespaceQualify(sb, type, options);
+                sb.Append(type.DiagnosticName);
             }
             catch
             {
                 sb.Length = initialLen;
 
-                string diagnosticName = "Unknown";
+                // 
                 AssemblyQualify(sb, type, options);
-                GetDiagnosticName(type, ref diagnosticName);
-                sb.Append(diagnosticName);
+                NamespaceQualify(sb, type, options);
+                sb.Append(type.DiagnosticName);
             }
 
             return Void.Value;
@@ -237,6 +208,19 @@ namespace Internal.TypeSystem
 
                 sb.Append(assemblyName);
                 sb.Append(']');
+            }
+        }
+
+        private void NamespaceQualify(StringBuilder sb, DefType type, FormatOptions options)
+        {
+            if ((options & FormatOptions.NamespaceQualify) != 0)
+            {
+                string ns = type.DiagnosticNamespace;
+                if (!string.IsNullOrEmpty(ns))
+                {
+                    sb.Append(ns);
+                    sb.Append('.');
+                }
             }
         }
 
@@ -302,7 +286,6 @@ namespace Internal.TypeSystem
             None = 0,
             AssemblyQualify = 0x1,
             NamespaceQualify = 0x2,
-            UseDiagnosticName = 0x4,
 
             Default = AssemblyQualify | NamespaceQualify,
         }

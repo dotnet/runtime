@@ -13,5 +13,13 @@ namespace Internal.TypeSystem
                 return _typeDef.DiagnosticName;
             }
         }
+
+        public override string DiagnosticNamespace
+        {
+            get
+            {
+                return _typeDef.DiagnosticNamespace;
+            }
+        }
     }
 }
