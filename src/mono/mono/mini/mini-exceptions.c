@@ -1523,10 +1523,9 @@ mono_get_portable_ip (intptr_t in_ip, intptr_t *out_ip, gint32 *out_offset, cons
 	*out_ip = mono_make_portable_ip ((intptr_t) info.dli_saddr, (intptr_t) info.dli_fbase);
 	*out_offset = in_ip - (intptr_t) info.dli_saddr;
 
-#ifndef MONO_PRIVATE_CRASHES
 	if (info.dli_saddr && out_name)
 		copy_summary_string_safe (out_name, info.dli_sname);
-#endif
+
 	return TRUE;
 }
 
