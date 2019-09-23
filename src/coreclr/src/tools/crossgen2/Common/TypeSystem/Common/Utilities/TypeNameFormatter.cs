@@ -87,27 +87,19 @@ namespace Internal.TypeSystem
     {
         public TState AppendName(StringBuilder sb, TypeDesc type, TOptions options)
         {
-            switch (type.Category)
+            // Don't use Category to switch here as it may fail for some types, and the DebugNameFormatter
+            // which is derived from that type cannot tolerate those failures
+            return type switch
             {
-                case TypeFlags.Array:
-                case TypeFlags.SzArray:
-                    return AppendName(sb, (ArrayType)type, options);
-                case TypeFlags.ByRef:
-                    return AppendName(sb, (ByRefType)type, options);
-                case TypeFlags.Pointer:
-                    return AppendName(sb, (PointerType)type, options);
-                case TypeFlags.FunctionPointer:
-                    return AppendName(sb, (FunctionPointerType)type, options);
-                case TypeFlags.GenericParameter:
-                    return AppendName(sb, (GenericParameterDesc)type, options);
-                case TypeFlags.SignatureTypeVariable:
-                    return AppendName(sb, (SignatureTypeVariable)type, options);
-                case TypeFlags.SignatureMethodVariable:
-                    return AppendName(sb, (SignatureMethodVariable)type, options);
-                default:
-                    Debug.Assert(type.IsDefType);
-                    return AppendName(sb, (DefType)type, options);
-            }
+                ArrayType arrayType => AppendName(sb, arrayType, options),
+                ByRefType byRefType => AppendName(sb, byRefType, options),
+                PointerType pointerType => AppendName(sb, pointerType, options),
+                FunctionPointerType functionPointerType => AppendName(sb, functionPointerType, options),
+                GenericParameterDesc genericPointerType => AppendName(sb, genericPointerType, options),
+                SignatureTypeVariable sigTypeVar => AppendName(sb, sigTypeVar, options),
+                SignatureMethodVariable sigMethodVar => AppendName(sb, sigMethodVar, options),
+                _ => AppendName(sb, (DefType)type, options)
+            };
         }
 
         public TState AppendName(StringBuilder sb, DefType type, TOptions options)
@@ -118,7 +110,8 @@ namespace Internal.TypeSystem
             }
             else
             {
-                DefType containingType = type.ContainingType;
+                DefType containingType = GetContainingType(type, options);
+
                 if (containingType != null)
                     return AppendNameForNestedType(sb, type, containingType, options);
                 else
@@ -137,6 +130,11 @@ namespace Internal.TypeSystem
         protected abstract TState AppendNameForNestedType(StringBuilder sb, DefType nestedType, DefType containingType, TOptions options);
         protected abstract TState AppendNameForNamespaceType(StringBuilder sb, DefType type, TOptions options);
         protected abstract TState AppendNameForInstantiatedType(StringBuilder sb, DefType type, TOptions options);
+
+        protected virtual DefType GetContainingType(DefType possibleInnerType, TOptions options)
+        {
+            return possibleInnerType.ContainingType;
+        }
 
         public string FormatName(TypeDesc type, TOptions options)
         {

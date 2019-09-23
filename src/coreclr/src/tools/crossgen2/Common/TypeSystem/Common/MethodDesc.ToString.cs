@@ -49,7 +49,7 @@ namespace Internal.TypeSystem
             // (Skipping return type to keep things short)
             sb.Append(OwningType);
             sb.Append('.');
-            sb.Append(Name);
+            sb.Append(DiagnosticName);
 
             bool first = true;
             for (int i = 0; i < Instantiation.Length; i++)
@@ -69,7 +69,14 @@ namespace Internal.TypeSystem
                 sb.Append('>');
 
             sb.Append('(');
-            sb.Append(Signature.ToString(includeReturnType: false));
+            try
+            {
+                sb.Append(Signature.ToString(includeReturnType: false));
+            }
+            catch
+            {
+                sb.Append("Unknown");
+            }
             sb.Append(')');
 
             return sb.ToString();
