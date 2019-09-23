@@ -14833,7 +14833,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
         /* We call gtPrepareCost to measure the cost of duplicating this tree */
         gtPrepareCost(expr);
 
-        estDupCostSz += expr->gtCostSz;
+        estDupCostSz += expr->GetCostSz();
     }
 
     bool                 allProfileWeightsAreValid = false;
@@ -19260,7 +19260,7 @@ unsigned Compiler::fgGetCodeEstimate(BasicBlock* block)
         }
         else
         {
-            // We could walk the tree to find out the real gtCostSz,
+            // We could walk the tree to find out the real GetCostSz(),
             // but just using MAX_COST for this trees code size works OK
             costSz += cost;
         }
