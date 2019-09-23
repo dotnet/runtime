@@ -6795,8 +6795,21 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
 
         bool IsTreeVNInvariant(GenTree* tree)
         {
-            return m_compiler->optVNIsLoopInvariant(tree->gtVNPair.GetLiberal(), m_loopNum,
-                                                    &m_hoistContext->m_curLoopVnInvariantCache);
+            ValueNum vn = tree->gtVNPair.GetLiberal();
+
+            if (m_compiler->vnStore->IsVNConstant(vn))
+            {
+                // It is unsafe to allow a GT_CLS_VAR that has been assigned a constant.
+                // The logic in optVNIsLoopInvariant would consider it to be loop-invariant, even
+                // if the assignment of the constant to the GT_CLS_VAR was inside the loop.
+                //
+                if (tree->OperIs(GT_CLS_VAR))
+                {
+                    return false;
+                }
+            }
+
+            return m_compiler->optVNIsLoopInvariant(vn, m_loopNum, &m_hoistContext->m_curLoopVnInvariantCache);
         }
 
     public:
