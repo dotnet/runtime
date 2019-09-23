@@ -110,7 +110,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        private Type? GetType(string strFormat, Type baseType)
+        private static Type? GetType(string strFormat, Type baseType)
         {
             // This function takes a string to describe the compound type, such as "[,][]", and a baseType.
             if (strFormat == null || strFormat.Equals(string.Empty))
@@ -124,11 +124,12 @@ namespace System.Reflection.Emit
 
         internal void CheckContext(params Type[]?[]? typess)
         {
-            ContainingAssemblyBuilder.CheckContext(typess);
+            AssemblyBuilder.CheckContext(typess);
         }
+
         internal void CheckContext(params Type?[]? types)
         {
-            ContainingAssemblyBuilder.CheckContext(types);
+            AssemblyBuilder.CheckContext(types);
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]

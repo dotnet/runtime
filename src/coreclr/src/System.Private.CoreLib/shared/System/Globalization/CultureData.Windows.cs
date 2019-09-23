@@ -712,8 +712,6 @@ namespace System.Globalization
             return GetLocaleInfo(cultureName, LocaleStringData.ConsoleFallbackName);
         }
 
-        internal bool IsFramework => false;
-
         internal bool IsWin32Installed => true;
 
         internal bool IsReplacementCulture

@@ -393,7 +393,7 @@ namespace System.Reflection.Emit
 
         internal int ExceptionHandlerCount => m_exceptions != null ? m_exceptions.Length : 0;
 
-        internal int CalculateNumberOfExceptions(__ExceptionInfo[]? excp)
+        internal static int CalculateNumberOfExceptions(__ExceptionInfo[]? excp)
         {
             int num = 0;
 
@@ -845,12 +845,10 @@ namespace System.Reflection.Emit
 
         // this method should return true for any and every ca that requires more work
         // than just setting the ca
-        private bool IsKnownCA(ConstructorInfo con)
+        private static bool IsKnownCA(ConstructorInfo con)
         {
             Type? caType = con.DeclaringType;
-            if (caType == typeof(System.Runtime.CompilerServices.MethodImplAttribute)) return true;
-            else if (caType == typeof(DllImportAttribute)) return true;
-            else return false;
+            return caType == typeof(MethodImplAttribute) || caType == typeof(DllImportAttribute);
         }
 
         private void ParseCA(ConstructorInfo con)

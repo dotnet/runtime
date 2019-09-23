@@ -376,14 +376,9 @@ namespace System.Text
             return bFallingBack;
         }
 
-        // private helper methods
         [DoesNotReturn]
-        internal void ThrowLastCharRecursive(int charRecursive)
-        {
+        internal static void ThrowLastCharRecursive(int charRecursive) =>
             // Throw it, using our complete character
-            throw new ArgumentException(
-                SR.Format(SR.Argument_RecursiveFallback,
-                    charRecursive), "chars");
-        }
+            throw new ArgumentException(SR.Format(SR.Argument_RecursiveFallback, charRecursive), "chars");
     }
 }
