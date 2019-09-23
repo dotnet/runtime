@@ -184,12 +184,6 @@ stages:
       #     storage: <Name of the Latest channel to publish to in dotnetcli blob storage>
       dependsOnPublishStages:
 
-      - dependsOn: NetCore_Dev30_Publish
-        channel:
-          name: .NET Core 3 Dev
-          bar: PublicDevRelease_30_Channel_Id
-          storage: release/3.0
-          public: true
       - dependsOn: NetCore_Release30_Publish
         channel:
           name: .NET Core 3 Release
