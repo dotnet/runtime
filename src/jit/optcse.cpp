@@ -275,7 +275,7 @@ int __cdecl Compiler::optCSEcostCmpEx(const void* op1, const void* op2)
 
     int diff;
 
-    diff = (int)(exp2->gtCostEx - exp1->gtCostEx);
+    diff = (int)(exp2->GetCostEx() - exp1->GetCostEx());
 
     if (diff != 0)
     {
@@ -591,7 +591,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
             printf("\nCSE candidate #%02u, vn=", CSEindex);
             vnPrint(key, 0);
             printf(" cseMask=%s in " FMT_BB ", [cost=%2u, size=%2u]: \n", genES2str(cseTraits, tempMask),
-                   compCurBB->bbNum, tree->gtCostEx, tree->GetCostSz());
+                   compCurBB->bbNum, tree->GetCostEx(), tree->GetCostSz());
             gtDispTree(tree);
         }
 #endif // DEBUG
@@ -1583,7 +1583,7 @@ public:
             }
             else
             {
-                m_Cost     = Expr()->gtCostEx;      // the estimated execution cost
+                m_Cost     = Expr()->GetCostEx();   // the estimated execution cost
                 m_Size     = Expr()->GetCostSz();   // always the GetCostSz()
                 m_defCount = m_CseDsc->csdDefWtCnt; // weighted def count
                 m_useCount = m_CseDsc->csdUseWtCnt; // weighted use count (excluding the implicit uses at defs)
@@ -2609,7 +2609,7 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
     }
     else
     {
-        cost = tree->gtCostEx;
+        cost = tree->GetCostEx();
     }
 
     /* Don't bother if the potential savings are very low */

@@ -6706,14 +6706,14 @@ bool Compiler::optIsProfitableToHoistableTree(GenTree* tree, unsigned lnum)
     // This pessimistically assumes that each loopVar has a conflicting
     // lifetime with every other loopVar.
     // For this case we will hoist the expression only if is profitable
-    // to place it in a stack home location (gtCostEx >= 2*IND_COST_EX)
+    // to place it in a stack home location (GetCostEx() >= 2*IND_COST_EX)
     // as we believe it will be placed in the stack or one of the other
     // loopVars will be spilled into the stack
     //
     if (loopVarCount >= availRegCount)
     {
-        // Don't hoist expressions that are not heavy: tree->gtCostEx < (2*IND_COST_EX)
-        if (tree->gtCostEx < (2 * IND_COST_EX))
+        // Don't hoist expressions that are not heavy: tree->GetCostEx() < (2*IND_COST_EX)
+        if (tree->GetCostEx() < (2 * IND_COST_EX))
         {
             return false;
         }
@@ -6725,12 +6725,12 @@ bool Compiler::optIsProfitableToHoistableTree(GenTree* tree, unsigned lnum)
     // available when we enter the loop body, since a loop often defines a
     // LclVar on exit or there is often at least one LclVar that is worth
     // spilling to the stack to make way for this hoisted expression.
-    // So we are willing hoist an expression with gtCostEx == MIN_CSE_COST
+    // So we are willing hoist an expression with GetCostEx() == MIN_CSE_COST
     //
     if (varInOutCount > availRegCount)
     {
-        // Don't hoist expressions that barely meet CSE cost requirements: tree->gtCostEx == MIN_CSE_COST
-        if (tree->gtCostEx <= MIN_CSE_COST + 1)
+        // Don't hoist expressions that barely meet CSE cost requirements: tree->GetCostEx() == MIN_CSE_COST
+        if (tree->GetCostEx() <= MIN_CSE_COST + 1)
         {
             return false;
         }
@@ -8907,7 +8907,7 @@ void Compiler::optOptimizeBools()
 
             gtPrepareCost(c2);
 
-            if (c2->gtCostEx > 12)
+            if (c2->GetCostEx() > 12)
             {
                 continue;
             }
