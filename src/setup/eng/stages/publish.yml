@@ -19,7 +19,7 @@ stages:
 # Stages-based publishing entry point
 - template: /eng/common/templates/post-build/post-build.yml
   parameters:
-    dependsOn:
+    validateDependsOn:
     - ${{ each dependency in parameters.dependsOnPublishStages }}:
       - PublishBlob_${{ dependency.dependsOn }}
     # Symbol validation is not ready yet. https://github.com/dotnet/arcade/issues/2871
