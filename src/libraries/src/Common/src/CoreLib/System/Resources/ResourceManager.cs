@@ -792,7 +792,7 @@ namespace System.Resources
                 set => _rm._satelliteContractVersion = value;
             }
 
-            internal Version? ObtainSatelliteContractVersion(Assembly a) =>
+            internal static Version? ObtainSatelliteContractVersion(Assembly a) =>
                 ResourceManager.GetSatelliteContractVersion(a);
 
             internal UltimateResourceFallbackLocation FallbackLoc
