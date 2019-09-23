@@ -38,7 +38,6 @@
          https://github.com/dotnet/corefx/issues/14291 is tracking cleaning this up -->
     <IsRuntimeAndReferenceAssembly Condition="'$(IsRuntimeAndReferenceAssembly)' == '' and '$(IsRuntimeAssembly)' == 'true' and Exists('$(SourceDir)/$(MSBuildProjectName)') and !Exists('$(SourceDir)/$(MSBuildProjectName)/ref') and !$(MSBuildProjectName.StartsWith('System.Private'))">true</IsRuntimeAndReferenceAssembly>
     <IsNETCoreAppRef Condition="'$(IsNETCoreAppRef)' == ''">$(IsNETCoreApp)</IsNETCoreAppRef>
-    <IsUAPRef Condition="'$(IsUAPRef)' == ''">$(IsUAP)</IsUAPRef>
     <IsNetFxNETStandardRef Condition="'$(IsNetFxNETStandardRef)' == ''">$(IsNetFxNETStandard)</IsNetFxNETStandardRef>
 
     <BinPlaceRef Condition="'$(BinPlaceRef)' == '' And ('$(IsReferenceAssembly)' == 'true' OR '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRef>
@@ -59,12 +58,6 @@
       <RefPath Condition="'$(BinPlaceNETCoreAppPackage)' == 'true' AND '$(IsNETCoreAppRef)' == 'true'">$(RefRootPath)microsoft.netcore.app</RefPath>
       <!-- enable trimming for any runtime project that's part of the shared framework and hasn't already set ILLinkTrimAssembly -->
       <SetProperties Condition="'$(BinPlaceRuntime)' == 'true' AND '$(ILLinkTrimAssembly)' == ''">ILLinkTrimAssembly=true</SetProperties>
-    </BinPlaceConfiguration>
-    <BinPlaceConfiguration Condition="'$(IsUAPRef)'=='true' AND '$(BuildingUAPVertical)' == 'true'" Include="uap-Windows_NT">
-      <PackageFileRefPath>$(UAPPackageRefPath)</PackageFileRefPath>
-    </BinPlaceConfiguration>
-    <BinPlaceConfiguration Condition="'$(IsUAP)' == 'true' AND '$(BuildingUAPVertical)' == 'true'" Include="uap-Windows_NT">
-      <PackageFileRuntimePath>$(UAPPackageRuntimePath)</PackageFileRuntimePath>
     </BinPlaceConfiguration>
 
     <!-- Setup the shared framework directory for testing -->

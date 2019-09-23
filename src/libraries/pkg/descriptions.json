@@ -151,11 +151,6 @@
     "CommonTypes": []
   },
   {
-    "Name": "Microsoft.Private.CoreFx.UAP",
-    "Description": "Package used to represent the portions of UAP that come from CoreFx.",
-    "CommonTypes": []
-  },
-  {
     "Name": "Microsoft.TargetingPack.NETFramework.v4.6",
     "Description": "Contains the .NET Framework v4.6 targeting pack.",
     "CommonTypes": []
