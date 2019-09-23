@@ -93,16 +93,7 @@ typedef DPTR(EnCSyncBlockInfo) PTR_EnCSyncBlockInfo;
 // reducing the mask.  We use the very high bit, in _DEBUG, to be sure we never forget
 // to mask the Value to obtain the Index
 
-    // These first three are only used on strings (If the first one is on, we know whether 
-    // the string has high byte characters, and the second bit tells which way it is. 
-    // Note that we are reusing the FINALIZER_RUN bit since strings don't have finalizers,
-    // so the value of this bit does not matter for strings
-#define BIT_SBLK_STRING_HAS_NO_HIGH_CHARS   0x80000000
-
-#define BIT_SBLK_STRING_HIGH_CHARS_KNOWN    0x40000000
-#define BIT_SBLK_STRING_HAS_SPECIAL_SORT    0xC0000000
-#define BIT_SBLK_STRING_HIGH_CHAR_MASK      0xC0000000
-
+#define BIT_SBLK_UNUSED                     0x80000000
 #define BIT_SBLK_FINALIZER_RUN              0x40000000
 #define BIT_SBLK_GC_RESERVE                 0x20000000
 

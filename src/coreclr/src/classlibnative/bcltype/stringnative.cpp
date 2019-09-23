@@ -30,29 +30,6 @@
 #pragma optimize("tgy", on)
 #endif
 
-/*===============================IsFastSort===============================
-**Action: Call the helper to walk the string and see if we have any high chars.
-**Returns: void.  The appropriate bits are set on the String.
-**Arguments: vThisRef - The string to be checked.
-**Exceptions: None.
-==============================================================================*/
-FCIMPL1(FC_BOOL_RET, COMString::IsFastSort, StringObject* thisRef) {
-    FCALL_CONTRACT;
-
-    VALIDATEOBJECT(thisRef);
-    _ASSERTE(thisRef!=NULL);
-    DWORD state = thisRef->GetHighCharState();
-    if (IS_STRING_STATE_UNDETERMINED(state)) {
-        state = (STRINGREF(thisRef))->InternalCheckHighChars();
-        FC_GC_POLL_RET();
-    }
-    else {
-        FC_GC_POLL_NOT_NEEDED();
-    }
-    FC_RETURN_BOOL(IS_FAST_SORT(state)); //This can indicate either high chars or special sorting chars.
-}
-FCIMPLEND
-
 
 /*==================================GETCHARAT===================================
 **Returns the character at position index.  Thows IndexOutOfRangeException as
