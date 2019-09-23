@@ -49,14 +49,7 @@ namespace Internal.TypeSystem
             // (Skipping return type to keep things short)
             sb.Append(OwningType);
             sb.Append('.');
-            try
-            {
-                sb.Append(Name);
-            }
-            catch
-            {
-                sb.Append(DiagnosticName);
-            }
+            sb.Append(DiagnosticName);
 
             bool first = true;
             for (int i = 0; i < Instantiation.Length; i++)

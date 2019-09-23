@@ -12,7 +12,14 @@ namespace Internal.TypeSystem.Ecma
         {
             get
             {
-                return $"MethodDef({MetadataReader.GetToken(Handle):x8})";
+                try
+                {
+                    return Name;
+                }
+                catch
+                {
+                    return $"MethodDef({MetadataReader.GetToken(Handle):x8})";
+                }
             }
         }
     }

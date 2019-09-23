@@ -257,24 +257,6 @@ namespace Internal.TypeSystem
             }
         }
 
-        private void GetDiagnosticName(GenericParameterDesc type, ref string diagnosticName)
-        {
-            try
-            {
-                diagnosticName = type.DiagnosticName;
-            }
-            catch {}
-        }
-
-        private void GetDiagnosticName(DefType type, ref string diagnosticName)
-        {
-            try
-            {
-                diagnosticName = type.DiagnosticName;
-            }
-            catch {}
-        }
-
         public struct Void
         {
             public static Void Value => default(Void);
