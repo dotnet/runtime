@@ -604,7 +604,7 @@ namespace System.Runtime.Loader
             return null;
         }
 
-        private Assembly ValidateAssemblyNameWithSimpleName(Assembly assembly, string? requestedSimpleName)
+        private static Assembly ValidateAssemblyNameWithSimpleName(Assembly assembly, string? requestedSimpleName)
         {
             // Get the name of the loaded assembly
             string? loadedSimpleName = null;

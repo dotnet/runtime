@@ -419,8 +419,6 @@ namespace System.Globalization
             return LocaleData.GetConsoleUICulture(cultureName);
         }
 
-        internal bool IsFramework => false;
-
         internal bool IsWin32Installed => false;
 
         internal bool IsReplacementCulture => false;

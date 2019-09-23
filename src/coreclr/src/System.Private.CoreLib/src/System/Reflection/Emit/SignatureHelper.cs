@@ -572,13 +572,13 @@ namespace System.Reflection.Emit
                 m_signature[m_currSig++] = phandle[i];
         }
 
-        private byte[] ExpandArray(byte[] inArray)
+        private static byte[] ExpandArray(byte[] inArray)
         {
             // Expand the signature buffer size
             return ExpandArray(inArray, inArray.Length * 2);
         }
 
-        private byte[] ExpandArray(byte[] inArray, int requiredLength)
+        private static byte[] ExpandArray(byte[] inArray, int requiredLength)
         {
             // Expand the signature buffer size
 

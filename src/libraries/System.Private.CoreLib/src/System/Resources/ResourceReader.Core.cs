@@ -95,7 +95,7 @@ namespace System.Resources
             return (obj, stream) => typedDelegate((TInstance)obj, stream);
         }
 
-        private bool ValidateReaderType(string readerType)
+        private static bool ValidateReaderType(string readerType)
         {
             return ResourceManager.IsDefaultType(readerType, ResourceManager.ResReaderTypeName);
         }
