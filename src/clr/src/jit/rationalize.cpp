@@ -295,7 +295,7 @@ static void RewriteAssignmentIntoStoreLclCore(GenTreeOp* assignment,
 
     GenTreeLclVarCommon* var = location->AsLclVarCommon();
     store->SetLclNum(var->gtLclNum);
-    store->SetSsaNum(var->gtSsaNum);
+    store->SetSsaNum(var->GetSsaNum());
 
     if (locationOp == GT_LCL_FLD)
     {

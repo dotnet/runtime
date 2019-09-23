@@ -524,7 +524,7 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
         return;
     }
 
-    if (lcl->gtSsaNum == SsaConfig::RESERVED_SSA_NUM)
+    if (lcl->GetSsaNum() == SsaConfig::RESERVED_SSA_NUM)
     {
         return;
     }
@@ -540,7 +540,7 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
         Limit      limit(Limit::keUndef);
         genTreeOps cmpOper = GT_NONE;
 
-        LclSsaVarDsc* ssaData     = m_pCompiler->lvaTable[lcl->gtLclNum].GetPerSsaData(lcl->gtSsaNum);
+        LclSsaVarDsc* ssaData     = m_pCompiler->lvaTable[lcl->gtLclNum].GetPerSsaData(lcl->GetSsaNum());
         ValueNum      normalLclVN = m_pCompiler->vnStore->VNConservativeNormalValue(ssaData->m_vnPair);
 
         // Current assertion is of the form (i < len - cns) != 0
