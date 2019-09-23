@@ -55,13 +55,7 @@ namespace Internal.TypeSystem
             }
             catch
             {
-                string diagName = "Unknown";
-                try
-                {
-                    diagName = DiagnosticName;
-                }
-                catch {}
-                sb.Append(diagName);
+                sb.Append(DiagnosticName);
             }
 
             bool first = true;

@@ -10,7 +10,7 @@ namespace Internal.TypeSystem
     public abstract partial class GenericParameterDesc
     {
         /// <summary>
-        /// Gets the name of the generic parameter as defined in the metadata.
+        /// Gets the name of the generic parameter as defined in the metadata. This must not throw
         /// </summary>
         public abstract string DiagnosticName { get; }
     }
