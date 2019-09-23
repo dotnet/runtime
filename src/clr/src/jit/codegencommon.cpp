@@ -159,7 +159,7 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
 
     genInterruptible = false;
 #ifdef _TARGET_ARMARCH_
-    hasTailCalls = false;
+    SetHasTailCalls(false);
 #endif // _TARGET_ARMARCH_
 #ifdef DEBUG
     genInterruptibleUsed = false;
@@ -7965,7 +7965,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 
     if (jmpEpilog)
     {
-        hasTailCalls = true;
+        SetHasTailCalls(true);
 
         noway_assert(block->bbJumpKind == BBJ_RETURN);
         noway_assert(block->GetFirstLIRNode() != nullptr);
