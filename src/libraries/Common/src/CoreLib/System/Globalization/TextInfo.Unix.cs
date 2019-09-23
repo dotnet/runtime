@@ -19,7 +19,7 @@ namespace System.Globalization
         // ---- PAL layer ends here ----
         // -----------------------------
 
-        private bool NeedsTurkishCasing(string localeName)
+        private static bool NeedsTurkishCasing(string localeName)
         {
             Debug.Assert(localeName != null);
 

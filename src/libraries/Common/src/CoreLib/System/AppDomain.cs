@@ -116,7 +116,7 @@ namespace System
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // This api is only meaningful for very specific partial trust/CAS scenarios
         }
 
-        private int ExecuteAssembly(Assembly assembly, string?[]? args)
+        private static int ExecuteAssembly(Assembly assembly, string?[]? args)
         {
             MethodInfo? entry = assembly.EntryPoint;
             if (entry == null)

@@ -457,7 +457,7 @@ namespace Internal.Win32
             }
         }
 
-        internal void Win32Error(int errorCode, string? str)
+        internal static void Win32Error(int errorCode, string? str)
         {
             switch (errorCode)
             {

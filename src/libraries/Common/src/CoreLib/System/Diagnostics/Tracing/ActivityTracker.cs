@@ -248,7 +248,7 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// Searched for a active (nonstopped) activity with the given name.  Returns null if not found.
         /// </summary>
-        private ActivityInfo? FindActiveActivity(string name, ActivityInfo? startLocation)
+        private static ActivityInfo? FindActiveActivity(string name, ActivityInfo? startLocation)
         {
             ActivityInfo? activity = startLocation;
             while (activity != null)
@@ -264,7 +264,7 @@ namespace System.Diagnostics.Tracing
         /// Strip out "Start" or "End" suffix from activity name and add providerName prefix.
         /// If 'task'  it does not end in Start or Stop and Task is non-zero use that as the name of the activity
         /// </summary>
-        private string NormalizeActivityName(string providerName, string activityName, int task)
+        private static string NormalizeActivityName(string providerName, string activityName, int task)
         {
             // We use provider name to distinguish between activities from different providers.
 
