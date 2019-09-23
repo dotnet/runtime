@@ -79,7 +79,7 @@ typedef struct {
 		GHashTable *type_names; /* For kind == MONO_KIND_TYPE_NAME_ONLY */
 		StepFilter filter; /* For kind == MOD_KIND_STEP */
 	} data;
-	gboolean caught, uncaught, subclasses; /* For kind == MOD_KIND_EXCEPTION_ONLY */
+	gboolean caught, uncaught, subclasses, not_filtered_feature, everything_else; /* For kind == MOD_KIND_EXCEPTION_ONLY */
 } Modifier;
 
 typedef struct{

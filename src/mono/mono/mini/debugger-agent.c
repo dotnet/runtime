@@ -283,7 +283,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 53
+#define MINOR_VERSION 54
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -3609,7 +3609,14 @@ create_event_list (EventKind event, GPtrArray *reqs, MonoJitInfo *ji, EventInfo 
 
 	if (!reqs)
 		return NULL;
-
+	gboolean has_everything_else = FALSE;
+	gboolean is_new_filtered_exception = FALSE;
+	gboolean filteredException = TRUE;
+	gint filtered_suspend_policy = 0;
+	gint filtered_req_id = 0;
+	gint everything_else_suspend_policy = 0;
+	gint everything_else_req_id = 0;
+	gboolean is_already_filtered = FALSE;
 	for (i = 0; i < reqs->len; ++i) {
 		EventRequest *req = (EventRequest *)g_ptr_array_index (reqs, i);
 		if (req->event_kind == event) {
@@ -3631,7 +3638,7 @@ create_event_list (EventKind event, GPtrArray *reqs, MonoJitInfo *ji, EventInfo 
 				} else if (mod->kind == MOD_KIND_THREAD_ONLY) {
 					if (mod->data.thread != mono_thread_internal_current ())
 						filtered = TRUE;
-				} else if (mod->kind == MOD_KIND_EXCEPTION_ONLY && ei) {
+				} else if (mod->kind == MOD_KIND_EXCEPTION_ONLY && !mod->not_filtered_feature && ei) {
 					if (mod->data.exc_class && mod->subclasses && !mono_class_is_assignable_from_internal (mod->data.exc_class, ei->exc->vtable->klass))
 						filtered = TRUE;
 					if (mod->data.exc_class && !mod->subclasses && mod->data.exc_class != ei->exc->vtable->klass)
@@ -3640,6 +3647,31 @@ create_event_list (EventKind event, GPtrArray *reqs, MonoJitInfo *ji, EventInfo 
 						filtered = TRUE;
 					if (!ei->caught && !mod->uncaught)
 						filtered = TRUE;
+				} else if (mod->kind == MOD_KIND_EXCEPTION_ONLY && mod->not_filtered_feature && ei) {
+					is_new_filtered_exception = TRUE;
+					if ((mod->data.exc_class && mod->subclasses && mono_class_is_assignable_from_internal (mod->data.exc_class, ei->exc->vtable->klass)) ||
+					    (mod->data.exc_class && !mod->subclasses && mod->data.exc_class != ei->exc->vtable->klass)) {
+						is_already_filtered = TRUE;
+						if ((ei->caught && mod->caught) || (!ei->caught && mod->uncaught)) {
+							filteredException = FALSE; 
+							filtered_suspend_policy = req->suspend_policy;
+							filtered_req_id = req->id;
+						}
+					}
+					if (!mod->data.exc_class && mod->everything_else) {
+						if ((ei->caught && mod->caught) || (!ei->caught && mod->uncaught)) {
+							has_everything_else = TRUE;
+							everything_else_req_id = req->id;
+							everything_else_suspend_policy = req->suspend_policy;
+						}
+					}
+					if (!mod->data.exc_class && !mod->everything_else) {
+						if ((ei->caught && mod->caught) || (!ei->caught && mod->uncaught)) {
+							filteredException = FALSE; 
+							filtered_suspend_policy = req->suspend_policy;
+							filtered_req_id = req->id;
+						}
+					}
 				} else if (mod->kind == MOD_KIND_ASSEMBLY_ONLY && ji) {
 					int k;
 					gboolean found = FALSE;
@@ -3722,11 +3754,22 @@ create_event_list (EventKind event, GPtrArray *reqs, MonoJitInfo *ji, EventInfo 
 				}
 			}
 
-			if (!filtered) {
+			if (!filtered && !is_new_filtered_exception) {
 				*suspend_policy = MAX (*suspend_policy, req->suspend_policy);
 				events = g_slist_append (events, GINT_TO_POINTER (req->id));
 			}
 		}
+	}
+
+	if (has_everything_else && !is_already_filtered) {
+		filteredException = FALSE; 
+		filtered_suspend_policy = everything_else_suspend_policy;
+		filtered_req_id = everything_else_req_id;
+	}
+
+	if (!filteredException) {
+		*suspend_policy = MAX (*suspend_policy, filtered_suspend_policy);
+		events = g_slist_append (events, GINT_TO_POINTER (filtered_req_id));
 	}
 
 	/* Send a VM START/DEATH event by default */
@@ -7230,7 +7273,6 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 					req->modifiers [i].subclasses = decode_byte (p, &p, end);
 				else
 					req->modifiers [i].subclasses = TRUE;
-				DEBUG_PRINTF (1, "[dbg] \tEXCEPTION_ONLY filter (%s%s%s%s).\n", exc_class ? m_class_get_name (exc_class) : "all", req->modifiers [i].caught ? ", caught" : "", req->modifiers [i].uncaught ? ", uncaught" : "", req->modifiers [i].subclasses ? ", include-subclasses" : "");
 				if (exc_class) {
 					req->modifiers [i].data.exc_class = exc_class;
 
@@ -7239,6 +7281,16 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 						return ERR_INVALID_ARGUMENT;
 					}
 				}
+				if (CHECK_PROTOCOL_VERSION (2, 54)) {
+					req->modifiers [i].not_filtered_feature = decode_byte (p, &p, end);
+					req->modifiers [i].everything_else  = decode_byte (p, &p, end);
+					DEBUG_PRINTF (1, "[dbg] \tEXCEPTION_ONLY 2 filter (%s%s%s%s).\n", exc_class ? m_class_get_name (exc_class) : (req->modifiers [i].everything_else ? "everything else" : "all"), req->modifiers [i].caught ? ", caught" : "", req->modifiers [i].uncaught ? ", uncaught" : "", req->modifiers [i].subclasses ? ", include-subclasses" : "");
+				} else {
+					req->modifiers [i].not_filtered_feature = FALSE;
+					req->modifiers [i].everything_else = FALSE;
+					DEBUG_PRINTF (1, "[dbg] \tEXCEPTION_ONLY filter (%s%s%s%s).\n", exc_class ? m_class_get_name (exc_class) : "all", req->modifiers [i].caught ? ", caught" : "", req->modifiers [i].uncaught ? ", uncaught" : "", req->modifiers [i].subclasses ? ", include-subclasses" : "");
+				}
+				
 			} else if (mod == MOD_KIND_ASSEMBLY_ONLY) {
 				int n = decode_int (p, &p, end);
 				int j;
