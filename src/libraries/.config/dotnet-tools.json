@@ -3,7 +3,7 @@
   "isRoot": true,
   "tools": {
     "coverlet.console": {
-      "version": "1.5.51-ged9195d73b",
+      "version": "1.6.0",
       "commands": [
         "coverlet"
       ]
