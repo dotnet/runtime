@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
@@ -8,11 +8,11 @@ using System.Threading.Tasks;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 
-namespace Microsoft.Extensions.Logging.Testing
+namespace Microsoft.AspNetCore.Testing
 {
-    public class LoggedTestClassRunner : XunitTestClassRunner
+    internal class AspNetTestClassRunner : XunitTestClassRunner
     {
-        public LoggedTestClassRunner(
+        public AspNetTestClassRunner(
             ITestClass testClass,
             IReflectionTypeInfo @class,
             IEnumerable<IXunitTestCase> testCases,
@@ -26,11 +26,19 @@ namespace Microsoft.Extensions.Logging.Testing
         {
         }
 
-        protected override Task<RunSummary> RunTestMethodAsync(
-            ITestMethod testMethod,
-            IReflectionMethodInfo method,
-            IEnumerable<IXunitTestCase> testCases,
-            object[] constructorArguments)
-            => new LoggedTestMethodRunner(testMethod, Class, method, testCases, DiagnosticMessageSink, MessageBus, new ExceptionAggregator(Aggregator), CancellationTokenSource, constructorArguments).RunAsync();
+        protected override Task<RunSummary> RunTestMethodAsync(ITestMethod testMethod, IReflectionMethodInfo method, IEnumerable<IXunitTestCase> testCases, object[] constructorArguments)
+        {
+            var runner = new AspNetTestMethodRunner(
+                testMethod,
+                Class,
+                method,
+                testCases,
+                DiagnosticMessageSink,
+                MessageBus,
+                new ExceptionAggregator(Aggregator),
+                CancellationTokenSource,
+                constructorArguments);
+            return runner.RunAsync();
+        }
     }
 }

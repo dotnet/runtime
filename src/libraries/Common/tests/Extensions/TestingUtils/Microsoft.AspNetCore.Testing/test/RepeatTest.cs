@@ -3,10 +3,10 @@
 
 using Xunit;
 
-namespace Microsoft.Extensions.Logging.Testing.Tests
+namespace Microsoft.AspNetCore.Testing
 {
     [Repeat]
-    public class LoggedTestXunitRepeatTests : LoggedTest
+    public class RepeatTest
     {
         public static int _runCount = 0;
 
@@ -14,30 +14,30 @@ namespace Microsoft.Extensions.Logging.Testing.Tests
         [Repeat(5)]
         public void RepeatLimitIsSetCorrectly()
         {
-            Assert.Equal(5, RepeatContext.Limit);
+            Assert.Equal(5, RepeatContext.Current.Limit);
         }
 
         [Fact]
         [Repeat(5)]
         public void RepeatRunsTestSpecifiedNumberOfTimes()
         {
-            Assert.Equal(RepeatContext.CurrentIteration, _runCount);
+            Assert.Equal(RepeatContext.Current.CurrentIteration, _runCount);
             _runCount++;
         }
 
         [Fact]
         public void RepeatCanBeSetOnClass()
         {
-            Assert.Equal(10, RepeatContext.Limit);
+            Assert.Equal(10, RepeatContext.Current.Limit);
         }
     }
 
-    public class LoggedTestXunitRepeatAssemblyTests : LoggedTest
+    public class LoggedTestXunitRepeatAssemblyTests
     {
         [Fact]
         public void RepeatCanBeSetOnAssembly()
         {
-            Assert.Equal(1, RepeatContext.Limit);
+            Assert.Equal(1, RepeatContext.Current.Limit);
         }
     }
 }
