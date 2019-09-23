@@ -312,7 +312,7 @@ void CodeGen::genCodeForBBlist()
 #ifdef _TARGET_XARCH_
         if (genAlignLoops && block->bbFlags & BBF_LOOP_HEAD)
         {
-            getEmitter()->emitLoopAlign();
+            GetEmitter()->emitLoopAlign();
         }
 #endif
 
@@ -365,7 +365,7 @@ void CodeGen::genCodeForBBlist()
         {
             // Mark a label and update the current set of live GC refs
 
-            block->bbEmitCookie = getEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
+            block->bbEmitCookie = GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
                                                              gcInfo.gcRegByrefSetCur, FALSE);
         }
 
@@ -373,7 +373,7 @@ void CodeGen::genCodeForBBlist()
         {
             // We require the block that starts the Cold section to have a label
             noway_assert(block->bbEmitCookie);
-            getEmitter()->emitSetFirstColdIGCookie(block->bbEmitCookie);
+            GetEmitter()->emitSetFirstColdIGCookie(block->bbEmitCookie);
         }
 
         /* Both stacks are always empty on entry to a basic block */
@@ -498,13 +498,13 @@ void CodeGen::genCodeForBBlist()
         {
             printf("Regset after " FMT_BB " gcr=", block->bbNum);
             printRegMaskInt(gcInfo.gcRegGCrefSetCur & ~regSet.rsMaskVars);
-            compiler->getEmitter()->emitDispRegSet(gcInfo.gcRegGCrefSetCur & ~regSet.rsMaskVars);
+            compiler->GetEmitter()->emitDispRegSet(gcInfo.gcRegGCrefSetCur & ~regSet.rsMaskVars);
             printf(", byr=");
             printRegMaskInt(gcInfo.gcRegByrefSetCur & ~regSet.rsMaskVars);
-            compiler->getEmitter()->emitDispRegSet(gcInfo.gcRegByrefSetCur & ~regSet.rsMaskVars);
+            compiler->GetEmitter()->emitDispRegSet(gcInfo.gcRegByrefSetCur & ~regSet.rsMaskVars);
             printf(", regVars=");
             printRegMaskInt(regSet.rsMaskVars);
-            compiler->getEmitter()->emitDispRegSet(regSet.rsMaskVars);
+            compiler->GetEmitter()->emitDispRegSet(regSet.rsMaskVars);
             printf("\n");
         }
 
@@ -618,7 +618,7 @@ void CodeGen::genCodeForBBlist()
         //    be slightly different from what the OS considers an epilog, and it is the OS-reported epilog that matters
         //    here.)
         // We handle case #1 here, and case #2 in the emitter.
-        if (getEmitter()->emitIsLastInsCall())
+        if (GetEmitter()->emitIsLastInsCall())
         {
             // Ok, the last instruction generated is a call instruction. Do any of the other conditions hold?
             // Note: we may be generating a few too many NOPs for the case of call preceding an epilog. Technically,
@@ -990,7 +990,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             }
             instruction ins  = ins_Load(targetType, compiler->isSIMDTypeLocalAligned(lcl->gtLclNum));
             emitAttr    attr = emitActualTypeSize(targetType);
-            emitter*    emit = getEmitter();
+            emitter*    emit = GetEmitter();
 
             // Load local variable from its home location.
             inst_RV_TT(ins, dstReg, unspillTree, 0, attr);
@@ -1094,7 +1094,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
                     }
 
                     TempDsc* t = regSet.rsUnspillInPlace(call, unspillTreeReg, i);
-                    getEmitter()->emitIns_R_S(ins_Load(dstType), emitActualTypeSize(dstType), dstReg, t->tdTempNum(),
+                    GetEmitter()->emitIns_R_S(ins_Load(dstType), emitActualTypeSize(dstType), dstReg, t->tdTempNum(),
                                               0);
                     regSet.tmpRlsTemp(t);
                     gcInfo.gcMarkRegPtrVal(dstReg, dstType);
@@ -1121,7 +1121,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
                     regNumber dstReg  = splitArg->GetRegNumByIdx(i);
 
                     TempDsc* t = regSet.rsUnspillInPlace(splitArg, dstReg, i);
-                    getEmitter()->emitIns_R_S(ins_Load(dstType), emitActualTypeSize(dstType), dstReg, t->tdTempNum(),
+                    GetEmitter()->emitIns_R_S(ins_Load(dstType), emitActualTypeSize(dstType), dstReg, t->tdTempNum(),
                                               0);
                     regSet.tmpRlsTemp(t);
                     gcInfo.gcMarkRegPtrVal(dstReg, dstType);
@@ -1148,7 +1148,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
                     regNumber dstReg  = multiReg->GetRegNumByIdx(i);
 
                     TempDsc* t = regSet.rsUnspillInPlace(multiReg, dstReg, i);
-                    getEmitter()->emitIns_R_S(ins_Load(dstType), emitActualTypeSize(dstType), dstReg, t->tdTempNum(),
+                    GetEmitter()->emitIns_R_S(ins_Load(dstType), emitActualTypeSize(dstType), dstReg, t->tdTempNum(),
                                               0);
                     regSet.tmpRlsTemp(t);
                     gcInfo.gcMarkRegPtrVal(dstReg, dstType);
@@ -1162,7 +1162,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
         else
         {
             TempDsc* t = regSet.rsUnspillInPlace(unspillTree, unspillTree->gtRegNum);
-            getEmitter()->emitIns_R_S(ins_Load(unspillTree->gtType), emitActualTypeSize(unspillTree->TypeGet()), dstReg,
+            GetEmitter()->emitIns_R_S(ins_Load(unspillTree->gtType), emitActualTypeSize(unspillTree->TypeGet()), dstReg,
                                       t->tdTempNum(), 0);
             regSet.tmpRlsTemp(t);
 
@@ -1575,7 +1575,7 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
         // for tail calls) in RDI.
         // Destination is always local (on the stack) - use EA_PTRSIZE.
         assert(m_stkArgVarNum != BAD_VAR_NUM);
-        getEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, dstReg, m_stkArgVarNum, putArgNode->getArgOffset());
+        GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, dstReg, m_stkArgVarNum, putArgNode->getArgOffset());
     }
 #endif // !_TARGET_X86_
 
@@ -1594,13 +1594,13 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
             {
                 offset = srcAddr->AsLclFld()->gtLclOffs;
             }
-            getEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, srcReg, lclNode->gtLclNum, offset);
+            GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, srcReg, lclNode->gtLclNum, offset);
         }
         else
         {
             assert(srcAddr->gtRegNum != REG_NA);
             // Source is not known to be on the stack. Use EA_BYREF.
-            getEmitter()->emitIns_R_R(INS_mov, EA_BYREF, srcReg, srcAddr->gtRegNum);
+            GetEmitter()->emitIns_R_R(INS_mov, EA_BYREF, srcReg, srcAddr->gtRegNum);
         }
     }
 
@@ -1668,7 +1668,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArg
         // Emit store instructions to store the registers produced by the GT_FIELD_LIST into the outgoing
         // argument area.
         unsigned thisFieldOffset = argOffset + fieldListPtr->gtFieldOffset;
-        getEmitter()->emitIns_S_R(ins_Store(type), attr, reg, outArgVarNum, thisFieldOffset);
+        GetEmitter()->emitIns_S_R(ins_Store(type), attr, reg, outArgVarNum, thisFieldOffset);
 
 // We can't write beyond the arg area unless this is a tail call, in which case we use
 // the first stack arg as the base of the incoming arg area.
@@ -2038,7 +2038,7 @@ void CodeGen::genEmitCall(int                   callType,
 #if !defined(_TARGET_X86_)
     int argSize = 0;
 #endif // !defined(_TARGET_X86_)
-    getEmitter()->emitIns_Call(emitter::EmitCallType(callType),
+    GetEmitter()->emitIns_Call(emitter::EmitCallType(callType),
                                methHnd,
                                INDEBUG_LDISASM_COMMA(sigInfo)
                                addr,
@@ -2071,7 +2071,7 @@ void CodeGen::genEmitCall(int                   callType,
 #endif // !defined(_TARGET_X86_)
     genConsumeAddress(indir->Addr());
 
-    getEmitter()->emitIns_Call(emitter::EmitCallType(callType),
+    GetEmitter()->emitIns_Call(emitter::EmitCallType(callType),
                                methHnd,
                                INDEBUG_LDISASM_COMMA(sigInfo)
                                nullptr,
@@ -2264,7 +2264,7 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
 //
 void CodeGen::genStoreLongLclVar(GenTree* treeNode)
 {
-    emitter* emit = getEmitter();
+    emitter* emit = GetEmitter();
 
     GenTreeLclVarCommon* lclNode = treeNode->AsLclVarCommon();
     unsigned             lclNum  = lclNode->gtLclNum;
