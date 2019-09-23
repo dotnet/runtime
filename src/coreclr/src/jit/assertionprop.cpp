@@ -3239,8 +3239,8 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
         {
             printf("\nVN relop based copy assertion prop in " FMT_BB ":\n", compCurBB->bbNum);
             printf("Assertion index=#%02u: V%02d.%02d %s V%02d.%02d\n", index, op1->gtLclVar.gtLclNum,
-                   op1->gtLclVar.gtSsaNum, (curAssertion->assertionKind == OAK_EQUAL) ? "==" : "!=",
-                   op2->gtLclVar.gtLclNum, op2->gtLclVar.gtSsaNum);
+                   op1->gtLclVar.GetSsaNum(), (curAssertion->assertionKind == OAK_EQUAL) ? "==" : "!=",
+                   op2->gtLclVar.gtLclNum, op2->gtLclVar.GetSsaNum());
             gtDispTree(tree, nullptr, nullptr, true);
         }
 #endif
