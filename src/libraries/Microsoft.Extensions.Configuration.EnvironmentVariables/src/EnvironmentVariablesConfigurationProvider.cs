@@ -48,7 +48,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
 
         internal void Load(IDictionary envVariables)
         {
-            Data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             var filteredEnvVariables = envVariables
                 .Cast<DictionaryEntry>()
@@ -58,8 +58,10 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
             foreach (var envVariable in filteredEnvVariables)
             {
                 var key = ((string)envVariable.Key).Substring(_prefix.Length);
-                Data[key] = (string)envVariable.Value;
+                data[key] = (string)envVariable.Value;
             }
+
+            Data = data;
         }
 
         private static string NormalizeKey(string key)

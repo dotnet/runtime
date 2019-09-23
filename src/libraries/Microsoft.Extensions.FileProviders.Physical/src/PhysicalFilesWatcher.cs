@@ -7,9 +7,9 @@ using System.IO;
 using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.FileProviders.Internal;
 using Microsoft.Extensions.FileProviders.Physical.Internal;
 using Microsoft.Extensions.FileSystemGlobbing;
+using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Extensions.FileProviders.Physical
@@ -24,6 +24,10 @@ namespace Microsoft.Extensions.FileProviders.Physical
     /// </summary>
     public class PhysicalFilesWatcher : IDisposable
     {
+        private static readonly Action<object> _cancelTokenSource = state => ((CancellationTokenSource)state).Cancel();
+
+        internal static TimeSpan DefaultPollingInterval = TimeSpan.FromSeconds(4);
+
         private readonly ConcurrentDictionary<string, ChangeTokenInfo> _filePathTokenLookup =
             new ConcurrentDictionary<string, ChangeTokenInfo>(StringComparer.OrdinalIgnoreCase);
         private readonly ConcurrentDictionary<string, ChangeTokenInfo> _wildcardTokenLookup =
@@ -32,8 +36,12 @@ namespace Microsoft.Extensions.FileProviders.Physical
         private readonly FileSystemWatcher _fileWatcher;
         private readonly object _fileWatcherLock = new object();
         private readonly string _root;
-        private readonly bool _pollForChanges;
         private readonly ExclusionFilters _filters;
+
+        private Timer _timer;
+        private bool _timerInitialzed;
+        private object _timerLock = new object();
+        private Func<Timer> _timerFactory;
 
         /// <summary>
         /// Initializes an instance of <see cref="PhysicalFilesWatcher" /> that watches files in <paramref name="root" />.
@@ -79,9 +87,18 @@ namespace Microsoft.Extensions.FileProviders.Physical
             _fileWatcher.Deleted += OnChanged;
             _fileWatcher.Error += OnError;
 
-            _pollForChanges = pollForChanges;
+            PollForChanges = pollForChanges;
             _filters = filters;
+
+            PollingChangeTokens = new ConcurrentDictionary<IPollingChangeToken, IPollingChangeToken>();
+            _timerFactory = () => NonCapturingTimer.Create(RaiseChangeEvents, state: PollingChangeTokens, dueTime: TimeSpan.Zero, period: DefaultPollingInterval);
         }
+
+        internal bool PollForChanges { get; }
+
+        internal bool UseActivePolling { get; set; }
+
+        internal ConcurrentDictionary<IPollingChangeToken, IPollingChangeToken> PollingChangeTokens { get; }
 
         /// <summary>
         ///     <para>
@@ -120,6 +137,11 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
         private IChangeToken GetOrAddChangeToken(string pattern)
         {
+            if (UseActivePolling)
+            {
+                LazyInitializer.EnsureInitialized(ref _timer, ref _timerInitialzed, ref _timerLock, _timerFactory);
+            }
+
             IChangeToken changeToken;
             var isWildCard = pattern.IndexOf('*') != -1;
             if (isWildCard || IsDirectoryPath(pattern))
@@ -134,10 +156,9 @@ namespace Microsoft.Extensions.FileProviders.Physical
             return changeToken;
         }
 
-        private IChangeToken GetOrAddFilePathChangeToken(string filePath)
+        internal IChangeToken GetOrAddFilePathChangeToken(string filePath)
         {
-            ChangeTokenInfo tokenInfo;
-            if (!_filePathTokenLookup.TryGetValue(filePath, out tokenInfo))
+            if (!_filePathTokenLookup.TryGetValue(filePath, out var tokenInfo))
             {
                 var cancellationTokenSource = new CancellationTokenSource();
                 var cancellationChangeToken = new CancellationChangeToken(cancellationTokenSource.Token);
@@ -146,25 +167,33 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
 
             IChangeToken changeToken = tokenInfo.ChangeToken;
-            if (_pollForChanges)
+            if (PollForChanges)
             {
                 // The expiry of CancellationChangeToken is controlled by this type and consequently we can cache it.
                 // PollingFileChangeToken on the other hand manages its own lifetime and consequently we cannot cache it.
+                var pollingChangeToken = new PollingFileChangeToken(new FileInfo(Path.Combine(_root, filePath)));
+
+                if (UseActivePolling)
+                {
+                    pollingChangeToken.ActiveChangeCallbacks = true;
+                    pollingChangeToken.CancellationTokenSource = new CancellationTokenSource();
+                    PollingChangeTokens.TryAdd(pollingChangeToken, pollingChangeToken);
+                }
+
                 changeToken = new CompositeChangeToken(
                     new[]
                     {
                         changeToken,
-                        new PollingFileChangeToken(new FileInfo(Path.Combine(_root, filePath)))
+                        pollingChangeToken,
                     });
             }
 
             return changeToken;
         }
 
-        private IChangeToken GetOrAddWildcardChangeToken(string pattern)
+        internal IChangeToken GetOrAddWildcardChangeToken(string pattern)
         {
-            ChangeTokenInfo tokenInfo;
-            if (!_wildcardTokenLookup.TryGetValue(pattern, out tokenInfo))
+            if (!_wildcardTokenLookup.TryGetValue(pattern, out var tokenInfo))
             {
                 var cancellationTokenSource = new CancellationTokenSource();
                 var cancellationChangeToken = new CancellationChangeToken(cancellationTokenSource.Token);
@@ -175,15 +204,24 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
 
             IChangeToken changeToken = tokenInfo.ChangeToken;
-            if (_pollForChanges)
+            if (PollForChanges)
             {
                 // The expiry of CancellationChangeToken is controlled by this type and consequently we can cache it.
                 // PollingFileChangeToken on the other hand manages its own lifetime and consequently we cannot cache it.
+                var pollingChangeToken = new PollingWildCardChangeToken(_root, pattern);
+
+                if (UseActivePolling)
+                {
+                    pollingChangeToken.ActiveChangeCallbacks = true;
+                    pollingChangeToken.CancellationTokenSource = new CancellationTokenSource();
+                    PollingChangeTokens.TryAdd(pollingChangeToken, pollingChangeToken);
+                }
+
                 changeToken = new CompositeChangeToken(
                     new[]
                     {
                         changeToken,
-                        new PollingWildCardChangeToken(_root, pattern)
+                        pollingChangeToken,
                     });
             }
 
@@ -191,12 +229,24 @@ namespace Microsoft.Extensions.FileProviders.Physical
         }
 
         /// <summary>
-        /// Disposes the file watcher
+        /// Disposes the provider. Change tokens may not trigger after the provider is disposed.
         /// </summary>
-        public void Dispose()
+        public void Dispose() => Dispose(true);
+
+        /// <summary>
+        /// Disposes the provider.
+        /// </summary>
+        /// <param name="disposing"><c>true</c> is invoked from <see cref="IDisposable.Dispose"/>.</param>
+        protected virtual void Dispose(bool disposing)
         {
             _fileWatcher.Dispose();
+            _timer?.Dispose();
         }
+
+        /// <summary>
+        /// Destructor for <see cref="PhysicalFilesWatcher"/>.
+        /// </summary>
+        ~PhysicalFilesWatcher() => Dispose(false);
 
         private void OnRenamed(object sender, RenamedEventArgs e)
         {
@@ -279,8 +329,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             path = NormalizePath(path);
 
             var matched = false;
-            ChangeTokenInfo matchInfo;
-            if (_filePathTokenLookup.TryRemove(path, out matchInfo))
+            if (_filePathTokenLookup.TryRemove(path, out var matchInfo))
             {
                 CancelToken(matchInfo);
                 matched = true;
@@ -346,19 +395,47 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 return;
             }
 
-            Task.Run(() =>
+            Task.Factory.StartNew(
+                _cancelTokenSource,
+                matchInfo.TokenSource,
+                CancellationToken.None,
+                TaskCreationOptions.DenyChildAttach,
+                TaskScheduler.Default);
+        }
+
+        internal static void RaiseChangeEvents(object state)
+        {
+            // Iterating over a concurrent bag gives us a point in time snapshot making it safe
+            // to remove items from it.
+            var changeTokens = (ConcurrentDictionary<IPollingChangeToken, IPollingChangeToken>)state;
+            foreach (var item in changeTokens)
             {
+                var token = item.Key;
+
+                if (!token.HasChanged)
+                {
+                    continue;
+                }
+
+                if (!changeTokens.TryRemove(token, out _))
+                {
+                    // Move on if we couldn't remove the item.
+                    continue;
+                }
+
+                // We're already on a background thread, don't need to spawn a background Task to cancel the CTS
                 try
                 {
-                    matchInfo.TokenSource.Cancel();
+                    token.CancellationTokenSource.Cancel();
                 }
                 catch
                 {
+
                 }
-            });
+            }
         }
 
-        private struct ChangeTokenInfo
+        private readonly struct ChangeTokenInfo
         {
             public ChangeTokenInfo(
                 CancellationTokenSource tokenSource,

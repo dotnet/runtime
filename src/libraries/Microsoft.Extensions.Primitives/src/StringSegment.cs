@@ -148,6 +148,30 @@ namespace Microsoft.Extensions.Primitives
         /// <returns>The <see cref="ReadOnlyMemory{T}"/> from this <see cref="StringSegment"/>.</returns>
         public ReadOnlyMemory<char> AsMemory() => Buffer.AsMemory(Offset, Length);
 
+        /// <summary>
+        /// Compares substrings of two specified <see cref="StringSegment"/> objects using the specified rules,
+        /// and returns an integer that indicates their relative position in the sort order.
+        /// </summary>
+        /// <param name="a">The first StringSegment to compare.</param>
+        /// <param name="b">The second StringSegment to compare.</param>
+        /// <param name="comparisonType">One of the enumeration values that specifies the rules for the comparison.</param>
+        /// <returns>
+        /// A 32-bit signed integer indicating the lexical relationship between the two comparands.
+        /// The value is negative if <paramref name="a"/> is less than <paramref name="b"/>, 0 if the two comparands are equal,
+        /// and positive if <paramref name="a"/> is greater than <paramref name="b"/>.
+        /// </returns>
+        public static int Compare(StringSegment a, StringSegment b, StringComparison comparisonType)
+        {
+            var minLength = Math.Min(a.Length, b.Length);
+            var diff = string.Compare(a.Buffer, a.Offset, b.Buffer, b.Offset, minLength, comparisonType);
+            if (diff == 0)
+            {
+                diff = a.Length - b.Length;
+            }
+
+            return diff;
+        }
+
         /// <inheritdoc />
         public override bool Equals(object obj)
         {

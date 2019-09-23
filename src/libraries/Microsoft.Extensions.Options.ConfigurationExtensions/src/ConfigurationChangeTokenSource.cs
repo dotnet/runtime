@@ -37,6 +37,9 @@ namespace Microsoft.Extensions.Options
             Name = name ?? Options.DefaultName;
         }
 
+        /// <summary>
+        /// The name of the option instance being changed.
+        /// </summary>
         public string Name { get; }
 
         /// <summary>

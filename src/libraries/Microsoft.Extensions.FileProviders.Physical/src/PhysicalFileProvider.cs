@@ -2,7 +2,9 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Diagnostics;
 using System.IO;
+using System.Threading;
 using Microsoft.Extensions.FileProviders.Internal;
 using Microsoft.Extensions.FileProviders.Physical;
 using Microsoft.Extensions.FileProviders.Physical.Internal;
@@ -20,19 +22,25 @@ namespace Microsoft.Extensions.FileProviders
     public class PhysicalFileProvider : IFileProvider, IDisposable
     {
         private const string PollingEnvironmentKey = "DOTNET_USE_POLLING_FILE_WATCHER";
-
         private static readonly char[] _pathSeparators = new[]
             {Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar};
 
-        private readonly PhysicalFilesWatcher _filesWatcher;
         private readonly ExclusionFilters _filters;
+
+        private readonly Func<PhysicalFilesWatcher> _fileWatcherFactory;
+        private PhysicalFilesWatcher _fileWatcher;
+        private bool _fileWatcherInitialized;
+        private object _fileWatcherLock = new object();
+
+        private bool? _usePollingFileWatcher;
+        private bool? _useActivePolling;
 
         /// <summary>
         /// Initializes a new instance of a PhysicalFileProvider at the given root directory.
         /// </summary>
         /// <param name="root">The root directory. This should be an absolute path.</param>
         public PhysicalFileProvider(string root)
-            : this(root, CreateFileWatcher(root, ExclusionFilters.Sensitive), ExclusionFilters.Sensitive)
+            : this(root, ExclusionFilters.Sensitive)
         {
         }
 
@@ -42,20 +50,12 @@ namespace Microsoft.Extensions.FileProviders
         /// <param name="root">The root directory. This should be an absolute path.</param>
         /// <param name="filters">Specifies which files or directories are excluded.</param>
         public PhysicalFileProvider(string root, ExclusionFilters filters)
-            : this(root, CreateFileWatcher(root, filters), filters)
-        { }
-
-        // for testing
-        internal PhysicalFileProvider(string root, PhysicalFilesWatcher physicalFilesWatcher)
-            : this(root, physicalFilesWatcher, ExclusionFilters.Sensitive)
-        { }
-
-        private PhysicalFileProvider(string root, PhysicalFilesWatcher physicalFilesWatcher, ExclusionFilters filters)
         {
             if (!Path.IsPathRooted(root))
             {
                 throw new ArgumentException("The path must be absolute.", nameof(root));
             }
+
             var fullRoot = Path.GetFullPath(root);
             // When we do matches in GetFullPath, we want to only match full directory names.
             Root = PathUtils.EnsureTrailingSlash(fullRoot);
@@ -64,27 +64,129 @@ namespace Microsoft.Extensions.FileProviders
                 throw new DirectoryNotFoundException(Root);
             }
 
-            _filesWatcher = physicalFilesWatcher;
             _filters = filters;
+            _fileWatcherFactory = () => CreateFileWatcher();
         }
 
-        private static PhysicalFilesWatcher CreateFileWatcher(string root, ExclusionFilters filters)
+        /// <summary>
+        /// Gets or sets a value that determines if this instance of <see cref="PhysicalFileProvider"/>
+        /// uses polling to determine file changes.
+        /// <para>
+        /// By default, <see cref="PhysicalFileProvider"/>  uses <see cref="FileSystemWatcher"/> to listen to file change events
+        /// for <see cref="Watch(string)"/>. <see cref="FileSystemWatcher"/> is ineffective in some scenarios such as mounted drives.
+        /// Polling is required to effectively watch for file changes.
+        /// </para>
+        /// <seealso cref="UseActivePolling"/>.
+        /// </summary>
+        /// <value>
+        /// The default value of this property is determined by the value of environment variable named <c>DOTNET_USE_POLLING_FILE_WATCHER</c>.
+        /// When <c>true</c> or <c>1</c>, this property defaults to <c>true</c>; otherwise false.
+        /// </value>
+        public bool UsePollingFileWatcher
+        {
+            get
+            {
+                if (_fileWatcher != null)
+                {
+                    throw new InvalidOperationException($"Cannot modify {nameof(UsePollingFileWatcher)} once file watcher has been initialized.");
+                }
+
+                if (_usePollingFileWatcher == null)
+                {
+                    ReadPollingEnvironmentVariables();
+                }
+
+                return _usePollingFileWatcher.Value;
+            }
+            set => _usePollingFileWatcher = value;
+        }
+
+        /// <summary>
+        /// Gets or sets a value that determines if this instance of <see cref="PhysicalFileProvider"/>
+        /// actively polls for file changes.
+        /// <para>
+        /// When <see langword="true"/>, <see cref="IChangeToken"/> returned by <see cref="Watch(string)"/> will actively poll for file changes
+        /// (<see cref="IChangeToken.ActiveChangeCallbacks"/> will be <see langword="true"/>) instead of being passive.
+        /// </para>
+        /// <para>
+        /// This property is only effective when <see cref="UsePollingFileWatcher"/> is set.
+        /// </para>
+        /// </summary>
+        /// <value>
+        /// The default value of this property is determined by the value of environment variable named <c>DOTNET_USE_POLLING_FILE_WATCHER</c>.
+        /// When <c>true</c> or <c>1</c>, this property defaults to <c>true</c>; otherwise false.
+        /// </value>
+        public bool UseActivePolling
+        {
+            get
+            {
+                if (_useActivePolling == null)
+                {
+                    ReadPollingEnvironmentVariables();
+                }
+
+                return _useActivePolling.Value;
+            }
+
+            set => _useActivePolling = value;
+        }
+
+        internal PhysicalFilesWatcher FileWatcher
+        {
+            get
+            {
+                return LazyInitializer.EnsureInitialized(
+                    ref _fileWatcher,
+                    ref _fileWatcherInitialized,
+                    ref _fileWatcherLock,
+                    _fileWatcherFactory);
+            }
+            set
+            {
+                Debug.Assert(!_fileWatcherInitialized);
+
+                _fileWatcherInitialized = true;
+                _fileWatcher = value;
+            }
+        }
+
+        internal PhysicalFilesWatcher CreateFileWatcher()
+        {
+            var root = PathUtils.EnsureTrailingSlash(Path.GetFullPath(Root));
+            return new PhysicalFilesWatcher(root, new FileSystemWatcher(root), UsePollingFileWatcher, _filters)
+            {
+                UseActivePolling = UseActivePolling,
+            };
+        }
+
+        private void ReadPollingEnvironmentVariables()
         {
             var environmentValue = Environment.GetEnvironmentVariable(PollingEnvironmentKey);
             var pollForChanges = string.Equals(environmentValue, "1", StringComparison.Ordinal) ||
-                                 string.Equals(environmentValue, "true", StringComparison.OrdinalIgnoreCase);
+                string.Equals(environmentValue, "true", StringComparison.OrdinalIgnoreCase);
 
-            root = PathUtils.EnsureTrailingSlash(Path.GetFullPath(root));
-            return new PhysicalFilesWatcher(root, new FileSystemWatcher(root), pollForChanges, filters);
+            _usePollingFileWatcher = pollForChanges;
+            _useActivePolling = pollForChanges;
         }
 
         /// <summary>
         /// Disposes the provider. Change tokens may not trigger after the provider is disposed.
         /// </summary>
-        public void Dispose()
+        public void Dispose() => Dispose(true);
+
+        /// <summary>
+        /// Disposes the provider.
+        /// </summary>
+        /// <param name="disposing"><c>true</c> is invoked from <see cref="IDisposable.Dispose"/>.</param>
+        protected virtual void Dispose(bool disposing)
         {
-            _filesWatcher.Dispose();
+            _fileWatcher?.Dispose();
         }
+
+        /// <summary>
+        /// Destructor for <see cref="PhysicalFileProvider"/>.
+        /// </summary>
+        ~PhysicalFileProvider() => Dispose(false);
 
         /// <summary>
         /// The root directory for this instance.
@@ -225,7 +327,7 @@ namespace Microsoft.Extensions.FileProviders
             // Relative paths starting with leading slashes are okay
             filter = filter.TrimStart(_pathSeparators);
 
-            return _filesWatcher.CreateFileChangeToken(filter);
+            return FileWatcher.CreateFileChangeToken(filter);
         }
     }
 }

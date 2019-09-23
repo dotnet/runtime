@@ -1,12 +1,13 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp2.1;net461</TargetFrameworks>
+    <TargetFrameworks>netcoreapp2.2;net461</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
     <Reference Include="Microsoft.Extensions.DependencyInjection" />
     <Reference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+    <Reference Include="Microsoft.Extensions.Options.DataAnnotations" />
     <Reference Include="Microsoft.Extensions.Options" />
   </ItemGroup>
 

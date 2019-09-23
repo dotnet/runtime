@@ -305,7 +305,7 @@ namespace Microsoft.Extensions.FileProviders
                 {
                     using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
                     {
-                        using (var provider = new PhysicalFileProvider(root.RootPath, physicalFilesWatcher))
+                        using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
                         {
                             var token = provider.Watch(fileName);
                             Assert.NotNull(token);
@@ -334,14 +334,14 @@ namespace Microsoft.Extensions.FileProviders
                 {
                     using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
                     {
-                        using (var provider = new PhysicalFileProvider(root.RootPath, physicalFilesWatcher))
+                        using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
                         {
                             var token = provider.Watch(fileName);
                             Assert.NotNull(token);
                             Assert.False(token.HasChanged, "Token should not have changed yet");
                             Assert.True(token.ActiveChangeCallbacks, "Token should have active callbacks");
 
-                            bool callbackInvoked = false;
+                            var callbackInvoked = false;
                             token.RegisterChangeCallback(state =>
                             {
                                 callbackInvoked = true;
@@ -374,7 +374,7 @@ namespace Microsoft.Extensions.FileProviders
                 {
                     using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: true))
                     {
-                        using (var provider = new PhysicalFileProvider(root.RootPath, physicalFilesWatcher))
+                        using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
                         {
                             var token = provider.Watch(fileName);
                             File.WriteAllText(fileLocation, "some-content");
@@ -403,7 +403,7 @@ namespace Microsoft.Extensions.FileProviders
                 {
                     using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: true))
                     {
-                        using (var provider = new PhysicalFileProvider(root.RootPath, physicalFilesWatcher))
+                        using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
                         {
                             root.CreateFile(fileName);
                             var token = provider.Watch(fileName);
@@ -429,7 +429,7 @@ namespace Microsoft.Extensions.FileProviders
                 {
                     using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
                     {
-                        using (var provider = new PhysicalFileProvider(root.RootPath, physicalFilesWatcher))
+                        using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
                         {
                             var token = provider.Watch(fileName);
                             Assert.NotNull(token);
@@ -736,7 +736,7 @@ namespace Microsoft.Extensions.FileProviders
                 {
                     using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
                     {
-                        using (var provider = new PhysicalFileProvider(root.RootPath, physicalFilesWatcher))
+                        using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
                         {
                             var fileName = Guid.NewGuid().ToString();
                             var changeToken = provider.Watch(fileName);
@@ -782,7 +782,7 @@ namespace Microsoft.Extensions.FileProviders
                 {
                     using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
                     {
-                        using (var provider = new PhysicalFileProvider(root.RootPath, physicalFilesWatcher))
+                        using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
                         {
                             var fileName1 = Guid.NewGuid().ToString();
                             var token1 = provider.Watch(fileName1);
@@ -814,7 +814,7 @@ namespace Microsoft.Extensions.FileProviders
                 {
                     using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
                     {
-                        using (var provider = new PhysicalFileProvider(root.RootPath, physicalFilesWatcher))
+                        using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
                         {
                             var fileName = Guid.NewGuid().ToString();
                             var token = provider.Watch(fileName);
@@ -920,7 +920,7 @@ namespace Microsoft.Extensions.FileProviders
                 {
                     using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
                     {
-                        using (var provider = new PhysicalFileProvider(root.RootPath, physicalFilesWatcher))
+                        using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
                         {
                             var name = Guid.NewGuid().ToString();
                             var token = provider.Watch(name);
@@ -944,7 +944,7 @@ namespace Microsoft.Extensions.FileProviders
                 {
                     using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
                     {
-                        using (var provider = new PhysicalFileProvider(root.RootPath, physicalFilesWatcher))
+                        using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
                         {
                             var name = Guid.NewGuid().ToString();
                             var token = provider.Watch(name);
@@ -968,7 +968,7 @@ namespace Microsoft.Extensions.FileProviders
                 {
                     using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
                     {
-                        using (var provider = new PhysicalFileProvider(root.RootPath, physicalFilesWatcher))
+                        using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
                         {
                             var directoryName = Guid.NewGuid().ToString();
                             root.CreateFolder(directoryName)
@@ -1025,7 +1025,7 @@ namespace Microsoft.Extensions.FileProviders
                 {
                     using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
                     {
-                        using (var provider = new PhysicalFileProvider(root.RootPath, physicalFilesWatcher))
+                        using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
                         {
                             var fileName = Guid.NewGuid().ToString();
                             var token = provider.Watch(slashes + fileName);
@@ -1066,7 +1066,7 @@ namespace Microsoft.Extensions.FileProviders
                 {
                     using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
                     {
-                        using (var provider = new PhysicalFileProvider(root.RootPath, physicalFilesWatcher))
+                        using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
                         {
                             var fileName = Guid.NewGuid().ToString();
                             var token = provider.Watch(slashes + fileName);
@@ -1091,7 +1091,7 @@ namespace Microsoft.Extensions.FileProviders
                 {
                     using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
                     {
-                        using (var provider = new PhysicalFileProvider(root.RootPath, physicalFilesWatcher))
+                        using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
                         {
                             var subDirectoryName = Guid.NewGuid().ToString();
                             var subSubDirectoryName = Guid.NewGuid().ToString();
@@ -1138,7 +1138,7 @@ namespace Microsoft.Extensions.FileProviders
                 {
                     using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
                     {
-                        using (var provider = new PhysicalFileProvider(root.RootPath, physicalFilesWatcher))
+                        using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
                         {
                             var oldFileName = Guid.NewGuid().ToString();
                             var oldToken = provider.Watch(oldFileName);
@@ -1169,7 +1169,7 @@ namespace Microsoft.Extensions.FileProviders
             using (var root = new DisposableFileSystem())
             using (var fileSystemWatcher = new MockFileSystemWatcher(root.RootPath))
             using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
-            using (var provider = new PhysicalFileProvider(root.RootPath, physicalFilesWatcher))
+            using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
             {
                 var oldDirectoryName = Guid.NewGuid().ToString();
                 var oldSubDirectoryName = Guid.NewGuid().ToString();
@@ -1205,23 +1205,23 @@ namespace Microsoft.Extensions.FileProviders
                 var newFileTcs = new TaskCompletionSource<object>();
                 newFileToken.RegisterChangeCallback(_ => newFileTcs.TrySetResult(true), null);
 
-                Assert.False(oldDirectoryToken.HasChanged);
-                Assert.False(oldSubDirectoryToken.HasChanged);
-                Assert.False(oldFileToken.HasChanged);
-                Assert.False(newDirectoryToken.HasChanged);
-                Assert.False(newSubDirectoryToken.HasChanged);
-                Assert.False(newFileToken.HasChanged);
+                Assert.False(oldDirectoryToken.HasChanged, "Old directory token should not have changed");
+                Assert.False(oldSubDirectoryToken.HasChanged, "Old subdirectory token should not have changed");
+                Assert.False(oldFileToken.HasChanged, "Old file token should not have changed");
+                Assert.False(newDirectoryToken.HasChanged, "New directory token should not have changed");
+                Assert.False(newSubDirectoryToken.HasChanged, "New subdirectory token should not have changed");
+                Assert.False(newFileToken.HasChanged, "New file token should not have changed");
 
                 fileSystemWatcher.CallOnRenamed(new RenamedEventArgs(WatcherChangeTypes.Renamed, root.RootPath, newDirectoryName, oldDirectoryName));
 
                 await Task.WhenAll(oldDirectoryTcs.Task, newDirectoryTcs.Task, newSubDirectoryTcs.Task, newFileTcs.Task).TimeoutAfter(TimeSpan.FromSeconds(30));
 
-                Assert.False(oldSubDirectoryToken.HasChanged);
-                Assert.False(oldFileToken.HasChanged);
-                Assert.True(oldDirectoryToken.HasChanged);
-                Assert.True(newDirectoryToken.HasChanged);
-                Assert.True(newSubDirectoryToken.HasChanged);
-                Assert.True(newFileToken.HasChanged);
+                Assert.False(oldSubDirectoryToken.HasChanged, "Old subdirectory token should not have changed");
+                Assert.False(oldFileToken.HasChanged, "Old file token should not have changed");
+                Assert.True(oldDirectoryToken.HasChanged, "Old directory token should have changed");
+                Assert.True(newDirectoryToken.HasChanged, "New directory token should have changed");
+                Assert.True(newSubDirectoryToken.HasChanged, "New sub directory token should have changed");
+                Assert.True(newFileToken.HasChanged, "New file token should have changed");
             }
 
             // wait a little to ensure these tokens don't fire even after disposing the watcher
@@ -1238,7 +1238,7 @@ namespace Microsoft.Extensions.FileProviders
                 {
                     using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
                     {
-                        using (var provider = new PhysicalFileProvider(root.RootPath, physicalFilesWatcher))
+                        using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
                         {
                             var fileName = "." + Guid.NewGuid().ToString();
                             var token = provider.Watch(Path.GetFileName(fileName));
@@ -1276,7 +1276,7 @@ namespace Microsoft.Extensions.FileProviders
                 {
                     using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
                     {
-                        using (var provider = new PhysicalFileProvider(root.RootPath, physicalFilesWatcher))
+                        using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
                         {
                             var hiddenFiletoken = provider.Watch(Path.GetFileName(hiddenFileName));
                             var systemFiletoken = provider.Watch(Path.GetFileName(systemFileName));
@@ -1303,7 +1303,7 @@ namespace Microsoft.Extensions.FileProviders
                 {
                     using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
                     {
-                        using (var provider = new PhysicalFileProvider(root.RootPath, physicalFilesWatcher))
+                        using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
                         {
                             var token1 = provider.Watch(Guid.NewGuid().ToString());
                             var token2 = provider.Watch(Guid.NewGuid().ToString());
@@ -1331,7 +1331,8 @@ namespace Microsoft.Extensions.FileProviders
                 root.RootPath + Path.DirectorySeparatorChar,
                 fileSystemWatcher,
                 pollForChanges: false))
-            using (var provider = new PhysicalFileProvider(root.RootPath, physicalFilesWatcher))
+
+            using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
             {
                 var token = provider.Watch("**/*.txt");
                 var directory = Path.Combine(root.RootPath, "subdir1", "subdir2");
@@ -1355,7 +1356,8 @@ namespace Microsoft.Extensions.FileProviders
                 root.RootPath + Path.DirectorySeparatorChar,
                 fileSystemWatcher,
                 pollForChanges: true))
-            using (var provider = new PhysicalFileProvider(root.RootPath, physicalFilesWatcher))
+
+            using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
             {
                 var filePath = Path.Combine(root.RootPath, "subdir1", "subdir2", "file.txt");
                 Directory.CreateDirectory(Path.GetDirectoryName(filePath));
@@ -1373,6 +1375,25 @@ namespace Microsoft.Extensions.FileProviders
 
                 // Assert
                 Assert.True(token.HasChanged);
+            }
+        }
+
+        [Fact]
+        public void CreateFileWatcher_CreatesWatcherWithPollingAndActiveFlags()
+        {
+            // Arrange
+            using (var root = new DisposableFileSystem())
+            using (var provider = new PhysicalFileProvider(root.RootPath))
+            {
+                provider.UsePollingFileWatcher = true;
+                provider.UseActivePolling = true;
+
+                // Act
+                var fileWatcher = provider.CreateFileWatcher();
+
+                // Assert
+                Assert.True(fileWatcher.PollForChanges);
+                Assert.True(fileWatcher.UseActivePolling);
             }
         }
     }

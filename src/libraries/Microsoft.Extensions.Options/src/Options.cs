@@ -8,6 +8,9 @@ namespace Microsoft.Extensions.Options
     /// </summary>
     public static class Options
     {
+        /// <summary>
+        /// The default name used for options instances: "".
+        /// </summary>
         public static readonly string DefaultName = string.Empty;
 
         /// <summary>
