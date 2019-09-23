@@ -19529,7 +19529,7 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
     if (call->IsVirtualStub())
     {
         JITDUMP("Restoring stub addr %p from guarded devirt candidate info\n",
-                call->gtGuardedDevirtualizationCandidateInfo->stubAddr);
+                dspPtr(call->gtGuardedDevirtualizationCandidateInfo->stubAddr));
         call->gtStubCallStubAddr = call->gtGuardedDevirtualizationCandidateInfo->stubAddr;
     }
 }
@@ -20126,11 +20126,11 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
         if (uniqueImplementingClass == NO_CLASS_HANDLE)
         {
-            JITDUMP("No unique implementor of interface %p (%s), sorry\n", objClass, objClassName);
+            JITDUMP("No unique implementor of interface %p (%s), sorry\n", dspPtr(objClass), objClassName);
             return;
         }
 
-        JITDUMP("Only known implementor of interface %p (%s) is %p (%s)!\n", objClass, objClassName,
+        JITDUMP("Only known implementor of interface %p (%s) is %p (%s)!\n", dspPtr(objClass), objClassName,
                 uniqueImplementingClass, eeGetClassName(uniqueImplementingClass));
 
         bool guessUniqueInterface = true;
@@ -20713,7 +20713,7 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*          call,
     // Save off the stub address since it shares a union with the candidate info.
     if (call->IsVirtualStub())
     {
-        JITDUMP("Saving stub addr %p in candidate info\n", call->gtStubCallStubAddr);
+        JITDUMP("Saving stub addr %p in candidate info\n", dspPtr(call->gtStubCallStubAddr));
         pInfo->stubAddr = call->gtStubCallStubAddr;
     }
     else

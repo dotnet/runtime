@@ -600,8 +600,8 @@ void CodeGen::genCodeForBBlist()
         }
         if (foundMismatchedRegVar)
         {
-            assert(!"Found mismatched live reg var(s) after block");
             JITDUMP("\n");
+            assert(!"Found mismatched live reg var(s) after block");
         }
 #endif
 

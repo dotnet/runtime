@@ -5852,7 +5852,7 @@ void LinearScan::allocateRegisters()
     }
 
 #ifdef JIT32_GCENCODER
-    // For the JIT32_GCENCODER, when lvaKeepAliveAndReportThis is true, we must either keep this "this" pointer
+    // For the JIT32_GCENCODER, when lvaKeepAliveAndReportThis is true, we must either keep the "this" pointer
     // in the same register for the entire method, or keep it on the stack. Rather than imposing this constraint
     // as we allocate, we will force all refs to the stack if it is split or spilled.
     if (enregisterLocalVars && compiler->lvaKeepAliveAndReportThis())
@@ -8174,6 +8174,11 @@ void LinearScan::resolveEdges()
                 }
                 SplitEdgeInfo info = {predBBNum, succBBNum};
                 getSplitBBNumToTargetBBNumMap()->Set(block->bbNum, info);
+
+                // Set both the live-in and live-out to the live-in of the successor (by construction liveness
+                // doesn't change in a split block).
+                VarSetOps::Assign(compiler, block->bbLiveIn, succBlock->bbLiveIn);
+                VarSetOps::Assign(compiler, block->bbLiveOut, succBlock->bbLiveIn);
             }
         }
     }
