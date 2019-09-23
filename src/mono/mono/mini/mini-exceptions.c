@@ -3341,6 +3341,27 @@ mono_handle_native_crash (const char *signal, MonoContext *mctx, MONO_SIG_HANDLE
 	if (handle_crash_loop)
 		return;
 
+#ifdef MONO_ARCH_USE_SIGACTION
+	struct sigaction sa;
+	sa.sa_handler = SIG_DFL;
+	sigemptyset (&sa.sa_mask);
+	sa.sa_flags = 0;
+
+	/* Remove our SIGABRT handler */
+	g_assert (sigaction (SIGABRT, &sa, NULL) != -1);
+
+	/* On some systems we get a SIGILL when calling abort (), because it might
+	 * fail to raise SIGABRT */
+	g_assert (sigaction (SIGILL, &sa, NULL) != -1);
+
+	/* Remove SIGCHLD, it uses the finalizer thread */
+	g_assert (sigaction (SIGCHLD, &sa, NULL) != -1);
+
+	/* Remove SIGQUIT, we are already dumping threads */
+	g_assert (sigaction (SIGQUIT, &sa, NULL) != -1);
+
+#endif
+
 	if (mini_debug_options.suspend_on_native_crash) {
 		g_async_safe_printf ("Received %s, suspending...\n", signal);
 		while (1) {
@@ -3378,20 +3399,6 @@ mono_handle_native_crash (const char *signal, MonoContext *mctx, MONO_SIG_HANDLE
 		mono_walk_stack_full (print_stack_frame_signal_safe, mctx, mono_domain_get (), jit_tls, mono_get_lmf (), MONO_UNWIND_LOOKUP_IL_OFFSET, NULL, TRUE);
 		g_async_safe_printf ("=================================================================\n");
 	}
-
-#ifdef MONO_ARCH_USE_SIGACTION
-	struct sigaction sa;
-	sa.sa_handler = SIG_DFL;
-	sigemptyset (&sa.sa_mask);
-	sa.sa_flags = 0;
-
-	/* Remove our SIGABRT handler */
-	g_assert (sigaction (SIGABRT, &sa, NULL) != -1);
-
-	/* On some systems we get a SIGILL when calling abort (), because it might
-	 * fail to raise SIGABRT */
-	g_assert (sigaction (SIGILL, &sa, NULL) != -1);
-#endif
 
 	mono_post_native_crash_handler (signal, mctx, info, mono_do_crash_chaining);
 }
