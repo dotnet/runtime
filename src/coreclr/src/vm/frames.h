@@ -409,6 +409,7 @@ public:
 class Frame : public FrameBase
 {
     friend class CheckAsmOffsets;
+    friend class GCFrame;
 #ifdef DACCESS_COMPILE
     friend void Thread::EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
@@ -2530,7 +2531,11 @@ private:
     BOOL          m_MaybeInterior;
 
     // Keep as last entry in class
-    DEFINE_VTABLE_GETTER_AND_DTOR(GCFrame)
+    DEFINE_VTABLE_GETTER(GCFrame)
+
+#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+    ~GCFrame();
+#endif
 };
 
 #ifdef FEATURE_INTERPRETER
@@ -3260,11 +3265,16 @@ public:
             *m_pShadowSP |= ICodeManager::SHADOW_SP_FILTER_DONE;
         }
     }
+
+#ifndef CROSSGEN_COMPILE
+    ~ExceptionFilterFrame();
+#endif
+
 #endif
 
 private:
     // Keep as last entry in class
-    DEFINE_VTABLE_GETTER_AND_CTOR_AND_DTOR(ExceptionFilterFrame)
+    DEFINE_VTABLE_GETTER_AND_CTOR(ExceptionFilterFrame)
 };
 
 #ifdef _DEBUG
@@ -3582,7 +3592,7 @@ public:
 
 #define GCPROTECT_END()                                                 \
                 DEBUG_ASSURE_NO_RETURN_END(GCPROTECT) }                 \
-                __gcframe.Pop(); } while(0)
+                } while(0)
 
 
 #else // #ifndef DACCESS_COMPILE
