@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
 using System.Numerics.Hashing;
+using Microsoft.CSharp.RuntimeBinder.Errors;
 using Microsoft.CSharp.RuntimeBinder.Semantics;
 
 namespace Microsoft.CSharp.RuntimeBinder
@@ -104,11 +105,14 @@ namespace Microsoft.CSharp.RuntimeBinder
         {
 #if ENABLECOMBINDER
             DynamicMetaObject com;
-            if (!BinderHelper.IsWindowsRuntimeObject(target) && ComBinder.TryBindGetMember(this, target, out com, ResultIndexed))
+            if (!BinderHelper.IsWindowsRuntimeObject(target) && ComBinder.TryConvert(this, target, out com))
             {
                 return com;
             }
+#else
+            BinderHelper.ThrowIfUsingDynamicCom(target);
 #endif
+
             BinderHelper.ValidateBindArgument(target, nameof(target));
             return BinderHelper.Bind(this, _binder, new[] { target }, _argumentInfo, errorSuggestion);
         }

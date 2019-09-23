@@ -191,7 +191,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 case ErrorCode.ERR_BadNonTrailingNamedArgument:
                     codeStr = SR.BadNonTrailingNamedArgument;
                     break;
-
+                case ErrorCode.ERR_DynamicBindingComUnsupported:
+                    codeStr = SR.DynamicBindingComUnsupported;
+                    break;
                 default:
                     // means missing resources match the code entry
                     Debug.Fail("Missing resources for the error " + code.ToString());
