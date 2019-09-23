@@ -4020,6 +4020,13 @@ void ExceptionTracker::ResetLimitFrame()
     m_pLimitFrame = m_pThread->GetFrame();
 }
 
+void ExceptionTracker::ResetInitialExplicitFrame()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    m_pInitialExplicitFrame = m_pThread->GetFrame();
+}
+
 //
 // static
 void ExceptionTracker::ResumeExecution(
