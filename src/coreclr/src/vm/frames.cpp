@@ -1001,6 +1001,97 @@ VOID GCFrame::Pop()
 #endif
 }
 
+#ifndef CROSSGEN_COMPILE
+// GCFrame destructor removes the GCFrame from the current thread's explicit frame list.
+// This prevents issues in functions that have HELPER_METHOD_FRAME_BEGIN / END around 
+// GCPROTECT_BEGIN / END and where the C++ compiler places some local variables over 
+// the stack location of the GCFrame local variable after the variable goes out of scope. 
+GCFrame::~GCFrame()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if (m_Next != NULL)
+    {
+        // Do a manual switch to the GC cooperative mode instead of using the GCX_COOP_THREAD_EXISTS
+        // macro so that this function isn't slowed down by having to deal with FS:0 chain on x86 Windows.
+        BOOL wasCoop = m_pCurThread->PreemptiveGCDisabled();
+        if (!wasCoop)
+        {
+            m_pCurThread->DisablePreemptiveGC();
+        }
+
+        // When the frame is destroyed, make sure it is no longer in the
+        // frame chain managed by the Thread.
+
+        Pop();
+
+#if defined(FEATURE_EH_FUNCLETS) && !defined(FEATURE_PAL)
+        PTR_ExceptionTracker pCurrentTracker = m_pCurThread->GetExceptionState()->GetCurrentExceptionTracker();
+        if (pCurrentTracker != NULL)
+        {
+            if (pCurrentTracker->GetLimitFrame() == this)
+            {
+                // The current frame that was just popped was the EH limit frame. We need to reset the EH limit frame
+                // to the current frame so that it stays on the frame chain from initial explicit frame.
+                // The ExceptionTracker::HasFrameBeenUnwoundByAnyActiveException needs that to correctly detect
+                // frames that were unwound.
+                pCurrentTracker->ResetLimitFrame();
+            }
+
+            PTR_Frame frame = pCurrentTracker->GetInitialExplicitFrame();
+            if (frame != NULL)
+            {
+                while ((frame != FRAME_TOP) && (frame != this))
+                {
+                    PTR_Frame nextFrame = frame->PtrNextFrame();
+                    if (nextFrame == this)
+                    {
+                        // Repair frame chain from the initial explicit frame to the current frame,
+                        // skipping the current GCFrame that was destroyed
+                        frame->m_Next = m_pCurThread->m_pFrame;
+                        break;
+                    }
+                    frame = nextFrame;
+                }
+            }
+        }
+#endif // FEATURE_EH_FUNCLETS && !FEATURE_PAL
+
+        if (!wasCoop)
+        {
+            m_pCurThread->EnablePreemptiveGC();
+        }
+
+    }
+}
+
+ExceptionFilterFrame::~ExceptionFilterFrame()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if (m_Next != NULL)
+    {
+        GCX_COOP();
+        // When the frame is destroyed, make sure it is no longer in the
+        // frame chain managed by the Thread.
+        Pop();
+    }
+}
+
+#endif // !CROSSGEN_COMPILE
+
 #ifdef FEATURE_INTERPRETER
 // Methods of IntepreterFrame.
 InterpreterFrame::InterpreterFrame(Interpreter* interp) 

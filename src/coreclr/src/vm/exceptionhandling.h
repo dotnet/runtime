@@ -299,6 +299,8 @@ public:
         return m_pInitialExplicitFrame;
     }
 
+    void ResetInitialExplicitFrame();
+
 #ifdef FEATURE_PAL
     // Reset the range of explicit frames, the limit frame and the scanned
     // stack range before unwinding a sequence of native frames. These frames
