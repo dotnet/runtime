@@ -21,16 +21,18 @@ namespace ILCompiler
         private readonly string _inputFilePath;
         private readonly EcmaModule _inputModule;
         private readonly bool _ibcTuning;
+        private readonly bool _resilient;
 
         // These need to provide reasonable defaults so that the user can optionally skip
         // calling the Use/Configure methods and still get something reasonable back.
         private KeyValuePair<string, string>[] _ryujitOptions = Array.Empty<KeyValuePair<string, string>>();
         private ILProvider _ilProvider = new ReadyToRunILProvider();
 
-        public ReadyToRunCodegenCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group, string inputFilePath, bool ibcTuning)
+        public ReadyToRunCodegenCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group, string inputFilePath, bool ibcTuning, bool resilient)
             : base(context, group, new CoreRTNameMangler())
         {
             _ibcTuning = ibcTuning;
+            _resilient = resilient;
             _inputFilePath = inputFilePath;
 
             _inputModule = context.GetModuleFromPath(_inputFilePath);
@@ -146,7 +148,8 @@ namespace ILCompiler
                 new DependencyAnalysis.ReadyToRun.DevirtualizationManager(_compilationGroup),
                 jitConfig,
                 _inputFilePath,
-                new ModuleDesc[] { _inputModule });
+                new ModuleDesc[] { _inputModule },
+                _resilient);
         }
     }
 }

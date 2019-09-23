@@ -9,7 +9,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
 {
-    public class DebugNameFormatter : TypeNameFormatter<DebugNameFormatter.Void, DebugNameFormatter.FormatOptions>
+    public partial class DebugNameFormatter : TypeNameFormatter<DebugNameFormatter.Void, DebugNameFormatter.FormatOptions>
     {
         public static readonly DebugNameFormatter Instance = new DebugNameFormatter();
 
@@ -67,8 +67,7 @@ namespace Internal.TypeSystem
 
         public override Void AppendName(StringBuilder sb, GenericParameterDesc type, FormatOptions options)
         {
-            sb.Append(type.Name);
-
+            sb.Append(type.DiagnosticName);
             return Void.Value;
         }
 
@@ -96,75 +95,97 @@ namespace Internal.TypeSystem
                 sb.Append('+');
             }
 
-            sb.Append(nestedType.Name);
+            sb.Append(nestedType.DiagnosticName);
 
             return Void.Value;
         }
 
         protected override Void AppendNameForNamespaceType(StringBuilder sb, DefType type, FormatOptions options)
         {
-            // Shortcut some of the well known types
-            switch (type.Category)
+            int initialLen = sb.Length;
+            try
             {
-                case TypeFlags.Void:
-                    sb.Append("void");
+                // Shortcut some of the well known types
+                switch (type.Category)
+                {
+                    case TypeFlags.Void:
+                        sb.Append("void");
+                        return Void.Value;
+                    case TypeFlags.Boolean:
+                        sb.Append("bool");
+                        return Void.Value;
+                    case TypeFlags.Char:
+                        sb.Append("char");
+                        return Void.Value;
+                    case TypeFlags.SByte:
+                        sb.Append("int8");
+                        return Void.Value;
+                    case TypeFlags.Byte:
+                        sb.Append("uint8");
+                        return Void.Value;
+                    case TypeFlags.Int16:
+                        sb.Append("int16");
+                        return Void.Value;
+                    case TypeFlags.UInt16:
+                        sb.Append("uint16");
+                        return Void.Value;
+                    case TypeFlags.Int32:
+                        sb.Append("int32");
+                        return Void.Value;
+                    case TypeFlags.UInt32:
+                        sb.Append("uint32");
+                        return Void.Value;
+                    case TypeFlags.Int64:
+                        sb.Append("int64");
+                        return Void.Value;
+                    case TypeFlags.UInt64:
+                        sb.Append("uint64");
+                        return Void.Value;
+                    case TypeFlags.IntPtr:
+                        sb.Append("native int");
+                        return Void.Value;
+                    case TypeFlags.UIntPtr:
+                        sb.Append("native uint");
+                        return Void.Value;
+                    case TypeFlags.Single:
+                        sb.Append("float32");
+                        return Void.Value;
+                    case TypeFlags.Double:
+                        sb.Append("float64");
+                        return Void.Value;
+                }
+
+                if (type.IsString)
+                {
+                    sb.Append("string");
                     return Void.Value;
-                case TypeFlags.Boolean:
-                    sb.Append("bool");
+                }
+
+                if (type.IsObject)
+                {
+                    sb.Append("object");
                     return Void.Value;
-                case TypeFlags.Char:
-                    sb.Append("char");
-                    return Void.Value;
-                case TypeFlags.SByte:
-                    sb.Append("int8");
-                    return Void.Value;
-                case TypeFlags.Byte:
-                    sb.Append("uint8");
-                    return Void.Value;
-                case TypeFlags.Int16:
-                    sb.Append("int16");
-                    return Void.Value;
-                case TypeFlags.UInt16:
-                    sb.Append("uint16");
-                    return Void.Value;
-                case TypeFlags.Int32:
-                    sb.Append("int32");
-                    return Void.Value;
-                case TypeFlags.UInt32:
-                    sb.Append("uint32");
-                    return Void.Value;
-                case TypeFlags.Int64:
-                    sb.Append("int64");
-                    return Void.Value;
-                case TypeFlags.UInt64:
-                    sb.Append("uint64");
-                    return Void.Value;
-                case TypeFlags.IntPtr:
-                    sb.Append("native int");
-                    return Void.Value;
-                case TypeFlags.UIntPtr:
-                    sb.Append("native uint");
-                    return Void.Value;
-                case TypeFlags.Single:
-                    sb.Append("float32");
-                    return Void.Value;
-                case TypeFlags.Double:
-                    sb.Append("float64");
-                    return Void.Value;
+                }
+
+                AssemblyQualify(sb, type, options);
+                NamespaceQualify(sb, type, options);
+                sb.Append(type.DiagnosticName);
+            }
+            catch
+            {
+                sb.Length = initialLen;
+
+                // 
+                AssemblyQualify(sb, type, options);
+                NamespaceQualify(sb, type, options);
+                sb.Append(type.DiagnosticName);
             }
 
-            if (type.IsString)
-            {
-                sb.Append("string");
-                return Void.Value;
-            }
+            return Void.Value;
+        }
 
-            if (type.IsObject)
-            {
-                sb.Append("object");
-                return Void.Value;
-            }
-
+        private void AssemblyQualify(StringBuilder sb, DefType type, FormatOptions options)
+        {
             if (((options & FormatOptions.AssemblyQualify) != 0)
                 && type is MetadataType mdType
                 && mdType.Module is IAssemblyDesc)
@@ -172,27 +193,35 @@ namespace Internal.TypeSystem
                 sb.Append('[');
 
                 // Trim the "System.Private." prefix
-                string assemblyName = ((IAssemblyDesc)mdType.Module).GetName().Name;
+                string assemblyName;
+                try
+                {
+                    assemblyName = ((IAssemblyDesc)mdType.Module).GetName().Name;
+                }
+                catch
+                {
+                    assemblyName = "Unknown";
+                }
+
                 if (assemblyName.StartsWith("System.Private", StringComparison.Ordinal))
                     assemblyName = "S.P" + assemblyName.Substring(14);
 
                 sb.Append(assemblyName);
                 sb.Append(']');
             }
+        }
 
+        private void NamespaceQualify(StringBuilder sb, DefType type, FormatOptions options)
+        {
             if ((options & FormatOptions.NamespaceQualify) != 0)
             {
-                string ns = type.Namespace;
+                string ns = type.DiagnosticNamespace;
                 if (!string.IsNullOrEmpty(ns))
                 {
                     sb.Append(ns);
                     sb.Append('.');
                 }
             }
-
-            sb.Append(type.Name);
-
-            return Void.Value;
         }
 
         protected override Void AppendNameForInstantiatedType(StringBuilder sb, DefType type, FormatOptions options)
@@ -214,6 +243,18 @@ namespace Internal.TypeSystem
             sb.Append('>');
 
             return Void.Value;
+        }
+
+        protected override DefType GetContainingType(DefType possibleInnerType, FormatOptions options)
+        {
+            try
+            {
+                return possibleInnerType.ContainingType;
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         public struct Void
