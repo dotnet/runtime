@@ -271,7 +271,7 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern uint GetExceptionCount();
 
-        internal object? DeepCopyStackTrace(object? currentStackTrace)
+        internal static object? DeepCopyStackTrace(object? currentStackTrace)
         {
             if (currentStackTrace != null)
             {
@@ -283,7 +283,7 @@ namespace System
             }
         }
 
-        internal object? DeepCopyDynamicMethods(object? currentDynamicMethods)
+        internal static object? DeepCopyDynamicMethods(object? currentDynamicMethods)
         {
             if (currentDynamicMethods != null)
             {

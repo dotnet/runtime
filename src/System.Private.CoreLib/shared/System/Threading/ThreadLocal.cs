@@ -561,7 +561,7 @@ namespace System.Threading
         /// <summary>
         /// Resizes a table to a certain length (or larger).
         /// </summary>
-        private void GrowTable(ref LinkedSlotVolatile[] table, int minLength)
+        private static void GrowTable(ref LinkedSlotVolatile[] table, int minLength)
         {
             Debug.Assert(table.Length < minLength);
 

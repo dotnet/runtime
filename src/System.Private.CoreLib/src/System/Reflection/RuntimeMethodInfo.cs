@@ -63,7 +63,7 @@ namespace System.Reflection
             }
         }
 
-        private bool IsDisallowedByRefType(Type type)
+        private static bool IsDisallowedByRefType(Type type)
         {
             if (!type.IsByRef)
                 return false;
