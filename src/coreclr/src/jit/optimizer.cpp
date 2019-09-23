@@ -3694,7 +3694,7 @@ void Compiler::optUnrollLoops()
 
                 for (Statement* stmt : block->Statements())
                 {
-                    /* Calculate gtCostSz */
+                    /* Calculate GetCostSz() */
                     gtSetStmtInfo(stmt);
 
                     /* Update loopCostSz */
@@ -4142,7 +4142,7 @@ void Compiler::fgOptWhileLoop(BasicBlock* block)
     /* We call gtPrepareCost to measure the cost of duplicating this tree */
 
     gtPrepareCost(condTree);
-    unsigned estDupCostSz = condTree->gtCostSz;
+    unsigned estDupCostSz = condTree->GetCostSz();
 
     double loopIterations = (double)BB_LOOP_WEIGHT;
 
@@ -7976,7 +7976,7 @@ void Compiler::optRemoveRangeCheck(GenTree* tree, Statement* stmt)
 
     gtUpdateSideEffects(stmt, tree);
 
-    /* Recalculate the gtCostSz, etc... */
+    /* Recalculate the GetCostSz(), etc... */
     gtSetStmtInfo(stmt);
 
     /* Re-thread the nodes if necessary */
