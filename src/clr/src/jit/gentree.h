@@ -445,8 +445,6 @@ public:
 #define MAX_COST UCHAR_MAX
 #define IND_COST_EX 3 // execution cost for an indirection
 
-    __declspec(property(get = GetCostEx)) unsigned char gtCostEx; // estimate of expression execution cost
-
     unsigned char GetCostEx() const
     {
         assert(gtCostsInitialized);
@@ -478,7 +476,7 @@ public:
     {
         // If the 'tree' costs aren't initialized, we'll hit an assert below.
         INDEBUG(gtCostsInitialized = tree->gtCostsInitialized;)
-        _gtCostEx = tree->gtCostEx;
+        _gtCostEx = tree->GetCostEx();
         _gtCostSz = tree->GetCostSz();
     }
 
