@@ -148,7 +148,7 @@ void CodeGen::genCodeForBBlist()
 
     // Check stack pointer on call stress mode is not compatible with fully interruptible GC. REVIEW: why?
     //
-    if (genInterruptible && compiler->opts.compStackCheckOnCall)
+    if (GetInterruptible() && compiler->opts.compStackCheckOnCall)
     {
         compiler->opts.compStackCheckOnCall = false;
     }
@@ -161,7 +161,7 @@ void CodeGen::genCodeForBBlist()
     // It is also not compatible with any function that makes a tailcall: we aren't smart enough to only
     // insert the SP check in the non-tailcall returns.
     //
-    if ((genInterruptible || compiler->compTailCallUsed) && compiler->opts.compStackCheckOnRet)
+    if ((GetInterruptible() || compiler->compTailCallUsed) && compiler->opts.compStackCheckOnRet)
     {
         compiler->opts.compStackCheckOnRet = false;
     }
