@@ -219,7 +219,12 @@ protected:
 
     BasicBlock* genCreateTempLabel();
 
+private:
+    void genLogLabel(BasicBlock* bb);
+
+protected:
     void genDefineTempLabel(BasicBlock* label);
+    void genDefineInlineTempLabel(BasicBlock* label);
 
     void genAdjustSP(target_ssize_t delta);
 
