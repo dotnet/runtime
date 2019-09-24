@@ -26,7 +26,7 @@ namespace System.ComponentModel
         /// Initializes a new instance of the <see cref='InvalidEnumArgumentException'/>
         /// class with the specified message.
         /// </summary>
-        public InvalidEnumArgumentException(string message) : base(message)
+        public InvalidEnumArgumentException(string? message) : base(message)
         {
         }
 
@@ -34,7 +34,7 @@ namespace System.ComponentModel
         /// Initializes a new instance of the Exception class with a specified error message
         /// and a reference to the inner exception that is the cause of this exception.
         /// </summary>
-        public InvalidEnumArgumentException(string message, Exception innerException)
+        public InvalidEnumArgumentException(string? message, Exception? innerException)
             : base(message, innerException)
         {
         }
@@ -44,7 +44,7 @@ namespace System.ComponentModel
         /// class with a message generated from the argument, invalid value, and
         /// enumeration class.
         /// </summary>
-        public InvalidEnumArgumentException(string argumentName, int invalidValue, Type enumClass)
+        public InvalidEnumArgumentException(string? argumentName, int invalidValue, Type enumClass)
             : base(SR.Format(SR.InvalidEnumArgument,
                                 argumentName,
                                 invalidValue,

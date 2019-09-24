@@ -43,16 +43,8 @@ namespace System.ComponentModel
         /// </summary>
         public bool IsReadOnly { get; }
 
-        public override bool Equals(object value)
-        {
-            if (this == value)
-            {
-                return true;
-            }
-
-            ReadOnlyAttribute other = value as ReadOnlyAttribute;
-            return other?.IsReadOnly == IsReadOnly;
-        }
+        public override bool Equals(object? value) =>
+            value is ReadOnlyAttribute other && other.IsReadOnly == IsReadOnly;
 
         public override int GetHashCode() => base.GetHashCode();
 

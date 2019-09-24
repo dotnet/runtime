@@ -9,7 +9,7 @@ namespace System
 {
     public partial interface IServiceProvider
     {
-        object? GetService(System.Type? serviceType);
+        object? GetService(System.Type serviceType);
     }
 }
 namespace System.ComponentModel

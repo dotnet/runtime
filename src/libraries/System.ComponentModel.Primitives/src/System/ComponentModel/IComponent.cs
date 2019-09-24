@@ -26,11 +26,11 @@ namespace System.ComponentModel
         /// When implemented by a class, gets or sets the <see cref='System.ComponentModel.ISite'/>
         /// associated with the <see cref='System.ComponentModel.IComponent'/>.
         /// </summary>
-        ISite Site { get; set; }
+        ISite? Site { get; set; }
 
         /// <summary>
         /// Adds an event handler to listen to the Disposed event on the component.
         /// </summary>
-        event EventHandler Disposed;
+        event EventHandler? Disposed;
     }
 }
