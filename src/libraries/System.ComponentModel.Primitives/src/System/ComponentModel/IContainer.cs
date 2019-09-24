@@ -20,7 +20,7 @@ namespace System.ComponentModel
         /// Adds the specified <see cref='System.ComponentModel.IComponent'/> to the
         /// <see cref='System.ComponentModel.IContainer'/> at the end of the list.
         /// </summary>
-        void Add(IComponent component);
+        void Add(IComponent? component);
 
         //  Adds a component to the container.
         /// <summary>
@@ -28,7 +28,7 @@ namespace System.ComponentModel
         /// <see cref='System.ComponentModel.IContainer'/> at the end of the list,
         /// and assigns a name to the component.
         /// </summary>
-        void Add(IComponent component, string name);
+        void Add(IComponent? component, string? name);
 
         /// <summary>
         /// Gets all the components in the <see cref='System.ComponentModel.IContainer'/>.
@@ -38,6 +38,6 @@ namespace System.ComponentModel
         /// <summary>
         /// Removes a component from the <see cref='System.ComponentModel.IContainer'/>.
         /// </summary>
-        void Remove(IComponent component);
+        void Remove(IComponent? component);
     }
 }

@@ -11,20 +11,20 @@ namespace System.ComponentModel
     [AttributeUsage(AttributeTargets.All)]
     public class CategoryAttribute : Attribute
     {
-        private static volatile CategoryAttribute s_action;
-        private static volatile CategoryAttribute s_appearance;
-        private static volatile CategoryAttribute s_asynchronous;
-        private static volatile CategoryAttribute s_behavior;
-        private static volatile CategoryAttribute s_data;
-        private static volatile CategoryAttribute s_design;
-        private static volatile CategoryAttribute s_dragDrop;
-        private static volatile CategoryAttribute s_defAttr;
-        private static volatile CategoryAttribute s_focus;
-        private static volatile CategoryAttribute s_format;
-        private static volatile CategoryAttribute s_key;
-        private static volatile CategoryAttribute s_layout;
-        private static volatile CategoryAttribute s_mouse;
-        private static volatile CategoryAttribute s_windowStyle;
+        private static volatile CategoryAttribute? s_action;
+        private static volatile CategoryAttribute? s_appearance;
+        private static volatile CategoryAttribute? s_asynchronous;
+        private static volatile CategoryAttribute? s_behavior;
+        private static volatile CategoryAttribute? s_data;
+        private static volatile CategoryAttribute? s_design;
+        private static volatile CategoryAttribute? s_dragDrop;
+        private static volatile CategoryAttribute? s_defAttr;
+        private static volatile CategoryAttribute? s_focus;
+        private static volatile CategoryAttribute? s_format;
+        private static volatile CategoryAttribute? s_key;
+        private static volatile CategoryAttribute? s_layout;
+        private static volatile CategoryAttribute? s_mouse;
+        private static volatile CategoryAttribute? s_windowStyle;
 
         private bool _localized;
 
@@ -176,7 +176,7 @@ namespace System.ComponentModel
                 {
                     lock (_locker)
                     {
-                        string localizedValue = GetLocalizedString(_categoryValue);
+                        string? localizedValue = GetLocalizedString(_categoryValue);
                         if (localizedValue != null)
                         {
                             _categoryValue = localizedValue;
@@ -190,23 +190,15 @@ namespace System.ComponentModel
             }
         }
 
-        public override bool Equals(object obj)
-        {
-            if (obj == this)
-            {
-                return true;
-            }
-
-            CategoryAttribute other = obj as CategoryAttribute;
-            return other != null && Category == other.Category;
-        }
+        public override bool Equals(object? obj) =>
+            obj is CategoryAttribute other && other.Category == Category;
 
         public override int GetHashCode() => Category?.GetHashCode() ?? 0;
 
         /// <summary>
         /// Looks up the localized name of a given category.
         /// </summary>
-        protected virtual string GetLocalizedString(string value) => SR.GetResourceString("PropertyCategory" + value, null);
+        protected virtual string? GetLocalizedString(string value) => SR.GetResourceString("PropertyCategory" + value, null);
 
         public override bool IsDefaultAttribute() => Category == Default.Category;
     }

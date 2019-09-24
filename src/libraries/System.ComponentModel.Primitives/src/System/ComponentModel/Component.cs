@@ -16,8 +16,8 @@ namespace System.ComponentModel
         /// </summary>
         private static readonly object s_eventDisposed = new object();
 
-        private ISite _site;
-        private EventHandlerList _events;
+        private ISite? _site;
+        private EventHandlerList? _events;
 
         ~Component() => Dispose(false);
 
@@ -44,7 +44,7 @@ namespace System.ComponentModel
         /// </summary>
         [Browsable(false)]
         [EditorBrowsable(EditorBrowsableState.Advanced)]
-        public event EventHandler Disposed
+        public event EventHandler? Disposed
         {
             add => Events.AddHandler(s_eventDisposed, value);
             remove => Events.RemoveHandler(s_eventDisposed, value);
@@ -60,7 +60,7 @@ namespace System.ComponentModel
         /// </summary>
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public virtual ISite Site
+        public virtual ISite? Site
         {
             get => _site;
             set => _site = value;
@@ -87,7 +87,7 @@ namespace System.ComponentModel
                     _site?.Container?.Remove(this);
                     if (_events != null)
                     {
-                        ((EventHandler)_events[s_eventDisposed])?.Invoke(this, EventArgs.Empty);
+                        ((EventHandler?)_events[s_eventDisposed])?.Invoke(this, EventArgs.Empty);
                     }
                 }
             }
@@ -99,13 +99,13 @@ namespace System.ComponentModel
         /// </summary>
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public IContainer Container => _site?.Container;
+        public IContainer? Container => _site?.Container;
 
         /// <summary>
         /// Returns an object representing a service provided by
         /// the <see cref='System.ComponentModel.Component'/>.
         /// </summary>
-        protected virtual object GetService(Type service) => _site?.GetService(service);
+        protected virtual object? GetService(Type service) => _site?.GetService(service);
 
         /// <summary>
         /// Gets a value indicating whether the <see cref='System.ComponentModel.Component'/>
@@ -122,10 +122,10 @@ namespace System.ComponentModel
         /// </summary>
         public override string ToString()
         {
-            ISite s = _site;
+            ISite? s = _site;
             if (s == null)
             {
-                return GetType().FullName;
+                return GetType().FullName!;
             }
 
             return s.Name + " [" + GetType().FullName + "]";

@@ -38,6 +38,6 @@ namespace System.ComponentModel
         /// When implemented by a class, gets or sets the name of the component
         /// associated with the <see cref='System.ComponentModel.ISite'/>.
         /// </summary>
-        string Name { get; set; }
+        string? Name { get; set; }
     }
 }
