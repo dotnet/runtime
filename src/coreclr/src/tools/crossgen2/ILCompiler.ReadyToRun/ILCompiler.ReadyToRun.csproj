@@ -4,12 +4,12 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <AssemblyName>ILCompiler.ReadyToRun</AssemblyName>
-    <TargetFramework>netstandard1.3</TargetFramework>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>READYTORUN;$(DefineConstants)</DefineConstants>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Platforms>x64;x86</Platforms>
-    <OutputPath>$(BinDir)\crossgen2</OutputPath>
+    <OutputPath>$(BinDir)/crossgen2/libs</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
   
