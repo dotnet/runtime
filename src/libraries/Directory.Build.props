@@ -258,6 +258,9 @@
     <!-- Suppress preview message as we are usually using preview SDK versions. -->
     <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
     <GenFacadesIgnoreBuildAndRevisionMismatch>true</GenFacadesIgnoreBuildAndRevisionMismatch>
+
+    <!-- Resource naming bug: https://github.com/microsoft/msbuild/issues/4740 -->
+    <EmbeddedResourceUseDependentUponConvention>false</EmbeddedResourceUseDependentUponConvention>
   </PropertyGroup>
 
   <!-- Set up some common paths -->

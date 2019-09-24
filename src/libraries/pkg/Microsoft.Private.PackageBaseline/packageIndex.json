@@ -3462,7 +3462,11 @@
         "net45": "4.0.0.0",
         "netstandard2.1": "4.0.0.0",
         "monoandroid10": "Any",
-        "xamarinmac20": "Any"
+        "monotouch10": "Any",
+        "xamarinmac20": "Any",
+        "xamarinios10": "Any",
+        "xamarintvos10": "Any",
+        "xamarinwatchos10": "Any"
       },
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
