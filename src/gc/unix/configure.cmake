@@ -96,4 +96,34 @@ endif()
 
 check_library_exists(${PTHREAD_LIBRARY} pthread_getaffinity_np "" HAVE_PTHREAD_GETAFFINITY_NP)
 
+check_cxx_symbol_exists(_SC_PHYS_PAGES unistd.h HAVE__SC_PHYS_PAGES)
+check_cxx_symbol_exists(_SC_AVPHYS_PAGES unistd.h HAVE__SC_AVPHYS_PAGES)
+check_function_exists(sysctl HAVE_SYSCTL)
+check_function_exists(sysinfo HAVE_SYSINFO)
+check_function_exists(sysconf HAVE_SYSCONF)
+check_struct_has_member ("struct sysinfo" mem_unit "sys/sysinfo.h" HAVE_SYSINFO_WITH_MEM_UNIT)
+
+check_cxx_source_compiles("
+#include <sys/param.h>
+#include <sys/sysctl.h>
+#include <vm/vm_param.h>
+
+int main(int argc, char **argv)
+{
+    struct xswdev xsw;
+
+    return 0;
+}" HAVE_XSWDEV)
+
+check_cxx_source_compiles("
+#include <sys/param.h>
+#include <sys/sysctl.h>
+
+int main(int argc, char **argv)
+{
+    struct xsw_usage xsu;
+
+    return 0;
+}" HAVE_XSW_USAGE)
+
 configure_file(${CMAKE_CURRENT_LIST_DIR}/config.gc.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.gc.h)
