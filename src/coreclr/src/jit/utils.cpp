@@ -2038,6 +2038,68 @@ float FloatingPointUtils::round(float x)
     return *reinterpret_cast<float*>(&bits);
 }
 
+bool FloatingPointUtils::isNormal(double x)
+{
+    int64_t bits = reinterpret_cast<int64_t&>(x);
+    bits &= 0x7FFFFFFFFFFFFFFF;
+    return (bits < 0x7FF0000000000000) && (bits != 0) && ((bits & 0x7FF0000000000000) != 0);
+}
+
+bool FloatingPointUtils::isNormal(float x)
+{
+    int32_t bits = reinterpret_cast<int32_t&>(x);
+    bits &= 0x7FFFFFFF;
+    return (bits < 0x7F800000) && (bits != 0) && ((bits & 0x7F800000) != 0);
+}
+
+//------------------------------------------------------------------------
+// hasPreciseReciprocal: check double for precise reciprocal. E.g. 2.0 <--> 0.5
+//
+// Arguments:
+//    x - value to check for precise reciprocal
+//
+// Return Value:
+//    True if 'x' is a power of two value and is not denormal (denormals may not be well-defined
+//    on some platforms such as if the user modified the floating-point environment via a P/Invoke)
+//
+
+bool FloatingPointUtils::hasPreciseReciprocal(double x)
+{
+    if (!isNormal(x))
+    {
+        return false;
+    }
+
+    uint64_t i        = reinterpret_cast<uint64_t&>(x);
+    uint64_t exponent = (i >> 52) & 0x7FFul;   // 0x7FF mask drops the sign bit
+    uint64_t mantissa = i & 0xFFFFFFFFFFFFFul; // 0xFFFFFFFFFFFFF mask drops the sign + exponent bits
+    return mantissa == 0 && exponent != 0 && exponent != 1023;
+}
+
+//------------------------------------------------------------------------
+// hasPreciseReciprocal: check float for precise reciprocal. E.g. 2.0f <--> 0.5f
+//
+// Arguments:
+//    x - value to check for precise reciprocal
+//
+// Return Value:
+//    True if 'x' is a power of two value and is not denormal (denormals may not be well-defined
+//    on some platforms such as if the user modified the floating-point environment via a P/Invoke)
+//
+
+bool FloatingPointUtils::hasPreciseReciprocal(float x)
+{
+    if (!isNormal(x))
+    {
+        return false;
+    }
+
+    uint32_t i        = reinterpret_cast<uint32_t&>(x);
+    uint32_t exponent = (i >> 23) & 0xFFu; // 0xFF mask drops the sign bit
+    uint32_t mantissa = i & 0x7FFFFFu;     // 0x7FFFFF mask drops the sign + exponent bits
+    return mantissa == 0 && exponent != 0 && exponent != 127;
+}
+
 namespace MagicDivide
 {
 template <int TableBase = 0, int TableSize, typename Magic>
