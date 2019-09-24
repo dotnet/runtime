@@ -269,9 +269,8 @@ struct insGroup
 #define IGF_NOGCINTERRUPT 0x0040  // this IG is is a no-interrupt region (prolog, epilog, etc.)
 #define IGF_UPD_ISZ 0x0080        // some instruction sizes updated
 #define IGF_PLACEHOLDER 0x0100    // this is a placeholder group, to be filled in later
-#define IGF_EMIT_ADD 0x0200       // this is a block added by the emitter
-                                  // because the codegen block was too big. Also used for
-                                  // placeholder IGs that aren't also labels.
+#define IGF_EXTEND 0x0200         // this block is conceptually an extension of the previous block
+                                  // and the emitter should continue to track GC info as if there was no new block.
 
 // Mask of IGF_* flags that should be propagated to new blocks when they are created.
 // This allows prologs and epilogs to be any number of IGs, but still be
@@ -1791,7 +1790,7 @@ private:
 
     void emitGenIG(insGroup* ig);
     insGroup* emitSavIG(bool emitAdd = false);
-    void emitNxtIG(bool emitAdd = false);
+    void emitNxtIG(bool extend = false);
 
     bool emitCurIGnonEmpty()
     {
@@ -1810,6 +1809,10 @@ private:
     // and registers.  The "isFinallyTarget" parameter indicates that the current location is
     // the start of a basic block that is returned to after a finally clause in non-exceptional execution.
     void* emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMaskTP byrefRegs, BOOL isFinallyTarget = FALSE);
+    // Same as above, except the label is added and is conceptually "inline" in
+    // the current block. Thus it extends the previous block and the emitter
+    // continues to track GC info as if there was no label.
+    void* emitAddInlineLabel();
 
 #ifdef _TARGET_ARMARCH_
 
@@ -2209,8 +2212,8 @@ public:
     static unsigned emitTotalPhIGcnt; // total number of insPlaceholderGroupData allocated
     static unsigned emitTotalIGicnt;
     static size_t   emitTotalIGsize;
-    static unsigned emitTotalIGmcnt;    // total method count
-    static unsigned emitTotalIGEmitAdd; // total number of 'emitAdd' (overflow) groups
+    static unsigned emitTotalIGmcnt;   // total method count
+    static unsigned emitTotalIGExtend; // total number of 'emitExtend' (typically overflow) groups
     static unsigned emitTotalIGjmps;
     static unsigned emitTotalIGptrs;
 
