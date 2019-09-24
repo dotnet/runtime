@@ -2974,6 +2974,109 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
     return nullptr;
 }
 
+//----------------------------------------------------------------------------------------------
+// LowerNodeCC: Lowers a node that produces a boolean value by setting the condition flags.
+//
+// Arguments:
+//     node - The node to lower
+//     condition - The condition code of the generated SETCC/JCC node
+//
+// Return Value:
+//     A SETCC/JCC node or nullptr if `node` is not used.
+//
+// Notes:
+//     This simply replaces `node`'s use with an appropiate SETCC/JCC node,
+//     `node` is not actually changed, except by having its GTF_SET_FLAGS set.
+//     It's the caller's responsibility to change `node` such that it only
+//     sets the condition flags, without producing a boolean value.
+//
+GenTreeCC* Lowering::LowerNodeCC(GenTree* node, GenCondition condition)
+{
+    // Skip over a chain of EQ/NE(x, 0) relops. This may be present either
+    // because `node` is not a relop and so it cannot be used directly by a
+    // JTRUE, or because the frontend failed to remove a EQ/NE(x, 0) that's
+    // used as logical negation.
+    //
+    // Usually there's only one such relop but there's little difference
+    // between removing one or all so we may as well remove them all.
+    //
+    // We can't allow any other nodes between `node` and its user because we
+    // have no way of knowing if those nodes change flags or not. So we're looking
+    // to skip over a sequence of appropriately connected zero and EQ/NE nodes.
+
+    // The x in EQ/NE(x, 0)
+    GenTree* relop = node;
+    // The first node of the relop sequence
+    GenTree* first = node->gtNext;
+    // The node following the relop sequence
+    GenTree* next = first;
+
+    while ((next != nullptr) && next->IsIntegralConst(0) && (next->gtNext != nullptr) &&
+           next->gtNext->OperIs(GT_EQ, GT_NE) && (next->gtNext->AsOp()->gtGetOp1() == relop) &&
+           (next->gtNext->AsOp()->gtGetOp2() == next))
+    {
+        relop = next->gtNext;
+        next  = relop->gtNext;
+
+        if (relop->OperIs(GT_EQ))
+        {
+            condition = GenCondition::Reverse(condition);
+        }
+    }
+
+    GenTreeCC* cc = nullptr;
+
+    // Next may be null if `node` is not used. In that case we don't need to generate a SETCC node.
+    if (next != nullptr)
+    {
+        if (next->OperIs(GT_JTRUE))
+        {
+            // If the instruction immediately following 'relop', i.e. 'next' is a conditional branch,
+            // it should always have 'relop' as its 'op1'. If it doesn't, then we have improperly
+            // constructed IL (the setting of a condition code should always immediately precede its
+            // use, since the JIT doesn't track dataflow for condition codes). Still, if it happens
+            // it's not our problem, it simply means that `node` is not used and can be removed.
+            if (next->AsUnOp()->gtGetOp1() == relop)
+            {
+                assert(relop->OperIsCompare());
+
+                next->ChangeOper(GT_JCC);
+                cc              = next->AsCC();
+                cc->gtCondition = condition;
+            }
+        }
+        else
+        {
+            // If the node is used by something other than a JTRUE then we need to insert a
+            // SETCC node to materialize the boolean value.
+            LIR::Use use;
+
+            if (BlockRange().TryGetUse(relop, &use))
+            {
+                cc = new (comp, GT_SETCC) GenTreeCC(GT_SETCC, condition, TYP_INT);
+                BlockRange().InsertAfter(node, cc);
+                use.ReplaceWith(comp, cc);
+            }
+        }
+    }
+
+    if (cc != nullptr)
+    {
+        node->gtFlags |= GTF_SET_FLAGS;
+        cc->gtFlags |= GTF_USE_FLAGS;
+    }
+
+    // Remove the chain of EQ/NE(x, 0) relop nodes, if any. Note that if a SETCC was
+    // inserted after `node`, `first` still points to the node that was initially
+    // after `node`.
+    if (relop != node)
+    {
+        BlockRange().Remove(first, relop);
+    }
+
+    return cc;
+}
+
 // Lower "jmp <method>" tail call to insert PInvoke method epilog if required.
 void Lowering::LowerJmpMethod(GenTree* jmp)
 {
