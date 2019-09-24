@@ -108,9 +108,11 @@ public sealed class ParallelRunner
         collectEtwTraces |= measurePerf;
         foreach (ProcessInfo process in processesToRun)
         {
-            process.Construct();
-            processList.Add(process);
-            collectEtwTraces |= process.Parameters.CollectJittedMethods;
+            if (process.Construct())
+            {
+                processList.Add(process);
+                collectEtwTraces |= process.Parameters.CollectJittedMethods;
+            }
         }
 
         processList.Sort((a, b) => b.Parameters.CompilationCostHeuristic.CompareTo(a.Parameters.CompilationCostHeuristic));

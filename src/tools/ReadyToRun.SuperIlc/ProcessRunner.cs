@@ -57,6 +57,8 @@ public class ProcessInfo
     public int ExitCode;
     public Dictionary<string, HashSet<string>> JittedMethods;
 
+    public bool IsEmpty => Parameters == null;
+
     public bool Crashed => ExitCode < -1000 * 1000;
 
     public ProcessInfo(ProcessConstructor constructor)
@@ -64,10 +66,11 @@ public class ProcessInfo
         Constructor = constructor;
     }
 
-    public void Construct()
+    public bool Construct()
     {
         Parameters = Constructor.Construct();
         Constructor = null;
+        return Parameters != null;
     }
 }
 
