@@ -17,6 +17,7 @@ namespace ReadyToRun.SuperIlc
             var parser = new CommandLineBuilder()
                 .AddCommand(CompileFolder())
                 .AddCommand(CompileSubtree())
+                .AddCommand(CompileFramework())
                 .AddCommand(CompileNugetPackages())
                 .AddCommand(CompileCrossgenRsp());
 
@@ -79,6 +80,26 @@ namespace ReadyToRun.SuperIlc
                         R2RDumpPath(),
                     },
                     handler: CommandHandler.Create<BuildOptions>(CompileSubtreeCommand.CompileSubtree));
+
+            Command CompileFramework() =>
+                new Command("compile-framework", "Compile managed framework assemblies in Core_Root",
+                    new Option[]
+                    {
+                            CoreRootDirectory(),
+                            Crossgen(),
+                            NoCleanup(),
+                            DegreeOfParallelism(),
+                            Sequential(),
+                            Release(),
+                            LargeBubble(),
+                            ReferencePath(),
+                            IssuesPath(),
+                            CompilationTimeoutMinutes(),
+                            R2RDumpPath(),
+                            MeasurePerf(),
+                            InputFileSearchString(),
+                    },
+                    handler: CommandHandler.Create<BuildOptions>(CompileFrameworkCommand.CompileFramework));
 
             Command CompileNugetPackages() =>
                 new Command("compile-nuget", "Restore a list of Nuget packages into an empty console app, publish, and optimize with Crossgen / CPAOT",
