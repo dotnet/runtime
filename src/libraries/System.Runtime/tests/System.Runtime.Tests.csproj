@@ -240,6 +240,7 @@
     <Compile Include="System\ArraySegmentTests.netcoreapp.cs" />
     <Compile Include="System\BooleanTests.netcoreapp.cs" />
     <Compile Include="System\ByteTests.netcoreapp.cs" />
+    <Compile Include="System\CharTests.netcoreapp.cs" />
     <Compile Include="System\DateTimeTests.netcoreapp.cs" />
     <Compile Include="System\DateTimeOffsetTests.netcoreapp.cs" />
     <Compile Include="System\DecimalTests.netcoreapp.cs" />
@@ -286,6 +287,7 @@
     <Compile Include="System\Text\RuneTests.netcoreapp.cs" />
     <Compile Include="System\Text\RuneTests.TestData.netcoreapp.cs" />
     <Compile Include="System\Text\StringBuilderTests.netcoreapp.cs" />
+    <Compile Include="System\Text\Unicode\UnicodeData.netcoreapp.cs" />
     <Compile Include="System\Text\Unicode\Utf16UtilityTests.ValidateChars.netcoreapp.cs" />
     <Compile Include="System\Text\Unicode\Utf8Tests.netcoreapp.cs" />
     <Compile Include="System\Text\Unicode\Utf8Tests.ToBytes.netcoreapp.cs" />
@@ -317,6 +319,20 @@
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
       <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="$(CommonTestPath)\Data\UnicodeData.11.0.txt">
+      <Link>System\Text\Unicode\UnicodeData.11.0.txt</Link>
+      <LogicalName>UnicodeData.11.0.txt</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonTestPath)\Data\CaseFolding-12.1.0.txt">
+      <Link>System\Text\Unicode\CaseFolding-12.1.0.txt</Link>
+      <LogicalName>CaseFolding-12.1.0.txt</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonTestPath)\Data\PropList-12.1.0.txt">
+      <Link>System\Text\Unicode\PropList-12.1.0.txt</Link>
+      <LogicalName>PropList-12.1.0.txt</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="TestLoadAssembly\TestLoadAssembly.csproj" />

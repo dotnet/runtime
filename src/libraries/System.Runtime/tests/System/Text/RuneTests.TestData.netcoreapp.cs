@@ -10,6 +10,19 @@ namespace System.Text.Tests
 {
     public static partial class RuneTests
     {
+        public static IEnumerable<Rune> AllRunes()
+        {
+            for (uint i = 0; i < 0xD800; i++)
+            {
+                yield return new Rune(i);
+            }
+
+            for (uint i = 0xE000; i <= 0x10FFFF; i++)
+            {
+                yield return new Rune(i);
+            }
+        }
+
         public static IEnumerable<object[]> GeneralTestData_BmpCodePoints_NoSurrogates()
         {
             yield return new object[]

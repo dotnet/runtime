@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Tests
 {
-    public class CharTests
+    public partial class CharTests
     {
         [Theory]
         [InlineData('h', 'h', 0)]
