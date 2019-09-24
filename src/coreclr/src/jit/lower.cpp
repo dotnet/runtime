@@ -1914,7 +1914,7 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
     // can add a new basic block for range check failure which becomes
     // fgLastBB with block number > loop header block number.
     // assert((comp->compCurBB->bbFlags & BBF_GC_SAFE_POINT) ||
-    //         !comp->optReachWithoutCall(comp->fgFirstBB, comp->compCurBB) || comp->genInterruptible);
+    //         !comp->optReachWithoutCall(comp->fgFirstBB, comp->compCurBB) || comp->GetInterruptible());
 
     // If PInvokes are in-lined, we have to remember to execute PInvoke method epilog anywhere that
     // a method returns.  This is a case of caller method has both PInvokes and tail calls.
