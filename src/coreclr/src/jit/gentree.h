@@ -5922,8 +5922,8 @@ struct GenCondition
         C    = Unsigned | S,    // = 14
         NC   = Unsigned | NS,   // = 15
                                 
-        FEQ  = Float | EQ,      // = 16
-        FNE  = Float | NE,      // = 17
+        FEQ  = Float | 0,       // = 16
+        FNE  = Float | 1,       // = 17
         FLT  = Float | SLT,     // = 18
         FLE  = Float | SLE,     // = 19
         FGE  = Float | SGE,     // = 20
