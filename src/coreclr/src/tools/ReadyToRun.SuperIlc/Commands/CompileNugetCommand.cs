@@ -92,7 +92,7 @@ namespace ReadyToRun.SuperIlc
                 }
 
                 BuildFolderSet folderSet = new BuildFolderSet(publishedAppFoldersToCompile, runners, options);
-                bool success = folderSet.Build(runners);
+                bool success = folderSet.Build();
                 folderSet.WriteLogs();
 
                 if (!options.NoCleanup && !options.Exe)

@@ -102,7 +102,7 @@ namespace ReadyToRun.SuperIlc
             Console.WriteLine($@"{directories.Length} folders scanned)");
 
             BuildFolderSet folderSet = new BuildFolderSet(folders, runners, options);
-            bool success = folderSet.Build(runners);
+            bool success = folderSet.Build();
             folderSet.WriteLogs();
 
             if (!options.NoCleanup)
@@ -116,20 +116,24 @@ namespace ReadyToRun.SuperIlc
         private static string[] LocateSubtree(string folder, string coreRootFolder)
         {
             ConcurrentBag<string> directories = new ConcurrentBag<string>();
-            LocateSubtreeAsync(folder, coreRootFolder, directories).Wait();
+            // TODO: this is somewhat hacky - should we introduce a new option -bt (bin/tests/OS.arch.config) we'd use
+            // to derive the location of Core_Root and testhost?
+            string testHostFolder = Path.Combine(Path.GetDirectoryName(Path.GetDirectoryName(coreRootFolder)), "testhost");
+            LocateSubtreeAsync(folder, coreRootFolder, testHostFolder, directories).Wait();
             return directories.ToArray();
         }
 
-        private static async Task LocateSubtreeAsync(string folder, string coreRootFolder, ConcurrentBag<string> directories)
+        private static async Task LocateSubtreeAsync(string folder, string coreRootFolder, string testHostFolder, ConcurrentBag<string> directories)
         {
             if (!Path.GetExtension(folder).Equals(".out", StringComparison.OrdinalIgnoreCase) &&
-                !folder.Equals(coreRootFolder, StringComparison.OrdinalIgnoreCase))
+                !folder.Equals(coreRootFolder, StringComparison.OrdinalIgnoreCase) &&
+                !folder.Equals(testHostFolder, StringComparison.OrdinalIgnoreCase))
             {
                 directories.Add(folder);
                 List<Task> subfolderTasks = new List<Task>();
                 foreach (string subdir in Directory.EnumerateDirectories(folder))
                 {
-                    subfolderTasks.Add(Task.Run(() => LocateSubtreeAsync(subdir, coreRootFolder, directories)));
+                    subfolderTasks.Add(Task.Run(() => LocateSubtreeAsync(subdir, coreRootFolder, testHostFolder, directories)));
                 }
                 await Task.WhenAll(subfolderTasks);
             }
