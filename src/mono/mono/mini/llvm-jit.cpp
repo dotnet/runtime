@@ -289,7 +289,8 @@ public:
 		if (opts == NULL) {
 			// FIXME: find optimal mono specific order of passes
 			// see https://llvm.org/docs/Frontend/PerformanceTips.html#pass-ordering
-			opts = " -simplifycfg -sroa -lower-expect -instcombine -gvn";
+			// the following order is based on a stripped version of "OPT -O2"
+			opts = " -simplifycfg -sroa -lower-expect -instcombine -licm -simplifycfg -lcssa -indvars -loop-deletion -gvn -memcpyopt -sccp -bdce -instcombine -dse -simplifycfg";
 		}
 
 		char **args = g_strsplit (opts, " ", -1);
