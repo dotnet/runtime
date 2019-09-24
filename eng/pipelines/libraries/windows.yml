@@ -119,10 +119,10 @@ stages:
           - windowsArmQueue: Windows.10.Arm64.Open
 
           - ${{ if eq(parameters.fullMatrix, 'false') }}:
-            - netcoreappWindowsQueues: Windows.7.Amd64.Open+Windows.81.Amd64.Open+Windows.10.Amd64.ClientRS4.ES.Open
+            - netcoreappWindowsQueues: Windows.7.Amd64.Open+Windows.81.Amd64.Open+Windows.10.Amd64.Client19H1.Open # TODO: change to 19H1 non en-US image when available: https://github.com/dotnet/core-eng/issues/7464
 
           - ${{ if eq(parameters.fullMatrix, 'true') }}:
-            - netcoreappWindowsQueues: Windows.7.Amd64.Open+Windows.81.Amd64.Open+Windows.10.Amd64.ClientRS4.Open+Windows.10.Amd64.ServerRS5.Open+Windows.10.Amd64.Client19H1.Open
+            - netcoreappWindowsQueues: Windows.7.Amd64.Open+Windows.81.Amd64.Open+Windows.10.Amd64.ServerRS5.Open+Windows.10.Amd64.Client19H1.Open
 
       # There is no point of running legs without outerloop tests, when in an outerloop build.
       - ${{ if and(ne(parameters.testScope, 'outerloop'), ne(parameters.testScope, 'all')) }}:
