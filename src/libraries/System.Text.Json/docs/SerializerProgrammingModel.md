@@ -35,7 +35,7 @@ To deserialize a JSON string into a POCO instance:
 To serialize an object to a JSON string:
 ```cs
     Person person = ...
-    string json = JsonSerializer.ToString(person);
+    string json = JsonSerializer.Serialize(person);
 ```
 
 Note there are also byte[]-based methods of these which are faster than using the string-based methods because the bytes (as UTF8) do not need to be converted to\from string (UTF16).
