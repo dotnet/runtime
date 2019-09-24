@@ -21,5 +21,14 @@
 #cmakedefine01 HAVE_PTHREAD_GETAFFINITY_NP
 #cmakedefine01 HAVE_PTHREAD_NP_H
 #cmakedefine01 HAVE_CPUSET_T
+#cmakedefine01 HAVE__SC_AVPHYS_PAGES
+#cmakedefine01 HAVE__SC_PHYS_PAGES
+#cmakedefine01 HAVE_SYSCONF
+#cmakedefine01 HAVE_SYSCTL
+#cmakedefine01 HAVE_SYSINFO
+#cmakedefine01 HAVE_SYSINFO_WITH_MEM_UNIT
+#cmakedefine01 HAVE_XSW_USAGE
+#cmakedefine01 HAVE_XSWDEV
+
 
 #endif // __CONFIG_H__

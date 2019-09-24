@@ -25,6 +25,8 @@ Revision History:
 #include <sched.h>
 #include <errno.h>
 #include <unistd.h>
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
 #include <sys/types.h>
 #if HAVE_SYSCTL
 #include <sys/sysctl.h>
@@ -239,6 +241,58 @@ GetSystemInfo(
     PERF_EXIT(GetSystemInfo);
 }
 
+// Get memory size multiplier based on the passed in units (k = kilo, m = mega, g = giga)
+static uint64_t GetMemorySizeMultiplier(char units)
+{
+    switch(units)
+    {
+        case 'g':
+        case 'G': return 1024 * 1024 * 1024;
+        case 'm':
+        case 'M': return 1024 * 1024;
+        case 'k':
+        case 'K': return 1024;
+    }
+
+    // No units multiplier
+    return 1;
+}
+
+#ifndef __APPLE__
+// Try to read the MemAvailable entry from /proc/meminfo.
+// Return true if the /proc/meminfo existed, the entry was present and we were able to parse it.
+static bool ReadMemAvailable(uint64_t* memAvailable)
+{
+    bool foundMemAvailable = false;
+    FILE* memInfoFile = fopen("/proc/meminfo", "r");
+    if (memInfoFile != NULL)
+    {
+        char *line = nullptr;
+        size_t lineLen = 0;
+
+        while (getline(&line, &lineLen, memInfoFile) != -1)
+        {
+            char units = '\0';
+            uint64_t available;
+            int fieldsParsed = sscanf(line, "MemAvailable: %" SCNu64 " %cB", &available, &units);
+
+            if (fieldsParsed >= 1)
+            {
+                uint64_t multiplier = GetMemorySizeMultiplier(units);
+                *memAvailable = available * multiplier;
+                foundMemAvailable = true;
+                break;
+            }
+        }
+
+        free(line);
+        fclose(memInfoFile);
+    }
+
+    return foundMemAvailable;
+}
+#endif // __APPLE__
+
 /*++
 Function:
   GlobalMemoryStatusEx
@@ -365,7 +419,22 @@ GlobalMemoryStatusEx(
     if (lpBuffer->ullTotalPhys > 0)
     {
 #ifndef __APPLE__
-        lpBuffer->ullAvailPhys = sysconf(SYSCONF_PAGES) * sysconf(_SC_PAGE_SIZE);
+        static volatile bool tryReadMemInfo = true;
+
+        if (tryReadMemInfo)
+        {
+            // Ensure that we don't try to read the /proc/meminfo in successive calls to the GlobalMemoryStatusEx
+            // if we have failed to access the file or the file didn't contain the MemAvailable value.
+            tryReadMemInfo = ReadMemAvailable(&lpBuffer->ullAvailPhys);
+        }
+
+        if (!tryReadMemInfo)
+        {
+            // The /proc/meminfo doesn't exist or it doesn't contain the MemAvailable row or the format of the row is invalid
+            // Fall back to getting the available pages using sysconf.
+            lpBuffer->ullAvailPhys = sysconf(SYSCONF_PAGES) * sysconf(_SC_PAGE_SIZE);
+        }
+
         INT64 used_memory = lpBuffer->ullTotalPhys - lpBuffer->ullAvailPhys;
         lpBuffer->dwMemoryLoad = (DWORD)((used_memory * 100) / lpBuffer->ullTotalPhys);
 #else
@@ -445,17 +514,7 @@ ReadMemoryValueFromFile(const char* filename, uint64_t* val)
     if (errno != 0)
         goto done;
 
-    multiplier = 1;
-    switch(*endptr)
-    {
-        case 'g':
-        case 'G': multiplier = 1024;
-        case 'm':
-        case 'M': multiplier = multiplier*1024;
-        case 'k':
-        case 'K': multiplier = multiplier*1024;
-    }
-
+    multiplier = GetMemorySizeMultiplier(*endptr);
     *val = num * multiplier;
     result = true;
     if (*val/multiplier != num)
