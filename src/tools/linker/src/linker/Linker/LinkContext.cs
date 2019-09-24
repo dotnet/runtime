@@ -113,6 +113,8 @@ namespace Mono.Linker {
 
 		public bool KeepUsedAttributeTypesOnly { get; set; }
 
+		public bool KeepDependencyAttributes { get; set; }
+
 		public bool StripResources { get; set; }
 
 		public System.Collections.IDictionary Actions {

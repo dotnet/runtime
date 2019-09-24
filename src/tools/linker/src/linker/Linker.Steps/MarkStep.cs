@@ -356,6 +356,11 @@ namespace Mono.Linker.Steps {
 					if (IsUserDependencyMarker (ca.AttributeType) && provider is MemberReference mr) {
 						MarkUserDependency (mr, ca);
 
+						if (_context.KeepDependencyAttributes) {
+							MarkCustomAttribute (ca);
+							continue;
+						}
+
 						if (Annotations.GetAction (mr.DeclaringType.Module.Assembly) == AssemblyAction.Link)
 							continue;
 					}
