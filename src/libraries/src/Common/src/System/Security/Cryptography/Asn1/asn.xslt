@@ -865,16 +865,24 @@ namespace <xsl:value-of select="@namespace" />
     <xsl:param name="indent" />
     <xsl:param name="name" select="@name"/>
     <xsl:variable name="nullable" select="@optional | parent::asn:Choice"/>
-    <xsl:if test="1" xml:space="preserve">
-            <xsl:value-of select="$indent"/><xsl:value-of select="$writerName"/>.WriteGeneralizedTime(<xsl:call-template name="MaybeImplicitCallP"/><xsl:value-of select="$name"/><xsl:if test="$nullable">.Value</xsl:if>);</xsl:if>
+    <xsl:choose>
+      <xsl:when test="@omitFractionalSeconds" xml:space="preserve">
+            <xsl:value-of select="$indent"/><xsl:value-of select="$writerName"/>.WriteGeneralizedTime(<xsl:call-template name="MaybeImplicitCallP"/><xsl:value-of select="$name"/><xsl:if test="$nullable">.Value</xsl:if>, omitFractionalSeconds: <xsl:value-of select="@omitFractionalSeconds"/>);</xsl:when>
+      <xsl:otherwise xml:space="preserve">
+            <xsl:value-of select="$indent"/><xsl:value-of select="$writerName"/>.WriteGeneralizedTime(<xsl:call-template name="MaybeImplicitCallP"/><xsl:value-of select="$name"/><xsl:if test="$nullable">.Value</xsl:if>);</xsl:otherwise>
+    </xsl:choose>
   </xsl:template>
   
   <xsl:template match="asn:GeneralizedTime" mode="DecodeSimpleValue" xml:space="default">
     <xsl:param name="readerName" />
     <xsl:param name="indent" />
     <xsl:param name="name" select="concat('decoded.', @name)"/>
-    <xsl:if test="1" xml:space="preserve">
-            <xsl:value-of select="$indent"/><xsl:value-of select="$name"/> = <xsl:value-of select="$readerName"/>.ReadGeneralizedTime(<xsl:call-template name="MaybeImplicitCall0"/>);</xsl:if>
+    <xsl:choose>
+      <xsl:when test="@omitFractionalSeconds" xml:space="preserve">
+            <xsl:value-of select="$indent"/><xsl:value-of select="$name"/> = <xsl:value-of select="$readerName"/>.ReadGeneralizedTime(<xsl:call-template name="MaybeImplicitCallP"/>disallowFractions: <xsl:value-of select="@omitFractionalSeconds"/>);</xsl:when>
+      <xsl:otherwise xml:space="preserve">
+            <xsl:value-of select="$indent"/><xsl:value-of select="$name"/> = <xsl:value-of select="$readerName"/>.ReadGeneralizedTime(<xsl:call-template name="MaybeImplicitCall0"/>);</xsl:otherwise>
+    </xsl:choose>
   </xsl:template>
   
   <xsl:template match="asn:GeneralizedTime" mode="DefaultTag">Asn1Tag.GeneralizedTime</xsl:template>

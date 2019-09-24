@@ -695,6 +695,91 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             }
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void FractionalSecondsNotWritten(bool selfSigned)
+        {
+            using (X509Certificate2 savedCert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
+            using (RSA rsa = savedCert.GetRSAPrivateKey())
+            {
+                X500DistinguishedName subjectName = new X500DistinguishedName("CN=Test");
+
+                var request = new CertificateRequest(
+                    subjectName,
+                    rsa,
+                    HashAlgorithmName.SHA256,
+                    RSASignaturePadding.Pkcs1);
+
+                // notBefore is a date before 2050 UTC (encoded using UTC TIME),
+                // notAfter is a date after 2050 UTC (encoded using GENERALIZED TIME).
+
+                DateTimeOffset notBefore = new DateTimeOffset(2049, 3, 4, 5, 6, 7, 89, TimeSpan.Zero);
+                DateTimeOffset notAfter = notBefore.AddYears(2);
+                Assert.NotEqual(0, notAfter.Millisecond);
+
+                DateTimeOffset normalizedBefore = notBefore.AddMilliseconds(-notBefore.Millisecond);
+                DateTimeOffset normalizedAfter = notAfter.AddMilliseconds(-notAfter.Millisecond);
+                byte[] manualSerialNumber = { 3, 2, 1 };
+                X509Certificate2 cert;
+
+                if (selfSigned)
+                {
+                    cert = request.CreateSelfSigned(notBefore, notAfter);
+                }
+                else
+                {
+                    cert = request.Create(
+                        subjectName,
+                        X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1),
+                        notBefore,
+                        notAfter,
+                        manualSerialNumber);
+                }
+
+                using (cert)
+                {
+                    Assert.Equal(normalizedBefore.DateTime.ToLocalTime(), cert.NotBefore);
+                    Assert.Equal(normalizedAfter.DateTime.ToLocalTime(), cert.NotAfter);
+
+                    if (selfSigned)
+                    {
+                        // The serial number used in CreateSelfSigned is random, so find the issuer name,
+                        // and the validity period is the next 34 bytes.  Verify it was encoded as expected.
+                        //
+                        // Since the random serial number is at most 9 bytes and the subjectName encoded
+                        // value is 17 bytes, there's no chance of an early false match.
+                        byte[] encodedCert = cert.RawData;
+                        byte[] needle = subjectName.RawData;
+
+                        int index = encodedCert.AsSpan().IndexOf(needle);
+                        Assert.Equal(
+                            "3020170D3439303330343035303630375A180F32303531303330343035303630375A",
+                            encodedCert.AsSpan(index + needle.Length, 34).ByteArrayToHex());
+                    }
+                    else
+                    {
+                        // The entire encoding is deterministic in this mode.
+                        Assert.Equal(
+                            "308201953081FFA0030201020203030201300D06092A864886F70D01010B0500" +
+                            "300F310D300B06035504031304546573743020170D3439303330343035303630" +
+                            "375A180F32303531303330343035303630375A300F310D300B06035504031304" +
+                            "5465737430819F300D06092A864886F70D010101050003818D00308189028181" +
+                            "00B11E30EA87424A371E30227E933CE6BE0E65FF1C189D0D888EC8FF13AA7B42" +
+                            "B68056128322B21F2B6976609B62B6BC4CF2E55FF5AE64E9B68C78A3C2DACC91" +
+                            "6A1BC7322DD353B32898675CFB5B298B176D978B1F12313E3D865BC53465A11C" +
+                            "CA106870A4B5D50A2C410938240E92B64902BAEA23EB093D9599E9E372E48336" +
+                            "730203010001300D06092A864886F70D01010B0500038181000095ABC7CC7B01" +
+                            "9C2A88A7891165B6ACCDBC5137D80C0A5151B11FD4D789CCE808412ABF05FFB1" +
+                            "D9BE097776147A6D4C3EE177E5F9C2C9E8C005D72A6473F9904185B95634BFB4" +
+                            "EA80B232B271DC1BF20A2FDC46FC93771636B618F29417C31D5F602236FDB414" +
+                            "CDC1BEDE700E31E80DC5E7BB7D3F367420B72925605C916BDA",
+                            cert.RawData.ByteArrayToHex());
+                    }
+                }
+            }
+        }
+
         private class InvalidSignatureGenerator : X509SignatureGenerator
         {
             private readonly byte[] _signatureAlgBytes;
