@@ -27,14 +27,7 @@ $(CLRTestBatchPreCommands)
 ]]></CLRTestBatchPreCommands>
     <BashCLRTestPreCommands><![CDATA[
 $(BashCLRTestPreCommands)
-if [ -e "/etc/os-release" ]; then
-    source /etc/os-release
-fi
-if [ "${ID}" != "alpine" ]; then
-    $CORE_ROOT/crossgen2/crossgen2 -r:$CORE_ROOT/*.dll -o:crossgen2smoke.dll crossgen2smoke.ildll
-else
-    cp crossgen2smoke.ildll crossgen2smoke.dll
-fi
+$CORE_ROOT/crossgen2/crossgen2 -r:$CORE_ROOT/*.dll -o:crossgen2smoke.dll crossgen2smoke.ildll
 ]]></BashCLRTestPreCommands>
   </PropertyGroup>
 </Project>
