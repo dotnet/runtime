@@ -3,12 +3,11 @@ Building CoreFX on Windows
 
 ## Required Software
 
-1. **[Visual Studio 2017](https://www.visualstudio.com/downloads/)** or **[Visual Studio 2019](https://visualstudio.microsoft.com/vs/preview/)** (Community, Professional, Enterprise) with the latest update must be installed. The Community version is completely free.
-1. **[CMake](https://cmake.org/)** must be installed from [the CMake download page](https://cmake.org/download/#latest) and added to your path. CMake 3.14.3 or later is required to build with VS 2019.
+1. **[Visual Studio 2019](https://visualstudio.microsoft.com/vs/preview/)** (Community, Professional, Enterprise) with the latest update must be installed. The Community version is completely free.
+2. **[CMake](https://cmake.org/)** must be installed from [the CMake download page](https://cmake.org/download/#latest) and added to your path. CMake 3.14.3 or later is required to build with VS 2019.
 
 ## Recommended Software
-1. **[Visual Studio 2019 Preview](https://visualstudio.microsoft.com/vs/preview/)** (Community, Professional, Enterprise) with the latest update should be installed. The Community version is completely free.
-1. **[.NET Core SDK](https://dotnet.microsoft.com/download/dotnet-core/3.0)** >= v3.0.0-preview6 should be installed, which will add the `dotnet` toolchain to your path.
+**[.NET Core SDK](https://dotnet.microsoft.com/download/dotnet-core/3.0)** >= v3.0.100 should be installed, which will add the `dotnet` toolchain to your path.
 
 ### Visual Studio 2019
 
@@ -43,50 +42,6 @@ The following are the minimum requirements:
 To build binaries for ARM, you need the following additional indivdual components:
 * Visual C++ compilers and libraries for ARM
 * Visual C++ compilers and libraries for ARM64
-
-### Visual Studio 2017
-
-#### Visual Studio 2017 - 'Workloads' based install
-
-The following are the minimum requirements:
-  * .NET desktop development
-    * All Required Components
-    * .NET Framework 4.7.2 Development Tools
-  * Desktop development with C++
-    * All Required Components
-    * VC++ 2017 v141 Toolset (x86, x64)
-    * Windows 8.1 SDK and UCRT SDK
-    * VC++ 2015.3 v140 Toolset (x86, x64)
-  * .NET Core cross-platform development
-    * All Required Components
-
-#### Visual Studio 2017 - 'Individual components' based install
-
-The following are the minimum requirements:
-  * C# and Visual Basic Roslyn Compilers
-  * Static Analysis Tools
-  * .NET Portable Library Targeting Pack
-  * Windows 10 SDK or Windows 8.1 SDK
-  * Visual Studio C++ Core Features
-  * VC++ 2017 v141 Toolset (x86, x64)
-  * MSBuild
-  * .NET Framework 4.7.2 Targeting Pack
-  * Windows Universal CRT SDK
-  * VC++ 2015.3 v140 Toolset (x86, x64)
-
-To build binaries for ARM, you need the following additional indivdual components:
-* Visual C++ compilers and libraries for ARM
-* Visual C++ compilers and libraries for ARM64
-
-#### Visual Studio 2017 - Command line install
-
-If you've installed Visual Studio 2017 already, go to `C:\Program Files (x86)\Microsoft Visual Studio\Installer` and run
-
-     vs_installer.exe modify --installPath "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community" --add Microsoft.VisualStudio.Component.NuGet --add Microsoft.Net.Component.4.6.TargetingPack --add Microsoft.VisualStudio.Component.PortableLibrary --add Microsoft.VisualStudio.Component.Static.Analysis.Tools --add Microsoft.VisualStudio.Component.Roslyn.Compiler --add Microsoft.Component.MSBuild --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.VC.CoreIde --add Microsoft.VisualStudio.Component.Windows10SDK.17134 --add Microsoft.VisualStudio.Component.VC.140
-
-This will install all the components needed.
-
-Note that you will need to adjust the install path to reflect your version, "Community", "Professional", "Enterprise" or "Preview"
 
 ## Building From the Command Line
 
