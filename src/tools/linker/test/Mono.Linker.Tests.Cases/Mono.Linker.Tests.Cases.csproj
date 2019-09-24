@@ -3,6 +3,7 @@
   <PropertyGroup Condition=" $(Configuration.StartsWith('illink')) ">
     <TargetFramework>netcoreapp3.0</TargetFramework>
     <ILLinkBuild>true</ILLinkBuild>
+    <DefineConstants>$(DefineConstants);ILLINK</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition=" ! $(Configuration.StartsWith('illink')) ">
@@ -15,6 +16,7 @@
     <WarningLevel>0</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <LangVersion>8.0</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>

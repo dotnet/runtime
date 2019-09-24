@@ -453,7 +453,7 @@ namespace Mono.Linker.Steps {
 				SweepCustomAttributes (type);
 
 			if (type.HasGenericParameters)
-				SweepCustomAttributeCollection (type.GenericParameters);
+				SweepGenericParameters (type.GenericParameters);
 
 			if (type.HasProperties)
 				SweepCustomAttributeCollection (type.Properties);
@@ -488,6 +488,16 @@ namespace Mono.Linker.Steps {
 				}
 				InterfaceRemoved (type, iface);
 				type.Interfaces.RemoveAt (i);
+			}
+		}
+
+		protected void SweepGenericParameters (Collection<GenericParameter> genericParameters)
+		{
+			foreach (var gp in genericParameters) {
+				SweepCustomAttributes (gp);
+
+				if (gp.HasConstraints)
+					SweepCustomAttributeCollection (gp.Constraints);
 			}
 		}
 
@@ -573,7 +583,7 @@ namespace Mono.Linker.Steps {
 
 			foreach (var method in methods) {
 				if (method.HasGenericParameters)
-					SweepCustomAttributeCollection (method.GenericParameters);
+					SweepGenericParameters (method.GenericParameters);
 
 				SweepCustomAttributes (method.MethodReturnType);
 
