@@ -231,6 +231,10 @@ namespace Mono.Linker {
 							context.KeepTypeForwarderOnlyAssemblies = bool.Parse (GetParam ());
 							continue;
 
+						case "--keep-dep-attributes":
+							context.KeepDependencyAttributes = bool.Parse (GetParam ());
+							continue;
+
 						case "--ignore-descriptors":
 							ignoreDescriptors = bool.Parse (GetParam ());
 							continue;
@@ -591,6 +595,7 @@ namespace Mono.Linker {
 			Console.WriteLine ("                              globalization: Globalization data and globalization behavior");
 			Console.WriteLine ("  --ignore-descriptors      Skips reading embedded descriptors (short -z). Defaults to false");
 			Console.WriteLine ("  --keep-facades            Keep assemblies with type-forwarders (short -t). Defaults to false");
+			Console.WriteLine ("  --keep-dep-attributes     Keep attributes used for manual dependency tracking. Defaults to false");
 			Console.WriteLine ("  --new-mvid                Generate a new guid for each linked assembly (short -g). Defaults to true");
 			Console.WriteLine ("  --skip-unresolved         Ignore unresolved types, methods, and assemblies. Defaults to false");			
 			Console.WriteLine ("  --strip-resources         Remove XML descriptor resources for linked assemblies. Defaults to true");
