@@ -13,5 +13,5 @@
     }
   -->
   <asn:UtcTime name="UtcTime" />
-  <asn:GeneralizedTime name="GeneralTime" />
+  <asn:GeneralizedTime name="GeneralTime" omitFractionalSeconds="true"/>
 </asn:Choice>

@@ -39,7 +39,7 @@
         <xs:element name="T61String" type="FieldBase" />
         <xs:element name="IA5String" type="FieldBase" />
         <xs:element name="UtcTime" type="UtcTimeType" />
-        <xs:element name="GeneralizedTime" type="FieldBase" />
+        <xs:element name="GeneralizedTime" type="GeneralizedTimeType" />
         <xs:element name="VisibleString" type="FieldBase" />
         <xs:element name="BMPString" type="FieldBase" />
       </xs:choice>
@@ -163,7 +163,7 @@
             <xs:element name="T61String"/>
             <xs:element name="IA5String"/>
             <xs:element name="UtcTime" type="UtcTimeCollectionType" />
-            <xs:element name="GeneralizedTime"/>
+            <xs:element name="GeneralizedTime" type="GeneralizedTimeCollectionType" />
             <xs:element name="VisibleString"/>
             <xs:element name="BMPString"/>
           </xs:choice>
@@ -182,6 +182,18 @@
 
   <xs:complexType name="UtcTimeCollectionType">
     <xs:attribute name="twoDigitYearMax" use="optional" type="xs:unsignedShort" />
+  </xs:complexType>
+
+  <xs:complexType name="GeneralizedTimeType">
+    <xs:complexContent>
+      <xs:extension base="FieldBase">
+        <xs:attribute name="omitFractionalSeconds" default="false" type="xs:boolean" />
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="GeneralizedTimeCollectionType">
+    <xs:attribute name="omitFractionalSeconds" default="false" type="xs:boolean" />
   </xs:complexType>
 
   <xs:simpleType name="QualifiedName">
