@@ -952,6 +952,7 @@ MINI_OP(OP_EXTRACT_I2, "extract_i2", IREG, XREG, NONE)
 MINI_OP(OP_EXTRACT_U2, "extract_u2", IREG, XREG, NONE)
 MINI_OP(OP_EXTRACT_I1, "extract_i1", IREG, XREG, NONE)
 MINI_OP(OP_EXTRACT_U1, "extract_u1", IREG, XREG, NONE)
+MINI_OP(OP_EXTRACT_R4, "extract_r4", FREG, XREG, NONE)
 MINI_OP(OP_EXTRACT_R8, "extract_r8", FREG, XREG, NONE)
 MINI_OP(OP_EXTRACT_I8, "extract_i8", LREG, XREG, NONE)
 
@@ -976,6 +977,7 @@ MINI_OP(OP_INSERTX_R4_SLOW, "insertx_r4_slow", XREG, XREG, FREG)
 MINI_OP(OP_INSERTX_R8_SLOW, "insertx_r8_slow", XREG, XREG, FREG)
 MINI_OP(OP_INSERTX_I8_SLOW, "insertx_i8_slow", XREG, XREG, LREG)
 
+MINI_OP(OP_FCONV_TO_R4_X, "fconv_to_r4_x", XREG, FREG, NONE)
 MINI_OP(OP_FCONV_TO_R8_X, "fconv_to_r8_x", XREG, FREG, NONE)
 MINI_OP(OP_XCONV_R8_TO_I4, "xconv_r8_to_i4", IREG, XREG, NONE)
 MINI_OP(OP_ICONV_TO_X, "iconv_to_x", XREG, IREG, NONE)
@@ -1006,6 +1008,7 @@ MINI_OP(OP_DPPS, "dpps", XREG, XREG, XREG)
 
 /* inst_c0 is the rounding mode: 0 = round, 1 = floor, 2 = ceiling */
 MINI_OP(OP_SSE41_ROUNDPD, "roundpd", XREG, XREG, NONE)
+MINI_OP(OP_SSE41_ROUNDSS, "roundss", XREG, XREG, NONE)
 
 /* Intel BMI1 */
 /* Count trailing zeroes, return 32/64 if the input is 0 */

@@ -132,6 +132,19 @@ llvm_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			} else if (!strcmp (cmethod->name, "Truncate")) {
 				opcode = OP_TRUNCF;
 			}
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+			else if (!strcmp (cmethod->name, "Round") && !cfg->compile_aot && (mono_arch_cpu_enumerate_simd_versions () & SIMD_VERSION_SSE41)) {
+				// special case: emit vroundps for MathF.Round directly instead of what llvm.round.f32 emits
+				// to align with CoreCLR behavior
+				int xreg = alloc_xreg (cfg);
+				EMIT_NEW_UNALU (cfg, ins, OP_FCONV_TO_R4_X, xreg, args [0]->dreg);
+				EMIT_NEW_UNALU (cfg, ins, OP_SSE41_ROUNDSS, xreg, xreg);
+				ins->inst_c0 = 0x4; // vroundss xmm0, xmm0, xmm0, 0x4 (mode for rounding)
+				int dreg = alloc_freg (cfg);
+				EMIT_NEW_UNALU (cfg, ins, OP_EXTRACT_R4, dreg, xreg);
+				return ins;
+			}
+#endif
 		}
 		// (float, float)
 		if (fsig->param_count == 2 && fsig->params [0]->type == MONO_TYPE_R4 && fsig->params [1]->type == MONO_TYPE_R4) {
