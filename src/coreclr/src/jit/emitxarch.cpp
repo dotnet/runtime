@@ -5345,26 +5345,20 @@ void emitter::emitIns_S_R_I(instruction ins, emitAttr attr, int varNum, int offs
     emitCurIGsize += sz;
 }
 
-void emitter::emitIns_AR_R_I(instruction ins, emitAttr attr, regNumber base, int disp, regNumber ireg, int ival)
+void emitter::emitIns_A_R_I(instruction ins, emitAttr attr, GenTreeIndir* indir, regNumber reg, int imm)
 {
-    assert(ins == INS_vextracti128 || ins == INS_vextractf128);
-    assert(base != REG_NA);
-    assert(ireg != REG_NA);
-    instrDesc* id = emitNewInstrAmdCns(attr, disp, ival);
+    assert((ins == INS_vextracti128) || (ins == INS_vextractf128));
+    assert(attr == EA_32BYTE);
+    assert(reg != REG_NA);
 
+    instrDesc* id = emitNewInstrAmdCns(attr, indir->Offset(), imm);
     id->idIns(ins);
-    id->idInsFmt(IF_AWR_RRD_CNS);
-    id->idAddr()->iiaAddrMode.amBaseReg = base;
-    id->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
-    id->idReg1(ireg);
-
-    assert(emitGetInsAmdAny(id) == disp); // make sure "disp" is stored properly
-
-    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeMR(ins), ival);
-    id->idCodeSize(sz);
-
+    id->idReg1(reg);
+    emitHandleMemOp(indir, id, IF_AWR_RRD_CNS, ins);
+    UNATIVE_OFFSET size = emitInsSizeAM(id, insCodeMR(ins), imm);
+    id->idCodeSize(size);
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += size;
 }
 
 void emitter::emitIns_AI_R(instruction ins, emitAttr attr, regNumber ireg, ssize_t disp)
