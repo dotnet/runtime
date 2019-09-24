@@ -369,6 +369,7 @@ assert_gc_safe_mode (const char *file, int lineno)
 	switch (state = mono_thread_info_current_state (cur)) {
 	case STATE_BLOCKING:
 	case STATE_BLOCKING_SELF_SUSPENDED:
+	case STATE_BLOCKING_SUSPEND_REQUESTED:
 		break;
 	default:
 		mono_fatal_with_history ("%s:%d: Expected GC Safe mode but was in %s state", file, lineno, mono_thread_state_name (state));
@@ -413,6 +414,7 @@ assert_gc_neutral_mode (const char *file, int lineno)
 	case STATE_ASYNC_SUSPEND_REQUESTED:
 	case STATE_BLOCKING:
 	case STATE_BLOCKING_SELF_SUSPENDED:
+	case STATE_BLOCKING_SUSPEND_REQUESTED:
 		break;
 	default:
 		mono_fatal_with_history ("%s:%d: Expected GC Neutral mode but was in %s state", file, lineno, mono_thread_state_name (state));
