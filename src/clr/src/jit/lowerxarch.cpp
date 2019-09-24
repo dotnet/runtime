@@ -837,70 +837,11 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
     }
     else if (simdNode->IsSIMDEqualityOrInequality())
     {
-        LIR::Use simdUse;
+        LowerNodeCC(simdNode,
+                    simdNode->gtSIMDIntrinsicID == SIMDIntrinsicOpEquality ? GenCondition::EQ : GenCondition::NE);
 
-        if (BlockRange().TryGetUse(simdNode, &simdUse))
-        {
-            //
-            // Try to transform JTRUE(EQ|NE(SIMD<OpEquality|OpInEquality>(x, y), 0|1)) into
-            // JCC(SIMD<OpEquality|OpInEquality>(x, y)). SIMD<OpEquality|OpInEquality>(x, y)
-            // is expected to set the Zero flag appropriately.
-            // All the involved nodes must form a continuous range, there's no other way to
-            // guarantee that condition flags aren't changed between the SIMD node and the JCC
-            // node.
-            //
-
-            bool     transformed = false;
-            GenTree* simdUser    = simdUse.User();
-
-            if (simdUser->OperIs(GT_EQ, GT_NE) && simdUser->gtGetOp2()->IsCnsIntOrI() &&
-                (simdNode->gtNext == simdUser->gtGetOp2()) && (simdUser->gtGetOp2()->gtNext == simdUser))
-            {
-                ssize_t relopOp2Value = simdUser->gtGetOp2()->AsIntCon()->IconValue();
-
-                if ((relopOp2Value == 0) || (relopOp2Value == 1))
-                {
-                    GenTree* jtrue = simdUser->gtNext;
-
-                    if ((jtrue != nullptr) && jtrue->OperIs(GT_JTRUE) && (jtrue->gtGetOp1() == simdUser))
-                    {
-                        if ((simdNode->gtSIMDIntrinsicID == SIMDIntrinsicOpEquality) != simdUser->OperIs(GT_EQ))
-                        {
-                            relopOp2Value ^= 1;
-                        }
-
-                        jtrue->ChangeOper(GT_JCC);
-                        GenTreeCC* jcc = jtrue->AsCC();
-                        jcc->gtFlags |= GTF_USE_FLAGS;
-                        jcc->gtCondition = (relopOp2Value == 0) ? GenCondition::NE : GenCondition::EQ;
-
-                        BlockRange().Remove(simdUser->gtGetOp2());
-                        BlockRange().Remove(simdUser);
-                        transformed = true;
-                    }
-                }
-            }
-
-            if (!transformed)
-            {
-                //
-                // The code generated for SIMD SIMD<OpEquality|OpInEquality>(x, y) nodes sets
-                // the Zero flag like integer compares do so we can simply use SETCC<EQ|NE>
-                // to produce the desired result. This avoids the need for subsequent phases
-                // to have to handle 2 cases (set flags/set destination register).
-                //
-
-                GenCondition condition =
-                    (simdNode->gtSIMDIntrinsicID == SIMDIntrinsicOpEquality) ? GenCondition::EQ : GenCondition::NE;
-                GenTreeCC* setcc = new (comp, GT_SETCC) GenTreeCC(GT_SETCC, condition, simdNode->TypeGet());
-                setcc->gtFlags |= GTF_USE_FLAGS;
-                BlockRange().InsertAfter(simdNode, setcc);
-                simdUse.ReplaceWith(comp, setcc);
-            }
-        }
-
-        simdNode->gtFlags |= GTF_SET_FLAGS;
         simdNode->gtType = TYP_VOID;
+        simdNode->ClearUnusedValue();
     }
 #endif
     ContainCheckSIMD(simdNode);
@@ -908,6 +849,89 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
 #endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
+
+//----------------------------------------------------------------------------------------------
+// LowerHWIntrinsicCC: Lowers a hardware intrinsic node that produces a boolean value by
+//     setting the condition flags.
+//
+//  Arguments:
+//     node - The hardware intrinsic node
+//     newIntrinsicId - The intrinsic id of the lowered intrinsic node
+//     condition - The condition code of the generated SETCC/JCC node
+//
+void Lowering::LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIntrinsicId, GenCondition condition)
+{
+    GenTreeCC* cc = LowerNodeCC(node, condition);
+
+    node->gtHWIntrinsicId = newIntrinsicId;
+    node->gtType          = TYP_VOID;
+    node->ClearUnusedValue();
+
+    bool swapOperands    = false;
+    bool canSwapOperands = false;
+
+    switch (newIntrinsicId)
+    {
+        case NI_SSE_COMISS:
+        case NI_SSE_UCOMISS:
+        case NI_SSE2_COMISD:
+        case NI_SSE2_UCOMISD:
+            // In some cases we can generate better code if we swap the operands:
+            //   - If the condition is not one of the "preferred" floating point conditions we can swap
+            //     the operands and change the condition to avoid generating an extra JP/JNP branch.
+            //   - If the first operand can be contained but the second cannot, we can swap operands in
+            //     order to be able to contain the first operand and avoid the need for a temp reg.
+            // We can't handle both situations at the same time and since an extra branch is likely to
+            // be worse than an extra temp reg (x64 has a reasonable number of XMM registers) we'll favor
+            // the branch case:
+            //   - If the condition is not preferred then swap, even if doing this will later prevent
+            //     containment.
+            //   - Allow swapping for containment purposes only if this doesn't result in a non-"preferred"
+            //     condition being generated.
+            if ((cc != nullptr) && cc->gtCondition.PreferSwap())
+            {
+                swapOperands = true;
+            }
+            else
+            {
+                canSwapOperands = (cc == nullptr) || !GenCondition::Swap(cc->gtCondition).PreferSwap();
+            }
+            break;
+
+        case NI_SSE41_PTEST:
+        case NI_AVX_PTEST:
+            // If we need the Carry flag then we can't swap operands.
+            canSwapOperands = (cc == nullptr) || cc->gtCondition.Is(GenCondition::EQ, GenCondition::NE);
+            break;
+
+        default:
+            unreached();
+    }
+
+    if (canSwapOperands)
+    {
+        bool op1SupportsRegOptional = false;
+        bool op2SupportsRegOptional = false;
+
+        if (!IsContainableHWIntrinsicOp(node, node->gtGetOp2(), &op2SupportsRegOptional) &&
+            IsContainableHWIntrinsicOp(node, node->gtGetOp1(), &op1SupportsRegOptional))
+        {
+            // Swap operands if op2 cannot be contained but op1 can.
+            swapOperands = true;
+        }
+    }
+
+    if (swapOperands)
+    {
+        std::swap(node->gtOp1, node->gtOp2);
+
+        if (cc != nullptr)
+        {
+            cc->gtCondition = GenCondition::Swap(cc->gtCondition);
+        }
+    }
+}
+
 //----------------------------------------------------------------------------------------------
 // Lowering::LowerHWIntrinsic: Perform containment analysis for a hardware intrinsic node.
 //
@@ -916,6 +940,108 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
 //
 void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 {
+    switch (node->gtHWIntrinsicId)
+    {
+        case NI_SSE_CompareScalarOrderedEqual:
+            LowerHWIntrinsicCC(node, NI_SSE_COMISS, GenCondition::FEQ);
+            break;
+        case NI_SSE_CompareScalarOrderedNotEqual:
+            LowerHWIntrinsicCC(node, NI_SSE_COMISS, GenCondition::FNEU);
+            break;
+        case NI_SSE_CompareScalarOrderedLessThan:
+            LowerHWIntrinsicCC(node, NI_SSE_COMISS, GenCondition::FLT);
+            break;
+        case NI_SSE_CompareScalarOrderedLessThanOrEqual:
+            LowerHWIntrinsicCC(node, NI_SSE_COMISS, GenCondition::FLE);
+            break;
+        case NI_SSE_CompareScalarOrderedGreaterThan:
+            LowerHWIntrinsicCC(node, NI_SSE_COMISS, GenCondition::FGT);
+            break;
+        case NI_SSE_CompareScalarOrderedGreaterThanOrEqual:
+            LowerHWIntrinsicCC(node, NI_SSE_COMISS, GenCondition::FGE);
+            break;
+
+        case NI_SSE_CompareScalarUnorderedEqual:
+            LowerHWIntrinsicCC(node, NI_SSE_UCOMISS, GenCondition::FEQ);
+            break;
+        case NI_SSE_CompareScalarUnorderedNotEqual:
+            LowerHWIntrinsicCC(node, NI_SSE_UCOMISS, GenCondition::FNEU);
+            break;
+        case NI_SSE_CompareScalarUnorderedLessThanOrEqual:
+            LowerHWIntrinsicCC(node, NI_SSE_UCOMISS, GenCondition::FLE);
+            break;
+        case NI_SSE_CompareScalarUnorderedLessThan:
+            LowerHWIntrinsicCC(node, NI_SSE_UCOMISS, GenCondition::FLT);
+            break;
+        case NI_SSE_CompareScalarUnorderedGreaterThanOrEqual:
+            LowerHWIntrinsicCC(node, NI_SSE_UCOMISS, GenCondition::FGE);
+            break;
+        case NI_SSE_CompareScalarUnorderedGreaterThan:
+            LowerHWIntrinsicCC(node, NI_SSE_UCOMISS, GenCondition::FGT);
+            break;
+
+        case NI_SSE2_CompareScalarOrderedEqual:
+            LowerHWIntrinsicCC(node, NI_SSE2_COMISD, GenCondition::FEQ);
+            break;
+        case NI_SSE2_CompareScalarOrderedNotEqual:
+            LowerHWIntrinsicCC(node, NI_SSE2_COMISD, GenCondition::FNEU);
+            break;
+        case NI_SSE2_CompareScalarOrderedLessThan:
+            LowerHWIntrinsicCC(node, NI_SSE2_COMISD, GenCondition::FLT);
+            break;
+        case NI_SSE2_CompareScalarOrderedLessThanOrEqual:
+            LowerHWIntrinsicCC(node, NI_SSE2_COMISD, GenCondition::FLE);
+            break;
+        case NI_SSE2_CompareScalarOrderedGreaterThan:
+            LowerHWIntrinsicCC(node, NI_SSE2_COMISD, GenCondition::FGT);
+            break;
+        case NI_SSE2_CompareScalarOrderedGreaterThanOrEqual:
+            LowerHWIntrinsicCC(node, NI_SSE2_COMISD, GenCondition::FGE);
+            break;
+
+        case NI_SSE2_CompareScalarUnorderedEqual:
+            LowerHWIntrinsicCC(node, NI_SSE2_UCOMISD, GenCondition::FEQ);
+            break;
+        case NI_SSE2_CompareScalarUnorderedNotEqual:
+            LowerHWIntrinsicCC(node, NI_SSE2_UCOMISD, GenCondition::FNEU);
+            break;
+        case NI_SSE2_CompareScalarUnorderedLessThanOrEqual:
+            LowerHWIntrinsicCC(node, NI_SSE2_UCOMISD, GenCondition::FLE);
+            break;
+        case NI_SSE2_CompareScalarUnorderedLessThan:
+            LowerHWIntrinsicCC(node, NI_SSE2_UCOMISD, GenCondition::FLT);
+            break;
+        case NI_SSE2_CompareScalarUnorderedGreaterThanOrEqual:
+            LowerHWIntrinsicCC(node, NI_SSE2_UCOMISD, GenCondition::FGE);
+            break;
+        case NI_SSE2_CompareScalarUnorderedGreaterThan:
+            LowerHWIntrinsicCC(node, NI_SSE2_UCOMISD, GenCondition::FGT);
+            break;
+
+        case NI_SSE41_TestC:
+            LowerHWIntrinsicCC(node, NI_SSE41_PTEST, GenCondition::C);
+            break;
+        case NI_SSE41_TestZ:
+            LowerHWIntrinsicCC(node, NI_SSE41_PTEST, GenCondition::EQ);
+            break;
+        case NI_SSE41_TestNotZAndNotC:
+            LowerHWIntrinsicCC(node, NI_SSE41_PTEST, GenCondition::UGT);
+            break;
+
+        case NI_AVX_TestC:
+            LowerHWIntrinsicCC(node, NI_AVX_PTEST, GenCondition::C);
+            break;
+        case NI_AVX_TestZ:
+            LowerHWIntrinsicCC(node, NI_AVX_PTEST, GenCondition::EQ);
+            break;
+        case NI_AVX_TestNotZAndNotC:
+            LowerHWIntrinsicCC(node, NI_AVX_PTEST, GenCondition::UGT);
+            break;
+
+        default:
+            break;
+    }
+
     ContainCheckHWIntrinsic(node);
 }
 #endif // FEATURE_HW_INTRINSICS
@@ -2999,35 +3125,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 case HW_Category_SIMDScalar:
                 case HW_Category_Scalar:
                 {
-                    if (HWIntrinsicInfo::GeneratesMultipleIns(intrinsicId))
-                    {
-                        switch (intrinsicId)
-                        {
-                            case NI_SSE_CompareScalarOrderedLessThan:
-                            case NI_SSE_CompareScalarUnorderedLessThan:
-                            case NI_SSE_CompareScalarOrderedLessThanOrEqual:
-                            case NI_SSE_CompareScalarUnorderedLessThanOrEqual:
-                            case NI_SSE2_CompareScalarOrderedLessThan:
-                            case NI_SSE2_CompareScalarUnorderedLessThan:
-                            case NI_SSE2_CompareScalarOrderedLessThanOrEqual:
-                            case NI_SSE2_CompareScalarUnorderedLessThanOrEqual:
-                            {
-                                // We need to swap the operands for CompareLessThanOrEqual
-                                node->gtOp1 = op2;
-                                node->gtOp2 = op1;
-                                op2         = op1;
-                                break;
-                            }
-
-                            default:
-                            {
-                                // TODO-XArch-CQ: The CompareScalarOrdered* and CompareScalarUnordered* methods
-                                //                are commutative if you also inverse the intrinsic.
-                                break;
-                            }
-                        }
-                    }
-
                     bool supportsRegOptional = false;
 
                     if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
