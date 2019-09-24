@@ -55,6 +55,11 @@ namespace Internal.JitInterface
 
         private ExceptionDispatchInfo _lastException;
 
+        private static bool s_jitRegistered = RegisterJITModule();
+
+        [DllImport("clrjitilc")]
+        private extern static IntPtr PAL_RegisterModule([MarshalAs(UnmanagedType.LPUTF8Str)] string moduleName);
+
         [DllImport("clrjitilc", CallingConvention=CallingConvention.StdCall)] // stdcall in CoreCLR!
         private extern static IntPtr jitStartup(IntPtr host);
 
@@ -109,12 +114,26 @@ namespace Internal.JitInterface
 
         private readonly UnboxingMethodDescFactory _unboxingThunkFactory;
 
+        private static bool RegisterJITModule()
+        {
+            if ((Environment.OSVersion.Platform == PlatformID.Unix) || (Environment.OSVersion.Platform == PlatformID.MacOSX))
+            {
+                return PAL_RegisterModule("libclrjitilc.so") != (IntPtr)1;
+            }
+            else
+            {
+                return true;
+            }
+        }
+
         public CorInfoImpl(JitConfigProvider jitConfig)
         {
             //
             // Global initialization
             //
             _jitConfig = jitConfig;
+            if (!s_jitRegistered)
+                throw new IOException("Failed to register JIT");
 
             jitStartup(GetJitHost(_jitConfig.UnmanagedInstance));
 
