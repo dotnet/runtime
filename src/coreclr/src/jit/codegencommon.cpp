@@ -983,18 +983,52 @@ BasicBlock* CodeGen::genCreateTempLabel()
     return block;
 }
 
-// inline
-void CodeGen::genDefineTempLabel(BasicBlock* label)
+void CodeGen::genLogLabel(BasicBlock* bb)
 {
 #ifdef DEBUG
     if (compiler->opts.dspCode)
     {
-        printf("\n      L_M%03u_" FMT_BB ":\n", Compiler::s_compMethodsCount, label->bbNum);
+        printf("\n      L_M%03u_" FMT_BB ":\n", Compiler::s_compMethodsCount, bb->bbNum);
     }
 #endif
+}
 
+// genDefineTempLabel: Define a label based on the current GC info tracked by
+// the code generator.
+//
+// Arguments:
+//     label - A label represented as a basic block. These are created with
+//     genCreateTempLabel and are not normal basic blocks.
+//
+// Notes:
+//     The label will be defined with the current GC info tracked by the code
+//     generator. When the emitter sees this label it will thus remove any temporary
+//     GC refs it is tracking in registers. For example, a call might produce a ref
+//     in RAX which the emitter would track but which would not be tracked in
+//     codegen's GC info since codegen would immediately copy it from RAX into its
+//     home.
+//
+void CodeGen::genDefineTempLabel(BasicBlock* label)
+{
+    genLogLabel(label);
     label->bbEmitCookie =
         GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur);
+}
+
+// genDefineInlineTempLabel: Define an inline label that does not affect the GC
+// info.
+//
+// Arguments:
+//     label - A label represented as a basic block. These are created with
+//     genCreateTempLabel and are not normal basic blocks.
+//
+// Notes:
+//     The emitter will continue to track GC info as if there was no label.
+//
+void CodeGen::genDefineInlineTempLabel(BasicBlock* label)
+{
+    genLogLabel(label);
+    label->bbEmitCookie = GetEmitter()->emitAddInlineLabel();
 }
 
 /*****************************************************************************

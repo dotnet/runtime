@@ -2530,7 +2530,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     if (genPendingCallLabel)
     {
         assert(call->IsUnmanaged());
-        genDefineTempLabel(genPendingCallLabel);
+        genDefineInlineTempLabel(genPendingCallLabel);
         genPendingCallLabel = nullptr;
     }
 
