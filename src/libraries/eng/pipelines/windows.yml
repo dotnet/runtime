@@ -89,12 +89,14 @@ stages:
                 _architecture: x64
                 _framework: uap
                 _helixQueues: $(uapNetfxQueues)
+                _skipPublishPackages: true # In UWP we don't produce packages
 
               UAP_x86_Release:
                 _BuildConfig: Release
                 _architecture: x86
                 _framework: uap
                 _helixQueues: $(uapNetfxQueues)
+                _skipPublishPackages: true # In UWP we don't produce packages
 
               arm64_Release:
                 _BuildConfig: Release
@@ -181,6 +183,7 @@ stages:
                   _BuildConfig: Release
                   _architecture: arm
                   _framework: uap
+                  _skipPublishPackages: true # In UWP we don't produce packages
 
             pool:
               name: Hosted VS2017
