@@ -423,48 +423,38 @@ namespace Internal.Cryptography.Pal
             if (cspKeyContainerInfo == null)
                 return;
 
-            sb.Append(Environment.NewLine + "  Key Store: ");
-            sb.Append(cspKeyContainerInfo.MachineKeyStore ? "Machine" : "User");
-            sb.Append(Environment.NewLine + "  Provider Name: ");
-            sb.Append(cspKeyContainerInfo.ProviderName);
-            sb.Append(Environment.NewLine + "  Provider type: ");
-            sb.Append(cspKeyContainerInfo.ProviderType);
-            sb.Append(Environment.NewLine + "  Key Spec: ");
-            sb.Append(cspKeyContainerInfo.KeyNumber);
-            sb.Append(Environment.NewLine + "  Key Container Name: ");
-            sb.Append(cspKeyContainerInfo.KeyContainerName);
+            sb.AppendLine().Append("  Key Store: ").Append(cspKeyContainerInfo.MachineKeyStore ? "Machine" : "User");
+            sb.AppendLine().Append("  Provider Name: ").Append(cspKeyContainerInfo.ProviderName);
+            sb.AppendLine().Append("  Provider type: ").Append(cspKeyContainerInfo.ProviderType);
+            sb.AppendLine().Append("  Key Spec: ").Append(cspKeyContainerInfo.KeyNumber);
+            sb.AppendLine().Append("  Key Container Name: ").Append(cspKeyContainerInfo.KeyContainerName);
 
             try
             {
                 string uniqueKeyContainer = cspKeyContainerInfo.UniqueKeyContainerName;
-                sb.Append(Environment.NewLine + "  Unique Key Container Name: ");
-                sb.Append(uniqueKeyContainer);
+                sb.AppendLine().Append("  Unique Key Container Name: ").Append(uniqueKeyContainer);
             }
             catch (CryptographicException) { }
             catch (NotSupportedException) { }
 
-            bool b = false;
             try
             {
-                b = cspKeyContainerInfo.HardwareDevice;
-                sb.Append(Environment.NewLine + "  Hardware Device: ");
-                sb.Append(b);
+                bool b = cspKeyContainerInfo.HardwareDevice;
+                sb.AppendLine().Append("  Hardware Device: ").Append(b);
             }
             catch (CryptographicException) { }
 
             try
             {
-                b = cspKeyContainerInfo.Removable;
-                sb.Append(Environment.NewLine + "  Removable: ");
-                sb.Append(b);
+                bool b = cspKeyContainerInfo.Removable;
+                sb.AppendLine().Append("  Removable: ").Append(b);
             }
             catch (CryptographicException) { }
 
             try
             {
-                b = cspKeyContainerInfo.Protected;
-                sb.Append(Environment.NewLine + "  Protected: ");
-                sb.Append(b);
+                bool b = cspKeyContainerInfo.Protected;
+                sb.AppendLine().Append("  Protected: ").Append(b);
             }
             catch (CryptographicException) { }
             catch (NotSupportedException) { }
