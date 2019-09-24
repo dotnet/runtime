@@ -39,16 +39,8 @@ namespace System.ComponentModel
         /// </summary>
         protected string DisplayNameValue { get; set; }
 
-        public override bool Equals(object obj)
-        {
-            if (obj == this)
-            {
-                return true;
-            }
-
-            DisplayNameAttribute other = obj as DisplayNameAttribute;
-            return other != null && other.DisplayName == DisplayName;
-        }
+        public override bool Equals(object? obj) =>
+            obj is DisplayNameAttribute other && other.DisplayName == DisplayName;
 
         public override int GetHashCode() => DisplayName?.GetHashCode() ?? 0;
 

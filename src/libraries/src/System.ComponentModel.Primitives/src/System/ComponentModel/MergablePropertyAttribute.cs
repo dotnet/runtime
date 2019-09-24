@@ -48,16 +48,8 @@ namespace System.ComponentModel
         /// </summary>
         public bool AllowMerge { get; }
 
-        public override bool Equals(object obj)
-        {
-            if (obj == this)
-            {
-                return true;
-            }
-
-            MergablePropertyAttribute other = obj as MergablePropertyAttribute;
-            return other?.AllowMerge == AllowMerge;
-        }
+        public override bool Equals(object? obj) =>
+            obj is MergablePropertyAttribute other && other.AllowMerge == AllowMerge;
 
         public override int GetHashCode() => base.GetHashCode();
 

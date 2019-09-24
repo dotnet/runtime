@@ -38,16 +38,8 @@ namespace System.ComponentModel
         /// </summary>
         public RefreshProperties RefreshProperties { get; }
 
-        public override bool Equals(object obj)
-        {
-            if (obj == this)
-            {
-                return true;
-            }
-
-            RefreshPropertiesAttribute other = obj as RefreshPropertiesAttribute;
-            return other?.RefreshProperties == RefreshProperties;
-        }
+        public override bool Equals(object? obj) =>
+            obj is RefreshPropertiesAttribute other && other.RefreshProperties == RefreshProperties;
 
         public override int GetHashCode() => base.GetHashCode();
 

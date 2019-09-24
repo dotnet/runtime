@@ -14,14 +14,14 @@ namespace System.ComponentModel
         /// Gets a specific <see cref='System.ComponentModel.Component'/> in the
         /// <see cref='System.ComponentModel.IContainer'/>.
         /// </summary>
-        public virtual IComponent this[string name]
+        public virtual IComponent? this[string? name]
         {
             get
             {
                 if (name != null)
                 {
                     IList list = InnerList;
-                    foreach (IComponent comp in list)
+                    foreach (IComponent? comp in list)
                     {
                         if (comp != null && comp.Site != null && comp.Site.Name != null && string.Equals(comp.Site.Name, name, StringComparison.OrdinalIgnoreCase))
                         {
@@ -37,7 +37,7 @@ namespace System.ComponentModel
         /// Gets a specific <see cref='System.ComponentModel.Component'/> in the
         /// <see cref='System.ComponentModel.IContainer'/>.
         /// </summary>
-        public virtual IComponent this[int index] => (IComponent)InnerList[index];
+        public virtual IComponent? this[int index] => (IComponent?)InnerList[index];
 
         public void CopyTo(IComponent[] array, int index) => InnerList.CopyTo(array, index);
     }

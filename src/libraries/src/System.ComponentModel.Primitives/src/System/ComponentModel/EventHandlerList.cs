@@ -9,8 +9,8 @@ namespace System.ComponentModel
     /// </summary>
     public sealed class EventHandlerList : IDisposable
     {
-        private ListEntry _head;
-        private readonly Component _parent;
+        private ListEntry? _head;
+        private readonly Component? _parent;
 
         /// <summary>
         /// Creates a new event handler list. The parent component is used to check the
@@ -31,11 +31,11 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets or sets the delegate for the specified key.
         /// </summary>
-        public Delegate this[object key]
+        public Delegate? this[object key]
         {
             get
             {
-                ListEntry e = null;
+                ListEntry? e = null;
                 if (_parent == null || _parent.CanRaiseEventsInternal)
                 {
                     e = Find(key);
@@ -45,7 +45,7 @@ namespace System.ComponentModel
             }
             set
             {
-                ListEntry e = Find(key);
+                ListEntry? e = Find(key);
                 if (e != null)
                 {
                     e._handler = value;
@@ -57,9 +57,9 @@ namespace System.ComponentModel
             }
         }
 
-        public void AddHandler(object key, Delegate value)
+        public void AddHandler(object key, Delegate? value)
         {
-            ListEntry e = Find(key);
+            ListEntry? e = Find(key);
             if (e != null)
             {
                 e._handler = Delegate.Combine(e._handler, value);
@@ -77,7 +77,7 @@ namespace System.ComponentModel
                 throw new ArgumentNullException(nameof(listToAddFrom));
             }
 
-            ListEntry currentListEntry = listToAddFrom._head;
+            ListEntry? currentListEntry = listToAddFrom._head;
             while (currentListEntry != null)
             {
                 AddHandler(currentListEntry._key, currentListEntry._handler);
@@ -87,9 +87,9 @@ namespace System.ComponentModel
 
         public void Dispose() => _head = null;
 
-        private ListEntry Find(object key)
+        private ListEntry? Find(object key)
         {
-            ListEntry found = _head;
+            ListEntry? found = _head;
             while (found != null)
             {
                 if (found._key == key)
@@ -101,9 +101,9 @@ namespace System.ComponentModel
             return found;
         }
 
-        public void RemoveHandler(object key, Delegate value)
+        public void RemoveHandler(object key, Delegate? value)
         {
-            ListEntry e = Find(key);
+            ListEntry? e = Find(key);
             if (e != null)
             {
                 e._handler = Delegate.Remove(e._handler, value);
@@ -112,11 +112,11 @@ namespace System.ComponentModel
 
         private sealed class ListEntry
         {
-            internal readonly ListEntry _next;
+            internal readonly ListEntry? _next;
             internal readonly object _key;
-            internal Delegate _handler;
+            internal Delegate? _handler;
 
-            public ListEntry(object key, Delegate handler, ListEntry next)
+            public ListEntry(object key, Delegate? handler, ListEntry? next)
             {
                 _next = next;
                 _key = key;

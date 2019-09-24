@@ -56,16 +56,8 @@ namespace System.ComponentModel
         /// </summary>
         public string Category { get; }
 
-        public override bool Equals(object obj)
-        {
-            if (obj == this)
-            {
-                return true;
-            }
-
-            DesignerCategoryAttribute other = obj as DesignerCategoryAttribute;
-            return other != null && other.Category == Category;
-        }
+        public override bool Equals(object? obj) =>
+            obj is DesignerCategoryAttribute other && other.Category == Category;
 
         public override int GetHashCode() => Category?.GetHashCode() ?? 0;
 
