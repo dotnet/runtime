@@ -65,6 +65,6 @@ namespace System.Threading.Tasks
         public ParallelOptions() { }
         public System.Threading.CancellationToken CancellationToken { get { throw null; } set { } }
         public int MaxDegreeOfParallelism { get { throw null; } set { } }
-        public System.Threading.Tasks.TaskScheduler TaskScheduler { get { throw null; } set { } }
+        public System.Threading.Tasks.TaskScheduler? TaskScheduler { get { throw null; } set { } }
     }
 }

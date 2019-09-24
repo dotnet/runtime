@@ -31,7 +31,7 @@ namespace System.Threading.Tasks
         // a 32-bit field, and just use the first 32-bits of the long.  And to minimize false sharing, each
         // value is stored in its own heap-allocated object, which is lazily allocated by the thread using
         // that range, minimizing the chances it'll be near the objects from other threads.
-        internal volatile StrongBox<long> _nSharedCurrentIndexOffset;
+        internal volatile StrongBox<long>? _nSharedCurrentIndexOffset;
 
         // to be set to 1 by the worker that finishes this range. It's OK to do a non-interlocked write here.
         internal int _bRangeFinished;
@@ -103,9 +103,11 @@ namespace System.Threading.Tasks
 
                 if (currentRange._bRangeFinished == 0)
                 {
-                    if (_indexRanges[_nCurrentIndexRange]._nSharedCurrentIndexOffset == null)
+                    StrongBox<long>? sharedCurrentIndexOffset = _indexRanges[_nCurrentIndexRange]._nSharedCurrentIndexOffset;
+                    if (sharedCurrentIndexOffset == null)
                     {
                         Interlocked.CompareExchange(ref _indexRanges[_nCurrentIndexRange]._nSharedCurrentIndexOffset, new StrongBox<long>(0), null);
+                        sharedCurrentIndexOffset = _indexRanges[_nCurrentIndexRange]._nSharedCurrentIndexOffset!;
                     }
 
                     long nMyOffset;
@@ -116,7 +118,7 @@ namespace System.Threading.Tasks
                         // We use the first 32 bits of the Int64 index in such cases.
                         unsafe
                         {
-                            fixed (long* indexPtr = &_indexRanges[_nCurrentIndexRange]._nSharedCurrentIndexOffset.Value)
+                            fixed (long* indexPtr = &sharedCurrentIndexOffset.Value)
                             {
                                 nMyOffset = Interlocked.Add(ref *(int*)indexPtr, (int)_nIncrementValue) - _nIncrementValue;
                             }
@@ -124,7 +126,7 @@ namespace System.Threading.Tasks
                     }
                     else
                     {
-                        nMyOffset = Interlocked.Add(ref _indexRanges[_nCurrentIndexRange]._nSharedCurrentIndexOffset.Value, _nIncrementValue) - _nIncrementValue;
+                        nMyOffset = Interlocked.Add(ref sharedCurrentIndexOffset.Value, _nIncrementValue) - _nIncrementValue;
                     }
 
                     if (currentRange._nToExclusive - currentRange._nFromInclusive > nMyOffset)
