@@ -1007,6 +1007,21 @@ MINI_OP(OP_DPPS, "dpps", XREG, XREG, XREG)
 /* inst_c0 is the rounding mode: 0 = round, 1 = floor, 2 = ceiling */
 MINI_OP(OP_SSE41_ROUNDPD, "roundpd", XREG, XREG, NONE)
 
+/* Intel BMI1 */
+/* Count trailing zeroes, return 32/64 if the input is 0 */
+MINI_OP(OP_CTTZ32, "cttz32", IREG, IREG, NONE)
+MINI_OP(OP_CTTZ64, "cttz64", LREG, LREG, NONE)
+MINI_OP(OP_BEXTR32, "bextr32", IREG, IREG, IREG)
+MINI_OP(OP_BEXTR64, "bextr64", LREG, LREG, LREG)
+
+/* Intel BMI2 */
+MINI_OP(OP_BZHI32, "bzhi32", IREG, IREG, IREG)
+MINI_OP(OP_BZHI64, "bzhi64", LREG, LREG, LREG)
+MINI_OP(OP_PEXT32, "pext32", IREG, IREG, IREG)
+MINI_OP(OP_PEXT64, "pext64", LREG, LREG, LREG)
+MINI_OP(OP_PDEP32, "pdep32", IREG, IREG, IREG)
+MINI_OP(OP_PDEP64, "pdep64", LREG, LREG, LREG)
+
 #endif
 
 MINI_OP(OP_XMOVE,   "xmove", XREG, XREG, NONE)
@@ -1401,16 +1416,4 @@ MINI_OP(OP_LZCNT64, "lzcnt64", LREG, LREG, NONE)
 MINI_OP(OP_POPCNT32, "popcnt32", IREG, IREG, NONE)
 MINI_OP(OP_POPCNT64, "popcnt64", LREG, LREG, NONE)
 
-/* Intel BMI1 */
-/* Count trailing zeroes, return 32/64 if the input is 0 */
-MINI_OP(OP_CTTZ32, "cttz32", IREG, IREG, NONE)
-MINI_OP(OP_CTTZ64, "cttz64", LREG, LREG, NONE)
-
-/* Intel BMI2 */
-MINI_OP(OP_BZHI32, "bzhi32", IREG, IREG, IREG)
-MINI_OP(OP_BZHI64, "bzhi64", LREG, LREG, LREG)
-MINI_OP(OP_PEXT32, "pext32", IREG, IREG, IREG)
-MINI_OP(OP_PEXT64, "pext64", LREG, LREG, LREG)
-MINI_OP(OP_PDEP32, "pdep32", IREG, IREG, IREG)
-MINI_OP(OP_PDEP64, "pdep64", LREG, LREG, LREG)
 

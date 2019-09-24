@@ -552,6 +552,8 @@ static guint16 lzcnt_methods [] = {
 };
 
 static guint16 bmi1_methods [] = {
+	SN_AndNot,
+	SN_BitFieldExtract,
 	SN_ExtractLowestSetBit,
 	SN_GetMaskUpToLowestSetBit,
 	SN_ResetLowestSetBit,
@@ -560,6 +562,7 @@ static guint16 bmi1_methods [] = {
 };
 
 static guint16 bmi2_methods [] = {
+	//SN_MultiplyNoFlags,
 	SN_ParallelBitDeposit,
 	SN_ParallelBitExtract,
 	SN_ZeroHighBits,
@@ -629,9 +632,6 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		}
 	}
 	if (!strcmp (class_name, "Bmi1") || (!strcmp (class_name, "X64") && cmethod->klass->nested_in && !strcmp (m_class_get_name (cmethod->klass->nested_in), "Bmi1"))) {
-		// We only support the subset used by corelib
-		if (m_class_get_image (cfg->method->klass) != mono_get_corlib ())
-			return NULL;
 		if (!COMPILE_LLVM (cfg))
 			return NULL;
 		id = lookup_intrins (bmi1_methods, sizeof (bmi1_methods), cmethod);
@@ -645,6 +645,26 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 			EMIT_NEW_ICONST (cfg, ins, supported ? 1 : 0);
 			ins->type = STACK_I4;
 			return ins;
+		case SN_AndNot: {
+			// (a ^ -1) & b
+			// LLVM replaces it with `andn`
+			int tmp_reg = alloc_preg (cfg);
+			int result_reg = alloc_preg (cfg);
+			EMIT_NEW_BIALU_IMM (cfg, ins, is_64bit ? OP_LXOR_IMM : OP_IXOR_IMM, tmp_reg, args [0]->dreg, -1);
+			EMIT_NEW_BIALU (cfg, ins, is_64bit ? OP_LAND : OP_IAND, result_reg, tmp_reg, args [1]->dreg);
+			return ins;
+		}
+		case SN_BitFieldExtract: {
+			if (fsig->param_count == 2) {
+				MONO_INST_NEW (cfg, ins, is_64bit ? OP_BEXTR64 : OP_BEXTR32);
+				ins->dreg = alloc_ireg (cfg);
+				ins->sreg1 = args [0]->dreg;
+				ins->sreg2 = args [1]->dreg;
+				ins->type = is_64bit ? STACK_I8 : STACK_I4;
+				MONO_ADD_INS (cfg->cbb, ins);
+				return ins;
+			}
+		}
 		case SN_GetMaskUpToLowestSetBit: {
 			// x ^ (x - 1)
 			// LLVM replaces it with `blsmsk`
@@ -686,7 +706,7 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		}
 	}
 	if (!strcmp (class_name, "Bmi2") || (!strcmp (class_name, "X64") && cmethod->klass->nested_in && !strcmp (m_class_get_name (cmethod->klass->nested_in), "Bmi2"))) {
-		// We only support the subset used by corelib
+		// We only support the subset used by corelib. Remove this check once MultiplyNoFlags is implemented.
 		if (m_class_get_image (cfg->method->klass) != mono_get_corlib ())
 			return NULL;
 		if (!COMPILE_LLVM (cfg))
@@ -701,7 +721,14 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 			EMIT_NEW_ICONST (cfg, ins, supported ? 1 : 0);
 			ins->type = STACK_I4;
 			return ins;
-		case SN_ZeroHighBits:
+		//case SN_MultiplyNoFlags:
+			//// TODO: implement using _mulx_u32/u64:
+			//// ulong MultiplyNoFlags(ulong left, ulong right)
+			//// ulong MultiplyNoFlags(ulong left, ulong right, ulong* low) => MultiplyNoFlags(left, right, low);
+			//// uint MultiplyNoFlags(uint left, uint right)
+			//// uint MultiplyNoFlags(uint left, uint right, uint* low)
+			//return NULL;
+		//case SN_ZeroHighBits:
 			MONO_INST_NEW (cfg, ins, is_64bit ? OP_BZHI64 : OP_BZHI32);
 			ins->dreg = alloc_ireg (cfg);
 			ins->sreg1 = args [0]->dreg;
@@ -714,7 +741,7 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 			ins->dreg = alloc_ireg (cfg);
 			ins->sreg1 = args [0]->dreg;
 			ins->sreg2 = args [1]->dreg;
-			ins->type = STACK_I4;
+			ins->type = is_64bit ? STACK_I8 : STACK_I4;
 			MONO_ADD_INS (cfg->cbb, ins);
 			return ins;
 		case SN_ParallelBitDeposit:
@@ -722,13 +749,12 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 			ins->dreg = alloc_ireg (cfg);
 			ins->sreg1 = args [0]->dreg;
 			ins->sreg2 = args [1]->dreg;
-			ins->type = STACK_I4;
+			ins->type = is_64bit ? STACK_I8 : STACK_I4;
 			MONO_ADD_INS (cfg->cbb, ins);
 			return ins;
 		default:
 			g_assert_not_reached ();
 		}
-		//printf ("%s %s\n", mono_method_get_full_name (cfg->method), mono_method_get_full_name (cmethod));
 	}
 
 	return NULL;
