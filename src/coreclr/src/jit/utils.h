@@ -669,6 +669,14 @@ public:
     static double round(double x);
 
     static float round(float x);
+
+    static bool isNormal(double x);
+
+    static bool isNormal(float x);
+
+    static bool hasPreciseReciprocal(double x);
+
+    static bool hasPreciseReciprocal(float x);
 };
 
 // The CLR requires that critical section locks be initialized via its ClrCreateCriticalSection API...but
