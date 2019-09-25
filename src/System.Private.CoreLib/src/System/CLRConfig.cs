@@ -11,7 +11,7 @@ namespace System
     // one example, is using the context switch in the globalization code which require to read the switch very
     // early even before the appdomain get initialized.
     // In general AppContext should be used instead of CLRConfig if there is no reason prevent that.
-    internal class CLRConfig
+    internal static class CLRConfig
     {
         internal static bool GetBoolValue(string switchName, out bool exist)
         {

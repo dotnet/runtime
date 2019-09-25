@@ -70,7 +70,7 @@ namespace System.Reflection.Emit
         #region MemberInfo Overrides
         public override Module Module => m_module;
 
-        public override Type? ReflectedType => m_containingType as Type;
+        public override Type? ReflectedType => m_containingType;
 
         public override string Name => m_name;
 

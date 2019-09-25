@@ -182,7 +182,7 @@ namespace System.Buffers.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteFourDecimalDigits(uint value, Span<byte> buffer, int startingIndex = 0)
         {
-            Debug.Assert(0 <= value && value <= 9999);
+            Debug.Assert(value <= 9999);
 
             uint temp = '0' + value;
             value /= 10;
@@ -206,7 +206,7 @@ namespace System.Buffers.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteTwoDecimalDigits(uint value, Span<byte> buffer, int startingIndex = 0)
         {
-            Debug.Assert(0 <= value && value <= 99);
+            Debug.Assert(value <= 99);
 
             uint temp = '0' + value;
             value /= 10;

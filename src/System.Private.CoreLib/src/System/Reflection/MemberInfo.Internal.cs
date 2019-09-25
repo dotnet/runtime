@@ -20,7 +20,7 @@ namespace System.Reflection
             if (MetadataToken != other.MetadataToken)
                 return false;
 
-            if (!(Module.Equals(other.Module)))
+            if (!Module.Equals(other.Module))
                 return false;
 
             return true;

@@ -128,7 +128,7 @@ namespace System.Diagnostics.Tracing
                 {
                     metadata[pos] = current;
                 }
-                pos += 1;
+                pos++;
             }
             while (more);
         }
@@ -182,7 +182,7 @@ namespace System.Diagnostics.Tracing
 
         public static bool ShouldOverrideFieldName(string fieldName)
         {
-            return (fieldName.Length <= 2 && fieldName[0] == '_');
+            return fieldName.Length <= 2 && fieldName[0] == '_';
         }
 
         public static TraceLoggingDataType MakeDataType(

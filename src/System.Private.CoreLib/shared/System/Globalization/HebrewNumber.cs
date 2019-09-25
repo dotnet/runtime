@@ -399,29 +399,29 @@ namespace System.Globalization
                     token = s_hebrewValues[index].token;
                     if (token == HebrewToken.Invalid)
                     {
-                        return (HebrewNumberParsingState.NotHebrewDigit);
+                        return HebrewNumberParsingState.NotHebrewDigit;
                     }
                     context.result += s_hebrewValues[index].value;
                 }
                 else
                 {
                     // Not in valid Hebrew digit range.
-                    return (HebrewNumberParsingState.NotHebrewDigit);
+                    return HebrewNumberParsingState.NotHebrewDigit;
                 }
             }
             context.state = s_numberPasingState[(int)context.state * (int)HebrewTokenCount + (int)token];
             if (context.state == HS._err)
             {
                 // Invalid Hebrew state.  This indicates an incorrect Hebrew number.
-                return (HebrewNumberParsingState.InvalidHebrewNumber);
+                return HebrewNumberParsingState.InvalidHebrewNumber;
             }
             if (context.state == HS.END)
             {
                 // Reach a terminal state.
-                return (HebrewNumberParsingState.FoundEndOfHebrewNumber);
+                return HebrewNumberParsingState.FoundEndOfHebrewNumber;
             }
             // We should continue to parse.
-            return (HebrewNumberParsingState.ContinueParsing);
+            return HebrewNumberParsingState.ContinueParsing;
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -439,9 +439,9 @@ namespace System.Globalization
         {
             if (ch >= minHebrewNumberCh && ch <= s_maxHebrewNumberCh)
             {
-                return (s_hebrewValues[ch - minHebrewNumberCh].value >= 0);
+                return s_hebrewValues[ch - minHebrewNumberCh].value >= 0;
             }
-            return (ch == '\'' || ch == '\"');
+            return ch == '\'' || ch == '\"';
         }
     }
 }

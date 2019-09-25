@@ -657,7 +657,6 @@ namespace System.Text
                 {
                     _manyChunks = new ManyChunkInfo(stringBuilder, chunkCount);
                 }
-
             }
 
             private static int ChunkCount(StringBuilder? stringBuilder)

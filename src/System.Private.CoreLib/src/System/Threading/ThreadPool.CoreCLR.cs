@@ -77,7 +77,7 @@ namespace System.Threading
                         if (ValidHandle())
                         {
                             result = UnregisterWaitNative(GetHandle(), waitObject?.SafeWaitHandle);
-                            if (result == true)
+                            if (result)
                             {
                                 if (bReleaseNeeded)
                                 {
@@ -158,10 +158,10 @@ namespace System.Threading
             }
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void WaitHandleCleanupNative(IntPtr handle);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool UnregisterWaitNative(IntPtr handle, SafeHandle? waitObject);
     }
 
@@ -202,7 +202,7 @@ namespace System.Threading
             // Note: this function may incorrectly return false due to TickCount overflow
             // if work item execution took around a multiple of 2^32 milliseconds (~49.7 days),
             // which is improbable.
-            return ((uint)(Environment.TickCount - startTickCount) < DispatchQuantum);
+            return (uint)(Environment.TickCount - startTickCount) < DispatchQuantum;
         }
 
         public static bool SetMaxThreads(int workerThreads, int completionPortThreads)
@@ -300,7 +300,7 @@ namespace System.Threading
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern Interop.BOOL RequestWorkerThread();
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe bool PostQueuedCompletionStatus(NativeOverlapped* overlapped);
 
         [CLSCompliant(false)]
@@ -328,25 +328,25 @@ namespace System.Threading
 
         // Native methods:
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool SetMinThreadsNative(int workerThreads, int completionPortThreads);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool SetMaxThreadsNative(int workerThreads, int completionPortThreads);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void GetMinThreadsNative(out int workerThreads, out int completionPortThreads);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void GetMaxThreadsNative(out int workerThreads, out int completionPortThreads);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void GetAvailableThreadsNative(out int workerThreads, out int completionPortThreads);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool NotifyWorkItemComplete();
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void ReportThreadStatus(bool isWorking);
 
         internal static void NotifyWorkItemProgress()
@@ -355,13 +355,13 @@ namespace System.Threading
             NotifyWorkItemProgressNative();
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void NotifyWorkItemProgressNative();
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void InitializeVMTp(ref bool enableWorkerTracking);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern IntPtr RegisterWaitForSingleObjectNative(
              WaitHandle waitHandle,
              object state,
@@ -369,7 +369,6 @@ namespace System.Threading
              bool executeOnlyOnce,
              RegisteredWaitHandle registeredWaitHandle
              );
-
 
         [Obsolete("ThreadPool.BindHandle(IntPtr) has been deprecated.  Please use ThreadPool.BindHandle(SafeHandle) instead.", false)]
         public static bool BindHandle(IntPtr osHandle)
@@ -398,7 +397,7 @@ namespace System.Threading
             return ret;
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool BindIOCompletionCallbackNative(IntPtr fileHandle);
     }
 }

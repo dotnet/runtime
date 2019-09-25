@@ -522,7 +522,6 @@ namespace System.Reflection.Emit
             if (!(opcode.Equals(OpCodes.Call) || opcode.Equals(OpCodes.Callvirt) || opcode.Equals(OpCodes.Newobj)))
                 throw new ArgumentException(SR.Argument_NotMethodCallOpcode, nameof(opcode));
 
-
             int stackchange = 0;
             int tk = GetMethodToken(methodInfo, optionalParameterTypes, false);
 
@@ -539,7 +538,7 @@ namespace System.Reflection.Emit
 
             // Pop the this parameter if the method is non-static and the
             // instruction is not newobj.
-            if (!(methodInfo is SymbolMethod) && methodInfo.IsStatic == false && !(opcode.Equals(OpCodes.Newobj)))
+            if (!(methodInfo is SymbolMethod) && !methodInfo.IsStatic && !opcode.Equals(OpCodes.Newobj))
                 stackchange--;
             // Pop the optional parameters off the stack.
             if (optionalParameterTypes != null)
@@ -688,7 +687,6 @@ namespace System.Reflection.Emit
             // correct offset to branch during the fixup process.
 
             EnsureCapacity(7);
-
 
             InternalEmit(opcode);
             if (OpCodes.TakesSingleByteArgument(opcode))
@@ -995,7 +993,6 @@ namespace System.Reflection.Emit
             }
 
             MarkLabel(endLabel);
-
 
             Label finallyEndLabel = DefineLabel();
             current.SetFinallyEndLabel(finallyEndLabel);
@@ -1498,7 +1495,6 @@ namespace System.Reflection.Emit
         }
     }
 
-
     /// <summary>
     /// Scope Tree is a class that track the scope structure within a method body
     /// It keeps track two parallel array. m_ScopeAction keeps track the action. It can be
@@ -1571,7 +1567,6 @@ namespace System.Reflection.Emit
             // make sure that arrays are large enough to hold addition info
             EnsureCapacity();
 
-
             m_ScopeActions[m_iCount] = sa;
             m_iOffsets[m_iCount] = iOffset;
             m_localSymInfos[m_iCount] = null;
@@ -1637,7 +1632,6 @@ namespace System.Reflection.Emit
         internal const int InitialSize = 16;
         internal LocalSymInfo?[] m_localSymInfos = null!;            // keep track debugging local information
     }
-
 
     /// <summary>
     /// This class tracks the line number info
@@ -1722,7 +1716,6 @@ namespace System.Reflection.Emit
         private const int InitialSize = 16;
         private int m_iLastFound;
     }
-
 
     /// <summary>
     /// This class tracks the line number info

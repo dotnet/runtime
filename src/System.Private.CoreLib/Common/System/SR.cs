@@ -48,7 +48,7 @@ namespace System
 
         private static string? InternalGetResourceString(string? key)
         {
-            if (key == null || key.Length == 0)
+            if (string.IsNullOrEmpty(key))
             {
                 Debug.Fail("SR::GetResourceString with null or empty key.  Bug in caller, or weird recursive loading problem?");
                 return key!;

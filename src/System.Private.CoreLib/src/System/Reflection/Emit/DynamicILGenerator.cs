@@ -22,7 +22,6 @@ namespace System.Reflection.Emit
             m_methodSigToken = m_scope.GetTokenFor(methodSignature);
         }
 
-
         internal void GetCallableMethod(RuntimeModule module, DynamicMethod dm)
         {
             dm.m_methodHandle = ModuleHandle.GetDynamicMethod(dm,
@@ -201,7 +200,6 @@ namespace System.Reflection.Emit
             SignatureHelper sig;
             if (optionalParameterTypes != null)
                 if ((callingConvention & CallingConventions.VarArgs) == 0)
-
                     throw new InvalidOperationException(SR.InvalidOperation_NotAVarArgCallingConvention);
 
             sig = GetMemberRefSignature(callingConvention,
@@ -296,7 +294,7 @@ namespace System.Reflection.Emit
             stackchange -= methodInfo.GetParameterTypes().Length;
             // Pop the this parameter if the method is non-static and the
             // instruction is not newobj.
-            if (!(methodInfo is SymbolMethod) && methodInfo.IsStatic == false && !(opcode.Equals(OpCodes.Newobj)))
+            if (!(methodInfo is SymbolMethod) && !methodInfo.IsStatic && !opcode.Equals(OpCodes.Newobj))
                 stackchange--;
             // Pop the optional parameters off the stack.
             if (optionalParameterTypes != null)
@@ -392,7 +390,6 @@ namespace System.Reflection.Emit
                 UpdateStackSize(OpCodes.Nop, 1);
 
                 current.MarkCatchAddr(ILOffset, exceptionType);
-
 
                 // this is relying on too much implementation details of the base and so it's highly breaking
                 // Need to have a more integrated story for exceptions
@@ -685,7 +682,6 @@ namespace System.Reflection.Emit
 
             typeOwner = m_method.m_typeOwner;
 
-
             securityControlFlags = (int)flags;
 
             return typeOwner;
@@ -844,7 +840,6 @@ namespace System.Reflection.Emit
         }
         #endregion
     }
-
 
     public class DynamicILInfo
     {

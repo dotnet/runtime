@@ -138,7 +138,7 @@ namespace System.Diagnostics.Tracing
                 }
                 else
                 {
-                    Debug.Assert(false, "Unsupported type encountered.");
+                    Debug.Fail("Unsupported type encountered.");
                 }
             }
 

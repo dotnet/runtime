@@ -131,8 +131,7 @@ namespace System.Threading
         ** space so the thread object may be allocated.  DON'T CHANGE THESE UNLESS
         ** YOU MODIFY ThreadBaseObject in vm\object.h
         =========================================================================*/
-#pragma warning disable 169 // These fields are not used from managed.
-#pragma warning disable CA1823
+#pragma warning disable CA1823, 169 // These fields are not used from managed.
         // IntPtrs need to be together, and before ints, because IntPtrs are 64-bit
         // fields on 64-bit platforms, where they will be sorted together.
 
@@ -144,8 +143,7 @@ namespace System.Threading
         // team to make sure that your changes are not going to prevent the debugger
         // from working.
         private int _managedThreadId; // INT32
-#pragma warning restore CA1823
-#pragma warning restore 169
+#pragma warning restore CA1823, 169
 
         private Thread() { }
 
@@ -247,7 +245,7 @@ namespace System.Threading
         // Invoked by VM. Helper method to get a logical thread ID for StringBuilder (for
         // correctness) and for FileStream's async code path (for perf, to avoid creating
         // a Thread instance).
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern IntPtr InternalGetCurrentThread();
 
         /// <summary>
@@ -276,7 +274,7 @@ namespace System.Threading
         public static bool Yield() => YieldInternal() != Interop.BOOL.FALSE;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static Thread InitializeCurrentThread() => (t_currentThread = GetCurrentThreadNative());
+        private static Thread InitializeCurrentThread() => t_currentThread = GetCurrentThreadNative();
 
         [MethodImpl(MethodImplOptions.InternalCall), ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         private static extern Thread GetCurrentThreadNative();
@@ -319,7 +317,7 @@ namespace System.Threading
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void InformThreadNameChange(ThreadHandle t, string? name, int len);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern DeserializationTracker GetThreadDeserializationTracker(ref StackCrawlMark stackMark);
 
         /// <summary>Returns true if the thread has been started and is not dead.</summary>
@@ -532,7 +530,7 @@ namespace System.Threading
                 return RefreshCurrentProcessorId();
             }
 
-            return (currentProcessorIdCache >> ProcessorIdCacheShift);
+            return currentProcessorIdCache >> ProcessorIdCacheShift;
         }
 
         internal void ResetThreadPoolThread()

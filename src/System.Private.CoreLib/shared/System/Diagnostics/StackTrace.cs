@@ -251,7 +251,7 @@ namespace System.Diagnostics
                         bool fFirstTyParam = true;
                         while (k < typars.Length)
                         {
-                            if (fFirstTyParam == false)
+                            if (!fFirstTyParam)
                                 sb.Append(',');
                             else
                                 fFirstTyParam = false;
@@ -279,7 +279,7 @@ namespace System.Diagnostics
                         bool fFirstParam = true;
                         for (int j = 0; j < pi.Length; j++)
                         {
-                            if (fFirstParam == false)
+                            if (!fFirstParam)
                                 sb.Append(", ");
                             else
                                 fFirstParam = false;

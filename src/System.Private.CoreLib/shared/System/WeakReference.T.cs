@@ -51,7 +51,7 @@ namespace System
         //      if (ref.Target != null)
         //          DoSomething(ref.Target)
         //
-        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryGetTarget([MaybeNullWhen(false), NotNullWhen(true)] out T target)
         {
             // Call the worker method that has more performant but less user friendly signature.

@@ -88,7 +88,6 @@ namespace System.Diagnostics.Tracing
 
     internal sealed class EventPipeWaitHandle : WaitHandle
     {
-
     }
 
     internal sealed class EventPipeConfiguration

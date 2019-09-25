@@ -185,7 +185,7 @@ namespace System.Diagnostics.Tracing
             {
                 metadata[pos] = this.inType;
             }
-            pos += 1;
+            pos++;
 
             // If InTypeChainFlag set, then write out the outType
             if (0 != (this.inType & Statics.InTypeChainFlag))
@@ -194,7 +194,7 @@ namespace System.Diagnostics.Tracing
                 {
                     metadata[pos] = this.outType;
                 }
-                pos += 1;
+                pos++;
 
                 // If OutTypeChainFlag set, then write out tags
                 if (0 != (this.outType & Statics.OutTypeChainFlag))

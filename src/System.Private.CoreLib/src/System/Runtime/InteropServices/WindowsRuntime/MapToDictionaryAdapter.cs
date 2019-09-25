@@ -30,7 +30,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
 
-
             IMap<K, V> _this = Unsafe.As<IMap<K, V>>(this);
             return Lookup(_this, key);
         }
@@ -40,7 +39,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
-
 
             IMap<K, V> _this = Unsafe.As<IMap<K, V>>(this);
             Insert(_this, key, value);
@@ -80,7 +78,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             if (ContainsKey<K, V>(key))
                 throw new ArgumentException(SR.Argument_AddingDuplicate);
-
 
             IMap<K, V> _this = Unsafe.As<IMap<K, V>>(this);
             Insert(_this, key, value);

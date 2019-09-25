@@ -6,13 +6,12 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.CompilerServices
 {
-
     /// <summary>
     /// Helpers that allows VM to call into ICastable methods without having to deal with RuntimeTypeHandle.
     /// RuntimeTypeHandle is a struct and is always passed in stack in x86, which our VM call helpers don't
     /// particularly like.
     /// </summary>
-    internal class ICastableHelpers
+    internal static class ICastableHelpers
     {
         internal static bool IsInstanceOfInterface(ICastable castable, RuntimeType type, [NotNullWhen(true)] out Exception? castError)
         {

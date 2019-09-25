@@ -378,7 +378,7 @@ namespace System
             if (length > (int.MaxValue / 3))
             {
                 // (int.MaxValue / 3) == 715,827,882 Bytes == 699 MB
-                throw new ArgumentOutOfRangeException(nameof(length), SR.Format(SR.ArgumentOutOfRange_LengthTooLarge, (int.MaxValue / 3)));
+                throw new ArgumentOutOfRangeException(nameof(length), SR.Format(SR.ArgumentOutOfRange_LengthTooLarge, int.MaxValue / 3));
             }
 
             return string.Create(length * 3 - 1, (value, startIndex, length), (dst, state) =>

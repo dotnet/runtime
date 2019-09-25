@@ -56,7 +56,7 @@ namespace System
                     throw new ArgumentException(SR.Format(SR.Arg_EnumUnderlyingTypeAndObjectMustBeSameType, valueType, underlyingType));
 
                 Array values = GetEnumRawConstantValues();
-                return (BinarySearch(values, value) >= 0);
+                return BinarySearch(values, value) >= 0;
             }
             else
             {
@@ -99,7 +99,6 @@ namespace System
             GetEnumData(out names, out values);
             return names;
         }
-
 
         // Returns the enum values as an object array.
         private Array GetEnumRawConstantValues()
@@ -169,7 +168,7 @@ namespace System
 
         internal static bool IsIntegerType(Type t)
         {
-            return (t == typeof(int) ||
+            return t == typeof(int) ||
                     t == typeof(short) ||
                     t == typeof(ushort) ||
                     t == typeof(byte) ||
@@ -178,7 +177,7 @@ namespace System
                     t == typeof(long) ||
                     t == typeof(ulong) ||
                     t == typeof(char) ||
-                    t == typeof(bool));
+                    t == typeof(bool);
         }
     }
 }

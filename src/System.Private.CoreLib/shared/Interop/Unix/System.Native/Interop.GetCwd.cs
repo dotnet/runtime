@@ -27,7 +27,7 @@ internal static partial class Interop
 
             // If that was too small, try increasing large buffer sizes
             int bufferSize = StackLimit;
-            do
+            while (true)
             {
                 checked { bufferSize *= 2; }
                 byte[] buf = ArrayPool<byte>.Shared.Rent(bufferSize);
@@ -47,7 +47,6 @@ internal static partial class Interop
                     ArrayPool<byte>.Shared.Return(buf);
                 }
             }
-            while (true);
         }
 
         private static unsafe string? GetCwdHelper(byte* ptr, int bufferSize)

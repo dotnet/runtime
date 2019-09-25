@@ -91,5 +91,4 @@ namespace System.Diagnostics.Tracing
         public IncrementingEventCounterPayloadType(IncrementingCounterPayload payload) { Payload = payload; }
         public IncrementingCounterPayload Payload { get; set; }
     }
-
 }

@@ -43,7 +43,7 @@ namespace System.Runtime.InteropServices
                     return null;
                 }
 
-                if (_once == false)
+                if (!_once)
                 {
                     PreProcessSignature();
                     _once = true;

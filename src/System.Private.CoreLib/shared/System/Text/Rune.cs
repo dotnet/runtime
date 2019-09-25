@@ -106,17 +106,17 @@ namespace System.Text
             _value = scalarValue;
         }
 
-        public static bool operator ==(Rune left, Rune right) => (left._value == right._value);
+        public static bool operator ==(Rune left, Rune right) => left._value == right._value;
 
-        public static bool operator !=(Rune left, Rune right) => (left._value != right._value);
+        public static bool operator !=(Rune left, Rune right) => left._value != right._value;
 
-        public static bool operator <(Rune left, Rune right) => (left._value < right._value);
+        public static bool operator <(Rune left, Rune right) => left._value < right._value;
 
-        public static bool operator <=(Rune left, Rune right) => (left._value <= right._value);
+        public static bool operator <=(Rune left, Rune right) => left._value <= right._value;
 
-        public static bool operator >(Rune left, Rune right) => (left._value > right._value);
+        public static bool operator >(Rune left, Rune right) => left._value > right._value;
 
-        public static bool operator >=(Rune left, Rune right) => (left._value >= right._value);
+        public static bool operator >=(Rune left, Rune right) => left._value >= right._value;
 
         // Operators below are explicit because they may throw.
 
@@ -701,7 +701,7 @@ namespace System.Text
 
         public override bool Equals(object? obj) => (obj is Rune other) && this.Equals(other);
 
-        public bool Equals(Rune other) => (this == other);
+        public bool Equals(Rune other) => this == other;
 
         public override int GetHashCode() => Value;
 
@@ -1140,7 +1140,7 @@ namespace System.Text
             // 00..1F (+1) => 01..20 (&~80) => 01..20
             // 7F..9F (+1) => 80..A0 (&~80) => 00..20
 
-            return (((value._value + 1) & ~0x80u) <= 0x20u);
+            return ((value._value + 1) & ~0x80u) <= 0x20u;
         }
 
         public static bool IsDigit(Rune value)
@@ -1159,7 +1159,7 @@ namespace System.Text
         {
             if (value.IsAscii)
             {
-                return (((value._value - 'A') & ~0x20u) <= (uint)('Z' - 'A')); // [A-Za-z]
+                return ((value._value - 'A') & ~0x20u) <= (uint)('Z' - 'A'); // [A-Za-z]
             }
             else
             {
@@ -1171,7 +1171,7 @@ namespace System.Text
         {
             if (value.IsAscii)
             {
-                return ((AsciiCharInfo[value.Value] & IsLetterOrDigitFlag) != 0);
+                return (AsciiCharInfo[value.Value] & IsLetterOrDigitFlag) != 0;
             }
             else
             {

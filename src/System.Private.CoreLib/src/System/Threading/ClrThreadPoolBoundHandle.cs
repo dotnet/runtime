@@ -285,7 +285,6 @@ namespace System.Threading
             _isDisposed = true;
         }
 
-
         private void EnsureNotDisposed()
         {
             if (_isDisposed)

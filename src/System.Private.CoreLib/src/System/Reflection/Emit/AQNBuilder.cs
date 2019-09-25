@@ -86,13 +86,10 @@ namespace System.Reflection.Emit
 
             if (elementType.IsPointer)
                 AddPointer();
-
             else if (elementType.IsByRef)
                 AddByRef();
-
             else if (elementType.IsSZArray)
                 AddSzArray();
-
             else if (elementType.IsArray)
                 AddArray(elementType.GetArrayRank());
         }

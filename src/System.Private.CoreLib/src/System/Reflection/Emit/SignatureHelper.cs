@@ -84,7 +84,6 @@ namespace System.Reflection.Emit
 
         public static SignatureHelper GetMethodSigHelper(Module? mod, CallingConvention unmanagedCallConv, Type? returnType)
         {
-            SignatureHelper sigHelp;
             MdSigCallingConvention intCall;
 
             returnType ??= typeof(void);
@@ -110,9 +109,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.Argument_UnknownUnmanagedCallConv, nameof(unmanagedCallConv));
             }
 
-            sigHelp = new SignatureHelper(mod, intCall, returnType, null, null);
-
-            return sigHelp;
+            return new SignatureHelper(mod, intCall, returnType, null, null);
         }
 
         public static SignatureHelper GetLocalVarSigHelper()
@@ -526,7 +523,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.Argument_LargeInteger);
             }
 
-            rid = (rid << 2);
+            rid <<= 2;
 
             // TypeDef is encoded with low bits 00
             // TypeRef is encoded with low bits 01
@@ -699,9 +696,6 @@ namespace System.Reflection.Emit
             return m_signature;
         }
 
-
-
-
         internal byte[] InternalGetSignatureArray()
         {
             int argCount = m_argCount;
@@ -710,7 +704,7 @@ namespace System.Reflection.Emit
 
             // Allocate the new array.
             if (argCount < 0x7F)
-                newSigSize += 1;
+                newSigSize++;
             else if (argCount < 0x3FFF)
                 newSigSize += 2;
             else
@@ -734,7 +728,7 @@ namespace System.Reflection.Emit
                 temp[sigCopyIndex++] = (byte)((argCount >> 24) | 0xC0);
                 temp[sigCopyIndex++] = (byte)((argCount >> 16) & 0xFF);
                 temp[sigCopyIndex++] = (byte)((argCount >> 8) & 0xFF);
-                temp[sigCopyIndex++] = (byte)((argCount) & 0xFF);
+                temp[sigCopyIndex++] = (byte)(argCount & 0xFF);
             }
             else
                 throw new ArgumentException(SR.Argument_LargeInteger);
@@ -831,7 +825,7 @@ namespace System.Reflection.Emit
 
             // Add one if the sig is done.
             if (m_sigDone)
-                HashCode += 1;
+                HashCode++;
 
             // Then add the hash code of all the arguments.
             for (int i = 0; i < m_currSig; i++)
@@ -873,24 +867,24 @@ namespace System.Reflection.Emit
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("Length: " + m_currSig + Environment.NewLine);
+            sb.Append("Length: ").Append(m_currSig).AppendLine();
 
             if (m_sizeLoc != -1)
             {
-                sb.Append("Arguments: " + m_signature[m_sizeLoc] + Environment.NewLine);
+                sb.Append("Arguments: ").Append(m_signature[m_sizeLoc]).AppendLine();
             }
             else
             {
-                sb.Append("Field Signature" + Environment.NewLine);
+                sb.AppendLine("Field Signature");
             }
 
-            sb.Append("Signature: " + Environment.NewLine);
+            sb.AppendLine("Signature: ");
             for (int i = 0; i <= m_currSig; i++)
             {
-                sb.Append(m_signature[i] + "  ");
+                sb.Append(m_signature[i]).Append("  ");
             }
 
-            sb.Append(Environment.NewLine);
+            sb.AppendLine();
             return sb.ToString();
         }
 

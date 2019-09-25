@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Collections.Generic
 {
-    [TypeDependencyAttribute("System.Collections.Generic.ObjectComparer`1")]
+    [TypeDependency("System.Collections.Generic.ObjectComparer`1")]
     public abstract partial class Comparer<T> : IComparer, IComparer<T>
     {
         // To minimize generic instantiation overhead of creating the comparer per type, we keep the generic portion of the code as small

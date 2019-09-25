@@ -422,7 +422,6 @@ namespace System
             return (int)(byte*)(offset + 6);
         Found7:
             return (int)(byte*)(offset + 7);
-
         }
 
         public static int LastIndexOf(ref byte searchSpace, int searchSpaceLength, ref byte value, int valueLength)

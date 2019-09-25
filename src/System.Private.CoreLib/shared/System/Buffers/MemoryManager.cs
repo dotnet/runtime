@@ -70,6 +70,5 @@ namespace System.Buffers
         /// Clean up of any leftover managed and unmanaged resources.
         /// </summary>
         protected abstract void Dispose(bool disposing);
-
     }
 }

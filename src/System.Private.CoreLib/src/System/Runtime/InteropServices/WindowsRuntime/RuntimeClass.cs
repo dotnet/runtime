@@ -24,7 +24,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         string ToString();
     }
 
-    internal class IStringableHelper
+    internal static class IStringableHelper
     {
         internal static string? ToString(object obj)
         {

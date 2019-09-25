@@ -76,7 +76,7 @@ namespace System.Reflection.Emit
         {
             get
             {
-                if (m_typeBuilder.m_isHiddenGlobalType == true)
+                if (m_typeBuilder.m_isHiddenGlobalType)
                     return null;
 
                 return m_typeBuilder;
@@ -87,7 +87,7 @@ namespace System.Reflection.Emit
         {
             get
             {
-                if (m_typeBuilder.m_isHiddenGlobalType == true)
+                if (m_typeBuilder.m_isHiddenGlobalType)
                     return null;
 
                 return m_typeBuilder;
@@ -168,7 +168,6 @@ namespace System.Reflection.Emit
 
             TypeBuilder.SetConstantValue(m_typeBuilder.GetModuleBuilder(), GetToken().Token, m_fieldType, defaultValue);
         }
-
 
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {

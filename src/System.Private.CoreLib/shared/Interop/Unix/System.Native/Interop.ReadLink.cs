@@ -34,7 +34,7 @@ internal static partial class Interop
         public static string? ReadLink(string path)
         {
             int bufferSize = 256;
-            do
+            while (true)
             {
                 byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
                 try
@@ -58,7 +58,7 @@ internal static partial class Interop
 
                 // buffer was too small, loop around again and try with a larger buffer.
                 bufferSize *= 2;
-            } while (true);
+            }
         }
     }
 }

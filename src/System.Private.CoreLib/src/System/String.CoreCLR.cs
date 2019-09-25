@@ -50,18 +50,18 @@ namespace System
         //
         public extern int Length
         {
-            [MethodImplAttribute(MethodImplOptions.InternalCall)]
+            [MethodImpl(MethodImplOptions.InternalCall)]
             get;
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern string FastAllocateString(int length);
 
         // Set extra byte for odd-sized strings that came from interop as BSTR.
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         internal extern void SetTrailByte(byte data);
         // Try to retrieve the extra byte - returns false if not present.
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         internal extern bool TryGetTrailByte(out byte data);
 
         [MethodImpl(MethodImplOptions.InternalCall)]

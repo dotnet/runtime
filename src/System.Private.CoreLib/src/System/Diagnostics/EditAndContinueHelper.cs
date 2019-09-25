@@ -15,12 +15,8 @@ namespace System.Diagnostics
 {
     internal sealed class EditAndContinueHelper
     {
-#pragma warning disable CA1823
-#pragma warning disable 169
-#pragma warning disable 414  // Field is not used from managed.
+#pragma warning disable CA1823, 169, 414 // field is not used from managed.
         private object? _objectReference;
-#pragma warning restore 414
-#pragma warning restore 169
-#pragma warning restore CA1823
+#pragma warning restore CA1823, 169, 414
     }
 }

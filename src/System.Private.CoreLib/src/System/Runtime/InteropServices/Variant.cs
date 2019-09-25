@@ -289,12 +289,12 @@ namespace System.Runtime.InteropServices
                 VariantType = VarEnum.VT_EMPTY;
             }
             else if (((vt & VarEnum.VT_ARRAY) != 0)
-                    || ((vt) == VarEnum.VT_BSTR)
-                    || ((vt) == VarEnum.VT_UNKNOWN)
-                    || ((vt) == VarEnum.VT_DISPATCH)
-                    || ((vt) == VarEnum.VT_VARIANT)
-                    || ((vt) == VarEnum.VT_RECORD)
-                    || ((vt) == VarEnum.VT_VARIANT))
+                    || (vt == VarEnum.VT_BSTR)
+                    || (vt == VarEnum.VT_UNKNOWN)
+                    || (vt == VarEnum.VT_DISPATCH)
+                    || (vt == VarEnum.VT_VARIANT)
+                    || (vt == VarEnum.VT_RECORD)
+                    || (vt == VarEnum.VT_VARIANT))
             {
                 unsafe
                 {

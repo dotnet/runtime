@@ -30,7 +30,7 @@ namespace System.Threading
         **
         ** Exceptions: ArgumentNullException if object is null.
         =========================================================================*/
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void Enter(object obj);
 
 
@@ -54,7 +54,7 @@ namespace System.Threading
             throw new ArgumentException(SR.Argument_MustBeFalse, "lockTaken");
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void ReliableEnter(object obj, ref bool lockTaken);
 
 
@@ -68,7 +68,7 @@ namespace System.Threading
         **             SynchronizationLockException if the current thread does not
         **             own the lock.
         =========================================================================*/
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void Exit(object obj);
 
         /*=========================================================================
@@ -143,7 +143,7 @@ namespace System.Threading
             ReliableEnterTimeout(obj, MillisecondsTimeoutFromTimeSpan(timeout), ref lockTaken);
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void ReliableEnterTimeout(object obj, int timeout, ref bool lockTaken);
 
         public static bool IsEntered(object obj)
@@ -154,7 +154,7 @@ namespace System.Threading
             return IsEnteredNative(obj);
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool IsEnteredNative(object obj);
 
         /*========================================================================
@@ -168,7 +168,7 @@ namespace System.Threading
     **
         ** Exceptions: ArgumentNullException if object is null.
     ========================================================================*/
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool ObjWait(bool exitContext, int millisecondsTimeout, object obj);
 
         public static bool Wait(object obj, int millisecondsTimeout, bool exitContext)
@@ -203,7 +203,7 @@ namespace System.Threading
         * Exceptions: SynchronizationLockException if this method is not called inside
         * a synchronized block of code.
         ========================================================================*/
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void ObjPulse(object obj);
 
         public static void Pulse(object obj)
@@ -218,7 +218,7 @@ namespace System.Threading
         /*========================================================================
         ** Sends a notification to all waiting objects.
         ========================================================================*/
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void ObjPulseAll(object obj);
 
         public static void PulseAll(object obj)

@@ -1235,7 +1235,7 @@ namespace System.Threading.Tasks
             /// <summary>Initializes the promise.</summary>
             /// <param name="thisRef">A reference to the object on which the begin/end methods are invoked.</param>
             /// <param name="endMethod">The end method.</param>
-            internal FromAsyncTrimPromise(TInstance thisRef, Func<TInstance, IAsyncResult, TResult> endMethod) : base()
+            internal FromAsyncTrimPromise(TInstance thisRef, Func<TInstance, IAsyncResult, TResult> endMethod)
             {
                 Debug.Assert(thisRef != null, "Expected a non-null thisRef");
                 Debug.Assert(endMethod != null, "Expected a non-null endMethod");

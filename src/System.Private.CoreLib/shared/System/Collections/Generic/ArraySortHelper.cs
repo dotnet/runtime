@@ -250,7 +250,7 @@ namespace System.Collections.Generic
             }
 
             // Put pivot in the right location.
-            Swap(keys, left, (hi - 1));
+            Swap(keys, left, hi - 1);
             return left;
         }
 
@@ -542,7 +542,7 @@ namespace System.Collections.Generic
             }
 
             // Put pivot in the right location.
-            Swap(keys, left, (hi - 1));
+            Swap(keys, left, hi - 1);
             return left;
         }
 
@@ -779,7 +779,7 @@ namespace System.Collections.Generic
             }
 
             // Put pivot in the right location.
-            Swap(keys, values, left, (hi - 1));
+            Swap(keys, values, left, hi - 1);
             return left;
         }
 
@@ -1026,7 +1026,7 @@ namespace System.Collections.Generic
             }
 
             // Put pivot in the right location.
-            Swap(keys, values, left, (hi - 1));
+            Swap(keys, values, left, hi - 1);
             return left;
         }
 

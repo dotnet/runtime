@@ -81,7 +81,7 @@ namespace System.Globalization
             // we can support the Transliterated Gregorian calendar.
             // DateTimeFormatInfo will use this ID to get formatting information about
             // the calendar.
-            ((CalendarId)_type);
+            (CalendarId)_type;
 
         /// <summary>
         /// Gets the absolute date for the given Gregorian date. The absolute date means
@@ -97,7 +97,7 @@ namespace System.Globalization
         {
             if (year >= 1 && year <= MaxYear && month >= 1 && month <= 12)
             {
-                int[] days = ((year % 4 == 0 && (year % 100 != 0 || year % 400 == 0))) ? DaysToMonth366 : DaysToMonth365;
+                int[] days = (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ? DaysToMonth366 : DaysToMonth365;
                 if (day >= 1 && (day <= days[month] - days[month - 1]))
                 {
                     int y = year - 1;
@@ -114,7 +114,7 @@ namespace System.Globalization
         /// </summary>
         internal virtual long DateToTicks(int year, int month, int day)
         {
-            return (GetAbsoluteDate(year, month, day) * TicksPerDay);
+            return GetAbsoluteDate(year, month, day) * TicksPerDay;
         }
 
         /// <summary>
@@ -254,7 +254,7 @@ namespace System.Globalization
                     SR.Format(SR.ArgumentOutOfRange_Range, 1, MaxYear));
             }
 
-            return ((year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ? 366 : 365);
+            return (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ? 366 : 365;
         }
 
         public override int GetEra(DateTime time) => ADEra;
@@ -442,7 +442,6 @@ namespace System.Globalization
         }
 
         private const int DefaultTwoDigitYearMax = 2029;
-
 
         public override int TwoDigitYearMax
         {
