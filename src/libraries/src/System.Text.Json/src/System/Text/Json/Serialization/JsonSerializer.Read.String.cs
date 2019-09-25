@@ -2,10 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
+
 namespace System.Text.Json
 {
     public static partial class JsonSerializer
     {
+        // The maximum length of a byte array before we ask for the actual transcoded byte size.
+        // The "int.MaxValue / 2" is used because max byte[] length is a bit less than int.MaxValue
+        // and because we don't want to allocate such a large buffer if not necessary.
+        private const int MaxArrayLengthBeforeCalculatingSize = int.MaxValue / 2 / JsonConstants.MaxExpansionFactorWhileTranscoding;
+
         /// <summary>
         /// Parse the text representing a single JSON value into a <typeparamref name="TValue"/>.
         /// </summary>
@@ -25,10 +32,7 @@ namespace System.Text.Json
         /// </remarks>
         public static TValue Deserialize<TValue>(string json, JsonSerializerOptions options = null)
         {
-            if (json == null)
-                throw new ArgumentNullException(nameof(json));
-
-            return (TValue)ParseCore(json, typeof(TValue), options);
+            return (TValue)Deserialize(json, typeof(TValue), options);
         }
 
         /// <summary>
@@ -52,31 +56,62 @@ namespace System.Text.Json
         public static object Deserialize(string json, Type returnType, JsonSerializerOptions options = null)
         {
             if (json == null)
+            {
                 throw new ArgumentNullException(nameof(json));
+            }
 
             if (returnType == null)
+            {
                 throw new ArgumentNullException(nameof(returnType));
+            }
 
-            return ParseCore(json, returnType, options);
-        }
-
-        private static object ParseCore(string json, Type returnType, JsonSerializerOptions options = null)
-        {
             if (options == null)
             {
                 options = JsonSerializerOptions.s_defaultOptions;
             }
 
-            // todo: use an array pool here for smaller requests to avoid the alloc?
-            byte[] jsonBytes = JsonReaderHelper.s_utf8Encoding.GetBytes(json);
-            var readerState = new JsonReaderState(options.GetReaderOptions());
-            var reader = new Utf8JsonReader(jsonBytes, isFinalBlock: true, readerState);
-            object result = ReadCore(returnType, options, ref reader);
+            object result;
+            byte[] tempArray = null;
 
-            if (reader.BytesConsumed != jsonBytes.Length)
+            int maxBytes;
+
+            // For performance, avoid asking for the actual byte count unless necessary.
+            if (json.Length > MaxArrayLengthBeforeCalculatingSize)
             {
-                ThrowHelper.ThrowJsonException_DeserializeDataRemaining(
-                    jsonBytes.Length, jsonBytes.Length - reader.BytesConsumed);
+                // Get the actual byte count in order to handle large input.
+                maxBytes = JsonReaderHelper.GetUtf8ByteCount(json.AsSpan());
+            }
+            else
+            {
+                maxBytes = json.Length * JsonConstants.MaxExpansionFactorWhileTranscoding;
+            }
+
+            Span<byte> utf8 = maxBytes <= JsonConstants.StackallocThreshold ?
+                stackalloc byte[maxBytes] :
+                (tempArray = ArrayPool<byte>.Shared.Rent(maxBytes));
+
+            try
+            {
+                int actualByteCount = JsonReaderHelper.GetUtf8FromText(json.AsSpan(), utf8);
+                utf8 = utf8.Slice(0, actualByteCount);
+
+                var readerState = new JsonReaderState(options.GetReaderOptions());
+                var reader = new Utf8JsonReader(utf8, isFinalBlock: true, readerState);
+                result = ReadCore(returnType, options, ref reader);
+
+                if (reader.BytesConsumed != actualByteCount)
+                {
+                    ThrowHelper.ThrowJsonException_DeserializeDataRemaining(
+                        actualByteCount, actualByteCount - reader.BytesConsumed);
+                }
+            }
+            finally
+            {
+                if (tempArray != null)
+                {
+                    utf8.Clear();
+                    ArrayPool<byte>.Shared.Return(tempArray);
+                }
             }
 
             return result;
