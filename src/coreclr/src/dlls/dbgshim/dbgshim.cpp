@@ -1364,14 +1364,14 @@ CloseCLREnumeration(
 {
     PUBLIC_CONTRACT;
 
-    if ((pHandleArray + dwArrayLength) != (HANDLE*)pStringArray)
-        return E_INVALIDARG;
-
     // It's possible that EnumerateCLRs found nothing to enumerate, in which case
     // pointers and count are zeroed.  If a debugger calls this function in that
     // case, let's not try to delete [] on NULL.
     if (pHandleArray == NULL)
         return S_OK;
+
+    if ((pHandleArray + dwArrayLength) != (HANDLE*)pStringArray)
+        return E_INVALIDARG;
 
 #ifndef FEATURE_PAL
     for (DWORD i = 0; i < dwArrayLength; i++)

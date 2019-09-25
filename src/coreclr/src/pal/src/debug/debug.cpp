@@ -375,10 +375,10 @@ DebugBreakCommand()
 FAILED:
     if (command_string)
     {
+        fprintf (stderr, "Failed to execute command: '%s'\n", command_string);
         free(command_string);
     }
 
-    fprintf (stderr, "Failed to execute command: '%s'\n", command_string);
     return -1;
 #else // ENABLE_RUN_ON_DEBUG_BREAK
     return 0;
