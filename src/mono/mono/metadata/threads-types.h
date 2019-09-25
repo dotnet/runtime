@@ -386,7 +386,7 @@ MonoException* mono_thread_force_interruption_checkpoint_noraise (void);
 /**
  * mono_thread_interruption_request_flag:
  *
- * Returns the address of a flag that will be non-zero if an interruption has
+ * A flag that will be non-zero if an interruption has
  * been requested for a thread. The thread to interrupt may not be the current
  * thread, so an additional call to mono_thread_interruption_requested () or
  * mono_thread_interruption_checkpoint () is always needed if the flag is not
