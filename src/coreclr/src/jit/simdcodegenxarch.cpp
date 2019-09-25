@@ -850,7 +850,7 @@ void CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
             else if (op1->OperIsLocalAddr())
             {
                 unsigned offset = (op1->OperGet() == GT_LCL_FLD_ADDR) ? op1->gtLclFld.gtLclOffs : 0;
-                GetEmitter()->emitIns_R_S(ins, emitTypeSize(targetType), targetReg, op1->gtLclVarCommon.gtLclNum,
+                GetEmitter()->emitIns_R_S(ins, emitTypeSize(targetType), targetReg, op1->gtLclVarCommon.GetLclNum(),
                                           offset);
             }
             else
@@ -2454,7 +2454,7 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
             // There are three parts to the total offset here:
             // {offset of local} + {offset of SIMD Vector field (lclFld only)} + {offset of element within SIMD vector}.
             bool     isEBPbased;
-            unsigned varNum = op1->gtLclVarCommon.gtLclNum;
+            unsigned varNum = op1->gtLclVarCommon.GetLclNum();
             offset += compiler->lvaFrameAddress(varNum, &isEBPbased);
             if (op1->OperGet() == GT_LCL_FLD)
             {
@@ -2911,7 +2911,7 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
     assert((treeNode->OperGet() == GT_STORE_LCL_FLD) || (treeNode->OperGet() == GT_STORE_LCL_VAR));
 
     unsigned offs   = 0;
-    unsigned varNum = treeNode->gtLclVarCommon.gtLclNum;
+    unsigned varNum = treeNode->gtLclVarCommon.GetLclNum();
     assert(varNum < compiler->lvaCount);
 
     if (treeNode->OperGet() == GT_STORE_LCL_FLD)
@@ -2953,7 +2953,7 @@ void CodeGen::genLoadLclTypeSIMD12(GenTree* treeNode)
 
     regNumber targetReg = treeNode->gtRegNum;
     unsigned  offs      = 0;
-    unsigned  varNum    = treeNode->gtLclVarCommon.gtLclNum;
+    unsigned  varNum    = treeNode->gtLclVarCommon.GetLclNum();
     assert(varNum < compiler->lvaCount);
 
     if (treeNode->OperGet() == GT_LCL_FLD)
@@ -3071,7 +3071,7 @@ void CodeGen::genSIMDIntrinsicUpperSave(GenTreeSIMD* simdNode)
     else
     {
         // The localVar must have a stack home.
-        unsigned   varNum = op1->AsLclVarCommon()->gtLclNum;
+        unsigned   varNum = op1->AsLclVarCommon()->GetLclNum();
         LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
         assert(varDsc->lvOnFrame);
         // We want to store this to the upper 16 bytes of this localVar's home.
@@ -3112,7 +3112,7 @@ void CodeGen::genSIMDIntrinsicUpperRestore(GenTreeSIMD* simdNode)
     else
     {
         // The localVar must have a stack home.
-        unsigned   varNum = op1->AsLclVarCommon()->gtLclNum;
+        unsigned   varNum = op1->AsLclVarCommon()->GetLclNum();
         LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
         assert(varDsc->lvOnFrame);
         // We will load this from the upper 16 bytes of this localVar's home.

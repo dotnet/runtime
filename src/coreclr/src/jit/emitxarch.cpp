@@ -3369,7 +3369,8 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
 
                 case GT_LCL_VAR:
                 {
-                    assert(memOp->IsRegOptional() || !emitComp->lvaTable[memOp->gtLclVar.gtLclNum].lvIsRegCandidate());
+                    assert(memOp->IsRegOptional() ||
+                           !emitComp->lvaTable[memOp->gtLclVar.GetLclNum()].lvIsRegCandidate());
                     varNum = memOp->AsLclVar()->GetLclNum();
                     offset = 0;
                     break;

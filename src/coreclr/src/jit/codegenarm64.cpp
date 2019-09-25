@@ -1828,7 +1828,7 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
     var_types targetType = tree->TypeGet();
     emitter*  emit       = GetEmitter();
 
-    unsigned varNum = tree->gtLclNum;
+    unsigned varNum = tree->GetLclNum();
     assert(varNum < compiler->lvaCount);
     LclVarDsc* varDsc         = &(compiler->lvaTable[varNum]);
     bool       isRegCandidate = varDsc->lvIsRegCandidate();
@@ -1880,7 +1880,7 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     // We must have a stack store with GT_STORE_LCL_FLD
     noway_assert(targetReg == REG_NA);
 
-    unsigned varNum = tree->gtLclNum;
+    unsigned varNum = tree->GetLclNum();
     assert(varNum < compiler->lvaCount);
     LclVarDsc* varDsc = &(compiler->lvaTable[varNum]);
 
@@ -1926,7 +1926,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
     regNumber targetReg  = tree->gtRegNum;
     emitter*  emit       = GetEmitter();
 
-    unsigned varNum = tree->gtLclNum;
+    unsigned varNum = tree->GetLclNum();
     assert(varNum < compiler->lvaCount);
     LclVarDsc* varDsc = &(compiler->lvaTable[varNum]);
 
@@ -2031,12 +2031,12 @@ void CodeGen::genSimpleReturn(GenTree* treeNode)
         if (op1->OperGet() == GT_LCL_VAR)
         {
             GenTreeLclVarCommon* lcl            = op1->AsLclVarCommon();
-            bool                 isRegCandidate = compiler->lvaTable[lcl->gtLclNum].lvIsRegCandidate();
+            bool                 isRegCandidate = compiler->lvaTable[lcl->GetLclNum()].lvIsRegCandidate();
             if (isRegCandidate && ((op1->gtFlags & GTF_SPILLED) == 0))
             {
                 // We may need to generate a zero-extending mov instruction to load the value from this GT_LCL_VAR
 
-                unsigned   lclNum  = lcl->gtLclNum;
+                unsigned   lclNum  = lcl->GetLclNum();
                 LclVarDsc* varDsc  = &(compiler->lvaTable[lclNum]);
                 var_types  op1Type = genActualType(op1->TypeGet());
                 var_types  lclType = genActualType(varDsc->TypeGet());
@@ -2571,7 +2571,7 @@ void CodeGen::genCodeForLoadPairOffset(regNumber dst, regNumber dst2, GenTree* b
         if (base->gtOper == GT_LCL_FLD_ADDR)
             offset += base->gtLclFld.gtLclOffs;
 
-        emit->emitIns_R_R_S_S(INS_ldp, EA_8BYTE, EA_8BYTE, dst, dst2, base->gtLclVarCommon.gtLclNum, offset);
+        emit->emitIns_R_R_S_S(INS_ldp, EA_8BYTE, EA_8BYTE, dst, dst2, base->gtLclVarCommon.GetLclNum(), offset);
     }
     else
     {
@@ -2591,7 +2591,7 @@ void CodeGen::genCodeForStorePairOffset(regNumber src, regNumber src2, GenTree* 
         if (base->gtOper == GT_LCL_FLD_ADDR)
             offset += base->gtLclFld.gtLclOffs;
 
-        emit->emitIns_S_S_R_R(INS_stp, EA_8BYTE, EA_8BYTE, src, src2, base->gtLclVarCommon.gtLclNum, offset);
+        emit->emitIns_S_S_R_R(INS_stp, EA_8BYTE, EA_8BYTE, src, src2, base->gtLclVarCommon.GetLclNum(), offset);
     }
     else
     {
@@ -3301,10 +3301,10 @@ void CodeGen::genCodeForSwap(GenTreeOp* tree)
     assert(genIsRegCandidateLocal(tree->gtOp1) && genIsRegCandidateLocal(tree->gtOp2));
 
     GenTreeLclVarCommon* lcl1    = tree->gtOp1->AsLclVarCommon();
-    LclVarDsc*           varDsc1 = &(compiler->lvaTable[lcl1->gtLclNum]);
+    LclVarDsc*           varDsc1 = &(compiler->lvaTable[lcl1->GetLclNum()]);
     var_types            type1   = varDsc1->TypeGet();
     GenTreeLclVarCommon* lcl2    = tree->gtOp2->AsLclVarCommon();
-    LclVarDsc*           varDsc2 = &(compiler->lvaTable[lcl2->gtLclNum]);
+    LclVarDsc*           varDsc2 = &(compiler->lvaTable[lcl2->GetLclNum()]);
     var_types            type2   = varDsc2->TypeGet();
 
     // We must have both int or both fp regs
@@ -4712,7 +4712,7 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
 
                 if (op1->OperIsLocal())
                 {
-                    unsigned varNum = op1->gtLclVarCommon.gtLclNum;
+                    unsigned varNum = op1->gtLclVarCommon.GetLclNum();
 
                     GetEmitter()->emitIns_R_S(ins, emitActualTypeSize(baseType), targetReg, varNum, offset);
                 }
@@ -4771,7 +4771,7 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
             assert(!op1->isUsedFromReg());
             if (op1->OperIsLocal())
             {
-                unsigned varNum = op1->gtLclVarCommon.gtLclNum;
+                unsigned varNum = op1->gtLclVarCommon.GetLclNum();
 
                 baseReg = simdNode->ExtractTempReg();
 
@@ -4926,7 +4926,7 @@ void CodeGen::genSIMDIntrinsicUpperSave(GenTreeSIMD* simdNode)
     {
         // This is not a normal spill; we'll spill it to the lclVar location.
         // The localVar must have a stack home.
-        unsigned   varNum = op1->AsLclVarCommon()->gtLclNum;
+        unsigned   varNum = op1->AsLclVarCommon()->GetLclNum();
         LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
         assert(varDsc->lvOnFrame);
         // We want to store this to the upper 8 bytes of this localVar's home.
@@ -4967,7 +4967,7 @@ void CodeGen::genSIMDIntrinsicUpperRestore(GenTreeSIMD* simdNode)
     assert(emitTypeSize(op1->TypeGet()) == 16);
     regNumber srcReg    = simdNode->gtRegNum;
     regNumber lclVarReg = genConsumeReg(op1);
-    unsigned  varNum    = op1->AsLclVarCommon()->gtLclNum;
+    unsigned  varNum    = op1->AsLclVarCommon()->GetLclNum();
     assert(lclVarReg != REG_NA);
     assert(srcReg != REG_NA);
     if (simdNode->gtFlags & GTF_SPILLED)
@@ -5083,7 +5083,7 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
     assert((treeNode->OperGet() == GT_STORE_LCL_FLD) || (treeNode->OperGet() == GT_STORE_LCL_VAR));
 
     unsigned offs   = 0;
-    unsigned varNum = treeNode->gtLclVarCommon.gtLclNum;
+    unsigned varNum = treeNode->gtLclVarCommon.GetLclNum();
     assert(varNum < compiler->lvaCount);
 
     if (treeNode->OperGet() == GT_STORE_LCL_FLD)

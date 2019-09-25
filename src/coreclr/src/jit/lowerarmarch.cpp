@@ -157,7 +157,7 @@ void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
     {
         GenTreeIntCon* con    = op1->AsIntCon();
         ssize_t        ival   = con->gtIconVal;
-        unsigned       varNum = storeLoc->gtLclNum;
+        unsigned       varNum = storeLoc->GetLclNum();
         LclVarDsc*     varDsc = comp->lvaTable + varNum;
 
         if (varDsc->lvIsSIMDType())
@@ -202,7 +202,7 @@ void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
     if (storeLoc->OperIs(GT_STORE_LCL_FLD))
     {
         // We should only encounter this for lclVars that are lvDoNotEnregister.
-        verifyLclFldDoNotEnregister(storeLoc->gtLclNum);
+        verifyLclFldDoNotEnregister(storeLoc->GetLclNum());
     }
     ContainCheckStoreLoc(storeLoc);
 }

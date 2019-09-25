@@ -1016,9 +1016,9 @@ private:
     {
         if (tree->IsLocal())
         {
-            unsigned int lclNum = tree->gtLclVarCommon.gtLclNum;
+            unsigned int lclNum = tree->gtLclVarCommon.GetLclNum();
             assert(lclNum < compiler->lvaCount);
-            LclVarDsc* varDsc = compiler->lvaTable + tree->gtLclVarCommon.gtLclNum;
+            LclVarDsc* varDsc = compiler->lvaTable + tree->gtLclVarCommon.GetLclNum();
 
             return isCandidateVar(varDsc);
         }
@@ -1114,7 +1114,7 @@ private:
 
     Interval* getIntervalForLocalVarNode(GenTreeLclVarCommon* tree)
     {
-        LclVarDsc* varDsc = &compiler->lvaTable[tree->gtLclNum];
+        LclVarDsc* varDsc = &compiler->lvaTable[tree->GetLclNum()];
         assert(varDsc->lvTracked);
         return getIntervalForLocalVar(varDsc->lvVarIndex);
     }
@@ -1593,7 +1593,7 @@ private:
         }
         // If 'fromTree' was a lclVar, it must be contained and 'toTree' must match.
         if (!fromTree->isContained() || (toTree == nullptr) || !toTree->OperIs(GT_LCL_VAR) ||
-            (toTree->AsLclVarCommon()->gtLclNum != toTree->AsLclVarCommon()->gtLclNum))
+            (toTree->AsLclVarCommon()->GetLclNum() != toTree->AsLclVarCommon()->GetLclNum()))
         {
             assert(!"Unmatched RMW indirections");
             return;
