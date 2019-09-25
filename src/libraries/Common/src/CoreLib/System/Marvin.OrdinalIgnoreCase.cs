@@ -67,7 +67,7 @@ namespace System
             return (int)(p1 ^ p0);
 
         NotAscii:
-            Debug.Assert(0 <= ucount && ucount <= Int32.MaxValue); // this should fit into a signed int
+            Debug.Assert(ucount <= int.MaxValue); // this should fit into a signed int
             return ComputeHash32OrdinalIgnoreCaseSlow(ref Unsafe.AddByteOffset(ref data, byteOffset), (int)ucount, p0, p1);
         }
 

@@ -409,7 +409,7 @@ namespace System.Threading
         {
             Debug.Assert(IsThreadOwnerTrackingEnabled);
 
-            int lockUnowned = 0;
+            const int LockUnowned = 0;
             // We are using thread IDs to mark ownership. Snap the thread ID and check for recursion.
             // We also must or the ID enablement bit, to ensure we propagate when we CAS it in.
             int newOwner = Environment.CurrentManagedThreadId;
@@ -419,11 +419,10 @@ namespace System.Threading
                 throw new LockRecursionException(SR.SpinLock_TryEnter_LockRecursionException);
             }
 
-
             SpinWait spinner = new SpinWait();
 
             // Loop until the lock has been successfully acquired or, if specified, the timeout expires.
-            do
+            while (true)
             {
                 // We failed to get the lock, either from the fast route or the last iteration
                 // and the timeout hasn't expired; spin once and try again.
@@ -431,9 +430,9 @@ namespace System.Threading
 
                 // Test before trying to CAS, to avoid acquiring the line exclusively unnecessarily.
 
-                if (_owner == lockUnowned)
+                if (_owner == LockUnowned)
                 {
-                    if (CompareExchange(ref _owner, newOwner, lockUnowned, ref lockTaken) == lockUnowned)
+                    if (CompareExchange(ref _owner, newOwner, LockUnowned, ref lockTaken) == LockUnowned)
                     {
                         return;
                     }
@@ -445,7 +444,7 @@ namespace System.Threading
                 {
                     return;
                 }
-            } while (true);
+            }
         }
 
         /// <summary>
@@ -575,7 +574,7 @@ namespace System.Threading
                 {
                     throw new InvalidOperationException(SR.SpinLock_IsHeldByCurrentThread);
                 }
-                return ((_owner & (~LOCK_ID_DISABLE_MASK)) == Environment.CurrentManagedThreadId);
+                return (_owner & (~LOCK_ID_DISABLE_MASK)) == Environment.CurrentManagedThreadId;
             }
         }
 
@@ -636,7 +635,6 @@ namespace System.Threading
                     }
                 }
             }
-
 
             /// <summary>
             ///  Gets whether the lock is currently held by any thread or not.

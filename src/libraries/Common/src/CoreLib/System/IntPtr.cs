@@ -84,7 +84,7 @@ namespace System
         {
 #if BIT64
             long l = (long)_value;
-            return (unchecked((int)l) ^ (int)(l >> 32));
+            return unchecked((int)l) ^ (int)(l >> 32);
 #else
             return unchecked((int)_value);
 #endif

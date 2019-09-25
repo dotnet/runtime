@@ -73,7 +73,7 @@ namespace System
         {
             if (obj is UIntPtr)
             {
-                return (_value == ((UIntPtr)obj)._value);
+                return _value == ((UIntPtr)obj)._value;
             }
             return false;
         }
@@ -85,7 +85,7 @@ namespace System
         {
 #if BIT64
             ulong l = (ulong)_value;
-            return (unchecked((int)l) ^ (int)(l >> 32));
+            return unchecked((int)l) ^ (int)(l >> 32);
 #else
             return unchecked((int)_value);
 #endif
@@ -134,7 +134,6 @@ namespace System
 #else
             (uint)value._value;
 #endif
-
 
         [Intrinsic]
         [NonVersionable]

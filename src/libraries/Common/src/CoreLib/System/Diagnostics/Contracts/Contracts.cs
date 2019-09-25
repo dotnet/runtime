@@ -602,9 +602,6 @@ namespace System.Diagnostics.Contracts
 
         #endregion Quantifiers
 
-        #region Pointers
-        #endregion
-
         #region Misc.
 
         /// <summary>

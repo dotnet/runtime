@@ -20,7 +20,7 @@ namespace System.Runtime.CompilerServices
             uint low
         )
         {
-            _dec = new decimal((int)low, (int)mid, (int)hi, (sign != 0), scale);
+            _dec = new decimal((int)low, (int)mid, (int)hi, sign != 0, scale);
         }
 
         public DecimalConstantAttribute(
@@ -31,7 +31,7 @@ namespace System.Runtime.CompilerServices
             int low
         )
         {
-            _dec = new decimal(low, mid, hi, (sign != 0), scale);
+            _dec = new decimal(low, mid, hi, sign != 0, scale);
         }
 
         public decimal Value => _dec;

@@ -371,7 +371,7 @@ namespace System.Runtime.CompilerServices
         private Task<TResult> InitializeTaskAsPromise()
         {
             Debug.Assert(m_task == null);
-            return (m_task = new Task<TResult>());
+            return m_task = new Task<TResult>();
         }
 
         /// <summary>
@@ -391,9 +391,9 @@ namespace System.Runtime.CompilerServices
             // generating this extra code until a better solution is implemented.
             return (m_task = new AsyncStateMachineBox<IAsyncStateMachine>());
 #else
-            return (m_task = AsyncMethodBuilderCore.TrackAsyncMethodCompletion ?
+            return m_task = AsyncMethodBuilderCore.TrackAsyncMethodCompletion ?
                 CreateDebugFinalizableAsyncStateMachineBox<IAsyncStateMachine>() :
-                new AsyncStateMachineBox<IAsyncStateMachine>());
+                new AsyncStateMachineBox<IAsyncStateMachine>();
 #endif
         }
 

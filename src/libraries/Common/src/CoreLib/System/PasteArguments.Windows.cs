@@ -60,6 +60,5 @@ namespace System
 
             return stringBuilder.ToString();
         }
-
     }
 }

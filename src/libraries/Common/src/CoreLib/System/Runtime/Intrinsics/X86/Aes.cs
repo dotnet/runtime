@@ -52,7 +52,5 @@ namespace System.Runtime.Intrinsics.X86
         ///   AESKEYGENASSIST xmm, xmm/m128, imm8
         /// </summary>
         public static Vector128<byte> KeygenAssist(Vector128<byte> value, byte control) => KeygenAssist(value, control);
-
     }
-
 }

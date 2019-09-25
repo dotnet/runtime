@@ -445,13 +445,13 @@ namespace System.Runtime.CompilerServices
                 Debug.Assert(parent != null);
                 Debug.Assert(IsPowerOfTwo(InitialCapacity));
 
-                int size = InitialCapacity;
-                _buckets = new int[size];
+                const int Size = InitialCapacity;
+                _buckets = new int[Size];
                 for (int i = 0; i < _buckets.Length; i++)
                 {
                     _buckets[i] = -1;
                 }
-                _entries = new Entry[size];
+                _entries = new Entry[Size];
 
                 // Only store the parent after all of the allocations have happened successfully.
                 // Otherwise, as part of growing or clearing the container, we could end up allocating

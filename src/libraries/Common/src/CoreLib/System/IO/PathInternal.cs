@@ -73,7 +73,7 @@ namespace System.IO
                 char* rightEnd = r + second.Length;
 
                 while (l != leftEnd && r != rightEnd
-                    && (*l == *r || (ignoreCase && char.ToUpperInvariant((*l)) == char.ToUpperInvariant((*r)))))
+                    && (*l == *r || (ignoreCase && char.ToUpperInvariant(*l) == char.ToUpperInvariant(*r))))
                 {
                     commonChars++;
                     l++;

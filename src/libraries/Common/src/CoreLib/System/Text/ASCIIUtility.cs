@@ -35,7 +35,7 @@ namespace System.Text
         {
             // If the high bit of any byte is set, that byte is non-ASCII.
 
-            return ((value & UInt64HighBitsOnlyMask) == 0);
+            return (value & UInt64HighBitsOnlyMask) == 0;
         }
 
         /// <summary>
@@ -44,7 +44,7 @@ namespace System.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool AllCharsInUInt32AreAscii(uint value)
         {
-            return ((value & ~0x007F007Fu) == 0);
+            return (value & ~0x007F007Fu) == 0;
         }
 
         /// <summary>
@@ -53,7 +53,7 @@ namespace System.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool AllCharsInUInt64AreAscii(ulong value)
         {
-            return ((value & ~0x007F007F_007F007Ful) == 0);
+            return (value & ~0x007F007F_007F007Ful) == 0;
         }
 
         /// <summary>
@@ -1575,7 +1575,7 @@ namespace System.Text
                 }
 
                 pUtf16Buffer[currentOffset] = (char)asciiData;
-                currentOffset += 1;
+                currentOffset++;
             }
 
         Finish:
@@ -1591,7 +1591,7 @@ namespace System.Text
             while (((byte)asciiData & 0x80) == 0)
             {
                 pUtf16Buffer[currentOffset] = (char)(byte)asciiData;
-                currentOffset += 1;
+                currentOffset++;
                 asciiData >>= 8;
             }
 

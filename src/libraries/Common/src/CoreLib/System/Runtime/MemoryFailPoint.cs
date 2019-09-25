@@ -195,7 +195,7 @@ namespace System.Runtime
 
                 // Ensure our cached amount of free address space is not stale.
                 long now = Environment.TickCount;  // Handle wraparound.
-                if ((now > LastTimeCheckingAddressSpace + CheckThreshold || now < LastTimeCheckingAddressSpace) ||
+                if (now > LastTimeCheckingAddressSpace + CheckThreshold || now < LastTimeCheckingAddressSpace ||
                     LastKnownFreeAddressSpace < (long)segmentSize)
                 {
                     CheckForFreeAddressSpace(segmentSize, false);

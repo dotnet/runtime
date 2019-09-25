@@ -10,7 +10,7 @@ namespace System.Runtime.InteropServices
     // from other languages. This is particularly useful for
     // methods defined in COM interop interfaces.
     //
-    [AttributeUsageAttribute(AttributeTargets.Parameter)]
+    [AttributeUsage(AttributeTargets.Parameter)]
     public sealed class DefaultParameterValueAttribute : Attribute
     {
         public DefaultParameterValueAttribute(object? value)

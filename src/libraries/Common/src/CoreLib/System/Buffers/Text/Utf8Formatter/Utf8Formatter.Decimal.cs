@@ -80,7 +80,6 @@ namespace System.Buffers.Text
                                     Debug.Assert(destination[i] == buffer2[i]);
                                 }
                             }
-
                         }
 #endif // DEBUG
                         return success;

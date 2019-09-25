@@ -53,6 +53,5 @@ namespace System.Buffers
 
             _pointer = null;
         }
-
     }
 }

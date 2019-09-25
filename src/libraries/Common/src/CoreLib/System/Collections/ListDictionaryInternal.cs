@@ -57,7 +57,6 @@ namespace System.Collections
                     throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
                 }
 
-
                 version++;
                 DictionaryNode? last = null;
                 DictionaryNode? node;
@@ -111,7 +110,6 @@ namespace System.Collections
             {
                 throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
             }
-
 
             version++;
             DictionaryNode? last = null;
@@ -238,7 +236,6 @@ namespace System.Collections
             private readonly int version;
             private bool start;
 
-
             public NodeEnumerator(ListDictionaryInternal list)
             {
                 this.list = list;
@@ -303,7 +300,7 @@ namespace System.Collections
                         current = current.next;
                     }
                 }
-                return (current != null);
+                return current != null;
             }
 
             public void Reset()
@@ -316,7 +313,6 @@ namespace System.Collections
                 current = null;
             }
         }
-
 
         private class NodeKeyValueCollection : ICollection
         {
@@ -368,7 +364,6 @@ namespace System.Collections
                 return new NodeKeyValueEnumerator(list, isKeys);
             }
 
-
             private class NodeKeyValueEnumerator : IEnumerator
             {
                 private readonly ListDictionaryInternal list;
@@ -416,7 +411,7 @@ namespace System.Collections
                             current = current.next;
                         }
                     }
-                    return (current != null);
+                    return current != null;
                 }
 
                 public void Reset()

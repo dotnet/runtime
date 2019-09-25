@@ -290,20 +290,16 @@ namespace System.Resources
                 args[1] = assembly;
                 try
                 {
-                    ResourceSet? rs = null;
                     // Add in a check for a constructor taking in an assembly first.
                     try
                     {
-                        rs = (ResourceSet)Activator.CreateInstance(_mediator.UserResourceSet, args)!;
-                        return rs;
+                        return (ResourceSet)Activator.CreateInstance(_mediator.UserResourceSet, args)!;
                     }
                     catch (MissingMethodException) { }
 
                     args = new object[1];
                     args[0] = store;
-                    rs = (ResourceSet)Activator.CreateInstance(_mediator.UserResourceSet, args)!;
-
-                    return rs;
+                    return (ResourceSet)Activator.CreateInstance(_mediator.UserResourceSet, args)!;
                 }
                 catch (MissingMethodException e)
                 {
@@ -317,13 +313,8 @@ namespace System.Resources
             Debug.Assert(satellite != null, "satellite shouldn't be null; check caller");
             Debug.Assert(fileName != null, "fileName shouldn't be null; check caller");
 
-            Stream? stream = satellite.GetManifestResourceStream(_mediator.LocationInfo!, fileName);
-            if (stream == null)
-            {
-                stream = CaseInsensitiveManifestResourceStreamLookup(satellite, fileName);
-            }
-
-            return stream;
+            return satellite.GetManifestResourceStream(_mediator.LocationInfo!, fileName) ??
+                CaseInsensitiveManifestResourceStreamLookup(satellite, fileName);
         }
 
         // Looks up a .resources file in the assembly manifest using
@@ -492,8 +483,8 @@ namespace System.Resources
                 Debug.Fail("Couldn't get " + System.CoreLib.Name + ResourceManager.ResFileExtension + " from " + System.CoreLib.Name + "'s assembly" + Environment.NewLine + Environment.NewLine + "Are you building the runtime on your machine?  Chances are the BCL directory didn't build correctly.  Type 'build -c' in the BCL directory.  If you get build errors, look at buildd.log.  If you then can't figure out what's wrong (and you aren't changing the assembly-related metadata code), ask a BCL dev.\n\nIf you did NOT build the runtime, you shouldn't be seeing this and you've found a bug.");
 
                 // We cannot continue further - simply FailFast.
-                string mesgFailFast = System.CoreLib.Name + ResourceManager.ResFileExtension + " couldn't be found!  Large parts of the BCL won't work!";
-                System.Environment.FailFast(mesgFailFast);
+                const string MesgFailFast = System.CoreLib.Name + ResourceManager.ResFileExtension + " couldn't be found!  Large parts of the BCL won't work!";
+                System.Environment.FailFast(MesgFailFast);
             }
             // We really don't think this should happen - we always
             // expect the neutral locale's resources to be present.

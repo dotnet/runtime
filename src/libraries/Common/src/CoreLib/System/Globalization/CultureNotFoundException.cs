@@ -71,7 +71,7 @@ namespace System.Globalization
             info.AddValue("InvalidCultureName", _invalidCultureName, typeof(string));
         }
 
-        public virtual Nullable<int> InvalidCultureId => _invalidCultureId;
+        public virtual int? InvalidCultureId => _invalidCultureId;
 
         public virtual string? InvalidCultureName => _invalidCultureName;
 

@@ -142,7 +142,7 @@ namespace System.Text.Unicode
                     // logical and arithmetic operations, and use only pdep for the expensive step of exploding the scalar across
                     // all four output bytes.
 
-                    uint unmaskedScalar = (value << 10) + (value >> 16) + ((0x40u) << 10) /* uuuuu = wwww + 1 */ - 0xDC00u /* remove low surrogate marker */;
+                    uint unmaskedScalar = (value << 10) + (value >> 16) + (0x40u << 10) /* uuuuu = wwww + 1 */ - 0xDC00u /* remove low surrogate marker */;
 
                     // Now, unmaskedScalar = [ xxxxxx11 011uuuuu zzzzyyyy yyxxxxxx ]. There's a bit of unneeded junk at the beginning
                     // that should normally be masked out via an and, but we'll just direct pdep to ignore it.
@@ -164,7 +164,7 @@ namespace System.Text.Unicode
                     uint tempD = (value & 0x03u) << 20; // = [ 00000000 00yy0000 00000000 00000000 ]
                     tempD |= 0x8080_80F0u;
 
-                    return (tempD | tempA | tempC); // = [ 10xxxxxx 10yyyyyy 10uuzzzz 11110uuu ]
+                    return tempD | tempA | tempC; // = [ 10xxxxxx 10yyyyyy 10uuzzzz 11110uuu ]
                 }
             }
             else
@@ -184,7 +184,7 @@ namespace System.Text.Unicode
                 tempD |= tempC;
 
                 uint tempE = (value & 0x3Fu) + 0xF080_8080u; // = [ 11110000 10000000 10000000 10xxxxxx ]
-                return (tempE | tempB | tempD); // = [ 11110uuu 10uuzzzz 10yyyyyy 10xxxxxx ]
+                return tempE | tempB | tempD; // = [ 11110uuu 10uuzzzz 10yyyyyy 10xxxxxx ]
             }
         }
 
@@ -442,7 +442,7 @@ namespace System.Text.Unicode
             // The below check takes advantage of the two's complement representation of negative numbers.
             // [ 0b1000_0000, 0b1011_1111 ] is [ -127 (sbyte.MinValue), -65 ]
 
-            return ((sbyte)value < -64);
+            return (sbyte)value < -64;
         }
 
         /// <summary>
@@ -827,7 +827,6 @@ namespace System.Text.Unicode
                 outputBuffer = (byte)((value >>= 6) | 0xE0u);
             }
         }
-
 
         /// <summary>
         /// Given a DWORD which represents a buffer of 2 packed UTF-16 values in machine endianess,

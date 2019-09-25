@@ -309,7 +309,7 @@ namespace System.Globalization
         public override bool IsLeapYear(int year, int era)
         {
             CheckYearEraRange(year, era);
-            return (year % 4 == 0);
+            return year % 4 == 0;
         }
 
         public override DateTime ToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int era)

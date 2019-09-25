@@ -679,7 +679,7 @@ namespace System.Threading
 
             Debug.Assert((newBits | updateBitsMask) == updateBitsMask, "newBits do not fall within the updateBitsMask.");
 
-            do
+            while (true)
             {
                 int oldState = m_combinedState; // cache the old value for testing in CAS
 
@@ -693,7 +693,7 @@ namespace System.Threading
                 }
 
                 sw.SpinOnce(sleep1Threshold: -1);
-            } while (true);
+            }
         }
 
         /// <summary>

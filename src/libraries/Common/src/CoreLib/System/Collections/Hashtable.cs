@@ -220,7 +220,6 @@ namespace System.Collections
             }
         }
 
-
         protected IEqualityComparer? EqualityComparer => _keycomparer;
 
         // Note: this constructor is a bogus constructor that does nothing
@@ -345,7 +344,7 @@ namespace System.Collections
 
         [Obsolete("Please use Hashtable(IDictionary, float, IEqualityComparer) instead.")]
         public Hashtable(IDictionary d, float loadFactor, IHashCodeProvider? hcp, IComparer? comparer)
-            : this((d != null ? d.Count : 0), loadFactor, hcp, comparer)
+            : this(d != null ? d.Count : 0, loadFactor, hcp, comparer)
         {
             if (d == null)
                 throw new ArgumentNullException(nameof(d), SR.ArgumentNull_Dictionary);
@@ -356,7 +355,7 @@ namespace System.Collections
         }
 
         public Hashtable(IDictionary d, float loadFactor, IEqualityComparer? equalityComparer)
-            : this((d != null ? d.Count : 0), loadFactor, equalityComparer)
+            : this(d != null ? d.Count : 0, loadFactor, equalityComparer)
         {
             if (d == null)
                 throw new ArgumentNullException(nameof(d), SR.ArgumentNull_Dictionary);
@@ -505,8 +504,6 @@ namespace System.Collections
             return false;
         }
 
-
-
         // Checks if this hashtable contains an entry with the given value. The
         // values of the entries of the hashtable are compared to the given value
         // using the Object.Equals method. This method performs a linear
@@ -611,7 +608,6 @@ namespace System.Collections
             return array;
         }
 
-
         // Copies the values of this hashtable to a given array starting at a given
         // index. This method is used by the implementation of the CopyTo method in
         // the ValueCollection class.
@@ -645,7 +641,6 @@ namespace System.Collections
 
                 uint seed;
                 uint incr;
-
 
                 // Take a snapshot of buckets, in case another thread does a resize
                 bucket[] lbuckets = _buckets;
@@ -967,7 +962,7 @@ namespace System.Collections
             uint seed = (uint)hashcode;
             uint incr = unchecked((uint)(1 + ((seed * HashHelpers.HashPrime) % ((uint)newBuckets.Length - 1))));
             int bucketNumber = (int)(seed % (uint)newBuckets.Length);
-            do
+            while (true)
             {
                 if ((newBuckets[bucketNumber].key == null) || (newBuckets[bucketNumber].key == _buckets))
                 {
@@ -983,7 +978,7 @@ namespace System.Collections
                     _occupancy++;
                 }
                 bucketNumber = (int)(((long)bucketNumber + incr) % (uint)newBuckets.Length);
-            } while (true);
+            }
         }
 
         // Removes an entry from this hashtable. If an entry with the specified
@@ -1428,7 +1423,6 @@ namespace System.Collections
             }
         }
 
-
         // Implements an enumerator for a hashtable. The enumerator uses the
         // internal version number of the hashtable to ensure that no modifications
         // are made to the hashtable while an enumeration is in progress.
@@ -1461,7 +1455,7 @@ namespace System.Collections
             {
                 get
                 {
-                    if (_current == false)
+                    if (!_current)
                         throw new InvalidOperationException(SR.InvalidOperation_EnumNotStarted);
                     return _currentKey!;
                 }
@@ -1491,18 +1485,17 @@ namespace System.Collections
             {
                 get
                 {
-                    if (_current == false)
+                    if (!_current)
                         throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
                     return new DictionaryEntry(_currentKey!, _currentValue);
                 }
             }
 
-
             public virtual object? Current
             {
                 get
                 {
-                    if (_current == false)
+                    if (!_current)
                         throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
 
                     if (_getObjectRetType == Keys)
@@ -1518,7 +1511,7 @@ namespace System.Collections
             {
                 get
                 {
-                    if (_current == false)
+                    if (!_current)
                         throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
                     return _currentValue;
                 }

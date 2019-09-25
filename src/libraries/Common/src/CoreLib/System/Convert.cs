@@ -389,7 +389,6 @@ namespace System
             return value == null ? false : ((IConvertible)value).ToBoolean(provider);
         }
 
-
         public static bool ToBoolean(bool value)
         {
             return value;
@@ -412,7 +411,6 @@ namespace System
         {
             return value != 0;
         }
-
 
         public static bool ToBoolean(short value)
         {
@@ -485,7 +483,6 @@ namespace System
         // public static bool ToBoolean(TimeSpan value)
 
         // Conversions to Char
-
 
         public static char ToChar(object? value)
         {
@@ -602,7 +599,6 @@ namespace System
         {
             return ((IConvertible)value).ToChar(null);
         }
-
 
         // Disallowed conversions to Char
         // public static char ToChar(TimeSpan value)
@@ -838,7 +834,6 @@ namespace System
             return ((IConvertible)value).ToByte(null);
         }
 
-
         // Disallowed conversions to Byte
         // public static byte ToByte(TimeSpan value)
 
@@ -948,7 +943,6 @@ namespace System
             return ((IConvertible)value).ToInt16(null);
         }
 
-
         // Disallowed conversions to Int16
         // public static short ToInt16(TimeSpan value)
 
@@ -965,7 +959,6 @@ namespace System
         {
             return value == null ? (ushort)0 : ((IConvertible)value).ToUInt16(provider);
         }
-
 
         [CLSCompliant(false)]
         public static ushort ToUInt16(bool value)
@@ -1018,7 +1011,6 @@ namespace System
             if (value > ushort.MaxValue) ThrowUInt16OverflowException();
             return (ushort)value;
         }
-
 
         [CLSCompliant(false)]
         public static ushort ToUInt16(long value)
@@ -1088,7 +1080,6 @@ namespace System
         {
             return value == null ? 0 : ((IConvertible)value).ToInt32(provider);
         }
-
 
         public static int ToInt32(bool value)
         {
@@ -1201,7 +1192,6 @@ namespace System
             return ((IConvertible)value).ToInt32(null);
         }
 
-
         // Disallowed conversions to Int32
         // public static int ToInt32(TimeSpan value)
 
@@ -1218,7 +1208,6 @@ namespace System
         {
             return value == null ? 0 : ((IConvertible)value).ToUInt32(provider);
         }
-
 
         [CLSCompliant(false)]
         public static uint ToUInt32(bool value)
@@ -1347,7 +1336,6 @@ namespace System
             return value == null ? 0 : ((IConvertible)value).ToInt64(provider);
         }
 
-
         public static long ToInt64(bool value)
         {
             return value ? bool.True : bool.False;
@@ -1402,7 +1390,6 @@ namespace System
         {
             return value;
         }
-
 
         public static long ToInt64(float value)
         {
@@ -1466,7 +1453,6 @@ namespace System
         {
             return value;
         }
-
 
         [CLSCompliant(false)]
         public static ulong ToUInt64(sbyte value)
@@ -1653,7 +1639,6 @@ namespace System
             return float.Parse(value, NumberStyles.Float | NumberStyles.AllowThousands, provider);
         }
 
-
         public static float ToSingle(bool value)
         {
             return value ? bool.True : bool.False;
@@ -1678,7 +1663,6 @@ namespace System
         {
             return value == null ? 0 : ((IConvertible)value).ToDouble(provider);
         }
-
 
         [CLSCompliant(false)]
         public static double ToDouble(sbyte value)
@@ -2153,7 +2137,6 @@ namespace System
             return value;
         }
 
-
         //
         // Conversions which understand Base XXX numbers.
         //
@@ -2444,7 +2427,6 @@ namespace System
                 throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)options), nameof(options));
             }
 
-
             int retVal;
 
             int inArrayLength;
@@ -2537,7 +2519,7 @@ namespace System
                     outChars[j] = base64[(inData[i] & 0xfc) >> 2];
                     outChars[j + 1] = base64[((inData[i] & 0x03) << 4) | ((inData[i + 1] & 0xf0) >> 4)];
                     outChars[j + 2] = base64[((inData[i + 1] & 0x0f) << 2) | ((inData[i + 2] & 0xc0) >> 6)];
-                    outChars[j + 3] = base64[(inData[i + 2] & 0x3f)];
+                    outChars[j + 3] = base64[inData[i + 2] & 0x3f];
                     j += 4;
                 }
 
@@ -2598,7 +2580,6 @@ namespace System
             return (int)outlen;
         }
 
-
         /// <summary>
         /// Converts the specified string, which encodes binary data as Base64 digits, to the equivalent byte array.
         /// </summary>
@@ -2610,7 +2591,6 @@ namespace System
 
             if (s == null)
                 throw new ArgumentNullException(nameof(s));
-
 
             unsafe
             {
@@ -2770,7 +2750,6 @@ namespace System
             if (offset > inArray.Length - length)
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_OffsetLength);
 
-
             if (inArray.Length == 0)
             {
                 return Array.Empty<byte>();
@@ -2859,7 +2838,6 @@ namespace System
                 // This is ok: as soon as we hit them during actual decode we will recognise them as illegal and throw.
                 if (c <= intSpace)
                     usefulInputLength--;
-
                 else if (c == intEq)
                 {
                     usefulInputLength--;

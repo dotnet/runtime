@@ -273,7 +273,6 @@ namespace System.Threading
             return Wait(millisecondsTimeout, new CancellationToken());
         }
 
-
         /// <summary>
         /// Blocks the current thread until it can enter the <see cref="SemaphoreSlim"/>,
         /// using a 32-bit signed integer to measure the time interval,

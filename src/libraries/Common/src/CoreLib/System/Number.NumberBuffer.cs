@@ -102,11 +102,11 @@ namespace System
                 }
 
                 sb.Append('"');
-                sb.Append(", Length = " + DigitsCount);
-                sb.Append(", Scale = " + Scale);
-                sb.Append(", IsNegative = " + IsNegative);
-                sb.Append(", HasNonZeroTail = " + HasNonZeroTail);
-                sb.Append(", Kind = " + Kind);
+                sb.Append(", Length = ").Append(DigitsCount);
+                sb.Append(", Scale = ").Append(Scale);
+                sb.Append(", IsNegative = ").Append(IsNegative);
+                sb.Append(", HasNonZeroTail = ").Append(HasNonZeroTail);
+                sb.Append(", Kind = ").Append(Kind);
                 sb.Append(']');
 
                 return sb.ToString();

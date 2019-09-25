@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.Globalization
 {
-    internal class CalendricalCalculationsHelper
+    internal static class CalendricalCalculationsHelper
     {
         private const double FullCircleOfArc = 360.0; // 360.0;
         private const int HalfCircleOfArc = 180;
@@ -257,8 +257,8 @@ namespace System.Globalization
                 + (4 * eccentricity * y * SinOfDegree(anomaly) * CosOfDegree(2 * lambda))
                 - (0.5 * Math.Pow(y, 2) * SinOfDegree(4 * lambda))
                 - (1.25 * Math.Pow(eccentricity, 2) * SinOfDegree(2 * anomaly)));
-            double divisor = 2 * Math.PI;
-            double equation = dividend / divisor;
+            const double Divisor = 2 * Math.PI;
+            double equation = dividend / Divisor;
 
             // approximation of equation of time is not valid for dates that are many millennia in the past or future
             // thus limited to a half day

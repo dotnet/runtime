@@ -524,7 +524,7 @@ namespace System
                 return double.NaN;
             }
 
-            return (Log(a) / Log(newBase));
+            return Log(a) / Log(newBase);
         }
 
         [NonVersionable]
