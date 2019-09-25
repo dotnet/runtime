@@ -27,6 +27,7 @@ namespace
         }
 
         DISPPARAMS params = { NULL, NULL, 0, 0 };
+        VariantInit(pResult);
         hr = dele->Invoke(
             dispid,
             IID_NULL,
