@@ -104,5 +104,45 @@ namespace System.Security.Cryptography
         {
             return !(left == right);
         }
+
+        public static bool TryFromOid(string oidValue, out HashAlgorithmName value)
+        {
+            if (oidValue is null)
+            {
+                throw new ArgumentNullException(nameof(oidValue));
+            }
+
+            switch (oidValue)
+            {
+                case Oids.Md5:
+                    value = MD5;
+                    return true;
+                case Oids.Sha1:
+                    value = SHA1;
+                    return true;
+                case Oids.Sha256:
+                    value = SHA256;
+                    return true;
+                case Oids.Sha384:
+                    value = SHA384;
+                    return true;
+                case Oids.Sha512:
+                    value = SHA512;
+                    return true;
+                default:
+                    value = default;
+                    return false;
+            }
+        }
+
+        public static HashAlgorithmName FromOid(string oidValue)
+        {
+            if (TryFromOid(oidValue, out HashAlgorithmName value))
+            {
+                return value;
+            }
+
+            throw new CryptographicException(SR.Format(SR.Cryptography_InvalidHashAlgorithmOid, oidValue));
+        }
     }
 }

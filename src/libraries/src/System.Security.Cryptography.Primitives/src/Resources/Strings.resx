@@ -105,6 +105,9 @@
   <data name="Cryptography_InvalidPaddingMode" xml:space="preserve">
     <value>Specified padding mode is not valid for this algorithm.</value>
   </data>
+  <data name="Cryptography_InvalidHashAlgorithmOid" xml:space="preserve">
+    <value>The specified OID ({0}) does not represent a known hash algorithm.</value>
+  </data>
   <data name="NotSupported_SubclassOverride" xml:space="preserve">
     <value>Method not supported. Derived class must override.</value>
   </data>

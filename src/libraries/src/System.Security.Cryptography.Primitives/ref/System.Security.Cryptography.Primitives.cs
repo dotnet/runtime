@@ -135,10 +135,12 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.HashAlgorithmName SHA512 { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
         public bool Equals(System.Security.Cryptography.HashAlgorithmName other) { throw null; }
+        public static System.Security.Cryptography.HashAlgorithmName FromOid(string oidValue) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Security.Cryptography.HashAlgorithmName left, System.Security.Cryptography.HashAlgorithmName right) { throw null; }
         public static bool operator !=(System.Security.Cryptography.HashAlgorithmName left, System.Security.Cryptography.HashAlgorithmName right) { throw null; }
         public override string ToString() { throw null; }
+        public static bool TryFromOid(string oidValue, out System.Security.Cryptography.HashAlgorithmName value) { throw null; }
     }
     public abstract partial class HMAC : System.Security.Cryptography.KeyedHashAlgorithm
     {
