@@ -5,7 +5,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
@@ -18,11 +17,11 @@ namespace System.Text.Json
     {
         private static readonly Type s_underlyingType = typeof(TProperty);
 
-        protected override void OnRead(JsonTokenType tokenType, ref ReadStack state, ref Utf8JsonReader reader)
+        protected override void OnRead(ref ReadStack state, ref Utf8JsonReader reader)
         {
             if (Converter == null)
             {
-                ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(RuntimePropertyType, reader, state.JsonPath());
+                ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(RuntimePropertyType);
             }
 
             TProperty value = Converter.Read(ref reader, s_underlyingType, Options);
@@ -37,16 +36,16 @@ namespace System.Text.Json
             }
         }
 
-        protected override void OnReadEnumerable(JsonTokenType tokenType, ref ReadStack state, ref Utf8JsonReader reader)
+        protected override void OnReadEnumerable(ref ReadStack state, ref Utf8JsonReader reader)
         {
             if (Converter == null)
             {
-                ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(RuntimePropertyType, reader, state.JsonPath());
+                ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(RuntimePropertyType);
             }
 
             TProperty value = Converter.Read(ref reader, s_underlyingType, Options);
             TProperty? nullableValue = new TProperty?(value);
-            JsonSerializer.ApplyValueToEnumerable(ref nullableValue, ref state, ref reader);
+            JsonSerializer.ApplyValueToEnumerable(ref nullableValue, ref state);
         }
 
         protected override void OnWrite(ref WriteStackFrame current, Utf8JsonWriter writer)

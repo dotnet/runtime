@@ -94,6 +94,11 @@ namespace System.Text.Json
         }
 
         /// <summary>
+        /// Specifies that 'try' logic should append Path information to the exception message.
+        /// </summary>
+        internal bool AppendPathInformation { get; set; }
+
+        /// <summary>
         ///  Sets the <see cref="SerializationInfo"/> with information about the exception.
         /// </summary>
         /// <param name="info">The <see cref="SerializationInfo"/> that holds the serialized object data about the exception being thrown.</param>
