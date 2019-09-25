@@ -52,6 +52,7 @@
 {
   .field public valuetype ForceHelper* me
   .field public int64 counter
+  .field public int64 extraField
 } // end of class ForceHelper
 
 .class private auto ansi beforefieldinit Repro
@@ -121,12 +122,13 @@
     IL_006e:  stfld      valuetype ForceHelper* ForceHelper::me
     IL_0073:  ldarg.0
     IL_0074:  ldarg.1
-    IL_0075:  tail. call       instance void Repro::TailHelper2(valuetype ForceHelper)
-    IL_007a:  ret
+    IL_0075:  ldarg.1
+    IL_0076:  tail. call       instance void Repro::TailHelper2(valuetype ForceHelper, valuetype ForceHelper)
+    IL_007b:  ret
   } // end of method Repro::TailHelper1
 
   .method private hidebysig instance void 
-          TailHelper2(valuetype ForceHelper h) cil managed
+          TailHelper2(valuetype ForceHelper h, valuetype ForceHelper h2) cil managed
   {
     // Code size       123 (0x7b)
     .maxstack  3
@@ -244,7 +246,7 @@
              int32 V_9)
     IL_0000:  newobj     instance void Repro::.ctor()
     IL_0005:  stloc.0
-    IL_0006:  ldc.i4.4
+    IL_0006:  ldc.i4.2
     IL_0007:  newarr     [System.Threading.Thread]System.Threading.Thread
     IL_000c:  stloc.s    V_5
     IL_000e:  ldloc.s    V_5
@@ -263,22 +265,6 @@
                                                                                      native int)
     IL_0032:  newobj     instance void [System.Threading.Thread]System.Threading.Thread::.ctor(class [System.Threading.Thread]System.Threading.ThreadStart)
     IL_0037:  stelem.ref
-    IL_0038:  ldloc.s    V_5
-    IL_003a:  ldc.i4.2
-    IL_003b:  ldloc.0
-    IL_003c:  ldftn      instance void Repro::TailCallThread()
-    IL_0042:  newobj     instance void [System.Threading.Thread]System.Threading.ThreadStart::.ctor(object,
-                                                                                     native int)
-    IL_0047:  newobj     instance void [System.Threading.Thread]System.Threading.Thread::.ctor(class [System.Threading.Thread]System.Threading.ThreadStart)
-    IL_004c:  stelem.ref
-    IL_004d:  ldloc.s    V_5
-    IL_004f:  ldc.i4.3
-    IL_0050:  ldloc.0
-    IL_0051:  ldftn      instance void Repro::TailCallThread()
-    IL_0057:  newobj     instance void [System.Threading.Thread]System.Threading.ThreadStart::.ctor(object,
-                                                                                     native int)
-    IL_005c:  newobj     instance void [System.Threading.Thread]System.Threading.Thread::.ctor(class [System.Threading.Thread]System.Threading.ThreadStart)
-    IL_0061:  stelem.ref
     IL_0062:  ldloc.s    V_5
     IL_0064:  stloc.1
     IL_0065:  ldloc.1
@@ -319,7 +305,7 @@
     IL_00a1:  add
     IL_00a2:  stloc.3
     IL_00a3:  ldloc.3
-    IL_00a4:  ldc.i4.s   60
+    IL_00a4:  ldc.i4.s   30
     IL_00a6:  blt.s      IL_008b
 
     IL_00a8:  ldloc.0
