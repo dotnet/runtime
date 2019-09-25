@@ -11,6 +11,7 @@
     <Compile Include="CryptoConfigTests.cs" />
     <Compile Include="CryptoStream.cs" />
     <Compile Include="CryptographicException.cs" />
+    <Compile Include="HashAlgorithmNameTests.cs" />
     <Compile Include="HmacAlgorithmTest.cs" />
     <Compile Include="KeyedHashAlgorithmTests.cs" />
     <Compile Include="Length32Hash.cs" />
