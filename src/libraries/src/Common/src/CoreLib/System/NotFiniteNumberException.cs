@@ -20,7 +20,6 @@ namespace System
         }
 
         public NotFiniteNumberException(double offendingNumber)
-            : base()
         {
             _offendingNumber = offendingNumber;
             HResult = HResults.COR_E_NOTFINITENUMBER;

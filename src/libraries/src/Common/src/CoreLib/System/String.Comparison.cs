@@ -184,7 +184,6 @@ namespace System
             return Compare(strA, strB, StringComparison.CurrentCulture);
         }
 
-
         // Provides a culture-correct string comparison. strA is compared to strB
         // to determine whether it is lexicographically less, equal, or greater, and then a
         // negative integer, 0, or a positive integer is returned; respectively.
@@ -195,7 +194,6 @@ namespace System
             StringComparison comparisonType = ignoreCase ? StringComparison.CurrentCultureIgnoreCase : StringComparison.CurrentCulture;
             return Compare(strA, strB, comparisonType);
         }
-
 
         // Provides a more flexible function for string comparison. See StringComparison
         // for meaning of different comparisonType.
@@ -247,7 +245,6 @@ namespace System
             }
         }
 
-
         // Provides a culture-correct string comparison. strA is compared to strB
         // to determine whether it is lexicographically less, equal, or greater, and then a
         // negative integer, 0, or a positive integer is returned; respectively.
@@ -257,8 +254,6 @@ namespace System
             CultureInfo compareCulture = culture ?? CultureInfo.CurrentCulture;
             return compareCulture.CompareInfo.Compare(strA, strB, options);
         }
-
-
 
         // Provides a culture-correct string comparison. strA is compared to strB
         // to determine whether it is lexicographically less, equal, or greater, and then a
@@ -331,7 +326,6 @@ namespace System
             return Compare(strA, indexA, strB, indexB, length, culture, options);
         }
 
-
         // Determines whether two string regions match.  The substring of strA beginning
         // at indexA of length length is compared with the substring of strB
         // beginning at indexB of the same length.
@@ -361,7 +355,6 @@ namespace System
 
             if (strA == null || strB == null)
             {
-
                 if (object.ReferenceEquals(strA, strB))
                 {
                     // They're both null
@@ -645,11 +638,11 @@ namespace System
             {
                 case StringComparison.CurrentCulture:
                 case StringComparison.CurrentCultureIgnoreCase:
-                    return (CultureInfo.CurrentCulture.CompareInfo.Compare(this, value, GetCaseCompareOfComparisonCulture(comparisonType)) == 0);
+                    return CultureInfo.CurrentCulture.CompareInfo.Compare(this, value, GetCaseCompareOfComparisonCulture(comparisonType)) == 0;
 
                 case StringComparison.InvariantCulture:
                 case StringComparison.InvariantCultureIgnoreCase:
-                    return (CompareInfo.Invariant.Compare(this, value, GetCaseCompareOfComparisonCulture(comparisonType)) == 0);
+                    return CompareInfo.Invariant.Compare(this, value, GetCaseCompareOfComparisonCulture(comparisonType)) == 0;
 
                 case StringComparison.Ordinal:
                     if (this.Length != value.Length)
@@ -666,7 +659,6 @@ namespace System
                     throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
             }
         }
-
 
         // Determines whether two Strings match.
         public static bool Equals(string? a, string? b)
@@ -702,11 +694,11 @@ namespace System
             {
                 case StringComparison.CurrentCulture:
                 case StringComparison.CurrentCultureIgnoreCase:
-                    return (CultureInfo.CurrentCulture.CompareInfo.Compare(a, b, GetCaseCompareOfComparisonCulture(comparisonType)) == 0);
+                    return CultureInfo.CurrentCulture.CompareInfo.Compare(a, b, GetCaseCompareOfComparisonCulture(comparisonType)) == 0;
 
                 case StringComparison.InvariantCulture:
                 case StringComparison.InvariantCultureIgnoreCase:
-                    return (CompareInfo.Invariant.Compare(a, b, GetCaseCompareOfComparisonCulture(comparisonType)) == 0);
+                    return CompareInfo.Invariant.Compare(a, b, GetCaseCompareOfComparisonCulture(comparisonType)) == 0;
 
                 case StringComparison.Ordinal:
                     if (a.Length != b.Length)

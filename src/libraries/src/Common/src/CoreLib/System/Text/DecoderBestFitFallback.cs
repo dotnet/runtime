@@ -121,7 +121,7 @@ namespace System.Text
                 _iCount++;
 
             // Return true if we could do it.
-            return (_iCount >= 0 && _iCount <= _iSize);
+            return _iCount >= 0 && _iCount <= _iSize;
         }
 
         // How many characters left to output?

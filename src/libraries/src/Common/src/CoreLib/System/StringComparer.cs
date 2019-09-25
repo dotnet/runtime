@@ -274,7 +274,7 @@ namespace System
             {
                 return false;
             }
-            return (this._ignoreCase == comparer._ignoreCase);
+            return this._ignoreCase == comparer._ignoreCase;
         }
 
         public override int GetHashCode()

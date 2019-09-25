@@ -14,7 +14,6 @@ namespace System.Runtime.InteropServices
     public class SEHException : ExternalException
     {
         public SEHException()
-            : base()
         {
             HResult = HResults.E_FAIL;
         }

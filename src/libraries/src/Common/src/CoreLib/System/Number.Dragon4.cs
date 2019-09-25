@@ -339,7 +339,7 @@ namespace System
 
                     // store the output digit
                     buffer[curDigit] = (byte)('0' + outputDigit);
-                    curDigit += 1;
+                    curDigit++;
 
                     // multiply larger by the output base
                     scaledValue.Multiply10();
@@ -374,7 +374,7 @@ namespace System
 
                     // store the output digit
                     buffer[curDigit] = (byte)('0' + outputDigit);
-                    curDigit += 1;
+                    curDigit++;
 
                     // multiply larger by the output base
                     scaledValue.Multiply10();
@@ -402,10 +402,10 @@ namespace System
                 }
 
                 buffer[curDigit] = (byte)('0' + outputDigit);
-                curDigit += 1;
+                curDigit++;
 
                 // return the number of digits output
-                return (uint)(curDigit);
+                return (uint)curDigit;
             }
 
             // round off the final digit
@@ -435,7 +435,7 @@ namespace System
             if (roundDown)
             {
                 buffer[curDigit] = (byte)('0' + outputDigit);
-                curDigit += 1;
+                curDigit++;
             }
             else if (outputDigit == 9)      // handle rounding up
             {
@@ -448,20 +448,20 @@ namespace System
                         // output 1 at the next highest exponent
 
                         buffer[curDigit] = (byte)('1');
-                        curDigit += 1;
-                        decimalExponent += 1;
+                        curDigit++;
+                        decimalExponent++;
 
                         break;
                     }
 
-                    curDigit -= 1;
+                    curDigit--;
 
                     if (buffer[curDigit] != '9')
                     {
                         // increment the digit
 
-                        buffer[curDigit] += 1;
-                        curDigit += 1;
+                        buffer[curDigit]++;
+                        curDigit++;
 
                         break;
                     }
@@ -471,11 +471,11 @@ namespace System
             {
                 // values in the range [0,8] can perform a simple round up
                 buffer[curDigit] = (byte)('0' + outputDigit + 1);
-                curDigit += 1;
+                curDigit++;
             }
 
             // return the number of digits output
-            uint outputLen = (uint)(curDigit);
+            uint outputLen = (uint)curDigit;
             Debug.Assert(outputLen <= buffer.Length);
             return outputLen;
         }

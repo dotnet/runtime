@@ -424,7 +424,7 @@ namespace System
                     sb.Append(m_innerExceptions[i].Message);
                     sb.Append(") ");
                 }
-                sb.Length -= 1;
+                sb.Length--;
                 return StringBuilderCache.GetStringAndRelease(sb);
             }
         }

@@ -191,6 +191,5 @@ namespace System
         // The per-year information is cached in this instance value. As a result it can
         // be cleaned up by CultureInfo.ClearCachedData, which will clear the instance of this object
         private readonly Hashtable m_CachedDaylightChanges = new Hashtable();
-
     } // class CurrentSystemTimeZone
 }

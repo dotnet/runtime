@@ -199,7 +199,6 @@ namespace System.Globalization
         ////////////////////////////////////////////////////////////////////////
         private static void CheckSpecialCalendar(ref CalendarId calendar, ref string localeName)
         {
-
             // Gregorian-US isn't always available in the OS, however it is the same for all locales
             switch (calendar)
             {
@@ -232,7 +231,7 @@ namespace System.Globalization
 
         private static bool CallGetCalendarInfoEx(string? localeName, CalendarId calendar, uint calType, out int data)
         {
-            return (Interop.Kernel32.GetCalendarInfoEx(localeName, (uint)calendar, IntPtr.Zero, calType | CAL_RETURN_NUMBER, IntPtr.Zero, 0, out data) != 0);
+            return Interop.Kernel32.GetCalendarInfoEx(localeName, (uint)calendar, IntPtr.Zero, calType | CAL_RETURN_NUMBER, IntPtr.Zero, 0, out data) != 0;
         }
 
         private static unsafe bool CallGetCalendarInfoEx(string localeName, CalendarId calendar, uint calType, out string data)
@@ -293,7 +292,7 @@ namespace System.Globalization
             context.userOverride = null;
             context.strings = new List<string>();
             // First call GetLocaleInfo if necessary
-            if (((lcType != 0) && ((lcType & CAL_NOUSEROVERRIDE) == 0)) &&
+            if ((lcType != 0) && ((lcType & CAL_NOUSEROVERRIDE) == 0) &&
                 // Get user locale, see if it matches localeName.
                 // Note that they should match exactly, including letter case
                 GetUserDefaultLocaleName() == localeName)
@@ -319,11 +318,8 @@ namespace System.Globalization
                 }
             }
 
-            unsafe
-            {
-                // Now call the enumeration API. Work is done by our callback function
-                Interop.Kernel32.EnumCalendarInfoExEx(EnumCalendarInfoCallback, localeName, (uint)calendar, null, calType, Unsafe.AsPointer(ref context));
-            }
+            // Now call the enumeration API. Work is done by our callback function
+            Interop.Kernel32.EnumCalendarInfoExEx(EnumCalendarInfoCallback, localeName, (uint)calendar, null, calType, Unsafe.AsPointer(ref context));
 
             // Now we have a list of data, fail if we didn't find anything.
             Debug.Assert(context.strings != null);

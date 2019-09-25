@@ -524,7 +524,7 @@ namespace System
 
         internal static void GetBytes(in decimal d, byte[] buffer)
         {
-            Debug.Assert((buffer != null && buffer.Length >= 16), "[GetBytes]buffer != null && buffer.Length >= 16");
+            Debug.Assert(buffer != null && buffer.Length >= 16, "[GetBytes]buffer != null && buffer.Length >= 16");
             buffer[0] = (byte)d.lo;
             buffer[1] = (byte)(d.lo >> 8);
             buffer[2] = (byte)(d.lo >> 16);
@@ -548,7 +548,7 @@ namespace System
 
         internal static decimal ToDecimal(ReadOnlySpan<byte> span)
         {
-            Debug.Assert((span.Length >= 16), "span.Length >= 16");
+            Debug.Assert(span.Length >= 16, "span.Length >= 16");
             int lo = BinaryPrimitives.ReadInt32LittleEndian(span);
             int mid = BinaryPrimitives.ReadInt32LittleEndian(span.Slice(4));
             int hi = BinaryPrimitives.ReadInt32LittleEndian(span.Slice(8));

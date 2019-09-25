@@ -125,7 +125,7 @@ namespace System.IO
             // When doing IO asynchronously (i.e. _isAsync==true), this callback is
             // called by a free thread in the threadpool when the IO operation
             // completes.
-            internal static unsafe void IOCallback(uint errorCode, uint numBytes, NativeOverlapped* pOverlapped)
+            internal static void IOCallback(uint errorCode, uint numBytes, NativeOverlapped* pOverlapped)
             {
                 // Extract the completion source from the overlapped.  The state in the overlapped
                 // will either be a FileStream (in the case where the preallocated overlapped was used),

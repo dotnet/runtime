@@ -86,7 +86,7 @@ namespace System.IO
             int length = path.Length;
             string? combinedPath = null;
 
-            if ((length >= 1 && PathInternal.IsDirectorySeparator(path[0])))
+            if (length >= 1 && PathInternal.IsDirectorySeparator(path[0]))
             {
                 // Path is current drive rooted i.e. starts with \:
                 // "\Foo" and "C:\Bar" => "C:\Foo"

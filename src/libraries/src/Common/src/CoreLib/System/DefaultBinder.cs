@@ -89,7 +89,6 @@ namespace System
             }
 #endregion
 
-
             // Find the method that matches...
             int CurIdx = 0;
             bool defaultValueBinding = ((bindingAttr & BindingFlags.OptionalParamBinding) != 0);
@@ -428,7 +427,6 @@ namespace System
             return candidates[currentMin]!;
         }
 
-
         // Given a set of fields that match the base criteria, select a field.
         // if value is null then we have no way to select a field
         public sealed override FieldInfo BindToField(BindingFlags bindingAttr, FieldInfo[] match, object value, CultureInfo? cultureInfo)
@@ -569,7 +567,7 @@ namespace System
 
                     if (pCls.IsPrimitive)
                     {
-                        if (!(type.UnderlyingSystemType.IsRuntimeImplemented()) ||
+                        if (!type.UnderlyingSystemType.IsRuntimeImplemented() ||
                             !CanChangePrimitive(type.UnderlyingSystemType, pCls.UnderlyingSystemType))
                             break;
                     }
@@ -657,7 +655,7 @@ namespace System
 
                         if (pCls.IsPrimitive)
                         {
-                            if (!(indexes[j].UnderlyingSystemType.IsRuntimeImplemented()) ||
+                            if (!indexes[j].UnderlyingSystemType.IsRuntimeImplemented() ||
                                 !CanChangePrimitive(indexes[j].UnderlyingSystemType, pCls.UnderlyingSystemType))
                                 break;
                         }
@@ -675,7 +673,7 @@ namespace System
                     {
                         if (candidates[i].PropertyType.IsPrimitive)
                         {
-                            if (!(returnType.UnderlyingSystemType.IsRuntimeImplemented()) ||
+                            if (!returnType.UnderlyingSystemType.IsRuntimeImplemented() ||
                                 !CanChangePrimitive(returnType.UnderlyingSystemType, candidates[i].PropertyType.UnderlyingSystemType))
                                 continue;
                         }
@@ -921,7 +919,7 @@ namespace System
             }
             else
             {
-                return (p1Less == true) ? 1 : 2;
+                return p1Less ? 1 : 2;
             }
         }
 
@@ -973,7 +971,6 @@ namespace System
                     c2 = c2.GetElementType()!;
                 }
             }
-
 
             if (c1.IsPrimitive && c2.IsPrimitive)
             {

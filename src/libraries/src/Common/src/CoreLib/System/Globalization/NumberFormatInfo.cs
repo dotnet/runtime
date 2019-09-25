@@ -55,7 +55,6 @@ namespace System.Globalization
         internal string _percentSymbol = "%";
         internal string _perMilleSymbol = "\u2030";
 
-
         internal string[] _nativeDigits = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" };
 
         internal int _numberDecimalDigits = 2;
@@ -188,22 +187,10 @@ namespace System.Globalization
         /// supported and constant irrespective of the current culture.
         /// Used by FromString methods.
         /// </summary>
-        public static NumberFormatInfo InvariantInfo
-        {
-            get
-            {
-                if (s_invariantInfo == null)
-                {
-                    // Lazy create the invariant info. This cannot be done in a .cctor because exceptions can
-                    // be thrown out of a .cctor stack that will need this.
-                    s_invariantInfo = new NumberFormatInfo
-                    {
-                        _isReadOnly = true
-                    };
-                }
-                return s_invariantInfo;
-            }
-        }
+        public static NumberFormatInfo InvariantInfo => s_invariantInfo ??=
+            // Lazy create the invariant info. This cannot be done in a .cctor because exceptions can
+            // be thrown out of a .cctor stack that will need this.
+            new NumberFormatInfo { _isReadOnly = true };
 
         public static NumberFormatInfo GetInstance(IFormatProvider? formatProvider)
         {
@@ -232,7 +219,6 @@ namespace System.Globalization
             n._isReadOnly = false;
             return n;
         }
-
 
         public int CurrencyDecimalDigits
         {
@@ -290,10 +276,9 @@ namespace System.Globalization
             }
         }
 
-
         public int[] CurrencyGroupSizes
         {
-            get => ((int[])_currencyGroupSizes.Clone());
+            get => (int[])_currencyGroupSizes.Clone();
             set
             {
                 if (value == null)
@@ -311,7 +296,7 @@ namespace System.Globalization
 
         public int[] NumberGroupSizes
         {
-            get => ((int[])_numberGroupSizes.Clone());
+            get => (int[])_numberGroupSizes.Clone();
             set
             {
                 if (value == null)
@@ -327,10 +312,9 @@ namespace System.Globalization
             }
         }
 
-
         public int[] PercentGroupSizes
         {
-            get => ((int[])_percentGroupSizes.Clone());
+            get => (int[])_percentGroupSizes.Clone();
             set
             {
                 if (value == null)
@@ -345,7 +329,6 @@ namespace System.Globalization
             }
         }
 
-
         public string CurrencyGroupSeparator
         {
             get => _currencyGroupSeparator;
@@ -356,7 +339,6 @@ namespace System.Globalization
                 _currencyGroupSeparator = value;
             }
         }
-
 
         public string CurrencySymbol
         {
@@ -623,7 +605,6 @@ namespace System.Globalization
             }
         }
 
-
         public string PercentDecimalSeparator
         {
             get => _percentDecimalSeparator;
@@ -635,7 +616,6 @@ namespace System.Globalization
             }
         }
 
-
         public string PercentGroupSeparator
         {
             get => _percentGroupSeparator;
@@ -646,7 +626,6 @@ namespace System.Globalization
                 _percentGroupSeparator = value;
             }
         }
-
 
         public string PercentSymbol
         {
@@ -662,7 +641,6 @@ namespace System.Globalization
                 _percentSymbol = value;
             }
         }
-
 
         public string PerMilleSymbol
         {

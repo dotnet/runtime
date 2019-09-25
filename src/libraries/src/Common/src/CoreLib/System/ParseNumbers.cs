@@ -176,7 +176,7 @@ namespace System
             }
 
             int grabNumbersStart = i;
-            int result = GrabInts(r, s, ref i, ((flags & TreatAsUnsigned) != 0));
+            int result = GrabInts(r, s, ref i, (flags & TreatAsUnsigned) != 0);
 
             // Check if they passed us a string with no parsable digits.
             if (i == grabNumbersStart)

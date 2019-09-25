@@ -24,7 +24,7 @@ namespace System
 
         public bool Contains(string value, StringComparison comparisonType)
         {
-            return (IndexOf(value, comparisonType) >= 0);
+            return IndexOf(value, comparisonType) >= 0;
         }
 
         public bool Contains(char value) => SpanHelpers.Contains(ref _firstChar, value, Length);

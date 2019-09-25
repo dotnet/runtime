@@ -12,7 +12,7 @@ namespace System.IO
     /// <summary>
     /// Wrapper to help with path normalization.
     /// </summary>
-    internal class PathHelper
+    internal static class PathHelper
     {
         /// <summary>
         /// Normalize the given path.

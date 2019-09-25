@@ -146,6 +146,5 @@ namespace System
             span[0] = '^';
             return new string(span.Slice(0, charsWritten + 1));
         }
-
     }
 }

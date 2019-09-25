@@ -416,7 +416,7 @@ namespace System.Text.Unicode
 
                         pOutputBuffer[0] = (char)charToWrite;
                         pInputBuffer += 2;
-                        pOutputBuffer += 1;
+                        pOutputBuffer++;
                         outputCharsRemaining--;
 
                         if (pFinalPosWhereCanReadDWordFromInputBuffer < pInputBuffer)
@@ -541,8 +541,8 @@ namespace System.Text.Unicode
 
                     *pOutputBuffer = (char)ExtractCharFromFirstThreeByteSequence(thisDWord);
                     pInputBuffer += 3;
-                    pOutputBuffer += 1;
-                    outputCharsRemaining -= 1;
+                    pOutputBuffer++;
+                    outputCharsRemaining--;
 
                 CheckForAsciiByteAfterThreeByteSequence:
 
@@ -566,9 +566,9 @@ namespace System.Text.Unicode
                             *pOutputBuffer = (char)(byte)thisDWord;
                         }
 
-                        pInputBuffer += 1;
-                        pOutputBuffer += 1;
-                        outputCharsRemaining -= 1;
+                        pInputBuffer++;
+                        pOutputBuffer++;
+                        outputCharsRemaining--;
                     }
 
                     if (pInputBuffer <= pFinalPosWhereCanReadDWordFromInputBuffer)
@@ -677,10 +677,10 @@ namespace System.Text.Unicode
                     // 1-byte (ASCII) case
                     *pOutputBuffer = (char)firstByte;
 
-                    pInputBuffer += 1;
-                    pOutputBuffer += 1;
-                    inputLength -= 1;
-                    outputCharsRemaining -= 1;
+                    pInputBuffer++;
+                    pOutputBuffer++;
+                    inputLength--;
+                    outputCharsRemaining--;
                     continue;
                 }
 
@@ -710,9 +710,9 @@ namespace System.Text.Unicode
                     *pOutputBuffer = (char)asChar;
 
                     pInputBuffer += 2;
-                    pOutputBuffer += 1;
+                    pOutputBuffer++;
                     inputLength -= 2;
-                    outputCharsRemaining -= 1;
+                    outputCharsRemaining--;
                     continue;
                 }
                 else if ((byte)firstByte <= (0xEFu - 0xC2u))
@@ -737,7 +737,7 @@ namespace System.Text.Unicode
                         }
 
                         partialChar -= ((0xEDu - 0xC2u) << 12) + (0xA0u << 6); // if partialChar = 0, we're at beginning of UTF-16 surrogate code point range
-                        if (partialChar < (0x0800u /* number of code points in UTF-16 surrogate code point range */))
+                        if (partialChar < 0x0800u /* number of code points in UTF-16 surrogate code point range */)
                         {
                             goto Error; // attempted to encode a UTF-16 surrogate code point; fail
                         }
@@ -756,9 +756,9 @@ namespace System.Text.Unicode
                         *pOutputBuffer = (char)partialChar;
 
                         pInputBuffer += 3;
-                        pOutputBuffer += 1;
+                        pOutputBuffer++;
                         inputLength -= 3;
-                        outputCharsRemaining -= 1;
+                        outputCharsRemaining--;
                         continue;
                     }
                     else if (inputLength >= 2)
@@ -1108,9 +1108,9 @@ namespace System.Text.Unicode
                         pOutputBuffer[0] = (byte)(thisDWord >> 24); // extract [ AA 00 ## ## ]
                     }
 
-                    pInputBuffer += 1;
-                    pOutputBuffer += 1;
-                    outputBytesRemaining -= 1;
+                    pInputBuffer++;
+                    pOutputBuffer++;
+                    outputBytesRemaining--;
 
                     if (pInputBuffer > pFinalPosWhereCanReadDWordFromInputBuffer)
                     {
@@ -1200,14 +1200,14 @@ namespace System.Text.Unicode
                         }
                         else
                         {
-                            pInputBuffer += 1;
+                            pInputBuffer++;
                             pOutputBuffer += 2;
                             goto OutputBufferTooSmall;
                         }
                     }
                     else
                     {
-                        pInputBuffer += 1;
+                        pInputBuffer++;
                         pOutputBuffer += 2;
                         outputBytesRemaining -= 2;
 
@@ -1280,7 +1280,7 @@ namespace System.Text.Unicode
 
                     WriteFirstUtf16CharAsUtf8ThreeByteSequence(ref *pOutputBuffer, thisDWord);
 
-                    pInputBuffer += 1;
+                    pInputBuffer++;
                     pOutputBuffer += 3;
                     outputBytesRemaining -= 3;
 
@@ -1304,9 +1304,9 @@ namespace System.Text.Unicode
                             *pOutputBuffer = (byte)(thisDWord);
                         }
 
-                        pInputBuffer += 1;
-                        pOutputBuffer += 1;
-                        outputBytesRemaining -= 1;
+                        pInputBuffer++;
+                        pOutputBuffer++;
+                        outputBytesRemaining--;
 
                         if (pInputBuffer > pFinalPosWhereCanReadDWordFromInputBuffer)
                         {
@@ -1396,8 +1396,8 @@ namespace System.Text.Unicode
                     // 1-byte (ASCII) case
                     *pOutputBuffer = (byte)thisChar;
 
-                    pInputBuffer += 1;
-                    pOutputBuffer += 1;
+                    pInputBuffer++;
+                    pOutputBuffer++;
                 }
                 else if (thisChar < 0x0800u)
                 {
@@ -1410,7 +1410,7 @@ namespace System.Text.Unicode
                     pOutputBuffer[1] = (byte)((thisChar & 0x3Fu) | unchecked((uint)(sbyte)0x80)); // [ 10xxxxxx ]
                     pOutputBuffer[0] = (byte)((thisChar >> 6) | unchecked((uint)(sbyte)0xC0)); // [ 110yyyyy ]
 
-                    pInputBuffer += 1;
+                    pInputBuffer++;
                     pOutputBuffer += 2;
                 }
                 else if (!UnicodeUtility.IsSurrogateCodePoint(thisChar))
@@ -1425,7 +1425,7 @@ namespace System.Text.Unicode
                     pOutputBuffer[1] = (byte)(((thisChar >> 6) & 0x3Fu) | unchecked((uint)(sbyte)0x80)); // [ 10yyyyyy ]
                     pOutputBuffer[0] = (byte)((thisChar >> 12) | unchecked((uint)(sbyte)0xE0)); // [ 1110zzzz ]
 
-                    pInputBuffer += 1;
+                    pInputBuffer++;
                     pOutputBuffer += 3;
                 }
                 else if (thisChar <= 0xDBFFu)
