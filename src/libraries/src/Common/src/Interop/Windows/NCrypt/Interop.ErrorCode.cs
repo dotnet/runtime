@@ -20,6 +20,7 @@ internal static partial class Interop
             NTE_NOT_SUPPORTED = unchecked((int)0x80090029),
             NTE_NO_MORE_ITEMS = unchecked((int)0x8009002a),
             E_FAIL = unchecked((int)0x80004005),
+            STATUS_UNSUCCESSFUL = unchecked((int)0xC0000001),
         }
     }
 }
