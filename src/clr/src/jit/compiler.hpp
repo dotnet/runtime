@@ -1186,7 +1186,7 @@ inline GenTree* Compiler::gtNewFieldRef(var_types typ, CORINFO_FIELD_HANDLE fldH
     if (obj != nullptr && obj->OperGet() == GT_ADDR && varTypeIsStruct(obj->gtOp.gtOp1) &&
         obj->gtOp.gtOp1->OperGet() == GT_LCL_VAR)
     {
-        unsigned lclNum                  = obj->gtOp.gtOp1->gtLclVarCommon.gtLclNum;
+        unsigned lclNum                  = obj->gtOp.gtOp1->gtLclVarCommon.GetLclNum();
         lvaTable[lclNum].lvFieldAccessed = 1;
 #if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
         // These structs are passed by reference; we should probably be able to treat these
@@ -1852,7 +1852,7 @@ inline VARSET_VALRET_TP Compiler::lvaStmtLclMask(Statement* stmt)
             continue;
         }
 
-        varNum = tree->gtLclVarCommon.gtLclNum;
+        varNum = tree->gtLclVarCommon.GetLclNum();
         assert(varNum < lvaCount);
         varDsc = lvaTable + varNum;
 
@@ -3351,7 +3351,7 @@ inline void Compiler::LoopDsc::VERIFY_lpIterTree()
 inline unsigned Compiler::LoopDsc::lpIterVar()
 {
     VERIFY_lpIterTree();
-    return lpIterTree->gtOp.gtOp1->gtLclVarCommon.gtLclNum;
+    return lpIterTree->gtOp.gtOp1->gtLclVarCommon.GetLclNum();
 }
 
 //-----------------------------------------------------------------------------
@@ -3487,7 +3487,7 @@ inline unsigned Compiler::LoopDsc::lpVarLimit()
 
     GenTree* limit = lpLimit();
     assert(limit->OperGet() == GT_LCL_VAR);
-    return limit->gtLclVarCommon.gtLclNum;
+    return limit->gtLclVarCommon.GetLclNum();
 }
 
 //-----------------------------------------------------------------------------
@@ -3503,7 +3503,7 @@ inline bool Compiler::LoopDsc::lpArrLenLimit(Compiler* comp, ArrIndex* index)
     // Check if we have a.length or a[i][j].length
     if (limit->gtArrLen.ArrRef()->gtOper == GT_LCL_VAR)
     {
-        index->arrLcl = limit->gtArrLen.ArrRef()->gtLclVarCommon.gtLclNum;
+        index->arrLcl = limit->gtArrLen.ArrRef()->gtLclVarCommon.GetLclNum();
         index->rank   = 0;
         return true;
     }
@@ -3828,7 +3828,8 @@ inline bool Compiler::impIsThis(GenTree* obj)
     }
     else
     {
-        return ((obj != nullptr) && (obj->gtOper == GT_LCL_VAR) && lvaIsOriginalThisArg(obj->gtLclVarCommon.gtLclNum));
+        return ((obj != nullptr) && (obj->gtOper == GT_LCL_VAR) &&
+                lvaIsOriginalThisArg(obj->gtLclVarCommon.GetLclNum()));
     }
 }
 
@@ -4158,7 +4159,7 @@ ValueNum Compiler::GetUseAsgDefVNOrTreeVN(GenTree* op)
 unsigned Compiler::GetSsaNumForLocalVarDef(GenTree* lcl)
 {
     // Address-taken variables don't have SSA numbers.
-    if (!lvaInSsa(lcl->AsLclVarCommon()->gtLclNum))
+    if (!lvaInSsa(lcl->AsLclVarCommon()->GetLclNum()))
     {
         return SsaConfig::RESERVED_SSA_NUM;
     }

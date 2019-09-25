@@ -807,7 +807,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 void CodeGen::genSpillVar(GenTree* tree)
 {
-    unsigned   varNum = tree->gtLclVarCommon.gtLclNum;
+    unsigned   varNum = tree->gtLclVarCommon.GetLclNum();
     LclVarDsc* varDsc = &(compiler->lvaTable[varNum]);
 
     assert(varDsc->lvIsRegCandidate());
@@ -947,7 +947,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             unspillTree->gtFlags &= ~GTF_SPILLED;
 
             GenTreeLclVarCommon* lcl    = unspillTree->AsLclVarCommon();
-            LclVarDsc*           varDsc = &compiler->lvaTable[lcl->gtLclNum];
+            LclVarDsc*           varDsc = &compiler->lvaTable[lcl->GetLclNum()];
 
 // TODO-Cleanup: The following code could probably be further merged and cleaned up.
 #ifdef _TARGET_XARCH_
@@ -969,12 +969,13 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
                 assert(!varTypeIsGC(varDsc));
                 var_types spillType = genActualType(varDsc->lvType);
                 unspillTree->gtType = spillType;
-                inst_RV_TT(ins_Load(spillType, compiler->isSIMDTypeLocalAligned(lcl->gtLclNum)), dstReg, unspillTree);
+                inst_RV_TT(ins_Load(spillType, compiler->isSIMDTypeLocalAligned(lcl->GetLclNum())), dstReg,
+                           unspillTree);
                 unspillTree->gtType = treeType;
             }
             else
             {
-                inst_RV_TT(ins_Load(treeType, compiler->isSIMDTypeLocalAligned(lcl->gtLclNum)), dstReg, unspillTree);
+                inst_RV_TT(ins_Load(treeType, compiler->isSIMDTypeLocalAligned(lcl->GetLclNum())), dstReg, unspillTree);
             }
 #elif defined(_TARGET_ARM64_)
             var_types targetType = unspillTree->gtType;
@@ -983,7 +984,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
                 assert(!varTypeIsGC(varDsc));
                 targetType = genActualType(varDsc->lvType);
             }
-            instruction ins  = ins_Load(targetType, compiler->isSIMDTypeLocalAligned(lcl->gtLclNum));
+            instruction ins  = ins_Load(targetType, compiler->isSIMDTypeLocalAligned(lcl->GetLclNum()));
             emitAttr    attr = emitActualTypeSize(targetType);
             emitter*    emit = GetEmitter();
 
@@ -991,7 +992,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             inst_RV_TT(ins, dstReg, unspillTree, 0, attr);
 #elif defined(_TARGET_ARM_)
             var_types   targetType = unspillTree->gtType;
-            instruction ins        = ins_Load(targetType, compiler->isSIMDTypeLocalAligned(lcl->gtLclNum));
+            instruction ins        = ins_Load(targetType, compiler->isSIMDTypeLocalAligned(lcl->GetLclNum()));
             emitAttr    attr       = emitTypeSize(targetType);
 
             // Load local variable from its home location.
@@ -1025,14 +1026,14 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
                 if ((unspillTree->gtFlags & GTF_VAR_DEATH) == 0)
                 {
                     // Report the home change for this variable
-                    varLiveKeeper->siUpdateVariableLiveRange(varDsc, lcl->gtLclNum);
+                    varLiveKeeper->siUpdateVariableLiveRange(varDsc, lcl->GetLclNum());
                 }
 #endif // USING_VARIABLE_LIVE_RANGE
 
 #ifdef DEBUG
                 if (VarSetOps::IsMember(compiler, gcInfo.gcVarPtrSetCur, varDsc->lvVarIndex))
                 {
-                    JITDUMP("\t\t\t\t\t\t\tRemoving V%02u from gcVarPtrSetCur\n", lcl->gtLclNum);
+                    JITDUMP("\t\t\t\t\t\t\tRemoving V%02u from gcVarPtrSetCur\n", lcl->GetLclNum());
                 }
 #endif // DEBUG
                 VarSetOps::RemoveElemD(compiler, gcInfo.gcVarPtrSetCur, varDsc->lvVarIndex);
@@ -1040,7 +1041,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
 #ifdef DEBUG
                 if (compiler->verbose)
                 {
-                    printf("\t\t\t\t\t\t\tV%02u in reg ", lcl->gtLclNum);
+                    printf("\t\t\t\t\t\t\tV%02u in reg ", lcl->GetLclNum());
                     varDsc->PrintVarReg();
                     printf(" is becoming live  ");
                     compiler->printTreeID(unspillTree);
@@ -1589,7 +1590,7 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
             {
                 offset = srcAddr->AsLclFld()->gtLclOffs;
             }
-            GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, srcReg, lclNode->gtLclNum, offset);
+            GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, srcReg, lclNode->GetLclNum(), offset);
         }
         else
         {
@@ -1854,7 +1855,7 @@ void CodeGen::genProduceReg(GenTree* tree)
         {
             // Store local variable to its home location.
             // Ensure that lclVar stores are typed correctly.
-            unsigned varNum = tree->gtLclVarCommon.gtLclNum;
+            unsigned varNum = tree->gtLclVarCommon.GetLclNum();
             assert(!compiler->lvaTable[varNum].lvNormalizeOnStore() ||
                    (tree->TypeGet() == genActualType(compiler->lvaTable[varNum].TypeGet())));
             inst_TT_RV(ins_Store(tree->gtType, compiler->isSIMDTypeLocalAligned(varNum)), tree, tree->gtRegNum);
@@ -2262,7 +2263,7 @@ void CodeGen::genStoreLongLclVar(GenTree* treeNode)
     emitter* emit = GetEmitter();
 
     GenTreeLclVarCommon* lclNode = treeNode->AsLclVarCommon();
-    unsigned             lclNum  = lclNode->gtLclNum;
+    unsigned             lclNum  = lclNode->GetLclNum();
     LclVarDsc*           varDsc  = &(compiler->lvaTable[lclNum]);
     assert(varDsc->TypeGet() == TYP_LONG);
     assert(!varDsc->lvPromoted);

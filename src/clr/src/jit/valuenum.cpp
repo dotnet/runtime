@@ -6442,7 +6442,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
                 }
 #endif // DEBUG
             }
-            else if (lvaVarAddrExposed(lclVarTree->gtLclNum))
+            else if (lvaVarAddrExposed(lclVarTree->GetLclNum()))
             {
                 fgMutateAddressExposedLocal(tree DEBUGARG("INITBLK - address-exposed local"));
             }
@@ -6484,7 +6484,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
 
                 if (lhs->IsLocalExpr(this, &lclVarTree, &lhsFldSeq))
                 {
-                    noway_assert(lclVarTree->gtLclNum == lhsLclNum);
+                    noway_assert(lclVarTree->GetLclNum() == lhsLclNum);
                 }
                 else
                 {
@@ -6743,7 +6743,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             case GT_LCL_VAR:
             {
                 GenTreeLclVarCommon* lcl    = tree->AsLclVarCommon();
-                unsigned             lclNum = lcl->gtLclNum;
+                unsigned             lclNum = lcl->GetLclNum();
                 LclVarDsc*           varDsc = &lvaTable[lclNum];
 
                 // Do we have a Use (read) of the LclVar?
@@ -7123,8 +7123,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                         assert(rhsVNPair.GetLiberal() != ValueNumStore::NoVN);
 
-                        lhs->gtVNPair                                                 = rhsVNPair;
-                        lvaTable[lcl->gtLclNum].GetPerSsaData(lclDefSsaNum)->m_vnPair = rhsVNPair;
+                        lhs->gtVNPair                                                    = rhsVNPair;
+                        lvaTable[lcl->GetLclNum()].GetPerSsaData(lclDefSsaNum)->m_vnPair = rhsVNPair;
 
 #ifdef DEBUG
                         if (verbose)
@@ -7140,7 +7140,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         }
 #endif // DEBUG
                     }
-                    else if (lvaVarAddrExposed(lcl->gtLclNum))
+                    else if (lvaVarAddrExposed(lcl->GetLclNum()))
                     {
                         // We could use MapStore here and MapSelect on reads of address-exposed locals
                         // (using the local nums as selectors) to get e.g. propagation of values
@@ -7191,7 +7191,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                             {
                                 // We don't know what field this represents.  Assign a new VN to the whole variable
                                 // (since we may be writing to an unknown portion of it.)
-                                newLhsVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lvaGetActualType(lclFld->gtLclNum)));
+                                newLhsVNPair.SetBoth(
+                                    vnStore->VNForExpr(compCurBB, lvaGetActualType(lclFld->GetLclNum())));
                             }
                             else
                             {
@@ -7224,7 +7225,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         }
 #endif // DEBUG
                     }
-                    else if (lvaVarAddrExposed(lclFld->gtLclNum))
+                    else if (lvaVarAddrExposed(lclFld->GetLclNum()))
                     {
                         // This side-effects ByrefExposed.  Just use a new opaque VN.
                         // As with GT_LCL_VAR, we could probably use MapStore here and MapSelect at corresponding
@@ -7534,7 +7535,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                             GenTreeLclVarCommon* lclVarTree = nullptr;
                             bool                 isLocal    = tree->DefinesLocal(this, &lclVarTree);
 
-                            if (isLocal && lvaVarAddrExposed(lclVarTree->gtLclNum))
+                            if (isLocal && lvaVarAddrExposed(lclVarTree->GetLclNum()))
                             {
                                 // Store to address-exposed local; need to record the effect on ByrefExposed.
                                 // We could use MapStore here and MapSelect on reads of address-exposed locals
