@@ -598,8 +598,9 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 			if (!supported)
 				return NULL;
 			MONO_INST_NEW (cfg, ins, is_64bit ? OP_POPCNT64 : OP_POPCNT32);
-			ins->dreg = alloc_ireg (cfg);
+			ins->dreg = is_64bit ? alloc_lreg (cfg) : alloc_ireg (cfg);
 			ins->sreg1 = args [0]->dreg;
+			ins->type = is_64bit ? STACK_I8 : STACK_I4;
 			MONO_ADD_INS (cfg->cbb, ins);
 			return ins;
 		default:
@@ -623,8 +624,9 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 			if (!supported)
 				return NULL;
 			MONO_INST_NEW (cfg, ins, is_64bit ? OP_LZCNT64 : OP_LZCNT32);
-			ins->dreg = alloc_ireg (cfg);
+			ins->dreg = is_64bit ? alloc_lreg (cfg) : alloc_ireg (cfg);
 			ins->sreg1 = args [0]->dreg;
+			ins->type = is_64bit ? STACK_I8 : STACK_I4;
 			MONO_ADD_INS (cfg->cbb, ins);
 			return ins;
 		default:
@@ -648,8 +650,8 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		case SN_AndNot: {
 			// (a ^ -1) & b
 			// LLVM replaces it with `andn`
-			int tmp_reg = alloc_preg (cfg);
-			int result_reg = alloc_preg (cfg);
+			int tmp_reg = is_64bit ? alloc_lreg (cfg) : alloc_ireg (cfg);
+			int result_reg = is_64bit ? alloc_lreg (cfg) : alloc_ireg (cfg);
 			EMIT_NEW_BIALU_IMM (cfg, ins, is_64bit ? OP_LXOR_IMM : OP_IXOR_IMM, tmp_reg, args [0]->dreg, -1);
 			EMIT_NEW_BIALU (cfg, ins, is_64bit ? OP_LAND : OP_IAND, result_reg, tmp_reg, args [1]->dreg);
 			return ins;
@@ -657,7 +659,7 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		case SN_BitFieldExtract: {
 			if (fsig->param_count == 2) {
 				MONO_INST_NEW (cfg, ins, is_64bit ? OP_BEXTR64 : OP_BEXTR32);
-				ins->dreg = alloc_ireg (cfg);
+				ins->dreg = is_64bit ? alloc_lreg (cfg) : alloc_ireg (cfg);
 				ins->sreg1 = args [0]->dreg;
 				ins->sreg2 = args [1]->dreg;
 				ins->type = is_64bit ? STACK_I8 : STACK_I4;
@@ -668,8 +670,8 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		case SN_GetMaskUpToLowestSetBit: {
 			// x ^ (x - 1)
 			// LLVM replaces it with `blsmsk`
-			int tmp_reg = alloc_preg (cfg);
-			int result_reg = alloc_preg (cfg);
+			int tmp_reg = is_64bit ? alloc_lreg (cfg) : alloc_ireg (cfg);
+			int result_reg = is_64bit ? alloc_lreg (cfg) : alloc_ireg (cfg);
 			EMIT_NEW_BIALU_IMM (cfg, ins, is_64bit ? OP_LSUB_IMM : OP_ISUB_IMM, tmp_reg, args [0]->dreg, 1);
 			EMIT_NEW_BIALU (cfg, ins, is_64bit ? OP_LXOR : OP_IXOR, result_reg, args [0]->dreg, tmp_reg);
 			return ins;
@@ -677,8 +679,8 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		case SN_ResetLowestSetBit: {
 			// x & (x - 1)
 			// LLVM replaces it with `blsr`
-			int tmp_reg = alloc_preg (cfg);
-			int result_reg = alloc_preg (cfg);
+			int tmp_reg = is_64bit ? alloc_lreg (cfg) : alloc_ireg (cfg);
+			int result_reg = is_64bit ? alloc_lreg (cfg) : alloc_ireg (cfg);
 			EMIT_NEW_BIALU_IMM (cfg, ins, is_64bit ? OP_LSUB_IMM : OP_ISUB_IMM, tmp_reg, args [0]->dreg, 1);
 			EMIT_NEW_BIALU (cfg, ins, is_64bit ? OP_LAND : OP_IAND, result_reg, args [0]->dreg, tmp_reg);
 			return ins;
@@ -686,9 +688,9 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		case SN_ExtractLowestSetBit: {
 			// x & (0 - x)
 			// LLVM replaces it with `blsi`
-			int tmp_reg = alloc_preg (cfg);
-			int result_reg = alloc_preg (cfg);
-			int zero_reg = alloc_preg (cfg);
+			int tmp_reg = is_64bit ? alloc_lreg (cfg) : alloc_ireg (cfg);
+			int result_reg = is_64bit ? alloc_lreg (cfg) : alloc_ireg (cfg);
+			int zero_reg = is_64bit ? alloc_lreg (cfg) : alloc_ireg (cfg);
 			MONO_EMIT_NEW_ICONST (cfg, zero_reg, 0);
 			EMIT_NEW_BIALU (cfg, ins, is_64bit ? OP_LSUB : OP_ISUB, tmp_reg, zero_reg, args [0]->dreg);
 			EMIT_NEW_BIALU (cfg, ins, is_64bit ? OP_LAND : OP_IAND, result_reg, args [0]->dreg, tmp_reg);
@@ -696,9 +698,9 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		}
 		case SN_TrailingZeroCount:
 			MONO_INST_NEW (cfg, ins, is_64bit ? OP_CTTZ64 : OP_CTTZ32);
-			ins->dreg = alloc_ireg (cfg);
+			ins->dreg = is_64bit ? alloc_lreg (cfg) : alloc_ireg (cfg);
 			ins->sreg1 = args [0]->dreg;
-			ins->type = STACK_I4;
+			ins->type = is_64bit ? STACK_I8 : STACK_I4;
 			MONO_ADD_INS (cfg->cbb, ins);
 			return ins;
 		default:
@@ -721,14 +723,14 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		case SN_MultiplyNoFlags:
 			if (fsig->param_count == 2) {
 				MONO_INST_NEW (cfg, ins, is_64bit ? OP_MULX_H64 : OP_MULX_H32);
-				ins->dreg = alloc_ireg (cfg);
+				ins->dreg = is_64bit ? alloc_lreg (cfg) : alloc_ireg (cfg);
 				ins->sreg1 = args [0]->dreg;
 				ins->sreg2 = args [1]->dreg;
 				ins->type = is_64bit ? STACK_I8 : STACK_I4;
 				MONO_ADD_INS (cfg->cbb, ins);
 			} else if (fsig->param_count == 3) {
 				MONO_INST_NEW (cfg, ins, is_64bit ? OP_MULX_HL64 : OP_MULX_HL32);
-				ins->dreg = alloc_ireg (cfg);
+				ins->dreg = is_64bit ? alloc_lreg (cfg) : alloc_ireg (cfg);
 				ins->sreg1 = args [0]->dreg;
 				ins->sreg2 = args [1]->dreg;
 				ins->sreg3 = args [2]->dreg;
@@ -740,7 +742,7 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 			return ins;
 		case SN_ZeroHighBits:
 			MONO_INST_NEW (cfg, ins, is_64bit ? OP_BZHI64 : OP_BZHI32);
-			ins->dreg = alloc_ireg (cfg);
+			ins->dreg = is_64bit ? alloc_lreg (cfg) : alloc_ireg (cfg);
 			ins->sreg1 = args [0]->dreg;
 			ins->sreg2 = args [1]->dreg;
 			ins->type = is_64bit ? STACK_I8 : STACK_I4;
@@ -748,7 +750,7 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 			return ins;
 		case SN_ParallelBitExtract:
 			MONO_INST_NEW (cfg, ins, is_64bit ? OP_PEXT64 : OP_PEXT32);
-			ins->dreg = alloc_ireg (cfg);
+			ins->dreg = is_64bit ? alloc_lreg (cfg) : alloc_ireg (cfg);
 			ins->sreg1 = args [0]->dreg;
 			ins->sreg2 = args [1]->dreg;
 			ins->type = is_64bit ? STACK_I8 : STACK_I4;
@@ -756,7 +758,7 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 			return ins;
 		case SN_ParallelBitDeposit:
 			MONO_INST_NEW (cfg, ins, is_64bit ? OP_PDEP64 : OP_PDEP32);
-			ins->dreg = alloc_ireg (cfg);
+			ins->dreg = is_64bit ? alloc_lreg (cfg) : alloc_ireg (cfg);
 			ins->sreg1 = args [0]->dreg;
 			ins->sreg2 = args [1]->dreg;
 			ins->type = is_64bit ? STACK_I8 : STACK_I4;
