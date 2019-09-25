@@ -11,6 +11,9 @@ using Xunit.Sdk;
 
 namespace System.IO.Tests
 {
+    [CollectionDefinition("NoParallelTests", DisableParallelization = true)]
+    public partial class NoParallelTests { }
+
     public abstract partial class FileSystemWatcherTest : FileCleanupTestBase
     {
         // Events are reported asynchronously by the OS, so allow an amount of time for
