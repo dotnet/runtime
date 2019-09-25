@@ -193,5 +193,4 @@ namespace System.Diagnostics.Tracing
         public CounterPayloadType(CounterPayload payload) { Payload = payload; }
         public CounterPayload Payload { get; set; }
     }
-
 }

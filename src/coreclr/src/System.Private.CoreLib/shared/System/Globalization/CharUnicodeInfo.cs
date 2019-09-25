@@ -49,7 +49,7 @@ namespace System.Globalization
                     if ((uint)temp2 <= HIGH_SURROGATE_RANGE)
                     {
                         // Convert the surrogate to UTF32 and get the result.
-                        return ((temp1 * 0x400) + temp2 + UNICODE_PLANE01_START);
+                        return (temp1 * 0x400) + temp2 + UNICODE_PLANE01_START;
                     }
                 }
             }
@@ -100,11 +100,11 @@ namespace System.Globalization
                     {
                         // Convert the surrogate to UTF32 and get the result.
                         charLength++;
-                        return ((temp1 * 0x400) + temp2 + UNICODE_PLANE01_START);
+                        return (temp1 * 0x400) + temp2 + UNICODE_PLANE01_START;
                     }
                 }
             }
-            return ((int)s[index]);
+            return (int)s[index];
         }
 
         /// <summary>
@@ -270,7 +270,7 @@ namespace System.Globalization
             Debug.Assert(value != null, "value can not be null");
             Debug.Assert(index < value.Length, "index < value.Length");
 
-            return (GetUnicodeCategory(InternalConvertToUtf32(value, index)));
+            return GetUnicodeCategory(InternalConvertToUtf32(value, index));
         }
 
         internal static BidiCategory GetBidiCategory(string s, int index)
@@ -284,7 +284,7 @@ namespace System.Globalization
                 throw new ArgumentOutOfRangeException(nameof(index));
             }
 
-            return ((BidiCategory)InternalGetCategoryValue(InternalConvertToUtf32(s, index), BIDI_CATEGORY_OFFSET));
+            return (BidiCategory)InternalGetCategoryValue(InternalConvertToUtf32(s, index), BIDI_CATEGORY_OFFSET);
         }
 
         internal static BidiCategory GetBidiCategory(StringBuilder s, int index)
@@ -292,7 +292,7 @@ namespace System.Globalization
             Debug.Assert(s != null, "s can not be null");
             Debug.Assert(index >= 0 && index < s.Length, "invalid index");
 
-            return ((BidiCategory)InternalGetCategoryValue(InternalConvertToUtf32(s, index), BIDI_CATEGORY_OFFSET));
+            return (BidiCategory)InternalGetCategoryValue(InternalConvertToUtf32(s, index), BIDI_CATEGORY_OFFSET);
         }
 
         /// <summary>
@@ -311,11 +311,11 @@ namespace System.Globalization
         internal static bool IsCombiningCategory(UnicodeCategory uc)
         {
             Debug.Assert(uc >= 0, "uc >= 0");
-            return (
+            return
                 uc == UnicodeCategory.NonSpacingMark ||
                 uc == UnicodeCategory.SpacingCombiningMark ||
                 uc == UnicodeCategory.EnclosingMark
-            );
+            ;
         }
     }
 }

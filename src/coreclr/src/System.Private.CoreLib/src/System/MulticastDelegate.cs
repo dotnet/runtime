@@ -40,7 +40,7 @@ namespace System
 
         internal bool IsUnmanagedFunctionPtr()
         {
-            return (_invocationCount == (IntPtr)(-1));
+            return _invocationCount == (IntPtr)(-1);
         }
 
         internal bool InvocationListLogicallyNull()
@@ -89,7 +89,7 @@ namespace System
                     }
 
                     // now we know 'this' is not a special one, so we can work out what the other is
-                    if ((d._invocationList as Delegate) != null)
+                    if (d._invocationList is Delegate)
                         // this is a secure/wrapper delegate so we need to unwrap and check the inner one
                         return Equals(d._invocationList);
 
@@ -104,7 +104,7 @@ namespace System
                     }
                     else
                     {
-                        Debug.Assert((_invocationList as object[]) != null, "empty invocation list on multicast delegate");
+                        Debug.Assert(_invocationList is object[], "empty invocation list on multicast delegate");
                         return InvocationListEquals(d);
                     }
                 }
@@ -123,7 +123,7 @@ namespace System
                 }
 
                 // now we know 'this' is not a special one, so we can work out what the other is
-                if ((d._invocationList as Delegate) != null)
+                if (d._invocationList is Delegate)
                     // this is a secure/wrapper delegate so we need to unwrap and check the inner one
                     return Equals(d._invocationList);
 
@@ -328,7 +328,7 @@ namespace System
         {
             for (int i = 0; i < count; i++)
             {
-                if (!(a[start + i].Equals(b[i])))
+                if (!a[start + i].Equals(b[i]))
                     return false;
             }
             return true;

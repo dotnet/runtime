@@ -13,12 +13,9 @@ namespace System
     [NonVersionable]
     internal readonly ref struct ByReference<T>
     {
-        // CS0169: The private field '{blah}' is never used
-#pragma warning disable 169
-#pragma warning disable CA1823
+#pragma warning disable CA1823, 169 // private field '{blah}' is never used
         private readonly IntPtr _value;
-#pragma warning restore CA1823
-#pragma warning restore 169
+#pragma warning restore CA1823, 169
 
         [Intrinsic]
         public ByReference(ref T value)

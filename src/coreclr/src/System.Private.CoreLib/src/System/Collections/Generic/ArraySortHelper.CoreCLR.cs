@@ -12,7 +12,7 @@ namespace System.Collections.Generic
         int BinarySearch(TKey[] keys, int index, int length, TKey value, IComparer<TKey>? comparer);
     }
 
-    [TypeDependencyAttribute("System.Collections.Generic.GenericArraySortHelper`1")]
+    [TypeDependency("System.Collections.Generic.GenericArraySortHelper`1")]
     internal partial class ArraySortHelper<T>
         : IArraySortHelper<T>
     {
@@ -46,7 +46,7 @@ namespace System.Collections.Generic
         void Sort(TKey[] keys, TValue[] values, int index, int length, IComparer<TKey>? comparer);
     }
 
-    [TypeDependencyAttribute("System.Collections.Generic.GenericArraySortHelper`2")]
+    [TypeDependency("System.Collections.Generic.GenericArraySortHelper`2")]
     internal partial class ArraySortHelper<TKey, TValue>
         : IArraySortHelper<TKey, TValue>
     {

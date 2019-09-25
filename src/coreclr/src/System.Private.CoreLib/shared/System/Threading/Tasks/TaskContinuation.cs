@@ -347,7 +347,6 @@ namespace System.Threading.Tasks
 
             return new Delegate[] { m_task.m_action };
         }
-
     }
 
     /// <summary>Task continuation for awaiting with a current synchronization context.</summary>

@@ -187,7 +187,6 @@ namespace System
         public DateTimeOffset ToOffset(TimeSpan offset) =>
             new DateTimeOffset((_dateTime + offset).Ticks, offset);
 
-
         // Instance Properties
 
         // The clock or visible time represented. This is just a wrapper around the internal date because this is
@@ -222,7 +221,6 @@ namespace System
         // integer between 0 and 23.
         //
         public int Hour => ClockDateTime.Hour;
-
 
         // Returns the millisecond part of this DateTimeOffset. The returned value
         // is an integer between 0 and 999.
@@ -371,7 +369,6 @@ namespace System
             return 0;
         }
 
-
         // Checks if this DateTimeOffset is equal to a given object. Returns
         // true if the given object is a boxed DateTimeOffset and its value
         // is equal to the value of this DateTimeOffset. Returns false
@@ -390,7 +387,7 @@ namespace System
             // currently the Kind should always be Unspecified, but there is always the possibility that a future version
             // of DateTimeOffset overloads the Kind field
             //
-            (ClockDateTime == other.ClockDateTime && Offset == other.Offset && ClockDateTime.Kind == other.ClockDateTime.Kind);
+            ClockDateTime == other.ClockDateTime && Offset == other.Offset && ClockDateTime.Kind == other.ClockDateTime.Kind;
 
         // Compares two DateTimeOffset values for equality. Returns true if
         // the two DateTimeOffset values are equal, or false if they are
@@ -448,7 +445,6 @@ namespace System
             }
         }
 
-
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info == null)
@@ -459,7 +455,6 @@ namespace System
             info.AddValue("DateTime", _dateTime); // Do not rename (binary serialization)
             info.AddValue("OffsetMinutes", _offsetMinutes); // Do not rename (binary serialization)
         }
-
 
         private DateTimeOffset(SerializationInfo info, StreamingContext context)
         {
@@ -585,7 +580,6 @@ namespace System
 
         public DateTimeOffset Subtract(TimeSpan value) =>
             new DateTimeOffset(ClockDateTime.Subtract(value), Offset);
-
 
         public long ToFileTime() => UtcDateTime.ToFileTime();
 
@@ -833,7 +827,6 @@ namespace System
 
         public static DateTimeOffset operator +(DateTimeOffset dateTimeOffset, TimeSpan timeSpan) =>
             new DateTimeOffset(dateTimeOffset.ClockDateTime + timeSpan, dateTimeOffset.Offset);
-
 
         public static DateTimeOffset operator -(DateTimeOffset dateTimeOffset, TimeSpan timeSpan) =>
             new DateTimeOffset(dateTimeOffset.ClockDateTime - timeSpan, dateTimeOffset.Offset);

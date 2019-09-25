@@ -50,7 +50,7 @@ namespace System.IO
         {
             string s = GetType().ToString() + ": " + Message;
 
-            if (FileName != null && FileName.Length != 0)
+            if (!string.IsNullOrEmpty(FileName))
                 s += Environment.NewLine + SR.Format(SR.IO_FileName_Name, FileName);
 
             if (InnerException != null)

@@ -76,8 +76,7 @@ namespace System.Threading.Tasks
         }
 
         // Construct a promise-style task without any options.
-        internal Task() :
-            base()
+        internal Task()
         {
         }
 

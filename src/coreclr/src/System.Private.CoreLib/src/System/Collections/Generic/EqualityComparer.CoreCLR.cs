@@ -7,7 +7,7 @@ using System.Diagnostics;
 
 namespace System.Collections.Generic
 {
-    [TypeDependencyAttribute("System.Collections.Generic.ObjectEqualityComparer`1")]
+    [TypeDependency("System.Collections.Generic.ObjectEqualityComparer`1")]
     public abstract partial class EqualityComparer<T> : IEqualityComparer, IEqualityComparer<T>
     {
         // To minimize generic instantiation overhead of creating the comparer per type, we keep the generic portion of the code as small

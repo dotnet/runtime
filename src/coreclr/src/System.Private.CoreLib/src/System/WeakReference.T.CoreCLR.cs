@@ -23,9 +23,9 @@ namespace System
         [MaybeNull]
         private extern T Target
         {
-            [MethodImplAttribute(MethodImplOptions.InternalCall)]
+            [MethodImpl(MethodImplOptions.InternalCall)]
             get;
-            [MethodImplAttribute(MethodImplOptions.InternalCall)]
+            [MethodImpl(MethodImplOptions.InternalCall)]
             set;
         }
 
@@ -35,13 +35,13 @@ namespace System
         // treated specially in gc.cpp's ScanForFinalization
         // This is needed for subclasses deriving from WeakReference<T>, however.
         // Additionally, there may be some cases during shutdown when we run this finalizer.
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         extern ~WeakReference();
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private extern void Create(T target, bool trackResurrection);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private extern bool IsTrackResurrection();
     }
 }

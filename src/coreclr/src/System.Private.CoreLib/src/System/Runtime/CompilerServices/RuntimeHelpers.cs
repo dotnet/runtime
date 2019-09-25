@@ -11,7 +11,7 @@ namespace System.Runtime.CompilerServices
 {
     public static partial class RuntimeHelpers
     {
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void InitializeArray(Array array, RuntimeFieldHandle fldHandle);
 
         // GetObjectValue is intended to allow value classes to be manipulated as 'Object'
@@ -27,7 +27,7 @@ namespace System.Runtime.CompilerServices
         // cloned when you pass them around, and are always passed by value.
         // Of course, reference types are not cloned.
         //
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         [return: NotNullIfNotNull("obj")]
         public static extern object? GetObjectValue(object? obj);
 
@@ -39,7 +39,7 @@ namespace System.Runtime.CompilerServices
         // This call will generate an exception if the specified class constructor threw an
         // exception when it ran.
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void _RunClassConstructor(RuntimeType type);
 
         public static void RunClassConstructor(RuntimeTypeHandle type)
@@ -55,7 +55,7 @@ namespace System.Runtime.CompilerServices
         // This call will generate an exception if the specified module constructor threw an
         // exception when it ran.
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void _RunModuleConstructor(System.Reflection.RuntimeModule module);
 
         public static void RunModuleConstructor(ModuleHandle module)
@@ -67,7 +67,7 @@ namespace System.Runtime.CompilerServices
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern void _CompileMethod(RuntimeMethodHandleInternal method);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe void _PrepareMethod(IRuntimeMethodInfo method, IntPtr* pInstantiation, int cInstantiation);
 
         public static void PrepareMethod(RuntimeMethodHandle method)
@@ -92,13 +92,13 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void PrepareDelegate(Delegate d);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern int GetHashCode(object o);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern new bool Equals(object? o1, object? o2);
 
         public static int OffsetToStringData
@@ -126,17 +126,17 @@ namespace System.Runtime.CompilerServices
         // If there is not enough stack, then it throws System.InsufficientExecutionStackException.
         // Note: this method is not part of the CER support, and is not to be confused with ProbeForSufficientStack
         // below.
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void EnsureSufficientExecutionStack();
 
         // This method ensures that there is sufficient stack to execute the average Framework function.
         // If there is not enough stack, then it return false.
         // Note: this method is not part of the CER support, and is not to be confused with ProbeForSufficientStack
         // below.
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool TryEnsureSufficientExecutionStack();
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void ExecuteCodeWithGuaranteedCleanup(TryCode code, CleanupCode backoutCode, object? userData);
 
         internal static void ExecuteBackoutCodeHelper(object backoutCode, object? userData, bool exceptionThrown)
@@ -212,8 +212,7 @@ namespace System.Runtime.CompilerServices
             // mov tmp, qword ptr [rax] ; rax = obj ref, tmp = MethodTable* pointer
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern object GetUninitializedObjectInternal(Type type);
-
     }
 }

@@ -228,7 +228,7 @@ namespace System
             Debug.Assert(dayOfWeek >= 0 && dayOfWeek <= 6, "dayOfWeek >= 0 && dayOfWeek <= 6");
             if (repeat == 3)
             {
-                return (dtfi.GetAbbreviatedDayName((DayOfWeek)dayOfWeek));
+                return dtfi.GetAbbreviatedDayName((DayOfWeek)dayOfWeek);
             }
             // Call dtfi.GetDayName() here, instead of accessing DayNames property, because we don't
             // want a clone of DayNames, which will hurt perf.
@@ -282,7 +282,7 @@ namespace System
             if (dtfi.Calendar.IsLeapYear(dtfi.Calendar.GetYear(time)))
             {
                 // This month is in a leap year
-                return dtfi.InternalGetMonthName(month, MonthNameStyles.LeapYear, (repeatCount == 3));
+                return dtfi.InternalGetMonthName(month, MonthNameStyles.LeapYear, repeatCount == 3);
             }
             // This is in a regular year.
             if (month >= 7)
@@ -291,9 +291,9 @@ namespace System
             }
             if (repeatCount == 3)
             {
-                return (dtfi.GetAbbreviatedMonthName(month));
+                return dtfi.GetAbbreviatedMonthName(month);
             }
-            return (dtfi.GetMonthName(month));
+            return dtfi.GetMonthName(month);
         }
 
         //
@@ -352,7 +352,7 @@ namespace System
             //
             // Return the character count including the begin/end quote characters and enclosed string.
             //
-            return (pos - beginPos);
+            return pos - beginPos;
         }
 
         //
@@ -364,9 +364,9 @@ namespace System
         {
             if (pos >= format.Length - 1)
             {
-                return (-1);
+                return -1;
             }
-            return ((int)format[pos + 1]);
+            return (int)format[pos + 1];
         }
 
         //
@@ -438,7 +438,6 @@ namespace System
             }
             return false;
         }
-
 
         //
         //  FormatCustomized
@@ -567,7 +566,7 @@ namespace System
                         }
                         else
                         {
-                            result.Append((dateTime.Hour < 12 ? dtfi.AMDesignator : dtfi.PMDesignator));
+                            result.Append(dateTime.Hour < 12 ? dtfi.AMDesignator : dtfi.PMDesignator);
                         }
                         break;
                     case 'd':
@@ -746,7 +745,7 @@ namespace System
                         nextChar = ParseNextChar(format, i);
                         if (nextChar >= 0)
                         {
-                            result.Append(((char)nextChar));
+                            result.Append((char)nextChar);
                             tokenLen = 2;
                         }
                         else
@@ -774,7 +773,6 @@ namespace System
             }
             return result;
         }
-
 
         // output the 'z' famliy of formats, which output a the offset from UTC, e.g. "-07:30"
         private static void FormatCustomizedTimeZone(DateTime dateTime, TimeSpan offset, int tokenLen, bool timeOnly, StringBuilder result)
@@ -936,7 +934,6 @@ namespace System
             }
             return realFormat;
         }
-
 
         // Expand a pre-defined format string (like "D" for long date) to the real format that
         // we are going to use in the date time parsing.
@@ -1146,7 +1143,7 @@ namespace System
                 }
                 else if (kind == DateTimeKind.Utc)
                 {
-                    charsRequired += 1;
+                    charsRequired++;
                 }
             }
             else
@@ -1268,7 +1265,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void WriteTwoDecimalDigits(uint value, Span<char> destination, int offset)
         {
-            Debug.Assert(0 <= value && value <= 99);
+            Debug.Assert(value <= 99);
 
             uint temp = '0' + value;
             value /= 10;
@@ -1283,7 +1280,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void WriteFourDecimalDigits(uint value, Span<char> buffer, int startingIndex = 0)
         {
-            Debug.Assert(0 <= value && value <= 9999);
+            Debug.Assert(value <= 9999);
 
             uint temp = '0' + value;
             value /= 10;

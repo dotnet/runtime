@@ -11,13 +11,11 @@ namespace System.Reflection
             CorElementType corElementType = 0;
             long buffer = 0;
             int length;
-            string? stringVal;
-
-            stringVal = scope.GetDefaultValue(token, out buffer, out length, out corElementType);
+            string? stringVal = scope.GetDefaultValue(token, out buffer, out length, out corElementType);
 
             RuntimeType fieldType = fieldTypeHandle.GetRuntimeType();
 
-            if (fieldType.IsEnum && raw == false)
+            if (fieldType.IsEnum && !raw)
             {
                 // NOTE: Unlike in `TypeBuilder.SetConstantValue`, if `fieldType` describes
                 // a nullable enum type `Nullable<TEnum>`, we do not unpack it to `TEnum` to

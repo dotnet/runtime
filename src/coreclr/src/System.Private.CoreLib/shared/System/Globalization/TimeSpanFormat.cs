@@ -12,31 +12,8 @@ namespace System.Globalization
 {
     internal static class TimeSpanFormat
     {
-        private static unsafe void AppendNonNegativeInt32(StringBuilder sb, int n, int digits)
-        {
-            Debug.Assert(n >= 0);
-            uint value = (uint)n;
-
-            const int MaxUInt32Digits = 10;
-            char* buffer = stackalloc char[MaxUInt32Digits];
-
-            int index = 0;
-            do
-            {
-                uint div = value / 10;
-                buffer[index++] = (char)(value - (div * 10) + '0');
-                value = div;
-            }
-            while (value != 0);
-            Debug.Assert(index <= MaxUInt32Digits);
-
-            for (int i = digits - index; i > 0; --i) sb.Append('0');
-            for (int i = index - 1; i >= 0; --i) sb.Append(buffer[i]);
-        }
-
         internal static readonly FormatLiterals PositiveInvariantFormatLiterals = TimeSpanFormat.FormatLiterals.InitInvariant(isNegative: false);
         internal static readonly FormatLiterals NegativeInvariantFormatLiterals = TimeSpanFormat.FormatLiterals.InitInvariant(isNegative: true);
-
 
         /// <summary>Main method called from TimeSpan.ToString.</summary>
         internal static string Format(TimeSpan value, string? format, IFormatProvider? formatProvider)
@@ -480,7 +457,7 @@ namespace System.Globalization
                         nextChar = DateTimeFormat.ParseNextChar(format, i);
                         if (nextChar >= 0)
                         {
-                            result.Append(((char)nextChar));
+                            result.Append((char)nextChar);
                             tokenLen = 2;
                         }
                         else

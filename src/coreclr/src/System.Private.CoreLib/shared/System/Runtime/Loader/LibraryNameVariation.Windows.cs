@@ -23,6 +23,5 @@ namespace System.Runtime.Loader
                 yield return new LibraryNameVariation(string.Empty, LibraryNameSuffix);
             }
         }
-
     }
 }

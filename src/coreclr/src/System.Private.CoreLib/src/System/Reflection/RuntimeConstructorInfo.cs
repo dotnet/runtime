@@ -18,13 +18,11 @@ namespace System.Reflection
         private RuntimeTypeCache m_reflectedTypeCache;
         private string? m_toString;
         private ParameterInfo[]? m_parameters; // Created lazily when GetParameters() is called.
-#pragma warning disable 414
-#pragma warning disable CA1823
+#pragma warning disable CA1823, 414
         private object _empty1 = null!; // These empties are used to ensure that RuntimeConstructorInfo and RuntimeMethodInfo are have a layout which is sufficiently similar
         private object _empty2 = null!;
         private object _empty3 = null!;
-#pragma warning restore CA1823
-#pragma warning restore 414
+#pragma warning restore CA1823, 414
         private IntPtr m_handle;
         private MethodAttributes m_methodAttributes;
         private BindingFlags m_bindingFlags;
@@ -174,7 +172,6 @@ namespace System.Reflection
         }
         #endregion
 
-
         #region MemberInfo Overrides
         public override string Name => RuntimeMethodHandle.GetName(this);
         public override MemberTypes MemberType => MemberTypes.Constructor;
@@ -320,7 +317,7 @@ namespace System.Reflection
 
         public override bool IsSecurityTransparent => false;
 
-        public override bool ContainsGenericParameters => (DeclaringType != null && DeclaringType.ContainsGenericParameters);
+        public override bool ContainsGenericParameters => DeclaringType != null && DeclaringType.ContainsGenericParameters;
         #endregion
 
         #region ConstructorInfo Overrides

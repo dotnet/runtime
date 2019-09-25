@@ -89,7 +89,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
     // Adapter class which holds a Windows Runtime IIterator<T>, exposing it as a managed IEnumerator<T>
 
-
     // There are a few implementation differences between the Iterator and IEnumerator which need to be
     // addressed. Iterator starts at index 0 while IEnumerator starts at index -1 as a result of which
     // the first call to IEnumerator.Current is correct only after calling MoveNext().

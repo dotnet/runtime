@@ -2440,7 +2440,7 @@ namespace System
                 // needs further thought for .NET 5 so that we can be spec compliant and so that users
                 // can get the desired rounding behavior for their needs.
 
-                return (digit >= '5');
+                return digit >= '5';
             }
         }
 

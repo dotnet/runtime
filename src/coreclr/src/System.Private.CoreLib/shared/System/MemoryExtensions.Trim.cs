@@ -388,7 +388,6 @@ namespace System
             }
 
             return memory;
-
         }
 
         /// <summary>

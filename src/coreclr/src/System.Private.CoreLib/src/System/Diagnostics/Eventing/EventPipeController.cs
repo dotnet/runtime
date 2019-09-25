@@ -213,19 +213,8 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        private static string Config_EventPipeOutputPath
-        {
-            get
-            {
-                string? stringValue = CompatibilitySwitch.GetValueInternal("EventPipeOutputPath");
-                if (stringValue == null)
-                {
-                    stringValue = ".";
-                }
-
-                return stringValue;
-            }
-        }
+        private static string Config_EventPipeOutputPath =>
+            CompatibilitySwitch.GetValueInternal("EventPipeOutputPath") ?? ".";
     }
 }
 

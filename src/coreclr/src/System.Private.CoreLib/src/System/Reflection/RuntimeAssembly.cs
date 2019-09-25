@@ -338,7 +338,7 @@ namespace System.Reflection
             return nLoad(assemblyRef, codeBase, null, ref stackMark, true, assemblyLoadContext);
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern RuntimeAssembly nLoad(AssemblyName fileName,
                                                     string? codeBase,
                                                     RuntimeAssembly? assemblyContext,
@@ -390,7 +390,7 @@ namespace System.Reflection
         }
 
         // Returns the names of all the resources
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern string[] GetManifestResourceNames(RuntimeAssembly assembly);
 
         // Returns the names of all the resources
@@ -400,7 +400,7 @@ namespace System.Reflection
         }
 
         // Returns the names of all the resources
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern AssemblyName[] GetReferencedAssemblies(RuntimeAssembly assembly);
 
         public override AssemblyName[] GetReferencedAssemblies()
@@ -523,7 +523,7 @@ namespace System.Reflection
             return CultureInfo.GetCultureInfo(locale);
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool FCallIsDynamic(RuntimeAssembly assembly);
 
         public override bool IsDynamic => FCallIsDynamic(GetNativeHandle());
@@ -655,10 +655,10 @@ namespace System.Reflection
             return GetModulesInternal(false, getResourceModules);
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern RuntimeModule GetManifestModule(RuntimeAssembly assembly);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int GetToken(RuntimeAssembly assembly);
 
         public sealed override Type[] GetForwardedTypes()

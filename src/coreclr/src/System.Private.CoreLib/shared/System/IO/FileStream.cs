@@ -163,7 +163,7 @@ namespace System.IO
         }
 
         public FileStream(string path, FileMode mode) :
-            this(path, mode, (mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite), DefaultShare, DefaultBufferSize, DefaultIsAsync)
+            this(path, mode, mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite, DefaultShare, DefaultBufferSize, DefaultIsAsync)
         { }
 
         public FileStream(string path, FileMode mode, FileAccess access) :

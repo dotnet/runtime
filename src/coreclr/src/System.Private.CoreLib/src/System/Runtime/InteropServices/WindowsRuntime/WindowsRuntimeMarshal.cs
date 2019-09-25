@@ -363,7 +363,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
                 public bool Equals(EventCacheKey other)
                 {
-                    return (object.Equals(target, other.target) && object.Equals(method, other.method));
+                    return object.Equals(target, other.target) && object.Equals(method, other.method);
                 }
 
                 public int GetHashCode(EventCacheKey key)
@@ -472,7 +472,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                     // because the total token list count has dropped to 0 and we don't have any events subscribed
                     Debug.Assert(s_eventRegistrations != null);
 
-                    Log("[WinRT_Eventing] Removing " + _key + " from cache" + "\n");
+                    Log("[WinRT_Eventing] Removing " + _key + " from cache\n");
                     s_eventRegistrations.Remove(_key);
                     Log("[WinRT_Eventing] s_eventRegistrations size = " + s_eventRegistrations.Count + "\n");
                 }
@@ -619,7 +619,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                         removeMethod(token);
                     }
 
-
                     throw;
                 }
             }
@@ -663,7 +662,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                             return null;
                         }
 
-                        Log("[WinRT_Eventing] Adding (" + instance + "," + removeMethod.Method + ") into cache" + "\n");
+                        Log("[WinRT_Eventing] Adding (" + instance + "," + removeMethod.Method + ") into cache\n");
 
                         eventCacheEntry = new EventCacheEntry();
                         eventCacheEntry.registrationTable = new ConditionalWeakTable<object, EventRegistrationTokenListWithCount>();
@@ -804,7 +803,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 CallRemoveMethods(removeMethod, tokensToRemove);
                 Log("[WinRT_Eventing] Finished removing all events for instance = " + instanceKey + "\n");
             }
-
 
             internal class ReaderWriterLockTimedOutException : ApplicationException
             {
@@ -1048,12 +1046,9 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 return string.Empty;
             }
 
-            unsafe
-            {
-                uint length;
-                char* rawBuffer = UnsafeNativeMethods.WindowsGetStringRawBuffer(hstring, &length);
-                return new string(rawBuffer, 0, checked((int)length));
-            }
+            uint length;
+            char* rawBuffer = UnsafeNativeMethods.WindowsGetStringRawBuffer(hstring, &length);
+            return new string(rawBuffer, 0, checked((int)length));
         }
 
         internal static Exception GetExceptionForHR(int hresult, Exception? innerException, string? messageResource)
@@ -1205,7 +1200,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             return activationFactory;
         }
 
-
 #endif // FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
 
         //
@@ -1292,7 +1286,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         /// </summary>
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int GetHRForException(Exception e);
-
 
 #if FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
         [MethodImpl(MethodImplOptions.InternalCall)]

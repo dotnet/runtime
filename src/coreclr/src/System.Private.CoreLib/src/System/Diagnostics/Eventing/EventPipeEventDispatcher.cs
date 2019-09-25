@@ -124,7 +124,7 @@ namespace System.Diagnostics.Tracing
             {
                 if (!EventPipeInternal.GetSessionInfo(m_sessionID, &sessionInfo))
                 {
-                    Debug.Assert(false, "GetSessionInfo returned false.");
+                    Debug.Fail("GetSessionInfo returned false.");
                 }
             }
 

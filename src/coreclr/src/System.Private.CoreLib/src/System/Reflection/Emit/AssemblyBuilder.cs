@@ -116,7 +116,7 @@ namespace System.Reflection.Emit
 
     public sealed class AssemblyBuilder : Assembly
     {
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern RuntimeModule GetInMemoryAssemblyModule(RuntimeAssembly assembly);
 
         #region Internal Data Members
@@ -251,7 +251,7 @@ namespace System.Reflection.Emit
         }
 
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern Assembly nCreateDynamicAssembly(AssemblyName name,
                                                               ref StackCrawlMark stackMark,
                                                               AssemblyBuilderAccess access);
