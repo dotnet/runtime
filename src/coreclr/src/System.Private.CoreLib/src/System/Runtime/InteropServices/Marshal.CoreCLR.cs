@@ -651,7 +651,7 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// check if the type is visible from COM.
         /// </summary>
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool IsTypeVisibleFromCom(Type t);
 
         [MethodImpl(MethodImplOptions.InternalCall)]

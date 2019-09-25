@@ -143,7 +143,7 @@ namespace System
             if (baseType == null)
             {
                 // Cannot resolve the type. If throwOnError is true we should have already thrown.
-                Debug.Assert(throwOnError == false);
+                Debug.Assert(!throwOnError);
                 return null;
             }
 
@@ -165,7 +165,7 @@ namespace System
                     if (types[i] == null)
                     {
                         // If throwOnError is true argParser.ConstructType should have already thrown.
-                        Debug.Assert(throwOnError == false);
+                        Debug.Assert(!throwOnError);
                         return null;
                     }
                 }
@@ -182,7 +182,7 @@ namespace System
 
         private static Assembly? ResolveAssembly(string asmName, Func<AssemblyName, Assembly?>? assemblyResolver, bool throwOnError, ref StackCrawlMark stackMark)
         {
-            Debug.Assert(asmName != null && asmName.Length > 0);
+            Debug.Assert(!string.IsNullOrEmpty(asmName));
 
             Assembly? assembly = null;
 

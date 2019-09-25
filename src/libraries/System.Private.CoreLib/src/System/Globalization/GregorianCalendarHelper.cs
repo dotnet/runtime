@@ -104,7 +104,6 @@ namespace System.Globalization
         internal EraInfo[] m_EraInfo;
         internal int[]? m_eras = null;
 
-
         // Construct an instance of gregorian calendar.
         internal GregorianCalendarHelper(Calendar cal, EraInfo[] eraInfo)
         {
@@ -238,14 +237,14 @@ namespace System.Globalization
             // If year was requested, compute and return it
             if (part == DatePartYear)
             {
-                return (y400 * 400 + y100 * 100 + y4 * 4 + y1 + 1);
+                return y400 * 400 + y100 * 100 + y4 * 4 + y1 + 1;
             }
             // n = day number within year
             n -= y1 * DaysPerYear;
             // If day-of-year was requested, return it
             if (part == DatePartDayOfYear)
             {
-                return (n + 1);
+                return n + 1;
             }
             // Leap year calculation looks different from IsLeapYear since y1, y4,
             // and y100 are relative to year 1, not year 0
@@ -257,9 +256,9 @@ namespace System.Globalization
             // m = 1-based month number
             while (n >= days[m]) m++;
             // If month was requested, return it
-            if (part == DatePartMonth) return (m);
+            if (part == DatePartMonth) return m;
             // Return 1-based day-of-month
-            return (n - days[m - 1] + 1);
+            return n - days[m - 1] + 1;
         }
 
         /*=================================GetAbsoluteDate==========================
@@ -284,12 +283,12 @@ namespace System.Globalization
         {
             if (year >= 1 && year <= 9999 && month >= 1 && month <= 12)
             {
-                int[] days = ((year % 4 == 0 && (year % 100 != 0 || year % 400 == 0))) ? DaysToMonth366 : DaysToMonth365;
+                int[] days = (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ? DaysToMonth366 : DaysToMonth365;
                 if (day >= 1 && (day <= days[month] - days[month - 1]))
                 {
                     int y = year - 1;
                     int absoluteDate = y * 365 + y / 4 - y / 100 + y / 400 + days[month - 1] + day - 1;
-                    return (absoluteDate);
+                    return absoluteDate;
                 }
             }
             throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadYearMonthDay);
@@ -299,7 +298,7 @@ namespace System.Globalization
         // Will check the if the parameters are valid.
         internal static long DateToTicks(int year, int month, int day)
         {
-            return (GetAbsoluteDate(year, month, day) * TicksPerDay);
+            return GetAbsoluteDate(year, month, day) * TicksPerDay;
         }
 
         // Return the tick count corresponding to the given hour, minute, second.
@@ -319,11 +318,10 @@ namespace System.Globalization
                                     0,
                                     MillisPerSecond - 1));
                 }
-                return (InternalGlobalizationHelper.TimeToTicks(hour, minute, second) + millisecond * TicksPerMillisecond);
+                return InternalGlobalizationHelper.TimeToTicks(hour, minute, second) + millisecond * TicksPerMillisecond;
             }
             throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadHourMinuteSecond);
         }
-
 
         internal void CheckTicksRange(long ticks)
         {
@@ -392,7 +390,7 @@ namespace System.Globalization
             }
             long ticks = DateToTicks(y, m, d) + (time.Ticks % TicksPerDay);
             Calendar.CheckAddResult(ticks, m_Cal.MinSupportedDateTime, m_Cal.MaxSupportedDateTime);
-            return (new DateTime(ticks));
+            return new DateTime(ticks);
         }
 
         // Returns the DateTime resulting from adding the given number of
@@ -405,7 +403,7 @@ namespace System.Globalization
         //
         public DateTime AddYears(DateTime time, int years)
         {
-            return (AddMonths(time, years * 12));
+            return AddMonths(time, years * 12);
         }
 
         // Returns the day-of-month part of the specified DateTime. The returned
@@ -413,7 +411,7 @@ namespace System.Globalization
         //
         public int GetDayOfMonth(DateTime time)
         {
-            return (GetDatePart(time.Ticks, DatePartDay));
+            return GetDatePart(time.Ticks, DatePartDay);
         }
 
         // Returns the day-of-week part of the specified DateTime. The returned value
@@ -424,7 +422,7 @@ namespace System.Globalization
         public DayOfWeek GetDayOfWeek(DateTime time)
         {
             CheckTicksRange(time.Ticks);
-            return ((DayOfWeek)((time.Ticks / TicksPerDay + 1) % 7));
+            return (DayOfWeek)((time.Ticks / TicksPerDay + 1) % 7);
         }
 
         // Returns the day-of-year part of the specified DateTime. The returned value
@@ -432,7 +430,7 @@ namespace System.Globalization
         //
         public int GetDayOfYear(DateTime time)
         {
-            return (GetDatePart(time.Ticks, DatePartDayOfYear));
+            return GetDatePart(time.Ticks, DatePartDayOfYear);
         }
 
         // Returns the number of days in the month given by the year and
@@ -449,7 +447,7 @@ namespace System.Globalization
                 throw new ArgumentOutOfRangeException(nameof(month), SR.ArgumentOutOfRange_Month);
             }
             int[] days = ((year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ? DaysToMonth366 : DaysToMonth365);
-            return (days[month] - days[month - 1]);
+            return days[month] - days[month - 1];
         }
 
         // Returns the number of days in the year given by the year argument for the current era.
@@ -461,7 +459,7 @@ namespace System.Globalization
             // Convert year/era value to Gregorain year value.
             //
             year = GetGregorianYear(year, era);
-            return ((year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ? 366 : 365);
+            return (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ? 366 : 365;
         }
 
         // Returns the era for the specified DateTime value.
@@ -473,12 +471,11 @@ namespace System.Globalization
             {
                 if (ticks >= m_EraInfo[i].ticks)
                 {
-                    return (m_EraInfo[i].era);
+                    return m_EraInfo[i].era;
                 }
             }
             throw new ArgumentOutOfRangeException(nameof(time), SR.ArgumentOutOfRange_Era);
         }
-
 
         public int[] Eras
         {
@@ -492,7 +489,7 @@ namespace System.Globalization
                         m_eras[i] = m_EraInfo[i].era;
                     }
                 }
-                return ((int[])m_eras.Clone());
+                return (int[])m_eras.Clone();
             }
         }
 
@@ -501,7 +498,7 @@ namespace System.Globalization
         //
         public int GetMonth(DateTime time)
         {
-            return (GetDatePart(time.Ticks, DatePartMonth));
+            return GetDatePart(time.Ticks, DatePartMonth);
         }
 
         // Returns the number of months in the specified year and era.
@@ -523,7 +520,7 @@ namespace System.Globalization
             {
                 if (ticks >= m_EraInfo[i].ticks)
                 {
-                    return (year - m_EraInfo[i].yearOffset);
+                    return year - m_EraInfo[i].yearOffset;
                 }
             }
             throw new ArgumentException(SR.Argument_NoEra);
@@ -544,7 +541,7 @@ namespace System.Globalization
                 // We should use the previous era info instead to get the right year number. Example of such date is Feb 2nd 1989
                 if (ticks >= m_EraInfo[i].ticks && year > m_EraInfo[i].yearOffset)
                 {
-                    return (year - m_EraInfo[i].yearOffset);
+                    return year - m_EraInfo[i].yearOffset;
                 }
             }
             throw new ArgumentException(SR.Argument_NoEra);
@@ -614,7 +611,7 @@ namespace System.Globalization
         public bool IsLeapYear(int year, int era)
         {
             year = GetGregorianYear(year, era);
-            return (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0));
+            return year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
         }
 
         // Returns the date and time converted to a DateTime value.  Throws an exception if the n-tuple is invalid.
@@ -624,7 +621,7 @@ namespace System.Globalization
             year = GetGregorianYear(year, era);
             long ticks = DateToTicks(year, month, day) + TimeToTicks(hour, minute, second, millisecond);
             CheckTicksRange(ticks);
-            return (new DateTime(ticks));
+            return new DateTime(ticks);
         }
 
         public virtual int GetWeekOfYear(DateTime time, CalendarWeekRule rule, DayOfWeek firstDayOfWeek)
@@ -632,9 +629,8 @@ namespace System.Globalization
             CheckTicksRange(time.Ticks);
             // Use GregorianCalendar to get around the problem that the implmentation in Calendar.GetWeekOfYear()
             // can call GetYear() that exceeds the supported range of the Gregorian-based calendars.
-            return (GregorianCalendar.GetDefaultInstance().GetWeekOfYear(time, rule, firstDayOfWeek));
+            return GregorianCalendar.GetDefaultInstance().GetWeekOfYear(time, rule, firstDayOfWeek);
         }
-
 
         public int ToFourDigitYear(int year, int twoDigitYearMax)
         {
@@ -647,7 +643,7 @@ namespace System.Globalization
             if (year < 100)
             {
                 int y = year % 100;
-                return ((twoDigitYearMax / 100 - (y > twoDigitYearMax % 100 ? 1 : 0)) * 100 + y);
+                return (twoDigitYearMax / 100 - (y > twoDigitYearMax % 100 ? 1 : 0)) * 100 + y;
             }
 
             if (year < m_minYear || year > m_maxYear)
@@ -658,7 +654,7 @@ namespace System.Globalization
             }
             // If the year value is above 100, just return the year value.  Don't have to do
             // the TwoDigitYearMax comparison.
-            return (year);
+            return year;
         }
     }
 }

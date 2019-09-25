@@ -267,7 +267,7 @@ namespace System.Runtime.InteropServices
                 _connectionPoint.Unadvise(_cookie);
                 Marshal.ReleaseComObject(_connectionPoint);
             }
-            catch (Exception)
+            catch
             {
                 // swallow all exceptions on unadvise
                 // the host may not be available at this point

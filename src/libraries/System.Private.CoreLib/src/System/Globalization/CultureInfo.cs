@@ -331,7 +331,7 @@ namespace System.Globalization
             }
 
             // In the most common case, they've given us a specific culture, so we'll just return that.
-            if (!(culture.IsNeutralCulture))
+            if (!culture.IsNeutralCulture)
             {
                 return culture;
             }
@@ -609,34 +609,12 @@ namespace System.Globalization
         /// Returns the full name of the CultureInfo. The name is in format like
         /// "en-US" This version does NOT include sort information in the name.
         /// </summary>
-        public virtual string Name
-        {
-            get
-            {
-                // We return non sorting name here.
-                if (_nonSortName == null)
-                {
-                    _nonSortName = _cultureData.Name ?? string.Empty;
-                }
-                return _nonSortName;
-            }
-        }
+        public virtual string Name => _nonSortName ??= (_cultureData.Name ?? string.Empty);
 
         /// <summary>
         /// This one has the sort information (ie: de-DE_phoneb)
         /// </summary>
-        internal string SortName
-        {
-            get
-            {
-                if (_sortName == null)
-                {
-                    _sortName = _cultureData.SortName;
-                }
-
-                return _sortName;
-            }
-        }
+        internal string SortName => _sortName ??= _cultureData.SortName;
 
         public string IetfLanguageTag =>
                 // special case the compatibility cultures
@@ -694,21 +672,10 @@ namespace System.Globalization
         /// <summary>
         /// Gets the CompareInfo for this culture.
         /// </summary>
-        public virtual CompareInfo CompareInfo
-        {
-            get
-            {
-                if (_compareInfo == null)
-                {
-                    // Since CompareInfo's don't have any overrideable properties, get the CompareInfo from
-                    // the Non-Overridden CultureInfo so that we only create one CompareInfo per culture
-                    _compareInfo = UseUserOverride
-                                    ? GetCultureInfo(_name).CompareInfo
-                                    : new CompareInfo(this);
-                }
-                return _compareInfo;
-            }
-        }
+        public virtual CompareInfo CompareInfo => _compareInfo ??=
+            // Since CompareInfo's don't have any overrideable properties, get the CompareInfo from
+            // the Non-Overridden CultureInfo so that we only create one CompareInfo per culture
+            (UseUserOverride ? GetCultureInfo(_name).CompareInfo : new CompareInfo(this));
 
         /// <summary>
         /// Gets the TextInfo for this culture.
@@ -749,7 +716,6 @@ namespace System.Globalization
         {
             return Name.GetHashCode() + CompareInfo.GetHashCode();
         }
-
 
         /// <summary>
         /// Implements object.ToString(). Returns the name of the CultureInfo,
@@ -1077,7 +1043,6 @@ namespace System.Globalization
 
             return newInfo;
         }
-
 
         public bool IsReadOnly => _isReadOnly;
 

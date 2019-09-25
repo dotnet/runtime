@@ -133,13 +133,9 @@ namespace System
             get
             {
                 // FX_PRODUCT_VERSION is expected to be set by the host
-                string? versionString = (string?)AppContext.GetData("FX_PRODUCT_VERSION");
-
-                if (versionString == null)
-                {
-                    // Use AssemblyInformationalVersionAttribute as fallback if the exact product version is not specified by the host
-                    versionString = typeof(object).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
-                }
+                // Use AssemblyInformationalVersionAttribute as fallback if the exact product version is not specified by the host
+                string? versionString = (string?)AppContext.GetData("FX_PRODUCT_VERSION") ??
+                    typeof(object).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
 
                 ReadOnlySpan<char> versionSpan = versionString.AsSpan();
 

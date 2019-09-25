@@ -1551,7 +1551,7 @@ namespace System.Threading.Tasks
             private readonly Task[] _tasks;
             private int _count;
 
-            internal CompleteOnCountdownPromise(Task[] tasksCopy) : base()
+            internal CompleteOnCountdownPromise(Task[] tasksCopy)
             {
                 Debug.Assert((tasksCopy != null) && (tasksCopy.Length > 0), "Expected non-null task array with at least one element in it");
                 _tasks = tasksCopy;
@@ -1621,7 +1621,7 @@ namespace System.Threading.Tasks
             private readonly Task<T>[] _tasks;
             private int _count;
 
-            internal CompleteOnCountdownPromise(Task<T>[] tasksCopy) : base()
+            internal CompleteOnCountdownPromise(Task<T>[] tasksCopy)
             {
                 Debug.Assert((tasksCopy != null) && (tasksCopy.Length > 0), "Expected non-null task array with at least one element in it");
                 _tasks = tasksCopy;
@@ -2271,7 +2271,7 @@ namespace System.Threading.Tasks
             private IList<Task>? _tasks; // must track this for cleanup
             private int _stateFlags;
 
-            public CompleteOnInvokePromise(IList<Task> tasks, bool isSyncBlocking) : base()
+            public CompleteOnInvokePromise(IList<Task> tasks, bool isSyncBlocking)
             {
                 Debug.Assert(tasks != null, "Expected non-null collection of tasks");
                 _tasks = tasks;

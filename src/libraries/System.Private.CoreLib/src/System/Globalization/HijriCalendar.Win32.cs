@@ -15,7 +15,7 @@ namespace System.Globalization
                 // Never been set before.  Use the system value from registry.
                 _hijriAdvance = GetAdvanceHijriDate();
             }
-            return (_hijriAdvance);
+            return _hijriAdvance;
         }
 
         private const string InternationalRegKey = "Control Panel\\International";

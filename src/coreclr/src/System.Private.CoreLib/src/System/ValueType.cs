@@ -64,10 +64,10 @@ namespace System
             return true;
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool CanCompareBits(object obj);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool FastEqualsCheck(object a, object b);
 
         /*=================================GetHashCode==================================
@@ -80,10 +80,10 @@ namespace System
         **Arguments: None.
         **Exceptions: None.
         ==============================================================================*/
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public extern override int GetHashCode();
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int GetHashCodeOfPtr(IntPtr ptr);
 
         public override string? ToString()

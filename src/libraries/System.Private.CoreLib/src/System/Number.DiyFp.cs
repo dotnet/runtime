@@ -100,7 +100,7 @@ namespace System
 
                 tmp += (1U << 31);
 
-                return new DiyFp((ac + (ad >> 32) + (bc >> 32) + (tmp >> 32)), (e + other.e + SignificandSize));
+                return new DiyFp(ac + (ad >> 32) + (bc >> 32) + (tmp >> 32), e + other.e + SignificandSize);
             }
 
             public DiyFp Normalize()
@@ -113,7 +113,7 @@ namespace System
 
                 Debug.Assert(f != 0);
                 int lzcnt = BitOperations.LeadingZeroCount(f);
-                return new DiyFp((f << lzcnt), (e - lzcnt));
+                return new DiyFp(f << lzcnt, e - lzcnt);
             }
 
             // The exponents of both numbers must be the same.
@@ -123,12 +123,12 @@ namespace System
             {
                 Debug.Assert(e == other.e);
                 Debug.Assert(f >= other.f);
-                return new DiyFp((f - other.f), e);
+                return new DiyFp(f - other.f, e);
             }
 
             private void GetBoundaries(int implicitBitIndex, out DiyFp mMinus, out DiyFp mPlus)
             {
-                mPlus = new DiyFp(((f << 1) + 1), (e - 1)).Normalize();
+                mPlus = new DiyFp((f << 1) + 1, e - 1).Normalize();
 
                 // The boundary is closer if the sigificand is of the form:
                 //      f == 2^p-1
@@ -143,14 +143,14 @@ namespace System
                 // In this scenario, we know that all the explicit bits are 0 and that the unbiased exponent is non-zero.
                 if (f == (1UL << implicitBitIndex))
                 {
-                    mMinus = new DiyFp(((f << 2) - 1), (e - 2));
+                    mMinus = new DiyFp((f << 2) - 1, e - 2);
                 }
                 else
                 {
-                    mMinus = new DiyFp(((f << 1) - 1), (e - 1));
+                    mMinus = new DiyFp((f << 1) - 1, e - 1);
                 }
 
-                mMinus = new DiyFp((mMinus.f << (mMinus.e - mPlus.e)), mPlus.e);
+                mMinus = new DiyFp(mMinus.f << (mMinus.e - mPlus.e), mPlus.e);
             }
         }
     }

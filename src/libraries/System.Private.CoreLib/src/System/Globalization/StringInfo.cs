@@ -269,7 +269,7 @@ namespace System.Globalization
             int[] result = new int[len];
             if (len == 0)
             {
-                return (result);
+                return result;
             }
 
             int resultCount = 0;
@@ -288,7 +288,7 @@ namespace System.Globalization
             {
                 int[] returnArray = new int[resultCount];
                 Array.Copy(result, 0, returnArray, 0, resultCount);
-                return (returnArray);
+                return returnArray;
             }
             return result;
         }

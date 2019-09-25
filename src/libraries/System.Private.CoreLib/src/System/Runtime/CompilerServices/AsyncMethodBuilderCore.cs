@@ -103,7 +103,7 @@ namespace System.Runtime.CompilerServices
             sb.AppendLine(stateMachineType.FullName);
             foreach (FieldInfo fi in fields)
             {
-                sb.AppendLine($"    {fi.Name}: {fi.GetValue(stateMachine)}");
+                sb.Append("    ").Append(fi.Name).Append(": ").Append(fi.GetValue(stateMachine)).AppendLine();
             }
             return sb.ToString();
         }

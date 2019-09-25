@@ -8,19 +8,19 @@ namespace System
 {
     public readonly partial struct DateTime
     {
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe bool ValidateSystemTime(Interop.Kernel32.SYSTEMTIME* time, bool localTime);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe bool FileTimeToSystemTime(long fileTime, FullSystemTime* time);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe void GetSystemTimeWithLeapSecondsHandling(FullSystemTime* time);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe bool SystemTimeToFileTime(Interop.Kernel32.SYSTEMTIME* time, long* fileTime);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe long GetSystemTimeAsFileTime();
     }
 }

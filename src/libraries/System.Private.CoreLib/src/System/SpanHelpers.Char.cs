@@ -168,12 +168,12 @@ namespace System
 
                 while (length > 0)
                 {
-                    length -= 1;
+                    length--;
 
                     if (value == *pCh)
                         goto Found;
 
-                    pCh += 1;
+                    pCh++;
                 }
 
                 // We get past SequentialScan only if IsHardwareAccelerated is true. However, we still have the redundant check to allow
@@ -274,8 +274,8 @@ namespace System
                 if (value == Add(ref searchSpace, offset))
                     goto Found;
 
-                offset += 1;
-                lengthToExamine -= 1;
+                offset++;
+                lengthToExamine--;
             }
 
             // We get past SequentialScan only if IsHardwareAccelerated or intrinsic .IsSupported is true. However, we still have the redundant check to allow
@@ -905,8 +905,8 @@ namespace System
 
                 while (length > 0)
                 {
-                    length -= 1;
-                    pCh -= 1;
+                    length--;
+                    pCh--;
 
                     if (*pCh == value)
                         goto Found;
@@ -1053,15 +1053,15 @@ namespace System
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe nint GetCharVectorSpanLength(nint offset, nint length)
-            => ((length - offset) & ~(Vector<ushort>.Count - 1));
+            => (length - offset) & ~(Vector<ushort>.Count - 1);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe nint GetCharVector128SpanLength(nint offset, nint length)
-            => ((length - offset) & ~(Vector128<ushort>.Count - 1));
+            => (length - offset) & ~(Vector128<ushort>.Count - 1);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static nint GetCharVector256SpanLength(nint offset, nint length)
-            => ((length - offset) & ~(Vector256<ushort>.Count - 1));
+            => (length - offset) & ~(Vector256<ushort>.Count - 1);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe nint UnalignedCountVector(ref char searchSpace)

@@ -47,7 +47,7 @@ namespace System.Collections
                 }
                 return true;
             }
-            return (candidate == 2);
+            return candidate == 2;
         }
 
         public static int GetPrime(int min)

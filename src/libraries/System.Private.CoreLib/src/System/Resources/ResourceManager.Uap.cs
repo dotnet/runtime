@@ -33,7 +33,7 @@ namespace System.Resources
 
             string? startingCulture = culture?.Name;
 
-            if (_PRIInitialized == false)
+            if (!_PRIInitialized)
             {
                 // Always throw if we did not fully succeed in initializing the WinRT Resource Manager.
 
@@ -90,7 +90,7 @@ namespace System.Resources
 #if FEATURE_APPX
             // Check to see if the assembly is under PLATFORM_RESOURCE_ROOTS. If it is, then we should use satellite assembly lookup for it.
             string? platformResourceRoots = (string?)AppContext.GetData("PLATFORM_RESOURCE_ROOTS");
-            if ((platformResourceRoots != null) && (platformResourceRoots != string.Empty))
+            if (!string.IsNullOrEmpty(platformResourceRoots))
             {
                 string resourceAssemblyPath = resourcesAssembly.Location;
 
@@ -122,9 +122,9 @@ namespace System.Resources
         // Throws MissingManifestResourceException and WinRT HResults
         private void SetUapConfiguration()
         {
-            Debug.Assert(_useUapResourceManagement == false); // Only this function writes to this member
+            Debug.Assert(!_useUapResourceManagement); // Only this function writes to this member
             Debug.Assert(_WinRTResourceManager == null); // Only this function writes to this member
-            Debug.Assert(_PRIInitialized == false); // Only this function writes to this member
+            Debug.Assert(!_PRIInitialized); // Only this function writes to this member
             Debug.Assert(_PRIExceptionInfo == null); // Only this function writes to this member
 
 #if FEATURE_APPX

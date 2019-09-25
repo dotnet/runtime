@@ -32,7 +32,6 @@ namespace System
         // bits 19-23   - Enums
         // bits 24-31   - Optional VT code (for roundtrip VT preservation)
 
-
         // What are the consequences of making this an enum?
         ///////////////////////////////////////////////////////////////////////
         // If you update this, update the corresponding stuff in OAVariantLib.cs,
@@ -112,7 +111,7 @@ namespace System
         //
         // Native Methods
         //
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         internal extern void SetFieldsObject(object val);
 
         //
@@ -139,7 +138,6 @@ namespace System
             _flags = CV_I1;
             _data = val;
         }
-
 
         public Variant(byte val)
         {
@@ -314,7 +312,7 @@ namespace System
 
         // This is a family-only accessor for the CVType.
         // This is never to be exposed externally.
-        internal int CVType => (_flags & TypeCodeBitMask);
+        internal int CVType => _flags & TypeCodeBitMask;
 
         public object? ToObject()
         {
@@ -365,9 +363,8 @@ namespace System
         }
 
         // This routine will return an boxed enum.
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private extern object BoxEnum();
-
 
         // Helper code for marshaling managed objects to VARIANT's (we use
         // managed variants as an intermediate type.

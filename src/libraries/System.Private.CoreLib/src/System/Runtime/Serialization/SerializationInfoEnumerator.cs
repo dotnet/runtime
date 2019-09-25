@@ -76,7 +76,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (_current == false)
+                if (!_current)
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
                 }
@@ -94,7 +94,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (_current == false)
+                if (!_current)
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
                 }
@@ -105,7 +105,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (_current == false)
+                if (!_current)
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
                 }
@@ -116,7 +116,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (_current == false)
+                if (!_current)
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
                 }

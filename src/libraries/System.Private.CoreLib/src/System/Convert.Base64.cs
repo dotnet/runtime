@@ -137,7 +137,7 @@ namespace System
                 if (destIndex > destLength - 1)
                     goto InvalidExit;
                 Unsafe.Add(ref destBytes, destIndex) = (byte)(i0 >> 16);
-                destIndex += 1;
+                destIndex++;
             }
 
             sourceIndex += 4;

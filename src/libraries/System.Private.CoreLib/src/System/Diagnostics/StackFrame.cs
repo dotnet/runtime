@@ -203,7 +203,7 @@ namespace System.Diagnostics
                     bool fFirstTyParam = true;
                     while (k < typars.Length)
                     {
-                        if (fFirstTyParam == false)
+                        if (!fFirstTyParam)
                             sb.Append(',');
                         else
                             fFirstTyParam = false;

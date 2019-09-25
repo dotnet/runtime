@@ -88,7 +88,7 @@ namespace System
 
         // The attributes on this method are chosen for best JIT performance.
         // Please do not edit unless intentional.
-        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static unsafe void MemoryCopy(void* source, void* destination, long destinationSizeInBytes, long sourceBytesToCopy)
         {
@@ -101,7 +101,7 @@ namespace System
 
         // The attributes on this method are chosen for best JIT performance.
         // Please do not edit unless intentional.
-        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static unsafe void MemoryCopy(void* source, void* destination, ulong destinationSizeInBytes, ulong sourceBytesToCopy)
         {
@@ -498,7 +498,7 @@ namespace System
 
         // Non-inlinable wrapper around the QCall that avoids polluting the fast path
         // with P/Invoke prolog/epilog.
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static unsafe void _Memmove(byte* dest, byte* src, nuint len)
         {
             __Memmove(dest, src, len);
@@ -506,7 +506,7 @@ namespace System
 
         // Non-inlinable wrapper around the QCall that avoids polluting the fast path
         // with P/Invoke prolog/epilog.
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static unsafe void _Memmove(ref byte dest, ref byte src, nuint len)
         {
             fixed (byte* pDest = &dest)

@@ -103,17 +103,9 @@ namespace System.Runtime.InteropServices
             {
                 ComEventsInfo eventsInfo = ComEventsInfo.FromObject(rcw);
 
-                ComEventsSink? sink = eventsInfo.FindSink(ref iid);
-                if (sink == null)
-                {
-                    sink = eventsInfo.AddSink(ref iid);
-                }
+                ComEventsSink sink = eventsInfo.FindSink(ref iid) ?? eventsInfo.AddSink(ref iid);
 
-                ComEventsMethod? method = sink.FindMethod(dispid);
-                if (method == null)
-                {
-                    method = sink.AddMethod(dispid);
-                }
+                ComEventsMethod method = sink.FindMethod(dispid) ?? sink.AddMethod(dispid);
 
                 method.AddDelegate(d);
             }

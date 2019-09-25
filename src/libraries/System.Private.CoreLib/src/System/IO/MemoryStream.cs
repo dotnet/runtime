@@ -192,7 +192,6 @@ namespace System.IO
             }
         }
 
-
         public virtual byte[] GetBuffer()
         {
             if (!_exposable)
@@ -208,7 +207,7 @@ namespace System.IO
                 return false;
             }
 
-            buffer = new ArraySegment<byte>(_buffer, offset: _origin, count: (_length - _origin));
+            buffer = new ArraySegment<byte>(_buffer, offset: _origin, count: _length - _origin);
             return true;
         }
 
@@ -547,7 +546,6 @@ namespace System.IO
                 return Task.FromException(ex);
             }
         }
-
 
         public override long Seek(long offset, SeekOrigin loc)
         {

@@ -1743,7 +1743,7 @@ namespace System
                 }
 
                 // Put pivot in the right location.
-                Swap(left, (hi - 1));
+                Swap(left, hi - 1);
                 return left;
             }
 
@@ -1949,7 +1949,7 @@ namespace System
                 }
 
                 // Put pivot in the right location.
-                Swap(left, (hi - 1));
+                Swap(left, hi - 1);
                 return left;
             }
 

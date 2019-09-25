@@ -1552,7 +1552,7 @@ namespace System
             for (int i = 0; i < t.TimeCount; i++)
             {
                 typeOfLocalTime[i] = data[index];
-                index += 1;
+                index++;
             }
 
             // read in the Type table.  Each 6-byte entry represents

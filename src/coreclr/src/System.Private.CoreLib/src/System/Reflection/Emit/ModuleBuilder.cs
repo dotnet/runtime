@@ -25,7 +25,7 @@ namespace System.Reflection.Emit
 
             if (obj is InternalModuleBuilder)
             {
-                return ((object)this == obj);
+                return (object)this == obj;
             }
 
             return obj.Equals(this);
@@ -268,7 +268,7 @@ namespace System.Reflection.Emit
 
             if (con is ConstructorBuilder conBuilder)
             {
-                if (usingRef == false && conBuilder.Module.Equals(this))
+                if (!usingRef && conBuilder.Module.Equals(this))
                     return conBuilder.GetToken();
 
                 // constructor is defined in a different module
@@ -277,12 +277,12 @@ namespace System.Reflection.Emit
             }
             else if (con is ConstructorOnTypeBuilderInstantiation conOnTypeBuilderInst)
             {
-                if (usingRef == true) throw new InvalidOperationException();
+                if (usingRef) throw new InvalidOperationException();
 
                 tr = GetTypeTokenInternal(con.DeclaringType!).Token;
                 mr = GetMemberRef(con.DeclaringType!.Module, tr, conOnTypeBuilderInst.MetadataTokenInternal);
             }
-            else if (con is RuntimeConstructorInfo rtCon && con.ReflectedType!.IsArray == false)
+            else if (con is RuntimeConstructorInfo rtCon && !con.ReflectedType!.IsArray)
             {
                 // constructor is not a dynamic field
                 // We need to get the TypeRef tokens
@@ -635,7 +635,7 @@ namespace System.Reflection.Emit
                 parameters = null;
             }
 
-            baseName = baseName.Replace(@"\\", @"\").Replace(@"\[", @"[").Replace(@"\*", @"*").Replace(@"\&", @"&");
+            baseName = baseName.Replace(@"\\", @"\").Replace(@"\[", "[").Replace(@"\*", "*").Replace(@"\&", "&");
 
             if (parameters != null)
             {
@@ -652,11 +652,8 @@ namespace System.Reflection.Emit
                 if (baseType == null && Assembly is AssemblyBuilder)
                 {
                     // now goto Assembly level to find the type.
-                    int size;
-                    List<ModuleBuilder> modList;
-
-                    modList = ContainingAssemblyBuilder._assemblyData._moduleBuilderList;
-                    size = modList.Count;
+                    List<ModuleBuilder> modList = ContainingAssemblyBuilder._assemblyData._moduleBuilderList;
+                    int size = modList.Count;
                     for (int i = 0; i < size && baseType == null; i++)
                     {
                         ModuleBuilder mBuilder = modList[i];
@@ -974,7 +971,7 @@ namespace System.Reflection.Emit
             // This method will define an initialized Data in .sdata.
             // We will create a fake TypeDef to represent the data with size. This TypeDef
             // will be the signature for the Field.
-            if (_moduleData._hasGlobalBeenCreated == true)
+            if (_moduleData._hasGlobalBeenCreated)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_GlobalsHaveBeenCreated);
             }
@@ -1190,7 +1187,7 @@ namespace System.Reflection.Emit
                     throw new InvalidOperationException(SR.InvalidOperation_CannotImportGlobalFromDifferentModule);
                 }
 
-                if (declaringType.IsArray == true)
+                if (declaringType.IsArray)
                 {
                     // use reflection to build signature to work around the E_T_VAR problem in EEClass
                     ParameterInfo[] paramInfo = method.GetParameters();

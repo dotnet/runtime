@@ -232,7 +232,7 @@ namespace System.Reflection
             {
                 for (int i = 0; i < m_otherMethod.Length; i++)
                 {
-                    if (Associates.IncludeAccessor(m_otherMethod[i] as MethodInfo, nonPublic))
+                    if (Associates.IncludeAccessor(m_otherMethod[i], nonPublic))
                         accessorList.Add(m_otherMethod[i]);
                 }
             }

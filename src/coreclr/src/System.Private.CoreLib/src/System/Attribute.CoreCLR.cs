@@ -243,7 +243,7 @@ namespace System
             {
                 Type objType = objAttr[i]!.GetType();
                 AttributeUsageAttribute attribUsage = InternalGetAttributeUsage(objType);
-                if (attribUsage.AllowMultiple == false)
+                if (!attribUsage.AllowMultiple)
                     disAllowMultiple.Add(objType);
             }
 
@@ -272,9 +272,9 @@ namespace System
                     Type objType = objAttr[i]!.GetType();
                     AttributeUsageAttribute attribUsage = InternalGetAttributeUsage(objType);
 
-                    if ((attribUsage.Inherited) && (disAllowMultiple.Contains(objType) == false))
+                    if ((attribUsage.Inherited) && (!disAllowMultiple.Contains(objType)))
                     {
-                        if (attribUsage.AllowMultiple == false)
+                        if (!attribUsage.AllowMultiple)
                             disAllowMultiple.Add(objType);
                         count++;
                     }
@@ -547,7 +547,7 @@ namespace System
 
             MemberInfo member = element.Member;
             if (member.MemberType == MemberTypes.Method && inherit)
-                return InternalParamGetCustomAttributes(element, attributeType, inherit) as Attribute[];
+                return InternalParamGetCustomAttributes(element, attributeType, inherit);
 
             return (element.GetCustomAttributes(attributeType, inherit) as Attribute[])!;
         }
@@ -563,7 +563,7 @@ namespace System
 
             MemberInfo member = element.Member;
             if (member.MemberType == MemberTypes.Method && inherit)
-                return InternalParamGetCustomAttributes(element, null, inherit) as Attribute[];
+                return InternalParamGetCustomAttributes(element, null, inherit);
 
             return (element.GetCustomAttributes(typeof(Attribute), inherit) as Attribute[])!;
         }

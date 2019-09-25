@@ -54,15 +54,11 @@ namespace System.Reflection
             m_scout = new LoaderAllocatorScout();
         }
 
-#pragma warning disable 169
-#pragma warning disable 414
-#pragma warning disable CA1823
+#pragma warning disable CA1823, 414, 169
         private LoaderAllocatorScout m_scout;
         private object[] m_slots;
         internal CerHashtable<RuntimeMethodInfo, RuntimeMethodInfo> m_methodInstantiations;
         private int m_slotsUsed;
-#pragma warning restore CA1823
-#pragma warning restore 414
-#pragma warning restore 169
+#pragma warning restore CA1823, 414, 169
     }
 }

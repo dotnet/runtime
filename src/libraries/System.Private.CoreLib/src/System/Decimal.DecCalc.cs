@@ -1912,7 +1912,7 @@ ReturnZero:
 
                 Unscale(ref low, ref high64, ref scale);
 
-                flags = ((flags) & ~ScaleMask) | (uint)scale << ScaleShift;
+                flags = (flags & ~ScaleMask) | (uint)scale << ScaleShift;
                 return (int)(flags ^ (uint)(high64 >> 32) ^ (uint)high64 ^ low);
             }
 

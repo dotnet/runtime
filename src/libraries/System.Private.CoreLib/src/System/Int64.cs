@@ -71,7 +71,7 @@ namespace System
         // The value of the lower 32 bits XORed with the uppper 32 bits.
         public override int GetHashCode()
         {
-            return (unchecked((int)((long)m_value)) ^ (int)(m_value >> 32));
+            return unchecked((int)((long)m_value)) ^ (int)(m_value >> 32);
         }
 
         public override string ToString()
@@ -117,7 +117,6 @@ namespace System
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             return Number.ParseInt64(s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
         }
-
 
         // Parses a long from a String in the given style.  If
         // a NumberFormatInfo isn't specified, the current culture's

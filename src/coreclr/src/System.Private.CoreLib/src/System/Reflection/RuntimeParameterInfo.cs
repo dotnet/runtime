@@ -12,14 +12,14 @@ namespace System.Reflection
     internal sealed unsafe class RuntimeParameterInfo : ParameterInfo
     {
         #region Static Members
-        internal static unsafe ParameterInfo[] GetParameters(IRuntimeMethodInfo method, MemberInfo member, Signature sig)
+        internal static ParameterInfo[] GetParameters(IRuntimeMethodInfo method, MemberInfo member, Signature sig)
         {
             Debug.Assert(method is RuntimeMethodInfo || method is RuntimeConstructorInfo);
 
             return GetParameters(method, member, sig, out _, false);
         }
 
-        internal static unsafe ParameterInfo GetReturnParameter(IRuntimeMethodInfo method, MemberInfo member, Signature sig)
+        internal static ParameterInfo GetReturnParameter(IRuntimeMethodInfo method, MemberInfo member, Signature sig)
         {
             Debug.Assert(method is RuntimeMethodInfo || method is RuntimeConstructorInfo);
 
@@ -28,7 +28,7 @@ namespace System.Reflection
             return returnParameter;
         }
 
-        internal static unsafe ParameterInfo[] GetParameters(
+        internal static ParameterInfo[] GetParameters(
             IRuntimeMethodInfo methodHandle, MemberInfo member, Signature sig, out ParameterInfo? returnParameter, bool fetchReturnParameter)
         {
             returnParameter = null;
@@ -64,7 +64,7 @@ namespace System.Reflection
 
                     position--;
 
-                    if (fetchReturnParameter == true && position == -1)
+                    if (fetchReturnParameter && position == -1)
                     {
                         // more than one return parameter?
                         if (returnParameter != null)
@@ -72,7 +72,7 @@ namespace System.Reflection
 
                         returnParameter = new RuntimeParameterInfo(sig, scope, tkParamDef, position, attr, member);
                     }
-                    else if (fetchReturnParameter == false && position >= 0)
+                    else if (!fetchReturnParameter && position >= 0)
                     {
                         // position beyong sigArgCount?
                         if (position >= sigArgCount)
@@ -242,8 +242,7 @@ namespace System.Reflection
                 {
                     if (!MdToken.IsNullToken(m_tkParamDef))
                     {
-                        string name;
-                        name = m_scope.GetName(m_tkParamDef).ToString();
+                        string name = m_scope.GetName(m_tkParamDef).ToString();
                         NameImpl = name;
                     }
 
@@ -266,7 +265,7 @@ namespace System.Reflection
 
                 object? defaultValue = GetDefaultValueInternal(false);
 
-                return (defaultValue != DBNull.Value);
+                return defaultValue != DBNull.Value;
             }
         }
 
@@ -419,7 +418,7 @@ namespace System.Reflection
                 byte sign = (byte)args[1].Value!;
                 byte scale = (byte)args[0].Value!;
 
-                return new decimal(low, mid, hi, (sign != 0), scale);
+                return new decimal(low, mid, hi, sign != 0, scale);
             }
             else
             {
@@ -430,7 +429,7 @@ namespace System.Reflection
                 byte sign = (byte)args[1].Value!;
                 byte scale = (byte)args[0].Value!;
 
-                return new decimal(low, mid, hi, (sign != 0), scale);
+                return new decimal(low, mid, hi, sign != 0, scale);
             }
         }
 

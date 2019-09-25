@@ -7,9 +7,9 @@ using System.Runtime.CompilerServices;
 
 namespace System.Numerics
 {
-    internal class ConstantHelper
+    internal static class ConstantHelper
     {
-        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static byte GetByteWithAllBitsSet()
         {
             byte value = 0;
@@ -22,7 +22,7 @@ namespace System.Numerics
             }
             return value;
         }
-        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static sbyte GetSByteWithAllBitsSet()
         {
             sbyte value = 0;
@@ -35,7 +35,7 @@ namespace System.Numerics
             }
             return value;
         }
-        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ushort GetUInt16WithAllBitsSet()
         {
             ushort value = 0;
@@ -48,7 +48,7 @@ namespace System.Numerics
             }
             return value;
         }
-        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static short GetInt16WithAllBitsSet()
         {
             short value = 0;
@@ -61,7 +61,7 @@ namespace System.Numerics
             }
             return value;
         }
-        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static uint GetUInt32WithAllBitsSet()
         {
             uint value = 0;
@@ -74,7 +74,7 @@ namespace System.Numerics
             }
             return value;
         }
-        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetInt32WithAllBitsSet()
         {
             int value = 0;
@@ -87,7 +87,7 @@ namespace System.Numerics
             }
             return value;
         }
-        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ulong GetUInt64WithAllBitsSet()
         {
             ulong value = 0;
@@ -100,7 +100,7 @@ namespace System.Numerics
             }
             return value;
         }
-        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long GetInt64WithAllBitsSet()
         {
             long value = 0;
@@ -113,7 +113,7 @@ namespace System.Numerics
             }
             return value;
         }
-        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float GetSingleWithAllBitsSet()
         {
             float value = 0;
@@ -126,7 +126,7 @@ namespace System.Numerics
             }
             return value;
         }
-        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double GetDoubleWithAllBitsSet()
         {
             double value = 0;

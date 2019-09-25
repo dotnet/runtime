@@ -1316,7 +1316,7 @@ namespace System.Reflection
             attributeType = (decoratedModule.ResolveType(scope.GetParentToken(caCtorToken), null, null) as RuntimeType)!;
 
             // Test attribute type against user provided attribute type filter
-            if (!(attributeFilterType.IsAssignableFrom(attributeType)))
+            if (!attributeFilterType.IsAssignableFrom(attributeType))
                 return false;
 
             // Ensure if attribute type must be inheritable that it is inheritable
@@ -1460,10 +1460,7 @@ namespace System.Reflection
                 attributeUsageAttribute = new AttributeUsageAttribute(targets, allowMultiple, inherited);
             }
 
-            if (attributeUsageAttribute == null)
-                return AttributeUsageAttribute.Default;
-
-            return attributeUsageAttribute;
+            return attributeUsageAttribute ?? AttributeUsageAttribute.Default;
         }
         #endregion
 
@@ -1479,8 +1476,8 @@ namespace System.Reflection
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe object _CreateCaObject(RuntimeModule pModule, RuntimeType type, IRuntimeMethodInfo pCtor, byte** ppBlob, byte* pEndBlob, int* pcNamedArgs);
-        private static unsafe object CreateCaObject(RuntimeModule module, RuntimeType type, IRuntimeMethodInfo ctor, ref IntPtr blob, IntPtr blobEnd, out int namedArgs)
+        private static extern object _CreateCaObject(RuntimeModule pModule, RuntimeType type, IRuntimeMethodInfo pCtor, byte** ppBlob, byte* pEndBlob, int* pcNamedArgs);
+        private static object CreateCaObject(RuntimeModule module, RuntimeType type, IRuntimeMethodInfo ctor, ref IntPtr blob, IntPtr blobEnd, out int namedArgs)
         {
             byte* pBlob = (byte*)blob;
             byte* pBlobEnd = (byte*)blobEnd;
@@ -1492,9 +1489,9 @@ namespace System.Reflection
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe void _GetPropertyOrFieldData(
+        private static extern void _GetPropertyOrFieldData(
             RuntimeModule pModule, byte** ppBlobStart, byte* pBlobEnd, out string name, out bool bIsProperty, out RuntimeType type, out object value);
-        private static unsafe void GetPropertyOrFieldData(
+        private static void GetPropertyOrFieldData(
             RuntimeModule module, ref IntPtr blobStart, IntPtr blobEnd, out string name, out bool isProperty, out RuntimeType? type, out object? value)
         {
             byte* pBlobStart = (byte*)blobStart;
@@ -1561,7 +1558,7 @@ namespace System.Reflection
             // re-architect the PCA product logic and test cases -- you've been warned!
             Debug.Assert(pca.BaseType == typeof(Attribute), "Pseudo CA Error");
             AttributeUsageAttribute usage = CustomAttribute.GetAttributeUsage(pca);
-            Debug.Assert(usage.Inherited == false, "Pseudo CA Error");
+            Debug.Assert(!usage.Inherited, "Pseudo CA Error");
             // AllowMultiple is true for TypeForwardedToAttribute
             // Debug.Assert(usage.AllowMultiple == false, "Pseudo CA Error");
         }

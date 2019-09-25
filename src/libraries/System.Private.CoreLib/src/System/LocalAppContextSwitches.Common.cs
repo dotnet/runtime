@@ -31,7 +31,7 @@ namespace System
                 isSwitchEnabled = GetSwitchDefaultValue(switchName);
             }
 
-            AppContext.TryGetSwitch(@"TestSwitch.LocalAppContext.DisableCaching", out bool disableCaching);
+            AppContext.TryGetSwitch("TestSwitch.LocalAppContext.DisableCaching", out bool disableCaching);
             if (!disableCaching)
             {
                 cachedSwitchValue = isSwitchEnabled ? 1 /*true*/ : -1 /*false*/;

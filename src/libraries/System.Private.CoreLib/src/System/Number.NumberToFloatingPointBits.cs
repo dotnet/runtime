@@ -241,7 +241,7 @@ namespace System
             Debug.Assert((mantissa & ~info.DenormalMantissaMask) == 0);
             Debug.Assert((shiftedExponent & ~(((1UL << info.ExponentBits) - 1) << info.DenormalMantissaBits)) == 0); // exponent fits in its place
 
-            return (shiftedExponent | mantissa);
+            return shiftedExponent | mantissa;
         }
 
         private static ulong ConvertBigIntegerToFloatingPointBits(ref BigInteger value, in FloatingPointInfo info, uint integerBitsOfPrecision, bool hasNonZeroFractionalPart)
@@ -425,14 +425,14 @@ namespace System
             uint totalDigits = (uint)(number.DigitsCount);
             uint integerDigitsMissing = positiveExponent - integerDigitsPresent;
 
-            uint integerFirstIndex = 0;
+            const uint IntegerFirstIndex = 0;
             uint integerLastIndex = integerDigitsPresent;
 
             uint fractionalFirstIndex = integerLastIndex;
             uint fractionalLastIndex = totalDigits;
 
             // First, we accumulate the integer part of the mantissa into a big_integer:
-            AccumulateDecimalDigitsIntoBigInteger(ref number, integerFirstIndex, integerLastIndex, out BigInteger integerValue);
+            AccumulateDecimalDigitsIntoBigInteger(ref number, IntegerFirstIndex, integerLastIndex, out BigInteger integerValue);
 
             if (integerDigitsMissing > 0)
             {
