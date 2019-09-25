@@ -204,4 +204,6 @@ ICALL_EXPORT gint32 ves_icall_System_Net_NetworkInformation_LinuxNetworkChange_R
 ICALL_EXPORT gpointer ves_icall_System_Net_NetworkInformation_LinuxNetworkChange_CloseNLSocket (gpointer sock);
 #endif
 
+ICALL_EXPORT MonoBoolean ves_icall_Mono_TlsProviderFactory_IsBtlsSupported (void);
+
 #endif // __MONO_METADATA_ICALL_H__
