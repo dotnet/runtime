@@ -409,7 +409,7 @@
     <value>The attribute '{0}' cannot exist more than once on '{1}'.</value>
   </data>
   <data name="SerializeUnableToSerialize" xml:space="preserve">
-    <value>The object or value could not be serialized. Path: {0}.</value>
+    <value>The object or value could not be serialized.</value>
   </data>
   <data name="FormatByte" xml:space="preserve">
     <value>Either the JSON value is not in a supported format, or is out of bounds for an unsigned byte.</value>

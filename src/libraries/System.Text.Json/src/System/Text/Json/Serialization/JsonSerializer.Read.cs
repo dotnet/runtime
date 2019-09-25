@@ -68,9 +68,9 @@ namespace System.Text.Json
                                 break;
                             }
                         }
-                        else if (readStack.Current.IsProcessingDictionary || readStack.Current.IsProcessingIDictionaryConstructible)
+                        else if (readStack.Current.IsProcessingDictionaryOrIDictionaryConstructible())
                         {
-                            HandleStartDictionary(options, ref reader, ref readStack);
+                            HandleStartDictionary(options, ref readStack);
                         }
                         else
                         {
@@ -87,13 +87,13 @@ namespace System.Text.Json
                             // A non-dictionary property can also have EndProperty() called when completed, although it is redundant.
                             readStack.Current.EndProperty();
                         }
-                        else if (readStack.Current.IsProcessingDictionary || readStack.Current.IsProcessingIDictionaryConstructible)
+                        else if (readStack.Current.IsProcessingDictionaryOrIDictionaryConstructible())
                         {
-                            HandleEndDictionary(options, ref reader, ref readStack);
+                            HandleEndDictionary(options, ref readStack);
                         }
                         else
                         {
-                            HandleEndObject(ref reader, ref readStack);
+                            HandleEndObject(ref readStack);
                         }
                     }
                     else if (tokenType == JsonTokenType.StartArray)
@@ -110,7 +110,7 @@ namespace System.Text.Json
                     }
                     else if (tokenType == JsonTokenType.EndArray)
                     {
-                        HandleEndArray(options, ref reader, ref readStack);
+                        HandleEndArray(options, ref readStack);
                     }
                     else if (tokenType == JsonTokenType.Null)
                     {
@@ -138,7 +138,6 @@ namespace System.Text.Json
             }
 
             readStack.BytesConsumed += reader.BytesConsumed;
-            return;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
