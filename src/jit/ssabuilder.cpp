@@ -665,7 +665,7 @@ static GenTree* GetPhiNode(BasicBlock* block, unsigned lclNum)
 
         GenTree* phiLhs = tree->gtOp.gtOp1;
         assert(phiLhs->OperGet() == GT_LCL_VAR);
-        if (phiLhs->gtLclVarCommon.gtLclNum == lclNum)
+        if (phiLhs->gtLclVarCommon.GetLclNum() == lclNum)
         {
             return tree->gtOp.gtOp2;
         }
@@ -927,7 +927,7 @@ void SsaBuilder::TreeRenameVariables(GenTree* tree, BasicBlock* block, SsaRename
                 GenTreeLclVarCommon* lclVarNode;
 
                 bool isLocal            = tree->DefinesLocal(m_pCompiler, &lclVarNode);
-                bool isAddrExposedLocal = isLocal && m_pCompiler->lvaVarAddrExposed(lclVarNode->gtLclNum);
+                bool isAddrExposedLocal = isLocal && m_pCompiler->lvaVarAddrExposed(lclVarNode->GetLclNum());
                 bool hasByrefHavoc      = ((block->bbMemoryHavoc & memoryKindSet(ByrefExposed)) != 0);
                 if (!isLocal || (isAddrExposedLocal && !hasByrefHavoc))
                 {
@@ -983,7 +983,7 @@ void SsaBuilder::TreeRenameVariables(GenTree* tree, BasicBlock* block, SsaRename
         return;
     }
 
-    unsigned lclNum = tree->gtLclVarCommon.gtLclNum;
+    unsigned lclNum = tree->gtLclVarCommon.GetLclNum();
     // Is this a variable we exclude from SSA?
     if (!m_pCompiler->lvaInSsa(lclNum))
     {
@@ -1079,7 +1079,7 @@ void SsaBuilder::AddDefToHandlerPhis(BasicBlock* block, unsigned lclNum, unsigne
 
                     assert(tree->IsPhiDefn());
 
-                    if (tree->gtOp.gtOp1->gtLclVar.gtLclNum == lclNum)
+                    if (tree->gtOp.gtOp1->gtLclVar.GetLclNum() == lclNum)
                     {
                         // It's the definition for the right local.  Add "ssaNum" to the RHS.
                         AddPhiArg(handler, stmt, tree->gtGetOp2()->AsPhi(), lclNum, ssaNum, block);
@@ -1305,7 +1305,7 @@ void SsaBuilder::AssignPhiNodeRhsVariables(BasicBlock* block, SsaRenameState* pR
             GenTree*    tree = stmt->gtStmtExpr;
             GenTreePhi* phi  = tree->gtGetOp2()->AsPhi();
 
-            unsigned lclNum = tree->gtOp.gtOp1->gtLclVar.gtLclNum;
+            unsigned lclNum = tree->gtOp.gtOp1->gtLclVar.GetLclNum();
             unsigned ssaNum = pRenameState->Top(lclNum);
             // Search the arglist for an existing definition for ssaNum.
             // (Can we assert that its the head of the list?  This should only happen when we add
@@ -1437,7 +1437,7 @@ void SsaBuilder::AssignPhiNodeRhsVariables(BasicBlock* block, SsaRenameState* pR
 
                     // Get the phi node from GT_ASG.
                     GenTree* lclVar = tree->gtOp.gtOp1;
-                    unsigned lclNum = lclVar->gtLclVar.gtLclNum;
+                    unsigned lclNum = lclVar->gtLclVar.GetLclNum();
 
                     // If the variable is live-out of "blk", and is therefore live on entry to the try-block-start
                     // "succ", then we make sure the current SSA name for the
@@ -1937,7 +1937,8 @@ void Compiler::JitTestCheckSSA()
             {
                 printf("  Node: ");
                 printTreeID(lcl);
-                printf(", SSA name = <%d, %d> -- SSA name class %d.\n", lcl->gtLclNum, lcl->GetSsaNum(), tlAndN.m_num);
+                printf(", SSA name = <%d, %d> -- SSA name class %d.\n", lcl->GetLclNum(), lcl->GetSsaNum(),
+                       tlAndN.m_num);
             }
             SSAName ssaNm;
             if (labelToSSA->Lookup(tlAndN.m_num, &ssaNm))
@@ -1955,7 +1956,7 @@ void Compiler::JitTestCheckSSA()
                 {
                     printf("Node: ");
                     printTreeID(lcl);
-                    printf(", SSA name = <%d, %d> was declared in SSA name class %d,\n", lcl->gtLclNum,
+                    printf(", SSA name = <%d, %d> was declared in SSA name class %d,\n", lcl->GetLclNum(),
                            lcl->GetSsaNum(), tlAndN.m_num);
                     printf(
                         "but this SSA name <%d,%d> has already been associated with a different SSA name class: %d.\n",
@@ -1963,11 +1964,11 @@ void Compiler::JitTestCheckSSA()
                     unreached();
                 }
                 // And the current node must be of the specified SSA family.
-                if (!(lcl->gtLclNum == ssaNm.m_lvNum && lcl->GetSsaNum() == ssaNm.m_ssaNum))
+                if (!(lcl->GetLclNum() == ssaNm.m_lvNum && lcl->GetSsaNum() == ssaNm.m_ssaNum))
                 {
                     printf("Node: ");
                     printTreeID(lcl);
-                    printf(", SSA name = <%d, %d> was declared in SSA name class %d,\n", lcl->gtLclNum,
+                    printf(", SSA name = <%d, %d> was declared in SSA name class %d,\n", lcl->GetLclNum(),
                            lcl->GetSsaNum(), tlAndN.m_num);
                     printf("but that name class was previously bound to a different SSA name: <%d,%d>.\n",
                            ssaNm.m_lvNum, ssaNm.m_ssaNum);
@@ -1976,7 +1977,7 @@ void Compiler::JitTestCheckSSA()
             }
             else
             {
-                ssaNm.m_lvNum  = lcl->gtLclNum;
+                ssaNm.m_lvNum  = lcl->GetLclNum();
                 ssaNm.m_ssaNum = lcl->GetSsaNum();
                 ssize_t num;
                 // The mapping(s) must be one-to-one: if the label has no mapping, then the ssaNm may not, either.
@@ -1984,7 +1985,7 @@ void Compiler::JitTestCheckSSA()
                 {
                     printf("Node: ");
                     printTreeID(lcl);
-                    printf(", SSA name = <%d, %d> was declared in SSA name class %d,\n", lcl->gtLclNum,
+                    printf(", SSA name = <%d, %d> was declared in SSA name class %d,\n", lcl->GetLclNum(),
                            lcl->GetSsaNum(), tlAndN.m_num);
                     printf("but this SSA name has already been associated with a different name class: %d.\n", num);
                     unreached();

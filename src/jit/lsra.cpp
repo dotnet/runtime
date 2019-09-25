@@ -181,7 +181,7 @@ unsigned LinearScan::getWeight(RefPosition* refPos)
             // Tracked locals: use weighted ref cnt as the weight of the
             // ref position.
             GenTreeLclVarCommon* lclCommon = treeNode->AsLclVarCommon();
-            LclVarDsc*           varDsc    = &(compiler->lvaTable[lclCommon->gtLclNum]);
+            LclVarDsc*           varDsc    = &(compiler->lvaTable[lclCommon->GetLclNum()]);
             weight                         = varDsc->lvRefCntWtd();
             if (refPos->getInterval()->isSpilled)
             {
@@ -7835,7 +7835,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
             if (op1->IsLocal())
             {
                 GenTreeLclVarCommon* lcl = op1->AsLclVarCommon();
-                jcmpLocalVarDsc          = &compiler->lvaTable[lcl->gtLclNum];
+                jcmpLocalVarDsc          = &compiler->lvaTable[lcl->GetLclNum()];
             }
         }
     }
@@ -9169,7 +9169,7 @@ void LinearScan::lsraDispNode(GenTree* tree, LsraTupleDumpMode mode, bool hasDes
     unsigned   varNum = UINT_MAX;
     if (tree->IsLocal())
     {
-        varNum = tree->gtLclVarCommon.gtLclNum;
+        varNum = tree->gtLclVarCommon.GetLclNum();
         varDsc = &(compiler->lvaTable[varNum]);
         if (varDsc->lvLRACandidate)
         {
@@ -10650,8 +10650,8 @@ void LinearScan::verifyResolutionMove(GenTree* resolutionMove, LsraLocation curr
         GenTreeLclVarCommon* right         = dst->gtGetOp2()->AsLclVarCommon();
         regNumber            leftRegNum    = left->gtRegNum;
         regNumber            rightRegNum   = right->gtRegNum;
-        LclVarDsc*           leftVarDsc    = compiler->lvaTable + left->gtLclNum;
-        LclVarDsc*           rightVarDsc   = compiler->lvaTable + right->gtLclNum;
+        LclVarDsc*           leftVarDsc    = compiler->lvaTable + left->GetLclNum();
+        LclVarDsc*           rightVarDsc   = compiler->lvaTable + right->GetLclNum();
         Interval*            leftInterval  = getIntervalForLocalVar(leftVarDsc->lvVarIndex);
         Interval*            rightInterval = getIntervalForLocalVar(rightVarDsc->lvVarIndex);
         assert(leftInterval->physReg == leftRegNum && rightInterval->physReg == rightRegNum);

@@ -273,7 +273,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_LCL_FLD:
         {
             // We should only encounter this for lclVars that are lvDoNotEnregister.
-            verifyLclFldDoNotEnregister(node->AsLclVarCommon()->gtLclNum);
+            verifyLclFldDoNotEnregister(node->AsLclVarCommon()->GetLclNum());
             break;
         }
 
@@ -506,7 +506,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     assert(node->gtOper == GT_SWITCH);
     GenTree* temp = node->gtOp.gtOp1;
     assert(temp->gtOper == GT_LCL_VAR);
-    unsigned  tempLclNum  = temp->gtLclVarCommon.gtLclNum;
+    unsigned  tempLclNum  = temp->gtLclVarCommon.GetLclNum();
     var_types tempLclType = temp->TypeGet();
 
     BasicBlock* defaultBB   = jumpTab[jumpCnt - 1];
@@ -2136,7 +2136,7 @@ void Lowering::RehomeArgForFastTailCall(unsigned int lclNum,
             LclVarDsc* callerArgDsc                     = comp->lvaGetDesc(lclNum);
             var_types  tmpTyp                           = genActualType(callerArgDsc->TypeGet());
             comp->lvaTable[tmpLclNum].lvType            = tmpTyp;
-            comp->lvaTable[tmpLclNum].lvDoNotEnregister = comp->lvaTable[lcl->gtLclNum].lvDoNotEnregister;
+            comp->lvaTable[tmpLclNum].lvDoNotEnregister = comp->lvaTable[lcl->GetLclNum()].lvDoNotEnregister;
             GenTree* value                              = comp->gtNewLclvNode(lclNum, tmpTyp);
 
             // TODO-1stClassStructs: This can be simplified with 1st class structs work.
@@ -4073,7 +4073,7 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
     unsigned lclNum;
     if (thisPtr->IsLocal())
     {
-        lclNum = thisPtr->gtLclVarCommon.gtLclNum;
+        lclNum = thisPtr->gtLclVarCommon.GetLclNum();
     }
     else
     {
@@ -5640,7 +5640,7 @@ bool Lowering::NodesAreEquivalentLeaves(GenTree* tree1, GenTree* tree2)
                    tree1->IsIconHandle() == tree2->IsIconHandle();
         case GT_LCL_VAR:
         case GT_LCL_VAR_ADDR:
-            return tree1->gtLclVarCommon.gtLclNum == tree2->gtLclVarCommon.gtLclNum;
+            return tree1->gtLclVarCommon.GetLclNum() == tree2->gtLclVarCommon.GetLclNum();
         case GT_CLS_VAR_ADDR:
             return tree1->gtClsVar.gtClsVarHnd == tree2->gtClsVar.gtClsVarHnd;
         default:
@@ -5836,7 +5836,7 @@ void Lowering::ContainCheckRet(GenTreeOp* ret)
         if (op1->OperGet() == GT_LCL_VAR)
         {
             GenTreeLclVarCommon* lclVarCommon = op1->AsLclVarCommon();
-            LclVarDsc*           varDsc       = &(comp->lvaTable[lclVarCommon->gtLclNum]);
+            LclVarDsc*           varDsc       = &(comp->lvaTable[lclVarCommon->GetLclNum()]);
             // This must be a multi-reg return or an HFA of a single element.
             assert(varDsc->lvIsMultiRegRet || (varDsc->lvIsHfa() && varTypeIsValidHfaType(varDsc->lvType)));
 

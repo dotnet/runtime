@@ -722,7 +722,7 @@ bool Compiler::optPopulateInitInfo(unsigned loopInd, GenTree* init, unsigned ite
     GenTree* lhs = init->gtOp.gtOp1;
     GenTree* rhs = init->gtOp.gtOp2;
     // LHS has to be local and should equal iterVar.
-    if (lhs->gtOper != GT_LCL_VAR || lhs->gtLclVarCommon.gtLclNum != iterVar)
+    if (lhs->gtOper != GT_LCL_VAR || lhs->gtLclVarCommon.GetLclNum() != iterVar)
     {
         return false;
     }
@@ -737,7 +737,7 @@ bool Compiler::optPopulateInitInfo(unsigned loopInd, GenTree* init, unsigned ite
     else if (rhs->gtOper == GT_LCL_VAR)
     {
         optLoopTable[loopInd].lpFlags |= LPFLG_VAR_INIT;
-        optLoopTable[loopInd].lpVarInit = rhs->gtLclVarCommon.gtLclNum;
+        optLoopTable[loopInd].lpVarInit = rhs->gtLclVarCommon.GetLclNum();
     }
     else
     {
@@ -788,12 +788,12 @@ bool Compiler::optCheckIterInLoopTest(
     GenTree* limitOp;
 
     // Make sure op1 or op2 is the iterVar.
-    if (opr1->gtOper == GT_LCL_VAR && opr1->gtLclVarCommon.gtLclNum == iterVar)
+    if (opr1->gtOper == GT_LCL_VAR && opr1->gtLclVarCommon.GetLclNum() == iterVar)
     {
         iterOp  = opr1;
         limitOp = opr2;
     }
-    else if (opr2->gtOper == GT_LCL_VAR && opr2->gtLclVarCommon.gtLclNum == iterVar)
+    else if (opr2->gtOper == GT_LCL_VAR && opr2->gtLclVarCommon.GetLclNum() == iterVar)
     {
         iterOp  = opr2;
         limitOp = opr1;
@@ -820,7 +820,7 @@ bool Compiler::optCheckIterInLoopTest(
             optLoopTable[loopInd].lpFlags |= LPFLG_SIMD_LIMIT;
         }
     }
-    else if (limitOp->gtOper == GT_LCL_VAR && !optIsVarAssigned(from, to, nullptr, limitOp->gtLclVarCommon.gtLclNum))
+    else if (limitOp->gtOper == GT_LCL_VAR && !optIsVarAssigned(from, to, nullptr, limitOp->gtLclVarCommon.GetLclNum()))
     {
         optLoopTable[loopInd].lpFlags |= LPFLG_VAR_LIMIT;
     }
@@ -3655,11 +3655,11 @@ void Compiler::optUnrollLoops()
 
         /* Make sure everything looks ok */
         if ((init->gtOper != GT_ASG) || (init->gtOp.gtOp1->gtOper != GT_LCL_VAR) ||
-            (init->gtOp.gtOp1->gtLclVarCommon.gtLclNum != lvar) || (init->gtOp.gtOp2->gtOper != GT_CNS_INT) ||
+            (init->gtOp.gtOp1->gtLclVarCommon.GetLclNum() != lvar) || (init->gtOp.gtOp2->gtOper != GT_CNS_INT) ||
             (init->gtOp.gtOp2->gtIntCon.gtIconVal != lbeg) ||
 
             !((incr->gtOper == GT_ADD) || (incr->gtOper == GT_SUB)) || (incr->gtOp.gtOp1->gtOper != GT_LCL_VAR) ||
-            (incr->gtOp.gtOp1->gtLclVarCommon.gtLclNum != lvar) || (incr->gtOp.gtOp2->gtOper != GT_CNS_INT) ||
+            (incr->gtOp.gtOp1->gtLclVarCommon.GetLclNum() != lvar) || (incr->gtOp.gtOp2->gtOper != GT_CNS_INT) ||
             (incr->gtOp.gtOp2->gtIntCon.gtIconVal != iterInc) ||
 
             (testStmt->gtStmtExpr->gtOper != GT_JTRUE))
@@ -5946,7 +5946,7 @@ Compiler::fgWalkResult Compiler::optIsVarAssgCB(GenTree** pTree, fgWalkData* dat
 
         if (destOper == GT_LCL_VAR)
         {
-            unsigned tvar = dest->gtLclVarCommon.gtLclNum;
+            unsigned tvar = dest->gtLclVarCommon.GetLclNum();
             if (tvar < lclMAX_ALLSET_TRACKED)
             {
                 AllVarSetOps::AddElemD(data->compiler, desc->ivaMaskVal, tvar);
@@ -5970,7 +5970,7 @@ Compiler::fgWalkResult Compiler::optIsVarAssgCB(GenTree** pTree, fgWalkData* dat
                may access different parts of the var as different (but
                overlapping) fields. So just treat them as indirect accesses */
 
-            // unsigned    lclNum = dest->gtLclFld.gtLclNum;
+            // unsigned    lclNum = dest->gtLclFld.GetLclNum();
             // noway_assert(lvaTable[lclNum].lvAddrTaken);
 
             varRefKinds refs = varTypeIsGC(tree->TypeGet()) ? VR_IND_REF : VR_IND_SCL;
@@ -7745,7 +7745,7 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                         // For now, assume arbitrary side effects on GcHeap/ByrefExposed...
                         memoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
                     }
-                    else if (lvaVarAddrExposed(lclVarTree->gtLclNum))
+                    else if (lvaVarAddrExposed(lclVarTree->GetLclNum()))
                     {
                         memoryHavoc |= memoryKindSet(ByrefExposed);
                     }
@@ -7774,7 +7774,7 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                         }
                     }
                     // If the local is address-exposed, count this as ByrefExposed havoc
-                    if (lvaVarAddrExposed(lhsLcl->gtLclNum))
+                    if (lvaVarAddrExposed(lhsLcl->GetLclNum()))
                     {
                         memoryHavoc |= memoryKindSet(ByrefExposed);
                     }
@@ -8145,7 +8145,7 @@ bool Compiler::optIdentifyLoopOptInfo(unsigned loopNum, LoopCloneContext* contex
 
 #ifdef DEBUG
     GenTree* op1 = pLoop->lpIterator();
-    noway_assert((op1->gtOper == GT_LCL_VAR) && (op1->gtLclVarCommon.gtLclNum == ivLclNum));
+    noway_assert((op1->gtOper == GT_LCL_VAR) && (op1->gtLclVarCommon.GetLclNum() == ivLclNum));
 #endif
 
     JITDUMP("Checking blocks " FMT_BB ".." FMT_BB " for optimization candidates\n", beg->bbNum,
@@ -8235,13 +8235,13 @@ bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsN
     {
         return false;
     }
-    unsigned arrLcl = arrBndsChk->gtArrLen->gtGetOp1()->gtLclVarCommon.gtLclNum;
+    unsigned arrLcl = arrBndsChk->gtArrLen->gtGetOp1()->gtLclVarCommon.GetLclNum();
     if (lhsNum != BAD_VAR_NUM && arrLcl != lhsNum)
     {
         return false;
     }
 
-    unsigned indLcl = arrBndsChk->gtIndex->gtLclVarCommon.gtLclNum;
+    unsigned indLcl = arrBndsChk->gtIndex->gtLclVarCommon.GetLclNum();
 
     GenTree* after = tree->gtGetOp2();
 
@@ -8267,7 +8267,7 @@ bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsN
     }
     GenTree* base = sibo->gtGetOp1();
     GenTree* sio  = sibo->gtGetOp2(); // sio == scale*index + offset
-    if (base->OperGet() != GT_LCL_VAR || base->gtLclVarCommon.gtLclNum != arrLcl)
+    if (base->OperGet() != GT_LCL_VAR || base->gtLclVarCommon.GetLclNum() != arrLcl)
     {
         return false;
     }
@@ -8300,7 +8300,7 @@ bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsN
 #else
     GenTree* indexVar = index;
 #endif
-    if (indexVar->gtOper != GT_LCL_VAR || indexVar->gtLclVarCommon.gtLclNum != indLcl)
+    if (indexVar->gtOper != GT_LCL_VAR || indexVar->gtLclVarCommon.GetLclNum() != indLcl)
     {
         return false;
     }
@@ -8377,7 +8377,7 @@ bool Compiler::optReconstructArrIndex(GenTree* tree, ArrIndex* result, unsigned 
         {
             return false;
         }
-        unsigned lhsNum = lhs->gtLclVarCommon.gtLclNum;
+        unsigned lhsNum = lhs->gtLclVarCommon.GetLclNum();
         GenTree* after  = tree->gtGetOp2();
         // Pass the "lhsNum", so we can verify if indeed it is used as the array base.
         return optExtractArrIndex(after, result, lhsNum);
@@ -8520,7 +8520,7 @@ Compiler::fgWalkResult Compiler::optValidRangeCheckIndex(GenTree** pTree, fgWalk
 
     if (tree->gtOper == GT_LCL_VAR)
     {
-        if (pData->pCompiler->lvaTable[tree->gtLclVarCommon.gtLclNum].lvAddrExposed)
+        if (pData->pCompiler->lvaTable[tree->gtLclVarCommon.GetLclNum()].lvAddrExposed)
         {
             pData->bValidIndex = false;
             return WALK_ABORT;
@@ -8565,9 +8565,9 @@ bool Compiler::optIsRangeCheckRemovable(GenTree* tree)
         else
         {
             noway_assert(pArray->gtType == TYP_REF);
-            noway_assert(pArray->gtLclVarCommon.gtLclNum < lvaCount);
+            noway_assert(pArray->gtLclVarCommon.GetLclNum() < lvaCount);
 
-            if (lvaTable[pArray->gtLclVarCommon.gtLclNum].lvAddrExposed)
+            if (lvaTable[pArray->gtLclVarCommon.GetLclNum()].lvAddrExposed)
             {
                 // If the array address has been taken, don't do the optimization
                 // (this restriction can be lowered a bit, but i don't think it's worth it)
@@ -8718,7 +8718,7 @@ GenTree* Compiler::optIsBoolCond(GenTree* condBranch, GenTree** compPtr, bool* b
     {
         /* is it a boolean local variable */
 
-        unsigned lclNum = opr1->gtLclVarCommon.gtLclNum;
+        unsigned lclNum = opr1->gtLclVarCommon.GetLclNum();
         noway_assert(lclNum < lvaCount);
 
         if (lvaTable[lclNum].lvIsBoolean)

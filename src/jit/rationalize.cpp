@@ -294,7 +294,7 @@ static void RewriteAssignmentIntoStoreLclCore(GenTreeOp* assignment,
     GenTreeLclVarCommon* store = assignment->AsLclVarCommon();
 
     GenTreeLclVarCommon* var = location->AsLclVarCommon();
-    store->SetLclNum(var->gtLclNum);
+    store->SetLclNum(var->GetLclNum());
     store->SetSsaNum(var->GetSsaNum());
 
     if (locationOp == GT_LCL_FLD)
@@ -368,7 +368,7 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
                 // We need to construct a block node for the location.
                 // Modify lcl to be the address form.
                 location->SetOper(addrForm(locationOp));
-                LclVarDsc* varDsc     = &(comp->lvaTable[location->AsLclVarCommon()->gtLclNum]);
+                LclVarDsc* varDsc     = &(comp->lvaTable[location->AsLclVarCommon()->GetLclNum()]);
                 location->gtType      = TYP_BYREF;
                 GenTreeBlk*  storeBlk = nullptr;
                 unsigned int size     = varDsc->lvExactSize;

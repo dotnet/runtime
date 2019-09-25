@@ -692,7 +692,7 @@ void CodeGen::genHWIntrinsic_R_R_RM(
 
                 case GT_LCL_VAR:
                 {
-                    assert(op2->IsRegOptional() || !compiler->lvaTable[op2->gtLclVar.gtLclNum].lvIsRegCandidate());
+                    assert(op2->IsRegOptional() || !compiler->lvaTable[op2->gtLclVar.GetLclNum()].lvIsRegCandidate());
                     varNum = op2->AsLclVar()->GetLclNum();
                     offset = 0;
                     break;
@@ -857,7 +857,7 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins,
 
                 case GT_LCL_VAR:
                 {
-                    assert(op2->IsRegOptional() || !compiler->lvaTable[op2->gtLclVar.gtLclNum].lvIsRegCandidate());
+                    assert(op2->IsRegOptional() || !compiler->lvaTable[op2->gtLclVar.GetLclNum()].lvIsRegCandidate());
                     varNum = op2->AsLclVar()->GetLclNum();
                     offset = 0;
                     break;
@@ -1021,7 +1021,7 @@ void CodeGen::genHWIntrinsic_R_R_RM_R(GenTreeHWIntrinsic* node, instruction ins)
 
                 case GT_LCL_VAR:
                 {
-                    assert(op2->IsRegOptional() || !compiler->lvaTable[op2->gtLclVar.gtLclNum].lvIsRegCandidate());
+                    assert(op2->IsRegOptional() || !compiler->lvaTable[op2->gtLclVar.GetLclNum()].lvIsRegCandidate());
                     varNum = op2->AsLclVar()->GetLclNum();
                     offset = 0;
                     break;
@@ -1147,7 +1147,7 @@ void CodeGen::genHWIntrinsic_R_R_R_RM(
 
                 case GT_LCL_VAR:
                 {
-                    assert(op3->IsRegOptional() || !compiler->lvaTable[op3->gtLclVar.gtLclNum].lvIsRegCandidate());
+                    assert(op3->IsRegOptional() || !compiler->lvaTable[op3->gtLclVar.GetLclNum()].lvIsRegCandidate());
                     varNum = op3->AsLclVar()->GetLclNum();
                     offset = 0;
                     break;

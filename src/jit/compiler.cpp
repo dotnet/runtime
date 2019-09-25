@@ -9552,7 +9552,7 @@ int cLeafIR(Compiler* comp, GenTree* tree)
         case GT_LCL_VAR:
         case GT_LCL_VAR_ADDR:
         case GT_STORE_LCL_VAR:
-            lclNum = tree->gtLclVarCommon.gtLclNum;
+            lclNum = tree->gtLclVarCommon.GetLclNum();
             comp->gtGetLclVarNameInfo(lclNum, &ilKind, &ilName, &ilNum);
             if (ilName != nullptr)
             {
@@ -9616,7 +9616,7 @@ int cLeafIR(Compiler* comp, GenTree* tree)
         case GT_LCL_FLD_ADDR:
         case GT_STORE_LCL_FLD:
 
-            lclNum = tree->gtLclVarCommon.gtLclNum;
+            lclNum = tree->gtLclVarCommon.GetLclNum();
             comp->gtGetLclVarNameInfo(lclNum, &ilKind, &ilName, &ilNum);
             if (ilName != nullptr)
             {

@@ -37,7 +37,7 @@ void Compiler::optBlockCopyPropPopStacks(BasicBlock* block, LclNumToGenTreePtrSt
             {
                 continue;
             }
-            unsigned lclNum = tree->gtLclVarCommon.gtLclNum;
+            unsigned lclNum = tree->gtLclVarCommon.GetLclNum();
             if (!lvaInSsa(lclNum))
             {
                 continue;
@@ -63,7 +63,7 @@ void Compiler::optDumpCopyPropStack(LclNumToGenTreePtrStack* curSsaName)
     for (LclNumToGenTreePtrStack::KeyIterator iter = curSsaName->Begin(); !iter.Equal(curSsaName->End()); ++iter)
     {
         GenTree* node = iter.GetValue()->Top();
-        JITDUMP("%d-[%06d]:V%02u ", iter.Get(), dspTreeID(node), node->AsLclVarCommon()->gtLclNum);
+        JITDUMP("%d-[%06d]:V%02u ", iter.Get(), dspTreeID(node), node->AsLclVarCommon()->GetLclNum());
     }
     JITDUMP("}\n\n");
 }
@@ -354,7 +354,7 @@ void Compiler::optBlockCopyProp(BasicBlock* block, LclNumToGenTreePtrStack* curS
             //
             if (optIsSsaLocal(tree) && (tree->gtFlags & GTF_VAR_DEF))
             {
-                VarSetOps::AddElemD(this, optCopyPropKillSet, lvaTable[tree->gtLclVarCommon.gtLclNum].lvVarIndex);
+                VarSetOps::AddElemD(this, optCopyPropKillSet, lvaTable[tree->gtLclVarCommon.GetLclNum()].lvVarIndex);
             }
         }
 
@@ -366,7 +366,7 @@ void Compiler::optBlockCopyProp(BasicBlock* block, LclNumToGenTreePtrStack* curS
                 continue;
             }
 
-            unsigned lclNum = tree->gtLclVarCommon.gtLclNum;
+            unsigned lclNum = tree->gtLclVarCommon.GetLclNum();
 
             // As we encounter a definition add it to the stack as a live definition.
             if (tree->gtFlags & GTF_VAR_DEF)

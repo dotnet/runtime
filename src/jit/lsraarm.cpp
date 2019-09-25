@@ -230,7 +230,7 @@ int LinearScan::BuildNode(GenTree* tree)
             // is processed, unless this is marked "isLocalDefUse" because it is a stack-based argument
             // to a call or an orphaned dead node.
             //
-            LclVarDsc* const varDsc = &compiler->lvaTable[tree->AsLclVarCommon()->gtLclNum];
+            LclVarDsc* const varDsc = &compiler->lvaTable[tree->AsLclVarCommon()->GetLclNum()];
             if (isCandidateVar(varDsc))
             {
                 return 0;

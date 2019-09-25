@@ -1194,7 +1194,7 @@ AGAIN:
         switch (oper)
         {
             case GT_LCL_VAR:
-                if (op1->gtLclVarCommon.gtLclNum != op2->gtLclVarCommon.gtLclNum)
+                if (op1->gtLclVarCommon.GetLclNum() != op2->gtLclVarCommon.GetLclNum())
                 {
                     break;
                 }
@@ -1202,7 +1202,7 @@ AGAIN:
                 return true;
 
             case GT_LCL_FLD:
-                if (op1->gtLclFld.gtLclNum != op2->gtLclFld.gtLclNum ||
+                if (op1->gtLclFld.GetLclNum() != op2->gtLclFld.GetLclNum() ||
                     op1->gtLclFld.gtLclOffs != op2->gtLclFld.gtLclOffs)
                 {
                     break;
@@ -1585,7 +1585,7 @@ AGAIN:
     {
         if (oper == GT_LCL_VAR)
         {
-            if (tree->gtLclVarCommon.gtLclNum == (unsigned)lclNum)
+            if (tree->gtLclVarCommon.GetLclNum() == (unsigned)lclNum)
             {
                 if (!defOnly)
                 {
@@ -1629,7 +1629,7 @@ AGAIN:
                 // 'tree' is the gtOp1 of an assignment node. So we can handle
                 // the case where defOnly is either true or false.
 
-                if (tree->gtOper == GT_LCL_VAR && tree->gtLclVarCommon.gtLclNum == (unsigned)lclNum)
+                if (tree->gtOper == GT_LCL_VAR && tree->gtLclVarCommon.GetLclNum() == (unsigned)lclNum)
                 {
                     return true;
                 }
@@ -1826,7 +1826,7 @@ Compiler::fgWalkResult Compiler::gtHasLocalsWithAddrOpCB(GenTree** pTree, fgWalk
 
     if (tree->gtOper == GT_LCL_VAR)
     {
-        unsigned   lclNum = tree->gtLclVarCommon.gtLclNum;
+        unsigned   lclNum = tree->gtLclVarCommon.GetLclNum();
         LclVarDsc* varDsc = &comp->lvaTable[lclNum];
 
         if (varDsc->lvHasLdAddrOp || varDsc->lvAddrExposed)
@@ -1910,10 +1910,10 @@ AGAIN:
         {
             UINT64 bits;
             case GT_LCL_VAR:
-                add = tree->gtLclVar.gtLclNum;
+                add = tree->gtLclVar.GetLclNum();
                 break;
             case GT_LCL_FLD:
-                hash = genTreeHashAdd(hash, tree->gtLclFld.gtLclNum);
+                hash = genTreeHashAdd(hash, tree->gtLclFld.GetLclNum());
                 add  = tree->gtLclFld.gtLclOffs;
                 break;
 
@@ -2697,8 +2697,8 @@ bool Compiler::gtIsLikelyRegVar(GenTree* tree)
         return false;
     }
 
-    assert(tree->gtLclVar.gtLclNum < lvaTableCnt);
-    LclVarDsc* varDsc = lvaTable + tree->gtLclVar.gtLclNum;
+    assert(tree->gtLclVar.GetLclNum() < lvaTableCnt);
+    LclVarDsc* varDsc = lvaTable + tree->gtLclVar.GetLclNum();
 
     if (varDsc->lvDoNotEnregister)
     {
@@ -3321,7 +3321,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costEx = 1;
                     costSz = 1;
                     /* Sign-extend and zero-extend are more expensive to load */
-                    if (lvaTable[tree->gtLclVar.gtLclNum].lvNormalizeOnLoad())
+                    if (lvaTable[tree->gtLclVar.GetLclNum()].lvNormalizeOnLoad())
                     {
                         costEx += 1;
                         costSz += 1;
@@ -6372,7 +6372,7 @@ GenTree* Compiler::gtNewObjNode(CORINFO_CLASS_HANDLE structHnd, GenTree* addr)
         if (lclNode != nullptr)
         {
             objNode->gtFlags |= GTF_IND_NONFAULTING;
-            if (!lvaIsImplicitByRefLocal(lclNode->gtLclNum))
+            if (!lvaIsImplicitByRefLocal(lclNode->GetLclNum()))
             {
                 objNode->gtFlags &= ~GTF_GLOB_REF;
             }
@@ -6415,7 +6415,7 @@ GenTree* Compiler::gtNewStructVal(CORINFO_CLASS_HANDLE structHnd, GenTree* addr)
         GenTree* val = addr->gtGetOp1();
         if (val->OperGet() == GT_LCL_VAR)
         {
-            unsigned   lclNum = addr->gtGetOp1()->AsLclVarCommon()->gtLclNum;
+            unsigned   lclNum = addr->gtGetOp1()->AsLclVarCommon()->GetLclNum();
             LclVarDsc* varDsc = &(lvaTable[lclNum]);
             if (varTypeIsStruct(varDsc) && (varDsc->lvVerTypeInfo.GetClassHandle() == structHnd) &&
                 !lvaIsImplicitByRefLocal(lclNum))
@@ -6609,7 +6609,7 @@ void Compiler::gtBlockOpInit(GenTree* result, GenTree* dst, GenTree* srcOrFillVa
         }
 
         if (currSrc->OperGet() == GT_LCL_VAR && currDst->OperGet() == GT_LCL_VAR &&
-            currSrc->gtLclVarCommon.gtLclNum == currDst->gtLclVarCommon.gtLclNum)
+            currSrc->gtLclVarCommon.GetLclNum() == currDst->gtLclVarCommon.GetLclNum())
         {
             // Make this a NOP
             // TODO-Cleanup: probably doesn't matter, but could do this earlier and avoid creating a GT_ASG
@@ -6885,7 +6885,7 @@ GenTree* Compiler::gtClone(GenTree* tree, bool complexOK)
             // Remember that the LclVar node has been cloned. The flag will be set
             // on 'copy' as well.
             tree->gtFlags |= GTF_VAR_CLONED;
-            copy = gtNewLclvNode(tree->gtLclVarCommon.gtLclNum, tree->gtType DEBUGARG(tree->gtLclVar.gtLclILoffs));
+            copy = gtNewLclvNode(tree->gtLclVarCommon.GetLclNum(), tree->gtType DEBUGARG(tree->gtLclVar.gtLclILoffs));
             break;
 
         case GT_LCL_FLD:
@@ -6894,7 +6894,7 @@ GenTree* Compiler::gtClone(GenTree* tree, bool complexOK)
             // on 'copy' as well.
             tree->gtFlags |= GTF_VAR_CLONED;
             copy = new (this, tree->gtOper)
-                GenTreeLclFld(tree->gtOper, tree->TypeGet(), tree->gtLclFld.gtLclNum, tree->gtLclFld.gtLclOffs);
+                GenTreeLclFld(tree->gtOper, tree->TypeGet(), tree->gtLclFld.GetLclNum(), tree->gtLclFld.gtLclOffs);
             copy->gtLclFld.gtFieldSeq = tree->gtLclFld.gtFieldSeq;
             break;
 
@@ -7056,7 +7056,7 @@ GenTree* Compiler::gtCloneExpr(
 
             case GT_LCL_VAR:
 
-                if (tree->gtLclVarCommon.gtLclNum == varNum)
+                if (tree->gtLclVarCommon.GetLclNum() == varNum)
                 {
                     copy = gtNewIconNode(varVal, tree->gtType);
                     if (tree->gtFlags & GTF_VAR_ARR_INDEX)
@@ -7069,14 +7069,14 @@ GenTree* Compiler::gtCloneExpr(
                     // Remember that the LclVar node has been cloned. The flag will
                     // be set on 'copy' as well.
                     tree->gtFlags |= GTF_VAR_CLONED;
-                    copy = gtNewLclvNode(tree->gtLclVar.gtLclNum, tree->gtType DEBUGARG(tree->gtLclVar.gtLclILoffs));
+                    copy = gtNewLclvNode(tree->gtLclVar.GetLclNum(), tree->gtType DEBUGARG(tree->gtLclVar.gtLclILoffs));
                     copy->AsLclVarCommon()->SetSsaNum(tree->AsLclVarCommon()->GetSsaNum());
                 }
                 copy->gtFlags = tree->gtFlags;
                 goto DONE;
 
             case GT_LCL_FLD:
-                if (tree->gtLclFld.gtLclNum == varNum)
+                if (tree->gtLclFld.GetLclNum() == varNum)
                 {
                     IMPL_LIMITATION("replacing GT_LCL_FLD with a constant");
                 }
@@ -7086,7 +7086,7 @@ GenTree* Compiler::gtCloneExpr(
                     // be set on 'copy' as well.
                     tree->gtFlags |= GTF_VAR_CLONED;
                     copy = new (this, GT_LCL_FLD)
-                        GenTreeLclFld(tree->TypeGet(), tree->gtLclFld.gtLclNum, tree->gtLclFld.gtLclOffs);
+                        GenTreeLclFld(tree->TypeGet(), tree->gtLclFld.GetLclNum(), tree->gtLclFld.gtLclOffs);
                     copy->gtLclFld.gtFieldSeq = tree->gtLclFld.gtFieldSeq;
                     copy->gtFlags             = tree->gtFlags;
                 }
@@ -8023,7 +8023,7 @@ bool Compiler::gtCompareTree(GenTree* op1, GenTree* op2)
                 break;
 
             case GT_LCL_VAR:
-                if (op1->gtLclVarCommon.gtLclNum == op2->gtLclVarCommon.gtLclNum)
+                if (op1->gtLclVarCommon.GetLclNum() == op2->gtLclVarCommon.GetLclNum())
                 {
                     return true;
                 }
@@ -9847,7 +9847,7 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
             printf(" %-6s", varTypeName(tree->TypeGet()));
             if (tree->gtOper == GT_LCL_VAR || tree->gtOper == GT_STORE_LCL_VAR)
             {
-                LclVarDsc* varDsc = &lvaTable[tree->gtLclVarCommon.gtLclNum];
+                LclVarDsc* varDsc = &lvaTable[tree->gtLclVarCommon.GetLclNum()];
                 if (varDsc->lvAddrExposed)
                 {
                     printf("(AX)"); // Variable has address exposed.
@@ -10418,7 +10418,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         case GT_LCL_VAR_ADDR:
         case GT_STORE_LCL_VAR:
             printf(" ");
-            varNum = tree->gtLclVarCommon.gtLclNum;
+            varNum = tree->gtLclVarCommon.GetLclNum();
             varDsc = &lvaTable[varNum];
             gtDispLclVar(varNum);
             if (tree->gtLclVarCommon.HasSsaName())
@@ -10483,7 +10483,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
                         printf("                                                  ");
                         printIndent(indentStack);
                         printf("    %-6s V%02u.%s (offs=0x%02x) -> ", varTypeName(fieldVarDsc->TypeGet()),
-                               tree->gtLclVarCommon.gtLclNum, fieldName, fieldVarDsc->lvFldOffset);
+                               tree->gtLclVarCommon.GetLclNum(), fieldName, fieldVarDsc->lvFldOffset);
                         gtDispLclVar(i);
 
                         if (fieldVarDsc->lvRegister)
@@ -12842,7 +12842,7 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
         }
 
         GenTree* copyDstAddrOp1 = copyDstAddr->gtOp.gtOp1;
-        if ((copyDstAddrOp1->OperGet() != GT_LCL_VAR) || (copyDstAddrOp1->gtLclVarCommon.gtLclNum != boxTempLcl))
+        if ((copyDstAddrOp1->OperGet() != GT_LCL_VAR) || (copyDstAddrOp1->gtLclVarCommon.GetLclNum() != boxTempLcl))
         {
             JITDUMP("Unexpected copy dest address 1st addend\n");
             return nullptr;
@@ -14601,7 +14601,7 @@ GenTree* Compiler::gtNewTempAssign(
     unsigned tmp, GenTree* val, Statement** pAfterStmt, IL_OFFSETX ilOffset, BasicBlock* block)
 {
     // Self-assignment is a nop.
-    if (val->OperGet() == GT_LCL_VAR && val->gtLclVarCommon.gtLclNum == tmp)
+    if (val->OperGet() == GT_LCL_VAR && val->gtLclVarCommon.GetLclNum() == tmp)
     {
         return gtNewNothingNode();
     }
@@ -14614,9 +14614,9 @@ GenTree* Compiler::gtNewTempAssign(
     }
 
     var_types valTyp = val->TypeGet();
-    if (val->OperGet() == GT_LCL_VAR && lvaTable[val->gtLclVar.gtLclNum].lvNormalizeOnLoad())
+    if (val->OperGet() == GT_LCL_VAR && lvaTable[val->gtLclVar.GetLclNum()].lvNormalizeOnLoad())
     {
-        valTyp      = lvaGetRealType(val->gtLclVar.gtLclNum);
+        valTyp      = lvaGetRealType(val->gtLclVar.GetLclNum());
         val->gtType = valTyp;
     }
     var_types dstTyp = varDsc->TypeGet();
@@ -15567,7 +15567,7 @@ bool GenTree::IsPhiDefn()
 bool GenTree::IsPartialLclFld(Compiler* comp)
 {
     return ((gtOper == GT_LCL_FLD) &&
-            (comp->lvaTable[this->gtLclVarCommon.gtLclNum].lvExactSize != genTypeSize(gtType)));
+            (comp->lvaTable[this->gtLclVarCommon.GetLclNum()].lvExactSize != genTypeSize(gtType)));
 }
 
 bool GenTree::DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bool* pIsEntire)
@@ -15891,10 +15891,10 @@ unsigned GenTree::IsLclVarUpdateTree(GenTree** pOtherTree, genTreeOps* pOper)
         GenTree* lhs = gtOp.gtOp1;
         if (lhs->OperGet() == GT_LCL_VAR)
         {
-            unsigned lhsLclNum = lhs->AsLclVarCommon()->gtLclNum;
+            unsigned lhsLclNum = lhs->AsLclVarCommon()->GetLclNum();
             GenTree* rhs       = gtOp.gtOp2;
             if (rhs->OperIsBinary() && (rhs->gtOp.gtOp1->gtOper == GT_LCL_VAR) &&
-                (rhs->gtOp.gtOp1->AsLclVarCommon()->gtLclNum == lhsLclNum))
+                (rhs->gtOp.gtOp1->AsLclVarCommon()->GetLclNum() == lhsLclNum))
             {
                 lclNum      = lhsLclNum;
                 *pOtherTree = rhs->gtOp.gtOp2;
@@ -16665,7 +16665,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
 #endif
                 break;
             case GT_LCL_VAR:
-                structHnd = lvaTable[tree->AsLclVarCommon()->gtLclNum].lvVerTypeInfo.GetClassHandle();
+                structHnd = lvaTable[tree->AsLclVarCommon()->GetLclNum()].lvVerTypeInfo.GetClassHandle();
                 break;
             case GT_RETURN:
                 structHnd = gtGetStructHandleIfPresent(tree->gtOp.gtOp1);
