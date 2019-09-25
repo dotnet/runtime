@@ -4854,7 +4854,7 @@ void Compiler::lvaUpdateArgsWithInitialReg()
 
         if (varDsc->lvIsRegCandidate())
         {
-            varDsc->lvRegNum = varDsc->lvArgInitReg;
+            varDsc->lvRegNum = varDsc->GetArgInitReg();
         }
     }
 }

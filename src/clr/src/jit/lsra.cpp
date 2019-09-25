@@ -7257,7 +7257,7 @@ void LinearScan::resolveRegisters()
                     else
 #endif // _TARGET_ARM_
                     {
-                        varDsc->lvArgInitReg = initialReg;
+                        varDsc->SetArgInitReg(initialReg);
                         JITDUMP("  Set V%02u argument initial register to %s\n", lclNum, getRegName(initialReg));
                     }
 
