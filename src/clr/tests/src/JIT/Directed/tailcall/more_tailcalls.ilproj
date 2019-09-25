@@ -7,9 +7,6 @@
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="call04_small.il" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\common\common.ilproj" />
+    <Compile Include="$(MSBuildProjectName).il" />
   </ItemGroup>
 </Project>
