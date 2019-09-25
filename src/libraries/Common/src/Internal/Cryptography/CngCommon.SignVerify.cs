@@ -11,6 +11,8 @@ namespace Internal.Cryptography
 {
     internal static partial class CngCommon
     {
+        private const int StatusUnsuccessfulRetryCount = 1;
+
         public static unsafe byte[] SignHash(this SafeNCryptKeyHandle keyHandle, ReadOnlySpan<byte> hash, AsymmetricPaddingMode paddingMode, void* pPaddingInfo, int estimatedSize)
         {
 #if DEBUG
@@ -19,11 +21,23 @@ namespace Internal.Cryptography
             byte[] signature = new byte[estimatedSize];
             int numBytesNeeded;
             ErrorCode errorCode = Interop.NCrypt.NCryptSignHash(keyHandle, pPaddingInfo, hash, hash.Length, signature, signature.Length, out numBytesNeeded, paddingMode);
+
+            if (errorCode == ErrorCode.STATUS_UNSUCCESSFUL)
+            {
+                errorCode = Interop.NCrypt.NCryptSignHash(keyHandle, pPaddingInfo, hash, hash.Length, signature, signature.Length, out numBytesNeeded, paddingMode);
+            }
+
             if (errorCode == ErrorCode.NTE_BUFFER_TOO_SMALL)
             {
                 signature = new byte[numBytesNeeded];
                 errorCode = Interop.NCrypt.NCryptSignHash(keyHandle, pPaddingInfo, hash, hash.Length, signature, signature.Length, out numBytesNeeded, paddingMode);
             }
+
+            if (errorCode == ErrorCode.STATUS_UNSUCCESSFUL)
+            {
+                errorCode = Interop.NCrypt.NCryptSignHash(keyHandle, pPaddingInfo, hash, hash.Length, signature, signature.Length, out numBytesNeeded, paddingMode);
+            }
+
             if (errorCode != ErrorCode.ERROR_SUCCESS)
                 throw errorCode.ToCryptographicException();
 
@@ -33,25 +47,49 @@ namespace Internal.Cryptography
 
         public static unsafe bool TrySignHash(this SafeNCryptKeyHandle keyHandle, ReadOnlySpan<byte> hash, Span<byte> signature, AsymmetricPaddingMode paddingMode, void* pPaddingInfo, out int bytesWritten)
         {
-            ErrorCode error = Interop.NCrypt.NCryptSignHash(keyHandle, pPaddingInfo, hash, hash.Length, signature, signature.Length, out int numBytesNeeded, paddingMode);
-            switch (error)
+            for (int i = 0; i <= StatusUnsuccessfulRetryCount; i++)
             {
-                case ErrorCode.ERROR_SUCCESS:
-                    bytesWritten = numBytesNeeded;
-                    return true;
+                ErrorCode error = Interop.NCrypt.NCryptSignHash(
+                    keyHandle,
+                    pPaddingInfo,
+                    hash,
+                    hash.Length,
+                    signature,
+                    signature.Length,
+                    out int numBytesNeeded,
+                    paddingMode);
 
-                case ErrorCode.NTE_BUFFER_TOO_SMALL:
-                    bytesWritten = 0;
-                    return false;
+                switch (error)
+                {
+                    case ErrorCode.ERROR_SUCCESS:
+                        bytesWritten = numBytesNeeded;
+                        return true;
 
-                default:
-                    throw error.ToCryptographicException();
+                    case ErrorCode.NTE_BUFFER_TOO_SMALL:
+                        bytesWritten = 0;
+                        return false;
+
+                    case ErrorCode.STATUS_UNSUCCESSFUL:
+                        // Retry
+                        break;
+
+                    default:
+                        throw error.ToCryptographicException();
+                }
             }
+
+            throw ErrorCode.STATUS_UNSUCCESSFUL.ToCryptographicException();
         }
 
         public static unsafe bool VerifyHash(this SafeNCryptKeyHandle keyHandle, ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, AsymmetricPaddingMode paddingMode, void* pPaddingInfo)
         {
             ErrorCode errorCode = Interop.NCrypt.NCryptVerifySignature(keyHandle, pPaddingInfo, hash, hash.Length, signature, signature.Length, paddingMode);
+
+            if (errorCode == ErrorCode.STATUS_UNSUCCESSFUL)
+            {
+                errorCode = Interop.NCrypt.NCryptVerifySignature(keyHandle, pPaddingInfo, hash, hash.Length, signature, signature.Length, paddingMode);
+            }
+
             return errorCode == ErrorCode.ERROR_SUCCESS;  // For consistency with other AsymmetricAlgorithm-derived classes, return "false" for any error code rather than making the caller catch an exception.
         }
     }
