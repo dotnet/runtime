@@ -69,13 +69,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             Root.Dispose();
         }
 
-#if DISPOSE_ASYNC
         public ValueTask DisposeAsync()
         {
             _disposed = true;
             return Root.DisposeAsync();
         }
-#endif
 
         internal object GetService(Type serviceType, ServiceProviderEngineScope serviceProviderEngineScope)
         {
