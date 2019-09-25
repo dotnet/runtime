@@ -6,6 +6,7 @@
     <GenerateResxSourceOmitGetResourceString>true</GenerateResxSourceOmitGetResourceString>
     <GenerateNeutralResourcesLanguageAttribute>false</GenerateNeutralResourcesLanguageAttribute>
     <EnsureRuntimePackageDependencies>false</EnsureRuntimePackageDependencies>
+    <EnableSourceControlManagerQueries>false</EnableSourceControlManagerQueries>
 
     <OutputType>Library</OutputType>
     <TargetFramework>netcoreapp2.1</TargetFramework>

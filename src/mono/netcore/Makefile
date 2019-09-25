@@ -114,6 +114,7 @@ patch-local-dotnet-aot-llvm: patch-local-dotnet
 # you can append BDN parameters at the end, e.g. ` -- --filter Burgers --keepFiles`
 # NOTE: we have to delete a couple of System.Drawing files to make it work
 run-benchmarks: patch-local-dotnet
+	@if test -z "$(DOTNET_PERF_REPO)"; then echo "DOTNET_PERF_REPO is not set"; exit 1; fi
 	cd $(DOTNET_PERF_REPO)/src/benchmarks/micro/ && \
 	> corefx/System.Drawing/Perf_Color.cs && \
 	> corefx/System.Drawing/Perf_Graphics_DrawBeziers.cs && \
@@ -125,7 +126,7 @@ run-benchmarks: patch-local-dotnet
 run-sample-local-dotnet-llvm: patch-local-dotnet
 	$(DOTNET) build -c Release sample/HelloWorld
 	PATH="../llvm/usr/bin/:$(PATH)" \
-	MONO_ENV_OPTIONS="--aot=llvm,llvmllc=\"-mcpu=native\"" \
+	MONO_ENV_OPTIONS="--aot=llvm,mcpu=native" \
 	$(DOTNET) sample/HelloWorld/bin/netcoreapp3.0/HelloWorld.dll
 	$(DOTNET) sample/HelloWorld/bin/netcoreapp3.0/HelloWorld.dll
 

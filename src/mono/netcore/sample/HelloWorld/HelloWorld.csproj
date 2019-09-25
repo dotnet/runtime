@@ -5,6 +5,7 @@
     <OutputPath>bin</OutputPath>
     <TargetFramework>netcoreapp3.0</TargetFramework>
     <DebugType>full</DebugType>
+    <EnableSourceControlManagerQueries>false</EnableSourceControlManagerQueries>
   </PropertyGroup>
 
 </Project>
