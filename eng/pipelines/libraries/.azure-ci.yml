@@ -93,7 +93,7 @@ stages:
 
     - template: eng\common\templates\post-build\post-build.yml
       parameters:
-        dependsOn:
+        validateDependsOn:
           - PrePublish
         enableSymbolValidation: false # https://github.com/dotnet/arcade/issues/2871
         SDLValidationParameters:
