@@ -13,11 +13,14 @@
 
 MONO_BEGIN_DECLS
 
-MONO_API MonoDomain * 
+MONO_API MONO_RT_EXTERNAL_ONLY MonoDomain * 
 mono_jit_init              (const char *file);
 
-MONO_API MonoDomain * 
+MONO_API MONO_RT_EXTERNAL_ONLY MonoDomain * 
 mono_jit_init_version      (const char *root_domain_name, const char *runtime_version);
+
+MONO_API MonoDomain * 
+mono_jit_init_version_for_test_only      (const char *root_domain_name, const char *runtime_version);
 
 MONO_API int
 mono_jit_exec              (MonoDomain *domain, MonoAssembly *assembly, 

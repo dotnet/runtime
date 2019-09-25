@@ -2754,7 +2754,9 @@ mono_main (int argc, char* argv[])
 MonoDomain * 
 mono_jit_init (const char *file)
 {
-	return mini_init (file, NULL);
+	MonoDomain *ret = mini_init (file, NULL);
+	MONO_ENTER_GC_SAFE_UNBALANCED; //once it is not executing any managed code yet, it's safe to run the gc
+	return ret;
 }
 
 /**
@@ -2780,7 +2782,16 @@ mono_jit_init (const char *file)
 MonoDomain * 
 mono_jit_init_version (const char *domain_name, const char *runtime_version)
 {
-	return mini_init (domain_name, runtime_version);
+	MonoDomain *ret = mini_init (domain_name, runtime_version);
+	MONO_ENTER_GC_SAFE_UNBALANCED; //once it is not executing any managed code yet, it's safe to run the gc
+	return ret;
+}
+
+MonoDomain * 
+mono_jit_init_version_for_test_only (const char *domain_name, const char *runtime_version)
+{
+	MonoDomain *ret = mini_init (domain_name, runtime_version);
+	return ret;
 }
 
 /**
