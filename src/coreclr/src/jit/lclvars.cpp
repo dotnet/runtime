@@ -3596,7 +3596,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 
                     NOT_BOOL:
 
-                        lclNum = op1->gtLclVarCommon.gtLclNum;
+                        lclNum = op1->gtLclVarCommon.GetLclNum();
                         noway_assert(lclNum < lvaCount);
 
                         lvaTable[lclNum].lvIsBoolean = false;
@@ -3615,7 +3615,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
     /* This must be a local variable reference */
 
     assert((tree->gtOper == GT_LCL_VAR) || (tree->gtOper == GT_LCL_FLD));
-    unsigned lclNum = tree->gtLclVarCommon.gtLclNum;
+    unsigned lclNum = tree->gtLclVarCommon.GetLclNum();
 
     noway_assert(lclNum < lvaCount);
     LclVarDsc* varDsc = lvaTable + lclNum;
@@ -4064,7 +4064,7 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
                     case GT_STORE_LCL_VAR:
                     case GT_STORE_LCL_FLD:
                     {
-                        const unsigned lclNum = node->AsLclVarCommon()->gtLclNum;
+                        const unsigned lclNum = node->AsLclVarCommon()->GetLclNum();
                         lvaTable[lclNum].incRefCnts(weight, this);
                         break;
                     }
@@ -7255,7 +7255,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
     Compiler* pComp      = ((lvaStressLclFldArgs*)data->pCallbackData)->m_pCompiler;
     bool      bFirstPass = ((lvaStressLclFldArgs*)data->pCallbackData)->m_bFirstPass;
     noway_assert(lcl->gtOper == GT_LCL_VAR);
-    unsigned   lclNum = lcl->gtLclVarCommon.gtLclNum;
+    unsigned   lclNum = lcl->gtLclVarCommon.GetLclNum();
     var_types  type   = lcl->TypeGet();
     LclVarDsc* varDsc = &pComp->lvaTable[lclNum];
 

@@ -1630,7 +1630,7 @@ GenTree* Compiler::impSIMDAbs(CORINFO_CLASS_HANDLE typeHnd, var_types baseType, 
 
         if (op1->OperGet() == GT_LCL_VAR)
         {
-            op1LclNum = op1->gtLclVarCommon.gtLclNum;
+            op1LclNum = op1->gtLclVarCommon.GetLclNum();
             op1Assign = nullptr;
         }
         else
@@ -2007,7 +2007,7 @@ GenTree* Compiler::getOp1ForConstructor(OPCODE opcode, GenTree* newobjThis, CORI
         assert(newobjThis->gtOper == GT_ADDR && newobjThis->gtOp.gtOp1->gtOper == GT_LCL_VAR);
 
         // push newobj result on type stack
-        unsigned tmp = op1->gtOp.gtOp1->gtLclVarCommon.gtLclNum;
+        unsigned tmp = op1->gtOp.gtOp1->gtLclVarCommon.GetLclNum();
         impPushOnStack(gtNewLclvNode(tmp, lvaGetRealType(tmp)), verMakeTypeInfo(clsHnd).NormaliseForStack());
     }
     else

@@ -25,7 +25,7 @@ void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree)
 {
     assert((tree->OperIsLocal() && (tree->OperGet() != GT_PHI_ARG)) || tree->OperIsLocalAddr());
 
-    const unsigned lclNum = tree->gtLclNum;
+    const unsigned lclNum = tree->GetLclNum();
     assert(lclNum < lvaCount);
 
     LclVarDsc* const varDsc = &lvaTable[lclNum];
@@ -382,7 +382,7 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
                 GenTreeLclVarCommon* dummyLclVarTree = nullptr;
                 if (tree->DefinesLocal(this, &dummyLclVarTree))
                 {
-                    if (lvaVarAddrExposed(dummyLclVarTree->gtLclNum))
+                    if (lvaVarAddrExposed(dummyLclVarTree->GetLclNum()))
                     {
                         fgCurMemoryDef |= memoryKindSet(ByrefExposed);
 
@@ -1470,7 +1470,7 @@ VARSET_VALRET_TP Compiler::fgUpdateLiveSet(VARSET_VALARG_TP liveSet, GenTree* tr
                 // fgGetHandlerLiveVars(compCurBB), but seems excessive
                 //
                 assert(VarSetOps::IsEmptyIntersection(this, newLiveSet, varBits) || opts.compDbgCode ||
-                       lvaTable[tree->gtLclVarCommon.gtLclNum].lvAddrExposed ||
+                       lvaTable[tree->gtLclVarCommon.GetLclNum()].lvAddrExposed ||
                        (compCurBB != nullptr && ehBlockHasExnFlowDsc(compCurBB)));
                 VarSetOps::UnionD(this, newLiveSet, varBits);
             }
@@ -1581,7 +1581,7 @@ void Compiler::fgComputeLifeTrackedLocalUse(VARSET_TP& life, LclVarDsc& varDsc, 
 #ifdef DEBUG
     if (verbose && 0)
     {
-        printf("Ref V%02u,T%02u] at ", node->gtLclNum, varIndex);
+        printf("Ref V%02u,T%02u] at ", node->GetLclNum(), varIndex);
         printTreeID(node);
         printf(" life %s -> %s\n", VarSetOps::ToString(this, life),
                VarSetOps::ToString(this, VarSetOps::AddElem(this, life, varIndex)));
@@ -1630,7 +1630,7 @@ bool Compiler::fgComputeLifeTrackedLocalDef(VARSET_TP&           life,
 #ifdef DEBUG
             if (verbose && 0)
             {
-                printf("Def V%02u,T%02u at ", node->gtLclNum, varIndex);
+                printf("Def V%02u,T%02u at ", node->GetLclNum(), varIndex);
                 printTreeID(node);
                 printf(" life %s -> %s\n",
                        VarSetOps::ToString(this,
@@ -1756,7 +1756,7 @@ void Compiler::fgComputeLifeUntrackedLocal(VARSET_TP&           life,
 //    `true` if the local var node corresponds to a dead store; `false` otherwise.
 bool Compiler::fgComputeLifeLocal(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, GenTree* lclVarNode)
 {
-    unsigned lclNum = lclVarNode->gtLclVarCommon.gtLclNum;
+    unsigned lclNum = lclVarNode->gtLclVarCommon.GetLclNum();
 
     assert(lclNum < lvaCount);
     LclVarDsc& varDsc = lvaTable[lclNum];
@@ -1817,7 +1817,7 @@ void Compiler::fgComputeLife(VARSET_TP&       life,
             bool isDeadStore = fgComputeLifeLocal(life, keepAliveVars, tree);
             if (isDeadStore)
             {
-                LclVarDsc* varDsc = &lvaTable[tree->gtLclVarCommon.gtLclNum];
+                LclVarDsc* varDsc = &lvaTable[tree->gtLclVarCommon.GetLclNum()];
 
                 bool doAgain = false;
                 if (fgRemoveDeadStore(&tree, varDsc, life, &doAgain, pStmtInfoDirty DEBUGARG(treeModf)))
@@ -1903,7 +1903,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             case GT_LCL_FLD:
             {
                 GenTreeLclVarCommon* const lclVarNode = node->AsLclVarCommon();
-                LclVarDsc&                 varDsc     = lvaTable[lclVarNode->gtLclNum];
+                LclVarDsc&                 varDsc     = lvaTable[lclVarNode->GetLclNum()];
 
                 if (node->IsUnusedValue())
                 {
@@ -1934,7 +1934,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                     JITDUMP("Removing dead LclVar address:\n");
                     DISPNODE(node);
 
-                    const bool isTracked = lvaTable[node->AsLclVarCommon()->gtLclNum].lvTracked;
+                    const bool isTracked = lvaTable[node->AsLclVarCommon()->GetLclNum()].lvTracked;
                     blockRange.Delete(this, block, node);
                     if (isTracked && !opts.MinOpts())
                     {
@@ -1974,7 +1974,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             {
                 GenTreeLclVarCommon* const lclVarNode = node->AsLclVarCommon();
 
-                LclVarDsc& varDsc = lvaTable[lclVarNode->gtLclNum];
+                LclVarDsc& varDsc = lvaTable[lclVarNode->GetLclNum()];
                 if (varDsc.lvTracked)
                 {
                     isDeadStore = fgComputeLifeTrackedLocalDef(life, keepAliveVars, varDsc, lclVarNode);

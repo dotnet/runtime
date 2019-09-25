@@ -966,14 +966,14 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
     // lcl_vars are not defs
     assert((tree->gtFlags & GTF_VAR_DEF) == 0);
 
-    bool isRegCandidate = compiler->lvaTable[tree->gtLclNum].lvIsRegCandidate();
+    bool isRegCandidate = compiler->lvaTable[tree->GetLclNum()].lvIsRegCandidate();
 
     // If this is a register candidate that has been spilled, genConsumeReg() will
     // reload it at the point of use.  Otherwise, if it's not in a register, we load it here.
 
     if (!isRegCandidate && !(tree->gtFlags & GTF_SPILLED))
     {
-        GetEmitter()->emitIns_R_S(ins_Load(tree->TypeGet()), emitTypeSize(tree), tree->gtRegNum, tree->gtLclNum, 0);
+        GetEmitter()->emitIns_R_S(ins_Load(tree->TypeGet()), emitTypeSize(tree), tree->gtRegNum, tree->GetLclNum(), 0);
         genProduceReg(tree);
     }
 }
@@ -998,7 +998,7 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     // We must have a stack store with GT_STORE_LCL_FLD
     noway_assert(targetReg == REG_NA);
 
-    unsigned varNum = tree->gtLclNum;
+    unsigned varNum = tree->GetLclNum();
     assert(varNum < compiler->lvaCount);
     LclVarDsc* varDsc = &(compiler->lvaTable[varNum]);
 
@@ -1030,7 +1030,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
     regNumber targetReg  = tree->gtRegNum;
     emitter*  emit       = GetEmitter();
 
-    unsigned varNum = tree->gtLclNum;
+    unsigned varNum = tree->GetLclNum();
     assert(varNum < compiler->lvaCount);
     LclVarDsc* varDsc = &(compiler->lvaTable[varNum]);
 

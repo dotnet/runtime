@@ -867,7 +867,7 @@ void ObjectAllocator::RewriteUses()
             assert(tree != nullptr);
             assert(tree->IsLocal());
 
-            const unsigned int lclNum    = tree->AsLclVarCommon()->gtLclNum;
+            const unsigned int lclNum    = tree->AsLclVarCommon()->GetLclNum();
             unsigned int       newLclNum = BAD_VAR_NUM;
             LclVarDsc*         lclVarDsc = m_compiler->lvaTable + lclNum;
 
