@@ -97,18 +97,7 @@ namespace System
                 }
             }
 
-            public TimeZoneInfo Local
-            {
-                get
-                {
-                    TimeZoneInfo? timeZone = _localTimeZone;
-                    if (timeZone == null)
-                    {
-                        timeZone = CreateLocal();
-                    }
-                    return timeZone;
-                }
-            }
+            public TimeZoneInfo Local => _localTimeZone ?? CreateLocal();
 
             /// <summary>
             /// Helper function that returns the corresponding DateTimeKind for this TimeZoneInfo.
@@ -1516,7 +1505,7 @@ namespace System
             {
                 // In southern hemisphere, the daylight saving time starts later in the year, and ends in the beginning of next year.
                 // Note, the summer in the southern hemisphere begins late in the year.
-                return (time < endTime || time >= startTime);
+                return time < endTime || time >= startTime;
             }
             else if (rule.NoDaylightTransitions)
             {

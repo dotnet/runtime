@@ -235,13 +235,10 @@ namespace System.Runtime.InteropServices
 
                 if (count > 0)
                 {
-                    unsafe
+                    fixed (byte* pStructure = &Unsafe.As<T, byte>(ref array[index]))
                     {
-                        fixed (byte* pStructure = &Unsafe.As<T, byte>(ref array[index]))
-                        {
-                            for (int i = 0; i < count; i++)
-                                Buffer.Memmove(pStructure + sizeofT * i, ptr + alignedSizeofT * i, sizeofT);
-                        }
+                        for (int i = 0; i < count; i++)
+                            Buffer.Memmove(pStructure + sizeofT * i, ptr + alignedSizeofT * i, sizeofT);
                     }
                 }
             }
@@ -314,7 +311,6 @@ namespace System.Runtime.InteropServices
 
                 if (count > 0)
                 {
-                    unsafe
                     {
                         fixed (byte* pStructure = &Unsafe.As<T, byte>(ref array[index]))
                         {
@@ -380,7 +376,7 @@ namespace System.Runtime.InteropServices
                 return size;
             }
 
-            return (uint)(((size + 3) & (~3)));
+            return (uint)((size + 3) & (~3));
         }
 
         /// <summary>

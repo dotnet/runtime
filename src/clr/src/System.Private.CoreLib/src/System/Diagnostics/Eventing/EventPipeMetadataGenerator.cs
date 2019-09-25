@@ -225,7 +225,6 @@ namespace System.Diagnostics.Tracing
 
                 // Top-level structs don't have a property name, but for simplicity we write a NULL-char to represent the name.
                 EventPipeMetadataGenerator.WriteToBuffer(pMetadataBlob, blobSize, ref offset, '\0');
-
             }
             else
             {

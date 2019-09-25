@@ -25,7 +25,6 @@ namespace System.Globalization
         {
             CheckTicksRange(time.Ticks);
 
-
             TimeToLunar(time, out int year, out _, out _);
             return ((year - 4) % 60) + 1;
         }
@@ -469,7 +468,7 @@ namespace System.Globalization
             DateTime dt = LunarToTime(time, y, m, d);
 
             CheckAddResult(dt.Ticks, MinSupportedDateTime, MaxSupportedDateTime);
-            return (dt);
+            return dt;
         }
 
         public override DateTime AddYears(DateTime time, int years)

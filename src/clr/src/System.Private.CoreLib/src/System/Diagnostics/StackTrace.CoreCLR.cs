@@ -9,7 +9,7 @@ namespace System.Diagnostics
 {
     public partial class StackTrace
     {
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void GetStackFramesInternal(StackFrameHelper sfh, int iSkip, bool fNeedFileInfo, Exception? e);
 
         internal static int CalculateFramesToSkip(StackFrameHelper StackF, int iNumFrames)

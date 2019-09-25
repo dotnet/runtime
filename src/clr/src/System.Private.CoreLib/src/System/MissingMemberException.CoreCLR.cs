@@ -9,7 +9,7 @@ namespace System
 {
     public partial class MissingMemberException : MemberAccessException, ISerializable
     {
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern string FormatSignature(byte[]? signature);
     }
 }

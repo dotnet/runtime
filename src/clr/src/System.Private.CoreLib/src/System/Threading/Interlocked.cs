@@ -47,23 +47,23 @@ namespace System.Threading
         /// <summary>
         /// Implemented: int, long, float, double, Object, IntPtr
         /// </summary>
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern int Exchange(ref int location1, int value);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern long Exchange(ref long location1, long value);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern float Exchange(ref float location1, float value);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Exchange(ref double location1, double value);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         [return: NotNullIfNotNull("location1")]
         public static extern object? Exchange([NotNullIfNotNull("value")] ref object? location1, object? value);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern IntPtr Exchange(ref IntPtr location1, IntPtr value);
 
         // This whole method reduces to a single call to Exchange(ref object, object) but
@@ -78,23 +78,23 @@ namespace System.Threading
         /// <summary>
         /// Implemented: int, long, float, double, Object, IntPtr
         /// </summary>
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern int CompareExchange(ref int location1, int value, int comparand);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern long CompareExchange(ref long location1, long value, long comparand);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern float CompareExchange(ref float location1, float value, float comparand);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double CompareExchange(ref double location1, double value, double comparand);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         [return: NotNullIfNotNull("location1")]
         public static extern object? CompareExchange(ref object? location1, object? value, object? comparand);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern IntPtr CompareExchange(ref IntPtr location1, IntPtr value, IntPtr comparand);
 
         // Note that getILIntrinsicImplementationForInterlocked() in vm\jitinterface.cpp replaces
@@ -114,16 +114,16 @@ namespace System.Threading
         }
 
         // BCL-internal overload that returns success via a ref bool param, useful for reliable spin locks.
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int CompareExchange(ref int location1, int value, int comparand, ref bool succeeded);
 
         /// <summary>
         /// Implemented: int, long
         /// </summary>
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int ExchangeAdd(ref int location1, int value);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern long ExchangeAdd(ref long location1, long value);
 
         public static int Add(ref int location1, int value)
@@ -141,7 +141,7 @@ namespace System.Threading
             return Interlocked.CompareExchange(ref location, 0, 0);
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void MemoryBarrier();
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]

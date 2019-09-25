@@ -499,7 +499,7 @@ namespace System.IO
             for (int i = 0; i < paths.Length; i++)
             {
                 string? path = paths[i];
-                if (path == null || path.Length == 0)
+                if (string.IsNullOrEmpty(path))
                 {
                     continue;
                 }
@@ -713,7 +713,6 @@ namespace System.IO
 
             fixed (char* f = &MemoryMarshal.GetReference(first), s = &MemoryMarshal.GetReference(second), t = &MemoryMarshal.GetReference(third), u = &MemoryMarshal.GetReference(fourth))
             {
-
 #if MS_IO_REDIST
                 return StringExtensions.Create(
 #else
@@ -780,7 +779,7 @@ namespace System.IO
             // Consume 3 MSB bits of b2, 1 MSB bit of b3, b4
             b2 >>= 5;
 
-            Debug.Assert(((b2 & 0xF8) == 0), "Unexpected set bits");
+            Debug.Assert((b2 & 0xF8) == 0, "Unexpected set bits");
 
             if ((b3 & 0x80) != 0)
                 b2 |= 0x08;
@@ -935,6 +934,6 @@ namespace System.IO
         /// Returns true if the path ends in a directory separator.
         /// </summary>
         public static bool EndsInDirectorySeparator(string path)
-              => path != null && path.Length > 0 && PathInternal.IsDirectorySeparator(path[path.Length - 1]);
+              => !string.IsNullOrEmpty(path) && PathInternal.IsDirectorySeparator(path[path.Length - 1]);
     }
 }

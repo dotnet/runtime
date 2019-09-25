@@ -764,7 +764,7 @@ namespace System.Globalization
         {
             if (month1 == month2)
             {
-                return (day1 - day2);
+                return day1 - day2;
             }
 
             // Make sure that (month1, day1) < (month2, day2)

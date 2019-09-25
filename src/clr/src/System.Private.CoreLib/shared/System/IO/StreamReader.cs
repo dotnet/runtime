@@ -471,7 +471,6 @@ namespace System.IO
                 CompressBuffer(2);
                 changedEncoding = true;
             }
-
             else if (_byteBuffer[0] == 0xFF && _byteBuffer[1] == 0xFE)
             {
                 // Little Endian Unicode, or possibly little endian UTF32
@@ -488,7 +487,6 @@ namespace System.IO
                     changedEncoding = true;
                 }
             }
-
             else if (_byteLen >= 3 && _byteBuffer[0] == 0xEF && _byteBuffer[1] == 0xBB && _byteBuffer[2] == 0xBF)
             {
                 // UTF-8

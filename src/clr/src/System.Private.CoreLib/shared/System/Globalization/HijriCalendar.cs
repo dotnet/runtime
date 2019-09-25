@@ -239,7 +239,7 @@ namespace System.Globalization
 
             if (part == DatePartDayOfYear)
             {
-                return ((int)numDays);
+                return (int)numDays;
             }
 
             while ((hijriMonth <= 12) && (numDays > s_hijriMonthDays[hijriMonth - 1]))
@@ -304,7 +304,7 @@ namespace System.Globalization
 
         public override DateTime AddYears(DateTime time, int years)
         {
-            return (AddMonths(time, years * 12));
+            return AddMonths(time, years * 12);
         }
 
         public override int GetDayOfMonth(DateTime time)

@@ -50,10 +50,9 @@ namespace System
                 return new EmptyReadOnlyDictionaryInternal();
             else
                 return new ListDictionaryInternal();
-
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool IsImmutableAgileException(Exception e);
 
 #if FEATURE_COMINTEROP
@@ -101,7 +100,7 @@ namespace System
 
                 // Keep the error object alive so that user could retrieve error information
                 // using Data["RestrictedErrorReference"]
-                dict.Add("__RestrictedErrorObject", (restrictedErrorObject == null ? null : new __RestrictedErrorObject(restrictedErrorObject)));
+                dict.Add("__RestrictedErrorObject", restrictedErrorObject == null ? null : new __RestrictedErrorObject(restrictedErrorObject));
                 dict.Add("__HasRestrictedLanguageErrorObject", hasrestrictedLanguageErrorObject);
             }
         }
@@ -123,7 +122,7 @@ namespace System
         }
 #endif // FEATURE_COMINTEROP
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern IRuntimeMethodInfo GetMethodFromStackTrace(object stackTrace);
 
         private MethodBase? GetExceptionMethodFromStackTrace()
@@ -235,7 +234,7 @@ namespace System
 
             string? tmpStackTraceString = StackTrace;
 
-            if (tmpStackTraceString != null && tmpStackTraceString.Length > 0)
+            if (!string.IsNullOrEmpty(tmpStackTraceString))
             {
                 _remoteStackTraceString = tmpStackTraceString + Environment.NewLine;
             }
@@ -243,7 +242,6 @@ namespace System
             _stackTrace = null;
             _stackTraceString = null;
         }
-
 
         // This is the object against which a lock will be taken
         // when attempt to restore the EDI. Since its static, its possible
@@ -253,22 +251,22 @@ namespace System
         // matches precisely.
         private static readonly object s_DispatchStateLock = new object();
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void PrepareForForeignExceptionRaise();
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void GetStackTracesDeepCopy(Exception exception, out object currentStackTrace, out object dynamicMethodArray);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void SaveStackTracesFromDeepCopy(Exception exception, object? currentStackTrace, object? dynamicMethodArray);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern object CopyStackTrace(object currentStackTrace);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern object CopyDynamicMethods(object currentDynamicMethods);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern uint GetExceptionCount();
 
         internal static object? DeepCopyStackTrace(object? currentStackTrace)
@@ -299,7 +297,7 @@ namespace System
         // exception, just before the exception is "rethrown".
         internal void RestoreDispatchState(in DispatchState dispatchState)
         {
-            bool fCanProcessException = !(IsImmutableAgileException(this));
+            bool fCanProcessException = !IsImmutableAgileException(this);
             // Restore only for non-preallocated exceptions
             if (fCanProcessException)
             {
@@ -351,8 +349,7 @@ namespace System
         private object? _watsonBuckets;
         private string? _stackTraceString; // Needed for serialization.
         private string? _remoteStackTraceString;
-#pragma warning disable 414  // Fields are not used from managed.
-#pragma warning disable CA1823
+#pragma warning disable CA1823, 414  // Fields are not used from managed.
         // _dynamicMethods is an array of System.Resolver objects, used to keep
         // DynamicMethodDescs alive for the lifetime of the exception. We do this because
         // the _stackTrace field holds MethodDescs, and a DynamicMethodDesc can be destroyed
@@ -362,8 +359,7 @@ namespace System
         private UIntPtr _ipForWatsonBuckets; // Used to persist the IP for Watson Bucketing
         private readonly IntPtr _xptrs;             // Internal EE stuff
         private readonly int _xcode = _COMPlusExceptionCode;             // Internal EE stuff
-#pragma warning restore CA1823
-#pragma warning restore 414
+#pragma warning restore CA1823, 414
 
         // @MANAGED: HResult is used from within the EE!  Rename with care - check VM directory
         private int _HResult;       // HResult

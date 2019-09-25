@@ -18,8 +18,8 @@ namespace System.Runtime.InteropServices {
     using System.Reflection;
     using System.Runtime.Serialization;
 
-    [GuidAttribute("b36b5c63-42ef-38bc-a07e-0b34c98f164a")]
-    [InterfaceTypeAttribute(ComInterfaceType.InterfaceIsDual)]
+    [Guid("b36b5c63-42ef-38bc-a07e-0b34c98f164a")]
+    [InterfaceType(ComInterfaceType.InterfaceIsDual)]
     [CLSCompliant(false)]
     internal interface _Exception
     {

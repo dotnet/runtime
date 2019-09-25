@@ -97,7 +97,7 @@ namespace System
 
                 while (length > 0)
                 {
-                    length -= 1;
+                    length--;
 
                     if (value.Equals(Unsafe.Add(ref searchSpace, index)))
                         goto Found;

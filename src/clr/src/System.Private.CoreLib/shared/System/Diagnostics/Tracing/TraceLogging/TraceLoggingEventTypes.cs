@@ -177,16 +177,9 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         internal EventTags Tags => this.tags;
 
-        internal NameInfo GetNameInfo(string name, EventTags tags)
-        {
-            NameInfo? ret = this.nameInfos.TryGet(new KeyValuePair<string, EventTags>(name, tags));
-            if (ret == null)
-            {
-                ret = this.nameInfos.GetOrAdd(new NameInfo(name, tags, this.typeMetadata.Length));
-            }
-
-            return ret;
-        }
+        internal NameInfo GetNameInfo(string name, EventTags tags) =>
+            this.nameInfos.TryGet(new KeyValuePair<string, EventTags>(name, tags)) ??
+                this.nameInfos.GetOrAdd(new NameInfo(name, tags, this.typeMetadata.Length));
 
         private TraceLoggingTypeInfo[] MakeArray(System.Reflection.ParameterInfo[] paramInfos)
         {

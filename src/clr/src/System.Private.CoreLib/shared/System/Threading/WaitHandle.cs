@@ -193,7 +193,6 @@ namespace System.Threading
             Span<SafeWaitHandle?> safeWaitHandles,
             Span<IntPtr> unsafeWaitHandles)
         {
-            Debug.Assert(waitHandles != null);
             Debug.Assert(waitHandles.Length > 0);
             Debug.Assert(waitHandles.Length <= MaxWaitHandles);
 

@@ -57,7 +57,7 @@ namespace System.Reflection
             }
 
             // must be last to avoid threading problems
-            return (m_invocationFlags = invocationFlags | INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED);
+            return m_invocationFlags = invocationFlags | INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED;
         }
         #endregion
 
@@ -163,11 +163,8 @@ namespace System.Reflection
             if (obj.IsNull)
                 throw new ArgumentException(SR.Arg_TypedReference_Null);
 
-            unsafe
-            {
-                // Passing TypedReference by reference is easier to make correct in native code
-                return RuntimeFieldHandle.GetValueDirect(this, (RuntimeType)FieldType, &obj, (RuntimeType?)DeclaringType);
-            }
+            // Passing TypedReference by reference is easier to make correct in native code
+            return RuntimeFieldHandle.GetValueDirect(this, (RuntimeType)FieldType, &obj, (RuntimeType?)DeclaringType);
         }
 
         [DebuggerStepThroughAttribute]
@@ -210,11 +207,8 @@ namespace System.Reflection
             if (obj.IsNull)
                 throw new ArgumentException(SR.Arg_TypedReference_Null);
 
-            unsafe
-            {
-                // Passing TypedReference by reference is easier to make correct in native code
-                RuntimeFieldHandle.SetValueDirect(this, (RuntimeType)FieldType, &obj, value, (RuntimeType?)DeclaringType);
-            }
+            // Passing TypedReference by reference is easier to make correct in native code
+            RuntimeFieldHandle.SetValueDirect(this, (RuntimeType)FieldType, &obj, value, (RuntimeType?)DeclaringType);
         }
 
         public override RuntimeFieldHandle FieldHandle => new RuntimeFieldHandle(this);
@@ -235,7 +229,7 @@ namespace System.Reflection
         [MethodImpl(MethodImplOptions.NoInlining)]
         private RuntimeType InitializeFieldType()
         {
-            return (m_fieldType = new Signature(this, m_declaringType).FieldType);
+            return m_fieldType = new Signature(this, m_declaringType).FieldType;
         }
 
         public override Type[] GetRequiredCustomModifiers()

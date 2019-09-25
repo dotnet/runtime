@@ -43,7 +43,6 @@ namespace System.Runtime.Intrinsics.X86
             /// This intrinisc is only available on 64-bit processes
             /// </summary>
             public static long ConvertToInt64WithTruncation(Vector128<float> value) => ConvertToInt64WithTruncation(value);
-
         }
 
         /// <summary>

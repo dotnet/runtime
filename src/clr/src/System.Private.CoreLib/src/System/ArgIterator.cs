@@ -26,7 +26,7 @@ namespace System
         private int RemainingArgs;           // # of remaining args.
 
 #if PLATFORM_WINDOWS // Native Varargs are not supported on Unix
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private extern ArgIterator(IntPtr arglist);
 
         // create an arg iterator that points at the first argument that
@@ -36,7 +36,7 @@ namespace System
         {
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private extern unsafe ArgIterator(IntPtr arglist, void* ptr);
 
         // create an arg iterator that points just past 'firstArg'.
@@ -62,7 +62,7 @@ namespace System
             return result;
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         // reference to TypedReference is banned, so have to pass result as void pointer
         private extern unsafe void FCallGetNextArg(void* result);
 
@@ -98,7 +98,7 @@ namespace System
         }
 
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         // reference to TypedReference is banned, so have to pass result as void pointer
         private extern unsafe void InternalGetNextArg(void* result, RuntimeType rt);
 
@@ -108,11 +108,11 @@ namespace System
         }
 
         // How many arguments are left in the list
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public extern int GetRemainingCount();
 
         // Gets the type of the current arg, does NOT advance the iterator
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private extern unsafe void* _GetNextArgType();
 
         public unsafe RuntimeTypeHandle GetNextArgType()
@@ -157,13 +157,13 @@ namespace System
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/coreclr/issues/9204
         }
 
-        [System.CLSCompliantAttribute(false)]
+        [CLSCompliant(false)]
         public System.TypedReference GetNextArg()
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/coreclr/issues/9204
         }
 
-        [System.CLSCompliantAttribute(false)]
+        [CLSCompliant(false)]
         public System.TypedReference GetNextArg(System.RuntimeTypeHandle rth)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/coreclr/issues/9204

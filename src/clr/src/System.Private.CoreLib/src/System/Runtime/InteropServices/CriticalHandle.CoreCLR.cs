@@ -9,7 +9,7 @@ namespace System.Runtime.InteropServices
 {
     public abstract partial class CriticalHandle : CriticalFinalizerObject, IDisposable
     {
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private extern void ReleaseHandleFailed();
     }
 }

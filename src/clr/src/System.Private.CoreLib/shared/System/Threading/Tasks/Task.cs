@@ -131,7 +131,6 @@ namespace System.Threading.Tasks
         // the completion event which will be set when the Future class calls Finish().
         // But the event would now be signalled if Cancel() is called
 
-
         internal object? m_stateObject; // A state object that can be optionally supplied, passed to action.
         internal TaskScheduler? m_taskScheduler; // The task scheduler this task runs under.
 
@@ -279,7 +278,6 @@ namespace System.Threading.Tasks
             }
         }
 
-
         // This field will only be instantiated to some non-null value if any ContingentProperties need to be set.
         // This will be a ContingentProperties instance or a type derived from it
         internal ContingentProperties? m_contingentProperties;
@@ -404,7 +402,6 @@ namespace System.Threading.Tasks
             : this(action, null, Task.InternalCurrentIfAttached(creationOptions), cancellationToken, creationOptions, InternalTaskOptions.None, null)
         {
         }
-
 
         /// <summary>
         /// Initializes a new <see cref="Task"/> with the specified action and state.
@@ -606,8 +603,8 @@ namespace System.Threading.Tasks
                 // we need to proactively cancel it, because it may never execute to transition itself.
                 // The only way to accomplish this is to register a callback on the CT.
                 // We exclude Promise tasks from this, because TaskCompletionSource needs to fully control the inner tasks's lifetime (i.e. not allow external cancellations)
-                if ((((InternalTaskOptions)Options &
-                    (InternalTaskOptions.QueuedByRuntime | InternalTaskOptions.PromiseTask | InternalTaskOptions.LazyCancellation)) == 0))
+                if (((InternalTaskOptions)Options &
+                    (InternalTaskOptions.QueuedByRuntime | InternalTaskOptions.PromiseTask | InternalTaskOptions.LazyCancellation)) == 0)
                 {
                     if (cancellationToken.IsCancellationRequested)
                     {
@@ -690,7 +687,7 @@ namespace System.Threading.Tasks
         private bool AtomicStateUpdateSlow(int newBits, int illegalBits)
         {
             int flags = m_stateFlags;
-            do
+            while (true)
             {
                 if ((flags & illegalBits) != 0) return false;
                 int oldFlags = Interlocked.CompareExchange(ref m_stateFlags, flags | newBits, flags);
@@ -699,13 +696,13 @@ namespace System.Threading.Tasks
                     return true;
                 }
                 flags = oldFlags;
-            } while (true);
+            }
         }
 
         internal bool AtomicStateUpdate(int newBits, int illegalBits, ref int oldFlags)
         {
             int flags = oldFlags = m_stateFlags;
-            do
+            while (true)
             {
                 if ((flags & illegalBits) != 0) return false;
                 oldFlags = Interlocked.CompareExchange(ref m_stateFlags, flags | newBits, flags);
@@ -714,7 +711,7 @@ namespace System.Threading.Tasks
                     return true;
                 }
                 flags = oldFlags;
-            } while (true);
+            }
         }
 
         /// <summary>
@@ -834,7 +831,6 @@ namespace System.Threading.Tasks
             // to clear bits, as this doesn't recursively clear bits in the case of, for example, WhenAny.
             SetNotificationForWaitCompletion(enabled: false);
         }
-
 
         // Atomically mark a Task as started while making sure that it is not canceled.
         internal bool MarkStarted()
@@ -1127,11 +1123,9 @@ namespace System.Threading.Tasks
             }
         }
 
-
         ////
         //// Helper methods for Factory StartNew methods.
         ////
-
 
         // Implicitly converts action to object and handles the meat of the StartNew() logic.
         internal static Task InternalStartNew(
@@ -1172,7 +1166,6 @@ namespace System.Threading.Tasks
 
             return newId;
         }
-
 
         /////////////
         // properties
@@ -1354,7 +1347,6 @@ namespace System.Threading.Tasks
         /// </summary>
         internal bool IsCancellationAcknowledged => (m_stateFlags & TASK_STATE_CANCELLATIONACKNOWLEDGED) != 0;
 
-
         /// <summary>
         /// Gets whether this <see cref="Task">Task</see> has completed.
         /// </summary>
@@ -1475,7 +1467,6 @@ namespace System.Threading.Tasks
             }
         }
 
-
         /// <summary>
         /// Whether an exception has been stored into the task.
         /// </summary>
@@ -1498,7 +1489,7 @@ namespace System.Threading.Tasks
         /// </remarks>
         public bool IsFaulted =>
             // Faulted is "king" -- if that bit is present (regardless of other bits), we are faulted.
-            ((m_stateFlags & TASK_STATE_FAULTED) != 0);
+            (m_stateFlags & TASK_STATE_FAULTED) != 0;
 
         /// <summary>
         /// The captured execution context for the current task to run inside
@@ -1535,7 +1526,6 @@ namespace System.Threading.Tasks
 
         /////////////
         // methods
-
 
         /// <summary>
         /// Disposes the <see cref="Task"/>, releasing all of its unmanaged resources.
@@ -1624,7 +1614,6 @@ namespace System.Threading.Tasks
         /////////////
         // internal helpers
 
-
         /// <summary>
         /// Schedules the task for execution.
         /// </summary>
@@ -1661,7 +1650,6 @@ namespace System.Threading.Tasks
                 Debug.Assert(m_action != null, "Must have a delegate to be in ScheduleAndStart");
                 AsyncCausalityTracer.TraceOperationCreation(this, "Task: " + m_action.Method.Name);
             }
-
 
             try
             {
@@ -2082,7 +2070,6 @@ namespace System.Threading.Tasks
             // ready to run continuations and notify parent.
             FinishStageThree();
         }
-
 
         /// <summary>
         /// Final stage of the task completion code path. Notifies the parent (if any) that another of its children are done, and runs continuations.
@@ -2628,7 +2615,6 @@ namespace System.Threading.Tasks
             return Wait((int)totalMilliseconds, default);
         }
 
-
         /// <summary>
         /// Waits for the <see cref="Task"/> to complete execution.
         /// </summary>
@@ -2646,7 +2632,6 @@ namespace System.Threading.Tasks
         {
             Wait(Timeout.Infinite, cancellationToken);
         }
-
 
         /// <summary>
         /// Waits for the <see cref="Task"/> to complete execution.
@@ -2669,7 +2654,6 @@ namespace System.Threading.Tasks
         {
             return Wait(millisecondsTimeout, default);
         }
-
 
         /// <summary>
         /// Waits for the <see cref="Task"/> to complete execution.
@@ -2776,7 +2760,7 @@ namespace System.Threading.Tasks
             {
                 Task? currentTask = Task.InternalCurrent;
                 log.TaskWaitBegin(
-                    (currentTask != null ? currentTask.m_taskScheduler!.Id : TaskScheduler.Default.Id), (currentTask != null ? currentTask.Id : 0),
+                    currentTask != null ? currentTask.m_taskScheduler!.Id : TaskScheduler.Default.Id, currentTask != null ? currentTask.Id : 0,
                     this.Id, TplEventSource.TaskWaitBehavior.Synchronous, 0);
             }
 
@@ -3005,7 +2989,7 @@ namespace System.Threading.Tasks
             if (tse != null)
                 throw tse;
             else
-                return (mustCleanup);
+                return mustCleanup;
         }
 
         // Breaks out logic for recording a cancellation request
@@ -3089,7 +3073,6 @@ namespace System.Threading.Tasks
             // Notify parents, fire continuations, other cleanup.
             FinishStageThree();
         }
-
 
         /// <summary>
         /// Sets the task's cancellation acknowledged flag.
@@ -3209,13 +3192,9 @@ namespace System.Threading.Tasks
             return returnValue;
         }
 
-
         //
         // Continuation passing functionality (aka ContinueWith)
         //
-
-
-
 
         /// <summary>
         /// Runs all of the continuations, as appropriate.
@@ -3804,7 +3783,6 @@ namespace System.Threading.Tasks
                 TaskContinuationOptions.None);
         }
 
-
         /// <summary>
         /// Creates a continuation that executes when the target <see cref="Task"/> completes.
         /// </summary>
@@ -4006,7 +3984,6 @@ namespace System.Threading.Tasks
             return ContinueWith<TResult>(continuationFunction, state, TaskScheduler.Current, default,
                 TaskContinuationOptions.None);
         }
-
 
         /// <summary>
         /// Creates a continuation that executes when the target <see cref="Task"/> completes.
@@ -4241,7 +4218,6 @@ namespace System.Threading.Tasks
                 InternalTaskOptions.ContinuationTask | InternalTaskOptions.LazyCancellation :
                 InternalTaskOptions.ContinuationTask;
         }
-
 
         /// <summary>
         /// Registers the continuation and possibly runs it (if the task is already finished).
@@ -4866,7 +4842,6 @@ namespace System.Threading.Tasks
             }
         }
 
-
         /// <summary>
         /// Waits for any of the provided <see cref="Task"/> objects to complete execution.
         /// </summary>
@@ -5168,7 +5143,6 @@ namespace System.Threading.Tasks
 
         #region Run methods
 
-
         /// <summary>
         /// Queues the specified work to run on the ThreadPool and returns a Task handle for that work.
         /// </summary>
@@ -5247,7 +5221,6 @@ namespace System.Threading.Tasks
             return Run(function, default);
         }
 
-
         /// <summary>
         /// Queues the specified work to run on the ThreadPool and returns a proxy for the
         /// Task returned by <paramref name="function"/>.
@@ -5324,7 +5297,6 @@ namespace System.Threading.Tasks
 
             return promise;
         }
-
 
         #endregion
 
@@ -6273,7 +6245,6 @@ namespace System.Threading.Tasks
         /// </summary>
         RunContinuationsAsynchronously = 0x40
     }
-
 
     /// <summary>
     /// Task creation flags which are only used internally.

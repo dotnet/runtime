@@ -34,7 +34,6 @@ namespace System
         //
         internal const int False = 0;
 
-
         //
         // Internal Constants are real consts for performance.
         //
@@ -46,7 +45,6 @@ namespace System
         // The internal string representation of false.
         //
         internal const string FalseLiteral = "False";
-
 
         //
         // Public Constants
@@ -136,7 +134,7 @@ namespace System
                 return false;
             }
 
-            return (m_value == ((bool)obj).m_value);
+            return m_value == ((bool)obj).m_value;
         }
 
         [NonVersionable]
@@ -195,21 +193,21 @@ namespace System
         //
         internal static bool IsTrueStringIgnoreCase(ReadOnlySpan<char> value)
         {
-            return (value.Length == 4 &&
+            return value.Length == 4 &&
                     (value[0] == 't' || value[0] == 'T') &&
                     (value[1] == 'r' || value[1] == 'R') &&
                     (value[2] == 'u' || value[2] == 'U') &&
-                    (value[3] == 'e' || value[3] == 'E'));
+                    (value[3] == 'e' || value[3] == 'E');
         }
 
         internal static bool IsFalseStringIgnoreCase(ReadOnlySpan<char> value)
         {
-            return (value.Length == 5 &&
+            return value.Length == 5 &&
                     (value[0] == 'f' || value[0] == 'F') &&
                     (value[1] == 'a' || value[1] == 'A') &&
                     (value[2] == 'l' || value[2] == 'L') &&
                     (value[3] == 's' || value[3] == 'S') &&
-                    (value[4] == 'e' || value[4] == 'E'));
+                    (value[4] == 'e' || value[4] == 'E');
         }
 
         // Determines whether a String represents true or false.
@@ -304,7 +302,6 @@ namespace System
         {
             return TypeCode.Boolean;
         }
-
 
         bool IConvertible.ToBoolean(IFormatProvider? provider)
         {

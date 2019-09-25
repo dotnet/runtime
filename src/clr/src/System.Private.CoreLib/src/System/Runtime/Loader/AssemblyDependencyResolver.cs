@@ -45,10 +45,7 @@ namespace System.Runtime.Loader
             {
                 // Setup error writer for this thread. This makes the hostpolicy redirect all error output
                 // to the writer specified. Have to store the previous writer to set it back once this is done.
-                corehost_error_writer_fn errorWriter = new corehost_error_writer_fn(message =>
-                {
-                    errorMessage.AppendLine(message);
-                });
+                corehost_error_writer_fn errorWriter = new corehost_error_writer_fn(message => errorMessage.AppendLine(message));
 
                 IntPtr errorWriterPtr = Marshal.GetFunctionPointerForDelegate(errorWriter);
                 IntPtr previousErrorWriterPtr = corehost_set_error_writer(errorWriterPtr);

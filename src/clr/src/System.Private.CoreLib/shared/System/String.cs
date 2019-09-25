@@ -41,7 +41,7 @@ namespace System
          * src/vm/ecall.cpp for instructions on how to add new overloads.
          */
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public extern String(char[] value);
 
 #if !CORECLR
@@ -61,7 +61,7 @@ namespace System
             return result;
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public extern String(char[] value, int startIndex, int length);
 
 #if !CORECLR
@@ -94,7 +94,7 @@ namespace System
         }
 
         [CLSCompliant(false)]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public extern unsafe String(char* value);
 
 #if !CORECLR
@@ -116,7 +116,7 @@ namespace System
         }
 
         [CLSCompliant(false)]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public extern unsafe String(char* value, int startIndex, int length);
 
 #if !CORECLR
@@ -260,7 +260,7 @@ namespace System
             return enc.GetString(new ReadOnlySpan<byte>(pStart, length));
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public extern String(char c, int count);
 
 #if !CORECLR
@@ -309,7 +309,7 @@ namespace System
             return result;
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public extern String(ReadOnlySpan<char> value);
 
 #if !CORECLR

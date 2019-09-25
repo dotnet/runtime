@@ -148,7 +148,7 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        internal unsafe void AddNullTerminatedString(string? value)
+        internal void AddNullTerminatedString(string? value)
         {
             // Treat null strings as empty strings.
             if (value == null)
@@ -258,7 +258,7 @@ namespace System.Diagnostics.Tracing
         internal void BeginBuffered()
         {
             this.ScalarsEnd();
-            this.bufferNesting += 1;
+            this.bufferNesting++;
         }
 
         /// <summary>
@@ -266,7 +266,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         internal void EndBuffered()
         {
-            this.bufferNesting -= 1;
+            this.bufferNesting--;
 
             if (this.bufferNesting == 0)
             {

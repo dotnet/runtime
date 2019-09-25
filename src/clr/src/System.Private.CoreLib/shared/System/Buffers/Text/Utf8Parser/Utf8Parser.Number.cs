@@ -18,8 +18,8 @@ namespace System.Buffers.Text
         {
             Debug.Assert(number.DigitsCount == 0);
             Debug.Assert(number.Scale == 0);
-            Debug.Assert(number.IsNegative == false);
-            Debug.Assert(number.HasNonZeroTail == false);
+            Debug.Assert(!number.IsNegative);
+            Debug.Assert(!number.HasNonZeroTail);
 
             number.CheckConsistency();
             textUsedExponentNotation = false;

@@ -137,7 +137,6 @@ namespace System.Buffers.Text
             const long MaxMilliSeconds = long.MaxValue / TimeSpan.TicksPerMillisecond;
             const long MinMilliSeconds = long.MinValue / TimeSpan.TicksPerMillisecond;
 
-            Debug.Assert(days >= 0 && hours >= 0 && minutes >= 0 && seconds >= 00 && fraction >= 0);
             if (hours > 23 || minutes > 59 || seconds > 59)
             {
                 timeSpan = default;

@@ -453,7 +453,7 @@ namespace System
                 }
 
                 // Check if we have NoDaylightTransitions in the serialized string and then deserialize it
-                if ((_serializedText[_currentTokenStartIndex] >= '0' && _serializedText[_currentTokenStartIndex] <= '1'))
+                if (_serializedText[_currentTokenStartIndex] >= '0' && _serializedText[_currentTokenStartIndex] <= '1')
                 {
                     noDaylightTransitions = GetNextInt32Value();
                 }

@@ -24,7 +24,7 @@ namespace System
         /// </summary>
         public static bool Contains(this ReadOnlySpan<char> span, ReadOnlySpan<char> value, StringComparison comparisonType)
         {
-            return (IndexOf(span, value, comparisonType) >= 0);
+            return IndexOf(span, value, comparisonType) >= 0;
         }
 
         /// <summary>
@@ -41,16 +41,16 @@ namespace System
             switch (comparisonType)
             {
                 case StringComparison.CurrentCulture:
-                    return (CultureInfo.CurrentCulture.CompareInfo.CompareOptionNone(span, other) == 0);
+                    return CultureInfo.CurrentCulture.CompareInfo.CompareOptionNone(span, other) == 0;
 
                 case StringComparison.CurrentCultureIgnoreCase:
-                    return (CultureInfo.CurrentCulture.CompareInfo.CompareOptionIgnoreCase(span, other) == 0);
+                    return CultureInfo.CurrentCulture.CompareInfo.CompareOptionIgnoreCase(span, other) == 0;
 
                 case StringComparison.InvariantCulture:
-                    return (CompareInfo.Invariant.CompareOptionNone(span, other) == 0);
+                    return CompareInfo.Invariant.CompareOptionNone(span, other) == 0;
 
                 case StringComparison.InvariantCultureIgnoreCase:
-                    return (CompareInfo.Invariant.CompareOptionIgnoreCase(span, other) == 0);
+                    return CompareInfo.Invariant.CompareOptionIgnoreCase(span, other) == 0;
 
                 case StringComparison.Ordinal:
                     return EqualsOrdinal(span, other);

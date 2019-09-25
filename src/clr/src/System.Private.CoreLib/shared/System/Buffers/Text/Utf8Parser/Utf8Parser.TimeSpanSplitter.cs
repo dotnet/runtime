@@ -78,14 +78,12 @@ namespace System.Buffers.Text
                 }
                 srcIndex += justConsumed;
 
-                ComponentParseResult result;
-
                 //
                 // Split out the second number (if any) For the 'c' format, a period might validly appear here as it;s used both to separate the day and the fraction - however,
                 // the fraction is always the fourth component at earliest, so if we do see a period at this stage, always parse the integer as a regular integer, not as
                 // a fraction.
                 //
-                result = ParseComponent(source, neverParseAsFraction: periodUsedToSeparateDay, ref srcIndex, out V2);
+                ComponentParseResult result = ParseComponent(source, neverParseAsFraction: periodUsedToSeparateDay, ref srcIndex, out V2);
                 if (result == ComponentParseResult.ParseFailure)
                 {
                     bytesConsumed = 0;
