@@ -6,12 +6,12 @@ These instructions will lead you through building Core-Setup.
 ----------------
 # Environment
 
-You must install several components to build the Core-Setup repo. These instructions were tested on Windows 8+.
+You must install several components to build the Core-Setup repo. These instructions were tested on Windows 10+.
 
 ## Visual Studio
 
 Visual Studio must be installed. Supported versions:
-- [Visual Studio 2019 RC](https://visualstudio.microsoft.com/downloads/#2019rc) (Community, Professional, Enterprise).  The community version is completely free.
+- [Visual Studio 2019](https://visualstudio.microsoft.com/downloads/#2019) (Community, Professional, Enterprise).  The community version is completely free.
 - [Visual Studio 2017](https://visualstudio.microsoft.com/vs/) (Community, Professional, Enterprise).  The community version is completely free.
 
 For Visual Studio:
