@@ -6328,7 +6328,7 @@ namespace System.Reflection
     }
     public static partial class RuntimeReflectionExtensions
     {
-        public static System.Reflection.MethodInfo? GetMethodInfo(this System.Delegate del) { throw null; }
+        public static System.Reflection.MethodInfo GetMethodInfo(this System.Delegate del) { throw null; }
         public static System.Reflection.MethodInfo? GetRuntimeBaseDefinition(this System.Reflection.MethodInfo method) { throw null; }
         public static System.Reflection.EventInfo? GetRuntimeEvent(this System.Type type, string name) { throw null; }
         public static System.Collections.Generic.IEnumerable<System.Reflection.EventInfo> GetRuntimeEvents(this System.Type type) { throw null; }
