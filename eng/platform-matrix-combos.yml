@@ -1,0 +1,71 @@
+parameters:
+  jobTemplate: ''
+  buildConfig: ''
+  # helixQueueGroup is a named collection of Helix Queues. If specified, it determines which Helix queues are
+  # used, instead of the usual criteria. Allowed values:
+  # 'pr' - the queues used for a pull request for the platform. Typically a small set.
+  # 'ci' - the queues used for a CI (post-merge) test run.
+  # 'all' - the queues used for non-PR, non-CI test runs, e.g., Manual or Scheduled runs. Typically this is all available queues.
+  # 'corefx' - the queues used for a corefx test run.
+  helixQueueGroup: 'pr'
+  stagedBuild: false
+  jobParameters: {}
+  linuxArm: false
+  linuxArm64: false
+  linuxMuslX64: false
+  linuxMuslArm64: false
+  linuxRhel6X64: false
+  linuxX64: false
+  osxX64: false
+  windowsX64: false
+  windowsX86: false
+  windowsArm: false
+  windowsArm64: false
+
+jobs:
+- template: /eng/platform-matrix-managed-test-build.yml
+  parameters:
+    jobTemplate: ${{ parameters.jobTemplate }}
+    buildConfig: ${{ parameters.buildConfig }}
+    helixQueueGroup: ${{ parameters.helixQueueGroup }}
+    stagedBuild: ${{ parameters.stagedBuild }}
+    jobParameters: ${{ parameters.jobParameters }}
+
+    linuxArm: ${{ parameters.linuxArm }}
+    linuxArm64: ${{ parameters.linuxArm64 }}
+    linuxMuslX64: ${{ parameters.linuxMuslX64 }}
+    linuxMuslArm64: ${{ parameters.linuxMuslArm64 }}
+    linuxRhel6X64: ${{ parameters.linuxRhel6X64 }}
+    linuxX64: ${{ parameters.linuxX64 }}
+    osxX64: ${{ parameters.osxX64 }}
+    windowsX64: ${{ parameters.windowsX64 }}
+    windowsX86: ${{ parameters.windowsX86 }}
+    windowsArm: ${{ parameters.windowsArm }}
+    windowsArm64: ${{ parameters.windowsArm64 }}
+
+    # Determine OS for building X86 managed test artifacts on *nix
+    # Currently no-op as we only run X86 tests on Windows
+    x86ManagedTestBuildOsGroup: ''
+
+    # Determine OS for building X64 managed test artifacts on *nix
+    ${{ if eq(parameters.osxX64, true) }}:
+      x64ManagedTestBuildOsGroup: 'OSX'
+    ${{ if and(ne(parameters.osxX64, true), eq(parameters.linuxX64, true)) }}:
+      x64ManagedTestBuildOsGroup: 'Linux'
+    ${{ if and(ne(parameters.osxX64, true), ne(parameters.linuxX64, true), eq(parameters.linuxMuslX64, true)) }}:
+      x64ManagedTestBuildOsGroup: 'Linux'
+      x64ManagedTestBuildOsSubgroup: '_musl'
+    ${{ if and(ne(parameters.osxX64, true), ne(parameters.linuxX64, true), ne(parameters.linuxMuslX64, true), eq(parameters.linuxRhel6X64, true)) }}:
+      x64ManagedTestBuildOsGroup: 'Linux'
+      x64ManagedTestBuildOsSubgroup: '_rhel6'
+
+    # Determine OS for building ARM managed test artifacts on *nix
+    ${{ if eq(parameters.linuxArm, true) }}:
+      armManagedTestBuildOsGroup: 'Linux'
+
+    # Determine OS for building ARM64 managed test artifacts on *nix
+    ${{ if eq(parameters.linuxArm64, true) }}:
+      arm64ManagedTestBuildOsGroup: 'Linux'
+    ${{ if and(ne(parameters.linuxArm64, true), eq(parameters.linuxMuslArm64, true)) }}:
+      arm64ManagedTestBuildOsGroup: 'Linux'
+      arm64ManagedTestBuildOsSubroup: '_musl'

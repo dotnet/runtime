@@ -4,6 +4,7 @@ parameters:
   osGroup: ''
   osSubgroup: ''
   container: ''
+  testGroup: ''
   crossrootfsDir: ''
   timeoutInMinutes: ''
   signBinaries: false
@@ -88,6 +89,49 @@ jobs:
       - name: enforcePgoArg
         value: '-enforcepgo'
 
+    - name: artifactRootName
+      value: $(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)
+
+    - name: testNativeArtifactName
+      value: 'NativeTestComponents_$(artifactRootName)'
+
+    - name: testNativeRootFolderPath
+      value: '$(binTestsPath)/obj/$(osGroup).$(archType).$(buildConfigUpper)'
+
+    - name: testBuildArtifactName
+      value: 'TestBuild_$(artifactRootName)'
+
+    - name: testBuildRootFolderPath
+      value: '$(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)'
+
+    - name: binTestsPath
+      value: '$(Build.SourcesDirectory)/bin/tests'
+
+    - name: archiveExtension
+      value: '.tar.gz'
+    - name: archiveType
+      value: tar
+    - name: tarCompression
+      value: gz
+
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - name: archiveExtension
+        value: '.zip'
+      - name: archiveType
+        value: zip
+      - name: tarCompression
+        value: ''
+
+    - name: priorityArg
+      value: ''
+    - ${{ if ne(parameters.testGroup, 'innerloop') }}:
+      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+        - name: priorityArg
+          value: 'priority1'
+      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+        - name: priorityArg
+          value: '-priority=1'
+
     steps:
 
     # Install native dependencies
@@ -130,6 +174,14 @@ jobs:
       - script: set __TestIntermediateDir=int&&build.cmd $(buildConfig) $(archType) -ci -skiptests -skipbuildpackages $(officialBuildIdArg) $(ibcOptimizeArg) $(enforcePgoArg)
         displayName: Build product
 
+    # Build native test components
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - script: ./build-test.sh skipmanaged $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(clangArg)
+        displayName: Build native test components
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - script: build-test.cmd skipmanaged $(buildConfig) $(archType) $(priorityArg)
+        displayName: Build native test components
+
     # Sign on Windows
     - ${{ if and(eq(parameters.osGroup, 'Windows_NT'), eq(parameters.signBinaries, 'true')) }}:
       - powershell: eng\common\build.ps1 -ci -sign -restore -configuration:$(buildConfig) -warnaserror:0 /p:ArcadeBuild=true /p:OfficialBuild=true /p:BuildOS=$(osGroup) /p:BuildArch=$(archType) /p:BuildType=$(_BuildConfig) /p:DotNetSignType=$env:_SignType -projects $(Build.SourcesDirectory)\eng\empty.csproj
@@ -150,6 +202,28 @@ jobs:
       inputs:
         pathtoPublish: $(Build.SourcesDirectory)/bin/Product/$(osGroup).$(archType).$(_BuildConfig)
         artifactName: ${{ format('BinDir_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+
+    # Publish test native components for consumption by test execution.
+    - template: /eng/upload-artifact-step.yml
+      parameters:
+        rootFolder: $(testNativeRootFolderPath)
+        includeRootFolder: false
+        archiveFile: $(Build.StagingDirectory)/$(testNativeArtifactName)$(archiveExtension)
+        archiveType: $(archiveType)
+        tarCompression: $(tarCompression)
+        artifactName: $(testNativeArtifactName)
+        displayName: 'native test components'
+
+    # Publish test build root for consumption by test execution.
+    - template: /eng/upload-artifact-step.yml
+      parameters:
+        rootFolder: $(testBuildRootFolderPath)
+        includeRootFolder: false
+        archiveFile: $(Build.StagingDirectory)/$(testBuildArtifactName)$(archiveExtension)
+        archiveType: $(archiveType)
+        tarCompression: $(tarCompression)
+        artifactName: $(testBuildArtifactName)
+        displayName: 'test build tree'
 
     # Get key vault secrets for publishing
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
