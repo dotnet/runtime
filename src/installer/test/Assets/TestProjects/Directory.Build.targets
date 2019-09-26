@@ -6,7 +6,7 @@
     versions. Remove them before the SDK tries to download them.
   -->
   <Target Name="RemoveUpstackKnownFrameworkReferences"
-          BeforeTargets="ResolveFrameworkReferences">
+          BeforeTargets="ProcessFrameworkReferences">
     <ItemGroup>
       <KnownFrameworkReference Remove="Microsoft.AspNetCore.App" />
     </ItemGroup>
