@@ -59,7 +59,7 @@
     <!-- standard -->
     <NETStandardLibraryPackageVersion>2.2.0-prerelease.19462.3</NETStandardLibraryPackageVersion>
     <!-- coreclr -->
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>5.0.0-alpha1.19462.1</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>5.0.0-alpha1.19475.5</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <!-- winforms -->
     <MicrosoftPrivateWinformsPackageVersion>5.0.0-alpha1.19462.11</MicrosoftPrivateWinformsPackageVersion>
     <!-- wpf -->
