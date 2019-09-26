@@ -589,7 +589,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 		mono_fixup_exe_image (exe_image);
 #endif
 	} else if (runtime_version != NULL) {
-		runtimes = g_slist_prepend (runtimes, (gpointer)get_runtime_by_version (DEFAULT_RUNTIME_VERSION));
+		runtimes = g_slist_prepend (runtimes, (gpointer)get_runtime_by_version (runtime_version));
 	}
 
 	if (runtimes == NULL) {
