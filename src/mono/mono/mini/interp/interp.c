@@ -944,6 +944,15 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, con
 		}									\
 	} while (0)
 
+/* Don't throw exception if thread is in GC Safe mode. Should only happen in managed-to-native wrapper. */
+#define EXCEPTION_CHECKPOINT_GC_UNSAFE	\
+	do {										\
+		if (mono_thread_interruption_request_flag && !mono_threads_is_critical_method (frame->imethod->method) && mono_thread_is_gc_unsafe_mode ()) { \
+			MonoException *exc = mono_thread_interruption_checkpoint ();	\
+			if (exc)							\
+				THROW_EX (exc, ip);					\
+		}									\
+	} while (0)
 
 #define EXCEPTION_CHECKPOINT_IN_HELPER_FUNCTION	\
 	do {										\
@@ -3484,8 +3493,7 @@ main_loop:
 			frame->ip = ip;
 
 			sp = do_icall_wrapper (frame, csignature, opcode, sp, target_ip, save_last_error);
-			if (mono_thread_is_gc_unsafe_mode ()) /* do not enter EH in GC Safe state */
-				EXCEPTION_CHECKPOINT;
+			EXCEPTION_CHECKPOINT_GC_UNSAFE;
 			CHECK_RESUME_STATE (context);
 			ip += 4;
 			MINT_IN_BREAK;
@@ -5928,8 +5936,7 @@ common_vcall:
 		MINT_IN_CASE(MINT_ICALL_PPPPPP_P)
 			frame->ip = ip;
 			sp = do_icall_wrapper (frame, NULL, *ip, sp, frame->imethod->data_items [ip [1]], FALSE);
-			if (mono_thread_is_gc_unsafe_mode ()) /* do not enter EH in GC Safe state */
-				EXCEPTION_CHECKPOINT;
+			EXCEPTION_CHECKPOINT_GC_UNSAFE;
 			CHECK_RESUME_STATE (context);
 			ip += 2;
 			MINT_IN_BREAK;
