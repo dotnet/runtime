@@ -3,6 +3,8 @@ parameters:
   archType: ''
   osGroup: ''
   osSubgroup: ''
+  managedTestBuildOsGroup: ''
+  managedTestBuildOsSubgroup: ''
   container: ''
   testGroup: ''
   readyToRun: false
@@ -25,6 +27,10 @@ jobs:
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
+    managedTestBuildOsGroup: ${{ parameters.managedTestBuildOsGroup }}
+    managedTestBuildOsSubgroup: ${{ parameters.managedTestBuildOsSubgroup }}
+    container: ${{ parameters.container }}
+    testGroup: ${{ parameters.testGroup }}
     readyToRun: ${{ parameters.readyToRun }}
     corefxTests: ${{ parameters.corefxTests }}
     stagedBuild: ${{ parameters.stagedBuild }}
@@ -37,22 +43,34 @@ jobs:
     # Compute job name from template parameters
     ${{ if and(eq(parameters.testGroup, 'innerloop'), eq(parameters.displayNameArgs, '')) }}:
       name: 'run_test_p0_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
-      dependsOn: 'build_test_p0_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'      
+      dependsOn:
+      - 'build_test_p0_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'
+      - ${{ if ne(parameters.stagedBuild, true) }}:
+        - ${{ format('build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       displayName: 'Run Test Pri0 ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
 
     ${{ if and(ne(parameters.testGroup, 'innerloop'), eq(parameters.displayNameArgs, '')) }}:
       name: 'run_test_p1_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
-      dependsOn: 'build_test_p1_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'      
+      dependsOn:
+      - 'build_test_p1_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'
+      - ${{ if ne(parameters.stagedBuild, true) }}:
+        - ${{ format('build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       displayName: 'Run Test Pri1 ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
 
     ${{ if and(eq(parameters.testGroup, 'innerloop'), ne(parameters.displayNameArgs, '')) }}:
       name: 'run_test_p0_${{ parameters.displayNameArgs }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
-      dependsOn: 'build_test_p0_${{ parameters.displayNameArgs }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'      
+      dependsOn:
+      - 'build_test_p0_${{ parameters.displayNameArgs }}_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'      
+      - ${{ if ne(parameters.stagedBuild, true) }}:
+        - ${{ format('build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       displayName: 'Run Test Pri0 ${{ parameters.displayNameArgs }} ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
 
     ${{ if and(ne(parameters.testGroup, 'innerloop'), ne(parameters.displayNameArgs, '')) }}:
       name: 'run_test_p1_${{ parameters.displayNameArgs }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
-      dependsOn: 'build_test_p1_${{ parameters.displayNameArgs }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'      
+      dependsOn:
+      - 'build_test_p1_${{ parameters.displayNameArgs }}_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'      
+      - ${{ if ne(parameters.stagedBuild, true) }}:
+        - ${{ format('build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       displayName: 'Run Test Pri1 ${{ parameters.displayNameArgs }} ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
 
     variables:
@@ -73,13 +91,80 @@ jobs:
 
     steps:
 
-    # Download and unzip tests    
+    # Download and unzip managed test artifacts
     - template: /eng/download-artifact-step.yml
       parameters:
-        downloadFolder: $(binTestsPath)
-        unpackFolder: $(testRootFolderPath)
-        artifactFileName: $(osGroup).$(archType).$(buildConfigUpper)$(archiveExtension)
-        artifactName: $(testArtifactName)
+        downloadFolder: '$(binTestsPath)/tmp'
+        unpackFolder: '$(testRootFolderPath)'
+        artifactFileName: '$(testArtifactName)$(archiveExtension)'
+        artifactName: '$(testArtifactName)'
+        displayName: 'managed test artifacts (built on ${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }})'
+
+
+    # Download and unzip test build tree
+    - template: /eng/download-artifact-step.yml
+      parameters:
+        downloadFolder: '$(binTestsPath)/tmp'
+        unpackFolder: '$(testBuildRootFolderPath)'
+        cleanUnpackFolder: false
+        artifactFileName: '$(testBuildArtifactName)$(archiveExtension)'
+        artifactName: '$(testBuildArtifactName)'
+        displayName: 'test build tree'
+
+
+    # Download product binaries directory
+    - task: DownloadBuildArtifacts@0
+      displayName: Download product build
+      inputs:
+        buildType: current
+        downloadType: single
+        artifactName: 'BinDir_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+        downloadPath: '$(System.ArtifactsDirectory)'
+
+
+    # Populate Product directory
+    - task: CopyFiles@2
+      displayName: Populate Product directory
+      inputs:
+        sourceFolder: '$(System.ArtifactsDirectory)/BinDir_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+        contents: '**'
+        targetFolder: '$(Build.SourcesDirectory)/bin/Product/$(osGroup).$(archType).$(buildConfigUpper)'
+
+
+    # Download and unzip the Microsoft.NET.Sdk.IL package needed for traversing
+    # ilproj test projects during copynativeonly.
+    - ${{ if ne(parameters.corefxTests, true) }}:
+      - template: /eng/download-artifact-step.yml
+        parameters:
+          downloadFolder: '$(binTestsPath)/tmp'
+          unpackFolder: '$(microsoftNetSdkIlFolderPath)'
+          artifactFileName: '$(microsoftNetSdkIlArtifactName)$(archiveExtension)'
+          artifactName: '$(microsoftNetSdkIlArtifactName)'
+          displayName: 'Microsoft.NET.Sdk.IL package'
+
+
+    # Download and unzip native test artifacts
+    - template: /eng/download-artifact-step.yml
+      parameters:
+        downloadFolder: '$(binTestsPath)/tmp'
+        unpackFolder: '$(testNativeRootFolderPath)'
+        artifactFileName: '$(testNativeArtifactName)$(archiveExtension)'
+        artifactName: '$(testNativeArtifactName)'
+        displayName: 'native test artifacts'
+
+
+    # Publish native test components to test output folder. Sadly we cannot do this
+    # during product build (so that we could zip up the files in their final test location
+    # and directly unzip them there after download). Unfortunately the logic to copy
+    # the native artifacts to the final test folders is dependent on availability of the
+    # managed test artifacts.
+    - ${{ if ne(parameters.corefxTests, true) }}:
+      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+        - script: ./build-test.sh copynativeonly $(buildConfig) $(archType) $(priorityArg)
+          displayName: Copy native test components to test output folder
+      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+        - script: build-test.cmd copynativeonly $(buildConfig) $(archType) $(priorityArg)
+          displayName: Copy native test components to test output folder
 
 
     # Send tests to Helix
@@ -131,7 +216,7 @@ jobs:
           timeoutPerTestInMinutes: 10
         ${{ if in(parameters.testGroup, 'outerloop') }}:
           timeoutPerTestCollectionInMinutes: 120
-          timeoutPerTestInMinutes: 10          
+          timeoutPerTestInMinutes: 10
         ${{ if in(parameters.testGroup, 'gc-longrunning') }}:
           timeoutPerTestCollectionInMinutes: 360
           # gc reliability may take up to 2 hours to shutdown. Some scenarios have very long iteration times.

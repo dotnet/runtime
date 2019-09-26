@@ -13,10 +13,13 @@ parameters:
   condition: true
   stagedBuild: false
 
-### Test build job
+### Build managed test components (native components are getting built as part
+### of the the product build job).
 
-### Each test build job depends on a corresponding build job with the same
-### buildConfig and archType.
+### TODO: As of today, build of managed test components requires the product build
+### as a prerequisite due to dependency on System.Private.Corelib. After switching
+### over to its reference assembly we should be able to remove this dependency and
+### run managed test builds in parallel with the product build job.
 
 jobs:
 - template: xplat-test-job.yml
@@ -25,6 +28,10 @@ jobs:
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
+    managedTestBuildOsGroup: ${{ parameters.osGroup }}
+    managedTestBuildOsSubgroup: ${{ parameters.osSubgroup }}
+    container: ${{ parameters.container }}
+    testGroup: ${{ parameters.testGroup }}
     readyToRun: ${{ parameters.readyToRun }}
     corefxTests: ${{ parameters.corefxTests }}
     stagedBuild: ${{ parameters.stagedBuild }}
@@ -54,16 +61,6 @@ jobs:
 
     variables:
     # Map template parameters to command line arguments
-    - name: priorityArg
-      value: ''
-    - ${{ if ne(parameters.testGroup, 'innerloop') }}:
-      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-        - name: priorityArg
-          value: 'priority1'
-      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-        - name: priorityArg
-          value: '-priority=1'
-
     - name: crossgenArg
       value: ''
     - ${{ if eq(parameters.readyToRun, true) }}:
@@ -94,13 +91,11 @@ jobs:
     # See https://docs.microsoft.com/azure/devops/pipelines/process/conditions
     condition: and(succeeded(), ${{ parameters.condition }})
 
-    # Test job depends on the corresponding build job
+    # TODO: Build of managed test components currently depends on the corresponding build job
+    # because it needs System.Private.Corelib; we should be able to remove this dependency
+    # by switching over to using reference assembly.
     ${{ if ne(parameters.stagedBuild, true) }}:
       dependsOn: ${{ format('build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-
-    # Run all steps in the container.
-    # Note that the containers are defined in platform-matrix.yml
-    container: ${{ parameters.container }}
 
     ${{ if eq(parameters.testGroup, 'innerloop') }}:
       timeoutInMinutes: 90
@@ -135,24 +130,39 @@ jobs:
         targetFolder: $(Build.SourcesDirectory)/bin/Product/$(osGroup).$(archType).$(buildConfigUpper)
 
 
-    # Build tests
+    # Build managed test components
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: ./build-test.sh $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(crossgenArg) $(clangArg) $(testhostArg) ci
-        displayName: Build tests
+      - script: ./build-test.sh skipnative skipgeneratelayout $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(crossgenArg) $(clangArg) $(testhostArg) ci
+        displayName: Build managed test components
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: build-test.cmd $(buildConfig) $(archType) $(priorityArg) $(crossgenArg) $(testhostArg) ci
-        displayName: Build tests
+      - script: build-test.cmd skipnative skipgeneratelayout $(buildConfig) $(archType) $(priorityArg) $(crossgenArg) $(testhostArg) ci
+        displayName: Build managed test components
 
 
-    # Zip and publish tests
+    # Zip and publish managed test components
     - template: /eng/upload-artifact-step.yml
       parameters:
         rootFolder: $(testRootFolderPath)
         includeRootFolder: false
-        archiveFile: $(testRootFolderPath)$(archiveExtension)
+        archiveFile: '$(Build.StagingDirectory)/$(testArtifactName)$(archiveExtension)'
         archiveType: $(archiveType)
         tarCompression: $(tarCompression)
         artifactName: $(testArtifactName)
+        displayName: 'managed test components'
+
+
+    # Publish .packages/microsoft.net.sdk.il needed for traversing
+    # test projects during the copynativeonly command in run test job.
+    - ${{ if ne(parameters.corefxTests, true) }}:
+      - template: /eng/upload-artifact-step.yml
+        parameters:
+          rootFolder: $(microsoftNetSdkIlFolderPath)
+          includeRootFolder: false
+          archiveFile: $(Build.StagingDirectory)/$(microsoftNetSdkIlArtifactName)$(archiveExtension)
+          archiveType: $(archiveType)
+          tarCompression: $(tarCompression)
+          artifactName: $(microsoftNetSdkIlArtifactName)
+          displayName: 'Microsoft.NET.Sdk.IL package'
 
 
     # Publish Logs
