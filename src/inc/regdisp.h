@@ -95,7 +95,11 @@ struct REGDISPLAY : public REGDISPLAY_BASE {
 
 #define REG_METHODS(reg) \
     inline PDWORD Get##reg##Location(void) { return pCurrentContextPointers->reg; } \
-    inline void   Set##reg##Location(PDWORD p##reg) { pCurrentContextPointers->reg = p##reg; }
+    inline void   Set##reg##Location(PDWORD p##reg) \
+    { \
+        pCurrentContextPointers->reg = p##reg; \
+        pCurrentContext->reg = *p##reg; \
+    }
 
 #endif // FEATURE_EH_FUNCLETS
 
@@ -115,8 +119,11 @@ struct REGDISPLAY : public REGDISPLAY_BASE {
 
 inline TADDR GetRegdisplayFP(REGDISPLAY *display) {
     LIMITED_METHOD_DAC_CONTRACT;
-
+#ifdef FEATURE_EH_FUNCLETS
+    return (TADDR)display->pCurrentContext->Ebp;
+#else
     return (TADDR)*display->GetEbpLocation();
+#endif
 }
 
 inline LPVOID GetRegdisplayFPAddress(REGDISPLAY *display) {
