@@ -1456,6 +1456,7 @@ mono_gc_set_string_length (MonoString *str, gint32 new_length)
 #define SPECIAL_ADDRESS_FIN_QUEUE ((mono_byte*)1)
 #define SPECIAL_ADDRESS_CRIT_FIN_QUEUE ((mono_byte*)2)
 #define SPECIAL_ADDRESS_EPHEMERON ((mono_byte*)3)
+#define SPECIAL_ADDRESS_TOGGLEREF ((mono_byte*)4)
 
 typedef struct {
 	int count;		/* must be the first field */
@@ -1879,6 +1880,20 @@ report_ephemeron_roots (void)
 }
 
 static void
+report_toggleref_root (MonoObject* obj, gpointer data)
+{
+	report_gc_root ((GCRootReport*)data, SPECIAL_ADDRESS_TOGGLEREF, obj);
+}
+
+static void
+report_toggleref_roots (void)
+{
+	GCRootReport report = { 0 };
+	sgen_foreach_toggleref_root (report_toggleref_root, &report);
+	notify_gc_roots (&report);
+}
+
+static void
 sgen_report_all_roots (SgenPointerQueue *fin_ready_queue, SgenPointerQueue *critical_fin_queue)
 {
 	if (!MONO_PROFILER_ENABLED (gc_roots))
@@ -1886,6 +1901,7 @@ sgen_report_all_roots (SgenPointerQueue *fin_ready_queue, SgenPointerQueue *crit
 
 	report_registered_roots ();
 	report_ephemeron_roots ();
+	report_toggleref_roots ();
 	report_pin_queue ();
 	report_finalizer_roots_from_queue (fin_ready_queue, SPECIAL_ADDRESS_FIN_QUEUE);
 	report_finalizer_roots_from_queue (critical_fin_queue, SPECIAL_ADDRESS_CRIT_FIN_QUEUE);
@@ -3087,6 +3103,7 @@ sgen_client_binary_protocol_collection_begin (int minor_gc_count, int generation
 		MONO_PROFILER_RAISE (gc_root_register, (SPECIAL_ADDRESS_FIN_QUEUE, 1, MONO_ROOT_SOURCE_FINALIZER_QUEUE, NULL, "Finalizer Queue"));
 		MONO_PROFILER_RAISE (gc_root_register, (SPECIAL_ADDRESS_CRIT_FIN_QUEUE, 1, MONO_ROOT_SOURCE_FINALIZER_QUEUE, NULL, "Finalizer Queue (Critical)"));
 		MONO_PROFILER_RAISE (gc_root_register, (SPECIAL_ADDRESS_EPHEMERON, 1, MONO_ROOT_SOURCE_EPHEMERON, NULL, "Ephemerons"));
+		MONO_PROFILER_RAISE (gc_root_register, (SPECIAL_ADDRESS_TOGGLEREF, 1, MONO_ROOT_SOURCE_TOGGLEREF, NULL, "ToggleRefs"));
 	}
 
 #ifndef DISABLE_PERFCOUNTERS

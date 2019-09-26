@@ -101,6 +101,16 @@ void sgen_client_mark_togglerefs (char *start, char *end, ScanCopyContext ctx)
 	sgen_drain_gray_stack (ctx);
 }
 
+void
+sgen_foreach_toggleref_root (void (*callback)(MonoObject*, gpointer), gpointer data)
+{
+	int i;
+	for (i = 0; i < toggleref_array_size; ++i) {
+		if (toggleref_array [i].strong_ref)
+			callback (toggleref_array [i].strong_ref, data);
+	}
+}
+
 void sgen_client_clear_togglerefs (char *start, char *end, ScanCopyContext ctx)
 {
 	CopyOrMarkObjectFunc copy_func = ctx.ops->copy_or_mark_object;

@@ -212,6 +212,7 @@ void sgen_client_bridge_register_finalized_object (GCObject *object);
  */
 void sgen_client_mark_togglerefs (char *start, char *end, ScanCopyContext ctx);
 void sgen_client_clear_togglerefs (char *start, char *end, ScanCopyContext ctx);
+void sgen_foreach_toggleref_root (void (*callback)(MonoObject*, gpointer), gpointer data);
 
 /*
  * Called to handle `MONO_GC_PARAMS` and `MONO_GC_DEBUG` options.  The `handle` functions

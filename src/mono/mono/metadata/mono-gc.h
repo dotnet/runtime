@@ -96,6 +96,10 @@ typedef enum {
 	 * Roots in the ephemeron arrays. This is a pseudo-root.
 	 */
 	MONO_ROOT_SOURCE_EPHEMERON = 15,
+	/**
+	 * Roots in the toggleref arrays. This is a pseudo-root.
+	 */
+	MONO_ROOT_SOURCE_TOGGLEREF = 16,
 } MonoGCRootSource;
 
 typedef enum {
