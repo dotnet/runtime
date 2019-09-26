@@ -1493,16 +1493,14 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         // callbacks from coming into the profiler even after Shutdown() has been called.
         // See https://github.com/dotnet/coreclr/issues/22176 for an example of how that
         // happens.
-        // Callbacks will be prevented when ProfilingAPIUtility::Terminate() changes the state
-        // to detached, which occurs shortly afterwards. It might be kinder to make the detaching
-        // transition before calling Shutdown(), but if we do we'd have to be very careful not
-        // to break profilers that were relying on being able to call various APIs during
-        // Shutdown(). I suspect this isn't something we'll ever do unless we get complaints.
+        //
+        // To prevent issues when profilers are attached we intentionally skip freeing the
+        // profiler here. Since there is no guarantee that the profiler won't be accessed after
+        // we free it (e.g. through callbacks or ELT hooks), we can't safely free the profiler.
         if (CORProfilerPresent())
         {
-            // If EEShutdown is not being called due to a ProcessDetach event, so
-            // the profiler should still be present
-            if (!g_fProcessDetach)
+            // Don't call back in to the profiler if we are being torn down, it might be unloaded
+            if (!fIsDllUnloading)
             {
                 BEGIN_PIN_PROFILER(CORProfilerPresent());
                 GCX_PREEMP();
@@ -1511,9 +1509,6 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
             }
 
             g_fEEShutDown |= ShutDown_Profiler;
-
-            // Free the interface objects.
-            ProfilingAPIUtility::TerminateProfiling();
         }
 #endif // PROFILING_SUPPORTED
 
