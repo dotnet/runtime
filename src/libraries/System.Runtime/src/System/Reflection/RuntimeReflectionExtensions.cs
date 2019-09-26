@@ -100,7 +100,7 @@ namespace System.Reflection
             return typeInfo.GetInterfaceMap(interfaceType);
         }
 
-        public static MethodInfo? GetMethodInfo(this Delegate del)
+        public static MethodInfo GetMethodInfo(this Delegate del)
         {
             if (del == null)
             {
