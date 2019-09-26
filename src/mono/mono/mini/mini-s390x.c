@@ -5650,7 +5650,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		/*---------------------------------------------------------------*/
 		mono_add_patch_info (cfg, code - cfg->native_code, 
 				MONO_PATCH_INFO_JIT_ICALL_ID,
-				GUINT_TO_POINTER (MONO_JIT_ICALL_mono_tls_get_lmf_addr_extern));
+				GUINT_TO_POINTER (MONO_JIT_ICALL_mono_tls_get_lmf_addr));
 		S390_CALL_TEMPLATE(code, s390_r1);
 
 		/*---------------------------------------------------------------*/	

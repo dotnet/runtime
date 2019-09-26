@@ -8,9 +8,83 @@
  * Copyright 2013 Xamarin, Inc (http://www.xamarin.com)
  */
 
+#include <mono/utils/mach-support.h>
+
 #include "mono-tls.h"
 
+/*
+ * On all platforms we should be able to use either __thread or __declspec (thread)
+ * or pthread/TlsGetValue.
+ * Certain platforms will support fast tls only when using one of the thread local
+ * storage backends. By default this is __thread if we have MONO_KEYWORD_THREAD defined.
+ *
+ * By default all platforms will call into these native getters whenever they need
+ * to get a tls value. On certain platforms we can try to be faster than this and
+ * avoid the call. We call this fast tls and each platform defines its own way to
+ * achieve this. For this, a platform has to define MONO_ARCH_HAVE_INLINED_TLS,
+ * and provide alternative getters/setters for a MonoTlsKey. In order to have fast
+ * getter/setters, the platform has to declare a way to fetch an internal offset
+ * (MONO_THREAD_VAR_OFFSET) which is stored here, and in the arch specific file
+ * probe the system to see if we can use the offset initialized here. If these
+ * run-time checks don't succeed we just use the fallbacks.
+ *
+ * In case we would wish to provide fast inlined tls for aot code, we would need
+ * to be sure that, at run-time, these two platform checks would never fail
+ * otherwise the tls getter/setters that we emitted would not work. Normally,
+ * there is little incentive to support this since tls access is most common in
+ * wrappers and managed allocators, both of which are not aot-ed by default.
+ * So far, we never supported inlined fast tls on full-aot systems.
+ */
+
 #ifdef MONO_KEYWORD_THREAD
+
+/* tls attribute */
+#if HAVE_TLS_MODEL_ATTR
+
+#if defined(__PIC__) && !defined(PIC)
+/*
+ * Must be compiling -fPIE, for executables.  Build PIC
+ * but with initial-exec.
+ * http://bugs.gentoo.org/show_bug.cgi?id=165547
+ */
+#define PIC
+#define PIC_INITIAL_EXEC
+#endif
+
+/*
+ * Define this if you want a faster libmono, which cannot be loaded dynamically as a
+ * module.
+ */
+//#define PIC_INITIAL_EXEC
+
+#if defined(PIC)
+
+#ifdef PIC_INITIAL_EXEC
+#define MONO_TLS_FAST __attribute__ ((__tls_model__("initial-exec")))
+#else
+#if defined (__powerpc__)
+/* local dynamic requires a call to __tls_get_addr to look up the
+   TLS block address via the Dynamic Thread Vector. In this case Thread
+   Pointer relative offsets can't be used as this modules TLS was
+   allocated separately (none contiguoiusly) from the initial TLS
+   block.
+
+   For now we will disable this. */
+#define MONO_TLS_FAST
+#else
+#define MONO_TLS_FAST __attribute__ ((__tls_model__("local-dynamic")))
+#endif
+#endif
+
+#else
+
+#define MONO_TLS_FAST __attribute__ ((__tls_model__("local-exec")))
+
+#endif
+
+#else
+#define MONO_TLS_FAST
+#endif
 
 /* Runtime offset detection */
 #if defined(TARGET_AMD64) && !defined(TARGET_MACH) && !defined(HOST_WIN32) /* __thread likely not tested on mac/win */
@@ -117,24 +191,32 @@ MONO_KEYWORD_THREAD MonoLMF           **mono_tls_lmf_addr MONO_TLS_FAST;
 #define MONO_THREAD_VAR_OFFSET(var,offset) (offset) = -1
 #endif
 
-MonoNativeTlsKey mono_tls_key_thread;
-MonoNativeTlsKey mono_tls_key_jit_tls;
-MonoNativeTlsKey mono_tls_key_domain;
-MonoNativeTlsKey mono_tls_key_sgen_thread_info;
-MonoNativeTlsKey mono_tls_key_lmf_addr;
+static MonoNativeTlsKey mono_tls_key_thread;
+static MonoNativeTlsKey mono_tls_key_jit_tls;
+static MonoNativeTlsKey mono_tls_key_domain;
+static MonoNativeTlsKey mono_tls_key_sgen_thread_info;
+static MonoNativeTlsKey mono_tls_key_lmf_addr;
 
 #endif
 
-gint32 mono_tls_offsets [TLS_KEY_NUM];
+static gint32 tls_offsets [TLS_KEY_NUM];
+
+#ifdef MONO_KEYWORD_THREAD
+#define MONO_TLS_GET_VALUE(tls_var,tls_key) (tls_var)
+#define MONO_TLS_SET_VALUE(tls_var,tls_key,value) (tls_var = value)
+#else
+#define MONO_TLS_GET_VALUE(tls_var,tls_key) (mono_native_tls_get_value (tls_key))
+#define MONO_TLS_SET_VALUE(tls_var,tls_key,value) (mono_native_tls_set_value (tls_key, value))
+#endif
 
 void
 mono_tls_init_gc_keys (void)
 {
 #ifdef MONO_KEYWORD_THREAD
-	MONO_THREAD_VAR_OFFSET (mono_tls_sgen_thread_info, mono_tls_offsets [TLS_KEY_SGEN_THREAD_INFO]);
+	MONO_THREAD_VAR_OFFSET (mono_tls_sgen_thread_info, tls_offsets [TLS_KEY_SGEN_THREAD_INFO]);
 #else
 	mono_native_tls_alloc (&mono_tls_key_sgen_thread_info, NULL);
-	MONO_THREAD_VAR_OFFSET (mono_tls_key_sgen_thread_info, mono_tls_offsets [TLS_KEY_SGEN_THREAD_INFO]);
+	MONO_THREAD_VAR_OFFSET (mono_tls_key_sgen_thread_info, tls_offsets [TLS_KEY_SGEN_THREAD_INFO]);
 #endif
 }
 
@@ -142,19 +224,19 @@ void
 mono_tls_init_runtime_keys (void)
 {
 #ifdef MONO_KEYWORD_THREAD
-	MONO_THREAD_VAR_OFFSET (mono_tls_thread, mono_tls_offsets [TLS_KEY_THREAD]);
-	MONO_THREAD_VAR_OFFSET (mono_tls_jit_tls, mono_tls_offsets [TLS_KEY_JIT_TLS]);
-	MONO_THREAD_VAR_OFFSET (mono_tls_domain, mono_tls_offsets [TLS_KEY_DOMAIN]);
-	MONO_THREAD_VAR_OFFSET (mono_tls_lmf_addr, mono_tls_offsets [TLS_KEY_LMF_ADDR]);
+	MONO_THREAD_VAR_OFFSET (mono_tls_thread, tls_offsets [TLS_KEY_THREAD]);
+	MONO_THREAD_VAR_OFFSET (mono_tls_jit_tls, tls_offsets [TLS_KEY_JIT_TLS]);
+	MONO_THREAD_VAR_OFFSET (mono_tls_domain, tls_offsets [TLS_KEY_DOMAIN]);
+	MONO_THREAD_VAR_OFFSET (mono_tls_lmf_addr, tls_offsets [TLS_KEY_LMF_ADDR]);
 #else
 	mono_native_tls_alloc (&mono_tls_key_thread, NULL);
-	MONO_THREAD_VAR_OFFSET (mono_tls_key_thread, mono_tls_offsets [TLS_KEY_THREAD]);
+	MONO_THREAD_VAR_OFFSET (mono_tls_key_thread, tls_offsets [TLS_KEY_THREAD]);
 	mono_native_tls_alloc (&mono_tls_key_jit_tls, NULL);
-	MONO_THREAD_VAR_OFFSET (mono_tls_key_jit_tls, mono_tls_offsets [TLS_KEY_JIT_TLS]);
+	MONO_THREAD_VAR_OFFSET (mono_tls_key_jit_tls, tls_offsets [TLS_KEY_JIT_TLS]);
 	mono_native_tls_alloc (&mono_tls_key_domain, NULL);
-	MONO_THREAD_VAR_OFFSET (mono_tls_key_domain, mono_tls_offsets [TLS_KEY_DOMAIN]);
+	MONO_THREAD_VAR_OFFSET (mono_tls_key_domain, tls_offsets [TLS_KEY_DOMAIN]);
 	mono_native_tls_alloc (&mono_tls_key_lmf_addr, NULL);
-	MONO_THREAD_VAR_OFFSET (mono_tls_key_lmf_addr, mono_tls_offsets [TLS_KEY_LMF_ADDR]);
+	MONO_THREAD_VAR_OFFSET (mono_tls_key_lmf_addr, tls_offsets [TLS_KEY_LMF_ADDR]);
 #endif
 }
 
@@ -170,29 +252,69 @@ mono_tls_free_keys (void)
 #endif
 }
 
-// Some references are from AOT and cannot be inlined.
 
-G_EXTERN_C MonoInternalThread *mono_tls_get_thread_extern (void)
+/*
+ * Gets the tls offset associated with the key. This offset is set at key
+ * initialization (at runtime). Certain targets can implement computing
+ * this offset and using it at runtime for fast inlined tls access.
+ */
+gint32
+mono_tls_get_tls_offset (MonoTlsKey key)
 {
-	return mono_tls_get_thread ();
+	g_assert (tls_offsets [key]);
+	return tls_offsets [key];
 }
 
-G_EXTERN_C MonoJitTlsData *mono_tls_get_jit_tls_extern (void)
+// Casts on getters are for the !MONO_KEYWORD_THREAD case.
+
+/* Getters for each tls key */
+MonoInternalThread *mono_tls_get_thread (void)
 {
-	return mono_tls_get_jit_tls ();
+	return (MonoInternalThread*)MONO_TLS_GET_VALUE (mono_tls_thread, mono_tls_key_thread);
 }
 
-G_EXTERN_C MonoDomain *mono_tls_get_domain_extern (void)
+MonoJitTlsData *mono_tls_get_jit_tls (void)
 {
-	return mono_tls_get_domain ();
+	return (MonoJitTlsData*)MONO_TLS_GET_VALUE (mono_tls_jit_tls, mono_tls_key_jit_tls);
 }
 
-G_EXTERN_C SgenThreadInfo *mono_tls_get_sgen_thread_info_extern (void)
+MonoDomain *mono_tls_get_domain (void)
 {
-	return mono_tls_get_sgen_thread_info ();
+	return (MonoDomain*)MONO_TLS_GET_VALUE (mono_tls_domain, mono_tls_key_domain);
 }
 
-G_EXTERN_C MonoLMF **mono_tls_get_lmf_addr_extern (void)
+SgenThreadInfo *mono_tls_get_sgen_thread_info (void)
 {
-	return mono_tls_get_lmf_addr ();
+	return (SgenThreadInfo*)MONO_TLS_GET_VALUE (mono_tls_sgen_thread_info, mono_tls_key_sgen_thread_info);
+}
+
+MonoLMF **mono_tls_get_lmf_addr (void)
+{
+	return (MonoLMF**)MONO_TLS_GET_VALUE (mono_tls_lmf_addr, mono_tls_key_lmf_addr);
+}
+
+/* Setters for each tls key */
+void mono_tls_set_thread (MonoInternalThread *value)
+{
+	MONO_TLS_SET_VALUE (mono_tls_thread, mono_tls_key_thread, value);
+}
+
+void mono_tls_set_jit_tls (MonoJitTlsData *value)
+{
+	MONO_TLS_SET_VALUE (mono_tls_jit_tls, mono_tls_key_jit_tls, value);
+}
+
+void mono_tls_set_domain (MonoDomain *value)
+{
+	MONO_TLS_SET_VALUE (mono_tls_domain, mono_tls_key_domain, value);
+}
+
+void mono_tls_set_sgen_thread_info (SgenThreadInfo *value)
+{
+	MONO_TLS_SET_VALUE (mono_tls_sgen_thread_info, mono_tls_key_sgen_thread_info, value);
+}
+
+void mono_tls_set_lmf_addr (MonoLMF **value)
+{
+	MONO_TLS_SET_VALUE (mono_tls_lmf_addr, mono_tls_key_lmf_addr, value);
 }
