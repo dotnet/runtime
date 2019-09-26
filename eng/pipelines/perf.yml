@@ -20,6 +20,8 @@ jobs:
     - Linux_x64
     - Windows_NT_x64
     - Windows_NT_x86
+    jobParameters:
+      testGroup: perf
     
 - template: /eng/platform-matrix.yml
   parameters:
@@ -29,3 +31,5 @@ jobs:
     - Linux_x64
     - Windows_NT_x64
     - Windows_NT_x86
+    jobParameters:
+      testGroup: perf

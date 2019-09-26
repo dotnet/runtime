@@ -2,7 +2,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <CLRTestKind>BuildAndRun</CLRTestKind>
-    <CLRTestPriority>1</CLRTestPriority>
+    <CLRTestPriority>0</CLRTestPriority>
     <RequiresMockHostPolicy>true</RequiresMockHostPolicy>
   </PropertyGroup>
   <ItemGroup>

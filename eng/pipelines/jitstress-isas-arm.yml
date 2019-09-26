@@ -23,6 +23,8 @@ jobs:
     platforms:
     - Linux_arm64
     - Windows_NT_arm64
+    jobParameters:
+      testGroup: jitstress-isas-arm
 
 - template: /eng/platform-matrix.yml
   parameters:

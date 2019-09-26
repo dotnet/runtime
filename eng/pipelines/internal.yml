@@ -54,6 +54,7 @@ stages:
           timeoutInMinutes: 120
           signBinaries: true
           publishToBlobFeed: true
+          testGroup: outerloop
 
     #
     # Publish build information to Build Assets Registry

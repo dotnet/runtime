@@ -23,6 +23,8 @@ jobs:
     platforms:
     - Windows_NT_x64
     - Windows_NT_x86
+    jobParameters:
+      testGroup: innerloop
 
 #
 # Checked builds
@@ -41,6 +43,8 @@ jobs:
     - Windows_NT_arm64
     - Windows_NT_x64
     - Windows_NT_x86
+    jobParameters:
+      testGroup: innerloop
 
 #
 # Release builds
@@ -56,6 +60,8 @@ jobs:
     - Windows_NT_arm
     - Windows_NT_arm64
     - Windows_NT_x64
+    jobParameters:
+      testGroup: innerloop
 
 #
 # Checked test builds

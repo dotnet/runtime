@@ -16,7 +16,6 @@
   <ItemGroup Condition="('$(IgnoreCoreCLRTestLibraryDependency)' != 'true') And ('$(ReferenceSystemPrivateCoreLib)' == 'true')">
     <Compile Include="$(MSBuildThisFileDirectory)\..\Common\CoreCLRTestLibrary\Assertion.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)\..\Common\CoreCLRTestLibrary\HostPolicyMock.cs" Condition="'$(RequiresMockHostPolicy)' == 'true'"/>
-    <Compile Include="$(MSBuildThisFileDirectory)\..\Common\CoreCLRTestLibrary\XPlatformUtils.cs" />
   </ItemGroup>
 
   <!-- Required debug vcruntime and UCRT dlls -->
