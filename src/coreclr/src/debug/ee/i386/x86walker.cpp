@@ -307,7 +307,7 @@ DWORD NativeWalker::GetRegisterValue(int registerNumber)
         return m_registers->SP;
         break;
     case 5:
-        return *m_registers->GetEbpLocation();
+        return GetRegdisplayFP(m_registers);
         break;
     case 6:
         return *m_registers->GetEsiLocation();

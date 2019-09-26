@@ -7747,7 +7747,7 @@ Loop:
                 CodeManState codeManState;
                 codeManState.dwIsSet = 0;
                 REGDISPLAY rd;
-                ZeroMemory(&rd, sizeof(rd));
+                FillRegDisplay(&rd, &ctxCur);
 
                 rd.SetEbpLocation(&ctxCur.Ebp);
                 rd.SP = ctxCur.Esp;
