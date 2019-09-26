@@ -222,6 +222,14 @@ mono_llvm_build_weighted_branch (LLVMBuilderRef builder, LLVMValueRef cond, LLVM
 }
 
 void
+mono_llvm_add_string_metadata (LLVMValueRef insref, const char* label, const char* text)
+{
+	auto ins = unwrap<Instruction> (insref);
+	auto &ctx = ins->getContext ();
+	ins->setMetadata (label, MDNode::get (ctx, MDString::get (ctx, text)));
+}
+
+void
 mono_llvm_set_implicit_branch (LLVMBuilderRef builder, LLVMValueRef branch)
 {
 	auto b = unwrap (builder);
