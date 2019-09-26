@@ -531,7 +531,7 @@ mono_native_state_add_frame (MonoStateWriter *writer, MonoFrameSummary *frame)
 			mono_state_writer_printf(writer, "\"0x%05x\"", frame->unmanaged_data.offset);
 		}
 
-		if (frame->unmanaged_data.module) {
+		if (frame->unmanaged_data.module [0] != '\0') {
 			mono_state_writer_printf(writer, ",\n");
 
 			assert_has_space (writer);

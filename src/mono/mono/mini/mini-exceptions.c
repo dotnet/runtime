@@ -1467,14 +1467,26 @@ check_whitelisted_module (const char *in_name, const char **out_module)
 #ifndef MONO_PRIVATE_CRASHES
 		return TRUE;
 #else
-	if (allow_all_native_libraries) {
-		if (out_module)
-			*out_module = "<external module>";
-		return TRUE;
-	}
 	if (g_str_has_suffix (in_name, "mono-sgen")) {
 		if (out_module)
-			*out_module = "mono";
+			copy_summary_string_safe ((char *) *out_module, "mono");
+		return TRUE;
+	}
+	if (allow_all_native_libraries) {
+		if (out_module) {
+			/* for a module name, use the basename of the full path in in_name */
+			char *basename = (char *) in_name, *p = (char *) in_name;
+			while (*p != '\0') {
+				if (*p == '/')
+					basename = p + 1;
+				p++;
+			}
+			if (*basename)
+				copy_summary_string_safe ((char *) *out_module, basename);
+			else
+				copy_summary_string_safe ((char *) *out_module, "unknown");
+
+		}
 		return TRUE;
 	}
 
@@ -1483,7 +1495,7 @@ check_whitelisted_module (const char *in_name, const char **out_module)
 		if (!g_str_has_suffix (in_name, iter->suffix))
 			continue;
 		if (out_module)
-			*out_module = iter->exported_name;
+			copy_summary_string_safe ((char *) *out_module, iter->exported_name);
 		return TRUE;
 	}
 
@@ -1577,6 +1589,7 @@ summarize_frame_internal (MonoMethod *method, gpointer ip, size_t native_offset,
 
 	dest->unmanaged_data.ip = (intptr_t) ip;
 	dest->is_managed = managed;
+	dest->unmanaged_data.module [0] = '\0';
 
 	if (!managed && method && method->wrapper_type != MONO_WRAPPER_NONE && method->wrapper_type < MONO_WRAPPER_NUM) {
 		dest->is_managed = FALSE;
@@ -1749,8 +1762,8 @@ mono_summarize_unmanaged_stack (MonoThreadSummary *out)
 	for (int i =0; i < out->num_unmanaged_frames; ++i) {
 		intptr_t ip = frame_ips [i];
 		MonoFrameSummary *frame = &out->unmanaged_frames [i];
-
-		int success = mono_get_portable_ip (ip, &frame->unmanaged_data.ip, &frame->unmanaged_data.offset, &frame->unmanaged_data.module, (char *) frame->str_descr);
+		const char* module_buf = frame->unmanaged_data.module;
+		int success = mono_get_portable_ip (ip, &frame->unmanaged_data.ip, &frame->unmanaged_data.offset, &module_buf, (char *) frame->str_descr);
 		if (!success)
 			continue;
 

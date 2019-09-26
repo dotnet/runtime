@@ -496,7 +496,7 @@ typedef struct {
 	struct {
 		intptr_t ip;
 		gint32 offset;
-		const char *module;
+		char module [MONO_MAX_SUMMARY_NAME_LEN];
 		gboolean is_trampoline;
 		gboolean has_name;
 	} unmanaged_data;
