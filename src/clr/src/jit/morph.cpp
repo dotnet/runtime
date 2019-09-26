@@ -819,7 +819,7 @@ void fgArgTabEntry::Dump()
     printf(", align=%u", alignment);
     if (isLateArg())
     {
-        printf(", lateArgInx=%u", lateArgInx);
+        printf(", lateArgInx=%u", GetLateArgInx());
     }
     if (isSplit)
     {
@@ -1110,21 +1110,21 @@ fgArgTabEntry* fgArgInfo::AddRegArg(unsigned          argNum,
     // may actually be less.
     curArgTabEntry->setRegNum(0, regNum);
 
-    curArgTabEntry->argNum     = argNum;
-    curArgTabEntry->node       = node;
-    curArgTabEntry->argType    = node->TypeGet();
-    curArgTabEntry->use        = use;
-    curArgTabEntry->slotNum    = 0;
-    curArgTabEntry->numRegs    = numRegs;
-    curArgTabEntry->numSlots   = 0;
-    curArgTabEntry->alignment  = alignment;
-    curArgTabEntry->lateArgInx = UINT_MAX;
-    curArgTabEntry->tmpNum     = BAD_VAR_NUM;
-    curArgTabEntry->isSplit    = false;
-    curArgTabEntry->isTmp      = false;
-    curArgTabEntry->needTmp    = false;
-    curArgTabEntry->needPlace  = false;
-    curArgTabEntry->processed  = false;
+    curArgTabEntry->argNum    = argNum;
+    curArgTabEntry->node      = node;
+    curArgTabEntry->argType   = node->TypeGet();
+    curArgTabEntry->use       = use;
+    curArgTabEntry->slotNum   = 0;
+    curArgTabEntry->numRegs   = numRegs;
+    curArgTabEntry->numSlots  = 0;
+    curArgTabEntry->alignment = alignment;
+    curArgTabEntry->SetLateArgInx(UINT_MAX);
+    curArgTabEntry->tmpNum    = BAD_VAR_NUM;
+    curArgTabEntry->isSplit   = false;
+    curArgTabEntry->isTmp     = false;
+    curArgTabEntry->needTmp   = false;
+    curArgTabEntry->needPlace = false;
+    curArgTabEntry->processed = false;
 #ifdef FEATURE_HFA
     curArgTabEntry->_hfaElemKind = HFA_ELEM_NONE;
 #endif
@@ -1198,15 +1198,15 @@ fgArgTabEntry* fgArgInfo::AddStkArg(unsigned          argNum,
     curArgTabEntry->structIntRegs   = 0;
     curArgTabEntry->structFloatRegs = 0;
 #endif // defined(UNIX_AMD64_ABI)
-    curArgTabEntry->numSlots   = numSlots;
-    curArgTabEntry->alignment  = alignment;
-    curArgTabEntry->lateArgInx = UINT_MAX;
-    curArgTabEntry->tmpNum     = BAD_VAR_NUM;
-    curArgTabEntry->isSplit    = false;
-    curArgTabEntry->isTmp      = false;
-    curArgTabEntry->needTmp    = false;
-    curArgTabEntry->needPlace  = false;
-    curArgTabEntry->processed  = false;
+    curArgTabEntry->numSlots  = numSlots;
+    curArgTabEntry->alignment = alignment;
+    curArgTabEntry->SetLateArgInx(UINT_MAX);
+    curArgTabEntry->tmpNum    = BAD_VAR_NUM;
+    curArgTabEntry->isSplit   = false;
+    curArgTabEntry->isTmp     = false;
+    curArgTabEntry->needTmp   = false;
+    curArgTabEntry->needPlace = false;
+    curArgTabEntry->processed = false;
 #ifdef FEATURE_HFA
     curArgTabEntry->_hfaElemKind = HFA_ELEM_NONE;
 #endif
@@ -1257,7 +1257,7 @@ void fgArgInfo::UpdateRegArg(fgArgTabEntry* curArgTabEntry, GenTree* node, bool 
         if (reMorphing)
         {
             // Find the arg in the late args list.
-            GenTree* argx = Compiler::gtArgNodeByLateArgInx(callTree, curArgTabEntry->lateArgInx);
+            GenTree* argx = Compiler::gtArgNodeByLateArgInx(callTree, curArgTabEntry->GetLateArgInx());
             if (curArgTabEntry->node != argx)
             {
                 curArgTabEntry->node = argx;
@@ -1301,7 +1301,7 @@ void fgArgInfo::UpdateStkArg(fgArgTabEntry* curArgTabEntry, GenTree* node, bool 
         if (isLateArg)
         {
             GenTree* argx       = nullptr;
-            unsigned lateArgInx = curArgTabEntry->lateArgInx;
+            unsigned lateArgInx = curArgTabEntry->GetLateArgInx();
 
             // Traverse the late argument list to find this argument so that we can update it.
             unsigned listInx = 0;
@@ -1316,7 +1316,7 @@ void fgArgInfo::UpdateStkArg(fgArgTabEntry* curArgTabEntry, GenTree* node, bool 
                 listInx++;
             }
             assert(listInx == lateArgInx);
-            assert(lateArgInx == curArgTabEntry->lateArgInx);
+            assert(lateArgInx == curArgTabEntry->GetLateArgInx());
 
             if (curArgTabEntry->node != argx)
             {
@@ -2441,8 +2441,8 @@ void fgArgInfo::EvalArgsToTemps()
             tmpRegArgNext = tmpRegArgNext->GetNext();
         }
 
-        curArgTabEntry->node       = defArg;
-        curArgTabEntry->lateArgInx = regArgInx++;
+        curArgTabEntry->node = defArg;
+        curArgTabEntry->SetLateArgInx(regArgInx++);
     }
 
 #ifdef DEBUG
