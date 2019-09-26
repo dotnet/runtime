@@ -35,6 +35,6 @@ METHOD(ResetLowestSetBit)
 METHOD(TrailingZeroCount)
 // BMI2
 METHOD(ZeroHighBits)
-//METHOD(MultiplyNoFlags)
+METHOD(MultiplyNoFlags)
 METHOD(ParallelBitDeposit)
 METHOD(ParallelBitExtract)
