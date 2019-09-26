@@ -119,7 +119,7 @@ stages:
           - windowsArmQueue: Windows.10.Arm64.Open
 
           - ${{ if eq(parameters.fullMatrix, 'false') }}:
-            - netcoreappWindowsQueues: Windows.7.Amd64.Open+Windows.81.Amd64.Open+Windows.10.Amd64.Client19H1.Open # TODO: change to 19H1 non en-US image when available: https://github.com/dotnet/core-eng/issues/7464
+            - netcoreappWindowsQueues: Windows.7.Amd64.Open+Windows.81.Amd64.Open+Windows.10.Amd64.Client19H1.ES.Open
 
           - ${{ if eq(parameters.fullMatrix, 'true') }}:
             - netcoreappWindowsQueues: Windows.7.Amd64.Open+Windows.81.Amd64.Open+Windows.10.Amd64.ServerRS5.Open+Windows.10.Amd64.Client19H1.Open
