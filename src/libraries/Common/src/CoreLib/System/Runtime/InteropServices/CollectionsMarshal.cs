@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices
         /// Get a <see cref="Span{T}"/> view over a <see cref="List{T}"/>'s data.
         /// Items should not be added or removed from the <see cref="List{T}"/> while the <see cref="Span{T}"/> is in use.
         /// </summary>
-        public static Span<T> AsSpan<T>(List<T> list)
-            => new Span<T>(list._items, 0, list._size);
+        public static Span<T> AsSpan<T>(List<T>? list)
+            => list is null ? default : new Span<T>(list._items, 0, list._size);
     }
 }
