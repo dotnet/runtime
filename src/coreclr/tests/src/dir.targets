@@ -63,7 +63,11 @@
       <Private>false</Private>
     </ProjectReference>
   </ItemGroup>
-        
+
+  <PropertyGroup>
+    <ErrorIfBuildToolsRestoredFromIndividualProject Condition="!Exists('$(ToolsDir)')">true</ErrorIfBuildToolsRestoredFromIndividualProject>
+  </PropertyGroup>
+  
   <Import Project="..\dir.targets" />
 
   <!-- Determine if this project should be built or not -->
@@ -71,12 +75,14 @@
     <BuildAllProjects Condition="'$(BuildAllProjects)' == ''">false</BuildAllProjects>
     <_WillCLRTestProjectBuild Condition="'$(_WillCLRTestProjectBuild)' == ''">false</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(BuildAllProjects)' != 'true'">true</_WillCLRTestProjectBuild>
-    <_WillCLRTestProjectBuild Condition="'$(DisableProjectBuild)' != 'true' And '$(BuildAllProjects)' == 'true' And '$(CLRTestPriority)' &lt;= '$(CLRTestPriorityToBuild)'">true</_WillCLRTestProjectBuild>
+    <_WillCLRTestProjectBuild Condition="'$(BuildAllProjects)' == 'true' And '$(CLRTestPriority)' &lt;= '$(CLRTestPriorityToBuild)'">true</_WillCLRTestProjectBuild>
+    <_WillCLRTestProjectBuild Condition="'$(DisableProjectBuild)' == 'true'">false</_WillCLRTestProjectBuild>
   </PropertyGroup>
 
   <PropertyGroup>
-    <CopyNativeProjectBinaries Condition="'$(CopyNativeProjectBinaries)' == '' And '$(_WillCLRTestProjectBuild)' == 'true' And '$(DisableProjectBuild)' != 'true'">true</CopyNativeProjectBinaries>
-    <CopyNativeProjectBinaries Condition="'$(CopyNativeProjectBinaries)' == '' And ('$(_WillCLRTestProjectBuild)' == 'false' Or '$(DisableProjectBuild)' == 'true')">false</CopyNativeProjectBinaries>
+    <_CopyNativeProjectBinaries>$(CopyNativeProjectBinaries)</_CopyNativeProjectBinaries>
+    <_CopyNativeProjectBinaries Condition="'$(_WillCLRTestProjectBuild)' != 'true'">false</_CopyNativeProjectBinaries>
+    <_CopyNativeProjectBinaries Condition="'$(_CopyNativeProjectBinaries)' == ''">true</_CopyNativeProjectBinaries>
   </PropertyGroup>
     
   <!-- if we have determined that there is nothing to build, overwrite the build targets so that nothing happens -->
@@ -108,7 +114,8 @@
           Condition="'$(GenerateRunScript)' != 'false' And ('$(_WillCLRTestProjectBuild)' == 'true')"
           DependsOnTargets="GenerateExecutionScriptsInternal" />
 
-  <Target Name="CopyNativeProjectBinaries">
+  <Target Name="CopyNativeProjectBinaries" Condition="'$(_CopyNativeProjectBinaries)' == 'true'">
+
      <ItemGroup>
         <NativeProjectBinaries Condition="'$(RunningOnUnix)' != 'true'" Include="$(NativeProjectOutputFolder)\**\*.*" />
 
@@ -168,7 +175,7 @@
 
   <Target Name="ResolveCmakeNativeProjectReference"
           Condition="'@(ProjectReference)' != ''"
-          BeforeTargets="BeforeResolveReferences;BeforeClean" >
+          BeforeTargets="ConsolidateNativeProjectReference;BeforeResolveReferences;BeforeClean" >
      <ItemGroup>
         <NativeProjectReference Include="%(ProjectReference.Identity)" Condition="$([System.String]::Copy(%(ProjectReference.FileName)).ToUpper()) == 'CMAKELISTS'" />
         <ProjectReference Remove="%(NativeProjectReference.Identity)" />
@@ -177,16 +184,17 @@
   </Target>
 
   <Target Name="ConsolidateNativeProjectReference"
-          Condition="'@(NativeProjectReferenceNormalized)' != '' and '$(CopyNativeProjectBinaries)' == 'true'"
+          Condition="'$(_CopyNativeProjectBinaries)' == 'true'"
           BeforeTargets="Build" >
-     <ItemGroup>
+     <ItemGroup Condition="'@(NativeProjectReferenceNormalized)' != ''">
         <NativeProjectOutputFoldersToCopy Include="$([System.String]::Copy('%(NativeProjectReferenceNormalized.RelativeDir)').Replace($(SourceDir),$(__NativeTestIntermediatesDir)\src\))" Condition="'$(RunningOnUnix)' == 'true'" />
         <NativeProjectOutputFoldersToCopy Include="$([System.String]::Copy('%(NativeProjectReferenceNormalized.RelativeDir)').Replace($(SourceDir),$(__NativeTestIntermediatesDir)\src\))$(Configuration)\" Condition="'$(RunningOnUnix)' != 'true'" />
      </ItemGroup>
 
     <Message Text= "Full native project references are :%(NativeProjectReferenceNormalized.Identity)" />
     <Message Text= "Native binaries will be copied from :%(NativeProjectOutputFoldersToCopy.Identity)" />
-   <MSBuild Projects="$(MSBuildProjectFile)" Targets="CopyNativeProjectBinaries" Properties="NativeProjectOutputFolder=%(NativeProjectOutputFoldersToCopy.Identity)" Condition="'@(NativeProjectReference)' != ''" />
+
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="CopyNativeProjectBinaries" Properties="NativeProjectOutputFolder=%(NativeProjectOutputFoldersToCopy.Identity)" Condition="'@(NativeProjectReference)' != ''" />
 
   </Target>
 

@@ -25,6 +25,8 @@ jobs:
 # disable ARM for now    - Linux_arm64
     - Windows_NT_x64
 # disable ARM for now    - Windows_NT_arm64
+    jobParameters:
+      testGroup: gc-longrunning
 
 - template: /eng/platform-matrix.yml
   parameters:

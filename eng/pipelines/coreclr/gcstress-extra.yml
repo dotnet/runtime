@@ -21,6 +21,8 @@ jobs:
     jobTemplate: build-job.yml
     buildConfig: checked
     platformGroup: gcstress
+    jobParameters:
+      testGroup: gcstress-extra
 
 - template: /eng/platform-matrix.yml
   parameters:
