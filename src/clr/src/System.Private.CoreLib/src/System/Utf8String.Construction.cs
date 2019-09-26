@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -168,6 +169,16 @@ namespace System
         static
 #endif
         private Utf8String Ctor(string? value) => Ctor(value.AsSpan());
+
+        internal static Utf8String CreateFromRune(Rune value)
+        {
+            Utf8String newString = FastAllocate(value.Utf8SequenceLength);
+            int bytesWritten = value.EncodeToUtf8(new Span<byte>(ref newString.DangerousGetMutableReference(), newString.Length));
+
+            Debug.Assert(bytesWritten == value.Utf8SequenceLength);
+
+            return newString;
+        }
 
         /*
          * HELPER METHODS
