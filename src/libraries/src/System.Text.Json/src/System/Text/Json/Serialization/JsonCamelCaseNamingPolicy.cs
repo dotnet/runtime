@@ -13,8 +13,21 @@ namespace System.Text.Json
                 return name;
             }
 
+#if BUILDING_INBOX_LIBRARY
+            return string.Create(name.Length, name, (chars, name) =>
+            {
+                name.AsSpan().CopyTo(chars);
+                FixCasing(chars);
+            });
+#else
             char[] chars = name.ToCharArray();
+            FixCasing(chars);
+            return new string(chars);
+#endif
+        }
 
+        private static void FixCasing(Span<char> chars)
+        {
             for (int i = 0; i < chars.Length; i++)
             {
                 if (i == 1 && !char.IsUpper(chars[i]))
@@ -38,8 +51,6 @@ namespace System.Text.Json
 
                 chars[i] = char.ToLowerInvariant(chars[i]);
             }
-
-            return new string(chars);
         }
     }
 }
