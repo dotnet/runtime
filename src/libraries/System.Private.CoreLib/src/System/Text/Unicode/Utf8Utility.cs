@@ -4,7 +4,6 @@
 
 using System.Buffers;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -46,15 +45,28 @@ namespace System.Text.Unicode
 
 #if FEATURE_UTF8STRING
         /// <summary>
+        /// Returns a value stating whether <paramref name="utf8Data"/> contains only well-formed UTF-8 data.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe bool IsWellFormedUtf8(ReadOnlySpan<byte> utf8Data)
+        {
+            fixed (byte* pUtf8Data = &MemoryMarshal.GetReference(utf8Data))
+            {
+                // The return value here will point to the end of the span if the data is well-formed.
+                byte* pFirstInvalidByte = GetPointerToFirstInvalidByte(pUtf8Data, utf8Data.Length, out int _, out _);
+                return (pFirstInvalidByte == (pUtf8Data + (uint)utf8Data.Length));
+            }
+        }
+
+        /// <summary>
         /// Returns <paramref name="value"/> if it is null or contains only well-formed UTF-8 data;
         /// otherwises allocates a new <see cref="Utf8String"/> instance containing the same data as
         /// <paramref name="value"/> but where all invalid UTF-8 sequences have been replaced
-        /// with U+FFD.
+        /// with U+FFFD.
         /// </summary>
-        [return: NotNullIfNotNull("value")]
-        public static Utf8String? ValidateAndFixupUtf8String(Utf8String? value)
+        public static Utf8String ValidateAndFixupUtf8String(Utf8String value)
         {
-            if (Utf8String.IsNullOrEmpty(value))
+            if (value.Length == 0)
             {
                 return value;
             }

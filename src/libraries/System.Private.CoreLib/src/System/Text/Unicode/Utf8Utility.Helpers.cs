@@ -431,7 +431,7 @@ namespace System.Text.Unicode
         /// i.e., has binary representation 10xxxxxx, where x is any bit.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsUtf8ContinuationByte(in byte value)
+        internal static bool IsUtf8ContinuationByte(in byte value)
         {
             // This API takes its input as a readonly ref so that the JIT can emit "cmp ModRM" statements
             // directly rather than bounce a temporary through a register. That is, we want the JIT to be

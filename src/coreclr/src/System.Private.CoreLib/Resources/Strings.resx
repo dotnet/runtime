@@ -3766,4 +3766,16 @@
   <data name="InvalidOperation_MultipleComUnRegFunctions" xml:space="preserve">
     <value>Type '{0}' has more than one COM unregistration function.</value>
   </data>
+  <data name="Utf8String_CannotSplitMultibyteSubsequence" xml:space="preserve">
+    <value>Cannot create the desired substring because it would split a multi-byte UTF-8 subsequence.</value>
+  </data>
+  <data name="Utf8Span_CannotCallEqualsObject" xml:space="preserve">
+    <value>Cannot call Utf8Span.Equals(object). Use Equals(Utf8Span) or operator == instead.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Utf16SurrogatesDisallowed" xml:space="preserve">
+    <value>UTF-16 surrogate code points (U+D800..U+DFFF) are disallowed.</value>
+  </data>
+  <data name="Argument_CannotBeEmptySpan" xml:space="preserve">
+    <value>Argument cannot be an empty span.</value>
+  </data>
 </root>
