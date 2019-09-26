@@ -6254,7 +6254,7 @@ fgArgTabEntry* Compiler::gtArgEntryByLateArgIndex(GenTreeCall* call, unsigned la
     for (unsigned i = 0; i < argCount; i++)
     {
         curArgTabEntry = argTable[i];
-        if (curArgTabEntry->isLateArg() && curArgTabEntry->lateArgInx == lateArgInx)
+        if (curArgTabEntry->isLateArg() && curArgTabEntry->GetLateArgInx() == lateArgInx)
         {
             return curArgTabEntry;
         }
@@ -11641,13 +11641,14 @@ void Compiler::gtDispLIRNode(GenTree* node, const char* prefixMsg /* = nullptr *
                     for (GenTreeArgList* element = operand->AsArgList(); element != nullptr; element = element->Rest())
                     {
                         operand = element->Current();
-                        if (curArgTabEntry->lateArgInx == (unsigned)-1)
+                        if (curArgTabEntry->GetLateArgInx() == (unsigned)-1)
                         {
                             gtGetArgMsg(call, operand, curArgTabEntry->argNum, listIndex, buf, sizeof(buf));
                         }
                         else
                         {
-                            gtGetLateArgMsg(call, operand, curArgTabEntry->lateArgInx, listIndex, buf, sizeof(buf));
+                            gtGetLateArgMsg(call, operand, curArgTabEntry->GetLateArgInx(), listIndex, buf,
+                                            sizeof(buf));
                         }
 
                         displayOperand(operand, buf, operandArc, indentStack, prefixIndent);
@@ -11662,7 +11663,7 @@ void Compiler::gtDispLIRNode(GenTree* node, const char* prefixMsg /* = nullptr *
                     }
                     else
                     {
-                        gtGetLateArgMsg(call, operand, curArgTabEntry->lateArgInx, -1, buf, sizeof(buf));
+                        gtGetLateArgMsg(call, operand, curArgTabEntry->GetLateArgInx(), -1, buf, sizeof(buf));
                     }
 
                     displayOperand(operand, buf, operandArc, indentStack, prefixIndent);
