@@ -156,6 +156,7 @@ namespace System.Linq
         /// </summary>
         /// <typeparam name="TSource">The type of the source array.</typeparam>
         /// <typeparam name="TResult">The type of the mapped items.</typeparam>
+        [DebuggerDisplay("Count = {CountForDebugger}")]
         private sealed partial class SelectArrayIterator<TSource, TResult> : Iterator<TResult>
         {
             private readonly TSource[] _source;
@@ -169,6 +170,8 @@ namespace System.Linq
                 _source = source;
                 _selector = selector;
             }
+
+            private int CountForDebugger => _source.Length;
 
             public override Iterator<TResult> Clone() => new SelectArrayIterator<TSource, TResult>(_source, _selector);
 
@@ -194,6 +197,7 @@ namespace System.Linq
         /// </summary>
         /// <typeparam name="TSource">The type of the source list.</typeparam>
         /// <typeparam name="TResult">The type of the mapped items.</typeparam>
+        [DebuggerDisplay("Count = {CountForDebugger}")]
         private sealed partial class SelectListIterator<TSource, TResult> : Iterator<TResult>
         {
             private readonly List<TSource> _source;
@@ -207,6 +211,8 @@ namespace System.Linq
                 _source = source;
                 _selector = selector;
             }
+
+            private int CountForDebugger => _source.Count;
 
             public override Iterator<TResult> Clone() => new SelectListIterator<TSource, TResult>(_source, _selector);
 
@@ -241,6 +247,7 @@ namespace System.Linq
         /// </summary>
         /// <typeparam name="TSource">The type of the source list.</typeparam>
         /// <typeparam name="TResult">The type of the mapped items.</typeparam>
+        [DebuggerDisplay("Count = {CountForDebugger}")]
         private sealed partial class SelectIListIterator<TSource, TResult> : Iterator<TResult>
         {
             private readonly IList<TSource> _source;
@@ -254,6 +261,8 @@ namespace System.Linq
                 _source = source;
                 _selector = selector;
             }
+
+            private int CountForDebugger => _source.Count;
 
             public override Iterator<TResult> Clone() => new SelectIListIterator<TSource, TResult>(_source, _selector);
 

@@ -17,6 +17,7 @@ namespace System.Linq
     /// Returning an instance of this type is useful to quickly handle scenarios where it is known
     /// that an operation will result in zero elements.
     /// </remarks>
+    [DebuggerDisplay("Count = 0")]
     internal sealed class EmptyPartition<TElement> : IPartition<TElement>, IEnumerator<TElement>
     {
         /// <summary>
@@ -150,6 +151,7 @@ namespace System.Linq
         /// An iterator that yields the items of part of an <see cref="IList{TSource}"/>.
         /// </summary>
         /// <typeparam name="TSource">The type of the source list.</typeparam>
+        [DebuggerDisplay("Count = {Count}")]
         private sealed class ListPartition<TSource> : Iterator<TSource>, IPartition<TSource>
         {
             private readonly IList<TSource> _source;
