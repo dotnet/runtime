@@ -44,10 +44,6 @@ namespace Mono.Tuner {
 			get { return context.Annotations; }
 		}
 
-		internal Tracer Tracer {
-			get { return context.Tracer; }
-		}
-
 		public abstract SubStepTargets Targets { get; }
 
 		public virtual void Initialize (LinkContext context)
@@ -96,6 +92,8 @@ namespace Mono.Tuner {
 		List<ISubStep> on_properties;
 		List<ISubStep> on_events;
 
+		Tracer tracer;
+
 		public void Add (ISubStep substep)
 		{
 			substeps.Add (substep);
@@ -103,9 +101,23 @@ namespace Mono.Tuner {
 
 		public void Process (LinkContext context)
 		{
+			tracer = context.Tracer;
+
 			InitializeSubSteps (context);
 
 			BrowseAssemblies (context.GetAssemblies ());
+		}
+
+		void Push (ISubStep subStep)
+		{
+			if (tracer != null)
+				tracer.Push (subStep);
+		}
+
+		void Pop ()
+		{
+			if (tracer != null)
+				tracer.Pop ();
 		}
 
 		static bool HasSubSteps (List<ISubStep> substeps)
@@ -186,49 +198,55 @@ namespace Mono.Tuner {
 		void DispatchAssembly (AssemblyDefinition assembly)
 		{
 			foreach (var substep in on_assemblies) {
-				var bs = substep as BaseSubStep;
-				if (bs != null)
-					bs.Tracer.Push (substep);
+				Push (substep);
 				substep.ProcessAssembly (assembly);
-				if (bs != null)
-					bs.Tracer.Pop ();
+				Pop ();
 			}
 		}
 
 		void DispatchType (TypeDefinition type)
 		{
 			foreach (var substep in on_types) {
-				var bs = substep as BaseSubStep;
-				if (bs != null)
-					bs.Tracer.Push (substep);
+				Push (substep);
 				substep.ProcessType (type);
-				if (bs != null)
-					bs.Tracer.Pop ();
+				Pop ();
 			}
 		}
 
 		void DispatchField (FieldDefinition field)
 		{
-			foreach (var substep in on_fields)
+			foreach (var substep in on_fields) {
+				Push (substep);
 				substep.ProcessField (field);
+				Pop ();
+			}
 		}
 
 		void DispatchMethod (MethodDefinition method)
 		{
-			foreach (var substep in on_methods)
+			foreach (var substep in on_methods) {
+				Push (substep);
 				substep.ProcessMethod (method);
+				Pop ();
+			}
 		}
 
 		void DispatchProperty (PropertyDefinition property)
 		{
-			foreach (var substep in on_properties)
+			foreach (var substep in on_properties) {
+				Push (substep);
 				substep.ProcessProperty (property);
+				Pop ();
+			}
 		}
 
 		void DispatchEvent (EventDefinition @event)
 		{
-			foreach (var substep in on_events)
+			foreach (var substep in on_events) {
+				Push (substep);
 				substep.ProcessEvent (@event);
+				Pop ();
+			}
 		}
 
 		void InitializeSubSteps (LinkContext context)
