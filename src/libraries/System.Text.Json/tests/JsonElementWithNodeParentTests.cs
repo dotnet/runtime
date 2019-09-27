@@ -85,6 +85,8 @@ namespace System.Text.Json.Tests
 
             JsonElement.ObjectEnumerator objectEnumerator = jsonObjectElement.EnumerateObject();
 
+            Assert.Equal(default, objectEnumerator.Current);
+
             for (int i = 1; i <= 3; i++)
             {
                 Assert.True(objectEnumerator.MoveNext());
@@ -115,6 +117,13 @@ namespace System.Text.Json.Tests
         {
             Assert.Equal("value", new JsonString("value").AsJsonElement().GetString());
             Assert.Throws<InvalidOperationException>(() => new JsonBoolean().AsJsonElement().GetString());
+        }
+
+        [Fact]
+        public static void TestBytesFromBase64()
+        {
+            Assert.Throws<NotSupportedException>(() => new JsonString().AsJsonElement().GetBytesFromBase64());
+            Assert.Throws<InvalidOperationException>(() => new JsonBoolean().AsJsonElement().GetBytesFromBase64());
         }
 
         [Fact]
@@ -282,6 +291,7 @@ namespace System.Text.Json.Tests
             Assert.True(arrayEnumerator.MoveNext());
             Assert.Equal(2, arrayEnumerator.Current.GetInt32());
             Assert.False(arrayEnumerator.MoveNext());
+            Assert.Equal(default, arrayEnumerator.Current);
 
             var jsonObjectFromCopy = (JsonObject)JsonNode.GetNode(jsonElementCopy);
             
