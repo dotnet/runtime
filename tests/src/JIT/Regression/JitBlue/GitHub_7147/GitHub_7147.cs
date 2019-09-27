@@ -47,6 +47,27 @@ namespace N
             return b;
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool callargs(int x, int y, int[] a)
+        {
+            bool b = false;
+
+            for (int i = 0; i < x; i++)
+            {
+                // The following call should throw DivideByZeroException when y is 0
+                // because call arguments are expected to be evaluated in order.
+                b |= call(x / y, a.Length + x + y);
+            }
+
+            return b;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool call(int x, int y)
+        {
+            return x == y;
+        }
+
         public static int Main(string[] args)
         {
             int errors = 0;
@@ -64,11 +85,6 @@ namespace N
                 // This is the correct result -- i / y should be evaluated and
                 // raise this exception (before c.f raises nulllref).
             }
-            catch
-            {
-                // Any exception other than DivideByZero is a failure
-                errors |= 2;
-            }
 #endif
 
             try
@@ -76,17 +92,23 @@ namespace N
                 swap(10, 11, 0, null);
                 // DivByZero should be raised from 'swap'; normal return
                 // is an error.
-                errors |= 4;
+                errors |= 2;
             }
             catch (DivideByZeroException)
             {
                 // This is the correct result -- x / y should be evaluated and
                 // raise this exception (before c.f raises nulllref).
             }
-            catch
+
+            try
             {
-                // Any exception other than DivideByZero is a failure
-                errors |= 8;
+                callargs(42, 0, null);
+                // callargs shoulw always throw an exception.
+                errors |= 4;
+            }
+            catch (DivideByZeroException)
+            {
+                // This is the expected exception
             }
 
             return 100 + errors;
