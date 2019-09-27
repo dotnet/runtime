@@ -120,16 +120,12 @@ namespace Internal.Cryptography
             }
         }
 
-        private static CngProperty CreateCngPropertyForCipherMode(string cipherMode)
-        {
-            byte[] cipherModeBytes = Encoding.Unicode.GetBytes((cipherMode + "\0").ToCharArray());
-            return new CngProperty(Interop.NCrypt.NCRYPT_CHAINING_MODE_PROPERTY, cipherModeBytes, CngPropertyOptions.None);
-        }
-
         private CngKey _cngKey;
         private readonly bool _encrypting;
 
-        private static readonly CngProperty s_ECBMode = CreateCngPropertyForCipherMode(Interop.BCrypt.BCRYPT_CHAIN_MODE_ECB);
-        private static readonly CngProperty s_CBCMode = CreateCngPropertyForCipherMode(Interop.BCrypt.BCRYPT_CHAIN_MODE_CBC);
+        private static readonly CngProperty s_ECBMode =
+            new CngProperty(Interop.NCrypt.NCRYPT_CHAINING_MODE_PROPERTY, Encoding.UTF8.GetBytes(Interop.BCrypt.BCRYPT_CHAIN_MODE_ECB + "\0"), CngPropertyOptions.None);
+        private static readonly CngProperty s_CBCMode =
+            new CngProperty(Interop.NCrypt.NCRYPT_CHAINING_MODE_PROPERTY, Encoding.UTF8.GetBytes(Interop.BCrypt.BCRYPT_CHAIN_MODE_CBC + "\0"), CngPropertyOptions.None);
     }
 }
