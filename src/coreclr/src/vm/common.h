@@ -374,43 +374,6 @@ namespace Loader
 
 #include "gcstress.h"
 
-#ifndef DACCESS_COMPILE 
-
-inline VOID UnsafeEEEnterCriticalSection(LPCRITICAL_SECTION lpCriticalSection)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_CAN_TAKE_LOCK;
-
-    EnterCriticalSection(lpCriticalSection);
-    INCTHREADLOCKCOUNT();
-}
-
-inline VOID UnsafeEELeaveCriticalSection(LPCRITICAL_SECTION lpCriticalSection)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-
-    LeaveCriticalSection(lpCriticalSection);
-    DECTHREADLOCKCOUNT();
-}
-
-inline BOOL UnsafeEETryEnterCriticalSection(LPCRITICAL_SECTION lpCriticalSection)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_CAN_TAKE_LOCK;
-
-    BOOL fEnteredCriticalSection = TryEnterCriticalSection(lpCriticalSection);
-    if(fEnteredCriticalSection)
-    {
-        INCTHREADLOCKCOUNT();
-    }
-    return fEnteredCriticalSection;
-}
-
-#endif // !DACCESS_COMPILE
-
 HRESULT EnsureRtlFunctions();
 HINSTANCE GetModuleInst();
 

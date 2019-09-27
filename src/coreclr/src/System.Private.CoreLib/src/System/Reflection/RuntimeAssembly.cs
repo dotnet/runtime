@@ -21,7 +21,9 @@ namespace System.Reflection
         internal RuntimeAssembly() { throw new NotSupportedException(); }
 
         #region private data members
+#pragma warning disable 67 // events are declared but not used
         private event ModuleResolveEventHandler? _ModuleResolve;
+#pragma warning restore 67
         private string? m_fullname;
         private object? m_syncRoot;   // Used to keep collectible types alive and as the syncroot for reflection.emit
 #pragma warning disable 169
@@ -566,23 +568,6 @@ namespace System.Reflection
             RuntimeAssembly runtimeAssembly = this;
             GetPublicKey(JitHelpers.GetQCallAssemblyOnStack(ref runtimeAssembly), JitHelpers.GetObjectHandleOnStack(ref publicKey));
             return publicKey;
-        }
-
-        // This method is called by the VM.
-        private RuntimeModule? OnModuleResolveEvent(string moduleName)
-        {
-            ModuleResolveEventHandler? moduleResolve = _ModuleResolve;
-            if (moduleResolve == null)
-                return null;
-
-            foreach (ModuleResolveEventHandler handler in moduleResolve.GetInvocationList())
-            {
-                RuntimeModule ret = (RuntimeModule)handler(this, new ResolveEventArgs(moduleName, this));
-                if (ret != null)
-                    return ret;
-            }
-
-            return null;
         }
 
         public override Assembly GetSatelliteAssembly(CultureInfo culture)
