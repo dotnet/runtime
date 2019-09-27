@@ -6,7 +6,7 @@ A longstanding feature request we've had from profiler authors is the ability to
 
 To enable ReJIT on attach there is a new API `ICorProfilerInfo10::RequestReJITWithInliners`. Here is the signature:
 
-```
+```cpp
     HRESULT RequestReJITWithInliners(
                 [in]                       DWORD       dwRejitFlags,
                 [in]                       ULONG       cFunctions,
@@ -16,7 +16,7 @@ To enable ReJIT on attach there is a new API `ICorProfilerInfo10::RequestReJITWi
 
 Conceptually this works the same as `ICorProfilerInfo4::RequestReJIT` except it will automatically ReJIT any methods that have inlined the target method(s) in the past. The arguments are the same except for the additon of `dwRejitFlags` as the first parameter. The valid values for this argument come from this enum:
 
-``` 
+```cpp
 typedef enum
 {
     // ReJITted methods will be prevented from being inlined
@@ -36,7 +36,7 @@ The other value `COR_PRF_REJIT_INLINING_CALLBACKS` controls whether you get a `I
 
 ## Inner workings/Limitations
 
-With this API you are no longer required to monitor JIT callbacks to manually block inlining from occurring. To acheive that the runtime now globally blocks a ReJITted method from being inlined (even if it was ReJITted with `ICorProfilerInfo4::RequestReJIT` and not the new API). Once a method is reverted with `ICorProfilerInfo4::RequestRevert` inlining will occur again for any future jittings.
+With this API you are no longer required to monitor JIT callbacks to manually block inlining from occurring. To achieve that the runtime now globally blocks a ReJITted method from being inlined (even if it was ReJITted with `ICorProfilerInfo4::RequestReJIT` and not the new API). Once a method is reverted with `ICorProfilerInfo4::RequestRevert` inlining will occur again for any future jittings.
 
 It is important to mention here how `RequestRevert` works. When you revert a ReJITted method, the original native code is activated. This means there are potential pitfalls for calling `RequestRevert`. Consider an app where method A inlines method B and the profiler wants to ReJIT both A and B. Once A and B are both ReJITted, the application will behave as expected. However, if later on the profiler decides to revert method A but intends to leave method B ReJITted, it might be surprising to find that once the original native code for A is activated this includes the inlined non-ReJIT IL for method B. Effectively any calls to B through A will be calling the original, unmodified IL.
 
