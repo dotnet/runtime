@@ -34,7 +34,7 @@ namespace System.IO.Compression
         private readonly short[] _right;
         private readonly byte[] _codeLengthArray;
 #if DEBUG
-        private uint[] _codeArrayDebug;
+        private uint[]? _codeArrayDebug;
 #endif
 
         private readonly int _tableMask;

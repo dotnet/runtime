@@ -72,7 +72,7 @@ namespace System.IO.Compression
             return _deflateStream.ReadByte();
         }
 
-        public override IAsyncResult BeginRead(byte[] array, int offset, int count, AsyncCallback asyncCallback, object asyncState) =>
+        public override IAsyncResult BeginRead(byte[] array, int offset, int count, AsyncCallback? asyncCallback, object? asyncState) =>
             TaskToApm.Begin(ReadAsync(array, offset, count, CancellationToken.None), asyncCallback, asyncState);
 
         public override int EndRead(IAsyncResult asyncResult) =>
@@ -100,7 +100,7 @@ namespace System.IO.Compression
             }
         }
 
-        public override IAsyncResult BeginWrite(byte[] array, int offset, int count, AsyncCallback asyncCallback, object asyncState) =>
+        public override IAsyncResult BeginWrite(byte[] array, int offset, int count, AsyncCallback? asyncCallback, object? asyncState) =>
             TaskToApm.Begin(WriteAsync(array, offset, count, CancellationToken.None), asyncCallback, asyncState);
 
         public override void EndWrite(IAsyncResult asyncResult) =>
@@ -142,7 +142,7 @@ namespace System.IO.Compression
                 {
                     _deflateStream.Dispose();
                 }
-                _deflateStream = null;
+                _deflateStream = null!;
             }
             finally
             {
@@ -157,17 +157,17 @@ namespace System.IO.Compression
                 return base.DisposeAsync();
             }
 
-            DeflateStream ds = _deflateStream;
+            DeflateStream? ds = _deflateStream;
             if (ds != null)
             {
-                _deflateStream = null;
+                _deflateStream = null!;
                 return ds.DisposeAsync();
             }
 
             return default;
         }
 
-        public Stream BaseStream => _deflateStream?.BaseStream;
+        public Stream BaseStream => _deflateStream?.BaseStream!;
 
         public override Task<int> ReadAsync(byte[] array, int offset, int count, CancellationToken cancellationToken)
         {

@@ -16,7 +16,7 @@ namespace System.IO.Compression
     /// </summary>
     internal sealed class Deflater : IDisposable
     {
-        private ZLibNative.ZLibStreamHandle _zlibStream;
+        private readonly ZLibNative.ZLibStreamHandle _zlibStream;
         private MemoryHandle _inputBufferHandle;
         private bool _isDisposed;
         private const int minWindowBits = -15;  // WindowBits must be between -8..-15 to write no header, 8..15 for a
@@ -60,7 +60,34 @@ namespace System.IO.Compression
 
             ZLibNative.CompressionStrategy strategy = ZLibNative.CompressionStrategy.DefaultStrategy;
 
-            DeflateInit(zlibCompressionLevel, windowBits, memLevel, strategy);
+            ZErrorCode errC;
+            try
+            {
+                errC = ZLibNative.CreateZLibStreamForDeflate(out _zlibStream, zlibCompressionLevel,
+                                                             windowBits, memLevel, strategy);
+            }
+            catch (Exception cause)
+            {
+                throw new ZLibException(SR.ZLibErrorDLLLoadError, cause);
+            }
+
+            switch (errC)
+            {
+                case ZErrorCode.Ok:
+                    return;
+
+                case ZErrorCode.MemError:
+                    throw new ZLibException(SR.ZLibErrorNotEnoughMemory, "deflateInit2_", (int)errC, _zlibStream.GetErrorMessage());
+
+                case ZErrorCode.VersionError:
+                    throw new ZLibException(SR.ZLibErrorVersionMismatch, "deflateInit2_", (int)errC, _zlibStream.GetErrorMessage());
+
+                case ZErrorCode.StreamError:
+                    throw new ZLibException(SR.ZLibErrorIncorrectInitParameters, "deflateInit2_", (int)errC, _zlibStream.GetErrorMessage());
+
+                default:
+                    throw new ZLibException(SR.ZLibErrorUnexpected, "deflateInit2_", (int)errC, _zlibStream.GetErrorMessage());
+            }
         }
 
         ~Deflater()
@@ -195,39 +222,6 @@ namespace System.IO.Compression
                 _zlibStream.AvailIn = 0;
                 _zlibStream.NextIn = ZLibNative.ZNullPtr;
                 _inputBufferHandle.Dispose();
-            }
-        }
-
-        private void DeflateInit(ZLibNative.CompressionLevel compressionLevel, int windowBits, int memLevel,
-                                 ZLibNative.CompressionStrategy strategy)
-        {
-            ZErrorCode errC;
-            try
-            {
-                errC = ZLibNative.CreateZLibStreamForDeflate(out _zlibStream, compressionLevel,
-                                                             windowBits, memLevel, strategy);
-            }
-            catch (Exception cause)
-            {
-                throw new ZLibException(SR.ZLibErrorDLLLoadError, cause);
-            }
-
-            switch (errC)
-            {
-                case ZErrorCode.Ok:
-                    return;
-
-                case ZErrorCode.MemError:
-                    throw new ZLibException(SR.ZLibErrorNotEnoughMemory, "deflateInit2_", (int)errC, _zlibStream.GetErrorMessage());
-
-                case ZErrorCode.VersionError:
-                    throw new ZLibException(SR.ZLibErrorVersionMismatch, "deflateInit2_", (int)errC, _zlibStream.GetErrorMessage());
-
-                case ZErrorCode.StreamError:
-                    throw new ZLibException(SR.ZLibErrorIncorrectInitParameters, "deflateInit2_", (int)errC, _zlibStream.GetErrorMessage());
-
-                default:
-                    throw new ZLibException(SR.ZLibErrorUnexpected, "deflateInit2_", (int)errC, _zlibStream.GetErrorMessage());
             }
         }
 
