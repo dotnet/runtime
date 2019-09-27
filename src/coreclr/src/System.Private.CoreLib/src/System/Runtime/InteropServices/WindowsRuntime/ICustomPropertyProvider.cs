@@ -99,7 +99,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     }
 
     //
-    // Interface for data binding code (CustomPropertyImpl) to retreive the target object
+    // Interface for data binding code (CustomPropertyImpl) to retrieve the target object
     // See CustomPropertyImpl.InvokeInternal for details
     //
     internal interface IGetProxyTarget
