@@ -1443,7 +1443,7 @@ public:
 #endif
     }
 
-    bool GetIsVararg()
+    bool IsVararg()
     {
 #ifdef FEATURE_VARARG
         return _isVararg;
