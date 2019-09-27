@@ -148,6 +148,19 @@
         "rhel.7-x64"
       ]
     },
+    "centos.8": {
+      "#import": [
+        "centos",
+        "rhel.8"
+      ]
+    },
+    "centos.8-x64": {
+      "#import": [
+        "centos.8",
+        "centos-x64",
+        "rhel.8-x64"
+      ]
+    },
     "debian": {
       "#import": [
         "linux"

@@ -28,8 +28,9 @@
     <RuntimeGroup Include="centos">
       <Parent>rhel</Parent>
       <Architectures>x64</Architectures>
-      <Versions>7</Versions>
+      <Versions>7;8</Versions>
       <ApplyVersionsToParent>true</ApplyVersionsToParent>
+      <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
     </RuntimeGroup>
 
     <RuntimeGroup Include="debian">
