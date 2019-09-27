@@ -2074,9 +2074,9 @@ namespace System
     }
     public partial class ResolveEventArgs : System.EventArgs
     {
-        public ResolveEventArgs(string? name) { }
-        public ResolveEventArgs(string? name, System.Reflection.Assembly? requestingAssembly) { }
-        public string? Name { get { throw null; } }
+        public ResolveEventArgs(string name) { }
+        public ResolveEventArgs(string name, System.Reflection.Assembly? requestingAssembly) { }
+        public string Name { get { throw null; } }
         public System.Reflection.Assembly? RequestingAssembly { get { throw null; } }
     }
     public ref partial struct RuntimeArgumentHandle
