@@ -429,11 +429,6 @@ public:
 
 inline BOOL dbgOnly_IsSpecialEEThread() { return FALSE; }
 
-#define INCTHREADLOCKCOUNT() { }
-#define DECTHREADLOCKCOUNT() { }
-#define INCTHREADLOCKCOUNTTHREAD(thread) { }
-#define DECTHREADLOCKCOUNTTHREAD(thread) { }
-
 #define FORBIDGC_LOADER_USE_ENABLED() false
 #define ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE()    ;
 
@@ -5549,13 +5544,6 @@ struct PendingSync
     }
     void Restore(BOOL bRemoveFromSB);
 };
-
-
-#define INCTHREADLOCKCOUNT() { }
-#define DECTHREADLOCKCOUNT() { }
-#define INCTHREADLOCKCOUNTTHREAD(thread) { }
-#define DECTHREADLOCKCOUNTTHREAD(thread) { }
-
 
 // --------------------------------------------------------------------------------
 // GCHolder is used to implement the normal GCX_ macros.

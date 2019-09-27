@@ -116,23 +116,23 @@ BOOL SpinLock::OwnedByCurrentThread()
 }
 #endif
 
-DEBUG_NOINLINE void SpinLock::AcquireLock(SpinLock *s, Thread * pThread)
+DEBUG_NOINLINE void SpinLock::AcquireLock(SpinLock *s)
 {
     SCAN_SCOPE_BEGIN;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
-    s->GetLock(pThread); 
+    s->GetLock(); 
 }
 
-DEBUG_NOINLINE void SpinLock::ReleaseLock(SpinLock *s, Thread * pThread) 
-{ 
+DEBUG_NOINLINE void SpinLock::ReleaseLock(SpinLock *s)
+{
     SCAN_SCOPE_END;
 
-    s->FreeLock(pThread); 
+    s->FreeLock(); 
 }
 
 
-void SpinLock::GetLock(Thread* pThread) 
+void SpinLock::GetLock()
 {
     CONTRACTL
     {
@@ -158,7 +158,6 @@ void SpinLock::GetLock(Thread* pThread)
         }
     }
 
-    INCTHREADLOCKCOUNTTHREAD(pThread);
 #ifdef _DEBUG
     m_holdingThreadId.SetToCurrentThread();
     dbg_EnterLock();
@@ -193,7 +192,7 @@ BOOL SpinLock::GetLockNoWait()
 // SpinLock::FreeLock   
 //  Release the spinlock
 //
-void SpinLock::FreeLock(Thread* pThread)
+void SpinLock::FreeLock()
 {
     CONTRACTL
     {
@@ -202,7 +201,7 @@ void SpinLock::FreeLock(Thread* pThread)
     }
     CONTRACTL_END;
 
-	_ASSERTE(m_Initialized == Initialized);
+    _ASSERTE(m_Initialized == Initialized);
 
 #ifdef _DEBUG
     _ASSERTE(OwnedByCurrentThread());
@@ -214,7 +213,6 @@ void SpinLock::FreeLock(Thread* pThread)
         VolatileStore(&m_lock, (LONG)0);
     }
 
-    DECTHREADLOCKCOUNTTHREAD(pThread);
     EE_LOCK_RELEASED(this);
 
 } // SpinLock::FreeLock ()
