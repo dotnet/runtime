@@ -551,7 +551,7 @@ namespace System.Text
 
         /// <summary>
         /// GetChunks returns ChunkEnumerator that follows the IEnumerable pattern and
-        /// thus can be used in a C# 'foreach' statements to retreive the data in the StringBuilder
+        /// thus can be used in a C# 'foreach' statements to retrieve the data in the StringBuilder
         /// as chunks (ReadOnlyMemory) of characters.  An example use is:
         ///
         ///      foreach (ReadOnlyMemory&lt;char&gt; chunk in sb.GetChunks())

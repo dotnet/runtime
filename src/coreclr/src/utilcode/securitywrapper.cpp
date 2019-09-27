@@ -256,7 +256,7 @@ HRESULT GetSidFromProcessEXWorker(DWORD dwProcessId, PSID *ppSid)
             if (rgProcessInfo[iProc].pUserSid == NULL)
             {
                 LOG((LF_CORDB, LL_INFO10000,
-                     "SecurityUtil::GetSidFromProcessEx is not able to retreive SID\n"));
+                     "SecurityUtil::GetSidFromProcessEx is not able to retrieve SID\n"));
 
                 // if there is no Sid for the user, don't call GetLengthSid.
                 // It will crash! It is ok to return E_FAIL as caller will ignore it.
