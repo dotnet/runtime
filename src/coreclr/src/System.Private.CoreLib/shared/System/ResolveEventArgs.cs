@@ -8,18 +8,18 @@ namespace System
 {
     public class ResolveEventArgs : EventArgs
     {
-        public ResolveEventArgs(string? name)
+        public ResolveEventArgs(string name)
         {
             Name = name;
         }
 
-        public ResolveEventArgs(string? name, Assembly? requestingAssembly)
+        public ResolveEventArgs(string name, Assembly? requestingAssembly)
         {
             Name = name;
             RequestingAssembly = requestingAssembly;
         }
 
-        public string? Name { get; }
+        public string Name { get; }
         public Assembly? RequestingAssembly { get; }
     }
 }
