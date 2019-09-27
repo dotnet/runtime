@@ -8,4 +8,4 @@ Using the existing BuildTools code reduces the risk of behavior differences vs.
 trying to find equivalents in Arcade. The upcoming new Arcade-powered publish
 functionality makes short-term effort to deduplicate these tasks throwaway work.
 
-See [core-setup/#7118 "Use Arcade publish functionality"](https://github.com/dotnet/core-setup/issues/7118)
+See [core-setup/#8285 "Migrate to Arcade's blob publish infrastructure"](https://github.com/dotnet/core-setup/issues/8285)
