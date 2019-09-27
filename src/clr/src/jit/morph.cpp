@@ -3771,7 +3771,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         }
 
         // Get information about this argument.
-        var_types hfaType            = argEntry->hfaType;
+        var_types hfaType            = argEntry->GetHfaType();
         bool      isHfaArg           = (hfaType != TYP_UNDEF);
         bool      isHfaRegArg        = argEntry->isHfaRegArg;
         unsigned  hfaSlots           = argEntry->numRegs;
@@ -4340,7 +4340,7 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
             {
                 if (fgEntryPtr->isHfaArg)
                 {
-                    var_types hfaType = fgEntryPtr->hfaType;
+                    var_types hfaType = fgEntryPtr->GetHfaType();
                     unsigned  structSize;
                     if (argx->OperIs(GT_OBJ))
                     {
@@ -4526,7 +4526,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
     unsigned  elemSize                = 0;
     var_types type[MAX_ARG_REG_COUNT] = {}; // TYP_UNDEF = 0
 
-    hfaType = fgEntryPtr->hfaType;
+    hfaType = fgEntryPtr->GetHfaType();
     if (varTypeIsValidHfaType(hfaType)
 #if !defined(_HOST_UNIX_) && defined(_TARGET_ARM64_)
         && !fgEntryPtr->IsVararg()
