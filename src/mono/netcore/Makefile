@@ -6,6 +6,11 @@ NETCORETESTS_VERSION := $(shell cat ../eng/Versions.props | sed -n 's/.*Microsof
 NETCOREAPP_VERSION := $(shell cat ../eng/Versions.props | sed -n 's/.*MicrosoftNETCoreAppVersion>\(.*\)<\/MicrosoftNETCoreAppVersion.*/\1/p' )
 ROSLYN_VERSION:=  $(shell cat ../eng/Versions.props | sed -n 's/.*MicrosoftNetCompilersVersion>\(.*\)<\/MicrosoftNetCompilersVersion.*/\1/p' )
 
+# Should be automated but not sure how for now
+# the name is misleading osx version is used for any unix like systems
+# the url is manually extracted from coreclr-outerloop (https://dev.azure.com/dnceng/public/_build?definitionId=98&_a=summary) Build artifacts published page
+CORECLR_TESTS:=https://dev.azure.com/dnceng/9ee6d478-d288-47f7-aacc-f6e6d082ae6d/_apis/build/builds/368250/artifacts?artifactName=Tests_OSX_x64_checked_outerloop&api-version=5.2-preview.5&%24format=zip
+
 # runtime version used by $(DOTNET) - local .net core sdk to bootstrap stuff
 # it doesn't match NETCOREAPP_VERSION
 BOOTSTRAP_RUNTIME = $(shell ls ../.dotnet/shared/Microsoft.NETCore.App | tail -1)
@@ -234,6 +239,36 @@ build-test-corefx-%:
 xunit-summary:
 	./xunit-summary.py "corefx/tests"
 
+
+update-tests-coreclr: coreclr/.stamp-tests
+
+coreclr/.stamp-tests:
+	rm -rf coreclr/tests
+	curl -L "$(CORECLR_TESTS)" --output coreclr/tests.zip
+	$(UNZIPCMD) coreclr/tests.zip -C coreclr/
+	mkdir coreclr/tests
+	$(UNZIPCMD) coreclr/Tests_Linux_x64_checked/Linux.x64.Checked.tar.gz -C coreclr/tests
+	touch $@
+
+.PHONY: corerun
+corerun:
+	cp corerun/corerun $(SHAREDRUNTIME)
+
+run-tests-coreclr: prepare update-tests-coreclr corerun
+	rm -rf coreclr/output.log
+	@counter=0; \
+	failures=0; \
+	test_files=$$(find coreclr/tests -type f -name "*.sh"); \
+	for testdir in $$test_files; do \
+		counter=$$((counter+1)); \
+		echo "Running $$testdir"; \
+		if sh $$testdir -coreroot=$(realpath $(SHAREDRUNTIME)) >>coreclr/output.log 2>&1 ; then \
+			echo "FAILED"; \
+			failures=$$((failures+1)); \
+		fi; \
+	done; \
+	echo "Tests Count: $$counter"; \
+	echo "Failed: $$failures"
 endif
 
 distdir:

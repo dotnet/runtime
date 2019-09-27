@@ -6778,6 +6778,7 @@ tools/mono-hang-watchdog/Makefile
 runtime/Makefile
 msvc/Makefile
 po/Makefile
+netcore/corerun/Makefile
 ])
 
 if test x$host_win32 = xyes; then
