@@ -378,7 +378,7 @@ CtxEntry* CtxEntryCache::FindCtxEntry(LPVOID pCtxCookie, Thread *pThread)
     ASSERT (GetThread ());
     BOOL bFound = FALSE;
 
-    ACQUIRE_SPINLOCK_NO_HOLDER(&m_Lock, pThread);
+    ACQUIRE_SPINLOCK_NO_HOLDER(&m_Lock);
     {
         // Try to find a context entry for the context cookie.
         pCtxEntry = m_CtxEntryHash.Lookup(pCtxCookie);
@@ -390,7 +390,7 @@ CtxEntry* CtxEntryCache::FindCtxEntry(LPVOID pCtxCookie, Thread *pThread)
             bFound = TRUE;
         }
     }
-    RELEASE_SPINLOCK_NO_HOLDER(&m_Lock, pThread);
+    RELEASE_SPINLOCK_NO_HOLDER(&m_Lock);
 
     if (!bFound)
     {
