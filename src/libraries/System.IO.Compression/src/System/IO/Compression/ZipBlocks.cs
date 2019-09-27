@@ -185,7 +185,7 @@ namespace System.IO.Compression
                 return false;
 
             // this pattern needed because nested using blocks trigger CA2202
-            MemoryStream ms = null;
+            MemoryStream? ms = null;
             try
             {
                 ms = new MemoryStream(extraField.Data);
@@ -555,8 +555,8 @@ namespace System.IO.Compression
         public long RelativeOffsetOfLocalHeader;
 
         public byte[] Filename;
-        public byte[] FileComment;
-        public List<ZipGenericExtraField> ExtraFields;
+        public byte[]? FileComment;
+        public List<ZipGenericExtraField>? ExtraFields;
 
         // if saveExtraFieldsAndComments is false, FileComment and ExtraFields will be null
         // in either case, the zip64 extra field info will be incorporated into other fields
@@ -653,7 +653,7 @@ namespace System.IO.Compression
         public uint OffsetOfStartOfCentralDirectoryWithRespectToTheStartingDiskNumber;
         public byte[] ArchiveComment;
 
-        public static void WriteBlock(Stream stream, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory, byte[] archiveComment)
+        public static void WriteBlock(Stream stream, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory, byte[]? archiveComment)
         {
             BinaryWriter writer = new BinaryWriter(stream);
 
