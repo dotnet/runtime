@@ -285,7 +285,7 @@ THREADGetThreadProcessId(
     }
     else
     {
-        ERROR("Couldn't retreive the hThread:%p pid owner !\n", hThread);
+        ERROR("Couldn't retrieve the hThread:%p pid owner !\n", hThread);
     }
 
 

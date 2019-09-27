@@ -9,7 +9,7 @@ Name = Return value test of SetEnvironmentVariableW
 TYPE = DEFAULT
 EXE1 = test4
 Description
-= Create environment variable and try to retreive
+= Create environment variable and try to retrieve
 = the value of the variable by using a variable name
 = that differs in case.  This should not affect the
 = return value in the Windows Operating System.
