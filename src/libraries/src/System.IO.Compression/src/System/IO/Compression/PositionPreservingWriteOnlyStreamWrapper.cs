@@ -36,7 +36,7 @@ namespace System.IO.Compression
             _stream.Write(buffer, offset, count);
         }
 
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object? state)
         {
             _position += count;
             return _stream.BeginWrite(buffer, offset, count, callback, state);

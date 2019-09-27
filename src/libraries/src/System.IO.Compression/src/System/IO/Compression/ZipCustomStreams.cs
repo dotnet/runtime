@@ -12,16 +12,16 @@ namespace System.IO.Compression
         private readonly bool _closeBaseStream;
 
         // Delegate that will be invoked on stream disposing
-        private readonly Action<ZipArchiveEntry> _onClosed;
+        private readonly Action<ZipArchiveEntry?>? _onClosed;
 
         // Instance that will be passed to _onClose delegate
-        private readonly ZipArchiveEntry _zipArchiveEntry;
+        private readonly ZipArchiveEntry? _zipArchiveEntry;
         private bool _isDisposed;
 
         internal WrappedStream(Stream baseStream, bool closeBaseStream)
             : this(baseStream, closeBaseStream, null, null) { }
 
-        private WrappedStream(Stream baseStream, bool closeBaseStream, ZipArchiveEntry entry, Action<ZipArchiveEntry> onClosed)
+        private WrappedStream(Stream baseStream, bool closeBaseStream, ZipArchiveEntry? entry, Action<ZipArchiveEntry?>? onClosed)
         {
             _baseStream = baseStream;
             _closeBaseStream = closeBaseStream;
@@ -30,7 +30,7 @@ namespace System.IO.Compression
             _isDisposed = false;
         }
 
-        internal WrappedStream(Stream baseStream, ZipArchiveEntry entry, Action<ZipArchiveEntry> onClosed)
+        internal WrappedStream(Stream baseStream, ZipArchiveEntry entry, Action<ZipArchiveEntry?>? onClosed)
             : this(baseStream, false, entry, onClosed) { }
 
         public override long Length
@@ -282,10 +282,10 @@ namespace System.IO.Compression
         // this is the position in BaseBaseStream
         private long _initialPosition;
         private readonly ZipArchiveEntry _zipArchiveEntry;
-        private readonly EventHandler _onClose;
+        private readonly EventHandler? _onClose;
         // Called when the stream is closed.
         // parameters are initialPosition, currentPosition, checkSum, baseBaseStream, zipArchiveEntry and onClose handler
-        private readonly Action<long, long, uint, Stream, ZipArchiveEntry, EventHandler> _saveCrcAndSizes;
+        private readonly Action<long, long, uint, Stream, ZipArchiveEntry, EventHandler?> _saveCrcAndSizes;
 
         // parameters to saveCrcAndSizes are
         // initialPosition (initialPosition in baseBaseStream),
@@ -295,8 +295,8 @@ namespace System.IO.Compression
         // zipArchiveEntry passed here so as to avoid closure allocation,
         // onClose handler passed here so as to avoid closure allocation
         public CheckSumAndSizeWriteStream(Stream baseStream, Stream baseBaseStream, bool leaveOpenOnClose,
-            ZipArchiveEntry entry, EventHandler onClose,
-            Action<long, long, uint, Stream, ZipArchiveEntry, EventHandler> saveCrcAndSizes)
+            ZipArchiveEntry entry, EventHandler? onClose,
+            Action<long, long, uint, Stream, ZipArchiveEntry, EventHandler?> saveCrcAndSizes)
         {
             _baseStream = baseStream;
             _baseBaseStream = baseBaseStream;
