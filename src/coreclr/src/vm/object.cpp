@@ -1983,12 +1983,12 @@ void ExceptionObject::SetStackTrace(StackTraceArray const & stackTrace, PTRARRAY
     CONTRACTL_END;
 
     Thread *m_pThread = GetThread();
-    SpinLock::AcquireLock(&g_StackTraceArrayLock, SPINLOCK_THREAD_PARAM_ONLY_IN_SOME_BUILDS);
+    SpinLock::AcquireLock(&g_StackTraceArrayLock);
 
     SetObjectReference((OBJECTREF*)&_stackTrace, (OBJECTREF)stackTrace.Get());
     SetObjectReference((OBJECTREF*)&_dynamicMethods, (OBJECTREF)dynamicMethodArray);
 
-    SpinLock::ReleaseLock(&g_StackTraceArrayLock, SPINLOCK_THREAD_PARAM_ONLY_IN_SOME_BUILDS);
+    SpinLock::ReleaseLock(&g_StackTraceArrayLock);
 
 }
 
@@ -2003,7 +2003,7 @@ void ExceptionObject::SetNullStackTrace()
     CONTRACTL_END;
 
     Thread *m_pThread = GetThread();
-    SpinLock::AcquireLock(&g_StackTraceArrayLock, SPINLOCK_THREAD_PARAM_ONLY_IN_SOME_BUILDS);
+    SpinLock::AcquireLock(&g_StackTraceArrayLock);
 
     I1ARRAYREF stackTraceArray = NULL;
     PTRARRAYREF dynamicMethodArray = NULL;
@@ -2011,7 +2011,7 @@ void ExceptionObject::SetNullStackTrace()
     SetObjectReference((OBJECTREF*)&_stackTrace, (OBJECTREF)stackTraceArray);
     SetObjectReference((OBJECTREF*)&_dynamicMethods, (OBJECTREF)dynamicMethodArray);
 
-    SpinLock::ReleaseLock(&g_StackTraceArrayLock, SPINLOCK_THREAD_PARAM_ONLY_IN_SOME_BUILDS);
+    SpinLock::ReleaseLock(&g_StackTraceArrayLock);
 }
 
 #endif // !defined(DACCESS_COMPILE)
@@ -2028,7 +2028,7 @@ void ExceptionObject::GetStackTrace(StackTraceArray & stackTrace, PTRARRAYREF * 
 
 #if !defined(DACCESS_COMPILE)
     Thread *m_pThread = GetThread();
-    SpinLock::AcquireLock(&g_StackTraceArrayLock, SPINLOCK_THREAD_PARAM_ONLY_IN_SOME_BUILDS);
+    SpinLock::AcquireLock(&g_StackTraceArrayLock);
 #endif // !defined(DACCESS_COMPILE)
 
     StackTraceArray temp(_stackTrace);
@@ -2040,7 +2040,7 @@ void ExceptionObject::GetStackTrace(StackTraceArray & stackTrace, PTRARRAYREF * 
     }
 
 #if !defined(DACCESS_COMPILE)
-    SpinLock::ReleaseLock(&g_StackTraceArrayLock, SPINLOCK_THREAD_PARAM_ONLY_IN_SOME_BUILDS);
+    SpinLock::ReleaseLock(&g_StackTraceArrayLock);
 #endif // !defined(DACCESS_COMPILE)
 
 }

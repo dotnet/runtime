@@ -147,9 +147,6 @@ DEFINE_FIELD_U(m_fullname,                 AssemblyBaseObject,     m_fullname)
 DEFINE_FIELD_U(m_syncRoot,                 AssemblyBaseObject,     m_pSyncRoot)
 DEFINE_FIELD_U(m_assembly,                 AssemblyBaseObject,     m_pAssembly)
 DEFINE_CLASS(ASSEMBLY,              Reflection,             RuntimeAssembly)
-DEFINE_FIELD(ASSEMBLY,              HANDLE,                 m_assembly)
-DEFINE_METHOD(ASSEMBLY,             GET_NAME,               GetName,                    IM_RetAssemblyName)
-DEFINE_METHOD(ASSEMBLY,             ON_MODULE_RESOLVE,      OnModuleResolveEvent,       IM_Str_RetModule)
 
 
 DEFINE_CLASS(ASYNCCALLBACK,         System,                 AsyncCallback)

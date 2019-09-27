@@ -25,7 +25,6 @@ BOOL SimpleRWLock::TryEnterRead()
         _ASSERTE (RWLock >= 0);
     } while( RWLock != InterlockedCompareExchange( &m_RWLock, RWLock+1, RWLock ));
 
-    INCTHREADLOCKCOUNT();
     EE_LOCK_TAKEN(this);
 
 #ifdef _DEBUG
@@ -114,8 +113,7 @@ BOOL SimpleRWLock::TryEnterWrite()
     if( RWLock ) {
         return FALSE;
     }
-    
-    INCTHREADLOCKCOUNT();
+
     EE_LOCK_TAKEN(this);
 
 #ifdef _DEBUG

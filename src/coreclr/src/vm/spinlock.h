@@ -199,15 +199,13 @@ private:
     // The following 5 APIs must remain private.  We want all entry/exit code to
     // occur via holders, so that exceptions will be sure to release the lock.
 private:
-    void GetLock(Thread * pThread);     // Acquire lock, blocks if unsuccessful
+    void GetLock();                     // Acquire lock, blocks if unsuccessful
     BOOL GetLockNoWait();               // Acquire lock, fail-fast 
-    void FreeLock(Thread * pThread);    // Release lock
+    void FreeLock();                    // Release lock
 
 public:
-    static void AcquireLock(SpinLock *s, Thread * pThread);
-    static void ReleaseLock(SpinLock *s, Thread * pThread);
-
-#define SPINLOCK_THREAD_PARAM_ONLY_IN_SOME_BUILDS   NULL
+    static void AcquireLock(SpinLock *s);
+    static void ReleaseLock(SpinLock *s);
 
     class Holder
     {
@@ -219,14 +217,14 @@ public:
             SCAN_SCOPE_BEGIN;
             STATIC_CONTRACT_GC_NOTRIGGER;
 
-            m_pSpinLock->GetLock(SPINLOCK_THREAD_PARAM_ONLY_IN_SOME_BUILDS);
+            m_pSpinLock->GetLock();
         }
 
         ~Holder()
         {
             SCAN_SCOPE_END;
 
-            m_pSpinLock->FreeLock(SPINLOCK_THREAD_PARAM_ONLY_IN_SOME_BUILDS);
+            m_pSpinLock->FreeLock();
         }
     };
 };
@@ -237,16 +235,16 @@ typedef SpinLock::Holder SpinLockHolder;
                         SpinLockHolder __spinLockHolder(lock);\
                         GCX_NOTRIGGER ();
 
-#define ACQUIRE_SPINLOCK_NO_HOLDER(lock, thread)\
+#define ACQUIRE_SPINLOCK_NO_HOLDER(lock)        \
 {                                               \
-    SpinLock::AcquireLock(lock, thread);        \
+    SpinLock::AcquireLock(lock);                \
     GCX_NOTRIGGER();                            \
     CANNOTTHROWCOMPLUSEXCEPTION();              \
     STATIC_CONTRACT_NOTHROW;                    \
 
 
-#define RELEASE_SPINLOCK_NO_HOLDER(lock, thread)\
-    SpinLock::ReleaseLock(lock, thread);        \
+#define RELEASE_SPINLOCK_NO_HOLDER(lock)        \
+    SpinLock::ReleaseLock(lock);                \
 }                                               \
 
 __inline BOOL IsOwnerOfSpinLock (LPVOID lock)
