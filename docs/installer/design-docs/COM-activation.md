@@ -62,7 +62,7 @@ The current .NET Core hosting solutions are described in detail at [Documentatio
 When `DllGetClassObject()` is called in a COM activation scenario, the following steps will occur. The calling of `DllGetClassObject()` is usually accomplished through an implicit or explcit call to `CoCreateInstance()`.
 
 1) Determine additional registration information needed for activation.
-    * The shim will check for an embedded manifest. If the shim does not contain an embedded manifest, the shim will check if a file with the `<shim_name>.clsidmap` naming format exists adjacent to it. Build tooling handles shim customization, including renaming the shim to be based on the managed assembly's name (e.g. `NetComServer.dll` will have a custom shim called `NetComServer.comhost.dll`).
+    * The shim will check for an embedded manifest. If the shim does not contain an embedded manifest, the shim will check if a file with the `<shim_name>.clsidmap` naming format exists adjacent to it. Build tooling handles shim customization, including renaming the shim to be based on the managed assembly's name (e.g. `NetComServer.dll` will have a custom shim called `NetComServer.comhost.dll`). If the shim is signed the shim will **not** attempt to discover the manifest on disk.
     * The manifest will contain a mapping from [`CLSID`](https://docs.microsoft.com/windows/desktop/com/com-class-objects-and-clsids) to managed assembly name and the [Fully-Qualified Name](https://docs.microsoft.com/dotnet/framework/reflection-and-codedom/specifying-fully-qualified-type-names) for the type. The format of this manifest is defined below. The shim's embedded mapping always takes precedence and in the case an embedded mapping is found, a `.clsidmap` file on disk will never be used.
     * The manifest will define an exhaustive list of .NET classes the shim is permitted to provide.
     * If a [`.runtimeconfig.json`](https://github.com/dotnet/cli/blob/master/Documentation/specs/runtime-configuration-file.md) file exists adjacent to the target managed assembly (`<assembly>.runtimeconfig.json`), that file is used to describe the target framework and CLR configuration. The documentation for the `.runtimeconfig.json` format defines under what circumstances this file may be optional.
@@ -74,14 +74,12 @@ When `DllGetClassObject()` is called in a COM activation scenario, the following
 1) Based on the `.runtimeconfig.json` the [framework](https://docs.microsoft.com/dotnet/core/packages#frameworks) to use can be determined and the appropriate `hostpolicy` library path is computed.
 1) The `hostpolicy` library is loaded and various exports are retrieved.
     * If a `hostpolicy` instance is already loaded, the one presently loaded is re-used.
-    * **Prior to 3.0 GA** No validation is done to determine if the loaded `hostpolicy` can satisfy the current assembly's `.runtimeconfig.json`.
-    * **At 3.0 GA** If a CLR is active within the process, the requested CLR version will be validated against that CLR. If version satisfiability fails, activation will fail.
+    * If a CLR is active within the process, the requested CLR version will be validated against that CLR. If version satisfiability fails, activation will fail.
 1) The `corehost_load()` export is called to initialize `hostpolicy`.
     - Prior to .NET Core 3.0, during application activation the `corehost_load()` export would always initialize `hostpolicy` regardless if initialization had already been performed. For .NET Core 3.0, calling the function again will not re-initialize `hostpolicy`, but simply return.
 1) The `hostfxr_get_runtime_delegate()` export is called
 1) The `hostfxr_get_runtime_delegate()` export calls into `hostpolicy` and determines if the associated `coreclr` library has been loaded and if so, uses the existing activated CLR instance. If a CLR instance is not available, `hostpolicy` will load `coreclr` and activate a new CLR instance.
-    * **Prior to 3.0 GA** No validation is done to determine if the current running coreclr instance can satisfy the current assembly's `.runtimeconfig.json`.
-    * **At 3.0 GA** If a CLR is active within the process, the requested CLR version will be validated against that CLR. If version satisfiability fails, activation will fail.
+    * If a CLR is active within the process, the requested CLR version will be validated against that CLR. If version satisfiability fails, activation will fail.
 1) A request to the CLR is made to create a managed delegate to a static "activation" method. The delegate is returned to the shim to attempt activation of the requested class.
     * The details of the activation API are implementation defined, but presently reside in `System.Private.CoreLib` on the `Internal.Runtime.InteropServices.ComActivator` class:
         ``` csharp
@@ -101,7 +99,7 @@ When `DllGetClassObject()` is called in a COM activation scenario, the following
         {
             ...
             [CLSCompliant(false)]
-            public static int GetClassFactoryForTypeInternal(ref ComActivationContextInternal context);
+            public static int GetClassFactoryForTypeInternal(ref ComActivationContextInternal cxtInt);
             ...
         }
         ```
@@ -133,6 +131,7 @@ The `CLSID` mapping manifest is a JSON format (`.clsidmap` extension when on dis
 1) A new .NET Core class library project is created using [`dotnet.exe`][dotnet_link].
 1) A class is defined that has the [`GuidAttribute("<GUID>")`][guid_link] and the [`ComVisibleAttribute(true)`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.comvisibleattribute).
     - In .NET Core, unlike .NET Framework, there is no generated class interface generation (i.e. `IClassX`). This means it is advantageous for users to have the class implement a marshalable interface.
+    - A ProgID for the class can be defined using the [`ProgIdAttribute`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.progidattribute). If a ProgID is not explicitly specified, the namespace and class name will be used as the ProgID. This follows the same semantics as .NET Framework COM servers.
 1) The `EnableComHosting` property is added to the project file.
     - i.e. `<EnableComHosting>true</EnableComHosting>`
 1) During class project build, the following actions occur if the `EnableComHosting` property is `true`:
@@ -144,7 +143,7 @@ The `CLSID` mapping manifest is a JSON format (`.clsidmap` extension when on dis
 
 ### .NET Core COM server registration
 
-Two options exist for registration and are a function of the intent of the class's author. The .NET Core platform will impose the deployment of a shim instance with a `.clsidmap` manifest. In order to address potential security concerns, the .NET Core tool chain by default will embedded the `.clsidmap` in the customized shim. When the `.clsidmap` is embedded the customized shim allows for the implicit signing of the `.clsidmap` manifest.
+Two options exist for registration and are a function of the intent of the class's author. The .NET Core platform will impose the deployment of a shim instance with a `.clsidmap` manifest. In order to address potential security concerns, the .NET Core tool chain by default will embed the `.clsidmap` in the customized shim. When the `.clsidmap` is embedded the customized shim allows for the implicit signing of the `.clsidmap` manifest. Once the shim is signed, the option for loading a non-embedded `.clsidmap` is disabled.
 
 #### Registry
 
