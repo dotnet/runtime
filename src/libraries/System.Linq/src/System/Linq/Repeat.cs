@@ -28,6 +28,7 @@ namespace System.Linq
         /// An iterator that yields the same item multiple times.
         /// </summary>
         /// <typeparam name="TResult">The type of the item.</typeparam>
+        [DebuggerDisplay("Count = {_count}")]
         private sealed partial class RepeatIterator<TResult> : Iterator<TResult>
         {
             private readonly int _count;

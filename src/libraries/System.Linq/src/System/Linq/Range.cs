@@ -28,6 +28,7 @@ namespace System.Linq
         /// <summary>
         /// An iterator that yields a range of consecutive integers.
         /// </summary>
+        [DebuggerDisplay("Count = {CountForDebugger}")]
         private sealed partial class RangeIterator : Iterator<int>
         {
             private readonly int _start;
@@ -39,6 +40,8 @@ namespace System.Linq
                 _start = start;
                 _end = unchecked(start + count);
             }
+
+            private int CountForDebugger => _end - _start;
 
             public override Iterator<int> Clone() => new RangeIterator(_start, _end - _start);
 
