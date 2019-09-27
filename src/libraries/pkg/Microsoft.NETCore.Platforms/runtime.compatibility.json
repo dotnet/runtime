@@ -319,6 +319,32 @@
     "any",
     "base"
   ],
+  "centos.8": [
+    "centos.8",
+    "centos",
+    "rhel.8",
+    "rhel",
+    "linux",
+    "unix",
+    "any",
+    "base"
+  ],
+  "centos.8-x64": [
+    "centos.8-x64",
+    "centos.8",
+    "centos-x64",
+    "rhel.8-x64",
+    "centos",
+    "rhel.8",
+    "rhel-x64",
+    "rhel",
+    "linux-x64",
+    "linux",
+    "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
   "debian": [
     "debian",
     "linux",
