@@ -12,8 +12,9 @@ using System.Diagnostics;
 
 using ILCompiler;
 
-using Internal.Runtime;
+using Internal.JitInterface;
 using Internal.NativeFormat;
+using Internal.Runtime;
 using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
@@ -34,40 +35,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         ManagedStatic,
         StdCall,
         /*FastCall, CDecl */
-    }
-
-    /// <summary>
-    /// System V struct passing
-    /// The Classification types are described in the ABI spec at http://www.x86-64.org/documentation/abi.pdf
-    /// </summary>
-    public enum SystemVClassificationType : byte
-    {
-        SystemVClassificationTypeUnknown            = 0,
-        SystemVClassificationTypeStruct             = 1,
-        SystemVClassificationTypeNoClass            = 2,
-        SystemVClassificationTypeMemory             = 3,
-        SystemVClassificationTypeInteger            = 4,
-        SystemVClassificationTypeIntegerReference   = 5,
-        SystemVClassificationTypeIntegerByRef       = 6,
-        SystemVClassificationTypeSSE                = 7,
-        // SystemVClassificationTypeSSEUp           = Unused, // Not supported by the CLR.
-        // SystemVClassificationTypeX87             = Unused, // Not supported by the CLR.
-        // SystemVClassificationTypeX87Up           = Unused, // Not supported by the CLR.
-        // SystemVClassificationTypeComplexX87      = Unused, // Not supported by the CLR.
-
-        // Internal flags - never returned outside of the classification implementation.
-
-        // This value represents a very special type with two eightbytes. 
-        // First ByRef, second Integer (platform int).
-        // The VM has a special Elem type for this type - ELEMENT_TYPE_TYPEDBYREF.
-        // This is the classification counterpart for that element type. It is used to detect 
-        // the special TypedReference type and specialize its classification.
-        // This type is represented as a struct with two fields. The classification needs to do
-        // special handling of it since the source/methadata type of the fieds is IntPtr. 
-        // The VM changes the first to ByRef. The second is left as IntPtr (TYP_I_IMPL really). The classification needs to match this and
-        // special handling is warranted (similar thing is done in the getGCLayout function for this type).
-        SystemVClassificationTypeTypedReference     = 8,
-        SystemVClassificationTypeMAX                = 9,
     }
 
     internal struct TypeHandle
