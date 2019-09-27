@@ -34,6 +34,8 @@ emit_array_generic_access (MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst
 	MonoType *etype = m_class_get_byval_arg (eklass);
 	if (is_set) {
 		EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, load, etype, args [2]->dreg, 0);
+		if (mini_debug_options.clr_memory_model && mini_type_is_reference (etype))
+			mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 		EMIT_NEW_STORE_MEMBASE_TYPE (cfg, store, etype, addr->dreg, 0, load->dreg);
 		if (mini_type_is_reference (etype))
 			mini_emit_write_barrier (cfg, addr, load);
@@ -1199,6 +1201,9 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				MONO_ADD_INS (cfg->cbb, f2i);
 			}
 
+			if (is_ref && mini_debug_options.clr_memory_model)
+				mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
+
 			MONO_INST_NEW (cfg, ins, opcode);
 			ins->dreg = is_ref ? mono_alloc_ireg_ref (cfg) : mono_alloc_ireg (cfg);
 			ins->inst_basereg = args [0]->dreg;
@@ -1298,6 +1303,9 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 					f2i_cmp->backend.spill_var = mini_get_int_to_float_spill_area (cfg);
 				MONO_ADD_INS (cfg->cbb, f2i_cmp);
 			}
+
+			if (is_ref && mini_debug_options.clr_memory_model)
+				mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 
 			MONO_INST_NEW (cfg, ins, opcode);
 			ins->dreg = is_ref ? alloc_ireg_ref (cfg) : alloc_ireg (cfg);

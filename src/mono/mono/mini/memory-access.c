@@ -13,6 +13,7 @@
 #include <mono/utils/mono-memory-model.h>
 
 #include "mini.h"
+#include "mini-runtime.h"
 #include "ir-emit.h"
 #include "jit-icalls.h"
 
@@ -293,6 +294,9 @@ mini_emit_wb_aware_memcpy (MonoCompile *cfg, MonoClass *klass, MonoInst *iargs[4
 	/*tmp = dreg*/
 	EMIT_NEW_UNALU (cfg, iargs [0], OP_MOVE, dest_ptr_reg, destreg);
 
+	if ((need_wb & 0x1) && mini_debug_options.clr_memory_model)
+		mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
+
 	while (size >= TARGET_SIZEOF_VOID_P) {
 		MonoInst *load_inst;
 		MONO_INST_NEW (cfg, load_inst, OP_LOAD_MEMBASE);
@@ -390,6 +394,9 @@ mini_emit_memory_copy_internal (MonoCompile *cfg, MonoInst *dest, MonoInst *src,
 		NEW_LOAD_MEMBASE (cfg, load, OP_LOAD_MEMBASE, dreg, src->dreg, 0);
 		MONO_ADD_INS (cfg->cbb, load);
 
+		if (mini_debug_options.clr_memory_model)
+			mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
+
 		NEW_STORE_MEMBASE (cfg, store, OP_STORE_MEMBASE_REG, dest->dreg, 0, dreg);
 		MONO_ADD_INS (cfg->cbb, store);
 
@@ -486,7 +493,8 @@ mini_emit_memory_store (MonoCompile *cfg, MonoType *type, MonoInst *dest, MonoIn
 	if (ins_flag & MONO_INST_VOLATILE) {
 		/* Volatile stores have release semantics, see 12.6.7 in Ecma 335 */
 		mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
-	}
+	} else if (mini_debug_options.clr_memory_model && mini_type_is_reference (type))
+		mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 
 	if (ins_flag & MONO_INST_UNALIGNED) {
 		MonoInst *addr, *mov, *tmp_var;
