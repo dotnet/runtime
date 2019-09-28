@@ -335,15 +335,9 @@ static PCCOR_SIGNATURE PrettyPrintType(
                 {       
                     if (sizes[i] != 0 && lowerBounds[i] != 0)   
                     {   
-                        if (lowerBounds[i] == 0)        
-                            appendStrNumW(out, sizes[i]);
-                        else    
-                        {       
-                            appendStrNumW(out, lowerBounds[i]);
-                            appendStrW(out, W("..."));
-                            if (sizes[i] != 0)  
-                                appendStrNumW(out, lowerBounds[i] + sizes[i] + 1);
-                        }       
+                        appendStrNumW(out, lowerBounds[i]);
+                        appendStrW(out, W("..."));
+                        appendStrNumW(out, lowerBounds[i] + sizes[i] + 1);
                     }   
                     if (i < rank-1) 
                         appendStrW(out, W(","));
@@ -749,15 +743,9 @@ static HRESULT PrettyPrintTypeA(
                 {
                     if (sizes[i] != 0 && lowerBounds[i] != 0)
                     {
-                        if (lowerBounds[i] == 0)
-                            appendStrNumA(out, sizes[i]);
-                        else
-                         {
-                             appendStrNumA(out, lowerBounds[i]);
-                             IfFailGo(appendStrA(out, "..."));
-                             if (sizes[i] != 0)
-                                 appendStrNumA(out, lowerBounds[i] + sizes[i] + 1);
-                         }
+                         appendStrNumA(out, lowerBounds[i]);
+                         IfFailGo(appendStrA(out, "..."));
+                         appendStrNumA(out, lowerBounds[i] + sizes[i] + 1);
                     }
                     if (i < rank-1) 
                         IfFailGo(appendStrA(out, ","));
