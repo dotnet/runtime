@@ -243,14 +243,6 @@ namespace System
             _stackTraceString = null;
         }
 
-        // This is the object against which a lock will be taken
-        // when attempt to restore the EDI. Since its static, its possible
-        // that unrelated exception object restorations could get blocked
-        // for a small duration but that sounds reasonable considering
-        // such scenarios are going to be extremely rare, where timing
-        // matches precisely.
-        private static readonly object s_DispatchStateLock = new object();
-
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void PrepareForForeignExceptionRaise();
 
@@ -293,6 +285,9 @@ namespace System
             }
         }
 
+        // Returns the lock, falling back to the static lock if the Exception is uninitialized (very rare).
+        private object StackTraceLock => _stackTraceLock ?? s_stackTraceLock;
+
         // This is invoked by ExceptionDispatchInfo.Throw to restore the exception stack trace, corresponding to the original throw of the
         // exception, just before the exception is "rethrown".
         internal void RestoreDispatchState(in DispatchState dispatchState)
@@ -324,7 +319,7 @@ namespace System
                     //
                     // Since EDI can be created at various points during exception dispatch (e.g. at various frames on the stack) for the same exception instance,
                     // they can have different data to be restored. Thus, to ensure atomicity of restoration from each EDI, perform the restore under a lock.
-                    lock (s_DispatchStateLock)
+                    lock (StackTraceLock)
                     {
                         _watsonBuckets = dispatchState.WatsonBuckets;
                         _ipForWatsonBuckets = dispatchState.IpForWatsonBuckets;
@@ -339,6 +334,9 @@ namespace System
                 }
             }
         }
+
+        // This is the static object against which a lock will be taken when the Exception is uninitialized (constructor not called).
+        private static readonly object s_stackTraceLock = new object();
 
         private MethodBase? _exceptionMethod;  // Needed for serialization.
         internal string? _message;
@@ -356,6 +354,8 @@ namespace System
         // unless a System.Resolver object roots it.
         private readonly object? _dynamicMethods;
         private string? _source;         // Mainly used by VB.
+        // This is the object against which a lock will be taken when attempting to restore the EDI.
+        private readonly object _stackTraceLock = new object();
         private UIntPtr _ipForWatsonBuckets; // Used to persist the IP for Watson Bucketing
         private readonly IntPtr _xptrs;             // Internal EE stuff
         private readonly int _xcode = _COMPlusExceptionCode;             // Internal EE stuff

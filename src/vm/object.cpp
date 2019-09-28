@@ -1969,54 +1969,114 @@ StackTraceElement & StackTraceArray::operator[](size_t index)
 }
 
 #if !defined(DACCESS_COMPILE)
-// Define the lock used to access stacktrace from an exception object
+// Define the lock used to access stacktrace from a global exception type
 SpinLock g_StackTraceArrayLock;
 
-void ExceptionObject::SetStackTrace(StackTraceArray const & stackTrace, PTRARRAYREF dynamicMethodArray)
+void ExceptionObject::SetStackTrace(I1ARRAYREF stackTrace, PTRARRAYREF dynamicMethodArray)
 {        
     CONTRACTL
     {
-        GC_NOTRIGGER;
-        NOTHROW;
+        THROWS;
+        GC_TRIGGERS;
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
-    Thread *m_pThread = GetThread();
-    SpinLock::AcquireLock(&g_StackTraceArrayLock);
+    if (_stackTraceLock == NULL || GetMethodTable() == g_pOutOfMemoryExceptionClass)
+    {
+        // We can't activate the SyncBlock for an OutOfMemoryException, so use preallocated SpinLock
+        SpinLock::AcquireLock(&g_StackTraceArrayLock);
 
-    SetObjectReference((OBJECTREF*)&_stackTrace, (OBJECTREF)stackTrace.Get());
-    SetObjectReference((OBJECTREF*)&_dynamicMethods, (OBJECTREF)dynamicMethodArray);
+        SetObjectReference((OBJECTREF*)&_stackTrace, (OBJECTREF)stackTrace);
+        SetObjectReference((OBJECTREF*)&_dynamicMethods, (OBJECTREF)dynamicMethodArray);
 
-    SpinLock::ReleaseLock(&g_StackTraceArrayLock);
+        SpinLock::ReleaseLock(&g_StackTraceArrayLock);
+    }
+    else
+    {
+        struct _gc
+        {
+            EXCEPTIONREF throwable;
+            OBJECTREF dynamicMethodArray;
+            OBJECTREF stateLock;
+            OBJECTREF trace;
+        };
+        _gc gc;
+        gc.throwable = (EXCEPTIONREF)this;
+        gc.dynamicMethodArray = (OBJECTREF)dynamicMethodArray;
+        gc.stateLock = _stackTraceLock;
+        gc.trace = stackTrace;
+        GCPROTECT_BEGIN(gc);
 
+        // Aquire lock
+        gc.stateLock->EnterObjMonitor();
+
+        SetObjectReference((OBJECTREF*)&gc.throwable->_stackTrace, gc.trace);
+        SetObjectReference((OBJECTREF*)&gc.throwable->_dynamicMethods, gc.dynamicMethodArray);
+
+        // Release lock
+        gc.stateLock->LeaveObjMonitor();
+
+        GCPROTECT_END();
+    }
 }
 
-void ExceptionObject::SetNullStackTrace()
-{        
+void ExceptionObject::GetStackTrace(StackTraceArray& stackTrace, PTRARRAYREF* outDynamicMethodArray /*= NULL*/)
+{
     CONTRACTL
     {
-        GC_NOTRIGGER;
-        NOTHROW;
+        THROWS;
+        GC_TRIGGERS;
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
-    Thread *m_pThread = GetThread();
-    SpinLock::AcquireLock(&g_StackTraceArrayLock);
+    if (_stackTraceLock == NULL || GetMethodTable() == g_pOutOfMemoryExceptionClass)
+    {
+        // We can't activate the SyncBlock for an OutOfMemoryException, so use preallocated SpinLock
+        SpinLock::AcquireLock(&g_StackTraceArrayLock);
 
-    I1ARRAYREF stackTraceArray = NULL;
-    PTRARRAYREF dynamicMethodArray = NULL;
+        StackTraceArray temp(_stackTrace);
+        stackTrace.Swap(temp);
 
-    SetObjectReference((OBJECTREF*)&_stackTrace, (OBJECTREF)stackTraceArray);
-    SetObjectReference((OBJECTREF*)&_dynamicMethods, (OBJECTREF)dynamicMethodArray);
+        if (outDynamicMethodArray != NULL)
+        {
+            *outDynamicMethodArray = _dynamicMethods;
+        }
 
-    SpinLock::ReleaseLock(&g_StackTraceArrayLock);
+        SpinLock::ReleaseLock(&g_StackTraceArrayLock);
+    }
+    else 
+    {
+        struct _gc
+        {
+            EXCEPTIONREF throwable;
+            OBJECTREF stateLock;
+        };
+        _gc gc;
+        gc.throwable = (EXCEPTIONREF)this;
+        gc.stateLock = _stackTraceLock;
+        GCPROTECT_BEGIN(gc);
+
+        // Aquire lock
+        gc.stateLock->EnterObjMonitor();
+
+        StackTraceArray temp(gc.throwable->_stackTrace);
+        stackTrace.Swap(temp);
+
+        if (outDynamicMethodArray != NULL)
+        {
+            *outDynamicMethodArray = gc.throwable->_dynamicMethods;
+        }
+
+        // Release lock
+        gc.stateLock->LeaveObjMonitor();
+
+        GCPROTECT_END();
+    }
 }
-
-#endif // !defined(DACCESS_COMPILE)
-
-void ExceptionObject::GetStackTrace(StackTraceArray & stackTrace, PTRARRAYREF * outDynamicMethodArray /*= NULL*/) const
+#else
+void ExceptionObject::GetStackTrace(StackTraceArray& stackTrace, PTRARRAYREF* outDynamicMethodArray /*= NULL*/) const
 {
     CONTRACTL
     {
@@ -2026,11 +2086,6 @@ void ExceptionObject::GetStackTrace(StackTraceArray & stackTrace, PTRARRAYREF * 
     }
     CONTRACTL_END;
 
-#if !defined(DACCESS_COMPILE)
-    Thread *m_pThread = GetThread();
-    SpinLock::AcquireLock(&g_StackTraceArrayLock);
-#endif // !defined(DACCESS_COMPILE)
-
     StackTraceArray temp(_stackTrace);
     stackTrace.Swap(temp);
 
@@ -2038,12 +2093,8 @@ void ExceptionObject::GetStackTrace(StackTraceArray & stackTrace, PTRARRAYREF * 
     {
         *outDynamicMethodArray = _dynamicMethods;
     }
-
-#if !defined(DACCESS_COMPILE)
-    SpinLock::ReleaseLock(&g_StackTraceArrayLock);
-#endif // !defined(DACCESS_COMPILE)
-
 }
+#endif // !defined(DACCESS_COMPILE)
 
 bool LAHashDependentHashTrackerObject::IsLoaderAllocatorLive()
 {
