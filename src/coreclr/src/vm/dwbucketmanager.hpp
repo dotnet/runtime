@@ -307,7 +307,6 @@ private:
     DWORD GetILOffset();
     bool GetFileVersionInfoForModule(Module* pModule, USHORT& major, USHORT& minor, USHORT& build, USHORT& revision);
     bool IsCodeContractsFrame(MethodDesc* pMD);
-    void FindFaultingMethodInfo();
     OBJECTREF GetRealExceptionObject();
     WCHAR* GetParamBufferForIndex(BucketParameterIndex paramIndex);
     void LogParam(__in_z LPCWSTR paramValue, BucketParameterIndex paramIndex);
@@ -360,9 +359,6 @@ BaseBucketParamsManager::BaseBucketParamsManager(GenericModeBlock* pGenericModeB
     if (codeInfo.IsValid())
     {
         m_pFaultingMD = codeInfo.GetMethodDesc();
-
-        if (m_pFaultingMD)
-            FindFaultingMethodInfo();
     }
 }
 
@@ -1032,71 +1028,6 @@ bool BaseBucketParamsManager::IsCodeContractsFrame(MethodDesc* pMD)
         return true;
 
     return false;
-}
-
-// code contract failures will have several frames on the stack which are part of the code contracts infrastructure.
-// as such we don't want to blame any of these frames since they're just propagating the fault from the user's code.
-// the purpose of this function is to identify if the current faulting frame is part of the code contract infrastructure
-// and if it is to traverse the stack trace in the exception object until the first frame which isn't code contracts stuff.
-void BaseBucketParamsManager::FindFaultingMethodInfo()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(m_pFaultingMD != NULL);
-    }
-    CONTRACTL_END;
-
-    // check if this frame is part of the code contracts infrastructure
-    if (IsCodeContractsFrame(m_pFaultingMD))
-    {
-        // it is so we need to do more searching to find the correct faulting MethodDesc.
-        // iterate over each frame in the stack trace object until we find the first
-        // frame that isn't part of the code contracts goop.
-        GCX_COOP();
-
-        OBJECTREF throwable = GetRealExceptionObject();
-
-        if (throwable != NULL)
-        {
-            StackTraceArray traceData;
-            EXCEPTIONREF(throwable)->GetStackTrace(traceData);
-
-            GCPROTECT_BEGIN(traceData);
-
-            size_t numElements = traceData.Size();
-
-            ContractFailureKind kind = GetContractFailureKind(throwable);
-
-            // skip frame 0 since we already know it's part of code contracts
-            for (size_t index = 1; index < numElements; ++index)
-            {
-                StackTraceElement const& cur = traceData[index];
-
-                MethodDesc* pMD = cur.pFunc;
-                _ASSERTE(pMD);
-
-                if (!IsCodeContractsFrame(pMD))
-                {
-                    // we want the next frame for preconditions however if we don't have it for some
-                    // reason then just use this frame (better than defaulting to the code contracts goop)
-                    if ((kind == CONTRACT_FAILURE_PRECONDITION) && (index + 1 < numElements))
-                    {
-                        _ASSERTE(!IsCodeContractsFrame(traceData[index + 1].pFunc));
-                        continue;
-                    }
-
-                    m_pFaultingMD = pMD;
-                    m_faultingPc = cur.ip;
-                    break;
-                }
-            }
-
-            GCPROTECT_END();
-        }
-    }
 }
 
 // gets the "real" exception object.  it might be m_pException or the exception object on the thread
