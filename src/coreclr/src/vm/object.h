@@ -2506,10 +2506,7 @@ public:
         return _xptrs;
     }
 
-    void SetStackTrace(StackTraceArray const & stackTrace, PTRARRAYREF dynamicMethodArray);
-    void SetNullStackTrace();
-
-    void GetStackTrace(StackTraceArray & stackTrace, PTRARRAYREF * outDynamicMethodArray = NULL) const;
+    void SetStackTrace(I1ARRAYREF stackTrace, PTRARRAYREF dynamicMethodArray);
 
 #ifdef DACCESS_COMPILE
     I1ARRAYREF GetStackTraceArrayObject() const
@@ -2517,6 +2514,9 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return _stackTrace;
     }
+    void GetStackTrace(StackTraceArray & stackTrace, PTRARRAYREF * outDynamicMethodArray = NULL) const;
+#else
+    void GetStackTrace(StackTraceArray & stackTrace, PTRARRAYREF * outDynamicMethodArray = NULL);
 #endif // DACCESS_COMPILE
 
     void SetInnerException(OBJECTREF innerException)
@@ -2673,6 +2673,7 @@ private:
     STRINGREF   _remoteStackTraceString;
     PTRARRAYREF _dynamicMethods;
     STRINGREF   _source;         // Mainly used by VB.
+    OBJECTREF   _stackTraceLock; // Lock used to access stacktrace from an exception object
 
     UINT_PTR    _ipForWatsonBuckets; // Contains the IP of exception for watson bucketing
     void*       _xptrs;
