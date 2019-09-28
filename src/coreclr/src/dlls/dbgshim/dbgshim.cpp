@@ -1760,7 +1760,6 @@ CreateDebuggingInterfaceFromVersion2(
     HRESULT hr = S_OK;
     HMODULE hMod = NULL;
     IUnknown * pCordb = NULL;
-    FPCoreCLRCreateCordbObject fpCreate2 = NULL;
 
     LOG((LF_CORDB, LL_EVERYTHING, "Calling CreateDebuggerInterfaceFromVersion, ver=%S\n", szDebuggeeVersion));
 
