@@ -1331,10 +1331,15 @@ struct FuncInfoDsc
 
 struct fgArgTabEntry
 {
-    GenTree* node;         // Initially points to `use`'s node, but if the argument is replaced with an GT_ASG or
-                           // placeholder it will point at the actual argument node in the gtCallLateArgs list.
-    GenTreeCall::Use* use; // Points at the GenTreeCall::Use in the gtCallArgs for this argument
-                           // or nullptr for the `this` argument which does not have a corresponding GenTreeCall::Use.
+    GenTreeCall::Use* use;     // Points to the argument's GenTreeCall::Use in gtCallArgs or gtCallThisArg.
+    GenTreeCall::Use* lateUse; // Points to the argument's GenTreeCall::Use in gtCallLateArgs, if any.
+
+    // Get the node that coresponds to this argument entry.
+    // This is the "real" node and not a placeholder or setup node.
+    GenTree* GetNode() const
+    {
+        return lateUse == nullptr ? use->GetNode() : lateUse->GetNode();
+    }
 
     unsigned argNum; // The original argument number, also specifies the required argument evaluation order from the IL
 
@@ -1699,6 +1704,7 @@ public:
     //
     void checkIsStruct()
     {
+        GenTree* node = GetNode();
         if (isStruct)
         {
             if (!varTypeIsStruct(node) && !node->OperIs(GT_FIELD_LIST))
@@ -1918,7 +1924,7 @@ public:
     // Caller must ensure that this index is a valid arg index.
     GenTree* GetArgNode(unsigned argIndex)
     {
-        return GetArgEntry(argIndex)->node;
+        return GetArgEntry(argIndex)->GetNode();
     }
 
     void Dump(Compiler* compiler);
@@ -2595,7 +2601,6 @@ public:
     static fgArgTabEntry* gtArgEntryByNode(GenTreeCall* call, GenTree* node);
     fgArgTabEntry* gtArgEntryByLateArgIndex(GenTreeCall* call, unsigned lateArgInx);
     static GenTree* gtArgNodeByLateArgInx(GenTreeCall* call, unsigned lateArgInx);
-    bool gtArgIsThisPtr(fgArgTabEntry* argEntry);
 
     GenTree* gtNewAssignNode(GenTree* dst, GenTree* src);
 
@@ -10150,9 +10155,9 @@ public:
             {
                 GenTreeCall* const call = node->AsCall();
 
-                if (call->gtCallObjp != nullptr)
+                if (call->gtCallThisArg != nullptr)
                 {
-                    result = WalkTree(&call->gtCallObjp, call);
+                    result = WalkTree(&call->gtCallThisArg->NodeRef(), call);
                     if (result == fgWalkResult::WALK_ABORT)
                     {
                         return result;

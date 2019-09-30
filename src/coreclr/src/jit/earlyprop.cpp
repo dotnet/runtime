@@ -85,7 +85,7 @@ GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree)
                 call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_ALIGN8))
             {
                 // This is an array allocation site. Grab the array length node.
-                return gtArgEntryByArgNum(call, 1)->node;
+                return gtArgEntryByArgNum(call, 1)->GetNode();
             }
         }
     }
@@ -127,7 +127,7 @@ GenTree* Compiler::getObjectHandleNodeFromAllocation(GenTree* tree)
             {
                 // This is an object allocation site. Return the runtime type handle node.
                 fgArgTabEntry* argTabEntry = gtArgEntryByArgNum(call, 0);
-                return argTabEntry->node;
+                return argTabEntry->GetNode();
             }
         }
     }

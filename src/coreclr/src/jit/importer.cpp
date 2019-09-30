@@ -7688,8 +7688,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                 // Create the actual call node
 
-                call                    = gtNewIndCallNode(fptr, callRetTyp, args, ilOffset);
-                call->gtCall.gtCallObjp = thisPtrCopy;
+                call                          = gtNewIndCallNode(fptr, callRetTyp, args, ilOffset);
+                call->AsCall()->gtCallThisArg = gtNewCallArgs(thisPtrCopy);
                 call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_GLOB_EFFECT);
 
                 if ((sig->sigInst.methInstCount != 0) && IsTargetAbi(CORINFO_CORERT_ABI))
@@ -8243,7 +8243,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
         // Store the "this" value in the call
         call->gtFlags |= obj->gtFlags & GTF_GLOB_EFFECT;
-        call->gtCall.gtCallObjp = obj;
+        call->AsCall()->gtCallThisArg = gtNewCallArgs(obj);
 
         // Is this a virtual or interface call?
         if (call->gtCall.IsVirtual())
@@ -8403,7 +8403,6 @@ DONE:
             // True virtual or indirect calls, shouldn't pass in a callee handle.
             CORINFO_METHOD_HANDLE exactCalleeHnd =
                 ((call->gtCall.gtCallType != CT_USER_FUNC) || call->gtCall.IsVirtual()) ? nullptr : methHnd;
-            GenTree* thisArg = call->gtCall.gtCallObjp;
 
             if (info.compCompHnd->canTailCall(info.compMethodHnd, methHnd, exactCalleeHnd, explicitTailCall))
             {
@@ -8505,8 +8504,7 @@ DONE:
 
         if (compIsForInlining() && opcode == CEE_CALLVIRT)
         {
-            GenTree* callObj = call->gtCall.gtCallObjp;
-            assert(callObj != nullptr);
+            GenTree* callObj = call->AsCall()->gtCallThisArg->GetNode();
 
             if ((call->gtCall.IsVirtual() || (call->gtFlags & GTF_CALL_NULLCHECK)) &&
                 impInlineIsGuaranteedThisDerefBeforeAnySideEffects(nullptr, call->AsCall()->gtCallArgs, callObj,
@@ -18187,7 +18185,7 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
         // Check if the callee has the same 'this' as the root.
         if (pInlineInfo != nullptr)
         {
-            GenTree* thisArg = pInlineInfo->iciCall->gtCall.gtCallObjp;
+            GenTree* thisArg = pInlineInfo->iciCall->AsCall()->gtCallThisArg->GetNode();
             assert(thisArg);
             bool isSameThis = impIsThis(thisArg);
             inlineResult->NoteBool(InlineObservation::CALLSITE_IS_SAME_THIS, isSameThis);
@@ -18460,7 +18458,7 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
 
             if (dwRestrictions & INLINE_SAME_THIS)
             {
-                GenTree* thisArg = pParam->call->gtCall.gtCallObjp;
+                GenTree* thisArg = pParam->call->gtCall.gtCallThisArg->GetNode();
                 assert(thisArg);
 
                 if (!pParam->pThis->impIsThis(thisArg))
@@ -18719,15 +18717,15 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
 
     memset(inlArgInfo, 0, (MAX_INL_ARGS + 1) * sizeof(inlArgInfo[0]));
 
-    GenTree* thisArg = call->gtCallObjp;
-    unsigned argCnt  = 0; // Count of the arguments
+    GenTreeCall::Use* thisArg = call->gtCallThisArg;
+    unsigned          argCnt  = 0; // Count of the arguments
 
     assert((methInfo->args.hasThis()) == (thisArg != nullptr));
 
     if (thisArg)
     {
         inlArgInfo[0].argIsThis = true;
-        GenTree* actualThisArg  = thisArg->gtRetExprVal();
+        GenTree* actualThisArg  = thisArg->GetNode()->gtRetExprVal();
         impInlineRecordArgInfo(pInlineInfo, actualThisArg, argCnt, inlineResult);
 
         if (inlineResult->IsFailure())
@@ -18743,7 +18741,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
     bool hasTypeCtxtArg = (methInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE) != 0;
 
 #if USER_ARGS_COME_LAST
-    unsigned typeCtxtArg = thisArg ? 1 : 0;
+    unsigned typeCtxtArg = (thisArg != nullptr) ? 1 : 0;
 #else  // USER_ARGS_COME_LAST
     unsigned typeCtxtArg = methInfo->args.totalILArgs();
 #endif // USER_ARGS_COME_LAST
@@ -18784,7 +18782,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
 
     /* We have typeless opcodes, get type information from the signature */
 
-    if (thisArg)
+    if (thisArg != nullptr)
     {
         var_types sigType;
 
@@ -18816,11 +18814,13 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
 #endif // FEATURE_SIMD
         lclVarInfo[0].lclTypeInfo = sigType;
 
-        assert(varTypeIsGC(thisArg->gtType) ||   // "this" is managed
-               (thisArg->gtType == TYP_I_IMPL && // "this" is unmgd but the method's class doesnt care
+        GenTree* thisArgNode = thisArg->GetNode();
+
+        assert(varTypeIsGC(thisArgNode->TypeGet()) ||     // "this" is managed
+               ((thisArgNode->TypeGet() == TYP_I_IMPL) && // "this" is unmgd but the method's class doesnt care
                 (clsAttr & CORINFO_FLG_VALUECLASS)));
 
-        if (genActualType(thisArg->gtType) != genActualType(sigType))
+        if (genActualType(thisArgNode->TypeGet()) != genActualType(sigType))
         {
             if (sigType == TYP_REF)
             {
@@ -18832,20 +18832,20 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
             /* This can only happen with byrefs <-> ints/shorts */
 
             assert(genActualType(sigType) == TYP_I_IMPL || sigType == TYP_BYREF);
-            assert(genActualType(thisArg->gtType) == TYP_I_IMPL || thisArg->gtType == TYP_BYREF);
+            assert((genActualType(thisArgNode->TypeGet()) == TYP_I_IMPL) || (thisArgNode->TypeGet() == TYP_BYREF));
 
             if (sigType == TYP_BYREF)
             {
                 lclVarInfo[0].lclVerTypeInfo = typeInfo(varType2tiType(TYP_I_IMPL));
             }
-            else if (thisArg->gtType == TYP_BYREF)
+            else if (thisArgNode->TypeGet() == TYP_BYREF)
             {
                 assert(sigType == TYP_I_IMPL);
 
                 /* If possible change the BYREF to an int */
-                if (thisArg->IsLocalAddrExpr() != nullptr)
+                if (thisArgNode->IsLocalAddrExpr() != nullptr)
                 {
-                    thisArg->gtType              = TYP_I_IMPL;
+                    thisArgNode->gtType          = TYP_I_IMPL;
                     lclVarInfo[0].lclVerTypeInfo = typeInfo(varType2tiType(TYP_I_IMPL));
                 }
                 else
@@ -20020,7 +20020,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     }
 
     // See what we know about the type of 'this' in the call.
-    GenTree*             thisObj       = call->gtCallObjp->gtEffectiveVal(false);
+    GenTree*             thisObj       = call->gtCallThisArg->GetNode()->gtEffectiveVal(false);
     GenTree*             actualThisObj = nullptr;
     bool                 isExact       = false;
     bool                 objIsNonNull  = false;
@@ -20333,7 +20333,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                     {
                         // Pass the local var as this and the type handle as a new arg
                         JITDUMP("Success! invoking unboxed entry point on local copy, and passing method table arg\n");
-                        call->gtCallObjp = localCopyThis;
+                        call->gtCallThisArg = gtNewCallArgs(localCopyThis);
                         call->gtCallMoreFlags |= GTF_CALL_M_UNBOXED;
 
                         // Prepend for R2L arg passing or empty L2R passing
@@ -20380,7 +20380,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                 if (localCopyThis != nullptr)
                 {
                     JITDUMP("Success! invoking unboxed entry point on local copy\n");
-                    call->gtCallObjp    = localCopyThis;
+                    call->gtCallThisArg = gtNewCallArgs(localCopyThis);
                     call->gtCallMethHnd = unboxedEntryMethod;
                     call->gtCallMoreFlags |= GTF_CALL_M_UNBOXED;
                     derivedMethod = unboxedEntryMethod;
@@ -20557,9 +20557,9 @@ public:
             comp->fgWalkTreePre(&use.NodeRef(), SpillRetExprVisitor, this);
         }
 
-        if (call->gtCallObjp != nullptr)
+        if (call->gtCallThisArg != nullptr)
         {
-            comp->fgWalkTreePre(&call->gtCallObjp, SpillRetExprVisitor, this);
+            comp->fgWalkTreePre(&call->gtCallThisArg->NodeRef(), SpillRetExprVisitor, this);
         }
     }
 

@@ -246,7 +246,7 @@ unsigned StackLevelSetter::PopArgumentsFromCall(GenTreeCall* call)
             fgArgTabEntry* argTab = argInfo->ArgTable()[i];
             if (argTab->numSlots != 0)
             {
-                GenTree* node = argTab->node;
+                GenTree* node = argTab->GetNode();
                 assert(node->OperIsPutArgStkOrSplit());
 
                 GenTreePutArgStk* putArg = node->AsPutArgStk();

@@ -3317,6 +3317,7 @@ struct GenTreeCall final : public GenTree
     public:
         Use(GenTree* node, Use* next = nullptr) : m_node(node), m_next(next)
         {
+            assert(node != nullptr);
         }
 
         GenTree*& NodeRef()
@@ -3326,6 +3327,7 @@ struct GenTreeCall final : public GenTree
 
         GenTree* GetNode() const
         {
+            assert(m_node != nullptr);
             return m_node;
         }
 
@@ -3370,6 +3372,11 @@ struct GenTreeCall final : public GenTree
             return m_use;
         }
 
+        Use* GetUse() const
+        {
+            return m_use;
+        }
+
         UseIterator& operator++()
         {
             m_use = m_use->GetNext();
@@ -3407,11 +3414,11 @@ struct GenTreeCall final : public GenTree
         }
     };
 
-    GenTree* gtCallObjp;     // The instance argument ('this' pointer)
-    Use*     gtCallArgs;     // The list of arguments in original evaluation order
-    Use*     gtCallLateArgs; // On x86:     The register arguments in an optimal order
-                             // On ARM/x64: - also includes any outgoing arg space arguments
-                             //             - that were evaluated into a temp LclVar
+    Use* gtCallThisArg;  // The instance argument ('this' pointer)
+    Use* gtCallArgs;     // The list of arguments in original evaluation order
+    Use* gtCallLateArgs; // On x86:     The register arguments in an optimal order
+                         // On ARM/x64: - also includes any outgoing arg space arguments
+                         //             - that were evaluated into a temp LclVar
     fgArgInfo* fgArgInfo;
 
     UseList Args()
@@ -4023,6 +4030,8 @@ struct GenTreeCall final : public GenTree
     void ReplaceCallOperand(GenTree** operandUseEdge, GenTree* replacement);
 
     bool AreArgsComplete() const;
+
+    static bool Equals(GenTreeCall* c1, GenTreeCall* c2);
 
     GenTreeCall(var_types type) : GenTree(GT_CALL, type)
     {
