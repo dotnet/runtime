@@ -102,11 +102,15 @@ namespace System.IO.Compression
             return (uint)ret;
         }
 
-        // assumes all bytes of signatureToFind are non zero, looks backwards from current position in stream,
+        // Assumes all bytes of signatureToFind are non zero, looks backwards from current position in stream,
+        // assumes maxBytesToRead is positive, ensures to not read beyond the provided max number of bytes,
         // if the signature is found then returns true and positions stream at first byte of signature
         // if the signature is not found, returns false
-        internal static bool SeekBackwardsToSignature(Stream stream, uint signatureToFind)
+        internal static bool SeekBackwardsToSignature(Stream stream, uint signatureToFind, int maxBytesToRead)
         {
+            Debug.Assert(signatureToFind != 0);
+            Debug.Assert(maxBytesToRead > 0);
+
             int bufferPointer = 0;
             uint currentSignature = 0;
             byte[] buffer = new byte[BackwardsSeekingBufferSize];
@@ -114,7 +118,8 @@ namespace System.IO.Compression
             bool outOfBytes = false;
             bool signatureFound = false;
 
-            while (!signatureFound && !outOfBytes)
+            int bytesRead = 0;
+            while (!signatureFound && !outOfBytes && bytesRead <= maxBytesToRead)
             {
                 outOfBytes = SeekBackwardsAndRead(stream, buffer, out bufferPointer);
 
@@ -132,6 +137,8 @@ namespace System.IO.Compression
                         bufferPointer--;
                     }
                 }
+
+                bytesRead += buffer.Length;
             }
 
             if (!signatureFound)
