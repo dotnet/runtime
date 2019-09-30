@@ -211,6 +211,64 @@ namespace ILCompiler
                     typeOffsets: typeOffsets);
             }
 
+            private void GetElementTypeInfoGeneric(
+                EcmaModule module,
+                FieldDesc fieldDesc,
+                EntityHandle valueTypeHandle,
+                bool moduleLayout,
+                out int alignment,
+                out int size,
+                out bool isGcPointerField,
+                out bool isGcBoxedField)
+            {
+                alignment = 1;
+                size = 0;
+                isGcPointerField = false;
+                isGcBoxedField = false;
+
+                TypeDesc fieldType = fieldDesc.FieldType;
+
+                if (fieldType.IsPrimitive || fieldType.IsFunctionPointer || fieldType.IsPointer)
+                {
+                    size = fieldType.GetElementSize().AsInt;
+                    alignment = size;
+                }
+                else if (fieldType.IsByRef || fieldType.IsByRefLike || fieldType.IsByReferenceOfT)
+                {
+                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, fieldDesc.OwningType);
+                }
+                else if (fieldType.IsValueType)
+                {
+                    if (IsTypeByRefLike(valueTypeHandle, module.MetadataReader))
+                    {
+                        ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, fieldDesc.OwningType);
+                    }
+                    if (moduleLayout && fieldType.GetTypeDefinition() is EcmaType ecmaType && ecmaType.EcmaModule != module)
+                    {
+                        // Allocate pessimistic non-GC area for cross-module fields as that's what CoreCLR does
+                        // <a href="https://github.com/dotnet/coreclr/blob/659af58047a949ed50d11101708538d2e87f2568/src/vm/ceeload.cpp#L2124">here</a>
+                        alignment = TargetDetails.MaximumPrimitiveSize;
+                        size = TargetDetails.MaximumPrimitiveSize;
+                        isGcBoxedField = true;
+                    }
+                    else if (fieldType.IsEnum)
+                    {
+                        size = fieldType.UnderlyingType.GetElementSize().AsInt;
+                        alignment = size;
+                        isGcBoxedField = false;
+                    }
+                    else
+                    {
+                        // All struct statics are boxed in CoreCLR
+                        isGcBoxedField = true;
+                    }
+                }
+                else
+                {
+                    isGcPointerField = true;
+                }
+            }
+
             private void GetElementTypeInfo(
                 EcmaModule module, 
                 FieldDesc fieldDesc,
@@ -376,8 +434,16 @@ namespace ILCompiler
 
                         GetFieldElementTypeAndValueTypeHandle(in fieldDef, module.MetadataReader, out corElementType, out valueTypeHandle);
 
-                        GetElementTypeInfo(module, field, valueTypeHandle, corElementType, pointerSize, moduleLayout: false,
-                            out alignment, out size, out isGcPointerField, out isGcBoxedField);
+                        if (defType.HasInstantiation)
+                        {
+                            GetElementTypeInfoGeneric(module, field, valueTypeHandle, moduleLayout: false,
+                                out alignment, out size, out isGcPointerField, out isGcBoxedField);
+                        }
+                        else
+                        {
+                            GetElementTypeInfo(module, field, valueTypeHandle, corElementType, pointerSize, moduleLayout: false,
+                                out alignment, out size, out isGcPointerField, out isGcBoxedField);
+                        }
                         if (isGcPointerField)
                         {
                             gcPointerCount[index]++;
@@ -446,8 +512,16 @@ namespace ILCompiler
 
                         GetFieldElementTypeAndValueTypeHandle(in fieldDef, module.MetadataReader, out corElementType, out valueTypeHandle);
 
-                        GetElementTypeInfo(module, field, valueTypeHandle, corElementType, pointerSize, moduleLayout: false,
-                            out alignment, out size, out isGcPointerField, out isGcBoxedField);
+                        if (defType.HasInstantiation)
+                        {
+                            GetElementTypeInfoGeneric(module, field, valueTypeHandle, moduleLayout: false,
+                                out alignment, out size, out isGcPointerField, out isGcBoxedField);
+                        }
+                        else
+                        {
+                            GetElementTypeInfo(module, field, valueTypeHandle, corElementType, pointerSize, moduleLayout: false,
+                                out alignment, out size, out isGcPointerField, out isGcBoxedField);
+                        }
 
                         LayoutInt offset = LayoutInt.Zero;
 
