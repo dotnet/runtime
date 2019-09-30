@@ -432,50 +432,14 @@ private:
 class MethodDescVersioningState
 {
 public:
-    // The size of the code used to jump stamp the prolog
-#ifdef FEATURE_JUMPSTAMP
-    static const size_t JumpStubSize =
-#if defined(_X86_) || defined(_AMD64_)
-        5;
-#else
-#error "Need to define size of jump-stamp for this platform"
-#endif
-#endif // FEATURE_JUMPSTAMP
-
     MethodDescVersioningState(PTR_MethodDesc pMethodDesc);
     PTR_MethodDesc GetMethodDesc() const;
     NativeCodeVersionId AllocateVersionId();
     PTR_NativeCodeVersionNode GetFirstVersionNode() const;
 
 #ifndef DACCESS_COMPILE
-#ifdef FEATURE_JUMPSTAMP
-    HRESULT SyncJumpStamp(NativeCodeVersion nativeCodeVersion, BOOL fEESuspended);
-    HRESULT UpdateJumpTarget(BOOL fEESuspended, PCODE pRejittedCode);
-    HRESULT UndoJumpStampNativeCode(BOOL fEESuspended);
-    HRESULT JumpStampNativeCode(PCODE pCode = NULL);
-#endif // FEATURE_JUMPSTAMP
     void LinkNativeCodeVersionNode(NativeCodeVersionNode* pNativeCodeVersionNode);
 #endif // DACCESS_COMPILE
-
-#ifdef FEATURE_JUMPSTAMP
-    enum JumpStampFlags
-    {
-        // There is no jump stamp in place on this method (Either because
-        // there is no code at all, or there is code that hasn't been
-        // overwritten with a jump)
-        JumpStampNone = 0x0,
-
-        // The method code has the jump stamp written in, and it points to the Prestub
-        JumpStampToPrestub = 0x1,
-
-        // The method code has the jump stamp written in, and it points to the currently
-        // active code version
-        JumpStampToActiveVersion = 0x2,
-    };
-
-    JumpStampFlags GetJumpStampState();
-    void SetJumpStampState(JumpStampFlags newState);
-#endif // FEATURE_JUMPSTAMP
 
     //read-write data for the default native code version
     BOOL IsDefaultVersionActiveChild() const;
@@ -484,26 +448,15 @@ public:
 #endif
 
 private:
-#if !defined(DACCESS_COMPILE) && defined(FEATURE_JUMPSTAMP)
-    INDEBUG(BOOL CodeIsSaved();)
-    HRESULT UpdateJumpStampHelper(BYTE* pbCode, INT64 i64OldValue, INT64 i64NewValue, BOOL fContentionPossible);
-#endif
     PTR_MethodDesc m_pMethodDesc;
 
     enum MethodDescVersioningStateFlags
     {
-        JumpStampMask = 0x3,
         IsDefaultVersionActiveChildFlag = 0x4
     };
     BYTE m_flags;
     NativeCodeVersionId m_nextId;
     PTR_NativeCodeVersionNode m_pFirstVersionNode;
-
-
-    // The originally JITted code that was overwritten with the jmp stamp.
-#ifdef FEATURE_JUMPSTAMP
-    BYTE m_rgSavedCode[JumpStubSize];
-#endif
 };
 
 class MethodDescVersioningStateHashTraits : public NoRemoveSHashTraits<DefaultSHashTraits<PTR_MethodDescVersioningState>>
@@ -601,8 +554,6 @@ typedef SHash<ILCodeVersioningStateHashTraits> ILCodeVersioningStateHash;
 class CodeVersionManager
 {
     friend class ILCodeVersion;
-    friend class PublishMethodHolder;
-    friend class PublishMethodTableHolder;
 
 public:
     CodeVersionManager();
@@ -646,9 +597,7 @@ public:
 
     HRESULT AddILCodeVersion(Module* pModule, mdMethodDef methodDef, ReJITID rejitId, ILCodeVersion* pILCodeVersion);
     HRESULT AddNativeCodeVersion(ILCodeVersion ilCodeVersion, MethodDesc* pClosedMethodDesc, NativeCodeVersion::OptimizationTier optimizationTier, NativeCodeVersion* pNativeCodeVersion);
-    HRESULT DoJumpStampIfNecessary(MethodDesc* pMD, PCODE pCode);
-    PCODE PublishNonJumpStampVersionableCodeIfNecessary(MethodDesc* pMethodDesc, bool *doBackpatchRef, bool *doFullBackpatchRef);
-    PCODE PublishJumpStampVersionableCodeIfNecessary(MethodDesc* pMethodDesc);
+    PCODE PublishVersionableCodeIfNecessary(MethodDesc* pMethodDesc, bool *doBackpatchRef, bool *doFullBackpatchRef);
     HRESULT PublishNativeCodeVersion(MethodDesc* pMethodDesc, NativeCodeVersion nativeCodeVersion, BOOL fEESuspended);
     HRESULT GetOrCreateMethodDescVersioningState(MethodDesc* pMethod, MethodDescVersioningState** ppMethodDescVersioningState);
     HRESULT GetOrCreateILCodeVersioningState(Module* pModule, mdMethodDef methodDef, ILCodeVersioningState** ppILCodeVersioningState);
@@ -702,45 +651,5 @@ private:
 };
 
 #endif // FEATURE_CODE_VERSIONING
-
-//
-// These holders are used by runtime code that is making new code
-// available for execution, either by publishing jitted code
-// or restoring NGEN code. It ensures the publishing is synchronized
-// with rejit requests
-//
-class PublishMethodHolder
-{
-public:
-#if !defined(FEATURE_CODE_VERSIONING) || defined(DACCESS_COMPILE) || defined(CROSSGEN_COMPILE)
-    PublishMethodHolder(MethodDesc* pMethod, PCODE pCode) { }
-#else
-    PublishMethodHolder(MethodDesc* pMethod, PCODE pCode);
-    ~PublishMethodHolder();
-#endif
-
-private:
-#if defined(FEATURE_CODE_VERSIONING)
-    MethodDesc * m_pMD;
-    HRESULT m_hr;
-#endif
-};
-
-class PublishMethodTableHolder
-{
-public:
-#if !defined(FEATURE_CODE_VERSIONING) || defined(DACCESS_COMPILE) || defined(CROSSGEN_COMPILE)
-    PublishMethodTableHolder(MethodTable* pMethodTable) { }
-#else
-    PublishMethodTableHolder(MethodTable* pMethodTable);
-    ~PublishMethodTableHolder();
-#endif
-
-private:
-#if defined(FEATURE_CODE_VERSIONING) && !defined(DACCESS_COMPILE)
-    MethodTable* m_pMethodTable;
-    CDynArray<CodeVersionManager::CodePublishError> m_errors;
-#endif
-};
 
 #endif // CODE_VERSION_H

@@ -569,17 +569,8 @@ void MethodTable::SetIsRestored()
         
     PRECONDITION(!IsFullyLoaded());
 
-    // If functions on this type have already been requested for rejit, then give the rejit
-    // manager a chance to jump-stamp the code we are implicitly restoring. This ensures the
-    // first thread entering the function will jump to the prestub and trigger the
-    // rejit. Note that the PublishMethodTableHolder may take a lock to avoid a rejit race.
-    // See code:ReJitManager::PublishMethodHolder::PublishMethodHolder#PublishCode
-    // for details on the race.
-    // 
-    {
-        PublishMethodTableHolder(this);
-        FastInterlockAnd(EnsureWritablePages(&(GetWriteableDataForWrite()->m_dwFlags)), ~MethodTableWriteableData::enum_flag_Unrestored);
-    }
+    FastInterlockAnd(EnsureWritablePages(&(GetWriteableDataForWrite()->m_dwFlags)), ~MethodTableWriteableData::enum_flag_Unrestored);
+
 #ifndef DACCESS_COMPILE
     if (ETW_PROVIDER_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER))
     {

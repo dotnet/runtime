@@ -1155,28 +1155,9 @@ BOOL PrepareCodeConfig::SetNativeCode(PCODE pCode, PCODE * ppAlternateCodeToUse)
 {
     LIMITED_METHOD_CONTRACT;
 
-    // If this function had already been requested for rejit (before its original
-    // code was jitted), then give the CodeVersionManager a chance to jump-stamp the
-    // code we just compiled so the first thread entering the function will jump
-    // to the prestub and trigger the rejit. Note that the PublishMethodHolder takes
-    // a lock to avoid a particular kind of rejit race. See
-    // code:CodeVersionManager::PublishMethodHolder::PublishMethodHolder#PublishCode for
-    // details on the rejit race.
-    // 
-    if (m_pMethodDesc->IsVersionableWithJumpStamp())
+    if (m_pMethodDesc->SetNativeCodeInterlocked(pCode, NULL))
     {
-        PublishMethodHolder publishWorker(GetMethodDesc(), pCode);
-        if (m_pMethodDesc->SetNativeCodeInterlocked(pCode, NULL))
-        {
-            return TRUE;
-        }
-    }
-    else
-    {
-        if (m_pMethodDesc->SetNativeCodeInterlocked(pCode, NULL))
-        {
-            return TRUE;
-        }
+        return TRUE;
     }
 
     *ppAlternateCodeToUse = m_pMethodDesc->GetNativeCode();
@@ -1976,14 +1957,12 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT)
     }
 
     /**************************   BACKPATCHING   *************************/
-    // See if the addr of code has changed from the pre-stub
-
 #ifdef FEATURE_CODE_VERSIONING
-    if (IsVersionableWithoutJumpStamp())
+    if (IsVersionable())
     {
         bool doBackpatch = true;
         bool doFullBackpatch = false;
-        pCode = GetCodeVersionManager()->PublishNonJumpStampVersionableCodeIfNecessary(this, &doBackpatch, &doFullBackpatch);
+        pCode = GetCodeVersionManager()->PublishVersionableCodeIfNecessary(this, &doBackpatch, &doFullBackpatch);
 
         if (doBackpatch)
         {
@@ -1998,28 +1977,13 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT)
 
     if (!IsPointingToPrestub())
     {
-        bool doFullBackpatch = true;
-    #ifdef FEATURE_CODE_VERSIONING
-        if (IsVersionableWithJumpStamp())
-        {
-            _ASSERTE(IsVersionableWithJumpStamp());
-            pCode = GetCodeVersionManager()->PublishJumpStampVersionableCodeIfNecessary(this);
-            if (pCode == NULL)
-            {
-                doFullBackpatch = false;
-            }
-        }
-    #endif
-
-        if (doFullBackpatch)
-        {
-            LOG((LF_CLASSLOADER, LL_INFO10000,
-                "    In PreStubWorker, method already jitted, backpatching call point\n"));
+        LOG((LF_CLASSLOADER, LL_INFO10000,
+            "    In PreStubWorker, method already jitted, backpatching call point\n"));
         #if defined(FEATURE_JIT_PITCHING)
             MarkMethodNotPitchingCandidate(this);
         #endif
-            RETURN DoBackpatch(pMT, pDispatchingMT, TRUE);
-        }
+
+        RETURN DoBackpatch(pMT, pDispatchingMT, TRUE);
     }
 
     /**************************   CODE CREATION  *************************/
