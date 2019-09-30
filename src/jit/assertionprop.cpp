@@ -3726,13 +3726,13 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
             call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_CHKCASTANY) ||
             call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_CHKCASTCLASS_SPECIAL))
         {
-            GenTree* arg1 = gtArgEntryByArgNum(call, 1)->node;
+            GenTree* arg1 = gtArgEntryByArgNum(call, 1)->GetNode();
             if (arg1->gtOper != GT_LCL_VAR)
             {
                 return nullptr;
             }
 
-            GenTree* arg2 = gtArgEntryByArgNum(call, 0)->node;
+            GenTree* arg2 = gtArgEntryByArgNum(call, 0)->GetNode();
 
             unsigned index = optAssertionIsSubtype(arg1, arg2, assertions);
             if (index != NO_ASSERTION_INDEX)

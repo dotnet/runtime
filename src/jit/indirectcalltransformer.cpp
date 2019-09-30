@@ -553,7 +553,7 @@ private:
             checkBlock = CreateAndInsertBasicBlock(BBJ_COND, currBlock);
 
             // Fetch method table from object arg to call.
-            GenTree* thisTree = compiler->gtCloneExpr(origCall->gtCallObjp);
+            GenTree* thisTree = compiler->gtCloneExpr(origCall->gtCallThisArg->GetNode());
 
             // Create temp for this if the tree is costly.
             if (!thisTree->IsLocal())
@@ -568,7 +568,7 @@ private:
 
                 // Propagate the new this to the call. Must be a new expr as the call
                 // will live on in the else block and thisTree is used below.
-                origCall->gtCallObjp = compiler->gtNewLclvNode(thisTempNum, TYP_REF);
+                origCall->gtCallThisArg = compiler->gtNewCallArgs(compiler->gtNewLclvNode(thisTempNum, TYP_REF));
             }
 
             GenTree* methodTable = compiler->gtNewIndir(TYP_I_IMPL, thisTree);
@@ -657,14 +657,14 @@ private:
 
             // copy 'this' to temp with exact type.
             const unsigned thisTemp  = compiler->lvaGrabTemp(false DEBUGARG("guarded devirt this exact temp"));
-            GenTree*       clonedObj = compiler->gtCloneExpr(origCall->gtCallObjp);
+            GenTree*       clonedObj = compiler->gtCloneExpr(origCall->gtCallThisArg->GetNode());
             GenTree*       assign    = compiler->gtNewTempAssign(thisTemp, clonedObj);
             compiler->lvaSetClass(thisTemp, clsHnd, true);
             compiler->fgNewStmtAtEnd(thenBlock, assign);
 
             // Clone call. Note we must use the special candidate helper.
-            GenTreeCall* call = compiler->gtCloneCandidateCall(origCall);
-            call->gtCallObjp  = compiler->gtNewLclvNode(thisTemp, TYP_REF);
+            GenTreeCall* call   = compiler->gtCloneCandidateCall(origCall);
+            call->gtCallThisArg = compiler->gtNewCallArgs(compiler->gtNewLclvNode(thisTemp, TYP_REF));
             call->SetIsGuarded();
 
             JITDUMP("Direct call [%06u] in block BB%02u\n", compiler->dspTreeID(call), thenBlock->bbNum);

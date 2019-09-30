@@ -1053,9 +1053,8 @@ void GenTreeCall::ReplaceCallOperand(GenTree** useEdge, GenTree* replacement)
         {
             assert((replacement->gtFlags & GTF_LATE_ARG) == 0);
 
-            fgArgTabEntry* fp = Compiler::gtArgEntryByNode(this, originalOperand);
-            assert(fp->node == originalOperand);
-            fp->node = replacement;
+            fgArgTabEntry* fp = Compiler::gtArgEntryByNode(this, replacement);
+            assert(fp->GetNode() == replacement);
         }
     }
 }
@@ -1087,6 +1086,106 @@ bool GenTreeCall::AreArgsComplete() const
 #endif
 
     return false;
+}
+
+//--------------------------------------------------------------------------
+// Equals: Check if 2 CALL nodes are equal.
+//
+// Arguments:
+//    c1 - The first call node
+//    c2 - The second call node
+//
+// Return Value:
+//    true if the 2 CALL nodes have the same type and operands
+//
+bool GenTreeCall::Equals(GenTreeCall* c1, GenTreeCall* c2)
+{
+    assert(c1->OperGet() == c2->OperGet());
+
+    if (c1->TypeGet() != c2->TypeGet())
+    {
+        return false;
+    }
+
+    if (c1->gtCallType != c2->gtCallType)
+    {
+        return false;
+    }
+
+    if (c1->gtCallType != CT_INDIRECT)
+    {
+        if (c1->gtCallMethHnd != c2->gtCallMethHnd)
+        {
+            return false;
+        }
+
+#ifdef FEATURE_READYTORUN_COMPILER
+        if (c1->gtEntryPoint.addr != c2->gtEntryPoint.addr)
+        {
+            return false;
+        }
+#endif
+    }
+    else
+    {
+        if (!Compare(c1->gtCallAddr, c2->gtCallAddr))
+        {
+            return false;
+        }
+    }
+
+    if ((c1->gtCallThisArg != nullptr) != (c2->gtCallThisArg != nullptr))
+    {
+        return false;
+    }
+
+    if ((c1->gtCallThisArg != nullptr) && !Compare(c1->gtCallThisArg->GetNode(), c2->gtCallThisArg->GetNode()))
+    {
+        return false;
+    }
+
+    GenTreeCall::UseIterator i1   = c1->Args().begin();
+    GenTreeCall::UseIterator end1 = c1->Args().end();
+    GenTreeCall::UseIterator i2   = c2->Args().begin();
+    GenTreeCall::UseIterator end2 = c2->Args().end();
+
+    for (; (i1 != end1) && (i2 != end2); ++i1, ++i2)
+    {
+        if (!Compare(i1->GetNode(), i2->GetNode()))
+        {
+            return false;
+        }
+    }
+
+    if ((i1 != end1) || (i2 != end2))
+    {
+        return false;
+    }
+
+    i1   = c1->LateArgs().begin();
+    end1 = c1->LateArgs().end();
+    i2   = c2->LateArgs().begin();
+    end2 = c2->LateArgs().end();
+
+    for (; (i1 != end1) && (i2 != end2); ++i1, ++i2)
+    {
+        if (!Compare(i1->GetNode(), i2->GetNode()))
+        {
+            return false;
+        }
+    }
+
+    if ((i1 != end1) || (i2 != end2))
+    {
+        return false;
+    }
+
+    if (!Compare(c1->gtControlExpr, c2->gtControlExpr))
+    {
+        return false;
+    }
+
+    return true;
 }
 
 #if !defined(FEATURE_PUT_STRUCT_ARG_STK)
@@ -1413,83 +1512,7 @@ AGAIN:
             return true;
 
         case GT_CALL:
-
-            if (op1->gtCall.gtCallType != op2->gtCall.gtCallType)
-            {
-                return false;
-            }
-
-            if (op1->gtCall.gtCallType != CT_INDIRECT)
-            {
-                if (op1->gtCall.gtCallMethHnd != op2->gtCall.gtCallMethHnd)
-                {
-                    return false;
-                }
-
-#ifdef FEATURE_READYTORUN_COMPILER
-                if (op1->gtCall.gtEntryPoint.addr != op2->gtCall.gtEntryPoint.addr)
-                {
-                    return false;
-                }
-#endif
-            }
-            else
-            {
-                if (!Compare(op1->gtCall.gtCallAddr, op2->gtCall.gtCallAddr))
-                {
-                    return false;
-                }
-            }
-
-            if (!Compare(op1->AsCall()->gtCallObjp, op2->AsCall()->gtCallObjp))
-            {
-                return false;
-            }
-
-            {
-                GenTreeCall::UseIterator i1   = op1->AsCall()->Args().begin();
-                GenTreeCall::UseIterator end1 = op1->AsCall()->Args().end();
-                GenTreeCall::UseIterator i2   = op2->AsCall()->Args().begin();
-                GenTreeCall::UseIterator end2 = op2->AsCall()->Args().end();
-
-                for (; (i1 != end1) && (i2 != end2); ++i1, ++i2)
-                {
-                    if (!Compare(i1->GetNode(), i2->GetNode()))
-                    {
-                        return false;
-                    }
-                }
-
-                if ((i1 != end1) || (i2 != end2))
-                {
-                    return false;
-                }
-
-                i1   = op1->AsCall()->LateArgs().begin();
-                end1 = op1->AsCall()->LateArgs().end();
-                i2   = op2->AsCall()->LateArgs().begin();
-                end2 = op2->AsCall()->LateArgs().end();
-
-                for (; (i1 != end1) && (i2 != end2); ++i1, ++i2)
-                {
-                    if (!Compare(i1->GetNode(), i2->GetNode()))
-                    {
-                        return false;
-                    }
-                }
-
-                if ((i1 != end1) || (i2 != end2))
-                {
-                    return false;
-                }
-            }
-
-            if (!Compare(op1->AsCall()->gtControlExpr, op2->AsCall()->gtControlExpr))
-            {
-                return false;
-            }
-
-            return true;
+            return GenTreeCall::Equals(op1->AsCall(), op2->AsCall());
 
         case GT_ARR_ELEM:
 
@@ -1664,10 +1687,9 @@ AGAIN:
             break;
 
         case GT_CALL:
-
-            if (tree->gtCall.gtCallObjp)
+            if (tree->AsCall()->gtCallThisArg != nullptr)
             {
-                if (gtHasRef(tree->gtCall.gtCallObjp, lclNum, defOnly))
+                if (gtHasRef(tree->AsCall()->gtCallThisArg->GetNode(), lclNum, defOnly))
                 {
                     return true;
                 }
@@ -2146,12 +2168,9 @@ AGAIN:
             break;
 
         case GT_CALL:
-
-            if (tree->gtCall.gtCallObjp && tree->gtCall.gtCallObjp->gtOper != GT_NOP)
+            if ((tree->AsCall()->gtCallThisArg != nullptr) && !tree->AsCall()->gtCallThisArg->GetNode()->OperIs(GT_NOP))
             {
-                temp = tree->gtCall.gtCallObjp;
-                assert(temp);
-                hash = genTreeHashAdd(hash, gtHashValue(temp));
+                hash = genTreeHashAdd(hash, gtHashValue(tree->AsCall()->gtCallThisArg->GetNode()));
             }
 
             for (GenTreeCall::Use& use : tree->AsCall()->Args())
@@ -4211,9 +4230,9 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
             /* Evaluate the 'this' argument, if present */
 
-            if (tree->gtCall.gtCallObjp)
+            if (tree->AsCall()->gtCallThisArg != nullptr)
             {
-                GenTree* thisVal = tree->gtCall.gtCallObjp;
+                GenTree* thisVal = tree->AsCall()->gtCallThisArg->GetNode();
 
                 lvl2 = gtSetEvalOrder(thisVal);
                 if (level < lvl2)
@@ -4760,9 +4779,9 @@ GenTree** GenTree::gtGetChildPointer(GenTree* parent) const
         {
             GenTreeCall* call = parent->AsCall();
 
-            if (this == call->gtCallObjp)
+            if ((call->gtCallThisArg != nullptr) && (this == call->gtCallThisArg->GetNode()))
             {
-                return &(call->gtCallObjp);
+                return &call->gtCallThisArg->NodeRef();
             }
             for (GenTreeCall::Use& use : call->Args())
             {
@@ -5063,9 +5082,9 @@ bool GenTree::TryGetUse(GenTree* def, GenTree*** use)
         case GT_CALL:
         {
             GenTreeCall* const call = this->AsCall();
-            if (def == call->gtCallObjp)
+            if ((call->gtCallThisArg != nullptr) && (def == call->gtCallThisArg->GetNode()))
             {
-                *use = &call->gtCallObjp;
+                *use = &call->gtCallThisArg->NodeRef();
                 return true;
             }
             if (def == call->gtControlExpr)
@@ -5947,7 +5966,7 @@ GenTreeCall* Compiler::gtNewCallNode(
     node->gtCallType      = callType;
     node->gtCallMethHnd   = callHnd;
     node->gtCallArgs      = args;
-    node->gtCallObjp      = nullptr;
+    node->gtCallThisArg   = nullptr;
     node->fgArgInfo       = nullptr;
     node->callSig         = nullptr;
     node->gtRetClsHnd     = nullptr;
@@ -6213,23 +6232,13 @@ fgArgTabEntry* Compiler::gtArgEntryByNode(GenTreeCall* call, GenTree* node)
     {
         curArgTabEntry = argTable[i];
 
-        if (curArgTabEntry->node == node)
+        if (curArgTabEntry->GetNode() == node)
         {
             return curArgTabEntry;
         }
-        else if (curArgTabEntry->use != nullptr)
+        else if (curArgTabEntry->use->GetNode() == node)
         {
-            if (curArgTabEntry->use->GetNode() == node)
-            {
-                return curArgTabEntry;
-            }
-        }
-        else // (curArgTabEntry->parent == NULL)
-        {
-            if (call->gtCallObjp == node)
-            {
-                return curArgTabEntry;
-            }
+            return curArgTabEntry;
         }
     }
     noway_assert(!"gtArgEntryByNode: node not found");
@@ -6290,15 +6299,6 @@ GenTree* Compiler::gtArgNodeByLateArgInx(GenTreeCall* call, unsigned lateArgInx)
     }
     noway_assert(argx != nullptr);
     return argx;
-}
-
-/*****************************************************************************
- *
- *  Given an fgArgTabEntry*, return true if it is the 'this' pointer argument.
- */
-bool Compiler::gtArgIsThisPtr(fgArgTabEntry* argEntry)
-{
-    return (argEntry->use == nullptr);
 }
 
 /*****************************************************************************
@@ -7591,7 +7591,16 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree, unsigned addFlag
 {
     GenTreeCall* copy = new (this, GT_CALL) GenTreeCall(tree->TypeGet());
 
-    copy->gtCallObjp = tree->gtCallObjp ? gtCloneExpr(tree->gtCallObjp, addFlags, deepVarNum, deepVarVal) : nullptr;
+    if (tree->gtCallThisArg == nullptr)
+    {
+        copy->gtCallThisArg = nullptr;
+    }
+    else
+    {
+        copy->gtCallThisArg =
+            gtNewCallArgs(gtCloneExpr(tree->gtCallThisArg->GetNode(), addFlags, deepVarNum, deepVarVal));
+    }
+
     copy->gtCallMoreFlags = tree->gtCallMoreFlags;
     copy->gtCallArgs      = nullptr;
     copy->gtCallLateArgs  = nullptr;
@@ -8046,51 +8055,54 @@ bool Compiler::gtCompareTree(GenTree* op1, GenTree* op2)
 
 GenTree* Compiler::gtGetThisArg(GenTreeCall* call)
 {
-    GenTree* thisArg = call->gtCallObjp;
-    if (thisArg != nullptr)
+    if (call->gtCallThisArg == nullptr)
     {
-        if (thisArg->OperIs(GT_NOP, GT_ASG) == false)
+        return nullptr;
+    }
+
+    GenTree* thisArg = call->gtCallThisArg->GetNode();
+    if (thisArg->OperIs(GT_NOP, GT_ASG) == false)
+    {
+        if ((thisArg->gtFlags & GTF_LATE_ARG) == 0)
         {
-            if ((thisArg->gtFlags & GTF_LATE_ARG) == 0)
-            {
-                return call->gtCallObjp;
-            }
-        }
-
-        if (call->gtCallLateArgs != nullptr)
-        {
-            unsigned       argNum          = 0;
-            fgArgTabEntry* thisArgTabEntry = gtArgEntryByArgNum(call, argNum);
-            GenTree*       result          = thisArgTabEntry->node;
-
-            // Assert if we used DEBUG_DESTROY_NODE.
-            assert(result->gtOper != GT_COUNT);
-
-#if !FEATURE_FIXED_OUT_ARGS && defined(DEBUG)
-            // Check that call->fgArgInfo used in gtArgEntryByArgNum was not
-            // left outdated by assertion propogation updates.
-            // There is no information about registers of late args for platforms
-            // with FEATURE_FIXED_OUT_ARGS that is why this debug check is under
-            // !FEATURE_FIXED_OUT_ARGS.
-            regNumber thisReg = REG_ARG_0;
-            regList   list    = call->regArgList;
-            int       index   = 0;
-            for (GenTreeCall::Use& use : call->LateArgs())
-            {
-                assert(index < call->regArgListCount);
-                regNumber curArgReg = list[index];
-                if (curArgReg == thisReg)
-                {
-                    assert(result == use.GetNode());
-                }
-
-                index++;
-            }
-#endif // !FEATURE_FIXED_OUT_ARGS && defined(DEBUG)
-
-            return result;
+            return thisArg;
         }
     }
+
+    if (call->gtCallLateArgs != nullptr)
+    {
+        unsigned       argNum          = 0;
+        fgArgTabEntry* thisArgTabEntry = gtArgEntryByArgNum(call, argNum);
+        GenTree*       result          = thisArgTabEntry->GetNode();
+
+        // Assert if we used DEBUG_DESTROY_NODE.
+        assert(result->gtOper != GT_COUNT);
+
+#if !FEATURE_FIXED_OUT_ARGS && defined(DEBUG)
+        // Check that call->fgArgInfo used in gtArgEntryByArgNum was not
+        // left outdated by assertion propogation updates.
+        // There is no information about registers of late args for platforms
+        // with FEATURE_FIXED_OUT_ARGS that is why this debug check is under
+        // !FEATURE_FIXED_OUT_ARGS.
+        regNumber thisReg = REG_ARG_0;
+        regList   list    = call->regArgList;
+        int       index   = 0;
+        for (GenTreeCall::Use& use : call->LateArgs())
+        {
+            assert(index < call->regArgListCount);
+            regNumber curArgReg = list[index];
+            if (curArgReg == thisReg)
+            {
+                assert(result == use.GetNode());
+            }
+
+            index++;
+        }
+#endif // !FEATURE_FIXED_OUT_ARGS && defined(DEBUG)
+
+        return result;
+    }
+
     return nullptr;
 }
 
@@ -8275,7 +8287,7 @@ unsigned GenTree::NumChildren()
             {
                 GenTreeCall* call = AsCall();
                 unsigned     res  = 0;
-                if (call->gtCallObjp != nullptr)
+                if (call->gtCallThisArg != nullptr)
                 {
                     res++;
                 }
@@ -8452,11 +8464,11 @@ GenTree* GenTree::GetChild(unsigned childNum)
             {
                 GenTreeCall* call = AsCall();
 
-                if (call->gtCallObjp != nullptr)
+                if (call->gtCallThisArg != nullptr)
                 {
                     if (childNum == 0)
                     {
-                        return call->gtCallObjp;
+                        return call->gtCallThisArg->GetNode();
                     }
 
                     childNum--;
@@ -9008,9 +9020,9 @@ void          GenTreeUseEdgeIterator::AdvanceCall()
         case CALL_INSTANCE:
             m_statePtr = call->gtCallArgs;
             m_advance  = &GenTreeUseEdgeIterator::AdvanceCall<CALL_ARGS>;
-            if (call->gtCallObjp != nullptr)
+            if (call->gtCallThisArg != nullptr)
             {
-                m_edge = &call->gtCallObjp;
+                m_edge = &call->gtCallThisArg->NodeRef();
                 return;
             }
             __fallthrough;
@@ -11056,10 +11068,9 @@ void Compiler::gtDispTree(GenTree*     tree,
 
                 bufp = &buf[0];
 
-                if ((call->gtCallObjp != nullptr) && (call->gtCallObjp->gtOper != GT_NOP) &&
-                    (!call->gtCallObjp->IsArgPlaceHolderNode()))
+                if ((call->gtCallThisArg != nullptr) && !call->gtCallThisArg->GetNode()->OperIs(GT_NOP, GT_ARGPLACE))
                 {
-                    if (call->gtCallObjp->gtOper == GT_ASG)
+                    if (call->gtCallThisArg->GetNode()->OperIs(GT_ASG))
                     {
                         sprintf_s(bufp, sizeof(buf), "this SETUP%c", 0);
                     }
@@ -11067,8 +11078,8 @@ void Compiler::gtDispTree(GenTree*     tree,
                     {
                         sprintf_s(bufp, sizeof(buf), "this in %s%c", compRegVarName(REG_ARG_0), 0);
                     }
-                    gtDispChild(call->gtCallObjp, indentStack, (call->gtCallObjp == lastChild) ? IIArcBottom : IIArc,
-                                bufp, topOnly);
+                    gtDispChild(call->gtCallThisArg->GetNode(), indentStack,
+                                (call->gtCallThisArg->GetNode() == lastChild) ? IIArcBottom : IIArc, bufp, topOnly);
                 }
 
                 if (call->gtCallArgs)
@@ -11346,7 +11357,7 @@ void Compiler::gtGetLateArgMsg(
     else
 #endif
     {
-        if (gtArgIsThisPtr(curArgTabEntry))
+        if (curArgTabEntry->use == call->gtCallThisArg)
         {
             sprintf_s(bufp, bufLength, "this in %s%c", compRegVarName(argReg), 0);
         }
@@ -11450,7 +11461,7 @@ void Compiler::gtDispArgList(GenTreeCall* call, IndentStack* indentStack)
 
     unsigned argnum = 0;
 
-    if (call->gtCallObjp != nullptr)
+    if (call->gtCallThisArg != nullptr)
     {
         argnum++;
     }
@@ -11613,7 +11624,7 @@ void Compiler::gtDispLIRNode(GenTree* node, const char* prefixMsg /* = nullptr *
         if (nodeIsCall)
         {
             GenTreeCall* call = node->AsCall();
-            if (operand == call->gtCallObjp)
+            if ((call->gtCallThisArg != nullptr) && (operand == call->gtCallThisArg->GetNode()))
             {
                 sprintf_s(buf, sizeof(buf), "this in %s", compRegVarName(REG_ARG_0));
                 displayOperand(operand, buf, operandArc, indentStack, prefixIndent);
@@ -11917,7 +11928,7 @@ GenTree* Compiler::gtFoldExprCall(GenTreeCall* call)
 
     if (ni == NI_System_Enum_HasFlag)
     {
-        GenTree* thisOp = call->gtCallObjp;
+        GenTree* thisOp = call->gtCallThisArg->GetNode();
         GenTree* flagOp = call->gtCallArgs->GetNode();
         GenTree* result = gtOptimizeEnumHasFlag(thisOp, flagOp);
 
@@ -12274,8 +12285,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
     }
     else
     {
-        assert(opOther->OperGet() == GT_CALL);
-        objOp = opOther->gtCall.gtCallObjp;
+        objOp = opOther->AsCall()->gtCallThisArg->GetNode();
     }
 
     GenTree* const objMT = gtNewOperNode(GT_IND, TYP_I_IMPL, objOp);

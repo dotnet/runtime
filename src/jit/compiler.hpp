@@ -4412,7 +4412,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_CALL:
         {
             GenTreeCall* const call = this->AsCall();
-            if ((call->gtCallObjp != nullptr) && (visitor(call->gtCallObjp) == VisitResult::Abort))
+            if ((call->gtCallThisArg != nullptr) && (visitor(call->gtCallThisArg->GetNode()) == VisitResult::Abort))
             {
                 return;
             }

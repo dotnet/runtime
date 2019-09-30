@@ -1007,8 +1007,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
     assert(arg != nullptr);
     assert(info != nullptr);
 
-    GenTree* putArg         = nullptr;
-    bool     updateArgTable = true;
+    GenTree* putArg = nullptr;
 
     bool isOnStack = true;
     isOnStack      = info->regNum == REG_STK;
@@ -1225,10 +1224,6 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
     {
         putArg->gtFlags |= GTF_LATE_ARG;
     }
-    else if (updateArgTable)
-    {
-        info->node = putArg;
-    }
     return putArg;
 }
 
@@ -1269,7 +1264,7 @@ void Lowering::LowerArg(GenTreeCall* call, GenTree** ppArg)
     }
 
     fgArgTabEntry* info = comp->gtArgEntryByNode(call, arg);
-    assert(info->node == arg);
+    assert(info->GetNode() == arg);
     var_types type = arg->TypeGet();
 
     if (varTypeIsSmall(type))
@@ -1309,8 +1304,9 @@ void Lowering::LowerArg(GenTreeCall* call, GenTree** ppArg)
         GenTreeUnOp* bitcast = new (comp, GT_BITCAST) GenTreeOp(GT_BITCAST, TYP_LONG, arg, nullptr);
         BlockRange().InsertAfter(arg, bitcast);
 
-        info->node = *ppArg = arg = bitcast;
-        type                      = TYP_LONG;
+        *ppArg = arg = bitcast;
+        assert(info->GetNode() == arg);
+        type = TYP_LONG;
     }
 #endif // defined(_TARGET_X86_)
 #endif // defined(FEATURE_SIMD)
@@ -1337,8 +1333,8 @@ void Lowering::LowerArg(GenTreeCall* call, GenTree** ppArg)
 
             BlockRange().InsertBefore(arg, putArg);
             BlockRange().Remove(arg);
-            *ppArg     = fieldList;
-            info->node = fieldList;
+            *ppArg = fieldList;
+            assert(info->GetNode() == fieldList);
         }
         else
         {
@@ -1491,9 +1487,9 @@ GenTree* Lowering::LowerFloatArgReg(GenTree* arg, regNumber regNum)
 void Lowering::LowerArgsForCall(GenTreeCall* call)
 {
     JITDUMP("objp:\n======\n");
-    if (call->gtCallObjp)
+    if (call->gtCallThisArg != nullptr)
     {
-        LowerArg(call, &call->gtCallObjp);
+        LowerArg(call, &call->gtCallThisArg->NodeRef());
     }
 
     JITDUMP("\nargs:\n======\n");
@@ -2243,16 +2239,16 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget
 #ifdef DEBUG
     argEntry = comp->gtArgEntryByArgNum(call, 0);
     assert(argEntry != nullptr);
-    assert(argEntry->node->gtOper == GT_PUTARG_REG);
-    GenTree* firstArg = argEntry->node->gtOp.gtOp1;
+    assert(argEntry->GetNode()->OperIs(GT_PUTARG_REG));
+    GenTree* firstArg = argEntry->GetNode()->AsUnOp()->gtGetOp1();
     assert(firstArg->gtOper == GT_CNS_INT);
 #endif
 
     // Replace second arg by callTarget.
     argEntry = comp->gtArgEntryByArgNum(call, 1);
     assert(argEntry != nullptr);
-    assert(argEntry->node->gtOper == GT_PUTARG_REG);
-    GenTree* secondArg = argEntry->node->gtOp.gtOp1;
+    assert(argEntry->GetNode()->OperIs(GT_PUTARG_REG));
+    GenTree* secondArg = argEntry->GetNode()->AsUnOp()->gtGetOp1();
 
     ContainCheckRange(callTargetRange);
     BlockRange().InsertAfter(secondArg, std::move(callTargetRange));
@@ -2263,7 +2259,7 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget
 
     BlockRange().Remove(std::move(secondArgRange));
 
-    argEntry->node->gtOp.gtOp1 = callTarget;
+    argEntry->GetNode()->AsUnOp()->gtOp1 = callTarget;
 
 #elif defined(_TARGET_X86_)
 
@@ -2282,8 +2278,7 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget
     // arg 0 == callTarget.
     argEntry = comp->gtArgEntryByArgNum(call, numArgs - 1);
     assert(argEntry != nullptr);
-    assert(argEntry->node->gtOper == GT_PUTARG_STK);
-    GenTree* arg0 = argEntry->node->gtOp.gtOp1;
+    GenTree* arg0 = argEntry->GetNode()->AsPutArgStk()->gtGetOp1();
 
     ContainCheckRange(callTargetRange);
     BlockRange().InsertAfter(arg0, std::move(callTargetRange));
@@ -2293,13 +2288,12 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget
     assert(isClosed);
     BlockRange().Remove(std::move(secondArgRange));
 
-    argEntry->node->gtOp.gtOp1 = callTarget;
+    argEntry->GetNode()->AsPutArgStk()->gtOp1 = callTarget;
 
     // arg 1 == flags
     argEntry = comp->gtArgEntryByArgNum(call, numArgs - 2);
     assert(argEntry != nullptr);
-    assert(argEntry->node->gtOper == GT_PUTARG_STK);
-    GenTree* arg1 = argEntry->node->gtOp.gtOp1;
+    GenTree* arg1 = argEntry->GetNode()->AsPutArgStk()->gtGetOp1();
     assert(arg1->gtOper == GT_CNS_INT);
 
     ssize_t tailCallHelperFlags = 1 |                                  // always restore EDI,ESI,EBX
@@ -2309,8 +2303,7 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget
     // arg 2 == numberOfNewStackArgsWords
     argEntry = comp->gtArgEntryByArgNum(call, numArgs - 3);
     assert(argEntry != nullptr);
-    assert(argEntry->node->gtOper == GT_PUTARG_STK);
-    GenTree* arg2 = argEntry->node->gtOp.gtOp1;
+    GenTree* arg2 = argEntry->GetNode()->AsPutArgStk()->gtGetOp1();
     assert(arg2->gtOper == GT_CNS_INT);
 
     arg2->gtIntCon.gtIconVal = nNewStkArgsWords;
@@ -2319,8 +2312,7 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget
     // arg 3 == numberOfOldStackArgsWords
     argEntry = comp->gtArgEntryByArgNum(call, numArgs - 4);
     assert(argEntry != nullptr);
-    assert(argEntry->node->gtOper == GT_PUTARG_STK);
-    GenTree* arg3 = argEntry->node->gtOp.gtOp1;
+    GenTree* arg3 = argEntry->GetNode()->AsPutArgStk()->gtGetOp1();
     assert(arg3->gtOper == GT_CNS_INT);
 #endif // DEBUG
 
@@ -3264,7 +3256,7 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
 #endif // !_TARGET_X86_
 
         fgArgTabEntry* thisArgTabEntry = comp->gtArgEntryByArgNum(call, argNum);
-        thisArgNode                    = thisArgTabEntry->node;
+        thisArgNode                    = thisArgTabEntry->GetNode();
     }
     else
     {
@@ -4065,8 +4057,8 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
     // get a reference to the thisPtr being passed
     fgArgTabEntry* argEntry = comp->gtArgEntryByArgNum(call, thisPtrArgNum);
     assert(argEntry->regNum == thisPtrArgReg);
-    assert(argEntry->node->gtOper == GT_PUTARG_REG);
-    GenTree* thisPtr = argEntry->node->gtOp.gtOp1;
+    assert(argEntry->GetNode()->OperIs(GT_PUTARG_REG));
+    GenTree* thisPtr = argEntry->GetNode()->AsUnOp()->gtGetOp1();
 
     // If what we are passing as the thisptr is not already a local, make a new local to place it in
     // because we will be creating expressions based on it.
@@ -4083,7 +4075,7 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
             vtableCallTemp = comp->lvaGrabTemp(true DEBUGARG("virtual vtable call"));
         }
 
-        LIR::Use thisPtrUse(BlockRange(), &(argEntry->node->gtOp.gtOp1), argEntry->node);
+        LIR::Use thisPtrUse(BlockRange(), &(argEntry->GetNode()->AsUnOp()->gtOp1), argEntry->GetNode());
         ReplaceWithLclVar(thisPtrUse, vtableCallTemp);
 
         lclNum = vtableCallTemp;
@@ -5429,9 +5421,9 @@ void Lowering::CheckCallArg(GenTree* arg)
 //
 void Lowering::CheckCall(GenTreeCall* call)
 {
-    if (call->gtCallObjp != nullptr)
+    if (call->gtCallThisArg != nullptr)
     {
-        CheckCallArg(call->gtCallObjp);
+        CheckCallArg(call->gtCallThisArg->GetNode());
     }
 
     for (GenTreeCall::Use& use : call->Args())
