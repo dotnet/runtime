@@ -2565,13 +2565,7 @@ CodeHeader* EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t re
 #if defined(_TARGET_X86_)
     // when not optimizing for code size, 8-byte align the method entry point, so that
     // the JIT can in turn 8-byte align the loop entry headers.
-    // 
-    // when ReJIT is enabled, 8-byte-align the method entry point so that we may use an
-    // 8-byte interlocked operation to atomically poke the top most bytes (e.g., to
-    // redirect the rejit jmp-stamp at the top of the method from the prestub to the
-    // rejitted code, or to reinstate original code on a revert).
-    else if ((g_pConfig->GenOptimizeType() != OPT_SIZE) ||
-        pMD->IsVersionableWithJumpStamp())
+    else if ((g_pConfig->GenOptimizeType() != OPT_SIZE))
     {
         alignment = max(alignment, 8);
     }

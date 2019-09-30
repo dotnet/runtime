@@ -4004,18 +4004,8 @@ void MethodDesc::CheckRestore(ClassLoadLevel level)
 #endif
 
             g_IBCLogger.LogMethodDescWriteAccess(this);
-
-            // If this function had already been requested for rejit, then give the rejit
-            // manager a chance to jump-stamp the code we are restoring. This ensures the
-            // first thread entering the function will jump to the prestub and trigger the
-            // rejit. Note that the PublishMethodHolder may take a lock to avoid a rejit race.
-            // See code:ReJitManager::PublishMethodHolder::PublishMethodHolder#PublishCode
-            // for details on the race.
-            // 
-            {
-                PublishMethodHolder publishWorker(this, GetNativeCode());
-                pIMD->m_wFlags2 = pIMD->m_wFlags2 & ~InstantiatedMethodDesc::Unrestored;
-            }
+            
+            pIMD->m_wFlags2 = pIMD->m_wFlags2 & ~InstantiatedMethodDesc::Unrestored;
 
             if (ETW_PROVIDER_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER))
             {
@@ -4863,7 +4853,7 @@ bool MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()
         !CORProfilerDisableTieredCompilation())
     {
         m_bFlags2 |= enum_flag2_IsEligibleForTieredCompilation;
-        _ASSERTE(IsVersionableWithoutJumpStamp());
+        _ASSERTE(IsVersionable());
         return true;
     }
 #endif
@@ -4996,13 +4986,13 @@ FORCEINLINE bool MethodDesc::TryBackpatchEntryPointSlots(
     return true;
 }
 
-void MethodDesc::TrySetInitialCodeEntryPointForNonJumpStampVersionableMethod(
+void MethodDesc::TrySetInitialCodeEntryPointForVersionableMethod(
     PCODE entryPoint,
     bool mayHaveEntryPointSlotsToBackpatch)
 {
     WRAPPER_NO_CONTRACT;
     _ASSERTE(entryPoint != NULL);
-    _ASSERTE(IsVersionableWithoutJumpStamp());
+    _ASSERTE(IsVersionable());
     _ASSERTE(mayHaveEntryPointSlotsToBackpatch == MayHaveEntryPointSlotsToBackpatch());
 
     if (mayHaveEntryPointSlotsToBackpatch)
@@ -5025,7 +5015,7 @@ void MethodDesc::SetCodeEntryPoint(PCODE entryPoint)
     {
         BackpatchEntryPointSlots(entryPoint);
     }
-    else if (IsVersionableWithoutJumpStamp())
+    else if (IsVersionable())
     {
         _ASSERTE(IsVersionableWithPrecode());
         GetOrCreatePrecode()->SetTargetInterlocked(entryPoint, FALSE /* fOnlyRedirectFromPrestub */);
@@ -5047,7 +5037,7 @@ void MethodDesc::SetCodeEntryPoint(PCODE entryPoint)
 void MethodDesc::ResetCodeEntryPoint()
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(IsVersionableWithoutJumpStamp());
+    _ASSERTE(IsVersionable());
 
     if (MayHaveEntryPointSlotsToBackpatch())
     {
@@ -5143,7 +5133,7 @@ BOOL MethodDesc::SetStableEntryPointInterlocked(PCODE addr)
     } CONTRACTL_END;
 
     _ASSERTE(!HasPrecode());
-    _ASSERTE(!IsVersionableWithoutJumpStamp());
+    _ASSERTE(!IsVersionable());
 
     PCODE pExpected = GetTemporaryEntryPoint();
     TADDR pSlot = GetAddrOfSlot();

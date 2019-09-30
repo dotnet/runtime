@@ -37,21 +37,6 @@
 // appropriate IL and codegen flags, calling UnsafeJitFunction(), and redirecting the
 // jump-stamp from the prestub to the newly-rejitted code.
 // 
-// * code:PublishMethodHolder::PublishMethodHolder
-// MethodDesc::MakeJitWorker() calls this to determine if there's an outstanding
-// "pre-rejit" request for a MethodDesc that has just been jitted for the first time. We
-// also call this from MethodDesc::CheckRestore when restoring generic methods.
-// The holder applies the jump-stamp to the
-// top of the originally JITted code, with the jump target being the prestub.
-// When ReJIT is enabled this holder enters the ReJIT
-// lock to enforce atomicity of doing the pre-rejit-jmp-stamp & publishing/restoring
-// the PCODE, which is required to avoid races with a profiler that calls RequestReJIT
-// just as the method finishes compiling/restoring.
-//
-// * code:PublishMethodTableHolder::PublishMethodTableHolder
-// Does the same thing as PublishMethodHolder except iterating over every
-// method in the MethodTable. This is called from MethodTable::SetIsRestored.
-// 
 // * code:ReJitManager::GetCurrentReJitFlags:
 // CEEInfo::canInline() calls this as part of its calculation of whether it may inline a
 // given method. (Profilers may specify on a per-rejit-request basis whether the rejit of
@@ -99,12 +84,12 @@
 //
 // Transitions between RejitInfo states happen only in the following circumstances:
 //   1) New RejitInfo added to table (kJumpNone state)
-//      Inside RequestRejit, DoJumpStampIfNecessary
+//      Inside RequestRejit
 //      Global Crst MAY/MAY NOT be held, table Crst held
 //      Allowed SharedReJit states: Requested, GettingReJITParameters, Active
 //
 //   2) kJumpNone -> kJumpToPrestub
-//      Inside RequestRejit, DoJumpStampIfNecessary
+//      Inside RequestRejit
 //      Global Crst MAY/MAY NOT be held, table Crst held
 //      Allowed SharedReJit states: Requested, GettingReJITParameters, Active
 //

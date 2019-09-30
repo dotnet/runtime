@@ -198,11 +198,6 @@ CORJIT_FLAGS ZapInfo::ComputeJitFlags(CORINFO_METHOD_HANDLE handle)
         jitFlags.Clear(CORJIT_FLAGS::CORJIT_FLAG_PROCSPLIT);
     }
 
-    // Rejit is now enabled by default for NGEN'ed code. This costs us
-    // some size in exchange for diagnostic functionality, but we've got
-    // further work planned that should mitigate the size increase.
-    jitFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_PROF_REJIT_NOPS);
-
 #ifdef FEATURE_READYTORUN_COMPILER
     if (IsReadyToRunCompilation())
     {
