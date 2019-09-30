@@ -194,7 +194,7 @@ In order to use the instructions in this document to collect a trace, spawn a ne
 
 Even though the application hosted in the container isn't privileged, this new shell is, and it will have all the privileges it needs to collect trace data.  Now, simply follow the instructions in [Collecting a Trace](#collecting-a-trace) using the privileged shell.
 
-If you want to try tracing in a container, we've written a [demo Dockerfile](https://raw.githubusercontent.com/dotnet/corefx-tools/master/src/performance/perfcollect/docker-demo/Dockerfile) that installs all of the performance tracing pre-requisites, sets the environment up for tracing, and starts a sample CPU-bound app.
+If you want to try tracing in a container, we've written a [demo Dockerfile](https://raw.githubusercontent.com/microsoft/perfview/master/src/perfcollect/docker-demo/Dockerfile) that installs all of the performance tracing pre-requisites, sets the environment up for tracing, and starts a sample CPU-bound app.
 
 ## Filtering ##
 Filtering is implemented on Windows through the latest mechanisms provided with the [EventSource](https://msdn.microsoft.com/en-us/library/system.diagnostics.tracing.eventsource(v=vs.110).aspx) class. 
