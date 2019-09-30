@@ -3,6 +3,7 @@
     <AssemblyName>System.Runtime.InteropServices.WindowsRuntime</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" Condition="'$(TargetsWindows)'=='true'" />
