@@ -5,6 +5,7 @@
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsNetStandard)' == 'true'">SR.PlatformNotSupported_RefEmitILGeneration</GeneratePlatformNotSupportedAssemblyMessage>
     <OmitResources>$(IsPartialFacadeAssembly)</OmitResources>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netstandard-Debug;netstandard-Release;netstandard1.0-Debug;netstandard1.0-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
