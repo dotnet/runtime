@@ -17,6 +17,11 @@ c_static_assert_msg(UCOL_LESS < 0, "managed side requires less than zero for a <
 c_static_assert_msg(UCOL_GREATER > 0, "managed side requires greater than zero for a > b");
 c_static_assert_msg(USEARCH_DONE == -1, "managed side requires -1 for not found");
 
+#define UCOL_IGNORABLE 0
+#define UCOL_PRIMARYORDERMASK 0xFFFF0000
+#define UCOL_SECONDARYORDERMASK 0x0000FF00
+#define UCOL_TERTIARYORDERMASK 0x000000FF
+
 #define CompareOptionsIgnoreCase 0x1
 #define CompareOptionsIgnoreNonSpace 0x2
 #define CompareOptionsIgnoreSymbols 0x4
@@ -318,7 +323,7 @@ static int CanIgnoreAllCollationElements(const UCollator* pColl, const UChar* lp
         int32_t curCollElem = UCOL_NULLORDER;
         while ((curCollElem = ucol_next(pCollElem, &err)) != UCOL_NULLORDER)
         {
-            if (curCollElem != 0)
+            if (curCollElem != UCOL_IGNORABLE)
             {
                 result = FALSE;
                 break;
@@ -329,7 +334,6 @@ static int CanIgnoreAllCollationElements(const UCollator* pColl, const UChar* lp
     }
 
     return U_SUCCESS(err) ? result : FALSE;
-
 }
 
 void CreateSortHandle(SortHandle** ppSortHandle)
@@ -588,6 +592,142 @@ int32_t GlobalizationNative_IndexOfOrdinalIgnoreCase(
 }
 
 /*
+ collation element is an int used for sorting. It consists of 3 components:
+    * primary - first 16 bits, representing the base letter
+    * secondary - next 8 bits, typically an accent
+    * tertiary - last 8 bits, typically the case
+
+An example (the numbers are made up to keep it simple)
+    a: 1 0 0
+    ą: 1 1 0
+    A: 1 0 1
+    Ą: 1 1 1
+
+    this method returns a mask that allows for characters comparison using specified Collator Strength
+*/
+static int32_t GetCollationElementMask(UColAttributeValue strength)
+{
+    assert(strength >= UCOL_SECONDARY);
+
+    switch (strength)
+    {
+        case UCOL_PRIMARY:
+            return UCOL_PRIMARYORDERMASK;
+        case UCOL_SECONDARY:
+            return UCOL_PRIMARYORDERMASK | UCOL_SECONDARYORDERMASK;
+        default:
+            return UCOL_PRIMARYORDERMASK | UCOL_SECONDARYORDERMASK | UCOL_TERTIARYORDERMASK;
+    }
+}
+
+static int32_t SimpleStartsWith_Iterators(UCollationElements* pPatternIterator, UCollationElements* pSourceIterator, UColAttributeValue strength)
+{
+    assert(strength >= UCOL_SECONDARY);
+
+    UErrorCode errorCode = U_ZERO_ERROR;
+    int32_t movePattern = TRUE, moveSource = TRUE;
+    int32_t patternElement = UCOL_IGNORABLE, sourceElement = UCOL_IGNORABLE;
+
+    int32_t collationElementMask = GetCollationElementMask(strength);
+
+    while (TRUE)
+    {
+        if (movePattern)
+        {
+            patternElement = ucol_next(pPatternIterator, &errorCode);
+        }
+        if (moveSource)
+        {
+            sourceElement = ucol_next(pSourceIterator, &errorCode);
+        }
+        movePattern = TRUE; moveSource = TRUE;
+
+        if (patternElement == UCOL_NULLORDER)
+        {
+            if (sourceElement == UCOL_NULLORDER)
+            {
+                return TRUE; // source is equal to pattern, we have reached both ends at the same time
+            }
+            else if (sourceElement == UCOL_IGNORABLE)
+            {
+                return TRUE; // the next character in source is an ignorable character, an example: "o\u0000".StartsWith("o")
+            }
+            else if (((sourceElement & UCOL_PRIMARYORDERMASK) == 0) && (sourceElement & UCOL_SECONDARYORDERMASK) != 0)
+            {
+                return FALSE; // the next character in source text is a combining character, an example: "o\u0308".StartsWith("o")
+            }
+            else
+            {
+                return TRUE;
+            }
+        }
+        else if (patternElement == UCOL_IGNORABLE)
+        {
+            moveSource = FALSE;
+        }
+        else if (sourceElement == UCOL_IGNORABLE)
+        {
+            movePattern = FALSE;
+        }
+        else if ((patternElement & collationElementMask) != (sourceElement & collationElementMask))
+        {
+            return FALSE;
+        }
+    }
+}
+
+int32_t SimpleStartsWith(const UCollator* pCollator, UErrorCode* pErrorCode, const UChar* pPattern, int32_t patternLength, const UChar* pText, int32_t textLength, int32_t options)
+{
+    assert(options <= 1);
+
+    int32_t result = FALSE;
+
+    UCollationElements* pPatternIterator = ucol_openElements(pCollator, pPattern, patternLength, pErrorCode);
+    if (U_SUCCESS(*pErrorCode))
+    {
+        UCollationElements* pSourceIterator = ucol_openElements(pCollator, pText, textLength, pErrorCode);
+        if (U_SUCCESS(*pErrorCode))
+        {
+            UColAttributeValue strength = ucol_getStrength(pCollator);
+
+            result = SimpleStartsWith_Iterators(pPatternIterator, pSourceIterator, strength);
+
+            ucol_closeElements(pSourceIterator);
+        }
+
+        ucol_closeElements(pPatternIterator);
+    }
+
+    return result;
+}
+
+int32_t ComplexStartsWith(const UCollator* pCollator, UErrorCode* pErrorCode, const UChar* pPattern, int32_t patternLength, const UChar* pText, int32_t textLength)
+{
+    int32_t result = FALSE;
+
+    UStringSearch* pSearch = usearch_openFromCollator(pPattern, patternLength, pText, textLength, pCollator, NULL, pErrorCode);
+    if (U_SUCCESS(*pErrorCode))
+    {
+        int32_t idx = usearch_first(pSearch, pErrorCode);
+        if (idx != USEARCH_DONE)
+        {
+            if (idx == 0)
+            {
+                result = TRUE;
+            }
+            else
+            {
+                result = CanIgnoreAllCollationElements(pCollator, pText, idx);
+            }
+        }
+
+        usearch_close(pSearch);
+    }
+
+    return result;
+}
+
+/*
  Return value is a "Win32 BOOL" (1 = true, 0 = false)
  */
 int32_t GlobalizationNative_StartsWith(
@@ -598,35 +738,22 @@ int32_t GlobalizationNative_StartsWith(
                         int32_t cwSourceLength,
                         int32_t options)
 {
-    int32_t result = FALSE;
+    
     UErrorCode err = U_ZERO_ERROR;
-    const UCollator* pColl = GetCollatorFromSortHandle(pSortHandle, options, &err);
+    const UCollator* pCollator = GetCollatorFromSortHandle(pSortHandle, options, &err);
 
-    if (U_SUCCESS(err))
+    if (!U_SUCCESS(err))
     {
-        UStringSearch* pSearch = usearch_openFromCollator(lpTarget, cwTargetLength, lpSource, cwSourceLength, pColl, NULL, &err);
-        int32_t idx = USEARCH_DONE;
-
-        if (U_SUCCESS(err))
-        {
-            idx = usearch_first(pSearch, &err);
-            if (idx != USEARCH_DONE)
-            {
-                if (idx == 0)
-                {
-                    result = TRUE;
-                }
-                else
-                {
-                    result = CanIgnoreAllCollationElements(pColl, lpSource, idx);
-                }
-            }
-
-            usearch_close(pSearch);
-        }
+        return FALSE;
     }
-
-    return result;
+    else if (options > CompareOptionsIgnoreCase)
+    {
+        return ComplexStartsWith(pCollator, &err, lpTarget, cwTargetLength, lpSource, cwSourceLength);
+    }
+    else
+    {
+        return SimpleStartsWith(pCollator, &err, lpTarget, cwTargetLength, lpSource, cwSourceLength, options);
+    }
 }
 
 /*
