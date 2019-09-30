@@ -199,7 +199,6 @@ HRESULT EEConfig::Init()
     iJitOptimizeType = OPT_DEFAULT;
     fJitFramed = false;
     fJitAlignLoops = false;
-    fAddRejitNops = false;
     fJitMinOpts = false;
     fPInvokeRestoreEsp = (DWORD)-1;
 
@@ -996,10 +995,6 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
     fJitMinOpts = (GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_JITMinOpts, fJitMinOpts) == 1);
     iJitOptimizeType      =  GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_JitOptimizeType, iJitOptimizeType);
     if (iJitOptimizeType > OPT_RANDOM)     iJitOptimizeType = OPT_DEFAULT;
-
-#ifdef FEATURE_REJIT
-    fAddRejitNops = (GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_AddRejitNops, fAddRejitNops) != 0);
-#endif
 
 #ifdef _TARGET_X86_
     fPInvokeRestoreEsp = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Jit_NetFx40PInvokeStackResilience);
