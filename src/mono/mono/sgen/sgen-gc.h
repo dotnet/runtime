@@ -322,6 +322,7 @@ enum {
 	INTERNAL_MEM_STATISTICS,
 	INTERNAL_MEM_STAT_PINNED_CLASS,
 	INTERNAL_MEM_STAT_REMSET_CLASS,
+	INTERNAL_MEM_STAT_GCHANDLE_CLASS,
 	INTERNAL_MEM_GRAY_QUEUE,
 	INTERNAL_MEM_MS_TABLES,
 	INTERNAL_MEM_MS_BLOCK_INFO,
@@ -469,6 +470,9 @@ void sgen_pin_stats_enable (void);
 void sgen_pin_stats_register_object (GCObject *obj, int generation);
 void sgen_pin_stats_register_global_remset (GCObject *obj);
 void sgen_pin_stats_report (void);
+
+void sgen_gchandle_stats_enable (void);
+void sgen_gchandle_stats_report (void);
 
 void sgen_sort_addresses (void **array, size_t size);
 void sgen_add_to_global_remset (gpointer ptr, GCObject *obj);

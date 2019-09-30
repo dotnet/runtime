@@ -1786,6 +1786,7 @@ collect_nursery (const char *reason, gboolean is_overflow)
 	SGEN_LOG (2, "Old generation scan: %lld usecs", (long long)(TV_ELAPSED (atv, btv) / 10));
 
 	sgen_pin_stats_report ();
+	sgen_gchandle_stats_report ();
 
 	TV_GETTIME (atv);
 	time_minor_scan_pinned += TV_ELAPSED (btv, atv);
@@ -3611,6 +3612,8 @@ sgen_gc_init (void)
 				debug_print_allowance = TRUE;
 			} else if (!strcmp (opt, "print-pinning")) {
 				sgen_pin_stats_enable ();
+			} else if (!strcmp (opt, "print-gchandles")) {
+				sgen_gchandle_stats_enable ();
 			} else if (!strcmp (opt, "verify-before-allocs")) {
 				sgen_verify_before_allocs = 1;
 				sgen_has_per_allocation_action = TRUE;
@@ -3719,6 +3722,7 @@ sgen_gc_init (void)
 				fprintf (stderr, "  check-scan-starts\n");
 				fprintf (stderr, "  print-allowance\n");
 				fprintf (stderr, "  print-pinning\n");
+				fprintf (stderr, "  print-gchandles\n");
 				fprintf (stderr, "  heap-dump=<filename>\n");
 				fprintf (stderr, "  binary-protocol=<filename>[:<file-size-limit>]\n");
 				fprintf (stderr, "  nursery-canaries\n");

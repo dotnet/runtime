@@ -20,6 +20,15 @@ static volatile guint32 stat_gc_handles_allocated = 0;
 static volatile guint32 stat_gc_handles_max_allocated = 0;
 #endif
 
+
+typedef struct {
+        size_t num_handles [HANDLE_TYPE_MAX];
+} GCHandleClassEntry;
+
+static gboolean do_gchandle_stats = FALSE;
+
+static SgenHashTable gchandle_class_hash_table = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_STATISTICS, INTERNAL_MEM_STAT_GCHANDLE_CLASS, sizeof (GCHandleClassEntry), g_str_hash, g_str_equal);
+
 /*
  * A table of GC handle data, implementing a simple lock-free bitmap allocator.
  *
@@ -512,6 +521,80 @@ sgen_register_obj_with_weak_fields (GCObject *obj)
 	// We use a gc handle to be able to do some processing for these objects at every gc
 	//
 	alloc_handle (gc_handles_for_type (HANDLE_WEAK_FIELDS), obj, FALSE);
+}
+
+void
+sgen_gchandle_stats_enable (void)
+{
+	do_gchandle_stats = TRUE;
+}
+
+static void
+sgen_gchandle_stats_register_vtable (GCVTable vtable, int handle_type)
+{
+	GCHandleClassEntry *entry;
+
+	char *name = g_strdup_printf ("%s.%s", sgen_client_vtable_get_namespace (vtable), sgen_client_vtable_get_name (vtable));
+	entry = (GCHandleClassEntry*) sgen_hash_table_lookup (&gchandle_class_hash_table, name);
+
+	if (entry) {
+		g_free (name);
+	} else {
+		// Create the entry for this class and get the address of it
+		GCHandleClassEntry empty_entry;
+		memset (&empty_entry, 0, sizeof (GCHandleClassEntry));
+		sgen_hash_table_replace (&gchandle_class_hash_table, name, &empty_entry, NULL);
+		entry = (GCHandleClassEntry*) sgen_hash_table_lookup (&gchandle_class_hash_table, name);
+	}
+
+	entry->num_handles [handle_type]++;
+}
+
+static void
+sgen_gchandle_stats_count (void)
+{
+	int i;
+
+	sgen_hash_table_clean (&gchandle_class_hash_table);
+
+	for (i = HANDLE_TYPE_MIN; i < HANDLE_TYPE_MAX; i++) {
+		HandleData *handles = gc_handles_for_type ((GCHandleType)i);
+		SgenArrayList *array = &handles->entries_array;
+		volatile gpointer *slot;
+		gpointer hidden, revealed;
+
+		SGEN_ARRAY_LIST_FOREACH_SLOT (array, slot) {
+			hidden = *slot;
+			revealed = MONO_GC_REVEAL_POINTER (hidden, MONO_GC_HANDLE_TYPE_IS_WEAK (i));
+
+			if (MONO_GC_HANDLE_IS_OBJECT_POINTER (hidden))
+				sgen_gchandle_stats_register_vtable (SGEN_LOAD_VTABLE (revealed), i);
+		} SGEN_ARRAY_LIST_END_FOREACH_SLOT;
+	}
+}
+
+void
+sgen_gchandle_stats_report (void)
+{
+	char *name;
+	GCHandleClassEntry *gchandle_entry;
+
+	if (!do_gchandle_stats)
+		return;
+
+	sgen_gchandle_stats_count ();
+
+	mono_gc_printf (sgen_gc_debug_file, "\n%-60s  %10s  %10s  %10s\n", "Class", "Normal", "Weak", "Pinned");
+	SGEN_HASH_TABLE_FOREACH (&gchandle_class_hash_table, char *, name, GCHandleClassEntry *, gchandle_entry) {
+		mono_gc_printf (sgen_gc_debug_file, "%-60s", name);
+		mono_gc_printf (sgen_gc_debug_file, "  %10ld", (long)gchandle_entry->num_handles [HANDLE_NORMAL]);
+		size_t weak_handles = gchandle_entry->num_handles [HANDLE_WEAK] +
+				gchandle_entry->num_handles [HANDLE_WEAK_TRACK] +
+				gchandle_entry->num_handles [HANDLE_WEAK_FIELDS];
+		mono_gc_printf (sgen_gc_debug_file, "  %10ld", (long)weak_handles);
+		mono_gc_printf (sgen_gc_debug_file, "  %10ld", (long)gchandle_entry->num_handles [HANDLE_PINNED]);
+		mono_gc_printf (sgen_gc_debug_file, "\n");
+	} SGEN_HASH_TABLE_FOREACH_END;
 }
 
 void
