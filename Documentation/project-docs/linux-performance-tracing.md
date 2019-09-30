@@ -5,7 +5,7 @@ When a performance problem is encountered on Linux, these instructions can be us
 
 CoreCLR supports two different mechanisms for tracing .NET applications on Linux: EventPipe and LTTng. They both have tools built by the .NET team, namely dotnet-trace (which uses EventPipe) and PerfCollect (which uses LTTng). Here are some notable differences between the two tools to help you decide which to use:
 
-1. PerfCollect is leverages LTTng, which is a tracing framework built for the Linux kernel, so it can only be used on Linux. dotnet-trace is OS agnostic, so you can use it the same way across Windows/macOS and Linux. 
+1. PerfCollect leverages LTTng, which is a tracing framework built for the Linux kernel, so it can only be used on Linux. dotnet-trace is OS agnostic, so you can use it the same way across Windows/macOS and Linux. 
 
 2. PerfCollect uses [perf](https://perf.wiki.kernel.org/index.php/Main_Page), which gives you native callstacks. dotnet-trace can only give you managed callstack.
 
