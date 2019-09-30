@@ -135,8 +135,6 @@ namespace ILCompiler
             if (_ibcTuning)
                 corJitFlags.Add(CorJitFlag.CORJIT_FLAG_BBINSTR);
 
-            corJitFlags.Add(CorJitFlag.CORJIT_FLAG_PROF_REJIT_NOPS);
-
             var jitConfig = new JitConfigProvider(corJitFlags, _ryujitOptions);
 
             return new ReadyToRunCodegenCompilation(

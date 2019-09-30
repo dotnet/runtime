@@ -6962,13 +6962,27 @@ MethodTableBuilder::NeedsNativeCodeSlot(bmtMDMethod * pMDMethod)
 
 #ifdef FEATURE_TIERED_COMPILATION
     // Keep in-sync with MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()
-    if (g_pConfig->TieredCompilation() &&
+    if ((g_pConfig->TieredCompilation() &&
 
         // Policy - If QuickJit is disabled and the module does not have any pregenerated code, the method would be ineligible
         // for tiering currently to avoid some unnecessary overhead
         (g_pConfig->TieredCompilation_QuickJit() || GetModule()->HasNativeOrReadyToRunImage()) &&
 
         (pMDMethod->GetMethodType() == METHOD_TYPE_NORMAL || pMDMethod->GetMethodType() == METHOD_TYPE_INSTANTIATED))
+
+#ifdef FEATURE_REJIT
+        ||
+
+        // Methods that are R2R need precode if ReJIT is enabled. Keep this in sync with MethodDesc::IsEligibleForReJIT()
+        (ReJitManager::IsReJITEnabled() &&
+
+            GetMethodClassification(pMDMethod->GetMethodType()) == mcIL &&
+
+            !GetModule()->IsCollectible() &&
+
+            !GetModule()->IsEditAndContinueEnabled())
+#endif // FEATURE_REJIT
+        )
     {
         return TRUE;
     }

@@ -276,7 +276,6 @@ public:
     unsigned int  GenOptimizeType(void)                     const {LIMITED_METHOD_CONTRACT;  return iJitOptimizeType; }
     bool          JitFramed(void)                           const {LIMITED_METHOD_CONTRACT;  return fJitFramed; }
     bool          JitAlignLoops(void)                       const {LIMITED_METHOD_CONTRACT;  return fJitAlignLoops; }
-    bool          AddRejitNops(void)                        const {LIMITED_METHOD_DAC_CONTRACT;  return fAddRejitNops; }
     bool          JitMinOpts(void)                          const {LIMITED_METHOD_CONTRACT;  return fJitMinOpts; }
     
     // Tiered Compilation config
@@ -787,7 +786,6 @@ private: //----------------------------------------------------------------
     bool fTrackDynamicMethodDebugInfo; //  Enable/Disable tracking dynamic method debug info
     bool fJitFramed;                   // Enable/Disable EBP based frames
     bool fJitAlignLoops;               // Enable/Disable loop alignment
-    bool fAddRejitNops;                // Enable/Disable nop padding for rejit.          default is true
     bool fJitMinOpts;                  // Enable MinOpts for all jitted methods
 
     unsigned iJitOptimizeType; // 0=Blended,1=SmallCode,2=FastCode,              default is 0=Blended
