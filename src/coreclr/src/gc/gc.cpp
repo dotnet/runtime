@@ -2611,6 +2611,10 @@ exclusive_sync* gc_heap::bgc_alloc_lock;
 
 oom_history gc_heap::oom_info;
 
+int         gc_heap::oomhist_index_per_heap = 0;
+
+oom_history gc_heap::oomhist_per_heap[max_oom_history_count];
+
 fgm_history gc_heap::fgm_result;
 
 size_t      gc_heap::allocated_since_last_gc = 0;
@@ -10917,6 +10921,8 @@ gc_heap::init_gc_heap (int  h_number)
 
     ephemeral_heap_segment = 0;
 
+    oomhist_index_per_heap = 0;
+
     freeable_large_heap_segment = 0;
 
     condemned_generation_num = 0;
@@ -12146,6 +12152,17 @@ size_t gc_heap::limit_from_size (size_t size, uint32_t flags, size_t physical_li
     return new_limit;
 }
 
+void gc_heap::add_to_oom_history_per_heap()
+{
+    oom_history* current_hist = &oomhist_per_heap[oomhist_index_per_heap];
+    memcpy (current_hist, &oom_info, sizeof (oom_info));
+    oomhist_index_per_heap++;
+    if (oomhist_index_per_heap == max_oom_history_count)
+    {
+        oomhist_index_per_heap = 0;
+    }
+}
+
 void gc_heap::handle_oom (int heap_num, oom_reason reason, size_t alloc_size, 
                           uint8_t* allocated, uint8_t* reserved)
 {
@@ -12175,6 +12192,7 @@ void gc_heap::handle_oom (int heap_num, oom_reason reason, size_t alloc_size,
     oom_info.available_pagefile_mb = fgm_result.available_pagefile_mb;
     oom_info.loh_p = fgm_result.loh_p;
 
+    add_to_oom_history_per_heap();
     fgm_result.fgm = fgm_no_failure;
 
     // Break early - before the more_space_lock is release so no other threads
@@ -13775,7 +13793,8 @@ exit:
     if (loh_alloc_state == a_state_cant_allocate)
     {
         assert (oom_r != oom_no_failure);
-        if (should_retry_other_heap (size))
+
+        if ((oom_r != oom_cant_commit) && should_retry_other_heap (size))
         {
             loh_alloc_state = a_state_retry_allocate;
         }
