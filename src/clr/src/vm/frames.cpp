@@ -1031,43 +1031,56 @@ GCFrame::~GCFrame()
 
         Pop();
 
-#if defined(FEATURE_EH_FUNCLETS) && !defined(FEATURE_PAL)
+#ifndef FEATURE_PAL
+
+        PTR_Frame frame = NULL;
+
+#ifdef FEATURE_EH_FUNCLETS
         PTR_ExceptionTracker pCurrentTracker = m_pCurThread->GetExceptionState()->GetCurrentExceptionTracker();
         if (pCurrentTracker != NULL)
         {
-            if (pCurrentTracker->GetLimitFrame() == this)
+            frame = pCurrentTracker->GetInitialExplicitFrame();
+        }
+#else
+        PTR_PTR_Frame ptrToInitialFrame = m_pCurThread->GetExceptionState()->GetPtrToBottomFrameDuringUnwind();
+        if (ptrToInitialFrame != NULL)
+        {
+            frame = *ptrToInitialFrame;
+            if (frame == this)
             {
-                // The current frame that was just popped was the EH limit frame. We need to reset the EH limit frame
-                // to the current frame so that it stays on the frame chain from initial explicit frame.
-                // The ExceptionTracker::HasFrameBeenUnwoundByAnyActiveException needs that to correctly detect
-                // frames that were unwound.
-                pCurrentTracker->ResetLimitFrame();
-            }
-
-            PTR_Frame frame = pCurrentTracker->GetInitialExplicitFrame();
-            if (frame != NULL)
-            {
-                while ((frame != FRAME_TOP) && (frame != this))
-                {
-                    PTR_Frame nextFrame = frame->PtrNextFrame();
-                    if (nextFrame == this)
-                    {
-                        // Repair frame chain from the initial explicit frame to the current frame,
-                        // skipping the current GCFrame that was destroyed
-                        frame->m_Next = m_pCurThread->m_pFrame;
-                        break;
-                    }
-                    frame = nextFrame;
-                }
+                // The current frame that was just popped was the bottom frame used
+                // as an initial frame to scan stack frames.
+                // Update the bottom frame pointer to point to the first valid frame.
+                *ptrToInitialFrame = m_pCurThread->m_pFrame;
             }
         }
-#endif // FEATURE_EH_FUNCLETS && !FEATURE_PAL
+#endif // FEATURE_EH_FUNCLETS
+
+        if (frame != NULL)
+        {
+            // There is an initial explicit frame, so we need to scan the explicit frame chain starting at
+            // that frame to see if the current frame that is being destroyed was on the chain.
+
+            while ((frame != FRAME_TOP) && (frame != this))
+            {
+                PTR_Frame nextFrame = frame->PtrNextFrame();
+                if (nextFrame == this)
+                {
+                    // Repair frame chain from the initial explicit frame to the current frame,
+                    // skipping the current GCFrame that was destroyed
+                    frame->m_Next = m_pCurThread->m_pFrame;
+                    break;
+                }
+                frame = nextFrame;
+                _ASSERTE(frame != NULL);
+            }
+        }
+#endif // !FEATURE_PAL
 
         if (!wasCoop)
         {
             m_pCurThread->EnablePreemptiveGC();
         }
-
     }
 }
 
