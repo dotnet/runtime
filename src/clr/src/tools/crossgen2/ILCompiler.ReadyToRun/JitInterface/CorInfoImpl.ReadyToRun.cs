@@ -150,7 +150,16 @@ namespace Internal.JitInterface
 
         private bool ShouldSkipCompilation(IMethodNode methodCodeNodeNeedingCode)
         {
-            return methodCodeNodeNeedingCode.Method.IsAggressiveOptimization;
+            MethodDesc method = methodCodeNodeNeedingCode.Method;
+            if (method.IsAggressiveOptimization)
+            {
+                return true;
+            }
+            if (HardwareIntrinsicHelpers.IsHardwareIntrinsic(method))
+            {
+                return true;
+            }
+            return false;
         }
 
         public void CompileMethod(IReadyToRunMethodCodeNode methodCodeNodeNeedingCode)
@@ -1143,6 +1152,109 @@ namespace Internal.JitInterface
             Get_CORINFO_SIG_INFO(methodToDescribe, &pResult->sig, useInstantiatingStub);
         }
 
+        private uint getMethodAttribs(CORINFO_METHOD_STRUCT_* ftn)
+        {
+            MethodDesc method = HandleToObject(ftn);
+            uint attribs = getMethodAttribsInternal(method);
+            attribs = FilterNamedIntrinsicMethodAttribs(attribs, method);
+            return attribs;
+        }
+
+        private uint FilterNamedIntrinsicMethodAttribs(uint attribs, MethodDesc method)
+        {
+            bool _TARGET_X86_ = _compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.X86;
+            bool _TARGET_AMD64_ = _compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.X64;
+            bool _TARGET_ARM64_ = _compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM64;
+
+            if ((attribs & (uint)CorInfoFlag.CORINFO_FLG_JIT_INTRINSIC) != 0)
+            {
+                // Figure out which intrinsic we are dealing with.
+                string namespaceName;
+                string className;
+                string enclosingClassName;
+                string methodName = this.getMethodNameFromMetadataImpl(method, out className, out namespaceName, out enclosingClassName);
+
+                // Is this the get_IsSupported method that checks whether intrinsic is supported?
+                bool fIsGetIsSupportedMethod = string.Equals(methodName, "get_IsSupported");
+                bool fIsPlatformHWIntrinsic = false;
+                bool fIsHWIntrinsic = false;
+                bool fTreatAsRegularMethodCall = false;
+
+                if (_TARGET_X86_ || _TARGET_AMD64_)
+                {
+                    fIsPlatformHWIntrinsic = (namespaceName == "System.Runtime.Intrinsics.X86");
+                }
+                else if (_TARGET_ARM64_)
+                {
+                    fIsPlatformHWIntrinsic = (namespaceName == "System.Runtime.Intrinsics.Arm.Arm64");
+                }
+
+                fIsHWIntrinsic = fIsPlatformHWIntrinsic || (namespaceName == "System.Runtime.Intrinsics");
+
+                // By default, we want to treat the get_IsSupported method for platform specific HWIntrinsic ISAs as
+                // method calls. This will be modified as needed below based on what ISAs are considered baseline.
+                //
+                // We also want to treat the non-platform specific hardware intrinsics as regular method calls. This
+                // is because they often change the code they emit based on what ISAs are supported by the compiler,
+                // but we don't know what the target machine will support.
+                //
+                // Additionally, we make sure none of the hardware intrinsic method bodies get pregenerated in crossgen
+                // (see ShouldSkipCompilation) but get JITted instead. The JITted method will have the correct
+                // answer for the CPU the code is running on.
+                fTreatAsRegularMethodCall = (fIsGetIsSupportedMethod && fIsPlatformHWIntrinsic) || (!fIsPlatformHWIntrinsic && fIsHWIntrinsic);
+
+                if (_TARGET_X86_ || _TARGET_AMD64_)
+                {
+                    if (fIsPlatformHWIntrinsic)
+                    {
+                        // Simplify the comparison logic by grabbing the name of the ISA
+                        string isaName = (enclosingClassName == null) ? className : enclosingClassName;
+                        if ((isaName == "Sse") || (isaName == "Sse2"))
+                        {
+                            if ((enclosingClassName == null) || (className == "X64"))
+                            {
+                                // If it's anything related to Sse/Sse2, we can expand unconditionally since this is
+                                // a baseline requirement of CoreCLR.
+                                fTreatAsRegularMethodCall = false;
+                            }
+                        }
+                        else if ((className == "Avx") || (className == "Fma") || (className == "Avx2") || (className == "Bmi1") || (className == "Bmi2"))
+                        {
+                            if ((enclosingClassName == null) || (string.Equals(className, "X64")))
+                            {
+                                // If it is the get_IsSupported method for an ISA which requires the VEX
+                                // encoding we want to expand unconditionally. This will force those code
+                                // paths to be treated as dead code and dropped from the compilation.
+                                //
+                                // For all of the other intrinsics in an ISA which requires the VEX encoding
+                                // we need to treat them as regular method calls. This is done because RyuJIT
+                                // doesn't currently support emitting both VEX and non-VEX encoded instructions
+                                // for a single method.
+                                fTreatAsRegularMethodCall = !fIsGetIsSupportedMethod;
+                            }
+                        }
+                    }
+                    else if (namespaceName == "System")
+                    {
+                        if ((className == "Math") || (className == "MathF"))
+                        {
+                            // These are normally handled via the SSE4.1 instructions ROUNDSS/ROUNDSD.
+                            // However, we don't know the ISAs the target machine supports so we should
+                            // fallback to the method call implementation instead.
+                            fTreatAsRegularMethodCall = (methodName == "Round");
+                        }
+                    }
+                }
+
+                if (fTreatAsRegularMethodCall)
+                {
+                    // Treat as a regular method call (into a JITted method).
+                    attribs = (attribs & ~(uint)CorInfoFlag.CORINFO_FLG_JIT_INTRINSIC) | (uint)CorInfoFlag.CORINFO_FLG_DONT_INLINE;
+                }
+            }
+            return attribs;
+        }
+
         private void getCallInfo(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CALLINFO_FLAGS flags, CORINFO_CALL_INFO* pResult)
         {
             MethodDesc methodToCall;
@@ -1167,6 +1279,8 @@ namespace Internal.JitInterface
                 out callerMethod,
                 out callerModule,
                 out useInstantiatingStub);
+
+            pResult->methodFlags = FilterNamedIntrinsicMethodAttribs(pResult->methodFlags, methodToCall);
 
             if (pResult->thisTransform == CORINFO_THIS_TRANSFORM.CORINFO_BOX_THIS)
             {
