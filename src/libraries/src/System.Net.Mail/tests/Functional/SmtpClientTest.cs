@@ -317,21 +317,29 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
-        [ActiveIssue(40711)]
+        // [ActiveIssue(40711)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework has a bug and may not time out for low values")]
         [PlatformSpecific(~TestPlatforms.OSX)] // on OSX, not all synchronous operations (e.g. connect) can be aborted by closing the socket.
         public void TestZeroTimeout()
         {
-            using (Socket serverSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            var testTask = Task.Run(() =>
             {
-                serverSocket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-                serverSocket.Listen(1);
+                using (Socket serverSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                {
+                    serverSocket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                    serverSocket.Listen(1);
 
-                SmtpClient smtpClient = new SmtpClient("localhost", (serverSocket.LocalEndPoint as IPEndPoint).Port);
-                smtpClient.Timeout = 0;
+                    SmtpClient smtpClient = new SmtpClient("localhost", (serverSocket.LocalEndPoint as IPEndPoint).Port);
+                    smtpClient.Timeout = 0;
 
-                MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "test");
-                Assert.Throws<SmtpException>(() => smtpClient.Send(msg));
+                    MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "test");
+                    Assert.Throws<SmtpException>(() => smtpClient.Send(msg));
+                }
+            });
+            // Abort in order to get a coredump if this test takes too long.
+            if (!testTask.Wait(TimeSpan.FromMinutes(5)))
+            {
+                Environment.FailFast(nameof(TestZeroTimeout));
             }
         }
 
