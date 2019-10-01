@@ -42,6 +42,10 @@ namespace ReadyToRun.SuperIlc
 
             // TODO (TRylek): problem related to devirtualization of method without IL - System.Enum.Equals(object)
             new FrameworkExclusion("System.ComponentModel.TypeConverter", "TODO trylek - devirtualization of method without IL"),
+
+            // TODO: additional framework build failures
+            new FrameworkExclusion("Microsoft.Diagnostics.Tracing.TraceEvent", "Assert failure in JIT"),
+            new FrameworkExclusion("System.Private.CoreLib", "Assert failure in JIT"),
         };
 
         private readonly IEnumerable<BuildFolder> _buildFolders;

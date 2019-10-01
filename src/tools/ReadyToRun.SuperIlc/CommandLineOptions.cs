@@ -33,6 +33,7 @@ namespace ReadyToRun.SuperIlc
                         CpaotDirectory(),
                         Crossgen(),
                         NoJit(),
+                        NoCrossgen2(),
                         Exe(),
                         NoExe(),
                         NoEtw(),
@@ -63,6 +64,7 @@ namespace ReadyToRun.SuperIlc
                         CpaotDirectory(),
                         Crossgen(),
                         NoJit(),
+                        NoCrossgen2(),
                         Exe(),
                         NoExe(),
                         NoEtw(),
@@ -87,6 +89,7 @@ namespace ReadyToRun.SuperIlc
                     {
                             CoreRootDirectory(),
                             Crossgen(),
+                            NoCrossgen2(),
                             NoCleanup(),
                             DegreeOfParallelism(),
                             Sequential(),
@@ -159,6 +162,9 @@ namespace ReadyToRun.SuperIlc
 
             Option NoJit() =>
                 new Option(new[] { "--nojit" }, "Don't run tests in JITted mode", new Argument<bool>());
+
+            Option NoCrossgen2() =>
+                new Option(new[] { "--nocrossgen2" }, "Don't run tests in Crossgen2 mode", new Argument<bool>());
 
             Option Exe() =>
                 new Option(new[] { "--exe" }, "Don't compile tests, just execute them", new Argument<bool>());
