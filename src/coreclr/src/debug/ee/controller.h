@@ -1562,7 +1562,8 @@ protected:
     virtual bool TrapStepInHelper(ControllerStackInfo * pInfo,
                                   const BYTE * ipCallTarget,
                                   const BYTE * ipNext,
-                                  bool fCallingIntoFunclet);
+                                  bool fCallingIntoFunclet,
+                                  bool fIsJump);
     virtual bool IsInterestingFrame(FrameInfo * pFrame);
     virtual bool DetectHandleNonUserCode(ControllerStackInfo *info, DebuggerMethodInfo * pInfo);
     
@@ -1736,7 +1737,8 @@ protected:
     virtual bool TrapStepInHelper(ControllerStackInfo * pInfo,
                                   const BYTE * ipCallTarget,
                                   const BYTE * ipNext,
-                                  bool fCallingIntoFunclet);
+                                  bool fCallingIntoFunclet,
+                                  bool fIsJump);
     virtual bool IsInterestingFrame(FrameInfo * pFrame);
     virtual void TriggerMethodEnter(Thread * thread, DebuggerJitInfo * dji, const BYTE * ip, FramePointer fp);
     virtual bool DetectHandleNonUserCode(ControllerStackInfo *info, DebuggerMethodInfo * pInfo);
