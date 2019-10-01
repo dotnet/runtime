@@ -318,9 +318,6 @@ namespace System.Net.Http
             }
         }
 
-        private static readonly HPackDecoder.HeaderCallback s_http2StreamOnResponseHeader =
-            (state, name, value) => ((Http2Stream)state)?.OnResponseHeader(name, value);
-
         private async Task ProcessHeadersFrame(FrameHeader frameHeader)
         {
             if (NetEventSource.IsEnabled) Trace($"{frameHeader}");
@@ -335,12 +332,11 @@ namespace System.Net.Http
             // We will still process the headers, to ensure the header decoding state is up-to-date,
             // but we will discard the decoded headers.
 
-            http2Stream?.OnResponseHeadersStart();
+            http2Stream?.OnHeadersStart();
 
             _hpackDecoder.Decode(
                 GetFrameData(_incomingBuffer.ActiveSpan.Slice(0, frameHeader.Length), frameHeader.PaddedFlag, frameHeader.PriorityFlag),
                 frameHeader.EndHeadersFlag,
-                s_http2StreamOnResponseHeader,
                 http2Stream);
             _incomingBuffer.Discard(frameHeader.Length);
 
@@ -356,7 +352,6 @@ namespace System.Net.Http
                 _hpackDecoder.Decode(
                     _incomingBuffer.ActiveSpan.Slice(0, frameHeader.Length),
                     frameHeader.EndHeadersFlag,
-                    s_http2StreamOnResponseHeader,
                     http2Stream);
                 _incomingBuffer.Discard(frameHeader.Length);
             }
@@ -365,7 +360,7 @@ namespace System.Net.Http
 
             if (http2Stream != null)
             {
-                http2Stream.OnResponseHeadersComplete(endStream);
+                http2Stream.OnHeadersComplete(endStream);
             }
         }
 

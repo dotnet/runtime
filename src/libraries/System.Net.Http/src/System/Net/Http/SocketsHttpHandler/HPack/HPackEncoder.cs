@@ -2,12 +2,168 @@
 // Licensed under the Apache License, Version 2.0.
 // See THIRD-PARTY-NOTICES.TXT in the project root for license information.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace System.Net.Http.HPack
 {
-    internal static class HPackEncoder
+    internal class HPackEncoder
     {
+        private IEnumerator<KeyValuePair<string, string>> _enumerator;
+
+        public bool BeginEncode(IEnumerable<KeyValuePair<string, string>> headers, Span<byte> buffer, out int length)
+        {
+            _enumerator = headers.GetEnumerator();
+            _enumerator.MoveNext();
+
+            return Encode(buffer, out length);
+        }
+
+        public bool BeginEncode(int statusCode, IEnumerable<KeyValuePair<string, string>> headers, Span<byte> buffer, out int length)
+        {
+            _enumerator = headers.GetEnumerator();
+            _enumerator.MoveNext();
+
+            int statusCodeLength = EncodeStatusCode(statusCode, buffer);
+            bool done = Encode(buffer.Slice(statusCodeLength), throwIfNoneEncoded: false, out int headersLength);
+            length = statusCodeLength + headersLength;
+
+            return done;
+        }
+
+        public bool Encode(Span<byte> buffer, out int length)
+        {
+            return Encode(buffer, throwIfNoneEncoded: true, out length);
+        }
+
+        private bool Encode(Span<byte> buffer, bool throwIfNoneEncoded, out int length)
+        {
+            int currentLength = 0;
+            do
+            {
+                if (!EncodeHeader(_enumerator.Current.Key, _enumerator.Current.Value, buffer.Slice(currentLength), out int headerLength))
+                {
+                    if (currentLength == 0 && throwIfNoneEncoded)
+                    {
+                        throw new HPackEncodingException();
+                    }
+
+                    length = currentLength;
+                    return false;
+                }
+
+                currentLength += headerLength;
+            }
+            while (_enumerator.MoveNext());
+
+            length = currentLength;
+
+            return true;
+        }
+
+        private int EncodeStatusCode(int statusCode, Span<byte> buffer)
+        {
+            switch (statusCode)
+            {
+                // Status codes which exist in the HTTP/2 StaticTable.
+                case 200:
+                case 204:
+                case 206:
+                case 304:
+                case 400:
+                case 404:
+                case 500:
+                    buffer[0] = (byte)(0x80 | StaticTable.StatusIndex[statusCode]);
+                    return 1;
+                default:
+                    // Send as Literal Header Field Without Indexing - Indexed Name
+                    buffer[0] = 0x08;
+
+                    ReadOnlySpan<byte> statusBytes = StatusCodes.ToStatusBytes(statusCode);
+                    buffer[1] = (byte)statusBytes.Length;
+                    statusBytes.CopyTo(buffer.Slice(2));
+
+                    return 2 + statusBytes.Length;
+            }
+        }
+
+        private bool EncodeHeader(string name, string value, Span<byte> buffer, out int length)
+        {
+            int i = 0;
+            length = 0;
+
+            if (buffer.Length == 0)
+            {
+                return false;
+            }
+
+            buffer[i++] = 0;
+
+            if (i == buffer.Length)
+            {
+                return false;
+            }
+
+            if (!EncodeString(name, buffer.Slice(i), out int nameLength, lowercase: true))
+            {
+                return false;
+            }
+
+            i += nameLength;
+
+            if (i >= buffer.Length)
+            {
+                return false;
+            }
+
+            if (!EncodeString(value, buffer.Slice(i), out int valueLength, lowercase: false))
+            {
+                return false;
+            }
+
+            i += valueLength;
+
+            length = i;
+            return true;
+        }
+
+        private bool EncodeString(string value, Span<byte> destination, out int bytesWritten, bool lowercase)
+        {
+            // From https://tools.ietf.org/html/rfc7541#section-5.2
+            // ------------------------------------------------------
+            //   0   1   2   3   4   5   6   7
+            // +---+---+---+---+---+---+---+---+
+            // | H |    String Length (7+)     |
+            // +---+---------------------------+
+            // |  String Data (Length octets)  |
+            // +-------------------------------+
+
+            if (destination.Length != 0)
+            {
+                destination[0] = 0; // TODO: Use Huffman encoding
+                if (IntegerEncoder.Encode(value.Length, 7, destination, out int integerLength))
+                {
+                    Debug.Assert(integerLength >= 1);
+
+                    destination = destination.Slice(integerLength);
+                    if (value.Length <= destination.Length)
+                    {
+                        for (int i = 0; i < value.Length; i++)
+                        {
+                            char c = value[i];
+                            destination[i] = (byte)((uint)(c - 'A') <= ('Z' - 'A') ? c | 0x20 : c);
+                        }
+
+                        bytesWritten = integerLength + value.Length;
+                        return true;
+                    }
+                }
+            }
+
+            bytesWritten = 0;
+            return false;
+        }
+
         // Things we should add:
         // * Huffman encoding
         //

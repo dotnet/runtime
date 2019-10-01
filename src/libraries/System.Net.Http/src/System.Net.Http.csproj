@@ -91,6 +91,8 @@
     <Compile Include="System\Net\Http\Headers\WarningHeaderValue.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HPack\HeaderField.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HPack\HPackEncoder.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HPack\HPackEncodingException.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HPack\StatusCodes.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HPack\IntegerEncoder.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HPack\StaticTable.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SystemProxyInfo.cs" />
@@ -122,6 +124,7 @@
   <!-- SocketsHttpHandler implementation -->
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <Compile Include="System\Net\Http\SocketsHttpHandler\HPack\DynamicTable.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\IHttpHeadersHandler.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HPack\HPackDecoder.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HPack\HPackDecodingException.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HPack\Huffman.cs" />

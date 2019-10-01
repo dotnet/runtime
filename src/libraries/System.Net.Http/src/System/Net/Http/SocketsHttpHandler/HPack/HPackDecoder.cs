@@ -2,15 +2,13 @@
 // Licensed under the Apache License, Version 2.0.
 // See THIRD-PARTY-NOTICES.TXT in the project root for license information.
 
+using System.Buffers;
 using System.Diagnostics;
 
 namespace System.Net.Http.HPack
 {
     internal class HPackDecoder
     {
-        // Can't use Action<,> because of Span
-        public delegate void HeaderCallback(object state, ReadOnlySpan<byte> headerName, ReadOnlySpan<byte> headerValue);
-
         private enum State
         {
             Ready,
@@ -87,9 +85,9 @@ namespace System.Net.Http.HPack
         private readonly int _maxResponseHeadersLength;
         private readonly DynamicTable _dynamicTable;
         private readonly IntegerDecoder _integerDecoder = new IntegerDecoder();
-        private byte[] _stringOctets = new byte[DefaultStringOctetsSize];
-        private byte[] _headerNameOctets = new byte[DefaultStringOctetsSize];
-        private byte[] _headerValueOctets = new byte[DefaultStringOctetsSize];
+        private byte[] _stringOctets;
+        private byte[] _headerNameOctets;
+        private byte[] _headerValueOctets;
 
         private State _state = State.Ready;
         private byte[] _headerName;
@@ -112,14 +110,35 @@ namespace System.Net.Http.HPack
             _maxDynamicTableSize = maxDynamicTableSize;
             _maxResponseHeadersLength = maxResponseHeadersLength;
             _dynamicTable = dynamicTable;
+
+            _stringOctets = new byte[DefaultStringOctetsSize];
+            _headerNameOctets = new byte[DefaultStringOctetsSize];
+            _headerValueOctets = new byte[DefaultStringOctetsSize];
         }
 
-        public void Decode(ReadOnlySpan<byte> data, bool endHeaders, HeaderCallback onHeader, object onHeaderState)
+        public void Decode(in ReadOnlySequence<byte> data, bool endHeaders, IHttpHeadersHandler handler)
         {
+            foreach (ReadOnlyMemory<byte> segment in data)
+            {
+                DecodeInternal(segment.Span, endHeaders, handler);
+            }
+
+            CheckIncompleteHeaderBlock(endHeaders);
+        }
+
+        public void Decode(ReadOnlySpan<byte> data, bool endHeaders, IHttpHeadersHandler handler)
+        {
+            DecodeInternal(data, endHeaders, handler);
+            CheckIncompleteHeaderBlock(endHeaders);
+        }
+
+        private void DecodeInternal(ReadOnlySpan<byte> data, bool endHeaders, IHttpHeadersHandler handler)
+        {
+            int intResult;
+
             for (int i = 0; i < data.Length; i++)
             {
                 byte b = data[i];
-
                 switch (_state)
                 {
                     case State.Ready:
@@ -132,9 +151,9 @@ namespace System.Net.Http.HPack
 
                             int val = b & ~IndexedHeaderFieldMask;
 
-                            if (_integerDecoder.StartDecode((byte)val, IndexedHeaderFieldPrefix))
+                            if (_integerDecoder.BeginTryDecode((byte)val, IndexedHeaderFieldPrefix, out intResult))
                             {
-                                OnIndexedHeaderField(_integerDecoder.Value, onHeader, onHeaderState);
+                                OnIndexedHeaderField(intResult, handler);
                             }
                             else
                             {
@@ -152,9 +171,9 @@ namespace System.Net.Http.HPack
                             {
                                 _state = State.HeaderNameLength;
                             }
-                            else if (_integerDecoder.StartDecode((byte)val, LiteralHeaderFieldWithIncrementalIndexingPrefix))
+                            else if (_integerDecoder.BeginTryDecode((byte)val, LiteralHeaderFieldWithIncrementalIndexingPrefix, out intResult))
                             {
-                                OnIndexedHeaderName(_integerDecoder.Value);
+                                OnIndexedHeaderName(intResult);
                             }
                             else
                             {
@@ -172,9 +191,9 @@ namespace System.Net.Http.HPack
                             {
                                 _state = State.HeaderNameLength;
                             }
-                            else if (_integerDecoder.StartDecode((byte)val, LiteralHeaderFieldWithoutIndexingPrefix))
+                            else if (_integerDecoder.BeginTryDecode((byte)val, LiteralHeaderFieldWithoutIndexingPrefix, out intResult))
                             {
-                                OnIndexedHeaderName(_integerDecoder.Value);
+                                OnIndexedHeaderName(intResult);
                             }
                             else
                             {
@@ -192,9 +211,9 @@ namespace System.Net.Http.HPack
                             {
                                 _state = State.HeaderNameLength;
                             }
-                            else if (_integerDecoder.StartDecode((byte)val, LiteralHeaderFieldNeverIndexedPrefix))
+                            else if (_integerDecoder.BeginTryDecode((byte)val, LiteralHeaderFieldNeverIndexedPrefix, out intResult))
                             {
-                                OnIndexedHeaderName(_integerDecoder.Value);
+                                OnIndexedHeaderName(intResult);
                             }
                             else
                             {
@@ -212,15 +231,9 @@ namespace System.Net.Http.HPack
                                 throw new HPackDecodingException(SR.net_http_hpack_late_dynamic_table_size_update);
                             }
 
-                            if (_integerDecoder.StartDecode((byte)(b & ~DynamicTableSizeUpdateMask), DynamicTableSizeUpdatePrefix))
+                            if (_integerDecoder.BeginTryDecode((byte)(b & ~DynamicTableSizeUpdateMask), DynamicTableSizeUpdatePrefix, out intResult))
                             {
-                                if (_integerDecoder.Value > _maxDynamicTableSize)
-                                {
-                                    // Dynamic table size update is too large.
-                                    throw new HPackDecodingException(SR.Format(SR.net_http_hpack_large_table_size_update, _integerDecoder.Value, _maxDynamicTableSize));
-                                }
-
-                                _dynamicTable.Resize(_integerDecoder.Value);
+                                SetDynamicHeaderTableSize(intResult);
                             }
                             else
                             {
@@ -231,35 +244,35 @@ namespace System.Net.Http.HPack
                         {
                             // Can't happen
                             Debug.Fail("Unreachable code");
-                            throw new InternalException();
+                            throw new InvalidOperationException("Unreachable code.");
                         }
 
                         break;
                     case State.HeaderFieldIndex:
-                        if (_integerDecoder.Decode(b))
+                        if (_integerDecoder.TryDecode(b, out intResult))
                         {
-                            OnIndexedHeaderField(_integerDecoder.Value, onHeader, onHeaderState);
+                            OnIndexedHeaderField(intResult, handler);
                         }
 
                         break;
                     case State.HeaderNameIndex:
-                        if (_integerDecoder.Decode(b))
+                        if (_integerDecoder.TryDecode(b, out intResult))
                         {
-                            OnIndexedHeaderName(_integerDecoder.Value);
+                            OnIndexedHeaderName(intResult);
                         }
 
                         break;
                     case State.HeaderNameLength:
                         _huffman = (b & HuffmanMask) != 0;
 
-                        if (_integerDecoder.StartDecode((byte)(b & ~HuffmanMask), StringLengthPrefix))
+                        if (_integerDecoder.BeginTryDecode((byte)(b & ~HuffmanMask), StringLengthPrefix, out intResult))
                         {
-                            if (_integerDecoder.Value == 0)
+                            if (intResult == 0)
                             {
                                 throw new HPackDecodingException(SR.Format(SR.net_http_invalid_response_header_name, ""));
                             }
 
-                            OnStringLength(_integerDecoder.Value, nextState: State.HeaderName);
+                            OnStringLength(intResult, nextState: State.HeaderName);
                         }
                         else
                         {
@@ -268,13 +281,13 @@ namespace System.Net.Http.HPack
 
                         break;
                     case State.HeaderNameLengthContinue:
-                        if (_integerDecoder.Decode(b))
+                        if (_integerDecoder.TryDecode(b, out intResult))
                         {
                             // IntegerDecoder disallows overlong encodings, where an integer is encoded with more bytes than is strictly required.
                             // 0 should always be represented by a single byte, so we shouldn't need to check for it in the continuation case.
-                            Debug.Assert(_integerDecoder.Value != 0, "A header name length of 0 should never be encoded with a continuation byte.");
+                            Debug.Assert(intResult != 0, "A header name length of 0 should never be encoded with a continuation byte.");
 
-                            OnStringLength(_integerDecoder.Value, nextState: State.HeaderName);
+                            OnStringLength(intResult, nextState: State.HeaderName);
                         }
 
                         break;
@@ -290,16 +303,13 @@ namespace System.Net.Http.HPack
                     case State.HeaderValueLength:
                         _huffman = (b & HuffmanMask) != 0;
 
-                        if (_integerDecoder.StartDecode((byte)(b & ~HuffmanMask), StringLengthPrefix))
+                        if (_integerDecoder.BeginTryDecode((byte)(b & ~HuffmanMask), StringLengthPrefix, out intResult))
                         {
-                            if (_integerDecoder.Value > 0)
+                            OnStringLength(intResult, nextState: State.HeaderValue);
+
+                            if (intResult == 0)
                             {
-                                OnStringLength(_integerDecoder.Value, nextState: State.HeaderValue);
-                            }
-                            else
-                            {
-                                OnStringLength(_integerDecoder.Value, nextState: State.Ready);
-                                OnHeaderComplete(onHeader, onHeaderState, new ReadOnlySpan<byte>(_headerName, 0, _headerNameLength), new ReadOnlySpan<byte>());
+                                ProcessHeaderValue(handler);
                             }
                         }
                         else
@@ -309,13 +319,13 @@ namespace System.Net.Http.HPack
 
                         break;
                     case State.HeaderValueLengthContinue:
-                        if (_integerDecoder.Decode(b))
+                        if (_integerDecoder.TryDecode(b, out intResult))
                         {
                             // IntegerDecoder disallows overlong encodings where an integer is encoded with more bytes than is strictly required.
                             // 0 should always be represented by a single byte, so we shouldn't need to check for it in the continuation case.
-                            Debug.Assert(_integerDecoder.Value != 0, "A header value length of 0 should never be encoded with a continuation byte.");
+                            Debug.Assert(intResult != 0, "A header value length of 0 should never be encoded with a continuation byte.");
 
-                            OnStringLength(_integerDecoder.Value, nextState: State.HeaderValue);
+                            OnStringLength(intResult, nextState: State.HeaderValue);
                         }
 
                         break;
@@ -324,25 +334,14 @@ namespace System.Net.Http.HPack
 
                         if (_stringIndex == _stringLength)
                         {
-                            OnString(nextState: State.Ready);
-
-                            var headerNameSpan = new ReadOnlySpan<byte>(_headerName, 0, _headerNameLength);
-                            var headerValueSpan = new ReadOnlySpan<byte>(_headerValueOctets, 0, _headerValueLength);
-
-                            OnHeaderComplete(onHeader, onHeaderState, headerNameSpan, headerValueSpan);
+                            ProcessHeaderValue(handler);
                         }
 
                         break;
                     case State.DynamicTableSizeUpdate:
-                        if (_integerDecoder.Decode(b))
+                        if (_integerDecoder.TryDecode(b, out intResult))
                         {
-                            if (_integerDecoder.Value > _maxDynamicTableSize)
-                            {
-                                // Dynamic table size update is too large.
-                                throw new HPackDecodingException(SR.Format(SR.net_http_hpack_large_table_size_update, _integerDecoder.Value, _maxDynamicTableSize));
-                            }
-
-                            _dynamicTable.Resize(_integerDecoder.Value);
+                            SetDynamicHeaderTableSize(intResult);
                             _state = State.Ready;
                         }
 
@@ -353,7 +352,10 @@ namespace System.Net.Http.HPack
                         throw new InternalException(_state);
                 }
             }
+        }
 
+        private void CheckIncompleteHeaderBlock(bool endHeaders)
+        {
             if (endHeaders)
             {
                 if (_state != State.Ready)
@@ -362,6 +364,21 @@ namespace System.Net.Http.HPack
                 }
 
                 _headersObserved = false;
+            }
+        }
+
+        private void ProcessHeaderValue(IHttpHeadersHandler handler)
+        {
+            OnString(nextState: State.Ready);
+
+            var headerNameSpan = new Span<byte>(_headerName, 0, _headerNameLength);
+            var headerValueSpan = new Span<byte>(_headerValueOctets, 0, _headerValueLength);
+
+            handler?.OnHeader(headerNameSpan, headerValueSpan);
+
+            if (_index)
+            {
+                _dynamicTable.Insert(headerNameSpan, headerValueSpan);
             }
         }
 
@@ -374,10 +391,10 @@ namespace System.Net.Http.HPack
             }
         }
 
-        private void OnIndexedHeaderField(int index, HeaderCallback onHeader, object onHeaderState)
+        private void OnIndexedHeaderField(int index, IHttpHeadersHandler handler)
         {
             HeaderField header = GetHeader(index);
-            onHeader(onHeaderState, new ReadOnlySpan<byte>(header.Name), new ReadOnlySpan<byte>(header.Value));
+            handler?.OnHeader(header.Name, header.Value);
             _state = State.Ready;
         }
 
@@ -440,23 +457,10 @@ namespace System.Net.Http.HPack
             }
             catch (HuffmanDecodingException ex)
             {
-                // Error in huffman encoding.
                 throw new HPackDecodingException(SR.net_http_hpack_huffman_decode_failed, ex);
             }
 
             _state = nextState;
-        }
-
-        // Called when we have complete header with name and value.
-        private void OnHeaderComplete(HeaderCallback onHeader, object onHeaderState, ReadOnlySpan<byte> headerName, ReadOnlySpan<byte> headerValue)
-        {
-            // Call provided callback.
-            onHeader(onHeaderState, headerName, headerValue);
-
-            if (_index)
-            {
-                _dynamicTable.Insert(headerName, headerValue);
-            }
         }
 
         private HeaderField GetHeader(int index)
@@ -472,6 +476,16 @@ namespace System.Net.Http.HPack
                 // Header index out of range.
                 throw new HPackDecodingException();
             }
+        }
+
+        private void SetDynamicHeaderTableSize(int size)
+        {
+            if (size > _maxDynamicTableSize)
+            {
+                throw new HPackDecodingException(SR.Format(SR.net_http_hpack_large_table_size_update, size, _maxDynamicTableSize));
+            }
+
+            _dynamicTable.Resize(size);
         }
     }
 }

@@ -43,17 +43,17 @@ namespace System.Net.Http.Unit.Tests.HPack
             Span<byte> encoded = stackalloc byte[5];
             Assert.True(IntegerEncoder.Encode(value, bits, encoded, out int bytesWritten));
 
-            bool finished = decoder.StartDecode(encoded[0], bits);
+            bool finished = decoder.BeginTryDecode(encoded[0], bits, out int intResult);
 
             int i = 1;
             for (; !finished && i < encoded.Length; ++i)
             {
-                finished = decoder.Decode(encoded[i]);
+                finished = decoder.TryDecode(encoded[i], out intResult);
             }
 
             Assert.True(finished);
             Assert.Equal(bytesWritten, i);
-            Assert.Equal(value, decoder.Value);
+            Assert.Equal(value, intResult);
         }
 
         public static IEnumerable<object[]> IntegerCodecExactSamples()
@@ -85,14 +85,14 @@ namespace System.Net.Http.Unit.Tests.HPack
             {
                 var dec = new IntegerDecoder();
 
-                if (!dec.StartDecode((byte)(encoded[0] & 0x7F), 7))
+                if (!dec.BeginTryDecode((byte)(encoded[0] & 0x7F), 7, out int intResult))
                 {
-                    for (int i = 1; !dec.Decode(encoded[i]); ++i)
+                    for (int i = 1; !dec.TryDecode(encoded[i], out intResult); ++i)
                     {
                     }
                 }
 
-                return dec.Value;
+                return intResult;
             });
         }
     }
