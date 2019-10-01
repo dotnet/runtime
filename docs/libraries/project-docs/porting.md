@@ -78,7 +78,7 @@ Binary Serialization is supported post 1.1, however we do not support cross-plat
 
 Technology                 | More information
 ---------------------------|-----------------------------------
-AppDomains                 | [Details](#app_domains)
+AppDomains                 | [Details](#app-domains)
 Remoting                   | [Details](#remoting)
 Code Access Security (CAS) | [Details](#code-access-security-cas)
 Security Transparency      | [Details](#security-transparency)
