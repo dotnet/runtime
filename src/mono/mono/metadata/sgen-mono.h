@@ -11,7 +11,7 @@
 typedef struct {
 	int version;
 	void (*emit_nursery_check) (MonoMethodBuilder *mb, gboolean is_concurrent);
-	void (*emit_managed_allocater) (MonoMethodBuilder *mb, gboolean slowpath, gboolean profiler, int atype);
+	void (*emit_managed_allocator) (MonoMethodBuilder *mb, gboolean slowpath, gboolean profiler, int atype);
 } MonoSgenMonoCallbacks;
 
 void

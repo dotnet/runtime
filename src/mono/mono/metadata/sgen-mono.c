@@ -254,7 +254,7 @@ emit_nursery_check_noilgen (MonoMethodBuilder *mb, gboolean is_concurrent)
 }
 
 static void
-emit_managed_allocater_noilgen (MonoMethodBuilder *mb, gboolean slowpath, gboolean profiler, int atype)
+emit_managed_allocator_noilgen (MonoMethodBuilder *mb, gboolean slowpath, gboolean profiler, int atype)
 {
 }
 
@@ -264,7 +264,7 @@ install_noilgen (void)
 	MonoSgenMonoCallbacks cb;
 	cb.version = MONO_SGEN_MONO_CALLBACKS_VERSION;
 	cb.emit_nursery_check = emit_nursery_check_noilgen;
-	cb.emit_managed_allocater = emit_managed_allocater_noilgen;
+	cb.emit_managed_allocator = emit_managed_allocator_noilgen;
 	mono_install_sgen_mono_callbacks (&cb);
 }
 
@@ -1042,7 +1042,7 @@ create_allocator (int atype, ManagedAllocatorVariant variant)
 
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_ALLOC);
 
-	get_sgen_mono_cb ()->emit_managed_allocater (mb, slowpath, profiler, atype);
+	get_sgen_mono_cb ()->emit_managed_allocator (mb, slowpath, profiler, atype);
 
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
 	info->d.alloc.gc_name = "sgen";

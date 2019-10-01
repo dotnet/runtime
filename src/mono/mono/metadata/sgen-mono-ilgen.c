@@ -173,7 +173,7 @@ emit_nursery_check_ilgen (MonoMethodBuilder *mb, gboolean is_concurrent)
 }
 
 static void
-emit_managed_allocater_ilgen (MonoMethodBuilder *mb, gboolean slowpath, gboolean profiler, int atype)
+emit_managed_allocator_ilgen (MonoMethodBuilder *mb, gboolean slowpath, gboolean profiler, int atype)
 {
 #ifdef MANAGED_ALLOCATION
 	int p_var, size_var, real_size_var, thread_var G_GNUC_UNUSED;
@@ -550,7 +550,7 @@ mono_sgen_mono_ilgen_init (void)
 	MonoSgenMonoCallbacks cb;
 	cb.version = MONO_SGEN_MONO_CALLBACKS_VERSION;
 	cb.emit_nursery_check = emit_nursery_check_ilgen;
-	cb.emit_managed_allocater = emit_managed_allocater_ilgen;
+	cb.emit_managed_allocator = emit_managed_allocator_ilgen;
 	mono_install_sgen_mono_callbacks (&cb);
 }
 #endif
