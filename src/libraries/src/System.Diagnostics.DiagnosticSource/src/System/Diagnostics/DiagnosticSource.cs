@@ -32,7 +32,7 @@ namespace System.Diagnostics
         /// <param name="name">The name of the event being written.</param>
         /// <param name="value">An object that represent the value being passed as a payload for the event.
         /// This is often an anonymous type which contains several sub-values.</param>
-        public abstract void Write(string name, object value);
+        public abstract void Write(string name, object? value);
 
         /// <summary>
         /// Optional: if there is expensive setup for the notification, you can call IsEnabled
@@ -56,7 +56,7 @@ namespace System.Diagnostics
         /// Null by default. Consumers should expect to receive null which may indicate that producer
         /// called pure IsEnabled(string) or producer passed all necessary context in arg1</param>
         /// <seealso cref="IsEnabled(string)"/>
-        public virtual bool IsEnabled(string name, object arg1, object arg2 = null)
+        public virtual bool IsEnabled(string name, object? arg1, object? arg2 = null)
         {
             return IsEnabled(name);
         }

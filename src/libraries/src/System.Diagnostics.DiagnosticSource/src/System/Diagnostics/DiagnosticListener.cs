@@ -26,7 +26,7 @@ namespace System.Diagnostics
     /// https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/DiagnosticSourceUsersGuide.md
     /// for instructions on its use.
     /// </summary>
-    public partial class DiagnosticListener : DiagnosticSource, IObservable<KeyValuePair<string, object>>, IDisposable
+    public partial class DiagnosticListener : DiagnosticSource, IObservable<KeyValuePair<string, object?>>, IDisposable
     {
         /// <summary>
         /// When you subscribe to this you get callbacks for all NotificationListeners in the appdomain
@@ -63,7 +63,7 @@ namespace System.Diagnostics
         ///
         /// If this parameter is null, no filtering is done (all overloads of DiagnosticSource.IsEnabled return true).
         /// </param>
-        public virtual IDisposable Subscribe(IObserver<KeyValuePair<string, object>> observer, Predicate<string> isEnabled)
+        public virtual IDisposable Subscribe(IObserver<KeyValuePair<string, object?>> observer, Predicate<string>? isEnabled)
         {
             IDisposable subscription;
             if (isEnabled == null)
@@ -107,7 +107,7 @@ namespace System.Diagnostics
         ///
         /// If this parameter is null, no filtering is done (all overloads of DiagnosticSource.IsEnabled return true).
         /// </param>
-        public virtual IDisposable Subscribe(IObserver<KeyValuePair<string, object>> observer, Func<string, object, object, bool> isEnabled)
+        public virtual IDisposable Subscribe(IObserver<KeyValuePair<string, object?>> observer, Func<string, object?, object?, bool>? isEnabled)
         {
             return isEnabled == null ?
              SubscribeInternal(observer, null, null, null, null) :
@@ -117,7 +117,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Same as other Subscribe overload where the predicate is assumed to always return true.
         /// </summary>
-        public virtual IDisposable Subscribe(IObserver<KeyValuePair<string, object>> observer)
+        public virtual IDisposable Subscribe(IObserver<KeyValuePair<string, object?>> observer)
         {
             return SubscribeInternal(observer, null, null, null, null);
         }
@@ -186,7 +186,7 @@ namespace System.Diagnostics
             }
 
             // Indicate completion to all subscribers.
-            DiagnosticSubscription subscriber = null;
+            DiagnosticSubscription? subscriber = null;
             Interlocked.Exchange(ref subscriber, _subscriptions);
             while (subscriber != null)
             {
@@ -207,7 +207,7 @@ namespace System.Diagnostics
         /// <returns></returns>
         public override string ToString()
         {
-            return Name;
+            return Name ?? string.Empty;
         }
 
         #region private
@@ -231,7 +231,7 @@ namespace System.Diagnostics
         /// </summary>
         public override bool IsEnabled(string name)
         {
-            for (DiagnosticSubscription curSubscription = _subscriptions; curSubscription != null; curSubscription = curSubscription.Next)
+            for (DiagnosticSubscription? curSubscription = _subscriptions; curSubscription != null; curSubscription = curSubscription.Next)
             {
                 if (curSubscription.IsEnabled1Arg == null || curSubscription.IsEnabled1Arg(name))
                     return true;
@@ -243,9 +243,9 @@ namespace System.Diagnostics
         /// <summary>
         /// Override abstract method
         /// </summary>
-        public override bool IsEnabled(string name, object arg1, object arg2 = null)
+        public override bool IsEnabled(string name, object? arg1, object? arg2 = null)
         {
-            for (DiagnosticSubscription curSubscription = _subscriptions; curSubscription != null; curSubscription = curSubscription.Next)
+            for (DiagnosticSubscription? curSubscription = _subscriptions; curSubscription != null; curSubscription = curSubscription.Next)
             {
                 if (curSubscription.IsEnabled3Arg == null || curSubscription.IsEnabled3Arg(name, arg1, arg2))
                     return true;
@@ -256,10 +256,10 @@ namespace System.Diagnostics
         /// <summary>
         /// Override abstract method
         /// </summary>
-        public override void Write(string name, object value)
+        public override void Write(string name, object? value)
         {
-            for (DiagnosticSubscription curSubscription = _subscriptions; curSubscription != null; curSubscription = curSubscription.Next)
-                curSubscription.Observer.OnNext(new KeyValuePair<string, object>(name, value));
+            for (DiagnosticSubscription? curSubscription = _subscriptions; curSubscription != null; curSubscription = curSubscription.Next)
+                curSubscription.Observer.OnNext(new KeyValuePair<string, object?>(name, value));
         }
 
         /// <summary>
@@ -273,7 +273,7 @@ namespace System.Diagnostics
         // Note that Subscriptions are READ ONLY.   This means you never update any fields (even on removal!)
         private class DiagnosticSubscription : IDisposable
         {
-            internal IObserver<KeyValuePair<string, object>> Observer;
+            internal IObserver<KeyValuePair<string, object?>> Observer = null!;
 
             // IsEnabled1Arg and IsEnabled3Arg represent IsEnabled callbacks.
             //    - IsEnabled1Arg invoked for DiagnosticSource.IsEnabled(string)
@@ -286,21 +286,21 @@ namespace System.Diagnostics
             //     IsEnabled1Arg falls back to IsEnabled3Arg with null context
             // Thus, dispatching is very efficient when producer and consumer agree on number of IsEnabled arguments
             // Argument number mismatch between producer/consumer adds extra cost of adding or omitting context parameters
-            internal Predicate<string> IsEnabled1Arg;
-            internal Func<string, object, object, bool> IsEnabled3Arg;
-            internal Action<Activity, object> OnActivityImport;
-            internal Action<Activity, object> OnActivityExport;
+            internal Predicate<string>? IsEnabled1Arg;
+            internal Func<string, object?, object?, bool>? IsEnabled3Arg;
+            internal Action<Activity, object?>? OnActivityImport;
+            internal Action<Activity, object?>? OnActivityExport;
 
-            internal DiagnosticListener Owner;          // The DiagnosticListener this is a subscription for.
-            internal DiagnosticSubscription Next;                // Linked list of subscribers
+            internal DiagnosticListener Owner = null!;          // The DiagnosticListener this is a subscription for.
+            internal DiagnosticSubscription? Next;                // Linked list of subscribers
 
             public void Dispose()
             {
                 // TO keep this lock free and easy to analyze, the linked list is READ ONLY.   Thus we copy
                 while (true)
                 {
-                    DiagnosticSubscription subscriptions = Owner._subscriptions;
-                    DiagnosticSubscription newSubscriptions = Remove(subscriptions, this);    // Make a new list, with myself removed.
+                    DiagnosticSubscription? subscriptions = Owner._subscriptions;
+                    DiagnosticSubscription? newSubscriptions = Remove(subscriptions, this);    // Make a new list, with myself removed.
 
                     // try to update, but if someone beat us to it, then retry.
                     if (Interlocked.CompareExchange(ref Owner._subscriptions, newSubscriptions, subscriptions) == subscriptions)
@@ -319,7 +319,7 @@ namespace System.Diagnostics
             }
 
             // Create a new linked list where 'subscription has been removed from the linked list of 'subscriptions'.
-            private static DiagnosticSubscription Remove(DiagnosticSubscription subscriptions, DiagnosticSubscription subscription)
+            private static DiagnosticSubscription? Remove(DiagnosticSubscription? subscriptions, DiagnosticSubscription subscription)
             {
                 if (subscriptions == null)
                 {
@@ -353,7 +353,7 @@ namespace System.Diagnostics
                 lock (s_allListenersLock)
                 {
                     // Call back for each existing listener on the new callback (catch-up).
-                    for (DiagnosticListener cur = s_allListeners; cur != null; cur = cur._next)
+                    for (DiagnosticListener? cur = s_allListeners; cur != null; cur = cur._next)
                         observer.OnNext(cur);
 
                     // Add the observer to the list of subscribers.
@@ -412,7 +412,7 @@ namespace System.Diagnostics
             /// </summary>
             internal class AllListenerSubscription : IDisposable
             {
-                internal AllListenerSubscription(AllListenerObservable owner, IObserver<DiagnosticListener> subscriber, AllListenerSubscription next)
+                internal AllListenerSubscription(AllListenerObservable owner, IObserver<DiagnosticListener> subscriber, AllListenerSubscription? next)
                 {
                     this._owner = owner;
                     this.Subscriber = subscriber;
@@ -429,17 +429,17 @@ namespace System.Diagnostics
 
                 private readonly AllListenerObservable _owner;               // the list this is a member of.
                 internal readonly IObserver<DiagnosticListener> Subscriber;
-                internal AllListenerSubscription Next;
+                internal AllListenerSubscription? Next;
             }
 
-            private AllListenerSubscription _subscriptions;
+            private AllListenerSubscription? _subscriptions;
             #endregion
         }
         #endregion
 
-        private IDisposable SubscribeInternal(IObserver<KeyValuePair<string, object>> observer,
-            Predicate<string> isEnabled1Arg, Func<string, object, object, bool> isEnabled3Arg,
-            Action<Activity, object> onActivityImport, Action<Activity, object> onActivityExport)
+        private IDisposable SubscribeInternal(IObserver<KeyValuePair<string, object?>> observer,
+            Predicate<string>? isEnabled1Arg, Func<string, object?, object?, bool>? isEnabled3Arg,
+            Action<Activity, object?>? onActivityImport, Action<Activity, object?>? onActivityExport)
         {
             // If we have been disposed, we silently ignore any subscriptions.
             if (_disposed)
@@ -462,12 +462,12 @@ namespace System.Diagnostics
             return newSubscription;
         }
 
-        private volatile DiagnosticSubscription _subscriptions;
-        private DiagnosticListener _next;               // We keep a linked list of all NotificationListeners (s_allListeners)
+        private volatile DiagnosticSubscription? _subscriptions;
+        private DiagnosticListener? _next;               // We keep a linked list of all NotificationListeners (s_allListeners)
         private bool _disposed;                        // Has Dispose been called?
 
-        private static DiagnosticListener s_allListeners;               // linked list of all instances of DiagnosticListeners.
-        private static AllListenerObservable s_allListenerObservable;   // to make callbacks to this object when listeners come into existence.
+        private static DiagnosticListener? s_allListeners;               // linked list of all instances of DiagnosticListeners.
+        private static AllListenerObservable? s_allListenerObservable;   // to make callbacks to this object when listeners come into existence.
         private static readonly object s_allListenersLock = new object();
 #if false
         private static readonly DiagnosticListener s_default = new DiagnosticListener("DiagnosticListener.DefaultListener");
