@@ -40,13 +40,13 @@
 
     // little-endian write barrier mask manipulation
     #define GEN_CLUMP_0_MASK        (0x000000FF)
-    #define NEXT_CLUMP_IN_MASK(dw)  (dw >> BITS_PER_BYTE)
+    #define NEXT_CLUMP_IN_MASK(dw)  ((dw) >> BITS_PER_BYTE)
 
 #else
 
     // big-endian write barrier mask manipulation
     #define GEN_CLUMP_0_MASK        (0xFF000000)
-    #define NEXT_CLUMP_IN_MASK(dw)  (dw << BITS_PER_BYTE)
+    #define NEXT_CLUMP_IN_MASK(dw)  ((dw) << BITS_PER_BYTE)
 
 #endif
 

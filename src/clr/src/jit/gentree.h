@@ -391,11 +391,11 @@ struct GenTree
 
 #define NO_CSE (0)
 
-#define IS_CSE_INDEX(x) (x != 0)
-#define IS_CSE_USE(x) (x > 0)
-#define IS_CSE_DEF(x) (x < 0)
-#define GET_CSE_INDEX(x) ((x > 0) ? x : -x)
-#define TO_CSE_DEF(x) (-x)
+#define IS_CSE_INDEX(x) ((x) != 0)
+#define IS_CSE_USE(x) ((x) > 0)
+#define IS_CSE_DEF(x) ((x) < 0)
+#define GET_CSE_INDEX(x) (((x) > 0) ? x : -(x))
+#define TO_CSE_DEF(x) (-(x))
 
     signed char gtCSEnum; // 0 or the CSE index (negated if def)
                           // valid only for CSE expressions

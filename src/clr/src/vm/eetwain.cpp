@@ -1653,7 +1653,7 @@ PTR_CBYTE skipToArgReg(const hdrInfo& info, PTR_CBYTE table)
 
 /*****************************************************************************/
 
-#define regNumToMask(regNum) RegMask(1<<regNum)
+#define regNumToMask(regNum) RegMask(1<<(regNum))
 
 /*****************************************************************************
  Helper for scanArgRegTable() and scanArgRegTableI() for regMasks

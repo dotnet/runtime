@@ -204,7 +204,7 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 
 #else // NYI not available; make it an assert.
 
-#define NYI(msg)        assert(!msg)
+#define NYI(msg)        assert(!(msg))
 #define NYI_AMD64(msg)  do { } while (0)
 #define NYI_ARM(msg)    do { } while (0)
 #define NYI_ARM64(msg)  do { } while (0)

@@ -28,9 +28,9 @@
 #include "strsafe.h"
 
 #define SIZE_OF_TOKEN_INFORMATION                   \
-    sizeof( TOKEN_USER )                            \
+    (sizeof( TOKEN_USER )                           \
     + sizeof( SID )                                 \
-    + sizeof( ULONG ) * SID_MAX_SUB_AUTHORITIES
+    + sizeof( ULONG ) * SID_MAX_SUB_AUTHORITIES)
 
 #include "../dlls/mscorrc/fusres.h"
 

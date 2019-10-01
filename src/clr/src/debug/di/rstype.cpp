@@ -112,7 +112,7 @@ HRESULT CordbType::GetStaticFieldValue(mdFieldDef fieldDef,
 }
 
 // Combine E_T_s and rank together to get an id for the m_sharedtypes table
-#define CORDBTYPE_ID(elementType,rank) ((unsigned int) elementType * (rank + 1) + 1)
+#define CORDBTYPE_ID(elementType,rank) (((unsigned int) (elementType)) * ((rank) + 1) + 1)
 
 
 //-----------------------------------------------------------------------------

@@ -104,8 +104,8 @@ int  nTemp=0;
 
 unsigned int uMethodBeginLine,uMethodBeginColumn;
 
-#define ELEMENT_TYPE_VARFIXUP ELEMENT_TYPE_MAX+2
-#define ELEMENT_TYPE_MVARFIXUP ELEMENT_TYPE_MAX+3
+#define ELEMENT_TYPE_VARFIXUP (ELEMENT_TYPE_MAX+2)
+#define ELEMENT_TYPE_MVARFIXUP (ELEMENT_TYPE_MAX+3)
 
 FIFO<char> TyParFixupList;
 void FixupTyPars(PCOR_SIGNATURE pSig, ULONG cSig);

@@ -159,15 +159,15 @@ INSTMUL(imul_15,        "imul",             IUM_RD, BAD_CODE,     0x4400003868, 
 // So a 4-byte opcode would be something like this:
 //             0x22114433
 
-#define PACK3(byte1,byte2,byte3) ((byte1 << 16) | (byte2 << 24) | byte3)
-#define PACK2(byte1,byte2)                       ((byte1 << 16) | byte2)
+#define PACK3(byte1,byte2,byte3) (((byte1) << 16) | ((byte2) << 24) | (byte3))
+#define PACK2(byte1,byte2)                       (((byte1) << 16) | (byte2))
 #define SSEFLT(c) PACK3(0xf3, 0x0f, c)
 #define SSEDBL(c) PACK3(0xf2, 0x0f, c)
 #define PCKDBL(c) PACK3(0x66, 0x0f, c)
 #define PCKFLT(c) PACK2(0x0f,c)
 
 // These macros encode extra byte that is implicit in the macro.
-#define PACK4(byte1,byte2,byte3,byte4) ((byte1 << 16) | (byte2 << 24) | byte3 | (byte4 << 8))
+#define PACK4(byte1,byte2,byte3,byte4) (((byte1) << 16) | ((byte2) << 24) | (byte3) | ((byte4) << 8))
 #define SSE38(c)   PACK4(0x66, 0x0f, 0x38, c)
 #define SSE3A(c)   PACK4(0x66, 0x0f, 0x3A, c)
 

@@ -42,8 +42,8 @@ class AssemblySpec;
             fail_op;                            \
     } while (false)
 
-#define VALIDATE_PTR_RET(val) VALIDATE_CONDITION(val != nullptr, return E_POINTER)
-#define VALIDATE_PTR_THROW(val) VALIDATE_CONDITION(val != nullptr, ThrowHR(E_POINTER))
+#define VALIDATE_PTR_RET(val) VALIDATE_CONDITION((val) != nullptr, return E_POINTER)
+#define VALIDATE_PTR_THROW(val) VALIDATE_CONDITION((val) != nullptr, ThrowHR(E_POINTER))
 #define VALIDATE_ARG_RET(condition) VALIDATE_CONDITION(condition, return E_INVALIDARG)
 #define VALIDATE_ARG_THROW(condition) VALIDATE_CONDITION(condition, ThrowHR(E_INVALIDARG))
 

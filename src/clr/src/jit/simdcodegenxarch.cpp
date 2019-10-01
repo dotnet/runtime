@@ -32,9 +32,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // - bits 6 and 7 of the immediate indicate which source item to select (0..3)
 // - bits 4 and 5 of the immediate indicate which target item to insert into (0..3)
 // - bits 0 to 3 of the immediate indicate which target item to zero
-#define INSERTPS_SOURCE_SELECT(i) (i << 6)
-#define INSERTPS_TARGET_SELECT(i) (i << 4)
-#define INSERTPS_ZERO(i) (1 << i)
+#define INSERTPS_SOURCE_SELECT(i) ((i) << 6)
+#define INSERTPS_TARGET_SELECT(i) ((i) << 4)
+#define INSERTPS_ZERO(i) (1 << (i))
 
 // getOpForSIMDIntrinsic: return the opcode for the given SIMD Intrinsic
 //

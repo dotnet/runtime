@@ -63,17 +63,17 @@ const BYTE decoded_8[2] = {8, END_DECODED };
 const BYTE decoded_9[2] = {9, END_DECODED };
 const BYTE decoded_10[2] = {10, END_DECODED };
 
-#define INBITS(s) (s > MAX_HEADER)
-#define INHEADER(s) (s <= MAX_HEADER)
-#define PARTIALBITS(s) ((s>>8)&0xFF)
+#define INBITS(s) ((s) > MAX_HEADER)
+#define INHEADER(s) ((s) <= MAX_HEADER)
+#define PARTIALBITS(s) (((s)>>8)&0xFF)
 #define NUMBERGOTTEN(s) (((s)>>16)&0xFF)
-#define HEADER(s) ((s>>24)&0xFF)
+#define HEADER(s) (((s)>>24)&0xFF)
 #define DECODING_HEADER(n) n
 #define DOING_BITS (MAX_HEADER+1)
-#define DECODING_BITS(partial, got, header) (DOING_BITS+(partial<<8)+(got<<16)+(header<<24))
+#define DECODING_BITS(partial, got, header) (DOING_BITS+((partial)<<8)+((got)<<16)+((header)<<24))
 #define DECODING_ERROR ((unsigned) -1)
-#define MASK(len) (~(~0u <<len))
-#define MASK64(len) ((~((~((unsigned __int64)0))<<len)))
+#define MASK(len) (~(~0u <<(len)))
+#define MASK64(len) ((~((~((unsigned __int64)0))<<(len))))
 #define BITS_PER_BYTE (sizeof(BYTE)*8)
 
 const Decoder::Decode emptyDecode = {decoded_end, DECODING_HEADER(0)};
