@@ -525,9 +525,15 @@ namespace System.IO.Compression
         {
             try
             {
-                // this seeks to the start of the end of central directory record
+                // This seeks backwards almost to the beginning of the EOCD, one byte after where the signature would be
+                // located if the EOCD had the minimum possible size (no file zip comment)
                 _archiveStream.Seek(-ZipEndOfCentralDirectoryBlock.SizeOfBlockWithoutSignature, SeekOrigin.End);
-                if (!ZipHelper.SeekBackwardsToSignature(_archiveStream, ZipEndOfCentralDirectoryBlock.SignatureConstant))
+
+                // If the EOCD has the minimum possible size (no zip file comment), then exactly the previous 4 bytes will contain the signature
+                // But if the EOCD has max possible size, the signature should be found somewhere in the previous 64K + 4 bytes
+                if (!ZipHelper.SeekBackwardsToSignature(_archiveStream,
+                        ZipEndOfCentralDirectoryBlock.SignatureConstant,
+                        ZipEndOfCentralDirectoryBlock.ZipFileCommentMaxLength + ZipEndOfCentralDirectoryBlock.SignatureSize))
                     throw new InvalidDataException(SR.EOCDNotFound);
 
                 long eocdStart = _archiveStream.Position;
@@ -543,56 +549,17 @@ namespace System.IO.Compression
 
                 _numberOfThisDisk = eocd.NumberOfThisDisk;
                 _centralDirectoryStart = eocd.OffsetOfStartOfCentralDirectoryWithRespectToTheStartingDiskNumber;
+
                 if (eocd.NumberOfEntriesInTheCentralDirectory != eocd.NumberOfEntriesInTheCentralDirectoryOnThisDisk)
                     throw new InvalidDataException(SR.SplitSpanned);
+
                 _expectedNumberOfEntries = eocd.NumberOfEntriesInTheCentralDirectory;
 
                 // only bother saving the comment if we are in update mode
                 if (_mode == ZipArchiveMode.Update)
                     _archiveComment = eocd.ArchiveComment;
 
-                // only bother looking for zip64 EOCD stuff if we suspect it is needed because some value is FFFFFFFFF
-                // because these are the only two values we need, we only worry about these
-                // if we don't find the zip64 EOCD, we just give up and try to use the original values
-                if (eocd.NumberOfThisDisk == ZipHelper.Mask16Bit ||
-                    eocd.OffsetOfStartOfCentralDirectoryWithRespectToTheStartingDiskNumber == ZipHelper.Mask32Bit ||
-                    eocd.NumberOfEntriesInTheCentralDirectory == ZipHelper.Mask16Bit)
-                {
-                    // we need to look for zip 64 EOCD stuff
-                    // seek to the zip 64 EOCD locator
-                    _archiveStream.Seek(eocdStart - Zip64EndOfCentralDirectoryLocator.SizeOfBlockWithoutSignature, SeekOrigin.Begin);
-                    // if we don't find it, assume it doesn't exist and use data from normal eocd
-                    if (ZipHelper.SeekBackwardsToSignature(_archiveStream, Zip64EndOfCentralDirectoryLocator.SignatureConstant))
-                    {
-                        // use locator to get to Zip64EOCD
-                        Zip64EndOfCentralDirectoryLocator locator;
-                        bool zip64eocdLocatorProper = Zip64EndOfCentralDirectoryLocator.TryReadBlock(_archiveReader, out locator);
-                        Debug.Assert(zip64eocdLocatorProper); // we just found this using the signature finder, so it should be okay
-
-                        if (locator.OffsetOfZip64EOCD > long.MaxValue)
-                            throw new InvalidDataException(SR.FieldTooBigOffsetToZip64EOCD);
-                        long zip64EOCDOffset = (long)locator.OffsetOfZip64EOCD;
-
-                        _archiveStream.Seek(zip64EOCDOffset, SeekOrigin.Begin);
-
-                        // read Zip64EOCD
-                        Zip64EndOfCentralDirectoryRecord record;
-                        if (!Zip64EndOfCentralDirectoryRecord.TryReadBlock(_archiveReader, out record))
-                            throw new InvalidDataException(SR.Zip64EOCDNotWhereExpected);
-
-                        _numberOfThisDisk = record.NumberOfThisDisk;
-
-                        if (record.NumberOfEntriesTotal > long.MaxValue)
-                            throw new InvalidDataException(SR.FieldTooBigNumEntries);
-                        if (record.OffsetOfCentralDirectory > long.MaxValue)
-                            throw new InvalidDataException(SR.FieldTooBigOffsetToCD);
-                        if (record.NumberOfEntriesTotal != record.NumberOfEntriesOnThisDisk)
-                            throw new InvalidDataException(SR.SplitSpanned);
-
-                        _expectedNumberOfEntries = (long)record.NumberOfEntriesTotal;
-                        _centralDirectoryStart = (long)record.OffsetOfCentralDirectory;
-                    }
-                }
+                TryReadZip64EndOfCentralDirectory(eocd, eocdStart);
 
                 if (_centralDirectoryStart > _archiveStream.Length)
                 {
@@ -606,6 +573,65 @@ namespace System.IO.Compression
             catch (IOException ex)
             {
                 throw new InvalidDataException(SR.CDCorrupt, ex);
+            }
+        }
+
+        // Tries to find the Zip64 End of Central Directory Locator, then the Zip64 End of Central Directory, assuming the
+        // End of Central Directory block has already been found, as well as the location in the stream where the EOCD starts.
+        private void TryReadZip64EndOfCentralDirectory(ZipEndOfCentralDirectoryBlock eocd, long eocdStart)
+        {
+            // Only bother looking for the Zip64-EOCD stuff if we suspect it is needed because some value is FFFFFFFFF
+            // because these are the only two values we need, we only worry about these
+            // if we don't find the Zip64-EOCD, we just give up and try to use the original values
+            if (eocd.NumberOfThisDisk == ZipHelper.Mask16Bit ||
+                eocd.OffsetOfStartOfCentralDirectoryWithRespectToTheStartingDiskNumber == ZipHelper.Mask32Bit ||
+                eocd.NumberOfEntriesInTheCentralDirectory == ZipHelper.Mask16Bit)
+            {
+                // Read Zip64 End of Central Directory Locator
+
+                // This seeks forwards almost to the beginning of the Zip64-EOCDL, one byte after where the signature would be located
+                _archiveStream.Seek(eocdStart - Zip64EndOfCentralDirectoryLocator.SizeOfBlockWithoutSignature, SeekOrigin.Begin);
+
+                // Exactly the previous 4 bytes should contain the Zip64-EOCDL signature
+                // if we don't find it, assume it doesn't exist and use data from normal EOCD
+                if (ZipHelper.SeekBackwardsToSignature(_archiveStream,
+                        Zip64EndOfCentralDirectoryLocator.SignatureConstant,
+                        Zip64EndOfCentralDirectoryLocator.SignatureSize))
+                {
+                    Debug.Assert(_archiveReader != null);
+
+                    // use locator to get to Zip64-EOCD
+                    Zip64EndOfCentralDirectoryLocator locator;
+                    bool zip64eocdLocatorProper = Zip64EndOfCentralDirectoryLocator.TryReadBlock(_archiveReader, out locator);
+                    Debug.Assert(zip64eocdLocatorProper); // we just found this using the signature finder, so it should be okay
+
+                    if (locator.OffsetOfZip64EOCD > long.MaxValue)
+                        throw new InvalidDataException(SR.FieldTooBigOffsetToZip64EOCD);
+
+                    long zip64EOCDOffset = (long)locator.OffsetOfZip64EOCD;
+
+                    _archiveStream.Seek(zip64EOCDOffset, SeekOrigin.Begin);
+
+                    // Read Zip64 End of Central Directory Record
+
+                    Zip64EndOfCentralDirectoryRecord record;
+                    if (!Zip64EndOfCentralDirectoryRecord.TryReadBlock(_archiveReader, out record))
+                        throw new InvalidDataException(SR.Zip64EOCDNotWhereExpected);
+
+                    _numberOfThisDisk = record.NumberOfThisDisk;
+
+                    if (record.NumberOfEntriesTotal > long.MaxValue)
+                        throw new InvalidDataException(SR.FieldTooBigNumEntries);
+
+                    if (record.OffsetOfCentralDirectory > long.MaxValue)
+                        throw new InvalidDataException(SR.FieldTooBigOffsetToCD);
+
+                    if (record.NumberOfEntriesTotal != record.NumberOfEntriesOnThisDisk)
+                        throw new InvalidDataException(SR.SplitSpanned);
+
+                    _expectedNumberOfEntries = (long)record.NumberOfEntriesTotal;
+                    _centralDirectoryStart = (long)record.OffsetOfCentralDirectory;
+                }
             }
         }
 

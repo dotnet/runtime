@@ -3,12 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Sdk;
 
 namespace System.IO.Compression.Tests
 {
@@ -757,6 +754,95 @@ namespace System.IO.Compression.Tests
                     {
                         Assert.Equal(0, entryStream.Length);
                     }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Opens an empty file that has a 64KB EOCD comment.
+        /// Adds two 64KB text entries. Verifies they can be read correctly.
+        /// Appends 64KB of garbage at the end of the file. Verifies we throw.
+        /// Prepends 64KB of garbage at the beginning of the file. Verifies we throw.
+        /// </summary>
+        [Fact]
+        public static void ReadArchive_WithEOCDComment_TrailingPrecedingGarbage()
+        {
+            void InsertEntry(ZipArchive archive, string name, string contents)
+            {
+                ZipArchiveEntry entry = archive.CreateEntry(name);
+                using (StreamWriter writer = new StreamWriter(entry.Open()))
+                {
+                    writer.WriteLine(contents);
+                }
+            }
+
+            int GetEntryContentsLength(ZipArchiveEntry entry)
+            {
+                int length = 0;
+                using (Stream stream = entry.Open())
+                {
+                    using (var reader = new StreamReader(stream))
+                    {
+                        length = reader.ReadToEnd().Length;
+                    }
+                }
+                return length;
+            }
+
+            void VerifyValidEntry(ZipArchiveEntry entry, string expectedName, int expectedMinLength)
+            {
+                Assert.NotNull(entry);
+                Assert.Equal(expectedName, entry.Name);
+                // The file has a few more bytes, but should be at least as large as its contents
+                Assert.True(GetEntryContentsLength(entry) >= expectedMinLength);
+            }
+
+            string name0 = "huge0.txt";
+            string name1 = "huge1.txt";
+            string str64KB = new string('x', ushort.MaxValue);
+            byte[] byte64KB = Text.Encoding.ASCII.GetBytes(str64KB);
+
+            // Open empty file with 64KB EOCD comment
+            string path = strange("extradata/emptyWith64KBComment.zip");
+            using (MemoryStream archiveStream = StreamHelpers.CreateTempCopyStream(path).Result)
+            {
+                // Insert 2 64KB txt entries
+                using (ZipArchive archive = new ZipArchive(archiveStream, ZipArchiveMode.Update, leaveOpen: true))
+                {
+                    InsertEntry(archive, name0, str64KB);
+                    InsertEntry(archive, name1, str64KB);
+                }
+
+                // Open and verify items
+                archiveStream.Seek(0, SeekOrigin.Begin);
+                using (ZipArchive archive = new ZipArchive(archiveStream, ZipArchiveMode.Read, leaveOpen: true))
+                {
+                    Assert.Equal(2, archive.Entries.Count);
+                    VerifyValidEntry(archive.Entries[0], name0, ushort.MaxValue);
+                    VerifyValidEntry(archive.Entries[1], name1, ushort.MaxValue);
+                }
+
+                // Append 64KB of garbage
+                archiveStream.Seek(0, SeekOrigin.End);
+                archiveStream.Write(byte64KB, 0, byte64KB.Length);
+
+                // Open should not be possible because we can't find the EOCD in the max search length from the end
+                Assert.Throws<InvalidDataException>(() =>
+                {
+                    ZipArchive archive = new ZipArchive(archiveStream, ZipArchiveMode.Read, leaveOpen: true);
+                });
+
+                // Create stream with 64KB of prepended garbage, then the above stream appended
+                // Attempting to create a ZipArchive should fail: no EOCD found
+                using (MemoryStream prependStream = new MemoryStream())
+                {
+                    prependStream.Write(byte64KB, 0, byte64KB.Length);
+                    archiveStream.WriteTo(prependStream);
+
+                    Assert.Throws<InvalidDataException>(() =>
+                    {
+                        ZipArchive archive = new ZipArchive(prependStream, ZipArchiveMode.Read);
+                    });
                 }
             }
         }
