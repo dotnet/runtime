@@ -521,9 +521,9 @@ UINT_PTR GetIPOfThrowSite(
     {
         // Get the BYTE[] containing the stack trace.
         StackTraceArray traceData;
-        ZeroMemory(&traceData, sizeof(traceData));
+        ((EXCEPTIONREF)throwable)->GetStackTrace(traceData);
+
         GCPROTECT_BEGIN(traceData);
-            ((EXCEPTIONREF)throwable)->GetStackTrace(traceData);
             // Grab the first non-zero, if there is one.
             for (size_t ix = 0; ix < traceData.Size(); ++ix)
             {
