@@ -1411,8 +1411,8 @@ public:
     {
         return (regNumber)regNums[0];
     }
-    __declspec(property(get = getOtherRegNum)) regNumber otherRegNum;
-    regNumber getOtherRegNum()
+
+    regNumber GetOtherRegNum()
     {
         return (regNumber)regNums[1];
     }
