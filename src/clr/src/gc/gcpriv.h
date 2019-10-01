@@ -2908,6 +2908,17 @@ public:
 
     // End DAC zone
 
+#define max_oom_history_count 4
+
+    PER_HEAP
+    int oomhist_index_per_heap;
+
+    PER_HEAP
+    oom_history oomhist_per_heap[max_oom_history_count];
+
+    PER_HEAP
+    void add_to_oom_history_per_heap();
+
     PER_HEAP
     BOOL expanded_in_fgc;
 
