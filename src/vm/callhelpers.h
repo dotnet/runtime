@@ -640,7 +640,7 @@ enum DispatchCallSimpleFlags
 // Arguments on x86 are passed backward
 #define ARGNUM_0    1
 #define ARGNUM_1    0
-#define ARGNUM_N(n)    __numArgs - n + 1
+#define ARGNUM_N(n)    (__numArgs - (n) + 1)
 
 #else
 

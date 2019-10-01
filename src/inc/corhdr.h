@@ -1894,10 +1894,10 @@ typedef enum CorSaveSize
 } CorSaveSize;
 #endif
 
-#define COR_IS_METHOD_MANAGED_IL(flags)         ((flags & 0xf) == (miIL | miManaged))
-#define COR_IS_METHOD_MANAGED_OPTIL(flags)      ((flags & 0xf) == (miOPTIL | miManaged))
-#define COR_IS_METHOD_MANAGED_NATIVE(flags)     ((flags & 0xf) == (miNative | miManaged))
-#define COR_IS_METHOD_UNMANAGED_NATIVE(flags)   ((flags & 0xf) == (miNative | miUnmanaged))
+#define COR_IS_METHOD_MANAGED_IL(flags)         (((flags) & 0xf) == (miIL | miManaged))
+#define COR_IS_METHOD_MANAGED_OPTIL(flags)      (((flags) & 0xf) == (miOPTIL | miManaged))
+#define COR_IS_METHOD_MANAGED_NATIVE(flags)     (((flags) & 0xf) == (miNative | miManaged))
+#define COR_IS_METHOD_UNMANAGED_NATIVE(flags)   (((flags) & 0xf) == (miNative | miUnmanaged))
 
 //
 // Enum used with NATIVE_TYPE_ARRAY.

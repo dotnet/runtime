@@ -71,7 +71,7 @@
     #define INDEBUG_MD_COMMA(expr)
     
     #define Debug_ReportError(strMessage) 
-    #define Debug_ReportInternalError(strMessage) _ASSERTE(!strMessage)
+    #define Debug_ReportInternalError(strMessage) _ASSERTE(!(strMessage))
 #endif //!_DEBUG_METADATA
 
 // --------------------------------------------------------------------------------------

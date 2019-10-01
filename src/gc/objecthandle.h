@@ -50,10 +50,10 @@ struct HandleTableBucket
 #define VHT_STRONG                  (0x00000400)  // avoid using low byte so we don't overlap normal types
 #define VHT_PINNED                  (0x00000800)  // avoid using low byte so we don't overlap normal types
 
-#define IS_VALID_VHT_VALUE(flag)   ((flag == VHT_WEAK_SHORT) || \
-                                    (flag == VHT_WEAK_LONG)  || \
-                                    (flag == VHT_STRONG)     || \
-                                    (flag == VHT_PINNED))
+#define IS_VALID_VHT_VALUE(flag)   (((flag) == VHT_WEAK_SHORT) || \
+                                    ((flag) == VHT_WEAK_LONG)  || \
+                                    ((flag) == VHT_STRONG)     || \
+                                    ((flag) == VHT_PINNED))
 
 GC_DAC_VISIBLE
 OBJECTREF GetDependentHandleSecondary(OBJECTHANDLE handle);

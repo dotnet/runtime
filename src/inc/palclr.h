@@ -106,7 +106,7 @@
 #else
 // Ports in progress - run-time asserts only
 #define PORTABILITY_WARNING(message)
-#define PORTABILITY_ASSERT(message)     _ASSERTE(false && message)
+#define PORTABILITY_ASSERT(message)     _ASSERTE(false && (message))
 #endif
 
 #define DIRECTORY_SEPARATOR_CHAR_A '\\'
@@ -473,7 +473,7 @@
 
 // Executes the handler if the specified exception code matches
 // the one in the exception. Otherwise, returns EXCEPTION_CONTINUE_SEARCH.
-#define PAL_EXCEPT_IF_EXCEPTION_CODE(dwExceptionCode) PAL_EXCEPT((GetExceptionCode() == dwExceptionCode)?EXCEPTION_EXECUTE_HANDLER:EXCEPTION_CONTINUE_SEARCH)
+#define PAL_EXCEPT_IF_EXCEPTION_CODE(dwExceptionCode) PAL_EXCEPT((GetExceptionCode() == (dwExceptionCode))?EXCEPTION_EXECUTE_HANDLER:EXCEPTION_CONTINUE_SEARCH)
 
 #define PAL_CPP_TRY try
 #define PAL_CPP_ENDTRY

@@ -267,8 +267,8 @@ enum CorruptionSeverity
                              // severity across boundaries like Reflection invocation, AD transition etc.
 };
 
-#define GET_CORRUPTION_SEVERITY(severity) ((severity & (~ReuseForReraise)))
-#define CAN_REUSE_CORRUPTION_SEVERITY(severity) ((severity & ReuseForReraise) == ReuseForReraise)
+#define GET_CORRUPTION_SEVERITY(severity) (((severity) & (~ReuseForReraise)))
+#define CAN_REUSE_CORRUPTION_SEVERITY(severity) (((severity) & ReuseForReraise) == ReuseForReraise)
 
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
 

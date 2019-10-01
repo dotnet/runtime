@@ -189,7 +189,7 @@ void *CCacheLineAllocator::GetCacheLine64()
         RETURN tempPtr;
     }
     
-#define AllocSize 4096*16
+#define AllocSize (4096*16)
 
     ////////////////////////////////'
     /// Virtual Allocation for some more cache lines

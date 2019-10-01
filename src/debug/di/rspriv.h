@@ -52,7 +52,7 @@ struct MachineInfo;
 #include "eventchannel.h"
 
 #undef ASSERT
-#define CRASH(x)  _ASSERTE(!x)
+#define CRASH(x)  _ASSERTE(!(x))
 #define ASSERT(x) _ASSERTE(x)
 
 // We want to keep the 'worst' HRESULT - if one has failed (..._E_...) & the
