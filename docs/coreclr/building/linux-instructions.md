@@ -47,15 +47,15 @@ Docker Images
 
 These instructions might fall stale often enough as we change our images as our requirements change. The table below is just a quick refernce view of the images we use in different build scenarios. The ones that we use for our our official builds can be found in [the platform matrix](../../eng/platform-matrix.yml) of our Azure DevOps builds under the `container` key of the platform you plan to build. 
 
-| OS                          | Target Arch     | Image location                                                                                      | crossrootfs location | Clang Version |
-| --------------------------- | --------------- | --------------------------------------------------------------------------------------------------- | -------------------- | ------------- |
-| Ubuntu 16.04                | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-30f6673-20190814211612`                   | -                    | -             |
-| Alpine                      | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.6-WithNode-cfdd435-20190521001804`                     | -                    | -             |
-| CentOS 6 (build for RHEL 6) | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:centos-6-3e800f1-20190501005338`                       | -                    | -             |
-| CentOS 7 (build for RHEL 7) | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-3e800f1-20190501005343`                       | -                    | -             |
-| Ubuntu 16.04                | arm32(armhf)    | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-14.04-23cacb0-20190528233931`             | `/crossrootfs/arm`   | -             |
-| Ubuntu 16.04                | arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-cfdd435-20190520220848`       | `/crossrootfs/arm64` | -             |
-| Alpine                      | arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-alpine-406629a-20190520220848` | `/crossrootfs/arm64` | -clang5.0     |
+| OS                          | Target Arch     | Image location                                                                                       | crossrootfs location | Clang Version |
+| --------------------------- | --------------- | ---------------------------------------------------------------------------------------------------- | -------------------- | ------------- |
+| Ubuntu 16.04                | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-bd0fe7c-20190923200211`                    | -                    | -             |
+| Alpine                      | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.9-WithNode-0fc54a3-20190918214015`             | -                    | -             |
+| CentOS 6 (build for RHEL 6) | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:centos-6-50f0d02-20190918213956`                        | -                    | -             |
+| CentOS 7 (build for RHEL 7) | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-50f0d02-20190918214028`                        | -                    | -             |
+| Ubuntu 16.04                | arm32(armhf)    | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-14.04-23cacb0-20190923200213`        | `/crossrootfs/arm`   | -             |
+| Ubuntu 16.04                | arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-cfdd435-20190923200213`        | `/crossrootfs/arm64` | -             |
+| Alpine                      | arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-alpine-406629a-20190923200213` | `/crossrootfs/arm64` | -clang5.0     |
 
 Environment
 ===========
@@ -66,6 +66,8 @@ Minimum RAM required to build is 1GB. The build is known to fail on 512 MB VMs (
 
 Toolchain Setup
 ---------------
+
+Add Kitware's APT feed to your configuration for a newer version of CMake. See their instructions at <https://apt.kitware.com/>.
 
 Install the following packages for the toolchain: 
 
