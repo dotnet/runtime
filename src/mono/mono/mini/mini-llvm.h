@@ -35,5 +35,6 @@ void     mono_llvm_create_vars (MonoCompile *cfg) MONO_LLVM_INTERNAL;
 void     mono_llvm_fixup_aot_module         (void) MONO_LLVM_INTERNAL;
 
 gboolean mini_llvm_init                     (void);
+MonoCPUFeatures mono_llvm_get_cpu_features  (void);
 
 #endif

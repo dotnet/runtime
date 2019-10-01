@@ -37,3 +37,4 @@
 -nomethod System.Drawing.Tests.IconTests.CorrectColorDepthExtracted
 -nomethod System.Drawing.Imaging.Tests.ImageAttributesTests.SetColorMatrix_ColorMatrixDefaultFlagType_Success
 -nomethod System.Drawing.Imaging.Tests.ImageAttributesTests.SetColorMatrices_ColorMatrixGrayMatrixFlagsTypes_Success
+-nomethod System.Drawing.Tests.IconTests.CorrectColorDepthExtracted

@@ -174,6 +174,14 @@ mono_llvm_di_set_location (LLVMBuilderRef builder, void *loc_md);
 LLVMValueRef
 mono_llvm_get_or_insert_gc_safepoint_poll (LLVMModuleRef module);
 
+typedef struct {
+	const char* alias;
+	guint32 flag;
+} CpuFeatureAliasFlag;
+
+int
+mono_llvm_check_cpu_features (const CpuFeatureAliasFlag *features, int length);
+
 G_END_DECLS
 
 #endif /* __MONO_MINI_LLVM_CPP_H__ */  

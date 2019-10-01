@@ -371,6 +371,8 @@ extern gboolean mono_do_crash_chaining;
 MONO_API_DATA gboolean mono_use_llvm;
 MONO_API_DATA gboolean mono_use_fast_math;
 MONO_API_DATA gboolean mono_use_interpreter;
+MONO_API_DATA MonoCPUFeatures mono_cpu_features_enabled;
+MONO_API_DATA MonoCPUFeatures mono_cpu_features_disabled;
 extern const char* mono_interp_opts_string;
 extern gboolean mono_do_single_method_regression;
 extern guint32 mono_single_method_regression_opt;

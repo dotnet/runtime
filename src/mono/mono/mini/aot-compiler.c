@@ -236,6 +236,7 @@ typedef struct MonoAotOptions {
 	char *logfile;
 	char *llvm_opts;
 	char *llvm_llc;
+	char *llvm_cpu_attr;
 	gboolean use_current_cpu;
 	gboolean dump_json;
 	gboolean profile_only;
@@ -7936,6 +7937,79 @@ mono_aot_split_options (const char *aot_options)
 	return args;
 }
 
+static gboolean
+parse_cpu_features (const gchar *attr)
+{
+	if (!attr || strlen (attr) < 2) {
+		fprintf (stderr, "Invalid attribute");
+		return FALSE;
+	}
+
+	//+foo - enable foo
+	//foo  - enable foo
+	//-foo - disable foo
+	gboolean enabled = TRUE;
+	if (attr [0] == '-')
+		enabled = FALSE;
+	int prefix = (attr [0] == '-' || attr [0] == '+') ? 1 : 0;
+	MonoCPUFeatures feature = (MonoCPUFeatures) 0;
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+	// e.g.:
+	// `mattr=+sse3` = +sse,+sse2,+pclmul,+aes,+sse3
+	// `mattr=-sse3` = -sse3,-ssse3,-sse4.1,-sse4.2,-popcnt,-avx,-avx2,-fma
+	if (!strcmp (attr + prefix, "sse"))
+		feature = MONO_CPU_X86_SSE_COMBINED;
+	else if (!strcmp (attr + prefix, "sse2"))
+		feature = MONO_CPU_X86_SSE2_COMBINED;
+	else if (!strcmp (attr + prefix, "sse3"))
+		feature = MONO_CPU_X86_SSE3_COMBINED;
+	else if (!strcmp (attr + prefix, "ssse3"))
+		feature = MONO_CPU_X86_SSSE3_COMBINED;
+	else if (!strcmp (attr + prefix, "sse4.1"))
+		feature = MONO_CPU_X86_SSE41_COMBINED;
+	else if (!strcmp (attr + prefix, "sse4.2"))
+		feature = MONO_CPU_X86_SSE42_COMBINED;
+	else if (!strcmp (attr + prefix, "avx"))
+		feature = MONO_CPU_X86_AVX_COMBINED;
+	else if (!strcmp (attr + prefix, "avx2"))
+		feature = MONO_CPU_X86_AVX2_COMBINED;
+	else if (!strcmp (attr + prefix, "pclmul"))
+		feature = MONO_CPU_X86_PCLMUL_COMBINED;
+	else if (!strcmp (attr + prefix, "aes"))
+		feature = MONO_CPU_X86_AES_COMBINED;
+	else if (!strcmp (attr + prefix, "popcnt"))
+		feature = MONO_CPU_X86_POPCNT_COMBINED;
+	else if (!strcmp (attr + prefix, "fma"))
+		feature = MONO_CPU_X86_FMA_COMBINED;
+	// these are independent
+	else if (!strcmp (attr + prefix, "lzcnt")) // technically, it'a a part of BMI but only on Intel
+		feature = MONO_CPU_X86_LZCNT;
+	else if (!strcmp (attr + prefix, "bmi")) // NOTE: it's not "bmi1"
+		feature = MONO_CPU_X86_BMI1;
+	else if (!strcmp (attr + prefix, "bmi2"))
+		feature = MONO_CPU_X86_BMI2; // BMI2 doesn't imply BMI1
+	else {
+		// we don't have a flag for it but it's probably recognized by opt/llc so let's don't fire an error here
+		// printf ("Unknown cpu feature: %s\n", attr);
+	}
+
+	// if we disable a feature from the SSE-AVX tree we also need to disable all dependencies
+	if (!enabled && (feature & MONO_CPU_X86_FULL_SSEAVX_COMBINED))
+		feature = (MonoCPUFeatures) (MONO_CPU_X86_FULL_SSEAVX_COMBINED & ~feature);
+	
+#elif defined(TARGET_ARM64)
+	// TODO: neon, sha1, sha2, asimd, etc...
+#endif
+
+	if (!enabled)
+		mono_cpu_features_enabled = (MonoCPUFeatures) (mono_cpu_features_enabled | feature);
+	else 
+		mono_cpu_features_disabled = (MonoCPUFeatures) (mono_cpu_features_disabled | feature);
+
+	return TRUE;
+}
+
 static void
 mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 {
@@ -8102,6 +8176,19 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 				printf ("mcpu can only be 'native' or 'generic' (default).\n");
 				exit (0);
 			}
+		} else if (str_begins_with (arg, "mattr=")) {
+			gchar* attr = g_strdup (arg + strlen ("mattr="));
+			if (!parse_cpu_features (attr))
+				exit (0);
+			// mattr can be declared more than once, e.g.
+			// `mattr=avx2,mattr=lzcnt,mattr=bmi2`
+			if (!opts->llvm_cpu_attr)
+				opts->llvm_cpu_attr = attr;
+			else {
+				char* old_attrs = opts->llvm_cpu_attr;
+				opts->llvm_cpu_attr = g_strdup_printf ("%s,%s", opts->llvm_cpu_attr, attr);
+				g_free (old_attrs);
+			}
 		} else if (str_begins_with (arg, "depfile=")) {
 			opts->depfile = g_strdup (arg + strlen ("depfile="));
 		} else if (str_begins_with (arg, "help") || str_begins_with (arg, "?")) {
@@ -8152,6 +8239,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			printf ("    llvmllc=\n");
 			printf ("    clangxx=\n");
 			printf ("    depfile=\n");
+			printf ("    mcpu=\n");
+			printf ("    mattr=\n");
 			printf ("    help/?\n");
 			exit (0);
 		} else {
@@ -9707,6 +9796,10 @@ emit_llvm_file (MonoAotCompile *acfg)
 		opts = g_strdup_printf ("%s -mcpu=native", opts);
 	}
 
+	if (acfg->aot_opts.llvm_cpu_attr) {
+		opts = g_strdup_printf ("%s -mattr=%s", opts, acfg->aot_opts.llvm_cpu_attr);
+	}
+
 	if (mono_use_fast_math) {
 		// same parameters are passed to llc and LLVM JIT
 		opts = g_strdup_printf ("%s -fp-contract=fast -enable-no-infs-fp-math -enable-no-nans-fp-math -enable-no-signed-zeros-fp-math -enable-no-trapping-fp-math -enable-unsafe-fp-math", opts);
@@ -9781,6 +9874,10 @@ emit_llvm_file (MonoAotCompile *acfg)
 
 	if (acfg->aot_opts.use_current_cpu) {
 		g_string_append (acfg->llc_args, " -mcpu=native");
+	}
+
+	if (acfg->aot_opts.llvm_cpu_attr) {
+		g_string_append_printf (acfg->llc_args, " -mattr=%s", acfg->aot_opts.llvm_cpu_attr);
 	}
 
 	command = g_strdup_printf ("\"%sllc\" %s -o \"%s\" \"%s.opt.bc\"", acfg->aot_opts.llvm_path, acfg->llc_args->str, output_fname, acfg->tmpbasename);

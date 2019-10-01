@@ -19,9 +19,10 @@ mono_simd_intrinsics_init (void)
  */
 
 #include "mini.h"
+#include "mini-runtime.h"
 #include "ir-emit.h"
 #ifdef ENABLE_LLVM
-#include "llvm-jit.h"
+#include "mini-llvm.h"
 #endif
 #include "mono/utils/bsearch.h"
 #include <mono/metadata/abi-details.h>
@@ -55,15 +56,24 @@ enum {
 static int register_size;
 
 static MonoCPUFeatures
-get_cpu_features (void)
+get_cpu_features (MonoCompile* cfg)
 {
-#ifdef ENABLE_LLVM
-	return mono_llvm_get_cpu_features ();
+	MonoCPUFeatures features = (MonoCPUFeatures)0;
+#if !defined(MONO_CROSS_COMPILE)
+	if (!cfg->compile_aot || cfg->use_current_cpu) {
+		// detect current CPU features if we are in JIT mode or AOT with use_current_cpu flag.
+#if defined(ENABLE_LLVM)
+		features = mono_llvm_get_cpu_features (); // llvm has a nice built-in API to detect features
 #elif defined(TARGET_AMD64)
-	return mono_arch_get_cpu_features ();
-#else
-	return (MonoCPUFeatures)0;
+		features = mono_arch_get_cpu_features ();
 #endif
+	}
+#endif
+
+	// apply parameters passed via -mattr
+	features = (MonoCPUFeatures) (features | mono_cpu_features_enabled);
+	features = (MonoCPUFeatures) (features & ~mono_cpu_features_disabled);
+	return features;
 }
 
 void
@@ -586,7 +596,7 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		if (id == -1)
 			return NULL;
 
-		supported = (get_cpu_features () & MONO_CPU_X86_POPCNT) != 0;
+		supported = (get_cpu_features (cfg) & MONO_CPU_X86_POPCNT) != 0;
 		is_64bit = !strcmp (class_name, "X64");
 
 		switch (id) {
@@ -612,7 +622,7 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		if (id == -1)
 			return NULL;
 
-		supported = (get_cpu_features () & MONO_CPU_X86_LZCNT) != 0;
+		supported = (get_cpu_features (cfg) & MONO_CPU_X86_LZCNT) != 0;
 		is_64bit = !strcmp (class_name, "X64");
 
 		switch (id) {
@@ -639,7 +649,7 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		id = lookup_intrins (bmi1_methods, sizeof (bmi1_methods), cmethod);
 
 		g_assert (id != -1);
-		supported = (get_cpu_features () & MONO_CPU_X86_BMI1) != 0;
+		supported = (get_cpu_features (cfg) & MONO_CPU_X86_BMI1) != 0;
 		is_64bit = !strcmp (class_name, "X64");
 
 		switch (id) {
@@ -712,7 +722,7 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 			return NULL;
 		id = lookup_intrins (bmi2_methods, sizeof (bmi2_methods), cmethod);
 		g_assert (id != -1);
-		supported = (get_cpu_features () & MONO_CPU_X86_BMI2) != 0;
+		supported = (get_cpu_features (cfg) & MONO_CPU_X86_BMI2) != 0;
 		is_64bit = !strcmp (class_name, "X64");
 
 		switch (id) {
@@ -872,12 +882,27 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 	if (image != mono_get_corlib ())
 		return NULL;
-	// FIXME:
-	if (cfg->compile_aot)
-		return NULL;
 
 	class_ns = m_class_get_name_space (cmethod->klass);
 	class_name = m_class_get_name (cmethod->klass);
+
+#ifdef TARGET_AMD64 // TODO: test and enable for x86 too
+	if (cmethod->klass->nested_in)
+		class_ns = m_class_get_name_space (cmethod->klass->nested_in), class_name, cmethod->klass->nested_in;
+	if (!strcmp (class_ns, "System.Runtime.Intrinsics.X86"))
+		return emit_x86_intrinsics (cfg ,cmethod, fsig, args);
+#endif
+
+	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {
+		if (!strcmp (class_name, "Vector128`1"))
+			return emit_vector128_t (cfg ,cmethod, fsig, args);
+		if (!strcmp (class_name, "Vector256`1"))
+		return emit_vector256_t (cfg ,cmethod, fsig, args);
+	}
+
+	// FIXME: Make sure get_cpu_features is used where needed
+	if (cfg->compile_aot)
+		return NULL;
 	if (!strcmp (class_ns, "System.Numerics") && !strcmp (class_name, "Vector")) {
 		MonoInst *ins = emit_sys_numerics_vector (cfg, cmethod, fsig, args);
 		if (!ins) {
@@ -892,18 +917,6 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		}
 		return ins;
 	}
-	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {
-		if (!strcmp (class_name, "Vector128`1"))
-			return emit_vector128_t (cfg ,cmethod, fsig, args);
-		if (!strcmp (class_name, "Vector256`1"))
-		return emit_vector256_t (cfg ,cmethod, fsig, args);
-	}
-#ifdef TARGET_AMD64
-	if (cmethod->klass->nested_in)
-		class_ns = m_class_get_name_space (cmethod->klass->nested_in), class_name, cmethod->klass->nested_in;
-	if (!strcmp (class_ns, "System.Runtime.Intrinsics.X86"))
-		return emit_x86_intrinsics (cfg ,cmethod, fsig, args);
-#endif
 
 	return NULL;
 }
