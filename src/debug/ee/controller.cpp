@@ -5605,7 +5605,8 @@ bool DebuggerStepper::TrapStepInHelper(
     ControllerStackInfo * pInfo,
     const BYTE * ipCallTarget,
     const BYTE * ipNext,
-    bool fCallingIntoFunclet)
+    bool fCallingIntoFunclet,
+    bool fIsJump)
 {
     TraceDestination td;
 
@@ -5861,7 +5862,7 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
                 // fall through...
 
             case WALK_CALL:
-                LOG((LF_CORDB,LL_INFO10000, "DC::TS:Imm:WALK_CALL ip=%p nextip=%p\n", walker.GetIP(), walker.GetNextIP()));
+                LOG((LF_CORDB,LL_INFO10000, "DC::TS:Imm:WALK_CALL ip=%p nextip=%p skipip=%p\n", walker.GetIP(), walker.GetNextIP(), walker.GetSkipIP()));
 
                 // If we're doing some sort of intra-method jump (usually, to get EIP in a clever way, via the CALL
                 // instruction), then put the bp where we're going, NOT at the instruction following the call
@@ -5913,7 +5914,7 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
                     // In this case, we want to step into the funclet even if the step operation is a step-over.
                     if (in || fCallingIntoFunclet)
                     {
-                        if (TrapStepInHelper(info, walker.GetNextIP(), walker.GetSkipIP(), fCallingIntoFunclet))
+                        if (TrapStepInHelper(info, walker.GetNextIP(), walker.GetSkipIP(), fCallingIntoFunclet, fIsJump))
                         {
                             return true;
                         }
@@ -6071,7 +6072,7 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
                     return true;
                 }
 
-                if (TrapStepInHelper(info, walker.GetNextIP(), walker.GetSkipIP(), fCallingIntoFunclet))
+                if (TrapStepInHelper(info, walker.GetNextIP(), walker.GetSkipIP(), fCallingIntoFunclet, false))
                 {
                     return true;
                 }
@@ -7772,7 +7773,8 @@ bool DebuggerJMCStepper::TrapStepInHelper(
     ControllerStackInfo * pInfo,
     const BYTE * ipCallTarget,
     const BYTE * ipNext,
-    bool fCallingIntoFunclet)
+    bool fCallingIntoFunclet,
+    bool fIsJump)
 {
 #ifndef FEATURE_EH_FUNCLETS
     // There are no funclets on x86.
@@ -7792,31 +7794,33 @@ bool DebuggerJMCStepper::TrapStepInHelper(
         // So in either case, we have to execute the rest of this function.
     }
 
-    MethodDesc * pDesc = pInfo->m_activeFrame.md;
-    DebuggerJitInfo *dji = NULL;
+    if (!fIsJump)
+    {
+        MethodDesc * pDesc = pInfo->m_activeFrame.md;
+        DebuggerJitInfo *dji = NULL;
 
-    // We may not have a DJI if we're in an attach case. We should still be able to do a JMC-step in though.
-    // So NULL is ok here.
-    dji = g_pDebugger->GetJitInfo(pDesc, (const BYTE*) ipNext);
+        // We may not have a DJI if we're in an attach case. We should still be able to do a JMC-step in though.
+        // So NULL is ok here.
+        dji = g_pDebugger->GetJitInfo(pDesc, (const BYTE*) ipNext);
+
+        // Place patch after call, which is at ipNext. Note we don't need an IL->Native map here
+        // since we disassembled native code to find the ip after the call.
+        SIZE_T offset = CodeRegionInfo::GetCodeRegionInfo(dji, pDesc).AddressToOffset(ipNext);
 
 
-    // Place patch after call, which is at ipNext. Note we don't need an IL->Native map here
-    // since we disassembled native code to find the ip after the call.
-    SIZE_T offset = CodeRegionInfo::GetCodeRegionInfo(dji, pDesc).AddressToOffset(ipNext);
+        LOG((LF_CORDB, LL_INFO100000, "DJMCStepper::TSIH, at '%s::%s', calling=0x%p, next=0x%p, offset=%d\n",
+            pDesc->m_pszDebugClassName,
+            pDesc->m_pszDebugMethodName,
+            ipCallTarget, ipNext,
+            offset));
 
-
-    LOG((LF_CORDB, LL_INFO100000, "DJMCStepper::TSIH, at '%s::%s', calling=0x%p, next=0x%p, offset=%d\n",
-        pDesc->m_pszDebugClassName,
-        pDesc->m_pszDebugMethodName,
-        ipCallTarget, ipNext,
-        offset));
-
-    // Place a patch at the native address (inside the managed method).
-    AddBindAndActivateNativeManagedPatch(pInfo->m_activeFrame.md,
-             dji,
-             offset,
-             pInfo->m_returnFrame.fp,
-             NULL);
+        // Place a patch at the native address (inside the managed method).
+        AddBindAndActivateNativeManagedPatch(pInfo->m_activeFrame.md,
+                dji,
+                offset,
+                pInfo->m_returnFrame.fp,
+                NULL);
+    }
 
     EnableMethodEnter();
 
