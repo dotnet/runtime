@@ -182,7 +182,7 @@ void MD5::GetHashValue(MD5HASHDATA* phash)
 
     #define H(x, y, z) ((x) ^ (y) ^ (z))
 
-    #define I(x, y, z) ((y) ^ ((x) | (~z)))
+    #define I(x, y, z) ((y) ^ ((x) | (~(z))))
 
     #define AC(ac)  ((ULONG)(ac))
     

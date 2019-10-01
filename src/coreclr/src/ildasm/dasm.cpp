@@ -967,7 +967,7 @@ void DumpTypelist(void* GUICookie)
     }
 
 }
-#define ELEMENT_TYPE_TYPEDEF ELEMENT_TYPE_MAX+1
+#define ELEMENT_TYPE_TYPEDEF (ELEMENT_TYPE_MAX+1)
 BOOL EnumTypedefs()
 {
     HENUMInternal   hEnum;

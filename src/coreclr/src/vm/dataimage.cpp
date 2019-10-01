@@ -27,7 +27,7 @@
 #include "../zap/zapimport.h"
 #include "inlinetracking.h"
 
-#define NodeTypeForItemKind(kind) ((ZapNodeType)(ZapNodeType_StoredStructure + kind))
+#define NodeTypeForItemKind(kind) ((ZapNodeType)(ZapNodeType_StoredStructure + (kind)))
 
 class ZapStoredStructure : public ZapNode
 {

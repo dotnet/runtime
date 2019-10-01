@@ -119,7 +119,7 @@ struct RCW;
 
 #ifndef PtrAlign
 #define PtrAlign(size) \
-    ((size + PTRALIGNCONST) & (~PTRALIGNCONST))
+    (((size) + PTRALIGNCONST) & (~PTRALIGNCONST))
 #endif //!PtrAlign
 
 // code:Object is the respesentation of an managed object on the GC heap.

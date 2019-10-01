@@ -1208,7 +1208,7 @@ HRESULT Assembler::CreatePEFile(__in __nullterminated WCHAR *pwzOutputFilename)
     EmitUnresolvedCustomAttributes();
     // Emit typedefs as special TypeSpecs
     {
-#define ELEMENT_TYPE_TYPEDEF ELEMENT_TYPE_MAX+1
+#define ELEMENT_TYPE_TYPEDEF (ELEMENT_TYPE_MAX+1)
         TypeDefDescr* pTDD;
         unsigned __int8* pb;
         unsigned namesize;

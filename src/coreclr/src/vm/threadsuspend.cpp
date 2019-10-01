@@ -70,8 +70,8 @@ extern "C" void             RedirectedHandledJITCaseForGCStress_Stub(void);
 // CANNOT USE IsBad*Ptr() methods here.  They are *banned* APIs because of various
 // reasons (see http://winweb/wincet/bannedapis.htm).
 //
-#define IS_VALID_WRITE_PTR(addr, size)      _ASSERTE(addr != NULL)
-#define IS_VALID_CODE_PTR(addr)             _ASSERTE(addr != NULL)
+#define IS_VALID_WRITE_PTR(addr, size)      _ASSERTE((addr) != NULL)
+#define IS_VALID_CODE_PTR(addr)             _ASSERTE((addr) != NULL)
 
 
 void ThreadSuspend::SetSuspendRuntimeInProgress()

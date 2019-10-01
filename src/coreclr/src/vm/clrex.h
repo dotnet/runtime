@@ -785,7 +785,7 @@ class EEFileLoadException : public EEException
 // This is explained in detail (alongwith relevant changes) in the implementation of RaiseTheException (in excep.cpp).
 
 #undef SET_CE_RETHROW_FLAG_FOR_EX_CATCH
-#define SET_CE_RETHROW_FLAG_FOR_EX_CATCH(expr)      ((expr == TRUE) && \
+#define SET_CE_RETHROW_FLAG_FOR_EX_CATCH(expr)      (((expr) == TRUE) && \
                                                      (g_pConfig->LegacyCorruptedStateExceptionsPolicy() == false) && \
                                                      (CEHelper::IsProcessCorruptedStateException(GetCurrentExceptionCode(), FALSE) ||     \
                                                      (!__state.DidCatchCxx() && \

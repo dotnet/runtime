@@ -429,7 +429,7 @@ CMiniMdBase::encodeToken(
 //*****************************************************************************
 inline BYTE cbRID(ULONG ixMax) { return ixMax > USHRT_MAX ? (BYTE) sizeof(ULONG) : (BYTE) sizeof(USHORT); }
 
-#define _CBTKN(cRecs,tkns) cbRID(cRecs << m_cb[lengthof(tkns)])
+#define _CBTKN(cRecs,tkns) cbRID((cRecs) << m_cb[lengthof(tkns)])
 
 //*****************************************************************************
 // Constructor.

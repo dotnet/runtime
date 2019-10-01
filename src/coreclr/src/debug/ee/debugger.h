@@ -51,7 +51,7 @@
 #include "canary.h"
 
 #undef ASSERT
-#define CRASH(x)  _ASSERTE(!x)
+#define CRASH(x)  _ASSERTE(!(x))
 #define ASSERT(x) _ASSERTE(x)
 
 
