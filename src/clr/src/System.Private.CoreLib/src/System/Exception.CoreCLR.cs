@@ -285,9 +285,6 @@ namespace System
             }
         }
 
-        // Returns the lock, falling back to the static lock if the Exception is uninitialized (very rare).
-        private object StackTraceLock => _stackTraceLock ?? s_stackTraceLock;
-
         // This is invoked by ExceptionDispatchInfo.Throw to restore the exception stack trace, corresponding to the original throw of the
         // exception, just before the exception is "rethrown".
         internal void RestoreDispatchState(in DispatchState dispatchState)
@@ -296,47 +293,29 @@ namespace System
             // Restore only for non-preallocated exceptions
             if (fCanProcessException)
             {
-                // Take a lock to ensure only one thread can restore the details
-                // at a time against this exception object that could have
-                // multiple ExceptionDispatchInfo instances associated with it.
+                // When restoring back the fields, we again create a copy and set reference to them
+                // in the exception object. This will ensure that when this exception is thrown and these
+                // fields are modified, then EDI's references remain intact.
                 //
-                // We do this inside a finally clause to ensure ThreadAbort cannot
-                // be injected while we have taken the lock. This is to prevent
-                // unrelated exception restorations from getting blocked due to TAE.
-                try { }
-                finally
-                {
-                    // When restoring back the fields, we again create a copy and set reference to them
-                    // in the exception object. This will ensure that when this exception is thrown and these
-                    // fields are modified, then EDI's references remain intact.
-                    //
-                    // Since deep copying can throw on OOM, try to get the copies
-                    // outside the lock.
-                    object? _stackTraceCopy = (dispatchState.StackTrace == null) ? null : DeepCopyStackTrace(dispatchState.StackTrace);
-                    object? _dynamicMethodsCopy = (dispatchState.DynamicMethods == null) ? null : DeepCopyDynamicMethods(dispatchState.DynamicMethods);
+                object? stackTraceCopy = (dispatchState.StackTrace == null) ? null : DeepCopyStackTrace(dispatchState.StackTrace);
+                object? dynamicMethodsCopy = (dispatchState.DynamicMethods == null) ? null : DeepCopyDynamicMethods(dispatchState.DynamicMethods);
 
-                    // Finally, restore the information.
-                    //
-                    // Since EDI can be created at various points during exception dispatch (e.g. at various frames on the stack) for the same exception instance,
-                    // they can have different data to be restored. Thus, to ensure atomicity of restoration from each EDI, perform the restore under a lock.
-                    lock (StackTraceLock)
-                    {
-                        _watsonBuckets = dispatchState.WatsonBuckets;
-                        _ipForWatsonBuckets = dispatchState.IpForWatsonBuckets;
-                        _remoteStackTraceString = dispatchState.RemoteStackTrace;
-                        SaveStackTracesFromDeepCopy(this, _stackTraceCopy, _dynamicMethodsCopy);
-                    }
-                    _stackTraceString = null;
+                // Watson buckets and remoteStackTraceString fields are captured and restored without any locks. It is possible for them to
+                // get out of sync without violating overall integrity of the system.
+                _watsonBuckets = dispatchState.WatsonBuckets;
+                _ipForWatsonBuckets = dispatchState.IpForWatsonBuckets;
+                _remoteStackTraceString = dispatchState.RemoteStackTrace;
 
-                    // Marks the TES state to indicate we have restored foreign exception
-                    // dispatch information.
-                    PrepareForForeignExceptionRaise();
-                }
+                // The binary stack trace and references to dynamic methods have to be restored under a lock to guarantee integrity of the system.
+                SaveStackTracesFromDeepCopy(this, stackTraceCopy, dynamicMethodsCopy);
+
+                _stackTraceString = null;
+
+                // Marks the TES state to indicate we have restored foreign exception
+                // dispatch information.
+                PrepareForForeignExceptionRaise();
             }
         }
-
-        // This is the static object against which a lock will be taken when the Exception is uninitialized (constructor not called).
-        private static readonly object s_stackTraceLock = new object();
 
         private MethodBase? _exceptionMethod;  // Needed for serialization.
         internal string? _message;
@@ -354,8 +333,6 @@ namespace System
         // unless a System.Resolver object roots it.
         private readonly object? _dynamicMethods;
         private string? _source;         // Mainly used by VB.
-        // This is the object against which a lock will be taken when attempting to restore the EDI.
-        private readonly object _stackTraceLock = new object();
         private UIntPtr _ipForWatsonBuckets; // Used to persist the IP for Watson Bucketing
         private readonly IntPtr _xptrs;             // Internal EE stuff
         private readonly int _xcode = _COMPlusExceptionCode;             // Internal EE stuff
