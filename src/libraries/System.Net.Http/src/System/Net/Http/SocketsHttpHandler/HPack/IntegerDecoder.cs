@@ -12,8 +12,6 @@ namespace System.Net.Http.HPack
         private int _i;
         private int _m;
 
-        public int Value { get; private set; }
-
         /// <summary>
         /// Decodes the first byte of the integer.
         /// </summary>
@@ -25,38 +23,43 @@ namespace System.Net.Http.HPack
         /// integer has been encoded into. Must be between 1 and 8.
         /// Upper bits must be zero.
         /// </param>
+        /// <param name="result">
+        /// If decoded successfully, contains the decoded integer.
+        /// </param>
         /// <returns>
         /// If the integer has been fully decoded, true.
-        /// Otherwise, false -- <see cref="Decode(byte)"/> must be called on subsequent bytes.
+        /// Otherwise, false -- <see cref="TryDecode(byte, out int)"/> must be called on subsequent bytes.
         /// </returns>
         /// <remarks>
         /// The term "prefix" can be confusing. From the HPACK spec:
         /// An integer is represented in two parts: a prefix that fills the current octet and an
         /// optional list of octets that are used if the integer value does not fit within the prefix.
         /// </remarks>
-        public bool StartDecode(byte b, int prefixLength)
+        public bool BeginTryDecode(byte b, int prefixLength, out int result)
         {
             Debug.Assert(prefixLength >= 1 && prefixLength <= 8);
             Debug.Assert((b & ~((1 << prefixLength) - 1)) == 0, "bits other than prefix data must be set to 0.");
 
             if (b < ((1 << prefixLength) - 1))
             {
-                Value = b;
+                result = b;
                 return true;
             }
-            else
-            {
-                _i = b;
-                _m = 0;
-                return false;
-            }
+
+            _i = b;
+            _m = 0;
+            result = 0;
+            return false;
         }
 
         /// <summary>
         /// Decodes subsequent bytes of an integer.
         /// </summary>
-        /// <returns>If the integer has been fully decoded, true. Otherwise, false -- <see cref="Decode(byte)"/> must be called on subsequent bytes.</returns>
-        public bool Decode(byte b)
+        /// <param name="result">
+        /// If decoded successfully, contains the decoded integer.
+        /// </param>
+        /// <returns>If the integer has been fully decoded, true. Otherwise, false -- <see cref="TryDecode(byte, out int)"/> must be called on subsequent bytes.</returns>
+        public bool TryDecode(byte b, out int result)
         {
             // Check if shifting b by _m would result in > 31 bits.
             // No masking is required: if the 8th bit is set, it indicates there is a
@@ -70,7 +73,7 @@ namespace System.Net.Http.HPack
                 throw new HPackDecodingException(SR.net_http_hpack_bad_integer);
             }
 
-            _i = _i + ((b & 127) << _m);
+            _i = _i + ((b & 0x7f) << _m);
 
             // If the addition overflowed, the result will be negative.
             if (_i < 0)
@@ -88,10 +91,11 @@ namespace System.Net.Http.HPack
                     throw new HPackDecodingException(SR.net_http_hpack_bad_integer);
                 }
 
-                Value = _i;
+                result = _i;
                 return true;
             }
 
+            result = 0;
             return false;
         }
     }

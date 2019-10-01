@@ -69,8 +69,6 @@ namespace System.Net.Http.HPack
 
         public void Resize(int maxSize)
         {
-            // TODO: What would cause us to need to grow the table size? The connection-level limit should prevent this, right?
-            // Understand this better. If we do need to resize, we may want a better resize strategy.
             if (maxSize > _maxSize)
             {
                 var newBuffer = new HeaderField[maxSize / HeaderField.RfcOverhead];

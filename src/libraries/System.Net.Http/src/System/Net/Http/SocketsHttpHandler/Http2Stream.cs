@@ -16,7 +16,7 @@ namespace System.Net.Http
 {
     internal sealed partial class Http2Connection
     {
-        private sealed class Http2Stream : IValueTaskSource, IHttpTrace
+        private sealed class Http2Stream : IValueTaskSource, IHttpTrace, IHttpHeadersHandler
         {
             private const int InitialStreamBufferSize =
 #if DEBUG
@@ -395,7 +395,7 @@ namespace System.Net.Http
 
             public void OnWindowUpdate(int amount) => _streamWindow.AdjustCredit(amount);
 
-            public void OnResponseHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
+            public void OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
             {
                 if (NetEventSource.IsEnabled) Trace($"{Encoding.ASCII.GetString(name)}: {Encoding.ASCII.GetString(value)}");
                 Debug.Assert(name != null && name.Length > 0);
@@ -527,7 +527,7 @@ namespace System.Net.Http
                 }
             }
 
-            public void OnResponseHeadersStart()
+            public void OnHeadersStart()
             {
                 Debug.Assert(!Monitor.IsEntered(SyncObject));
                 lock (SyncObject)
@@ -550,7 +550,7 @@ namespace System.Net.Http
                 }
             }
 
-            public void OnResponseHeadersComplete(bool endStream)
+            public void OnHeadersComplete(bool endStream)
             {
                 Debug.Assert(!Monitor.IsEntered(SyncObject));
                 bool signalWaiter;

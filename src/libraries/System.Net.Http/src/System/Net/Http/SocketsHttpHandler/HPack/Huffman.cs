@@ -9,7 +9,7 @@ namespace System.Net.Http.HPack
     internal class Huffman
     {
         // TODO: this can be constructed from _decodingTable
-        private static readonly (uint code, int bitLength)[] s_encodingTable = new (uint code, int bitLength)[]
+        private static readonly (uint code, int bitLength)[] _encodingTable = new (uint code, int bitLength)[]
         {
             (0b11111111_11000000_00000000_00000000, 13),
             (0b11111111_11111111_10110000_00000000, 23),
@@ -270,7 +270,7 @@ namespace System.Net.Http.HPack
             (0b11111111_11111111_11111111_11111100, 30)
         };
 
-        private static readonly (int codeLength, int[] codes)[] s_decodingTable = new[]
+        private static readonly (int codeLength, int[] codes)[] _decodingTable = new[]
         {
             (5, new[] { 48, 49, 50, 97, 99, 101, 105, 111, 115, 116 }),
             (6, new[] { 32, 37, 45, 46, 47, 51, 52, 53, 54, 55, 56, 57, 61, 65, 95, 98, 100, 102, 103, 104, 108, 109, 110, 112, 114, 117 }),
@@ -297,7 +297,7 @@ namespace System.Net.Http.HPack
 
         public static (uint encoded, int bitLength) Encode(int data)
         {
-            return s_encodingTable[data];
+            return _encodingTable[data];
         }
 
         /// <summary>
@@ -385,7 +385,7 @@ namespace System.Net.Http.HPack
         /// </param>
         /// <param name="decodedBits">The number of bits decoded from <paramref name="data"/>.</param>
         /// <returns>The decoded symbol.</returns>
-        private static int DecodeValue(uint data, int validBits, out int decodedBits)
+        internal static int DecodeValue(uint data, int validBits, out int decodedBits)
         {
             // The code below implements the decoding logic for a canonical Huffman code.
             //
@@ -406,13 +406,13 @@ namespace System.Net.Http.HPack
 
             int codeMax = 0;
 
-            for (int i = 0; i < s_decodingTable.Length && s_decodingTable[i].codeLength <= validBits; i++)
+            for (int i = 0; i < _decodingTable.Length && _decodingTable[i].codeLength <= validBits; i++)
             {
-                (int codeLength, int[] codes) = s_decodingTable[i];
+                (int codeLength, int[] codes) = _decodingTable[i];
 
                 if (i > 0)
                 {
-                    codeMax <<= codeLength - s_decodingTable[i - 1].codeLength;
+                    codeMax <<= codeLength - _decodingTable[i - 1].codeLength;
                 }
 
                 codeMax += codes.Length;
