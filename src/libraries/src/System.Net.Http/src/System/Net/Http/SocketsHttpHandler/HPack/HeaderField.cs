@@ -7,7 +7,7 @@ using System.Text;
 
 namespace System.Net.Http.HPack
 {
-    internal struct HeaderField
+    internal readonly struct HeaderField
     {
         // http://httpwg.org/specs/rfc7541.html#rfc.section.4.1
         public const int RfcOverhead = 32;
@@ -34,7 +34,7 @@ namespace System.Net.Http.HPack
 
         public int Length => GetLength(Name.Length, Value.Length);
 
-        public static int GetLength(int nameLength, int valueLenth) => nameLength + valueLenth + RfcOverhead;
+        public static int GetLength(int nameLength, int valueLength) => nameLength + valueLength + RfcOverhead;
 
         public override string ToString()
         {

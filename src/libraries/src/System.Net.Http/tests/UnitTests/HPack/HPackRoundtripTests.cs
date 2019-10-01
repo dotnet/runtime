@@ -128,11 +128,20 @@ namespace System.Net.Http.Unit.Tests.HPack
             var header = new HttpRequestHeaders();
             var hpackDecoder = new HPackDecoder(maxDynamicTableSize: 0, maxResponseHeadersLength: HttpHandlerDefaults.DefaultMaxResponseHeadersLength * 1024);
 
-            hpackDecoder.Decode(memory.Span, true, ((_, name, value) => HeaderHandler(name, value)), null);
+            hpackDecoder.Decode(memory.Span, true, new HeaderHandler(header));
 
             return header;
+        }
 
-            void HeaderHandler(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
+        private class HeaderHandler : IHttpHeadersHandler
+        {
+            HttpRequestHeaders _headers;
+            public HeaderHandler(HttpRequestHeaders headers)
+            {
+                _headers = headers;
+            }
+
+            public void OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
             {
                 if (!HeaderDescriptor.TryGet(name, out HeaderDescriptor descriptor))
                 {
@@ -141,7 +150,12 @@ namespace System.Net.Http.Unit.Tests.HPack
 
                 string headerValue = descriptor.GetHeaderValue(value);
 
-                header.TryAddWithoutValidation(descriptor, headerValue.Split(',').Select(x => x.Trim()));
+                _headers.TryAddWithoutValidation(descriptor, headerValue.Split(',').Select(x => x.Trim()));
+            }
+
+            public void OnHeadersComplete(bool endStream)
+            {
+                throw new NotImplementedException();
             }
         }
     }
