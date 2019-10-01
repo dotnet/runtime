@@ -2211,7 +2211,7 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
 {
     CONTRACTL
     {
-        THROWS;
+        NOTHROW;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
     }
