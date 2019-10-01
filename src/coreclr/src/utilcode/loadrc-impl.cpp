@@ -39,7 +39,7 @@ void SkipChars(MyString &str, MyStringIterator &i, WCHAR c1, WCHAR c2) { while (
 #include <algorithm>
 typedef std::wstring MyString;
 typedef std::wstring::const_iterator MyStringIterator;
-#define EndsWithChar(OBJ, CHAR) (*(OBJ.rbegin()) == CHAR)
+#define EndsWithChar(OBJ, CHAR) (*(OBJ.rbegin()) == (CHAR))
 #define AppendChar(OBJ, CHAR) (OBJ.push_back(CHAR))
 #define AppendStr(OBJ, STR) (OBJ += STR)
 #define TrimLastChar(OBJ) (OBJ.resize(OBJ.size() - 1))
@@ -50,7 +50,7 @@ typedef std::wstring::const_iterator MyStringIterator;
 #define StrEndIter(OBJ) (OBJ.end())
 #define FindNext(OBJ, ITER, CHAR) (ITER = std::find<std::wstring::const_iterator>(ITER, OBJ.end(), CHAR))
 #define MakeString(DST, OBJ, BEG, END) (DST = MyString(BEG, END))
-#define StrEquals(STR1, STR2) (STR1 == STR2)
+#define StrEquals(STR1, STR2) ((STR1) == (STR2))
 #define ClrGetEnvironmentVariable(var, res) GetEnvVar(L##var, res)
 bool FindLast(const MyString &str, MyStringIterator &iter, WCHAR c)
 {

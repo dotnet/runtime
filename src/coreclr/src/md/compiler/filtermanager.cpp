@@ -12,7 +12,7 @@
 #include "stdafx.h"
 #include "filtermanager.h"
 
-#define IsGlobalTypeDef(td) (td == TokenFromRid(mdtTypeDef, 1))
+#define IsGlobalTypeDef(td) ((td) == TokenFromRid(mdtTypeDef, 1))
 
 //*****************************************************************************
 // Walk up to the containing tree and

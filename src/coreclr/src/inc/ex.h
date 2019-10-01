@@ -747,7 +747,7 @@ private:
 //
 // We also check the global override flag incase it has been set to force pre-V4 beahviour. "0" implies it has not
 // been overriden.
-#define SET_CE_RETHROW_FLAG_FOR_EX_CATCH(expr)      (((expr == TRUE) && \
+#define SET_CE_RETHROW_FLAG_FOR_EX_CATCH(expr)      ((((expr) == TRUE) && \
                                                       (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_legacyCorruptedStateExceptionsPolicy) == 0) && \
                                                       IsProcessCorruptedStateException(GetCurrentExceptionCode(), FALSE)))
 

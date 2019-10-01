@@ -3941,7 +3941,7 @@ size_t gcard_of ( uint8_t*);
 
 //GC Flags
 #define GC_MARKED       (size_t)0x1
-#define slot(i, j) ((uint8_t**)(i))[j+1]
+#define slot(i, j) ((uint8_t**)(i))[(j)+1]
 
 #define free_object_base_size (plug_skew + sizeof(ArrayBase))
 

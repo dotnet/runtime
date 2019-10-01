@@ -112,8 +112,8 @@ int ThreadpoolMgr::ThreadAdjustmentInterval;
 #define CP_THREAD_PENDINGIO_WAIT 5000           // polling interval when thread is retired but has a pending io
 #define GATE_THREAD_DELAY 500 /*milliseconds*/
 #define GATE_THREAD_DELAY_TOLERANCE 50 /*milliseconds*/
-#define DELAY_BETWEEN_SUSPENDS 5000 + GATE_THREAD_DELAY // time to delay between suspensions
-#define SUSPEND_TIME GATE_THREAD_DELAY+100      // milliseconds to suspend during SuspendProcessing
+#define DELAY_BETWEEN_SUSPENDS (5000 + GATE_THREAD_DELAY) // time to delay between suspensions
+#define SUSPEND_TIME (GATE_THREAD_DELAY + 100)      // milliseconds to suspend during SuspendProcessing
 
 LONG ThreadpoolMgr::Initialization=0;           // indicator of whether the threadpool is initialized.
 
@@ -2516,11 +2516,11 @@ int ThreadpoolMgr::FindWaitIndex(const ThreadCB* threadCB, const HANDLE waitHand
 
 // if no wraparound that the timer is expired if duetime is less than current time
 // if wraparound occurred, then the timer expired if dueTime was greater than last time or dueTime is less equal to current time
-#define TimeExpired(last,now,duetime) (last <= now ? \
-                                       (duetime <= now && duetime >= last): \
-                                       (duetime >= last || duetime <= now))
+#define TimeExpired(last,now,duetime) ((last) <= (now) ? \
+                                       ((duetime) <= (now) && (duetime) >= (last)): \
+                                       ((duetime) >= (last) || (duetime) <= (now)))
 
-#define TimeInterval(end,start) ( end > start ? (end - start) : ((0xffffffff - start) + end + 1)   )
+#define TimeInterval(end,start) ((end) > (start) ? ((end) - (start)) : ((0xffffffff - (start)) + (end) + 1))
 
 // Returns the minimum of the remaining time to reach a timeout among all the waits
 DWORD ThreadpoolMgr::MinimumRemainingWait(LIST_ENTRY* waitInfo, unsigned int numWaits)

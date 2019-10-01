@@ -184,10 +184,10 @@ If you change any of those algorithm, please verify it by this program:
 
 #define GEN_FULLGC                          PREFOLD_FILL_INTO_AGEMASK(GEN_AGE_LIMIT)
 
-#define MAKE_CLUMP_MASK_ADDENDS(bytes)      (bytes >> GEN_INC_SHIFT)
-#define APPLY_CLUMP_ADDENDS(gen, addend)    (gen + addend)
+#define MAKE_CLUMP_MASK_ADDENDS(bytes)      ((bytes) >> GEN_INC_SHIFT)
+#define APPLY_CLUMP_ADDENDS(gen, addend)    ((gen) + (addend))
 
-#define COMPUTE_CLUMP_MASK(gen, msk)        (((gen & GEN_CLAMP) - msk) & GEN_MASK)
+#define COMPUTE_CLUMP_MASK(gen, msk)        ((((gen) & GEN_CLAMP) - (msk)) & GEN_MASK)
 #define COMPUTE_CLUMP_ADDENDS(gen, msk)     MAKE_CLUMP_MASK_ADDENDS(COMPUTE_CLUMP_MASK(gen, msk))
 #define COMPUTE_AGED_CLUMPS(gen, msk)       APPLY_CLUMP_ADDENDS(gen, COMPUTE_CLUMP_ADDENDS(gen, msk))
 

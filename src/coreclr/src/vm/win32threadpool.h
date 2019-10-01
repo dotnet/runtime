@@ -70,7 +70,7 @@ extern int (WINAPI * g_pufnNtQuerySystemInformation) (SYSTEM_INFORMATION_CLASS S
 #endif // !FEATURE_PAL
 
 #define FILETIME_TO_INT64(t) (*(__int64*)&(t))
-#define MILLI_TO_100NANO(x)  (x * 10000)        // convert from milliseond to 100 nanosecond unit
+#define MILLI_TO_100NANO(x)  ((x) * 10000)        // convert from milliseond to 100 nanosecond unit
 
 /**
  * This type is supposed to be private to ThreadpoolMgr.

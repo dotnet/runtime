@@ -749,8 +749,8 @@ void Zapper::CleanupAssembly()
 // Stepping is masked out by GetSpecificCpuInfo()
 // #define CPU_X86_STEPPING(cpuType)   (((cpuType) & 0x000F)     )
 
-#define CPU_X86_USE_CMOV(cpuFeat)   ((cpuFeat & 0x00008001) == 0x00008001)
-#define CPU_X86_USE_SSE2(cpuFeat)   ((cpuFeat & 0x04000000) == 0x04000000)
+#define CPU_X86_USE_CMOV(cpuFeat)   (((cpuFeat) & 0x00008001) == 0x00008001)
+#define CPU_X86_USE_SSE2(cpuFeat)   (((cpuFeat) & 0x04000000) == 0x04000000)
 
 // Values for CPU_X86_FAMILY(cpuType)
 #define CPU_X86_486                 4

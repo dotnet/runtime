@@ -3676,8 +3676,8 @@ private:
         enum_flag_UNUSED_ComponentSize_6    = 0x00004000,
         enum_flag_UNUSED_ComponentSize_7    = 0x00008000,
 
-#define SET_FALSE(flag)     (flag & 0)
-#define SET_TRUE(flag)      (flag & 0xffff)
+#define SET_FALSE(flag)     ((flag) & 0)
+#define SET_TRUE(flag)      ((flag) & 0xffff)
 
         // IMPORTANT! IMPORTANT! IMPORTANT!
         //

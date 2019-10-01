@@ -214,7 +214,7 @@ unsigned DbgGetEXETimeStamp();
 // will not be coorelated with each other (9973 is prime).  Returns false on a retail build
 #define DbgRandomOnHashAndExe(hash, fractionOn) \
     (((DbgGetEXETimeStamp() * __LINE__ * ((hash) ? (hash) : 1)) % 9973) < \
-     unsigned(fractionOn * 9973))
+     unsigned((fractionOn) * 9973))
 #define DbgRandomOnExe(fractionOn) DbgRandomOnHashAndExe(0, fractionOn)
 #define DbgRandomOnStringAndExe(string, fractionOn) DbgRandomOnHashAndExe(HashStringA(string), fractionOn)
 
