@@ -16,6 +16,7 @@ namespace ReadyToRun.SuperIlc
         public bool Crossgen { get; set; }
         public bool Exe { get; set; }
         public bool NoJit { get; set; }
+        public bool NoCrossgen2 { get; set; }
         public bool NoExe { get; set; }
         public bool NoEtw { get; set; }
         public bool NoCleanup { get; set; }
@@ -78,10 +79,13 @@ namespace ReadyToRun.SuperIlc
         {
             List<CompilerRunner> runners = new List<CompilerRunner>();
 
-            List<string> cpaotReferencePaths = new List<string>();
-            cpaotReferencePaths.Add(CoreRootOutputPath(CompilerIndex.CPAOT, isFramework));
-            cpaotReferencePaths.AddRange(overrideReferencePaths != null ? overrideReferencePaths : ReferencePaths());
-            runners.Add(new CpaotRunner(this, cpaotReferencePaths));
+            if (!NoCrossgen2)
+            {
+                List<string> cpaotReferencePaths = new List<string>();
+                cpaotReferencePaths.Add(CoreRootOutputPath(CompilerIndex.CPAOT, isFramework));
+                cpaotReferencePaths.AddRange(overrideReferencePaths != null ? overrideReferencePaths : ReferencePaths());
+                runners.Add(new CpaotRunner(this, cpaotReferencePaths));
+            }
 
             if (Crossgen)
             {
