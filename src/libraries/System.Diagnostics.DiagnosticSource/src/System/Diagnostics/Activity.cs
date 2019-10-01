@@ -32,7 +32,7 @@ namespace System.Diagnostics
     public partial class Activity
     {
 #pragma warning disable CA1825 // Array.Empty<T>() doesn't exist in all configurations
-        private static readonly IEnumerable<KeyValuePair<string, string>> s_emptyBaggageTags = new KeyValuePair<string, string>[0];
+        private static readonly IEnumerable<KeyValuePair<string, string?>> s_emptyBaggageTags = new KeyValuePair<string, string?>[0];
 #pragma warning restore CA1825
 
         private const byte ActivityTraceFlagsIsSet = 0b_1_0000000; // Internal flag to indicate if flags have been set
@@ -53,25 +53,25 @@ namespace System.Diagnostics
         /// </summary>
         public static bool ForceDefaultIdFormat { get; set; }
 
-        private string _traceState;
+        private string? _traceState;
         private State _state;
         private int _currentChildId;  // A unique number for all children of this activity.
 
         // State associated with ID.
-        private string _id;
-        private string _rootId;
+        private string? _id;
+        private string? _rootId;
         // State associated with ParentId.
-        private string _parentId;
+        private string? _parentId;
 
         // W3C formats
-        private string _parentSpanId;
-        private string _traceId;
-        private string _spanId;
+        private string? _parentSpanId;
+        private string? _traceId;
+        private string? _spanId;
 
         private byte _w3CIdFlags;
 
-        private KeyValueListNode _tags;
-        private KeyValueListNode _baggage;
+        private KeyValueListNode? _tags;
+        private KeyValueListNode? _baggage;
 
         /// <summary>
         /// An operation name is a COARSEST name that is useful grouping/filtering.
@@ -79,7 +79,7 @@ namespace System.Diagnostics
         /// reasonable, but arguments (e.g. specific accounts etc), should not be in
         /// the name but rather in the tags.
         /// </summary>
-        public string OperationName { get; }
+        public string OperationName { get; } = null!;
 
         /// <summary>
         /// If the Activity that created this activity is from the same process you can get
@@ -87,7 +87,7 @@ namespace System.Diagnostics
         /// parent (a root activity) or if the Parent is from outside the process.
         /// </summary>
         /// <seealso cref="ParentId"/>
-        public Activity Parent { get; private set; }
+        public Activity? Parent { get; private set; }
 
         /// <summary>
         /// If the Activity has ended (<see cref="Stop"/> or <see cref="SetEndTime"/> was called) then this is the delta
@@ -118,7 +118,7 @@ namespace System.Diagnostics
         ///  - '|a000b421-5d183ab6.1.8e2d4c28_' - Id of the grand child activity. It was started in another process and ends with '_'<para />
         /// 'a000b421-5d183ab6' is a <see cref="RootId"/> for the first Activity and all its children
         /// </example>
-        public string Id
+        public string? Id
         {
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
         [System.Security.SecuritySafeCriticalAttribute]
@@ -149,7 +149,7 @@ namespace System.Diagnostics
         /// <para/>
         /// See <see href="https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format"/> for more details
         /// </summary>
-        public string ParentId
+        public string? ParentId
         {
             get
             {
@@ -177,7 +177,7 @@ namespace System.Diagnostics
         /// RootId may be null if Activity has neither ParentId nor Id.
         /// See <see href="https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format"/> for more details
         /// </summary>
-        public string RootId
+        public string? RootId
         {
             get
             {
@@ -186,7 +186,7 @@ namespace System.Diagnostics
                 //Presumably, it will be called by logging systems for every log record, so we cache it.
                 if (_rootId == null)
                 {
-                    string rootId = null;
+                    string? rootId = null;
                     if (Id != null)
                     {
                         rootId = GetRootId(Id);
@@ -212,20 +212,20 @@ namespace System.Diagnostics
         /// however is NOT passed on to the children of this activity.
         /// </summary>
         /// <seealso cref="Baggage"/>
-        public IEnumerable<KeyValuePair<string, string>> Tags
+        public IEnumerable<KeyValuePair<string, string?>> Tags
         {
             get
             {
-                KeyValueListNode tags = _tags;
+                KeyValueListNode? tags = _tags;
                 return tags != null ?
                     Iterate(tags) :
                     s_emptyBaggageTags;
 
-                static IEnumerable<KeyValuePair<string, string>> Iterate(KeyValueListNode tags)
+                static IEnumerable<KeyValuePair<string, string?>> Iterate(KeyValueListNode? tags)
                 {
                     do
                     {
-                        yield return tags.keyValue;
+                        yield return tags!.keyValue;
                         tags = tags.Next;
                     }
                     while (tags != null);
@@ -241,11 +241,11 @@ namespace System.Diagnostics
         /// In general, if you are not using the data at runtime, you should be using Tags
         /// instead.
         /// </summary>
-        public IEnumerable<KeyValuePair<string, string>> Baggage
+        public IEnumerable<KeyValuePair<string, string?>> Baggage
         {
             get
             {
-                for (Activity activity = this; activity != null; activity = activity.Parent)
+                for (Activity? activity = this; activity != null; activity = activity.Parent)
                 {
                     if (activity._baggage != null)
                     {
@@ -255,11 +255,12 @@ namespace System.Diagnostics
 
                 return s_emptyBaggageTags;
 
-                static IEnumerable<KeyValuePair<string, string>> Iterate(Activity activity)
+                static IEnumerable<KeyValuePair<string, string?>> Iterate(Activity? activity)
                 {
+                    Debug.Assert(activity != null);
                     do
                     {
-                        for (KeyValueListNode baggage = activity._baggage; baggage != null; baggage = baggage.Next)
+                        for (KeyValueListNode? baggage = activity._baggage; baggage != null; baggage = baggage.Next)
                         {
                             yield return baggage.keyValue;
                         }
@@ -275,9 +276,9 @@ namespace System.Diagnostics
         /// Returns the value of the key-value pair added to the activity with <see cref="AddBaggage(string, string)"/>.
         /// Returns null if that key does not exist.
         /// </summary>
-        public string GetBaggageItem(string key)
+        public string? GetBaggageItem(string key)
         {
-            foreach (KeyValuePair<string, string> keyValue in Baggage)
+            foreach (KeyValuePair<string, string?> keyValue in Baggage)
                 if (key == keyValue.Key)
                     return keyValue.Value;
             return null;
@@ -307,10 +308,10 @@ namespace System.Diagnostics
         /// is useful to log but not needed for runtime control (for the latter, <see cref="Baggage"/>)
         /// </summary>
         /// <returns>'this' for convenient chaining</returns>
-        public Activity AddTag(string key, string value)
+        public Activity AddTag(string key, string? value)
         {
-            KeyValueListNode currentTags = _tags;
-            KeyValueListNode newTags = new KeyValueListNode() { keyValue = new KeyValuePair<string, string>(key, value) };
+            KeyValueListNode? currentTags = _tags;
+            KeyValueListNode newTags = new KeyValueListNode() { keyValue = new KeyValuePair<string, string?>(key, value) };
             do
             {
                 newTags.Next = currentTags;
@@ -329,10 +330,10 @@ namespace System.Diagnostics
         /// Returns 'this' for convenient chaining.
         /// </summary>
         /// <returns>'this' for convenient chaining</returns>
-        public Activity AddBaggage(string key, string value)
+        public Activity AddBaggage(string key, string? value)
         {
-            KeyValueListNode currentBaggage = _baggage;
-            KeyValueListNode newBaggage = new KeyValueListNode() { keyValue = new KeyValuePair<string, string>(key, value) };
+            KeyValueListNode? currentBaggage = _baggage;
+            KeyValueListNode newBaggage = new KeyValueListNode() { keyValue = new KeyValuePair<string, string?>(key, value) };
 
             do
             {
@@ -459,7 +460,7 @@ namespace System.Diagnostics
             {
                 if (_parentId == null && _parentSpanId is null)
                 {
-                    Activity parent = Current;
+                    Activity? parent = Current;
                     if (parent != null)
                     {
                         // The parent change should not form a loop.   We are actually guaranteed this because
@@ -538,13 +539,13 @@ namespace System.Diagnostics
         /// it is expected to be special cased (it has its own HTTP header), it is more
         /// convenient/efficient if it is not lumped in with other baggage.
         /// </summary>
-        public string TraceStateString
+        public string? TraceStateString
         {
             get
             {
-                for (Activity activity = this; activity != null; activity = activity.Parent)
+                for (Activity? activity = this; activity != null; activity = activity.Parent)
                 {
-                    string val = activity._traceState;
+                    string? val = activity._traceState;
                     if (val != null)
                         return val;
                 }
@@ -635,7 +636,7 @@ namespace System.Diagnostics
             {
                 if (_parentSpanId is null)
                 {
-                    string parentSpanId = null;
+                    string? parentSpanId = null;
                     if (_parentId != null && IsW3CId(_parentId))
                     {
                         try
@@ -848,7 +849,7 @@ namespace System.Diagnostics
             return *((long*)&g);
         }
 
-        private static bool ValidateSetCurrent(Activity activity)
+        private static bool ValidateSetCurrent(Activity? activity)
         {
             bool canSet = activity == null || (activity.Id != null && !activity.IsFinished);
             if (!canSet)
@@ -939,8 +940,8 @@ namespace System.Diagnostics
         /// </summary>
         private partial class KeyValueListNode
         {
-            public KeyValuePair<string, string> keyValue;
-            public KeyValueListNode Next;
+            public KeyValuePair<string, string?> keyValue;
+            public KeyValueListNode? Next;
         }
 
         [Flags]
@@ -991,9 +992,9 @@ namespace System.Diagnostics
 #endif
     public readonly struct ActivityTraceId : IEquatable<ActivityTraceId>
     {
-        private readonly string _hexString;
+        private readonly string? _hexString;
 
-        internal ActivityTraceId(string hexString) => _hexString = hexString;
+        internal ActivityTraceId(string? hexString) => _hexString = hexString;
 
         /// <summary>
         /// Create a new TraceId with at random number in it (very likely to be unique)
@@ -1046,7 +1047,7 @@ namespace System.Diagnostics
         {
             return _hexString == traceId._hexString;
         }
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj is ActivityTraceId traceId)
                 return _hexString == traceId._hexString;
@@ -1212,9 +1213,9 @@ namespace System.Diagnostics
 #endif
     public readonly struct ActivitySpanId : IEquatable<ActivitySpanId>
     {
-        private readonly string _hexString;
+        private readonly string? _hexString;
 
-        internal ActivitySpanId(string hexString) => _hexString = hexString;
+        internal ActivitySpanId(string? hexString) => _hexString = hexString;
 
         /// <summary>
         /// Create a new SpanId with at random number in it (very likely to be unique)
@@ -1268,15 +1269,11 @@ namespace System.Diagnostics
         {
             return _hexString == spanId._hexString;
         }
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            if (!(obj is ActivitySpanId))
-            {
-                return false;
-            }
-
-            ActivitySpanId spanId = (ActivitySpanId)obj;
-            return _hexString == spanId._hexString;
+            if (obj is ActivitySpanId spanId)
+                return _hexString == spanId._hexString;
+            return false;
         }
         public override int GetHashCode()
         {

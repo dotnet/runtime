@@ -9,6 +9,7 @@
     <CLSCompliant>false</CLSCompliant>
     <NoWarn>$(NoWarn);SA1205</NoWarn>
     <Configurations>net45-Debug;net45-Release;net46-Debug;net46-Release;netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release;netstandard1.1-Debug;netstandard1.1-Release;netstandard1.3-Debug;netstandard1.3-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetGroup)' == 'netstandard1.1' OR '$(TargetGroup)' == 'net45'">
     <DefineConstants>$(DefineConstants);NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT</DefineConstants>
