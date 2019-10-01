@@ -245,9 +245,9 @@ update-tests-coreclr: coreclr/.stamp-tests
 coreclr/.stamp-tests:
 	rm -rf coreclr/tests
 	curl -L "$(CORECLR_TESTS)" --output coreclr/tests.zip
-	$(UNZIPCMD) coreclr/tests.zip -C coreclr/
+	tar -xvf coreclr/tests.zip -C coreclr/
 	mkdir coreclr/tests
-	$(UNZIPCMD) coreclr/Tests_Linux_x64_checked/Linux.x64.Checked.tar.gz -C coreclr/tests
+	tar -xvf coreclr/Tests_OSX_x64_checked_outerloop/Tests_OSX_x64_checked_outerloop.tar.gz -C coreclr/tests
 	touch $@
 
 .PHONY: corerun
