@@ -44,6 +44,9 @@ namespace ReadyToRun.SuperIlc
 
         protected abstract string CompilerRelativePath { get;  }
         protected abstract string CompilerFileName { get; }
+
+        protected virtual string CompilerPath => Path.Combine(_options.CoreRootDirectory.FullName, CompilerRelativePath, CompilerFileName);
+        
         protected abstract IEnumerable<string> BuildCommandLineArguments(string assemblyFileName, string outputFileName);
 
         public virtual ProcessParameters CompilationProcess(string outputRoot, string assemblyFileName)
@@ -56,7 +59,7 @@ namespace ReadyToRun.SuperIlc
             CreateResponseFile(responseFile, commandLineArgs);
 
             ProcessParameters processParameters = new ProcessParameters();
-            processParameters.ProcessPath = Path.Combine(_options.CoreRootDirectory.FullName, CompilerRelativePath, CompilerFileName);
+            processParameters.ProcessPath = CompilerPath;
             processParameters.Arguments = $"@{responseFile}";
             if (_options.CompilationTimeoutMinutes != 0)
             {
