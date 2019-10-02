@@ -21,6 +21,14 @@ namespace ReadyToRun.SuperIlc
 
         protected override string CompilerFileName => "crossgen".OSExeSuffix();
 
+        protected override string CompilerPath
+        {
+            get
+            {
+                return _options.CrossgenPath != null ? _options.CrossgenPath.FullName : base.CompilerPath;
+            }
+        }
+
         public CrossgenRunner(BuildOptions options, IEnumerable<string> referencePaths)
             : base(options, referencePaths) { }
 
