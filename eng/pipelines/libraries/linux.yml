@@ -117,7 +117,7 @@ stages:
 
         submitToHelix: true
         # Temporary till we reduced workloads on ARM64
-        timeoutInMinutes: 180
+        timeoutInMinutes: 240
 
         variables:
           - redhatHelixQueue: RedHat.6.Amd64.Open
