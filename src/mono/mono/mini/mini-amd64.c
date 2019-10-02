@@ -116,12 +116,12 @@ mono_arch_regname (int reg)
 	return "unknown";
 }
 
-static const char * packed_xmmregs [] = {
+static const char * const packed_xmmregs [] = {
 	"p:xmm0", "p:xmm1", "p:xmm2", "p:xmm3", "p:xmm4", "p:xmm5", "p:xmm6", "p:xmm7", "p:xmm8",
 	"p:xmm9", "p:xmm10", "p:xmm11", "p:xmm12", "p:xmm13", "p:xmm14", "p:xmm15"
 };
 
-static const char * single_xmmregs [] = {
+static const char * const single_xmmregs [] = {
 	"s:xmm0", "s:xmm1", "s:xmm2", "s:xmm3", "s:xmm4", "s:xmm5", "s:xmm6", "s:xmm7", "s:xmm8",
 	"s:xmm9", "s:xmm10", "s:xmm11", "s:xmm12", "s:xmm13", "s:xmm14", "s:xmm15"
 };
@@ -3039,11 +3039,6 @@ mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 			EMIT_COND_BRANCH (tins, cond, signed);	\
 		}			\
 	} while (0); 
-
-#define EMIT_FPCOMPARE(code) do { \
-	amd64_fcompp (code); \
-	amd64_fnstsw (code); \
-} while (0); 
 
 #define EMIT_SSE2_FPFUNC(code, op, dreg, sreg1) do { \
     amd64_movsd_membase_reg (code, AMD64_RSP, -8, (sreg1)); \
