@@ -1435,6 +1435,22 @@ copy_summary_string_safe (char *in, const char *out)
 	return;
 }
 
+static void
+fill_frame_managed_info (MonoFrameSummary *frame, MonoMethod * method)
+{
+		MonoImage *image = mono_class_get_image (method->klass);
+		// Used for hashing, more stable across rebuilds than using GUID
+		copy_summary_string_safe (frame->str_descr, image->assembly_name);
+
+		frame->managed_data.guid = image->guid;
+		frame->managed_data.token = method->token;
+		frame->managed_data.filename = image->module_name;
+
+		MonoDotNetHeader *header = &image->image_info->cli_header;
+		frame->managed_data.image_size = header->nt.pe_image_size;
+		frame->managed_data.time_date_stamp = image->time_date_stamp;
+}
+
 typedef struct {
 	char *suffix;
 	char *exported_name;
@@ -1607,24 +1623,9 @@ summarize_frame_internal (MonoMethod *method, gpointer ip, size_t native_offset,
 			ud->error = "Managed method frame, but no provided managed method";
 			return TRUE;
 		}
-
-		MonoImage *image = mono_class_get_image (method->klass);
-		// Used for hashing, more stable across rebuilds than using GUID
-		copy_summary_string_safe (dest->str_descr, image->assembly_name);
-
-		dest->managed_data.guid = image->guid;
-
+		fill_frame_managed_info (dest, method);
 		dest->managed_data.native_offset = native_offset;
-		dest->managed_data.token = method->token;
 		dest->managed_data.il_offset = il_offset;
-
-		dest->managed_data.filename = image->module_name;
-
-		MonoDotNetHeader *header = &image->image_info->cli_header;
-		dest->managed_data.image_size = header->nt.pe_image_size;
-
-		dest->managed_data.time_date_stamp = image->time_date_stamp;
-
 	} else {
 		dest->managed_data.token = -1;
 	}
@@ -1764,8 +1765,29 @@ mono_summarize_unmanaged_stack (MonoThreadSummary *out)
 		MonoFrameSummary *frame = &out->unmanaged_frames [i];
 		const char* module_buf = frame->unmanaged_data.module;
 		int success = mono_get_portable_ip (ip, &frame->unmanaged_data.ip, &frame->unmanaged_data.offset, &module_buf, (char *) frame->str_descr);
-		if (!success)
+
+		/* attempt to look up any managed method at that ip */
+		/* TODO: Trampolines - follow examples from mono_print_method_from_ip() */
+
+		MonoJitInfo *ji;
+		MonoDomain *domain = mono_domain_get ();
+		MonoDomain *target_domain;
+		ji = mini_jit_info_table_find_ext (domain, (char *)ip, TRUE, &target_domain);
+		if (ji) {
+			frame->is_managed = TRUE;
+			if (!ji->async && !ji->is_trampoline) {
+				MonoMethod *method = jinfo_get_method (ji);
+				fill_frame_managed_info (frame, method);
+#ifndef MONO_PRIVATE_CRASHES
+				frame->managed_data.name = method->name;
+#endif
+			}
+		}
+
+		if (!success && !ji) {
+			frame->unmanaged_data.ip = ip;
 			continue;
+		}
 
 		if (out->unmanaged_frames [i].str_descr [0] != '\0')
 			out->unmanaged_frames [i].unmanaged_data.has_name = TRUE;

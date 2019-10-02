@@ -514,6 +514,7 @@ mono_native_state_add_frame (MonoStateWriter *writer, MonoFrameSummary *frame)
 		mono_state_writer_printf(writer, "\"0x%05x\"\n", frame->managed_data.il_offset);
 
 	} else {
+		mono_state_writer_printf(writer, "\n");
 		assert_has_space (writer);
 		mono_state_writer_indent (writer);
 		mono_state_writer_object_key (writer, "native_address");
