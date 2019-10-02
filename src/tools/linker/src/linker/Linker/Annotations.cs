@@ -60,6 +60,8 @@ namespace Mono.Linker {
 
 		public AnnotationStore (LinkContext context) => this.context = context;
 
+		public bool ProcessSatelliteAssemblies { get; set; }
+
 		protected Tracer Tracer {
 			get {
 				return context.Tracer;

@@ -17,5 +17,14 @@ namespace Mono.Linker
 
 			return true;
 		}
+
+		public static bool IsSatelliteAssemblyMarker (MethodDefinition method)
+		{
+			if (!method.IsConstructor || method.IsStatic)
+				return false;
+
+			var declaringType = method.DeclaringType;
+			return declaringType.Name == "ResourceManager" && declaringType.Namespace == "System.Resources";
+		}
 	}
 }

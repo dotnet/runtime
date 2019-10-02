@@ -126,11 +126,13 @@ namespace Mono.Linker.Steps {
 			case AssemblyAction.AddBypassNGen:
 				Context.Tracer.AddDependency (assembly);
 				WriteAssembly (assembly, directory);
+				CopySatelliteAssembliesIfNeeded (assembly, directory);
 				break;
 			case AssemblyAction.Copy:
 				Context.Tracer.AddDependency (assembly);
 				CloseSymbols (assembly);
 				CopyAssembly (assembly, directory);
+				CopySatelliteAssembliesIfNeeded (assembly, directory);
 				break;
 			case AssemblyAction.Delete:
 				CloseSymbols (assembly);
@@ -181,6 +183,28 @@ namespace Mono.Linker.Steps {
 			return parameters;
 		}
 
+
+		void CopySatelliteAssembliesIfNeeded (AssemblyDefinition assembly, string directory)
+		{
+			if (!Annotations.ProcessSatelliteAssemblies)
+				return;
+
+			FileInfo original = GetOriginalAssemblyFileInfo (assembly);
+			string resourceFile = GetAssemblyResourceFileName (original.FullName);
+
+			foreach (var subDirectory in Directory.EnumerateDirectories (original.DirectoryName)) {
+				var satelliteAssembly = Path.Combine (subDirectory, resourceFile);
+				if (!File.Exists (satelliteAssembly))
+					continue;
+
+				string cultureName = subDirectory.Substring (subDirectory.LastIndexOf (Path.DirectorySeparatorChar) + 1);
+				string culturePath = Path.Combine (directory, cultureName);
+
+				Directory.CreateDirectory (culturePath);
+				File.Copy (satelliteAssembly, Path.Combine (culturePath, resourceFile));
+			}
+		}
+
 		void CopyConfigFileIfNeeded (AssemblyDefinition assembly, string directory)
 		{
 			string config = GetConfigFile (GetOriginalAssemblyFileInfo (assembly).FullName);
@@ -193,6 +217,11 @@ namespace Mono.Linker.Steps {
 				return;
 
 			File.Copy (config, GetConfigFile (GetAssemblyFileName (assembly, directory)), true);
+		}
+
+		static string GetAssemblyResourceFileName (string assembly)
+		{
+			return Path.GetFileNameWithoutExtension (assembly) + ".resources.dll";
 		}
 
 		static string GetConfigFile (string assembly)
