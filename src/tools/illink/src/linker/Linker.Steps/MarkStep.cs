@@ -1821,7 +1821,10 @@ namespace Mono.Linker.Steps {
 			if (ShouldMarkAsInstancePossible (method))
 				MarkRequirementsForInstantiatedTypes (method.DeclaringType);
 
-			if (IsPropertyMethod (method))
+			if (method.IsConstructor) {
+				if (!Annotations.ProcessSatelliteAssemblies && KnownMembers.IsSatelliteAssemblyMarker (method))
+					Annotations.ProcessSatelliteAssemblies = true;
+			} else if (IsPropertyMethod (method))
 				MarkProperty (GetProperty (method));
 			else if (IsEventMethod (method))
 				MarkEvent (GetEvent (method));
