@@ -34,7 +34,7 @@ emit_array_generic_access (MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst
 	MonoType *etype = m_class_get_byval_arg (eklass);
 	if (is_set) {
 		EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, load, etype, args [2]->dreg, 0);
-		if (mini_debug_options.clr_memory_model && mini_type_is_reference (etype))
+		if (!mini_debug_options.weak_memory_model && mini_type_is_reference (etype))
 			mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 		EMIT_NEW_STORE_MEMBASE_TYPE (cfg, store, etype, addr->dreg, 0, load->dreg);
 		if (mini_type_is_reference (etype))
@@ -1201,7 +1201,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				MONO_ADD_INS (cfg->cbb, f2i);
 			}
 
-			if (is_ref && mini_debug_options.clr_memory_model)
+			if (is_ref && !mini_debug_options.weak_memory_model)
 				mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 
 			MONO_INST_NEW (cfg, ins, opcode);
@@ -1304,7 +1304,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				MONO_ADD_INS (cfg->cbb, f2i_cmp);
 			}
 
-			if (is_ref && mini_debug_options.clr_memory_model)
+			if (is_ref && !mini_debug_options.weak_memory_model)
 				mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 
 			MONO_INST_NEW (cfg, ins, opcode);

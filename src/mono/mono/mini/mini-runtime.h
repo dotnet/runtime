@@ -245,9 +245,9 @@ typedef struct MonoDebugOptions {
 	gboolean test_tailcall_require;
 
 	/*
-	 * Use the the stricter clr memory model.
+	 * Don't enforce any memory model. We will assume the architecture's memory model.
 	 */
-	gboolean clr_memory_model;
+	gboolean weak_memory_model;
 
 	/*
 	 * Internal testing feature

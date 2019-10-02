@@ -2309,7 +2309,7 @@ mini_emit_storing_write_barrier (MonoCompile *cfg, MonoInst *ptr, MonoInst *valu
 	 * Add a release memory barrier so the object contents are flushed
 	 * to memory before storing the reference into another object.
 	 */
-	if (mini_debug_options.clr_memory_model)
+	if (!mini_debug_options.weak_memory_model)
 		mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 
 	EMIT_NEW_STORE_MEMBASE (cfg, store, OP_STORE_MEMBASE_REG, ptr->dreg, 0, value->dreg);
@@ -3530,7 +3530,7 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, target->dreg, 0);
 			MONO_EMIT_NEW_COND_EXC (cfg, EQ, "NullReferenceException");
 		}
-		if (mini_debug_options.clr_memory_model)
+		if (!mini_debug_options.weak_memory_model)
 			mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, target), target->dreg);
 		if (cfg->gen_write_barriers) {
@@ -4230,7 +4230,7 @@ mini_emit_array_store (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, gboole
 			EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, m_class_get_byval_arg (klass), array_reg, offset, sp [2]->dreg);
 		} else {
 			MonoInst *addr = mini_emit_ldelema_1_ins (cfg, klass, sp [0], sp [1], safety_checks);
-			if (mini_debug_options.clr_memory_model && mini_class_is_reference (klass))
+			if (!mini_debug_options.weak_memory_model && mini_class_is_reference (klass))
 				mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 			EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, m_class_get_byval_arg (klass), addr->dreg, 0, sp [2]->dreg);
 			if (mini_class_is_reference (klass))
@@ -7750,7 +7750,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					}
 
 					addr = mini_emit_ldelema_ins (cfg, cmethod, sp, ip, TRUE);
-					if (mini_debug_options.clr_memory_model && val->type == STACK_OBJ)
+					if (!mini_debug_options.weak_memory_model && val->type == STACK_OBJ)
 						mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 					EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, fsig->params [fsig->param_count - 1], addr->dreg, 0, val->dreg);
 					if (cfg->gen_write_barriers && val->type == STACK_OBJ && !MONO_INS_IS_PCONST_NULL (val))
@@ -8248,7 +8248,7 @@ calli_end:
 
 			if (il_op == MONO_CEE_STIND_R4 && sp [1]->type == STACK_R8)
 				sp [1] = convert_value (cfg, m_class_get_byval_arg (mono_defaults.single_class), sp [1]);
-			if (mini_debug_options.clr_memory_model && il_op == MONO_CEE_STIND_REF && method->wrapper_type != MONO_WRAPPER_WRITE_BARRIER)
+			if (!mini_debug_options.weak_memory_model && il_op == MONO_CEE_STIND_REF && method->wrapper_type != MONO_WRAPPER_WRITE_BARRIER)
 				mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 			NEW_STORE_MEMBASE (cfg, ins, stind_to_store_membase (il_op), sp [0]->dreg, 0, sp [1]->dreg);
 			ins->flags |= ins_flag;
@@ -9496,7 +9496,7 @@ calli_end:
 				if (ins_flag & MONO_INST_VOLATILE) {
 					/* Volatile stores have release semantics, see 12.6.7 in Ecma 335 */
 					mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
-				} else if (mini_debug_options.clr_memory_model && mini_type_is_reference (ftype)) {
+				} else if (!mini_debug_options.weak_memory_model && mini_type_is_reference (ftype)) {
 					mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 				}
 			}
