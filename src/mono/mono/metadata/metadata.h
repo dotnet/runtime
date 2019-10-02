@@ -337,18 +337,18 @@ typedef enum {
 	MONO_PARSE_FIELD
 } MonoParseTypeMode;
 
-MONO_API mono_bool
+MONO_API MONO_RT_EXTERNAL_ONLY mono_bool
 mono_type_is_byref       (MonoType *type);
 
-MONO_API int
+MONO_API MONO_RT_EXTERNAL_ONLY int
 mono_type_get_type       (MonoType *type);
 
 /* For MONO_TYPE_FNPTR */
-MONO_API MonoMethodSignature*
+MONO_API MONO_RT_EXTERNAL_ONLY MonoMethodSignature*
 mono_type_get_signature  (MonoType *type);
 
 /* For MONO_TYPE_CLASS, VALUETYPE */
-MONO_API MonoClass*
+MONO_API MONO_RT_EXTERNAL_ONLY MonoClass*
 mono_type_get_class      (MonoType *type);
 
 MONO_API MonoArrayType*

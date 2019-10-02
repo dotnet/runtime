@@ -867,7 +867,7 @@ mono_cominterop_emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, 
 		mono_mb_emit_byte (mb, CEE_LDIND_REF);
 
 		if (conv == MONO_MARSHAL_CONV_OBJECT_INTERFACE) {
-			mono_mb_emit_ptr (mb, mono_type_get_class (type));
+			mono_mb_emit_ptr (mb, mono_type_get_class_internal (type));
 			mono_mb_emit_icall (mb, cominterop_get_interface);
 
 		}
@@ -900,7 +900,7 @@ mono_cominterop_emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, 
 		mono_mb_emit_byte (mb, CEE_LDIND_REF);
 		
 		if (conv == MONO_MARSHAL_CONV_OBJECT_INTERFACE)
-			mono_mb_emit_ptr (mb, mono_type_get_class (type));
+			mono_mb_emit_ptr (mb, mono_type_get_class_internal (type));
 		else if (conv == MONO_MARSHAL_CONV_OBJECT_IUNKNOWN)
 			mono_mb_emit_ptr (mb, mono_class_get_iunknown_class ());
 		else if (conv == MONO_MARSHAL_CONV_OBJECT_IDISPATCH)
@@ -1686,7 +1686,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_GetCCW (MonoObjectHandle object
 	g_assert (!MONO_HANDLE_IS_NULL (ref_type));
 	MonoType * const type = MONO_HANDLE_GETVAL (ref_type, type);
 	g_assert (type);
-	MonoClass * klass = mono_type_get_class (type);
+	MonoClass * klass = mono_type_get_class_internal (type);
 	g_assert (klass);
 	if (!mono_class_init_checked (klass, error))
 		return NULL;
@@ -1701,7 +1701,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_GetCCW (MonoObjectHandle object
 		if (attr) {
 			MonoType *def_itf = attr->type->type;
 			if (def_itf->type == MONO_TYPE_CLASS)
-				klass = mono_type_get_class (def_itf);
+				klass = mono_type_get_class_internal (def_itf);
 		}
 		if (!cinfo->cached)
 			mono_custom_attrs_free (cinfo);

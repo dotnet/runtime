@@ -6778,7 +6778,7 @@ get_types (gpointer key, gpointer value, gpointer user_data)
 			t = mono_reflection_get_type_checked (ass->image, ass->image, ud->info, ud->ignore_case, TRUE, &type_resolve, probe_type_error);
 			mono_error_cleanup (probe_type_error);
 			if (t) {
-				g_ptr_array_add (ud->res_classes, mono_type_get_class (t));
+				g_ptr_array_add (ud->res_classes, mono_type_get_class_internal (t));
 				g_ptr_array_add (ud->res_domains, domain);
 			}
 		}

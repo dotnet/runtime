@@ -76,18 +76,18 @@ partial_sharing_supported (void)
 static int
 type_check_context_used (MonoType *type, gboolean recursive)
 {
-	switch (mono_type_get_type (type)) {
+	switch (mono_type_get_type_internal (type)) {
 	case MONO_TYPE_VAR:
 		return MONO_GENERIC_CONTEXT_USED_CLASS;
 	case MONO_TYPE_MVAR:
 		return MONO_GENERIC_CONTEXT_USED_METHOD;
 	case MONO_TYPE_SZARRAY:
-		return mono_class_check_context_used (mono_type_get_class (type));
+		return mono_class_check_context_used (mono_type_get_class_internal (type));
 	case MONO_TYPE_ARRAY:
 		return mono_class_check_context_used (mono_type_get_array_type (type)->eklass);
 	case MONO_TYPE_CLASS:
 		if (recursive)
-			return mono_class_check_context_used (mono_type_get_class (type));
+			return mono_class_check_context_used (mono_type_get_class_internal (type));
 		else
 			return 0;
 	case MONO_TYPE_GENERICINST:

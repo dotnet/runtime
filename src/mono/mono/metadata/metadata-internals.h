@@ -1222,4 +1222,71 @@ mono_assembly_get_alc (MonoAssembly *assm)
 	return mono_image_get_alc (assm->image);
 }
 
+/**
+ * mono_type_get_type_internal:
+ * \param type the \c MonoType operated on
+ * \returns the IL type value for \p type. This is one of the \c MonoTypeEnum
+ * enum members like \c MONO_TYPE_I4 or \c MONO_TYPE_STRING.
+ */
+static inline int
+mono_type_get_type_internal (MonoType *type)
+{
+	return type->type;
+}
+
+/**
+ * mono_type_get_signature:
+ * \param type the \c MonoType operated on
+ * It is only valid to call this function if \p type is a \c MONO_TYPE_FNPTR .
+ * \returns the \c MonoMethodSignature pointer that describes the signature
+ * of the function pointer \p type represents.
+ */
+static inline MonoMethodSignature*
+mono_type_get_signature_internal (MonoType *type)
+{
+	g_assert (type->type == MONO_TYPE_FNPTR);
+	return type->data.method;
+}
+
+/**
+ * mono_type_is_byref_internal:
+ * \param type the \c MonoType operated on
+ * \returns TRUE if \p type represents a type passed by reference,
+ * FALSE otherwise.
+ */
+static inline mono_bool
+mono_type_is_byref_internal (MonoType *type)
+{
+	return type->byref;
+}
+
+/**
+ * mono_type_get_class_internal:
+ * \param type the \c MonoType operated on
+ * It is only valid to call this function if \p type is a \c MONO_TYPE_CLASS or a
+ * \c MONO_TYPE_VALUETYPE . For more general functionality, use \c mono_class_from_mono_type_internal,
+ * instead.
+ * \returns the \c MonoClass pointer that describes the class that \p type represents.
+ */
+static inline MonoClass*
+mono_type_get_class_internal (MonoType *type)
+{
+	/* FIXME: review the runtime users before adding the assert here */
+	return type->data.klass;
+}
+
+/**
+ * mono_type_get_array_type_internal:
+ * \param type the \c MonoType operated on
+ * It is only valid to call this function if \p type is a \c MONO_TYPE_ARRAY .
+ * \returns a \c MonoArrayType struct describing the array type that \p type
+ * represents. The info includes details such as rank, array element type
+ * and the sizes and bounds of multidimensional arrays.
+ */
+static inline MonoArrayType*
+mono_type_get_array_type_internal (MonoType *type)
+{
+	return type->data.array;
+}
+
 #endif /* __MONO_METADATA_INTERNALS_H__ */

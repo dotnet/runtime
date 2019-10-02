@@ -2334,8 +2334,8 @@ handle_enum:
 		if (candidate->type != MONO_TYPE_FNPTR)
 			return FALSE;
 
-		left = mono_type_get_signature (target);
-		right = mono_type_get_signature (candidate);
+		left = mono_type_get_signature_internal (target);
+		right = mono_type_get_signature_internal (candidate);
 		return mono_metadata_signature_equal (left, right) && left->call_convention == right->call_convention;
 	}
 
@@ -2610,7 +2610,7 @@ mono_delegate_type_equal (MonoType *target, MonoType *candidate)
 	case MONO_TYPE_FNPTR:
 		if (candidate->type != MONO_TYPE_FNPTR)
 			return FALSE;
-		return mono_delegate_signature_equal (mono_type_get_signature (target), mono_type_get_signature (candidate), FALSE);
+		return mono_delegate_signature_equal (mono_type_get_signature_internal (target), mono_type_get_signature_internal (candidate), FALSE);
 
 	case MONO_TYPE_GENERICINST: {
 		MonoClass *target_klass;
