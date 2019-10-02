@@ -61,6 +61,8 @@ namespace System.Net.Mail
         // ports above this limit are invalid
         private const int MaxPortValue = 65535;
         public event SendCompletedEventHandler SendCompleted;
+        private bool _useDefaultCredentials;
+        private ICredentialsByHost _customCredentials;
 
         public SmtpClient()
         {
@@ -229,7 +231,7 @@ namespace System.Net.Mail
         {
             get
             {
-                return ReferenceEquals(_transport.Credentials, CredentialCache.DefaultNetworkCredentials);
+                return _useDefaultCredentials;
             }
             set
             {
@@ -238,7 +240,8 @@ namespace System.Net.Mail
                     throw new InvalidOperationException(SR.SmtpInvalidOperationDuringSend);
                 }
 
-                _transport.Credentials = value ? CredentialCache.DefaultNetworkCredentials : null;
+                _useDefaultCredentials = value;
+                UpdateTransportCredentials();
             }
         }
 
@@ -255,8 +258,14 @@ namespace System.Net.Mail
                     throw new InvalidOperationException(SR.SmtpInvalidOperationDuringSend);
                 }
 
-                _transport.Credentials = value;
+                _customCredentials = value;
+                UpdateTransportCredentials();
             }
+        }
+
+        private void UpdateTransportCredentials()
+        {
+            _transport.Credentials = _useDefaultCredentials ? CredentialCache.DefaultNetworkCredentials : _customCredentials;
         }
 
         public int Timeout
