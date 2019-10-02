@@ -54,7 +54,7 @@ sample instruction disassembly.
 The process entails
 - Generating a necessary set of instructions
 - Generating parsable disassembly for the instructions
-- Parsing the disassambly
+- Parsing the disassembly
 
 ### Generating a necessary set of instructions
 
@@ -80,14 +80,14 @@ We will iterate through all the necessary set. Many of these combinations
 will lead to invalid/undefined encodings.  This will cause the disassembler
 to give up and mark the disassemble as bad.
 
-The disassemble will then resume trying to diassemble at teh next boundary.
+The disassemble will then resume trying to diassemble at the next boundary.
 
 To make sure the disassembler attempts to disassemble every instruction,
 we need to make sure the preceding instruction is always valid and terminates
 at our desired instruction boundary.
 
-Through examination of the `Primary` opcode map, it is obsereved that
-0x50-0x5f are all 1 byte instructions.  These become conveninet padding.
+Through examination of the `Primary` opcode map, it is observed that
+0x50-0x5f are all 1 byte instructions.  These become convenient padding.
 
 After each necessary instruction we insert enough padding bytes to fill
 the maximum instruction length and leave at least one additional one byte
@@ -193,7 +193,7 @@ Windows disassembler may also work.  Not attempted.
 # Parse disassembly and generate code
 cat opcodes.intel | dotnet run > ../amd64InstrDecode.h
 ```
-#### Finding releavant dissassembly lines
+#### Finding relevant disassembly lines
 
 We are not interested in all lines in the disassembly. The disassembler
 stray comments, recovery and our padding introduce lines we need to ignore.
@@ -275,7 +275,7 @@ For a few other instructions the `L`, `W`, `vvvv` value may the instruction
 change behavior. Usually these do not change mnemonic.
 
 The set of instructions is therefore usually grouped by the opcode map and
-`opCodeExt` generated above.  For thes a change in `opCodeExt` or `map`
+`opCodeExt` generated above.  For these a change in `opCodeExt` or `map`
 will start a new group.
 
 For select problematic groups of `modrm.reg` sensitive instructions, a
@@ -323,7 +323,7 @@ respective descriptions.
 
 ## Limitations
 
-The approach of using a single object file as the source of disassebly
+The approach of using a single object file as the source of disassembly
 samples, is restricted to a max compilation/link unit size. Early drafts
 were generating more instructions, and couldn't be compiled.
 
