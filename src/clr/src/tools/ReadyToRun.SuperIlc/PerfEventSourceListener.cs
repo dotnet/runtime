@@ -24,7 +24,8 @@ public sealed class PerfEventSourceListener
     private double _loadingMsec = 0;
     private double _graphProcessingMsec = 0;
     private double _emittingMsec = 0;
-    private double _jitMsec = 0;
+    private double _jitMsec = 0; // Wall clock time spent JITing methods
+    private double _totalJitMsec = 0; // CPU time spent JITing methods (sum of all threads)
     private double _dependencyAnalysisMsec = 0;
     private int _methodsJitted = 0;
     private int nodesAddedToMarkStack = 0;
@@ -100,16 +101,28 @@ public sealed class PerfEventSourceListener
         traceEventSession.Source.Dynamic.AddCallbackForProviderEvent(providerName, "Jit/Start", delegate (TraceEvent traceEvent)
         {
             if (_doneWarmup.WaitOne(0))
-            {
                 _jitMsec -= traceEvent.TimeStampRelativeMSec;
-                _methodsJitted++;
-            }
         });
         traceEventSession.Source.Dynamic.AddCallbackForProviderEvent(providerName, "Jit/Stop", delegate (TraceEvent traceEvent)
         {
             if (_doneWarmup.WaitOne(0))
                 _jitMsec += traceEvent.TimeStampRelativeMSec;
         });
+
+        traceEventSession.Source.Dynamic.AddCallbackForProviderEvent(providerName, "JitMethod/Start", delegate (TraceEvent traceEvent)
+        {
+            if (_doneWarmup.WaitOne(0))
+            {
+                _totalJitMsec -= traceEvent.TimeStampRelativeMSec;
+                ++_methodsJitted;
+            }
+        });
+        traceEventSession.Source.Dynamic.AddCallbackForProviderEvent(providerName, "JitMethod/Stop", delegate (TraceEvent traceEvent)
+        {
+            if (_doneWarmup.WaitOne(0))
+                _totalJitMsec += traceEvent.TimeStampRelativeMSec;
+        });
+
 
         traceEventSession.Source.Dynamic.AddCallbackForProviderEvent(providerName, "DependencyAnalysis/Start", delegate (TraceEvent traceEvent)
         {
@@ -146,7 +159,9 @@ public sealed class PerfEventSourceListener
         writer.Indent++;
         writer.WriteLine($"Added {nodesAddedToMarkStack / _totalRealRuns} nodes to mark stack");
         writer.WriteLine($"Dependency analysis time: {_dependencyAnalysisMsec / _totalRealRuns:F2} ms");
-        writer.WriteLine($"JIT time: {_jitMsec / _totalRealRuns:F2} ms ({_methodsJitted / _totalRealRuns} methods JITed)");
+        writer.WriteLine($"Wall clock JIT time: {_jitMsec / _totalRealRuns:F2} ms");
+        writer.WriteLine($"Total JIT time: {_totalJitMsec / _totalRealRuns:F2} ms (sum of all threads)");
+        writer.WriteLine($"{_methodsJitted/ _totalRealRuns} methods JITed");
         writer.Indent--;
 
         writer.WriteLine($"Emitting time: {_emittingMsec / _totalRealRuns:F2} ms");
