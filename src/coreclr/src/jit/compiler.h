@@ -521,7 +521,7 @@ public:
         }
         else if (slotNum == 1)
         {
-            return lvOtherArgReg;
+            return GetOtherArgReg();
         }
         else
         {
@@ -685,7 +685,6 @@ public:
     }
 
 #if FEATURE_MULTIREG_ARGS
-    __declspec(property(get = GetOtherArgReg, put = SetOtherArgReg)) regNumber lvOtherArgReg;
 
     regNumber GetOtherArgReg() const
     {

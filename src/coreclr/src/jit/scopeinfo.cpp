@@ -1568,7 +1568,7 @@ void CodeGen::psiBegProlog()
                         }
                         else if (nCnt == 1)
                         {
-                            otherRegNum = lclVarDsc->lvOtherArgReg;
+                            otherRegNum = lclVarDsc->GetOtherArgReg();
                         }
                         else
                         {
