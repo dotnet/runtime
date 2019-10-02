@@ -13,6 +13,10 @@
     <!-- arcade -->
     <PackageReference Include="Microsoft.DotNet.GenFacades" Version="$(MicrosoftDotNetGenFacadesPackageVersion)" />
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingPackageVersion)" />
+    
+    <!-- coreclr -->
+    <!-- Download the package in the initial arcade restore step to work around race conditions when restoring an msbuild SDK. -->
+    <PackageDownload Include="Microsoft.NET.Sdk.IL" Version="[$(MicrosoftNETSdkILPackageVersion)]" />
 
     <!-- roslyn -->
     <PackageReference Include="Microsoft.Net.Compilers.Toolset" Version="$(MicrosoftNetCompilersToolsetVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
