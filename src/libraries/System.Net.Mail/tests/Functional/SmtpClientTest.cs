@@ -9,7 +9,6 @@
 // (C) 2006 John Luke
 //
 
-using System.Collections.Generic;
 using System.IO;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;

@@ -10,6 +10,7 @@
     <Compile Include="AttachmentTest.cs" />
     <Compile Include="ContentDispositionTest.cs" />
     <Compile Include="ContentTypeTest.cs" />
+    <Compile Include="SmtpClientCredentialsTest.cs" />
     <Compile Include="HeaderCollectionTest.cs" />
     <Compile Include="LinkedResourceCollectionTest.cs" />
     <Compile Include="LinkedResourceTest.cs" />
