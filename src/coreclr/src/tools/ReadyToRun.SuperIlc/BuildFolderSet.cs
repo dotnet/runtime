@@ -20,11 +20,13 @@ namespace ReadyToRun.SuperIlc
         {
             public readonly string SimpleName;
             public readonly string Reason;
+            public readonly bool Crossgen2Only;
 
-            public FrameworkExclusion(string simpleName, string reason)
+            public FrameworkExclusion(string simpleName, string reason, bool crossgen2Only = false)
             {
                 SimpleName = simpleName;
                 Reason = reason;
+                Crossgen2Only = crossgen2Only;
             }
         }
 
@@ -36,16 +38,16 @@ namespace ReadyToRun.SuperIlc
             new FrameworkExclusion("xunit.performance.api", "Not a framework assembly"),
 
             // TODO (DavidWr): IBC-related failures
-            new FrameworkExclusion("Microsoft.CodeAnalysis.CSharp", "Ibc TypeToken 6200019a has type token which resolves to a nil token"),
-            new FrameworkExclusion("Microsoft.CodeAnalysis", "Ibc TypeToken 620001af unable to find external typedef"),
-            new FrameworkExclusion("Microsoft.CodeAnalysis.VisualBasic", "Ibc TypeToken 620002ce unable to find external typedef"),
+            new FrameworkExclusion("Microsoft.CodeAnalysis.CSharp", "Ibc TypeToken 6200019a has type token which resolves to a nil token", crossgen2Only: true),
+            new FrameworkExclusion("Microsoft.CodeAnalysis", "Ibc TypeToken 620001af unable to find external typedef", crossgen2Only: true),
+            new FrameworkExclusion("Microsoft.CodeAnalysis.VisualBasic", "Ibc TypeToken 620002ce unable to find external typedef", crossgen2Only: true),
 
             // TODO (TRylek): problem related to devirtualization of method without IL - System.Enum.Equals(object)
-            new FrameworkExclusion("System.ComponentModel.TypeConverter", "TODO trylek - devirtualization of method without IL"),
+            new FrameworkExclusion("System.ComponentModel.TypeConverter", "TODO trylek - devirtualization of method without IL", crossgen2Only: true),
 
             // TODO: additional framework build failures
-            new FrameworkExclusion("Microsoft.Diagnostics.Tracing.TraceEvent", "Assert failure in JIT"),
-            new FrameworkExclusion("System.Private.CoreLib", "Assert failure in JIT"),
+            new FrameworkExclusion("Microsoft.Diagnostics.Tracing.TraceEvent", "Assert failure in JIT", crossgen2Only: true),
+            new FrameworkExclusion("System.Private.CoreLib", "Assert failure in JIT", crossgen2Only: true),
         };
 
         private readonly IEnumerable<BuildFolder> _buildFolders;
@@ -280,16 +282,16 @@ namespace ReadyToRun.SuperIlc
             {
                 string simpleName = Path.GetFileNameWithoutExtension(frameworkDll);
                 FrameworkExclusion exclusion = s_frameworkExclusions.FirstOrDefault(asm => asm.SimpleName.Equals(simpleName, StringComparison.OrdinalIgnoreCase));
-                if (exclusion != null)
-                {
-                    _frameworkExclusions.Add(exclusion.SimpleName, exclusion.Reason);
-                    continue;
-                }
 
                 ProcessInfo[] processes = new ProcessInfo[(int)CompilerIndex.Count];
                 compilationsPerRunner.Add(new KeyValuePair<string, ProcessInfo[]>(frameworkDll, processes));
                 foreach (CompilerRunner runner in frameworkRunners)
                 {
+                    if (exclusion != null && (!exclusion.Crossgen2Only || runner.Index == CompilerIndex.CPAOT))
+                    {
+                        _frameworkExclusions.Add(exclusion.SimpleName, exclusion.Reason);
+                        continue;
+                    }
                     ProcessInfo compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, _options.CoreRootDirectory.FullName, frameworkDll));
                     compilationsToRun.Add(compilationProcess);
                     processes[(int)runner.Index] = compilationProcess;
@@ -308,7 +310,11 @@ namespace ReadyToRun.SuperIlc
                 foreach (CompilerRunner runner in frameworkRunners)
                 {
                     ProcessInfo compilationProcess = kvp.Value[(int)runner.Index];
-                    if (compilationProcess.Succeeded)
+                    if (compilationProcess == null)
+                    {
+                        // No compilation process (e.g. there's no real compilation phase for the JIT mode)
+                    }
+                    else if (compilationProcess.Succeeded)
                     {
                         skipCopying.Add(compilationProcess.Parameters.InputFileName);
                         AnalyzeCompilationLog(compilationProcess, runner.Index);
