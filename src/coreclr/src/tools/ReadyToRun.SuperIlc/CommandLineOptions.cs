@@ -30,8 +30,8 @@ namespace ReadyToRun.SuperIlc
                         InputDirectory(),
                         OutputDirectory(),
                         CoreRootDirectory(),
-                        CpaotDirectory(),
                         Crossgen(),
+                        CrossgenPath(),
                         NoJit(),
                         NoCrossgen2(),
                         Exe(),
@@ -61,8 +61,8 @@ namespace ReadyToRun.SuperIlc
                         InputDirectory(),
                         OutputDirectory(),
                         CoreRootDirectory(),
-                        CpaotDirectory(),
                         Crossgen(),
+                        CrossgenPath(),
                         NoJit(),
                         NoCrossgen2(),
                         Exe(),
@@ -87,20 +87,21 @@ namespace ReadyToRun.SuperIlc
                 new Command("compile-framework", "Compile managed framework assemblies in Core_Root",
                     new Option[]
                     {
-                            CoreRootDirectory(),
-                            Crossgen(),
-                            NoCrossgen2(),
-                            NoCleanup(),
-                            DegreeOfParallelism(),
-                            Sequential(),
-                            Release(),
-                            LargeBubble(),
-                            ReferencePath(),
-                            IssuesPath(),
-                            CompilationTimeoutMinutes(),
-                            R2RDumpPath(),
-                            MeasurePerf(),
-                            InputFileSearchString(),
+                        CoreRootDirectory(),
+                        Crossgen(),
+                        CrossgenPath(),
+                        NoCrossgen2(),
+                        NoCleanup(),
+                        DegreeOfParallelism(),
+                        Sequential(),
+                        Release(),
+                        LargeBubble(),
+                        ReferencePath(),
+                        IssuesPath(),
+                        CompilationTimeoutMinutes(),
+                        R2RDumpPath(),
+                        MeasurePerf(),
+                        InputFileSearchString(),
                     },
                     handler: CommandHandler.Create<BuildOptions>(CompileFrameworkCommand.CompileFramework));
 
@@ -114,7 +115,6 @@ namespace ReadyToRun.SuperIlc
                         PackageList(),
                         CoreRootDirectory(),
                         Crossgen(),
-                        CpaotDirectory(),
                         NoCleanup(),
                         DegreeOfParallelism(),
                         CompilationTimeoutMinutes(),
@@ -131,7 +131,6 @@ namespace ReadyToRun.SuperIlc
                         OutputDirectory(),
                         CoreRootDirectory(),
                         Crossgen(),
-                        CpaotDirectory(),
                         NoCleanup(),
                         DegreeOfParallelism(),
                         CompilationTimeoutMinutes(),
@@ -151,14 +150,14 @@ namespace ReadyToRun.SuperIlc
             Option CoreRootDirectory() =>
                 new Option(new[] { "--core-root-directory", "-cr" }, "Location of the CoreCLR CORE_ROOT folder", new Argument<DirectoryInfo>().ExistingOnly());
 
-            Option CpaotDirectory() =>
-                new Option(new[] { "--cpaot-directory", "-cpaot" }, "Folder containing the CPAOT compiler", new Argument<DirectoryInfo>().ExistingOnly());
-
             Option ReferencePath() =>
                 new Option(new[] { "--reference-path", "-r" }, "Folder containing assemblies to reference during compilation", new Argument<DirectoryInfo[]>() { Arity = ArgumentArity.ZeroOrMore }.ExistingOnly());
 
             Option Crossgen() =>
                 new Option(new[] { "--crossgen" }, "Compile the apps using Crossgen in the CORE_ROOT folder", new Argument<bool>());
+
+            Option CrossgenPath() =>
+                new Option(new[] { "--crossgen-path", "-cp" }, "Explicit Crossgen path (useful for cross-targeting)", new Argument<FileInfo>().ExistingOnly());
 
             Option NoJit() =>
                 new Option(new[] { "--nojit" }, "Don't run tests in JITted mode", new Argument<bool>());
