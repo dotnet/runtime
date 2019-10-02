@@ -769,6 +769,8 @@ namespace Internal.JitInterface
             {
                 if (field.IsStatic &&
                     !field.IsLiteral &&
+                    !field.HasRva &&
+                    !field.IsThreadStatic &&
                     field.FieldType.IsValueType &&
                     !field.FieldType.UnderlyingType.IsPrimitive)
                 {
