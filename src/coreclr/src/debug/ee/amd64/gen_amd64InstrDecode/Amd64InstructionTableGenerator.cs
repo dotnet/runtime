@@ -4,7 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-namespace Amd64InstructioTableGenerator
+namespace Amd64InstructionTableGenerator
 {
     [Flags]
     public enum EncodingFlags : int
@@ -152,7 +152,7 @@ namespace Amd64InstructioTableGenerator
                 {"lidt",    (e) => { return SuffixFlags.M10B;}},
                 {"sgdt",    (e) => { return SuffixFlags.M10B;}},
                 {"sidt",    (e) => { return SuffixFlags.M10B;}},
-                {"vlddqu",  (e) => { return Amd64InstructioTableGenerator.Amd64L(SuffixFlags.M32B, SuffixFlags.M16B, e);}},
+                {"vlddqu",  (e) => { return Amd64InstructionTableGenerator.Amd64L(SuffixFlags.M32B, SuffixFlags.M16B, e);}},
                 {"vprotb",  (e) => { return SuffixFlags.M16B;}},
                 {"vprotd",  (e) => { return SuffixFlags.M16B;}},
                 {"vprotq",  (e) => { return SuffixFlags.M16B;}},
@@ -499,7 +499,7 @@ namespace Amd64InstructioTableGenerator
     }
 
 
-    class Amd64InstructioTableGenerator
+    class Amd64InstructionTableGenerator
     {
         List<Amd64InstructionSample> samples = new List<Amd64InstructionSample>();
 
@@ -514,7 +514,7 @@ namespace Amd64InstructioTableGenerator
         Dictionary<Map, Dictionary<int, string>> opcodes;
         int currentExtension = -8;
 
-        Amd64InstructioTableGenerator()
+        Amd64InstructionTableGenerator()
         {
             regExpandOpcodes = new List<(Map, int)>()
             {
@@ -926,7 +926,7 @@ namespace Amd64InstructioTableGenerator
 
         static void Main(string[] args)
         {
-            new Amd64InstructioTableGenerator();
+            new Amd64InstructionTableGenerator();
         }
     }
 }
