@@ -210,7 +210,7 @@ namespace System.Diagnostics
                     if (fFirstFrame)
                         fFirstFrame = false;
                     else
-                        sb.Append(Environment.NewLine);
+                        sb.Append(Environment.NewLineConst);
 
                     sb.AppendFormat(CultureInfo.InvariantCulture, "   {0} ", word_At);
 
@@ -320,14 +320,14 @@ namespace System.Diagnostics
                     // Skip EDI boundary for async
                     if (sf.IsLastFrameFromForeignExceptionStackTrace && !isAsync)
                     {
-                        sb.Append(Environment.NewLine);
+                        sb.Append(Environment.NewLineConst);
                         sb.Append(SR.Exception_EndStackTraceFromPreviousThrow);
                     }
                 }
             }
 
             if (traceFormat == TraceFormat.TrailingNewLine)
-                sb.Append(Environment.NewLine);
+                sb.Append(Environment.NewLineConst);
 
             return sb.ToString();
         }

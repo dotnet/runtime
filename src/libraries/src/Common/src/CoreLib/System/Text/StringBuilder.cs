@@ -982,12 +982,12 @@ namespace System.Text
             return this;
         }
 
-        public StringBuilder AppendLine() => Append(Environment.NewLine);
+        public StringBuilder AppendLine() => Append(Environment.NewLineConst);
 
         public StringBuilder AppendLine(string? value)
         {
             Append(value);
-            return Append(Environment.NewLine);
+            return Append(Environment.NewLineConst);
         }
 
         public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count)

@@ -147,7 +147,7 @@ namespace System.Reflection
             new KeyValuePair<char, string>('=', "="),
             new KeyValuePair<char, string>('\'', "'"),
             new KeyValuePair<char, string>('\"', "\""),
-            new KeyValuePair<char, string>('n', Environment.NewLine),
+            new KeyValuePair<char, string>('n', Environment.NewLineConst),
             new KeyValuePair<char, string>('t', "\t"),
         };
     }
