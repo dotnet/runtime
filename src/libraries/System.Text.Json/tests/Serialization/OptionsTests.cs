@@ -411,8 +411,6 @@ namespace System.Text.Json.Serialization.Tests
         {
             var options = new JsonSerializerOptions();
             options.Converters.Add(new CustomConverterTests.LongArrayConverter());
-            options.Converters.Add(new CustomConverterTests.DictionaryConverter(20));
-            GenericConverterTestHelper<Dictionary<string, long>>("DictionaryConverter", new Dictionary<string, long> { { "val1", 123 }, { "val2", 456 } }, "{\"val1\":103,\"val2\":436}", options);
             GenericConverterTestHelper<long[]>("LongArrayConverter", new long[] { 1, 2, 3, 4 }, "\"1,2,3,4\"", options);
         }
 
