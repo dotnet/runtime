@@ -7,9 +7,9 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Kernel32
+    internal static partial class Kernel32
     {
         internal unsafe struct CREATEFILE2_EXTENDED_PARAMETERS
         {

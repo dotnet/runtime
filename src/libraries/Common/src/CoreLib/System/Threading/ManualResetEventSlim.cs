@@ -223,8 +223,7 @@ namespace System.Threading
         /// being stored and used. The event will be signaled or unsignaled depending on
         /// the state of the thin-event itself, with synchronization taken into account.
         /// </summary>
-        /// <returns>True if a new event was created and stored, false otherwise.</returns>
-        private bool LazyInitializeEvent()
+        private void LazyInitializeEvent()
         {
             bool preInitializeIsSet = IsSet;
             ManualResetEvent newEventObj = new ManualResetEvent(preInitializeIsSet);
@@ -235,8 +234,6 @@ namespace System.Threading
             {
                 // Someone else set the value due to a race condition. Destroy the garbage event.
                 newEventObj.Dispose();
-
-                return false;
             }
             else
             {
@@ -261,8 +258,6 @@ namespace System.Threading
                         }
                     }
                 }
-
-                return true;
             }
         }
 

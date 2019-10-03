@@ -5,9 +5,9 @@
 using System;
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Shell32
+    internal static partial class Shell32
     {
         internal const int COR_E_PLATFORMNOTSUPPORTED = unchecked((int)0x80131539);
 

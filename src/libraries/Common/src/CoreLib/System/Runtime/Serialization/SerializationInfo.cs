@@ -519,7 +519,7 @@ namespace System.Runtime.Serialization
             if (value == null)
                 return null;
 
-            if (ReferenceEquals(foundType, type) || type.IsAssignableFrom(foundType) || value == null)
+            if (ReferenceEquals(foundType, type) || type.IsAssignableFrom(foundType))
             {
                 return value;
             }

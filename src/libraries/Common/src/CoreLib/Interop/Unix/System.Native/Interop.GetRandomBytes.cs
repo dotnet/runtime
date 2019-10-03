@@ -6,7 +6,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
     internal unsafe partial class Sys
     {

@@ -95,7 +95,7 @@ namespace System.Runtime
             set => Volatile.Write(ref s_hiddenLastKnownFreeAddressSpace, value);
         }
 
-        private static long AddToLastKnownFreeAddressSpace(long addend) =>
+        private static void AddToLastKnownFreeAddressSpace(long addend) =>
             Interlocked.Add(ref s_hiddenLastKnownFreeAddressSpace, addend);
 
         private static long LastTimeCheckingAddressSpace
