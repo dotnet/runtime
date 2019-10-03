@@ -1120,10 +1120,9 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
         // Evaluate each of the GT_FIELD_LIST items into their register
         // and store their register into the outgoing argument area
         unsigned regIndex = 0;
-        for (GenTreeFieldList* fieldListPtr = source->AsFieldList(); fieldListPtr != nullptr;
-             fieldListPtr                   = fieldListPtr->Rest())
+        for (GenTreeFieldList::Use& use : source->AsFieldList()->Uses())
         {
-            GenTree*  nextArgNode = fieldListPtr->gtGetOp1();
+            GenTree*  nextArgNode = use.GetNode();
             regNumber fieldReg    = nextArgNode->gtRegNum;
             genConsumeReg(nextArgNode);
 
@@ -2288,12 +2287,10 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         // Deal with multi register passed struct args.
         if (argNode->OperGet() == GT_FIELD_LIST)
         {
-            GenTreeArgList* argListPtr   = argNode->AsArgList();
-            unsigned        iterationNum = 0;
-            regNumber       argReg       = curArgTabEntry->regNum;
-            for (; argListPtr != nullptr; argListPtr = argListPtr->Rest(), iterationNum++)
+            regNumber argReg = curArgTabEntry->regNum;
+            for (GenTreeFieldList::Use& use : argNode->AsFieldList()->Uses())
             {
-                GenTree* putArgRegNode = argListPtr->gtOp.gtOp1;
+                GenTree* putArgRegNode = use.GetNode();
                 assert(putArgRegNode->gtOper == GT_PUTARG_REG);
 
                 genConsumeReg(putArgRegNode);

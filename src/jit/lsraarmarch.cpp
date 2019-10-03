@@ -252,23 +252,23 @@ int LinearScan::BuildCall(GenTreeCall* call)
             assert(argNode->isContained());
 
             // There could be up to 2-4 PUTARG_REGs in the list (3 or 4 can only occur for HFAs)
-            for (GenTreeFieldList* entry = argNode->AsFieldList(); entry != nullptr; entry = entry->Rest())
+            for (GenTreeFieldList::Use& use : argNode->AsFieldList()->Uses())
             {
 #ifdef DEBUG
-                assert(entry->Current()->OperIs(GT_PUTARG_REG));
-                assert(entry->Current()->gtRegNum == argReg);
+                assert(use.GetNode()->OperIs(GT_PUTARG_REG));
+                assert(use.GetNode()->gtRegNum == argReg);
                 // Update argReg for the next putarg_reg (if any)
                 argReg = genRegArgNext(argReg);
 
 #if defined(_TARGET_ARM_)
                 // A double register is modelled as an even-numbered single one
-                if (entry->Current()->TypeGet() == TYP_DOUBLE)
+                if (use.GetNode()->TypeGet() == TYP_DOUBLE)
                 {
                     argReg = genRegArgNext(argReg);
                 }
 #endif // _TARGET_ARM_
 #endif
-                BuildUse(entry->Current(), genRegMask(entry->Current()->gtRegNum));
+                BuildUse(use.GetNode(), genRegMask(use.GetNode()->gtRegNum));
                 srcCount++;
             }
         }
@@ -398,9 +398,9 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* argNode)
         {
             assert(putArgChild->isContained());
             // We consume all of the items in the GT_FIELD_LIST
-            for (GenTreeFieldList* current = putArgChild->AsFieldList(); current != nullptr; current = current->Rest())
+            for (GenTreeFieldList::Use& use : putArgChild->AsFieldList()->Uses())
             {
-                BuildUse(current->Current());
+                BuildUse(use.GetNode());
                 srcCount++;
             }
         }
@@ -490,10 +490,9 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
         // To avoid redundant moves, have the argument operand computed in the
         // register in which the argument is passed to the call.
 
-        for (GenTreeFieldList* fieldListPtr = putArgChild->AsFieldList(); fieldListPtr != nullptr;
-             fieldListPtr                   = fieldListPtr->Rest())
+        for (GenTreeFieldList::Use& use : putArgChild->AsFieldList()->Uses())
         {
-            GenTree* node = fieldListPtr->gtGetOp1();
+            GenTree* node = use.GetNode();
             assert(!node->isContained());
             // The only multi-reg nodes we should see are OperIsMultiRegOp()
             unsigned currentRegCount;
