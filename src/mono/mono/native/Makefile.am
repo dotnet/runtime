@@ -1,8 +1,10 @@
+if !ENABLE_MSVC_ONLY
 if MONO_NATIVE_COMPAT
 lib_LTLIBRARIES = libmono-native-compat.la libmono-native-unified.la
 else
 lib_LTLIBRARIES = libmono-native.la
 endif
+endif # !ENABLE_MSVC_ONLY
 
 CC = $(MONO_NATIVE_CC)
 CCLD = $(MONO_NATIVE_CC)
@@ -11,6 +13,8 @@ CPP = $(MONO_NATIVE_CC) -E
 CXX = $(MONO_NATIVE_CXX)
 CXXCPP = $(MONO_NATIVE_CXX) -E
 CC_FOR_BUILD = $(MONO_NATIVE_CC)
+
+if !ENABLE_MSVC_ONLY
 
 common_sources = \
 	pal_config.h \
@@ -159,12 +163,16 @@ common_cflags = \
 	-DBROTLI_BUILD_NO_RBIT \
 	-Wno-typedef-redefinition
 
+endif # !ENABLE_MSVC_ONLY
+
 # clear these flags as we set values for each target separately and automake always appends CFLAGS
 CFLAGS=
 CPPFLAGS=
 CXXFLAGS=
 LDFLAGS=
 CCASFLAGS=
+
+if !ENABLE_MSVC_ONLY
 
 libmono_native_la_SOURCES = $(common_sources) $(platform_sources) platform-type.c
 
@@ -211,3 +219,5 @@ libmono_native_unified_la_LIBADD = $(MONO_NATIVE_LIBADD)
 test-bundle-local:
 	mkdir -p $(TEST_BUNDLE_PATH)
 	cp -L .libs/libmono-native$(libsuffix) $(TEST_BUNDLE_PATH)/
+
+endif # !ENABLE_MSVC_ONLY

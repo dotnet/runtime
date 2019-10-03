@@ -247,7 +247,7 @@ if /i "%CMAKE_GENERATOR%" == "ninja" (
     )
 ) else (
     :: Build LLVM using msbuild build system.
-    call "%MSBUILD%" llvm.sln /p:Configuration=%VS_CONFIGURATION% /p:Platform=%VS_PLATFORM% /t:%VS_TARGET% /v:m /nologo || (
+    call "%MSBUILD%" llvm.sln /p:Configuration=%VS_CONFIGURATION% /p:Platform=%VS_PLATFORM% /t:%VS_TARGET% /v:m /nologo /m || (
         goto ON_ERROR
     )
 )

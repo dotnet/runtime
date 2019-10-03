@@ -384,8 +384,13 @@ ICALL_EXPORT int ves_icall_Interop_Sys_DoubleToString (double, char*, char*, int
 
 #include <shellapi.h>
 
+#ifdef _WINDOWS
+int APIENTRY
+wWinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow)
+#else
 int
-main (void)
+main (int _argc, char* _argv[])
+#endif
 {
 	gunichar2 *module_file_name;
 	guint32 length;

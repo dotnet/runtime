@@ -177,10 +177,13 @@ test-wrench: check-parallel
 
 aotcheck: testaot gshared-aot
 
+if HOST_WIN32
+JITTEST_PROG = $(top_builddir)/runtime/mono-wrapper
+else
 JITTEST_PROG = $(if $(VALGRIND), valgrind $(VALGRIND_ARGS),) $(if $(SGEN),$(top_builddir)/mono/mini/mono-sgen,$(top_builddir)/mono/mini/mono)
+endif
 
 JITTEST_PROG_RUN = MONO_CFG_DIR=$(mono_build_root)/runtime/etc $(LIBTOOL) --mode=execute $(JITTEST_PROG)
-
 
 RUNTIME_ARGS=--config tests-config --optimize=all --debug
 TEST_RUNTIME_ARGS ?= $(RUNTIME_ARGS)
@@ -225,9 +228,9 @@ TEST_RUNNER = ./test-runner.exe
 
 if HOST_WIN32
 if ENABLE_MSVC
-	DEFAULT_WIN32_RUNTIME=$(shell cygpath -w -a $(top_builddir)/@mono_runtime@ | sed 's/\\/\\\\/g')
+DEFAULT_WIN32_RUNTIME=$(shell cygpath -w -a $(top_builddir)/@mono_runtime@ | sed 's/\\/\\\\/g')
 else
-	DEFAULT_WIN32_RUNTIME=$(top_builddir)/runtime/mono-wrapper)
+DEFAULT_WIN32_RUNTIME=$(top_builddir)/runtime/mono-wrapper)
 endif
 TEST_RUNNER += --config tests-config --runtime "$(if $(MONO_EXECUTABLE),$(shell cygpath -w -a $(MONO_EXECUTABLE) | sed 's/\\/\\\\/g'),$(DEFAULT_WIN32_RUNTIME))"
 else
@@ -2675,21 +2678,28 @@ endif
 tests-sgen-oom: $(TESTS_SGEN_OOM) $(TESTSAOT_SGEN_OOM) test-runner.exe sgen-cementing-stress.exe sgen-new-threads-dont-join-stw-2.exe sgen-bridge-major-fragmentation.exe
 	$(TOOLS_RUNTIME) $(TEST_RUNNER) $(TEST_RUNNER_ARGS) --testsuite-name $@ --runtime-args "--gc=sgen --gc-debug=max-valloc-size=50M,bridge=Bridge" --disabled "$(DISABLED_TESTS)" --timeout 900 $(TESTS_SGEN_OOM)
 
+if HOST_WIN32
+AOT_CONFIGURATIONS=	\
+	"|regular"
+else
 AOT_CONFIGURATIONS=	\
 	"|regular"	\
 	"--gc=boehm|boehm"
+endif
 
 #LLVM crashes, got to fix it first.
 #	"--llvm|llvm"	\
 #	"--llvm --gc=boehm|llvm+boehm"
 
+AOT_TEMP_DIR=$(top_builddir)/mono/tests/aot-tmp
 
 test-aot:
 	@failed=0; \
 	passed=0; \
 	failed_tests="";\
 	profile=$(DEFAULT_PROFILE);	\
-	tmpfile=`mktemp -t mono_aot_outputXXXXXX` || exit 1;	\
+	rm -rf $(AOT_TEMP_DIR); \
+	mkdir $(AOT_TEMP_DIR); \
 	rm -f test-aot-$${name}.stdout test-aot-$${name}.stderr; \
 	for assembly in $(mcs_topdir)/class/lib/$$profile/*.dll	; do	\
 		asm_name=`basename $$assembly`;	\
@@ -2699,7 +2709,7 @@ test-aot:
 			params=`echo $$conf | cut -d\| -f 1`;	\
 			test_name="$${asm_name}|$${name}";	\
 			echo "  $$test_name";	\
-			if MONO_PATH=$(mcs_topdir)/class/lib/$$profile $(JITTEST_PROG_RUN) $$params --aot=outfile=$$tmpfile $$assembly >> test-aot-$${name}.stdout 2>> test-aot-$${name}.stderr;	\
+			if MONO_PATH=$(mcs_topdir)/class/lib/$$profile $(JITTEST_PROG_RUN) $$params --aot=temp-path=$(AOT_TEMP_DIR),outfile=$(AOT_TEMP_DIR)/$$asm_name $$assembly >> test-aot-$${name}.stdout 2>> test-aot-$${name}.stderr;	\
 			then \
 				passed=`expr $${passed} + 1`; \
 			else \
@@ -2708,7 +2718,7 @@ test-aot:
 			fi \
 		done;	\
 	done;	\
-	rm	$$tmpfile;	\
+	rm -rf $(AOT_TEMP_DIR); \
 	echo "$${passed} test(s) passed. $${failed} test(s) did not pass."; \
 	if [ $${failed} != 0 ]; then echo -e "\nFailed tests:\n"; \
 	for i in $${failed_tests}; do echo $${i}; done; exit 1; fi
@@ -3143,6 +3153,8 @@ EXTRA_DIST += test_lldb.py test-lldb.cs
 test-lldb: test-lldb.exe
 	python test_lldb.py $(JITTEST_PROG)
 
+if !ENABLE_MSVC_ONLY
+
 noinst_LTLIBRARIES = libtest.la
 
 AM_CPPFLAGS = $(GLIB_CFLAGS)
@@ -3159,6 +3171,8 @@ libtest_la_LDFLAGS = -no-undefined -rpath `pwd`
 endif
 libtest_la_SOURCES = libtest.c
 libtest_la_LIBADD = $(top_builddir)/mono/eglib/libeglib.la
+
+endif # !ENABLE_MSVC_ONLY
 
 INTERNALSVISIBLETO_TEST_SRC = \
 	internalsvisibleto-runtimetest.cs \

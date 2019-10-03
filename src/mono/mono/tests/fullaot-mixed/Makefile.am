@@ -6,6 +6,12 @@ lambda.exe: $(srcdir)/lambda.cs
 AOTDIR=linker-output
 AOT_TMPDIR=aot-tmp
 
+if HOST_WIN32
+PLATFORM_PATH_SEPARATOR=;
+else
+PLATFORM_PATH_SEPARATOR=:
+endif
+
 $(AOTDIR)/lambda.exe$(PLATFORM_AOT_SUFFIX): $(AOTDIR)/lambda.exe $(LINKED_ASSEMBLIES)
 	mkdir -p $(AOT_TMPDIR)/lambda.exe
 	MONO_PATH=$(AOTDIR) $(MONO_EXE) --aot=full,interp,temp-path=$(AOT_TMPDIR)/lambda.exe $(AOTDIR)/lambda.exe
@@ -47,7 +53,7 @@ if !X86
 if !DISABLE_INTERPRETER
 if !ENABLE_COOP_SUSPEND
 check: $(AOT_IMAGES) $(TEST_IMAGES)
-	MONO_PATH=$(AOTDIR):$(CLASS) $(MONO_EXE) --aot-path=$(AOTDIR) --full-aot-interp $(AOTDIR)/lambda.exe
+	MONO_PATH="$(AOTDIR)$(PLATFORM_PATH_SEPARATOR)$(CLASS)" $(MONO_EXE) --aot-path=$(AOTDIR) --full-aot-interp $(AOTDIR)/lambda.exe
 endif
 endif
 endif

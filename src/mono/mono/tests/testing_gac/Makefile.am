@@ -25,15 +25,15 @@ TEST_RUNTIME = MONO_PATH=$(CLASS) $(RUNTIME)
 TOOLS_RUNTIME= MONO_PATH=$(mcs_topdir)/class/lib/build $(RUNTIME)
 
 # These tests are testing strict assembly strong-name resolution
-TEST_RUNNER = ../test-runner.exe --runtime $(RUNTIME) --runtime-args "--assembly-loader=strict"
+TEST_RUNNER = ../test-runner.exe --runtime-args "--assembly-loader=strict"
 
 if HOST_WIN32
 if ENABLE_MSVC
-	DEFAULT_WIN32_RUNTIME=$(shell cygpath -w -a $(top_builddir)/@mono_runtime@ | sed 's/\\/\\\\/g')
+DEFAULT_WIN32_RUNTIME=$(shell cygpath -w -a $(top_builddir)/@mono_runtime@ | sed 's/\\/\\\\/g')
 else
-	DEFAULT_WIN32_RUNTIME=$(top_builddir)/runtime/mono-wrapper)
+DEFAULT_WIN32_RUNTIME=$(top_builddir)/runtime/mono-wrapper)
 endif
-TEST_RUNNER_ARGS=--runtime $(if $(MONO_EXECUTABLE),$(shell cygpath -w -a $(MONO_EXECUTABLE) | sed 's/\\/\\\\/g'),$(DEFAULT_WIN32_RUNTIME))
+TEST_RUNNER_ARGS=--runtime "$(if $(MONO_EXECUTABLE),$(shell cygpath -w -a $(MONO_EXECUTABLE) | sed 's/\\/\\\\/g'),$(DEFAULT_WIN32_RUNTIME))"
 else
 TEST_RUNNER_ARGS=--runtime $(if $(MONO_EXECUTABLE),$(MONO_EXECUTABLE),mono)
 endif

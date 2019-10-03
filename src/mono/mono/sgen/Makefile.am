@@ -1,5 +1,7 @@
 include $(top_srcdir)/mk/common.mk
 
+if !ENABLE_MSVC_ONLY
+
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CPPFLAGS) $(GLIB_CFLAGS) $(SHARED_CFLAGS)
 
 if SUPPORT_SGEN
@@ -64,4 +66,18 @@ monosgen_sources = \
 libmonosgen_la_SOURCES = $(monosgen_sources)
 libmonosgen_la_CFLAGS = $(SGEN_DEFINES)
 
+endif # !ENABLE_MSVC_ONLY
+
 CFLAGS := $(filter-out @CXX_REMOVE_CFLAGS@, @CFLAGS@) @CXX_ADD_CFLAGS@
+
+if ENABLE_MSVC_ONLY
+
+all-local:
+
+	make -C $(top_srcdir)/msvc libgcmonosgen
+
+clean-local:
+
+	make -C $(top_srcdir)/msvc clean-libgcmonosgen
+
+endif # ENABLE_MSVC_ONLY

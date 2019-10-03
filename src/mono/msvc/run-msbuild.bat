@@ -6,6 +6,7 @@
 :: %2 Host CPU architecture, x86_64|i686, default x86_64
 :: %3 Visual Studio configuration, debug|release, default release
 :: %4 Additional arguments passed to msbuild, needs to be quoted if multiple.
+:: %5 Project to build.
 :: -------------------------------------------------------
 
 @echo off
@@ -17,7 +18,6 @@ set BUILD_RESULT=1
 set RUN_MSBUILD_SCRIPT_PATH=%~dp0
 
 :: Configure all known build arguments.
-set VS_BUILD_ARGS=""
 set VS_TARGET=build
 if /i "%~1" == "clean" (
     set VS_TARGET="clean"
@@ -43,6 +43,16 @@ set "VS_ADDITIONAL_ARGUMENTS=/p:PlatformToolset=v140 /p:MONO_TARGET_GC=sgen"
 if /i not "%~1" == "" (
     set VS_ADDITIONAL_ARGUMENTS=%~1
 )
+shift
+
+set VS_BUILD_PROJ=mono.sln
+if /i not "%~1" == "" (
+    set VS_BUILD_PROJ=%~1
+)
+
+if not exist %VS_BUILD_PROJ% (
+    set VS_BUILD_PROJ=%RUN_MSBUILD_SCRIPT_PATH%%VS_BUILD_PROJ%
+)
 
 :: Setup Windows environment.
 call %RUN_MSBUILD_SCRIPT_PATH%setup-windows-env.bat
@@ -50,8 +60,8 @@ call %RUN_MSBUILD_SCRIPT_PATH%setup-windows-env.bat
 :: Setup VS msbuild environment.
 call %RUN_MSBUILD_SCRIPT_PATH%setup-vs-msbuild-env.bat
 
-set VS_BUILD_ARGS=/p:Configuration=%VS_CONFIGURATION% /p:Platform=%VS_PLATFORM% %VS_ADDITIONAL_ARGUMENTS% /t:%VS_TARGET%
-call msbuild.exe %VS_BUILD_ARGS% "%RUN_MSBUILD_SCRIPT_PATH%mono.sln" && (
+set VS_BUILD_ARGS=/p:Configuration=%VS_CONFIGURATION% /p:Platform=%VS_PLATFORM% %VS_ADDITIONAL_ARGUMENTS% /t:%VS_TARGET% /m
+call msbuild.exe %VS_BUILD_ARGS% "%VS_BUILD_PROJ%" && (
     set BUILD_RESULT=0
 ) || (
     set BUILD_RESULT=1

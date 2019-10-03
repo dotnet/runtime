@@ -1,5 +1,7 @@
 include $(top_srcdir)/mk/common.mk
 
+if !ENABLE_MSVC_ONLY
+
 if HOST_WIN32
 win32_sources = \
 	console-win32.c \
@@ -446,9 +448,13 @@ sgen_sources = \
 	sgen-mono.h		\
 	sgen-client-mono.h
 
+endif # !ENABLE_MSVC_ONLY
+
 # Per-library to workaround CoreFX/native until/unless https://github.com/dotnet/corefx/pull/31342.
 #CFLAGS := $(filter-out @CXX_REMOVE_CFLAGS@, @CFLAGS@) @CXX_ADD_CFLAGS@
 CFLAGS := $(filter-out @CXX_REMOVE_CFLAGS@, @CFLAGS@)
+
+if !ENABLE_MSVC_ONLY
 
 libmonoruntime_la_SOURCES = $(common_sources) $(icall_tables_sources) $(ilgen_sources) $(gc_dependent_sources) $(null_gc_sources) $(boehm_sources)
 # Add CXX_ADD_CFLAGS per-library until/unless https://github.com/dotnet/corefx/pull/31342.
@@ -459,6 +465,8 @@ libmonoruntimesgen_la_SOURCES = $(common_sources) $(icall_tables_sources) $(ilge
 # Add CXX_ADD_CFLAGS per-library until/unless https://github.com/dotnet/corefx/pull/31342.
 libmonoruntimesgen_la_CFLAGS = $(SGEN_DEFINES) @CXX_ADD_CFLAGS@
 libmonoruntimesgen_la_LIBADD = libmonoruntime-config.la libmonoruntime-support.la
+
+endif # !ENABLE_MSVC_ONLY
 
 libmonoruntimeincludedir = $(includedir)/mono-$(API_VER)/mono/metadata
 
@@ -494,6 +502,22 @@ libmonoruntimeinclude_HEADERS = \
 	tokentype.h		\
 	verify.h		
 
+if !ENABLE_MSVC_ONLY
+
 EXTRA_DIST = $(null_sources) \
 		external-only.c \
 		threadpool-io-poll.c threadpool-io-epoll.c threadpool-io-kqueue.c
+
+endif # !ENABLE_MSVC_ONLY
+
+if ENABLE_MSVC_ONLY
+
+all-local:
+
+	make -C $(top_srcdir)/msvc libmonoruntime
+
+clean-local:
+
+	make -C $(top_srcdir)/msvc clean-libmonoruntime
+
+endif # ENABLE_MSVC_ONLY

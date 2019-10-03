@@ -239,12 +239,12 @@ if not ERRORLEVEL == 0 (
 
 if /i "%CMAKE_GENERATOR%" == "ninja" (
     :: Build BTLS using ninja build system.
-    call "%NINJA%" || (
+    call "%NINJA%" -j4 || (
         goto ON_ERROR
     )
 ) else (
     :: Build BTLS using msbuild build system.
-    call "%MSBUILD%" mono-btls.sln /p:Configuration=%VS_CONFIGURATION% /p:Platform=%VS_PLATFORM% /t:%VS_TARGET% /v:m /nologo || (
+    call "%MSBUILD%" mono-btls.sln /p:Configuration=%VS_CONFIGURATION% /p:Platform=%VS_PLATFORM% /t:%VS_TARGET% /v:m /nologo /m || (
         goto ON_ERROR
     )
 )

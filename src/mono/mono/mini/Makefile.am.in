@@ -16,6 +16,8 @@ else
 PLATFORM_PATH_SEPARATOR=:
 endif
 
+if !ENABLE_MSVC_ONLY
+
 # This is needed for automake dependency generation
 if SUPPORT_NULLGC
 libgc_libs=
@@ -52,6 +54,7 @@ $(mono_build_root)/llvm/llvm_config.mk:
 
 endif
 
+endif # !ENABLE_MSVC_ONLY
 
 if FULL_AOT_TESTS
 # if the tests are going to run with framework assemblies compiled with
@@ -73,6 +76,8 @@ RUNTIME_AOTCHECK = MONO_PATH="$(CLASS)$(PLATFORM_PATH_SEPARATOR)." $(RUNTIME_EXE
 
 MCS = CSC_SDK_PATH_DISABLED= $(TOOLS_RUNTIME) $(CSC) -langversion:7.2 -nostdlib -unsafe -nowarn:0162 -nologo -noconfig -r:$(CLASS)/mscorlib.dll -r:$(CLASS)/System.dll -r:$(CLASS)/System.Core.dll
 ILASM = $(TOOLS_RUNTIME) $(mcs_topdir)/class/lib/build/ilasm.exe
+
+if !ENABLE_MSVC_ONLY
 
 AM_CFLAGS = \
 	-I$(top_srcdir) 	\
@@ -115,6 +120,8 @@ boehm_static_libraries = libmini.la $(interp_libs_with_mini) $(dbg_libs_with_min
 boehm_binaries  = mono-boehm
 endif
 
+endif # !ENABLE_MSVC_ONLY
+
 if SUPPORT_SGEN
 mono_bin_suffix = sgen
 libmono_suffix = sgen
@@ -125,16 +132,38 @@ endif
 
 if DISABLE_EXECUTABLES
 else
+if !ENABLE_MSVC_ONLY
 mono: mono-$(mono_bin_suffix)
 	ln -sf $< $@
 
 mono.exe: mono-$(mono_bin_suffix).exe
 	ln -sf $< $@
+else # !ENABLE_MSVC_ONLY
+.PHONY: mono
+mono:
+	make -C $(top_srcdir)/msvc mono
+	ln -sf $(mono_msvc_build_bin_dir)/mono-$(mono_bin_suffix)$(EXEEXT) ./mono.exe
+if SUPPORT_SGEN
+	ln -sf $(mono_msvc_build_bin_dir)/mono-$(mono_bin_suffix)$(EXEEXT) ./mono-sgen.exe
+endif
+
+mono.exe: mono
+
+monow.exe: mono
+
+all-local: mono
+
+clean-mono:
+	make -C $(top_srcdir)/msvc clean-mono
+
+endif # !ENABLE_MSVC_ONLY
 
 install-exec-hook:
 	(cd $(DESTDIR)$(bindir) && ln -sf mono-$(mono_bin_suffix)$(EXEEXT) mono$(EXEEXT))
 	(cd $(DESTDIR)$(libdir); shopt -s nullglob 2>/dev/null; for i in libmono$(libmono_suffix)*; do ln -sf $$i `echo $$i | sed s/$(libmono_suffix)//` ; done)
 endif
+
+if !ENABLE_MSVC_ONLY
 
 if DISABLE_EXECUTABLES
 else
@@ -523,6 +552,8 @@ common_sources = \
 	ee.h \
 	mini-runtime.h
 
+endif # !ENABLE_MSVC_ONLY
+
 # keep in sync with mcs/class/Mono.Runtime.Tests
 test_sources = 			\
 	basic-calls.cs 		\
@@ -577,6 +608,8 @@ regtests_DISABLED += builtin-types.exe
 endif
 
 regtests = $(filter-out $(regtests_DISABLED),$(regtests_UNIVERSAL))
+
+if !ENABLE_MSVC_ONLY
 
 if WASM
 arch_sources = $(wasm_sources)
@@ -743,6 +776,8 @@ libmonosgen_2_0_la_CFLAGS = $(mono_sgen_CFLAGS) @CXX_ADD_CFLAGS@
 libmonosgen_2_0_la_LIBADD = libmini.la $(interp_libs_with_mini) $(dbg_libs_with_mini) $(sgen_libs) $(LIBMONO_DTRACE_OBJECT) $(LLVMMONOF)
 libmonosgen_2_0_la_LDFLAGS = $(libmonoldflags) $(monobin_platform_ldflags) 
 
+endif # !ENABLE_MSVC_ONLY
+
 libmonoincludedir = $(includedir)/mono-$(API_VER)/mono/jit
 
 # These are public headers.
@@ -891,10 +926,10 @@ endif
 GSHAREDVT_RUNTIME_OPTS=$(if $(GSHAREDVT),-O=gsharedvt,)
 
 aotcheck: mono $(regtests)
-	rm -rf *.exe.so *.exe.dylib *.exe.dylib.dSYM
+	rm -rf *.exe.so *.exe.dylib *.exe.dylib.dSYM *.exe.dll
 	$(MINI_RUNTIME) $(LLVM_AOT_RUNTIME_OPTS) --aot="$(LLVM_AOT_COMPILER_OPTS)" $(regtests) || exit 1
 	for i in $(regtests); do $(RUNTIME_AOTCHECK) --regression $$i || exit 1; done
-	rm -rf *.exe.so *.exe.dylib *.exe.dylib.dSYM
+	rm -rf *.exe.so *.exe.dylib *.exe.dylib.dSYM *.exe.dll
 
 llvmaotcheck:
 	$(MAKE) aotcheck LLVM=1
@@ -1022,7 +1057,7 @@ check_local_targets = $(if $(EMIT_NUNIT), rcheck-nunit, rcheck)
 check-local: $(check_local_targets)
 
 clean-local:
-	rm -f mono a.out gmon.out *.o buildver-boehm.h buildver-sgen.h test.exe regressionexitcode.out TestResult-op_il_seq_point.xml*
+	rm -f mono mono.exe monow.exe mono-sgen.exe a.out gmon.out *.o buildver-boehm.h buildver-sgen.h test.exe regressionexitcode.out TestResult-op_il_seq_point.xml*
 
 pkgconfigdir = $(libdir)/pkgconfig
 

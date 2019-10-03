@@ -1,5 +1,7 @@
 include $(top_srcdir)/mk/common.mk
 
+if !ENABLE_MSVC_ONLY
+
 AM_CPPFLAGS = $(GLIB_CFLAGS) -I$(top_srcdir)
 
 if HOST_WIN32
@@ -35,7 +37,12 @@ noinst_LIBRARIES += libmonodismain.a
 endif
 endif
 
+endif # !ENABLE_MSVC_ONLY
+
 CFLAGS := $(filter-out @CXX_REMOVE_CFLAGS@, @CFLAGS@)
+
+if !ENABLE_MSVC_ONLY
+
 libmonodis_a_CFLAGS = $(CFLAGS) @CXX_ADD_CFLAGS@
 libmonodismain_a_CFLAGS = $(CFLAGS) @CXX_ADD_CFLAGS@
 
@@ -85,3 +92,25 @@ endif
 man_MANS = monodis.1
 
 EXTRA_DIST = $(man_MANS)
+
+endif # !ENABLE_MSVC_ONLY
+
+if ENABLE_MSVC_ONLY
+
+if SUPPORT_SGEN
+mono_bin_suffix = sgen
+else
+mono_bin_suffix =
+endif
+
+all-local:
+
+	make -C $(top_srcdir)/msvc monodis
+	cp -f $(mono_msvc_build_bin_dir)/monodis-$(mono_bin_suffix)$(EXEEXT) ./monodis$(EXEEXT)
+
+clean-local:
+
+	make -C $(top_srcdir)/msvc clean-monodis
+	rm ./monodis$(EXEEXT)
+
+endif # ENABLE_MSVC_ONLY

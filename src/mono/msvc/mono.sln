@@ -32,6 +32,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mono", "mono.vcxproj", "{A0
 	ProjectSection(ProjectDependencies) = postProject
 		{92AE7622-5F58-4234-9A26-9EC71876B3F4} = {92AE7622-5F58-4234-9A26-9EC71876B3F4}
 		{158073ED-99AE-4196-9EDC-DDB2344F8466} = {158073ED-99AE-4196-9EDC-DDB2344F8466}
+		{D89D58F1-DA7A-4157-AFEE-F43D3BA20C9D} = {D89D58F1-DA7A-4157-AFEE-F43D3BA20C9D}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libgc", "libgc.vcxproj", "{EB56000B-C80B-4E8B-908D-D84D31B517D3}"
@@ -209,6 +210,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "build-external-llvm", "buil
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mono-profiler-log", "mono-profiler-log.vcxproj", "{8C02A728-7A50-43CE-B507-BDFC05B7EA94}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "monow", "monow.vcxproj", "{D89D58F1-DA7A-4157-AFEE-F43D3BA20C9D}"
+	ProjectSection(ProjectDependencies) = postProject
+		{92AE7622-5F58-4234-9A26-9EC71876B3F4} = {92AE7622-5F58-4234-9A26-9EC71876B3F4}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -442,6 +448,14 @@ Global
 		{8C02A728-7A50-43CE-B507-BDFC05B7EA94}.Release|Win32.Build.0 = Release|Win32
 		{8C02A728-7A50-43CE-B507-BDFC05B7EA94}.Release|x64.ActiveCfg = Release|x64
 		{8C02A728-7A50-43CE-B507-BDFC05B7EA94}.Release|x64.Build.0 = Release|x64
+		{D89D58F1-DA7A-4157-AFEE-F43D3BA20C9D}.Debug|Win32.ActiveCfg = Debug|Win32
+		{D89D58F1-DA7A-4157-AFEE-F43D3BA20C9D}.Debug|Win32.Build.0 = Debug|Win32
+		{D89D58F1-DA7A-4157-AFEE-F43D3BA20C9D}.Debug|x64.ActiveCfg = Debug|x64
+		{D89D58F1-DA7A-4157-AFEE-F43D3BA20C9D}.Debug|x64.Build.0 = Debug|x64
+		{D89D58F1-DA7A-4157-AFEE-F43D3BA20C9D}.Release|Win32.ActiveCfg = Release|Win32
+		{D89D58F1-DA7A-4157-AFEE-F43D3BA20C9D}.Release|Win32.Build.0 = Release|Win32
+		{D89D58F1-DA7A-4157-AFEE-F43D3BA20C9D}.Release|x64.ActiveCfg = Release|x64
+		{D89D58F1-DA7A-4157-AFEE-F43D3BA20C9D}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -482,11 +496,12 @@ Global
 		{E41DDF41-0916-454B-A7C2-6E410E45CAFD} = {7AF3635B-001C-42BF-94B9-C036CFDCA71D}
 		{C3D4C623-55F8-4653-980D-61AA629B4E1D} = {7AF3635B-001C-42BF-94B9-C036CFDCA71D}
 		{8C02A728-7A50-43CE-B507-BDFC05B7EA94} = {4CFD7702-60B2-4E82-BFAD-FCBB53EB4DA2}
+		{D89D58F1-DA7A-4157-AFEE-F43D3BA20C9D} = {DE3617B4-17A8-4E5F-A00F-BA43D956881F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		AMDCaProjectFile = C:\Users\Owner\Development\monogit\mono\msvc\CodeAnalyst\mono.caw
-		AMDCaPersistentStartup = mono
 		AMDCaPersistentConfig = Debug|Win32
+		AMDCaPersistentStartup = mono
+		AMDCaProjectFile = C:\Users\Owner\Development\monogit\mono\msvc\CodeAnalyst\mono.caw
 	EndGlobalSection
 	GlobalSection(DPCodeReviewSolutionGUID) = preSolution
 		DPCodeReviewSolutionGUID = {00000000-0000-0000-0000-000000000000}
