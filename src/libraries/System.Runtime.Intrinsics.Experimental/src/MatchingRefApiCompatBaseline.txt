@@ -1,0 +1,4 @@
+Compat issues with assembly System.Runtime.Intrinsics.Experimental:
+CannotSealType : Type 'System.Runtime.Intrinsics.Arm.AdvSimd.Arm64' is effectively (has a private constructor) sealed in the reference but not sealed in the implementation.
+MembersMustExist : Member 'System.Runtime.Intrinsics.Arm.AdvSimd.Arm64..ctor()' does not exist in the reference but it does exist in the implementation.
+Total Issues: 2

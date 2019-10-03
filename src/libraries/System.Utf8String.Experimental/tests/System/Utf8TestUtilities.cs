@@ -2,9 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Globalization;
 using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using Xunit;
 
 namespace System.Tests
@@ -21,6 +26,110 @@ namespace System.Tests
                 Assert.NotNull(fastAllocateMethod);
                 return (Func<int, Utf8String>)fastAllocateMethod.CreateDelegate(typeof(Func<int, Utf8String>));
             });
+        }
+
+        public static int GetByteLength(this Utf8String value)
+        {
+            return value.AsBytes().Length;
+        }
+
+        public unsafe static bool IsNull(this Utf8Span span)
+        {
+            return Unsafe.AreSame(ref Unsafe.AsRef<byte>(null), ref MemoryMarshal.GetReference(span.Bytes));
+        }
+
+        /// <summary>
+        /// Parses an expression of the form "a..b" and returns a <see cref="Range"/>.
+        /// </summary>
+        public static Range ParseRangeExpr(ReadOnlySpan<char> expression)
+        {
+            int idxOfDots = expression.IndexOf("..", StringComparison.Ordinal);
+            if (idxOfDots < 0)
+            {
+                goto Error;
+            }
+
+            ReadOnlySpan<char> firstPart = expression[..idxOfDots].Trim();
+            Index firstIndex = Index.Start;
+
+            if (!firstPart.IsWhiteSpace())
+            {
+                bool fromEnd = false;
+
+                if (!firstPart.IsEmpty && firstPart[0] == '^')
+                {
+                    fromEnd = true;
+                    firstPart = firstPart[1..];
+                }
+
+                if (!int.TryParse(firstPart, NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, CultureInfo.InvariantCulture, out int startIndex))
+                {
+                    goto Error;
+                }
+
+                firstIndex = new Index(startIndex, fromEnd);
+            }
+
+            ReadOnlySpan<char> secondPart = expression[(idxOfDots + 2)..].Trim();
+            Index secondIndex = Index.End;
+
+            if (!secondPart.IsWhiteSpace())
+            {
+                bool fromEnd = false;
+
+                if (!secondPart.IsEmpty && secondPart[0] == '^')
+                {
+                    fromEnd = true;
+                    secondPart = secondPart[1..];
+                }
+
+                if (!int.TryParse(secondPart, NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, CultureInfo.InvariantCulture, out int endIndex))
+                {
+                    goto Error;
+                }
+
+                secondIndex = new Index(endIndex, fromEnd);
+            }
+
+            return new Range(firstIndex, secondIndex);
+
+        Error:
+            throw new ArgumentException($"Range expression '{expression.ToString()}' is invalid.");
+        }
+
+        public static void AssertRangesEqual(int originalLength, Range expected, Range actual)
+        {
+            Assert.Equal(expected, actual, new RangeEqualityComparer(originalLength));
+        }
+
+        /// <summary>
+        /// Runs this test on its own dedicated thread; allows for setting CurrentCulture and other thread-statics.
+        /// </summary>
+        /// <param name="testCode"></param>
+        public static void RunOnDedicatedThread(Action testCode)
+        {
+            Assert.NotNull(testCode);
+
+            ExceptionDispatchInfo edi = default;
+            Thread newThread = new Thread(() =>
+            {
+                try
+                {
+                    testCode();
+                }
+                catch (Exception ex)
+                {
+                    edi = ExceptionDispatchInfo.Capture(ex);
+                }
+            });
+
+            newThread.Start();
+            newThread.Join();
+
+            if (edi != null)
+            {
+                edi.Throw();
+            }
         }
 
         /// <summary>
@@ -68,10 +177,36 @@ namespace System.Tests
             Utf8String newUtf8String = _utf8StringFactory.Value(buffer.Count);
             fixed (byte* pNewUtf8String = newUtf8String)
             {
-                buffer.AsSpan().CopyTo(new Span<byte>(pNewUtf8String, newUtf8String.Length));
+                buffer.AsSpan().CopyTo(new Span<byte>(pNewUtf8String, newUtf8String.GetByteLength()));
             }
 
             return newUtf8String;
+        }
+
+        public unsafe static Range GetRangeOfSubspan<T>(ReadOnlySpan<T> outerSpan, ReadOnlySpan<T> innerSpan)
+        {
+            ulong byteOffset = (ulong)(void*)Unsafe.ByteOffset(ref MemoryMarshal.GetReference(outerSpan), ref MemoryMarshal.GetReference(innerSpan));
+            ulong elementOffset = byteOffset / (uint)Unsafe.SizeOf<T>();
+
+            checked
+            {
+                int elementOffsetAsInt = (int)elementOffset;
+                Range retVal = elementOffsetAsInt..(elementOffsetAsInt + innerSpan.Length);
+
+                _ = outerSpan[retVal]; // call the real slice logic to make sure we're really within the outer span
+                return retVal;
+            }
+        }
+
+        public static Range GetRangeOfSubspan(Utf8Span outerSpan, Utf8Span innerSpan)
+        {
+            return GetRangeOfSubspan(outerSpan.Bytes, innerSpan.Bytes);
+        }
+
+        public static bool IsEmpty(this Range range, int length)
+        {
+            (_, int actualLength) = range.GetOffsetAndLength(length);
+            return (actualLength == 0);
         }
     }
 }

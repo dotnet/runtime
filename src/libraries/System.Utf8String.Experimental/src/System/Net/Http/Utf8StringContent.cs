@@ -48,7 +48,7 @@ namespace System.Net.Http
 
         protected override bool TryComputeLength(out long length)
         {
-            length = _content.Length;
+            length = _content.AsBytes().Length;
             return true;
         }
     }

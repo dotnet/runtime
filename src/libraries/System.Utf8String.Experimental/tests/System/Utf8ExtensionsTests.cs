@@ -165,19 +165,20 @@ namespace System.Tests
         [Fact]
         public void AsSpan_FromUtf8String()
         {
-            Assert.True(default(ReadOnlySpan<Char8>) == ((Utf8String)null).AsSpan());
+            Assert.True(((Utf8String)null).AsSpan().Bytes == default); // referential equality check
 
             Utf8String theString = u8("Hello");
-            Assert.True(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<byte, Char8>(ref Unsafe.AsRef(in theString.GetPinnableReference())), 5) == theString.AsSpan());
+
+            Assert.True(Unsafe.AreSame(ref Unsafe.AsRef(in theString.GetPinnableReference()), ref Unsafe.AsRef(in theString.AsSpan().GetPinnableReference())));
+            Assert.Equal(5, theString.AsSpan().Bytes.Length);
         }
 
         [Fact]
         public void AsSpan_FromUtf8String_WithStart()
         {
-            Assert.True(default(ReadOnlySpan<Char8>) == ((Utf8String)null).AsSpan(0));
+            Assert.True(((Utf8String)null).AsSpan(0).Bytes == default); // referential equality check
             Assert.True(u8("Hello").AsSpan(5).IsEmpty);
-
-            SpanAssert.Equal(new Char8[] { (Char8)'e', (Char8)'l', (Char8)'l', (Char8)'o' }, u8("Hello").AsSpan(1));
+            Assert.Equal(new byte[] { (byte)'e', (byte)'l', (byte)'l', (byte)'o' }, u8("Hello").AsSpan(1).Bytes.ToArray());
         }
 
         [Fact]
@@ -191,10 +192,9 @@ namespace System.Tests
         [Fact]
         public void AsSpan_FromUtf8String_WithStartAndLength()
         {
-            Assert.True(default(ReadOnlySpan<Char8>) == ((Utf8String)null).AsSpan(0, 0));
+            Assert.True(((Utf8String)null).AsSpan(0, 0).Bytes == default); // referential equality check
             Assert.True(u8("Hello").AsSpan(5, 0).IsEmpty);
-
-            SpanAssert.Equal(new Char8[] { (Char8)'e', (Char8)'l', (Char8)'l' }, u8("Hello").AsSpan(1, 3));
+            Assert.Equal(new byte[] { (byte)'e', (byte)'l', (byte)'l' }, u8("Hello").AsSpan(1, 3).Bytes.ToArray());
         }
 
         [Fact]
