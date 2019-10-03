@@ -240,7 +240,7 @@ namespace System.Diagnostics
             {
                 sb.Append("<null>");
             }
-            sb.Append(Environment.NewLine);
+            sb.Append(Environment.NewLineConst);
 
             return sb.ToString();
         }
