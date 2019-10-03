@@ -5,7 +5,5 @@
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <!-- System.Memory uses the Open key, so we will also. -->
     <StrongNameKeyId>Open</StrongNameKeyId>
-    <!-- This is a preview package. Do not ship as stable. -->
-    <BlockStable>true</BlockStable>
   </PropertyGroup>
 </Project>

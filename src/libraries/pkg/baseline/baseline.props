@@ -11,7 +11,7 @@
     Below targets should moved to packaging.targets in BuildTools but keeping in corefx for convenience right now
   -->
 
-  <Target Name="BlockStable" Condition="'$(BlockStable)' == 'true'" AfterTargets="CalculatePackageVersion">
+  <Target Name="BlockStable" Condition="'$(SuppressFinalPackageVersion)' == 'true'" AfterTargets="CalculatePackageVersion">
     <!-- DO NOT ship this packages as stable -->
     <Error Condition="!$(PackageVersion.Contains('-'))" Text="Package $(Id) should not be built stable" />
   </Target>
@@ -20,7 +20,7 @@
   <Target Name="GetPackageIdentityIfStable"
           Returns="@(_StablePackageIdentity)">
 
-    <ItemGroup Condition="'$(BlockStable)' != 'true'">
+    <ItemGroup Condition="'$(SuppressFinalPackageVersion)' != 'true'">
       <_StablePackageIdentity Include="$(Id)">
         <Version>$(PackageVersion)</Version>
       </_StablePackageIdentity>
