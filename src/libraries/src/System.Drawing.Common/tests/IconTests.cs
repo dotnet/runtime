@@ -861,8 +861,23 @@ namespace System.Drawing.Tests
                         switch (expectedBitDepth)
                         {
                             case 32:
-                                Assert.Equal(0x879EE532u, (uint)bitmap.GetPixel(0, 0).ToArgb());
-                                Assert.Equal(0x661CD8B7u, (uint)bitmap.GetPixel(0, 31).ToArgb());
+                                if (!PlatformDetection.IsWindows)
+                                {
+                                    // libgdiplus on Unix doesn't natively support ARGB32 format. It
+                                    // uses the Cairo library which represents the bitmaps as PARGB32
+                                    // with individual channels premultiplied with the alpha channel.
+                                    // When converting back and forth it results in slight loss of
+                                    // precision so allow both original and rounded values here.
+                                    uint color = (uint)bitmap.GetPixel(0, 0).ToArgb();
+                                    Assert.True(color == 0x879EE532u || color == 0x879EE431u, color.ToString("x"));
+                                    color = (uint)bitmap.GetPixel(0, 31).ToArgb();
+                                    Assert.True(color == 0x661CD8B7u || color == 0x661BD7B6u, color.ToString("x"));
+                                }
+                                else
+                                {
+                                    Assert.Equal(0x879EE532u, (uint)bitmap.GetPixel(0, 0).ToArgb());
+                                    Assert.Equal(0x661CD8B7u, (uint)bitmap.GetPixel(0, 31).ToArgb());
+                                }
                                 break;
                             case 16:
                             case 8:
