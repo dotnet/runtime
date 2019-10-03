@@ -38,131 +38,131 @@ namespace MathCeilingSingleTest
 
             var program = new Program();
 
-            if (MathF.Round(constantValue) != 0.0f)
+            if (MathF.Ceiling(constantValue) != 0.0f)
             {
-                Console.WriteLine("MathF.Round of a constant value failed");
+                Console.WriteLine("MathF.Ceiling of a constant value failed");
                 return Fail;
             }
 
-            if (MathF.Round(staticValue) != 1.0f)
+            if (MathF.Ceiling(staticValue) != 2.0f)
             {
-                Console.WriteLine("MathF.Round of a static value failed");
+                Console.WriteLine("MathF.Ceiling of a static value failed");
                 return Fail;
             }
 
             fixed (float* pStaticValue = &staticValue)
             {
-                if (MathF.Round(*pStaticValue) != 1.0f)
+                if (MathF.Ceiling(*pStaticValue) != 2.0f)
                 {
-                    Console.WriteLine("MathF.Round of an addressed static value failed");
+                    Console.WriteLine("MathF.Ceiling of an addressed static value failed");
                     return Fail;
                 }
             }
 
-            if (MathF.Round(staticValueArray[0]) != 2.0f)
+            if (MathF.Ceiling(staticValueArray[0]) != 3.0f)
             {
-                Console.WriteLine("MathF.Round of a static value array (index 0) failed");
+                Console.WriteLine("MathF.Ceiling of a static value array (index 0) failed");
                 return Fail;
             }
 
-            if (MathF.Round(staticValueArray[1]) != 3.0f)
+            if (MathF.Ceiling(staticValueArray[1]) != 4.0f)
             {
-                Console.WriteLine("MathF.Round of a static value array (index 1) failed");
+                Console.WriteLine("MathF.Ceiling of a static value array (index 1) failed");
                 return Fail;
             }
 
-            if (MathF.Round(staticValueArray[2]) != 4.0f)
+            if (MathF.Ceiling(staticValueArray[2]) != 5.0f)
             {
-                Console.WriteLine("MathF.Round of a static value array (index 2) failed");
+                Console.WriteLine("MathF.Ceiling of a static value array (index 2) failed");
                 return Fail;
             }
 
             fixed (float* pStaticValueArray = &staticValueArray[0])
             {
-                if (MathF.Round(pStaticValueArray[0]) != 2.0f)
+                if (MathF.Ceiling(pStaticValueArray[0]) != 3.0f)
                 {
-                    Console.WriteLine("MathF.Round of a addressed static value array (index 0) failed");
+                    Console.WriteLine("MathF.Ceiling of a addressed static value array (index 0) failed");
                     return Fail;
                 }
 
-                if (MathF.Round(pStaticValueArray[1]) != 3.0f)
+                if (MathF.Ceiling(pStaticValueArray[1]) != 4.0f)
                 {
-                    Console.WriteLine("MathF.Round of a addressed static value array (index 1) failed");
+                    Console.WriteLine("MathF.Ceiling of a addressed static value array (index 1) failed");
                     return Fail;
                 }
 
-                if (MathF.Round(pStaticValueArray[2]) != 4.0f)
+                if (MathF.Ceiling(pStaticValueArray[2]) != 5.0f)
                 {
-                    Console.WriteLine("MathF.Round of a addressed static value array (index 2) failed");
+                    Console.WriteLine("MathF.Ceiling of a addressed static value array (index 2) failed");
                     return Fail;
                 }
             }
 
-            if (MathF.Round(program.instanceValue) != 6.0f)
+            if (MathF.Ceiling(program.instanceValue) != 6.0f)
             {
-                Console.WriteLine("MathF.Round of an instance value failed");
+                Console.WriteLine("MathF.Ceiling of an instance value failed");
                 return Fail;
             }
 
             fixed (float* pInstanceValue = &program.instanceValue)
             {
-                if (MathF.Round(*pInstanceValue) != 6.0f)
+                if (MathF.Ceiling(*pInstanceValue) != 6.0f)
                 {
-                    Console.WriteLine("MathF.Round of an addressed instance value failed");
+                    Console.WriteLine("MathF.Ceiling of an addressed instance value failed");
                     return Fail;
                 }
             }
 
-            if (MathF.Round(program.instanceValueArray[0]) != 7.0f)
+            if (MathF.Ceiling(program.instanceValueArray[0]) != 7.0f)
             {
-                Console.WriteLine("MathF.Round of an instance value array (index 0) failed");
+                Console.WriteLine("MathF.Ceiling of an instance value array (index 0) failed");
                 return Fail;
             }
 
-            if (MathF.Round(program.instanceValueArray[1]) != 8.0f)
+            if (MathF.Ceiling(program.instanceValueArray[1]) != 8.0f)
             {
-                Console.WriteLine("MathF.Round of an instance value array (index 1) failed");
+                Console.WriteLine("MathF.Ceiling of an instance value array (index 1) failed");
                 return Fail;
             }
 
-            if (MathF.Round(program.instanceValueArray[2]) != 9.0f)
+            if (MathF.Ceiling(program.instanceValueArray[2]) != 9.0f)
             {
-                Console.WriteLine("MathF.Round of an instance value array (index 2) failed");
+                Console.WriteLine("MathF.Ceiling of an instance value array (index 2) failed");
                 return Fail;
             }
 
             fixed (float* pInstanceValueArray = &program.instanceValueArray[0])
             {
-                if (MathF.Round(pInstanceValueArray[0]) != 7.0f)
+                if (MathF.Ceiling(pInstanceValueArray[0]) != 7.0f)
                 {
-                    Console.WriteLine("MathF.Round of a addressed instance value array (index 0) failed");
+                    Console.WriteLine("MathF.Ceiling of a addressed instance value array (index 0) failed");
                     return Fail;
                 }
 
-                if (MathF.Round(pInstanceValueArray[1]) != 8.0f)
+                if (MathF.Ceiling(pInstanceValueArray[1]) != 8.0f)
                 {
-                    Console.WriteLine("MathF.Round of a addressed instance value array (index 1) failed");
+                    Console.WriteLine("MathF.Ceiling of a addressed instance value array (index 1) failed");
                     return Fail;
                 }
 
-                if (MathF.Round(pInstanceValueArray[2]) != 9.0f)
+                if (MathF.Ceiling(pInstanceValueArray[2]) != 9.0f)
                 {
-                    Console.WriteLine("MathF.Round of a addressed instance value array (index 2) failed");
+                    Console.WriteLine("MathF.Ceiling of a addressed instance value array (index 2) failed");
                     return Fail;
                 }
             }
 
-            if (MathF.Round(localValue) != 10.0f)
+            if (MathF.Ceiling(localValue) != 10.0f)
             {
-                Console.WriteLine("MathF.Round of a local value failed");
+                Console.WriteLine("MathF.Ceiling of a local value failed");
                 return Fail;
             }
 
             float* pLocalValue = &localValue;
 
-            if (MathF.Round(*pLocalValue) != 10.0f)
+            if (MathF.Ceiling(*pLocalValue) != 10.0f)
             {
-                Console.WriteLine("MathF.Round of an addressed local value failed");
+                Console.WriteLine("MathF.Ceiling of an addressed local value failed");
                 return Fail;
             }
 
