@@ -378,7 +378,7 @@ LPVOID __FCThrowArgument(LPVOID me, enum RuntimeExceptionKind reKind, LPCWSTR ar
 #ifdef __GNUC__
 #define F_CALL_CONV __attribute__((cdecl, regparm(3)))
 
-// GCC fastcall convention (simulated via stdcall) is different from MSVC fastcall convention. GCC can use up
+// GCC FCALL convention (simulated via cdecl, regparm(3)) is different from MSVC FCALL convention. GCC can use up
 // to 3 registers to store parameters. The registers used are EAX, EDX, ECX. Dummy parameters and reordering
 // of the actual parameters in the FCALL signature is used to make the calling convention to look like in MSVC.
 #define SWIZZLE_REGARG_ORDER
