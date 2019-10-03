@@ -29,7 +29,7 @@ namespace System.Drawing.Printing
             if (!document.PrinterSettings.IsValid)
                 throw new InvalidPrinterException(document.PrinterSettings);
 
-            _dc = document.PrinterSettings.CreateDeviceContext(modeHandle);
+            _dc = document.PrinterSettings.CreateDeviceContext(_modeHandle);
             SafeNativeMethods.DOCINFO info = new SafeNativeMethods.DOCINFO();
             info.lpszDocName = document.DocumentName;
             if (document.PrinterSettings.PrintToFile)
@@ -62,8 +62,8 @@ namespace System.Drawing.Printing
             Debug.Assert(_dc != null && _graphics == null, "PrintController methods called in the wrong order?");
 
             base.OnStartPage(document, e);
-            e.PageSettings.CopyToHdevmode(modeHandle);
-            IntPtr modePointer = SafeNativeMethods.GlobalLock(new HandleRef(this, modeHandle));
+            e.PageSettings.CopyToHdevmode(_modeHandle);
+            IntPtr modePointer = Interop.Kernel32.GlobalLock(new HandleRef(this, _modeHandle));
             try
             {
                 IntPtr result = SafeNativeMethods.ResetDC(new HandleRef(_dc, _dc.Hdc), new HandleRef(null, modePointer));
@@ -71,7 +71,7 @@ namespace System.Drawing.Printing
             }
             finally
             {
-                SafeNativeMethods.GlobalUnlock(new HandleRef(this, modeHandle));
+                Interop.Kernel32.GlobalUnlock(new HandleRef(this, _modeHandle));
             }
 
             // int horizontalResolution = Windows.GetDeviceCaps(dc.Hdc, SafeNativeMethods.HORZRES);

@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections;
-using System.Diagnostics;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Internal;
@@ -15,46 +13,26 @@ namespace System.Drawing.Printing
     /// <summary>
     /// A PrintController which "prints" to a series of images.
     /// </summary>
-    public class PreviewPrintController : PrintController
+    public partial class PreviewPrintController : PrintController
     {
-        private readonly IList _list = new ArrayList(); // list of PreviewPageInfo
-        private System.Drawing.Graphics _graphics;
+        private Graphics _graphics;
         private DeviceContext _dc;
-        private bool _antiAlias;
-
-        private void CheckSecurity()
-        {
-        }
-
-        /// <summary>
-        /// This is new public property which notifies if this controller is used for PrintPreview.
-        /// </summary>
-        public override bool IsPreview
-        {
-            get
-            {
-                return true;
-            }
-        }
 
         /// <summary>
         /// Implements StartPrint for generating print preview information.
         /// </summary>
         public override void OnStartPrint(PrintDocument document, PrintEventArgs e)
         {
-            Debug.Assert(_dc == null && _graphics == null, "PrintController methods called in the wrong order?");
-
-            // For security purposes, don't assume our public methods are called in any particular order
-            CheckSecurity();
-
             base.OnStartPrint(document, e);
 
             if (!document.PrinterSettings.IsValid)
+            {
                 throw new InvalidPrinterException(document.PrinterSettings);
+            }
 
             // We need a DC as a reference; we don't actually draw on it.
             // We make sure to reuse the same one to improve performance.
-            _dc = document.PrinterSettings.CreateInformationContext(modeHandle);
+            _dc = document.PrinterSettings.CreateInformationContext(_modeHandle);
         }
 
         /// <summary>
@@ -62,16 +40,11 @@ namespace System.Drawing.Printing
         /// </summary>
         public override Graphics OnStartPage(PrintDocument document, PrintPageEventArgs e)
         {
-            Debug.Assert(_dc != null && _graphics == null, "PrintController methods called in the wrong order?");
-
-            // For security purposes, don't assume our public methods are called in any particular order
-            CheckSecurity();
-
             base.OnStartPage(document, e);
 
             if (e.CopySettingsToDevMode)
             {
-                e.PageSettings.CopyToHdevmode(modeHandle);
+                e.PageSettings.CopyToHdevmode(_modeHandle);
             }
 
             Size size = e.PageBounds.Size;
@@ -100,7 +73,6 @@ namespace System.Drawing.Printing
             {
                 // Adjust the origin of the graphics object to be at the
                 // user-specified margin location
-                //
                 int dpiX = UnsafeNativeMethods.GetDeviceCaps(new HandleRef(_dc, _dc.Hdc), SafeNativeMethods.LOGPIXELSX);
                 int dpiY = UnsafeNativeMethods.GetDeviceCaps(new HandleRef(_dc, _dc.Hdc), SafeNativeMethods.LOGPIXELSY);
                 int hardMarginX_DU = UnsafeNativeMethods.GetDeviceCaps(new HandleRef(_dc, _dc.Hdc), SafeNativeMethods.PHYSICALOFFSETX);
@@ -112,11 +84,9 @@ namespace System.Drawing.Printing
                 _graphics.TranslateTransform(document.DefaultPageSettings.Margins.Left, document.DefaultPageSettings.Margins.Top);
             }
 
-
             _graphics.PrintingHelper = printGraphics;
 
-
-            if (_antiAlias)
+            if (UseAntiAlias)
             {
                 _graphics.TextRenderingHint = TextRenderingHint.AntiAlias;
                 _graphics.SmoothingMode = SmoothingMode.AntiAlias;
@@ -129,13 +99,11 @@ namespace System.Drawing.Printing
         /// </summary>
         public override void OnEndPage(PrintDocument document, PrintPageEventArgs e)
         {
-            Debug.Assert(_dc != null && _graphics != null, "PrintController methods called in the wrong order?");
-
-            // For security purposes, don't assume our public methods are called in any particular order
-            CheckSecurity();
-
-            _graphics.Dispose();
-            _graphics = null;
+            if (_graphics != null)
+            {
+                _graphics.Dispose();
+                _graphics = null;
+            }
 
             base.OnEndPage(document, e);
         }
@@ -145,37 +113,13 @@ namespace System.Drawing.Printing
         /// </summary>
         public override void OnEndPrint(PrintDocument document, PrintEventArgs e)
         {
-            Debug.Assert(_dc != null && _graphics == null, "PrintController methods called in the wrong order?");
-
-            // For security purposes, don't assume our public methods are called in any particular order
-            CheckSecurity();
-
-            _dc.Dispose();
-            _dc = null;
+            if (_dc != null)
+            {
+                _dc.Dispose();
+                _dc = null;
+            }
 
             base.OnEndPrint(document, e);
-        }
-
-        public PreviewPageInfo[] GetPreviewPageInfo()
-        {
-            // For security purposes, don't assume our public methods are called in any particular order
-            CheckSecurity();
-
-            PreviewPageInfo[] temp = new PreviewPageInfo[_list.Count];
-            _list.CopyTo(temp, 0);
-            return temp;
-        }
-
-        public virtual bool UseAntiAlias
-        {
-            get
-            {
-                return _antiAlias;
-            }
-            set
-            {
-                _antiAlias = value;
-            }
         }
     }
 }
