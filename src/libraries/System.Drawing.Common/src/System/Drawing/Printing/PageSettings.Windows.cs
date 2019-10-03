@@ -46,10 +46,9 @@ namespace System.Drawing.Printing
             get
             {
                 IntPtr modeHandle = printerSettings.GetHdevmode();
-
                 Rectangle pageBounds = GetBounds(modeHandle);
 
-                SafeNativeMethods.GlobalFree(new HandleRef(this, modeHandle));
+                Interop.Kernel32.GlobalFree(new HandleRef(this, modeHandle));
                 return pageBounds;
             }
         }
@@ -164,13 +163,13 @@ namespace System.Drawing.Printing
                 if (_paperSource == null)
                 {
                     IntPtr modeHandle = printerSettings.GetHdevmode();
-                    IntPtr modePointer = SafeNativeMethods.GlobalLock(new HandleRef(this, modeHandle));
+                    IntPtr modePointer = Interop.Kernel32.GlobalLock(new HandleRef(this, modeHandle));
                     SafeNativeMethods.DEVMODE mode = (SafeNativeMethods.DEVMODE)Marshal.PtrToStructure(modePointer, typeof(SafeNativeMethods.DEVMODE));
 
                     PaperSource result = PaperSourceFromMode(mode);
 
-                    SafeNativeMethods.GlobalUnlock(new HandleRef(this, modeHandle));
-                    SafeNativeMethods.GlobalFree(new HandleRef(this, modeHandle));
+                    Interop.Kernel32.GlobalUnlock(new HandleRef(this, modeHandle));
+                    Interop.Kernel32.GlobalFree(new HandleRef(this, modeHandle));
 
                     return result;
                 }
@@ -233,13 +232,13 @@ namespace System.Drawing.Printing
                 if (_printerResolution == null)
                 {
                     IntPtr modeHandle = printerSettings.GetHdevmode();
-                    IntPtr modePointer = SafeNativeMethods.GlobalLock(new HandleRef(this, modeHandle));
+                    IntPtr modePointer = Interop.Kernel32.GlobalLock(new HandleRef(this, modeHandle));
                     SafeNativeMethods.DEVMODE mode = (SafeNativeMethods.DEVMODE)Marshal.PtrToStructure(modePointer, typeof(SafeNativeMethods.DEVMODE));
 
                     PrinterResolution result = PrinterResolutionFromMode(mode);
 
-                    SafeNativeMethods.GlobalUnlock(new HandleRef(this, modeHandle));
-                    SafeNativeMethods.GlobalFree(new HandleRef(this, modeHandle));
+                    Interop.Kernel32.GlobalUnlock(new HandleRef(this, modeHandle));
+                    Interop.Kernel32.GlobalFree(new HandleRef(this, modeHandle));
 
                     return result;
                 }
@@ -281,7 +280,7 @@ namespace System.Drawing.Printing
         /// </summary>
         public void CopyToHdevmode(IntPtr hdevmode)
         {
-            IntPtr modePointer = SafeNativeMethods.GlobalLock(new HandleRef(null, hdevmode));
+            IntPtr modePointer = Interop.Kernel32.GlobalLock(hdevmode);
             SafeNativeMethods.DEVMODE mode = (SafeNativeMethods.DEVMODE)Marshal.PtrToStructure(modePointer, typeof(SafeNativeMethods.DEVMODE));
 
             if (_color.IsNotDefault && ((mode.dmFields & SafeNativeMethods.DM_COLOR) == SafeNativeMethods.DM_COLOR))
@@ -370,11 +369,11 @@ namespace System.Drawing.Printing
                 int retCode = SafeNativeMethods.DocumentProperties(NativeMethods.NullHandleRef, NativeMethods.NullHandleRef, printerSettings.PrinterName, modePointer, modePointer, SafeNativeMethods.DM_IN_BUFFER | SafeNativeMethods.DM_OUT_BUFFER);
                 if (retCode < 0)
                 {
-                    SafeNativeMethods.GlobalFree(new HandleRef(null, modePointer));
+                    Interop.Kernel32.GlobalFree(modePointer);
                 }
             }
 
-            SafeNativeMethods.GlobalUnlock(new HandleRef(null, hdevmode));
+            Interop.Kernel32.GlobalUnlock(hdevmode);
         }
 
         private short ExtraBytes
@@ -382,13 +381,13 @@ namespace System.Drawing.Printing
             get
             {
                 IntPtr modeHandle = printerSettings.GetHdevmodeInternal();
-                IntPtr modePointer = SafeNativeMethods.GlobalLock(new HandleRef(this, modeHandle));
+                IntPtr modePointer = Interop.Kernel32.GlobalLock(new HandleRef(this, modeHandle));
                 SafeNativeMethods.DEVMODE mode = (SafeNativeMethods.DEVMODE)Marshal.PtrToStructure(modePointer, typeof(SafeNativeMethods.DEVMODE));
 
                 short result = mode?.dmDriverExtra ?? 0;
 
-                SafeNativeMethods.GlobalUnlock(new HandleRef(this, modeHandle));
-                SafeNativeMethods.GlobalFree(new HandleRef(this, modeHandle));
+                Interop.Kernel32.GlobalUnlock(new HandleRef(this, modeHandle));
+                Interop.Kernel32.GlobalFree(new HandleRef(this, modeHandle));
 
                 return result;
             }
@@ -427,15 +426,17 @@ namespace System.Drawing.Printing
                     ownHandle = true;
                 }
 
-                IntPtr modePointer = SafeNativeMethods.GlobalLock(new HandleRef(null, modeHandle));
+                IntPtr modePointer = Interop.Kernel32.GlobalLock(modeHandle);
                 SafeNativeMethods.DEVMODE mode = (SafeNativeMethods.DEVMODE)Marshal.PtrToStructure(modePointer, typeof(SafeNativeMethods.DEVMODE));
 
                 PaperSize result = PaperSizeFromMode(mode);
 
-                SafeNativeMethods.GlobalUnlock(new HandleRef(null, modeHandle));
+                Interop.Kernel32.GlobalUnlock(modeHandle);
 
                 if (ownHandle)
-                    SafeNativeMethods.GlobalFree(new HandleRef(null, modeHandle));
+                {
+                    Interop.Kernel32.GlobalFree(modeHandle);
+                }
 
                 return result;
             }
@@ -509,9 +510,11 @@ namespace System.Drawing.Printing
         public void SetHdevmode(IntPtr hdevmode)
         {
             if (hdevmode == IntPtr.Zero)
+            {
                 throw new ArgumentException(SR.Format(SR.InvalidPrinterHandle, hdevmode));
+            }
 
-            IntPtr pointer = SafeNativeMethods.GlobalLock(new HandleRef(null, hdevmode));
+            IntPtr pointer = Interop.Kernel32.GlobalLock(hdevmode);
             SafeNativeMethods.DEVMODE mode = (SafeNativeMethods.DEVMODE)Marshal.PtrToStructure(pointer, typeof(SafeNativeMethods.DEVMODE));
 
             if ((mode.dmFields & SafeNativeMethods.DM_COLOR) == SafeNativeMethods.DM_COLOR)
@@ -528,7 +531,7 @@ namespace System.Drawing.Printing
             _paperSource = PaperSourceFromMode(mode);
             _printerResolution = PrinterResolutionFromMode(mode);
 
-            SafeNativeMethods.GlobalUnlock(new HandleRef(null, hdevmode));
+            Interop.Kernel32.GlobalUnlock(hdevmode);
         }
 
         /// <summary>

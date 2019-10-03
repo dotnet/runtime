@@ -35,8 +35,10 @@
     <Compile Include="System\Drawing\Imaging\Metafile.cs" />
     <Compile Include="System\Drawing\Printing\PrinterUnit.cs" />
     <Compile Include="System\Drawing\Printing\PreviewPageInfo.cs" />
+    <Compile Include="System\Drawing\Printing\PreviewPrintController.cs" />
     <Compile Include="System\Drawing\Printing\PrintEventHandler.cs" />
     <Compile Include="System\Drawing\Printing\PrintAction.cs" />
+    <Compile Include="System\Drawing\Printing\PrintController.cs" />
     <Compile Include="System\Drawing\Printing\PrintPageEventHandler.cs" />
     <Compile Include="System\Drawing\Printing\QueryPageSettingsEventArgs.cs" />
     <Compile Include="System\Drawing\Printing\QueryPageSettingsEventHandler.cs" />
@@ -230,6 +232,12 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.FreeLibrary.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.FreeLibrary.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GlobalFree.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GlobalFree.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GlobalLock.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GlobalLock.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.LoadLibraryEx.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.LoadLibraryEx.cs</Link>

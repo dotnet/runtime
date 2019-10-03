@@ -10,47 +10,47 @@ namespace System.Drawing.Printing
     /// <summary>
     /// Controls how a document is printed.
     /// </summary>
-    public abstract class PrintController
+    public abstract partial class PrintController
     {
-        // DEVMODEs are pretty expensive, so we cache one here and share it with the
-        // Standard and Preview print controllers.  If it weren't for all the rules about API changes,
-        // I'd consider making this protected.
-
-        #region SafeDeviceModeHandle Class
-
         /// <summary>
         /// Represents a SafeHandle for a Printer's Device Mode struct handle (DEVMODE)
         /// </summary>
+        /// <remarks>
+        /// DEVMODEs are pretty expensive, so we cache one here and share it
+        /// with the Standard and Preview print controllers.
+        /// </remarks>
         internal sealed class SafeDeviceModeHandle : SafeHandle
         {
-            // This constructor is used by the P/Invoke marshaling layer
-            // to allocate a SafeHandle instance.  P/Invoke then does the
-            // appropriate method call, storing the handle in this class.
-            private SafeDeviceModeHandle() : base(IntPtr.Zero, true) { return; }
+            /// <summary>
+            /// This constructor is used by the P/Invoke marshaling layer
+            /// to allocate a SafeHandle instance. P/Invoke then does the
+            /// appropriate method call, storing the handle in this class.
+            /// </summary>
+            private SafeDeviceModeHandle() : base(IntPtr.Zero, ownsHandle: true)
+            {
+            }
 
-            internal SafeDeviceModeHandle(IntPtr handle)
-                : base(IntPtr.Zero, true)  // "true" means "owns the handle"
+            internal SafeDeviceModeHandle(IntPtr handle) : base(IntPtr.Zero, ownsHandle: true)
             {
                 SetHandle(handle);
             }
 
-            public override bool IsInvalid
-            {
-                get { return handle == IntPtr.Zero; }
-            }
+            public override bool IsInvalid => handle == IntPtr.Zero;
 
-            // Specifies how to free the handle.
-            // The boolean returned should be true for success and false if the runtime
-            // should fire a SafeHandleCriticalFailure MDA (CustomerDebugProbe) if that
-            // MDA is enabled.
+            /// <summary>
+            /// Specifies how to free the handle.
+            /// The boolean returned should be true for success and false if the runtime
+            /// should fire a SafeHandleCriticalFailure MDA (CustomerDebugProbe) if that
+            /// MDA is enabled.
+            /// </summary>
             protected override bool ReleaseHandle()
             {
                 if (!IsInvalid)
                 {
-                    SafeNativeMethods.GlobalFree(new HandleRef(this, handle));
+                    Interop.Kernel32.GlobalFree(new HandleRef(this, handle));
                 }
-                handle = IntPtr.Zero;
 
+                handle = IntPtr.Zero;
                 return true;
             }
 
@@ -65,34 +65,14 @@ namespace System.Drawing.Printing
             }
         }
 
-        #endregion
+        private protected SafeDeviceModeHandle _modeHandle = null;
 
-        internal SafeDeviceModeHandle modeHandle = null;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref='PrintController'/> class.
-        /// </summary>
-        protected PrintController()
-        {
-        }
-
-
-        /// <summary>
-        /// This is new public property which notifies if this controller is used for PrintPreview.
-        /// </summary>
-        public virtual bool IsPreview
-        {
-            get
-            {
-                return false;
-            }
-        }
-
-        // WARNING: if you have nested PrintControllers, this method won't get called on the inner one.
-        // Add initialization code to StartPrint or StartPage instead.
+        /// <remarks>
+        /// If you have nested PrintControllers, this method won't get called on the inner one.
+        /// Add initialization code to StartPrint or StartPage instead.
+        /// </remarks>
         internal void Print(PrintDocument document)
         {
-            //
             // Get the PrintAction for this event
             PrintAction printAction;
             if (IsPreview)
@@ -106,17 +86,17 @@ namespace System.Drawing.Printing
 
             // Check that user has permission to print to this particular printer
             PrintEventArgs printEvent = new PrintEventArgs(printAction);
-            document._OnBeginPrint(printEvent);
+            document.OnBeginPrint(printEvent);
             if (printEvent.Cancel)
             {
-                document._OnEndPrint(printEvent);
+                document.OnEndPrint(printEvent);
                 return;
             }
 
             OnStartPrint(document, printEvent);
             if (printEvent.Cancel)
             {
-                document._OnEndPrint(printEvent);
+                document.OnEndPrint(printEvent);
                 OnEndPrint(document, printEvent);
                 return;
             }
@@ -136,7 +116,7 @@ namespace System.Drawing.Printing
             {
                 try
                 {
-                    document._OnEndPrint(printEvent);
+                    document.OnEndPrint(printEvent);
                     printEvent.Cancel = canceled | printEvent.Cancel;
                 }
                 finally
@@ -146,15 +126,19 @@ namespace System.Drawing.Printing
             }
         }
 
-        // Returns true if print was aborted.
-        // WARNING: if you have nested PrintControllers, this method won't get called on the inner one
-        // Add initialization code to StartPrint or StartPage instead.
+        /// <summary>
+        /// Returns true if print was aborted.
+        /// </summary>
+        /// <remarks>
+        /// If you have nested PrintControllers, this method won't get called on the inner one
+        /// Add initialization code to StartPrint or StartPage instead.
+        /// </remarks>
         private bool PrintLoop(PrintDocument document)
         {
             QueryPageSettingsEventArgs queryEvent = new QueryPageSettingsEventArgs((PageSettings)document.DefaultPageSettings.Clone());
             while (true)
             {
-                document._OnQueryPageSettings(queryEvent);
+                document.OnQueryPageSettings(queryEvent);
                 if (queryEvent.Cancel)
                 {
                     return true;
@@ -166,7 +150,7 @@ namespace System.Drawing.Printing
 
                 try
                 {
-                    document._OnPrintPage(pageEvent);
+                    document.OnPrintPage(pageEvent);
                     OnEndPage(document, pageEvent);
                 }
                 finally
@@ -182,10 +166,6 @@ namespace System.Drawing.Printing
                 {
                     return false;
                 }
-                else
-                {
-                    // loop
-                }
             }
         }
 
@@ -197,7 +177,7 @@ namespace System.Drawing.Printing
             while (true)
             {
                 queryEvent.PageSettingsChanged = false;
-                document._OnQueryPageSettings(queryEvent);
+                document.OnQueryPageSettings(queryEvent);
                 if (queryEvent.Cancel)
                 {
                     return true;
@@ -231,7 +211,7 @@ namespace System.Drawing.Printing
 
                 try
                 {
-                    document._OnPrintPage(pageEvent);
+                    document.OnPrintPage(pageEvent);
                     OnEndPage(document, pageEvent);
                 }
                 finally
@@ -253,10 +233,10 @@ namespace System.Drawing.Printing
 
         private PrintPageEventArgs CreatePrintPageEvent(PageSettings pageSettings)
         {
-            Debug.Assert((modeHandle != null), "modeHandle is null.  Someone must have forgot to call base.StartPrint");
+            Debug.Assert((_modeHandle != null), "modeHandle is null.  Someone must have forgot to call base.StartPrint");
 
 
-            Rectangle pageBounds = pageSettings.GetBounds(modeHandle);
+            Rectangle pageBounds = pageSettings.GetBounds(_modeHandle);
             Rectangle marginBounds = new Rectangle(pageSettings.Margins.Left,
                                                    pageSettings.Margins.Top,
                                                    pageBounds.Width - (pageSettings.Margins.Left + pageSettings.Margins.Right),
@@ -266,28 +246,12 @@ namespace System.Drawing.Printing
             return pageEvent;
         }
 
-
         /// <summary>
         /// When overridden in a derived class, begins the control sequence of when and how to print a document.
         /// </summary>
         public virtual void OnStartPrint(PrintDocument document, PrintEventArgs e)
         {
-            modeHandle = (SafeDeviceModeHandle)document.PrinterSettings.GetHdevmode(document.DefaultPageSettings);
-        }
-
-        /// <summary>
-        /// When overridden in a derived class, begins the control sequence of when and how to print a page in a document.
-        /// </summary>
-        public virtual Graphics OnStartPage(PrintDocument document, PrintPageEventArgs e)
-        {
-            return null;
-        }
-
-        /// <summary>
-        /// When overridden in a derived class, completes the control sequence of when and how to print a page in a document.
-        /// </summary>
-        public virtual void OnEndPage(PrintDocument document, PrintPageEventArgs e)
-        {
+            _modeHandle = (SafeDeviceModeHandle)document.PrinterSettings.GetHdevmode(document.DefaultPageSettings);
         }
 
         /// <summary>
@@ -295,11 +259,7 @@ namespace System.Drawing.Printing
         /// </summary>
         public virtual void OnEndPrint(PrintDocument document, PrintEventArgs e)
         {
-            Debug.Assert((modeHandle != null), "modeHandle is null.  Someone must have forgot to call base.StartPrint");
-            if (modeHandle != null)
-            {
-                modeHandle.Close();
-            }
+            _modeHandle?.Close();
         }
     }
 }

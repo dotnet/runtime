@@ -9,10 +9,24 @@ internal partial class Interop
 {
     internal partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, PreserveSig = true)]
-        internal static extern IntPtr GlobalLock(IntPtr hMem);
+        [DllImport(Libraries.Kernel32, ExactSpelling = true, SetLastError = true)]
+        public static extern IntPtr GlobalLock(IntPtr hMem);
 
-        [DllImport(Libraries.Kernel32, PreserveSig = true)]
-        internal static extern int GlobalUnlock(IntPtr hMem);
+        public static IntPtr GlobalLock(HandleRef hMem)
+        {
+            IntPtr result = GlobalLock(hMem.Handle);
+            GC.KeepAlive(hMem.Wrapper);
+            return result;
+        }
+
+        [DllImport(Libraries.Kernel32, ExactSpelling = true)]
+        public static extern IntPtr GlobalUnlock(IntPtr hMem);
+
+        public static IntPtr GlobalUnlock(HandleRef hMem)
+        {
+            IntPtr result = GlobalUnlock(hMem.Handle);
+            GC.KeepAlive(hMem.Wrapper);
+            return result;
+        }
     }
 }
