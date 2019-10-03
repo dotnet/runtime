@@ -117,10 +117,15 @@ namespace Internal.JitInterface
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Pow, "Pow", "System", "MathF");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Exp, "Exp", "System", "Math");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Exp, "Exp", "System", "MathF");
+#if !READYTORUN
+            // These are normally handled via the SSE4.1 instructions ROUNDSS/ROUNDSD.
+            // However, we don't know the ISAs the target machine supports so we should
+            // fallback to the method call implementation instead.
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Ceiling, "Ceiling", "System", "Math");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Ceiling, "Ceiling", "System", "MathF");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Floor, "Floor", "System", "Math");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Floor, "Floor", "System", "MathF");
+#endif
             // table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetChar, null, null, null); // unused
             // table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Array_GetDimLength, "GetLength", "System", "Array"); // not handled
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Array_Get, "Get", null, null);
