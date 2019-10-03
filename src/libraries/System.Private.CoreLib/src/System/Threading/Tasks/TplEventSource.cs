@@ -67,7 +67,7 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>ETW tasks that have start/stop events.</summary>
-        public class Tasks // this name is important for EventSource
+        public static class Tasks // this name is important for EventSource
         {
             /// <summary>A parallel loop.</summary>
             public const EventTask Loop = (EventTask)1;
@@ -89,7 +89,7 @@ namespace System.Threading.Tasks
             public const EventTask TraceSynchronousWork = (EventTask)9;
         }
 
-        public class Keywords // thisname is important for EventSource
+        public static class Keywords // this name is important for EventSource
         {
             /// <summary>
             /// Only the most basic information about the workings of the task library

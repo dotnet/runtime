@@ -327,9 +327,6 @@ namespace System.Reflection
         {
             INVOCATION_FLAGS invocationFlags = InvocationFlags;
 
-            // get the declaring TypeHandle early for consistent exceptions in IntrospectionOnly context
-            RuntimeTypeHandle declaringTypeHandle = m_declaringType.TypeHandle;
-
             if ((invocationFlags & (INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE | INVOCATION_FLAGS.INVOCATION_FLAGS_CONTAINS_STACK_POINTERS | INVOCATION_FLAGS.INVOCATION_FLAGS_NO_CTOR_INVOKE)) != 0)
                 ThrowNoInvokeException();
 

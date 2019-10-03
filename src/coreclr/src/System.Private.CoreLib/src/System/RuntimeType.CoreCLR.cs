@@ -3512,7 +3512,6 @@ namespace System
             int argCnt = (providedArgs != null) ? providedArgs.Length : 0;
 
             binder ??= DefaultBinder;
-            bool bDefaultBinder = (binder == DefaultBinder);
 
             // Delegate to Activator.CreateInstance
             if ((bindingFlags & BindingFlags.CreateInstance) != 0)

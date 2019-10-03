@@ -1953,8 +1953,6 @@ namespace System.Text
 
             newValue ??= string.Empty;
 
-            int deltaLength = newValue.Length - oldValue.Length;
-
             int[]? replacements = null; // A list of replacement positions in a chunk to apply
             int replacementsCount = 0;
 
@@ -1992,7 +1990,6 @@ namespace System.Text
                 {
                     // Replacing mutates the blocks, so we need to convert to a logical index and back afterwards.
                     int index = indexInChunk + chunk.m_ChunkOffset;
-                    int indexBeforeAdjustment = index;
 
                     // See if we accumulated any replacements, if so apply them.
                     Debug.Assert(replacements != null || replacementsCount == 0, "replacements was null and replacementsCount != 0");

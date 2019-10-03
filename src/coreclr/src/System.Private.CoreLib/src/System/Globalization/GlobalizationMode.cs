@@ -4,7 +4,7 @@
 
 namespace System.Globalization
 {
-    internal sealed partial class GlobalizationMode
+    internal static partial class GlobalizationMode
     {
         internal static bool Invariant { get; } = GetGlobalizationInvariantMode();
 
