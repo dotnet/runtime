@@ -295,7 +295,7 @@ namespace System
             }
         }
 
-        public static string NewLine => "\n";
+        internal const string NewLineConst = "\n";
 
         private static OperatingSystem GetOSVersion() => GetOperatingSystem(Interop.Sys.GetUnixRelease());
 
