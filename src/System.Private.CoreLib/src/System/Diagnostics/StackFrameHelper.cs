@@ -45,7 +45,7 @@ namespace System.Diagnostics
         private static GetSourceLineInfoDelegate? s_getSourceLineInfo = null;
 
         [ThreadStatic]
-        private static int t_reentrancy = 0;
+        private static int t_reentrancy;
 
         public StackFrameHelper(Thread? target)
         {

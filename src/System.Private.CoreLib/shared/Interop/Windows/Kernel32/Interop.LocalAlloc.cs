@@ -5,9 +5,9 @@
 using System;
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Kernel32
+    internal static partial class Kernel32
     {
         internal const uint LMEM_FIXED = 0x0000;
         internal const uint LMEM_MOVEABLE = 0x0002;

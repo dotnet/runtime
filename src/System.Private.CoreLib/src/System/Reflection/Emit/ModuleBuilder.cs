@@ -113,7 +113,7 @@ namespace System.Reflection.Emit
         private static Type? GetType(string strFormat, Type baseType)
         {
             // This function takes a string to describe the compound type, such as "[,][]", and a baseType.
-            if (strFormat == null || strFormat.Equals(string.Empty))
+            if (string.IsNullOrEmpty(strFormat))
             {
                 return baseType;
             }

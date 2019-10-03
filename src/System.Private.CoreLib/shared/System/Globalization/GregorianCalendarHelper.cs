@@ -97,7 +97,7 @@ namespace System.Globalization
             0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366
         };
 
-        internal int m_maxYear = 9999;
+        internal int m_maxYear;
         internal int m_minYear;
         internal Calendar m_Cal;
 

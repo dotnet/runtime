@@ -4,9 +4,9 @@
 
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Kernel32
+    internal static partial class Kernel32
     {
         [DllImport(Libraries.Kernel32, EntryPoint = "GetEnvironmentStringsW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
         internal static extern unsafe char* GetEnvironmentStrings();

@@ -950,6 +950,7 @@ namespace System
                     break;
                 case 'r':
                 case 'R':       // RFC 1123 Standard
+                case 'u':       // Universal time in sortable format.
                     if (offset != NullOffset)
                     {
                         // Convert to UTC invariants mean this will be in range
@@ -958,14 +959,6 @@ namespace System
                     dtfi = DateTimeFormatInfo.InvariantInfo;
                     break;
                 case 's':       // Sortable without Time Zone Info
-                    dtfi = DateTimeFormatInfo.InvariantInfo;
-                    break;
-                case 'u':       // Universal time in sortable format.
-                    if (offset != NullOffset)
-                    {
-                        // Convert to UTC invariants mean this will be in range
-                        dateTime -= offset;
-                    }
                     dtfi = DateTimeFormatInfo.InvariantInfo;
                     break;
                 case 'U':       // Universal time in culture dependent format.
