@@ -24,7 +24,7 @@ namespace System.IO
         public static readonly TextWriter Null = new NullTextWriter();
 
         // We don't want to allocate on every TextWriter creation, so cache the char array.
-        private static readonly char[] s_coreNewLine = Environment.NewLine.ToCharArray();
+        private static readonly char[] s_coreNewLine = Environment.NewLineConst.ToCharArray();
 
         /// <summary>
         /// This is the 'NewLine' property expressed as a char[].
@@ -34,7 +34,7 @@ namespace System.IO
         /// as they are shared among many instances of TextWriter.
         /// </summary>
         protected char[] CoreNewLine = s_coreNewLine;
-        private string CoreNewLineStr = Environment.NewLine;
+        private string CoreNewLineStr = Environment.NewLineConst;
 
         // Can be null - if so, ask for the Thread's CurrentCulture every time.
         private readonly IFormatProvider? _internalFormatProvider;
@@ -126,7 +126,7 @@ namespace System.IO
             {
                 if (value == null)
                 {
-                    value = Environment.NewLine;
+                    value = Environment.NewLineConst;
                 }
 
                 CoreNewLineStr = value;

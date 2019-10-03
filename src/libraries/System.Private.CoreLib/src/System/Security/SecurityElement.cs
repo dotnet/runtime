@@ -510,7 +510,7 @@ namespace System.Security
 
                     if (i != _attributes.Count - 2)
                     {
-                        write(obj, Environment.NewLine);
+                        write(obj, Environment.NewLineConst);
                     }
                 }
             }
@@ -519,7 +519,7 @@ namespace System.Security
             {
                 // If we are a single tag with no children, just add the end of tag text.
                 write(obj, "/>");
-                write(obj, Environment.NewLine);
+                write(obj, Environment.NewLineConst);
             }
             else
             {
@@ -534,7 +534,7 @@ namespace System.Security
                 {
                     ConvertSecurityElementFactories();
 
-                    write(obj, Environment.NewLine);
+                    write(obj, Environment.NewLineConst);
 
                     for (int i = 0; i < _children.Count; ++i)
                     {
@@ -546,7 +546,7 @@ namespace System.Security
                 write(obj, "</");
                 write(obj, _tag);
                 write(obj, ">");
-                write(obj, Environment.NewLine);
+                write(obj, Environment.NewLineConst);
             }
         }
 

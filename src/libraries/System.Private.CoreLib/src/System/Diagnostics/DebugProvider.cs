@@ -29,11 +29,11 @@ namespace System.Diagnostics
 
         internal void WriteAssert(string stackTrace, string? message, string? detailMessage)
         {
-            WriteLine(SR.DebugAssertBanner + Environment.NewLine
-                   + SR.DebugAssertShortMessage + Environment.NewLine
-                   + message + Environment.NewLine
-                   + SR.DebugAssertLongMessage + Environment.NewLine
-                   + detailMessage + Environment.NewLine
+            WriteLine(SR.DebugAssertBanner + Environment.NewLineConst
+                   + SR.DebugAssertShortMessage + Environment.NewLineConst
+                   + message + Environment.NewLineConst
+                   + SR.DebugAssertLongMessage + Environment.NewLineConst
+                   + detailMessage + Environment.NewLineConst
                    + stackTrace);
         }
 
@@ -52,7 +52,7 @@ namespace System.Diagnostics
                     _needIndent = false;
                 }
                 WriteCore(message);
-                if (message.EndsWith(Environment.NewLine))
+                if (message.EndsWith(Environment.NewLineConst))
                 {
                     _needIndent = true;
                 }
@@ -61,7 +61,7 @@ namespace System.Diagnostics
 
         public virtual void WriteLine(string? message)
         {
-            Write(message + Environment.NewLine);
+            Write(message + Environment.NewLineConst);
         }
 
         public virtual void OnIndentLevelChanged(int indentLevel) { }
@@ -84,7 +84,7 @@ namespace System.Diagnostics
 
                 s = s.Trim();
                 if (s.Length > 0)
-                    s += Environment.NewLine;
+                    s += Environment.NewLineConst;
 
                 return s;
             }

@@ -95,7 +95,7 @@ namespace System.Globalization
                         return valueMessage;
                     }
 
-                    return s + Environment.NewLine + valueMessage;
+                    return s + Environment.NewLineConst + valueMessage;
                 }
                 return s;
             }

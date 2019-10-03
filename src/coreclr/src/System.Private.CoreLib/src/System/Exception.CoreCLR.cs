@@ -236,7 +236,7 @@ namespace System
 
             if (!string.IsNullOrEmpty(tmpStackTraceString))
             {
-                _remoteStackTraceString = tmpStackTraceString + Environment.NewLine;
+                _remoteStackTraceString = tmpStackTraceString + Environment.NewLineConst;
             }
 
             _stackTrace = null;
