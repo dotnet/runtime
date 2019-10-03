@@ -75,7 +75,7 @@ namespace ILCompiler
 
             if (!_profileData.PartialNGen)
             {
-                foreach (TypeDesc type in _module.GetAllTypes())
+                foreach (MetadataType type in _module.GetAllTypes())
                 {
                     try
                     {
@@ -87,11 +87,15 @@ namespace ILCompiler
                         continue;
                     }
 
-                    // If this is not a generic definition, root all methods
-                    if (!type.HasInstantiation)
+                    MetadataType typeWithMethods = type;
+                    if (type.HasInstantiation)
                     {
-                        RootMethods(type, "Library module method", rootProvider);
+                        typeWithMethods = InstantiateIfPossible(type);
+                        if (typeWithMethods == null)
+                            continue;
                     }
+
+                    RootMethods(typeWithMethods, "Library module method", rootProvider);
                 }
             }
         }
@@ -100,17 +104,26 @@ namespace ILCompiler
         {
             foreach (MethodDesc method in type.GetAllMethods())
             {
-                // Skip methods with no IL and uninstantiated generic methods
-                if (method.IsAbstract || method.HasInstantiation)
+                // Skip methods with no IL
+                if (method.IsAbstract)
                     continue;
 
                 if (method.IsInternalCall)
                     continue;
 
+                MethodDesc methodToRoot = method;
+                if (method.HasInstantiation)
+                {
+                    methodToRoot = InstantiateIfPossible(method);
+
+                    if (methodToRoot == null)
+                        continue;
+                }
+
                 try
                 {
-                    CheckCanGenerateMethod(method);
-                    rootProvider.AddCompilationRoot(method, reason);
+                    CheckCanGenerateMethod(methodToRoot);
+                    rootProvider.AddCompilationRoot(methodToRoot, reason);
                 }
                 catch (TypeSystemException)
                 {
@@ -150,6 +163,48 @@ namespace ILCompiler
             {
                 defType.ComputeTypeContainsGCPointers();
             }
+        }
+
+        private static Instantiation GetInstantiationThatMeetsConstraints(Instantiation definition)
+        {
+            TypeDesc[] args = new TypeDesc[definition.Length];
+
+            for (int i = 0; i < definition.Length; i++)
+            {
+                GenericParameterDesc genericParameter = (GenericParameterDesc)definition[i];
+
+                // If the parameter is not constrained to be a valuetype, we can instantiate over __Canon
+                if (genericParameter.HasNotNullableValueTypeConstraint)
+                {
+                    return default;
+                }
+
+                args[i] = genericParameter.Context.CanonType;
+            }
+
+            return new Instantiation(args);
+        }
+
+        private static InstantiatedType InstantiateIfPossible(MetadataType type)
+        {
+            Instantiation inst = GetInstantiationThatMeetsConstraints(type.Instantiation);
+            if (inst.IsNull)
+            {
+                return null;
+            }
+
+            return type.MakeInstantiatedType(inst);
+        }
+
+        private static MethodDesc InstantiateIfPossible(MethodDesc method)
+        {
+            Instantiation inst = GetInstantiationThatMeetsConstraints(method.Instantiation);
+            if (inst.IsNull)
+            {
+                return null;
+            }
+
+            return method.MakeInstantiatedMethod(inst);
         }
     }
 }
