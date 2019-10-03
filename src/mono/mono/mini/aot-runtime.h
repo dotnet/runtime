@@ -11,7 +11,7 @@
 #include "mini.h"
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION 170
+#define MONO_AOT_FILE_VERSION 171
 
 #define MONO_AOT_TRAMP_PAGE_SIZE 16384
 
@@ -200,6 +200,8 @@ typedef struct MonoAotFileInfo
 	guint32 double_align, long_align, generic_tramp_num, card_table_shift_bits, card_table_mask;
 	/* The page size used by trampoline pages */
 	guint32 tramp_page_size;
+	/* Size of each entry stored at method_addresses */
+	guint32 call_table_entry_size;
 	/*
 	 * The number of GOT entries which need to be preinitialized when the
 	 * module is loaded.

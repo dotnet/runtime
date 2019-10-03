@@ -329,6 +329,7 @@ typedef struct MonoAotCompile {
 
 	MonoAotOptions aot_opts;
 	guint32 nmethods;
+	int call_table_entry_size;
 	guint32 nextra_methods;
 	guint32 opts;
 	guint32 simd_opts;
@@ -10096,12 +10097,10 @@ emit_code (MonoAotCompile *acfg)
 
 	for (i = 0; i < acfg->nmethods; ++i) {
 #ifdef MONO_ARCH_AOT_SUPPORTED
-		int call_size;
-
 		if (!ignore_cfg (acfg->cfgs [i])) {
-			arch_emit_label_address (acfg, acfg->cfgs [i]->asm_symbol, FALSE, acfg->thumb_mixed && acfg->cfgs [i]->compile_llvm, NULL, &call_size);
+			arch_emit_label_address (acfg, acfg->cfgs [i]->asm_symbol, FALSE, acfg->thumb_mixed && acfg->cfgs [i]->compile_llvm, NULL, &acfg->call_table_entry_size);
 		} else {
-			arch_emit_label_address (acfg, symbol, FALSE, FALSE, NULL, &call_size);
+			arch_emit_label_address (acfg, symbol, FALSE, FALSE, NULL, &acfg->call_table_entry_size);
 		}
 #endif
 	}
@@ -11117,6 +11116,7 @@ init_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 	info->got_size = acfg->got_offset * sizeof (target_mgreg_t);
 	info->plt_size = acfg->plt_offset;
 	info->nmethods = acfg->nmethods;
+	info->call_table_entry_size = acfg->call_table_entry_size;
 	info->nextra_methods = acfg->nextra_methods;
 	info->flags = acfg->flags;
 	info->opts = acfg->opts;
@@ -11284,6 +11284,7 @@ emit_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 	emit_int32 (acfg, info->card_table_shift_bits);
 	emit_int32 (acfg, info->card_table_mask);
 	emit_int32 (acfg, info->tramp_page_size);
+	emit_int32 (acfg, info->call_table_entry_size);
 	emit_int32 (acfg, info->nshared_got_entries);
 	emit_int32 (acfg, info->datafile_size);
 	emit_int32 (acfg, 0);
