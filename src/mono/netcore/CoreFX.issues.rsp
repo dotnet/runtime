@@ -61,6 +61,13 @@
 -nomethod BasicEventSourceTests.TestsManifestNegative.Test_GenerateManifest_InvalidEventSources
 
 ####################################################################
+##  System.Drawing.Common.Tests
+####################################################################
+
+# System.ArgumentException Arg_ObjObjEx
+-nomethod System.Drawing.Imaging.Tests.ImageAttributesTests.SetColorMatrix_InvalidFlags_ThrowsArgumentException
+
+####################################################################
 ##  System.Dynamic.Runtime.Tests
 ####################################################################
 
