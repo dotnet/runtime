@@ -1417,6 +1417,7 @@ glong     g_utf8_pointer_to_offset (const gchar *str, const gchar *pos);
 #define G_UNSUPPORTED_API "%s:%d: '%s' not supported.", __FILE__, __LINE__
 #define g_unsupported_api(name) G_STMT_START { g_warning (G_UNSUPPORTED_API, name); } G_STMT_END
 
+#if _WIN32
 // g_free the result
 // No MAX_PATH limit.
 gboolean
@@ -1436,6 +1437,7 @@ mono_get_module_basename (gpointer process, gpointer mod, gunichar2 **pstr, guin
 // No MAX_PATH limit.
 gboolean
 mono_get_current_directory (gunichar2 **pstr, guint32 *plength);
+#endif
 
 G_END_DECLS // FIXME: There is more extern C than there should be.
 
