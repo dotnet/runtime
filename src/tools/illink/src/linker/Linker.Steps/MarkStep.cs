@@ -2333,7 +2333,8 @@ namespace Mono.Linker.Steps {
 
 						first_arg_instr = GetInstructionAtStackDepth (instructions, i - 1, methodCalledDefinition.Parameters.Count);
 						if (first_arg_instr < 0) {
-							_context.LogMessage (MessageImportance.Low, $"Reflection call '{methodCalled.FullName}' couldn't be decomposed");
+							if (!HasManuallyTrackedDependency (body))
+								_context.LogMessage (MessageImportance.Low, $"Reflection call '{methodCalled.FullName}' inside '{body.Method.FullName}' couldn't be decomposed");
 							continue;
 						}
 
@@ -2348,7 +2349,8 @@ namespace Mono.Linker.Steps {
 							// The next value must be string constant (we don't handle anything else)
 							//
 							if (first_arg.OpCode != OpCodes.Ldstr) {
-								_context.LogMessage (MessageImportance.Low, $"Reflection call '{methodCalled.FullName}' was detected with argument which cannot be analyzed");
+								if (!HasManuallyTrackedDependency (body))
+									_context.LogMessage (MessageImportance.Low, $"Reflection call '{methodCalled.FullName}' inside '{body.Method.FullName}' was detected with argument which cannot be analyzed");
 								continue;
 							}
 
@@ -2362,7 +2364,8 @@ namespace Mono.Linker.Steps {
 
 						var declaringType = FindReflectionTypeForLookup (instructions, first_arg_instr - 1);
 						if (declaringType == null) {
-							_context.LogMessage (MessageImportance.Low, $"Reflection call '{methodCalled.FullName}' does not use detectable instance type extraction");
+							 if (!HasManuallyTrackedDependency (body))
+								_context.LogMessage (MessageImportance.Low, $"Reflection call '{methodCalled.FullName}' inside '{body.Method.FullName}' does not use detectable instance type extraction");
 							continue;
 						}
 
@@ -2400,7 +2403,8 @@ namespace Mono.Linker.Steps {
 
 						first_arg_instr = GetInstructionAtStackDepth (instructions, i - 1, methodCalledDefinition.Parameters.Count);
 						if (first_arg_instr < 0) {
-							_context.LogMessage (MessageImportance.Low, $"Reflection call '{methodCalled.FullName}' couldn't be decomposed");
+							if (!HasManuallyTrackedDependency (body))
+								_context.LogMessage (MessageImportance.Low, $"Reflection call '{methodCalled.FullName}' inside '{body.Method.FullName}' couldn't be decomposed");
 							continue;
 						}
 
@@ -2409,7 +2413,8 @@ namespace Mono.Linker.Steps {
 						//
 						first_arg = instructions [first_arg_instr];
 						if (first_arg.OpCode != OpCodes.Ldstr) {
-							_context.LogMessage (MessageImportance.Low, $"Reflection call '{methodCalled.FullName}' was detected with argument which cannot be analyzed");
+							if (!HasManuallyTrackedDependency (body))
+								_context.LogMessage (MessageImportance.Low, $"Reflection call '{methodCalled.FullName}' inside '{body.Method.FullName}' was detected with argument which cannot be analyzed");
 							continue;
 						}
 
@@ -2462,7 +2467,8 @@ namespace Mono.Linker.Steps {
 					case "Call":
 						first_arg_instr = GetInstructionAtStackDepth (instructions, i - 1, 4);
 						if (first_arg_instr < 0) {
-							_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' couldn't be decomposed");
+							if (!HasManuallyTrackedDependency (body))
+								_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' inside '{body.Method.FullName}' couldn't be decomposed");
 							continue;
 						}
 
@@ -2471,15 +2477,17 @@ namespace Mono.Linker.Steps {
 							first_arg_instr++;
 
 						declaringType = FindReflectionTypeForLookup (instructions, first_arg_instr);
-						if (declaringType == null) {
-							_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' was detected with 1st argument which cannot be analyzed");
+						if (declaringType == null ) {
+							if (!HasManuallyTrackedDependency (body))
+								_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' inside '{body.Method.FullName}' was detected with 1st argument which cannot be analyzed");
 							continue;
 						}
 
 						second_arg_instr = GetInstructionAtStackDepth (instructions, i - 1, 3);
 						second_argument = instructions [second_arg_instr];
 						if (second_argument.OpCode != OpCodes.Ldstr) {
-							_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' was detected with 2nd argument which cannot be analyzed");
+							if (!HasManuallyTrackedDependency (body))
+								_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' inside '{body.Method.FullName}' was detected with 2nd argument which cannot be analyzed");
 							continue;
 						}
 
@@ -2498,7 +2506,8 @@ namespace Mono.Linker.Steps {
 
 						second_arg_instr = GetInstructionAtStackDepth (instructions, i - 1, 2);
 						if (second_arg_instr < 0) {
-							_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' couldn't be decomposed");
+							if (!HasManuallyTrackedDependency (body))
+								_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' inside '{body.Method.FullName}' couldn't be decomposed");
 							continue;
 						}
 
@@ -2508,14 +2517,16 @@ namespace Mono.Linker.Steps {
 
 						declaringType = FindReflectionTypeForLookup (instructions, second_arg_instr);
 						if (declaringType == null) {
-							_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' was detected with 2nd argument which cannot be analyzed");
+							if (!HasManuallyTrackedDependency (body))
+								_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' inside '{body.Method.FullName}' was detected with 2nd argument which cannot be analyzed");
 							continue;
 						}
 
 						var third_arg_inst = GetInstructionAtStackDepth (instructions, i - 1, 1);
 						var third_argument = instructions [third_arg_inst];
 						if (third_argument.OpCode != OpCodes.Ldstr) {
-							_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' was detected with the 3rd argument which cannot be analyzed");
+							if (!HasManuallyTrackedDependency (body))
+								_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' inside '{body.Method.FullName}' was detected with the 3rd argument which cannot be analyzed");
 							continue;
 						}
 
@@ -2551,6 +2562,11 @@ namespace Mono.Linker.Steps {
 
 					continue;
 				}
+			}
+
+			bool HasManuallyTrackedDependency (MethodBody methodBody)
+			{
+				return PreserveDependencyLookupStep.HasPreserveDependencyAttribute (methodBody.Method);
 			}
 		}
 

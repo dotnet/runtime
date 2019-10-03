@@ -64,6 +64,19 @@ namespace Mono.Linker.Steps {
 			return tr.Name == "PreserveDependencyAttribute" && tr.Namespace == "System.Runtime.CompilerServices";
 		}
 
+		public static bool HasPreserveDependencyAttribute (MethodDefinition method)
+		{
+			if (!method.HasCustomAttributes)
+				return false;
+
+			foreach (var ca in method.CustomAttributes) {
+				if (IsPreserveDependencyAttribute (ca.AttributeType))
+					return true;
+			}
+
+			return false;
+		}
+
 		void ProcessPreserveDependencyAttribute (Collection<CustomAttribute> attributes)
 		{
 			foreach (var ca in attributes) {
