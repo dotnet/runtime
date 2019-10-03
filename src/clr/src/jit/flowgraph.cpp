@@ -18838,6 +18838,13 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
             }
             break;
 
+        case GT_FIELD_LIST:
+            for (GenTreeFieldList::Use& use : tree->AsFieldList()->Uses())
+            {
+                fgSetTreeSeqHelper(use.GetNode(), isLIR);
+            }
+            break;
+
         case GT_CMPXCHG:
             // Evaluate the trees left to right
             fgSetTreeSeqHelper(tree->gtCmpXchg.gtOpLocation, isLIR);
@@ -18889,8 +18896,7 @@ void Compiler::fgSetTreeSeqFinish(GenTree* tree, bool isLIR)
     {
         tree->gtFlags &= ~GTF_REVERSE_OPS;
 
-        if ((tree->OperGet() == GT_LIST) || (tree->OperGet() == GT_ARGPLACE) ||
-            (tree->OperGet() == GT_FIELD_LIST && !tree->AsFieldList()->IsFieldListHead()))
+        if (tree->OperIs(GT_LIST, GT_ARGPLACE))
         {
             return;
         }
@@ -21209,7 +21215,6 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                 break;
 
             case GT_LIST:
-            case GT_FIELD_LIST:
                 if ((op2 != nullptr) && op2->OperIsAnyList())
                 {
                     ArrayStack<GenTree*> stack(getAllocator(CMK_DebugOnly));
@@ -21426,6 +21431,14 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 
             case GT_PHI:
                 for (GenTreePhi::Use& use : tree->AsPhi()->Uses())
+                {
+                    fgDebugCheckFlags(use.GetNode());
+                    chkFlags |= (use.GetNode()->gtFlags & GTF_ALL_EFFECT);
+                }
+                break;
+
+            case GT_FIELD_LIST:
+                for (GenTreeFieldList::Use& use : tree->AsFieldList()->Uses())
                 {
                     fgDebugCheckFlags(use.GetNode());
                     chkFlags |= (use.GetNode()->gtFlags & GTF_ALL_EFFECT);

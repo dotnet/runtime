@@ -1546,9 +1546,6 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, BasicBlock* block, Lsra
     assert(tree->OperGet() != GT_LIST);
     assert(tree->OperGet() != GT_CLS_VAR);
 
-    // The LIR traversal visits only the first node in a GT_FIELD_LIST.
-    assert((tree->OperGet() != GT_FIELD_LIST) || tree->AsFieldList()->IsFieldListHead());
-
     // The set of internal temporary registers used by this node are stored in the
     // gtRsvdRegs register mask. Clear it out.
     tree->gtRsvdRegs = RBM_NONE;

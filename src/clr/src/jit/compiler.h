@@ -9981,6 +9981,17 @@ public:
                 }
                 break;
 
+            case GT_FIELD_LIST:
+                for (GenTreeFieldList::Use& use : node->AsFieldList()->Uses())
+                {
+                    result = WalkTree(&use.NodeRef(), node);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+                }
+                break;
+
             case GT_CMPXCHG:
             {
                 GenTreeCmpXchg* const cmpXchg = node->AsCmpXchg();

@@ -5361,23 +5361,12 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         // Deal with multi register passed struct args.
         if (argNode->OperGet() == GT_FIELD_LIST)
         {
-            GenTreeFieldList* fieldListPtr = argNode->AsFieldList();
-            unsigned          iterationNum = 0;
-            for (; fieldListPtr != nullptr; fieldListPtr = fieldListPtr->Rest(), iterationNum++)
+            unsigned regIndex = 0;
+            for (GenTreeFieldList::Use& use : argNode->AsFieldList()->Uses())
             {
-                GenTree* putArgRegNode = fieldListPtr->gtOp.gtOp1;
+                GenTree* putArgRegNode = use.GetNode();
                 assert(putArgRegNode->gtOper == GT_PUTARG_REG);
-                regNumber argReg = REG_NA;
-
-                if (iterationNum == 0)
-                {
-                    argReg = curArgTabEntry->regNum;
-                }
-                else
-                {
-                    assert(iterationNum == 1);
-                    argReg = curArgTabEntry->GetOtherRegNum();
-                }
+                regNumber argReg = curArgTabEntry->getRegNum(regIndex++);
 
                 genConsumeReg(putArgRegNode);
 
@@ -5431,7 +5420,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             assert(curArgTabEntry != nullptr);
             assert(size == (curArgTabEntry->numSlots * TARGET_POINTER_SIZE));
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
-            if (source->TypeGet() == TYP_STRUCT)
+            if (!source->OperIs(GT_FIELD_LIST) && (source->TypeGet() == TYP_STRUCT))
             {
                 GenTreeObj* obj      = source->AsObj();
                 unsigned    argBytes = roundUp(obj->GetLayout()->GetSize(), TARGET_POINTER_SIZE);
@@ -7729,11 +7718,11 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
         assert(genCountBits(rsvdRegs) == (unsigned)((intTmpReg == REG_NA) ? 0 : 1) + ((simdTmpReg == REG_NA) ? 0 : 1));
     }
 
-    for (GenTreeFieldList* current = fieldList; current != nullptr; current = current->Rest())
+    for (GenTreeFieldList::Use& use : fieldList->Uses())
     {
-        GenTree* const fieldNode   = current->Current();
-        const unsigned fieldOffset = current->gtFieldOffset;
-        var_types      fieldType   = current->gtFieldType;
+        GenTree* const fieldNode   = use.GetNode();
+        const unsigned fieldOffset = use.GetOffset();
+        var_types      fieldType   = use.GetType();
 
         // Long-typed nodes should have been handled by the decomposition pass, and lowering should have sorted the
         // field list in descending order by offset.

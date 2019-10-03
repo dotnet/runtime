@@ -4269,11 +4269,7 @@ void GenTree::VisitOperands(TVisitor visitor)
             visitor(this->AsUnOp()->gtOp1);
             return;
 
-        // Variadic nodes
-        case GT_FIELD_LIST:
-            VisitListOperands(visitor);
-            return;
-
+// Variadic nodes
 #ifdef FEATURE_SIMD
         case GT_SIMD:
             if (this->AsSIMD()->gtSIMDIntrinsicID == SIMDIntrinsicInitN)
@@ -4306,6 +4302,16 @@ void GenTree::VisitOperands(TVisitor visitor)
             for (GenTreePhi::Use& use : AsPhi()->Uses())
             {
                 if (visitor(use.GetNode()) == VisitResult::Abort)
+                {
+                    break;
+                }
+            }
+            return;
+
+        case GT_FIELD_LIST:
+            for (GenTreeFieldList::Use& field : AsFieldList()->Uses())
+            {
+                if (visitor(field.GetNode()) == VisitResult::Abort)
                 {
                     break;
                 }
