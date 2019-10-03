@@ -1263,8 +1263,11 @@ DPTR(VALUE) NgenHashTable<NGEN_HASH_ARGS>::FindVolatileEntryByHash(NgenHashValue
     // Since there is at least one entry there must be at least one bucket.
     _ASSERTE(m_cWarmBuckets > 0);
 
+    // Compute which bucket the entry belongs in based on the hash.
+    DWORD dwBucket = iHash % VolatileLoad(&m_cWarmBuckets);
+
     // Point at the first entry in the bucket chain which would contain any entries with the given hash code.
-    PTR_VolatileEntry pEntry = (GetWarmBuckets())[iHash % m_cWarmBuckets];
+    PTR_VolatileEntry pEntry = (GetWarmBuckets())[dwBucket];
 
     // Walk the bucket chain one entry at a time.
     while (pEntry)
