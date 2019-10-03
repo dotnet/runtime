@@ -17,7 +17,7 @@ resources:
     image: microsoft/dotnet-buildtools-prereqs:centos-6-376e1a3-20174311014331
 
   - container: alpine_36_container
-    image: microsoft/dotnet-buildtools-prereqs:alpine-3.6-WithNode-f4d3fe3-20181213005010
+    image: mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.9-WithNode-0fc54a3-20190918214015
 
   - container: alpine_37_arm64_container
     image: microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-arm64-alpine10fcdcf-20190208200917
