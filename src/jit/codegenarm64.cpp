@@ -1911,7 +1911,7 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
 
     genUpdateLife(tree);
 
-    varDsc->lvRegNum = REG_STK;
+    varDsc->SetRegNum(REG_STK);
 }
 
 //------------------------------------------------------------------------
@@ -1988,7 +1988,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
 
             genUpdateLife(tree);
 
-            varDsc->lvRegNum = REG_STK;
+            varDsc->SetRegNum(REG_STK);
         }
         else // store into register (i.e move into register)
         {
@@ -3319,8 +3319,8 @@ void CodeGen::genCodeForSwap(GenTreeOp* tree)
     regMaskTP oldOp2RegMask = genRegMask(oldOp2Reg);
 
     // We don't call genUpdateVarReg because we don't have a tree node with the new register.
-    varDsc1->lvRegNum = oldOp2Reg;
-    varDsc2->lvRegNum = oldOp1Reg;
+    varDsc1->SetRegNum(oldOp2Reg);
+    varDsc2->SetRegNum(oldOp1Reg);
 
     // Do the xchg
     emitAttr size = EA_PTRSIZE;
