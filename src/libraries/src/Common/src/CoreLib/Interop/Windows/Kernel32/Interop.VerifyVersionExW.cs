@@ -4,9 +4,9 @@
 
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Kernel32
+    internal static partial class Kernel32
     {
         internal const byte VER_GREATER_EQUAL = 0x3;
         internal const uint VER_MAJORVERSION = 0x0000002;

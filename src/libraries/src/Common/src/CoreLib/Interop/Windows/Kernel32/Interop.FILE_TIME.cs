@@ -4,9 +4,9 @@
 
 using System;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Kernel32
+    internal static partial class Kernel32
     {
         internal struct FILE_TIME
         {

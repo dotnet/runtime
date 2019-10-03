@@ -6,9 +6,9 @@ using Microsoft.Win32.SafeHandles;
 using System;
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class NtDll
+    internal static partial class NtDll
     {
         [DllImport(Libraries.NtDll, ExactSpelling = true)]
         internal static extern unsafe int NtQueryInformationFile(

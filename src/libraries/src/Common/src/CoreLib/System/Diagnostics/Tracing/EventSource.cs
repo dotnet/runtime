@@ -308,9 +308,8 @@ namespace System.Diagnostics.Tracing
             {
                 if (attrib.Guid != null)
                 {
-                    Guid g = Guid.Empty;
 #if !ES_BUILD_AGAINST_DOTNET_V35
-                    if (Guid.TryParse(attrib.Guid, out g))
+                    if (Guid.TryParse(attrib.Guid, out Guid g))
                         return g;
 #else
                     try { return new Guid(attrib.Guid); }
@@ -2654,7 +2653,6 @@ namespace System.Diagnostics.Tracing
 #endif
 
             m_outOfBandMessageCount = 0;
-            bool shouldReport = (commandArgs.perEventSourceSessionId > 0) && (commandArgs.perEventSourceSessionId <= SessionMask.MAX);
             try
             {
                 EnsureDescriptorsInitialized();
@@ -2924,12 +2922,10 @@ namespace System.Diagnostics.Tracing
 
         // Send out the ETW manifest XML out to ETW
         // Today, we only send the manifest to ETW, custom listeners don't get it.
-        private unsafe bool SendManifest(byte[]? rawManifest)
+        private unsafe void SendManifest(byte[]? rawManifest)
         {
-            bool success = true;
-
             if (rawManifest == null)
-                return false;
+                return;
 
             Debug.Assert(!SelfDescribingEvents);
 
@@ -2978,7 +2974,7 @@ namespace System.Diagnostics.Tracing
                                     goto TRY_AGAIN_WITH_SMALLER_CHUNK_SIZE;
                                 }
                             }
-                            success = false;
+
                             if (ThrowOnEventWriteErrors)
                                 ThrowEventSourceException("SendManifest");
                             break;
@@ -2997,7 +2993,6 @@ namespace System.Diagnostics.Tracing
                 }
             }
 #endif // FEATURE_MANAGED_ETW
-            return success;
         }
 
 #if (ES_BUILD_PCL)
@@ -3028,13 +3023,6 @@ namespace System.Diagnostics.Tracing
             }
 
 #if (!ES_BUILD_PCL && !ES_BUILD_PN)
-            // In the reflection only context, we have to do things by hand.
-            string fullTypeNameToFind = attributeType.FullName!;
-
-#if EVENT_SOURCE_LEGACY_NAMESPACE_SUPPORT
-            fullTypeNameToFind = fullTypeNameToFind.Replace("System.Diagnostics.Eventing", "System.Diagnostics.Tracing");
-#endif
-
             foreach (CustomAttributeData data in CustomAttributeData.GetCustomAttributes(member))
             {
                 if (AttributeTypeNamesMatch(attributeType, data.Constructor.ReflectedType!))
@@ -3878,10 +3866,10 @@ namespace System.Diagnostics.Tracing
 
         internal static uint s_currentPid;              // current process id, used in synthesizing quasi-GUIDs
         [ThreadStatic]
-        private static byte m_EventSourceExceptionRecurenceCount = 0; // current recursion count inside ThrowEventSourceException
+        private static byte m_EventSourceExceptionRecurenceCount; // current recursion count inside ThrowEventSourceException
 
         [ThreadStatic]
-        private static bool m_EventSourceInDecodeObject = false;
+        private static bool m_EventSourceInDecodeObject;
 
 #if FEATURE_MANAGED_ETW_CHANNELS
         internal volatile ulong[]? m_channelData;
@@ -4514,7 +4502,7 @@ namespace System.Diagnostics.Tracing
         /// and another EventSource is created as part of the process.
         /// </summary>
         [ThreadStatic]
-        private static bool s_ConnectingEventSourcesAndListener = false;
+        private static bool s_ConnectingEventSourcesAndListener;
 #endif
 
         /// <summary>

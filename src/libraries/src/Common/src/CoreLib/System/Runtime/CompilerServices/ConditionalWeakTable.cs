@@ -266,9 +266,9 @@ namespace System.Runtime.CompilerServices
             // there is any outstanding enumerator, no compaction is performed.
 
             private ConditionalWeakTable<TKey, TValue>? _table; // parent table, set to null when disposed
-            private readonly int _maxIndexInclusive;           // last index in the container that should be enumerated
-            private int _currentIndex = -1;                    // the current index into the container
-            private KeyValuePair<TKey, TValue> _current;       // the current entry set by MoveNext and returned from Current
+            private readonly int _maxIndexInclusive;            // last index in the container that should be enumerated
+            private int _currentIndex;                          // the current index into the container
+            private KeyValuePair<TKey, TValue> _current;        // the current entry set by MoveNext and returned from Current
 
             public Enumerator(ConditionalWeakTable<TKey, TValue> table)
             {
