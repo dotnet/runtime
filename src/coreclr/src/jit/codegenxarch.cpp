@@ -187,7 +187,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
         // Note: On Amd64 System V RDX is an arg register - REG_ARG_2 - as well
         // as return register for two-register-returned structs.
         if (compiler->lvaKeepAliveAndReportThis() && compiler->lvaTable[compiler->info.compThisArg].lvRegister &&
-            (compiler->lvaTable[compiler->info.compThisArg].lvRegNum == REG_ARG_0))
+            (compiler->lvaTable[compiler->info.compThisArg].GetRegNum() == REG_ARG_0))
         {
             regGSCheck = REG_ARG_1;
         }
@@ -1362,7 +1362,7 @@ void CodeGen::genFloatReturn(GenTree* treeNode)
     // If it already has a home location, use that. Otherwise, we need a temp.
     if (genIsRegCandidateLocal(op1) && compiler->lvaTable[op1->gtLclVarCommon.GetLclNum()].lvOnFrame)
     {
-        if (compiler->lvaTable[op1->gtLclVarCommon.GetLclNum()].lvRegNum != REG_STK)
+        if (compiler->lvaTable[op1->gtLclVarCommon.GetLclNum()].GetRegNum() != REG_STK)
         {
             op1->gtFlags |= GTF_SPILL;
             inst_TT_RV(ins_Store(op1->gtType, compiler->isSIMDTypeLocalAligned(op1->gtLclVarCommon.GetLclNum())), op1,
@@ -2162,7 +2162,7 @@ void CodeGen::genMultiRegCallStoreToLocal(GenTree* treeNode)
             offset += genTypeSize(type);
         }
 
-        varDsc->lvRegNum = REG_STK;
+        varDsc->SetRegNum(REG_STK);
     }
 #elif defined(_TARGET_X86_)
     // Longs are returned in two return registers on x86.
@@ -2208,7 +2208,7 @@ void CodeGen::genMultiRegCallStoreToLocal(GenTree* treeNode)
         offset += genTypeSize(type);
     }
 
-    varDsc->lvRegNum = REG_STK;
+    varDsc->SetRegNum(REG_STK);
 #else  // !UNIX_AMD64_ABI && !_TARGET_X86_
     assert(!"Unreached");
 #endif // !UNIX_AMD64_ABI && !_TARGET_X86_
@@ -4711,7 +4711,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
             // stack store
             emit->emitInsStoreLcl(ins_Store(targetType, compiler->isSIMDTypeLocalAligned(lclNum)),
                                   emitTypeSize(targetType), tree);
-            varDsc->lvRegNum = REG_STK;
+            varDsc->SetRegNum(REG_STK);
         }
         else
         {
@@ -4983,7 +4983,7 @@ void CodeGen::genRegCopy(GenTree* treeNode)
                 LclVarDsc* varDsc = &compiler->lvaTable[lcl->GetLclNum()];
 
                 // If we didn't just spill it (in genConsumeReg, above), then update the register info
-                if (varDsc->lvRegNum != REG_STK)
+                if (varDsc->GetRegNum() != REG_STK)
                 {
                     // The old location is dying
                     genUpdateRegLife(varDsc, /*isBorn*/ false, /*isDying*/ true DEBUGARG(op1));
@@ -5195,8 +5195,8 @@ void CodeGen::genCodeForSwap(GenTreeOp* tree)
     regMaskTP oldOp2RegMask = genRegMask(oldOp2Reg);
 
     // We don't call genUpdateVarReg because we don't have a tree node with the new register.
-    varDsc1->lvRegNum = oldOp2Reg;
-    varDsc2->lvRegNum = oldOp1Reg;
+    varDsc1->SetRegNum(oldOp2Reg);
+    varDsc2->SetRegNum(oldOp1Reg);
 
     // Do the xchg
     emitAttr size = EA_PTRSIZE;
@@ -5960,19 +5960,19 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         }
         noway_assert(varDsc->lvIsParam);
 
-        if (varDsc->lvIsRegArg && (varDsc->lvRegNum != REG_STK))
+        if (varDsc->lvIsRegArg && (varDsc->GetRegNum() != REG_STK))
         {
             // Skip reg args which are already in its right register for jmp call.
             // If not, we will spill such args to their stack locations.
             //
             // If we need to generate a tail call profiler hook, then spill all
             // arg regs to free them up for the callback.
-            if (!compiler->compIsProfilerHookNeeded() && (varDsc->lvRegNum == varDsc->lvArgReg))
+            if (!compiler->compIsProfilerHookNeeded() && (varDsc->GetRegNum() == varDsc->lvArgReg))
             {
                 continue;
             }
         }
-        else if (varDsc->lvRegNum == REG_STK)
+        else if (varDsc->GetRegNum() == REG_STK)
         {
             // Skip args which are currently living in stack.
             continue;
@@ -5981,15 +5981,15 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         // If we came here it means either a reg argument not in the right register or
         // a stack argument currently living in a register.  In either case the following
         // assert should hold.
-        assert(varDsc->lvRegNum != REG_STK);
+        assert(varDsc->GetRegNum() != REG_STK);
 
         assert(!varDsc->lvIsStructField || (compiler->lvaTable[varDsc->lvParentLcl].lvFieldCnt == 1));
         var_types storeType = genActualType(varDsc->lvaArgType()); // We own the memory and can use the full move.
-        GetEmitter()->emitIns_S_R(ins_Store(storeType), emitTypeSize(storeType), varDsc->lvRegNum, varNum, 0);
+        GetEmitter()->emitIns_S_R(ins_Store(storeType), emitTypeSize(storeType), varDsc->GetRegNum(), varNum, 0);
 
         // Update lvRegNum life and GC info to indicate lvRegNum is dead and varDsc stack slot is going live.
-        // Note that we cannot modify varDsc->lvRegNum here because another basic block may not be expecting it.
-        // Therefore manually update life of varDsc->lvRegNum.
+        // Note that we cannot modify varDsc->GetRegNum() here because another basic block may not be expecting it.
+        // Therefore manually update life of varDsc->GetRegNum().
         regMaskTP tempMask = varDsc->lvRegMask();
         regSet.RemoveMaskVars(tempMask);
         gcInfo.gcMarkRegSetNpt(tempMask);
@@ -6059,8 +6059,9 @@ void CodeGen::genJmpMethod(GenTree* jmp)
             //
 
             // Update varDsc->lvArgReg and lvOtherArgReg life and GC Info to indicate varDsc stack slot is dead and
-            // argReg is going live. Note that we cannot modify varDsc->lvRegNum and lvOtherArgReg here because another
-            // basic block may not be expecting it. Therefore manually update life of argReg.  Note that GT_JMP marks
+            // argReg is going live. Note that we cannot modify varDsc->GetRegNum() and lvOtherArgReg here
+            // because another basic block may not be expecting it.
+            // Therefore manually update life of argReg.  Note that GT_JMP marks
             // the end of the basic block and after which reg life and gc info will be recomputed for the new block in
             // genCodeForBBList().
             if (type0 != TYP_UNKNOWN)
@@ -6094,15 +6095,16 @@ void CodeGen::genJmpMethod(GenTree* jmp)
             var_types loadType = varDsc->lvaArgType();
             regNumber argReg   = varDsc->lvArgReg; // incoming arg register
 
-            if (varDsc->lvRegNum != argReg)
+            if (varDsc->GetRegNum() != argReg)
             {
                 assert(genIsValidReg(argReg));
                 GetEmitter()->emitIns_R_S(ins_Load(loadType), emitTypeSize(loadType), argReg, varNum, 0);
 
                 // Update argReg life and GC Info to indicate varDsc stack slot is dead and argReg is going live.
-                // Note that we cannot modify varDsc->lvRegNum here because another basic block may not be expecting it.
-                // Therefore manually update life of argReg.  Note that GT_JMP marks the end of the basic block
-                // and after which reg life and gc info will be recomputed for the new block in genCodeForBBList().
+                // Note that we cannot modify varDsc->GetRegNum() here because another basic block may not be
+                // expecting it. Therefore manually update life of argReg.  Note that GT_JMP marks the end of the
+                // basic block and after which reg life and gc info will be recomputed for the new block in
+                // genCodeForBBList().
                 regSet.AddMaskVars(genRegMask(argReg));
                 gcInfo.gcMarkRegPtrVal(argReg, loadType);
                 if (compiler->lvaIsGCTracked(varDsc))
@@ -9149,7 +9151,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
     // registers that profiler callback kills.
     if (compiler->lvaKeepAliveAndReportThis() && compiler->lvaTable[compiler->info.compThisArg].lvIsInReg())
     {
-        regMaskTP thisPtrMask = genRegMask(compiler->lvaTable[compiler->info.compThisArg].lvRegNum);
+        regMaskTP thisPtrMask = genRegMask(compiler->lvaTable[compiler->info.compThisArg].GetRegNum());
         noway_assert((RBM_PROFILER_LEAVE_TRASH & thisPtrMask) == 0);
     }
 

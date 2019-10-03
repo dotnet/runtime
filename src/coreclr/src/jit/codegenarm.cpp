@@ -1015,7 +1015,7 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
 
     // Updating variable liveness after instruction was emitted
     genUpdateLife(tree);
-    varDsc->lvRegNum = REG_STK;
+    varDsc->SetRegNum(REG_STK);
 }
 
 //------------------------------------------------------------------------
@@ -1069,7 +1069,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
             // Updating variable liveness after instruction was emitted
             genUpdateLife(tree);
 
-            varDsc->lvRegNum = REG_STK;
+            varDsc->SetRegNum(REG_STK);
         }
         else // store into register (i.e move into register)
         {

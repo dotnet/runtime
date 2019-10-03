@@ -373,7 +373,7 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
         case TYP_LONG:
 #endif // _TARGET_64BIT_
             this->vlType       = VLT_REG;
-            this->vlReg.vlrReg = varDsc->lvRegNum;
+            this->vlReg.vlrReg = varDsc->GetRegNum();
             break;
 
 #ifndef _TARGET_64BIT_
@@ -384,13 +384,13 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
             if (varDsc->lvOtherReg != REG_STK)
             {
                 this->vlType            = VLT_REG_REG;
-                this->vlRegReg.vlrrReg1 = varDsc->lvRegNum;
+                this->vlRegReg.vlrrReg1 = varDsc->GetRegNum();
                 this->vlRegReg.vlrrReg2 = varDsc->lvOtherReg;
             }
             else
             {
                 this->vlType                        = VLT_REG_STK;
-                this->vlRegStk.vlrsReg              = varDsc->lvRegNum;
+                this->vlRegStk.vlrsReg              = varDsc->GetRegNum();
                 this->vlRegStk.vlrsStk.vlrssBaseReg = baseReg;
                 if (isFramePointerUsed && this->vlRegStk.vlrsStk.vlrssBaseReg == REG_SPBASE)
                 {
@@ -407,7 +407,7 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
             // TODO-AMD64-Bug: ndp\clr\src\inc\corinfo.h has a definition of RegNum that only goes up to R15,
             // so no XMM registers can get debug information.
             this->vlType       = VLT_REG_FP;
-            this->vlReg.vlrReg = varDsc->lvRegNum;
+            this->vlReg.vlrReg = varDsc->GetRegNum();
             break;
 
 #else // !_TARGET_64BIT_
@@ -418,7 +418,7 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
             if (isFloatRegType(type))
             {
                 this->vlType         = VLT_FPSTK;
-                this->vlFPstk.vlfReg = varDsc->lvRegNum;
+                this->vlFPstk.vlfReg = varDsc->GetRegNum();
             }
             break;
 #endif // CPU_HAS_FP_SUPPORT
@@ -437,7 +437,7 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
             //
             // Note: Need to initialize vlrReg field, otherwise during jit dump hitting an assert
             // in eeDispVar() --> getRegName() that regNumber is valid.
-            this->vlReg.vlrReg = varDsc->lvRegNum;
+            this->vlReg.vlrReg = varDsc->GetRegNum();
             break;
 #endif // FEATURE_SIMD
 
@@ -1801,7 +1801,7 @@ void CodeGen::psiMoveToReg(unsigned varNum, regNumber reg, regNumber otherReg)
     {
         // Grab the assigned registers.
 
-        reg      = compiler->lvaTable[varNum].lvRegNum;
+        reg      = compiler->lvaTable[varNum].GetRegNum();
         otherReg = compiler->lvaTable[varNum].lvOtherReg;
     }
 
