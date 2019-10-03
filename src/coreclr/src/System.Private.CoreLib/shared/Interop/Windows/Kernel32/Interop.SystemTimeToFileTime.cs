@@ -4,9 +4,9 @@
 
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Kernel32
+    internal static partial class Kernel32
     {
         [DllImport(Libraries.Kernel32)]
         internal static extern unsafe Interop.BOOL SystemTimeToFileTime(Interop.Kernel32.SYSTEMTIME* lpSystemTime, long* lpFileTime);

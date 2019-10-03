@@ -1998,57 +1998,5 @@ namespace System
             TimeSpan utcOffset = GetUtcOffset(baseUtcOffset, adjustmentRule);
             return !UtcOffsetOutOfRange(utcOffset);
         }
-
-        /// <summary>
-        /// Normalize adjustment rule offset so that it is within valid range
-        /// This method should not be called at all but is here in case something changes in the future
-        /// or if really old time zones are present on the OS (no combination is known at the moment)
-        /// </summary>
-        private static void NormalizeAdjustmentRuleOffset(TimeSpan baseUtcOffset, [NotNull] ref AdjustmentRule adjustmentRule)
-        {
-            // Certain time zones such as:
-            //       Time Zone  start date  end date    offset
-            // -----------------------------------------------------
-            // America/Yakutat  0001-01-01  1867-10-18   14:41:00
-            // America/Yakutat  1867-10-18  1900-08-20   14:41:00
-            // America/Sitka    0001-01-01  1867-10-18   14:58:00
-            // America/Sitka    1867-10-18  1900-08-20   14:58:00
-            // Asia/Manila      0001-01-01  1844-12-31  -15:56:00
-            // Pacific/Guam     0001-01-01  1845-01-01  -14:21:00
-            // Pacific/Saipan   0001-01-01  1845-01-01  -14:21:00
-            //
-            // have larger offset than currently supported by framework.
-            // If for whatever reason we find that time zone exceeding max
-            // offset of 14h this function will truncate it to the max valid offset.
-            // Updating max offset may cause problems with interacting with SQL server
-            // which uses SQL DATETIMEOFFSET field type which was originally designed to be
-            // bit-for-bit compatible with DateTimeOffset.
-
-            TimeSpan utcOffset = GetUtcOffset(baseUtcOffset, adjustmentRule);
-
-            // utc base offset delta increment
-            TimeSpan adjustment = TimeSpan.Zero;
-
-            if (utcOffset > MaxOffset)
-            {
-                adjustment = MaxOffset - utcOffset;
-            }
-            else if (utcOffset < MinOffset)
-            {
-                adjustment = MinOffset - utcOffset;
-            }
-
-            if (adjustment != TimeSpan.Zero)
-            {
-                adjustmentRule = AdjustmentRule.CreateAdjustmentRule(
-                    adjustmentRule.DateStart,
-                    adjustmentRule.DateEnd,
-                    adjustmentRule.DaylightDelta,
-                    adjustmentRule.DaylightTransitionStart,
-                    adjustmentRule.DaylightTransitionEnd,
-                    adjustmentRule.BaseUtcOffsetDelta + adjustment,
-                    adjustmentRule.NoDaylightTransitions);
-            }
-        }
     }
 }

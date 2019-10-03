@@ -10,7 +10,6 @@ using System.Security.Permissions;
 using BitOperations = Microsoft.Diagnostics.Tracing.Internal.BitOperations;
 #endif
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.InteropServices;
@@ -1200,10 +1199,8 @@ namespace System.Diagnostics.Tracing
             return m_eventProvider.EventRegister(eventSource, enableCallback, null, ref m_regHandle);
         }
 
-        private uint EventUnregister(long registrationHandle)
-        {
-            return m_eventProvider.EventUnregister(registrationHandle);
-        }
+        private void EventUnregister(long registrationHandle) =>
+            m_eventProvider.EventUnregister(registrationHandle);
 
 #if PLATFORM_WINDOWS
         private static bool m_setInformationMissing;

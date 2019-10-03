@@ -5,9 +5,9 @@
 using System;
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class User32
+    internal static partial class User32
     {
         [DllImport(Libraries.User32, EntryPoint = "SendMessageTimeoutW", CharSet = CharSet.Unicode)]
         public static extern IntPtr SendMessageTimeout(IntPtr hWnd, int msg, IntPtr wParam, string lParam, int flags, int timeout, IntPtr pdwResult);

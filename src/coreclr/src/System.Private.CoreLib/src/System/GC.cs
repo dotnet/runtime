@@ -505,7 +505,7 @@ namespace System
             return StartNoGCRegionWorker(totalSize, true, lohSize, disallowFullBlockingGC);
         }
 
-        private static EndNoGCRegionStatus EndNoGCRegionWorker()
+        public static void EndNoGCRegion()
         {
             EndNoGCRegionStatus status = (EndNoGCRegionStatus)_EndNoGCRegion();
             if (status == EndNoGCRegionStatus.NotInProgress)
@@ -514,13 +514,6 @@ namespace System
                 throw new InvalidOperationException("Garbage collection was induced in NoGCRegion mode");
             else if (status == EndNoGCRegionStatus.AllocationExceeded)
                 throw new InvalidOperationException("Allocated memory exceeds specified memory for NoGCRegion mode");
-
-            return EndNoGCRegionStatus.Succeeded;
-        }
-
-        public static void EndNoGCRegion()
-        {
-            EndNoGCRegionWorker();
         }
 
         private readonly struct MemoryLoadChangeNotification

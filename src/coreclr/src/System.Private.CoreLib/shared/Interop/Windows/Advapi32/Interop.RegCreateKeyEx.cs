@@ -10,9 +10,9 @@ using Internal.Win32.SafeHandles;
 #endif
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Advapi32
+    internal static partial class Advapi32
     {
         // Note: RegCreateKeyEx won't set the last error on failure - it returns
         // an error code if it fails.

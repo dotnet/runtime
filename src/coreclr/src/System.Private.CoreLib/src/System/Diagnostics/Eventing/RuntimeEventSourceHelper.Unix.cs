@@ -6,7 +6,7 @@ using System;
 
 namespace System.Diagnostics.Tracing
 {
-    internal sealed class RuntimeEventSourceHelper
+    internal static class RuntimeEventSourceHelper
     {
         private static Interop.Sys.ProcessCpuInformation cpuInfo;
 

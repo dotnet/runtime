@@ -5,9 +5,9 @@
 using System;
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class OleAut32
+    internal static partial class OleAut32
     {
         [DllImport(Libraries.OleAut32)]
         internal static extern void SysFreeString(IntPtr bstr);
