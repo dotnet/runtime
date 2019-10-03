@@ -7,10 +7,10 @@
     "dotnet": "3.0.100"
   },
   "msbuild-sdks": {
-    "Microsoft.DotNet.Arcade.Sdk": "5.0.0-beta.19501.4",
-    "Microsoft.DotNet.Helix.Sdk": "5.0.0-beta.19501.4",
-    "Microsoft.DotNet.Build.Tasks.Configuration": "5.0.0-beta.19501.4",
-    "Microsoft.DotNet.CoreFxTesting": "5.0.0-beta.19501.4",
+    "Microsoft.DotNet.Arcade.Sdk": "5.0.0-beta.19502.11",
+    "Microsoft.DotNet.Helix.Sdk": "5.0.0-beta.19502.11",
+    "Microsoft.DotNet.Build.Tasks.Configuration": "5.0.0-beta.19502.11",
+    "Microsoft.DotNet.CoreFxTesting": "5.0.0-beta.19502.11",
     "FIX-85B6-MERGE-9C38-CONFLICT": "1.0.0",
     "Microsoft.NET.Sdk.IL": "5.0.0-alpha1.19501.3"
   }
