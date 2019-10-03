@@ -198,6 +198,10 @@ namespace System.Runtime.InteropServices
         public CoClassAttribute(System.Type coClass) { }
         public System.Type CoClass { get { throw null; } }
     }
+    public static partial class CollectionsMarshal
+    {
+        public static System.Span<T> AsSpan<T>(System.Collections.Generic.List<T>? list) { throw null; }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, Inherited=false)]
     public sealed partial class ComAliasNameAttribute : System.Attribute
     {
