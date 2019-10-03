@@ -61,12 +61,12 @@ namespace System.Runtime.InteropServices
             Exception? innerException = InnerException;
             if (innerException != null)
             {
-                s.Append(Environment.NewLine).Append(InnerExceptionPrefix).Append(innerException.ToString());
+                s.Append(Environment.NewLineConst + InnerExceptionPrefix).Append(innerException.ToString());
             }
 
             string? stackTrace = StackTrace;
             if (stackTrace != null)
-                s.Append(Environment.NewLine).Append(stackTrace);
+                s.AppendLine().Append(stackTrace);
 
             return s.ToString();
         }

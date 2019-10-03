@@ -47,7 +47,7 @@ namespace System
 
         public static string[] GetLogicalDrives() => DriveInfoInternal.GetLogicalDrives();
 
-        public static string NewLine => "\r\n";
+        internal const string NewLineConst = "\r\n";
 
         public static int SystemPageSize
         {
