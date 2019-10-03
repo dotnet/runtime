@@ -56,8 +56,8 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <!-- BlockStable on private packages by default -->
-    <BlockStable Condition="'$(BlockStable)' == '' and $(MSBuildProjectName.Contains('Private'))">true</BlockStable>
+    <!-- SuppressFinalPackageVersion on private packages by default -->
+    <SuppressFinalPackageVersion Condition="'$(SuppressFinalPackageVersion)' == '' and $(MSBuildProjectName.Contains('Private'))">true</SuppressFinalPackageVersion>
   </PropertyGroup>
 
 </Project>

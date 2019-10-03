@@ -382,9 +382,11 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- When IsShipping property is set, other IsShipping* properties take its value if they are not set.
-    This is why IsShippingPackage is only set for Private packages, as Experimental are covered with IsShipping -->
-    <IsShipping Condition="$(MSBuildProjectName.Contains('Experimental'))">false</IsShipping>
+    <!-- Experimental packages should not be stable -->
+    <SuppressFinalPackageVersion Condition="'$(SuppressFinalPackageVersion)' == '' and $(MSBuildProjectName.Contains('Experimental'))">true</SuppressFinalPackageVersion>
+    <IsShippingAssembly Condition="$(MSBuildProjectName.Contains('Experimental'))">false</IsShippingAssembly>
+
+    <!-- We don't want Private packages to be shipped to NuGet.org -->
     <IsShippingPackage Condition="$(MSBuildProjectName.Contains('Private')) and '$(MSBuildProjectExtension)' == '.pkgproj'">false</IsShippingPackage>
   </PropertyGroup>
 </Project>
