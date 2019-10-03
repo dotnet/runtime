@@ -1096,10 +1096,10 @@ int LinearScan::BuildCall(GenTreeCall* call)
         }
         else if (argNode->OperGet() == GT_FIELD_LIST)
         {
-            for (GenTreeFieldList* entry = argNode->AsFieldList(); entry != nullptr; entry = entry->Rest())
+            for (GenTreeFieldList::Use& use : argNode->AsFieldList()->Uses())
             {
-                assert(entry->Current()->OperIsPutArgReg());
-                HandleFloatVarArgs(call, entry->Current(), &callHasFloatRegArgs);
+                assert(use.GetNode()->OperIsPutArgReg());
+                HandleFloatVarArgs(call, use.GetNode(), &callHasFloatRegArgs);
             }
         }
     }
@@ -1127,11 +1127,11 @@ int LinearScan::BuildCall(GenTreeCall* call)
 #ifdef UNIX_AMD64_ABI
         else if (argNode->OperGet() == GT_FIELD_LIST)
         {
-            for (GenTreeFieldList* entry = argNode->AsFieldList(); entry != nullptr; entry = entry->Rest())
+            for (GenTreeFieldList::Use& use : argNode->AsFieldList()->Uses())
             {
-                assert(entry->Current()->OperIsPutArgReg());
+                assert(use.GetNode()->OperIsPutArgReg());
                 srcCount++;
-                BuildUse(entry->Current(), genRegMask(entry->Current()->gtRegNum));
+                BuildUse(use.GetNode(), genRegMask(use.GetNode()->gtRegNum));
             }
         }
 #endif // UNIX_AMD64_ABI
@@ -1167,13 +1167,12 @@ int LinearScan::BuildCall(GenTreeCall* call)
             assert(argNode->isContained());
             assert(varTypeIsStruct(argNode) || curArgTabEntry->isStruct);
 
-            int i = 0;
-            for (GenTreeFieldList* entry = argNode->AsFieldList(); entry != nullptr; entry = entry->Rest())
+            unsigned regIndex = 0;
+            for (GenTreeFieldList::Use& use : argNode->AsFieldList()->Uses())
             {
-                const regNumber argReg = (i == 0) ? curArgTabEntry->regNum : curArgTabEntry->GetOtherRegNum();
-                assert(entry->Current()->gtRegNum == argReg);
-                assert(i < 2);
-                i++;
+                const regNumber argReg = curArgTabEntry->getRegNum(regIndex);
+                assert(use.GetNode()->gtRegNum == argReg);
+                regIndex++;
             }
         }
         else
@@ -1483,11 +1482,11 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
         unsigned     prevOffset = putArgStk->getArgSize();
         // We need to iterate over the fields twice; once to determine the need for internal temps,
         // and once to actually build the uses.
-        for (GenTreeFieldList* current = putArgStk->gtOp1->AsFieldList(); current != nullptr; current = current->Rest())
+        for (GenTreeFieldList::Use& use : putArgStk->gtOp1->AsFieldList()->Uses())
         {
-            GenTree* const  fieldNode   = current->Current();
+            GenTree* const  fieldNode   = use.GetNode();
             const var_types fieldType   = fieldNode->TypeGet();
-            const unsigned  fieldOffset = current->gtFieldOffset;
+            const unsigned  fieldOffset = use.GetOffset();
 
 #ifdef _TARGET_X86_
             assert(fieldType != TYP_LONG);
@@ -1497,7 +1496,7 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
             // Note that we need to check the GT_FIELD_LIST type, not 'fieldType'. This is because the
             // GT_FIELD_LIST will be TYP_SIMD12 whereas the fieldType might be TYP_SIMD16 for lclVar, where
             // we "round up" to 16.
-            if ((current->gtFieldType == TYP_SIMD12) && (simdTemp == nullptr))
+            if ((use.GetType() == TYP_SIMD12) && (simdTemp == nullptr))
             {
                 simdTemp = buildInternalFloatRegisterDefForNode(putArgStk);
             }
@@ -1527,9 +1526,9 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
             prevOffset = fieldOffset;
         }
 
-        for (GenTreeFieldList* current = putArgStk->gtOp1->AsFieldList(); current != nullptr; current = current->Rest())
+        for (GenTreeFieldList::Use& use : putArgStk->gtOp1->AsFieldList()->Uses())
         {
-            GenTree* const fieldNode = current->Current();
+            GenTree* const fieldNode = use.GetNode();
             if (!fieldNode->isContained())
             {
                 BuildUse(fieldNode);
