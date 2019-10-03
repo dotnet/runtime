@@ -51,20 +51,18 @@ namespace System.IO
             string s = GetType().ToString() + ": " + Message;
 
             if (!string.IsNullOrEmpty(FileName))
-                s += Environment.NewLine + SR.Format(SR.IO_FileName_Name, FileName);
+                s += Environment.NewLineConst + SR.Format(SR.IO_FileName_Name, FileName);
 
             if (InnerException != null)
-                s = s + Environment.NewLine + InnerExceptionPrefix + InnerException.ToString();
+                s += Environment.NewLineConst + InnerExceptionPrefix + InnerException.ToString();
 
             if (StackTrace != null)
-                s += Environment.NewLine + StackTrace;
+                s += Environment.NewLineConst + StackTrace;
 
             if (FusionLog != null)
             {
                 s ??= " ";
-                s += Environment.NewLine;
-                s += Environment.NewLine;
-                s += FusionLog;
+                s += Environment.NewLineConst + Environment.NewLineConst + FusionLog;
             }
 
             return s;

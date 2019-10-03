@@ -96,20 +96,18 @@ namespace System
             string s = GetType().ToString() + ": " + Message;
 
             if (!string.IsNullOrEmpty(_fileName))
-                s += Environment.NewLine + SR.Format(SR.IO_FileName_Name, _fileName);
+                s += Environment.NewLineConst + SR.Format(SR.IO_FileName_Name, _fileName);
 
             if (InnerException != null)
-                s = s + InnerExceptionPrefix + InnerException.ToString();
+                s += InnerExceptionPrefix + InnerException.ToString();
 
             if (StackTrace != null)
-                s += Environment.NewLine + StackTrace;
+                s += Environment.NewLineConst + StackTrace;
 
             if (_fusionLog != null)
             {
                 s ??= " ";
-                s += Environment.NewLine;
-                s += Environment.NewLine;
-                s += _fusionLog;
+                s += Environment.NewLineConst + Environment.NewLineConst + _fusionLog;
             }
 
             return s;

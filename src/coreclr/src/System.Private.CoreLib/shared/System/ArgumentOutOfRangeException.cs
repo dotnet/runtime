@@ -81,7 +81,7 @@ namespace System
                     string valueMessage = SR.Format(SR.ArgumentOutOfRange_ActualValue, _actualValue);
                     if (s == null)
                         return valueMessage;
-                    return s + Environment.NewLine + valueMessage;
+                    return s + Environment.NewLineConst + valueMessage;
                 }
                 return s;
             }

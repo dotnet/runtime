@@ -65,7 +65,7 @@ namespace System
                 }
 
                 string objectDisposed = SR.Format(SR.ObjectDisposed_ObjectName_Name, name);
-                return base.Message + Environment.NewLine + objectDisposed;
+                return base.Message + Environment.NewLineConst + objectDisposed;
             }
         }
 

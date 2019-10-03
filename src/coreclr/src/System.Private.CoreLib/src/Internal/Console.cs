@@ -28,9 +28,9 @@ namespace Internal
         }
 
         public static void WriteLine(string? s) =>
-            Write(s + Environment.NewLine);
+            Write(s + Environment.NewLineConst);
 
         public static void WriteLine() =>
-            Write(Environment.NewLine);
+            Write(Environment.NewLineConst);
     }
 }

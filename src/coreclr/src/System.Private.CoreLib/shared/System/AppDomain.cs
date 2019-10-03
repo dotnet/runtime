@@ -158,7 +158,7 @@ namespace System
         public bool IsFinalizingForUnload() => false;
 
         public override string ToString() =>
-            SR.AppDomain_Name + FriendlyName + Environment.NewLine + SR.AppDomain_NoContextPolicies;
+            SR.AppDomain_Name + FriendlyName + Environment.NewLineConst + SR.AppDomain_NoContextPolicies;
 
         public static void Unload(AppDomain domain)
         {

@@ -112,6 +112,8 @@ namespace System
 
         public static bool Is64BitOperatingSystem => Is64BitProcess || Is64BitOperatingSystemWhen32BitProcess;
 
+        public static string NewLine => NewLineConst;
+
         private static OperatingSystem? s_osVersion;
 
         public static OperatingSystem OSVersion

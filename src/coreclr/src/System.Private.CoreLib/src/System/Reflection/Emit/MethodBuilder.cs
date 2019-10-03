@@ -460,7 +460,7 @@ namespace System.Reflection.Emit
             sb.Append("Name: ").Append(m_strName).AppendLine(" ");
             sb.Append("Attributes: ").Append((int)m_iAttributes).AppendLine();
             sb.Append("Method Signature: ").Append(GetMethodSignature()).AppendLine();
-            sb.Append(Environment.NewLine);
+            sb.AppendLine();
             return sb.ToString();
         }
 
