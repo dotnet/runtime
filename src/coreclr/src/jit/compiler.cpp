@@ -2012,8 +2012,8 @@ VarName Compiler::compVarName(regNumber reg, bool isFloatReg)
         {
             /* If the variable is not in a register, or not in the register we're looking for, quit. */
             /* Also, if it is a compiler generated variable (i.e. slot# > info.compVarScopesCount), don't bother. */
-            if ((varDsc->lvRegister != 0) && (varDsc->lvRegNum == reg) && (varDsc->IsFloatRegType() || !isFloatReg) &&
-                (varDsc->lvSlotNum < info.compVarScopesCount))
+            if ((varDsc->lvRegister != 0) && (varDsc->GetRegNum() == reg) &&
+                (varDsc->IsFloatRegType() || !isFloatReg) && (varDsc->lvSlotNum < info.compVarScopesCount))
             {
                 /* check if variable in that register is live */
                 if (VarSetOps::IsMember(this, compCurLife, varDsc->lvVarIndex))
@@ -9573,7 +9573,7 @@ int cLeafIR(Compiler* comp, GenTree* tree)
                     {
                         if (varDsc->lvRegister)
                         {
-                            chars += printf(":%s", getRegName(varDsc->lvRegNum));
+                            chars += printf(":%s", getRegName(varDsc->GetRegNum()));
                         }
                         else
                         {
@@ -9593,7 +9593,7 @@ int cLeafIR(Compiler* comp, GenTree* tree)
                 {
                     if (varDsc->lvRegister)
                     {
-                        chars += printf("(%s)", getRegName(varDsc->lvRegNum));
+                        chars += printf("(%s)", getRegName(varDsc->GetRegNum()));
                     }
                     else
                     {
@@ -9637,7 +9637,7 @@ int cLeafIR(Compiler* comp, GenTree* tree)
                     {
                         if (varDsc->lvRegister)
                         {
-                            chars += printf(":%s", getRegName(varDsc->lvRegNum));
+                            chars += printf(":%s", getRegName(varDsc->GetRegNum()));
                         }
                         else
                         {
@@ -9657,7 +9657,7 @@ int cLeafIR(Compiler* comp, GenTree* tree)
                 {
                     if (varDsc->lvRegister)
                     {
-                        chars += printf("(%s)", getRegName(varDsc->lvRegNum));
+                        chars += printf("(%s)", getRegName(varDsc->GetRegNum()));
                     }
                     else
                     {

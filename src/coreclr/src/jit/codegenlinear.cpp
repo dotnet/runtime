@@ -61,10 +61,10 @@ void CodeGen::genInitializeRegisterState()
         noway_assert(!varTypeIsFloating(varDsc->TypeGet()));
 
         // Mark the register as holding the variable
-        assert(varDsc->lvRegNum != REG_STK);
+        assert(varDsc->GetRegNum() != REG_STK);
         if (!varDsc->lvAddrExposed)
         {
-            regSet.verifyRegUsed(varDsc->lvRegNum);
+            regSet.verifyRegUsed(varDsc->GetRegNum());
         }
     }
 }
@@ -824,7 +824,7 @@ void CodeGen::genSpillVar(GenTree* tree)
         emitAttr  size   = emitTypeSize(lclTyp);
 
         instruction storeIns = ins_Store(lclTyp, compiler->isSIMDTypeLocalAligned(varNum));
-        assert(varDsc->lvRegNum == tree->gtRegNum);
+        assert(varDsc->GetRegNum() == tree->gtRegNum);
         inst_TT_RV(storeIns, tree, tree->gtRegNum, 0, size);
 
         genUpdateRegLife(varDsc, /*isBorn*/ false, /*isDying*/ true DEBUGARG(tree));
@@ -847,7 +847,7 @@ void CodeGen::genSpillVar(GenTree* tree)
     }
 
     tree->gtFlags &= ~GTF_SPILL;
-    varDsc->lvRegNum = REG_STK;
+    varDsc->SetRegNum(REG_STK);
     if (varTypeIsMultiReg(tree))
     {
         varDsc->lvOtherReg = REG_STK;
@@ -874,7 +874,7 @@ void CodeGen::genSpillVar(GenTree* tree)
 void CodeGenInterface::genUpdateVarReg(LclVarDsc* varDsc, GenTree* tree)
 {
     assert(tree->OperIsScalarLocal() || (tree->gtOper == GT_COPY));
-    varDsc->lvRegNum = tree->gtRegNum;
+    varDsc->SetRegNum(tree->gtRegNum);
 }
 
 //------------------------------------------------------------------------
@@ -1292,9 +1292,9 @@ regNumber CodeGen::genConsumeReg(GenTree* tree)
     {
         GenTreeLclVarCommon* lcl    = tree->AsLclVarCommon();
         LclVarDsc*           varDsc = &compiler->lvaTable[lcl->GetLclNum()];
-        if (varDsc->lvRegNum != REG_STK && varDsc->lvRegNum != tree->gtRegNum)
+        if (varDsc->GetRegNum() != REG_STK && varDsc->GetRegNum() != tree->gtRegNum)
         {
-            inst_RV_RV(ins_Copy(tree->TypeGet()), tree->gtRegNum, varDsc->lvRegNum);
+            inst_RV_RV(ins_Copy(tree->TypeGet()), tree->gtRegNum, varDsc->GetRegNum());
         }
     }
 
@@ -1318,9 +1318,9 @@ regNumber CodeGen::genConsumeReg(GenTree* tree)
 
         if ((tree->gtFlags & GTF_VAR_DEATH) != 0)
         {
-            gcInfo.gcMarkRegSetNpt(genRegMask(varDsc->lvRegNum));
+            gcInfo.gcMarkRegSetNpt(genRegMask(varDsc->GetRegNum()));
         }
-        else if (varDsc->lvRegNum == REG_STK)
+        else if (varDsc->GetRegNum() == REG_STK)
         {
             // We have loaded this into a register only temporarily
             gcInfo.gcMarkRegSetNpt(genRegMask(tree->gtRegNum));
@@ -1387,7 +1387,7 @@ void CodeGen::genConsumeRegs(GenTree* tree)
             unsigned   varNum = tree->AsLclVarCommon()->GetLclNum();
             LclVarDsc* varDsc = compiler->lvaTable + varNum;
 
-            noway_assert(varDsc->lvRegNum == REG_STK);
+            noway_assert(varDsc->GetRegNum() == REG_STK);
             noway_assert(tree->IsRegOptional() || !varDsc->lvLRACandidate);
 
             // Update the life of the lcl var.

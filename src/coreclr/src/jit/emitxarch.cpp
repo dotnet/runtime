@@ -11465,7 +11465,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                     // We're relocating "this" in the prolog
                     assert(emitComp->lvaIsOriginalThisArg(0));
                     assert(emitComp->lvaTable[0].lvRegister);
-                    assert(emitComp->lvaTable[0].lvRegNum == reg1);
+                    assert(emitComp->lvaTable[0].GetRegNum() == reg1);
 
                     if (emitFullGCinfo)
                     {

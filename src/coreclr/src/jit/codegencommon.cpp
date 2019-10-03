@@ -441,11 +441,11 @@ regMaskTP CodeGenInterface::genGetRegMask(const LclVarDsc* varDsc)
 
     if (varTypeIsFloating(varDsc->TypeGet()))
     {
-        regMask = genRegMaskFloat(varDsc->lvRegNum, varDsc->TypeGet());
+        regMask = genRegMaskFloat(varDsc->GetRegNum(), varDsc->TypeGet());
     }
     else
     {
-        regMask = genRegMask(varDsc->lvRegNum);
+        regMask = genRegMask(varDsc->GetRegNum());
     }
     return regMask;
 }
@@ -3609,7 +3609,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
                 /* Maybe the argument stays in the register (IDEAL) */
 
-                if ((i == 0) && (varDsc->lvRegNum == regNum))
+                if ((i == 0) && (varDsc->GetRegNum() == regNum))
                 {
                     goto NON_DEP;
                 }
@@ -3625,7 +3625,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 }
 
                 if ((i == 1) && (genActualType(varDsc->TypeGet()) == TYP_DOUBLE) &&
-                    (REG_NEXT(varDsc->lvRegNum) == regNum))
+                    (REG_NEXT(varDsc->GetRegNum()) == regNum))
                 {
                     goto NON_DEP;
                 }
@@ -3686,7 +3686,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 regNumber destRegNum = REG_NA;
                 if (regArgTab[argNum].slot == 1)
                 {
-                    destRegNum = varDsc->lvRegNum;
+                    destRegNum = varDsc->GetRegNum();
                 }
 #if FEATURE_MULTIREG_ARGS && defined(FEATURE_SIMD) && defined(_TARGET_64BIT_)
                 else
@@ -3710,7 +3710,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 {
                     assert(regArgTab[argNum].slot == 2);
                     assert(varDsc->TypeGet() == TYP_DOUBLE);
-                    destRegNum = REG_NEXT(varDsc->lvRegNum);
+                    destRegNum = REG_NEXT(varDsc->GetRegNum());
                 }
 #endif // !defined(_TARGET_64BIT_)
                 noway_assert(destRegNum != REG_NA);
@@ -4024,10 +4024,10 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                     size = EA_GCREF;
                 }
 
-                noway_assert(varDscDest->lvArgReg == varDscSrc->lvRegNum);
+                noway_assert(varDscDest->lvArgReg == varDscSrc->GetRegNum());
 
-                GetEmitter()->emitIns_R_R(INS_xchg, size, varDscSrc->lvRegNum, varDscSrc->lvArgReg);
-                regSet.verifyRegUsed(varDscSrc->lvRegNum);
+                GetEmitter()->emitIns_R_R(INS_xchg, size, varDscSrc->GetRegNum(), varDscSrc->lvArgReg);
+                regSet.verifyRegUsed(varDscSrc->GetRegNum());
                 regSet.verifyRegUsed(varDscSrc->lvArgReg);
 
                 /* mark both arguments as processed */
@@ -4238,7 +4238,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
             if (regArgTab[argNum].slot == 1)
             {
-                destRegNum = varDsc->lvRegNum;
+                destRegNum = varDsc->GetRegNum();
 
 #ifdef _TARGET_ARM_
                 if (genActualType(destMemType) == TYP_DOUBLE && regArgTab[argNum + 1].processed)
@@ -4301,7 +4301,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 // it as a single to finish the shuffling.
 
                 destMemType = TYP_FLOAT;
-                destRegNum  = REG_NEXT(varDsc->lvRegNum);
+                destRegNum  = REG_NEXT(varDsc->GetRegNum());
             }
 #endif // !_TARGET_64BIT_
 #if (defined(UNIX_AMD64_ABI) || defined(_TARGET_ARM64_)) && defined(FEATURE_SIMD)
@@ -4311,7 +4311,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 assert(argNum > 0);
                 assert(regArgTab[argNum - 1].slot == 1);
                 assert((varDsc->lvType == TYP_SIMD12) || (varDsc->lvType == TYP_SIMD16));
-                destRegNum = varDsc->lvRegNum;
+                destRegNum = varDsc->GetRegNum();
                 noway_assert(regNum != destRegNum);
                 continue;
             }
@@ -7223,7 +7223,7 @@ void CodeGen::genFnProlog()
 
         if (varDsc->lvIsInReg())
         {
-            regMaskTP regMask = genRegMask(varDsc->lvRegNum);
+            regMaskTP regMask = genRegMask(varDsc->GetRegNum());
             if (!varDsc->IsFloatRegType())
             {
                 initRegs |= regMask;
@@ -7353,7 +7353,7 @@ void CodeGen::genFnProlog()
             LclVarDsc* varDsc = &compiler->lvaTable[compiler->info.compLvFrameListRoot];
             if (varDsc->lvRegister)
             {
-                excludeMask |= genRegMask(varDsc->lvRegNum);
+                excludeMask |= genRegMask(varDsc->GetRegNum());
             }
         }
     }
@@ -7816,10 +7816,10 @@ void CodeGen::genFnProlog()
 
         if (varDsc->lvIsInReg())
         {
-            if (varDsc->lvRegNum != REG_EAX)
+            if (varDsc->GetRegNum() != REG_EAX)
             {
-                GetEmitter()->emitIns_R_R(INS_mov, EA_PTRSIZE, varDsc->lvRegNum, REG_EAX);
-                regSet.verifyRegUsed(varDsc->lvRegNum);
+                GetEmitter()->emitIns_R_R(INS_mov, EA_PTRSIZE, varDsc->GetRegNum(), REG_EAX);
+                regSet.verifyRegUsed(varDsc->GetRegNum());
             }
         }
         else

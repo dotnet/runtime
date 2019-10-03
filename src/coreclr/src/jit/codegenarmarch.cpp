@@ -1429,7 +1429,7 @@ void CodeGen::genMultiRegCallStoreToLocal(GenTree* treeNode)
 
         // Updating variable liveness after instruction was emitted
         genUpdateLife(treeNode);
-        varDsc->lvRegNum = REG_STK;
+        varDsc->SetRegNum(REG_STK);
     }
 }
 
@@ -2235,7 +2235,7 @@ void CodeGen::genRegCopy(GenTree* treeNode)
             LclVarDsc* varDsc = &compiler->lvaTable[lcl->GetLclNum()];
 
             // If we didn't just spill it (in genConsumeReg, above), then update the register info
-            if (varDsc->lvRegNum != REG_STK)
+            if (varDsc->GetRegNum() != REG_STK)
             {
                 // The old location is dying
                 genUpdateRegLife(varDsc, /*isBorn*/ false, /*isDying*/ true DEBUGARG(op1));
@@ -2659,17 +2659,17 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         }
         noway_assert(varDsc->lvIsParam);
 
-        if (varDsc->lvIsRegArg && (varDsc->lvRegNum != REG_STK))
+        if (varDsc->lvIsRegArg && (varDsc->GetRegNum() != REG_STK))
         {
             // Skip reg args which are already in its right register for jmp call.
             // If not, we will spill such args to their stack locations.
             //
             // If we need to generate a tail call profiler hook, then spill all
             // arg regs to free them up for the callback.
-            if (!compiler->compIsProfilerHookNeeded() && (varDsc->lvRegNum == varDsc->lvArgReg))
+            if (!compiler->compIsProfilerHookNeeded() && (varDsc->GetRegNum() == varDsc->lvArgReg))
                 continue;
         }
-        else if (varDsc->lvRegNum == REG_STK)
+        else if (varDsc->GetRegNum() == REG_STK)
         {
             // Skip args which are currently living in stack.
             continue;
@@ -2678,7 +2678,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         // If we came here it means either a reg argument not in the right register or
         // a stack argument currently living in a register.  In either case the following
         // assert should hold.
-        assert(varDsc->lvRegNum != REG_STK);
+        assert(varDsc->GetRegNum() != REG_STK);
         assert(varDsc->TypeGet() != TYP_STRUCT);
         var_types storeType = genActualType(varDsc->TypeGet());
         emitAttr  storeSize = emitActualTypeSize(storeType);
@@ -2687,7 +2687,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         if (varDsc->TypeGet() == TYP_LONG)
         {
             // long - at least the low half must be enregistered
-            GetEmitter()->emitIns_S_R(INS_str, EA_4BYTE, varDsc->lvRegNum, varNum, 0);
+            GetEmitter()->emitIns_S_R(INS_str, EA_4BYTE, varDsc->GetRegNum(), varNum, 0);
 
             // Is the upper half also enregistered?
             if (varDsc->lvOtherReg != REG_STK)
@@ -2698,12 +2698,12 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         else
 #endif // _TARGET_ARM_
         {
-            GetEmitter()->emitIns_S_R(ins_Store(storeType), storeSize, varDsc->lvRegNum, varNum, 0);
+            GetEmitter()->emitIns_S_R(ins_Store(storeType), storeSize, varDsc->GetRegNum(), varNum, 0);
         }
         // Update lvRegNum life and GC info to indicate lvRegNum is dead and varDsc stack slot is going live.
-        // Note that we cannot modify varDsc->lvRegNum here because another basic block may not be expecting it.
-        // Therefore manually update life of varDsc->lvRegNum.
-        regMaskTP tempMask = genRegMask(varDsc->lvRegNum);
+        // Note that we cannot modify varDsc->GetRegNum() here because another basic block may not be expecting it.
+        // Therefore manually update life of varDsc->GetRegNum().
+        regMaskTP tempMask = genRegMask(varDsc->GetRegNum());
         regSet.RemoveMaskVars(tempMask);
         gcInfo.gcMarkRegSetNpt(tempMask);
         if (compiler->lvaIsGCTracked(varDsc))
@@ -2746,7 +2746,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         regNumber argRegNext = REG_NA;
 
 #ifdef _TARGET_ARM64_
-        if (varDsc->lvRegNum != argReg)
+        if (varDsc->GetRegNum() != argReg)
         {
             var_types loadType = TYP_UNDEF;
 
@@ -2788,9 +2788,10 @@ void CodeGen::genJmpMethod(GenTree* jmp)
                 GetEmitter()->emitIns_R_S(ins_Load(loadType), loadSize, argReg, varNum, 0);
 
                 // Update argReg life and GC Info to indicate varDsc stack slot is dead and argReg is going live.
-                // Note that we cannot modify varDsc->lvRegNum here because another basic block may not be expecting it.
-                // Therefore manually update life of argReg.  Note that GT_JMP marks the end of the basic block
-                // and after which reg life and gc info will be recomputed for the new block in genCodeForBBList().
+                // Note that we cannot modify varDsc->GetRegNum() here because another basic block may not be
+                // expecting it. Therefore manually update life of argReg.  Note that GT_JMP marks the end of
+                // the basic block and after which reg life and gc info will be recomputed for the new block
+                // in genCodeForBBList().
                 regSet.AddMaskVars(genRegMask(argReg));
                 gcInfo.gcMarkRegPtrVal(argReg, loadType);
 
@@ -2855,7 +2856,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         {
             argRegNext = genRegArgNext(argReg);
 
-            if (varDsc->lvRegNum != argReg)
+            if (varDsc->GetRegNum() != argReg)
             {
                 GetEmitter()->emitIns_R_S(INS_ldr, EA_PTRSIZE, argReg, varNum, 0);
                 GetEmitter()->emitIns_R_S(INS_ldr, EA_PTRSIZE, argRegNext, varNum, REGSIZE_BYTES);
@@ -2876,7 +2877,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
 
             for (unsigned ofs = 0; ofs < maxSize; ofs += (unsigned)loadSize)
             {
-                if (varDsc->lvRegNum != argReg)
+                if (varDsc->GetRegNum() != argReg)
                 {
                     GetEmitter()->emitIns_R_S(ins_Load(loadType), loadSize, fieldReg, varNum, ofs);
                 }
@@ -2894,7 +2895,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
                 unsigned idx = ofs / REGSIZE_BYTES;
                 loadType     = varDsc->GetLayout()->GetGCPtrType(idx);
 
-                if (varDsc->lvRegNum != argReg)
+                if (varDsc->GetRegNum() != argReg)
                 {
                     emitAttr loadSize = emitActualTypeSize(loadType);
 
@@ -2915,7 +2916,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         {
             loadType = compiler->mangleVarArgsType(genActualType(varDsc->TypeGet()));
 
-            if (varDsc->lvRegNum != argReg)
+            if (varDsc->GetRegNum() != argReg)
             {
                 GetEmitter()->emitIns_R_S(ins_Load(loadType), emitTypeSize(loadType), argReg, varNum, 0);
             }
