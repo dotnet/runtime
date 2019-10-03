@@ -205,60 +205,36 @@ namespace System.Drawing.Printing
             }
         }
 
-        internal void _OnBeginPrint(PrintEventArgs e)
-        {
-            OnBeginPrint(e);
-        }
-
         /// <summary>
         /// Raises the <see cref='BeginPrint'/> event.
         /// </summary>
-        protected virtual void OnBeginPrint(PrintEventArgs e)
+        protected internal virtual void OnBeginPrint(PrintEventArgs e)
         {
-            if (_beginPrintHandler != null)
-                _beginPrintHandler(this, e);
-        }
-
-        internal void _OnEndPrint(PrintEventArgs e)
-        {
-            OnEndPrint(e);
+            _beginPrintHandler?.Invoke(this, e);
         }
 
         /// <summary>
         /// Raises the <see cref='EndPrint'/> event.
         /// </summary>
-        protected virtual void OnEndPrint(PrintEventArgs e)
+        protected internal virtual void OnEndPrint(PrintEventArgs e)
         {
-            if (_endPrintHandler != null)
-                _endPrintHandler(this, e);
-        }
-
-        internal void _OnPrintPage(PrintPageEventArgs e)
-        {
-            OnPrintPage(e);
+            _endPrintHandler?.Invoke(this, e);
         }
 
         /// <summary>
         /// Raises the <see cref='PrintPage'/> event.
         /// </summary>
-        protected virtual void OnPrintPage(PrintPageEventArgs e)
+        protected internal virtual void OnPrintPage(PrintPageEventArgs e)
         {
-            if (_printPageHandler != null)
-                _printPageHandler(this, e);
-        }
-
-        internal void _OnQueryPageSettings(QueryPageSettingsEventArgs e)
-        {
-            OnQueryPageSettings(e);
+            _printPageHandler?.Invoke(this, e);
         }
 
         /// <summary>
         /// Raises the <see cref='QueryPageSettings'/> event.
         /// </summary>
-        protected virtual void OnQueryPageSettings(QueryPageSettingsEventArgs e)
+        protected internal virtual void OnQueryPageSettings(QueryPageSettingsEventArgs e)
         {
-            if (_queryHandler != null)
-                _queryHandler(this, e);
+            _queryHandler?.Invoke(this, e);
         }
 
         /// <summary>
