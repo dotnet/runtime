@@ -377,8 +377,8 @@ namespace System.Drawing.Tests
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_NullImageWithSize_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>("image", () => new Bitmap(null, new Size(1, 2)));
-            AssertExtensions.Throws<ArgumentNullException>("image", () => new Bitmap(null, 1, 2));
+            AssertExtensions.Throws<ArgumentNullException>("original", "image", () => new Bitmap(null, new Size(1, 2)));
+            AssertExtensions.Throws<ArgumentNullException>("original", "image", () => new Bitmap(null, 1, 2));
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
