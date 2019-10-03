@@ -1064,20 +1064,25 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
         }
         else
         {
-            GenTreeFieldList* fieldListPtr = arg->AsFieldList();
-            for (unsigned index = 0; index < info->numRegs; fieldListPtr = fieldListPtr->Rest(), index++)
+            unsigned regIndex = 0;
+            for (GenTreeFieldList::Use& use : arg->AsFieldList()->Uses())
             {
-                var_types regType = fieldListPtr->gtGetOp1()->TypeGet();
+                if (regIndex >= info->numRegs)
+                {
+                    break;
+                }
+                var_types regType = use.GetNode()->TypeGet();
                 // Account for the possibility that float fields may be passed in integer registers.
-                if (varTypeIsFloating(regType) && !genIsValidFloatReg(argSplit->GetRegNumByIdx(index)))
+                if (varTypeIsFloating(regType) && !genIsValidFloatReg(argSplit->GetRegNumByIdx(regIndex)))
                 {
                     regType = (regType == TYP_FLOAT) ? TYP_INT : TYP_LONG;
                 }
-                argSplit->m_regType[index] = regType;
-
-                // Clear the register assignments on the fieldList nodes, as these are contained.
-                fieldListPtr->gtRegNum = REG_NA;
+                argSplit->m_regType[regIndex] = regType;
+                regIndex++;
             }
+
+            // Clear the register assignment on the fieldList node, as these are contained.
+            arg->gtRegNum = REG_NA;
         }
     }
     else
@@ -1088,26 +1093,19 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
 #if FEATURE_MULTIREG_ARGS
             if ((info->numRegs > 1) && (arg->OperGet() == GT_FIELD_LIST))
             {
-                assert(arg->OperGet() == GT_FIELD_LIST);
-
-                assert(arg->AsFieldList()->IsFieldListHead());
                 unsigned int regIndex = 0;
-                for (GenTreeFieldList* fieldListPtr = arg->AsFieldList(); fieldListPtr != nullptr;
-                     fieldListPtr                   = fieldListPtr->Rest())
+                for (GenTreeFieldList::Use& use : arg->AsFieldList()->Uses())
                 {
                     regNumber argReg = info->getRegNum(regIndex);
-                    GenTree*  curOp  = fieldListPtr->gtOp.gtOp1;
+                    GenTree*  curOp  = use.GetNode();
                     var_types curTyp = curOp->TypeGet();
 
                     // Create a new GT_PUTARG_REG node with op1
                     GenTree* newOper = comp->gtNewPutArgReg(curTyp, curOp, argReg);
 
                     // Splice in the new GT_PUTARG_REG node in the GT_FIELD_LIST
-                    ReplaceArgWithPutArgOrBitcast(&fieldListPtr->gtOp.gtOp1, newOper);
+                    ReplaceArgWithPutArgOrBitcast(&use.NodeRef(), newOper);
                     regIndex++;
-
-                    // Initialize all the gtRegNum's since the list won't be traversed in an LIR traversal.
-                    fieldListPtr->gtRegNum = REG_NA;
                 }
 
                 // Just return arg. The GT_FIELD_LIST is not replaced.
@@ -1317,46 +1315,35 @@ void Lowering::LowerArg(GenTreeCall* call, GenTree** ppArg)
 #if !defined(_TARGET_64BIT_)
     if (varTypeIsLong(type))
     {
-        bool isReg = (info->regNum != REG_STK);
-        if (isReg)
+        noway_assert(arg->OperIs(GT_LONG));
+        GenTreeFieldList* fieldList = new (comp, GT_FIELD_LIST) GenTreeFieldList();
+        fieldList->AddFieldLIR(comp, arg->AsOp()->gtGetOp1(), 0, TYP_INT);
+        fieldList->AddFieldLIR(comp, arg->AsOp()->gtGetOp2(), 4, TYP_INT);
+        GenTree* newArg = NewPutArg(call, fieldList, info, type);
+
+        if (info->regNum != REG_STK)
         {
-            noway_assert(arg->OperGet() == GT_LONG);
             assert(info->numRegs == 2);
-
-            GenTree* argLo = arg->gtGetOp1();
-            GenTree* argHi = arg->gtGetOp2();
-
-            GenTreeFieldList* fieldList = new (comp, GT_FIELD_LIST) GenTreeFieldList(argLo, 0, TYP_INT, nullptr);
-            // Only the first fieldList node (GTF_FIELD_LIST_HEAD) is in the instruction sequence.
-            (void)new (comp, GT_FIELD_LIST) GenTreeFieldList(argHi, 4, TYP_INT, fieldList);
-            GenTree* putArg = NewPutArg(call, fieldList, info, type);
-
-            BlockRange().InsertBefore(arg, putArg);
-            BlockRange().Remove(arg);
-            *ppArg = fieldList;
-            assert(info->GetNode() == fieldList);
+            // In the register argument case, NewPutArg replaces the original field list args with new
+            // GT_PUTARG_REG nodes, inserts them in linear order and returns the field list. So the
+            // only thing left to do is to insert the field list itself in linear order.
+            assert(newArg == fieldList);
+            BlockRange().InsertBefore(arg, newArg);
         }
         else
         {
-            assert(arg->OperGet() == GT_LONG);
             // For longs, we will replace the GT_LONG with a GT_FIELD_LIST, and put that under a PUTARG_STK.
             // Although the hi argument needs to be pushed first, that will be handled by the general case,
             // in which the fields will be reversed.
             assert(info->numSlots == 2);
-            GenTree*          argLo     = arg->gtGetOp1();
-            GenTree*          argHi     = arg->gtGetOp2();
-            GenTreeFieldList* fieldList = new (comp, GT_FIELD_LIST) GenTreeFieldList(argLo, 0, TYP_INT, nullptr);
-            // Only the first fieldList node (GTF_FIELD_LIST_HEAD) is in the instruction sequence.
-            (void)new (comp, GT_FIELD_LIST) GenTreeFieldList(argHi, 4, TYP_INT, fieldList);
-            GenTree* putArg  = NewPutArg(call, fieldList, info, type);
-            putArg->gtRegNum = info->regNum;
-
-            // We can't call ReplaceArgWithPutArgOrBitcast here because it presumes that we are keeping the original
-            // arg.
-            BlockRange().InsertBefore(arg, fieldList, putArg);
-            BlockRange().Remove(arg);
-            *ppArg = putArg;
+            newArg->gtRegNum = REG_STK;
+            BlockRange().InsertBefore(arg, fieldList, newArg);
         }
+
+        *ppArg = newArg;
+        assert(info->GetNode() == newArg);
+
+        BlockRange().Remove(arg);
     }
     else
 #endif // !defined(_TARGET_64BIT_)
@@ -1409,37 +1396,36 @@ GenTree* Lowering::LowerFloatArg(GenTree** pArg, fgArgTabEntry* info)
     GenTree* arg = *pArg;
     if (info->regNum != REG_STK)
     {
-        if (arg->OperIsFieldList())
+        if (arg->OperIs(GT_FIELD_LIST))
         {
-            GenTreeFieldList* currListNode  = arg->AsFieldList();
-            regNumber         currRegNumber = info->regNum;
-
             // Transform fields that are passed as registers in place.
-            unsigned fieldRegCount;
-            for (unsigned i = 0; i < info->numRegs; i += fieldRegCount)
+            regNumber currRegNumber = info->regNum;
+            unsigned  regIndex      = 0;
+            for (GenTreeFieldList::Use& use : arg->AsFieldList()->Uses())
             {
-                assert(currListNode != nullptr);
-                GenTree* node = currListNode->Current();
+                if (regIndex >= info->numRegs)
+                {
+                    break;
+                }
+                GenTree* node = use.GetNode();
                 if (varTypeIsFloating(node))
                 {
                     GenTree* intNode = LowerFloatArgReg(node, currRegNumber);
                     assert(intNode != nullptr);
 
-                    ReplaceArgWithPutArgOrBitcast(currListNode->pCurrent(), intNode);
-                    currListNode->ChangeType(intNode->TypeGet());
+                    ReplaceArgWithPutArgOrBitcast(&use.NodeRef(), intNode);
                 }
 
                 if (node->TypeGet() == TYP_DOUBLE)
                 {
                     currRegNumber = REG_NEXT(REG_NEXT(currRegNumber));
-                    fieldRegCount = 2;
+                    regIndex += 2;
                 }
                 else
                 {
                     currRegNumber = REG_NEXT(currRegNumber);
-                    fieldRegCount = 1;
+                    regIndex += 1;
                 }
-                currListNode = currListNode->Rest();
             }
             // List fields were replaced in place.
             return arg;
@@ -5395,11 +5381,10 @@ void Lowering::CheckCallArg(GenTree* arg)
         {
             GenTreeFieldList* list = arg->AsFieldList();
             assert(list->isContained());
-            assert(list->IsFieldListHead());
 
-            for (; list != nullptr; list = list->Rest())
+            for (GenTreeFieldList::Use& use : list->Uses())
             {
-                assert(list->Current()->OperIsPutArg());
+                assert(use.GetNode()->OperIsPutArg());
             }
         }
         break;

@@ -562,9 +562,8 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
 
     // First, remove any preceeding list nodes, which are not otherwise visited by the tree walk.
     //
-    // NOTE: GT_FIELD_LIST head nodes, and GT_LIST nodes used by GT_HWIntrinsic nodes will in fact be visited.
-    for (GenTree* prev = node->gtPrev; prev != nullptr && prev->OperIsAnyList() && !(prev->OperIsFieldListHead());
-         prev          = node->gtPrev)
+    // NOTE: GT_LIST nodes used by GT_HWIntrinsic nodes will in fact be visited.
+    for (GenTree* prev = node->gtPrev; (prev != nullptr) && prev->OperIs(GT_LIST); prev = node->gtPrev)
     {
         prev->gtFlags &= ~GTF_REVERSE_OPS;
         BlockRange().Remove(prev);
@@ -574,13 +573,10 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
     node->gtFlags &= ~GTF_REVERSE_OPS;
 
     // In addition, remove the current node if it is a GT_LIST node that is not an aggregate.
-    if (node->OperIsAnyList())
+    if (node->OperIs(GT_LIST))
     {
         GenTreeArgList* list = node->AsArgList();
-        if (!list->OperIsFieldListHead())
-        {
-            BlockRange().Remove(list);
-        }
+        BlockRange().Remove(list);
         return Compiler::WALK_CONTINUE;
     }
 

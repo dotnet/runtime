@@ -684,7 +684,7 @@ GenTree* DecomposeLongs::DecomposeCnsLng(LIR::Use& use)
 // DecomposeFieldList: Decompose GT_FIELD_LIST.
 //
 // Arguments:
-//    listNode - the head of the FIELD_LIST that contains the given GT_LONG.
+//    fieldList - the GT_FIELD_LIST node that uses the given GT_LONG node.
 //    longNode - the node to decompose
 //
 // Return Value:
@@ -693,34 +693,29 @@ GenTree* DecomposeLongs::DecomposeCnsLng(LIR::Use& use)
 // Notes:
 //    Split a LONG field list element into two elements: one for each half of the GT_LONG.
 //
-GenTree* DecomposeLongs::DecomposeFieldList(GenTreeFieldList* listNode, GenTreeOp* longNode)
+GenTree* DecomposeLongs::DecomposeFieldList(GenTreeFieldList* fieldList, GenTreeOp* longNode)
 {
     assert(longNode->OperGet() == GT_LONG);
-    // We are given the head of the field list. We need to find the actual node that uses
-    // the `GT_LONG` so that we can split it.
-    for (; listNode != nullptr; listNode = listNode->Rest())
+
+    GenTreeFieldList::Use* loUse = nullptr;
+    for (GenTreeFieldList::Use& use : fieldList->Uses())
     {
-        if (listNode->Current() == longNode)
+        if (use.GetNode() == longNode)
         {
+            loUse = &use;
             break;
         }
     }
-    assert(listNode != nullptr);
+    assert(loUse != nullptr);
 
     Range().Remove(longNode);
 
-    GenTree* rest = listNode->gtOp2;
+    loUse->SetNode(longNode->gtGetOp1());
+    loUse->SetType(TYP_INT);
 
-    GenTreeFieldList* loNode = listNode;
-    loNode->gtType           = TYP_INT;
-    loNode->gtOp1            = longNode->gtOp1;
-    loNode->gtFieldType      = TYP_INT;
+    fieldList->InsertFieldLIR(m_compiler, loUse, longNode->gtGetOp2(), loUse->GetOffset() + 4, TYP_INT);
 
-    GenTreeFieldList* hiNode =
-        new (m_compiler, GT_FIELD_LIST) GenTreeFieldList(longNode->gtOp2, loNode->gtFieldOffset + 4, TYP_INT, loNode);
-    hiNode->gtOp2 = rest;
-
-    return listNode->gtNext;
+    return fieldList->gtNext;
 }
 
 //------------------------------------------------------------------------

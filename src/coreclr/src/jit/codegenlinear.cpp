@@ -1651,10 +1651,9 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArg
     // Evaluate each of the GT_FIELD_LIST items into their register
     // and store their register into the outgoing argument area.
     unsigned argOffset = putArgStk->getArgOffset();
-    for (GenTreeFieldList* fieldListPtr = putArgStk->gtOp1->AsFieldList(); fieldListPtr != nullptr;
-         fieldListPtr                   = fieldListPtr->Rest())
+    for (GenTreeFieldList::Use& use : putArgStk->gtOp1->AsFieldList()->Uses())
     {
-        GenTree* nextArgNode = fieldListPtr->gtOp.gtOp1;
+        GenTree* nextArgNode = use.GetNode();
         genConsumeReg(nextArgNode);
 
         regNumber reg  = nextArgNode->gtRegNum;
@@ -1663,7 +1662,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArg
 
         // Emit store instructions to store the registers produced by the GT_FIELD_LIST into the outgoing
         // argument area.
-        unsigned thisFieldOffset = argOffset + fieldListPtr->gtFieldOffset;
+        unsigned thisFieldOffset = argOffset + use.GetOffset();
         GetEmitter()->emitIns_S_R(ins_Store(type), attr, reg, outArgVarNum, thisFieldOffset);
 
 // We can't write beyond the arg area unless this is a tail call, in which case we use
