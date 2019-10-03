@@ -151,7 +151,7 @@ internal static partial class Interop
         }
     }
 
-    internal partial class Sys
+    internal static partial class Sys
     {
         internal static Error GetLastError()
         {

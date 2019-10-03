@@ -438,7 +438,7 @@ namespace System.Reflection.Emit
             // Transparent DynamicMethod to call the current DynamicMethod.
             //
 
-            RuntimeMethodHandle method = GetMethodDescriptor();
+            _ = GetMethodDescriptor();
             // ignore obj since it's a static method
 
             // create a signature object

@@ -10,9 +10,9 @@ using Microsoft.Diagnostics.Tracing;
 using System.Diagnostics.Tracing;
 #endif
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Advapi32
+    internal static partial class Advapi32
     {
         /// <summary>
         ///  Call the ETW native API EventWriteTransfer and checks for invalid argument error.

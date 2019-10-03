@@ -4265,12 +4265,8 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     // with this issue.
                     if ((result.flags & ParseFlags.CaptureOffset) != 0)
                     {
-                        if ((result.flags & ParseFlags.Rfc1123Pattern) != 0 && quotedStr == GMTName)
-                        {
-                            result.flags |= ParseFlags.TimeZoneUsed;
-                            result.timeZoneOffset = TimeSpan.Zero;
-                        }
-                        else if ((result.flags & ParseFlags.UtcSortPattern) != 0 && quotedStr == ZuluName)
+                        if (((result.flags & ParseFlags.Rfc1123Pattern) != 0 && quotedStr == GMTName) ||
+                            ((result.flags & ParseFlags.UtcSortPattern) != 0 && quotedStr == ZuluName))
                         {
                             result.flags |= ParseFlags.TimeZoneUsed;
                             result.timeZoneOffset = TimeSpan.Zero;
