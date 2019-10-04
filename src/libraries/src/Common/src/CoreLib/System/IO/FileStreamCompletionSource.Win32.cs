@@ -4,6 +4,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -186,7 +187,9 @@ namespace System.IO
                     }
                     else
                     {
-                        TrySetException(Win32Marshal.GetExceptionForWin32Error(errorCode));
+                        Exception e = Win32Marshal.GetExceptionForWin32Error(errorCode);
+                        e.SetCurrentStackTrace();
+                        TrySetException(e);
                     }
                 }
                 else

@@ -1802,6 +1802,7 @@ namespace System.Threading.Tasks
                 // may not contain a TCE, but an OCE or any OCE-derived type, which would mean we'd be
                 // propagating an exception of a different type.
                 canceledException = new TaskCanceledException(this);
+                canceledException.SetCurrentStackTrace();
             }
 
             if (ExceptionRecorded)
