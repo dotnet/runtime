@@ -2453,7 +2453,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
     if (compiler->codeGen->GetInterruptible())
     {
 #ifdef _TARGET_X86_
-        assert(compiler->genFullPtrRegMap);
+        assert(compiler->IsFullPtrRegMapRequired());
 
         unsigned ptrRegs = 0;
 
@@ -2902,7 +2902,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
         */
 
         /* If "this" is enregistered, note it. We do this explicitly here as
-           genFullPtrRegMap==false, and so we don't have any regPtrDsc's. */
+           IsFullPtrRegMapRequired()==false, and so we don't have any regPtrDsc's. */
 
         if (compiler->lvaKeepAliveAndReportThis() && compiler->lvaTable[compiler->info.compThisArg].lvRegister)
         {
@@ -2919,7 +2919,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
         CallDsc* call;
 
-        assert(compiler->genFullPtrRegMap == false);
+        assert(compiler->IsFullPtrRegMapRequired() == false);
 
         /* Walk the list of pointer register/argument entries */
 
@@ -3073,7 +3073,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
     }
     else // GetInterruptible() is false and we have an EBP-less frame
     {
-        assert(compiler->genFullPtrRegMap);
+        assert(compiler->IsFullPtrRegMapRequired());
 
 #ifdef _TARGET_X86_
 
@@ -4277,7 +4277,7 @@ void GCInfo::gcMakeRegPtrTable(
 
     if (compiler->codeGen->GetInterruptible())
     {
-        assert(compiler->genFullPtrRegMap);
+        assert(compiler->IsFullPtrRegMapRequired());
 
         regMaskSmall ptrRegs          = 0;
         regPtrDsc*   regStackArgFirst = nullptr;
@@ -4381,7 +4381,7 @@ void GCInfo::gcMakeRegPtrTable(
     }
     else if (compiler->isFramePointerUsed()) // GetInterruptible() is false, and we're using EBP as a frame pointer.
     {
-        assert(compiler->genFullPtrRegMap == false);
+        assert(compiler->IsFullPtrRegMapRequired() == false);
 
         // Walk the list of pointer register/argument entries.
 
@@ -4487,7 +4487,7 @@ void GCInfo::gcMakeRegPtrTable(
     }
     else // GetInterruptible() is false and we have an EBP-less frame
     {
-        assert(compiler->genFullPtrRegMap);
+        assert(compiler->IsFullPtrRegMapRequired());
 
         // Walk the list of pointer register/argument entries */
         // First count them.
