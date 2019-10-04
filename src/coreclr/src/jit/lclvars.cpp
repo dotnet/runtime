@@ -5852,7 +5852,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             bool allocateOnFrame = varDsc->lvOnFrame;
 
             if (varDsc->lvRegister && (lvaDoneFrameLayout == REGALLOC_FRAME_LAYOUT) &&
-                ((varDsc->TypeGet() != TYP_LONG) || (varDsc->lvOtherReg != REG_STK)))
+                ((varDsc->TypeGet() != TYP_LONG) || (varDsc->GetOtherReg() != REG_STK)))
             {
                 allocateOnFrame = false;
             }
