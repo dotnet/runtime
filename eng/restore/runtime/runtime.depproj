@@ -12,9 +12,9 @@
   </ItemGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
-    <!-- These needs to be replaced once we have an official build -->
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview9-19407-2</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
-    <MicrosoftPrivateCorefxNETCoreAppVersion>4.6.0-preview9.19419.3</MicrosoftPrivateCorefxNETCoreAppVersion>
+    <!-- Non-shipping packages do not produce stable versions. -->
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-rc2.19462.14</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <MicrosoftPrivateCorefxNETCoreAppVersion>4.6.0-rc2.19462.14</MicrosoftPrivateCorefxNETCoreAppVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)' == 'uap10.0.16299'">

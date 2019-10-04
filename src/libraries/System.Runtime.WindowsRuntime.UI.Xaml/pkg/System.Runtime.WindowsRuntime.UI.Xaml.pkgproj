@@ -24,10 +24,7 @@
       <TargetFramework>netcoreapp1.0</TargetFramework>
     </File>-->
 
-    <HarvestIncludePaths Include="runtimes/win8/lib/netstandard1.3">
-      <TargetPath>runtimes/win/lib/netcore50</TargetPath>
-    </HarvestIncludePaths>
-
+    <HarvestIncludePaths Include="runtimes/win/lib/netcore50" />
     <File Include="$(PlaceHolderFile)">
       <TargetPath>runtimes/win-aot/lib/uap10.0.16299</TargetPath>
     </File>
