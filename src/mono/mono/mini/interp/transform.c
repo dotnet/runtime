@@ -6387,6 +6387,26 @@ interp_local_deadce (TransformData *td, int *local_ref_count)
 	}
 }
 
+static gboolean
+interp_local_equal (StackValue *locals, int local1, int local2)
+{
+	if (local1 == local2)
+		return TRUE;
+	if (locals [local1].opcode != MINT_NOP) {
+		g_assert (MINT_IS_LDLOC (locals [local1].opcode));
+		// local1 is a copy of local2
+		if (locals [local1].data == local2)
+			return TRUE;
+	}
+	if (locals [local2].opcode != MINT_NOP) {
+		g_assert (MINT_IS_LDLOC (locals [local2].opcode));
+		// local2 is a copy of local1
+		if (locals [local2].data == local1)
+			return TRUE;
+	}
+	return FALSE;
+}
+
 static void
 interp_cprop (TransformData *td)
 {
@@ -6424,7 +6444,7 @@ interp_cprop (TransformData *td)
 			int loaded_local = ins->data [0];
 			local_ref_count [loaded_local]++;
 			InterpInst *prev_ins = interp_prev_ins (ins);
-			if (MINT_IS_STLOC (prev_ins->opcode) && !interp_is_bb_start (td, prev_ins, ins) && prev_ins->data [0] == loaded_local) {
+			if (MINT_IS_STLOC (prev_ins->opcode) && !interp_is_bb_start (td, prev_ins, ins) && interp_local_equal (locals, prev_ins->data [0], loaded_local)) {
 				int mt = prev_ins->opcode - MINT_STLOC_I1;
 				if (ins->opcode - MINT_LDLOC_I1 == mt) {
 					if (mt == MINT_TYPE_I4)
@@ -6432,16 +6452,18 @@ interp_cprop (TransformData *td)
 					else if (mt == MINT_TYPE_O || mt == MINT_TYPE_P)
 						replace_op = MINT_STLOC_NP_O;
 					if (replace_op) {
+						int stored_local = prev_ins->data [0];
 						if (td->verbose_level)
 							g_print ("Add stloc.np : ldloc (off %p), stloc (off %p)\n", ins->il_offset, prev_ins->il_offset);
 						// We know what local is on the stack now. Track it
 						sp->ins = NULL;
 						sp->val.opcode = ins->opcode;
-						sp->val.data = loaded_local;
+						sp->val.data = stored_local;
 
 						// Clear the previous stloc instruction
 						interp_clear_ins (td, prev_ins);
 						ins->opcode = replace_op;
+						ins->data [0] = stored_local;
 						mono_interp_stats.stloc_nps++;
 						local_ref_count [loaded_local]--;
 					}
