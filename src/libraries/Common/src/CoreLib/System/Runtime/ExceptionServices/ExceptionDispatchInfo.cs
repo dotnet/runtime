@@ -61,5 +61,23 @@ namespace System.Runtime.ExceptionServices
         // rather than replacing the original stack trace.
         [DoesNotReturn]
         public static void Throw(Exception source) => Capture(source).Throw();
+
+        /// <summary>Stores the current stack trace into the specified <see cref="Exception"/> instance.</summary>
+        /// <param name="source">The unthrown <see cref="Exception"/> instance.</param>
+        /// <exception cref="ArgumentNullException">The <paramref name="source"/> argument was null.</exception>
+        /// <exception cref="InvalidOperationException">The <paramref name="source"/> argument was previously thrown or previously had a stack trace stored into it..</exception>
+        /// <returns>The <paramref name="source"/> exception instance.</returns>
+        [StackTraceHidden]
+        public static Exception SetCurrentStackTrace(Exception source)
+        {
+            if (source is null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            source.SetCurrentStackTrace();
+
+            return source;
+        }
     }
 }

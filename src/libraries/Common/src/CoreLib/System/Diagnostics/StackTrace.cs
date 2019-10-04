@@ -194,11 +194,16 @@ namespace System.Diagnostics
         /// </summary>
         internal string ToString(TraceFormat traceFormat)
         {
+            var sb = new StringBuilder(256);
+            ToString(traceFormat, sb);
+            return sb.ToString();
+        }
+
+        internal void ToString(TraceFormat traceFormat, StringBuilder sb)
+        {
             string word_At = SR.Word_At;
             string inFileLineNum = SR.StackTrace_InFileLineNumber;
-
             bool fFirstFrame = true;
-            StringBuilder sb = new StringBuilder(255);
             for (int iFrameIndex = 0; iFrameIndex < _numOfFrames; iFrameIndex++)
             {
                 StackFrame? sf = GetFrame(iFrameIndex);
@@ -210,7 +215,7 @@ namespace System.Diagnostics
                     if (fFirstFrame)
                         fFirstFrame = false;
                     else
-                        sb.Append(Environment.NewLineConst);
+                        sb.AppendLine();
 
                     sb.AppendFormat(CultureInfo.InvariantCulture, "   {0} ", word_At);
 
@@ -320,16 +325,14 @@ namespace System.Diagnostics
                     // Skip EDI boundary for async
                     if (sf.IsLastFrameFromForeignExceptionStackTrace && !isAsync)
                     {
-                        sb.Append(Environment.NewLineConst);
+                        sb.AppendLine();
                         sb.Append(SR.Exception_EndStackTraceFromPreviousThrow);
                     }
                 }
             }
 
             if (traceFormat == TraceFormat.TrailingNewLine)
-                sb.Append(Environment.NewLineConst);
-
-            return sb.ToString();
+                sb.AppendLine();
         }
 #endif // !CORERT
 
