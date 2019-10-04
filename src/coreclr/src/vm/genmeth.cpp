@@ -802,7 +802,11 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
     // Some callers pass a pExactMT that is a subtype of a parent type of pDefMD.
     // Find the actual exact parent of pDefMD.
     pExactMT = pDefMD->GetExactDeclaringType(pExactMT);
-    _ASSERTE(pExactMT != NULL);
+    if (pExactMT == NULL)
+    {
+        _ASSERTE(false);
+        COMPlusThrowHR(COR_E_TYPELOAD);
+    }
 
     if (pDefMD->HasClassOrMethodInstantiation() || !methodInst.IsEmpty())
     {
