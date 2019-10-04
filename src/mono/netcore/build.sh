@@ -34,6 +34,7 @@ force_rebuild=false
 test=false
 skipmscorlib=false
 skipnative=false
+llvm=false
 autogen_params=''
 
 while [[ $# > 0 ]]; do
@@ -64,7 +65,7 @@ while [[ $# > 0 ]]; do
       skipnative=true
       ;;
     -llvm)
-      autogen_params="$autogen_params --enable-llvm"
+      llvm=true
       ;;
     -p:*|/p:*)
       properties="$properties $1"
@@ -96,6 +97,11 @@ if [[ "$configuration" == "Debug" ]]; then
 elif [[ "$configuration" == "Release" ]]; then
   EXTRA_CFLAGS="-O2 -g"
   EXTRA_CXXFLAGS="-O2 -g"
+fi
+
+if [ "$llvm" = "true" ]; then
+  git submodule update --init -- ../external/llvm
+  autogen_params="$autogen_params --enable-llvm"
 fi
 
 # run .././autogen.sh only once or if "--rebuild" argument is provided
