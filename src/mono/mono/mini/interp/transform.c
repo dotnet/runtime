@@ -379,6 +379,15 @@ interp_clear_ins (TransformData *td, InterpInst *ins)
 	ins->opcode = MINT_NOP;
 }
 
+static InterpInst*
+interp_prev_ins (InterpInst *ins)
+{
+	ins = ins->prev;
+	while (ins && ins->opcode == MINT_NOP)
+		ins = ins->prev;
+	return ins;
+}
+
 #define CHECK_STACK(td, n) \
 	do { \
 		int stack_size = (td)->sp - (td)->stack; \
@@ -1034,6 +1043,10 @@ interp_is_bb_start (TransformData *td, InterpInst *start, InterpInst *end)
 		}
 		ins = ins->next;
 	}
+
+	// Also check if end is bb start
+	if (ins != NULL && ins->il_offset != -1 && td->is_bb_start [ins->il_offset])
+		return TRUE;
 	return FALSE;
 }
 
@@ -6410,8 +6423,9 @@ interp_cprop (TransformData *td)
 			int replace_op = 0;
 			int loaded_local = ins->data [0];
 			local_ref_count [loaded_local]++;
-			if (!is_bb_start && MINT_IS_STLOC (ins->prev->opcode) && ins->prev->data [0] == loaded_local) {
-				int mt = ins->prev->opcode - MINT_STLOC_I1;
+			InterpInst *prev_ins = interp_prev_ins (ins);
+			if (MINT_IS_STLOC (prev_ins->opcode) && !interp_is_bb_start (td, prev_ins, ins) && prev_ins->data [0] == loaded_local) {
+				int mt = prev_ins->opcode - MINT_STLOC_I1;
 				if (ins->opcode - MINT_LDLOC_I1 == mt) {
 					if (mt == MINT_TYPE_I4)
 						replace_op = MINT_STLOC_NP_I4;
@@ -6419,14 +6433,14 @@ interp_cprop (TransformData *td)
 						replace_op = MINT_STLOC_NP_O;
 					if (replace_op) {
 						if (td->verbose_level)
-							g_print ("Add stloc.np : ldloc (off %p), stloc (off %p)\n", ins->il_offset, ins->prev->il_offset);
+							g_print ("Add stloc.np : ldloc (off %p), stloc (off %p)\n", ins->il_offset, prev_ins->il_offset);
 						// We know what local is on the stack now. Track it
 						sp->ins = NULL;
 						sp->val.opcode = ins->opcode;
 						sp->val.data = loaded_local;
 
 						// Clear the previous stloc instruction
-						interp_clear_ins (td, ins->prev);
+						interp_clear_ins (td, prev_ins);
 						ins->opcode = replace_op;
 						mono_interp_stats.stloc_nps++;
 						local_ref_count [loaded_local]--;
