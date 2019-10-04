@@ -59,6 +59,7 @@
     PER_FUNCTION_BLOCK(ucol_getStrength, libicui18n) \
     PER_FUNCTION_BLOCK(ucol_getVersion, libicui18n) \
     PER_FUNCTION_BLOCK(ucol_next, libicui18n) \
+    PER_FUNCTION_BLOCK(ucol_previous, libicui18n) \
     PER_FUNCTION_BLOCK(ucol_open, libicui18n) \
     PER_FUNCTION_BLOCK(ucol_openElements, libicui18n) \
     PER_FUNCTION_BLOCK(ucol_openRules, libicui18n) \
@@ -166,6 +167,7 @@ FOR_ALL_ICU_FUNCTIONS
 #define ucol_getStrength(...) ucol_getStrength_ptr(__VA_ARGS__)
 #define ucol_getVersion(...) ucol_getVersion_ptr(__VA_ARGS__)
 #define ucol_next(...) ucol_next_ptr(__VA_ARGS__)
+#define ucol_previous(...) ucol_previous_ptr(__VA_ARGS__)
 #define ucol_open(...) ucol_open_ptr(__VA_ARGS__)
 #define ucol_openElements(...) ucol_openElements_ptr(__VA_ARGS__)
 #define ucol_openRules(...) ucol_openRules_ptr(__VA_ARGS__)
