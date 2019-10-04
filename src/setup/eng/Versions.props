@@ -61,11 +61,11 @@
     <!-- coreclr -->
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>5.0.0-alpha1.19501.1</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <!-- winforms -->
-    <MicrosoftPrivateWinformsPackageVersion>5.0.0-alpha1.19502.3</MicrosoftPrivateWinformsPackageVersion>
+    <MicrosoftPrivateWinformsPackageVersion>5.0.0-alpha1.19503.1</MicrosoftPrivateWinformsPackageVersion>
     <!-- wpf -->
-    <MicrosoftDotNetWpfGitHubPackageVersion>5.0.0-alpha1.19503.5</MicrosoftDotNetWpfGitHubPackageVersion>
+    <MicrosoftDotNetWpfGitHubPackageVersion>5.0.0-alpha1.19503.6</MicrosoftDotNetWpfGitHubPackageVersion>
     <!-- wpf-int -->
-    <MicrosoftDotNetWpfDncEngPackageVersion>5.0.0-alpha1.19503.14</MicrosoftDotNetWpfDncEngPackageVersion>
+    <MicrosoftDotNetWpfDncEngPackageVersion>5.0.0-alpha1.19503.16</MicrosoftDotNetWpfDncEngPackageVersion>
     <!-- Not auto-updated. -->
     <MicrosoftBuildPackageVersion>15.7.179</MicrosoftBuildPackageVersion>
     <MicrosoftBuildFrameworkPackageVersion>$(MicrosoftBuildPackageVersion)</MicrosoftBuildFrameworkPackageVersion>
