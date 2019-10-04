@@ -7,6 +7,7 @@ using System;
 using Internal.JitInterface;
 using Internal.Text;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -63,28 +64,46 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     if (_method.Token.TokenType == CorTokenType.mdtMethodDef)
                     {
                         fixupKind = ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry_DefToken;
+                        optimized = true;
                     }
                     else if (_method.Token.TokenType == CorTokenType.mdtMemberRef)
                     {
                         fixupKind = ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry_RefToken;
+                        optimized = true;
                     }
-                    optimized = true;
                 }
             }
 
-            SignatureContext innerContext = dataBuilder.EmitFixup(r2rFactory, fixupKind, _method.Token.Module, _signatureContext);
-
-            if (optimized && _method.Token.TokenType == CorTokenType.mdtMethodDef)
+            MethodWithToken method = _method;
+            
+            if (factory.CompilationModuleGroup.VersionsWithMethodBody(method.Method))
             {
-                dataBuilder.EmitMethodDefToken(_method.Token);
+                if (method.Token.TokenType == CorTokenType.mdtMethodSpec)
+                {
+                    method = new MethodWithToken(method.Method, _signatureContext.GetModuleTokenForMethod(method.Method, throwIfNotFound: false), method.ConstrainedType);
+                }
+                else if (!optimized && (method.Token.TokenType == CorTokenType.mdtMemberRef))
+                {
+                    if (method.Method.OwningType.GetTypeDefinition() is EcmaType)
+                    {
+                        method = new MethodWithToken(method.Method, _signatureContext.GetModuleTokenForMethod(method.Method, throwIfNotFound: false), method.ConstrainedType);
+                    }
+                }
             }
-            else if (optimized && _method.Token.TokenType == CorTokenType.mdtMemberRef)
+
+            SignatureContext innerContext = dataBuilder.EmitFixup(r2rFactory, fixupKind, method.Token.Module, _signatureContext);
+
+            if (optimized && method.Token.TokenType == CorTokenType.mdtMethodDef)
             {
-                dataBuilder.EmitMethodRefToken(_method.Token);
+                dataBuilder.EmitMethodDefToken(method.Token);
+            }
+            else if (optimized && method.Token.TokenType == CorTokenType.mdtMemberRef)
+            {
+                dataBuilder.EmitMethodRefToken(method.Token);
             }
             else
             {
-                dataBuilder.EmitMethodSignature(_method, enforceDefEncoding: false, enforceOwningType: false, innerContext, _isUnboxingStub, _isInstantiatingStub);
+                dataBuilder.EmitMethodSignature(method, enforceDefEncoding: false, enforceOwningType: false, innerContext, _isUnboxingStub, _isInstantiatingStub);
             }
 
             return dataBuilder.ToObjectData();
