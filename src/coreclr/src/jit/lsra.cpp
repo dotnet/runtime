@@ -81,8 +81,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     Local variable table (LclVarDsc):
     - LclVarDsc::lvRegister is set to true if a local variable has the
       same register assignment for its entire lifetime.
-    - LclVarDsc::lvRegNum / lvOtherReg: these are initialized to their
-      first value at the end of LSRA (it looks like lvOtherReg isn't?
+    - LclVarDsc::lvRegNum / GetOtherReg(): these are initialized to their
+      first value at the end of LSRA (it looks like GetOtherReg() isn't?
       This is probably a bug (ARM)). Codegen will set them to their current value
       as it processes the trees, since a variable can (now) be assigned different
       registers over its lifetimes.
@@ -1647,7 +1647,7 @@ void LinearScan::identifyCandidates()
         // Initialize all variables to REG_STK
         varDsc->SetRegNum(REG_STK);
 #ifndef _TARGET_64BIT_
-        varDsc->lvOtherReg = REG_STK;
+        varDsc->SetOtherReg(REG_STK);
 #endif // _TARGET_64BIT_
 
         if (!enregisterLocalVars)
@@ -6042,7 +6042,7 @@ void LinearScan::updatePreviousInterval(RegRecord* reg, Interval* interval, Regi
 // Details:
 // This method is called for each local reference, during the resolveRegisters
 // phase of LSRA.  It is responsible for keeping the following in sync:
-//   - varDsc->GetRegNum() (and lvOtherReg) contain the unique register location.
+//   - varDsc->GetRegNum() (and GetOtherReg()) contain the unique register location.
 //     If it is not in the same register through its lifetime, it is set to REG_STK.
 //   - interval->physReg is set to the assigned register
 //     (i.e. at the code location which is currently being handled by resolveRegisters())
@@ -7250,7 +7250,7 @@ void LinearScan::resolveRegisters()
 #ifdef _TARGET_ARM_
                     if (varTypeIsMultiReg(varDsc))
                     {
-                        // TODO-ARM-NYI: Map the hi/lo intervals back to lvRegNum and lvOtherReg (these should NYI
+                        // TODO-ARM-NYI: Map the hi/lo intervals back to lvRegNum and GetOtherReg() (these should NYI
                         // before this)
                         assert(!"Multi-reg types not yet supported");
                     }
