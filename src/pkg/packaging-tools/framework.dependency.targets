@@ -251,10 +251,17 @@
       <_diaSymReaderPackageDir>$(PackagesDir)microsoft.diasymreader.native/$(MicrosoftDiaSymReaderNativePackageVersion)/</_diaSymReaderPackageDir>
     </PropertyGroup>
 
+    <PropertyGroup Condition="'$(TargetArchitecture)' == 'arm' AND '$(OS)' == 'Windows_NT'">
+      <_crossHostArch>x86</_crossHostArch>
+    </PropertyGroup> 
+    <PropertyGroup Condition="'$(TargetArchitecture)' == 'arm' AND '$(OS)' != 'Windows_NT'">
+      <_crossHostArch>x64</_crossHostArch>
+    </PropertyGroup> 
+    <PropertyGroup Condition="'$(TargetArchitecture)' == 'arm64'">
+      <_crossHostArch>x64</_crossHostArch>
+    </PropertyGroup> 
     <PropertyGroup>
-      <_crossDir Condition="'$(TargetArchitecture)' == 'arm' AND '$(OS)' == 'Windows_NT'">/x86_arm</_crossDir>
-      <_crossDir Condition="'$(TargetArchitecture)' == 'arm' AND '$(OS)' != 'Windows_NT'">/x64_arm</_crossDir>
-      <_crossDir Condition="'$(TargetArchitecture)' == 'arm64'">/x64_arm64</_crossDir>
+      <_crossDir Condition="'$(_crossHostArch)' != ''">/$(_crossHostArch)_$(TargetArchitecture)</_crossDir>
     </PropertyGroup>
 
     <ItemGroup>
@@ -303,7 +310,7 @@
     <PropertyGroup Condition="'@(_diaSymReaderAssembly)' != ''">
       <_diaSymReaderToolDir>%(_diaSymReaderAssembly.RootDir)%(_diaSymReaderAssembly.Directory)</_diaSymReaderToolDir>
     </PropertyGroup>
-
+    
     <!--
       DiaSymReader can't be built from source, so use an unrelated default directory in that case.
       This is used as the working directory for crossgen calls.
@@ -313,7 +320,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <_requiredProperty Include="_coreLibDirectory;_crossGenPath;_jitPath;_fxLibDirectory;_windowsWinMDDirectory;_diaSymReaderToolDir" />
+      <_requiredProperty Include="_runtimeDirectory;_coreLibDirectory;_crossGenPath;_jitPath;_fxLibDirectory;_windowsWinMDDirectory;_diaSymReaderToolDir" />
     </ItemGroup>
 
     <Message Text="%(_requiredProperty.Identity): $(%(_requiredProperty.Identity))" />
@@ -404,7 +411,7 @@
           DependsOnTargets="
             GetCrossgenToolPaths;
             EnsureCrossGenIsExecutable"
-          Inputs="@(_filesToCrossGen)"
+          Inputs="@(_filesToCrossGen);$(_crossGenPath)"
           Outputs="%(_filesToCrossGen.CrossGenedPath)">
     <PropertyGroup>
       <_crossGenResponseFile>$(_crossGenIntermediatePath)%(_filesToCrossGen.FileName).rsp</_crossGenResponseFile>

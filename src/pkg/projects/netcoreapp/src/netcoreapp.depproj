@@ -77,5 +77,6 @@
       </FilesToPackage>
     </ItemGroup>
   </Target>
-
+  
+  <Import Project="localnetcoreapp.override.targets" />
 </Project>
