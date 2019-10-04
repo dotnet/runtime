@@ -2287,9 +2287,10 @@ void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
 
     compiler->EndPhase(PHASE_GENERATE_CODE);
 
-    codeSize = GetEmitter()->emitEndCodeGen(compiler, trackedStackPtrsContig, GetInterruptible(), genFullPtrRegMap,
-                                            (compiler->info.compRetType == TYP_REF), compiler->compHndBBtabCount,
-                                            &prologSize, &epilogSize, codePtr, &coldCodePtr, &consPtr);
+    codeSize =
+        GetEmitter()->emitEndCodeGen(compiler, trackedStackPtrsContig, GetInterruptible(), IsFullPtrRegMapRequired(),
+                                     (compiler->info.compRetType == TYP_REF), compiler->compHndBBtabCount, &prologSize,
+                                     &epilogSize, codePtr, &coldCodePtr, &consPtr);
 
     compiler->EndPhase(PHASE_EMIT_CODE);
 
@@ -6705,7 +6706,7 @@ void CodeGen::genReserveEpilog(BasicBlock* block)
 
     bool jmpEpilog = ((block->bbFlags & BBF_HAS_JMP) != 0);
 
-    if (genFullPtrRegMap && !jmpEpilog)
+    if (IsFullPtrRegMapRequired() && !jmpEpilog)
     {
         if (varTypeIsGC(compiler->info.compRetNativeType))
         {
