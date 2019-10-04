@@ -382,12 +382,11 @@ private:
     //        for fully interruptible methods)
     //
 public:
-    __declspec(property(get = doFullPtrRegMap, put = setFullPtrRegMap)) bool genFullPtrRegMap;
-    bool doFullPtrRegMap()
+    bool IsFullPtrRegMapRequired()
     {
         return m_cgFullPtrRegMap;
     }
-    void setFullPtrRegMap(bool value)
+    void SetFullPtrRegMapRequired(bool value)
     {
         m_cgFullPtrRegMap = value;
     }
