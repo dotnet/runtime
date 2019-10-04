@@ -559,7 +559,7 @@ namespace ReadyToRun.SuperIlc
         {
             const int TopAppCount = 10;
 
-            IEnumerable<ProcessInfo> selection = processes.OrderByDescending(process => process.DurationMilliseconds).Take(TopAppCount);
+            IEnumerable<ProcessInfo> selection = processes.Where(process => !process.IsEmpty).OrderByDescending(process => process.DurationMilliseconds).Take(TopAppCount);
             int count = selection.Count();
             if (count == 0)
             {
