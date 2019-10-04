@@ -75,7 +75,12 @@ namespace Mono.Linker.Tests.TestCases
 		{
 			return NUnitCasesBySuiteName ("Reflection");
 		}
-		
+
+		public static IEnumerable<TestCaseData> ComponentModelTests ()
+		{
+			return NUnitCasesBySuiteName ("ComponentModel");
+		}
+
 		public static IEnumerable<TestCaseData> SymbolsTests ()
 		{
 			return NUnitCasesBySuiteName ("Symbols");

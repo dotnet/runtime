@@ -1141,18 +1141,23 @@ namespace Mono.Linker.Steps {
 				return;
 
 			foreach (CustomAttribute attribute in type.CustomAttributes) {
-				switch (attribute.Constructor.DeclaringType.FullName) {
-				case "System.Xml.Serialization.XmlSchemaProviderAttribute":
+				var attrType = attribute.Constructor.DeclaringType;
+				switch (attrType.Name) {
+				case "XmlSchemaProviderAttribute" when attrType.Namespace == "System.Xml.Serialization":
 					MarkXmlSchemaProvider (type, attribute);
 					break;
-				case "System.Diagnostics.DebuggerDisplayAttribute":
+				case "DebuggerDisplayAttribute" when attrType.Namespace == "System.Diagnostics":
 					MarkTypeWithDebuggerDisplayAttribute (type, attribute);
 					break;
-				case "System.Diagnostics.DebuggerTypeProxyAttribute":
+				case "DebuggerTypeProxyAttribute" when attrType.Namespace == "System.Diagnostics":
 					MarkTypeWithDebuggerTypeProxyAttribute (type, attribute);
 					break;
-				case "System.Diagnostics.Tracing.EventDataAttribute":
+				case "EventDataAttribute" when attrType.Namespace == "System.Diagnostics.Tracing":
 					MarkMethodsIf (type.Methods, IsPublicInstancePropertyMethod);
+					break;
+				case "TypeConverterAttribute" when attrType.Namespace == "System.ComponentModel":
+					// The attribute can be applied anywhere but in reality it's always associated with type
+					MarkTypeConverterDependency (attribute);
 					break;
 				}
 			}
@@ -1179,6 +1184,30 @@ namespace Mono.Linker.Steps {
 				return;
 
 			MarkNamedMethod (type, method_name);
+		}
+
+		void MarkTypeConverterDependency (CustomAttribute attribute)
+		{
+			var args = attribute.ConstructorArguments;
+			if (args.Count < 1)
+				return;
+
+			TypeDefinition tdef = null;
+			switch (attribute.ConstructorArguments [0].Value) {
+			case string s:
+				tdef = ResolveFullyQualifiedTypeName (s);
+				break;
+			case TypeReference type:
+				tdef = type.Resolve ();
+				break;
+			}
+
+			if (tdef == null)
+				return;
+
+			MarkMethodsIf (tdef.Methods, l =>
+				l.IsDefaultConstructor () ||
+				l.Parameters.Count == 1 && l.Parameters [0].ParameterType.IsTypeOf ("System", "Type"));
 		}
 
 		void MarkTypeWithDebuggerDisplayAttribute (TypeDefinition type, CustomAttribute attribute)
@@ -1538,6 +1567,25 @@ namespace Mono.Linker.Steps {
 				td = type.Resolve ();
 
 			return td;
+		}
+
+		TypeDefinition ResolveFullyQualifiedTypeName (string name)
+		{
+			if (!TypeNameParser.TryParseTypeAssemblyQualifiedName (name, out string typeName, out string assemblyName))
+				return null;
+
+			foreach (var assemblyDefinition in _context.GetAssemblies ()) {
+				if (assemblyName != null && assemblyDefinition.Name.Name != assemblyName)
+					continue;
+
+				var foundType = assemblyDefinition.MainModule.GetType (typeName);
+				if (foundType == null)
+					continue;
+
+				return foundType;
+			}
+
+			return null;
 		}
 
 		protected TypeReference GetOriginalType (TypeReference type)
@@ -2369,21 +2417,7 @@ namespace Mono.Linker.Steps {
 							continue;
 						}
 
-						var name = (string)first_arg.Operand;
-
-						if (!TypeNameParser.TryParseTypeAssemblyQualifiedName (name, out string typeName, out string assemblyName))
-							continue;
-
-						TypeDefinition foundType = null;
-						foreach (var assemblyDefinition in _context.GetAssemblies ()) {
-							if (assemblyName != null && assemblyDefinition.Name.Name != assemblyName)
-								continue;
-
-							foundType = assemblyDefinition.MainModule.GetType (typeName);
-							if (foundType != null)
-								break;
-						}
-
+						TypeDefinition foundType = ResolveFullyQualifiedTypeName ((string) first_arg.Operand);
 						if (foundType == null)
 							continue;
 
