@@ -478,7 +478,7 @@ regMaskTP CodeGenInterface::genGetRegMask(GenTree* tree)
 
 // The given lclVar is either going live (being born) or dying.
 // It might be both going live and dying (that is, it is a dead store) under MinOpts.
-// Update regSet.rsMaskVars accordingly.
+// Update regSet.GetMaskVars() accordingly.
 // inline
 void CodeGenInterface::genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bool isDying DEBUGARG(GenTree* tree))
 {
@@ -499,12 +499,12 @@ void CodeGenInterface::genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bo
     {
         // We'd like to be able to assert the following, however if we are walking
         // through a qmark/colon tree, we may encounter multiple last-use nodes.
-        // assert((regSet.rsMaskVars & regMask) == regMask);
+        // assert((regSet.GetMaskVars() & regMask) == regMask);
         regSet.RemoveMaskVars(regMask);
     }
     else
     {
-        assert((regSet.rsMaskVars & regMask) == 0);
+        assert((regSet.GetMaskVars() & regMask) == 0);
         regSet.AddMaskVars(regMask);
     }
 }
