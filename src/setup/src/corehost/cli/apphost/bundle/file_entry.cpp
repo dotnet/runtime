@@ -11,7 +11,7 @@ using namespace bundle;
 
 bool file_entry_t::is_valid() const
 {
-    return m_offset > 0 && m_size > 0 &&
+    return m_offset > 0 && m_size >= 0 &&
         static_cast<file_type_t>(m_type) < file_type_t::__last;
 }
 
