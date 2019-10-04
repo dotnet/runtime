@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
+using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 
 namespace System.Threading
@@ -533,7 +534,9 @@ namespace System.Threading
                         // returning false if you use it multiple times. Since first calling Timer.Dispose(WaitHandle)
                         // and then calling Timer.DisposeAsync is not something anyone is likely to or should do, we
                         // simplify by just failing in that case.
-                        return new ValueTask(Task.FromException(new InvalidOperationException(SR.InvalidOperation_TimerAlreadyClosed)));
+                        var e = new InvalidOperationException(SR.InvalidOperation_TimerAlreadyClosed);
+                        e.SetCurrentStackTrace();
+                        return new ValueTask(Task.FromException(e));
                     }
                 }
                 else
