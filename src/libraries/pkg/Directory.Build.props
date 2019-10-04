@@ -6,6 +6,7 @@
          For offline builds we still set OfficialBuildId but we need to build all the packages for a single
          leg only, so we also take DotNetBuildFromSource  into account. -->
     <BuildingAnOfficialBuildLeg Condition="'$(BuildingAnOfficialBuildLeg)' == '' AND '$(OfficialBuildId)' != '' AND '$(DotNetBuildFromSource)' != 'true'">true</BuildingAnOfficialBuildLeg>
+    <HarvestStablePackage>false</HarvestStablePackage>
   </PropertyGroup>
 
   <!-- Packages opt-in to automatic RID-specific builds by placing a *.RID.props next to their project
