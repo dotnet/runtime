@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
@@ -484,9 +483,8 @@ LAgain:
             out CandidateFunctionMember methAmbig1,
             out CandidateFunctionMember methAmbig2)
         {
-            Debug.Assert(list.Any());
-            Debug.Assert(list.First().mpwi != null);
-            Debug.Assert(list.Count > 0);
+            Debug.Assert(list.Count != 0);
+            Debug.Assert(list[0].mpwi != null);
 
             // select the best method:
             /*
@@ -501,8 +499,8 @@ LAgain:
                 goto phase 2
             Phase 2: compare all items before candidate to candidate
                 If candidate always better, return it, otherwise return null
+            */
 
-        */
             // Record two method that are ambiguous for error reporting.
             CandidateFunctionMember ambig1 = null;
             CandidateFunctionMember ambig2 = null;
@@ -584,8 +582,8 @@ LAgain:
             {
                 // For some reason, we have an ambiguity but never had a tie.
                 // This can easily happen in a circular graph of candidate methods.
-                methAmbig1 = list.First();
-                methAmbig2 = list.Skip(1).First();
+                methAmbig1 = list[0];
+                methAmbig2 = list[1];
             }
 
             return null;
