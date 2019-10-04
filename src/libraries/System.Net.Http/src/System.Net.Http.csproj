@@ -485,9 +485,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Poll.cs">
       <Link>Common\Interop\Unix\libc\Interop.Poll.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.PrintF.cs">
-      <Link>Common\Interop\Unix\libc\Interop.PrintF.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\System.Native\Interop.Read.cs">
       <Link>Common\Interop\Unix\libc\Interop.Read.cs</Link>
     </Compile>
@@ -693,6 +690,7 @@
     <Reference Include="System.IO.Compression.Brotli" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Reference Include="System.Console" Condition="'$(ConfigurationGroup)' == 'Debug'" />
     <Reference Include="System.Diagnostics.StackTrace" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Security.Cryptography.Algorithms" />

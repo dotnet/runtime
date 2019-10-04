@@ -300,9 +300,6 @@
     <Compile Include="Microsoft\Win32\SafeHandles\SafePasswordHandle.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' AND '$(TargetsOSX)' != 'true' ">
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.PrintF.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.PrintF.cs</Link>
-    </Compile>
     <AsnXml Include="System\Security\Cryptography\X509Certificates\Asn1\DistributionPointAsn.xml" />
     <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\DistributionPointAsn.xml.cs">
       <DependentUpon>System\Security\Cryptography\X509Certificates\Asn1\DistributionPointAsn.xml</DependentUpon>
@@ -711,6 +708,9 @@
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' AND '$(TargetsOSX)' != 'true'">
     <Reference Include="System.Diagnostics.StackTrace" />
     <Reference Include="System.Security.Cryptography.OpenSsl" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Reference Include="System.Console" Condition="'$(ConfigurationGroup)' == 'Debug'" />
   </ItemGroup>
   <ItemGroup>
     <None Include="@(AsnXml)" /> 
