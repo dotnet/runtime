@@ -90,7 +90,13 @@ namespace Mono.Linker.Tests.TestCases
 		{
 			Run (testCase);
 		}
-		
+
+		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.ComponentModelTests))]
+		public void ComponentModelTests (TestCase testCase)
+		{
+			Run (testCase);
+		}
+
 		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.PreserveDependenciesTests))]
 		public void PreserveDependenciesTests (TestCase testCase)
 		{

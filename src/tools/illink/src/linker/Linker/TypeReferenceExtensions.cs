@@ -231,5 +231,11 @@ namespace Mono.Linker
 
 			throw new NotImplementedException ();
 		}
+
+		public static bool IsTypeOf (this TypeReference type, string ns, string name)
+		{
+			return type.Name == name
+				&& type.Namespace == ns;
+		}
 	}
 }
