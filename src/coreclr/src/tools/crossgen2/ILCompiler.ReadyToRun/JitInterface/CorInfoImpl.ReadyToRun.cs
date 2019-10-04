@@ -559,6 +559,8 @@ namespace Internal.JitInterface
 
                 case CorInfoHelpFunc.CORINFO_HELP_INITCLASS:
                 case CorInfoHelpFunc.CORINFO_HELP_INITINSTCLASS:
+                case CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTEXCEPTION:
+                case CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION:
                 case CorInfoHelpFunc.CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED:
                 case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL:
                 case CorInfoHelpFunc.CORINFO_HELP_GETREFANY:
