@@ -259,7 +259,7 @@ void CodeGen::genCodeForBBlist()
             }
         }
 
-        regSet.rsMaskVars = newLiveRegSet;
+        regSet.SetMaskVars(newLiveRegSet);
 
 #ifdef DEBUG
         if (compiler->verbose)
@@ -474,7 +474,7 @@ void CodeGen::genCodeForBBlist()
         /* Make sure we didn't bungle pointer register tracking */
 
         regMaskTP ptrRegs       = gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur;
-        regMaskTP nonVarPtrRegs = ptrRegs & ~regSet.rsMaskVars;
+        regMaskTP nonVarPtrRegs = ptrRegs & ~regSet.GetMaskVars();
 
         // If return is a GC-type, clear it.  Note that if a common
         // epilog is generated (genReturnBB) it has a void return
@@ -492,14 +492,14 @@ void CodeGen::genCodeForBBlist()
         if (nonVarPtrRegs)
         {
             printf("Regset after " FMT_BB " gcr=", block->bbNum);
-            printRegMaskInt(gcInfo.gcRegGCrefSetCur & ~regSet.rsMaskVars);
-            compiler->GetEmitter()->emitDispRegSet(gcInfo.gcRegGCrefSetCur & ~regSet.rsMaskVars);
+            printRegMaskInt(gcInfo.gcRegGCrefSetCur & ~regSet.GetMaskVars());
+            compiler->GetEmitter()->emitDispRegSet(gcInfo.gcRegGCrefSetCur & ~regSet.GetMaskVars());
             printf(", byr=");
-            printRegMaskInt(gcInfo.gcRegByrefSetCur & ~regSet.rsMaskVars);
-            compiler->GetEmitter()->emitDispRegSet(gcInfo.gcRegByrefSetCur & ~regSet.rsMaskVars);
+            printRegMaskInt(gcInfo.gcRegByrefSetCur & ~regSet.GetMaskVars());
+            compiler->GetEmitter()->emitDispRegSet(gcInfo.gcRegByrefSetCur & ~regSet.GetMaskVars());
             printf(", regVars=");
-            printRegMaskInt(regSet.rsMaskVars);
-            compiler->GetEmitter()->emitDispRegSet(regSet.rsMaskVars);
+            printRegMaskInt(regSet.GetMaskVars());
+            compiler->GetEmitter()->emitDispRegSet(regSet.GetMaskVars());
             printf("\n");
         }
 
@@ -1004,7 +1004,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             // TODO-Review: We would like to call:
             //      genUpdateRegLife(varDsc, /*isBorn*/ true, /*isDying*/ false DEBUGARG(tree));
             // instead of the following code, but this ends up hitting this assert:
-            //      assert((regSet.rsMaskVars & regMask) == 0);
+            //      assert((regSet.GetMaskVars() & regMask) == 0);
             // due to issues with LSRA resolution moves.
             // So, just force it for now. This probably indicates a condition that creates a GC hole!
             //

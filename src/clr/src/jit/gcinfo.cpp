@@ -194,8 +194,8 @@ void GCInfo::gcMarkRegSetNpt(regMaskTP regMask DEBUGARG(bool forceOutput))
 {
     /* NOTE: don't unmark any live register variables */
 
-    regMaskTP gcRegByrefSetNew = gcRegByrefSetCur & ~(regMask & ~regSet->rsMaskVars);
-    regMaskTP gcRegGCrefSetNew = gcRegGCrefSetCur & ~(regMask & ~regSet->rsMaskVars);
+    regMaskTP gcRegByrefSetNew = gcRegByrefSetCur & ~(regMask & ~regSet->GetMaskVars());
+    regMaskTP gcRegGCrefSetNew = gcRegGCrefSetCur & ~(regMask & ~regSet->GetMaskVars());
 
     INDEBUG(gcDspGCrefSetChanges(gcRegGCrefSetNew, forceOutput));
     INDEBUG(gcDspByrefSetChanges(gcRegByrefSetNew, forceOutput));
