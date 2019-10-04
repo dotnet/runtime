@@ -2228,7 +2228,7 @@
     <value>--- End of inner exception stack trace ---</value>
   </data>
   <data name="Exception_EndStackTraceFromPreviousThrow" xml:space="preserve">
-    <value>--- End of stack trace from previous location where exception was thrown ---</value>
+    <value>--- End of stack trace from previous location ---</value>
   </data>
   <data name="Exception_WasThrown" xml:space="preserve">
     <value>Exception of type '{0}' was thrown.</value>

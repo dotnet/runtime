@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
+using System.Text;
 
 namespace System
 {
@@ -419,6 +420,31 @@ namespace System
 
             return new DispatchState(stackTrace, dynamicMethods,
                 _remoteStackTraceString, _ipForWatsonBuckets, _watsonBuckets);
+        }
+
+        [StackTraceHidden]
+        internal void SetCurrentStackTrace()
+        {
+            // If this is a preallocated singleton exception, silently skip the operation,
+            // regardless of the value of throwIfHasExistingStack.
+            if (IsImmutableAgileException(this))
+            {
+                return;
+            }
+
+            // Check to see if the exception already has a stack set in it.
+            if (_stackTrace != null || _stackTraceString != null || _remoteStackTraceString != null)
+            {
+                ThrowHelper.ThrowInvalidOperationException();
+            }
+
+            // Store the current stack trace into the "remote" stack trace, which was originally introduced to support
+            // remoting of exceptions cross app-domain boundaries, and is thus concatenated into Exception.StackTrace
+            // when it's retrieved.
+            var sb = new StringBuilder(256);
+            new StackTrace(fNeedFileInfo: true).ToString(System.Diagnostics.StackTrace.TraceFormat.TrailingNewLine, sb);
+            sb.AppendLine(SR.Exception_EndStackTraceFromPreviousThrow);
+            _remoteStackTraceString = sb.ToString();
         }
     }
 }
