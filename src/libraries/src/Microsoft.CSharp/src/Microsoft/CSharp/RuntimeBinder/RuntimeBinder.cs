@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
-using System.Linq;
 using System.Linq.Expressions;
 using Microsoft.CSharp.RuntimeBinder.Errors;
 using Microsoft.CSharp.RuntimeBinder.Semantics;
@@ -1295,7 +1294,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             LocalVariableSymbol[] locals)
         {
             Debug.Assert(arguments.Length >= 2);
-            Debug.Assert(arguments.All(a => a.Type != null));
+            Debug.Assert(Array.TrueForAll(arguments, a => a.Type != null));
 
             string name = payload.Name;
 

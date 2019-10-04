@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security;
@@ -750,19 +749,22 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             (Assembly, Assembly) key = (assemblyThatDefinesAttribute, assemblyToCheck);
             if (!s_internalsVisibleToCache.TryGetValue(key, out bool result))
             {
-                AssemblyName assyName;
-
                 // Assembly.GetName() requires FileIOPermission to FileIOPermissionAccess.PathDiscovery.
                 // If we don't have that (we're in low trust), then we are going to effectively turn off
                 // InternalsVisibleTo. The alternative is to crash when this happens.
 
                 try
                 {
-                    assyName = assemblyToCheck.GetName();
-                    result = assemblyThatDefinesAttribute.GetCustomAttributes()
-                        .OfType<InternalsVisibleToAttribute>()
-                        .Select(ivta => new AssemblyName(ivta.AssemblyName))
-                        .Any(an => AssemblyName.ReferenceMatchesDefinition(an, assyName));
+                    AssemblyName assyName = assemblyToCheck.GetName();
+                    foreach (Attribute attr in assemblyThatDefinesAttribute.GetCustomAttributes())
+                    {
+                        if (attr is InternalsVisibleToAttribute ivta &&
+                            AssemblyName.ReferenceMatchesDefinition(new AssemblyName(ivta.AssemblyName), assyName))
+                        {
+                            result = true;
+                            break;
+                        }
+                    }
                 }
                 catch (SecurityException)
                 {

@@ -4,7 +4,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -182,13 +181,25 @@ namespace Microsoft.CSharp.RuntimeBinder
             // Recurse in for generic types arrays, byref and pointer types.
             if (t1.IsGenericType && t2.IsGenericType)
             {
-                var args1 = t1.GetGenericArguments();
-                var args2 = t2.GetGenericArguments();
+                Type[] args1 = t1.GetGenericArguments();
+                Type[] args2 = t2.GetGenericArguments();
 
                 if (args1.Length == args2.Length)
                 {
-                    return t1.IsGenericallyEqual(t2) &&
-                           Enumerable.All(Enumerable.Zip(args1, args2, (ta1, ta2) => ta1.IsGenericallyEquivalentTo(ta2, member1, member2)), x => x);
+                    if (!t1.IsGenericallyEqual(t2))
+                    {
+                        return false;
+                    }
+
+                    for (int i = 0; i < args1.Length; i++)
+                    {
+                        if (!args1[i].IsGenericallyEquivalentTo(args2[i], member1, member2))
+                        {
+                            return false;
+                        }
+                    }
+
+                    return true;
                 }
             }
 
@@ -330,11 +341,12 @@ namespace Microsoft.CSharp.RuntimeBinder
             string name = type.GetCustomAttribute<DefaultMemberAttribute>()?.MemberName;
             if (name != null)
             {
-                if (type.GetProperties(
-                        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance)
-                    .Any(p => p.Name == name && p.GetIndexParameters().Length != 0))
+                foreach (PropertyInfo p in type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance))
                 {
-                    return name;
+                    if (p.Name == name && p.GetIndexParameters().Length != 0)
+                    {
+                        return name;
+                    }
                 }
             }
 
