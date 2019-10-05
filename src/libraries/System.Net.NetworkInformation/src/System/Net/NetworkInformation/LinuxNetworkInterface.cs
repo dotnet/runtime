@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
 namespace System.Net.NetworkInformation
 {
@@ -93,7 +92,13 @@ namespace System.Net.NetworkInformation
                 }
                 else if (result == 0)
                 {
-                    return interfacesByName.Values.ToArray();
+                    var results = new LinuxNetworkInterface[interfacesByName.Count];
+                    int i = 0;
+                    foreach (KeyValuePair<string, LinuxNetworkInterface> item in interfacesByName)
+                    {
+                        results[i++] = item.Value;
+                    }
+                    return results;
                 }
                 else
                 {

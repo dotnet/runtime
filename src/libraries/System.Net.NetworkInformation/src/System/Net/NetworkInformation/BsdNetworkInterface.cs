@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Linq;
 
 namespace System.Net.NetworkInformation
 {
@@ -102,7 +101,13 @@ namespace System.Net.NetworkInformation
                 }
                 else if (result == 0)
                 {
-                    return interfacesByName.Values.ToArray();
+                    var results = new BsdNetworkInterface[interfacesByName.Count];
+                    int i = 0;
+                    foreach (KeyValuePair<string, BsdNetworkInterface> item in interfacesByName)
+                    {
+                        results[i++] = item.Value;
+                    }
+                    return results;
                 }
                 else
                 {
