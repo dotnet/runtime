@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Globalization;
@@ -17,7 +18,7 @@ namespace System.Data
         private readonly DataSet _dataSet;
         private XmlToDatasetMap _nodeToSchemaMap = null;
         private readonly Hashtable _nodeToRowMap;
-        private readonly Stack _childRowsStack = null;
+        private readonly Stack<DataRow> _childRowsStack = null;
         private readonly Hashtable _htableExcludedNS = null;
         private readonly bool _fIsXdr = false;
         internal bool _isDiffgram = false;
@@ -46,7 +47,7 @@ namespace System.Data
             _fIsXdr = IsXdr;
 
             // Allocate the stack and create the mappings
-            _childRowsStack = new Stack(50);
+            _childRowsStack = new Stack<DataRow>(50);
 
             _topMostNode = topNode;
             _ignoreSchema = ignoreSchema;
@@ -74,7 +75,7 @@ namespace System.Data
 
             // Allocate the stack and create the mappings
 
-            _childRowsStack = new Stack(50);
+            _childRowsStack = new Stack<DataRow>(50);
             _topMostNode = topNode;
             _ignoreSchema = ignoreSchema;
         }
@@ -846,7 +847,7 @@ namespace System.Data
 
             while (entryChild < _childRowsStack.Count)
             {     // Process child rows we might have
-                DataRow childRow = (DataRow)_childRowsStack.Pop();
+                DataRow childRow = _childRowsStack.Pop();
                 // Get row from the stack
                 bool unchanged = (childRow.RowState == DataRowState.Unchanged);
                 // Is data the same as before?
@@ -1115,7 +1116,7 @@ namespace System.Data
 
             while (entryChild < _childRowsStack.Count)
             {     // Process child rows we might have
-                DataRow childRow = (DataRow)_childRowsStack.Pop();
+                DataRow childRow = _childRowsStack.Pop();
                 // Get row from the stack
                 bool unchanged = (childRow.RowState == DataRowState.Unchanged);
                 // Is data the same as before?
