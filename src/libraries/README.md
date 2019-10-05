@@ -34,13 +34,16 @@ If you are having issues with the "full" .NET Framework (also called "Desktop"),
 
 ### Issue Guide
 
-This section is **in progress** here: [New contributor Docs - Issues](https://github.com/dotnet/corefx/wiki/New-contributor-Docs#issue-guide) (feel free to make it better - it's easy-to-edit wiki with RW permissions to everyone!)
-
-Each issue area has one or more Microsoft owners, who are [listed here](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/issue-guide.md).
+Each issue area has one or more Microsoft owners, who are [listed here](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/issue-guide.md). There's also some information there about how we use issues in this repo.
 
 ### Contributing Guide
 
-This section is **in progress** here: [New contributor Docs - Contributing](https://github.com/dotnet/corefx/wiki/New-contributor-Docs#contributing-guide) (feel free to make it better - it's easy-to-edit wiki with RW permissions to everyone!)
+We welcome contributions! Many people all over the world have helped make this project better. You'll want to check out:
+
+* [What kind of contributions you might want to make](https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/contributing.md) and [guidelines specific to this repo](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/contributing.md)
+* [How you can make a change happen!](https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/contributing-workflow.md)
+* [How to build and test your change](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/developer-guide.md)
+* More information in the [detailed readme here](https://github.com/dotnet/corefx/blob/master/Documentation/README.md)
 
 ### Useful Links
 
