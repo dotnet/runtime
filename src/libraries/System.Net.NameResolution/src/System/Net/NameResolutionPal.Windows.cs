@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Net.Sockets;
 using System.Threading;
@@ -199,7 +200,7 @@ namespace System.Net
                 }
                 else
                 {
-                    state.SetResult(new SocketException((int)errorCode));
+                    state.SetResult(ExceptionDispatchInfo.SetCurrentStackTrace(new SocketException((int)errorCode)));
                 }
             }
             finally

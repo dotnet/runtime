@@ -200,7 +200,8 @@ namespace System.Net.Security
             {
                 if (_queuedReadCount + count > MaxQueuedReadBytes)
                 {
-                    return new IOException(SR.Format(SR.net_auth_ignored_reauth, MaxQueuedReadBytes.ToString(NumberFormatInfo.CurrentInfo)));
+                    return ExceptionDispatchInfo.SetCurrentStackTrace(
+                        new IOException(SR.Format(SR.net_auth_ignored_reauth, MaxQueuedReadBytes.ToString(NumberFormatInfo.CurrentInfo))));
                 }
 
                 if (count != 0)
@@ -646,7 +647,8 @@ namespace System.Net.Security
                 {
                     // Fail re-handshake.
                     ProtocolToken message = new ProtocolToken(null, status);
-                    StartSendAuthResetSignal(null, asyncRequest, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.net_auth_SSPI, message.GetException())));
+                    StartSendAuthResetSignal(null, asyncRequest, ExceptionDispatchInfo.Capture(
+                        ExceptionDispatchInfo.SetCurrentStackTrace(new AuthenticationException(SR.net_auth_SSPI, message.GetException()))));
                     return;
                 }
 
@@ -1208,7 +1210,7 @@ namespace System.Net.Security
                 // Re-handshake status is not supported.
                 ArrayPool<byte>.Shared.Return(rentedBuffer);
                 ProtocolToken message = new ProtocolToken(null, status);
-                return new ValueTask(Task.FromException(new IOException(SR.net_io_encrypt, message.GetException())));
+                return new ValueTask(Task.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.net_io_encrypt, message.GetException()))));
             }
 
             ValueTask t = writeAdapter.WriteAsync(outBuffer, 0, encryptedBytes);

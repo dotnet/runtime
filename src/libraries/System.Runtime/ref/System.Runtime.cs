@@ -7054,6 +7054,7 @@ namespace System.Runtime.ExceptionServices
         internal ExceptionDispatchInfo() { }
         public System.Exception SourceException { get { throw null; } }
         public static System.Runtime.ExceptionServices.ExceptionDispatchInfo Capture(System.Exception source) { throw null; }
+        public static System.Exception SetCurrentStackTrace(System.Exception source) { throw null; }
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
         public void Throw() { }
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]

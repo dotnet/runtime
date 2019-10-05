@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -175,7 +176,7 @@ namespace System.Net.Http
                 HttpConnection connection = _connection;
                 if (connection == null)
                 {
-                    return new ValueTask(Task.FromException(new IOException(SR.ObjectDisposed_StreamClosed)));
+                    return new ValueTask(Task.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.ObjectDisposed_StreamClosed))));
                 }
 
                 if (buffer.Length == 0)

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.ExceptionServices;
 using System.Threading;
 
 namespace System.IO.Pipes
@@ -63,9 +64,7 @@ namespace System.IO.Pipes
             base.AsyncCallback(errorCode, numBytes);
         }
 
-        protected override void HandleError(int errorCode)
-        {
-            TrySetException(_pipeStream.WinIOError(errorCode));
-        }
+        protected override void HandleError(int errorCode) =>
+            TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(_pipeStream.WinIOError(errorCode)));
     }
 }
