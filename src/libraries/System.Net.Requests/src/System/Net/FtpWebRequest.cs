@@ -989,7 +989,7 @@ namespace System.Net
                     {
                         if (sEx.SocketErrorCode == SocketError.TimedOut)
                         {
-                            SetException(new WebException(SR.net_timeout, WebExceptionStatus.Timeout));
+                            SetException(ExceptionDispatchInfo.SetCurrentStackTrace(new WebException(SR.net_timeout, WebExceptionStatus.Timeout)));
                         }
                     }
                 }

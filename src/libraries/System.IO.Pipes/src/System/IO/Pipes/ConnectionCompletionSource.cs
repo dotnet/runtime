@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.ExceptionServices;
 using System.Threading;
 
 namespace System.IO.Pipes
@@ -34,12 +35,11 @@ namespace System.IO.Pipes
             base.AsyncCallback(errorCode, numBytes);
         }
 
-        protected override void HandleError(int errorCode)
-        {
-            TrySetException(Win32Marshal.GetExceptionForWin32Error(errorCode));
-        }
+        protected override void HandleError(int errorCode) =>
+            TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(Win32Marshal.GetExceptionForWin32Error(errorCode)));
 
-        protected override void HandleUnexpectedCancellation() => TrySetException(Error.GetOperationAborted());
+        protected override void HandleUnexpectedCancellation() =>
+            TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(Error.GetOperationAborted()));
     }
 
     internal struct VoidResult { }
