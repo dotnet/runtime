@@ -6597,7 +6597,14 @@ mono_threads_summarize_init (void)
 gboolean
 mono_threads_summarize_execute (MonoContext *ctx, gchar **out, MonoStackHash *hashes, gboolean silent, gchar *working_mem, size_t provided_size)
 {
-	return mono_threads_summarize_execute_internal (ctx, out, hashes, silent, working_mem, provided_size, FALSE);
+	gboolean result;
+	gboolean already_async = mono_thread_info_is_async_context ();
+	if (!already_async)
+		mono_thread_info_set_is_async_context (TRUE);
+	result = mono_threads_summarize_execute_internal (ctx, out, hashes, silent, working_mem, provided_size, FALSE);
+	if (!already_async)
+		mono_thread_info_set_is_async_context (FALSE);
+	return result;
 }
 
 gboolean 
