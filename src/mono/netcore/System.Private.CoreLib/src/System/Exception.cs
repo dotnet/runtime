@@ -92,6 +92,16 @@ namespace System
 			_stackTraceString = null;
 		}
 
+		[StackTraceHidden]
+		internal void SetCurrentStackTrace ()
+		{
+			// Check to see if the exception already has a stack set in it.
+			if (_stackTraceString != null)
+				ThrowHelper.ThrowInvalidOperationException();
+
+			// TODO: Store the current stack trace into this exception
+		}
+
 		string? CreateSourceName ()
 		{
 			var st = new StackTrace (this, fNeedFileInfo: false);
