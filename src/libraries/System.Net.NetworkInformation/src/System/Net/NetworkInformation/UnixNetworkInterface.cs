@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 
 namespace System.Net.NetworkInformation
 {
@@ -36,12 +35,19 @@ namespace System.Net.NetworkInformation
 
         public override bool Supports(NetworkInterfaceComponent networkInterfaceComponent)
         {
-            Sockets.AddressFamily family =
-                (networkInterfaceComponent == NetworkInterfaceComponent.IPv4)
-                ? Sockets.AddressFamily.InterNetwork
-                : Sockets.AddressFamily.InterNetworkV6;
+            Sockets.AddressFamily family = (networkInterfaceComponent == NetworkInterfaceComponent.IPv4) ?
+                Sockets.AddressFamily.InterNetwork :
+                Sockets.AddressFamily.InterNetworkV6;
 
-            return _addresses.Any(addr => addr.AddressFamily == family);
+            foreach (IPAddress addr in _addresses)
+            {
+                if (addr.AddressFamily == family)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>

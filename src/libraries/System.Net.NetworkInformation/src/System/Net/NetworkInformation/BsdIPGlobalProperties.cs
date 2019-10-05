@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Linq;
-using System.Threading.Tasks;
-
 namespace System.Net.NetworkInformation
 {
     internal class BsdIPGlobalProperties : UnixIPGlobalProperties
@@ -73,7 +70,12 @@ namespace System.Net.NetworkInformation
         public override IPEndPoint[] GetActiveTcpListeners()
         {
             TcpConnectionInformation[] allConnections = GetTcpConnections(listeners:true);
-            return allConnections.Select(tci => tci.LocalEndPoint).ToArray();
+            var endPoints = new IPEndPoint[allConnections.Length];
+            for (int i = 0; i < allConnections.Length; i++)
+            {
+                endPoints[i] = allConnections[i].LocalEndPoint;
+            }
+            return endPoints;
         }
 
         public unsafe override IPEndPoint[] GetActiveUdpListeners()
