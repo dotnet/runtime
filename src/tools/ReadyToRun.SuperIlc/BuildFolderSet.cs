@@ -289,7 +289,7 @@ namespace ReadyToRun.SuperIlc
                 {
                     if (exclusion != null && (!exclusion.Crossgen2Only || runner.Index == CompilerIndex.CPAOT))
                     {
-                        _frameworkExclusions.Add(exclusion.SimpleName, exclusion.Reason);
+                        _frameworkExclusions[exclusion.SimpleName] = exclusion.Reason;
                         continue;
                     }
                     ProcessInfo compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, _options.CoreRootDirectory.FullName, frameworkDll));
