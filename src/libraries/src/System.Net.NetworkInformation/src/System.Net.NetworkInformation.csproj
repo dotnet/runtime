@@ -301,7 +301,6 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Reference Include="System.IO.FileSystem" />
-    <Reference Include="System.Linq" />
     <Reference Include="System.Threading.Thread" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsLinux)' == 'true'">

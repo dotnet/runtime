@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net.Sockets;
 
 namespace System.Net.NetworkInformation
@@ -82,12 +81,15 @@ namespace System.Net.NetworkInformation
         private static UnicastIPAddressInformationCollection GetUnicastAddresses(UnixNetworkInterface uni)
         {
             var collection = new UnicastIPAddressInformationCollection();
-            foreach (IPAddress address in uni.Addresses.Where((addr) => !IPAddressUtil.IsMulticast(addr)))
+            foreach (IPAddress address in uni.Addresses)
             {
-                IPAddress netMask = (address.AddressFamily == AddressFamily.InterNetwork)
-                                    ? uni.GetNetMaskForIPv4Address(address)
-                                    : IPAddress.Any; // Windows compatibility
-                collection.InternalAdd(new UnixUnicastIPAddressInformation(address, netMask));
+                if (!IPAddressUtil.IsMulticast(address))
+                {
+                    IPAddress netMask = (address.AddressFamily == AddressFamily.InterNetwork)
+                                        ? uni.GetNetMaskForIPv4Address(address)
+                                        : IPAddress.Any; // Windows compatibility
+                    collection.InternalAdd(new UnixUnicastIPAddressInformation(address, netMask));
+                }
             }
 
             return collection;
@@ -96,9 +98,12 @@ namespace System.Net.NetworkInformation
         private static MulticastIPAddressInformationCollection GetMulticastAddresses(UnixNetworkInterface uni)
         {
             var collection = new MulticastIPAddressInformationCollection();
-            foreach (IPAddress address in uni.Addresses.Where(IPAddressUtil.IsMulticast))
+            foreach (IPAddress address in uni.Addresses)
             {
-                collection.InternalAdd(new UnixMulticastIPAddressInformation(address));
+                if (IPAddressUtil.IsMulticast(address))
+                {
+                    collection.InternalAdd(new UnixMulticastIPAddressInformation(address));
+                }
             }
 
             return collection;
