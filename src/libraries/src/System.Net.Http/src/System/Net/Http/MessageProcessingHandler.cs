@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
@@ -68,7 +69,7 @@ namespace System.Net.Http
 
                     if (task.Result == null)
                     {
-                        sendState.TrySetException(new InvalidOperationException(SR.net_http_handler_noresponse));
+                        sendState.TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(new InvalidOperationException(SR.net_http_handler_noresponse)));
                         return;
                     }
 

@@ -7,6 +7,7 @@ using System.IO;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
@@ -106,13 +107,13 @@ namespace System.Net.Http
                     case SocketError.ConnectionAborted:
                         if (CancellationToken.IsCancellationRequested)
                         {
-                            Builder.SetException(CancellationHelper.CreateOperationCanceledException(null, CancellationToken));
+                            Builder.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(CancellationHelper.CreateOperationCanceledException(null, CancellationToken)));
                             break;
                         }
                         goto default;
 
                     default:
-                        Builder.SetException(new SocketException((int)SocketError));
+                        Builder.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(new SocketException((int)SocketError)));
                         break;
                 }
             }

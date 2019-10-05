@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -121,7 +122,7 @@ namespace System.Net.Http
                 {
                     while (_waiters.TryDequeue(out Waiter waiter))
                     {
-                        waiter.TrySetException(CreateObjectDisposedException(forActiveWaiter: true));
+                        waiter.TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(CreateObjectDisposedException(forActiveWaiter: true)));
                     }
                 }
             }
