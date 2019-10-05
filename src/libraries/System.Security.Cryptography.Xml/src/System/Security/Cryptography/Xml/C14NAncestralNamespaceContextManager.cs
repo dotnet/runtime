@@ -3,8 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Xml;
-using System.IO;
-using System.Text;
 using System.Collections;
 
 namespace System.Security.Cryptography.Xml
