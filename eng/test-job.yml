@@ -5,6 +5,7 @@ parameters:
   osSubgroup: ''
   managedTestBuildOsGroup: ''
   managedTestBuildOsSubgroup: ''
+  managedTestBuildArchType: ''
   container: ''
   testGroup: ''
   readyToRun: false
@@ -23,16 +24,13 @@ parameters:
 ### buildConfig and archType.
 
 jobs:
-- ${{ if and(eq(parameters.osSubgroup, parameters.managedTestBuildOsSubgroup), or(eq(parameters.osGroup, parameters.managedTestBuildOsGroup), eq(parameters.managedTestBuildOsGroup, ''))) }}:
+- ${{ if and(eq(parameters.archType, parameters.managedTestBuildArchType), eq(parameters.osSubgroup, parameters.managedTestBuildOsSubgroup), eq(parameters.osGroup, parameters.managedTestBuildOsGroup)) }}:
   - template: build-test-job.yml
     parameters:
       buildConfig: ${{ parameters.buildConfig }}
       archType: ${{ parameters.archType }}
-      ${{ if ne(parameters.managedTestBuildOsGroup, '') }}:
-        osGroup: ${{ parameters.managedTestBuildOsGroup }}
-      ${{ if eq(parameters.managedTestBuildOsGroup, '') }}:
-        osGroup: ${{ parameters.osGroup }}
-      osSubgroup: ${{ parameters.managedTestBuildOsSubgroup }}
+      osGroup: ${{ parameters.osGroup }}
+      osSubgroup: ${{ parameters.osSubgroup }}
       container: ${{ parameters.container }}
       testGroup: ${{ parameters.testGroup }}
       readyToRun: ${{ parameters.readyToRun }}
@@ -48,11 +46,9 @@ jobs:
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
-    ${{ if ne(parameters.managedTestBuildOsGroup, '') }}:
-      managedTestBuildOsGroup: ${{ parameters.managedTestBuildOsGroup }}
-    ${{ if eq(parameters.managedTestBuildOsGroup, '') }}:
-      managedTestBuildOsGroup: ${{ parameters.osGroup }}
+    managedTestBuildOsGroup: ${{ parameters.managedTestBuildOsGroup }}
     managedTestBuildOsSubgroup: ${{ parameters.managedTestBuildOsSubgroup }}
+    managedTestBuildArchType: ${{ parameters.managedTestBuildArchType }}
     container: ${{ parameters.container }}
     testGroup: ${{ parameters.testGroup }}
     readyToRun: ${{ parameters.readyToRun }}
