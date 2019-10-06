@@ -39,6 +39,7 @@ jobs:
     platformGroup: all
     jobParameters:
       testGroup: outerloop
+      crossgenFramework: true
 
 #
 # Release builds

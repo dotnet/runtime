@@ -55,6 +55,7 @@ stages:
           signBinaries: true
           publishToBlobFeed: true
           testGroup: outerloop
+          crossgenFramework: true
 
     #
     # Publish build information to Build Assets Registry
