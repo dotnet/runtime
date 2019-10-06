@@ -36,6 +36,7 @@
 -noclass System.Tests.ReflectionTests
 -noclass System.Tests.Utf8ExtensionsTests
 -noclass System.Tests.Utf8StringTests
+-noclass System.Text.Tests.Utf8SpanTests
 
 # https://github.com/dotnet/corefx/issues/37886
 -nomethod System.Security.Cryptography.Rsa.Tests.RSAXml.FromNonsenseXml
