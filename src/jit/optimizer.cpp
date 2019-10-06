@@ -6795,8 +6795,20 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
 
         bool IsTreeVNInvariant(GenTree* tree)
         {
-            return m_compiler->optVNIsLoopInvariant(tree->gtVNPair.GetLiberal(), m_loopNum,
-                                                    &m_hoistContext->m_curLoopVnInvariantCache);
+            ValueNum vn = tree->gtVNPair.GetLiberal();
+            if (m_compiler->vnStore->IsVNConstant(vn))
+            {
+                // It is unsafe to allow a GT_CLS_VAR that has been assigned a constant.
+                // The logic in optVNIsLoopInvariant would consider it to be loop-invariant, even
+                // if the assignment of the constant to the GT_CLS_VAR was inside the loop.
+                //
+                if (tree->OperIs(GT_CLS_VAR))
+                {
+                    return false;
+                }
+            }
+
+            return m_compiler->optVNIsLoopInvariant(vn, m_loopNum, &m_hoistContext->m_curLoopVnInvariantCache);
         }
 
     public:
@@ -7003,22 +7015,36 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                 // Is the value of the whole tree loop invariant?
                 if (!treeIsInvariant)
                 {
+                    // Here we have a tree that is not loop invariant and we thus cannot hoist
                     treeIsHoistable = false;
                 }
             }
 
-            // Check if we need to set 'm_beforeSideEffect' to false.
-            // If we encounter a tree with a call in it
-            //  or if we see an assignment to global we set it to false.
+            // Next check if we need to set 'm_beforeSideEffect' to false.
             //
-            // If we are already set to false then we can skip these checks
+            // If we have already set it to false then we can skip these checks
             //
             if (m_beforeSideEffect)
             {
-                // For this purpose, we only care about memory side effects.  We assume that expressions will
+                // Is the value of the whole tree loop invariant?
+                if (!treeIsInvariant)
+                {
+                    // We have a tree that is not loop invariant and we thus cannot hoist
+                    assert(treeIsHoistable == false);
+
+                    // Check if we should clear m_beforeSideEffect.
+                    // If 'tree' can throw an exception then we need to set m_beforeSideEffect to false.
+                    // Note that calls are handled below
+                    if (tree->OperMayThrow(m_compiler) && !tree->IsCall())
+                    {
+                        m_beforeSideEffect = false;
+                    }
+                }
+
+                // In the section below, we only care about memory side effects.  We assume that expressions will
                 // be hoisted so that they are evaluated in the same order as they would have been in the loop,
-                // and therefore throw exceptions in the same order.  (So we don't use GTF_GLOBALLY_VISIBLE_SIDE_EFFECTS
-                // here, since that includes exceptions.)
+                // and therefore throw exceptions in the same order.
+                //
                 if (tree->IsCall())
                 {
                     // If it's a call, it must be a helper call that does not mutate the heap.
@@ -7041,6 +7067,19 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                         {
                             m_beforeSideEffect = false;
                         }
+
+                        // Additional check for helper calls that throw exceptions
+                        if (!treeIsInvariant)
+                        {
+                            // We have a tree that is not loop invariant and we thus cannot hoist
+                            assert(treeIsHoistable == false);
+
+                            // Does this helper call throw?
+                            if (!s_helperCallProperties.NoThrow(helpFunc))
+                            {
+                                m_beforeSideEffect = false;
+                            }
+                        }
                     }
                 }
                 else if (tree->OperIs(GT_ASG))
@@ -7051,6 +7090,13 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                     {
                         m_beforeSideEffect = false;
                     }
+                }
+                else if (tree->OperIs(GT_XADD, GT_XCHG, GT_LOCKADD, GT_CMPXCHG, GT_MEMORYBARRIER))
+                {
+                    // If this node is a MEMORYBARRIER or an Atomic operation
+                    // then don't hoist and stop any further hoisting after this node
+                    treeIsHoistable    = false;
+                    m_beforeSideEffect = false;
                 }
             }
 
