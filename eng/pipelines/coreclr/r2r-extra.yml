@@ -23,6 +23,7 @@ jobs:
     platformGroup: gcstress
     jobParameters:
       testGroup: r2r-extra
+      crossgenFramework: true
 
 - template: /eng/platform-matrix.yml
   parameters:
