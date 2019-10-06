@@ -574,6 +574,33 @@ namespace System.Reflection.Tests
             Assert.Equal(expected, type.GetTypeInfo().IsAssignableFrom(c?.GetTypeInfo()));
         }
 
+        [Fact]
+        public void IsAssignableFromNullable()
+        {
+            Type nubInt = typeof(Nullable<int>);
+            Type intType = typeof(int);
+            Type objType = typeof(object);
+            Type valTypeType = typeof(ValueType);
+
+            // sanity checks
+            // Nullable<T>  is assignable from  int
+            Assert.True(nubInt.IsAssignableFrom(intType));
+            Assert.False(intType.IsAssignableFrom(nubInt));
+
+            Type nubOfT = nubInt.GetGenericTypeDefinition();
+            Type T = nubOfT.GetTypeInfo().GenericTypeParameters[0];
+
+            // should be true
+            Assert.True(T.IsAssignableFrom(T));
+            Assert.True(objType.IsAssignableFrom(T));
+            Assert.True(valTypeType.IsAssignableFrom(T));
+
+            // should be false
+            // Nullable<T> is not assignable from T
+            Assert.False(nubOfT.IsAssignableFrom(T));
+            Assert.False(T.IsAssignableFrom(nubOfT));
+        }
+
         public static IEnumerable<object[]> IsEquivilentTo_TestData()
         {
             yield return new object[] { typeof(string), typeof(string), true };
