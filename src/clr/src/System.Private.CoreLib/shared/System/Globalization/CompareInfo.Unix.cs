@@ -309,14 +309,22 @@ namespace System.Globalization
                 char* a = ap;
                 char* b = bp;
 
-                if (target.Length > source.Length)
-                    goto InteropCall;
-
                 for (int j = 0; j < target.Length; j++)
                 {
                     char targetChar = *(b + j);
                     if (targetChar >= 0x80 || HighCharTable[targetChar])
                         goto InteropCall;
+                }
+
+                if (target.Length > source.Length)
+                {
+                    for (int k = 0; k < source.Length; k++)
+                    {
+                        char targetChar = *(a + k);
+                        if (targetChar >= 0x80 || HighCharTable[targetChar])
+                            goto InteropCall;
+                    }
+                    return -1;
                 }
 
                 int startIndex, endIndex, jump;
@@ -347,7 +355,10 @@ namespace System.Globalization
                         char valueChar = *(a + sourceIndex);
                         char targetChar = *(b + targetIndex);
 
-                        if (valueChar == targetChar && valueChar < 0x80 && !HighCharTable[valueChar])
+                        if (valueChar >= 0x80 || HighCharTable[valueChar])
+                            goto InteropCall;
+
+                        if (valueChar == targetChar)
                         {
                             continue;
                         }
@@ -358,18 +369,25 @@ namespace System.Globalization
                         if ((uint)(targetChar - 'a') <= ('z' - 'a'))
                             targetChar = (char)(targetChar - 0x20);
 
-                        if (valueChar >= 0x80 || HighCharTable[valueChar])
+                        if (valueChar == targetChar)
+                        {
+                            continue;
+                        }
+
+                        // The match may be affected by special character. Verify that the following character is regular ASCII.
+                        if (sourceIndex < source.Length - 1 && *(a + sourceIndex + 1) >= 0x80)
                             goto InteropCall;
-                        else if (valueChar != targetChar)
-                            break;
+                        goto Next;
                     }
 
-                    if (targetIndex == target.Length)
-                    {
-                        if (matchLengthPtr != null)
-                            *matchLengthPtr = target.Length;
-                        return i;
-                    }
+                    // The match may be affected by special character. Verify that the following character is regular ASCII.
+                    if (sourceIndex < source.Length && *(a + sourceIndex) >= 0x80)
+                        goto InteropCall;
+                    if (matchLengthPtr != null)
+                        *matchLengthPtr = target.Length;
+                    return i;
+
+                Next: ;
                 }
 
                 return -1;
@@ -443,16 +461,26 @@ namespace System.Globalization
 
                         if (valueChar >= 0x80 || HighCharTable[valueChar])
                             goto InteropCall;
-                        else if (valueChar != targetChar)
-                            break;
+
+                        if (valueChar == targetChar)
+                        {
+                            continue;
+                        }
+
+                        // The match may be affected by special character. Verify that the following character is regular ASCII.
+                        if (sourceIndex < source.Length - 1 && *(a + sourceIndex + 1) >= 0x80)
+                            goto InteropCall;
+                        goto Next;
                     }
 
-                    if (targetIndex == target.Length)
-                    {
-                        if (matchLengthPtr != null)
-                            *matchLengthPtr = target.Length;
-                        return i;
-                    }
+                    // The match may be affected by special character. Verify that the following character is regular ASCII.
+                    if (sourceIndex < source.Length && *(a + sourceIndex) >= 0x80)
+                        goto InteropCall;
+                    if (matchLengthPtr != null)
+                        *matchLengthPtr = target.Length;
+                    return i;
+
+                Next: ;
                 }
 
                 return -1;
