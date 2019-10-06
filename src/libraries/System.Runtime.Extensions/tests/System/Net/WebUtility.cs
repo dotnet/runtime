@@ -83,6 +83,8 @@ namespace System.Net.Tests
             yield return new object[] { char.ConvertFromUtf32(144308), "&#144308;" };
             yield return new object[] { "\uD800\uDC00", "&#65536;" };
             yield return new object[] { "a\uD800\uDC00b", "a&#65536;b" };
+            yield return new object[] { "\uD83D\uDE01\uD83D\uDE02\uD83D\uDE03", "&#128513;&#128514;&#128515;" };
+            yield return new object[] { "a\uD83D\uDE01\uD83D\uDE02\uD83D\uDE03b", "a&#128513;&#128514;&#128515;b" };
 
             // High BMP non-chars
             yield return new object[] { "\uFFFD", "\uFFFD" };

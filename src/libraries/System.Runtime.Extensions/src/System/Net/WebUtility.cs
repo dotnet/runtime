@@ -639,17 +639,17 @@ namespace System.Net
         private static int GetNextUnicodeScalarValueFromUtf16Surrogate(ReadOnlySpan<char> input, ref int index)
         {
             // invariants
-            Debug.Assert(input.Length >= 1);
-            Debug.Assert(char.IsSurrogate(input[0]));
+            Debug.Assert(input.Length - index >= 1);
+            Debug.Assert(char.IsSurrogate(input[index]));
 
-            if (input.Length <= 1)
+            if (input.Length - index <= 1)
             {
                 // not enough characters remaining to resurrect the original scalar value
                 return UnicodeReplacementChar;
             }
 
-            char leadingSurrogate = input[0];
-            char trailingSurrogate = input[1];
+            char leadingSurrogate = input[index];
+            char trailingSurrogate = input[index + 1];
 
             if (!char.IsSurrogatePair(leadingSurrogate, trailingSurrogate))
             {
