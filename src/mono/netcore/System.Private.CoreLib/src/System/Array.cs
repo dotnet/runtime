@@ -429,12 +429,14 @@ namespace System
 			return GetLowerBound (dimension) + GetLength (dimension) - 1;
 		}
 
+		[Intrinsic]
 		[MethodImpl (MethodImplOptions.AggressiveInlining)]
 		internal ref byte GetRawSzArrayData ()
 		{
 			return ref Unsafe.As<RawData>(this).Data;
 		}
 
+		[Intrinsic]
 		[MethodImpl (MethodImplOptions.AggressiveInlining)]
 		internal ref byte GetRawArrayData ()
 		{

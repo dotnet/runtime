@@ -738,11 +738,11 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		} else
 			return NULL;
 	} else if (cmethod->klass == mono_defaults.array_class) {
-		if (strcmp (cmethod->name, "GetGenericValueImpl") == 0 && fsig->param_count + fsig->hasthis == 3 && !cfg->gsharedvt)
+		if (fsig->param_count + fsig->hasthis == 3 && !cfg->gsharedvt && strcmp (cmethod->name, "GetGenericValueImpl") == 0)
 			return emit_array_generic_access (cfg, fsig, args, FALSE);
-		else if (strcmp (cmethod->name, "SetGenericValueImpl") == 0 && fsig->param_count + fsig->hasthis == 3 && !cfg->gsharedvt)
+		else if (fsig->param_count + fsig->hasthis == 3 && !cfg->gsharedvt && strcmp (cmethod->name, "SetGenericValueImpl") == 0)
 			return emit_array_generic_access (cfg, fsig, args, TRUE);
-		else if (!strcmp (cmethod->name, "GetRawSzArrayData")) {
+		else if (!strcmp (cmethod->name, "GetRawSzArrayData") || !strcmp (cmethod->name, "GetRawArrayData")) {
 			int dreg = alloc_preg (cfg);
 			EMIT_NEW_BIALU_IMM (cfg, ins, OP_PADD_IMM, dreg, args [0]->dreg, MONO_STRUCT_OFFSET (MonoArray, vector));
 			return ins;
