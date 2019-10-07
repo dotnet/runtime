@@ -45,7 +45,6 @@ jobs:
     - Windows_NT_x86
     jobParameters:
       testGroup: innerloop
-      crossgenFramework: true
 
 #
 # Release builds

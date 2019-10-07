@@ -165,8 +165,17 @@ jobs:
       clean: true
 
     # Download the GIT repository
-    - template: /eng/download-git-repository-step.yml
+    - template: /eng/download-artifact-step.yml
       parameters:
-        unix: ${{ ne(parameters.osGroup, 'Windows_NT') }}
+        displayName: 'GIT repository'
+        downloadFolder: $(Build.SourcesDirectory)/download/
+        cleanUnpackFolder: false
+        unpackFolder: $(Build.SourcesDirectory)
+        ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+          artifactFileName: repo_windows.zip
+          artifactName: repo_windows
+        ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+          artifactFileName: repo_unix.tar.gz
+          artifactName: repo_unix
 
     - ${{ parameters.steps }}

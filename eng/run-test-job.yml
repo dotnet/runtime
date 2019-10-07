@@ -5,7 +5,6 @@ parameters:
   osSubgroup: ''
   managedTestBuildOsGroup: ''
   managedTestBuildOsSubgroup: ''
-  managedTestBuildArchType: ''
   container: ''
   testGroup: ''
   readyToRun: false
@@ -30,7 +29,6 @@ jobs:
     osSubgroup: ${{ parameters.osSubgroup }}
     managedTestBuildOsGroup: ${{ parameters.managedTestBuildOsGroup }}
     managedTestBuildOsSubgroup: ${{ parameters.managedTestBuildOsSubgroup }}
-    managedTestBuildArchType: ${{ parameters.managedTestBuildArchType }}
     container: ${{ parameters.container }}
     testGroup: ${{ parameters.testGroup }}
     readyToRun: ${{ parameters.readyToRun }}
@@ -46,7 +44,7 @@ jobs:
     ${{ if and(eq(parameters.testGroup, 'innerloop'), eq(parameters.displayNameArgs, '')) }}:
       name: 'run_test_p0_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
       dependsOn:
-      - 'build_test_p0_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.managedTestBuildArchType }}_${{parameters.buildConfig }}'
+      - 'build_test_p0_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'
       - ${{ if ne(parameters.stagedBuild, true) }}:
         - ${{ format('build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       displayName: 'Run Test Pri0 ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
@@ -54,7 +52,7 @@ jobs:
     ${{ if and(ne(parameters.testGroup, 'innerloop'), eq(parameters.displayNameArgs, '')) }}:
       name: 'run_test_p1_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
       dependsOn:
-      - 'build_test_p1_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.managedTestBuildArchType }}_${{parameters.buildConfig }}'
+      - 'build_test_p1_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'
       - ${{ if ne(parameters.stagedBuild, true) }}:
         - ${{ format('build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       displayName: 'Run Test Pri1 ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
@@ -62,7 +60,7 @@ jobs:
     ${{ if and(eq(parameters.testGroup, 'innerloop'), ne(parameters.displayNameArgs, '')) }}:
       name: 'run_test_p0_${{ parameters.displayNameArgs }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
       dependsOn:
-      - 'build_test_p0_${{ parameters.displayNameArgs }}_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.managedTestBuildArchType }}_${{parameters.buildConfig }}'      
+      - 'build_test_p0_${{ parameters.displayNameArgs }}_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'      
       - ${{ if ne(parameters.stagedBuild, true) }}:
         - ${{ format('build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       displayName: 'Run Test Pri0 ${{ parameters.displayNameArgs }} ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
@@ -70,7 +68,7 @@ jobs:
     ${{ if and(ne(parameters.testGroup, 'innerloop'), ne(parameters.displayNameArgs, '')) }}:
       name: 'run_test_p1_${{ parameters.displayNameArgs }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
       dependsOn:
-      - 'build_test_p1_${{ parameters.displayNameArgs }}_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.managedTestBuildArchType }}_${{parameters.buildConfig }}'      
+      - 'build_test_p1_${{ parameters.displayNameArgs }}_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'      
       - ${{ if ne(parameters.stagedBuild, true) }}:
         - ${{ format('build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       displayName: 'Run Test Pri1 ${{ parameters.displayNameArgs }} ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
@@ -100,7 +98,7 @@ jobs:
         unpackFolder: '$(testRootFolderPath)'
         artifactFileName: '$(testArtifactName)$(archiveExtension)'
         artifactName: '$(testArtifactName)'
-        displayName: 'managed test artifacts (built on ${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }} ${{ parameters.managedTestBuildArchType }})'
+        displayName: 'managed test artifacts (built on ${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }})'
 
 
     # Download and unzip test build tree
@@ -115,14 +113,22 @@ jobs:
 
 
     # Download product binaries directory
-    - template: /eng/download-artifact-step.yml
-      parameters:
-        downloadFolder: '$(productBuildRootFolderPath)/tmp'
-        unpackFolder: '$(productBuildRootFolderPath)'
-        cleanUnpackFolder: false
-        artifactFileName: '$(productBuildArtifactName)$(archiveExtension)'
-        artifactName: '$(productBuildArtifactName)'
-        displayName: 'product build'
+    - task: DownloadBuildArtifacts@0
+      displayName: Download product build
+      inputs:
+        buildType: current
+        downloadType: single
+        artifactName: 'BinDir_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+        downloadPath: '$(System.ArtifactsDirectory)'
+
+
+    # Populate Product directory
+    - task: CopyFiles@2
+      displayName: Populate Product directory
+      inputs:
+        sourceFolder: '$(System.ArtifactsDirectory)/BinDir_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+        contents: '**'
+        targetFolder: '$(Build.SourcesDirectory)/bin/Product/$(osGroup).$(archType).$(buildConfigUpper)'
 
 
     # Download and unzip the Microsoft.NET.Sdk.IL package needed for traversing
