@@ -130,7 +130,7 @@ namespace ReadyToRun.SuperIlc
                 {
                     compilationInputFiles.Add(file);
                 }
-                else
+                else if ((Path.GetExtension(file) != ".pdb") && (Path.GetExtension(file) != ".ilk")) // exclude .pdb and .ilk files that are large and not needed in the target folder
                 {
                     passThroughFiles.Add(file);
                 }

@@ -42,7 +42,7 @@ namespace ReadyToRun.SuperIlc
 
             if (!options.Exe)
             {
-                PathExtensions.DeleteOutputFolders(options.OutputDirectory.FullName, options.CoreRootDirectory.FullName, recursive: false);
+                PathExtensions.DeleteOutputFolders(options.OutputDirectory.FullName, options.CoreRootDirectory.FullName, runners, recursive: false);
             }
 
             string nugetOutputFolder = Path.Combine(options.OutputDirectory.FullName, "nuget.out");
@@ -97,7 +97,7 @@ namespace ReadyToRun.SuperIlc
 
                 if (!options.NoCleanup && !options.Exe)
                 {
-                    PathExtensions.DeleteOutputFolders(options.OutputDirectory.FullName, options.CoreRootDirectory.FullName, recursive: false);
+                    PathExtensions.DeleteOutputFolders(options.OutputDirectory.FullName, options.CoreRootDirectory.FullName, runners, recursive: false);
                 }
 
                 return success ? 0 : 1;
