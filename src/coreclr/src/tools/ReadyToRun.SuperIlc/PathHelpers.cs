@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using ReadyToRun.SuperIlc;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -231,14 +232,14 @@ static class PathExtensions
         }
     }
 
-    public static string[] LocateOutputFolders(string folder, string coreRootFolder, bool recursive)
+    public static string[] LocateOutputFolders(string folder, string coreRootFolder, IEnumerable<CompilerRunner> runners, bool recursive)
     {
         ConcurrentBag<string> directories = new ConcurrentBag<string>();
-        LocateOutputFoldersAsync(folder, coreRootFolder, recursive, directories).Wait();
+        LocateOutputFoldersAsync(folder, coreRootFolder, runners, recursive, directories).Wait();
         return directories.ToArray();
     }
 
-    private static async Task LocateOutputFoldersAsync(string folder, string coreRootFolder, bool recursive, ConcurrentBag<string> directories)
+    private static async Task LocateOutputFoldersAsync(string folder, string coreRootFolder, IEnumerable<CompilerRunner> runners, bool recursive, ConcurrentBag<string> directories)
     {
         if (coreRootFolder == null || !StringComparer.OrdinalIgnoreCase.Equals(folder, coreRootFolder))
         {
@@ -247,24 +248,30 @@ static class PathExtensions
             {
                 if (Path.GetExtension(dir).Equals(".out", StringComparison.OrdinalIgnoreCase))
                 {
-                    directories.Add(dir);
+                    foreach (CompilerRunner runner in runners)
+                    {
+                        if (runner.GetOutputPath(folder) == dir)
+                        {
+                            directories.Add(dir);
+                        }
+                    }
                 }
                 else if (recursive)
                 {
-                    subfolderTasks.Add(Task.Run(() => LocateOutputFoldersAsync(dir, coreRootFolder, recursive, directories)));
+                    subfolderTasks.Add(Task.Run(() => LocateOutputFoldersAsync(dir, coreRootFolder, runners, recursive, directories)));
                 }
             }
             await Task.WhenAll(subfolderTasks);
         }
     }
 
-    public static bool DeleteOutputFolders(string folder, string coreRootFolder, bool recursive)
+    public static bool DeleteOutputFolders(string folder, string coreRootFolder, IEnumerable<CompilerRunner> runners, bool recursive)
     {
         Stopwatch stopwatch = new Stopwatch();
         stopwatch.Start();
 
         Console.WriteLine("Locating output {0} {1}", (recursive ? "subtree" : "folder"), folder);
-        string[] outputFolders = LocateOutputFolders(folder, coreRootFolder, recursive);
+        string[] outputFolders = LocateOutputFolders(folder, coreRootFolder, runners, recursive);
         Console.WriteLine("Deleting {0} output folders", outputFolders.Length);
 
         if (DeleteSubtrees(outputFolders))
