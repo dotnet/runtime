@@ -2312,7 +2312,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             }
         }
 #if FEATURE_ARG_SPLIT
-        else if (curArgTabEntry->isSplit)
+        else if (curArgTabEntry->IsSplit())
         {
             assert(curArgTabEntry->numRegs >= 1);
             genConsumeArgSplitStruct(argNode->AsPutArgSplit());

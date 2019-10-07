@@ -1427,8 +1427,7 @@ public:
         return (regNumber)regNums[i];
     }
 
-    __declspec(property(get = getIsSplit, put = setIsSplit)) bool isSplit;
-    bool getIsSplit()
+    bool IsSplit()
     {
 #ifdef FEATURE_ARG_SPLIT
         return _isSplit;
@@ -1436,7 +1435,7 @@ public:
         return false;
 #endif
     }
-    void setIsSplit(bool value)
+    void SetSplit(bool value)
     {
 #ifdef FEATURE_ARG_SPLIT
         _isSplit = value;
@@ -1591,7 +1590,7 @@ public:
 
     bool isPassedInRegisters()
     {
-        return !isSplit && (numRegs != 0);
+        return !IsSplit() && (numRegs != 0);
     }
 
     bool isPassedInFloatRegisters()
@@ -1605,7 +1604,7 @@ public:
 
     bool isSingleRegOrSlot()
     {
-        return !isSplit && ((numRegs == 1) || (numSlots == 1));
+        return !IsSplit() && ((numRegs == 1) || (numSlots == 1));
     }
 
     // Returns the number of "slots" used, where for this purpose a
@@ -1641,7 +1640,7 @@ public:
             // We counted the number of regs, but if they are DOUBLE hfa regs we have to double the size.
             if (GetHfaType() == TYP_DOUBLE)
             {
-                assert(!isSplit);
+                assert(!IsSplit());
                 size <<= 1;
             }
 #elif defined(_TARGET_ARM64_)
