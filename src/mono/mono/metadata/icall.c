@@ -7201,6 +7201,66 @@ mono_array_get_byte_length (MonoArrayHandle array)
 	}
 }
 
+#ifdef ENABLE_NETCORE
+void
+ves_icall_System_Buffer_BlockCopy (MonoArrayHandle src, int src_offset, MonoArrayHandle dst, int dst_offset, int count, MonoError *error)
+{
+	MONO_CHECK_ARG_NULL_HANDLE (src,);
+	MONO_CHECK_ARG_NULL_HANDLE (dst,);
+
+	if (src_offset < 0) {
+		mono_error_set_argument_out_of_range (error, "srcOffset", "Value must be non-negative and less than or equal to Int32.MaxValue.");
+		return;
+	}
+
+	if (dst_offset < 0) {
+		mono_error_set_argument_out_of_range (error, "dstOffset", "Value must be non-negative and less than or equal to Int32.MaxValue.");
+		return;
+	}
+
+	if (count < 0) {
+		mono_error_set_argument_out_of_range (error, "count", "Value must be non-negative and less than or equal to Int32.MaxValue.");
+		return;
+	}
+
+	MonoClass * const src_class = m_class_get_element_class (MONO_HANDLE_GETVAL (src, obj.vtable)->klass);
+	MonoClass * const dst_class = m_class_get_element_class (MONO_HANDLE_GETVAL (dst, obj.vtable)->klass);
+
+	if (!m_class_is_primitive (src_class)) {
+		mono_error_set_argument (error, "src", "Object must be an array of primitives.");
+		return;
+	}
+
+	if (!m_class_is_primitive (dst_class)) {
+		mono_error_set_argument (error, "dst", "Object must be an array of primitives.");
+		return;
+	}
+
+	if ((src_offset > mono_array_get_byte_length (src) - count) || (dst_offset > mono_array_get_byte_length (dst) - count)) {
+		mono_error_set_argument (error, "", "Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.");
+		return;
+	}
+
+	MONO_ENTER_NO_SAFEPOINTS;
+
+	guint8 const * const src_buf = (guint8*)MONO_HANDLE_RAW (src)->vector + src_offset;
+	guint8* const dst_buf = (guint8*)MONO_HANDLE_RAW (dst)->vector + dst_offset;
+
+	memmove (dst_buf, src_buf, count);
+
+	MONO_EXIT_NO_SAFEPOINTS;
+
+	return;
+}
+
+MonoBoolean
+ves_icall_System_Buffer_IsPrimitiveTypeArray (MonoArrayHandle array, MonoError* error)
+{
+	MonoClass * const klass = m_class_get_element_class (MONO_HANDLE_GETVAL (array, obj.vtable)->klass);
+	return m_class_is_primitive (klass);
+}
+#endif
+
 gint32
 ves_icall_System_Buffer_ByteLengthInternal (MonoArrayHandle array, MonoError* error)
 {

@@ -57,7 +57,9 @@ HANDLES(ARRAY_12, "SetValue",         ves_icall_System_Array_SetValue, void, 3, 
 HANDLES(ARRAY_13, "SetValueImpl",  ves_icall_System_Array_SetValueImpl, void, 3, (MonoArray, MonoObject, guint32))
 HANDLES(ARRAY_14, "SetValueRelaxedImpl",  ves_icall_System_Array_SetValueRelaxedImpl, void, 3, (MonoArray, MonoObject, guint32))
 
-ICALL_TYPE(BUFFER, "System.Buffer", BUFFER_1)
+ICALL_TYPE(BUFFER, "System.Buffer", BUFFER_0)
+HANDLES(BUFFER_0, "BlockCopy", ves_icall_System_Buffer_BlockCopy, void, 5, (MonoArray, int, MonoArray, int, int))
+HANDLES(BUFFER_0a, "IsPrimitiveTypeArray", ves_icall_System_Buffer_IsPrimitiveTypeArray, MonoBoolean, 1, (MonoArray))
 HANDLES(BUFFER_1, "_ByteLength", ves_icall_System_Buffer_ByteLengthInternal, gint32, 1, (MonoArray))
 NOHANDLES(ICALL(BUFFER_2, "__Memmove", ves_icall_System_Runtime_RuntimeImports_Memmove))
 
