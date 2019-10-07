@@ -8703,6 +8703,8 @@ public:
 #endif
     }
 
+    const char* compGetTieringName() const;
+
     codeOptimize compCodeOpt()
     {
 #if 0
