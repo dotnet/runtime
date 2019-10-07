@@ -22,6 +22,11 @@
 #include <string.h>
 #include <glib.h>
 
+// Contains LIBC_SO definition
+#ifdef HAVE_GNU_LIBNAMES_H
+#include <gnu/lib-names.h>
+#endif
+
 struct MonoDlFallbackHandler {
 	MonoDlFallbackLoad load_func;
 	MonoDlFallbackSymbol symbol_func;
@@ -143,6 +148,26 @@ get_dl_name_from_libtool (const char *libtool_file)
 	return line;
 }
 
+#ifdef ENABLE_NETCORE
+static const char *
+fix_libc_name (const char *name)
+{
+	if (strncmp (name, "libc", 4) == 0) {
+		// Taken from CoreCLR: https://github.com/dotnet/coreclr/blob/6b0dab793260d36e35d66c82678c63046828d01b/src/pal/src/loader/module.cpp#L568-L576
+#if defined (HOST_DARWIN)
+		return "/usr/lib/libc.dylib";
+#elif defined (__FreeBSD__)
+		return "libc.so.7";
+#elif defined (LIBC_SO)
+		return LIBC_SO;
+#else
+		return "libc.so";
+#endif
+	}
+	return name;
+}
+#endif
+
 /**
  * mono_dl_open:
  * \param name name of file containing shared module
@@ -177,6 +202,10 @@ mono_dl_open (const char *name, int flags, char **error_msg)
 		return NULL;
 	}
 	module->main_module = name == NULL? TRUE: FALSE;
+
+#ifdef ENABLE_NETCORE
+	name = fix_libc_name (name);
+#endif
 
 	// No GC safe transition because this is called early in main.c
 	lib = mono_dl_open_file (name, lflags);
