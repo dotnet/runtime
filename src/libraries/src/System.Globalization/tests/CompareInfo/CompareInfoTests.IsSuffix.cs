@@ -13,6 +13,7 @@ namespace System.Globalization.Tests
         private static CompareInfo s_hungarianCompare = new CultureInfo("hu-HU").CompareInfo;
         private static CompareInfo s_turkishCompare = new CultureInfo("tr-TR").CompareInfo;
         private static CompareInfo s_frenchCompare = new CultureInfo("fr-FR").CompareInfo;
+        private static CompareInfo s_slovakCompare = new CultureInfo("sk-SK").CompareInfo;
 
         public static IEnumerable<object[]> IsSuffix_TestData()
         {
@@ -32,6 +33,11 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "dz", "z", CompareOptions.None, true };
             yield return new object[] { s_hungarianCompare, "dz", "z", CompareOptions.None, false };
             yield return new object[] { s_hungarianCompare, "dz", "z", CompareOptions.Ordinal, true };
+
+            // Slovak
+            yield return new object[] { s_slovakCompare, "ch", "h", CompareOptions.None, false };
+            yield return new object[] { s_slovakCompare, "velmi chora", "hora", CompareOptions.None, false };
+            yield return new object[] { s_slovakCompare, "chh", "H", CompareOptions.IgnoreCase, true };
 
             // Turkish
             yield return new object[] { s_turkishCompare, "Hi", "I", CompareOptions.None, false };
@@ -91,6 +97,13 @@ namespace System.Globalization.Tests
                 Assert.Equal(expected, compareInfo.IsSuffix(source, value));
             }
             Assert.Equal(expected, compareInfo.IsSuffix(source, value, options));
+
+            if ((compareInfo == s_invariantCompare) && ((options == CompareOptions.None) || (options == CompareOptions.IgnoreCase)))
+            {
+                StringComparison stringComparison = (options == CompareOptions.IgnoreCase) ? StringComparison.InvariantCultureIgnoreCase : StringComparison.InvariantCulture;
+                Assert.Equal(expected, source.EndsWith(value, stringComparison));
+                Assert.Equal(expected, source.AsSpan().EndsWith(value.AsSpan(), stringComparison));
+            }
         }
 
         [Fact]

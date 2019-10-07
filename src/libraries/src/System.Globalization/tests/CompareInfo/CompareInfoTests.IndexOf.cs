@@ -13,6 +13,7 @@ namespace System.Globalization.Tests
         private static CompareInfo s_currentCompare = CultureInfo.CurrentCulture.CompareInfo;
         private static CompareInfo s_hungarianCompare = new CultureInfo("hu-HU").CompareInfo;
         private static CompareInfo s_turkishCompare = new CultureInfo("tr-TR").CompareInfo;
+        private static CompareInfo s_slovakCompare = new CultureInfo("sk-SK").CompareInfo;
 
         public static IEnumerable<object[]> IndexOf_TestData()
         {
@@ -36,6 +37,11 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "foobardzsdzs", "rddzs", 0, 12, CompareOptions.None, -1 };
             yield return new object[] { s_invariantCompare, "foobardzsdzs", "rddzs", 0, 12, CompareOptions.Ordinal, -1 };
 
+            // Slovak
+            yield return new object[] { s_slovakCompare, "ch", "h", 0, 2, CompareOptions.None, -1 };
+            yield return new object[] { s_slovakCompare, "chodit hore", "HO", 0, 2, CompareOptions.IgnoreCase, -1 };
+            yield return new object[] { s_slovakCompare, "chh", "h", 0, 3, CompareOptions.None, 2 };
+
             // Turkish
             yield return new object[] { s_turkishCompare, "Hi", "I", 0, 2, CompareOptions.None, -1 };
             yield return new object[] { s_turkishCompare, "Hi", "I", 0, 2, CompareOptions.IgnoreCase, -1 };
@@ -55,6 +61,7 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "a\u0300", 0, 9, CompareOptions.OrdinalIgnoreCase, -1 };
             yield return new object[] { s_invariantCompare, "FooBar", "Foo\u0400Bar", 0, 6, CompareOptions.Ordinal, -1 };
             yield return new object[] { s_invariantCompare, "TestFooBA\u0300R", "FooB\u00C0R", 0, 11, CompareOptions.IgnoreNonSpace, 4 };
+            yield return new object[] { s_invariantCompare, "o\u0308", "o", 0, 2, CompareOptions.None, -1 };
 
             // Ignore symbols
             yield return new object[] { s_invariantCompare, "More Test's", "Tests", 0, 11, CompareOptions.IgnoreSymbols, 5 };
@@ -176,7 +183,16 @@ namespace System.Globalization.Tests
             }
             // Use IndexOf(string, string, int, int, CompareOptions)
             Assert.Equal(expected, compareInfo.IndexOf(source, value, startIndex, count, options));
-        }
+
+            if ((compareInfo == s_invariantCompare) && ((options == CompareOptions.None) || (options == CompareOptions.IgnoreCase)))
+            {
+                StringComparison stringComparison = (options == CompareOptions.IgnoreCase) ? StringComparison.InvariantCultureIgnoreCase : StringComparison.InvariantCulture;
+                // Use int string.IndexOf(string, StringComparison)
+                Assert.Equal(expected, source.IndexOf(value, startIndex, count, stringComparison));
+                // Use int MemoryExtensions.IndexOf(this ReadOnlySpan<char>, ReadOnlySpan<char>, StringComparison)
+                Assert.Equal((expected == -1) ? -1 : (expected - startIndex), source.AsSpan(startIndex, count).IndexOf(value.AsSpan(), stringComparison));
+            }
+         }
 
         private static void IndexOf_Char(CompareInfo compareInfo, string source, char value, int startIndex, int count, CompareOptions options, int expected)
         {
