@@ -308,6 +308,7 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
+        [ActiveIssue(40948)]
         public void AttributeArray_SetGetAttributesAndModify_DoesCopy()
         {
             var attribute1 = new MockAttribute1();
