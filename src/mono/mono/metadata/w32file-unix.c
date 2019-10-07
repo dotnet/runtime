@@ -4382,7 +4382,6 @@ mono_w32file_get_disk_free_space (const gunichar2 *path_name, guint64 *free_byte
 #elif defined(HAVE_STATFS)
 	struct statfs fsstat;
 #endif
-	gboolean isreadonly;
 	gchar *utf8_path_name;
 	gint ret;
 	unsigned long block_size;
@@ -4411,17 +4410,11 @@ mono_w32file_get_disk_free_space (const gunichar2 *path_name, guint64 *free_byte
 		MONO_ENTER_GC_SAFE;
 		ret = statvfs (utf8_path_name, &fsstat);
 		MONO_EXIT_GC_SAFE;
-		isreadonly = ((fsstat.f_flag & ST_RDONLY) == ST_RDONLY);
 		block_size = fsstat.f_frsize;
 #elif defined(HAVE_STATFS)
 		MONO_ENTER_GC_SAFE;
 		ret = statfs (utf8_path_name, &fsstat);
 		MONO_EXIT_GC_SAFE;
-#if defined (MNT_RDONLY)
-		isreadonly = ((fsstat.f_flags & MNT_RDONLY) == MNT_RDONLY);
-#elif defined (MS_RDONLY)
-		isreadonly = ((fsstat.f_flags & MS_RDONLY) == MS_RDONLY);
-#endif
 		block_size = fsstat.f_bsize;
 #endif
 	} while(ret == -1 && errno == EINTR);
@@ -4435,19 +4428,13 @@ mono_w32file_get_disk_free_space (const gunichar2 *path_name, guint64 *free_byte
 	}
 
 	/* total number of free bytes for non-root */
-	if (isreadonly)
-		*free_bytes_avail = 0;
-	else
-		*free_bytes_avail = block_size * (guint64)fsstat.f_bavail;
+	*free_bytes_avail = block_size * (guint64)fsstat.f_bavail;
 
 	/* total number of bytes available for non-root */
 	*total_number_of_bytes = block_size * (guint64)fsstat.f_blocks;
 
 	/* total number of bytes available for root */
-	if (isreadonly)
-		*total_number_of_free_bytes = 0;
-	else
-		*total_number_of_free_bytes = block_size * (guint64)fsstat.f_bfree;
+	*total_number_of_free_bytes = block_size * (guint64)fsstat.f_bfree;
 #endif
 	return(TRUE);
 }
