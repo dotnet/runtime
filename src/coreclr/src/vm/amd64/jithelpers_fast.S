@@ -537,3 +537,45 @@ LEAF_ENTRY JIT_Stelem_Ref__ArrayStoreCheck_Helper, _TEXT
         jmp     C_FUNC(JIT_WriteBarrier)
 #endif
 LEAF_END JIT_Stelem_Ref__ArrayStoreCheck_Helper, _TEXT
+
+// The following helper will access ("probe") a word on each page of the stack
+// starting with the page right beneath rsp down to the one pointed to by r11.
+// The procedure is needed to make sure that the "guard" page is pushed down below the allocated stack frame.
+// The call to the helper will be emitted by JIT in the function/funclet prolog when large (larger than 0x3000 bytes) stack frame is required.
+//
+// NOTE: On Linux we must advance the stack pointer as we probe - it is not allowed to access 65535 bytes below rsp.
+// Since this helper will modify a value of rsp - it must establish the frame pointer.
+//
+// See also https://github.com/dotnet/coreclr/issues/16827#issue-303331518 for more information.
+
+#define PAGE_SIZE 0x1000
+
+NESTED_ENTRY JIT_StackProbe, _TEXT, NoHandler
+        // On entry:
+        //   r11 - points to the lowest address on the stack frame being allocated (i.e. [InitialSp - FrameSize])
+        //   rsp - points to some byte on the last probed page
+        // On exit:
+        //   r11 - is preserved
+        //
+        // NOTE: this helper will probe at least one page below the one pointed by rsp.
+
+        push_nonvol_reg rbp
+        mov     rbp, rsp
+        set_cfa_register rbp, 16
+
+    END_PROLOGUE
+
+        sub     rsp, PAGE_SIZE         // rsp points to some byte on the first unprobed page
+        or      rsp, (PAGE_SIZE - 1)   // rsp points to the **highest address** on the first unprobed page
+                                       // This is done to make the following loop end condition simpler.
+
+LOCAL_LABEL(ProbeLoop):
+        test    dword ptr [rsp], eax
+        sub     rsp, PAGE_SIZE         // rsp points to the highest address of the **next page** to probe
+        cmp     rsp, r11
+        jge     LOCAL_LABEL(ProbeLoop) // if (rsp >= r11), then we need to probe the page pointed to by rsp.
+
+        RESET_FRAME_WITH_RBP
+        ret
+
+NESTED_END JIT_StackProbe, _TEXT

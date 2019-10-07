@@ -335,6 +335,9 @@ enum ReadyToRunHelper
 
     // JIT32 x86-specific exception handling
     READYTORUN_HELPER_EndCatch                  = 0x110,
+
+    // Stack probing helper
+    READYTORUN_HELPER_StackProbe                = 0x111,
 };
 
 //
