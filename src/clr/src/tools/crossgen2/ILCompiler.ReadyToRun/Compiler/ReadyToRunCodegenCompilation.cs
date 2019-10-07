@@ -63,6 +63,13 @@ namespace ILCompiler
 
         public bool CanInline(MethodDesc caller, MethodDesc callee)
         {
+            // Check to see if the method requires a security object.  This means they call demand and
+            // shouldn't be inlined.
+            if (callee.RequireSecObject)
+            {
+                return false;
+            }
+
             return NodeFactory.CompilationModuleGroup.CanInline(caller, callee);
         }
 
