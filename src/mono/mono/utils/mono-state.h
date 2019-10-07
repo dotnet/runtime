@@ -21,7 +21,7 @@
 #define MONO_NATIVE_STATE_PROTOCOL_VERSION "0.0.5"
 
 typedef enum {
-	MonoSummaryNone,
+	MonoSummaryNone = 0,
 	MonoSummarySetup,
 	MonoSummarySuspendHandshake,
 	MonoSummaryUnmanagedStacks,

@@ -148,6 +148,15 @@ file_for_summary_stage (const char *directory, MonoSummaryStage stage, gchar *bu
 	g_snprintf (buff, sizeof_buff, "%s%scrash_stage_%d", directory, G_DIR_SEPARATOR_S, stage);
 }
 
+static void
+create_stage_mark_file (void)
+{
+	char out_file [200];
+	file_for_summary_stage (log.directory, log.level, out_file, sizeof(out_file));
+	int handle = g_open (out_file, O_WRONLY | O_CREAT, S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
+	close(handle);
+}
+
 gboolean
 mono_summarize_set_timeline_dir (const char *directory)
 {
@@ -168,30 +177,27 @@ mono_summarize_timeline_start (void)
 	if (!configured_timeline_dir)
 		return;
 
-	log.level = MonoSummarySetup;
 	log.directory = configured_timeline_dir;
+	mono_summarize_timeline_phase_log (MonoSummarySetup);
 }
 
 void
 mono_summarize_double_fault_log (void)
 {
-	char out_file [200];
-	file_for_summary_stage (log.directory, MonoSummaryDoubleFault, out_file, sizeof(out_file));
-	int handle = g_open (out_file, O_WRONLY | O_CREAT, S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
-	close(handle);
+	mono_summarize_timeline_phase_log (MonoSummaryDoubleFault);
 }
 
 void
 mono_summarize_timeline_phase_log (MonoSummaryStage next)
 {
-	if (log.level == MonoSummaryNone)
-		return;
-
 	if (!log.directory)
 		return;
 
 	MonoSummaryStage out_level;
 	switch (log.level) {
+		case MonoSummaryNone:
+			out_level = MonoSummarySetup;
+			break;
 		case MonoSummarySetup:
 			out_level = MonoSummarySuspendHandshake;
 			break;
@@ -235,20 +241,15 @@ mono_summarize_timeline_phase_log (MonoSummaryStage next)
 			return;
 	}
 
-	g_assertf(out_level == next, "Log Error: Log transition to %d, actual expected next step is %d\n", next, out_level);
+	g_assertf(out_level == next || next == MonoSummaryDoubleFault, "Log Error: Log transition to %d, actual expected next step is %d\n", next, out_level);
 
-	char out_file [200];
-	file_for_summary_stage (log.directory, out_level, out_file, sizeof(out_file));
-	int handle = g_open (out_file, O_WRONLY | O_CREAT, S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
-	close(handle);
-
+	log.level = out_level;
+	create_stage_mark_file ();
 	// To check, comment out normally
 	// DO NOT MERGE UNCOMMENTED
 	// As this does a lot of FILE io
 	//
 	// g_assert (out_level == mono_summarize_timeline_read_level (log.directory,  FALSE));
-
-	log.level = out_level;
 
 	if (out_level == MonoSummaryDone)
 		memset (&log, 0, sizeof (log));
