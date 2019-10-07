@@ -14,23 +14,24 @@ namespace Internal.TypeSystem.Ecma
     {
         private static class MethodFlags
         {
-            public const int BasicMetadataCache     = 0x0001;
-            public const int Virtual                = 0x0002;
-            public const int NewSlot                = 0x0004;
-            public const int Abstract               = 0x0008;
-            public const int Final                  = 0x0010;
-            public const int NoInlining             = 0x0020;
-            public const int AggressiveInlining     = 0x0040;
-            public const int RuntimeImplemented     = 0x0080;
-            public const int InternalCall           = 0x0100;
-            public const int Synchronized           = 0x0200;
-            public const int AggressiveOptimization = 0x0400;
-            public const int NoOptimization         = 0x0800;
+            public const int BasicMetadataCache     = 0x00001;
+            public const int Virtual                = 0x00002;
+            public const int NewSlot                = 0x00004;
+            public const int Abstract               = 0x00008;
+            public const int Final                  = 0x00010;
+            public const int NoInlining             = 0x00020;
+            public const int AggressiveInlining     = 0x00040;
+            public const int RuntimeImplemented     = 0x00080;
+            public const int InternalCall           = 0x00100;
+            public const int Synchronized           = 0x00200;
+            public const int AggressiveOptimization = 0x00400;
+            public const int NoOptimization         = 0x00800;
+            public const int RequireSecObject       = 0x01000;
 
-            public const int AttributeMetadataCache = 0x1000;
-            public const int Intrinsic              = 0x2000;
-            public const int NativeCallable         = 0x4000;
-            public const int RuntimeExport          = 0x8000;
+            public const int AttributeMetadataCache = 0x02000;
+            public const int Intrinsic              = 0x04000;
+            public const int NativeCallable         = 0x08000;
+            public const int RuntimeExport          = 0x10000;
         };
 
         private EcmaType _type;
@@ -142,6 +143,9 @@ namespace Internal.TypeSystem.Ecma
 
                 if ((methodAttributes & MethodAttributes.Final) != 0)
                     flags |= MethodFlags.Final;
+
+                if ((methodAttributes & MethodAttributes.RequireSecObject) != 0)
+                    flags |= MethodFlags.RequireSecObject;
 
                 if ((methodImplAttributes & MethodImplAttributes.NoInlining) != 0)
                     flags |= MethodFlags.NoInlining;
@@ -263,6 +267,14 @@ namespace Internal.TypeSystem.Ecma
             get
             {
                 return (GetMethodFlags(MethodFlags.BasicMetadataCache | MethodFlags.NoInlining) & MethodFlags.NoInlining) != 0;
+            }
+        }
+
+        public override bool RequireSecObject
+        {
+            get
+            {
+                return (GetMethodFlags(MethodFlags.BasicMetadataCache | MethodFlags.RequireSecObject) & MethodFlags.RequireSecObject) != 0;
             }
         }
 
