@@ -66,11 +66,6 @@
     <BuildPhase>$(MSBuildProjectName)</BuildPhase>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
-    <!-- WindowsDesktop packs currently depend on non-source-built App package. -->
-    <ProjectExclusions Include="windowsdesktop\**\*.*proj" />
-  </ItemGroup>
-
   <PropertyGroup Condition="'$(PackageTargetRuntime)' == ''">
     <SkipValidatePackage>true</SkipValidatePackage>
     <IncludeRuntimeJson>true</IncludeRuntimeJson>

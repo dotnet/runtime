@@ -85,7 +85,7 @@
   <ItemGroup>
     <SubsetName
       Include="pkgproj"
-      Description="The packaging projects. These produce NETCoreApp and WindowsDesktop assets: NuGet packages, installers, zips, and Linux packages." />
+      Description="The packaging projects. These produce NETCoreApp assets: NuGet packages, installers, zips, and Linux packages." />
   </ItemGroup>
   <ItemGroup Condition="'$(SubsetToLower)' == '' or $(SubsetToLower.Contains('pkgproj'))">
     <PkgprojProjectToBuild Include="$(RepoRoot)src\pkg\projects\**\*.pkgproj" SignPhase="MsiFiles" />
