@@ -48,7 +48,7 @@ stages:
                 _framework: netfx
                 _helixQueues: $(uapNetfxQueues)
 
-              UWP_CoreCLR_x64_Debug:
+              UAP_x64_Debug:
                 _BuildConfig: Debug
                 _architecture: x64
                 _framework: uap
@@ -91,32 +91,15 @@ stages:
                 _helixQueues: $(uapNetfxQueues)
                 _skipPublishPackages: true # In UWP we don't produce packages
 
-              UAP_x86_Release:
-                _BuildConfig: Release
-                _architecture: x86
-                _framework: uap
-                _helixQueues: $(uapNetfxQueues)
-                _skipPublishPackages: true # In UWP we don't produce packages
-
-              arm64_Release:
-                _BuildConfig: Release
-                _architecture: arm64
-                _framework: netcoreapp
-                _helixQueues: $(windowsArmQueue)
-                _publishTests: true
-
         pool:
           name: Hosted VS2017
 
         submitToHelix: true
-        # Temporarily until we increase the Windows ARM64 queue, https://github.com/dotnet/core-eng/issues/7756
-        timeoutInMinutes: 180
         buildExtraArguments: /p:RuntimeOS=win10
 
         variables:
           - nanoQueues: "`(Windows.Nano.1809.Amd64.Open`)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1809-helix-amd64-61052b7-20190723211353"
           - uapNetfxQueues: Windows.10.Amd64.ClientRS5.Open
-          - windowsArmQueue: Windows.10.Arm64.Open
 
           - ${{ if eq(parameters.fullMatrix, 'false') }}:
             - netcoreappWindowsQueues: Windows.7.Amd64.Open+Windows.81.Amd64.Open+Windows.10.Amd64.Client19H1.ES.Open
@@ -179,11 +162,11 @@ stages:
                   _architecture: arm
                   _framework: netcoreapp
 
-                UAP_arm_Release:
+                arm64_Release:
                   _BuildConfig: Release
-                  _architecture: arm
-                  _framework: uap
-                  _skipPublishPackages: true # In UWP we don't produce packages
+                  _architecture: arm64
+                  _framework: netcoreapp
+                  _publishTests: true
 
             pool:
               name: Hosted VS2017
