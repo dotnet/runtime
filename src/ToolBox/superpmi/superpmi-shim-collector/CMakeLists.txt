@@ -35,15 +35,8 @@ set(SUPERPMI_SHIM_COLLECTOR_SOURCES
     ../superpmi-shared/typeutils.cpp
     ../superpmi-shared/spmidumphelper.cpp
 )
-
-add_precompiled_header(
-    standardpch.h
-    ../superpmi-shared/standardpch.cpp
-    SUPERPMI_SHIM_COLLECTOR_SOURCES
-)
-
 if (WIN32)
-    preprocess_def_file(${CMAKE_CURRENT_SOURCE_DIR}/superpmi-shim-collector.def ${CMAKE_CURRENT_BINARY_DIR}/superpmi-shim-collector.def)
+    preprocess_file(${CMAKE_CURRENT_SOURCE_DIR}/superpmi-shim-collector.def ${CMAKE_CURRENT_BINARY_DIR}/superpmi-shim-collector.def)
 
     list(APPEND SUPERPMI_SHIM_COLLECTOR_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/superpmi-shim-collector.def)
 endif (WIN32)
@@ -52,6 +45,8 @@ _add_library(superpmi-shim-collector
     SHARED
     ${SUPERPMI_SHIM_COLLECTOR_SOURCES}
 )
+
+target_precompile_header(TARGET superpmi-shim-collector HEADER standardpch.h)
 
 if(CLR_CMAKE_PLATFORM_UNIX)
     target_link_libraries(superpmi-shim-collector

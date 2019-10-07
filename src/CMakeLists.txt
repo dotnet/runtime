@@ -38,19 +38,17 @@ if(CLR_CMAKE_PLATFORM_UNIX)
   # variable specified by the TARGET_FILE parameter.
   function(build_resources SOURCE TARGET_NAME TARGET_FILE)
 
-    get_compile_definitions(PREPROCESS_DEFINITIONS)
-    get_include_directories(INCLUDE_DIRECTORIES)
-
     set(PREPROCESSED_SOURCE ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}.rc.i)
+
+    preprocess_file(${SOURCE} ${PREPROCESSED_SOURCE})
+
     set(RESOURCE_ENTRY_ARRAY_CPP ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}.cpp)
 
     add_custom_command(
       OUTPUT ${RESOURCE_ENTRY_ARRAY_CPP}
-      # Preprocess the windows .rc file
-      COMMAND ${CMAKE_CXX_COMPILER} -E -P ${PREPROCESS_DEFINITIONS} ${INCLUDE_DIRECTORIES} -o ${PREPROCESSED_SOURCE} -x c ${SOURCE}
       # Convert the preprocessed .rc file to a C++ file which will be used to make a static lib.
       COMMAND ${AWK} -v name=${TARGET_NAME} -f ${RC_TO_CPP} -f ${PROCESS_RC} ${PREPROCESSED_SOURCE} >${RESOURCE_ENTRY_ARRAY_CPP}
-            DEPENDS ${SOURCE} ${RC_TO_CPP} ${PROCESS_RC}
+            DEPENDS ${PREPROCESSED_SOURCE} ${RC_TO_CPP} ${PROCESS_RC}
     )
 
     include_directories(${RESOURCE_STRING_HEADER_DIR})

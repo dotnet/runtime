@@ -48,6 +48,8 @@ add_library_clr(protononjit
    ${JIT_ARCH_ALTJIT_SOURCES}
 )
 
+target_precompile_header(TARGET protononjit HEADER jitpch.h ADDITIONAL_INCLUDE_DIRECTORIES ${JIT_SOURCE_DIR})
+
 add_dependencies(protononjit jit_exports)
 
 set_property(TARGET protononjit APPEND_STRING PROPERTY LINK_FLAGS ${JIT_EXPORTS_LINKER_OPTION})
