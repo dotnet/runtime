@@ -101,9 +101,9 @@
       <Uri>https://github.com/dotnet/corefx</Uri>
       <Sha>a434a52ae3f1175bc1cad8b1a02b0921ef3b1f55</Sha>
     </Dependency>
-    <Dependency Name="NETStandard.Library" Version="2.2.0-prerelease.19507.1">
+    <Dependency Name="NETStandard.Library" Version="2.2.0-prerelease.19507.2">
       <Uri>https://github.com/dotnet/standard</Uri>
-      <Sha>6b1794e8e26f0928bd912fbf6a03bf819634fa0b</Sha>
+      <Sha>30adc7e9aa13a7d35c999a2c2e37e271b2e61cbf</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NETCore.Runtime.CoreCLR" Version="5.0.0-alpha1.19501.1">
       <Uri>https://github.com/dotnet/coreclr</Uri>
