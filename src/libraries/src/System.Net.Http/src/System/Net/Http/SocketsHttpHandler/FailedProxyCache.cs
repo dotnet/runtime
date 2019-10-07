@@ -85,11 +85,8 @@ namespace System.Net.Http
         /// </summary>
         /// <param name="uri">The <paramref name="uri"/> of the proxy to renew.</param>
         /// <param name="renewTicks">The current renewal time for the proxy. If the value has changed from this, the proxy will not be renewed.</param>
-        public bool TryRenewProxy(Uri uri, long renewTicks)
-        {
-            var collection = (ICollection<KeyValuePair<Uri, long>>)_failedProxies;
-            return collection.Remove(new KeyValuePair<Uri, long>(uri, renewTicks));
-        }
+        public bool TryRenewProxy(Uri uri, long renewTicks) =>
+            _failedProxies.TryRemove(new KeyValuePair<Uri, long>(uri, renewTicks));
 
         /// <summary>
         /// Cleans up any old proxies that should no longer be marked as failing.

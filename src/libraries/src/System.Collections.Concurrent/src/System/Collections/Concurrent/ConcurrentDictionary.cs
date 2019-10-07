@@ -342,6 +342,31 @@ namespace System.Collections.Concurrent
             return TryRemoveInternal(key, out value, false, default);
         }
 
+        /// <summary>Removes a key and value from the dictionary.</summary>
+        /// <param name="item">The <see cref="KeyValuePair{TKey,TValue}"/> representing the key and value to remove.</param>
+        /// <returns>
+        /// true if the key and value represented by <paramref name="item"/> are successfully
+        /// found and removed; otherwise, false.
+        /// </returns>
+        /// <remarks>
+        /// Both the specifed key and value must match the entry in the dictionary for it to be removed.
+        /// The key is compared using the dictionary's comparer (or the default comparer for <typeparamref name="TKey"/>
+        /// if no comparer was provided to the dictionary when it was constructed).  The value is compared using the
+        /// default comparer for <typeparamref name="TValue"/>.
+        /// </remarks>
+        /// <exception cref="System.ArgumentNullException">
+        /// The <see cref="KeyValuePair{TKey, TValue}.Key"/> property of <paramref name="item"/> is a null reference.
+        /// </exception>
+        public bool TryRemove(KeyValuePair<TKey, TValue> item)
+        {
+            if (item.Key is null)
+            {
+                throw new ArgumentNullException(nameof(item), SR.ConcurrentDictionary_ItemKeyIsNull);
+            }
+
+            return TryRemoveInternal(item.Key, out _, matchValue: true, item.Value);
+        }
+
         /// <summary>
         /// Removes the specified key from the dictionary if it exists and returns its associated value.
         /// If matchValue flag is set, the key will be removed only if is associated with a particular
@@ -1421,13 +1446,8 @@ namespace System.Collections.Concurrent
         /// found and removed; otherwise, false.</returns>
         /// <exception cref="System.ArgumentNullException">The Key property of <paramref
         /// name="keyValuePair"/> is a null reference (Nothing in Visual Basic).</exception>
-        bool ICollection<KeyValuePair<TKey, TValue>>.Remove(KeyValuePair<TKey, TValue> keyValuePair)
-        {
-            if (keyValuePair.Key == null) throw new ArgumentNullException(nameof(keyValuePair), SR.ConcurrentDictionary_ItemKeyIsNull);
-
-            TValue throwAwayValue;
-            return TryRemoveInternal(keyValuePair.Key, out throwAwayValue, true, keyValuePair.Value);
-        }
+        bool ICollection<KeyValuePair<TKey, TValue>>.Remove(KeyValuePair<TKey, TValue> keyValuePair) =>
+            TryRemove(keyValuePair);
 
         #endregion
 
