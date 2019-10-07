@@ -41,7 +41,16 @@ namespace System.IO.Tests
                 string fileContentRead = File.ReadAllText(tmpFileName);
                 Assert.Equal(textContentToEncrypt, fileContentRead);
 
-                File.Encrypt(tmpFileName);
+                try
+                {
+                    File.Encrypt(tmpFileName);
+                }
+                catch (IOException e) when (e.HResult == unchecked((int)0x80070490))
+                {
+                    // Ignore ERROR_NOT_FOUND 1168 (0x490). It is reported when EFS is disabled by domain policy.
+                    return;
+                }
+
                 Assert.Equal(fileContentRead, File.ReadAllText(tmpFileName));
                 Assert.Equal(FileAttributes.Encrypted, (FileAttributes.Encrypted & File.GetAttributes(tmpFileName)));
 
