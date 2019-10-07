@@ -70,6 +70,9 @@ public:
     // Log a JIT compiled method to the map.
     static void LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t codeSize, PrepareCodeConfig *pConfig);
 
+    // Log a pre-compiled method to the map.
+    static void LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode);
+
     // Log a set of stub to the map.
     static void LogStubs(const char* stubType, const char* stubOwner, PCODE pCode, size_t codeSize);
 
