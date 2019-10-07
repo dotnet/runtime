@@ -4,7 +4,7 @@ The APIs shown here reflection Preview 5.
 
 Design points:
 - Due to time constraints, and to gather feedback, the feature set is intended to a minimum viable product for 3.0.
-  - An expectation is that a significant percent of Json.NET consumers would be able to use this, especially for ASP.NET scenarios. However, with the 3.0 release being a minimum viable product, that percent is not known. However, the percent will never be 100%, and that is neither a goal nor a long-term goal, because Json.NET has [many features](https://www.newtonsoft.com/json/help/html/JsonNetVsDotNetSerializers.htm) and some are not target requirements.
+- An expectation is that a significant percent of Json.NET consumers would be able to use this, especially for ASP.NET scenarios. However, with the 3.0 release being a minimum viable product, that percent is not known. However, the percent will never be 100%, and that is neither a goal nor a long-term goal, because Json.NET has [many features](https://www.newtonsoft.com/json/help/html/JsonNetVsDotNetSerializers.htm) and some are not target requirements.
 - Simple POCO object scenarios are targeted. These are typically used for DTO scenarios.
 - The API designed to be extensible for new features in subsequent releases and by the community.
 - Design-time attributes for defining the various options, but still support modifications at run-time.
@@ -29,7 +29,7 @@ Using a simple POCO class:
 To deserialize a JSON string into a POCO instance:
 ```cs
     string json = ...
-    Person person = JsonSerializer.Parse<Person>(json);
+    Person person = JsonSerializer.Deserialize<Person>(json);
 ```
 
 To serialize an object to a JSON string:
@@ -43,26 +43,25 @@ Note there are also byte[]-based methods of these which are faster than using th
 ```cs
 namespace System.Text.Json.Serialization
 {
-    public static class JsonSerializer
+    public static partial class JsonSerializer
     {
-        public static object Parse(ReadOnlySpan<byte> utf8Json, Type returnType, JsonSerializerOptions options = null);
-        public static TValue Parse<TValue>(ReadOnlySpan<byte> utf8Json, JsonSerializerOptions options = null);
+        public static object Deserialize(System.ReadOnlySpan<byte> utf8Json, System.Type returnType, System.Text.Json.JsonSerializerOptions options = null) { throw null; }
+        public static object Deserialize(string json, System.Type returnType, System.Text.Json.JsonSerializerOptions options = null) { throw null; }
+        public static TValue Deserialize<TValue>(System.ReadOnlySpan<byte> utf8Json, System.Text.Json.JsonSerializerOptions options = null) { throw null; }
+        public static TValue Deserialize<TValue>(string json, System.Text.Json.JsonSerializerOptions options = null) { throw null; }
+        public static System.Threading.Tasks.ValueTask<object> DeserializeAsync(System.IO.Stream utf8Json, System.Type returnType, System.Text.Json.JsonSerializerOptions options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<TValue> DeserializeAsync<TValue>(System.IO.Stream utf8Json, System.Text.Json.JsonSerializerOptions options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static object Deserialize(ref System.Text.Json.Utf8JsonReader reader, System.Type returnType, System.Text.Json.JsonSerializerOptions options = null) { throw null; }
+        public static TValue Deserialize<TValue>(ref System.Text.Json.Utf8JsonReader reader, System.Text.Json.JsonSerializerOptions options = null) { throw null; }
 
-        public static object Parse(string json, Type returnType, JsonSerializerOptions options = null);
-        public static TValue Parse<TValue>(string json, JsonSerializerOptions options = null);
-
-        public static ValueTask<object> ReadAsync(Stream utf8Json, Type returnType, JsonSerializerOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
-        public static ValueTask<TValue> ReadAsync<TValue>(Stream utf8Json, JsonSerializerOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
-
-        // Naming of `ToBytes` TBD based on API review; may want to expose a char8[] in addition to byte[].
-        public static byte[] ToBytes(object value, Type type, JsonSerializerOptions options = null);
-        public static byte[] ToBytes<TValue>(TValue value, JsonSerializerOptions options = null);
-
-        public static string ToString(object value, Type type, JsonSerializerOptions options = null);
-        public static string ToString<TValue>(TValue value, JsonSerializerOptions options = null);
-
-        public static Task WriteAsync(object value, Type type, Stream utf8Json, JsonSerializerOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
-        public static Task WriteAsync<TValue>(TValue value, Stream utf8Json, JsonSerializerOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
+        public static string Serialize(object value, System.Type inputType, System.Text.Json.JsonSerializerOptions options = null) { throw null; }
+        public static string Serialize<TValue>(TValue value, System.Text.Json.JsonSerializerOptions options = null) { throw null; }
+        public static byte[] SerializeToUtf8Bytes(object value, System.Type inputType, System.Text.Json.JsonSerializerOptions options = null) { throw null; }
+        public static byte[] SerializeToUtf8Bytes<TValue>(TValue value, System.Text.Json.JsonSerializerOptions options = null) { throw null; }
+        public static System.Threading.Tasks.Task SerializeAsync(System.IO.Stream utf8Json, object value, System.Type inputType, System.Text.Json.JsonSerializerOptions options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task SerializeAsync<TValue>(System.IO.Stream utf8Json, TValue value, System.Text.Json.JsonSerializerOptions options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static void Serialize(System.Text.Json.Utf8JsonWriter writer, object value, System.Type inputType, System.Text.Json.JsonSerializerOptions options = null) { }
+        public static void Serialize<TValue>(System.Text.Json.Utf8JsonWriter writer, TValue value, System.Text.Json.JsonSerializerOptions options = null) { }
     }
 }
 ```
@@ -116,7 +115,7 @@ To specify camel-casing:
     options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
 
     // Be sure to specify the options class on calls to the serializer:
-    string json = JsonSerializer.ToString(person, options);
+    string json = JsonSerializer.Serialize(person, options);
 ```
 
 It is possible to author a new converter by deriving from `JsonNamingPolicy` and overriding `ConvertName`.
@@ -191,8 +190,8 @@ Json.NET:
 JsonSerializer:
 ```cs
     Person person = ...;
-    string json = JsonSerializer.ToBytes(person);
-    person = JsonSerializer.Parse(json);
+    string json = JsonSerializer.Serialize(person);
+    person = JsonSerializer.Deserialize(json);
 ```
 ## Simple scenario with run-time settings
 Json.NET:
@@ -206,7 +205,7 @@ JsonSerializer:
 ```cs
     var options = new JsonSerializerOptions();
     options.IgnoreNullValues = true;
-    string json = JsonSerializer.ToString(person, options);
+    string json = JsonSerializer.Serialize(person, options);
 ```
 
 Note that Json.NET also has a `JsonSerializer` class with instance methods for advanced scenarios. See also Json.NET [code samples](https://www.newtonsoft.com/json/help/html/Samples.htm) and [documentation](https://www.newtonsoft.com/json/help/html/R_Project_Documentation.htm).
@@ -220,11 +219,11 @@ An instance of this class and exposed objects will be immutable once (de)seriali
 ## Static typing \ polymorphic behavior
 The Read\Write methods specify statically (at compile time) the POCO type through `<TValue>` which below is `<Person>`:
 ```cs
-    Person person = JsonSerializer.Parse<Person>(utf8);
-    JsonSerializer.ToBytes<Person>(person);
+    Person person = JsonSerializer.Deserialize<Person>(utf8);
+    JsonSerializer.SerializeToUtf8Bytes<Person>(person);
 
     // Due to generic inference, Write can be simplified as:
-    JsonSerializer.ToBytes(person);
+    JsonSerializer.SerializeToUtf8Bytes(person);
 ```
 
 For Read, this means that if the `utf8` data has additional properties that originally came from a derived class (e.g. a Customer class that derived from Person), only a Person object is instantiated. This is fairly obvious, since there is no hint to say a Customer was originally serialized.
@@ -235,7 +234,7 @@ Because serialization of an object tree in an opt-out model (all properties are 
 
 However, static typing also limits polymorphic scenarios. This overload can be used with `GetType()` to address this:
 ```cs
-    JsonSerializer.ToBytes(person, person.GetType());
+    JsonSerializer.SerializeToUtf8Bytes(person, person.GetType());
 ```
 
 In this case, if `person` is actually a Customer object, the Customer will be serialized.
@@ -247,7 +246,7 @@ The design supports async methods that can stream with a buffer size around the 
 
 Currently the async `await` calls on Stream and Pipe is based on a byte threshold determined by the current buffer size.
 
-For the Stream-based async methods, the Stream's `ReadAsync()` \ `WriteAsync()` are awaited. There is no call to `FlushAsync()` - it is expected the consumer does this or uses a Stream or an adapter that can auto-flush.
+For the Stream-based async methods, the Stream's `DeserializeAsync()` \ `SerializeAsync()` are awaited. There is no call to `FlushAsync()` - it is expected the consumer does this or uses a Stream or an adapter that can auto-flush.
 
 ## Performance
 The goal is to have a super fast (de)serializer given the feature set with minimal overhead on top of the reader and writer.
