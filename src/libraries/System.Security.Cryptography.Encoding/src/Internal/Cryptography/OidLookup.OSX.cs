@@ -4,7 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Diagnostics;
 using System.Security.Cryptography;
 
 namespace Internal.Cryptography
@@ -44,6 +44,9 @@ namespace Internal.Cryptography
         // ---- PAL layer ends here ----
         // -----------------------------
 
+        /// <summary>Expected size of <see cref="s_extraFriendlyNameToOid"/>.</summary>
+        private const int ExtraFriendlyNameToOidCount = 8;
+
         // There are places inside the framework where Oid.FromFriendlyName is called
         // (to pass in an OID group restriction for Windows) and an exception is not tolerated.
         //
@@ -53,7 +56,7 @@ namespace Internal.Cryptography
         // and OpenSSL produce different answers.  Since the answers originally came from OpenSSL
         // on macOS, this preserves the OpenSSL names.
         private static readonly Dictionary<string, string> s_extraFriendlyNameToOid =
-            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            new Dictionary<string, string>(ExtraFriendlyNameToOidCount, StringComparer.OrdinalIgnoreCase)
             {
                 { "pkcs7-data", "1.2.840.113549.1.7.1" },
                 { "contentType", "1.2.840.113549.1.9.3" },
@@ -66,6 +69,17 @@ namespace Internal.Cryptography
             };
 
         private static readonly Dictionary<string, string> s_extraOidToFriendlyName =
-            s_extraFriendlyNameToOid.ToDictionary(kvp => kvp.Value, kvp => kvp.Key);
+            InvertWithDefaultComparer(s_extraFriendlyNameToOid);
+
+#if DEBUG
+        static partial void ExtraStaticDebugValidation()
+        {
+            // Validate we hardcoded the right dictionary size
+            Debug.Assert(s_extraFriendlyNameToOid.Count == ExtraFriendlyNameToOidCount,
+                $"Expected {nameof(s_extraFriendlyNameToOid)}.{nameof(s_extraFriendlyNameToOid.Count)} == {ExtraFriendlyNameToOidCount}, got {s_extraFriendlyNameToOid.Count}");
+            Debug.Assert(s_extraOidToFriendlyName.Count == ExtraFriendlyNameToOidCount,
+                $"Expected {nameof(s_extraOidToFriendlyName)}.{nameof(s_extraOidToFriendlyName.Count)} == {ExtraFriendlyNameToOidCount}, got {s_extraOidToFriendlyName.Count}");
+        }
+#endif
     }
 }
