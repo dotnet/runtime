@@ -20,7 +20,7 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Expected WatcherChangeTypes are different based on OS
         public void Unix_File_Move_To_Same_Directory()
         {
-            FileMove_SameDirectory(WatcherChangeTypes.Created | WatcherChangeTypes.Deleted);
+            FileMove_SameDirectory(WatcherChangeTypes.Renamed);
         }
 
         [Fact]
@@ -40,7 +40,7 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.OSX)]  // Expected WatcherChangeTypes are different based on OS
         public void OSX_File_Move_To_Different_Watched_Directory()
         {
-            FileMove_DifferentWatchedDirectory(WatcherChangeTypes.Changed);
+            FileMove_DifferentWatchedDirectory(0);
         }
 
         [Fact]
@@ -75,7 +75,7 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Expected WatcherChangeTypes are different based on OS
         public void Unix_File_Move_In_Nested_Directory(bool includeSubdirectories)
         {
-            FileMove_NestedDirectory(includeSubdirectories ? WatcherChangeTypes.Created | WatcherChangeTypes.Deleted : 0, includeSubdirectories);
+            FileMove_NestedDirectory(includeSubdirectories ? WatcherChangeTypes.Renamed : 0, includeSubdirectories);
         }
 
         [Fact]
@@ -89,7 +89,7 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Expected WatcherChangeTypes are different based on OS
         public void Unix_File_Move_With_Set_NotifyFilter()
         {
-            FileMove_WithNotifyFilter(WatcherChangeTypes.Deleted);
+            FileMove_WithNotifyFilter(WatcherChangeTypes.Renamed);
         }
 
         #region Test Helpers
