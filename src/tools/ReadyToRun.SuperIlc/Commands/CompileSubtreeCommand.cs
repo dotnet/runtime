@@ -44,7 +44,7 @@ namespace ReadyToRun.SuperIlc
 
             if (!options.Exe)
             {
-                PathExtensions.DeleteOutputFolders(options.OutputDirectory.FullName, options.CoreRootDirectory.FullName, recursive: true);
+                PathExtensions.DeleteOutputFolders(options.OutputDirectory.FullName, options.CoreRootDirectory.FullName, runners, recursive: true);
             }
 
             string[] directories = LocateSubtree(options.InputDirectory.FullName, options.CoreRootDirectory.FullName).ToArray();
@@ -107,7 +107,7 @@ namespace ReadyToRun.SuperIlc
 
             if (!options.NoCleanup)
             {
-                PathExtensions.DeleteOutputFolders(options.OutputDirectory.FullName, options.CoreRootDirectory.FullName, recursive: true);
+                PathExtensions.DeleteOutputFolders(options.OutputDirectory.FullName, options.CoreRootDirectory.FullName, runners, recursive: true);
             }
 
             return success ? 0 : 1;
