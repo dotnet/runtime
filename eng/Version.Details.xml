@@ -109,18 +109,6 @@
       <Uri>https://github.com/dotnet/coreclr</Uri>
       <Sha>8f719f2a37fd1741a4f55cf3026a3ce4d89f3bc6</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Private.Winforms" Version="5.0.0-alpha1.19503.1" CoherentParentDependency="Microsoft.DotNet.Wpf.DncEng">
-      <Uri>https://github.com/dotnet/winforms</Uri>
-      <Sha>cf14d40dae262b353c5e2aa6cf0d35507dc279dc</Sha>
-    </Dependency>
-    <Dependency Name="Microsoft.DotNet.Wpf.GitHub" Version="5.0.0-alpha1.19504.4" CoherentParentDependency="Microsoft.DotNet.Wpf.DncEng">
-      <Uri>https://github.com/dotnet/wpf</Uri>
-      <Sha>2e840efbac4cf916fe35d22d279d42ed02915cc6</Sha>
-    </Dependency>
-    <Dependency Name="Microsoft.DotNet.Wpf.DncEng" Version="5.0.0-alpha1.19507.2">
-      <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-wpf-int</Uri>
-      <Sha>3c2266feccd11816e541b94e480dacf2f10a33f9</Sha>
-    </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
     <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="5.0.0-beta.19505.1">
