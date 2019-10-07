@@ -43,15 +43,10 @@ set(MCS_SOURCES
     ../superpmi-shared/spmidumphelper.cpp
 )
 
-add_precompiled_header(
-    standardpch.h
-    ../superpmi-shared/standardpch.cpp
-    MCS_SOURCES
-)
-
 _add_executable(mcs
     ${MCS_SOURCES}
 )
+target_precompile_header(TARGET mcs HEADER standardpch.h)
 
 if(CLR_CMAKE_PLATFORM_UNIX)
     target_link_libraries(mcs

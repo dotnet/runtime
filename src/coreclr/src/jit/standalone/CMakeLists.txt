@@ -20,6 +20,8 @@ add_library_clr(clrjit
    ${JIT_ARCH_SOURCES}
 )
 
+target_precompile_header(TARGET clrjit HEADER jitpch.h ADDITIONAL_INCLUDE_DIRECTORIES ${JIT_SOURCE_DIR})
+
 add_dependencies(clrjit jit_exports)
 
 set_property(TARGET clrjit APPEND_STRING PROPERTY LINK_FLAGS ${JIT_EXPORTS_LINKER_OPTION})

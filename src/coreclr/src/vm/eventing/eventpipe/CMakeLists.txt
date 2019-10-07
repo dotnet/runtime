@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 2.8.12.2)
 
-include(FindPythonInterp)
+include(FindPython)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(GENERATE_SCRIPT ${CLR_DIR}/src/scripts/genEventPipe.py)
-set(GENERATE_COMMAND ${PYTHON_EXECUTABLE} ${GENERATE_SCRIPT} --man ${EVENT_MANIFEST} --exc ${EVENT_EXCLUSIONS} --intermediate ${CMAKE_CURRENT_BINARY_DIR} ${NONEXTERN_ARG})
+set(GENERATE_COMMAND ${Python_EXECUTABLE} ${GENERATE_SCRIPT} --man ${EVENT_MANIFEST} --exc ${EVENT_EXCLUSIONS} --intermediate ${CMAKE_CURRENT_BINARY_DIR} ${NONEXTERN_ARG})
 
 execute_process(
   COMMAND ${GENERATE_COMMAND} --dry-run

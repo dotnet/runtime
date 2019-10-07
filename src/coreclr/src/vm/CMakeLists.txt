@@ -920,7 +920,11 @@ convert_to_absolute_path(VM_SOURCES_WKS ${VM_SOURCES_WKS})
 convert_to_absolute_path(VM_SOURCES_WKS_ARCH_ASM ${VM_SOURCES_WKS_ARCH_ASM})
 convert_to_absolute_path(VM_SOURCES_DAC ${VM_SOURCES_DAC})
 
-add_subdirectory(dac)
+add_library_clr(cee_dac ${VM_SOURCES_DAC})
+add_dependencies(cee_dac eventing_headers)
+set_target_properties(cee_dac PROPERTIES DAC_COMPONENT TRUE)
+target_precompile_header(TARGET cee_dac HEADER common.h)
+
 add_subdirectory(wks)
 
 if(FEATURE_PERFTRACING)

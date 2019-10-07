@@ -21,8 +21,6 @@ set(CEEFILEGEN_HEADERS
     ../../inc/utilcode.h
 )
 
-add_precompiled_header(stdafx.h stdafx.cpp CEEFILEGEN_SOURCES)
-
 if (WIN32)
     list(APPEND CEEFILEGEN_SOURCES ${CEEFILEGEN_HEADERS})
 endif (WIN32)
@@ -31,3 +29,4 @@ add_library_clr(ceefgen
     STATIC
     ${CEEFILEGEN_SOURCES}
 )
+target_precompile_header(TARGET ceefgen HEADER stdafx.h)

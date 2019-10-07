@@ -20,7 +20,17 @@ list(APPEND UNWINDER_SOURCES
 convert_to_absolute_path(UNWINDER_SOURCES ${UNWINDER_SOURCES})
 
 if(CLR_CMAKE_PLATFORM_UNIX)    
-    add_subdirectory(wks)
+    add_library_clr(unwinder_wks ${UNWINDER_SOURCES})
+    add_dependencies(unwinder_wks eventing_headers)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
-add_subdirectory(dac)
+add_library_clr(unwinder_dac ${UNWINDER_SOURCES})
+add_dependencies(unwinder_dac eventing_headers)
+set_target_properties(unwinder_dac PROPERTIES DAC_COMPONENT TRUE)
+target_compile_definitions(unwinder_dac PRIVATE FEATURE_NO_HOST)
+
+add_library_clr(unwinder_dac_amd64 ${UNWINDER_SOURCES})
+add_dependencies(unwinder_dac_amd64 eventing_headers)
+set_target_properties(unwinder_dac_amd64 PROPERTIES DAC_COMPONENT TRUE)
+target_compile_definitions(unwinder_dac_amd64 PRIVATE FEATURE_NO_HOST)
+
