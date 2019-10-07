@@ -117,5 +117,9 @@ HELPER(READYTORUN_HELPER_PInvokeEnd,                CORINFO_HELP_JIT_PINVOKE_END
 HELPER(READYTORUN_HELPER_MonitorEnter,              CORINFO_HELP_MON_ENTER,                         )
 HELPER(READYTORUN_HELPER_MonitorExit,               CORINFO_HELP_MON_EXIT,                          )
 
+#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+HELPER(READYTORUN_HELPER_StackProbe,                CORINFO_HELP_STACK_PROBE,                       )
+#endif
+
 #undef HELPER
 #undef OPTIMIZEFORSPEED

@@ -313,6 +313,8 @@ namespace Internal.JitInterface
 
         CORINFO_HELP_GVMLOOKUP_FOR_SLOT,        // Resolve a generic virtual method target from this pointer and runtime method handle
 
+        CORINFO_HELP_STACK_PROBE,               // Probes each page of the allocated stack frame
+
         CORINFO_HELP_COUNT,
     }
 }
