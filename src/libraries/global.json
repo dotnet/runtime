@@ -1,7 +1,8 @@
 {
   "sdk": {
     "version": "3.0.100",
-    "rollforward": "major"
+    "allowPrerelease": true,
+    "rollForward": "major"
   },
   "tools": {
     "dotnet": "3.0.100"
