@@ -51,7 +51,22 @@ set(MDCOMPILER_HEADERS
 convert_to_absolute_path(MDCOMPILER_SOURCES ${MDCOMPILER_SOURCES})
 convert_to_absolute_path(MDCOMPILER_HEADERS ${MDCOMPILER_HEADERS})
 
-add_subdirectory(dac)
-add_subdirectory(wks)
-add_subdirectory(dbi)
-add_subdirectory(crossgen)
+if (WIN32)
+    list(APPEND MDCOMPILER_SOURCES ${MDCOMPILER_HEADERS})
+endif()
+
+add_library_clr(mdcompiler_dac ${MDCOMPILER_SOURCES})
+set_target_properties(mdcompiler_dac PROPERTIES DAC_COMPONENT TRUE)
+target_precompile_header(TARGET mdcompiler_dac HEADER stdafx.h)
+
+add_library_clr(mdcompiler_wks ${MDCOMPILER_SOURCES})
+target_compile_definitions(mdcompiler_wks PRIVATE FEATURE_METADATA_EMIT_ALL)
+target_precompile_header(TARGET mdcompiler_wks HEADER stdafx.h)
+
+add_library_clr(mdcompiler-dbi ${MDCOMPILER_SOURCES})
+set_target_properties(mdcompiler-dbi PROPERTIES DBI_COMPONENT TRUE)
+target_precompile_header(TARGET mdcompiler-dbi HEADER stdafx.h)
+
+add_library_clr(mdcompiler_crossgen ${MDCOMPILER_SOURCES})
+set_target_properties(mdcompiler_crossgen PROPERTIES CROSSGEN_COMPONENT TRUE)
+target_precompile_header(TARGET mdcompiler_crossgen HEADER stdafx.h)

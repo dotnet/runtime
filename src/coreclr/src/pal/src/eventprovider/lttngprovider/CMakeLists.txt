@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 2.8.12)
 
-include(FindPythonInterp)
+include(FindPython)
 set (GENERATE_SCRIPT ${CLR_DIR}/src/scripts/genLttngProvider.py)
 
-set(GENERATE_COMMAND ${PYTHON_EXECUTABLE} ${GENERATE_SCRIPT} --man ${EVENT_MANIFEST} --intermediate ${CMAKE_CURRENT_BINARY_DIR})
+set(GENERATE_COMMAND ${Python_EXECUTABLE} ${GENERATE_SCRIPT} --man ${EVENT_MANIFEST} --intermediate ${CMAKE_CURRENT_BINARY_DIR})
 
 execute_process(
   COMMAND ${GENERATE_COMMAND} --dry-run

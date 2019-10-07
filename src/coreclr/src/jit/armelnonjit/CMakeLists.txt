@@ -50,6 +50,8 @@ add_library_clr(armelnonjit
    ${JIT_ARCH_ALTJIT_SOURCES}
 )
 
+target_precompile_header(TARGET armelnonjit HEADER jitpch.h ADDITIONAL_INCLUDE_DIRECTORIES ${JIT_SOURCE_DIR})
+
 add_dependencies(armelnonjit jit_exports)
 
 set_property(TARGET armelnonjit APPEND_STRING PROPERTY LINK_FLAGS ${JIT_EXPORTS_LINKER_OPTION})

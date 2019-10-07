@@ -16,8 +16,18 @@ endif(CLR_CMAKE_TARGET_ARCH_I386)
 
 convert_to_absolute_path(GCINFO_SOURCES ${GCINFO_SOURCES})
 
-add_subdirectory(lib)
-add_subdirectory(crossgen)
+add_library_clr(gcinfo
+    STATIC
+    ${GCINFO_SOURCES}
+)
+
+add_library_clr(gcinfo_crossgen
+    STATIC
+    ${GCINFO_SOURCES}
+)
+
+set_target_properties(gcinfo_crossgen PROPERTIES CROSSGEN_COMPONENT TRUE)
+
 
 if (CLR_CMAKE_PLATFORM_ARCH_I386)
     # On x86, build RyuJIT/ARM32 cross-compiling altjit.

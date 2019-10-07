@@ -114,12 +114,6 @@ if [ $OS = "Linux" -o $OS = "FreeBSD" -o $OS = "OpenBSD" -o $OS = "NetBSD" -o $O
 fi
 
 cmake_extra_defines=
-if [[ -n "$LLDB_LIB_DIR" ]]; then
-    cmake_extra_defines="$cmake_extra_defines -DWITH_LLDB_LIBS=$LLDB_LIB_DIR"
-fi
-if [[ -n "$LLDB_INCLUDE_DIR" ]]; then
-    cmake_extra_defines="$cmake_extra_defines -DWITH_LLDB_INCLUDES=$LLDB_INCLUDE_DIR"
-fi
 if [ "$CROSSCOMPILE" == "1" ]; then
     if ! [[ -n "$ROOTFS_DIR" ]]; then
         echo "ROOTFS_DIR not set for crosscompile"
@@ -168,7 +162,6 @@ $cmake_command \
   "-DCMAKE_BUILD_TYPE=$buildtype" \
   "-DCLR_CMAKE_ENABLE_CODE_COVERAGE=$code_coverage" \
   "-DCMAKE_INSTALL_PREFIX=$__CMakeBinDir" \
-  "-DCLR_CMAKE_COMPILER=Clang" \
   "-DCMAKE_USER_MAKE_RULES_OVERRIDE=" \
   $cmake_extra_defines \
   $__UnprocessedCMakeArgs \

@@ -1,4 +1,3 @@
-include(${CLR_DIR}/dac.cmake)
 add_definitions(-DFEATURE_NO_HOST)
 
 set(CLR_DAC_SOURCES
@@ -17,7 +16,7 @@ if(WIN32)
     set(CURRENT_BINARY_DIR_FOR_CONFIG ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR})
 
     # Preprocess exports definition file
-    preprocess_def_file(${CMAKE_CURRENT_SOURCE_DIR}/${DEF_SOURCES} ${CURRENT_BINARY_DIR_FOR_CONFIG}/mscordac.def)
+    preprocess_file(${CMAKE_CURRENT_SOURCE_DIR}/${DEF_SOURCES} ${CURRENT_BINARY_DIR_FOR_CONFIG}/mscordac.def)
 
     # Create target to add file dependency on mscordac.def
     add_custom_target(mscordaccore_def DEPENDS ${CURRENT_BINARY_DIR_FOR_CONFIG}/mscordac.def)
@@ -102,6 +101,8 @@ endif(CLR_CMAKE_PLATFORM_DARWIN)
 _add_library(mscordacobj OBJECT mscordac.cpp)
 
 add_library_clr(mscordaccore SHARED ${CLR_DAC_SOURCES} $<TARGET_OBJECTS:mscordacobj>)
+
+set_target_properties(mscordacobj mscordaccore PROPERTIES DAC_COMPONENT TRUE)
 
 if(CLR_CMAKE_PLATFORM_LINUX)
     add_dependencies(mscordaccore lib_redefines_inc)

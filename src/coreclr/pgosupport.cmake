@@ -1,3 +1,6 @@
+include(CheckIPOSupported)
+check_ipo_supported(RESULT HAVE_LTO)
+
 # Adds Profile Guided Optimization (PGO) flags to the current target
 function(add_pgo TargetName)
     if(WIN32)
