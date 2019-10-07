@@ -210,18 +210,14 @@ ICALL_TYPE(ARRAY, "System.Array", ARRAY_1)
 HANDLES(ARRAY_1, "ClearInternal", ves_icall_System_Array_ClearInternal, void, 3, (MonoArray, int, int))
 HANDLES(ARRAY_3, "CreateInstanceImpl",   ves_icall_System_Array_CreateInstanceImpl, MonoArray, 3, (MonoReflectionType, MonoArray, MonoArray))
 HANDLES(ARRAY_4, "FastCopy",         ves_icall_System_Array_FastCopy, MonoBoolean, 5, (MonoArray, int, MonoArray, int, int))
-// Generic ref/out parameters are not supported by HANDLES(), so NOHANDLES().
-// FIXME HANDLES should handle this trivially. Do it separately.
-NOHANDLES(ICALL(ARRAY_5, "GetGenericValueImpl", ves_icall_System_Array_GetGenericValueImpl))
+NOHANDLES(ICALL(ARRAY_5, "GetGenericValue_icall", ves_icall_System_Array_GetGenericValue_icall))
 HANDLES(ARRAY_6, "GetLength",        ves_icall_System_Array_GetLength, gint32, 2, (MonoArray, gint32))
 HANDLES(ARRAY_15, "GetLongLength",   ves_icall_System_Array_GetLongLength, gint64, 2, (MonoArray, gint32))
 HANDLES(ARRAY_7, "GetLowerBound",    ves_icall_System_Array_GetLowerBound, gint32, 2, (MonoArray, gint32))
 HANDLES(ARRAY_8, "GetRank",          ves_icall_System_Array_GetRank, gint32, 1, (MonoObject))
 HANDLES(ARRAY_9, "GetValue",         ves_icall_System_Array_GetValue, MonoObject, 2, (MonoArray, MonoArray))
 HANDLES(ARRAY_10, "GetValueImpl",    ves_icall_System_Array_GetValueImpl, MonoObject, 2, (MonoArray, guint32))
-// Generic ref/out parameters are not supported by HANDLES(), so NOHANDLES().
-// FIXME HANDLES should handle this trivially. Do it separately.
-NOHANDLES(ICALL(ARRAY_11, "SetGenericValueImpl", ves_icall_System_Array_SetGenericValueImpl))
+NOHANDLES(ICALL(ARRAY_11, "SetGenericValue_icall", ves_icall_System_Array_SetGenericValue_icall))
 HANDLES(ARRAY_12, "SetValue",         ves_icall_System_Array_SetValue, void, 3, (MonoArray, MonoObject, MonoArray))
 HANDLES(ARRAY_13, "SetValueImpl",  ves_icall_System_Array_SetValueImpl, void, 3, (MonoArray, MonoObject, guint32))
 

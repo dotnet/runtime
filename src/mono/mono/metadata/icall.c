@@ -1015,38 +1015,31 @@ ves_icall_System_Array_FastCopy (MonoArrayHandle source, int source_idx, MonoArr
 }
 
 void
-ves_icall_System_Array_GetGenericValueImpl (MonoArray *arr, guint32 pos, gpointer value)
+ves_icall_System_Array_GetGenericValue_icall (MonoArray **arr, guint32 pos, gpointer value)
 {
-	// FIXME?
-	// Generic ref/out parameters are not supported by HANDLES(), so NOHANDLES().
-
-	icallarray_print ("%s arr:%p pos:%u value:%p\n", __func__, arr, pos, value);
+	icallarray_print ("%s arr:%p pos:%u value:%p\n", __func__, *arr, pos, value);
 
 	MONO_REQ_GC_UNSAFE_MODE;	// because of gpointer value
 
-	MonoClass * const ac = mono_object_class (arr);
+	MonoClass * const ac = mono_object_class (*arr);
 	gsize const esize = mono_array_element_size (ac);
-	gconstpointer * const ea = (gconstpointer*)((char*)arr->vector + (pos * esize));
+	gconstpointer * const ea = (gconstpointer*)((char*)(*arr)->vector + (pos * esize));
 
 	mono_gc_memmove_atomic (value, ea, esize);
 }
 
 void
-ves_icall_System_Array_SetGenericValueImpl (MonoArray *arr, guint32 pos, gpointer value)
+ves_icall_System_Array_SetGenericValue_icall (MonoArray **arr, guint32 pos, gpointer value)
 {
-	// FIXME?
-	// Generic ref/out parameters are not supported by HANDLES(), so NOHANDLES().
-
-	icallarray_print ("%s arr:%p pos:%u value:%p\n", __func__, arr, pos, value);
+	icallarray_print ("%s arr:%p pos:%u value:%p\n", __func__, *arr, pos, value);
 
 	MONO_REQ_GC_UNSAFE_MODE;	// because of gpointer value
 
-
-	MonoClass * const ac = mono_object_class (arr);
+	MonoClass * const ac = mono_object_class (*arr);
 	MonoClass * const ec = m_class_get_element_class (ac);
 
 	gsize const esize = mono_array_element_size (ac);
-	gpointer * const ea = (gpointer*)((char*)arr->vector + (pos * esize));
+	gpointer * const ea = (gpointer*)((char*)(*arr)->vector + (pos * esize));
 
 	if (MONO_TYPE_IS_REFERENCE (m_class_get_byval_arg (ec))) {
 		g_assert (esize == sizeof (gpointer));

@@ -4769,11 +4769,11 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method, MonoError *error)
 		}
 
 		/*
-		 * Special case Array.GetGenericValueImpl which is a generic icall.
+		 * Special case Array.GetGenericValue_icall which is a generic icall.
 		 * Generic sharing currently can't handle it, but the icall returns data using
 		 * an out parameter, so the managed-to-native wrappers can share the same code.
 		 */
-		if (method_index == 0xffffff && method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE && method->klass == mono_defaults.array_class && !strcmp (method->name, "GetGenericValueImpl")) {
+		if (method_index == 0xffffff && method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE && method->klass == mono_defaults.array_class && !strcmp (method->name, "GetGenericValue_icall")) {
 			MonoMethod *m;
 			MonoGenericContext ctx;
 
@@ -4781,7 +4781,7 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method, MonoError *error)
 				/* Avoid recursion */
 				return NULL;
 
-			m = mono_class_get_method_from_name_checked (mono_defaults.array_class, "GetGenericValueImpl", 2, 0, error);
+			m = mono_class_get_method_from_name_checked (mono_defaults.array_class, "GetGenericValue_icall", 3, 0, error);
 			mono_error_assert_ok (error);
 			g_assert (m);
 

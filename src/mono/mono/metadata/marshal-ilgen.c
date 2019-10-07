@@ -6283,7 +6283,7 @@ typedef enum {
 	/* Wrap the argument (a valuetype reference) in a handle to pin its
 	   enclosing object, but pass the raw reference to the icall.  This is
 	   also how we pass byref generic parameter arguments to generic method
-	   icalls (eg, System.Array:GetGenericValueImpl<T>(int idx, T out value)) */
+	   icalls (e.g. System.Array:GetGenericValue_icall<T>(int idx, T out value)) */
 	ICALL_HANDLES_WRAP_VALUETYPE_REF,
 } IcallHandlesWrap;
 

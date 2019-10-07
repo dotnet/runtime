@@ -2002,6 +2002,7 @@ mono_class_from_mono_type (MonoType *type)
 MonoClass *
 mono_class_from_mono_type_internal (MonoType *type)
 {
+	g_assert (type);
 	switch (type->type) {
 	case MONO_TYPE_OBJECT:
 		return type->data.klass? type->data.klass: mono_defaults.object_class;

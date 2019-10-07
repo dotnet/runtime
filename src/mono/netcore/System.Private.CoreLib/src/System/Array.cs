@@ -498,7 +498,7 @@ namespace System
 
 		// CAUTION! No bounds checking!
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-		extern void GetGenericValueImpl<T> (int pos, out T value);
+		extern static void GetGenericValue_icall<T> (ref Array self, int pos, out T value);
 
 		// CAUTION! No bounds checking!
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
@@ -506,7 +506,21 @@ namespace System
 
 		// CAUTION! No bounds checking!
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-		extern void SetGenericValueImpl<T> (int pos, ref T value);
+		extern static void SetGenericValue_icall<T> (ref Array self, int pos, ref T value);
+
+		// This is a special case in the runtime.
+		void GetGenericValueImpl<T> (int pos, out T value)
+		{
+			var self = this;
+			GetGenericValue_icall (ref self, pos, out value);
+		}
+
+		// This is a special case in the runtime.
+		void SetGenericValueImpl<T> (int pos, ref T value)
+		{
+			var self = this;
+			SetGenericValue_icall (ref self, pos, ref value);
+		}
 
 		// CAUTION! No bounds checking!
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
@@ -569,6 +583,7 @@ namespace System
 				ThrowHelper.ThrowArgumentOutOfRange_IndexException ();
 
 			T value;
+			// Do not change this to call GetGenericValue_icall directly, due to special casing in the runtime.
 			GetGenericValueImpl (index, out value);
 			return value;
 		}
@@ -599,6 +614,7 @@ namespace System
 				ThrowHelper.ThrowArgumentOutOfRange_IndexException ();
 
 			T value;
+			// Do not change this to call GetGenericValue_icall directly, due to special casing in the runtime.
 			GetGenericValueImpl (index, out value);
 			return value;
 		}
@@ -613,6 +629,7 @@ namespace System
 				return;
 			}
 
+			// Do not change this to call SetGenericValue_icall directly, due to special casing in the runtime.
 			SetGenericValueImpl (index, ref item);
 		}
 	}

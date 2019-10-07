@@ -5679,22 +5679,21 @@ add_generic_instances (MonoAotCompile *acfg)
 			add_instances_of (acfg, klass, insts, ninsts, TRUE);
 
 		/* 
-		 * Add a managed-to-native wrapper of Array.GetGenericValueImpl<object>, which is
-		 * used for all instances of GetGenericValueImpl by the AOT runtime.
+		 * Add a managed-to-native wrapper of Array.GetGenericValue_icall<object>, which is
+		 * used for all instances of GetGenericValue_icall by the AOT runtime.
 		 */
 		{
 			ERROR_DECL (error);
 			MonoGenericContext ctx;
-			MonoType *args [16];
 			MonoMethod *get_method;
 			MonoClass *array_klass = m_class_get_parent (mono_class_create_array (mono_defaults.object_class, 1));
 
-			get_method = mono_class_get_method_from_name_checked (array_klass, "GetGenericValueImpl", 2, 0, error);
+			get_method = mono_class_get_method_from_name_checked (array_klass, "GetGenericValue_icall", 3, 0, error);
 			mono_error_assert_ok (error);
 
 			if (get_method) {
 				memset (&ctx, 0, sizeof (ctx));
-				args [0] = object_type;
+				MonoType *args [ ] = { object_type };
 				ctx.method_inst = mono_metadata_get_generic_inst (1, args);
 				add_extra_method (acfg, mono_marshal_get_native_wrapper (mono_class_inflate_generic_method_checked (get_method, &ctx, error), TRUE, TRUE));
 				mono_error_assert_ok (error); /* FIXME don't swallow the error */

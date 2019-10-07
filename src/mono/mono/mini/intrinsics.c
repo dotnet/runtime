@@ -22,12 +22,12 @@
 static GENERATE_GET_CLASS_WITH_CACHE (runtime_helpers, "System.Runtime.CompilerServices", "RuntimeHelpers")
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (math, "System", "Math")
 
-/* optimize the simple GetGenericValueImpl/SetGenericValueImpl generic icalls */
+/* optimize the simple GetGenericValueImpl/SetGenericValueImpl generic calls */
 static MonoInst*
 emit_array_generic_access (MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst **args, int is_set)
 {
 	MonoInst *addr, *store, *load;
-	MonoClass *eklass = mono_class_from_mono_type_internal (fsig->params [2]);
+	MonoClass *eklass = mono_class_from_mono_type_internal (fsig->params [1]);
 
 	/* the bounds check is already done by the callers */
 	addr = mini_emit_ldelema_1_ins (cfg, eklass, args [0], args [1], FALSE);
