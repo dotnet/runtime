@@ -159,7 +159,7 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GenericOperations.cs">
       <Link>Common\Interop\Windows\Interop.GenericOperations.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.EncryptDecrypt.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.EncryptDecrypt.cs">
       <Link>Common\Interop\Windows\Interop.EncryptDecrypt.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetVolumeInformation.cs">
