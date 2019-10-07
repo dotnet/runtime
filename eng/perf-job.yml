@@ -48,14 +48,22 @@ jobs:
     # Extra steps that will be passed to the performance template and run before sending the job to helix (all of which is done in the template)
 
     # Download product binaries directory
-    - template: /eng/download-artifact-step.yml
-      parameters:
-        downloadFolder: '$(productBuildRootFolderPath)/tmp'
-        unpackFolder: '$(productBuildRootFolderPath)'
-        cleanUnpackFolder: false
-        artifactFileName: '$(productBuildArtifactName)$(archiveExtension)'
-        artifactName: '$(productBuildArtifactName)'
-        displayName: 'product build'
+    - task: DownloadBuildArtifacts@0
+      displayName: Download product build
+      inputs:
+        buildType: current
+        downloadType: single
+        artifactName: ${{ format('BinDir_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+        downloadPath: $(System.ArtifactsDirectory)
+
+
+    # Populate Product directory
+    - task: CopyFiles@2
+      displayName: Populate Product directory
+      inputs:
+        sourceFolder: $(System.ArtifactsDirectory)/${{ format('BinDir_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+        contents: '**'
+        targetFolder: $(Build.SourcesDirectory)/bin/Product/${{ parameters.osGroup }}.${{ parameters.archType }}.Release
 
     # Create Core_Root
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:

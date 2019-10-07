@@ -5,7 +5,6 @@ parameters:
   osSubgroup: ''
   container: ''
   testGroup: ''
-  crossgenFramework: false
   crossrootfsDir: ''
   timeoutInMinutes: ''
   signBinaries: false
@@ -14,16 +13,15 @@ parameters:
 
 ### Product build
 jobs:
-- template: xplat-test-job.yml
+- template: xplat-job.yml
   parameters:
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
     helixType: 'build/product/'
-    testGroup: ${{ parameters.testGroup }}
-    stagedBuild: ${{ parameters.stagedBuild }}
     enableMicrobuild: true
+    stagedBuild: ${{ parameters.stagedBuild }}
 
     # Compute job name from template parameters
     name: ${{ format('build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
@@ -39,6 +37,10 @@ jobs:
 
     gatherAssetManifests: true
     variables:
+    - name: osGroup
+      value: ${{ parameters.osGroup }}
+    - name: osSubgroup
+      value: ${{ parameters.osSubgroup }}
     - name: stripSymbolsArg
       value: ''
     # Strip symbols only on the release build
@@ -86,11 +88,49 @@ jobs:
     - ${{ if and(eq(parameters.buildConfig, 'Release'), and(eq(parameters.osGroup, 'Windows_NT'), not(or(eq(parameters.archType, 'arm64'), eq(parameters.archType, 'arm'))))) }}:
       - name: enforcePgoArg
         value: '-enforcepgo'
-    - name: crossgenArg
+
+    - name: artifactRootName
+      value: $(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)
+
+    - name: testNativeArtifactName
+      value: 'NativeTestComponents_$(artifactRootName)'
+
+    - name: testNativeRootFolderPath
+      value: '$(binTestsPath)/obj/$(osGroup).$(archType).$(buildConfigUpper)'
+
+    - name: testBuildArtifactName
+      value: 'TestBuild_$(artifactRootName)'
+
+    - name: testBuildRootFolderPath
+      value: '$(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)'
+
+    - name: binTestsPath
+      value: '$(Build.SourcesDirectory)/bin/tests'
+
+    - name: archiveExtension
+      value: '.tar.gz'
+    - name: archiveType
+      value: tar
+    - name: tarCompression
+      value: gz
+
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - name: archiveExtension
+        value: '.zip'
+      - name: archiveType
+        value: zip
+      - name: tarCompression
+        value: ''
+
+    - name: priorityArg
       value: ''
-    - ${{ if eq(parameters.crossgenFramework, true) }}:
-      - name: crossgenArg
-        value: 'crossgen'
+    - ${{ if ne(parameters.testGroup, 'innerloop') }}:
+      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+        - name: priorityArg
+          value: 'priority1'
+      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+        - name: priorityArg
+          value: '-priority=1'
 
     steps:
 
@@ -134,12 +174,12 @@ jobs:
       - script: set __TestIntermediateDir=int&&build.cmd $(buildConfig) $(archType) -ci -skiptests -skipbuildpackages $(officialBuildIdArg) $(ibcOptimizeArg) $(enforcePgoArg)
         displayName: Build product
 
-    # Build native test components and optionally crossgen the framework assemblies
+    # Build native test components
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: ./build-test.sh skipmanaged $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(clangArg)
+      - script: ./build-test.sh skipmanaged $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(clangArg)
         displayName: Build native test components
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: build-test.cmd skipmanaged $(crossgenArg) $(buildConfig) $(archType) $(priorityArg)
+      - script: build-test.cmd skipmanaged $(buildConfig) $(archType) $(priorityArg)
         displayName: Build native test components
 
     # Sign on Windows
@@ -157,15 +197,11 @@ jobs:
         condition: always()
 
     # Publish product output directory for consumption by tests.
-    - template: /eng/upload-artifact-step.yml
-      parameters:
-        rootFolder: '$(productBuildRootFolderPath)'
-        includeRootFolder: false
-        archiveFile: $(Build.StagingDirectory)/$(productBuildArtifactName)$(archiveExtension)
-        archiveType: $(archiveType)
-        tarCompression: $(tarCompression)
-        artifactName: $(productBuildArtifactName)
-        displayName: 'product build'
+    - task: PublishBuildArtifacts@1
+      displayName: Publish product build
+      inputs:
+        pathtoPublish: $(Build.SourcesDirectory)/bin/Product/$(osGroup).$(archType).$(_BuildConfig)
+        artifactName: ${{ format('BinDir_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
     # Publish test native components for consumption by test execution.
     - template: /eng/upload-artifact-step.yml
