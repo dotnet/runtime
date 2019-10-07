@@ -80,6 +80,41 @@ g_module_symbol (GModule *module, const gchar *symbol_name, gpointer *symbol)
 	return (*symbol != NULL);
 }
 
+#if defined(HAVE_DLADDR)
+gboolean
+g_module_address (void *addr, char *file_name, size_t file_name_len,
+                  void **file_base, char *sym_name, size_t sym_name_len,
+                  void **sym_addr)
+{
+	Dl_info dli;
+	int ret = dladdr(addr, &dli);
+	/* This zero-on-failure is unlike other Unix APIs. */
+	if (ret == 0)
+		return FALSE;
+	/*
+	 * AIX/Win32 return non-const, so we use caller-allocated bufs instead
+	 */
+	if (file_name != NULL && file_name_len >= 1)
+		g_strlcpy(file_name, dli.dli_fname, file_name_len);
+	if (file_base != NULL)
+		*file_base = dli.dli_fbase;
+	if (sym_name != NULL && sym_name_len >= 1)
+		g_strlcpy(sym_name, dli.dli_sname, sym_name_len);
+	if (sym_addr != NULL)
+		*sym_addr = dli.dli_saddr;
+	return TRUE;
+}
+#elif !defined(_AIX)
+/* AIX has its own implementation that is long enough to be its own file. */
+gboolean
+g_module_address (void *addr, char *file_name, size_t file_name_len,
+                  void **file_base, char *sym_name, size_t sym_name_len,
+                  void **sym_addr)
+{
+	return FALSE;
+}
+#endif
+
 const gchar *
 g_module_error (void)
 {

@@ -1174,7 +1174,7 @@ AC_DEFINE(DISABLE_STRUCTURED_CRASH,1,[Do not create structured crash files durin
 fi
 
 case "$host" in
-	*-mingw*|*-*-cygwin*|*-*-aix*|*-*-os400*)
+	*-mingw*|*-*-cygwin*)
 		crash_reporting=no
 		;;
 esac
@@ -2217,6 +2217,10 @@ if test x$host_win32 = xno; then
 	AC_CHECK_FUNCS(getresuid)
 	AC_CHECK_FUNCS(setresuid)
 	AC_CHECK_FUNCS(kqueue)
+	# IBM provides a compatibility library for i offering this function.
+	# BSDs and others, have execinfo in base or packages.
+	AC_SEARCH_LIBS(backtrace_symbols, execinfo util)
+	# Two-step so it sets it in config.h
 	AC_CHECK_FUNCS(backtrace_symbols)
 	AC_CHECK_FUNCS(mkstemp)
 	AC_CHECK_FUNCS(mmap)

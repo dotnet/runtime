@@ -15,7 +15,7 @@ win_files  = \
 
 unix_files = \
 	gdate-unix.c  gdir-unix.c  gfile-unix.c  gmisc-unix.c	\
-	gmodule-unix.c gtimer-unix.c
+	gmodule-unix.c gtimer-unix.c gmodule-aix.c
 
 if HOST_WIN32
 os_files = $(win_files)

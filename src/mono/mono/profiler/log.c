@@ -12,6 +12,7 @@
  */
 
 #include <config.h>
+#include <gmodule.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/assembly-internals.h>
 #include <mono/metadata/class-internals.h>
@@ -51,9 +52,6 @@
 #include "log.h"
 #include "helper.h"
 
-#ifdef HAVE_DLFCN_H
-#include <dlfcn.h>
-#endif
 #include <fcntl.h>
 #ifdef HAVE_LINK_H
 #include <link.h>
@@ -2422,7 +2420,7 @@ add_code_pointer (uintptr_t ip)
 }
 
 static void
-dump_usym (const char *name, uintptr_t value, uintptr_t size)
+dump_usym (char *name, uintptr_t value, uintptr_t size)
 {
 	int len = strlen (name) + 1;
 
@@ -2442,42 +2440,34 @@ dump_usym (const char *name, uintptr_t value, uintptr_t size)
 	EXIT_LOG;
 }
 
-static const char*
-symbol_for (uintptr_t code)
+static gboolean
+symbol_for (uintptr_t code, char *sname, size_t slen)
 {
-#ifdef HAVE_DLADDR
-	Dl_info di;
-
-	if (dladdr ((void *) code, &di))
-		if (di.dli_sname)
-			return di.dli_sname;
-#endif
-
-	return NULL;
+	return g_module_address ((void *) code, NULL, 0, NULL, sname, slen, NULL);
 }
 
 static void
 dump_unmanaged_coderefs (void)
 {
 	int i;
-	const char* last_symbol;
+	char last_symbol [256];
 	uintptr_t addr, page_end;
 
 	for (i = 0; i < size_code_pages; ++i) {
-		const char* sym;
+		char sym [256];
 		if (!code_pages [i] || code_pages [i] & 1)
 			continue;
-		last_symbol = NULL;
+		last_symbol [0] = '\0';
 		addr = CPAGE_ADDR (code_pages [i]);
 		page_end = addr + CPAGE_SIZE;
 		code_pages [i] |= 1;
 		/* we dump the symbols for the whole page */
 		for (; addr < page_end; addr += 16) {
-			sym = symbol_for (addr);
-			if (sym && sym == last_symbol)
+			gboolean symret = symbol_for (addr, sym, 256);
+			if (symret && strncmp (sym, last_symbol, 256) == 0)
 				continue;
-			last_symbol = sym;
-			if (!sym)
+			g_strlcpy (last_symbol, sym, 256);
+			if (sym [0] == '\0')
 				continue;
 			dump_usym (sym, addr, 0); /* let's not guess the size */
 		}

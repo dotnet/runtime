@@ -140,6 +140,45 @@ g_module_symbol (GModule *module, const gchar *symbol_name, gpointer *symbol)
 	}
 }
 
+gboolean
+g_module_address (void *addr, char *file_name, size_t file_name_len,
+                  void **file_base, char *sym_name, size_t sym_name_len,
+                  void **sym_addr)
+{
+	HMODULE module;
+	/*
+	 * We have to cast the address because usually this func works with strings,
+	 * this being an exception.
+	 */
+	BOOL ret = GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCWSTR)addr, &module);
+	if (ret)
+		return FALSE;
+
+	if (file_name != NULL && file_name_len >= 1) {
+		/* sigh, non-const. AIX for POSIX is the same way. */
+		TCHAR *fname = (TCHAR*)g_alloca(255);
+		DWORD bytes = GetModuleFileName(module, fname, 255);
+		/* XXX: check for ERROR_INSUFFICIENT_BUFFER? */
+		if (bytes) {
+			/* Convert back to UTF-8 from wide for runtime */
+			*file_name = '\0'; /* XXX */
+		} else {
+			*file_name = '\0';
+		}
+	}
+	/* XXX: implement the rest */
+	if (file_base != NULL)
+		*file_base = NULL;
+	if (sym_name != NULL && sym_name_len >= 1)
+		sym_name[0] = '\0';
+	if (sym_addr != NULL)
+		*sym_addr = NULL;
+
+	/* -1 reference count to avoid leaks; Ex variant does +1 refcount */
+	FreeLibrary (module);
+	return TRUE;
+}
+
 #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
 const gchar *
 g_module_error (void)
