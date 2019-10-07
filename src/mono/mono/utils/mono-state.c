@@ -238,9 +238,7 @@ mono_summarize_timeline_phase_log (MonoSummaryStage next)
 	g_assertf(out_level == next, "Log Error: Log transition to %d, actual expected next step is %d\n", next, out_level);
 
 	char out_file [200];
-	memset (out_file, 0, sizeof(out_file));
 	file_for_summary_stage (log.directory, out_level, out_file, sizeof(out_file));
-
 	int handle = g_open (out_file, O_WRONLY | O_CREAT, S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
 	close(handle);
 
