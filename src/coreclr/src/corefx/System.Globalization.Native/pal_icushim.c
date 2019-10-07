@@ -54,8 +54,10 @@ static int FindICULibs(const char* versionPrefix, char* symbolName, char* symbol
 // equal to the version we are built against and less or equal to that version
 // plus 20 to give us enough headspace. The ICU seems to version about twice
 // a year.
-#define MinICUVersion  U_ICU_VERSION_MAJOR_NUM
-#define MaxICUVersion  (MinICUVersion + 20)
+// On some platforms (mainly Alpine Linux) we want to make our minimum version
+// an earlier version than what we build that we know we support.
+#define MinICUVersion  50
+#define MaxICUVersion  (U_ICU_VERSION_MAJOR_NUM + 20)
 #define MinMinorICUVersion  1
 #define MaxMinorICUVersion  5
 #define MinSubICUVersion 1
