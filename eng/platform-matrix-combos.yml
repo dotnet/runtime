@@ -43,40 +43,29 @@ jobs:
     windowsArm: ${{ parameters.windowsArm }}
     windowsArm64: ${{ parameters.windowsArm64 }}
 
-    # Determine OS / arch combo for building managed test artifacts on *nix
+    # Determine OS for building X86 managed test artifacts on *nix
+    # Currently no-op as we only run X86 tests on Windows
+    x86ManagedTestBuildOsGroup: ''
 
     # Determine OS for building X64 managed test artifacts on *nix
     ${{ if eq(parameters.osxX64, true) }}:
-      unixManagedTestBuildOsGroup: 'OSX'
-      unixManagedTestBuildArchType: 'x64'
+      x64ManagedTestBuildOsGroup: 'OSX'
     ${{ if and(ne(parameters.osxX64, true), eq(parameters.linuxX64, true)) }}:
-      unixManagedTestBuildOsGroup: 'Linux'
-      unixManagedTestBuildArchType: 'x64'
-    ${{ if and(ne(parameters.osxX64, true), ne(parameters.linuxX64, true), eq(parameters.linuxArm, true)) }}:
-      unixManagedTestBuildOsGroup: 'Linux'
-      unixManagedTestBuildArchType: 'arm'
-    ${{ if and(ne(parameters.osxX64, true), ne(parameters.linuxX64, true), ne(parameters.linuxArm, true), eq(parameters.linuxArm64, true)) }}:
-      unixManagedTestBuildOsGroup: 'Linux'
-      unixManagedTestBuildArchType: 'arm64'
-    ${{ if and(ne(parameters.osxX64, true), ne(parameters.linuxX64, true), ne(parameters.linuxArm, true), ne(parameters.linuxArm64, true), eq(parameters.linuxMuslX64, true)) }}:
-      unixManagedTestBuildOsGroup: 'Linux'
-      unixManagedTestBuildOsSubgroup: '_musl'
-      unixManagedTestBuildArchType: 'x64'
-    ${{ if and(ne(parameters.osxX64, true), ne(parameters.linuxX64, true), ne(parameters.linuxArm, true), ne(parameters.linuxArm64, true), ne(parameters.linuxMuslX64, true), eq(parameters.linuxMuslArm64, true)) }}:
-      unixManagedTestBuildOsGroup: 'Linux'
-      unixManagedTestBuildOsSubgroup: '_musl'
-      unixManagedTestBuildArchType: 'arm64'
-    ${{ if and(ne(parameters.osxX64, true), ne(parameters.linuxX64, true), ne(parameters.linuxArm, true), ne(parameters.linuxArm64, true), ne(parameters.linuxMuslX64, true), ne(parameters.linuxMuslArm64, true), eq(parameters.linuxRhel6X64, true)) }}:
-      unixManagedTestBuildOsGroup: 'Linux'
-      unixManagedTestBuildOsSubgroup: '_rhel6'
-      unixManagedTestBuildArchType: 'x64'
+      x64ManagedTestBuildOsGroup: 'Linux'
+    ${{ if and(ne(parameters.osxX64, true), ne(parameters.linuxX64, true), eq(parameters.linuxMuslX64, true)) }}:
+      x64ManagedTestBuildOsGroup: 'Linux'
+      x64ManagedTestBuildOsSubgroup: '_musl'
+    ${{ if and(ne(parameters.osxX64, true), ne(parameters.linuxX64, true), ne(parameters.linuxMuslX64, true), eq(parameters.linuxRhel6X64, true)) }}:
+      x64ManagedTestBuildOsGroup: 'Linux'
+      x64ManagedTestBuildOsSubgroup: '_rhel6'
 
-    ${{ if eq(parameters.windowsX86, true) }}:
-      windows32bitManagedTestBuildArchType: 'x86'
-    ${{ if and(ne(parameters.windowsX86, true), eq(parameters.windowsArm, true)) }}:
-      windows32bitManagedTestBuildArchType: 'arm'
+    # Determine OS for building ARM managed test artifacts on *nix
+    ${{ if eq(parameters.linuxArm, true) }}:
+      armManagedTestBuildOsGroup: 'Linux'
 
-    ${{ if eq(parameters.windowsX64, true) }}:
-      windows64bitManagedTestBuildArchType: 'x64'
-    ${{ if and(ne(parameters.windowsX64, true), eq(parameters.windowsArm64, true)) }}:
-      windows64bitManagedTestBuildArchType: 'arm64'
+    # Determine OS for building ARM64 managed test artifacts on *nix
+    ${{ if eq(parameters.linuxArm64, true) }}:
+      arm64ManagedTestBuildOsGroup: 'Linux'
+    ${{ if and(ne(parameters.linuxArm64, true), eq(parameters.linuxMuslArm64, true)) }}:
+      arm64ManagedTestBuildOsGroup: 'Linux'
+      arm64ManagedTestBuildOsSubroup: '_musl'

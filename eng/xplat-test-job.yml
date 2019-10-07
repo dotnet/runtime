@@ -5,7 +5,6 @@ parameters:
   osSubgroup: ''
   managedTestBuildOsGroup: ''
   managedTestBuildOsSubgroup: ''
-  managedTestBuildArchType: ''
   name: ''
   helixType: '(unspecified)'
   container: ''
@@ -49,6 +48,14 @@ jobs:
     gatherAssetManifests: ${{ parameters.gatherAssetManifests }}
   
     variables:
+    - ${{ if ne(parameters.testGroup, '') }}:
+      - name: testArtifactRootName
+        value: ${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_${{ parameters.testGroup }}
+
+    - ${{ if eq(parameters.testGroup, '') }}:
+      - name: testArtifactRootName
+        value: ${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}
+
     - name: binTestsPath
       value: $(Build.SourcesDirectory)/bin/tests
 
@@ -58,29 +65,18 @@ jobs:
     - name: nativeRootFolderPath
       value: $(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)
 
-    - name: testArtifactNameR2RPart
-      value: ''
-
-    - ${{ if eq(parameters.readyToRun, true) }}:
-      - name: testArtifactNameR2RPart
-        value: '_r2r'
-
-    - name: testArtifactNameCoreFxPart
-      value: ''
-
-    - ${{ if eq(parameters.corefxTests, true) }}:
-      - name: testArtifactNameCoreFxPart
-        value: '_corefx'
-
-    - name: testArtifactNameTestGroupPart
-      value: ''
-
-    - ${{ if ne(parameters.testGroup, '') }}:
+    - ${{ if and(eq(parameters.corefxTests, true), eq(parameters.readyToRun, true)) }}:
       - name: testArtifactName
-        value: _$(testGroup)
-
-    - name: testArtifactName
-      value: Tests$(testArtifactNameR2RPart)$(testArtifactNameCoreFxPart)_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.managedTestBuildArchType }}_$(buildConfig)$(testArtifactNameTestGroupPart)
+        value: Tests_r2r_corefx_$(testArtifactRootName)
+    - ${{ if and(eq(parameters.corefxTests, true), ne(parameters.readyToRun, true)) }}:
+      - name: testArtifactName
+        value: Tests_corefx_$(testArtifactRootName)
+    - ${{ if and(ne(parameters.corefxTests, true), eq(parameters.readyToRun, true)) }}:
+      - name: testArtifactName
+        value: Tests_r2r_$(testArtifactRootName)
+    - ${{ if and(ne(parameters.corefxTests, true), ne(parameters.readyToRun, true)) }}:
+      - name: testArtifactName
+        value: Tests_$(testArtifactRootName)
 
     - name: testNativeArtifactName
       value: 'NativeTestComponents_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
@@ -96,15 +92,9 @@ jobs:
 
     - name: microsoftNetSdkIlFolderPath
       value: $(Build.SourcesDirectory)/.packages/microsoft.net.sdk.il
-
+      
     - name: microsoftNetSdkIlArtifactName
-      value: 'MicrosoftNetSdkIlPackage_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.managedTestBuildArchType }}_$(buildConfig)'
-
-    - name: productBuildArtifactName
-      value: 'BinDir_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
-
-    - name: productBuildRootFolderPath
-      value: '$(Build.SourcesDirectory)/bin/Product/$(osGroup).$(archType).$(buildConfigUpper)'
+      value: 'MicrosoftNetSdkIlPackage_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_$(archType)_$(buildConfig)'
 
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       - name: archiveExtension
