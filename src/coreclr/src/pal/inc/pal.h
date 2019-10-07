@@ -529,6 +529,24 @@ PAL_ProbeMemory(
     DWORD cbBuffer,
     BOOL fWriteAccess);
 
+PALIMPORT
+int
+PALAPI
+// Start the jitdump file
+PAL_PerfJitDump_Start(const char* path);
+
+PALIMPORT
+int
+PALAPI
+// Log a method to the jitdump file.
+PAL_PerfJitDump_LogMethod(void* pCode, size_t codeSize, const char* symbol, void* debugInfo, void* unwindInfo);
+
+PALIMPORT
+int
+PALAPI
+// Finish the jitdump file
+PAL_PerfJitDump_Finish();
+
 /******************* winuser.h Entrypoints *******************************/
 PALIMPORT
 LPSTR

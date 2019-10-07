@@ -50,6 +50,22 @@ void PerfMap::Initialize()
         {
             s_ShowOptimizationTiers = true;
         }
+
+#ifndef CROSSGEN_COMPILE
+        char jitdumpPath[4096];
+
+        // CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapJitDumpPath) returns a LPWSTR
+        // Use GetEnvironmentVariableA because it is simpler.
+        // Keep comment here to make it searchable.
+        DWORD len = GetEnvironmentVariableA("COMPlus_PerfMapJitDumpPath", jitdumpPath, sizeof(jitdumpPath) - 1);
+
+        if (len == 0)
+        {
+            GetTempPathA(sizeof(jitdumpPath) - 1, jitdumpPath);
+        }
+
+        PAL_PerfJitDump_Start(jitdumpPath);
+#endif // CROSSGEN_COMPILE
     }
 }
 
@@ -60,6 +76,7 @@ void PerfMap::Destroy()
 
     if (s_Current != nullptr)
     {
+        PAL_PerfJitDump_Finish();
         delete s_Current;
         s_Current = nullptr;
     }
@@ -183,24 +200,21 @@ void PerfMap::LogMethod(MethodDesc * pMethod, PCODE pCode, size_t codeSize, cons
     EX_TRY
     {
         // Get the full method signature.
-        SString fullMethodSignature;
-        pMethod->GetFullMethodInfo(fullMethodSignature);
+        SString name;
+        pMethod->GetFullMethodInfo(name);
 
         // Build the map file line.
         StackScratchBuffer scratch;
-        SString line;
-        line.Printf(FMT_CODE_ADDR " %x %s", pCode, codeSize, fullMethodSignature.GetANSI(scratch));
         if (optimizationTier != nullptr && s_ShowOptimizationTiers)
         {
-            line.AppendPrintf("[%s]\n", optimizationTier);
+            name.AppendPrintf("[%s]", optimizationTier);
         }
-        else
-        {
-            line.Append(W('\n'));
-        }
+        SString line;
+        line.Printf(FMT_CODE_ADDR " %x %s\n", pCode, codeSize, name.GetANSI(scratch));
 
         // Write the line.
         WriteLine(line);
+        PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetANSI(scratch), nullptr, nullptr);
     }
     EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
 }
@@ -263,6 +277,57 @@ void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t cod
     s_Current->LogMethod(pMethod, pCode, codeSize, optimizationTier);
 }
 
+// Log a pre-compiled method to the perfmap.
+void PerfMap::LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    if (s_Current == nullptr)
+    {
+        return;
+    }
+
+    // Get information about the NGEN'd method code.
+    EECodeInfo codeInfo(pCode);
+    _ASSERTE(codeInfo.IsValid());
+
+    IJitManager::MethodRegionInfo methodRegionInfo;
+    codeInfo.GetMethodRegionInfo(&methodRegionInfo);
+
+    // Logging failures should not cause any exceptions to flow upstream.
+    EX_TRY
+    {
+        // Get the full method signature.
+        SString name;
+        pMethod->GetFullMethodInfo(name);
+
+        StackScratchBuffer scratch;
+
+        if (s_ShowOptimizationTiers)
+        {
+            name.AppendPrintf(W("[PreJIT]"));
+        }
+
+        // NGEN can split code between hot and cold sections which are separate in memory.
+        // Emit an entry for each section if it is used.
+        if (methodRegionInfo.hotSize > 0)
+        {
+            PAL_PerfJitDump_LogMethod((void*)methodRegionInfo.hotStartAddress, methodRegionInfo.hotSize, name.GetANSI(scratch), nullptr, nullptr);
+        }
+
+        if (methodRegionInfo.coldSize > 0)
+        {
+            if (s_ShowOptimizationTiers)
+            {
+                pMethod->GetFullMethodInfo(name);
+                name.AppendPrintf(W("[PreJit-cold]"));
+            }
+            PAL_PerfJitDump_LogMethod((void*)methodRegionInfo.coldStartAddress, methodRegionInfo.coldSize, name.GetANSI(scratch), nullptr, nullptr);
+        }
+    }
+    EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
+}
+
 // Log a set of stub to the map.
 void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode, size_t codeSize)
 {
@@ -282,15 +347,19 @@ void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode,
         }
         if(!stubType)
         {
-            stubOwner = "?";
+            stubType = "?";
         }
 
         // Build the map file line.
+        StackScratchBuffer scratch;
+        SString name;
+        name.Printf("stub<%d> %s<%s>", ++(s_Current->m_StubsMapped), stubType, stubOwner);
         SString line;
-        line.Printf(FMT_CODE_ADDR " %x stub<%d> %s<%s>\n", pCode, codeSize, ++(s_Current->m_StubsMapped), stubType, stubOwner);
+        line.Printf(FMT_CODE_ADDR " %x %s\n", pCode, codeSize, name.GetANSI(scratch));
 
         // Write the line.
         s_Current->WriteLine(line);
+        PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetANSI(scratch), nullptr, nullptr);
     }
     EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
 }

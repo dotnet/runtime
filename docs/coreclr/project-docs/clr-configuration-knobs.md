@@ -709,6 +709,7 @@ Name | Description | Type | Class | Default Value | Flags
 `ETWEnabled` | This flag is used on OSes < Vista to enable/disable ETW. It is disabled by default | `DWORD` | `EXTERNAL` | `0` | REGUTIL_default
 `MsBetweenAttachCheck` |  | `DWORD` | `EXTERNAL` | `500` |
 `PerfMapEnabled` | This flag is used on Linux to enable writing /tmp/perf-$pid.map. It is disabled by default | `DWORD` | `EXTERNAL` | `0` | REGUTIL_default
+`PerfMapJitDumpPath` | Specifies a path to write the perf jitdump file. Defaults to GetTempPathA() | `STRING` | `EXTERNAL` | | REGUTIL_default
 `PerfMapIgnoreSignal` | When perf map is enabled, this option will configure the specified signal to be accepted and ignored as a marker in the perf logs.  It is disabled by default | `DWORD` | `EXTERNAL` | `0` | REGUTIL_default
 `ProfAPI_AttachProfilerMinTimeoutInMs` | Timeout in ms for the minimum time out value of AttachProfiler | `DWORD` | `EXTERNAL` | `10*1000` |
 `ProfAPI_DetachMaxSleepMs` | The maximum time, in milliseconds, the CLR will wait before checking whether a profiler that is in the process of detaching is ready to be unloaded. | `DWORD` | `EXTERNAL` | `0` |
