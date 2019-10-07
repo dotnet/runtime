@@ -19,7 +19,7 @@ namespace System.IO
         {
             string fullPath = Path.GetFullPath(path);
 
-            if (!Interop.Kernel32.EncryptFile(fullPath))
+            if (!Interop.Advapi32.EncryptFile(fullPath))
             {
                 ThrowExceptionEncryptDecryptFail(fullPath);
             }
@@ -29,7 +29,7 @@ namespace System.IO
         {
             string fullPath = Path.GetFullPath(path);
 
-            if (!Interop.Kernel32.DecryptFile(fullPath))
+            if (!Interop.Advapi32.DecryptFile(fullPath))
             {
                 ThrowExceptionEncryptDecryptFail(fullPath);
             }
