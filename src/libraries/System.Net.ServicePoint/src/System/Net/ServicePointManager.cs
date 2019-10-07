@@ -137,16 +137,14 @@ namespace System.Net
                 // to scavenge the table looking for entries that have lost their service point and removing them.
                 foreach (KeyValuePair<string, WeakReference<ServicePoint>> entry in s_servicePointTable)
                 {
-                    ServicePoint ignored;
-                    if (!entry.Value.TryGetTarget(out ignored))
+                    if (!entry.Value.TryGetTarget(out _))
                     {
-                        // We use the IDictionary.Remove method rather than TryRemove as it will only
-                        // remove the entry from the table if both the key/value in the pair match.
+                        // Remove the entry from the table if both the key/value in the pair match.
                         // This avoids a race condition where another thread concurrently sets a new
                         // weak reference value for the same key, and is why when adding the new
                         // service point below, we don't use any weak reference object we may already
                         // have from the initial retrieval above.
-                        ((IDictionary<string, WeakReference<ServicePoint>>)s_servicePointTable).Remove(entry);
+                        s_servicePointTable.TryRemove(entry);
                     }
                 }
 

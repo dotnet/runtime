@@ -468,6 +468,42 @@ namespace System.Collections.Concurrent.Tests
         }
 
         [Fact]
+        public static void TryRemove_KeyValuePair_ArgumentValidation()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("item", () => new ConcurrentDictionary<string, int>().TryRemove(new KeyValuePair<string, int>(null, 42)));
+            new ConcurrentDictionary<int, int>().TryRemove(new KeyValuePair<int, int>(0, 0)); // no error when using default value type
+            new ConcurrentDictionary<int?, int>().TryRemove(new KeyValuePair<int?, int>(0, 0)); // or nullable
+        }
+
+        [Fact]
+        public static void TryRemove_KeyValuePair_RemovesSuccessfullyAsAppropriate()
+        {
+            var dict = new ConcurrentDictionary<string, int>();
+
+            for (int i = 0; i < 2; i++)
+            {
+                Assert.False(dict.TryRemove(KeyValuePair.Create("key", 42)));
+                Assert.Equal(0, dict.Count);
+                Assert.True(dict.TryAdd("key", 42));
+                Assert.Equal(1, dict.Count);
+                Assert.True(dict.TryRemove(KeyValuePair.Create("key", 42)));
+                Assert.Equal(0, dict.Count);
+            }
+
+            Assert.True(dict.TryAdd("key", 42));
+            Assert.False(dict.TryRemove(KeyValuePair.Create("key", 43))); // value doesn't match
+        }
+
+        [Fact]
+        public static void TryRemove_KeyValuePair_MatchesKeyWithDefaultComparer()
+        {
+            var dict = new ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            dict.TryAdd("key", "value");
+            Assert.False(dict.TryRemove(KeyValuePair.Create("key", "VALUE")));
+            Assert.True(dict.TryRemove(KeyValuePair.Create("KEY", "value")));
+        }
+
+        [Fact]
         public static void TestGetOrAdd()
         {
             TestGetOrAddOrUpdate(1, 1, 1, 10000, true);
