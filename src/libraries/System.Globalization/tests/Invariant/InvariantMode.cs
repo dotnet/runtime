@@ -657,6 +657,7 @@ namespace System.Globalization.Tests
             {
                 Assert.Equal(result, CultureInfo.GetCultureInfo(cul).CompareInfo.IndexOf(source, value, startIndex, count, options));
                 Assert.Equal(result, source.IndexOf(value, startIndex, count, GetStringComparison(options)));
+                Assert.Equal((result == -1) ? -1 : (result - startIndex), source.AsSpan(startIndex, count).IndexOf(value.AsSpan(), GetStringComparison(options)));
             }
         }
 
@@ -668,6 +669,21 @@ namespace System.Globalization.Tests
             {
                 Assert.Equal(result, CultureInfo.GetCultureInfo(cul).CompareInfo.LastIndexOf(source, value, startIndex, count, options));
                 Assert.Equal(result, source.LastIndexOf(value, startIndex, count, GetStringComparison(options)));
+
+                // Filter differences betweeen string-based and Span-based LastIndexOf
+                // - Empty value handling - https://github.com/dotnet/coreclr/issues/26608
+                // - Negative count
+                if (value.Length == 0 || count < 0)
+                    continue;
+
+                if (startIndex == source.Length)
+                {
+                    startIndex--;
+                    if (count > 0)
+                        count--;
+                }
+                int leftStartIndex = (startIndex - count + 1);
+                Assert.Equal((result == -1) ? -1 : (result - leftStartIndex), source.AsSpan(leftStartIndex, count).LastIndexOf(value.AsSpan(), GetStringComparison(options)));
             }
         }
 
@@ -679,6 +695,7 @@ namespace System.Globalization.Tests
             {
                 Assert.Equal(result, CultureInfo.GetCultureInfo(cul).CompareInfo.IsPrefix(source, value, options));
                 Assert.Equal(result, source.StartsWith(value, GetStringComparison(options)));
+                Assert.Equal(result, source.AsSpan().StartsWith(value.AsSpan(), GetStringComparison(options)));
             }
         }
 
@@ -690,6 +707,7 @@ namespace System.Globalization.Tests
             {
                 Assert.Equal(result, CultureInfo.GetCultureInfo(cul).CompareInfo.IsSuffix(source, value, options));
                 Assert.Equal(result, source.EndsWith(value, GetStringComparison(options)));
+                Assert.Equal(result, source.AsSpan().EndsWith(value.AsSpan(), GetStringComparison(options)));
             }
         }
 

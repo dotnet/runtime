@@ -94,6 +94,13 @@ namespace System.Globalization.Tests
                 Assert.Equal(expected, compareInfo.IsPrefix(source, value));
             }
             Assert.Equal(expected, compareInfo.IsPrefix(source, value, options));
+
+            if ((compareInfo == s_invariantCompare) && ((options == CompareOptions.None) || (options == CompareOptions.IgnoreCase)))
+            {
+                StringComparison stringComparison = (options == CompareOptions.IgnoreCase) ? StringComparison.InvariantCultureIgnoreCase : StringComparison.InvariantCulture;
+                Assert.Equal(expected, source.StartsWith(value, stringComparison));
+                Assert.Equal(expected, source.AsSpan().StartsWith(value.AsSpan(), stringComparison));
+            }
         }
 
         [Fact]
