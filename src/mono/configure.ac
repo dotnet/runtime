@@ -10,17 +10,6 @@ AC_INIT(mono, [6.7.0],
 AC_CONFIG_SRCDIR([README.md])
 AC_CONFIG_MACRO_DIR([m4])
 
-if test "x$host_alias" = "x"; then
-	build_uname_all=`(uname -a) 2>/dev/null`
-	case "$build_uname_all" in
-	CYGWIN*)
-		AC_MSG_NOTICE([Run configure using ./configure --host=i686-w64-mingw32 or --host=x86_64-w64-mingw32])
-		AC_MSG_NOTICE([Falling back using --host=x86_64-w64-mingw32 as default.])
-		host_alias=x86_64-w64-mingw32
-		;;
-	esac
-fi
-
 AC_CANONICAL_SYSTEM
 AC_CANONICAL_HOST
 

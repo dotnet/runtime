@@ -160,7 +160,19 @@ if test x$MONO_EXTRA_CONFIGURE_FLAGS != x; then
 	echo "MONO_EXTRA_CONFIGURE_FLAGS is $MONO_EXTRA_CONFIGURE_FLAGS"
 fi
 
-conf_flags="$MONO_EXTRA_CONFIGURE_FLAGS --enable-maintainer-mode --enable-compile-warnings" #--enable-iso-c
+host_conf_flag=
+build_uname_all=`(uname -a) 2>/dev/null`
+case "$build_uname_all" in
+CYGWIN*)
+  if [[ "$@" != *"--host="* ]]; then
+	  echo "Missing --host parameter, configure using ./configure --host=i686-w64-mingw32 or --host=x86_64-w64-mingw32"
+	  echo "Falling back using --host=x86_64-w64-mingw32 as default."
+    host_conf_flag="--host=x86_64-w64-mingw32"
+  fi
+	;;
+esac
+
+conf_flags="$MONO_EXTRA_CONFIGURE_FLAGS --enable-maintainer-mode --enable-compile-warnings $host_conf_flag" #--enable-iso-c
 
 if test x$NOCONFIGURE = x; then
   echo Running $srcdir/configure $conf_flags "$@" ...
