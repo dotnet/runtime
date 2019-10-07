@@ -296,10 +296,9 @@ convert_to_absolute_path(JIT_ARM64_SOURCES ${JIT_ARM64_SOURCES})
 
 
 if(WIN32)
-  add_precompiled_header(jitpch.h ../jitpch.cpp SOURCES)
   set(CLRJIT_EXPORTS ${CMAKE_CURRENT_LIST_DIR}/ClrJit.exports)
   set(JIT_EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/ClrJit.exports.def)
-  preprocess_def_file (${CLRJIT_EXPORTS} ${JIT_EXPORTS_FILE})
+  preprocess_file (${CLRJIT_EXPORTS} ${JIT_EXPORTS_FILE})
 
   set(SHARED_LIB_SOURCES ${SOURCES} ${JIT_EXPORTS_FILE})
 else()
@@ -350,6 +349,8 @@ else()
        RuntimeObject.lib
     )
 endif(CLR_CMAKE_PLATFORM_UNIX)
+
+set(JIT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 if (FEATURE_MERGE_JIT_AND_ENGINE)
   # Despite the directory being named "dll", it creates a static library "clrjit_static" to link into the VM.
