@@ -58,6 +58,20 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
+        /// Gets a value indicating whether this method was marked with the
+        /// System.Security.DynamicSecurityMethod attribute. For such methods
+        /// runtime needs to be able to find their caller, their caller's caller
+        /// or the method itself on the call stack using stack walking.
+        /// </summary>
+        public virtual bool RequireSecObject
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Gets a value specifying whether this method should not be optimized.
         /// </summary>
         public virtual bool IsNoOptimization
@@ -168,6 +182,14 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override bool RequireSecObject
+        {
+            get
+            {
+                return _methodDef.RequireSecObject;
+            }
+        }
+
         public override bool IsNoOptimization
         {
             get
@@ -249,6 +271,14 @@ namespace Internal.TypeSystem
             get
             {
                 return _typicalMethodDef.IsAggressiveOptimization;
+            }
+        }
+
+        public override bool RequireSecObject
+        {
+            get
+            {
+                return _typicalMethodDef.RequireSecObject;
             }
         }
 
