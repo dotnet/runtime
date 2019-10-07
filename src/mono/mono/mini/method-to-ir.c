@@ -10941,7 +10941,7 @@ mono_ldptr:
 			MONO_ADD_INS (cfg->cbb, ins);
 
 			cfg->flags |= MONO_CFG_HAS_ALLOCA;
-			if (init_locals)
+			if (header->init_locals)
 				ins->flags |= MONO_INST_INIT;
 
 			MONO_START_BB (cfg, end_bb);

@@ -1030,6 +1030,7 @@ TESTS_IL_SRC=			\
 	gh-13057_mono_local_emulate_ops_av.il \
 	module-cctor-entrypoint.il \
 	bug-gh-9706.il \
+	localloc-noinit.il \
 	calli_native.il
 
 # This test crashes the runtime, even with recent fixes.
@@ -1633,17 +1634,28 @@ REMOTING_DISABLED_TESTS = \
 
 if FULL_AOT_TESTS
 PROFILE_DISABLED_TESTS += $(REMOTING_DISABLED_TESTS)
+
+# Test is too sensitive.
+PROFILE_DISABLED_TESTS += localloc-noinit.exe
 endif
 
 if HYBRID_AOT_TESTS
 PROFILE_DISABLED_TESTS += $(REMOTING_DISABLED_TESTS)
+
+# Test is too sensitive.
+PROFILE_DISABLED_TESTS += localloc-noinit.exe
 endif
 
 if FULL_AOT_INTERP_TESTS
 PROFILE_DISABLED_TESTS += $(REMOTING_DISABLED_TESTS)
+
+# Test is too sensitive.
+PROFILE_DISABLED_TESTS += localloc-noinit.exe
+
 endif
 
 AOT_DISABLED_TESTS= \
+	localloc-noinit.exe \
 	constraints-load.exe \
 	calli_sig_check.exe
 
@@ -1910,6 +1922,8 @@ INTERP_DISABLED_TESTS += tailcall/interface-conservestack/9.exe
 # expected InvalidProgramException not thrown
 INTERP_DISABLED_TESTS += calli_sig_check.exe
 
+# Test is too sensitive.
+INTERP_DISABLED_TESTS += localloc-noinit.exe
 
 # bug-48015.exe: be careful when re-enabling, it happens that it returns with exit code 0, but doesn't actually execute the test.
 # bug-60862.exe: missing support to map IP->method; only works on platforms with altstack support.
@@ -1976,6 +1990,15 @@ INTERP_DISABLED_TESTS += \
 	bug-80307.exe \
 	dim-diamondshape.exe \
 	pinvoke3.exe
+
+# Test is too sensitive.
+DISABLED_TESTS += localloc-noinit.exe
+
+endif
+
+if HOST_WIN32
+# Test is too sensitive?
+DISABLED_TESTS += localloc-noinit.exe
 endif
 
 if AMD64
