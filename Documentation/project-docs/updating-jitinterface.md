@@ -17,6 +17,7 @@ The JitInterface is versioned by a GUID. Any change to JitInterface is required 
 Crossgen2 is the AOT compiler for CoreCLR. It generates native code for .NET apps ahead of time and uses the JIT to do that. Since crossgen2 is written in managed code, it doesn't consume the C++ headers and maintains a managed copy of them. Changes to JitInterface need to be ported managed code.
 
 1. If an enum/struct was modified or added, port the change to CorInfoTypes.cs.
-2. If a method was added or modified in ICorStaticInfo or ICorDynamicInfo, port the change to ThunkInput.txt. Run gen.bat to regenerate CorInfoBase.cs and jitinterface.h from ThunkInput.txt. Provide a managed implementation of the method in CorInfoImpl.cs. If the managed implementation is specific to CoreCLR ReadyToRun (and doesn't apply to full AOT compilation), provide the implementation in CorInfoImpl.ReadyToRun.cs instead.
+2. If a method was added or modified in ICorStaticInfo or ICorDynamicInfo, port the change to ThunkInput.txt.
+   Run gen.bat or gen.sh to regenerate CorInfoBase.cs and jitinterface.h from ThunkInput.txt. Provide a managed implementation of the method in CorInfoImpl.cs. If the managed implementation is specific to CoreCLR ReadyToRun (and doesn't apply to full AOT compilation), provide the implementation in CorInfoImpl.ReadyToRun.cs instead.
 3. Update JitInterface GUID in jitwrapper.cpp.
 
