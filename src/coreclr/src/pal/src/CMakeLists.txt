@@ -226,6 +226,7 @@ set(SOURCES
   misc/jitsupport.cpp
   misc/miscpalapi.cpp
   misc/msgbox.cpp
+  misc/perfjitdump.cpp
   misc/strutil.cpp
   misc/sysinfo.cpp
   misc/time.cpp

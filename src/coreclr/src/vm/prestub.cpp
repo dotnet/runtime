@@ -384,6 +384,11 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
 
         if (pCode == NULL)
             pCode = GetPrecompiledCode(pConfig);
+
+#ifdef FEATURE_PERFMAP
+        if (pCode != NULL)
+            PerfMap::LogPreCompiledMethod(this, pCode);
+#endif
     }
 
     if (pCode == NULL)
