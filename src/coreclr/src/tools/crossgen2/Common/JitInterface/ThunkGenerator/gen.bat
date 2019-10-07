@@ -1,3 +1,2 @@
-csc Program.cs
-Program.exe ThunkInput.txt ..\CorInfoBase.cs ..\..\..\jitinterface\jitinterface.h
-del Program.exe
+cd /d %~dp0
+dotnet run -- ThunkInput.txt ..\CorInfoBase.cs ..\..\..\jitinterface\jitinterface.h
