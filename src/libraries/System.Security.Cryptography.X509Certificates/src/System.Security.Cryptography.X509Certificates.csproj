@@ -687,7 +687,6 @@
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.IO.FileSystem" />
-    <Reference Include="System.Linq" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Resources.ResourceManager" />

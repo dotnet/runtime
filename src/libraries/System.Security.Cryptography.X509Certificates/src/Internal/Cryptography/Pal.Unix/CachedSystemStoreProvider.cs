@@ -129,35 +129,33 @@ namespace Internal.Cryptography.Pal
                 Monitor.IsEntered(s_recheckStopwatch),
                 "LoadMachineStores assumes a lock(s_recheckStopwatch)");
 
-            IEnumerable<FileInfo> trustedCertFiles;
-            DateTime newFileTime = default;
-            DateTime newDirTime = default;
-
-            if (rootStorePath != null && rootStorePath.Exists)
-            {
-                trustedCertFiles = rootStorePath.EnumerateFiles();
-                newDirTime = rootStorePath.LastWriteTimeUtc;
-            }
-            else
-            {
-                trustedCertFiles = Array.Empty<FileInfo>();
-            }
-
-            if (rootStoreFile != null && rootStoreFile.Exists)
-            {
-                trustedCertFiles = trustedCertFiles.Prepend(rootStoreFile);
-                newFileTime = rootStoreFile.LastWriteTimeUtc;
-            }
-
             SafeX509StackHandle rootStore = Interop.Crypto.NewX509Stack();
             Interop.Crypto.CheckValidOpenSslHandle(rootStore);
             SafeX509StackHandle intermedStore = Interop.Crypto.NewX509Stack();
             Interop.Crypto.CheckValidOpenSslHandle(intermedStore);
 
-            HashSet<X509Certificate2> uniqueRootCerts = new HashSet<X509Certificate2>();
-            HashSet<X509Certificate2> uniqueIntermediateCerts = new HashSet<X509Certificate2>();
+            DateTime newFileTime = default;
+            DateTime newDirTime = default;
 
-            foreach (FileInfo file in trustedCertFiles)
+            var uniqueRootCerts = new HashSet<X509Certificate2>();
+            var uniqueIntermediateCerts = new HashSet<X509Certificate2>();
+
+            if (rootStoreFile != null && rootStoreFile.Exists)
+            {
+                newFileTime = rootStoreFile.LastWriteTimeUtc;
+                ProcessFile(rootStoreFile);
+            }
+
+            if (rootStorePath != null && rootStorePath.Exists)
+            {
+                newDirTime = rootStorePath.LastWriteTimeUtc;
+                foreach (FileInfo file in rootStorePath.EnumerateFiles())
+                {
+                    ProcessFile(file);
+                }
+            }
+
+            void ProcessFile(FileInfo file)
             {
                 using (SafeBioHandle fileBio = Interop.Crypto.BioNewFile(file.FullName, "rb"))
                 {
@@ -165,10 +163,8 @@ namespace Internal.Cryptography.Pal
                     if (fileBio.IsInvalid)
                     {
                         Interop.Crypto.ErrClearError();
-                        continue;
+                        return;
                     }
-
-                    ICertificatePal pal;
 
                     // Some distros ship with two variants of the same certificate.
                     // One is the regular format ('BEGIN CERTIFICATE') and the other
@@ -176,6 +172,7 @@ namespace Internal.Cryptography.Pal
                     // The additional data contains the appropriate usage (e.g. emailProtection, serverAuth, ...).
                     // Because corefx doesn't validate for a specific usage, derived certificates are rejected.
                     // For now, we skip the certificates with AUX data and use the regular certificates.
+                    ICertificatePal pal;
                     while (OpenSslX509CertificateReader.TryReadX509PemNoAux(fileBio, out pal) ||
                         OpenSslX509CertificateReader.TryReadX509Der(fileBio, out pal))
                     {

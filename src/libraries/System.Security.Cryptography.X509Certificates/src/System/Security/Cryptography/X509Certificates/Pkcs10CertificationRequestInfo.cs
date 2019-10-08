@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Linq;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates.Asn1;
 using Internal.Cryptography;
@@ -58,12 +57,18 @@ namespace System.Security.Cryptography.X509Certificates
             spki.Algorithm = new AlgorithmIdentifierAsn { Algorithm = PublicKey.Oid, Parameters = PublicKey.EncodedParameters.RawData };
             spki.SubjectPublicKey = PublicKey.EncodedKeyValue.RawData;
 
+            var attributes = new AttributeAsn[Attributes.Count];
+            for (int i = 0; i < attributes.Length; i++)
+            {
+                attributes[i] = new AttributeAsn(Attributes[i]);
+            }
+
             CertificationRequestInfoAsn requestInfo = new CertificationRequestInfoAsn
             {
                 Version = 0,
                 Subject = this.Subject.RawData,
                 SubjectPublicKeyInfo = spki,
-                Attributes = Attributes.Select(a => new AttributeAsn(a)).ToArray(),
+                Attributes = attributes
             };
 
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
