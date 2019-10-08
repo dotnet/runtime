@@ -243,6 +243,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalTheory(nameof(PlatformSupportsUnixDomainSockets))]
+        [ActiveIssue(29742, TestPlatforms.Windows)]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ConcurrentSendReceive(bool forceNonBlocking)
