@@ -39,9 +39,9 @@
     <MicrosoftDotNetBuildTasksFeedVersion>5.0.0-beta.19506.1</MicrosoftDotNetBuildTasksFeedVersion>
     <MicrosoftDotNetVersionToolsTasksPackageVersion>5.0.0-beta.19506.1</MicrosoftDotNetVersionToolsTasksPackageVersion>
     <!-- Core-setup dependencies -->
-    <MicrosoftNETCoreAppPackageVersion>5.0.0-alpha1.19506.5</MicrosoftNETCoreAppPackageVersion>
-    <MicrosoftNETCoreDotNetHostPackageVersion>5.0.0-alpha1.19506.5</MicrosoftNETCoreDotNetHostPackageVersion>
-    <MicrosoftNETCoreDotNetHostPolicyPackageVersion>5.0.0-alpha1.19506.5</MicrosoftNETCoreDotNetHostPolicyPackageVersion>
+    <MicrosoftNETCoreAppPackageVersion>5.0.0-alpha1.19507.10</MicrosoftNETCoreAppPackageVersion>
+    <MicrosoftNETCoreDotNetHostPackageVersion>5.0.0-alpha1.19507.10</MicrosoftNETCoreDotNetHostPackageVersion>
+    <MicrosoftNETCoreDotNetHostPolicyPackageVersion>5.0.0-alpha1.19507.10</MicrosoftNETCoreDotNetHostPolicyPackageVersion>
     <!-- Coreclr dependencies -->
     <MicrosoftNETCoreILAsmPackageVersion>5.0.0-alpha1.19506.2</MicrosoftNETCoreILAsmPackageVersion>
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>5.0.0-alpha1.19506.2</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
