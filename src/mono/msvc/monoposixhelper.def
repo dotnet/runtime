@@ -12,7 +12,6 @@ Mono_Posix_FromMlockallFlags
 Mono_Posix_FromMmapFlags
 Mono_Posix_FromMmapProts
 Mono_Posix_FromMountFlags
-Mono_Posix_FromMremapFlags
 Mono_Posix_FromMsyncFlags
 Mono_Posix_FromOpenFlags
 Mono_Posix_FromPathconfName
@@ -97,7 +96,6 @@ Mono_Posix_ToMlockallFlags
 Mono_Posix_ToMmapFlags
 Mono_Posix_ToMmapProts
 Mono_Posix_ToMountFlags
-Mono_Posix_ToMremapFlags
 Mono_Posix_ToMsyncFlags
 Mono_Posix_ToOpenFlags
 Mono_Posix_ToPathconfName
