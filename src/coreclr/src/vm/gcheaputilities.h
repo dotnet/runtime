@@ -122,12 +122,12 @@ public:
 
     static bool UseThreadAllocationContexts()
     {
-        // When running on a single-proc system, it's more efficient to use a single global
+        // When running on a single-proc Intel system, it's more efficient to use a single global
         // allocation context for SOH allocations than to use one for every thread.
-#if defined(_TARGET_ARM_) || defined(FEATURE_PAL) || defined(FEATURE_REDHAWK)
-        return true;
+#if (defined(_TARGET_X86_) || defined(_TARGET_AMD64_)) && !defined(FEATURE_PAL)
+        return IsServerHeap() || ::g_SystemInfo.dwNumberOfProcessors != 1 || CPUGroupInfo::CanEnableGCCPUGroups();
 #else
-        return IsServerHeap() || ::GetCurrentProcessCpuCount() != 1;
+        return true;
 #endif
 
     }
