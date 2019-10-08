@@ -822,6 +822,15 @@
 -nomethod System.Runtime.Tests.ProfileOptimizationTest.ProfileOptimization_CheckFileExists
 
 ####################################################################
+##  System.Runtime.Handles.Tests
+####################################################################
+
+# NRE in SafeHandle.Dispose
+# https://github.com/mono/mono/issues/17224
+-noclass SafeWaitHandleExtensions_4000_Tests
+-noclass SafeWaitHandle_4000_Tests
+
+####################################################################
 ##  System.Reflection.TypeExtensions.Tests
 ####################################################################
 
