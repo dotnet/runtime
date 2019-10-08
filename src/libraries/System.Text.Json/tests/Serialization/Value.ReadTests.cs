@@ -365,22 +365,18 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        // NOTE: LongInputString test is constrained to run on Windows and MacOSX because it causes
-        //       problems on Linux due to the way deferred memory allocation works. On Linux, the allocation can
-        //       succeed even if there is not enough memory but then the test may get killed by the OOM killer at the
-        //       time the memory is accessed which triggers the full memory allocation.
+        private const long ArrayPoolMaxSizeBeforeUsingNormalAlloc = 1024 * 1024;
         private const int MaxExpansionFactorWhileTranscoding = 3;
-        private const int MaxArrayLengthBeforeCalculatingSize = int.MaxValue / 2 / MaxExpansionFactorWhileTranscoding;
-        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
-        [ConditionalTheory(nameof(IsX64))]
-        [InlineData(MaxArrayLengthBeforeCalculatingSize - 3)]
-        [InlineData(MaxArrayLengthBeforeCalculatingSize - 2)]
-        [InlineData(MaxArrayLengthBeforeCalculatingSize - 1)]
-        [InlineData(MaxArrayLengthBeforeCalculatingSize)]
-        [InlineData(MaxArrayLengthBeforeCalculatingSize + 1)]
-        [InlineData(MaxArrayLengthBeforeCalculatingSize + 2)]
-        [InlineData(MaxArrayLengthBeforeCalculatingSize + 3)]
-        [OuterLoop]
+        private const long Threshold = ArrayPoolMaxSizeBeforeUsingNormalAlloc / MaxExpansionFactorWhileTranscoding;
+
+        [Theory]
+        [InlineData(Threshold - 3)]
+        [InlineData(Threshold - 2)]
+        [InlineData(Threshold - 1)]
+        [InlineData(Threshold)]
+        [InlineData(Threshold + 1)]
+        [InlineData(Threshold + 2)]
+        [InlineData(Threshold + 3)]
         public static void LongInputString(int length)
         {
             // Verify boundary conditions in Deserialize() that inspect the size to determine allocation strategy.

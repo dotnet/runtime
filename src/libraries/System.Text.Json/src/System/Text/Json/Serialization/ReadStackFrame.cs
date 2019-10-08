@@ -88,6 +88,22 @@ namespace System.Text.Json
         }
 
         /// <summary>
+        /// Is the current object a Dictionary or IDictionaryConstructible.
+        /// </summary>
+        public bool IsProcessingDictionaryOrIDictionaryConstructibleObject()
+        {
+            return IsProcessingObject(ClassType.Dictionary | ClassType.IDictionaryConstructible);
+        }
+
+        /// <summary>
+        /// Is the current property a Dictionary or IDictionaryConstructible.
+        /// </summary>
+        public bool IsProcessingDictionaryOrIDictionaryConstructibleProperty()
+        {
+            return IsProcessingProperty(ClassType.Dictionary | ClassType.IDictionaryConstructible);
+        }
+
+        /// <summary>
         /// Is the current object or property a Dictionary or IDictionaryConstructible.
         /// </summary>
         public bool IsProcessingDictionaryOrIDictionaryConstructible()
@@ -205,9 +221,10 @@ namespace System.Text.Json
             if (jsonPropertyInfo.EnumerableConverter != null)
             {
                 IList converterList;
-                if (jsonPropertyInfo.ElementClassInfo.ClassType == ClassType.Value)
+                JsonClassInfo elementClassInfo = jsonPropertyInfo.ElementClassInfo;
+                if (elementClassInfo.ClassType == ClassType.Value)
                 {
-                    converterList = jsonPropertyInfo.ElementClassInfo.PolicyProperty.CreateConverterList();
+                    converterList = elementClassInfo.PolicyProperty.CreateConverterList();
                 }
                 else
                 {

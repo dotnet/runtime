@@ -31,7 +31,6 @@ namespace System.Text.Json
         public bool MoveToNextProperty;
 
         // The current property.
-        public bool PropertyEnumeratorActive;
         public int PropertyEnumeratorIndex;
         public ExtensionDataWriteStatus ExtensionDataStatus;
         public JsonPropertyInfo JsonPropertyInfo;
@@ -102,20 +101,15 @@ namespace System.Text.Json
         public void Reset()
         {
             CurrentValue = null;
-            EndObject();
-        }
-
-        public void EndObject()
-        {
             CollectionEnumerator = null;
             ExtensionDataStatus = ExtensionDataWriteStatus.NotStarted;
             IsIDictionaryConstructible = false;
             JsonClassInfo = null;
             PropertyEnumeratorIndex = 0;
-            PropertyEnumeratorActive = false;
             PopStackOnEndCollection = false;
             PopStackOnEndObject = false;
             StartObjectWritten = false;
+
             EndProperty();
         }
 
@@ -146,27 +140,19 @@ namespace System.Text.Json
         {
             EndProperty();
 
-            if (PropertyEnumeratorActive)
-            {
-                int len = JsonClassInfo.PropertyCacheArray.Length;
-                if (PropertyEnumeratorIndex < len)
-                {
-                    if ((PropertyEnumeratorIndex == len - 1) && JsonClassInfo.DataExtensionProperty != null)
-                    {
-                        ExtensionDataStatus = ExtensionDataWriteStatus.Writing;
-                    }
+            int maxPropertyIndex = JsonClassInfo.PropertyCacheArray.Length;
 
-                    PropertyEnumeratorIndex++;
-                    PropertyEnumeratorActive = true;
-                }
-                else
-                {
-                    PropertyEnumeratorActive = false;
-                }
-            }
-            else
+            ++PropertyEnumeratorIndex;
+            if (PropertyEnumeratorIndex >= maxPropertyIndex)
             {
-                ExtensionDataStatus = ExtensionDataWriteStatus.Finished;
+                if (PropertyEnumeratorIndex > maxPropertyIndex)
+                {
+                    ExtensionDataStatus = ExtensionDataWriteStatus.Finished;
+                }
+                else if (JsonClassInfo.DataExtensionProperty != null)
+                {
+                    ExtensionDataStatus = ExtensionDataWriteStatus.Writing;
+                }
             }
         }
     }

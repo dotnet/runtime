@@ -194,10 +194,8 @@ namespace System.Text.Json
                 ArrayPool<byte>.Shared.Return(buffer);
             }
 
-            if (bytesInBuffer != 0)
-            {
-                ThrowHelper.ThrowJsonException_DeserializeDataRemaining(totalBytesRead, bytesInBuffer);
-            }
+            // The reader should have thrown if we have remaining bytes.
+            Debug.Assert(bytesInBuffer == 0);
 
             return (TValue)readStack.Current.ReturnValue;
         }

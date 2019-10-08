@@ -26,10 +26,11 @@ namespace System.Text.Json
             Debug.Assert(state.Current.ReturnValue != default || state.Current.TempDictionaryValues != default);
             Debug.Assert(state.Current.JsonClassInfo != default);
 
-            if (state.Current.IsProcessingDictionaryOrIDictionaryConstructible() &&
+            bool isProcessingDictObject = state.Current.IsProcessingDictionaryOrIDictionaryConstructibleObject();
+            if ((isProcessingDictObject || state.Current.IsProcessingDictionaryOrIDictionaryConstructibleProperty()) &&
                 state.Current.JsonClassInfo.DataExtensionProperty != state.Current.JsonPropertyInfo)
             {
-                if (state.Current.IsProcessingObject(ClassType.Dictionary | ClassType.IDictionaryConstructible))
+                if (isProcessingDictObject)
                 {
                     state.Current.JsonPropertyInfo = state.Current.JsonClassInfo.PolicyProperty;
                 }

@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+
 namespace System.Text.Json
 {
     public static partial class JsonSerializer
@@ -56,10 +58,8 @@ namespace System.Text.Json
             var reader = new Utf8JsonReader(utf8Json, isFinalBlock: true, readerState);
             object result = ReadCore(returnType, options, ref reader);
 
-            if (reader.BytesConsumed != utf8Json.Length)
-            {
-                ThrowHelper.ThrowJsonException_DeserializeDataRemaining(utf8Json.Length, utf8Json.Length - reader.BytesConsumed);
-            }
+            // The reader should have thrown if we have remaining bytes.
+            Debug.Assert(reader.BytesConsumed == utf8Json.Length);
 
             return result;
         }

@@ -303,10 +303,8 @@ namespace System.Text.Json
 
                 ReadCore(options, ref newReader, ref readStack);
 
-                if (newReader.BytesConsumed != length)
-                {
-                    ThrowHelper.ThrowJsonException_DeserializeDataRemaining(length, length - newReader.BytesConsumed);
-                }
+                // The reader should have thrown if we have remaining bytes.
+                Debug.Assert(newReader.BytesConsumed == length);
             }
             catch (JsonException)
             {

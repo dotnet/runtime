@@ -31,11 +31,13 @@ namespace System.Text.Json
                 state.Current.CollectionPropertyInitialized = true;
 
                 ClassType classType = state.Current.JsonClassInfo.ClassType;
-                if (classType == ClassType.Value &&
-                    jsonPropertyInfo.ElementClassInfo.Type != typeof(object) &&
-                    jsonPropertyInfo.ElementClassInfo.Type != typeof(JsonElement))
+                if (classType == ClassType.Value)
                 {
-                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(state.Current.JsonClassInfo.Type);
+                    Type elementClassInfoType = jsonPropertyInfo.ElementClassInfo.Type;
+                    if (elementClassInfoType != typeof(object) && elementClassInfoType != typeof(JsonElement))
+                    {
+                        ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(state.Current.JsonClassInfo.Type);
+                    }
                 }
 
                 JsonClassInfo classInfo = state.Current.JsonClassInfo;
