@@ -42,6 +42,8 @@ namespace Internal.JitInterface
             ARM = 0x01c4,
         }
 
+        private const string JitLibrary = "clrjitilc";
+
 #if SUPPORT_JIT
         private const string JitSupportLibrary = "*";
 #else
@@ -57,13 +59,13 @@ namespace Internal.JitInterface
 
         private static bool s_jitRegistered = RegisterJITModule();
 
-        [DllImport("clrjitilc")]
+        [DllImport(JitLibrary)]
         private extern static IntPtr PAL_RegisterModule([MarshalAs(UnmanagedType.LPUTF8Str)] string moduleName);
 
-        [DllImport("clrjitilc", CallingConvention=CallingConvention.StdCall)] // stdcall in CoreCLR!
+        [DllImport(JitLibrary, CallingConvention=CallingConvention.StdCall)] // stdcall in CoreCLR!
         private extern static IntPtr jitStartup(IntPtr host);
 
-        [DllImport("clrjitilc", CallingConvention=CallingConvention.StdCall)]
+        [DllImport(JitLibrary, CallingConvention=CallingConvention.StdCall)]
         private extern static IntPtr getJit();
 
         [DllImport(JitSupportLibrary)]
@@ -126,6 +128,16 @@ namespace Internal.JitInterface
             }
         }
 
+        private IntPtr JitLibraryResolver(string libraryName, System.Reflection.Assembly assembly, DllImportSearchPath? searchPath)
+        {
+            IntPtr libHandle = IntPtr.Zero;
+            if (libraryName == JitLibrary)
+            {
+                libHandle = NativeLibrary.Load(_jitConfig.JitPath, assembly, searchPath);
+            }
+            return libHandle;
+        }
+
         public CorInfoImpl(JitConfigProvider jitConfig)
         {
             //
@@ -133,7 +145,14 @@ namespace Internal.JitInterface
             //
             _jitConfig = jitConfig;
             if (!s_jitRegistered)
+            {
                 throw new IOException("Failed to register JIT");
+            }
+
+            if (_jitConfig.JitPath != null)
+            {
+                NativeLibrary.SetDllImportResolver(typeof(CorInfoImpl).Assembly, JitLibraryResolver);
+            }
 
             jitStartup(GetJitHost(_jitConfig.UnmanagedInstance));
 
