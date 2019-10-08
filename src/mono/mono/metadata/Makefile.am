@@ -421,8 +421,8 @@ common_sources = \
 	fdhandle.c	\
 	callspec.h	\
 	callspec.c	\
-	abi.c
-
+	abi.c	\
+	native-library.c
 
 # These source files have compile time dependencies on GC code
 gc_dependent_sources = \

@@ -15,6 +15,7 @@
 
 #include "mono/metadata/assembly.h"
 #include "mono/metadata/loader.h"
+#include "mono/metadata/loader-internals.h"
 #include "mono/metadata/mono-config.h"
 #include "mono/metadata/mono-config-internals.h"
 #include "mono/metadata/metadata-internals.h"
@@ -342,7 +343,7 @@ dllmap_start (gpointer user_data,
 				info->ignore = TRUE;
 		}
 		if (!info->ignore)
-			mono_dllmap_insert (info->assembly, info->dll, NULL, info->target, NULL);
+			mono_dllmap_insert_internal (info->assembly, info->dll, NULL, info->target, NULL);
 	} else if (strcmp (element_name, "dllentry") == 0) {
 		const char *name = NULL, *target = NULL, *dll = NULL;
 		int ignore = FALSE;
@@ -363,7 +364,7 @@ dllmap_start (gpointer user_data,
 		if (!dll)
 			dll = info->dll;
 		if (!info->ignore && !ignore)
-			mono_dllmap_insert (info->assembly, info->dll, name, dll, target);
+			mono_dllmap_insert_internal (info->assembly, info->dll, name, dll, target);
 	}
 }
 

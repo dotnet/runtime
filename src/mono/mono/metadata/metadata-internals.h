@@ -298,8 +298,6 @@ struct _MonoTableInfo {
 
 #define REFERENCE_MISSING ((gpointer) -1)
 
-typedef struct _MonoDllMap MonoDllMap;
-
 typedef struct {
 	gboolean (*match) (MonoImage*);
 	gboolean (*load_pe_data) (MonoImage*);
