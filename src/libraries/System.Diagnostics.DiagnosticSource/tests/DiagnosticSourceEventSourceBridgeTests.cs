@@ -734,6 +734,43 @@ namespace System.Diagnostics.Tests
                 }
             }).Dispose();
         }
+
+        [Fact]
+        public void IndexGetters_DontThrow()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                using (var eventListener = new TestDiagnosticSourceEventListener())
+                using (var diagnosticListener = new DiagnosticListener("MySource"))
+                {
+                    eventListener.Enable(
+                        "MySource/MyEvent"
+                    );
+                    // The type MyEvent only declares 3 Properties, but actually
+                    // has 4 due to the implicit Item property from having the index
+                    // operator implemented. The Getter for this Item property
+                    // is unusual for Property getters because it takes
+                    // an int32 as an input. This test ensures that this
+                    // implicit Property isn't implicitly serialized by
+                    // DiagnosticSourceEventSource.
+                    diagnosticListener.Write(
+                        "MyEvent",
+                        new MyEvent
+                        {
+                            Number = 1,
+                            OtherNumber = 2
+                        }
+                    );
+                    Assert.Equal(1, eventListener.EventCount);
+                    Assert.Equal("MySource", eventListener.LastEvent.SourceName);
+                    Assert.Equal("MyEvent", eventListener.LastEvent.EventName);
+                    Assert.True(eventListener.LastEvent.Arguments.Count <= 3);
+                    Assert.Equal("1", eventListener.LastEvent.Arguments["Number"]);
+                    Assert.Equal("2", eventListener.LastEvent.Arguments["OtherNumber"]);
+                    Assert.Equal("2", eventListener.LastEvent.Arguments["Count"]);
+                }
+            }).Dispose();
+        }
     }
 
     /****************************************************************************/
@@ -755,6 +792,22 @@ namespace System.Diagnostics.Tests
     {
         public int X { get; set; }
         public int Y { get; set; }
+    }
+
+    /// <summary>
+    /// classes for test data
+    /// </summary>
+    internal class MyEvent
+    {
+        public int Number { get; set; }
+        public int OtherNumber { get; set; }
+        public int Count => 2;
+        public KeyValuePair<string, object> this[int index] => index switch
+        {
+            0 => new KeyValuePair<string, object>(nameof(Number), Number),
+            1 => new KeyValuePair<string, object>(nameof(OtherNumber), OtherNumber),
+            _ => throw new IndexOutOfRangeException()
+        };
     }
 
     /****************************************************************************/
