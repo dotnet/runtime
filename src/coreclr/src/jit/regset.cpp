@@ -378,11 +378,11 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
     }
 
 #if defined(_TARGET_ARM_)
-    assert(tree->gtRegNum == reg || (call != nullptr && call->GetRegNumByIdx(regIdx) == reg) ||
+    assert(tree->GetRegNum() == reg || (call != nullptr && call->GetRegNumByIdx(regIdx) == reg) ||
            (splitArg != nullptr && splitArg->GetRegNumByIdx(regIdx) == reg) ||
            (multiReg != nullptr && multiReg->GetRegNumByIdx(regIdx) == reg));
 #else
-    assert(tree->gtRegNum == reg || (call != nullptr && call->GetRegNumByIdx(regIdx) == reg));
+    assert(tree->GetRegNum() == reg || (call != nullptr && call->GetRegNumByIdx(regIdx) == reg));
 #endif // !_TARGET_ARM_
 
     // Are any registers free for spillage?
@@ -470,7 +470,7 @@ void RegSet::rsSpillFPStack(GenTreeCall* call)
     spill->spillTree  = call;
     SpillDsc* lastDsc = spill;
 
-    regNumber reg      = call->gtRegNum;
+    regNumber reg      = call->GetRegNum();
     lastDsc->spillNext = rsSpillDesc[reg];
     rsSpillDesc[reg]   = spill;
 

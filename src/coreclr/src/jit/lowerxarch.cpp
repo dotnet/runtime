@@ -1515,7 +1515,7 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
             {
                 // We may have cases where we have set a register target on the ctrlExpr, but if it
                 // contained we must clear it.
-                ctrlExpr->gtRegNum = REG_NA;
+                ctrlExpr->SetRegNum(REG_NA);
                 MakeSrcContained(call, ctrlExpr);
             }
         }
@@ -1600,8 +1600,8 @@ void Lowering::ContainCheckIndir(GenTreeIndir* node)
         // argument.
         //
         // Workaround:
-        // Note that LowerVirtualStubCall() sets addr->gtRegNum to VirtualStubParam.reg and Lowering::doPhase()
-        // sets destination candidates on such nodes and resets addr->gtRegNum to REG_NA.
+        // Note that LowerVirtualStubCall() sets addr->GetRegNum() to VirtualStubParam.reg and Lowering::doPhase()
+        // sets destination candidates on such nodes and resets addr->GetRegNum() to REG_NA.
         // Ideally we should set a flag on addr nodes that shouldn't be marked as contained
         // (in LowerVirtualStubCall()), but we don't have any GTF_* flags left for that purpose.  As a workaround
         // an explicit check is made here.
