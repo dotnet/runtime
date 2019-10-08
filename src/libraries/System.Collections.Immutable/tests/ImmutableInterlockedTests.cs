@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -12,6 +11,7 @@ namespace System.Collections.Immutable.Tests
     public class ImmutableInterlockedTests
     {
         private delegate bool UpdateDelegate<T>(ref T location, Func<T, T> transformer);
+        private delegate bool UpdateArrayDelegate<T>(ref ImmutableArray<T> location, Func<ImmutableArray<T>, ImmutableArray<T>> transformer);
 
         [Fact]
         public void Update_StartWithNull()
@@ -22,6 +22,30 @@ namespace System.Collections.Immutable.Tests
                 Assert.True(func(ref list, l => { Assert.Null(l); return ImmutableList.Create(1); }));
                 Assert.Equal(1, list.Count);
                 Assert.Equal(1, list[0]);
+            });
+        }
+
+        [Fact]
+        public void UpdateArray_StartWithDefault()
+        {
+            UpdateArrayHelper<int>(func =>
+            {
+                ImmutableArray<int> array = default;
+                Assert.True(func(ref array, l => { Assert.Equal(default, l); return ImmutableArray.Create(1); }));
+                Assert.Equal(1, array.Length);
+                Assert.Equal(1, array[0]);
+            });
+        }
+
+        [Fact]
+        public void UpdateArray_StartWithEmpty()
+        {
+            UpdateArrayHelper<int>(func =>
+            {
+                ImmutableArray<int> array = ImmutableArray<int>.Empty;
+                Assert.True(func(ref array, l => { Assert.Equal(0, l.Length); return ImmutableArray.Create(1); }));
+                Assert.Equal(1, array.Length);
+                Assert.Equal(1, array[0]);
             });
         }
 
@@ -39,6 +63,19 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void UpdateArray_IncrementalUpdate()
+        {
+            UpdateArrayHelper<int>(func =>
+            {
+                ImmutableArray<int> array = ImmutableArray.Create(1);
+                Assert.True(func(ref array, l => l.Add(2)));
+                Assert.Equal(2, array.Length);
+                Assert.Equal(1, array[0]);
+                Assert.Equal(2, array[1]);
+            });
+        }
+
+        [Fact]
         public void Update_FuncThrowsThrough()
         {
             UpdateHelper<ImmutableList<int>>(func =>
@@ -49,12 +86,32 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void UpdateArray_FuncThrowsThrough()
+        {
+            UpdateArrayHelper<int>(func =>
+            {
+                ImmutableArray<int> array = ImmutableArray.Create(42);
+                Assert.Throws<InvalidOperationException>(() => func(ref array, l => throw new InvalidOperationException()));
+            });
+        }
+
+        [Fact]
         public void Update_NoEffectualChange()
         {
             UpdateHelper<ImmutableList<int>>(func =>
             {
                 ImmutableList<int> list = ImmutableList.Create<int>(1);
                 Assert.False(func(ref list, l => l));
+            });
+        }
+
+        [Fact]
+        public void UpdateArray_NoEffectualChange()
+        {
+            UpdateArrayHelper<int>(func =>
+            {
+                ImmutableArray<int> array = ImmutableArray.Create(42);
+                Assert.False(func(ref array, l => l));
             });
         }
 
@@ -70,7 +127,7 @@ namespace System.Collections.Immutable.Tests
                 var barrier = new Barrier(tasks.Length);
                 for (int i = 0; i < tasks.Length; i++)
                 {
-                    tasks[i] = Task.Run(delegate
+                    tasks[i] = Task.Factory.StartNew(delegate
                     {
                         // Maximize concurrency by blocking this thread until all the other threads are ready to go as well.
                         barrier.SignalAndWait();
@@ -79,7 +136,7 @@ namespace System.Collections.Immutable.Tests
                         {
                             Assert.True(func(ref list, l => l.Add(l.Count)));
                         }
-                    });
+                    }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
                 }
 
                 Task.WaitAll(tasks);
@@ -87,6 +144,39 @@ namespace System.Collections.Immutable.Tests
                 for (int i = 0; i < list.Count; i++)
                 {
                     Assert.Equal(i, list[i]);
+                }
+            });
+        }
+
+        [Fact]
+        public void UpdateArray_HighConcurrency()
+        {
+            UpdateArrayHelper<int>(func =>
+            {
+                ImmutableArray<int> array = ImmutableArray.Create<int>();
+                int concurrencyLevel = Environment.ProcessorCount;
+                int iterations = 500;
+                Task[] tasks = new Task[concurrencyLevel];
+                var barrier = new Barrier(tasks.Length);
+                for (int i = 0; i < tasks.Length; i++)
+                {
+                    tasks[i] = Task.Factory.StartNew(delegate
+                    {
+                        // Maximize concurrency by blocking this thread until all the other threads are ready to go as well.
+                        barrier.SignalAndWait();
+
+                        for (int j = 0; j < iterations; j++)
+                        {
+                            Assert.True(func(ref array, l => l.Add(l.Length)));
+                        }
+                    }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+                }
+
+                Task.WaitAll(tasks);
+                Assert.Equal(concurrencyLevel * iterations, array.Length);
+                for (int i = 0; i < array.Length; i++)
+                {
+                    Assert.Equal(i, array[i]);
                 }
             });
         }
@@ -147,6 +237,65 @@ namespace System.Collections.Immutable.Tests
                 Assert.Equal(2, set.Count);
                 Assert.True(set.Contains(1));
                 Assert.True(set.Contains(2));
+            });
+        }
+
+        [Fact]
+        public void UpdateArray_CarefullyScheduled()
+        {
+            UpdateArrayHelper<int>(func =>
+            {
+                var array = ImmutableArray.Create<int>();
+                var task2TransformEntered = new AutoResetEvent(false);
+                var task1TransformExited = new AutoResetEvent(false);
+
+                var task1 = Task.Run(delegate
+                {
+                    int transform1ExecutionCounter = 0;
+                    func(
+                        ref array,
+                        s =>
+                        {
+                            Assert.Equal(1, ++transform1ExecutionCounter);
+                            task2TransformEntered.WaitOne();
+                            return s.Add(1);
+                        });
+                    task1TransformExited.Set();
+                    Assert.Equal(1, transform1ExecutionCounter);
+                });
+
+                var task2 = Task.Run(delegate
+                {
+                    int transform2ExecutionCounter = 0;
+                    func(
+                        ref array,
+                        s =>
+                        {
+                            switch (++transform2ExecutionCounter)
+                            {
+                                case 1:
+                                    task2TransformEntered.Set();
+                                    task1TransformExited.WaitOne();
+                                    Assert.True(s.IsEmpty);
+                                    break;
+                                case 2:
+                                    Assert.True(s.Contains(1));
+                                    Assert.Equal(1, s.Length);
+                                    break;
+                            }
+
+                            return s.Add(2);
+                        });
+
+                    // Verify that this transform had to execute twice.
+                    Assert.Equal(2, transform2ExecutionCounter);
+                });
+
+                // Wait for all tasks and rethrow any exceptions.
+                Task.WaitAll(task1, task2);
+                Assert.Equal(2, array.Length);
+                Assert.True(array.Contains(1));
+                Assert.True(array.Contains(2));
             });
         }
 
@@ -439,6 +588,22 @@ namespace System.Collections.Immutable.Tests
         }
 
         /// <summary>
+        /// Executes a test against both <see cref="ImmutableInterlocked.Update{T}(ref ImmutableArray{T}, Func{ImmutableArray{T}, ImmutableArray{T}})"/>
+        /// and <see cref="ImmutableInterlocked.Update{ImmutableArray{T}, TArg}(ref ImmutableArray{T}, Func{ImmutableArray{T}, TArg, ImmutableArray{T}}, TArg)"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of value under test.</typeparam>
+        /// <param name="test">
+        /// The test to execute. Invoke the parameter instead of calling
+        /// the ImmutableInterlocked method so that the delegate can test both overloads
+        /// by being executed twice.
+        /// </param>
+        private static void UpdateArrayHelper<T>(Action<UpdateArrayDelegate<T>> test)
+        {
+            test(ImmutableInterlocked.Update<T>);
+            test(UpdateArrayWrapper<T>);
+        }
+
+        /// <summary>
         /// A wrapper that makes one overload look like another so the same test delegate can execute against both.
         /// </summary>
         /// <typeparam name="T">The type of value being changed.</typeparam>
@@ -447,6 +612,25 @@ namespace System.Collections.Immutable.Tests
         /// <returns>The result of the replacement function.</returns>
         private static bool UpdateWrapper<T>(ref T location, Func<T, T> transformer)
             where T : class
+        {
+            return ImmutableInterlocked.Update<T, int>(
+                ref location,
+                (t, arg) =>
+                {
+                    Assert.Equal(1, arg);
+                    return transformer(t);
+                },
+                1);
+        }
+
+        /// <summary>
+        /// A wrapper that makes one overload look like another so the same test delegate can execute against both.
+        /// </summary>
+        /// <typeparam name="T">The type of value being changed.</typeparam>
+        /// <param name="location">The variable or field to be changed.</param>
+        /// <param name="transformer">The function that transforms the value.</param>
+        /// <returns>The result of the replacement function.</returns>
+        private static bool UpdateArrayWrapper<T>(ref ImmutableArray<T> location, Func<ImmutableArray<T>, ImmutableArray<T>> transformer)
         {
             return ImmutableInterlocked.Update<T, int>(
                 ref location,
