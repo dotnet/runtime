@@ -98,6 +98,92 @@ namespace System.Collections.Immutable
             return true;
         }
 
+        /// <summary>
+        /// Mutates an immutable array in-place with optimistic locking transaction semantics
+        /// via a specified transformation function.
+        /// The transformation is retried as many times as necessary to win the optimistic locking race.
+        /// </summary>
+        /// <typeparam name="T">The type of data in the immutable array.</typeparam>
+        /// <param name="location">
+        /// The immutable array to be changed.
+        /// </param>
+        /// <param name="transformer">
+        /// A function that produces the new array from the old. This function should be side-effect free,
+        /// as it may run multiple times when races occur with other threads.</param>
+        /// <returns>
+        /// <c>true</c> if the location's value is changed by applying the result of the
+        /// <paramref name="transformer"/> function;
+        /// <c>false</c> if the location's value remained the same because the last
+        /// invocation of <paramref name="transformer"/> returned the existing value.
+        /// </returns>
+        public static bool Update<T>(ref ImmutableArray<T> location, Func<ImmutableArray<T>, ImmutableArray<T>> transformer)
+        {
+            Requires.NotNull(transformer, nameof(transformer));
+
+            bool successful;
+            T[] oldArray = Volatile.Read(ref location.array);
+            do
+            {
+                ImmutableArray<T> newImmutableArray = transformer(new ImmutableArray<T>(oldArray));
+                if (ReferenceEquals(oldArray, newImmutableArray.array))
+                {
+                    // No change was actually required.
+                    return false;
+                }
+
+                T[] interlockedResult = Interlocked.CompareExchange(ref location.array, newImmutableArray.array, oldArray);
+                successful = ReferenceEquals(oldArray, interlockedResult);
+                oldArray = interlockedResult; // we already have a volatile read that we can reuse for the next loop
+            }
+            while (!successful);
+
+            return true;
+        }
+
+        /// <summary>
+        /// Mutates an immutable array in-place with optimistic locking transaction semantics
+        /// via a specified transformation function.
+        /// The transformation is retried as many times as necessary to win the optimistic locking race.
+        /// </summary>
+        /// <typeparam name="T">The type of data in the immutable array.</typeparam>
+        /// <typeparam name="TArg">The type of argument passed to the <paramref name="transformer"/>.</typeparam>
+        /// <param name="location">
+        /// The immutable array to be changed.
+        /// </param>
+        /// <param name="transformer">
+        /// A function that produces the new array from the old. This function should be side-effect free,
+        /// as it may run multiple times when races occur with other threads.</param>
+        /// <param name="transformerArgument">The argument to pass to <paramref name="transformer"/>.</param>
+        /// <returns>
+        /// <c>true</c> if the location's value is changed by applying the result of the
+        /// <paramref name="transformer"/> function;
+        /// <c>false</c> if the location's value remained the same because the last
+        /// invocation of <paramref name="transformer"/> returned the existing value.
+        /// </returns>
+        public static bool Update<T, TArg>(ref ImmutableArray<T> location, Func<ImmutableArray<T>, TArg, ImmutableArray<T>> transformer, TArg transformerArgument)
+        {
+            Requires.NotNull(transformer, nameof(transformer));
+
+            bool successful;
+            T[] oldArray = Volatile.Read(ref location.array);
+            do
+            {
+                ImmutableArray<T> newImmutableArray = transformer(new ImmutableArray<T>(oldArray), transformerArgument);
+                if (ReferenceEquals(oldArray, newImmutableArray.array))
+                {
+                    // No change was actually required.
+                    return false;
+                }
+
+                T[] interlockedResult = Interlocked.CompareExchange(ref location.array, newImmutableArray.array, oldArray);
+                successful = ReferenceEquals(oldArray, interlockedResult);
+                oldArray = interlockedResult; // we already have a volatile read that we can reuse for the next loop
+            }
+            while (!successful);
+
+            return true;
+        }
+
         #region ImmutableArray<T> members
 
         /// <summary>
