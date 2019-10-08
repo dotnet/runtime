@@ -1,7 +1,6 @@
 ﻿<Project>
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
-    <PackageVersion>2.3.0</PackageVersion>
     <AssemblyVersion>2.0.2.0</AssemblyVersion>
     <StrongNameKeyId>Open</StrongNameKeyId>
   </PropertyGroup>
