@@ -257,7 +257,7 @@
     <PropertyGroup Condition="'$(TargetArchitecture)' == 'arm' AND '$(OS)' != 'Windows_NT'">
       <_crossHostArch>x64</_crossHostArch>
     </PropertyGroup> 
-    <PropertyGroup Condition="'$(TargetArchitecture)' == 'arm64'">
+    <PropertyGroup Condition="'$(TargetArchitecture)' == 'arm64' AND '$(BuildArchitecture)' != 'arm64'">
       <_crossHostArch>x64</_crossHostArch>
     </PropertyGroup> 
     <PropertyGroup>
@@ -279,7 +279,6 @@
       <!-- Find crossgen tool assets in package cache to allow ExcludeAssets=All. -->
       <_runtimeCLR Include="$(_runtimePackageDir)**/$(LibraryFilePrefix)coreclr$(LibraryFileExtension)" />
       <_runtimeCoreLib Include="$(_runtimePackageDir)**/native/System.Private.CoreLib.dll" />
-      <_runtimeJIT Include="$(_jitPackageDir)**/$(LibraryFilePrefix)clrjit$(LibraryFileExtension)" />
       <_fxSystemRuntime Include="$(_corefxPackageDir)**/System.Runtime.dll" />
       <_windowsWinMD Include="$(_winmdPackageDir)**/Windows.winmd" />
       <_diaSymReaderAssembly Include="$(_diaSymReaderPackageDir)**\Microsoft.DiaSymReader.Native.*.dll" />
@@ -294,8 +293,8 @@
       <_coreLibDirectory>%(_runtimeCoreLib.RootDir)%(_runtimeCoreLib.Directory)</_coreLibDirectory>
     </PropertyGroup>
 
-    <PropertyGroup Condition="'@(_runtimeJIT)' != ''">
-      <_jitPath>%(_runtimeJIT.FullPath)</_jitPath>
+    <PropertyGroup>
+      <_jitPath Condition="'$(_crossDir)' == ''">$(_jitPackageDir)runtimes/$(PackageRID)/native/$(LibraryFilePrefix)clrjit$(LibraryFileExtension)</_jitPath>
       <_jitPath Condition="'$(_crossDir)' != ''">$(_jitPackageDir)runtimes$(_crossDir)/native/$(LibraryFilePrefix)clrjit$(LibraryFileExtension)</_jitPath>
     </PropertyGroup>
 
