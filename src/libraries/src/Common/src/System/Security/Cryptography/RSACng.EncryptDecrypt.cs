@@ -241,6 +241,7 @@ namespace System.Security.Cryptography
 
             if (errorCode == ErrorCode.NTE_BUFFER_TOO_SMALL)
             {
+                CryptographicOperations.ZeroMemory(output);
                 output = new byte[numBytesNeeded];
 
                 for (int i = 0; i <= StatusUnsuccessfulRetryCount; i++)
@@ -260,7 +261,13 @@ namespace System.Security.Cryptography
                 throw errorCode.ToCryptographicException();
             }
 
-            Array.Resize(ref output, numBytesNeeded);
+            if (numBytesNeeded != output.Length)
+            {
+                byte[] ret = output.AsSpan(0, numBytesNeeded).ToArray();
+                CryptographicOperations.ZeroMemory(output);
+                output = ret;
+            }
+
             return output;
         }
 
@@ -300,9 +307,17 @@ namespace System.Security.Cryptography
             bool encrypt,
             out int bytesNeeded)
         {
-            return encrypt ?
+            ErrorCode errorCode = encrypt ?
                 Interop.NCrypt.NCryptEncrypt(key, input, input.Length, paddingInfo, output, output.Length, out bytesNeeded, paddingMode) :
                 Interop.NCrypt.NCryptDecrypt(key, input, input.Length, paddingInfo, output, output.Length, out bytesNeeded, paddingMode);
+
+            // Windows 10.1903 can return success when it meant NTE_BUFFER_TOO_SMALL.
+            if (errorCode == ErrorCode.ERROR_SUCCESS && bytesNeeded > output.Length)
+            {
+                errorCode = ErrorCode.NTE_BUFFER_TOO_SMALL;
+            }
+
+            return errorCode;
         }
     }
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
