@@ -22,6 +22,7 @@ namespace ILCompiler
         private readonly EcmaModule _inputModule;
         private readonly bool _ibcTuning;
         private readonly bool _resilient;
+        private string _jitPath;
 
         // These need to provide reasonable defaults so that the user can optionally skip
         // calling the Use/Configure methods and still get something reasonable back.
@@ -31,9 +32,9 @@ namespace ILCompiler
         public ReadyToRunCodegenCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group, string inputFilePath, bool ibcTuning, bool resilient)
             : base(context, group, new CoreRTNameMangler())
         {
+            _inputFilePath = inputFilePath;
             _ibcTuning = ibcTuning;
             _resilient = resilient;
-            _inputFilePath = inputFilePath;
 
             _inputModule = context.GetModuleFromPath(_inputFilePath);
 
@@ -75,6 +76,12 @@ namespace ILCompiler
         protected override ILProvider GetILProvider()
         {
             return _ilProvider;
+        }
+
+        public override CompilationBuilder UseJitPath(string jitPath)
+        {
+            _jitPath = jitPath;
+            return this;
         }
 
         public override ICompilation ToCompilation()
@@ -136,7 +143,7 @@ namespace ILCompiler
                 corJitFlags.Add(CorJitFlag.CORJIT_FLAG_BBINSTR);
 
             corJitFlags.Add(CorJitFlag.CORJIT_FLAG_FEATURE_SIMD);
-            var jitConfig = new JitConfigProvider(corJitFlags, _ryujitOptions);
+            var jitConfig = new JitConfigProvider(corJitFlags, _ryujitOptions, _jitPath);
 
             return new ReadyToRunCodegenCompilation(
                 graph,
