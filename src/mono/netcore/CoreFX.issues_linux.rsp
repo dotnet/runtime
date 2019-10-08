@@ -23,3 +23,6 @@
 
 # Requires precise GC (should be ignored in dotnet/corefx for mono)
 -nomethod System.Collections.Concurrent.Tests.ConcurrentQueueTests.ReferenceTypes_NulledAfterDequeue
+
+# Requires NativeLibrary implementation
+-nomethod System.Data.Odbc.Tests.DependencyCheckTest.OdbcConnection_OpenWhenOdbcNotInstalled_ThrowsException
