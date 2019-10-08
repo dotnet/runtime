@@ -1,8 +1,10 @@
 name: dotnet-runtime-21
+base: core18
 version: 2.1.13
 summary: Cross-Platform .NET Core Runtime. 
 description: |
-  .NET Core 2.1 Runtime and ASP.NET Core. https://dot.net/core.
+  .NET Core runtimes and libraries which are optimized for running .NET Core apps in production. See https://dot.net/core.
+  .NET Core is a general purpose development platform maintained by Microsoft. 
 
 grade: stable
 confinement: strict
@@ -15,8 +17,6 @@ apps:
       - network-bind
       - removable-media
       - home
-
-base: core18
 
 slots:
   dotnet-runtime:
