@@ -7715,13 +7715,14 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                     if (lsl > 0)
                     {
                         // Generate code to set tmpReg = base + index*scale
-                        emitIns_R_R_R_I(INS_add, leaBasePartialAddrAttr, tmpReg, memBase->gtRegNum, index->gtRegNum,
-                                        lsl, INS_FLAGS_DONT_CARE, INS_OPTS_LSL);
+                        emitIns_R_R_R_I(INS_add, leaBasePartialAddrAttr, tmpReg, memBase->GetRegNum(),
+                                        index->GetRegNum(), lsl, INS_FLAGS_DONT_CARE, INS_OPTS_LSL);
                     }
                     else // no scale
                     {
                         // Generate code to set tmpReg = base + index
-                        emitIns_R_R_R(INS_add, leaBasePartialAddrAttr, tmpReg, memBase->gtRegNum, index->gtRegNum);
+                        emitIns_R_R_R(INS_add, leaBasePartialAddrAttr, tmpReg, memBase->GetRegNum(),
+                                      index->GetRegNum());
                     }
 
                     noway_assert(emitInsIsLoad(ins) || (tmpReg != dataReg));
@@ -7735,13 +7736,13 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                     codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);
                     // Then add the base register
                     //      rd = rd + base
-                    emitIns_R_R_R(INS_add, leaBasePartialAddrAttr, tmpReg, tmpReg, memBase->gtRegNum);
+                    emitIns_R_R_R(INS_add, leaBasePartialAddrAttr, tmpReg, tmpReg, memBase->GetRegNum());
 
                     noway_assert(emitInsIsLoad(ins) || (tmpReg != dataReg));
-                    noway_assert(tmpReg != index->gtRegNum);
+                    noway_assert(tmpReg != index->GetRegNum());
 
                     // Then load/store dataReg from/to [tmpReg + index*scale]
-                    emitIns_R_R_R_I(ins, attr, dataReg, tmpReg, index->gtRegNum, lsl, INS_FLAGS_DONT_CARE,
+                    emitIns_R_R_R_I(ins, attr, dataReg, tmpReg, index->GetRegNum(), lsl, INS_FLAGS_DONT_CARE,
                                     INS_OPTS_LSL);
                 }
             }
@@ -7750,13 +7751,13 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 if (lsl > 0)
                 {
                     // Then load/store dataReg from/to [memBase + index*scale]
-                    emitIns_R_R_R_I(ins, attr, dataReg, memBase->gtRegNum, index->gtRegNum, lsl, INS_FLAGS_DONT_CARE,
-                                    INS_OPTS_LSL);
+                    emitIns_R_R_R_I(ins, attr, dataReg, memBase->GetRegNum(), index->GetRegNum(), lsl,
+                                    INS_FLAGS_DONT_CARE, INS_OPTS_LSL);
                 }
                 else // no scale
                 {
                     // Then load/store dataReg from/to [memBase + index]
-                    emitIns_R_R_R(ins, attr, dataReg, memBase->gtRegNum, index->gtRegNum);
+                    emitIns_R_R_R(ins, attr, dataReg, memBase->GetRegNum(), index->GetRegNum());
                 }
             }
         }
@@ -7765,7 +7766,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
             if (emitIns_valid_imm_for_ldst_offset(offset, attr))
             {
                 // Then load/store dataReg from/to [memBase + offset]
-                emitIns_R_R_I(ins, attr, dataReg, memBase->gtRegNum, offset);
+                emitIns_R_R_I(ins, attr, dataReg, memBase->GetRegNum(), offset);
             }
             else
             {
@@ -7776,7 +7777,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);
 
                 // Then load/store dataReg from/to [memBase + tmpReg]
-                emitIns_R_R_R(ins, attr, dataReg, memBase->gtRegNum, tmpReg);
+                emitIns_R_R_R(ins, attr, dataReg, memBase->GetRegNum(), tmpReg);
             }
         }
     }
@@ -7785,11 +7786,11 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
         if (offset != 0)
         {
             assert(emitIns_valid_imm_for_add(offset, INS_FLAGS_DONT_CARE));
-            emitIns_R_R_I(ins, attr, dataReg, addr->gtRegNum, offset);
+            emitIns_R_R_I(ins, attr, dataReg, addr->GetRegNum(), offset);
         }
         else
         {
-            emitIns_R_R(ins, attr, dataReg, addr->gtRegNum);
+            emitIns_R_R(ins, attr, dataReg, addr->GetRegNum());
         }
     }
 }
@@ -7816,13 +7817,13 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
 
     if (intConst)
     {
-        emitIns_R_I(ins, attr, dst->gtRegNum, (target_ssize_t)intConst->IconValue());
-        return dst->gtRegNum;
+        emitIns_R_I(ins, attr, dst->GetRegNum(), (target_ssize_t)intConst->IconValue());
+        return dst->GetRegNum();
     }
     else
     {
-        emitIns_R_R(ins, attr, dst->gtRegNum, src->gtRegNum);
-        return dst->gtRegNum;
+        emitIns_R_R(ins, attr, dst->GetRegNum(), src->GetRegNum());
+        return dst->GetRegNum();
     }
 }
 
@@ -7903,19 +7904,20 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
     if (intConst != nullptr)
     {
-        emitIns_R_R_I(ins, attr, dst->gtRegNum, nonIntReg->gtRegNum, (target_ssize_t)intConst->IconValue(), flags);
+        emitIns_R_R_I(ins, attr, dst->GetRegNum(), nonIntReg->GetRegNum(), (target_ssize_t)intConst->IconValue(),
+                      flags);
     }
     else
     {
         if (isMulOverflow)
         {
             regNumber extraReg = dst->GetSingleTempReg();
-            assert(extraReg != dst->gtRegNum);
+            assert(extraReg != dst->GetRegNum());
 
             if ((dst->gtFlags & GTF_UNSIGNED) != 0)
             {
                 // Compute 8 byte result from 4 byte by 4 byte multiplication.
-                emitIns_R_R_R_R(INS_umull, EA_4BYTE, dst->gtRegNum, extraReg, src1->gtRegNum, src2->gtRegNum);
+                emitIns_R_R_R_R(INS_umull, EA_4BYTE, dst->GetRegNum(), extraReg, src1->GetRegNum(), src2->GetRegNum());
 
                 // Overflow exists if the result's high word is non-zero.
                 emitIns_R_I(INS_cmp, attr, extraReg, 0);
@@ -7923,16 +7925,16 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             else
             {
                 // Compute 8 byte result from 4 byte by 4 byte multiplication.
-                emitIns_R_R_R_R(INS_smull, EA_4BYTE, dst->gtRegNum, extraReg, src1->gtRegNum, src2->gtRegNum);
+                emitIns_R_R_R_R(INS_smull, EA_4BYTE, dst->GetRegNum(), extraReg, src1->GetRegNum(), src2->GetRegNum());
 
                 // Overflow exists if the result's high word is not merely a sign bit.
-                emitIns_R_R_I(INS_cmp, attr, extraReg, dst->gtRegNum, 31, INS_FLAGS_DONT_CARE, INS_OPTS_ASR);
+                emitIns_R_R_I(INS_cmp, attr, extraReg, dst->GetRegNum(), 31, INS_FLAGS_DONT_CARE, INS_OPTS_ASR);
             }
         }
         else
         {
             // We can just do the arithmetic, setting the flags if needed.
-            emitIns_R_R_R(ins, attr, dst->gtRegNum, src1->gtRegNum, src2->gtRegNum, flags);
+            emitIns_R_R_R(ins, attr, dst->GetRegNum(), src1->GetRegNum(), src2->GetRegNum(), flags);
         }
     }
 
@@ -7963,7 +7965,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
         codeGen->genJumpToThrowHlpBlk(jumpKind, SCK_OVERFLOW);
     }
 
-    return dst->gtRegNum;
+    return dst->GetRegNum();
 }
 
 #if defined(DEBUG) || defined(LATE_DISASM)

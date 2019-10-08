@@ -1082,7 +1082,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
             }
 
             // Clear the register assignment on the fieldList node, as these are contained.
-            arg->gtRegNum = REG_NA;
+            arg->SetRegNum(REG_NA);
         }
     }
     else
@@ -1336,7 +1336,7 @@ void Lowering::LowerArg(GenTreeCall* call, GenTree** ppArg)
             // Although the hi argument needs to be pushed first, that will be handled by the general case,
             // in which the fields will be reversed.
             assert(info->numSlots == 2);
-            newArg->gtRegNum = REG_STK;
+            newArg->SetRegNum(REG_STK);
             BlockRange().InsertBefore(arg, fieldList, newArg);
         }
 
@@ -1457,7 +1457,7 @@ GenTree* Lowering::LowerFloatArgReg(GenTree* arg, regNumber regNum)
     assert(varTypeIsFloating(floatType));
     var_types intType = (floatType == TYP_DOUBLE) ? TYP_LONG : TYP_INT;
     GenTree*  intArg  = comp->gtNewBitCastNode(intType, arg);
-    intArg->gtRegNum  = regNum;
+    intArg->SetRegNum(regNum);
 #ifdef _TARGET_ARM_
     if (floatType == TYP_DOUBLE)
     {
@@ -5715,7 +5715,7 @@ void Lowering::ContainCheckNode(GenTree* node)
         case GT_PUTARG_SPLIT:
 #endif // FEATURE_ARG_SPLIT
             // The regNum must have been set by the lowering of the call.
-            assert(node->gtRegNum != REG_NA);
+            assert(node->GetRegNum() != REG_NA);
             break;
 #ifdef _TARGET_XARCH_
         case GT_INTRINSIC:
