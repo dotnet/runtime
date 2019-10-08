@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
@@ -28,7 +29,6 @@ namespace System.Text.Json
                 }
 
                 state.Current.WriteObjectOrArrayStart(ClassType.Object, writer, options);
-                state.Current.PropertyEnumeratorActive = true;
                 state.Current.MoveToNextProperty = true;
             }
 
@@ -38,7 +38,7 @@ namespace System.Text.Json
             }
 
             // Determine if we are done enumerating properties.
-            if (state.Current.PropertyEnumeratorActive)
+            if (state.Current.ExtensionDataStatus != ExtensionDataWriteStatus.Finished)
             {
                 // If ClassType.Unknown at this point, we are typeof(object) which should not have any properties.
                 Debug.Assert(state.Current.JsonClassInfo.ClassType != ClassType.Unknown);
@@ -58,10 +58,6 @@ namespace System.Text.Json
             if (state.Current.PopStackOnEndObject)
             {
                 state.Pop();
-            }
-            else
-            {
-                state.Current.EndObject();
             }
 
             return true;

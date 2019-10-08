@@ -297,9 +297,6 @@
   <data name="ZeroDepthAtEnd" xml:space="preserve">
     <value>Expected depth to be zero at the end of the JSON payload. There is an open JSON object or array that should be closed.</value>
   </data>
-  <data name="DeserializeDataRemaining" xml:space="preserve">
-    <value>The provided data of length {0} has remaining bytes {1}.</value>
-  </data>
   <data name="DeserializeUnableToConvertValue" xml:space="preserve">
     <value>The JSON value could not be converted to {0}.</value>
   </data>
