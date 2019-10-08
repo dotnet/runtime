@@ -54,7 +54,7 @@ namespace System.Text.Json
 
             state.Current.CollectionPropertyInitialized = true;
 
-            // We should not be processing custom converters here.
+            // We should not be processing custom converters here (converters are of ClassType.Value).
             Debug.Assert(state.Current.JsonClassInfo.ClassType != ClassType.Value);
 
             // Set or replace the existing enumerable value.

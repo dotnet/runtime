@@ -65,5 +65,41 @@ namespace System.Text.Json.Serialization.Tests
                     => writer.WriteStringValue(value);
             }
         }
+
+        private class ConverterReturningNull : JsonConverter<Customer>
+        {
+            public override Customer Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                Assert.Equal(JsonTokenType.StartObject, reader.TokenType);
+
+                bool rc = reader.Read();
+                Assert.True(rc);
+
+                Assert.Equal(JsonTokenType.EndObject, reader.TokenType);
+
+                return null;
+            }
+
+            public override void Write(Utf8JsonWriter writer, Customer value, JsonSerializerOptions options)
+            {
+                throw new NotSupportedException();
+            }
+        }
+
+        [Fact]
+        public static void VerifyConverterWithTrailingWhitespace()
+        {
+            string json = "{}   ";
+
+            var options = new JsonSerializerOptions();
+            options.Converters.Add(new ConverterReturningNull());
+
+            byte[] utf8 = Encoding.UTF8.GetBytes(json);
+
+            // The serializer will finish reading the whitespace and no exception will be thrown.
+            Customer c = JsonSerializer.Deserialize<Customer>(utf8, options);
+
+            Assert.Null(c);
+        }
     }
 }

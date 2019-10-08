@@ -353,7 +353,8 @@ namespace System.Text.Json
             Debug.Assert(ShouldDeserialize);
 
             JsonPropertyInfo propertyInfo;
-            if (ElementClassInfo != null && (propertyInfo = ElementClassInfo.PolicyProperty) != null)
+            JsonClassInfo elementClassInfo = ElementClassInfo;
+            if (elementClassInfo != null && (propertyInfo = elementClassInfo.PolicyProperty) != null)
             {
                 // Forward the setter to the value-based JsonPropertyInfo.
                 propertyInfo.ReadEnumerable(tokenType, ref state, ref reader);

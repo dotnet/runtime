@@ -438,9 +438,15 @@ namespace System.Text.Json
                 key = MemoryMarshal.Read<ulong>(propertyName);
 
                 // Max out the length byte.
-                // The comparison logic tests for equality against the full contents instead of just
-                // the key if the property name length is >7.
+                // This will cause the comparison logic to always test for equality against the full contents
+                // when the first 7 bytes are the same.
                 key |= 0xFF00000000000000;
+
+                // It is also possible to include the length up to 0xFF in order to prevent false positives
+                // when the first 7 bytes match but a different length (up to 0xFF). However the extra logic
+                // slows key generation in the majority of cases:
+                // key &= 0x00FFFFFFFFFFFFFF;
+                // key |= (ulong) 7 << Math.Max(length, 0xFF);
             }
             else if (length > 3)
             {
@@ -448,25 +454,25 @@ namespace System.Text.Json
 
                 if (length == 7)
                 {
-                    key |= (ulong) propertyName[6] << (6 * BitsInByte)
-                        | (ulong) propertyName[5] << (5 * BitsInByte)
-                        | (ulong) propertyName[4] << (4 * BitsInByte)
-                        | (ulong) 7 << (7 * BitsInByte);
+                    key |= (ulong)propertyName[6] << (6 * BitsInByte)
+                        | (ulong)propertyName[5] << (5 * BitsInByte)
+                        | (ulong)propertyName[4] << (4 * BitsInByte)
+                        | (ulong)7 << (7 * BitsInByte);
                 }
                 else if (length == 6)
                 {
-                    key |= (ulong) propertyName[5] << (5 * BitsInByte)
-                        | (ulong) propertyName[4] << (4 * BitsInByte)
-                        | (ulong) 6 << (7 * BitsInByte);
+                    key |= (ulong)propertyName[5] << (5 * BitsInByte)
+                        | (ulong)propertyName[4] << (4 * BitsInByte)
+                        | (ulong)6 << (7 * BitsInByte);
                 }
                 else if (length == 5)
                 {
-                    key |= (ulong) propertyName[4] << (4 * BitsInByte)
-                        | (ulong) 5 << (7 * BitsInByte);
+                    key |= (ulong)propertyName[4] << (4 * BitsInByte)
+                        | (ulong)5 << (7 * BitsInByte);
                 }
                 else
                 {
-                    key |= (ulong) 4 << (7 * BitsInByte);
+                    key |= (ulong)4 << (7 * BitsInByte);
                 }
             }
             else if (length > 1)
@@ -475,18 +481,18 @@ namespace System.Text.Json
 
                 if (length == 3)
                 {
-                    key |= (ulong) propertyName[2] << (2 * BitsInByte)
-                        | (ulong) 3 << (7 * BitsInByte);
+                    key |= (ulong)propertyName[2] << (2 * BitsInByte)
+                        | (ulong)3 << (7 * BitsInByte);
                 }
                 else
                 {
-                    key |= (ulong) 2 << (7 * BitsInByte);
+                    key |= (ulong)2 << (7 * BitsInByte);
                 }
             }
             else if (length == 1)
             {
                 key = propertyName[0]
-                    | (ulong) 1 << (7 * BitsInByte);
+                    | (ulong)1 << (7 * BitsInByte);
             }
             else
             {
