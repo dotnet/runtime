@@ -6,6 +6,7 @@ using System.Collections;
 using System.Reflection;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System
 {
@@ -30,7 +31,7 @@ namespace System
 		string _helpURL;
 		object _traceIPs;
 		string? _stackTraceString;
-		string? _unused3;
+		string? _remoteStackTraceString;
 		int _unused4;
 		object _dynamicMethods; // Dynamic methods referenced by the stack trace
 		int _HResult;
@@ -55,12 +56,15 @@ namespace System
 
 		string? GetStackTrace (bool needFileInfo)
 		{
-			if (_stackTraceString != null)
-				return _stackTraceString;
+			string? stackTraceString = _stackTraceString;
+			string? remoteStackTraceString = _remoteStackTraceString;
+				
+			if (stackTraceString != null)
+				return remoteStackTraceString + stackTraceString;
 			if (_traceIPs == null)
-				return null;
+				return remoteStackTraceString;
 
-			return new StackTrace (this, needFileInfo).ToString (System.Diagnostics.StackTrace.TraceFormat.Normal);
+			return remoteStackTraceString + new StackTrace (this, needFileInfo).ToString (System.Diagnostics.StackTrace.TraceFormat.Normal);
 		}
 
 		internal DispatchState CaptureDispatchState ()
@@ -96,10 +100,17 @@ namespace System
 		internal void SetCurrentStackTrace ()
 		{
 			// Check to see if the exception already has a stack set in it.
-			if (_stackTraceString != null)
-				ThrowHelper.ThrowInvalidOperationException();
+			if (_traceIPs != null || _stackTraceString != null || _remoteStackTraceString != null) {
+				ThrowHelper.ThrowInvalidOperationException ();
+			}
 
-			// TODO: Store the current stack trace into this exception
+			// Store the current stack trace into the "remote" stack trace, which was originally introduced to support
+			// remoting of exceptions cross app-domain boundaries, and is thus concatenated into Exception.StackTrace
+			// when it's retrieved.
+			var sb = new StringBuilder (256);
+			new StackTrace (fNeedFileInfo: true).ToString (System.Diagnostics.StackTrace.TraceFormat.TrailingNewLine, sb);
+			sb.AppendLine (SR.Exception_EndStackTraceFromPreviousThrow);
+			_remoteStackTraceString = sb.ToString ();
 		}
 
 		string? CreateSourceName ()
@@ -129,7 +140,7 @@ namespace System
 		static IDictionary CreateDataContainer () => new ListDictionaryInternal ();
 
 		static string? SerializationWatsonBuckets => null;
-		static string? SerializationRemoteStackTraceString => null;
+		string? SerializationRemoteStackTraceString => _remoteStackTraceString;
 		string? SerializationStackTraceString => GetStackTrace (true);
 	}
 }
