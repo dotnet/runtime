@@ -2695,7 +2695,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
             call->gtCallArgs = gtPrependNewCallArg(stubAddrArg, call->gtCallArgs);
 
             numArgs++;
-            nonStandardArgs.Add(stubAddrArg, stubAddrArg->gtRegNum);
+            nonStandardArgs.Add(stubAddrArg, stubAddrArg->GetRegNum());
         }
         else
         {
@@ -2748,15 +2748,15 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
     {
         assert(call->gtEntryPoint.addr != nullptr);
 
-        size_t   addrValue            = (size_t)call->gtEntryPoint.addr;
-        GenTree* indirectCellAddress  = gtNewIconHandleNode(addrValue, GTF_ICON_FTN_ADDR);
-        indirectCellAddress->gtRegNum = REG_R2R_INDIRECT_PARAM;
+        size_t   addrValue           = (size_t)call->gtEntryPoint.addr;
+        GenTree* indirectCellAddress = gtNewIconHandleNode(addrValue, GTF_ICON_FTN_ADDR);
+        indirectCellAddress->SetRegNum(REG_R2R_INDIRECT_PARAM);
 
         // Push the stub address onto the list of arguments.
         call->gtCallArgs = gtPrependNewCallArg(indirectCellAddress, call->gtCallArgs);
 
         numArgs++;
-        nonStandardArgs.Add(indirectCellAddress, indirectCellAddress->gtRegNum);
+        nonStandardArgs.Add(indirectCellAddress, indirectCellAddress->GetRegNum());
     }
 
 #endif // FEATURE_READYTORUN_COMPILER && _TARGET_ARMARCH_
@@ -7467,8 +7467,8 @@ void Compiler::fgMorphTailCallViaHelper(GenTreeCall* call, void* pfnCopyArgs)
 
         // We don't need this arg to be in the normal stub register, so
         // clear out the register assignment.
-        assert(stubAddrArg->gtRegNum == virtualStubParamInfo->GetReg());
-        stubAddrArg->gtRegNum = REG_NA;
+        assert(stubAddrArg->GetRegNum() == virtualStubParamInfo->GetReg());
+        stubAddrArg->SetRegNum(REG_NA);
 
         // And push the stub address onto the list of arguments
         call->gtCallArgs = gtPrependNewCallArg(stubAddrArg, call->gtCallArgs);
@@ -7707,8 +7707,8 @@ void Compiler::fgMorphTailCallViaHelper(GenTreeCall* call, void* pfnCopyArgs)
 
         // We don't need this arg to be in the normal stub register, so
         // clear out the register assignment.
-        assert(stubAddrArg->gtRegNum == virtualStubParamInfo->GetReg());
-        stubAddrArg->gtRegNum = REG_NA;
+        assert(stubAddrArg->GetRegNum() == virtualStubParamInfo->GetReg());
+        stubAddrArg->SetRegNum(REG_NA);
 
         // And push the stub address onto the list of arguments
         call->gtCallArgs = gtPrependNewCallArg(stubAddrArg, call->gtCallArgs);
@@ -7803,7 +7803,7 @@ GenTree* Compiler::fgGetStubAddrArg(GenTreeCall* call)
         stubAddrArg  = gtNewIconHandleNode(addr, GTF_ICON_FTN_ADDR);
     }
     assert(stubAddrArg != nullptr);
-    stubAddrArg->gtRegNum = virtualStubParamInfo->GetReg();
+    stubAddrArg->SetRegNum(virtualStubParamInfo->GetReg());
     return stubAddrArg;
 }
 

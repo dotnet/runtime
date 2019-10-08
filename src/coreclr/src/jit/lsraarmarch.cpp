@@ -256,7 +256,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
             {
 #ifdef DEBUG
                 assert(use.GetNode()->OperIs(GT_PUTARG_REG));
-                assert(use.GetNode()->gtRegNum == argReg);
+                assert(use.GetNode()->GetRegNum() == argReg);
                 // Update argReg for the next putarg_reg (if any)
                 argReg = genRegArgNext(argReg);
 
@@ -268,7 +268,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
                 }
 #endif // _TARGET_ARM_
 #endif
-                BuildUse(use.GetNode(), genRegMask(use.GetNode()->gtRegNum));
+                BuildUse(use.GetNode(), genRegMask(use.GetNode()->GetRegNum()));
                 srcCount++;
             }
         }
@@ -287,7 +287,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
         else
         {
             assert(argNode->OperIs(GT_PUTARG_REG));
-            assert(argNode->gtRegNum == argReg);
+            assert(argNode->GetRegNum() == argReg);
             HandleFloatVarArgs(call, argNode, &callHasFloatRegArgs);
 #ifdef _TARGET_ARM_
             // The `double` types have been transformed to `long` on armel,
@@ -296,14 +296,14 @@ int LinearScan::BuildCall(GenTreeCall* call)
             if (argNode->TypeGet() == TYP_LONG)
             {
                 assert(argNode->IsMultiRegNode());
-                BuildUse(argNode, genRegMask(argNode->gtRegNum), 0);
-                BuildUse(argNode, genRegMask(genRegArgNext(argNode->gtRegNum)), 1);
+                BuildUse(argNode, genRegMask(argNode->GetRegNum()), 0);
+                BuildUse(argNode, genRegMask(genRegArgNext(argNode->GetRegNum())), 1);
                 srcCount += 2;
             }
             else
 #endif // _TARGET_ARM_
             {
-                BuildUse(argNode, genRegMask(argNode->gtRegNum));
+                BuildUse(argNode, genRegMask(argNode->GetRegNum()));
                 srcCount++;
             }
         }
@@ -470,7 +470,7 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
     // Registers for split argument corresponds to source
     int dstCount = argNode->gtNumRegs;
 
-    regNumber argReg  = argNode->gtRegNum;
+    regNumber argReg  = argNode->GetRegNum();
     regMaskTP argMask = RBM_NONE;
     for (unsigned i = 0; i < argNode->gtNumRegs; i++)
     {
