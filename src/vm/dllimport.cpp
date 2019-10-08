@@ -5876,8 +5876,7 @@ private:
 };  // class LoadLibErrorTracker
 
 // Load the library directly. On Unix systems, don't register it yet with PAL. 
-// * External callers like AssemblyNative::InternalLoadUnmanagedDllFromPath() and the upcoming 
-//   System.Runtime.InteropServices.NativeLibrary.Load() need the raw system handle
+// * External callers like System.Runtime.InteropServices.NativeLibrary.Load() need the raw system handle
 // * Internal callers like LoadLibraryModule() can convert this handle to a HMODULE via PAL APIs on Unix
 static NATIVE_LIBRARY_HANDLE LocalLoadLibraryHelper( LPCWSTR name, DWORD flags, LoadLibErrorTracker *pErrorTracker )
 {
