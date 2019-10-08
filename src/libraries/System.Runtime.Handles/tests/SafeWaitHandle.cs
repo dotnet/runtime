@@ -6,7 +6,7 @@ using System;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
 
-public partial class SafeWaitHandle_4000_Tests
+public partial class SafeWaitHandleTests
 {
     [Fact]
     public static void SafeWaitHandle_invalid()
@@ -22,5 +22,8 @@ public partial class SafeWaitHandle_4000_Tests
         SafeWaitHandle swh = new SafeWaitHandle(new IntPtr(1), true);
         Assert.False(swh.IsClosed);
         Assert.False(swh.IsInvalid);
+
+        // Prevent finalization. Closing of the bogus handle has unpredictable results.
+        swh.SetHandleAsInvalid();
     }
 }
