@@ -45,7 +45,7 @@ namespace System.Drawing
             0xFF9932CC,     // DarkOrchid
             0xFF8B0000,     // DarkRed
             0xFFE9967A,     // DarkSalmon
-            0xFF8FBC8B,     // DarkSeaGreen
+            0xFF8FBC8F,     // DarkSeaGreen
             0xFF483D8B,     // DarkSlateBlue
             0xFF2F4F4F,     // DarkSlateGray
             0xFF00CED1,     // DarkTurquoise
