@@ -39,7 +39,7 @@ namespace System.Globalization.Tests
 
             // Slovak
             yield return new object[] { s_slovakCompare, "ch", "h", 0, 2, CompareOptions.None, -1 };
-            yield return new object[] { s_slovakCompare, "chodit hore", "HO", 0, 2, CompareOptions.IgnoreCase, -1 };
+            yield return new object[] { s_slovakCompare, "chodit hore", "HO", 0, 11, CompareOptions.IgnoreCase, 7 };
             yield return new object[] { s_slovakCompare, "chh", "h", 0, 3, CompareOptions.None, 2 };
 
             // Turkish
