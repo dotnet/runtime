@@ -371,8 +371,8 @@ OPDEF(MINT_CASTCLASS_COMMON, "castclass.common", 2, Pop0, Push0, MintOpClassToke
 OPDEF(MINT_ISINST_COMMON, "isinst.common", 2, Pop1, Push1, MintOpClassToken)
 OPDEF(MINT_NEWARR, "newarr", 2, Pop1, Push1, MintOpClassToken)
 OPDEF(MINT_BOX, "box", 3, Pop0, Push0, MintOpTwoShorts)
-OPDEF(MINT_BOX_VT, "box.vt", 3, Pop0, Push0, MintOpTwoShorts)
-OPDEF(MINT_BOX_NULLABLE, "box.nullable", 3, Pop0, Push0, MintOpTwoShorts)
+OPDEF(MINT_BOX_VT, "box.vt", 4, Pop0, Push0, MintOpTwoShorts)
+OPDEF(MINT_BOX_NULLABLE, "box.nullable", 4, Pop0, Push0, MintOpTwoShorts)
 OPDEF(MINT_UNBOX, "unbox", 2, Pop1, Push1, MintOpClassToken)
 OPDEF(MINT_LDTOKEN, "ldtoken", 2, Pop0, Push1, MintOpClassToken) /* not really */
 OPDEF(MINT_LDFTN, "ldftn", 2, Pop0, Push1, MintOpMethodToken)

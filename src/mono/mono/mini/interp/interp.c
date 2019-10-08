@@ -3104,8 +3104,7 @@ mono_interp_box_nullable (InterpFrame* frame, const guint16* ip, stackval* sp, M
 	int const size = mono_class_value_size (c, NULL);
 
 	guint16 offset = ip [2];
-	gboolean const pop_vt_sp = !(offset & BOX_NOT_CLEAR_VT_SP);
-	offset &= ~BOX_NOT_CLEAR_VT_SP;
+	guint16 pop_vt_sp = !ip [3];
 
 	sp [-1 - offset].data.o = mono_nullable_box (sp [-1 - offset].data.p, c, error);
 	mono_interp_error_cleanup (error); /* FIXME: don't swallow the error */
@@ -3125,8 +3124,7 @@ mono_interp_box_vt (InterpFrame* frame, const guint16* ip, stackval* sp)
 	int const size = mono_class_value_size (c, NULL);
 
 	guint16 offset = ip [2];
-	gboolean const pop_vt_sp = !(offset & BOX_NOT_CLEAR_VT_SP);
-	offset &= ~BOX_NOT_CLEAR_VT_SP;
+	guint16 pop_vt_sp = !ip [3];
 
 	OBJREF (o) = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
 	mono_value_copy_internal (mono_object_get_data (o), sp [-1 - offset].data.p, c);
@@ -4605,7 +4603,7 @@ common_vcall:
 			guint16 param_count;
 			guint16 imethod_index = ip [1];
 
-			const gboolean is_inlined = imethod_index == 0xffff;
+			const gboolean is_inlined = imethod_index == INLINED_METHOD_FLAG;
 
 			param_count = ip [2];
 
@@ -5255,12 +5253,12 @@ common_vcall:
 		}
 		MINT_IN_CASE(MINT_BOX_VT) {
 			vt_sp -= mono_interp_box_vt (frame, ip, sp);
-			ip += 3;
+			ip += 4;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_BOX_NULLABLE) {
 			vt_sp -= mono_interp_box_nullable (frame, ip, sp, error);
-			ip += 3;
+			ip += 4;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_NEWARR) {

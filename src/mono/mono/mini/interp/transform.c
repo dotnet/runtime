@@ -2021,7 +2021,8 @@ interp_constrained_box (TransformData *td, MonoDomain *domain, MonoClass *constr
 		g_assert (mt == MINT_TYPE_VT);
 		interp_add_ins (td, MINT_BOX_NULLABLE);
 		td->last_ins->data [0] = get_data_item_index (td, constrained_class);
-		td->last_ins->data [1] = csignature->param_count | ((td->sp - 1 - csignature->param_count)->type != STACK_TYPE_MP ? 0 : BOX_NOT_CLEAR_VT_SP);
+		td->last_ins->data [1] = csignature->param_count;
+		td->last_ins->data [2] = (td->sp - 1 - csignature->param_count)->type != STACK_TYPE_MP ? 0 : 1;
 	} else {
 		MonoVTable *vtable = mono_class_vtable_checked (domain, constrained_class, error);
 		return_if_nok (error);
@@ -2029,7 +2030,8 @@ interp_constrained_box (TransformData *td, MonoDomain *domain, MonoClass *constr
 		if (mt == MINT_TYPE_VT) {
 			interp_add_ins (td, MINT_BOX_VT);
 			td->last_ins->data [0] = get_data_item_index (td, vtable);
-			td->last_ins->data [1] = csignature->param_count | ((td->sp - 1 - csignature->param_count)->type != STACK_TYPE_MP ? 0 : BOX_NOT_CLEAR_VT_SP);
+			td->last_ins->data [1] = csignature->param_count;
+			td->last_ins->data [2] = (td->sp - 1 - csignature->param_count)->type != STACK_TYPE_MP ? 0 : 1;
 		} else {
 			interp_add_ins (td, MINT_BOX);
 			td->last_ins->data [0] = get_data_item_index (td, vtable);
@@ -4337,7 +4339,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 							goto_if_nok (error, exit);
 
 							if (interp_inline_method (td, m, mheader, error)) {
-								newobj_fast->data [0] = 0xffff;
+								newobj_fast->data [0] = INLINED_METHOD_FLAG;
 								break;
 							}
 						}
@@ -6109,7 +6111,7 @@ get_inst_stack_usage (TransformData *td, InterpInst *ins, int *pop, int *push)
 		}
 		case MINT_NEWOBJ_FAST: {
 			int param_count = ins->data [1];
-			gboolean is_inlined = ins->data [0] == 0xffff;
+			gboolean is_inlined = ins->data [0] == INLINED_METHOD_FLAG;
 			if (is_inlined) {
 				// This needs to be handled explictly during cprop, in order to properly
 				// keep track of stack contents
@@ -6578,7 +6580,7 @@ retry:
 			sp [-1].ins = NULL;
 			sp++;
 		} else if (ins->opcode >= MINT_BOX && ins->opcode <= MINT_BOX_NULLABLE) {
-			int offset = (ins->data [1] & ~BOX_NOT_CLEAR_VT_SP);
+			int offset = ins->data [1];
 			// Clear the stack slot that is boxed
 			memset (&sp [-1 - offset], 0, sizeof (StackContentInfo));
 			// Make sure that the instructions that pushed this stack slot can't be
@@ -6596,7 +6598,7 @@ retry:
 				sp [-i].ins = NULL;
 			memset (sp, 0, sizeof (StackContentInfo));
 			sp++;
-		} else if (ins->opcode == MINT_NEWOBJ_FAST && ins->data [0] == 0xffff) {
+		} else if (ins->opcode == MINT_NEWOBJ_FAST && ins->data [0] == INLINED_METHOD_FLAG) {
 			int param_count = ins->data [1];
 			// memmove the stack values while clearing ins, to prevent instruction removal
 			for (int i = 1; i <= param_count; i++) {

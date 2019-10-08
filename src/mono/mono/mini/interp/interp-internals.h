@@ -22,7 +22,7 @@
 #define MINT_TYPE_P  9
 #define MINT_TYPE_VT 10
 
-#define BOX_NOT_CLEAR_VT_SP 0x4000
+#define INLINED_METHOD_FLAG 0xffff
 
 #define MINT_VT_ALIGNMENT 8
 
