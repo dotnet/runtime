@@ -297,22 +297,6 @@ void QCALLTYPE AssemblyNative::LoadFromPath(INT_PTR ptrNativeAssemblyLoadContext
     END_QCALL;
 }
 
-// static
-INT_PTR QCALLTYPE AssemblyNative::InternalLoadUnmanagedDllFromPath(LPCWSTR unmanagedLibraryPath)
-{
-    QCALL_CONTRACT;
-
-    NATIVE_LIBRARY_HANDLE moduleHandle = nullptr;
-
-    BEGIN_QCALL;
-
-    moduleHandle = NDirect::LoadLibraryFromPath(unmanagedLibraryPath, true);
-
-    END_QCALL;
-
-    return reinterpret_cast<INT_PTR>(moduleHandle);
-}
-
 /*static */
 void QCALLTYPE AssemblyNative::LoadFromStream(INT_PTR ptrNativeAssemblyLoadContext, INT_PTR ptrAssemblyArray, 
                                               INT32 cbAssemblyArrayLength, INT_PTR ptrSymbolArray, INT32 cbSymbolArrayLength, 
