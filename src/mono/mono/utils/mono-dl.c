@@ -152,7 +152,7 @@ get_dl_name_from_libtool (const char *libtool_file)
 static const char *
 fix_libc_name (const char *name)
 {
-	if (strcmp (name, "libc") == 0) {
+	if (name != NULL && strcmp (name, "libc") == 0) {
 		// Taken from CoreCLR: https://github.com/dotnet/coreclr/blob/6b0dab793260d36e35d66c82678c63046828d01b/src/pal/src/loader/module.cpp#L568-L576
 #if defined (HOST_DARWIN)
 		return "/usr/lib/libc.dylib";
