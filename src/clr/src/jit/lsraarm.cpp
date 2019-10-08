@@ -752,7 +752,7 @@ int LinearScan::BuildNode(GenTree* tree)
         {
             srcCount = 1;
             assert(dstCount == 1);
-            regNumber argReg  = tree->gtRegNum;
+            regNumber argReg  = tree->GetRegNum();
             regMaskTP argMask = genRegMask(argReg);
 
             // If type of node is `long` then it is actually `double`.

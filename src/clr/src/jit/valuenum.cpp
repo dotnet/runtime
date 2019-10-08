@@ -8480,7 +8480,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
 
         // Find the corresponding late arg.
         GenTree* indirectCellAddress = call->fgArgInfo->GetArgNode(0);
-        assert(indirectCellAddress->IsCnsIntOrI() && indirectCellAddress->gtRegNum == REG_R2R_INDIRECT_PARAM);
+        assert(indirectCellAddress->IsCnsIntOrI() && indirectCellAddress->GetRegNum() == REG_R2R_INDIRECT_PARAM);
 #endif // DEBUG
 
         // For ARM indirectCellAddress is consumed by the call itself, so it should have added as an implicit argument

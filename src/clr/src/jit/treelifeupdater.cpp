@@ -96,7 +96,7 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree)
                 {
                     compiler->codeGen->genUpdateVarReg(varDsc, tree);
                 }
-                if (varDsc->lvIsInReg() && tree->gtRegNum != REG_NA)
+                if (varDsc->lvIsInReg() && tree->GetRegNum() != REG_NA)
                 {
                     compiler->codeGen->genUpdateRegLife(varDsc, isBorn, isDying DEBUGARG(tree));
                 }

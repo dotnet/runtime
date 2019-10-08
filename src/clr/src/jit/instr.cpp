@@ -704,7 +704,7 @@ AGAIN:
             {
                 // TODO-LdStArch-Bug: Should regTmp be a dst on the node or an internal reg?
                 // Either way, it is not currently being handled by Lowering.
-                regNumber regTmp = tree->gtRegNum;
+                regNumber regTmp = tree->GetRegNum();
                 assert(regTmp != REG_NA);
                 GetEmitter()->emitIns_R_S(ins_Load(tree->TypeGet()), size, regTmp, varNum, offs);
                 GetEmitter()->emitIns_R_R(ins, size, regTmp, reg, flags);
@@ -867,7 +867,7 @@ AGAIN:
 
                 default:
                     regNumber regTmp;
-                    regTmp = tree->gtRegNum;
+                    regTmp = tree->GetRegNum();
 
                     GetEmitter()->emitIns_R_S(ins_Load(tree->TypeGet()), size, regTmp, varNum, offs);
                     GetEmitter()->emitIns_R_R(ins, size, reg, regTmp, flags);
@@ -1162,7 +1162,7 @@ void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenT
     }
     else
     {
-        regNumber rmOpReg = rmOp->gtRegNum;
+        regNumber rmOpReg = rmOp->GetRegNum();
         GetEmitter()->emitIns_SIMD_R_R_I(ins, attr, reg1, rmOpReg, ival);
     }
 }
