@@ -79,9 +79,6 @@ namespace System.Runtime.Loader
         }
 #endif
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern IntPtr InternalLoadUnmanagedDllFromPath(string unmanagedDllPath);
-
         // This method is invoked by the VM when using the host-provided assembly load context
         // implementation.
         private static IntPtr ResolveUnmanagedDll(string unmanagedDllName, IntPtr gchManagedAssemblyLoadContext)
