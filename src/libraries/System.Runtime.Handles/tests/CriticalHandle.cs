@@ -6,7 +6,7 @@ using System;
 using System.Runtime.InteropServices;
 using Xunit;
 
-public partial class CriticalHandle_4000_Tests
+public partial class CriticalHandleTests
 {
     private class MyCriticalHandle : CriticalHandle
     {
