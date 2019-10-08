@@ -2647,7 +2647,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         assert(arg2 != nullptr);
         nonStandardArgs.Add(arg2, REG_LNGARG_HI);
     }
-#else  // !_TARGET_X86_
+#else // !_TARGET_X86_
     // TODO-X86-CQ: Currently RyuJIT/x86 passes args on the stack, so this is not needed.
     // If/when we change that, the following code needs to be changed to correctly support the (TBD) managed calling
     // convention for x86/SSE.
@@ -2669,6 +2669,9 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
     // We are allowed to have a Fixed Return Buffer argument combined
     // with any of the remaining non-standard arguments
     //
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
+#if !defined(FEATURE_CORECLR)
     if (call->IsUnmanaged() && !opts.ShouldUsePInvokeHelpers())
     {
         assert(!call->gtCallCookie);
@@ -2681,7 +2684,9 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 
         nonStandardArgs.Add(cns, REG_PINVOKE_COOKIE_PARAM);
     }
-    else if (call->IsVirtualStub())
+    else
+#endif // !defined(FEATURE_CORECLR)
+        if (call->IsVirtualStub())
     {
         if (!call->IsTailCallViaHelper())
         {
