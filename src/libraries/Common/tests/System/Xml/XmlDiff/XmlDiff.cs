@@ -6,8 +6,6 @@ using System.Text;
 using System.IO;
 using System.Diagnostics;
 
-[assembly: System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAssembly]
-
 namespace System.Xml.XmlDiff
 {
     internal enum DiffType

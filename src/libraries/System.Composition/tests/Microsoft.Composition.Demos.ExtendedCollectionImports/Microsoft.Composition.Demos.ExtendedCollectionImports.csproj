@@ -4,14 +4,10 @@
     <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="Dictionaries\DictionaryExportDescriptorProvider.cs" />
     <Compile Include="Util\Formatters.cs" />
     <Compile Include="OrderedImportManyAttribute.cs" />
     <Compile Include="OrderedCollections\OrderedImportManyExportDescriptorProvider.cs" />
     <Compile Include="KeyByMetadataAttribute.cs" />
-    <Compile Include="$(CommonPath)\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAssemblyAttribute.cs">
-      <Link>Common\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAssemblyAttribute.cs</Link>
-    </Compile>
   </ItemGroup>
 </Project>

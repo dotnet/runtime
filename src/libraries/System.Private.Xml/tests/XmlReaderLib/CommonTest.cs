@@ -6,8 +6,6 @@ using OLEDB.Test.ModuleCore;
 using System.IO;
 using XmlCoreTest.Common;
 
-[assembly: System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAssembly]
-
 namespace System.Xml.Tests
 {
     ////////////////////////////////////////////////////////////////

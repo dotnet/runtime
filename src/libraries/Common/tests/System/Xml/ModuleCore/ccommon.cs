@@ -5,8 +5,6 @@
 using System;
 using System.Diagnostics;
 
-[assembly: System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAssembly]
-
 namespace OLEDB.Test.ModuleCore
 {
     ////////////////////////////////////////////////////////////////
