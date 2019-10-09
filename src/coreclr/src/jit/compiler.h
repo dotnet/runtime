@@ -1457,8 +1457,7 @@ public:
 #endif // FEATURE_VARARG
     }
 
-    __declspec(property(get = getIsHfaArg)) bool isHfaArg;
-    bool getIsHfaArg()
+    bool IsHfaArg()
     {
 #ifdef FEATURE_HFA
         return IsHfa(_hfaElemKind);
@@ -1545,7 +1544,7 @@ public:
             }
 #endif // _TARGET_ARM_
 
-            if (!isHfaArg)
+            if (!IsHfaArg())
             {
                 // We haven't previously set this; do so now.
                 _hfaElemKind = HfaElemKindFromType(type);
