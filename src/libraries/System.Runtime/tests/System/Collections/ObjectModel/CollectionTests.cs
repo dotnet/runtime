@@ -325,6 +325,33 @@ namespace System.Collections.ObjectModel.Tests
             Assert.Throws<NotSupportedException>(() => collection.RemoveAt(0));
         }
 
+        [Fact]
+        public void IList_Add_ValidItemButThrowsInvalidCastExceptionFromOverride_ThrowsInvalidCastException()
+        {
+            var collection = new ObservableCollection<int>();
+            collection.CollectionChanged += delegate { throw new InvalidCastException(); };
+
+            Assert.Throws<InvalidCastException>(() => ((IList)collection).Add(1));
+        }
+
+        [Fact]
+        public void IList_Insert_ValidItemButThrowsInvalidCastExceptionFromOverride_ThrowsInvalidCastException()
+        {
+            var collection = new ObservableCollection<int>();
+            collection.CollectionChanged += delegate { throw new InvalidCastException(); };
+
+            Assert.Throws<InvalidCastException>(() => ((IList)collection).Insert(0, 1));
+        }
+
+        [Fact]
+        public void IList_Item_Set_ValidItemButThrowsInvalidCastExceptionFromOverride_ThrowsInvalidCastException()
+        {
+            var collection = new ObservableCollection<int>() { 1 };
+            collection.CollectionChanged += delegate { throw new InvalidCastException(); };
+
+            Assert.Throws<InvalidCastException>(() => ((IList)collection)[0] = 2);
+        }
+
         private class TestCollection<T> : Collection<T>
         {
             public TestCollection()
