@@ -169,21 +169,6 @@ void Assembly::SetMDImport(IMDInternalImport *pMDImport)
     m_pMDImport->AddRef();
 }
 
-mdAssembly *Assembly::GetAssemblyRefTokens()
-{
-    return m_pAssemblyRefTokens;
-}
-
-DWORD Assembly::GetNbAssemblyRefTokens()
-{
-    return m_dwCAssemblyRefTokens;
-}
-
-void Assembly::SetNbAsssemblyRefTokens(DWORD dwCAssemblyRefTokens)
-{
-    m_dwCAssemblyRefTokens = dwCAssemblyRefTokens;
-}
-
 BINDER_SPACE::Assembly* GetAssemblyFromPrivAssemblyFast(ICLRPrivAssembly *pPrivAssembly)
 {
 #ifdef _DEBUG

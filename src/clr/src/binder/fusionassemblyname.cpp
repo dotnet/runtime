@@ -19,7 +19,6 @@
 #include <strsafe.h>
 #include "shlwapi.h"
 
-#include "binderinterface.hpp"
 #include "assemblyidentity.hpp"
 #include "textualidentityparser.hpp"
 
