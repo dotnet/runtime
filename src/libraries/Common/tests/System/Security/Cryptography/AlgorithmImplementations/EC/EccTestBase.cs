@@ -225,8 +225,18 @@ namespace System.Security.Cryptography.Tests
                 Assert.Equal(c1.G.Y, c2.G.Y);
                 Assert.Equal(c1.Cofactor, c2.Cofactor);
                 Assert.Equal(c1.Order, c2.Order);
-                Assert.Equal(c1.Seed, c2.Seed);
-                Assert.Equal(c1.Hash, c2.Hash);
+
+                // Optional parameters. Null is an OK interpretation.
+                // Different is not.
+                if (c1.Seed != null && c2.Seed != null)
+                {
+                    Assert.Equal(c1.Seed, c2.Seed);
+                }
+
+                if (c1.Hash != null && c2.Hash != null)
+                {
+                    Assert.Equal(c1.Hash, c2.Hash);
+                }
 
                 if (c1.IsPrime)
                 {

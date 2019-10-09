@@ -3,9 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Collections;
 using System.Diagnostics;
-using System.Numerics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
 
@@ -13,6 +12,10 @@ namespace System.Security.Cryptography
 {
     internal static class EccKeyFormatHelper
     {
+        // This is the same limit that OpenSSL 1.0.2-1.1.1 has,
+        // there's no real point reading anything bigger than this (for now).
+        private const int MaxFieldBitSize = 661;
+
         private static readonly string[] s_validOids =
         {
             Oids.EcPublicKey,
@@ -229,8 +232,13 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static ECCurve GetCurve(in ECDomainParameters domainParameters)
+        private static ECCurve GetCurve(ECDomainParameters domainParameters)
         {
+            if (domainParameters.Specified.HasValue)
+            {
+                return GetSpecifiedECCurve(domainParameters.Specified.Value);
+            }
+
             if (domainParameters.Named == null)
             {
                 throw new CryptographicException(SR.Cryptography_ECC_NamedCurvesOnly);
@@ -254,14 +262,170 @@ namespace System.Security.Cryptography
             return ECCurve.CreateFromOid(curveOid);
         }
 
-        internal static AsnWriter WriteSubjectPublicKeyInfo(in ECParameters ecParameters)
+        private static ECCurve GetSpecifiedECCurve(SpecifiedECDomain specifiedParameters)
+        {
+            // sec1-v2 C.3:
+            //
+            // Versions 1, 2, and 3 are defined.
+            // 1 is just data, 2 and 3 mean that a seed is required (with different reasons for why,
+            // but they're human-reasons, not technical ones).
+            if (specifiedParameters.Version < 1 || specifiedParameters.Version > 3)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            }
+
+            if (specifiedParameters.Version > 1 && !specifiedParameters.Curve.Seed.HasValue)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            }
+
+            byte[] primeOrPoly;
+            bool prime;
+
+            switch (specifiedParameters.FieldID.FieldType)
+            {
+                case Oids.EcPrimeField:
+                    prime = true;
+                    AsnReader primeReader = new AsnReader(specifiedParameters.FieldID.Parameters, AsnEncodingRules.BER);
+                    ReadOnlySpan<byte> primeValue = primeReader.ReadIntegerBytes().Span;
+
+                    if (primeValue[0] == 0)
+                    {
+                        primeValue = primeValue.Slice(1);
+                    }
+
+                    if (primeValue.Length > (MaxFieldBitSize / 8))
+                    {
+                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                    }
+
+                    primeOrPoly = primeValue.ToArray();
+                    break;
+                case Oids.EcChar2Field:
+                    prime = false;
+                    AsnReader char2Reader = new AsnReader(specifiedParameters.FieldID.Parameters, AsnEncodingRules.BER);
+                    AsnReader innerReader = char2Reader.ReadSequence();
+                    char2Reader.ThrowIfNotEmpty();
+
+                    // Characteristic-two ::= SEQUENCE
+                    // {
+                    //     m INTEGER, -- Field size
+                    //     basis CHARACTERISTIC-TWO.&id({BasisTypes}),
+                    //     parameters CHARACTERISTIC-TWO.&Type({BasisTypes}{@basis})
+                    // }
+
+                    if (!innerReader.TryReadInt32(out int m) || m > MaxFieldBitSize || m < 0)
+                    {
+                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                    }
+
+                    int k1;
+                    int k2 = -1;
+                    int k3 = -1;
+
+                    switch (innerReader.ReadObjectIdentifierAsString())
+                    {
+                        case Oids.EcChar2TrinomialBasis:
+                            // Trinomial ::= INTEGER
+                            if (!innerReader.TryReadInt32(out k1) || k1 >= m || k1 < 1)
+                            {
+                                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                            }
+
+                            break;
+                        case Oids.EcChar2PentanomialBasis:
+                            // Pentanomial ::= SEQUENCE
+                            // {
+                            //     k1 INTEGER, -- k1 > 0
+                            //     k2 INTEGER, -- k2 > k1
+                            //     k3 INTEGER -- k3 > k2
+                            // }
+                            AsnReader pentanomialReader = innerReader.ReadSequence();
+
+                            if (!pentanomialReader.TryReadInt32(out k1) ||
+                                !pentanomialReader.TryReadInt32(out k2) ||
+                                !pentanomialReader.TryReadInt32(out k3) ||
+                                k1 < 1 ||
+                                k2 <= k1 ||
+                                k3 <= k2 ||
+                                k3 >= m)
+                            {
+                                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                            }
+
+                            pentanomialReader.ThrowIfNotEmpty();
+
+                            break;
+                        default:
+                            throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                    }
+
+                    innerReader.ThrowIfNotEmpty();
+
+                    BitArray poly = new BitArray(m + 1);
+                    poly.Set(m, true);
+                    poly.Set(k1, true);
+                    poly.Set(0, true);
+
+                    if (k2 > 0)
+                    {
+                        poly.Set(k2, true);
+                        poly.Set(k3, true);
+                    }
+
+                    primeOrPoly = new byte[(m + 7) / 8];
+                    poly.CopyTo(primeOrPoly, 0);
+                    Array.Reverse(primeOrPoly);
+                    break;
+                default:
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            }
+
+            ECCurve curve;
+
+            if (prime)
+            {
+                curve = new ECCurve
+                {
+                    CurveType = ECCurve.ECCurveType.PrimeShortWeierstrass,
+                    Prime = primeOrPoly,
+                };
+            }
+            else
+            {
+                curve = new ECCurve
+                {
+                    CurveType = ECCurve.ECCurveType.Characteristic2,
+                    Polynomial = primeOrPoly,
+                };
+            }
+
+            curve.A = specifiedParameters.Curve.A.ToUnsignedIntegerBytes(primeOrPoly.Length);
+            curve.B = specifiedParameters.Curve.B.ToUnsignedIntegerBytes(primeOrPoly.Length);
+            curve.Order = specifiedParameters.Order.ToUnsignedIntegerBytes(primeOrPoly.Length);
+
+            ReadOnlySpan<byte> baseSpan = specifiedParameters.Base.Span;
+
+            // We only understand the uncompressed point encoding, but that's almost always what's used.
+            if (baseSpan[0] != 0x04 || baseSpan.Length != 2 * primeOrPoly.Length + 1)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            }
+
+            curve.G.X = baseSpan.Slice(1, primeOrPoly.Length).ToArray();
+            curve.G.Y = baseSpan.Slice(1 + primeOrPoly.Length).ToArray();
+
+            if (specifiedParameters.Cofactor.HasValue)
+            {
+                curve.Cofactor = specifiedParameters.Cofactor.Value.ToUnsignedIntegerBytes();
+            }
+
+            return curve;
+        }
+
+        internal static AsnWriter WriteSubjectPublicKeyInfo(ECParameters ecParameters)
         {
             ecParameters.Validate();
-
-            if (!ecParameters.Curve.IsNamed)
-            {
-                throw new CryptographicException(SR.Cryptography_ECC_NamedCurvesOnly);
-            }
 
             // Since the public key format for EC keys is not ASN.1,
             // write the SPKI structure manually.
@@ -298,18 +462,13 @@ namespace System.Security.Cryptography
             writer.PopSequence();
         }
 
-        internal static AsnWriter WritePkcs8PrivateKey(in ECParameters ecParameters)
+        internal static AsnWriter WritePkcs8PrivateKey(ECParameters ecParameters)
         {
             ecParameters.Validate();
 
             if (ecParameters.D == null)
             {
                 throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
-            }
-
-            if (!ecParameters.Curve.IsNamed)
-            {
-                throw new CryptographicException(SR.Cryptography_ECC_NamedCurvesOnly);
             }
 
             // Don't need the domain parameters because they're contained in the algId.
@@ -320,7 +479,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static void WriteEcParameters(in ECParameters ecParameters, AsnWriter writer)
+        private static void WriteEcParameters(ECParameters ecParameters, AsnWriter writer)
         {
             if (ecParameters.Curve.IsNamed)
             {
@@ -334,10 +493,237 @@ namespace System.Security.Cryptography
 
                 writer.WriteObjectIdentifier(oid.Value);
             }
+            else if (ecParameters.Curve.IsExplicit)
+            {
+                Debug.Assert(ecParameters.Curve.IsPrime || ecParameters.Curve.IsCharacteristic2);
+                WriteSpecifiedECDomain(ecParameters, writer);
+            }
             else
             {
-                throw new CryptographicException(SR.Cryptography_ECC_NamedCurvesOnly);
+                throw new CryptographicException(
+                    SR.Format(SR.Cryptography_CurveNotSupported, ecParameters.Curve.CurveType.ToString()));
             }
+        }
+
+        private static void WriteSpecifiedECDomain(ECParameters ecParameters, AsnWriter writer)
+        {
+            int m;
+            int k1;
+            int k2;
+            int k3;
+            m = k1 = k2 = k3 = -1;
+
+            if (ecParameters.Curve.IsCharacteristic2)
+            {
+                DetermineChar2Parameters(ecParameters, ref m, ref k1, ref k2, ref k3);
+            }
+
+            // SpecifiedECDomain
+            writer.PushSequence();
+            {
+                // version
+                // We don't know if the seed (if present) is verifiably random (2).
+                // We also don't know if the base point is verifiably random (3).
+                // So just be version 1.
+                writer.WriteInteger(1);
+
+                // fieldId
+                writer.PushSequence();
+                {
+                    if (ecParameters.Curve.IsPrime)
+                    {
+                        writer.WriteObjectIdentifier(Oids.EcPrimeField);
+                        writer.WriteIntegerUnsigned(ecParameters.Curve.Prime);
+                    }
+                    else
+                    {
+                        Debug.Assert(ecParameters.Curve.IsCharacteristic2);
+
+                        // id
+                        writer.WriteObjectIdentifier(Oids.EcChar2Field);
+
+                        // Parameters (Characteristic-two)
+                        writer.PushSequence();
+                        {
+                            // m
+                            writer.WriteInteger(m);
+
+                            if (k3 > 0)
+                            {
+                                writer.WriteObjectIdentifier(Oids.EcChar2PentanomialBasis);
+
+                                writer.PushSequence();
+                                {
+                                    writer.WriteInteger(k1);
+                                    writer.WriteInteger(k2);
+                                    writer.WriteInteger(k3);
+
+                                    writer.PopSequence();
+                                }
+                            }
+                            else
+                            {
+                                Debug.Assert(k2 < 0);
+                                Debug.Assert(k1 > 0);
+
+                                writer.WriteObjectIdentifier(Oids.EcChar2TrinomialBasis);
+                                writer.WriteInteger(k1);
+                            }
+
+                            writer.PopSequence();
+                        }
+                    }
+
+                    writer.PopSequence();
+                }
+
+                // curve
+                WriteCurve(ecParameters.Curve, writer);
+
+                // base
+                WriteUncompressedBasePoint(ecParameters, writer);
+
+                // order
+                writer.WriteIntegerUnsigned(ecParameters.Curve.Order);
+
+                // cofactor
+                if (ecParameters.Curve.Cofactor != null)
+                {
+                    writer.WriteIntegerUnsigned(ecParameters.Curve.Cofactor);
+                }
+
+                // hash is omitted.
+
+                writer.PopSequence();
+            }
+        }
+
+        private static void DetermineChar2Parameters(
+            in ECParameters ecParameters,
+            ref int m,
+            ref int k1,
+            ref int k2,
+            ref int k3)
+        {
+            byte[] polynomial = ecParameters.Curve.Polynomial;
+            int lastIndex = polynomial.Length - 1;
+
+            // The most significant byte needs a set bit, and the least significant bit must be set.
+            if (polynomial[0] == 0 || (polynomial[lastIndex] & 1) != 1)
+            {
+                throw new CryptographicException(SR.Cryptography_InvalidECCharacteristic2Curve);
+            }
+
+            for (int localBitIndex = 7; localBitIndex >= 0; localBitIndex--)
+            {
+                int test = 1 << localBitIndex;
+
+                if ((polynomial[0] & test) == test)
+                {
+                    m = checked(8 * lastIndex + localBitIndex);
+                }
+            }
+
+            // Find the other set bits. Since we've already found m and 0, there is either
+            // one remaining (trinomial) or 3 (pentanomial).
+            for (int inverseIndex = 0; inverseIndex < polynomial.Length; inverseIndex++)
+            {
+                int forwardIndex = lastIndex - inverseIndex;
+                byte val = polynomial[forwardIndex];
+
+                for (int localBitIndex = 0; localBitIndex < 8; localBitIndex++)
+                {
+                    int test = 1 << localBitIndex;
+
+                    if ((val & test) == test)
+                    {
+                        int bitIndex = 8 * inverseIndex + localBitIndex;
+
+                        if (bitIndex == 0)
+                        {
+                            // The bottom bit is always set, it's not considered a parameter.
+                        }
+                        else if (bitIndex == m)
+                        {
+                            break;
+                        }
+                        else if (k1 < 0)
+                        {
+                            k1 = bitIndex;
+                        }
+                        else if (k2 < 0)
+                        {
+                            k2 = bitIndex;
+                        }
+                        else if (k3 < 0)
+                        {
+                            k3 = bitIndex;
+                        }
+                        else
+                        {
+                            // More than pentanomial.
+                            throw new CryptographicException(SR.Cryptography_InvalidECCharacteristic2Curve);
+                        }
+                    }
+                }
+            }
+
+            if (k3 > 0)
+            {
+                // Pentanomial
+            }
+            else if (k2 > 0)
+            {
+                // There is no quatranomial
+                throw new CryptographicException(SR.Cryptography_InvalidECCharacteristic2Curve);
+            }
+            else if (k1 > 0)
+            {
+                // Trinomial
+            }
+            else
+            {
+                // No smaller bases exist
+                throw new CryptographicException(SR.Cryptography_InvalidECCharacteristic2Curve);
+            }
+        }
+
+        private static void WriteCurve(in ECCurve curve, AsnWriter writer)
+        {
+            writer.PushSequence();
+            WriteFieldElement(curve.A, writer);
+            WriteFieldElement(curve.B, writer);
+
+            if (curve.Seed != null)
+            {
+                writer.WriteBitString(curve.Seed);
+            }
+
+            writer.PopSequence();
+        }
+
+        private static void WriteFieldElement(byte[] fieldElement, AsnWriter writer)
+        {
+            int start = 0;
+
+            while (start < fieldElement.Length - 1 && fieldElement[start] == 0)
+            {
+                start++;
+            }
+
+            writer.WriteOctetString(fieldElement.AsSpan(start));
+        }
+
+        private static void WriteUncompressedBasePoint(in ECParameters ecParameters, AsnWriter writer)
+        {
+            int basePointLength = ecParameters.Curve.G.X.Length * 2 + 1;
+            byte[] tmp = CryptoPool.Rent(basePointLength);
+            tmp[0] = 0x04;
+            ecParameters.Curve.G.X.CopyTo(tmp.AsSpan(1));
+            ecParameters.Curve.G.Y.CopyTo(tmp.AsSpan(1 + ecParameters.Curve.G.X.Length));
+            writer.WriteOctetString(tmp.AsSpan(0, basePointLength));
+            // Non-sensitive data.
+            CryptoPool.Return(tmp, clearSize: 0);
         }
 
         private static void WriteUncompressedPublicKey(in ECParameters ecParameters, AsnWriter writer)
