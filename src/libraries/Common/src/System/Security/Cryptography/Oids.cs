@@ -75,6 +75,10 @@ namespace System.Security.Cryptography
 
         // ECDSA CMS uses the combined signature+digest OID
         // https://tools.ietf.org/html/rfc5753#section-2.1.1
+        internal const string EcPrimeField = "1.2.840.10045.1.1";
+        internal const string EcChar2Field = "1.2.840.10045.1.2";
+        internal const string EcChar2TrinomialBasis = "1.2.840.10045.1.2.3.2";
+        internal const string EcChar2PentanomialBasis = "1.2.840.10045.1.2.3.3";
         internal const string EcPublicKey = "1.2.840.10045.2.1";
         internal const string ECDsaWithSha1 = "1.2.840.10045.4.1";
         internal const string ECDsaWithSha256 = "1.2.840.10045.4.3.2";

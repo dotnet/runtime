@@ -41,7 +41,12 @@ namespace System.Security.Cryptography.Asn1
                 writer.WriteInteger(Cofactor.Value.Span);
             }
 
-            writer.WriteObjectIdentifier(Hash);
+
+            if (Hash != null)
+            {
+                writer.WriteObjectIdentifier(Hash);
+            }
+
             writer.PopSequence(tag);
         }
 
@@ -100,7 +105,12 @@ namespace System.Security.Cryptography.Asn1
                 decoded.Cofactor = sequenceReader.ReadIntegerBytes();
             }
 
-            decoded.Hash = sequenceReader.ReadObjectIdentifier();
+
+            if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(Asn1Tag.ObjectIdentifier))
+            {
+                decoded.Hash = sequenceReader.ReadObjectIdentifier();
+            }
+
 
             sequenceReader.ThrowIfNotEmpty();
         }

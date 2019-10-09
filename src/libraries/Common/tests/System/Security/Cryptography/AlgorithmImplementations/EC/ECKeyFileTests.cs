@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Security.Cryptography.Pkcs;
 using System.Text;
 using Test.Cryptography;
 using Xunit;
@@ -19,8 +18,13 @@ namespace System.Security.Cryptography.Tests
         protected abstract ECParameters ExportParameters(T key, bool includePrivate);
 
         public static bool SupportsBrainpool { get; } = IsCurveSupported(ECCurve.NamedCurves.brainpoolP160r1.Oid);
-
+        public static bool SupportsSect163k1 { get; } = IsCurveSupported(EccTestData.Sect163k1Key1.Curve.Oid);
         public static bool SupportsSect283k1 { get; } = IsCurveSupported(EccTestData.Sect283k1Key1.Curve.Oid);
+        public static bool SupportsC2pnb163v1 { get; } = IsCurveSupported(EccTestData.C2pnb163v1Key1.Curve.Oid);
+
+        // This would need to be virtualized if there was ever a platform that
+        // allowed explicit in ECDH or ECDSA but not the other.
+        public static bool SupportsExplicitCurves { get; } = EcDiffieHellman.Tests.ECDiffieHellmanFactory.ExplicitCurvesSupported;
 
         private static bool IsCurveSupported(Oid oid)
         {
@@ -225,18 +229,10 @@ NfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==";
         }
 
         [Fact]
-        public void ReadNistP256Explicit()
+        public void ReadWriteNistP256ExplicitECPrivateKey()
         {
-            byte[] explicitSPKI = Convert.FromBase64String(@"
-MIIBSzCCAQMGByqGSM49AgEwgfcCAQEwLAYHKoZIzj0BAQIhAP////8AAAABAAAA
-AAAAAAAAAAAA////////////////MFsEIP////8AAAABAAAAAAAAAAAAAAAA////
-///////////8BCBaxjXYqjqT57PrvVV2mIa8ZR0GsMxTsPY7zjw+J9JgSwMVAMSd
-NgiG5wSTamZ44ROdJreBn36QBEEEaxfR8uEsQkf4vOblY6RA8ncDfYEt6zOg9KE5
-RdiYwpZP40Li/hp/m47n60p8D54WK84zV2sxXs7LtkBoN79R9QIhAP////8AAAAA
-//////////+85vqtpxeehPO5ysL8YyVRAgEBA0IABIEB7OR0ZKbq1wz2mm4r09iG
-kaMmLSLLpPdjXq/yZoCo2KErph1ZkjX2fZy01Y8Xg9PKQ+ePClq6piQHmTbAw6k=");
-
-            byte[] explicitECPrivateKey = Convert.FromBase64String(@"
+            ReadWriteBase64ECPrivateKey(
+                @"
 MIIBaAIBAQQgcKEsLbFoRe1W/2jPwhpHKz8E19aFG/Y0ny19WzRSs4qggfowgfcC
 AQEwLAYHKoZIzj0BAQIhAP////8AAAABAAAAAAAAAAAAAAAA////////////////
 MFsEIP////8AAAABAAAAAAAAAAAAAAAA///////////////8BCBaxjXYqjqT57Pr
@@ -244,9 +240,16 @@ vVV2mIa8ZR0GsMxTsPY7zjw+J9JgSwMVAMSdNgiG5wSTamZ44ROdJreBn36QBEEE
 axfR8uEsQkf4vOblY6RA8ncDfYEt6zOg9KE5RdiYwpZP40Li/hp/m47n60p8D54W
 K84zV2sxXs7LtkBoN79R9QIhAP////8AAAAA//////////+85vqtpxeehPO5ysL8
 YyVRAgEBoUQDQgAEgQHs5HRkpurXDPaabivT2IaRoyYtIsuk92Ner/JmgKjYoSum
-HVmSNfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==");
+HVmSNfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==",
+                EccTestData.GetNistP256ReferenceKeyExplicit(),
+                SupportsExplicitCurves);
+        }
 
-            byte[] explicitPkcs8 = Convert.FromBase64String(@"
+        [Fact]
+        public void ReadWriteNistP256ExplicitPkcs8()
+        {
+            ReadWriteBase64Pkcs8(
+                @"
 MIIBeQIBADCCAQMGByqGSM49AgEwgfcCAQEwLAYHKoZIzj0BAQIhAP////8AAAAB
 AAAAAAAAAAAAAAAA////////////////MFsEIP////8AAAABAAAAAAAAAAAAAAAA
 ///////////////8BCBaxjXYqjqT57PrvVV2mIa8ZR0GsMxTsPY7zjw+J9JgSwMV
@@ -254,34 +257,48 @@ AMSdNgiG5wSTamZ44ROdJreBn36QBEEEaxfR8uEsQkf4vOblY6RA8ncDfYEt6zOg
 9KE5RdiYwpZP40Li/hp/m47n60p8D54WK84zV2sxXs7LtkBoN79R9QIhAP////8A
 AAAA//////////+85vqtpxeehPO5ysL8YyVRAgEBBG0wawIBAQQgcKEsLbFoRe1W
 /2jPwhpHKz8E19aFG/Y0ny19WzRSs4qhRANCAASBAezkdGSm6tcM9ppuK9PYhpGj
-Ji0iy6T3Y16v8maAqNihK6YdWZI19n2ctNWPF4PTykPnjwpauqYkB5k2wMOp");
+Ji0iy6T3Y16v8maAqNihK6YdWZI19n2ctNWPF4PTykPnjwpauqYkB5k2wMOp",
+                EccTestData.GetNistP256ReferenceKeyExplicit(),
+                SupportsExplicitCurves);
+        }
 
-            using (T key = CreateKey())
-            {
-                Assert.ThrowsAny<CryptographicException>(
-                    () => key.ImportSubjectPublicKeyInfo(explicitSPKI, out _));
+        [Fact]
+        public void ReadWriteNistP256ExplicitEncryptedPkcs8()
+        {
+            ReadWriteBase64EncryptedPkcs8(
+                @"
+MIIBoTAbBgkqhkiG9w0BBQMwDgQIQqYZ3N87K0ICAggABIIBgOHAWa6wz144p0uT
+qZsQAbQcIpAFBQRC382dxiOHCV11OyZg264SmxS9iY1OEwIr/peACLu+Fk7zPKhv
+Ox1hYz/OeLoKKdtBMqrp65JmH73jG8qeAMuYNj83AIERY7Cckuc2fEC2GTEJcNWs
+olE+0p4H6yIvXI48NEQazj5w9zfOGvLmP6Kw6nX+SV3fzM9jHskU226LnDdokGVg
+an6/hV1r+2+n2MujhfNzQd/5vW5zx7PN/1aMVMz3wUv9t8scDppeMR5CNCMkxlRA
+cQ2lfx2vqFuY70EckgumDqm7AtKK2bLlA6XGTb8HuqKHA0l1zrul9AOBC1g33isD
+5CJu1CCT34adV4E4G44uiRQUtf+K8m5Oeo8FI/gGBxdQyOh1k8TNsM+p32gTU8HH
+89M5R+s1ayQI7jVPGHXm8Ch7lxvqo6FZAu6+vh23vTwVShUTpGYd0XguE6XKJjGx
+eWDIWFuFRj58uAQ65/viFausHWt1BdywcwcyVRb2eLI5MR7DWA==",
+                "explicit",
+                new PbeParameters(
+                    PbeEncryptionAlgorithm.Aes128Cbc,
+                    HashAlgorithmName.SHA256,
+                    1234),
+                EccTestData.GetNistP256ReferenceKeyExplicit(),
+                SupportsExplicitCurves);
+        }
 
-                Assert.ThrowsAny<CryptographicException>(
-                    () => ImportECPrivateKey(key, explicitECPrivateKey, out _));
-
-                // Win10 supports explicit curve PKCS8 on the CNG types.
-                if (!PlatformDetection.IsWindows10Version1607OrGreater)
-                {
-                    Assert.ThrowsAny<CryptographicException>(
-                        () => key.ImportPkcs8PrivateKey(explicitPkcs8, out _));
-
-                    Pkcs8PrivateKeyInfo builder = Pkcs8PrivateKeyInfo.Decode(explicitPkcs8, out _, skipCopy: true);
-                    byte[] explicitEncryptedPkcs8 = builder.Encrypt(
-                        "asdf",
-                        new PbeParameters(
-                            PbeEncryptionAlgorithm.TripleDes3KeyPkcs12,
-                            HashAlgorithmName.SHA1,
-                            2048));
-
-                    Assert.ThrowsAny<CryptographicException>(
-                        () => key.ImportEncryptedPkcs8PrivateKey("asdf", explicitEncryptedPkcs8, out _));
-                }
-            }
+        [Fact]
+        public void ReadWriteNistP256ExplicitSubjectPublicKeyInfo()
+        {
+            ReadWriteBase64SubjectPublicKeyInfo(
+                @"
+MIIBSzCCAQMGByqGSM49AgEwgfcCAQEwLAYHKoZIzj0BAQIhAP////8AAAABAAAA
+AAAAAAAAAAAA////////////////MFsEIP////8AAAABAAAAAAAAAAAAAAAA////
+///////////8BCBaxjXYqjqT57PrvVV2mIa8ZR0GsMxTsPY7zjw+J9JgSwMVAMSd
+NgiG5wSTamZ44ROdJreBn36QBEEEaxfR8uEsQkf4vOblY6RA8ncDfYEt6zOg9KE5
+RdiYwpZP40Li/hp/m47n60p8D54WK84zV2sxXs7LtkBoN79R9QIhAP////8AAAAA
+//////////+85vqtpxeehPO5ysL8YyVRAgEBA0IABIEB7OR0ZKbq1wz2mm4r09iG
+kaMmLSLLpPdjXq/yZoCo2KErph1ZkjX2fZy01Y8Xg9PKQ+ePClq6piQHmTbAw6k=",
+                EccTestData.GetNistP256ReferenceKeyExplicit(),
+                SupportsExplicitCurves);
         }
 
         [Fact]
@@ -336,6 +353,118 @@ ctLI7vH2zDIF0AV+ud5sqeMQUJY=",
         }
 
         [Fact]
+        public void ReadWriteSect163k1Key1ECPrivateKey()
+        {
+            ReadWriteBase64ECPrivateKey(
+                @"
+MFMCAQEEFQPBmVrfrowFGNwT3+YwS7AQF+akEqAHBgUrgQQAAaEuAywABAYXnjcZ
+zIElQ1/mRYnV/KbcGIdVHQeI/rti/8kkjYs5iv4+C1w8ArP+Nw==",
+                EccTestData.Sect163k1Key1,
+                SupportsSect163k1);
+        }
+
+        [Fact]
+        public void ReadWriteSect163k1Key1Pkcs8()
+        {
+            ReadWriteBase64Pkcs8(
+                @"
+MGMCAQAwEAYHKoZIzj0CAQYFK4EEAAEETDBKAgEBBBUDwZla366MBRjcE9/mMEuw
+EBfmpBKhLgMsAAQGF543GcyBJUNf5kWJ1fym3BiHVR0HiP67Yv/JJI2LOYr+Pgtc
+PAKz/jc=",
+                EccTestData.Sect163k1Key1,
+                SupportsSect163k1);
+        }
+
+        [Fact]
+        public void ReadWriteSect163k1Key1EncryptedPkcs8()
+        {
+            ReadWriteBase64EncryptedPkcs8(
+                @"
+MIGHMBsGCSqGSIb3DQEFAzAOBAjLBuCZyPt15QICCAAEaPa9V9VJoB8G+RIgZaYv
+z4xl+rpvkDrDI0Xnh8oj1CLQldy2N77pdk3pOg9TwJo+r+eKfIJgBVezW2O615ww
+f+ESRyxDnBgKz6H2RKeenyrwVhxF98SyJzAdP637vR3QmDNAWWAgoUhg",
+                "Koblitz",
+                new PbeParameters(
+                    PbeEncryptionAlgorithm.Aes256Cbc,
+                    HashAlgorithmName.SHA256,
+                    7), 
+                EccTestData.Sect163k1Key1,
+                SupportsSect163k1);
+        }
+
+        [Fact]
+        public void ReadWriteSect163k1Key1SubjectPublicKeyInfo()
+        {
+            ReadWriteBase64SubjectPublicKeyInfo(
+                @"
+MEAwEAYHKoZIzj0CAQYFK4EEAAEDLAAEBheeNxnMgSVDX+ZFidX8ptwYh1UdB4j+
+u2L/ySSNizmK/j4LXDwCs/43",
+                EccTestData.Sect163k1Key1,
+                SupportsSect163k1);
+        }
+
+        [Fact]
+        public void ReadWriteSect163k1Key1ExplicitECPrivateKey()
+        {
+            ReadWriteBase64ECPrivateKey(
+                @"
+MIHHAgEBBBUDwZla366MBRjcE9/mMEuwEBfmpBKgezB5AgEBMCUGByqGSM49AQIw
+GgICAKMGCSqGSM49AQIDAzAJAgEDAgEGAgEHMAYEAQEEAQEEKwQC/hPAU3u8Eayq
+B9eT3k5tXlyU7ugCiQcPsF04/1gyHy6ABTbVOMzao9kCFQQAAAAAAAAAAAACAQii
+4MwNmfil7wIBAqEuAywABAYXnjcZzIElQ1/mRYnV/KbcGIdVHQeI/rti/8kkjYs5
+iv4+C1w8ArP+Nw==",
+                EccTestData.Sect163k1Key1Explicit,
+                SupportsSect163k1);
+        }
+
+        [Fact]
+        public void ReadWriteSect163k1Key1ExplicitPkcs8()
+        {
+            ReadWriteBase64Pkcs8(
+                @"
+MIHYAgEAMIGEBgcqhkjOPQIBMHkCAQEwJQYHKoZIzj0BAjAaAgIAowYJKoZIzj0B
+AgMDMAkCAQMCAQYCAQcwBgQBAQQBAQQrBAL+E8BTe7wRrKoH15PeTm1eXJTu6AKJ
+Bw+wXTj/WDIfLoAFNtU4zNqj2QIVBAAAAAAAAAAAAAIBCKLgzA2Z+KXvAgECBEww
+SgIBAQQVA8GZWt+ujAUY3BPf5jBLsBAX5qQSoS4DLAAEBheeNxnMgSVDX+ZFidX8
+ptwYh1UdB4j+u2L/ySSNizmK/j4LXDwCs/43",
+                EccTestData.Sect163k1Key1Explicit,
+                SupportsSect163k1);
+        }
+
+        [Fact]
+        public void ReadWriteSect163k1Key1ExplicitEncryptedPkcs8()
+        {
+            ReadWriteBase64EncryptedPkcs8(
+                @"
+MIIBADAbBgkqhkiG9w0BBQMwDgQICAkWq2tKYZUCAggABIHgjBfngwE9DbCEaznz
++55MjSGbQH0NMgIRCJtQLbrI7888+KmTL6hWYPH6CQzTsi1unWrMAH2JKa7dkIe9
+FWNXW7bmhcokVDh/OTXOV9QPZ3O4m19a9XOl0wNlbi47XQ3KUkcbzyFNYlDMSzFw
+HRfW8+aIkyYAvYCoA4buRfigBe0xy1VKyE5aUkX0EFjx4gqC3Q5mjDMFOxlKNjVV
+clSZg6tg9J7bTQsDAN0uYpBc1r8DiSQbKMxg+q13yBciXJzfmkQRtNVXQPsseiUm
+z2NFvWcpK0Fh9fCVGuXV9sjJ5qE=",
+                "Koblitz",
+                new PbeParameters(
+                    PbeEncryptionAlgorithm.Aes128Cbc,
+                    HashAlgorithmName.SHA256,
+                    12), 
+                EccTestData.Sect163k1Key1Explicit,
+                SupportsSect163k1);
+        }
+
+        [Fact]
+        public void ReadWriteSect163k1Key1ExplicitSubjectPublicKeyInfo()
+        {
+            ReadWriteBase64SubjectPublicKeyInfo(
+                @"
+MIG1MIGEBgcqhkjOPQIBMHkCAQEwJQYHKoZIzj0BAjAaAgIAowYJKoZIzj0BAgMD
+MAkCAQMCAQYCAQcwBgQBAQQBAQQrBAL+E8BTe7wRrKoH15PeTm1eXJTu6AKJBw+w
+XTj/WDIfLoAFNtU4zNqj2QIVBAAAAAAAAAAAAAIBCKLgzA2Z+KXvAgECAywABAYX
+njcZzIElQ1/mRYnV/KbcGIdVHQeI/rti/8kkjYs5iv4+C1w8ArP+Nw==",
+                EccTestData.Sect163k1Key1Explicit,
+                SupportsSect163k1);
+        }
+
+        [Fact]
         public void ReadWriteSect283k1Key1ECPrivateKey()
         {
             ReadWriteBase64ECPrivateKey(
@@ -387,6 +516,124 @@ MF4wEAYHKoZIzj0CAQYFK4EEABADSgAEB1J3C9M+am7iCWy2sSDnSXtHtsB3oUfL
 V9r2k5CdhAcW7qeqBH25mVw1YDxeay+M3/DrcdN640MboISeurE6TJADx5afVc2Q",
                 EccTestData.Sect283k1Key1,
                 SupportsSect283k1);
+        }
+
+        [Fact]
+        public void ReadWriteC2pnb163v1ECPrivateKey()
+        {
+            ReadWriteBase64ECPrivateKey(
+                @"
+MFYCAQEEFQD00koUBxIvRFlnvh2TwAk6ZTZ5hqAKBggqhkjOPQMAAaEuAywABAIR
+Jy8cVYJCaIjpG9aSV3SUIyJIqgQnCDD3oQCa1nCojekr1ZJIzIE7RQ==",
+                EccTestData.C2pnb163v1Key1,
+                SupportsC2pnb163v1);
+        }
+
+        [Fact]
+        public void ReadWriteC2pnb163v1Pkcs8()
+        {
+            ReadWriteBase64Pkcs8(
+                @"
+MGYCAQAwEwYHKoZIzj0CAQYIKoZIzj0DAAEETDBKAgEBBBUA9NJKFAcSL0RZZ74d
+k8AJOmU2eYahLgMsAAQCEScvHFWCQmiI6RvWkld0lCMiSKoEJwgw96EAmtZwqI3p
+K9WSSMyBO0U=",
+                EccTestData.C2pnb163v1Key1,
+                SupportsC2pnb163v1);
+        }
+
+        [Fact]
+        public void ReadWriteC2pnb163v1EncryptedPkcs8()
+        {
+            ReadWriteBase64EncryptedPkcs8(
+                @"
+MIGPMBsGCSqGSIb3DQEFAzAOBAjdV9IDq+L+5gICCAAEcI1e6RA8kMcYB+PvOcCU
+Jj65nXTIrMPmZ0DmFMF9WBg0J+yzxgDhBVynpT2uJntY4FuDlvdpcLRK1EGLZYKf
+qYc5zJMYkRZ178bE3DtfrP3UxD34YvbRl2aeu334+wJOm7ApXv81ugt4OoCiPhdg
+wiA=",
+                "secret",
+                new PbeParameters(
+                    PbeEncryptionAlgorithm.Aes192Cbc,
+                    HashAlgorithmName.SHA512,
+                    1024),
+                EccTestData.C2pnb163v1Key1,
+                SupportsC2pnb163v1);
+        }
+
+        [Fact]
+        public void ReadWriteC2pnb163v1SubjectPublicKeyInfo()
+        {
+            ReadWriteBase64SubjectPublicKeyInfo(
+                @"
+MEMwEwYHKoZIzj0CAQYIKoZIzj0DAAEDLAAEAhEnLxxVgkJoiOkb1pJXdJQjIkiq
+BCcIMPehAJrWcKiN6SvVkkjMgTtF",
+                EccTestData.C2pnb163v1Key1,
+                SupportsC2pnb163v1);
+        }
+
+        [Fact]
+        public void ReadWriteC2pnb163v1ExplicitECPrivateKey()
+        {
+            ReadWriteBase64ECPrivateKey(
+                @"
+MIIBBwIBAQQVAPTSShQHEi9EWWe+HZPACTplNnmGoIG6MIG3AgEBMCUGByqGSM49
+AQIwGgICAKMGCSqGSM49AQIDAzAJAgEBAgECAgEIMEQEFQclRrVDUjSkIuB4lnX0
+MsiUNd5SQgQUyVF9BtUkDTz/OMdLILbNTW+d1NkDFQDSwPsVdghg3vHu9NaW5naH
+VhUXVAQrBAevaZiVRhA9eTKfzD10iA8zu+gDywHsIyEbWWat6h0/h/fqWEiu8LfK
+nwIVBAAAAAAAAAAAAAHmD8iCHMdNrq/BAgECoS4DLAAEAhEnLxxVgkJoiOkb1pJX
+dJQjIkiqBCcIMPehAJrWcKiN6SvVkkjMgTtF",
+                EccTestData.C2pnb163v1Key1Explicit,
+                SupportsC2pnb163v1);
+        }
+
+        [Fact]
+        public void ReadWriteC2pnb163v1ExplicitPkcs8()
+        {
+            ReadWriteBase64Pkcs8(
+                @"
+MIIBFwIBADCBwwYHKoZIzj0CATCBtwIBATAlBgcqhkjOPQECMBoCAgCjBgkqhkjO
+PQECAwMwCQIBAQIBAgIBCDBEBBUHJUa1Q1I0pCLgeJZ19DLIlDXeUkIEFMlRfQbV
+JA08/zjHSyC2zU1vndTZAxUA0sD7FXYIYN7x7vTWluZ2h1YVF1QEKwQHr2mYlUYQ
+PXkyn8w9dIgPM7voA8sB7CMhG1lmreodP4f36lhIrvC3yp8CFQQAAAAAAAAAAAAB
+5g/IghzHTa6vwQIBAgRMMEoCAQEEFQD00koUBxIvRFlnvh2TwAk6ZTZ5hqEuAywA
+BAIRJy8cVYJCaIjpG9aSV3SUIyJIqgQnCDD3oQCa1nCojekr1ZJIzIE7RQ==",
+                EccTestData.C2pnb163v1Key1Explicit,
+                SupportsC2pnb163v1);
+        }
+
+        [Fact]
+        public void ReadWriteC2pnb163v1ExplicitEncryptedPkcs8()
+        {
+            ReadWriteBase64EncryptedPkcs8(
+                @"
+MIIBQTAbBgkqhkiG9w0BBQMwDgQI9+ZZnHaqxb0CAggABIIBIM+n6x/Q1hs5OW0F
+oOKZmQ0mKNRKb23SMqwo0bJlxseIOVdYzOV2LH1hSWeJb7FMxo6OJXb2CpYSPqv1
+v3lhdLC5t/ViqAOhG70KF+Dy/vZr8rWXRFqy+OdqwxOes/lBsG+Ws9+uEk8+Gm2G
+xMHXJNKliSUePlT3wC7z8bCkEvLF7hkGjEAgcABry5Ohq3W2by6Dnd8YWJNgeiW/
+Vu5rT1ThAus7w2TJjWrrEqBbIlQ9nm6/MMj9nYnVVfpPAOk/qX9Or7TmK+Sei88Q
+staXBhfJk9ec8laiPpNbhHJSZ2Ph3Snb6SA7MYi5nIMP4RPxOM2eUet4/ueV1O3U
+wxcZ+wOsnebIwy4ftKL+klh5EXv/9S5sCjC8g8J2cA6GmcZbiQ==",
+                "secret",
+                new PbeParameters(
+                    PbeEncryptionAlgorithm.Aes192Cbc,
+                    HashAlgorithmName.SHA512,
+                    1024),
+                EccTestData.C2pnb163v1Key1Explicit,
+                SupportsC2pnb163v1);
+        }
+
+        [Fact]
+        public void ReadWriteC2pnb163v1ExplicitSubjectPublicKeyInfo()
+        {
+            ReadWriteBase64SubjectPublicKeyInfo(
+                @"
+MIH0MIHDBgcqhkjOPQIBMIG3AgEBMCUGByqGSM49AQIwGgICAKMGCSqGSM49AQID
+AzAJAgEBAgECAgEIMEQEFQclRrVDUjSkIuB4lnX0MsiUNd5SQgQUyVF9BtUkDTz/
+OMdLILbNTW+d1NkDFQDSwPsVdghg3vHu9NaW5naHVhUXVAQrBAevaZiVRhA9eTKf
+zD10iA8zu+gDywHsIyEbWWat6h0/h/fqWEiu8LfKnwIVBAAAAAAAAAAAAAHmD8iC
+HMdNrq/BAgECAywABAIRJy8cVYJCaIjpG9aSV3SUIyJIqgQnCDD3oQCa1nCojekr
+1ZJIzIE7RQ==",
+                EccTestData.C2pnb163v1Key1Explicit,
+                SupportsC2pnb163v1);
         }
 
         [Fact]
