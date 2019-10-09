@@ -337,16 +337,17 @@ namespace System.DirectoryServices.AccountManagement
             // Make sure we're not a fake principal
             CheckFakePrincipal();
 
-            if (context.ContextType == ContextType.Machine || _ctx.ContextType == ContextType.Machine)
-            {
-                throw new InvalidOperationException(SR.SaveToNotSupportedAgainstMachineStore);
-            }
             // We must have a PrincipalContext to save into.  This should always be the case, unless we're unpersisted
             // and they never set a PrincipalContext.
             if (context == null)
             {
                 Debug.Assert(this.unpersisted == true);
                 throw new InvalidOperationException(SR.NullArguments);
+            }
+
+            if (context.ContextType == ContextType.Machine || _ctx.ContextType == ContextType.Machine)
+            {
+                throw new InvalidOperationException(SR.SaveToNotSupportedAgainstMachineStore);
             }
 
             // If the user is trying to save to the same context we are already set to then just save the changes
