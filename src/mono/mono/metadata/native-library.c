@@ -1,8 +1,9 @@
 #include "config.h"
-#include "mono/utils/mono-compiler.h"
+#include "mono/metadata/class-internals.h"
 #include "mono/metadata/loader-internals.h"
 #include "mono/metadata/loader.h"
-#include "mono/metadata/class-internals.h"
+#include "mono/utils/checked-build.h"
+#include "mono/utils/mono-compiler.h"
 #include "mono/utils/mono-logger-internals.h"
 #include "mono/utils/mono-path.h"
 
@@ -44,16 +45,15 @@ GENERATE_TRY_GET_CLASS_WITH_CACHE (appdomain_unloaded_exception, "System", "AppD
  * LOCKING: Assumes the relevant lock is held.
  * For the global DllMap, this is `global_loader_data_mutex`, and for images it's their internal lock.
  */
-static int 
+static int
 mono_dllmap_lookup_list (MonoDllMap *dll_map, const char *dll, const char* func, const char **rdll, const char **rfunc) {
 	int found = 0;
 
 	*rdll = dll;
+	*rfunc = func;
 
 	if (!dll_map)
-		return 0;
-
-	mono_global_loader_data_lock ();
+		goto exit;
 
 	/* 
 	 * we use the first entry we find that matches, since entries from
@@ -61,17 +61,17 @@ mono_dllmap_lookup_list (MonoDllMap *dll_map, const char *dll, const char* func,
 	 * later entries win.
 	 */
 	for (; dll_map; dll_map = dll_map->next) {
-		if (dll_map->dll [0] == 'i' && dll_map->dll [1] == ':') {
-			if (g_ascii_strcasecmp (dll_map->dll + 2, dll))
-				continue;
-		} else if (strcmp (dll_map->dll, dll)) {
+		// Check case-insensitively when the dll name is prefixed with 'i:'
+		gboolean case_insensitive_match = strncmp (dll_map->dll, "i:", 2) == 0 && g_ascii_strcasecmp (dll_map->dll + 2, dll) == 0;
+		gboolean case_sensitive_match = strcmp (dll_map->dll, dll) == 0;
+		if (!(case_insensitive_match || case_sensitive_match))
 			continue;
-		}
+
 		if (!found && dll_map->target) {
 			*rdll = dll_map->target;
 			found = 1;
 			/* we don't quit here, because we could find a full
-			 * entry that matches also function and that has priority.
+			 * entry that also matches the function, which takes priority.
 			 */
 		}
 		if (dll_map->func && strcmp (dll_map->func, func) == 0) {
@@ -81,20 +81,40 @@ mono_dllmap_lookup_list (MonoDllMap *dll_map, const char *dll, const char* func,
 		}
 	}
 
-	mono_global_loader_data_unlock ();
+exit:
+	*rdll = g_strdup (*rdll);
+	*rfunc = g_strdup (*rfunc);
 	return found;
 }
 
-static int 
+/*
+ * The locking and GC state transitions here are wonky due to the fact the image lock is a coop lock
+ * and the global loader data lock is an OS lock.
+ */
+static int
 mono_dllmap_lookup (MonoImage *assembly, const char *dll, const char* func, const char **rdll, const char **rfunc)
 {
 	int res;
+
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	if (assembly && assembly->dll_map) {
+		mono_image_lock (assembly);
 		res = mono_dllmap_lookup_list (assembly->dll_map, dll, func, rdll, rfunc);
+		mono_image_unlock (assembly);
 		if (res)
 			return res;
 	}
-	return mono_dllmap_lookup_list (global_dll_map, dll, func, rdll, rfunc);
+
+	MONO_ENTER_GC_SAFE;
+
+	mono_global_loader_data_lock ();
+	res = mono_dllmap_lookup_list (global_dll_map, dll, func, rdll, rfunc);
+	mono_global_loader_data_unlock ();
+
+	MONO_EXIT_GC_SAFE;
+
+	return res;
 }
 #endif
 
@@ -103,18 +123,20 @@ dllmap_insert_global (const char *dll, const char *func, const char *tdll, const
 {
 	MonoDllMap *entry;
 
-		mono_loader_init ();
+	mono_loader_init ();
 
-		entry = (MonoDllMap *)g_malloc0 (sizeof (MonoDllMap));
-		entry->dll = dll? g_strdup (dll): NULL;
-		entry->target = tdll? g_strdup (tdll): NULL;
-		entry->func = func? g_strdup (func): NULL;
-		entry->target_func = tfunc? g_strdup (tfunc): (func? g_strdup (func): NULL);
+	entry = (MonoDllMap *)g_malloc0 (sizeof (MonoDllMap));
+	entry->dll = dll? g_strdup (dll): NULL;
+	entry->target = tdll? g_strdup (tdll): NULL;
+	entry->func = func? g_strdup (func): NULL;
+	entry->target_func = tfunc? g_strdup (tfunc): (func? g_strdup (func): NULL);
 
-		mono_global_loader_data_lock ();
-		entry->next = global_dll_map;
-		global_dll_map = entry;
-		mono_global_loader_data_unlock ();
+	// No transition here because this is early in startup
+	mono_global_loader_data_lock ();
+	entry->next = global_dll_map;
+	global_dll_map = entry;
+	mono_global_loader_data_unlock ();
+
 }
 
 static void
@@ -123,20 +145,26 @@ dllmap_insert_image (MonoImage *assembly, const char *dll, const char *func, con
 	MonoDllMap *entry;
 	g_assert (assembly != NULL);
 
-		mono_loader_init ();
+	MONO_REQ_GC_UNSAFE_MODE;
 
-		entry = (MonoDllMap *)mono_image_alloc0 (assembly, sizeof (MonoDllMap));
-		entry->dll = dll? mono_image_strdup (assembly, dll): NULL;
-		entry->target = tdll? mono_image_strdup (assembly, tdll): NULL;
-		entry->func = func? mono_image_strdup (assembly, func): NULL;
-		entry->target_func = tfunc? mono_image_strdup (assembly, tfunc): (func? mono_image_strdup (assembly, func): NULL);
+	mono_loader_init ();
 
-		mono_image_lock (assembly);
-		entry->next = assembly->dll_map;
-		assembly->dll_map = entry;
-		mono_image_unlock (assembly);
+	entry = (MonoDllMap *)mono_image_alloc0 (assembly, sizeof (MonoDllMap));
+	entry->dll = dll? mono_image_strdup (assembly, dll): NULL;
+	entry->target = tdll? mono_image_strdup (assembly, tdll): NULL;
+	entry->func = func? mono_image_strdup (assembly, func): NULL;
+	entry->target_func = tfunc? mono_image_strdup (assembly, tfunc): (func? mono_image_strdup (assembly, func): NULL);
+
+	mono_image_lock (assembly);
+	entry->next = assembly->dll_map;
+	assembly->dll_map = entry;
+	mono_image_unlock (assembly);
 }
 
+/*
+ * LOCKING: Assumes the relevant lock is held.
+ * For the global DllMap, this is `global_loader_data_mutex`, and for images it's their internal lock.
+ */
 static void
 free_dllmap (MonoDllMap *map)
 {
@@ -155,13 +183,12 @@ free_dllmap (MonoDllMap *map)
 void
 mono_dllmap_insert_internal (MonoImage *assembly, const char *dll, const char *func, const char *tdll, const char *tfunc)
 {
+	// The locking in here is _really_ wonky, and I'm not convinced this function should exist.
+	// I've split it into an internal version to offer flexibility in the future.
 	if (!assembly)
 		dllmap_insert_global (dll, func, tdll, tfunc);
-	else {
-		MONO_ENTER_GC_UNSAFE;
+	else
 		dllmap_insert_image (assembly, dll, func, tdll, tfunc);
-		MONO_EXIT_GC_UNSAFE;
-	}
 }
 
 /**
@@ -172,7 +199,7 @@ mono_dllmap_insert_internal (MonoImage *assembly, const char *dll, const char *f
  * \param tdll The name of the library to map the specified \p dll if it matches.
  * \param tfunc The name of the function that replaces the invocation.  If NULL, it is replaced with a copy of \p func.
  *
- * LOCKING: Acquires the loader lock.
+ * LOCKING: Acquires the image lock, or the loader data lock if an image is not passed.
  *
  * This function is used to programatically add \c DllImport remapping in either
  * a specific assembly, or as a global remapping.   This is done by remapping
@@ -203,8 +230,13 @@ mono_dllmap_insert (MonoImage *assembly, const char *dll, const char *func, cons
 void
 mono_global_dllmap_cleanup (void)
 {
+	// No need for a transition here since the thread is already detached from the runtime
+	mono_global_loader_data_lock ();
+
 	free_dllmap (global_dll_map);
 	global_dll_map = NULL;
+
+	mono_global_loader_data_unlock ();
 }
 
 static MonoDl*
@@ -214,27 +246,42 @@ cached_module_load (const char *name, int flags, char **err)
 
 	if (err)
 		*err = NULL;
+
+	MONO_ENTER_GC_SAFE;
+
 	mono_global_loader_data_lock ();
+
 	if (!global_module_map)
 		global_module_map = g_hash_table_new (g_str_hash, g_str_equal);
+
 	res = (MonoDl *)g_hash_table_lookup (global_module_map, name);
-	if (res) {
-		mono_global_loader_data_unlock ();
-		return res;
-	}
+	if (res)
+		goto exit;
+
 	res = mono_dl_open (name, flags, err);
 	if (res)
 		g_hash_table_insert (global_module_map, g_strdup (name), res);
+
+exit:
 	mono_global_loader_data_unlock ();
+
+	MONO_EXIT_GC_SAFE;
+
 	return res;
 }
 
 void
 mono_loader_register_module (const char *name, MonoDl *module)
 {
+	// No transition here because this is early in startup
+	mono_global_loader_data_lock ();
+
 	if (!global_module_map)
 		global_module_map = g_hash_table_new (g_str_hash, g_str_equal);
+
 	g_hash_table_insert (global_module_map, g_strdup (name), module);
+
+	mono_global_loader_data_unlock ();
 }
 
 static void
@@ -246,12 +293,17 @@ remove_cached_module (gpointer key, gpointer value, gpointer user_data)
 void
 mono_cached_module_cleanup (void)
 {
+	// No need for a transition here since the thread is already detached from the runtime
+	mono_global_loader_data_lock ();
+
 	if (global_module_map != NULL) {
 		g_hash_table_foreach(global_module_map, remove_cached_module, NULL);
 
 		g_hash_table_destroy(global_module_map);
 		global_module_map = NULL;
 	}
+
+	mono_global_loader_data_unlock ();
 }
 
 static gboolean
@@ -332,7 +384,7 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 }
 
 static MonoDl*
-pinvoke_probe_for_module (MonoImage *image, const char*new_scope, const char *import, char **found_name_out, char **error_msg_out);
+pinvoke_probe_for_module (MonoImage *image, const char*new_scope, char **found_name_out, char **error_msg_out);
 
 static MonoDl*
 pinvoke_probe_for_module_relative_directories (MonoImage *image, const char *file_name, char **found_name_out);
@@ -362,10 +414,11 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 	MonoTableInfo *mr = &tables [MONO_TABLE_MODULEREF];
 	guint32 im_cols [MONO_IMPLMAP_SIZE];
 	guint32 scope_token;
-	const char *import = NULL;
-	const char *orig_scope;
-	const char *new_scope;
-	char *error_msg;
+	const char *orig_import = NULL;
+	const char *new_import = NULL;
+	const char *orig_scope = NULL;
+	const char *new_scope = NULL;
+	char *error_msg = NULL;
 	char *found_name = NULL;
 	MonoDl *module = NULL;
 	gboolean cached = FALSE;
@@ -383,34 +436,32 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 			(MonoReflectionMethodAux *)g_hash_table_lookup (
 				((MonoDynamicImage*)m_class_get_image (method->klass))->method_aux_hash, method);
 		if (!method_aux)
-			return NULL;
+			goto exit;
 
-		import = method_aux->dllentry;
+		orig_import = method_aux->dllentry;
 		orig_scope = method_aux->dll;
 	}
 	else {
 		if (!piinfo->implmap_idx || piinfo->implmap_idx > im->rows)
-			return NULL;
+			goto exit;
 
 		mono_metadata_decode_row (im, piinfo->implmap_idx - 1, im_cols, MONO_IMPLMAP_SIZE);
 
 		if (!im_cols [MONO_IMPLMAP_SCOPE] || im_cols [MONO_IMPLMAP_SCOPE] > mr->rows)
-			return NULL;
+			goto exit;
 
 		piinfo->piflags = im_cols [MONO_IMPLMAP_FLAGS];
-		import = mono_metadata_string_heap (image, im_cols [MONO_IMPLMAP_NAME]);
+		orig_import = mono_metadata_string_heap (image, im_cols [MONO_IMPLMAP_NAME]);
 		scope_token = mono_metadata_decode_row_col (mr, im_cols [MONO_IMPLMAP_SCOPE] - 1, MONO_MODULEREF_NAME);
 		orig_scope = mono_metadata_string_heap (image, scope_token);
 	}
 
 #ifndef ENABLE_NETCORE
 	// FIXME: The dllmap remaps System.Native to mono-native
-	mono_dllmap_lookup (image, orig_scope, import, &new_scope, &import);
+	mono_dllmap_lookup (image, orig_scope, orig_import, &new_scope, &new_import);
 #else
-	/* AK: FIXME: dllmap, above doesn't strdup the results, so these leak
-	 * since there's no free() */
 	new_scope = g_strdup (orig_scope);
-	import = g_strdup (import);
+	new_import = g_strdup (orig_import);
 #endif
 
 	if (!module) {
@@ -424,22 +475,20 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 		mono_image_unlock (image);
 		if (module)
 			cached = TRUE;
-		if (found_name)
-			found_name = g_strdup (found_name);
+		found_name = g_strdup (found_name);
 	}
 
 	if (!module)
-		module = pinvoke_probe_for_module (image, new_scope, import, &found_name, &error_msg);
+		module = pinvoke_probe_for_module (image, new_scope, &found_name, &error_msg);
 
 	if (!module) {
 		mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_DLLIMPORT,
 				"DllImport unable to load library '%s'.",
 				error_msg);
-		g_free (error_msg);
 
 		status_out->err_code = LOOKUP_PINVOKE_ERR_NO_LIB;
 		status_out->err_arg = g_strdup (new_scope);
-		return NULL;
+		goto exit;
 	}
 
 	if (!cached) {
@@ -455,17 +504,21 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
 				"DllImport searching in: '%s' ('%s').", new_scope, found_name);
-	g_free (found_name);
 
-	addr = pinvoke_probe_for_symbol (module, piinfo, import, &error_msg);
+	addr = pinvoke_probe_for_symbol (module, piinfo, new_import, &error_msg);
 
 	if (!addr) {
-		g_free (error_msg);
 		status_out->err_code = LOOKUP_PINVOKE_ERR_NO_SYM;
-		status_out->err_arg = g_strdup (import);
-		return NULL;
+		status_out->err_arg = g_strdup (new_import);
+		goto exit;
 	}
 	piinfo->addr = addr;
+
+exit:
+	g_free ((char *)new_import);
+	g_free ((char *)new_scope);
+	g_free (error_msg);
+	g_free (found_name);
 	return addr;
 }
 
@@ -549,7 +602,7 @@ pinvoke_probe_transform_path (const char *new_scope, int phase, char **file_name
 }
 
 static MonoDl*
-pinvoke_probe_for_module (MonoImage *image, const char *new_scope, const char *import, char **found_name_out, char **error_msg_out)
+pinvoke_probe_for_module (MonoImage *image, const char *new_scope, char **found_name_out, char **error_msg_out)
 {
 	char *full_name, *file_name;
 	char *error_msg = NULL;

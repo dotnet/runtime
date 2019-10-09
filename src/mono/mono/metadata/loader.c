@@ -61,7 +61,7 @@
 static MonoCoopMutex loader_mutex;
 static mono_mutex_t global_loader_data_mutex;
 static gboolean loader_lock_inited;
-static gboolean loader_lock_track_ownership = FALSE;
+static gboolean loader_lock_track_ownership;
 
 /*
  * This TLS variable holds how many times the current thread has acquired the loader 
@@ -82,6 +82,7 @@ mono_loader_init ()
 {
 	static gboolean inited;
 
+	// FIXME: potential race
 	if (!inited) {
 		mono_coop_mutex_init_recursive (&loader_mutex);
 		mono_os_mutex_init_recursive (&global_loader_data_mutex);
