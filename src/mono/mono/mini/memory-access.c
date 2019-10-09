@@ -400,7 +400,7 @@ mini_emit_memory_copy_internal (MonoCompile *cfg, MonoInst *dest, MonoInst *src,
 		NEW_STORE_MEMBASE (cfg, store, OP_STORE_MEMBASE_REG, dest->dreg, 0, dreg);
 		MONO_ADD_INS (cfg->cbb, store);
 
-		mini_emit_write_barrier (cfg, dest, src);
+		mini_emit_write_barrier (cfg, dest, load);
 		return;
 
 	} else if (cfg->gen_write_barriers && (m_class_has_references (klass) || size_ins) && !native) { 	/* if native is true there should be no references in the struct */
