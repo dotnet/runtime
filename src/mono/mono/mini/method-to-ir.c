@@ -12518,6 +12518,8 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 							mono_bblock_insert_before_ins (bb, ins, load_ins);
 							use_ins = load_ins;
 						}
+						if (cfg->verbose_level > 2)
+							mono_print_ins_index (0, use_ins);
 					}
 
 					if (var->dreg < orig_next_vreg) {
