@@ -1615,6 +1615,10 @@ namespace R2RDump
                     builder.Append("END_CATCH");
                     break;
 
+                case ReadyToRunHelper.READYTORUN_HELPER_StackProbe:
+                    builder.Append("STACK_PROBE");
+                    break;
+
                 default:
                     builder.Append(string.Format("Unknown helper: {0:X2}", helperType));
                     break;

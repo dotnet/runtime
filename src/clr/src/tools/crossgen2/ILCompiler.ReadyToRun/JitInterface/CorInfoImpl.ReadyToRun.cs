@@ -557,6 +557,10 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.LogMethodEnter;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_STACK_PROBE:
+                    id = ReadyToRunHelper.StackProbe;
+                    break;
+
                 case CorInfoHelpFunc.CORINFO_HELP_INITCLASS:
                 case CorInfoHelpFunc.CORINFO_HELP_INITINSTCLASS:
                 case CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTEXCEPTION:
