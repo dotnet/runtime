@@ -1205,10 +1205,8 @@ namespace System
         {
             while (--digits >= 0 || value != 0)
             {
-                // TODO https://github.com/dotnet/coreclr/issues/3439
-                uint newValue = value / 10;
-                *(--bufferEnd) = (byte)(value - (newValue * 10) + '0');
-                value = newValue;
+                value = Math.DivRem(value, 10, out uint remainder);
+                *(--bufferEnd) = (byte)(remainder + '0');
             }
             return bufferEnd;
         }
@@ -1217,15 +1215,13 @@ namespace System
         {
             while (--digits >= 0 || value != 0)
             {
-                // TODO https://github.com/dotnet/coreclr/issues/3439
-                uint newValue = value / 10;
-                *(--bufferEnd) = (char)(value - (newValue * 10) + '0');
-                value = newValue;
+                value = Math.DivRem(value, 10, out uint remainder);
+                *(--bufferEnd) = (char)(remainder + '0');
             }
             return bufferEnd;
         }
 
-        private static unsafe string UInt32ToDecStr(uint value, int digits)
+        internal static unsafe string UInt32ToDecStr(uint value, int digits)
         {
             int bufferLength = Math.Max(digits, FormattingHelpers.CountDigits(value));
 
@@ -1243,10 +1239,8 @@ namespace System
                 {
                     do
                     {
-                        // TODO https://github.com/dotnet/coreclr/issues/3439
-                        uint div = value / 10;
-                        *(--p) = (char)('0' + value - (div * 10));
-                        value = div;
+                        value = Math.DivRem(value, 10, out uint remainder);
+                        *(--p) = (char)(remainder + '0');
                     }
                     while (value != 0);
                 }
@@ -1276,10 +1270,8 @@ namespace System
                 {
                     do
                     {
-                        // TODO https://github.com/dotnet/coreclr/issues/3439
-                        uint div = value / 10;
-                        *(--p) = (char)('0' + value - (div * 10));
-                        value = div;
+                        value = Math.DivRem(value, 10, out uint remainder);
+                        *(--p) = (char)(remainder + '0');
                     }
                     while (value != 0);
                 }
@@ -1481,7 +1473,7 @@ namespace System
             number.CheckConsistency();
         }
 
-        private static unsafe string UInt64ToDecStr(ulong value, int digits)
+        internal static unsafe string UInt64ToDecStr(ulong value, int digits)
         {
             if (digits < 1)
                 digits = 1;
