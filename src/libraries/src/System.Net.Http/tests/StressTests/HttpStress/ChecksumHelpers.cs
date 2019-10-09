@@ -57,7 +57,7 @@ namespace HttpStress
             return c;
         }
 
-        public static ulong update_crc(ulong crc, string text, Encoding encoding = null)
+        public static ulong update_crc(ulong crc, string text, Encoding? encoding = null)
         {
             encoding = encoding ?? Encoding.ASCII;
             byte[] bytes = encoding.GetBytes(text);
@@ -65,9 +65,9 @@ namespace HttpStress
         }
 
         public static ulong CalculateCRC(byte[] buf) => update_crc(InitialCrc, buf, buf.Length) ^ InitialCrc;
-        public static ulong CalculateCRC(string text, Encoding encoding = null) => update_crc(InitialCrc, text, encoding) ^ InitialCrc;
+        public static ulong CalculateCRC(string text, Encoding? encoding = null) => update_crc(InitialCrc, text, encoding) ^ InitialCrc;
 
-        public static ulong CalculateHeaderCrc<T>(IEnumerable<(string name, T)> headers, Encoding encoding = null) where T : IEnumerable<string>
+        public static ulong CalculateHeaderCrc<T>(IEnumerable<(string name, T)> headers, Encoding? encoding = null) where T : IEnumerable<string>
         {
             ulong checksum = InitialCrc;
 
