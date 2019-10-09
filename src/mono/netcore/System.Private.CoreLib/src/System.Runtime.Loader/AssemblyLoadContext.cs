@@ -27,9 +27,6 @@ namespace System.Runtime.Loader
 		{
 		}
 
-		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-		extern static IntPtr InternalLoadUnmanagedDllFromPath (string unmanagedDllPath);
-
 		[System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
 		Assembly InternalLoadFromPath (string assemblyPath, string nativeImagePath)
 		{
