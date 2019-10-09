@@ -187,6 +187,30 @@ g_assertion_message (const gchar *format, ...)
 	exit (0);
 }
 
+// Emscriptem emulates varargs, and fails to stack pack multiple outgoing varargs areas,
+// so this function serves to remove varargs in its caller and conserve stack.
+void
+mono_assertion_message_disabled (const char *file, int line)
+{
+	mono_assertion_message (file, line, "<disabled>");
+}
+
+// Emscriptem emulates varargs, and fails to stack pack multiple outgoing varargs areas,
+// so this function serves to remove varargs in its caller and conserve stack.
+void
+mono_assertion_message (const char *file, int line, const char *condition)
+{
+	g_assertion_message ("* Assertion at %s:%d, condition `%s' not met\n", file, line, condition);
+}
+
+// Emscriptem emulates varargs, and fails to stack pack multiple outgoing varargs areas,
+// so this function serves to remove varargs in its caller and conserve stack.
+void
+mono_assertion_message_unreachable (const char *file, int line)
+{
+	g_assertion_message ("* Assertion: should not be reached at %s:%d\n", __FILE__, __LINE__);
+}
+
 #if HOST_ANDROID
 #include <android/log.h>
 

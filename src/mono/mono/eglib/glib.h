@@ -779,6 +779,9 @@ G_EXTERN_C // Used by MonoPosixHelper or MonoSupportW, at least.
 void           g_log                  (const gchar *log_domain, GLogLevelFlags log_level, const gchar *format, ...);
 G_EXTERN_C // Used by MonoPosixHelper or MonoSupportW, at least.
 void           g_assertion_message    (const gchar *format, ...) G_GNUC_NORETURN;
+void           mono_assertion_message_disabled  (const char *file, int line) G_GNUC_NORETURN;
+void           mono_assertion_message  (const char *file, int line, const char *condition) G_GNUC_NORETURN;
+void           mono_assertion_message_unreachable (const char *file, int line) G_GNUC_NORETURN;
 const char *   g_get_assertion_message (void);
 
 #ifdef HAVE_C99_SUPPORT
@@ -930,9 +933,10 @@ GUnicodeBreakType   g_unichar_break_type (gunichar c);
 
 /* g_assert is a boolean expression; the precise value is not preserved, just true or false. */
 #ifdef DISABLE_ASSERT_MESSAGES
-#define g_assert(x) (G_LIKELY((x)) ? 1 : (g_assertion_message ("* Assertion at %s:%d, condition `%s' not met\n", __FILE__, __LINE__, "<disabled>"), 0))
+// This is smaller than the equivalent mono_assertion_message (..."disabled");
+#define g_assert(x) (G_LIKELY((x)) ? 1 : (mono_assertion_message_disabled (__FILE__, __LINE__), 0))
 #else
-#define g_assert(x) (G_LIKELY((x)) ? 1 : (g_assertion_message ("* Assertion at %s:%d, condition `%s' not met\n", __FILE__, __LINE__, #x), 0))
+#define g_assert(x) (G_LIKELY((x)) ? 1 : (mono_assertion_message (__FILE__, __LINE__, #x), 0))
 #endif
 
 #ifdef __cplusplus
@@ -941,7 +945,7 @@ GUnicodeBreakType   g_unichar_break_type (gunichar c);
 #define g_static_assert(x) g_assert (x)
 #endif
 
-#define  g_assert_not_reached() G_STMT_START { g_assertion_message ("* Assertion: should not be reached at %s:%d\n", __FILE__, __LINE__); eg_unreachable(); } G_STMT_END
+#define  g_assert_not_reached() G_STMT_START { mono_assertion_message_unreachable (__FILE__, __LINE__); eg_unreachable(); } G_STMT_END
 
 /* f is format -- like printf and scanf
  * Where you might have said:
