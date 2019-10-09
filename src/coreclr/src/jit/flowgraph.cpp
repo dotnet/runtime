@@ -14397,6 +14397,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
     return returnvalue;
 }
 
+//-------------------------------------------------------------
 // fgBlockEndFavorsTailDuplication:
 //     Heuristic function that returns true if this block ends in a statement that looks favorable
 //     for tail-duplicating its successor (such as assigning a constant to a local).
@@ -14412,38 +14413,38 @@ bool Compiler::fgBlockEndFavorsTailDuplication(BasicBlock* block)
         return false;
     }
 
-    if (!block->lastStmt())
+    Statement* lastStmt = block->lastStmt();
+
+    if (lastStmt == nullptr)
     {
         return false;
     }
-    else
+
+    // Tail duplication tends to pay off when the last statement
+    // is an assignment of a constant, arraylength, or a relop.
+    // This is because these statements produce information about values
+    // that would otherwise be lost at the upcoming merge point.
+    GenTree* tree = lastStmt->gtStmtExpr;
+    if (tree->gtOper != GT_ASG)
     {
-        // Tail duplication tends to pay off when the last statement
-        // is an assignment of a constant, arraylength, or a relop.
-        // This is because these statements produce information about values
-        // that would otherwise be lost at the upcoming merge point.
-
-        Statement* lastStmt = block->lastStmt();
-        GenTree*   tree     = lastStmt->gtStmtExpr;
-        if (tree->gtOper != GT_ASG)
-        {
-            return false;
-        }
-
-        if (tree->OperIsBlkOp())
-        {
-            return false;
-        }
-
-        GenTree* op2 = tree->gtOp.gtOp2;
-        if (op2->gtOper != GT_ARR_LENGTH && !op2->OperIsConst() && ((op2->OperKind() & GTK_RELOP) == 0))
-        {
-            return false;
-        }
+        return false;
     }
+
+    if (tree->OperIsBlkOp())
+    {
+        return false;
+    }
+
+    GenTree* op2 = tree->gtOp.gtOp2;
+    if (op2->gtOper != GT_ARR_LENGTH && !op2->OperIsConst() && ((op2->OperKind() & GTK_RELOP) == 0))
+    {
+        return false;
+    }
+
     return true;
 }
 
+//-------------------------------------------------------------
 // fgBlockIsGoodTailDuplicationCandidate:
 //     Heuristic function that examines a block (presumably one that is a merge point) to determine
 //     if it should be duplicated.
@@ -14454,21 +14455,26 @@ bool Compiler::fgBlockEndFavorsTailDuplication(BasicBlock* block)
 //
 bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target)
 {
-    Statement* stmt = target->FirstNonPhiDef();
-
     // Here we are looking for blocks with a single statement feeding a conditional branch.
     // These blocks are small, and when duplicated onto the tail of blocks that end in
     // assignments, there is a high probability of the branch completely going away.
-
+    //
     // This is by no means the only kind of tail that it is beneficial to duplicate,
     // just the only one we recognize for now.
-
-    if (stmt != target->lastStmt())
+    if (target->bbJumpKind != BBJ_COND)
     {
         return false;
     }
 
-    if (target->bbJumpKind != BBJ_COND)
+    // No point duplicating this block if it's not a control flow join.
+    if (target->bbRefs < 2)
+    {
+        return false;
+    }
+
+    Statement* stmt = target->FirstNonPhiDef();
+
+    if (stmt != target->lastStmt())
     {
         return false;
     }
@@ -14512,6 +14518,7 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target)
     return true;
 }
 
+//-------------------------------------------------------------
 // fgOptimizeUncondBranchToSimpleCond:
 //    For a block which has an unconditional branch, look to see if its target block
 //    is a good candidate for tail duplication, and if so do that duplication.
@@ -14527,8 +14534,7 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
     assert(block->bbJumpKind == BBJ_ALWAYS);
     assert(block->bbJumpDest == target);
 
-    // TODO-Review: OK if they are in the same region?
-    if (compHndBBtabCount > 0)
+    if (!BasicBlock::sameEHRegion(block, target))
     {
         return false;
     }
@@ -14552,7 +14558,6 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
     assert(stmt == target->lastStmt());
 
     // Duplicate the target block at the end of this block
-
     GenTree* cloned = gtCloneExpr(stmt->gtStmtExpr);
     noway_assert(cloned);
     Statement* jmpStmt = gtNewStmt(cloned);
@@ -14563,7 +14568,6 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
     fgRemoveRefPred(target, block);
 
     // add an unconditional block after this block to jump to the target block's fallthrough block
-
     BasicBlock* next = fgNewBBafter(BBJ_ALWAYS, block, true);
 
     // The new block 'next' will inherit its weight from 'block'
@@ -14573,14 +14577,8 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
     fgAddRefPred(next, block);
     fgAddRefPred(next->bbJumpDest, next);
 
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("fgOptimizeUncondBranchToSimpleCond(from " FMT_BB " to cond " FMT_BB "), created new uncond " FMT_BB
-               "\n",
-               block->bbNum, target->bbNum, next->bbNum);
-    }
-#endif // DEBUG
+    JITDUMP("fgOptimizeUncondBranchToSimpleCond(from " FMT_BB " to cond " FMT_BB "), created new uncond " FMT_BB "\n",
+            block->bbNum, target->bbNum, next->bbNum);
 
     if (fgStmtListThreaded)
     {
