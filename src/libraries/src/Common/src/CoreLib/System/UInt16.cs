@@ -68,7 +68,7 @@ namespace System
         // Converts the current value to a String in base-10 with no extra padding.
         public override string ToString()
         {
-            return Number.FormatUInt32(m_value, null, null);
+            return Number.UInt32ToDecStr(m_value, -1);
         }
 
         public string ToString(IFormatProvider? provider)
