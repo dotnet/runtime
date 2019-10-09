@@ -90,9 +90,9 @@ clean-genmdesc:
 	$(top_srcdir)/msvc/run-msbuild.sh "clean" "$(host_cpu)" "release" "" "genmdesc.vcxproj"
 
 jay:
-	$(top_srcdir)/msvc/run-msbuild.sh "build" "$(host_cpu)" "release" "" "jay.vcxproj"
+	$(top_srcdir)/msvc/run-msbuild.sh "build" "$(host_cpu)" "release" "" "$(top_srcdir)/mcs/jay/jay.vcxproj"
 
 clean-jay:
-	$(top_srcdir)/msvc/run-msbuild.sh "clean" "$(host_cpu)" "release" "" "jay.vcxproj"
+	$(top_srcdir)/msvc/run-msbuild.sh "clean" "$(host_cpu)" "release" "" "$(top_srcdir)/mcs/jay/jay.vcxproj"
 
 endif
