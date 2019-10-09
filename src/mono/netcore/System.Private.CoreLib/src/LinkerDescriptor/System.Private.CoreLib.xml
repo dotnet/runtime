@@ -389,7 +389,7 @@
 		<!-- domain.c: mono_defaults.string_class -->
 		<type fullname="System.String" preserve="fields">
 			<!-- method-to-ir.c: mini_redirect_call -->
-			<method name="InternalAllocateStr" />
+			<method name="FastAllocateString" />
 			<!-- method-to-it.c: mini_emit_initobj -->
 			<method name="memset" />
 			<!-- mini-generic-sharing.c: class_type_info 

@@ -35,7 +35,7 @@ ves_icall_System_String_ctor_RedirectToCreateString (void)
 }
 
 MonoStringHandle
-ves_icall_System_String_InternalAllocateStr (gint32 length, MonoError *error)
+ves_icall_System_String_FastAllocateString (gint32 length, MonoError *error)
 {
 	return mono_string_new_size_handle (mono_domain_get (), length, error);
 }
