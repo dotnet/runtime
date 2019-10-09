@@ -262,7 +262,7 @@ namespace System.Net.Http.HPack
         }
 
         /// <summary>Encodes a "Literal Header Field without Indexing - New Name".</summary>
-        public static bool EncodeLiteralHeaderFieldWithoutIndexingNewName(string name, string[] values, string separator, Span<byte> destination, out int bytesWritten)
+        public static bool EncodeLiteralHeaderFieldWithoutIndexingNewName(string name, ReadOnlySpan<string> values, string separator, Span<byte> destination, out int bytesWritten)
         {
             // From https://tools.ietf.org/html/rfc7541#section-6.2.2
             // ------------------------------------------------------
@@ -422,7 +422,7 @@ namespace System.Net.Http.HPack
             return false;
         }
 
-        public static bool EncodeStringLiterals(string[] values, string separator, Span<byte> destination, out int bytesWritten)
+        public static bool EncodeStringLiterals(ReadOnlySpan<string> values, string separator, Span<byte> destination, out int bytesWritten)
         {
             bytesWritten = 0;
 
