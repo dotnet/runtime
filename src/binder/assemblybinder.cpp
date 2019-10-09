@@ -35,10 +35,6 @@
 #define APP_DOMAIN_LOCKED_UNLOCKED        0x02
 #define APP_DOMAIN_LOCKED_CONTEXT         0x04
 
-#define BIND_BEHAVIOR_STATIC            0
-#define BIND_BEHAVIOR_ORDER_INDEPENDENT 1
-#define BIND_BEHAVIOR_BEST_MATCH        2
-
 #ifndef IMAGE_FILE_MACHINE_ARM64
 #define IMAGE_FILE_MACHINE_ARM64             0xAA64  // ARM64 Little-Endian
 #endif
@@ -280,42 +276,6 @@ namespace BINDER_SPACE
             return hr;
         }
 
-        HRESULT LogBindBehavior(ApplicationContext *pApplicationContext,
-                                DWORD               dwBindBehavior)
-        {
-            HRESULT hr = S_OK;
-            BindingLog *pBindingLog = pApplicationContext->GetBindingLog();
-
-            if (pBindingLog->CanLog())
-            {
-                PathString bindBehavior;
-                UINT uiBindBehavior = 0;
-
-                switch (dwBindBehavior)
-                {
-                case BIND_BEHAVIOR_STATIC:
-                    uiBindBehavior = ID_FUSLOG_BINDING_BEHAVIOR_STATIC;
-                    break;
-                case BIND_BEHAVIOR_ORDER_INDEPENDENT:
-                    uiBindBehavior = ID_FUSLOG_BINDING_BEHAVIOR_ORDER_INDEPENDENT;
-                    break;
-                case BIND_BEHAVIOR_BEST_MATCH:
-                    uiBindBehavior = ID_FUSLOG_BINDING_BEHAVIOR_BEST_MATCH;
-                    break;
-                default:
-                    _ASSERTE(0);
-                    IF_FAIL_GO(E_INVALIDARG);
-                    break;
-                }
-
-                IF_FAIL_GO(bindBehavior.LoadResourceAndReturnHR(CCompRC::Debugging, uiBindBehavior));
-                IF_FAIL_GO(pBindingLog->Log(bindBehavior.GetUnicode()));
-            }
-
-        Exit:
-            return hr;
-        }
-
         HRESULT LogAssemblyNameWhereRef(ApplicationContext *pApplicationContext,
                                         Assembly           *pAssembly)
         {
@@ -364,28 +324,6 @@ namespace BINDER_SPACE
                             culturedManifestDisplayName.GetUnicode(), 
                             localPathDisplayName.GetUnicode());
                 IF_FAIL_GO(pBindingLog->Log(info.GetUnicode()));
-            }
-
-        Exit:
-            return hr;
-        }
-
-        HRESULT LogPathAttempt(ApplicationContext *pApplicationContext,
-                               PathString         &assemblyPath)
-        {
-            HRESULT hr = S_OK;
-            BindingLog *pBindingLog = pApplicationContext->GetBindingLog();
-
-            if (pBindingLog->CanLog())
-            {
-                PathString tmp;
-                PathString info;
-
-                IF_FAIL_GO(tmp.LoadResourceAndReturnHR(CCompRC::Debugging,
-                                                       ID_FUSLOG_BINDING_LOG_PATH_ATTEMPT));
-                info.Printf(tmp.GetUnicode(), assemblyPath.GetUnicode());
-
-                IF_FAIL_GO(pBindingLog->Log(info));
             }
 
         Exit:

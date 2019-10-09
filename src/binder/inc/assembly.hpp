@@ -148,17 +148,11 @@ namespace BINDER_SPACE
 
         inline IMDInternalImport *GetMDImport();
         inline void SetMDImport(IMDInternalImport *pMDImport);
-        inline mdAssembly *GetAssemblyRefTokens();
-
-        inline DWORD GetNbAssemblyRefTokens();
-        inline void SetNbAsssemblyRefTokens(DWORD dwCAssemblyRefTokens);
 
         LONG                     m_cRef;
         PEImage                 *m_pPEImage;
         PEImage                 *m_pNativePEImage;
         IMDInternalImport       *m_pMDImport;
-        mdAssembly              *m_pAssemblyRefTokens;
-        DWORD                    m_dwCAssemblyRefTokens;
         AssemblyName            *m_pAssemblyName;
         SString                  m_assemblyPath;
         DWORD                    m_dwAssemblyFlags;
