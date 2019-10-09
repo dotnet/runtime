@@ -243,7 +243,11 @@ namespace Mono.Linker.Steps {
 		{
 			// We may mark an interface type later on.  Which means we need to reprocess any time with one or more interface implementations that have not been marked
 			// and if an interface type is found to be marked and implementation is not marked, then we need to mark that implementation
-			foreach (var type in _typesWithInterfaces) {
+
+			// copy the data to avoid modified while enumerating error potential, which can happen under certain conditions.
+			var typesWithInterfaces = _typesWithInterfaces.ToArray ();
+
+			foreach (var type in typesWithInterfaces) {
 				// Exception, types that have not been flagged as instantiated yet.  These types may not need their interfaces even if the
 				// interface type is marked
 				if (!Annotations.IsInstantiated (type))
