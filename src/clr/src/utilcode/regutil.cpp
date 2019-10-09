@@ -53,16 +53,12 @@ LPWSTR REGUTIL::EnvGetString(LPCWSTR name, BOOL fPrependCOMPLUS)
         return NULL;
     }
 
-#ifdef ALLOW_REGISTRY
     if (fPrependCOMPLUS)
     {
+#ifdef ALLOW_REGISTRY
         if (!EnvCacheValueNameSeenPerhaps(name))
             return NULL;
-    }
 #endif // ALLOW_REGISTRY
-
-    if (fPrependCOMPLUS)
-    {
         wcscpy_s(buff, _countof(buff), COMPLUS_PREFIX);
     }
     else
