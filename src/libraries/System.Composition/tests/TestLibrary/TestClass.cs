@@ -4,8 +4,6 @@
 
 using System.Composition;
 
-[assembly: System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAssembly]
-
 namespace TestLibrary
 {
     [Export]

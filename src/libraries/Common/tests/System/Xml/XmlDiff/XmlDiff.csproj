@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>XmlDiff</AssemblyName>
     <RootNamespace>System.Xml.XmlDiff</RootNamespace>
     <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
@@ -8,9 +7,6 @@
     <Compile Include="XmlDiff.cs" />
     <Compile Include="XmlDiffDocument.cs" />
     <Compile Include="XmlDiffOption.cs" />
-    <Compile Include="$(CommonPath)\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAssemblyAttribute.cs">
-      <Link>Common\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAssemblyAttribute.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ModuleCore\ModuleCore.csproj" />
