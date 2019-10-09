@@ -5,8 +5,5 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program_1_1_1_3.cs" />
-    <Compile Include="$(CommonPath)\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAssemblyAttribute.cs">
-      <Link>Common\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAssemblyAttribute.cs</Link>
-    </Compile>
   </ItemGroup>
 </Project>
