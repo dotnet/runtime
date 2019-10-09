@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Security.Principal;
 using Xunit;
 
@@ -105,6 +106,27 @@ namespace System.DirectoryServices.AccountManagement.Tests
                 byte[] readArray = extendedPrincipal.ByteArrayExtension;
                 principal.Delete();
             }
+        }
+
+        [Theory]
+        [MemberData(nameof(TestDebuggerAttributes_Inputs))]
+        public void Save_ThrowsInvalidOperationException(PrincipalContext context)
+        {
+            if (DomainContext == null)
+            {
+                return;
+            }
+
+            using (Principal principal = CreateExtendedPrincipal(DomainContext, Guid.NewGuid().ToString()))
+            {
+                Assert.Throws<InvalidOperationException>(() => principal.Save(context));
+            }
+        }
+
+        public static IEnumerable<object[]> TestDebuggerAttributes_Inputs()
+        {
+            yield return new object[] { null };
+            yield return new object[] { new PrincipalContext(ContextType.Machine) };
         }
 
         public abstract Principal CreatePrincipal(PrincipalContext context, string name);
