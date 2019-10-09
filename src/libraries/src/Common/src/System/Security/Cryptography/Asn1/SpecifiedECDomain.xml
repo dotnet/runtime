@@ -27,5 +27,5 @@
   <asn:OctetString name="Base" />    
   <asn:Integer name="Order" backingType="ReadOnlyMemory" />
   <asn:Integer name="Cofactor" backingType="ReadOnlyMemory" optional="true" />
-  <asn:ObjectIdentifier name="Hash" />
+  <asn:ObjectIdentifier name="Hash" optional="true" />
 </asn:Sequence>
