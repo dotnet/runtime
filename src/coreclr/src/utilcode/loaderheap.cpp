@@ -856,14 +856,13 @@ inline size_t AllocMem_TotalSize(size_t dwRequestedSize, UnlockedLoaderHeap *pHe
 #ifdef _DEBUG
     dwSize += LOADER_HEAP_DEBUG_BOUNDARY;
     dwSize = ((dwSize + ALLOC_ALIGN_CONSTANT) & (~ALLOC_ALIGN_CONSTANT));
+#endif
 
     if (!pHeap->m_fExplicitControl)
     {
+#ifdef _DEBUG
         dwSize += sizeof(LoaderHeapValidationTag);
-    }
 #endif
-    if (!pHeap->m_fExplicitControl)
-    {
         if (dwSize < sizeof(LoaderHeapFreeBlock))
         {
             dwSize = sizeof(LoaderHeapFreeBlock);

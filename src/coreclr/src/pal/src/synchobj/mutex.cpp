@@ -1292,14 +1292,15 @@ void NamedMutexProcessData::Close(bool isAbruptShutdown, bool releaseSharedData)
         {
             GetSharedData()->~NamedMutexSharedData();
         }
+
+#if !NAMED_MUTEX_USE_PTHREAD_MUTEX
+        CloseHandle(m_processLockHandle);
+        SharedMemoryHelpers::CloseFile(m_sharedLockFileDescriptor);
+#endif // !NAMED_MUTEX_USE_PTHREAD_MUTEX
+
     }
 
 #if !NAMED_MUTEX_USE_PTHREAD_MUTEX
-    if (!isAbruptShutdown)
-    {
-        CloseHandle(m_processLockHandle);
-        SharedMemoryHelpers::CloseFile(m_sharedLockFileDescriptor);
-    }
 
     if (!releaseSharedData)
     {
