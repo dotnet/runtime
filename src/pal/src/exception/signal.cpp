@@ -647,7 +647,10 @@ static void inject_activation_handler(int code, siginfo_t *siginfo, void *contex
 
         if (g_safeActivationCheckFunction(CONTEXTGetPC(&winContext), /* checkingCurrentThread */ TRUE))
         {
+            int savedErrNo = errno; // Make sure that errno is not modified
             g_activationFunction(&winContext);
+            errno = savedErrNo;
+
             // Activation function may have modified the context, so update it.
             CONTEXTToNativeContext(&winContext, ucontext);
         }
