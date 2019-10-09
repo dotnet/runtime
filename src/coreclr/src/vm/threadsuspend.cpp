@@ -3189,9 +3189,11 @@ extern "C" PCONTEXT __stdcall GetCurrentSavedRedirectContext()
 {
     LIMITED_METHOD_CONTRACT;
 
-    DWORD dwLastError = GetLastError();
-    PCONTEXT pContext = GetThread()->GetSavedRedirectContext();
-    SetLastError(dwLastError);
+    PCONTEXT pContext;
+
+    BEGIN_PRESERVE_LAST_ERROR;
+    pContext = GetThread()->GetSavedRedirectContext();
+    END_PRESERVE_LAST_ERROR;
 
     return pContext;
 }
@@ -3204,7 +3206,7 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
 
     // We must preserve this in case we've interrupted an IL pinvoke stub before it
     // was able to save the error.
-    DWORD dwLastError = GetLastError();
+    DWORD dwLastError = GetLastError(); // BEGIN_PRESERVE_LAST_ERROR
 
     Thread *pThread = GetThread();
     _ASSERTE(pThread);
@@ -3351,7 +3353,7 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
 
             LOG((LF_SYNC, LL_INFO1000, "Resuming execution with RtlRestoreContext\n"));
 
-            SetLastError(dwLastError);
+            SetLastError(dwLastError); // END_PRESERVE_LAST_ERROR
 
             RtlRestoreContext(pCtx, NULL);
         }
@@ -5685,6 +5687,8 @@ void STDCALL OnHijackWorker(HijackArgs * pArgs)
     CONTRACTL_END;
 
 #ifdef HIJACK_NONINTERRUPTIBLE_THREADS
+    BEGIN_PRESERVE_LAST_ERROR;
+
     Thread         *thread = GetThread();
 
     thread->ResetThreadState(Thread::TS_Hijacked);
@@ -5716,6 +5720,8 @@ void STDCALL OnHijackWorker(HijackArgs * pArgs)
 #endif // _DEBUG
 
     frame.Pop();
+
+    END_PRESERVE_LAST_ERROR;
 #else
     PORTABILITY_ASSERT("OnHijackWorker not implemented on this platform.");
 #endif // HIJACK_NONINTERRUPTIBLE_THREADS
