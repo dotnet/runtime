@@ -300,14 +300,14 @@ namespace HttpStress
                                 return;
                             }
 
-                            string name = e.InnerException?.GetType().Name;
+                            string? name = e.InnerException?.GetType().Name;
                             switch (name)
                             {
                                 case "Http2ProtocolException":
                                 case "Http2ConnectionException":
                                 case "Http2StreamException":
-                                    if (e.InnerException.Message.Contains("INTERNAL_ERROR") || // UseKestrel (https://github.com/aspnet/AspNetCore/issues/12256)
-                                        e.InnerException.Message.Contains("CANCEL")) // UseHttpSys
+                                    if ((e.InnerException?.Message?.Contains("INTERNAL_ERROR") ?? false) || // UseKestrel (https://github.com/aspnet/AspNetCore/issues/12256)
+                                        (e.InnerException?.Message?.Contains("CANCEL") ?? false)) // UseHttpSys
                                     {
                                         return;
                                     }
@@ -482,7 +482,7 @@ namespace HttpStress
             }
         }
 
-        private static void ValidateContent(string expectedContent, string actualContent, string details = null)
+        private static void ValidateContent(string expectedContent, string actualContent, string? details = null)
         {
             if (actualContent != expectedContent)
             {
