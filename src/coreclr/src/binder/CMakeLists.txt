@@ -14,7 +14,6 @@ set(BINDER_COMMON_SOURCES
     assemblybinder.cpp
     stringlexer.cpp
     clrprivbindercoreclr.cpp
-    binderinterface.cpp
     debuglog.cpp
     bindinglog.cpp
     cdebuglog.cpp
@@ -38,7 +37,6 @@ set(BINDER_COMMON_HEADERS
     inc/assemblyname.inl
     inc/assemblyversion.hpp
     inc/assemblyversion.inl
-    inc/binderinterface.hpp
     inc/bindertypes.hpp
     inc/bindinglog.hpp
     inc/bindinglog.inl
