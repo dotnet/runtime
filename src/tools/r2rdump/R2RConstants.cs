@@ -270,6 +270,8 @@ namespace R2RDump
 
         // JIT32 x86-specific exception handling
         READYTORUN_HELPER_EndCatch = 0x110,
+
+        READYTORUN_HELPER_StackProbe = 0x111,
     }
 
     public enum CorElementType : byte
