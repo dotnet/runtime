@@ -293,7 +293,7 @@ Ability to specify which fields are required.
 - Int64
 - IEnumerable (see the feature notes)
 - IList (see the feature notes)
-- Object (polymorhic mode for serialization only)
+- Object (polymorphic mode for serialization only)
 - Nullable < T >
 - SByte
 - Single
