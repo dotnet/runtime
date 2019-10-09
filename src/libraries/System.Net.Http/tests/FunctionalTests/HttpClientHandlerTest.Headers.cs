@@ -48,7 +48,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData("\u05D1\u05F1")]
         [InlineData("jp\u30A5")]
-        public async Task SendAsync_InvalidHeader_Throw(string value)
+        public async Task SendAsync_InvalidCharactersInHeader_Throw(string value)
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
@@ -73,25 +73,45 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [Fact]
-        public async Task SendAsync_SpecialCharacterHeader_Success()
+        [Theory]
+        [InlineData("x-Special_name", "header name with underscore", true)] // underscores in header
+        [InlineData("Date", "invaliddateformat", false)] // invalid format for header but added with TryAddWithoutValidation
+        [InlineData("Accept-CharSet", "text/plain, text/json", false)] // invalid format for header but added with TryAddWithoutValidation
+        [InlineData("Content-Location", "", false)] // invalid format for header but added with TryAddWithoutValidation
+        [InlineData("Max-Forwards", "NotAnInteger", false)] // invalid format for header but added with TryAddWithoutValidation
+        public async Task SendAsync_SpecialHeaderKeyOrValue_Success(string key, string value, bool parsable)
         {
-            string headerValue = "header name with underscore";
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
+                bool contentHeader = false;
                 using (HttpClient client = CreateHttpClient())
                 {
                     var message = new HttpRequestMessage(HttpMethod.Get, uri) { Version = VersionFromUseHttp2 };
-                    message.Headers.TryAddWithoutValidation("x-Special_name", "header name with underscore");
+                    if (!message.Headers.TryAddWithoutValidation(key, value))
+                    {
+                        message.Content = new StringContent("");
+                        contentHeader = message.Content.Headers.TryAddWithoutValidation(key, value);
+                    }
                     (await client.SendAsync(message).ConfigureAwait(false)).Dispose();
+                }
+
+                // Validate our test by validating our understanding of a header's parsability.
+                HttpHeaders headers = contentHeader ? (HttpHeaders)
+                    new StringContent("").Headers :
+                    new HttpRequestMessage().Headers;
+                if (parsable)
+                {
+                    headers.Add(key, value);
+                }
+                else
+                {
+                    Assert.Throws<FormatException>(() => headers.Add(key, value));
                 }
             },
             async server =>
             {
                 HttpRequestData requestData = await server.HandleRequestAsync(HttpStatusCode.OK);
-
-                string header = requestData.GetSingleHeaderValue("x-Special_name");
-                Assert.Equal(header, headerValue);
+                Assert.Equal(value, requestData.GetSingleHeaderValue(key));
             });
         }
 

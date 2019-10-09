@@ -15,31 +15,26 @@ namespace System.Net.Http.Headers
         private const int AcceptCharsetSlot = 1;
         private const int AcceptEncodingSlot = 2;
         private const int AcceptLanguageSlot = 3;
-        private const int ExpectSlot = 4;
-        private const int IfMatchSlot = 5;
-        private const int IfNoneMatchSlot = 6;
-        private const int TransferEncodingSlot = 7;
-        private const int UserAgentSlot = 8;
-        private const int NumCollectionsSlots = 9;
+        private const int IfMatchSlot = 4;
+        private const int IfNoneMatchSlot = 5;
+        private const int TransferEncodingSlot = 6;
+        private const int UserAgentSlot = 7;
+        private const int NumCollectionsSlots = 8;
 
         private object[] _specialCollectionsSlots;
         private HttpGeneralHeaders _generalHeaders;
+        private HttpHeaderValueCollection<NameValueWithParametersHeaderValue> _expect;
         private bool _expectContinueSet;
 
         #region Request Headers
 
         private T GetSpecializedCollection<T>(int slot, Func<HttpRequestHeaders, T> creationFunc)
         {
-            // 9 properties each lazily allocate a collection to store the value(s) for that property.
+            // 8 properties each lazily allocate a collection to store the value(s) for that property.
             // Rather than having a field for each of these, store them untyped in an array that's lazily
-            // allocated.  Then we only pay for the 72 bytes for those fields when any is actually accessed.
-            object[] collections = _specialCollectionsSlots ?? (_specialCollectionsSlots = new object[NumCollectionsSlots]);
-            object result = collections[slot];
-            if (result == null)
-            {
-                collections[slot] = result = creationFunc(this);
-            }
-            return (T)result;
+            // allocated.  Then we only pay for the 64 bytes for those fields when any is actually accessed.
+            _specialCollectionsSlots ??= new object[NumCollectionsSlots];
+            return (T)(_specialCollectionsSlots[slot] ??= creationFunc(this));
         }
 
         public HttpHeaderValueCollection<MediaTypeWithQualityHeaderValue> Accept =>
@@ -198,7 +193,7 @@ namespace System.Net.Http.Headers
             GetSpecializedCollection(UserAgentSlot, thisRef => new HttpHeaderValueCollection<ProductInfoHeaderValue>(KnownHeaders.UserAgent.Descriptor, thisRef));
 
         private HttpHeaderValueCollection<NameValueWithParametersHeaderValue> ExpectCore =>
-            GetSpecializedCollection(ExpectSlot, thisRef => new HttpHeaderValueCollection<NameValueWithParametersHeaderValue>(KnownHeaders.Expect.Descriptor, thisRef, HeaderUtilities.ExpectContinue));
+            _expect ??= new HttpHeaderValueCollection<NameValueWithParametersHeaderValue>(KnownHeaders.Expect.Descriptor, this, HeaderUtilities.ExpectContinue);
 
         #endregion
 
