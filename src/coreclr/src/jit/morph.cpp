@@ -13188,6 +13188,14 @@ DONE_MORPHING_CHILDREN:
                     // Perform the transform ADDR(IND(...)) == (...).
                     GenTree* addr = op1->gtOp.gtOp1;
 
+                    // If tree has a zero field sequence annotation, update the annotation
+                    // on addr node.
+                    FieldSeqNode* zeroFieldSeq = nullptr;
+                    if (GetZeroOffsetFieldMap()->Lookup(tree, &zeroFieldSeq))
+                    {
+                        fgAddFieldSeqForZeroOffset(addr, zeroFieldSeq);
+                    }
+
                     noway_assert(varTypeIsGC(addr->gtType) || addr->gtType == TYP_I_IMPL);
 
                     DEBUG_DESTROY_NODE(op1);
