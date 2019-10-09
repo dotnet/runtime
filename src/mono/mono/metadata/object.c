@@ -4542,8 +4542,6 @@ free_main_args (void)
 int
 mono_runtime_set_main_args (int argc, char* argv[])
 {
-	MONO_ENTER_GC_UNSAFE;
-
 	MONO_REQ_GC_NEUTRAL_MODE;
 
 	int i;
@@ -4565,9 +4563,7 @@ mono_runtime_set_main_args (int argc, char* argv[])
 		main_args [i] = utf8_arg;
 	}
 
-	MONO_EXIT_GC_UNSAFE;
-
-	return 0;
+	MONO_EXTERNAL_ONLY (int, 0);
 }
 
 /*
