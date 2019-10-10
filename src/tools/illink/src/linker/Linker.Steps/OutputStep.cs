@@ -201,7 +201,7 @@ namespace Mono.Linker.Steps {
 				string culturePath = Path.Combine (directory, cultureName);
 
 				Directory.CreateDirectory (culturePath);
-				File.Copy (satelliteAssembly, Path.Combine (culturePath, resourceFile));
+				File.Copy (satelliteAssembly, Path.Combine (culturePath, resourceFile), true);
 			}
 		}
 
