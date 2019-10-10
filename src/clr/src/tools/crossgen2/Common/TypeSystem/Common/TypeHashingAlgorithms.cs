@@ -115,7 +115,7 @@ namespace Internal.NativeFormat
             return hash1 ^ hash2;
         }
 
-        // This function may be needed in a portion of the codebase which is too low level to use 
+        // This function may be needed in a portion of the codebase which is too low level to use
         // globalization, ergo, we cannot call ToString on the integer.
         private static string IntToString(int arg)
         {
@@ -145,7 +145,7 @@ namespace Internal.NativeFormat
 
         public static int ComputeArrayTypeHashCode(int elementTypeHashCode, int rank)
         {
-            // Arrays are treated as generic types in some parts of our system. The array hashcodes are 
+            // Arrays are treated as generic types in some parts of our system. The array hashcodes are
             // carefully crafted to be the same as the hashcodes of their implementation generic types.
 
             int hashCode;

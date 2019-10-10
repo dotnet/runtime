@@ -215,5 +215,38 @@ namespace ILCompiler
         {
             return unchecked((int)(((uint)value << bitCount) | ((uint)value >> (32 - bitCount))));
         }
+
+        private static uint XXHash32_MixEmptyState()
+        {
+            // Unlike System.HashCode, these hash values are required to be stable, so don't
+            // mixin a random process specific value
+            return 374761393U; // Prime5
+        }
+
+        private static uint XXHash32_QueueRound(uint hash, uint queuedValue)
+        {
+            return ((uint)RotateLeft((int)(hash + queuedValue * 3266489917U/*Prime3*/), 17)) * 668265263U/*Prime4*/;
+        }
+
+        private static uint XXHash32_MixFinal(uint hash)
+        {
+            hash ^= hash >> 15;
+            hash *= 2246822519U/*Prime2*/;
+            hash ^= hash >> 13;
+            hash *= 3266489917U/*Prime3*/;
+            hash ^= hash >> 16;
+            return hash;
+        }
+
+        public static uint CombineTwoValuesIntoHash(uint value1, uint value2)
+        {
+            // This matches the behavior of System.HashCode.Combine(value1, value2) as of the time of authoring
+            uint hash = XXHash32_MixEmptyState();
+            hash += 8;
+            hash = XXHash32_QueueRound(hash, value1);
+            hash = XXHash32_QueueRound(hash, value2);
+            hash = XXHash32_MixFinal(hash);
+            return hash;
+        }
     }
 }
