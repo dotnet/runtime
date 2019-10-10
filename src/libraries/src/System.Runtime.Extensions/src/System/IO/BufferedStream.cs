@@ -431,7 +431,7 @@ namespace System.IO
             _stream.Flush();
         }
 
-        private async Task FlushWriteAsync(CancellationToken cancellationToken)
+        private async ValueTask FlushWriteAsync(CancellationToken cancellationToken)
         {
             Debug.Assert(_stream != null);
             Debug.Assert(_readPos == 0 && _readLen == 0,
@@ -1117,7 +1117,7 @@ namespace System.IO
             }
 
             // Delegate to the async implementation.
-            return new ValueTask(WriteToUnderlyingStreamAsync(buffer, cancellationToken, semaphoreLockTask));
+            return WriteToUnderlyingStreamAsync(buffer, cancellationToken, semaphoreLockTask);
         }
 
         /// <summary>BufferedStream should be as thin a wrapper as possible. We want WriteAsync to delegate to
@@ -1125,7 +1125,7 @@ namespace System.IO
         /// in terms of the other. This allows BufferedStream to affect the semantics of the stream it wraps as
         /// little as possible.
         /// </summary>
-        private async Task WriteToUnderlyingStreamAsync(
+        private async ValueTask WriteToUnderlyingStreamAsync(
             ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken, Task semaphoreLockTask)
         {
             Debug.Assert(_stream != null);

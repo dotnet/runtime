@@ -29,10 +29,10 @@ namespace System.Net.Http
 
             protected bool IsDisposed => _disposed == 1;
 
-            public virtual Task<bool> DrainAsync(int maxDrainBytes)
+            public virtual ValueTask<bool> DrainAsync(int maxDrainBytes)
             {
                 Debug.Fail($"DrainAsync should not be called for this response stream: {GetType()}");
-                return Task.FromResult(false);
+                return new ValueTask<bool>(false);
             }
 
             protected override void Dispose(bool disposing)

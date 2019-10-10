@@ -64,9 +64,9 @@ namespace System.Net.Http
                 var waiter = new Waiter { Amount = amount };
                 (_waiters ??= new Queue<Waiter>()).Enqueue(waiter);
 
-                return new ValueTask<int>(cancellationToken.CanBeCanceled ?
-                                          waiter.WaitWithCancellationAsync(cancellationToken) :
-                                          waiter.Task);
+                return cancellationToken.CanBeCanceled ?
+                    waiter.WaitWithCancellationAsync(cancellationToken) :
+                    new ValueTask<int>(waiter.Task);
             }
         }
 

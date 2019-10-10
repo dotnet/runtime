@@ -127,7 +127,7 @@ namespace System.Net.Http
 
         private object SyncObject => _httpStreams;
 
-        public async Task SetupAsync()
+        public async ValueTask SetupAsync()
         {
             _outgoingBuffer.EnsureAvailableSpace(s_http2ConnectionPreface.Length +
                 FrameHeader.Size + (FrameHeader.SettingLength * 2) +
@@ -165,7 +165,7 @@ namespace System.Net.Http
             _ = ProcessIncomingFramesAsync();
         }
 
-        private async Task EnsureIncomingBytesAsync(int minReadBytes)
+        private async ValueTask EnsureIncomingBytesAsync(int minReadBytes)
         {
             if (NetEventSource.IsEnabled) Trace($"{nameof(minReadBytes)}={minReadBytes}");
             if (_incomingBuffer.ActiveLength >= minReadBytes)
@@ -321,7 +321,7 @@ namespace System.Net.Http
             }
         }
 
-        private async Task ProcessHeadersFrame(FrameHeader frameHeader)
+        private async ValueTask ProcessHeadersFrame(FrameHeader frameHeader)
         {
             if (NetEventSource.IsEnabled) Trace($"{frameHeader}");
             Debug.Assert(frameHeader.Type == FrameType.Headers);
@@ -783,7 +783,7 @@ namespace System.Net.Http
             }
         }
 
-        private async Task AcquireWriteLockAsync(CancellationToken cancellationToken)
+        private async ValueTask AcquireWriteLockAsync(CancellationToken cancellationToken)
         {
             Task acquireLockTask = _writerLock.WaitAsync(cancellationToken);
             if (!acquireLockTask.IsCompletedSuccessfully)

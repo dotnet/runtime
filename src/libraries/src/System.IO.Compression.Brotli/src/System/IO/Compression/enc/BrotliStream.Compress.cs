@@ -76,12 +76,12 @@ namespace System.IO.Compression
             EnsureNoActiveAsyncOperation();
             EnsureNotDisposed();
 
-            return new ValueTask(cancellationToken.IsCancellationRequested ?
-                Task.FromCanceled<int>(cancellationToken) :
-                WriteAsyncMemoryCore(buffer, cancellationToken));
+            return cancellationToken.IsCancellationRequested ?
+                new ValueTask(Task.FromCanceled<int>(cancellationToken)) :
+                WriteAsyncMemoryCore(buffer, cancellationToken);
         }
 
-        private async Task WriteAsyncMemoryCore(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken, bool isFinalBlock = false)
+        private async ValueTask WriteAsyncMemoryCore(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken, bool isFinalBlock = false)
         {
             AsyncOperationStarting();
             try
