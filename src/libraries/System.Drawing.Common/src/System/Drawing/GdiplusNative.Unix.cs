@@ -28,8 +28,6 @@ namespace System.Drawing
                 !RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ||
                 Environment.GetEnvironmentVariable("SYSTEM_DRAWING_COMMON_FORCE_X11") != null;
 
-            private static bool didLoadNativeLibrary = false;
-
             internal static IntPtr LoadNativeLibrary()
             {
                 string libraryName;
@@ -57,8 +55,6 @@ namespace System.Drawing
                     }
                 }
 
-                didLoadNativeLibrary = lib != IntPtr.Zero;
-
                 // This function may return a null handle. If it does, individual functions loaded from it will throw a DllNotFoundException,
                 // but not until an attempt is made to actually use the function (rather than load it). This matches how PInvokes behave.
                 return lib;
@@ -69,15 +65,22 @@ namespace System.Drawing
                 LibraryResolver.EnsureRegistered();
 
                 // Check whether the version of libgdiplus is a recent version of libgdiplus.
-                var installedVersion = LibgdiplusVersion;
+                try
+                {
+                    var installedVersion = LibgdiplusVersion;
 
-                if (installedVersion == null && didLoadNativeLibrary)
-                {
-                    throw new PlatformNotSupportedException(SR.Format(SR.LibgdiplusOutdated, LibraryRequiredVersion));
+                    if (installedVersion == null)
+                    {
+                        throw new PlatformNotSupportedException(SR.Format(SR.LibgdiplusOutdated, LibraryRequiredVersion));
+                    }
+                    else if (installedVersion < LibraryRequiredVersion)
+                    {
+                        throw new PlatformNotSupportedException(SR.Format(SR.LibgdiplusOutdated2, LibraryRequiredVersion, installedVersion));
+                    }
                 }
-                else if (installedVersion < LibraryRequiredVersion)
+                catch (DllNotFoundException)
                 {
-                    throw new PlatformNotSupportedException(SR.Format(SR.LibgdiplusOutdated2, LibraryRequiredVersion, installedVersion));
+                    // libgdiplus could not be loaded, so there's nothing to check.
                 }
             }
 
@@ -92,10 +95,6 @@ namespace System.Drawing
                     catch (EntryPointNotFoundException)
                     {
                         return null;  // in case of older libgdiplus or Windows GDI+
-                    }
-                    catch (DllNotFoundException)
-                    {
-                        return null;
                     }
                 }
             }
