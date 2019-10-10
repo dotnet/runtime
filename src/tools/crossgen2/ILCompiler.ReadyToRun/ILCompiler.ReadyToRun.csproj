@@ -101,6 +101,7 @@
     <Compile Include="CodeGen\ReadyToRunObjectWriter.cs" />
     <Compile Include="Compiler\CompilationModuleGroup.ReadyToRun.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ArgIterator.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\AttributePresenceFilterNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\CopiedFieldRvaNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\CopiedManagedResourcesNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\CopiedMetadataBlobNode.cs" />
