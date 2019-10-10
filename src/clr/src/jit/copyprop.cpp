@@ -31,7 +31,7 @@ void Compiler::optBlockCopyPropPopStacks(BasicBlock* block, LclNumToGenTreePtrSt
 {
     for (Statement* stmt : block->Statements())
     {
-        for (GenTree* tree = stmt->gtStmtList; tree != nullptr; tree = tree->gtNext)
+        for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
         {
             if (!tree->IsLocal())
             {
@@ -332,7 +332,7 @@ void Compiler::optBlockCopyProp(BasicBlock* block, LclNumToGenTreePtrStack* curS
         VarSetOps::ClearD(this, optCopyPropKillSet);
 
         // Walk the tree to find if any local variable can be replaced with current live definitions.
-        for (GenTree* tree = stmt->gtStmtList; tree != nullptr; tree = tree->gtNext)
+        for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
         {
             treeLifeUpdater.UpdateLife(tree);
 
@@ -359,7 +359,7 @@ void Compiler::optBlockCopyProp(BasicBlock* block, LclNumToGenTreePtrStack* curS
         }
 
         // This logic must be in sync with SSA renaming process.
-        for (GenTree* tree = stmt->gtStmtList; tree != nullptr; tree = tree->gtNext)
+        for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
         {
             if (!optIsSsaLocal(tree))
             {

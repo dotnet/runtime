@@ -214,7 +214,7 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
         for (Statement* stmt : block->Statements())
         {
             BuildConnGraphVisitor buildConnGraphVisitor(this);
-            buildConnGraphVisitor.WalkTree(&stmt->gtStmtExpr, nullptr);
+            buildConnGraphVisitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
         }
     }
 }
@@ -349,7 +349,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
 
         for (Statement* stmt : block->Statements())
         {
-            GenTree* stmtExpr = stmt->gtStmtExpr;
+            GenTree* stmtExpr = stmt->GetRootNode();
             GenTree* op2      = nullptr;
 
             bool canonicalAllocObjFound = false;
@@ -369,11 +369,11 @@ bool ObjectAllocator::MorphAllocObjNodes()
                 assert(basicBlockHasNewObj);
                 //------------------------------------------------------------------------
                 // We expect the following expression tree at this point
-                //  *  STMT      void
-                //  |  /--*  ALLOCOBJ  ref
-                //  |  |  \--*  CNS_INT(h) long
-                //  \--*  ASG       ref
-                //     \--*  LCL_VAR   ref
+                //  STMTx (IL 0x... ???)
+                //    * ASG       ref
+                //    +--*  LCL_VAR   ref
+                //    \--*  ALLOCOBJ  ref
+                //       \--*  CNS_INT(h) long
                 //------------------------------------------------------------------------
 
                 GenTree* op1 = stmtExpr->gtGetOp1();
@@ -399,7 +399,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
                     // definitely-stack-pointing pointers. All definitely-stack-pointing pointers are in both sets.
                     MarkLclVarAsDefinitelyStackPointing(lclNum);
                     MarkLclVarAsPossiblyStackPointing(lclNum);
-                    stmt->gtStmtExpr->gtBashToNOP();
+                    stmt->GetRootNode()->gtBashToNOP();
                     comp->optMethodFlags |= OMF_HAS_OBJSTACKALLOC;
                     didStackAllocate = true;
                 }
@@ -423,7 +423,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
             {
                 // We assume that GT_ALLOCOBJ nodes are always present in the
                 // canonical form.
-                comp->fgWalkTreePre(&stmt->gtStmtExpr, AssertWhenAllocObjFoundVisitor);
+                comp->fgWalkTreePre(stmt->GetRootNodePointer(), AssertWhenAllocObjFoundVisitor);
             }
 #endif // DEBUG
         }
@@ -516,10 +516,10 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* a
         unsigned int structSize = comp->lvaTable[lclNum].lvSize();
 
         //------------------------------------------------------------------------
-        // *  STMT      void
-        // |  /--*  CNS_INT   int    0
-        // \--*  ASG       struct (init)
-        //    \--*  LCL_VAR   struct
+        // STMTx (IL 0x... ???)
+        //   *  ASG       struct (init)
+        //   +--*  LCL_VAR   struct
+        //   \--*  CNS_INT   int    0
         //------------------------------------------------------------------------
 
         GenTree*   tree        = comp->gtNewLclvNode(lclNum, TYP_STRUCT);
@@ -533,12 +533,12 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* a
     }
 
     //------------------------------------------------------------------------
-    // *  STMT      void
-    // |  /--*  CNS_INT(h) long
-    // \--*  ASG       long
-    //    \--*  FIELD     long   #PseudoField:0x0
-    //       \--*  ADDR      byref
-    //          \--*  LCL_VAR   struct
+    // STMTx (IL 0x... ???)
+    //   * ASG       long
+    //   +--*  FIELD     long   #PseudoField:0x0
+    //   |  \--*  ADDR      byref
+    //   |     \--*  LCL_VAR   struct
+    //   \--*  CNS_INT(h) long
     //------------------------------------------------------------------------
 
     // Create a local representing the object
@@ -911,7 +911,7 @@ void ObjectAllocator::RewriteUses()
         for (Statement* stmt : block->Statements())
         {
             RewriteUsesVisitor rewriteUsesVisitor(this);
-            rewriteUsesVisitor.WalkTree(&stmt->gtStmtExpr, nullptr);
+            rewriteUsesVisitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
         }
     }
 }

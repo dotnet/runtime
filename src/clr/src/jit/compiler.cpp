@@ -4850,7 +4850,7 @@ void Compiler::ResetOptAnnotations()
     {
         for (Statement* stmt : block->Statements())
         {
-            for (GenTree* tree = stmt->gtStmtList; tree != nullptr; tree = tree->gtNext)
+            for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
             {
                 tree->ClearVN();
                 tree->ClearAssertion();
@@ -6888,7 +6888,7 @@ Compiler::NodeToIntMap* Compiler::FindReachableNodesInNodeTestData()
     {
         for (Statement* stmt = block->FirstNonPhiDef(); stmt != nullptr; stmt = stmt->GetNextStmt())
         {
-            for (GenTree* tree = stmt->gtStmtList; tree != nullptr; tree = tree->gtNext)
+            for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
             {
                 TestLabelAndNum tlAndN;
 
@@ -7019,7 +7019,7 @@ void Compiler::compCallArgStats()
     {
         for (Statement* stmt : block->Statements())
         {
-            for (GenTree* call = stmt->gtStmtList; call != nullptr; call = call->gtNext)
+            for (GenTree* call = stmt->GetTreeList(); call != nullptr; call = call->gtNext)
             {
                 if (call->gtOper != GT_CALL)
                     continue;
@@ -8427,7 +8427,7 @@ GenTree* dFindTree(unsigned id)
     {
         for (Statement* stmt : block->Statements())
         {
-            tree = dFindTree(stmt->gtStmtExpr, id);
+            tree = dFindTree(stmt->GetRootNode(), id);
             if (tree != nullptr)
             {
                 dbTreeBlock = block;
@@ -8655,7 +8655,7 @@ void cBlockIR(Compiler* comp, BasicBlock* block)
 
             if (comp->compRationalIRForm)
             {
-                for (GenTree* tree = stmt->gtStmtList; tree != nullptr; tree = tree->gtNext)
+                for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
                 {
                     cNodeIR(comp, tree);
                 }
@@ -10676,7 +10676,7 @@ void cNodeIR(Compiler* comp, GenTree* tree)
 
 void cStmtIR(Compiler* comp, Statement* stmt)
 {
-    cTreeIR(comp, stmt->gtStmtExpr);
+    cTreeIR(comp, stmt->GetRootNode());
     if (!comp->dumpIRNoStmts)
     {
         dTabStopIR(0, COLUMN_OPCODE);

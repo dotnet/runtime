@@ -1287,7 +1287,7 @@ void RangeCheck::MapMethodDefs()
         for (Statement* stmt : block->Statements())
         {
             MapMethodDefsData data(this, block, stmt);
-            m_pCompiler->fgWalkTreePre(&stmt->gtStmtExpr, MapMethodDefsVisitor, &data, false, true);
+            m_pCompiler->fgWalkTreePre(stmt->GetRootNodePointer(), MapMethodDefsVisitor, &data, false, true);
         }
     }
     m_fMappedDefs = true;
@@ -1315,7 +1315,7 @@ void RangeCheck::OptimizeRangeChecks()
     {
         for (Statement* stmt : block->Statements())
         {
-            for (GenTree* tree = stmt->gtStmtList; tree; tree = tree->gtNext)
+            for (GenTree* tree = stmt->GetTreeList(); tree; tree = tree->gtNext)
             {
                 if (IsOverBudget())
                 {

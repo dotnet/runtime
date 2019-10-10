@@ -10907,9 +10907,9 @@ void CodeGen::genIPmappingGen()
             if ((block->bbRefs > 1) && (stmt != nullptr))
             {
                 bool found = false;
-                if (stmt->gtStmtILoffsx != BAD_IL_OFFSET)
+                if (stmt->GetILOffsetX() != BAD_IL_OFFSET)
                 {
-                    IL_OFFSET ilOffs = jitGetILoffs(stmt->gtStmtILoffsx);
+                    IL_OFFSET ilOffs = jitGetILoffs(stmt->GetILOffsetX());
                     for (unsigned i = 0; i < eeBoundariesCount; ++i)
                     {
                         if (eeBoundaries[i].ilOffset == ilOffs)
