@@ -1,3 +1,10 @@
+trigger:
+  batch: true
+  branches:
+    include:
+    - master
+    - release/*
+
 variables:
 - name: officialBuild
   value: ${{ and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}
