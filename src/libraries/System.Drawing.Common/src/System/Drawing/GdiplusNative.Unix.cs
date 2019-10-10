@@ -55,7 +55,7 @@ namespace System.Drawing
                     }
                 }
 
-                if (lib != null)
+                if (lib != IntPtr.Zero)
                 {
                     var version = LibgdiplusVersion;
 
