@@ -66,6 +66,7 @@ namespace System.Net.Sockets
         {
             get
             {
+                CreateNewSocketIfNeeded();
                 return _serverSocket;
             }
         }
@@ -93,7 +94,7 @@ namespace System.Net.Sockets
         {
             get
             {
-                return _serverSocket.ExclusiveAddressUse;
+                return _serverSocket != null ? _serverSocket.ExclusiveAddressUse : _exclusiveAddressUse;
             }
             set
             {
@@ -102,7 +103,10 @@ namespace System.Net.Sockets
                     throw new InvalidOperationException(SR.net_tcplistener_mustbestopped);
                 }
 
-                _serverSocket.ExclusiveAddressUse = value;
+                if (_serverSocket != null)
+                {
+                    _serverSocket.ExclusiveAddressUse = value;
+                }
                 _exclusiveAddressUse = value;
             }
         }
@@ -139,6 +143,8 @@ namespace System.Net.Sockets
                 return;
             }
 
+            CreateNewSocketIfNeeded();
+
             _serverSocket.Bind(_serverSocketEP);
             try
             {
@@ -160,14 +166,9 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            _serverSocket.Dispose();
+            _serverSocket?.Dispose();
             _active = false;
-            _serverSocket = new Socket(_serverSocketEP.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-
-            if (_exclusiveAddressUse)
-            {
-                _serverSocket.ExclusiveAddressUse = true;
-            }
+            _serverSocket = null;
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
@@ -332,6 +333,16 @@ namespace System.Net.Sockets
             if (NetEventSource.IsEnabled) NetEventSource.Exit(null, port);
 
             return listener;
+        }
+
+        private void CreateNewSocketIfNeeded()
+        {
+            _serverSocket ??= new Socket(_serverSocketEP.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+
+            if (_exclusiveAddressUse)
+            {
+                _serverSocket.ExclusiveAddressUse = true;
+            }
         }
     }
 }
