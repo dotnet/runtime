@@ -5776,7 +5776,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
     info.compTotalHotCodeSize  = 0;
     info.compTotalColdCodeSize = 0;
 
-    fgHasBackwardJump = false;
+    compHasBackwardJump = false;
 
 #ifdef DEBUG
     compCurBB = nullptr;
@@ -5912,10 +5912,10 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
     }
 
 #ifdef FEATURE_CORECLR
-    if (fgHasBackwardJump && (info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) != 0 && fgCanSwitchToOptimized())
+    if (compHasBackwardJump && (info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) != 0 && fgCanSwitchToOptimized())
 #else // !FEATURE_CORECLR
     // We may want to use JitConfig value here to support DISABLE_TIER0_FOR_LOOPS
-    if (fgHasBackwardJump && fgCanSwitchToOptimized())
+    if (compHasBackwardJump && fgCanSwitchToOptimized())
 #endif
     {
         // Method likely has a loop, switch to the OptimizedTier to avoid spending too much time running slower code
