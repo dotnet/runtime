@@ -1177,7 +1177,7 @@ namespace System.Net.Security
             }
         }
 
-        private async Task WriteAsyncChunked<TWriteAdapter>(TWriteAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
+        private async ValueTask WriteAsyncChunked<TWriteAdapter>(TWriteAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
             where TWriteAdapter : struct, ISslWriteAdapter
         {
             do
@@ -1185,7 +1185,6 @@ namespace System.Net.Security
                 int chunkBytes = Math.Min(buffer.Length, MaxDataSize);
                 await WriteSingleChunk(writeAdapter, buffer.Slice(0, chunkBytes)).ConfigureAwait(false);
                 buffer = buffer.Slice(chunkBytes);
-
             } while (buffer.Length != 0);
         }
 
@@ -1197,7 +1196,7 @@ namespace System.Net.Security
             if (!ioSlot.IsCompletedSuccessfully)
             {
                 // Operation is async and has been queued, return.
-                return new ValueTask(WaitForWriteIOSlot(writeAdapter, ioSlot, buffer));
+                return WaitForWriteIOSlot(writeAdapter, ioSlot, buffer);
             }
 
             byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length + FrameOverhead);
@@ -1222,16 +1221,16 @@ namespace System.Net.Security
             }
             else
             {
-                return new ValueTask(CompleteAsync(t, rentedBuffer));
+                return CompleteAsync(t, rentedBuffer);
             }
 
-            async Task WaitForWriteIOSlot(TWriteAdapter wAdapter, Task lockTask, ReadOnlyMemory<byte> buff)
+            async ValueTask WaitForWriteIOSlot(TWriteAdapter wAdapter, Task lockTask, ReadOnlyMemory<byte> buff)
             {
                 await lockTask.ConfigureAwait(false);
                 await WriteSingleChunk(wAdapter, buff).ConfigureAwait(false);
             }
 
-            async Task CompleteAsync(ValueTask writeTask, byte[] bufferToReturn)
+            async ValueTask CompleteAsync(ValueTask writeTask, byte[] bufferToReturn)
             {
                 try
                 {
@@ -1464,7 +1463,7 @@ namespace System.Net.Security
             }
         }
 
-        private async Task WriteAsyncInternal<TWriteAdapter>(TWriteAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
+        private async ValueTask WriteAsyncInternal<TWriteAdapter>(TWriteAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
             where TWriteAdapter : struct, ISslWriteAdapter
         {
             ThrowIfExceptionalOrNotAuthenticatedOrShutdown();
@@ -1484,7 +1483,7 @@ namespace System.Net.Security
             {
                 ValueTask t = buffer.Length < MaxDataSize ?
                     WriteSingleChunk(writeAdapter, buffer) :
-                    new ValueTask(WriteAsyncChunked(writeAdapter, buffer));
+                    WriteAsyncChunked(writeAdapter, buffer);
                 await t.ConfigureAwait(false);
             }
             catch (Exception e)

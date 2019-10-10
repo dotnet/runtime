@@ -23,13 +23,13 @@ namespace System.Net.Http
                 // that are still buffered.
                 HttpConnection connection = GetConnectionOrThrow();
                 Debug.Assert(connection._currentRequest != null);
-                return new ValueTask(connection.WriteAsync(buffer));
+                return connection.WriteAsync(buffer);
             }
 
-            public override Task FinishAsync()
+            public override ValueTask FinishAsync()
             {
                 _connection = null;
-                return Task.CompletedTask;
+                return default;
             }
         }
     }

@@ -370,7 +370,7 @@ namespace System.Net.WebSockets
             // Similarly, it should be rare that there are multiple outstanding calls to SendFrameAsync, but if there are, again
             // fall back to the fallback path.
             return cancellationToken.CanBeCanceled || !_sendFrameAsyncLock.Wait(0) ?
-                new ValueTask(SendFrameFallbackAsync(opcode, endOfMessage, payloadBuffer, cancellationToken)) :
+                SendFrameFallbackAsync(opcode, endOfMessage, payloadBuffer, cancellationToken) :
                 SendFrameLockAcquiredNonCancelableAsync(opcode, endOfMessage, payloadBuffer);
         }
 
@@ -421,10 +421,10 @@ namespace System.Net.WebSockets
                 }
             }
 
-            return new ValueTask(WaitForWriteTaskAsync(writeTask));
+            return WaitForWriteTaskAsync(writeTask);
         }
 
-        private async Task WaitForWriteTaskAsync(ValueTask writeTask)
+        private async ValueTask WaitForWriteTaskAsync(ValueTask writeTask)
         {
             try
             {
@@ -443,7 +443,7 @@ namespace System.Net.WebSockets
             }
         }
 
-        private async Task SendFrameFallbackAsync(MessageOpcode opcode, bool endOfMessage, ReadOnlyMemory<byte> payloadBuffer, CancellationToken cancellationToken)
+        private async ValueTask SendFrameFallbackAsync(MessageOpcode opcode, bool endOfMessage, ReadOnlyMemory<byte> payloadBuffer, CancellationToken cancellationToken)
         {
             await _sendFrameAsyncLock.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
@@ -781,7 +781,7 @@ namespace System.Net.WebSockets
         /// <summary>Processes a received close message.</summary>
         /// <param name="header">The message header.</param>
         /// <returns>The received result message.</returns>
-        private async Task HandleReceivedCloseAsync(MessageHeader header, CancellationToken cancellationToken)
+        private async ValueTask HandleReceivedCloseAsync(MessageHeader header, CancellationToken cancellationToken)
         {
             lock (StateUpdateLock)
             {
@@ -848,7 +848,7 @@ namespace System.Net.WebSockets
         }
 
         /// <summary>Issues a read on the stream to wait for EOF.</summary>
-        private async Task WaitForServerToCloseConnectionAsync(CancellationToken cancellationToken)
+        private async ValueTask WaitForServerToCloseConnectionAsync(CancellationToken cancellationToken)
         {
             // Per RFC 6455 7.1.1, try to let the server close the connection.  We give it up to a second.
             // We simply issue a read and don't care what we get back; we could validate that we don't get
@@ -876,7 +876,7 @@ namespace System.Net.WebSockets
 
         /// <summary>Processes a received ping or pong message.</summary>
         /// <param name="header">The message header.</param>
-        private async Task HandleReceivedPingPongAsync(MessageHeader header, CancellationToken cancellationToken)
+        private async ValueTask HandleReceivedPingPongAsync(MessageHeader header, CancellationToken cancellationToken)
         {
             // Consume any (optional) payload associated with the ping/pong.
             if (header.PayloadLength > 0 && _receiveBufferCount < header.PayloadLength)
@@ -949,7 +949,7 @@ namespace System.Net.WebSockets
         /// <param name="closeStatus">The close status code to use.</param>
         /// <param name="error">The error reason.</param>
         /// <param name="innerException">An optional inner exception to include in the thrown exception.</param>
-        private async Task CloseWithReceiveErrorAndThrowAsync(
+        private async ValueTask CloseWithReceiveErrorAndThrowAsync(
             WebSocketCloseStatus closeStatus, WebSocketError error, Exception innerException = null)
         {
             // Close the connection if it hasn't already been closed
@@ -1132,7 +1132,7 @@ namespace System.Net.WebSockets
         /// <param name="closeStatus">The close status to send.</param>
         /// <param name="closeStatusDescription">The close status description to send.</param>
         /// <param name="cancellationToken">The CancellationToken to use to cancel the websocket.</param>
-        private async Task SendCloseFrameAsync(WebSocketCloseStatus closeStatus, string closeStatusDescription, CancellationToken cancellationToken)
+        private async ValueTask SendCloseFrameAsync(WebSocketCloseStatus closeStatus, string closeStatusDescription, CancellationToken cancellationToken)
         {
             // Close payload is two bytes containing the close status followed by a UTF8-encoding of the status description, if it exists.
 
@@ -1193,7 +1193,7 @@ namespace System.Net.WebSockets
             _receiveBufferOffset += count;
         }
 
-        private async Task EnsureBufferContainsAsync(int minimumRequiredBytes, CancellationToken cancellationToken, bool throwOnPrematureClosure = true)
+        private async ValueTask EnsureBufferContainsAsync(int minimumRequiredBytes, CancellationToken cancellationToken, bool throwOnPrematureClosure = true)
         {
             Debug.Assert(minimumRequiredBytes <= _receiveBuffer.Length, $"Requested number of bytes {minimumRequiredBytes} must not exceed {_receiveBuffer.Length}");
 

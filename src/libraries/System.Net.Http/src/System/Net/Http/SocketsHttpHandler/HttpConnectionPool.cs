@@ -311,7 +311,7 @@ namespace System.Net.Http
 
             // We are at the connection limit. Wait for an available connection or connection count (indicated by null).
             if (NetEventSource.IsEnabled) Trace("Connection limit reached, waiting for available connection.");
-            return new ValueTask<HttpConnection>(waiter.WaitWithCancellationAsync(cancellationToken));
+            return waiter.WaitWithCancellationAsync(cancellationToken);
         }
 
         private async ValueTask<(HttpConnectionBase connection, bool isNewConnection, HttpResponseMessage failureResponse)>

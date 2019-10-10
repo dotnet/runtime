@@ -217,7 +217,7 @@ namespace System.Net.Http
             _readOffset += bytesToConsume;
         }
 
-        private async Task WriteHeadersAsync(HttpHeaders headers, string cookiesFromContainer)
+        private async ValueTask WriteHeadersAsync(HttpHeaders headers, string cookiesFromContainer)
         {
             if (headers.HeaderStore != null)
             {
@@ -278,7 +278,7 @@ namespace System.Net.Http
             }
         }
 
-        private async Task WriteHostHeaderAsync(Uri uri)
+        private async ValueTask WriteHostHeaderAsync(Uri uri)
         {
             await WriteBytesAsync(KnownHeaders.Host.AsciiBytesWithColonSpace).ConfigureAwait(false);
 
@@ -773,7 +773,7 @@ namespace System.Net.Http
 
         private static bool IsLineEmpty(ArraySegment<byte> line) => line.Count == 0;
 
-        private async Task SendRequestContentAsync(HttpRequestMessage request, HttpContentWriteStream stream, CancellationToken cancellationToken)
+        private async ValueTask SendRequestContentAsync(HttpRequestMessage request, HttpContentWriteStream stream, CancellationToken cancellationToken)
         {
             // Now that we're sending content, prohibit retries on this connection.
             _canRetry = false;
@@ -986,7 +986,7 @@ namespace System.Net.Http
             _writeOffset += source.Length;
         }
 
-        private async Task WriteAsync(ReadOnlyMemory<byte> source)
+        private async ValueTask WriteAsync(ReadOnlyMemory<byte> source)
         {
             int remaining = _writeBuffer.Length - _writeOffset;
 
@@ -1063,10 +1063,10 @@ namespace System.Net.Http
 
             // There's data in the write buffer and the data we're writing doesn't fit after it.
             // Do two writes, one to flush the buffer and then another to write the supplied content.
-            return new ValueTask(FlushThenWriteWithoutBufferingAsync(source));
+            return FlushThenWriteWithoutBufferingAsync(source);
         }
 
-        private async Task FlushThenWriteWithoutBufferingAsync(ReadOnlyMemory<byte> source)
+        private async ValueTask FlushThenWriteWithoutBufferingAsync(ReadOnlyMemory<byte> source)
         {
             await FlushAsync().ConfigureAwait(false);
             await WriteToStreamAsync(source).ConfigureAwait(false);
@@ -1405,7 +1405,7 @@ namespace System.Net.Http
         }
 
         // Throws IOException on EOF.  This is only called when we expect more data.
-        private async Task FillAsync()
+        private async ValueTask FillAsync()
         {
             Debug.Assert(_readAheadTask == null);
 
@@ -1598,7 +1598,7 @@ namespace System.Net.Http
             return bytesToCopy;
         }
 
-        private async Task CopyFromBufferAsync(Stream destination, int count, CancellationToken cancellationToken)
+        private async ValueTask CopyFromBufferAsync(Stream destination, int count, CancellationToken cancellationToken)
         {
             Debug.Assert(count <= _readLength - _readOffset);
 
@@ -1768,7 +1768,7 @@ namespace System.Net.Http
             }
         }
 
-        public async Task DrainResponseAsync(HttpResponseMessage response)
+        public async ValueTask DrainResponseAsync(HttpResponseMessage response)
         {
             Debug.Assert(_inUse);
 

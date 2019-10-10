@@ -101,9 +101,9 @@ namespace System.Security.Cryptography
         // byte[] ciphertext = ms.ToArray();
         // cs.Close();
         public void FlushFinalBlock() =>
-            FlushFinalBlockAsync(useAsync: false).GetAwaiter().GetResult();
+            FlushFinalBlockAsync(useAsync: false).AsTask().GetAwaiter().GetResult();
 
-        private async Task FlushFinalBlockAsync(bool useAsync)
+        private async ValueTask FlushFinalBlockAsync(bool useAsync)
         {
             if (_finalBlockTransformed)
                 throw new NotSupportedException(SR.Cryptography_CryptoStream_FlushFinalBlockTwice);
@@ -496,7 +496,7 @@ namespace System.Security.Cryptography
         public override void Write(byte[] buffer, int offset, int count)
         {
             CheckWriteArguments(buffer, offset, count);
-            WriteAsyncCore(buffer, offset, count, default(CancellationToken), useAsync: false).GetAwaiter().GetResult();
+            WriteAsyncCore(buffer, offset, count, default(CancellationToken), useAsync: false).AsTask().GetAwaiter().GetResult();
         }
 
         private void CheckWriteArguments(byte[] buffer, int offset, int count)
@@ -511,7 +511,7 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
         }
 
-        private async Task WriteAsyncCore(byte[] buffer, int offset, int count, CancellationToken cancellationToken, bool useAsync)
+        private async ValueTask WriteAsyncCore(byte[] buffer, int offset, int count, CancellationToken cancellationToken, bool useAsync)
         {
             // write <= count bytes to the output stream, transforming as we go.
             // Basic idea: using bytes in the _InputBuffer first, make whole blocks,
