@@ -1328,10 +1328,10 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
 
 	error_init (error);
 
-	if (mono_class_is_interface (klass)) {
+	if (mono_class_is_interface (klass) || !m_class_is_valuetype (klass)) {
 		MonoObject *this_obj;
 
-		is_iface = TRUE;
+		is_iface = mono_class_is_interface (klass);
 
 		/* Have to use the receiver's type instead of klass, the receiver is a ref type */
 		this_obj = *(MonoObject**)mp;

@@ -1031,6 +1031,28 @@ public class Tests
 		Two
 	};
 
+	class GetHashBase1 {
+		public override int GetHashCode () {
+			return 1;
+		}
+	}
+
+	class GetHashClass1 : GetHashBase1 {
+		public override int GetHashCode () {
+			return 2;
+		}
+	}
+
+	interface GetHashIFace {
+		int get_hash<T, T2> (T t, T2 t2);
+	}
+
+	class GetHashImpl : GetHashIFace {
+		public int get_hash<T, T2> (T t, T2 t2) {
+			return t.GetHashCode ();
+		}
+	}
+
 	public static int test_0_constrained_tostring () {
 		if (to_string<int, int> (1, 1) != "1")
 			return 1;
@@ -1055,6 +1077,9 @@ public class Tests
 			return 3;
 		if (get_hash<string, int> ("A", 1) != "A".GetHashCode ())
 			return 4;
+		GetHashIFace iface = new GetHashImpl ();
+		if (iface.get_hash<GetHashBase1, int> (new GetHashClass1 (), 1) != 2)
+			return 5;
 		return 0;
 	}
 
