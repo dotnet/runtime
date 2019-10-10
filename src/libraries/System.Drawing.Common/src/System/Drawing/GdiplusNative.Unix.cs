@@ -65,22 +65,15 @@ namespace System.Drawing
                 LibraryResolver.EnsureRegistered();
 
                 // Check whether the version of libgdiplus is a recent version of libgdiplus.
-                try
-                {
-                    var installedVersion = LibgdiplusVersion;
+                var installedVersion = LibgdiplusVersion;
 
-                    if (installedVersion == null)
-                    {
-                        throw new PlatformNotSupportedException(SR.Format(SR.LibgdiplusOutdated, LibraryRequiredVersion));
-                    }
-                    else if (installedVersion < LibraryRequiredVersion)
-                    {
-                        throw new PlatformNotSupportedException(SR.Format(SR.LibgdiplusOutdated2, LibraryRequiredVersion, installedVersion));
-                    }
-                }
-                catch (DllNotFoundException)
+                if (installedVersion == null)
                 {
-                    // libgdiplus could not be loaded, so there's nothing to check.
+                    throw new PlatformNotSupportedException(SR.Format(SR.LibgdiplusOutdated, LibraryRequiredVersion));
+                }
+                else if (installedVersion < LibraryRequiredVersion)
+                {
+                    throw new PlatformNotSupportedException(SR.Format(SR.LibgdiplusOutdated2, LibraryRequiredVersion, installedVersion));
                 }
             }
 
