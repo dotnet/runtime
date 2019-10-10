@@ -44,7 +44,7 @@ namespace System.Threading.Channels
                 return
                     cancellationToken.IsCancellationRequested ? new ValueTask(Task.FromCanceled<T>(cancellationToken)) :
                     TryWrite(item) ? default :
-                    new ValueTask(WriteAsyncCore(item, cancellationToken));
+                    WriteAsyncCore(item, cancellationToken);
             }
             catch (Exception e)
             {
@@ -52,7 +52,7 @@ namespace System.Threading.Channels
             }
         }
 
-        private async Task WriteAsyncCore(T innerItem, CancellationToken ct)
+        private async ValueTask WriteAsyncCore(T innerItem, CancellationToken ct)
         {
             while (await WaitToWriteAsync(ct).ConfigureAwait(false))
             {

@@ -184,7 +184,7 @@ namespace System.Net.Http
             SetRequestAuthenticationHeaderValue(request, new AuthenticationHeaderValue(BasicScheme, base64AuthString), isProxyAuth);
         }
 
-        private static async Task<bool> TrySetDigestAuthToken(HttpRequestMessage request, NetworkCredential credential, DigestResponse digestResponse, bool isProxyAuth)
+        private static async ValueTask<bool> TrySetDigestAuthToken(HttpRequestMessage request, NetworkCredential credential, DigestResponse digestResponse, bool isProxyAuth)
         {
             string parameter = await GetDigestTokenForCredential(credential, request, digestResponse).ConfigureAwait(false);
 

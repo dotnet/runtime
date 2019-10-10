@@ -191,7 +191,7 @@ namespace System.Net.Http
 
             public override bool NeedsDrain => (_connection != null);
 
-            public override async Task<bool> DrainAsync(int maxDrainBytes)
+            public override async ValueTask<bool> DrainAsync(int maxDrainBytes)
             {
                 Debug.Assert(_connection != null);
                 Debug.Assert(_contentBytesRemaining > 0);

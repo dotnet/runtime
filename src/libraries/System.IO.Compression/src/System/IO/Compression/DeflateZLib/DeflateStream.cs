@@ -631,7 +631,7 @@ namespace System.IO.Compression
             }
         }
 
-        private async Task PurgeBuffersAsync()
+        private async ValueTask PurgeBuffersAsync()
         {
             // Same logic as PurgeBuffers, except with async counterparts.
 
@@ -809,12 +809,12 @@ namespace System.IO.Compression
             EnsureNoActiveAsyncOperation();
             EnsureNotDisposed();
 
-            return new ValueTask(cancellationToken.IsCancellationRequested ?
-                Task.FromCanceled<int>(cancellationToken) :
-                WriteAsyncMemoryCore(buffer, cancellationToken));
+            return cancellationToken.IsCancellationRequested ?
+                new ValueTask(Task.FromCanceled<int>(cancellationToken)) :
+                WriteAsyncMemoryCore(buffer, cancellationToken);
         }
 
-        private async Task WriteAsyncMemoryCore(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+        private async ValueTask WriteAsyncMemoryCore(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
         {
             AsyncOperationStarting();
             try
@@ -838,7 +838,7 @@ namespace System.IO.Compression
         /// <summary>
         /// Writes the bytes that have already been deflated
         /// </summary>
-        private async Task WriteDeflaterOutputAsync(CancellationToken cancellationToken)
+        private async ValueTask WriteDeflaterOutputAsync(CancellationToken cancellationToken)
         {
             Debug.Assert(_deflater != null && _buffer != null);
             while (!_deflater.NeedsInput())

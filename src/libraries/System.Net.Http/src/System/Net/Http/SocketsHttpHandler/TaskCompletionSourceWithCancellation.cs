@@ -20,7 +20,7 @@ namespace System.Net.Http
             TrySetCanceled(_cancellationToken);
         }
 
-        public async Task<T> WaitWithCancellationAsync(CancellationToken cancellationToken)
+        public async ValueTask<T> WaitWithCancellationAsync(CancellationToken cancellationToken)
         {
             _cancellationToken = cancellationToken;
             using (cancellationToken.UnsafeRegister(s => ((TaskCompletionSourceWithCancellation<T>)s).OnCancellation(), this))
