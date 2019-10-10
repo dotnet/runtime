@@ -36,7 +36,7 @@ RyuJIT represents a function as a doubly-linked list of `BasicBlock` values. Eac
 
 Both HIR and LIR blocks are composed of `GenTree` nodes that define the operations performed by the block. A `GenTree` node may consume some number of operands and may produce a singly-defined, at-most-singly-used value as a result. These values are referred to interchangably as *SDSU* temps or *tree* temps. Defs of SDSU temps are represented by `GenTree` nodes themselves, and uses are represented by edges from the using node to the defining node. Furthermore, SDSU temps defined in one block may not be used in a different block. In cases where a value must be multiply-defined, multiply-used, or defined in one block and used in another, the IR provides another class of temporary: the local var. Local vars are defined by assignment nodes in HIR or store nodes in LIR, and are used by local var nodes in both forms.
 
-An HIR block is composed of a doubly-linked list of statement nodes (`GenTreeStmt`), each of which references a single expression tree (`gtStmtExpr`). The `GenTree` nodes in this tree execute in "tree order", which is defined as the order produced by a depth-first, left-to-right traversal of the tree, with two notable exceptions:
+An HIR block is composed of a doubly-linked list of statement nodes (`Statement`), each of which references a single expression tree (`m_rootNode`). The `GenTree` nodes in this tree execute in "tree order", which is defined as the order produced by a depth-first, left-to-right traversal of the tree, with two notable exceptions:
 - Binary nodes marked with the `GTF_REVERSE_OPS` flag execute their right operand tree (`gtOp2`) before their left operand tree (`gtOp1`)
 - Dynamically-sized block copy nodes where `gtEvalSizeFirst` is `true` execute the `gtDynamicSize` tree before executing their other operand trees.
 
@@ -55,8 +55,8 @@ Each operation is represented as a GenTree node, with an opcode (`GT_xxx`), zero
 `GenTree` nodes are doubly-linked in execution order, but the links are not necessarily valid during all phases of the JIT. In HIR these links are primarily a convenience, as the order produced by a traversal of the links must match the order produced by a "tree order" traversal (see above for details). In LIR these links define the execution order of the nodes.
 
 HIR statement nodes utilize the same `GenTree` base type as the operation nodes, though they are not truly related.
-* The statement nodes are doubly-linked. The first statement node in a block points to the last node in the block via its `gtPrev` link. Note that the last statement node does *not* point to the first; that is, the list is not fully circular.
-* Each statement node contains two `GenTree` links – `gtStmtExpr` points to the top-level node in the statement (i.e. the root of the tree that represents the statement), while `gtStmtList` points to the first node in execution order (again, this link is not always valid).
+* The statement nodes are doubly-linked. The first statement node in a block points to the last node in the block via its `m_prev` link. Note that the last statement node does *not* point to the first; that is, the list is not fully circular.
+* Each statement node contains two `GenTree` links – `m_rootNode` points to the top-level node in the statement (i.e. the root of the tree that represents the statement), while `m_treeList` points to the first node in execution order (again, this link is not always valid).
 
 ## Local var descriptors
 
@@ -71,8 +71,8 @@ For this snippet of code (extracted from [tests/src/JIT/CodeGenBringUpTests/DblR
 A stripped-down dump of the `GenTree` nodes just after they are imported looks like this:
 
 ```
-▌  STMT      void  (IL 0x000...0x026)
-└──▌  ASG       double
+STMT  (IL 0x000...0x026)
+   ▌  ASG       double
    ├──▌  IND       double
    │  └──▌  LCL_VAR   byref  V03 arg3         
    └──▌  DIV       double
@@ -123,7 +123,7 @@ The top-level function of interest is `Compiler::compCompile`. It invokes the fo
 | **Phase** | **IR Transformations** |
 | --- | --- |
 |[Pre-import](#pre-import)|`Compiler->lvaTable` created and filled in for each user argument and variable. BasicBlock list initialized.|
-|[Importation](#importation)|`GenTree` nodes created and linked in to Statements, and Statements into BasicBlocks. Inlining candidates identified.|
+|[Importation](#importation)|`GenTree` nodes created and linked in to `Statement` nodes, and Statements into BasicBlocks. Inlining candidates identified.|
 |[Inlining](#inlining)|The IR for inlined methods is incorporated into the flowgraph.|
 |[Struct Promotion](#struct-promotion)|New lclVars are created for each field of a promoted struct.|
 |[Mark Address-Exposed Locals](#mark-addr-exposed)|lclVars with references occurring in an address-taken context are marked.  This must be kept up-to-date.|
@@ -249,8 +249,8 @@ As the JIT has evolved, changes have been made to improve the ability to reason 
 For our earlier example (Example of Post-Import IR), here is what the simplified dump looks like just prior to Rationalization (the $ annotations are value numbers).  Note that some common subexpressions have been computed into new temporary lclVars, and that computation has been inserted as a `GT_COMMA` (comma) node in the IR:
 
 ```
-▌  STMT      void  (IL 0x000...0x026)
-└──▌  ASG       double $VN.Void
+STMT  (IL 0x000...0x026)
+   ▌  ASG       double $VN.Void
    ├──▌  IND       double $146
    │  └──▌  LCL_VAR   byref  V03 arg3         u:1 (last use) $c0
    └──▌  DIV       double $146
@@ -284,7 +284,7 @@ For our earlier example (Example of Post-Import IR), here is what the simplified
          └──▌  LCL_VAR   double V07 cse1          $145
 ```
 
-After rationalization, the nodes are presented in execution order, and the `GT_COMMA` (comma), `GT_ASG` (=), and `GT_STMT` nodes have been eliminated:
+After rationalization, the nodes are presented in execution order, and the `GT_COMMA` (comma), `GT_ASG` (=), and `Statement` nodes have been eliminated:
 
 ```
          IL_OFFSET void   IL offset: 0x0
@@ -501,7 +501,7 @@ There are several properties of the IR that are valid only during (or after) spe
 * Rationalization
   * All `GT_ASG` trees are transformed into `GT_STORE` variants (e.g. `GT_STORE_LCL_VAR`).
   * All `GT_ADDR` nodes are eliminated (e.g. with `GT_LCL_VAR_ADDR`).
-  * All `GT_COMMA` and `GT_STMT` nodes are removed and their constituent nodes linked into execution order.
+  * All `GT_COMMA` and `Statement` nodes are removed and their constituent nodes linked into execution order.
 * Lowering
   * `GenTree` nodes are split or transformed as needed to expose all of their register requirements and any necessary `flowgraph` changes (e.g., for switch statements).
 
@@ -509,16 +509,16 @@ There are several properties of the IR that are valid only during (or after) spe
 
 Ordering:
 
-* For `GenTreeStmt` nodes, the `gtNext` and `gtPrev` fields must always be consistent. The last statement in the `BasicBlock` must have `gtNext` equal to null. By convention, the `gtPrev` of the first statement in the `BasicBlock` must be the last statement of the `BasicBlock`.
-  * In all phases, `gtStmtExpr` points to the top-level node of the expression.
-* For non-statement nodes, the `gtNext` and `gtPrev` fields are either null, prior to ordering, or they are consistent (i.e. `A->gtPrev->gtNext = A`, and `A->gtNext->gtPrev == A`, if they are non-null).
-* After normalization the `gtStmtList` of the containing statement points to the first node to be executed.
-* Prior to normalization, the `gtNext` and `gtPrev` pointers on the expression (non-statement) `GenTree` nodes are invalid. The expression nodes are only traversed via the links from parent to child (e.g. `node->gtGetOp1()`, or `node->gtOp.gtOp1`). The `gtNext/gtPrev` links are set by `fgSetBlockOrder()`.
+* For `Statement` nodes, the `m_next` and `m_prev` fields must always be consistent. The last statement in the `BasicBlock` must have `m_next` equal to null. By convention, the `m_prev` of the first statement in the `BasicBlock` must be the last statement of the `BasicBlock`.
+  * In all phases, `m_rootNode` points to the top-level node of the expression.
+* For 'GenTree' nodes, the `gtNext` and `gtPrev` fields are either null, prior to ordering, or they are consistent (i.e. `A->gtPrev->gtNext = A`, and `A->gtNext->gtPrev == A`, if they are non-null).
+* After normalization the `m_treeList` of the containing statement points to the first node to be executed.
+* Prior to normalization, the `gtNext` and `gtPrev` pointers on the expression `GenTree` nodes are invalid. The expression nodes are only traversed via the links from parent to child (e.g. `node->gtGetOp1()`, or `node->gtOp.gtOp1`). The `gtNext/gtPrev` links are set by `fgSetBlockOrder()`.
   * After normalization, and prior to rationalization, the parent/child links remain the primary traversal mechanism. The evaluation order of any nested expression-statements (usually assignments) is enforced by the `GT_COMMA` in which they are contained.
 * After rationalization, all `GT_COMMA` nodes are eliminated, statements are flattened, and the primary traversal mechanism becomes the `gtNext/gtPrev` links which define the execution order.
 * In tree ordering:
-  * The `gtPrev` of the first node (`gtStmtList`) is always null.
-  * The `gtNext` of the last node (`gtStmtExpr`) is always null.
+  * The `gtPrev` of the first node (`m_treeList`) is always null.
+  * The `gtNext` of the last node (`m_rootNode`) is always null.
 
 ## LclVar phase-dependent properties
 
@@ -558,7 +558,7 @@ In a JitDump, the generated GC info can be seen following the “In gcInfoBlockH
 Debug info consists primarily of two types of information in the JIT:
 
 * Mapping of IL offsets to native code offsets. This is accomplished via:
-  * the `gtStmtILoffsx` on the statement nodes (`GenTreeStmt`)
+  * the `m_ILOffsetX` on the statement nodes (`Statement`)
   * the `gtLclILoffs` on lclVar references (`GenTreeLclVar`)
   * The IL offsets are captured during CodeGen by calling `CodeGen::genIPmappingAdd()`, and then written to debug tables by `CodeGen::genIPmappingGen()`.
 * Mapping of user locals to location (register or stack). This is accomplished via:
@@ -625,7 +625,7 @@ where the node labels (e.g. arg0) help identifying the call arguments after reor
 
 Here is a full dump of an entire statement:
 ```
-[000026] ------------              ▌  STMT      void  (IL 0x010...  ???)
+STMT00000 (IL 0x010...  ???)
 [000025] --C-G-------              └──▌  RETURN    double
 [000023] --C-G-------                 └──▌  CALL      double C.DblSqrt
 [000022] ------------ arg0               └──▌  MUL       double

@@ -626,7 +626,7 @@ unsigned Compiler::optValnumCSE_Locate()
         {
             /* We walk the tree in the forwards direction (bottom up) */
             bool stmtHasArrLenCandidate = false;
-            for (GenTree* tree = stmt->gtStmtList; tree != nullptr; tree = tree->gtNext)
+            for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
             {
                 if (tree->OperIsCompare() && stmtHasArrLenCandidate)
                 {
@@ -1011,7 +1011,7 @@ void Compiler::optValnumCSE_Availablity()
         {
             // We walk the tree in the forwards direction (bottom up)
 
-            for (GenTree* tree = stmt->gtStmtList; tree != nullptr; tree = tree->gtNext)
+            for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
             {
                 if (IS_CSE_INDEX(tree->gtCSEnum))
                 {
@@ -2930,7 +2930,7 @@ void Compiler::optCleanupCSEs()
         for (Statement* stmt : StatementList(block->FirstNonPhiDef()))
         {
             // We must clear the gtCSEnum field.
-            for (GenTree* tree = stmt->gtStmtExpr; tree; tree = tree->gtPrev)
+            for (GenTree* tree = stmt->GetRootNode(); tree; tree = tree->gtPrev)
             {
                 tree->gtCSEnum = NO_CSE;
             }
@@ -2956,7 +2956,7 @@ void Compiler::optEnsureClearCSEInfo()
         // Walk the statement trees in this basic block
         for (Statement* stmt : StatementList(block->FirstNonPhiDef()))
         {
-            for (GenTree* tree = stmt->gtStmtExpr; tree; tree = tree->gtPrev)
+            for (GenTree* tree = stmt->GetRootNode(); tree; tree = tree->gtPrev)
             {
                 assert(tree->gtCSEnum == NO_CSE);
             }

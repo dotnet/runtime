@@ -5299,86 +5299,154 @@ struct GenTreeILOffset : public GenTree
 struct Statement
 {
 public:
-    GenTree*       gtStmtExpr;      // root of the expression tree
-    GenTree*       gtStmtList;      // first node (for forward walks)
-    InlineContext* gtInlineContext; // The inline context for this statement.
-    IL_OFFSETX     gtStmtILoffsx;   // instr offset (if available)
-
-#ifdef DEBUG
-    IL_OFFSET gtStmtLastILoffs; // instr offset at end of stmt
-
-private:
-    unsigned m_stmtID;
-#endif
-
-public:
-    __declspec(property(get = getPrevStmt)) Statement* gtPrevStmt;
-
-    Statement* gtNext;
-    Statement* gtPrev;
-
-    bool compilerAdded;
-
-    Statement* GetNextStmt()
-    {
-        if (gtNext == nullptr)
-        {
-            return nullptr;
-        }
-        else
-        {
-            return gtNext;
-        }
-    }
-
-    Statement* getPrevStmt()
-    {
-        if (gtPrev == nullptr)
-        {
-            return nullptr;
-        }
-        else
-        {
-            return gtPrev;
-        }
-    }
-
     Statement(GenTree* expr, IL_OFFSETX offset DEBUGARG(unsigned stmtID))
-        : gtStmtExpr(expr)
-        , gtStmtList(nullptr)
-        , gtInlineContext(nullptr)
-        , gtStmtILoffsx(offset)
+        : m_rootNode(expr)
+        , m_treeList(nullptr)
+        , m_inlineContext(nullptr)
+        , m_ILOffsetX(offset)
 #ifdef DEBUG
-        , gtStmtLastILoffs(BAD_IL_OFFSET)
+        , m_lastILOffset(BAD_IL_OFFSET)
         , m_stmtID(stmtID)
 #endif
-        , gtNext(nullptr)
-        , gtPrev(nullptr)
-        , compilerAdded(false)
+        , m_next(nullptr)
+        , m_prev(nullptr)
+        , m_compilerAdded(false)
     {
     }
 
-    bool IsPhiDefnStmt()
+    GenTree* GetRootNode() const
     {
-        return gtStmtExpr->IsPhiDefn();
+        return m_rootNode;
     }
 
-    unsigned char GetCostSz() const
+    GenTree** GetRootNodePointer()
     {
-        return gtStmtExpr->GetCostSz();
+        return &m_rootNode;
     }
 
-    unsigned char GetCostEx() const
+    void SetRootNode(GenTree* treeRoot)
     {
-        return gtStmtExpr->GetCostEx();
+        m_rootNode = treeRoot;
+    }
+
+    GenTree* GetTreeList() const
+    {
+        return m_treeList;
+    }
+
+    void SetTreeList(GenTree* treeHead)
+    {
+        m_treeList = treeHead;
+    }
+
+    InlineContext* GetInlineContext() const
+    {
+        return m_inlineContext;
+    }
+
+    void SetInlineContext(InlineContext* inlineContext)
+    {
+        m_inlineContext = inlineContext;
+    }
+
+    IL_OFFSETX GetILOffsetX() const
+    {
+        return m_ILOffsetX;
+    }
+
+    void SetILOffsetX(IL_OFFSETX offsetX)
+    {
+        m_ILOffsetX = offsetX;
     }
 
 #ifdef DEBUG
+
+    IL_OFFSET GetLastILOffset() const
+    {
+        return m_lastILOffset;
+    }
+
+    void SetLastILOffset(IL_OFFSET lastILOffset)
+    {
+        m_lastILOffset = lastILOffset;
+    }
+
     unsigned GetID() const
     {
         return m_stmtID;
     }
+#endif // DEBUG
+
+    Statement* GetNextStmt() const
+    {
+        return m_next;
+    }
+
+    void SetNextStmt(Statement* nextStmt)
+    {
+        m_next = nextStmt;
+    }
+
+    Statement* GetPrevStmt() const
+    {
+        return m_prev;
+    }
+
+    void SetPrevStmt(Statement* prevStmt)
+    {
+        m_prev = prevStmt;
+    }
+
+    bool IsCompilerAdded() const
+    {
+        return m_compilerAdded;
+    }
+
+    void SetCompilerAdded()
+    {
+        m_compilerAdded = true;
+    }
+
+    bool IsPhiDefnStmt() const
+    {
+        return m_rootNode->IsPhiDefn();
+    }
+
+    unsigned char GetCostSz() const
+    {
+        return m_rootNode->GetCostSz();
+    }
+
+    unsigned char GetCostEx() const
+    {
+        return m_rootNode->GetCostEx();
+    }
+
+private:
+    // The root of the expression tree.
+    // Note: It will be the last node in evaluation order.
+    GenTree* m_rootNode;
+
+    // The tree list head (for forward walks in evaluation order).
+    // The value is `nullptr` until we have set the sequencing of the nodes.
+    GenTree* m_treeList;
+
+    InlineContext* m_inlineContext; // The inline context for this statement.
+
+    IL_OFFSETX m_ILOffsetX; // The instr offset (if available).
+
+#ifdef DEBUG
+    IL_OFFSET m_lastILOffset; // The instr offset at the end of this statement.
+    unsigned  m_stmtID;
 #endif
+
+    // The statement nodes are doubly-linked. The first statement node in a block points
+    // to the last node in the block via its `m_prev` link. Note that the last statement node
+    // does not point to the first: it's `m_next == nullptr`; that is, the list is not fully circular.
+    Statement* m_next;
+    Statement* m_prev;
+
+    bool m_compilerAdded; // Was the statement created by optimizer?
 };
 
 class StatementIterator
@@ -5397,7 +5465,7 @@ public:
 
     StatementIterator& operator++()
     {
-        m_stmt = m_stmt->gtNext;
+        m_stmt = m_stmt->GetNextStmt();
         return *this;
     }
 

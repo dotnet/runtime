@@ -589,13 +589,13 @@ InlineResult::InlineResult(Compiler* compiler, GenTreeCall* call, Statement* stm
     // Pass along some optional information to the policy.
     if (stmt != nullptr)
     {
-        m_InlineContext = stmt->gtInlineContext;
+        m_InlineContext = stmt->GetInlineContext();
         m_Policy->NoteContext(m_InlineContext);
 
 #if defined(DEBUG) || defined(INLINE_DATA)
         m_Policy->NoteOffset(call->gtRawILOffset);
 #else
-        m_Policy->NoteOffset(stmt->gtStmtILoffsx);
+        m_Policy->NoteOffset(stmt->GetILOffsetX());
 #endif // defined(DEBUG) || defined(INLINE_DATA)
     }
 
@@ -1200,7 +1200,7 @@ InlineContext* InlineStrategy::NewSuccess(InlineInfo* inlineInfo)
     Statement*     stmt          = inlineInfo->iciStmt;
     BYTE*          calleeIL      = inlineInfo->inlineCandidateInfo->methInfo.ILCode;
     unsigned       calleeILSize  = inlineInfo->inlineCandidateInfo->methInfo.ILCodeSize;
-    InlineContext* parentContext = stmt->gtInlineContext;
+    InlineContext* parentContext = stmt->GetInlineContext();
     GenTreeCall*   originalCall  = inlineInfo->inlineResult->GetCall();
 
     noway_assert(parentContext != nullptr);
@@ -1213,7 +1213,7 @@ InlineContext* InlineStrategy::NewSuccess(InlineInfo* inlineInfo)
     calleeContext->m_Sibling        = parentContext->m_Child;
     parentContext->m_Child          = calleeContext;
     calleeContext->m_Child          = nullptr;
-    calleeContext->m_Offset         = stmt->gtStmtILoffsx;
+    calleeContext->m_Offset         = stmt->GetILOffsetX();
     calleeContext->m_Observation    = inlineInfo->inlineResult->GetObservation();
     calleeContext->m_Success        = true;
     calleeContext->m_Devirtualized  = originalCall->IsDevirtualized();
@@ -1263,7 +1263,7 @@ InlineContext* InlineStrategy::NewFailure(Statement* stmt, InlineResult* inlineR
 {
     // Check for a parent context first. We should now have a parent
     // context for all statements.
-    InlineContext* parentContext = stmt->gtInlineContext;
+    InlineContext* parentContext = stmt->GetInlineContext();
     assert(parentContext != nullptr);
     InlineContext* failedContext = new (m_Compiler, CMK_Inlining) InlineContext(this);
     GenTreeCall*   originalCall  = inlineResult->GetCall();
@@ -1275,7 +1275,7 @@ InlineContext* InlineStrategy::NewFailure(Statement* stmt, InlineResult* inlineR
     failedContext->m_Sibling       = parentContext->m_Child;
     parentContext->m_Child         = failedContext;
     failedContext->m_Child         = nullptr;
-    failedContext->m_Offset        = stmt->gtStmtILoffsx;
+    failedContext->m_Offset        = stmt->GetILOffsetX();
     failedContext->m_Observation   = inlineResult->GetObservation();
     failedContext->m_Callee        = inlineResult->GetCallee();
     failedContext->m_Success       = false;
