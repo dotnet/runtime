@@ -18,7 +18,7 @@ namespace System.Drawing
         internal unsafe partial class Gdip
         {
             internal const string LibraryName = "libgdiplus";
-            internal static readonly Version LibraryRequiredVersion = new Version(6, 0, 1);
+            private static readonly Version LibraryRequiredVersion = new Version(6, 0, 1);
             public static IntPtr Display = IntPtr.Zero;
 
             // Indicates whether X11 is available. It's available on Linux but not on recent macOS versions
@@ -27,6 +27,8 @@ namespace System.Drawing
             public static bool UseX11Drawable { get; } =
                 !RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ||
                 Environment.GetEnvironmentVariable("SYSTEM_DRAWING_COMMON_FORCE_X11") != null;
+
+            private static bool didLoadNativeLibrary = false;
 
             internal static IntPtr LoadNativeLibrary()
             {
@@ -55,19 +57,7 @@ namespace System.Drawing
                     }
                 }
 
-                if (lib != IntPtr.Zero)
-                {
-                    var version = LibgdiplusVersion;
-
-                    if (version == null)
-                    {
-                        throw new PlatformNotSupportedException(SR.Format(SR.LibgdiplusOutdated, LibraryRequiredVersion));
-                    }
-                    else if (version < LibraryRequiredVersion)
-                    {
-                        throw new PlatformNotSupportedException(SR.Format(SR.LibgdiplusOutdated2, LibraryRequiredVersion, version));
-                    }
-                }
+                didLoadNativeLibrary = lib != IntPtr.Zero;
 
                 // This function may return a null handle. If it does, individual functions loaded from it will throw a DllNotFoundException,
                 // but not until an attempt is made to actually use the function (rather than load it). This matches how PInvokes behave.
@@ -77,6 +67,18 @@ namespace System.Drawing
             private static void PlatformInitialize()
             {
                 LibraryResolver.EnsureRegistered();
+
+                // Check whether the version of libgdiplus is a recent version of libgdiplus.
+                var installedVersion = LibgdiplusVersion;
+
+                if (installedVersion == null && didLoadNativeLibrary)
+                {
+                    throw new PlatformNotSupportedException(SR.Format(SR.LibgdiplusOutdated, LibraryRequiredVersion));
+                }
+                else if (installedVersion < LibraryRequiredVersion)
+                {
+                    throw new PlatformNotSupportedException(SR.Format(SR.LibgdiplusOutdated2, LibraryRequiredVersion, installedVersion));
+                }
             }
 
             private static Version LibgdiplusVersion
