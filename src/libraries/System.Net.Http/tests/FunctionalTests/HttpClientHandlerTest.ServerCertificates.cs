@@ -318,7 +318,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(41108)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP doesn't allow revocation checking to be turned off")]
         [OuterLoop("Uses external server")]
         [ConditionalFact(nameof(ClientSupportsDHECipherSuites))]
