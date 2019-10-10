@@ -5659,7 +5659,7 @@ void Compiler::fgValueNumber()
             // Now iterate over the block's statements, and their trees.
             for (Statement* stmt : StatementList(blk->FirstNonPhiDef()))
             {
-                for (GenTree* tree = stmt->gtStmtList; tree != nullptr; tree = tree->gtNext)
+                for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
                 {
                     tree->gtVNPair.SetBoth(ValueNumStore::NoVN);
                 }
@@ -5822,7 +5822,7 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
     // first check to see if all phi args have the same value.
     for (; (stmt != nullptr) && stmt->IsPhiDefnStmt(); stmt = stmt->GetNextStmt())
     {
-        GenTree* asg = stmt->gtStmtExpr;
+        GenTree* asg = stmt->GetRootNode();
         assert(asg->OperIs(GT_ASG));
 
         GenTreeLclVar* newSsaDef = asg->AsOp()->gtGetOp1()->AsLclVar();
@@ -5991,12 +5991,12 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
         if (verbose)
         {
             printf("\n***** " FMT_BB ", " FMT_STMT "(before)\n", blk->bbNum, stmt->GetID());
-            gtDispTree(stmt->gtStmtExpr);
+            gtDispTree(stmt->GetRootNode());
             printf("\n");
         }
 #endif
 
-        for (GenTree* tree = stmt->gtStmtList; tree != nullptr; tree = tree->gtNext)
+        for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
         {
             fgValueNumberTree(tree);
         }
@@ -6005,9 +6005,9 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
         if (verbose)
         {
             printf("\n***** " FMT_BB ", " FMT_STMT "(after)\n", blk->bbNum, stmt->GetID());
-            gtDispTree(stmt->gtStmtExpr);
+            gtDispTree(stmt->GetRootNode());
             printf("\n");
-            if (stmt->gtNext)
+            if (stmt->GetNextStmt() != nullptr)
             {
                 printf("---------\n");
             }

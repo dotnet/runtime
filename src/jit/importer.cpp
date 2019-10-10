@@ -426,7 +426,7 @@ inline void Compiler::impEndTreeList(BasicBlock* block, Statement* firstStmt, St
 {
     /* Make the list circular, so that we can easily walk it backwards */
 
-    firstStmt->gtPrev = lastStmt;
+    firstStmt->SetPrevStmt(lastStmt);
 
     /* Store the tree list in the basic block */
 
@@ -462,8 +462,8 @@ inline void Compiler::impEndTreeList(BasicBlock* block)
 #ifdef DEBUG
     if (impLastILoffsStmt != nullptr)
     {
-        impLastILoffsStmt->gtStmtLastILoffs = compIsForInlining() ? BAD_IL_OFFSET : impCurOpcOffs;
-        impLastILoffsStmt                   = nullptr;
+        impLastILoffsStmt->SetLastILOffset(compIsForInlining() ? BAD_IL_OFFSET : impCurOpcOffs);
+        impLastILoffsStmt = nullptr;
     }
 #endif
     impStmtList = impLastStmt = nullptr;
@@ -491,7 +491,7 @@ inline void Compiler::impAppendStmtCheck(Statement* stmt, unsigned chkLevel)
         return;
     }
 
-    GenTree* tree = stmt->gtStmtExpr;
+    GenTree* tree = stmt->GetRootNode();
 
     // Calls can only be appended if there are no GTF_GLOB_EFFECT on the stack
 
@@ -554,7 +554,7 @@ inline void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel)
         /* If the statement being appended has any side-effects, check the stack
            to see if anything needs to be spilled to preserve correct ordering. */
 
-        GenTree* expr  = stmt->gtStmtExpr;
+        GenTree* expr  = stmt->GetRootNode();
         unsigned flags = expr->gtFlags & GTF_GLOB_EFFECT;
 
         // Assignment to (unaliased) locals don't count as a side-effect as
@@ -624,7 +624,7 @@ inline void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel)
     /* Once we set impCurStmtOffs in an appended tree, we are ready to
        report the following offsets. So reset impCurStmtOffs */
 
-    if (impLastStmt->gtStmtILoffsx == impCurStmtOffs)
+    if (impLastStmt->GetILOffsetX() == impCurStmtOffs)
     {
         impCurStmtOffsSet(BAD_IL_OFFSET);
     }
@@ -659,8 +659,8 @@ inline void Compiler::impAppendStmt(Statement* stmt)
     else
     {
         // Append the expression statement to the existing list.
-        impLastStmt->gtNext = stmt;
-        stmt->gtPrev        = impLastStmt;
+        impLastStmt->SetNextStmt(stmt);
+        stmt->SetPrevStmt(impLastStmt);
     }
     impLastStmt = stmt;
 }
@@ -679,7 +679,7 @@ Statement* Compiler::impExtractLastStmt()
     assert(impLastStmt != nullptr);
 
     Statement* stmt = impLastStmt;
-    impLastStmt     = impLastStmt->gtPrevStmt;
+    impLastStmt     = impLastStmt->GetPrevStmt();
     if (impLastStmt == nullptr)
     {
         impStmtList = nullptr;
@@ -705,12 +705,12 @@ inline void Compiler::impInsertStmtBefore(Statement* stmt, Statement* stmtBefore
     }
     else
     {
-        Statement* stmtPrev = stmtBefore->getPrevStmt();
-        stmt->gtPrev        = stmtPrev;
-        stmtPrev->gtNext    = stmt;
+        Statement* stmtPrev = stmtBefore->GetPrevStmt();
+        stmt->SetPrevStmt(stmtPrev);
+        stmtPrev->SetNextStmt(stmt);
     }
-    stmt->gtNext       = stmtBefore;
-    stmtBefore->gtPrev = stmt;
+    stmt->SetNextStmt(stmtBefore);
+    stmtBefore->SetPrevStmt(stmt);
 }
 
 /*****************************************************************************
@@ -2527,7 +2527,7 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
 
         if (stmt != nullptr)
         {
-            GenTree* tree = stmt->gtStmtExpr;
+            GenTree* tree = stmt->GetRootNode();
             assert(tree != nullptr);
 
             if ((tree->gtOper == GT_ASG) && (tree->gtOp.gtOp1->gtOper == GT_LCL_VAR) &&
@@ -2656,7 +2656,7 @@ inline void Compiler::impCurStmtOffsSet(IL_OFFSET offs)
     if (compIsForInlining())
     {
         Statement* callStmt = impInlineInfo->iciStmt;
-        impCurStmtOffs      = callStmt->gtStmtILoffsx;
+        impCurStmtOffs      = callStmt->GetILOffsetX();
     }
     else
     {
@@ -2703,11 +2703,11 @@ bool Compiler::impCanSpillNow(OPCODE prevOpcode)
  *
  *  Remember the instr offset for the statements
  *
- *  When we do impAppendTree(tree), we can't set tree->gtStmtLastILoffs to
- *  impCurOpcOffs, if the append was done because of a partial stack spill,
+ *  When we do impAppendTree(tree), we can't set stmt->SetLastILOffset(impCurOpcOffs),
+ *  if the append was done because of a partial stack spill,
  *  as some of the trees corresponding to code up to impCurOpcOffs might
  *  still be sitting on the stack.
- *  So we delay marking of gtStmtLastILoffs until impNoteLastILoffs().
+ *  So we delay calling of SetLastILOffset() until impNoteLastILoffs().
  *  This should be called when an opcode finally/explicitly causes
  *  impAppendTree(tree) to be called (as opposed to being called because of
  *  a spill caused by the opcode)
@@ -2724,12 +2724,12 @@ void Compiler::impNoteLastILoffs()
 
         assert(impLastStmt);
 
-        impLastStmt->gtStmtLastILoffs = compIsForInlining() ? BAD_IL_OFFSET : impCurOpcOffs;
+        impLastStmt->SetLastILOffset(compIsForInlining() ? BAD_IL_OFFSET : impCurOpcOffs);
     }
     else
     {
-        impLastILoffsStmt->gtStmtLastILoffs = compIsForInlining() ? BAD_IL_OFFSET : impCurOpcOffs;
-        impLastILoffsStmt                   = nullptr;
+        impLastILoffsStmt->SetLastILOffset(compIsForInlining() ? BAD_IL_OFFSET : impCurOpcOffs);
+        impLastILoffsStmt = nullptr;
     }
 }
 
@@ -3073,7 +3073,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
     // We start by looking at the last statement, making sure it's an assignment, and
     // that the target of the assignment is the array passed to InitializeArray.
     //
-    GenTree* arrayAssignment = impLastStmt->gtStmtExpr;
+    GenTree* arrayAssignment = impLastStmt->GetRootNode();
     if ((arrayAssignment->gtOper != GT_ASG) || (arrayAssignment->gtOp.gtOp1->gtOper != GT_LCL_VAR) ||
         (arrayLocalNode->gtOper != GT_LCL_VAR) ||
         (arrayAssignment->gtOp.gtOp1->gtLclVarCommon.GetLclNum() != arrayLocalNode->gtLclVarCommon.GetLclNum()))
@@ -9291,9 +9291,9 @@ void Compiler::impImportLeave(BasicBlock* block)
 
                 if (endCatches)
                 {
-                    lastStmt            = gtNewStmt(endCatches);
-                    endLFinStmt->gtNext = lastStmt;
-                    lastStmt->gtPrev    = endLFinStmt;
+                    lastStmt = gtNewStmt(endCatches);
+                    endLFinStmt->SetNextStmt(lastStmt);
+                    lastStmt->SetPrevStmt(endLFinStmt);
                 }
                 else
                 {
@@ -9382,9 +9382,9 @@ void Compiler::impImportLeave(BasicBlock* block)
 
         if (endCatches)
         {
-            lastStmt            = gtNewStmt(endCatches);
-            endLFinStmt->gtNext = lastStmt;
-            lastStmt->gtPrev    = endLFinStmt;
+            lastStmt = gtNewStmt(endCatches);
+            endLFinStmt->SetNextStmt(lastStmt);
+            lastStmt->SetPrevStmt(endLFinStmt);
         }
         else
         {
@@ -14526,10 +14526,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 #ifndef _TARGET_64BIT_
                     // In UWP6.0 and beyond (post-.NET Core 2.0), we decided to let this cast from int to long be
                     // generated for ARM as well as x86, so the following IR will be accepted:
-                    //     *  STMT      void
-                    //         |  /--*  CNS_INT   int    2
-                    //         \--*  ASG       long
-                    //            \--*  CLS_VAR   long
+                    // STMTx (IL 0x... ???)
+                    //   *  ASG long
+                    //   +--*  CLS_VAR   long
+                    //   \--*  CNS_INT   int    2
 
                     if ((op1->TypeGet() != op2->TypeGet()) && op2->OperIsConst() && varTypeIsIntOrI(op2->TypeGet()) &&
                         varTypeIsLong(op1->TypeGet()))
@@ -17017,7 +17017,7 @@ SPILLSTACK:
 
                 addStmt = impExtractLastStmt();
 
-                assert(addStmt->gtStmtExpr->gtOper == GT_JTRUE);
+                assert(addStmt->GetRootNode()->gtOper == GT_JTRUE);
 
                 /* Note if the next block has more than one ancestor */
 
@@ -17058,7 +17058,7 @@ SPILLSTACK:
                 unsigned     jmpCnt;
 
                 addStmt = impExtractLastStmt();
-                assert(addStmt->gtStmtExpr->gtOper == GT_SWITCH);
+                assert(addStmt->GetRootNode()->gtOper == GT_SWITCH);
 
                 jmpCnt = block->bbJumpSwt->bbsCount;
                 jmpTab = block->bbJumpSwt->bbsDstTab;
@@ -17209,9 +17209,9 @@ SPILLSTACK:
                are spilling to the temps already used by a previous block),
                we need to spill addStmt */
 
-            if (addStmt != nullptr && !newTemps && gtHasRef(addStmt->gtStmtExpr, tempNum, false))
+            if (addStmt != nullptr && !newTemps && gtHasRef(addStmt->GetRootNode(), tempNum, false))
             {
-                GenTree* addTree = addStmt->gtStmtExpr;
+                GenTree* addTree = addStmt->GetRootNode();
 
                 if (addTree->gtOper == GT_JTRUE)
                 {
@@ -19463,7 +19463,7 @@ BOOL Compiler::impInlineIsGuaranteedThisDerefBeforeAnySideEffects(GenTree*      
 
     for (Statement* stmt : StatementList(impStmtList))
     {
-        GenTree* expr = stmt->gtStmtExpr;
+        GenTree* expr = stmt->GetRootNode();
         if (GTF_GLOBALLY_VISIBLE_SIDE_EFFECTS(expr->gtFlags))
         {
             return FALSE;
