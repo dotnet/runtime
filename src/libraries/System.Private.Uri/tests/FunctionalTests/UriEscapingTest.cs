@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Text;
 using System.Common.Tests;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 
 using Xunit;
 
@@ -104,6 +106,26 @@ namespace System.PrivateUri.Tests
                 string outputZhCn = Uri.EscapeDataString(GB18030CertificationString1);
                 Assert.Equal(output, outputZhCn); //"Same normalized result expected in different locales."
             }
+        }
+
+        public static IEnumerable<object[]> UriEscapeUnescapeDataString_Roundtrip_MemberData()
+        {
+            // Test the no-longer-existing "c_MaxUriBufferSize" limit of 0xFFF0,
+            // as well as lengths longer than the max Uri length of ushort.MaxValue.
+            foreach (int length in new[] { 1, 0xFFF0, 0xFFF1, ushort.MaxValue + 10 })
+            {
+                yield return new object[] { new string('s', length), string.Concat(Enumerable.Repeat("s", length)) };
+                yield return new object[] { new string('/', length), string.Concat(Enumerable.Repeat("%2F", length)) };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(UriEscapeUnescapeDataString_Roundtrip_MemberData))]
+        public void UriEscapeUnescapeDataString_Roundtrip(string input, string expectedEscaped)
+        {
+            string output = Uri.EscapeDataString(input);
+            Assert.Equal(expectedEscaped, output);
+            Assert.Equal(input, Uri.UnescapeDataString(output));
         }
 
         #endregion EscapeDataString
@@ -284,6 +306,24 @@ namespace System.PrivateUri.Tests
             string input = "http://[::1]:90/path/path?query[]#fragment[]#";
             string output = Uri.EscapeUriString(input);
             Assert.Equal(input, output);
+        }
+
+        public static IEnumerable<object[]> UriEscapingUriString_Long_MemberData()
+        {
+            // Test the no-longer-existing "c_MaxUriBufferSize" limit of 0xFFF0,
+            // as well as lengths longer than the max Uri length of ushort.MaxValue.
+            foreach (int length in new[] { 1, 0xFFF0, 0xFFF1, ushort.MaxValue + 10 })
+            {
+                yield return new object[] { new string('s', length), string.Concat(Enumerable.Repeat("s", length)) };
+                yield return new object[] { new string('<', length), string.Concat(Enumerable.Repeat("%3C", length)) };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(UriEscapingUriString_Long_MemberData))]
+        public void UriEscapingUriString_Long_Escaped(string input, string expectedEscaped)
+        {
+            Assert.Equal(expectedEscaped, Uri.EscapeUriString(input));
         }
 
         #endregion EscapeUriString

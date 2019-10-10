@@ -134,9 +134,6 @@ namespace System
         internal static unsafe char[]? EscapeString(string input, int start, int end, char[]? dest, ref int destPos,
             bool isUriString, char force1, char force2, char rsvd)
         {
-            if (end - start >= Uri.c_MaxUriBufferSize)
-                throw new UriFormatException(SR.net_uri_SizeLimit);
-
             int i = start;
             int prevInputPos = start;
             byte* bytes = stackalloc byte[c_MaxUnicodeCharsReallocate * c_MaxUTF_8BytesPerUnicodeChar];   // 40*4=160
