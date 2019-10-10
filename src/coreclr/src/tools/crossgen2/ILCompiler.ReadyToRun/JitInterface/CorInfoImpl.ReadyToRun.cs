@@ -164,15 +164,24 @@ namespace Internal.JitInterface
 
         public void CompileMethod(IReadyToRunMethodCodeNode methodCodeNodeNeedingCode)
         {
+            bool codeGotPublished = false;
             _methodCodeNode = methodCodeNodeNeedingCode;
 
-            if (!ShouldSkipCompilation(methodCodeNodeNeedingCode))
+            try
             {
-                CompileMethodInternal(methodCodeNodeNeedingCode);
+                if (!ShouldSkipCompilation(methodCodeNodeNeedingCode))
+                {
+                    CompileMethodInternal(methodCodeNodeNeedingCode);
+                    codeGotPublished = true;
+                }
             }
-            else
+            finally
             {
-                PublishEmptyCode();
+                if (!codeGotPublished)
+                {
+                    PublishEmptyCode();
+                }
+                CompileMethodCleanup();
             }
         }
 
