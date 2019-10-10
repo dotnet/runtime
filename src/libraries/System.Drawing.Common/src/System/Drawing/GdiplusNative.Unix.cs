@@ -18,6 +18,7 @@ namespace System.Drawing
         internal unsafe partial class Gdip
         {
             internal const string LibraryName = "libgdiplus";
+            internal static readonly Version LibraryRequiredVersion = new Version(6, 0, 1);
             public static IntPtr Display = IntPtr.Zero;
 
             // Indicates whether X11 is available. It's available on Linux but not on recent macOS versions
@@ -54,6 +55,20 @@ namespace System.Drawing
                     }
                 }
 
+                if (lib != null)
+                {
+                    var version = LibgdiplusVersion;
+
+                    if (version == null)
+                    {
+                        throw new PlatformNotSupportedException(SR.Format(SR.LibgdiplusOutdated, LibraryRequiredVersion));
+                    }
+                    else if (version < LibraryRequiredVersion)
+                    {
+                        throw new PlatformNotSupportedException(SR.Format(SR.LibgdiplusOutdated2, LibraryRequiredVersion, version));
+                    }
+                }
+
                 // This function may return a null handle. If it does, individual functions loaded from it will throw a DllNotFoundException,
                 // but not until an attempt is made to actually use the function (rather than load it). This matches how PInvokes behave.
                 return lib;
@@ -62,6 +77,25 @@ namespace System.Drawing
             private static void PlatformInitialize()
             {
                 LibraryResolver.EnsureRegistered();
+            }
+
+            private static Version LibgdiplusVersion
+            {
+                get
+                {
+                    try
+                    {
+                        return new Version(GetLibgdiplusVersion());
+                    }
+                    catch (EntryPointNotFoundException)
+                    {
+                        return null;  // in case of older libgdiplus or Windows GDI+
+                    }
+                    catch (DllNotFoundException)
+                    {
+                        return null;
+                    }
+                }
             }
 
             // Imported functions
@@ -415,6 +449,9 @@ namespace System.Drawing
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipGetPostScriptSavePage(IntPtr graphics);
+
+            [DllImport(LibraryName, ExactSpelling = true)]
+            internal extern static string GetLibgdiplusVersion();
         }
     }
 
