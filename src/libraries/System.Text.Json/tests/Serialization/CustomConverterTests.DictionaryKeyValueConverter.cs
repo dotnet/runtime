@@ -157,7 +157,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void AllPrimitivesConvertion()
+        public static void AllPrimitivesConversion()
         {
             ClassWithDictionaries obj;
             Guid guid = Guid.NewGuid();

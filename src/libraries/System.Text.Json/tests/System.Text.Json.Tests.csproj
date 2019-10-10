@@ -39,11 +39,13 @@
     <Compile Include="Serialization\CustomConverterTests.Attribute.cs" />
     <Compile Include="Serialization\CustomConverterTests.BadConverters.cs" />
     <Compile Include="Serialization\CustomConverterTests.cs" />
+    <Compile Include="Serialization\CustomConverterTests.ContravariantDictionaryConverter.cs" />
     <Compile Include="Serialization\CustomConverterTests.DerivedTypes.cs" />
-    <Compile Include="Serialization\CustomConverterTests.DictionaryConverterForIDictionary.cs" />
-    <Compile Include="Serialization\CustomConverterTests.DictionaryInt32StringConverter.cs" />
-    <Compile Include="Serialization\CustomConverterTests.DictionaryKeyValueConverter.cs" />
+    <Compile Include="Serialization\CustomConverterTests.DictionaryEnumConverter.cs" />
     <Compile Include="Serialization\CustomConverterTests.DictionaryGuidConverter.cs" />
+    <Compile Include="Serialization\CustomConverterTests.DictionaryInt32StringConverter.cs" />
+    <Compile Include="Serialization\CustomConverterTests.DictionaryInt32StringKeyValueConverter.cs" />
+    <Compile Include="Serialization\CustomConverterTests.DictionaryKeyValueConverter.cs" />
     <Compile Include="Serialization\CustomConverterTests.Enum.cs" />
     <Compile Include="Serialization\CustomConverterTests.Exceptions.cs" />
     <Compile Include="Serialization\CustomConverterTests.Int32.cs" />
@@ -131,8 +133,5 @@
     <Compile Include="JsonNumberTests.cs" />
     <Compile Include="JsonObjectTests.cs" />
     <Compile Include="JsonStringTests.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Serialization\CustomConverterTests.DictionaryInt32StringKeyValueConverter.cs" />
   </ItemGroup>
 </Project>

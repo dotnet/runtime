@@ -12,7 +12,8 @@ namespace System.Text.Json.Serialization.Tests
     {
         /// <summary>
         /// Demonstrates a <see cref="Dictionary{Guid, TValue}"> converter using a JSON object with property names representing keys.
-        /// Sample JSON for <see cref="Dictionary{Guid, object}">: {"2E6E1787-1874-49BF-91F1-0F65CCB6C161":{}}
+        /// Sample JSON for <see cref="Dictionary{Guid, object}">: {"2E6E1787-1874-49BF-91F1-0F65CCB6C161":{"MyProperty":"myValue"}}
+        /// Sample JSON for <see cref="Dictionary{Guid, int}">: {"2E6E1787-1874-49BF-91F1-0F65CCB6C161":42}
         /// </summary>
         internal sealed class DictionaryGuidConverter : JsonConverterFactory
         {
