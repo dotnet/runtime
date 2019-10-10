@@ -3402,11 +3402,14 @@ main_loop:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_POP) {
-			guint16 u16 = (ip [1]) + 1;
-			if (u16 > 1)
-				memmove (sp - u16, sp - 1, (u16 - 1) * sizeof (stackval));
 			sp--;
-			ip += 2;
+			ip++;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_POP1) {
+			sp [-2] = sp [-1];
+			sp--;
+			ip++;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_JMP) {
@@ -6965,6 +6968,7 @@ register_interp_stats (void)
 	mono_counters_register ("STLOC_NP count", MONO_COUNTER_INTERP | MONO_COUNTER_INT, &mono_interp_stats.stloc_nps);
 	mono_counters_register ("MOVLOC count", MONO_COUNTER_INTERP | MONO_COUNTER_INT, &mono_interp_stats.movlocs);
 	mono_counters_register ("Copy propagations", MONO_COUNTER_INTERP | MONO_COUNTER_INT, &mono_interp_stats.copy_propagations);
+	mono_counters_register ("Added pop count", MONO_COUNTER_INTERP | MONO_COUNTER_INT, &mono_interp_stats.added_pop_count);
 	mono_counters_register ("Killed instructions", MONO_COUNTER_INTERP | MONO_COUNTER_INT, &mono_interp_stats.killed_instructions);
 	mono_counters_register ("Methods inlined", MONO_COUNTER_INTERP | MONO_COUNTER_INT, &mono_interp_stats.inlined_methods);
 	mono_counters_register ("Inline failures", MONO_COUNTER_INTERP | MONO_COUNTER_INT, &mono_interp_stats.inline_failures);

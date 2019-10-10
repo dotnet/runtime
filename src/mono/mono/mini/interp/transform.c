@@ -3455,7 +3455,6 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		case CEE_POP:
 			CHECK_STACK(td, 1);
 			SIMPLE_OP(td, MINT_POP);
-			td->last_ins->data [0] = 0;
 			if (td->sp [-1].type == STACK_TYPE_VT) {
 				int size = mono_class_value_size (td->sp [-1].klass, NULL);
 				size = ALIGN_TO (size, MINT_VT_ALIGNMENT);
@@ -4530,7 +4529,6 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			{
 				if (is_static) {
 					interp_add_ins (td, MINT_POP);
-					td->last_ins->data [0] = 0;
 					interp_emit_ldsflda (td, field, error);
 					goto_if_nok (error, exit);
 				} else {
@@ -4568,7 +4566,6 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			{
 				if (is_static) {
 					interp_add_ins (td, MINT_POP);
-					td->last_ins->data [0] = 0;
 					interp_emit_sfld_access (td, field, field_klass, mt, TRUE, error);
 					goto_if_nok (error, exit);
 				} else {
@@ -4637,10 +4634,11 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 #endif
 			{
 				if (is_static) {
-					interp_add_ins (td, MINT_POP);
-					td->last_ins->data [0] = 1;
 					interp_emit_sfld_access (td, field, field_klass, mt, FALSE, error);
 					goto_if_nok (error, exit);
+
+					/* pop the unused object reference */
+					interp_add_ins (td, MINT_POP);
 
 					/* the vtable of the field might not be initialized at this point */
 					mono_class_vtable_checked (domain, field_klass, error);
@@ -5529,8 +5527,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					break;
 				case CEE_MONO_CALLI_EXTRA_ARG:
 					/* Same as CEE_CALLI, except that we drop the extra arg required for llvm specific behaviour */
-					interp_add_ins (td, MINT_POP);
-					td->last_ins->data [0] = 1;
+					interp_add_ins (td, MINT_POP1);
 					--td->sp;
 					if (!interp_transform_call (td, method, NULL, domain, generic_context, td->is_bb_start, NULL, FALSE, error, FALSE, FALSE))
 						goto exit;
@@ -5556,15 +5553,12 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 						/* attach needs two arguments, and has one return value: leave one element on the stack */
 						interp_add_ins (td, MINT_POP);
-						td->last_ins->data [0] = 0;
 					} else if (jit_icall_id == MONO_JIT_ICALL_mono_threads_detach_coop) {
 						g_assert (rtm->needs_thread_attach);
 
 						/* detach consumes two arguments, and no return value: drop both of them */
 						interp_add_ins (td, MINT_POP);
-						td->last_ins->data [0] = 0;
 						interp_add_ins (td, MINT_POP);
-						td->last_ins->data [0] = 0;
 					} else {
 						int const icall_op = interp_icall_op_for_sig (info->sig);
 						g_assert (icall_op != -1);
@@ -6395,6 +6389,12 @@ interp_local_deadce (TransformData *td, int *local_ref_count)
 				interp_clear_ins (td, ins);
 				mono_interp_stats.killed_instructions++;
 			}
+		} else if (MINT_IS_STLOC (ins->opcode) && ins->opcode != MINT_STLOC_VT) {
+			if (!local_ref_count [ins->data [0]] && (td->locals [ins->data [0]].flags & INTERP_LOCAL_FLAG_INDIRECT) == 0) {
+				// We store to a dead stloc, we can replace it with a POP to save local space
+				ins->opcode = MINT_POP;
+				mono_interp_stats.added_pop_count++;
+			}
 		}
 	}
 	return needs_cprop;
@@ -6503,10 +6503,10 @@ retry:
 				if (td->locals [loaded_local].flags & INTERP_LOCAL_FLAG_INDIRECT) {
 					sp->val.opcode = MINT_NOP;
 				} else {
-					sp->ins = ins;
 					sp->val.opcode = ins->opcode;
 					sp->val.data = ins->data [0];
 				}
+				sp->ins = ins;
 			}
 			sp++;
 		} else if (MINT_IS_STLOC (ins->opcode)) {
@@ -6598,6 +6598,15 @@ retry:
 				sp [-i].ins = NULL;
 			memset (sp, 0, sizeof (StackContentInfo));
 			sp++;
+		} else if (ins->opcode == MINT_POP) {
+			sp--;
+			if (sp->ins) {
+				// The top of the stack is not used by any instructions. Kill both the
+				// instruction that pushed it and the pop.
+				interp_clear_ins (td, sp->ins);
+				interp_clear_ins (td, ins);
+				mono_interp_stats.killed_instructions += 2;
+			}
 		} else if (ins->opcode == MINT_NEWOBJ_FAST && ins->data [0] == INLINED_METHOD_FLAG) {
 			int param_count = ins->data [1];
 			// memmove the stack values while clearing ins, to prevent instruction removal
@@ -6611,6 +6620,13 @@ retry:
 		} else if (ins->opcode == MINT_CASTCLASS || ins->opcode == MINT_CASTCLASS_COMMON || ins->opcode == MINT_CASTCLASS_INTERFACE) {
 			// Keep the value on the stack, but prevent optimizing away
 			sp [-1].ins = NULL;
+		} else if (MINT_IS_CONDITIONAL_BRANCH (ins->opcode)) {
+			sp -= pop;
+			g_assert (push == 0);
+			// We can't clear any instruction that pushes the stack, because the
+			// branched code will expect a certain stack size.
+			for (StackContentInfo *sp_iter = stack; sp_iter < sp; sp_iter++)
+				sp_iter->ins = NULL;
 		} else {
 			if (pop == MINT_POP_ALL)
 				pop = sp - stack;
@@ -6618,6 +6634,10 @@ retry:
 			g_assert (sp >= stack && sp <= stack_end);
 			g_assert ((sp - push) >= stack && (sp - push) <= stack_end);
 			memset (sp - push, 0, push * sizeof (StackContentInfo));
+			// If this instruction only pushes a single value, make it a candidate for
+			// removal, if its value is not used anywhere.
+			if (push == 1 && pop == 0 && !MINT_IS_CALL (ins->opcode) && !MINT_IS_NEWOBJ (ins->opcode))
+				sp [-1].ins = ins;
 		}
 		last_il_offset = ins->il_offset;
 	}
