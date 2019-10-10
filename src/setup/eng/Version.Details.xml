@@ -111,21 +111,21 @@
     </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
-    <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="5.0.0-beta.19505.1">
+    <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="5.0.0-beta.19509.5">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>13e1dbd86223eaa797655bf14070ea28ce6461e3</Sha>
+      <Sha>1acb4c3ce4c6497388752adad31825ae7cdb7e2a</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Feed" Version="5.0.0-beta.19505.1">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Feed" Version="5.0.0-beta.19509.5">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>13e1dbd86223eaa797655bf14070ea28ce6461e3</Sha>
+      <Sha>1acb4c3ce4c6497388752adad31825ae7cdb7e2a</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Packaging" Version="5.0.0-beta.19505.1">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Packaging" Version="5.0.0-beta.19509.5">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>13e1dbd86223eaa797655bf14070ea28ce6461e3</Sha>
+      <Sha>1acb4c3ce4c6497388752adad31825ae7cdb7e2a</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.VersionTools.Tasks" Version="5.0.0-beta.19505.1">
+    <Dependency Name="Microsoft.DotNet.VersionTools.Tasks" Version="5.0.0-beta.19509.5">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>13e1dbd86223eaa797655bf14070ea28ce6461e3</Sha>
+      <Sha>1acb4c3ce4c6497388752adad31825ae7cdb7e2a</Sha>
     </Dependency>
     <Dependency Name="Microsoft.SourceLink" Version="1.0.0-beta2-19367-01">
       <Uri>https://github.com/dotnet/sourcelink</Uri>
