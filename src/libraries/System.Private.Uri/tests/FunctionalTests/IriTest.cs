@@ -495,36 +495,24 @@ namespace System.PrivateUri.Tests
             { }
         }
 
-        [Fact]
-        public void Iri_ValidateVeryLongInputString_EscapeDataString()
+        [Theory]
+        [InlineData(maxUriLength)]
+        [InlineData(maxUriLength + 1)]
+        [InlineData(10 + ushort.MaxValue)]
+        public void Iri_ValidateVeryLongInputString_EscapeDataString(int length)
         {
-            string bigString1 = GetUnicodeString(0, maxUriLength, 1);
-            Assert.True(Uri.EscapeDataString(bigString1).Length > bigString1.Length);
-
-            try
-            {
-                string bigString2 = GetUnicodeString(0, maxUriLength + 1, 1);
-                Uri.EscapeDataString(bigString2);
-                Assert.False(true, "Expected UriFormatException: Uri too large");
-            }
-            catch (FormatException)
-            { }
+            string s = GetUnicodeString(0, length, 1);
+            Assert.InRange(Uri.EscapeDataString(s).Length, s.Length + 1, int.MaxValue);
         }
 
-        [Fact]
-        public void Iri_ValidateVeryLongInputString_EscapeUriString()
+        [Theory]
+        [InlineData(maxUriLength)]
+        [InlineData(maxUriLength + 1)]
+        [InlineData(10 + ushort.MaxValue)]
+        public void Iri_ValidateVeryLongInputString_EscapeUriString(int length)
         {
-            string bigString1 = GetUnicodeString(0, maxUriLength, 1);
-            Assert.True(Uri.EscapeUriString(bigString1).Length > bigString1.Length);
-
-            try
-            {
-                string bigString2 = GetUnicodeString(0, maxUriLength + 1, 1);
-                Uri.EscapeUriString(bigString2);
-                Assert.False(true, "Expected UriFormatException: Uri too large");
-            }
-            catch (FormatException)
-            { }
+            string s = GetUnicodeString(0, length, 1);
+            Assert.InRange(Uri.EscapeUriString(s).Length, s.Length + 1, int.MaxValue);
         }
 
         [Theory]
