@@ -244,7 +244,7 @@ void Rationalizer::SanityCheck()
         {
             ValidateStatement(statement, block);
 
-            for (GenTree* tree = statement->gtStmtList; tree; tree = tree->gtNext)
+            for (GenTree* tree = statement->GetTreeList(); tree; tree = tree->gtNext)
             {
                 // QMARK nodes should have been removed before this phase.
                 assert(tree->OperGet() != GT_QMARK);
@@ -935,25 +935,25 @@ void Rationalizer::DoPhase()
 
         for (Statement* statement : StatementList(firstStatement))
         {
-            assert(statement->gtStmtList != nullptr);
-            assert(statement->gtStmtList->gtPrev == nullptr);
-            assert(statement->gtStmtExpr != nullptr);
-            assert(statement->gtStmtExpr->gtNext == nullptr);
+            assert(statement->GetTreeList() != nullptr);
+            assert(statement->GetTreeList()->gtPrev == nullptr);
+            assert(statement->GetRootNode() != nullptr);
+            assert(statement->GetRootNode()->gtNext == nullptr);
 
-            BlockRange().InsertAtEnd(LIR::Range(statement->gtStmtList, statement->gtStmtExpr));
+            BlockRange().InsertAtEnd(LIR::Range(statement->GetTreeList(), statement->GetRootNode()));
 
             // If this statement has correct offset information, change it into an IL offset
             // node and insert it into the LIR.
-            if (statement->gtStmtILoffsx != BAD_IL_OFFSET)
+            if (statement->GetILOffsetX() != BAD_IL_OFFSET)
             {
                 assert(!statement->IsPhiDefnStmt());
                 GenTreeILOffset* ilOffset = new (comp, GT_IL_OFFSET)
-                    GenTreeILOffset(statement->gtStmtILoffsx DEBUGARG(statement->gtStmtLastILoffs));
-                BlockRange().InsertBefore(statement->gtStmtList, ilOffset);
+                    GenTreeILOffset(statement->GetILOffsetX() DEBUGARG(statement->GetLastILOffset()));
+                BlockRange().InsertBefore(statement->GetTreeList(), ilOffset);
             }
 
             m_block = block;
-            visitor.WalkTree(&statement->gtStmtExpr, nullptr);
+            visitor.WalkTree(statement->GetRootNodePointer(), nullptr);
         }
 
         block->bbStmtList = nullptr;

@@ -103,7 +103,7 @@ void Compiler::fgResetForSsa()
             blk->bbStmtList = blk->FirstNonPhiDef();
             if (blk->bbStmtList != nullptr)
             {
-                blk->bbStmtList->gtPrev = last;
+                blk->bbStmtList->SetPrevStmt(last);
             }
         }
 
@@ -113,7 +113,7 @@ void Compiler::fgResetForSsa()
         blk->bbPostOrderNum = 0;
         for (Statement* stmt : blk->Statements())
         {
-            for (GenTree* tree = stmt->gtStmtList; tree != nullptr; tree = tree->gtNext)
+            for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
             {
                 if (tree->IsLocal())
                 {
@@ -661,7 +661,7 @@ static GenTree* GetPhiNode(BasicBlock* block, unsigned lclNum)
             break;
         }
 
-        GenTree* tree = stmt->gtStmtExpr;
+        GenTree* tree = stmt->GetRootNode();
 
         GenTree* phiLhs = tree->gtOp.gtOp1;
         assert(phiLhs->OperGet() == GT_LCL_VAR);
@@ -697,16 +697,16 @@ void SsaBuilder::InsertPhi(BasicBlock* block, unsigned lclNum)
     asg->SetCosts(0, 0);
 
     // Create the statement and chain everything in linear order - PHI, LCL_VAR, ASG
-    Statement* stmt  = m_pCompiler->gtNewStmt(asg);
-    stmt->gtStmtList = phi;
-    phi->gtNext      = lhs;
-    lhs->gtPrev      = phi;
-    lhs->gtNext      = asg;
-    asg->gtPrev      = lhs;
+    Statement* stmt = m_pCompiler->gtNewStmt(asg);
+    stmt->SetTreeList(phi);
+    phi->gtNext = lhs;
+    lhs->gtPrev = phi;
+    lhs->gtNext = asg;
+    asg->gtPrev = lhs;
 
 #ifdef DEBUG
     unsigned seqNum = 1;
-    for (GenTree* node = stmt->gtStmtList; node != nullptr; node = node->gtNext)
+    for (GenTree* node = stmt->GetTreeList(); node != nullptr; node = node->gtNext)
     {
         node->gtSeqNum = seqNum++;
     }
@@ -748,15 +748,15 @@ void SsaBuilder::AddPhiArg(
     // will be first in linear order as well.
     phi->gtUses = new (m_pCompiler, CMK_ASTNode) GenTreePhi::Use(phiArg, phi->gtUses);
 
-    GenTree* head = stmt->gtStmtList;
+    GenTree* head = stmt->GetTreeList();
     assert(head->OperIs(GT_PHI, GT_PHI_ARG));
-    stmt->gtStmtList = phiArg;
-    phiArg->gtNext   = head;
-    head->gtPrev     = phiArg;
+    stmt->SetTreeList(phiArg);
+    phiArg->gtNext = head;
+    head->gtPrev   = phiArg;
 
 #ifdef DEBUG
     unsigned seqNum = 1;
-    for (GenTree* node = stmt->gtStmtList; node != nullptr; node = node->gtNext)
+    for (GenTree* node = stmt->GetTreeList(); node != nullptr; node = node->gtNext)
     {
         node->gtSeqNum = seqNum++;
     }
@@ -1075,7 +1075,7 @@ void SsaBuilder::AddDefToHandlerPhis(BasicBlock* block, unsigned lclNum, unsigne
                         break;
                     }
 
-                    GenTree* tree = stmt->gtStmtExpr;
+                    GenTree* tree = stmt->GetRootNode();
 
                     assert(tree->IsPhiDefn());
 
@@ -1235,7 +1235,7 @@ void SsaBuilder::BlockRenameVariables(BasicBlock* block, SsaRenameState* pRename
             isPhiDefn = false;
         }
 
-        for (GenTree* tree = stmt->gtStmtList; tree; tree = tree->gtNext)
+        for (GenTree* tree = stmt->GetTreeList(); tree; tree = tree->gtNext)
         {
             TreeRenameVariables(tree, block, pRenameState, isPhiDefn);
         }
@@ -1302,7 +1302,7 @@ void SsaBuilder::AssignPhiNodeRhsVariables(BasicBlock* block, SsaRenameState* pR
                 break;
             }
 
-            GenTree*    tree = stmt->gtStmtExpr;
+            GenTree*    tree = stmt->GetRootNode();
             GenTreePhi* phi  = tree->gtGetOp2()->AsPhi();
 
             unsigned lclNum = tree->gtOp.gtOp1->gtLclVar.GetLclNum();
@@ -1426,7 +1426,7 @@ void SsaBuilder::AssignPhiNodeRhsVariables(BasicBlock* block, SsaRenameState* pR
 
                 for (Statement* stmt : handlerStart->Statements())
                 {
-                    GenTree* tree = stmt->gtStmtExpr;
+                    GenTree* tree = stmt->GetRootNode();
 
                     // Check if the first n of the statements are phi nodes. If not, exit.
                     if (tree->OperGet() != GT_ASG || tree->gtOp.gtOp2 == nullptr ||

@@ -442,7 +442,7 @@ void Compiler::optAddCopies()
             optAddCopyLclNum   = lclNum;  // in
             optAddCopyAsgnNode = nullptr; // out
 
-            fgWalkTreePre(&stmt->gtStmtExpr, Compiler::optAddCopiesCallback, (void*)this, false);
+            fgWalkTreePre(stmt->GetRootNodePointer(), Compiler::optAddCopiesCallback, (void*)this, false);
 
             noway_assert(optAddCopyAsgnNode);
 
@@ -476,7 +476,7 @@ void Compiler::optAddCopies()
         if (verbose)
         {
             printf("\nIntroducing a new copy for V%02u\n", lclNum);
-            gtDispTree(stmt->gtStmtExpr);
+            gtDispTree(stmt->GetRootNode());
             printf("\n");
         }
 #endif
@@ -3930,8 +3930,8 @@ GenTree* Compiler::optAssertionProp_Update(GenTree* newTree, GenTree* tree, Stat
             {
                 // If there's no parent, the tree being replaced is the root of the
                 // statement.
-                assert((stmt->gtStmtExpr == tree) && (&stmt->gtStmtExpr == useEdge));
-                stmt->gtStmtExpr = newTree;
+                assert((stmt->GetRootNode() == tree) && (stmt->GetRootNodePointer() == useEdge));
+                stmt->SetRootNode(newTree);
             }
 
             // We only need to ensure that the gtNext field is set as it is used to traverse
@@ -4514,12 +4514,12 @@ ASSERT_TP* Compiler::optComputeAssertionGen()
         // Walk the statement trees in this basic block.
         for (Statement* stmt : block->Statements())
         {
-            for (GenTree* tree = stmt->gtStmtList; tree != nullptr; tree = tree->gtNext)
+            for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
             {
                 if (tree->gtOper == GT_JTRUE)
                 {
                     // A GT_TRUE is always the last node in a tree, so we can break here
-                    assert((tree->gtNext == nullptr) && (stmt->gtNext == nullptr));
+                    assert((tree->gtNext == nullptr) && (stmt->GetNextStmt() == nullptr));
                     jtrue = tree;
                     break;
                 }
@@ -4983,14 +4983,14 @@ Statement* Compiler::optVNAssertionPropCurStmt(BasicBlock* block, Statement* stm
     }
 
     // Preserve the prev link before the propagation and morph.
-    Statement* prev = (stmt == block->firstStmt()) ? nullptr : stmt->getPrevStmt();
+    Statement* prev = (stmt == block->firstStmt()) ? nullptr : stmt->GetPrevStmt();
 
     // Perform VN based assertion prop first, in case we don't find
     // anything in assertion gen.
     optAssertionPropagatedCurrentStmt = false;
 
     VNAssertionPropVisitorInfo data(this, block, stmt);
-    fgWalkTreePre(&stmt->gtStmtExpr, Compiler::optVNAssertionPropCurStmtVisitor, &data);
+    fgWalkTreePre(stmt->GetRootNodePointer(), Compiler::optVNAssertionPropCurStmtVisitor, &data);
 
     if (optAssertionPropagatedCurrentStmt)
     {
@@ -5065,7 +5065,7 @@ void Compiler::optAssertionPropMain()
             }
 
             // Perform assertion gen for control flow based assertions.
-            for (GenTree* tree = stmt->gtStmtList; tree != nullptr; tree = tree->gtNext)
+            for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
             {
                 optAssertionGen(tree);
             }
@@ -5150,16 +5150,16 @@ void Compiler::optAssertionPropMain()
 
             // Preserve the prev link before the propagation and morph, to check if propagation
             // removes the current stmt.
-            Statement* prevStmt = (stmt == block->firstStmt()) ? nullptr : stmt->getPrevStmt();
+            Statement* prevStmt = (stmt == block->firstStmt()) ? nullptr : stmt->GetPrevStmt();
 
             optAssertionPropagatedCurrentStmt = false; // set to true if a assertion propagation took place
                                                        // and thus we must morph, set order, re-link
-            for (GenTree* tree = stmt->gtStmtList; tree != nullptr; tree = tree->gtNext)
+            for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
             {
                 if (tree->OperIs(GT_JTRUE))
                 {
                     // A GT_TRUE is always the last node in a tree, so we can break here
-                    assert((tree->gtNext == nullptr) && (stmt->gtNext == nullptr));
+                    assert((tree->gtNext == nullptr) && (stmt->GetNextStmt() == nullptr));
                     break;
                 }
 

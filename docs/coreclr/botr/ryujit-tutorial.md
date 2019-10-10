@@ -153,10 +153,10 @@ The RyuJIT IR can be described at a high level as follows:
 - `LclVarDsc` represents a local variable, argument or JIT-created temp. It has a `gtLclNum` which is the identifier usually associated with the variable in the JIT and its dumps. The `LclVarDsc` contains the type, use count, weighted use count, frame or register assignment etc. These are often referred to simply as “lclVars”. They can be tracked (`lvTracked`), in which case they participate in dataflow analysis, and have a different index (`lvVarIndex`) to allow for the use of dense bit vectors. Only non-address-taken lclVars participate in liveness analysis, though aliased variables can participate in value numbering.
 
 ### GenTrees
-- A `BasicBlock` is a list of statements (GenTreeStmt nodes)
-  - It has a pointer to the expression for the statement
+- A `BasicBlock` is a list of statements (`Statement`)
+  - It has a pointer to the root expression for the statement
   - Statement nodes share the same base type as expression nodes, though they are really distinct IR objects
-- Each `GenTreeStmt` node points to its expression tree
+- Each `Statement` node points to its root expression tree
   - Each node points to its operands (children), and contains:
     - Oper (the operator for the expression, e.g. GT_ASG, GT_ADD, …)
     - Type (the evaluation type, e.g. GT_INT, GT_REF, GT_STRUCT)
@@ -164,14 +164,14 @@ The RyuJIT IR can be described at a high level as follows:
     - Comma nodes are inserted to allow creation of (multi-use) temps while preserving ordering constraints
 
 #### Notes
-The GenTree is the primary data structure of the JIT. It is used to represent both the statements within a block, as well as the expressions for each statement.
+The GenTree is the primary data structure of the JIT. It is used to represent the expressions for each statement.
 Some distinguishing features of this IR are that, while an operation has links to its operands, they do not have a link to their parent expression.
 Furthermore, during the initial phases of the JIT, the nodes are only ordered implicitly by the canonical traversal order of trees.
 The initial construction of the IR ensures that any ordering dependencies are obeyed by the canonical traversal order, and any subsequent optimizations must ensure that any visible ordering constraints are obeyed.
 
 ### GenTrees Sample
 ```
-▌  stmtExpr  void  (top level) (IL 0x01D 
+▌  Statement  (top level) (IL 0x01D 
 │        ┌──▌  const int 1
 │     ┌──▌  & int   
 │     │  └──▌  lclVar int V08
@@ -216,7 +216,7 @@ The Rationalizer phase, which transforms these constructs to a more rational for
   - Execution order links (`gtPrev` and `gtNext`) are the definitive specification
   of execution order (no longer derivable from a tree walk)
   - Each `BasicBlock` contains a single linked list of nodes
-    - `GT_STMT` nodes are eliminated
+    - `Statement` nodes are eliminated
     - `GT_IL_OFFSET`nodes convey source (IL) mapping info
 
 #### Notes
@@ -492,7 +492,7 @@ This is the same diagram as before, but with additional links to indicate execut
 ### IR Rationalization: Commas
 #### Front-end IR
 ```
-▌  stmtExpr (IL 0x093...0x09D)
+▌  Statement (IL 0x093...0x09D)
 │     ┌──▌  lclVar long V09
 │  ┌──▌  indir long
 │  │        ┌──▌  lclFld float V10 [+0]
@@ -505,7 +505,7 @@ This is the same diagram as before, but with additional links to indicate execut
 ```
 ##### Rationalized IR
 ```
-▌  stmtExpr (IL 0x093...0x09D)
+▌  Statement (IL 0x093...0x09D)
 │  ┌──▌  lclVar long V09
 │  │  {  ▌  stmtExpr (embedded)
 │  │  {  │  ┌──▌  &lclFld V10 [+0]
@@ -695,19 +695,19 @@ Add Pattern Recognition (SampleStep2 shelveset):
 ### IR Dump: Front-end
 Here is an example dump in tree order (shown with COMPlus_JitDumpAscii=0)
 ```
-[000068] ------------      ▌  stmtExpr  void  (top level) (IL   ???...  ???)
-[000067] -AC-G-------      └──▌  call help void   HELPER.CORINFO_HELP_ARRADDR_ST
-[000047] ------------ arg0    ├──▌  lclVar    ref    V03 loc2         
-[000048] ------------ arg1    ├──▌  const     int    0
-[000063] -A---------- arg2    └──▌  box       ref   
-[000061] ------------            │  ┌──▌  lclVar    ref    V04 tmp0         
-[000062] -A----------            └──▌  comma     ref   
-[000049] ------------               │  ┌──▌  lclVar    long   V01 loc0         
-[000060] -A----------               └──▌  =         long  
-[000059] -------N----                  └──▌  indir     long  
-[000057] ------------                     │  ┌──▌  const     long   8
-[000058] ------------                     └──▌  +         byref 
-[000056] ------------                        └──▌  lclVar    ref    V04 tmp0
+STMT00000 (IL   ???...  ???)
+[000067] -AC-G-------      ▌  call help void   HELPER.CORINFO_HELP_ARRADDR_ST
+[000047] ------------ arg0 ├──▌  lclVar    ref    V03 loc2         
+[000048] ------------ arg1 ├──▌  const     int    0
+[000063] -A---------- arg2 └──▌  box       ref   
+[000061] ------------         │  ┌──▌  lclVar    ref    V04 tmp0         
+[000062] -A----------         └──▌  comma     ref   
+[000049] ------------            │  ┌──▌  lclVar    long   V01 loc0         
+[000060] -A----------            └──▌  =         long  
+[000059] -------N----               └──▌  indir     long  
+[000057] ------------                  │  ┌──▌  const     long   8
+[000058] ------------                  └──▌  +         byref 
+[000056] ------------                     └──▌  lclVar    ref    V04 tmp0
 ```
 
 ### IR Dump: Back-end
@@ -733,6 +733,8 @@ N231 (  1,  1) [000048] ------------             │  │  ┌──▌  const  
 N233 (  1,  1) [000420] ------------ arg1 in rdx │  ├──▌  putarg_reg int    REG rdx
 N241 ( 49, 31) [000067] -ACXGO------             └──▌  call help void   HELPER.CORINFO_HELP_ARRADDR_ST $1d1
 ```
+#### Notes
+This needs to be updated, as we no longer have statements in back-end.
 
 ### Phase Transitions
 - Flowgraph analysis
