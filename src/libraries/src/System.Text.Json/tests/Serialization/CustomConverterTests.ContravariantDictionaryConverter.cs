@@ -9,21 +9,19 @@ namespace System.Text.Json.Serialization.Tests
 {
     public static partial class CustomConverterTests
     {
-        /// <summary>
-        /// Demonstrates custom <see cref="Dictionary{string, long}">.
-        /// Adds offset to each value to verify the converter ran.
-        /// </summary>
-        private class DictionaryConverterForIDictionary : JsonConverter<IDictionary<string, long>>
+        // Test class for a contravariant converter (IDictionary->Dictionary).
+        private class ContravariantDictionaryConverter : JsonConverter<IDictionary<string, long>>
         {
             private long _offset;
 
-            public DictionaryConverterForIDictionary(long offset)
+            public ContravariantDictionaryConverter(long offset)
             {
                 _offset = offset;
             }
 
             public override bool CanConvert(Type typeToConvert)
             {
+                // For simplicity, just support Dictionary not IDictionary.
                 return typeToConvert == typeof(Dictionary<string, long>);
             }
 
@@ -83,7 +81,7 @@ namespace System.Text.Json.Serialization.Tests
             const string Json = @"{""Key1"":1,""Key2"":2}";
 
             var options = new JsonSerializerOptions();
-            options.Converters.Add(new DictionaryConverterForIDictionary(10));
+            options.Converters.Add(new ContravariantDictionaryConverter(10));
 
             Dictionary<string, long> dictionary = JsonSerializer.Deserialize<Dictionary<string, long>>(Json, options);
             Assert.Equal(11, dictionary["Key1"]);
@@ -98,7 +96,7 @@ namespace System.Text.Json.Serialization.Tests
             const string Json = @"{""MyInt"":32,""MyDictionary"":{""Key1"":1,""Key2"":2},""MyString"":""Hello""}";
 
             var options = new JsonSerializerOptions();
-            options.Converters.Add(new DictionaryConverterForIDictionary(10));
+            options.Converters.Add(new ContravariantDictionaryConverter(10));
 
             ClassHavingDictionaryFieldWhichUsesCustomConverter dictionary = JsonSerializer.Deserialize<ClassHavingDictionaryFieldWhichUsesCustomConverter>(Json, options);
             Assert.Equal(11, dictionary.MyDictionary["Key1"]);
