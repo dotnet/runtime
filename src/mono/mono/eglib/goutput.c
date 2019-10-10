@@ -208,7 +208,7 @@ mono_assertion_message (const char *file, int line, const char *condition)
 void
 mono_assertion_message_unreachable (const char *file, int line)
 {
-	g_assertion_message ("* Assertion: should not be reached at %s:%d\n", __FILE__, __LINE__);
+	g_assertion_message ("* Assertion: should not be reached at %s:%d\n", file, line);
 }
 
 #if HOST_ANDROID
