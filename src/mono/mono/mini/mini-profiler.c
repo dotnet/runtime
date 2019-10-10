@@ -52,13 +52,21 @@ emit_fill_call_ctx (MonoCompile *cfg, MonoInst *method, MonoInst *ret)
 	MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, alloc->dreg, MONO_STRUCT_OFFSET (MonoProfilerCallContext, method), method->dreg);
 
 	if (ret) {
-		MonoInst *var = mono_compile_create_var (cfg, mono_method_signature_internal (cfg->method)->ret, OP_LOCAL);
+		MonoType *ret_type = mono_method_signature_internal (cfg->method)->ret;
+		MonoInst *var = mono_compile_create_var (cfg, ret_type, OP_LOCAL);
 
 		MonoInst *store, *addr;
 
 		EMIT_NEW_TEMPSTORE (cfg, store, var->inst_c0, ret);
 		EMIT_NEW_VARLOADA (cfg, addr, var, NULL);
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, alloc->dreg, MONO_STRUCT_OFFSET (MonoProfilerCallContext, return_value), addr->dreg);
+
+		/* Work around a limitation of the register allocator regarding
+		 * FP stack, see https://github.com/mono/mono/pull/17251 */
+		if (cfg->backend->use_fpstack && (ret_type->type == MONO_TYPE_R8 || ret_type->type == MONO_TYPE_R4)) {
+			MonoInst *move_ret_back;
+			EMIT_NEW_VARSTORE (cfg, move_ret_back, ret, ret_type, var);
+		}
 	}
 
 	return alloc;
