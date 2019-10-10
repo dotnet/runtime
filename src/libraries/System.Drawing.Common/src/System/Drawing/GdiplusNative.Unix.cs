@@ -451,7 +451,7 @@ namespace System.Drawing
             internal static extern int GdipGetPostScriptSavePage(IntPtr graphics);
 
             [DllImport(LibraryName, ExactSpelling = true)]
-            internal extern static string GetLibgdiplusVersion();
+            internal static extern string GetLibgdiplusVersion();
         }
     }
 
