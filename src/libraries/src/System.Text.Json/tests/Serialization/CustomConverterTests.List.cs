@@ -4,6 +4,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using Xunit;
 
@@ -236,6 +237,132 @@ namespace System.Text.Json.Serialization.Tests
 
             jsonSerialized = JsonSerializer.Serialize(contraVariantList, options);
             Assert.Equal(json, jsonSerialized);
+        }
+
+        private class MyModelWithConverterAttributes
+        {
+            [JsonConverter(typeof(ListToStringElementsConverter))]
+            public List<string> ItemsList { get; set; }
+
+            [JsonConverter(typeof(ListToArrayElementsConverter))]
+            public string[] ItemsArray { get; set; }
+
+            [JsonConverter(typeof(ListToDictionaryElementsConverter))]
+            public Dictionary<string, string> ItemsDictionary { get; set; }
+        }
+
+        private class MyModelWithNoConverterAttributes
+        {
+            public List<string> ItemsList { get; set; }
+            public string[] ItemsArray { get; set; }
+            public Dictionary<string, string> ItemsDictionary { get; set; }
+        }
+
+        [Fact]
+        public static void CustomListWithJsonConverterAttribute()
+        {
+            const string Json =
+                @"{""ItemsList"":[""hello"",1,true]," +
+                @"""ItemsArray"":[""hello"",1,true]," +
+                @"""ItemsDictionary"":{""hello"":""hello"",""1"":1,""true"":true}}";
+
+            // Baseline failure (no JsonConverterAttributes).
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<MyModelWithNoConverterAttributes>(Json));
+
+            // Success case.
+            MyModelWithConverterAttributes obj;
+
+            void Verify()
+            {
+                Assert.Equal("hello", obj.ItemsList[0]);
+                Assert.Equal("1", obj.ItemsList[1]);
+                Assert.Equal("True", obj.ItemsList[2]);
+
+                Assert.Equal("hello", obj.ItemsArray[0]);
+                Assert.Equal("1", obj.ItemsArray[1]);
+                Assert.Equal("True", obj.ItemsArray[2]);
+
+                Assert.Equal("hello", obj.ItemsDictionary["hello"]);
+                Assert.Equal("1", obj.ItemsDictionary["1"]);
+                Assert.Equal("True", obj.ItemsDictionary["true"]);
+            }
+
+            obj = JsonSerializer.Deserialize<MyModelWithConverterAttributes>(Json);
+            Verify();
+
+            string jsonRoundTripped = JsonSerializer.Serialize<MyModelWithConverterAttributes>(obj);
+            Assert.Equal(
+                @"{""ItemsList"":[""hello"",""1"",""True""]," +
+                @"""ItemsArray"":[""hello"",""1"",""True""]," +
+                @"""ItemsDictionary"":{""hello"":""hello"",""1"":""1"",""true"":""True""}}",
+                jsonRoundTripped);
+ 
+            obj = JsonSerializer.Deserialize<MyModelWithConverterAttributes>(jsonRoundTripped);
+            Verify();
+        }
+
+        /// <summary>
+        /// This converter coerces JSON array items into <see cref="List{string}"/> when deserializing.
+        /// </summary>
+        class ListToStringElementsConverter : JsonConverter<List<string>>
+        {
+            public override List<string> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                using (var doc = JsonDocument.ParseValue(ref reader))
+                {
+                    return doc.RootElement.EnumerateArray().Select(e => e.ToString()).ToList();
+                }
+            }
+
+            public override void Write(Utf8JsonWriter writer, List<string> value, JsonSerializerOptions options)
+            {
+                JsonSerializer.Serialize(writer, value, options);
+            }
+        }
+
+        /// <summary>
+        /// This converter coerces JSON array items into <see cref="string[]"/> when deserializing.
+        /// </summary>
+        class ListToArrayElementsConverter : JsonConverter<string[]>
+        {
+            public override string[] Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                using (var doc = JsonDocument.ParseValue(ref reader))
+                {
+                    return doc.RootElement.EnumerateArray().Select(e => e.ToString()).ToArray();
+                }
+            }
+
+            public override void Write(Utf8JsonWriter writer, string[] value, JsonSerializerOptions options)
+            {
+                JsonSerializer.Serialize(writer, value, options);
+            }
+        }
+
+        /// <summary>
+        /// This converter coerces JSON property values into <see cref="Dictionary{string, string}"> when deserializing.
+        /// </summary>
+        class ListToDictionaryElementsConverter : JsonConverter<Dictionary<string, string>>
+        {
+            public override Dictionary<string, string> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                var dictionary = new Dictionary<string, string>();
+
+                using (var doc = JsonDocument.ParseValue(ref reader))
+                {
+                    foreach (JsonProperty property in doc.RootElement.EnumerateObject())
+                    {
+                        dictionary.Add(property.Name, property.Value.ToString());
+                    }
+                }
+
+                return dictionary;
+            }
+
+            public override void Write(Utf8JsonWriter writer, Dictionary<string, string> value, JsonSerializerOptions options)
+            {
+                JsonSerializer.Serialize(writer, value, options);
+            }
         }
     }
 }
