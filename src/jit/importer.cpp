@@ -7542,20 +7542,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         exactContextHnd                = callInfo->contextHandle;
         exactContextNeedsRuntimeLookup = callInfo->exactContextNeedsRuntimeLookup == TRUE;
 
-        // Recursive call is treated as a loop to the begining of the method.
-        if (gtIsRecursiveCall(methHnd))
-        {
-#ifdef DEBUG
-            if (verbose)
-            {
-                JITDUMP("\nFound recursive call in the method. Mark " FMT_BB " to " FMT_BB
-                        " as having a backward branch.\n",
-                        fgFirstBB->bbNum, compCurBB->bbNum);
-            }
-#endif
-            fgMarkBackwardJump(fgFirstBB, compCurBB);
-        }
-
         switch (callInfo->kind)
         {
 
@@ -8480,6 +8466,15 @@ DONE:
             info.compCompHnd->reportTailCallDecision(info.compMethodHnd, methHnd, explicitTailCall, TAILCALL_FAIL,
                                                      szCanTailCallFailReason);
         }
+    }
+
+    // A tail recursive call is a potential loop from the current block to the start of the method.
+    if (canTailCall && gtIsRecursiveCall(methHnd))
+    {
+        JITDUMP("\nFound tail recursive call in the method. Mark " FMT_BB " to " FMT_BB
+                " as having a backward branch.\n",
+                fgFirstBB->bbNum, compCurBB->bbNum);
+        fgMarkBackwardJump(fgFirstBB, compCurBB);
     }
 
     // Note: we assume that small return types are already normalized by the managed callee

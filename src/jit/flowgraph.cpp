@@ -4310,6 +4310,7 @@ void Compiler::fgSwitchToOptimized()
     assert(fgCanSwitchToOptimized());
 
     // Switch to optimized and re-init options
+    JITDUMP("****\n**** JIT Tier0 jit request switching to Tier1 because of loop\n****\n");
     assert(opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0));
     opts.jitFlags->Clear(JitFlags::JIT_FLAG_TIER0);
     compInitOptions(opts.jitFlags);
@@ -5238,7 +5239,7 @@ void Compiler::fgMarkBackwardJump(BasicBlock* startBlock, BasicBlock* endBlock)
         if ((block->bbFlags & BBF_BACKWARD_JUMP) == 0)
         {
             block->bbFlags |= BBF_BACKWARD_JUMP;
-            fgHasBackwardJump = true;
+            compHasBackwardJump = true;
         }
     }
 }
@@ -23178,6 +23179,7 @@ _Done:
     compUnsafeCastUsed |= InlineeCompiler->compUnsafeCastUsed;
     compNeedsGSSecurityCookie |= InlineeCompiler->compNeedsGSSecurityCookie;
     compGSReorderStackLayout |= InlineeCompiler->compGSReorderStackLayout;
+    compHasBackwardJump |= InlineeCompiler->compHasBackwardJump;
 
 #ifdef FEATURE_SIMD
     if (InlineeCompiler->usesSIMDTypes())
