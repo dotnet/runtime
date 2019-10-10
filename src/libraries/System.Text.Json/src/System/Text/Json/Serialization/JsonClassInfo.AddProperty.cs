@@ -97,28 +97,16 @@ namespace System.Text.Json
                 return JsonPropertyInfo.CreateIgnoredPropertyPlaceholder(propertyInfo, options);
             }
 
-            Type collectionElementType = null;
-            switch (GetClassType(runtimePropertyType, options))
+            // Obtain the custom converter for the property.
+            if (converter == null)
             {
-                case ClassType.Enumerable:
-                case ClassType.Dictionary:
-                case ClassType.IDictionaryConstructible:
-                case ClassType.Unknown:
-                    collectionElementType = GetElementType(runtimePropertyType, parentClassType, propertyInfo, options);
-                    break;
+                converter = options.DetermineConverterForProperty(parentClassType, runtimePropertyType, propertyInfo);
             }
 
-            // Create the JsonPropertyInfo<TType, TProperty>
+            // Obtain the type of the JsonPropertyInfo class to construct.
             Type propertyInfoClassType;
             if (runtimePropertyType.IsGenericType && runtimePropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
             {
-                // First try to find a converter for the Nullable, then if not found use the underlying type.
-                // This supports custom converters that want to (de)serialize as null when the value is not null.
-                if (converter == null)
-                {
-                    converter = options.DetermineConverterForProperty(parentClassType, runtimePropertyType, propertyInfo);
-                }
-
                 if (converter != null)
                 {
                     propertyInfoClassType = typeof(JsonPropertyInfoNotNullable<,,,>).MakeGenericType(
@@ -129,6 +117,7 @@ namespace System.Text.Json
                 }
                 else
                 {
+                    // Attempt to find converter for underlying type.
                     Type typeToConvert = Nullable.GetUnderlyingType(runtimePropertyType);
                     converter = options.DetermineConverterForProperty(parentClassType, typeToConvert, propertyInfo);
                     propertyInfoClassType = typeof(JsonPropertyInfoNullable<,>).MakeGenericType(parentClassType, typeToConvert);
@@ -136,11 +125,6 @@ namespace System.Text.Json
             }
             else
             {
-                if (converter == null)
-                {
-                    converter = options.DetermineConverterForProperty(parentClassType, runtimePropertyType, propertyInfo);
-                }
-
                 Type typeToConvert = converter?.TypeToConvert;
                 if (typeToConvert == null)
                 {
@@ -176,16 +160,41 @@ namespace System.Text.Json
                 }
             }
 
-            JsonPropertyInfo jsonInfo = (JsonPropertyInfo)Activator.CreateInstance(
+            // Create the JsonPropertyInfo instance.
+            JsonPropertyInfo jsonPropertyInfo = (JsonPropertyInfo)Activator.CreateInstance(
                 propertyInfoClassType,
                 BindingFlags.Instance | BindingFlags.Public,
                 binder: null,
                 args: null,
                 culture: null);
 
-            jsonInfo.Initialize(parentClassType, declaredPropertyType, runtimePropertyType, implementedPropertyType, propertyInfo, collectionElementType, converter, options);
+            // Obtain the collection element type.
+            Type collectionElementType = null;
+            if (converter == null)
+            {
+                switch (GetClassType(runtimePropertyType, options))
+                {
+                    case ClassType.Enumerable:
+                    case ClassType.Dictionary:
+                    case ClassType.IDictionaryConstructible:
+                    case ClassType.Unknown:
+                        collectionElementType = GetElementType(runtimePropertyType, parentClassType, propertyInfo, options);
+                        break;
+                }
+            }
 
-            return jsonInfo;
+            // Initialize the JsonPropertyInfo.
+            jsonPropertyInfo.Initialize(
+                parentClassType,
+                declaredPropertyType,
+                runtimePropertyType,
+                implementedPropertyType,
+                propertyInfo,
+                collectionElementType,
+                converter,
+                options);
+
+            return jsonPropertyInfo;
         }
 
         internal JsonPropertyInfo CreateRootObject(JsonSerializerOptions options)
