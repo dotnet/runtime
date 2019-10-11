@@ -48,7 +48,6 @@ public:
 private:
     static IpcStream::DiagnosticsIpc *s_pIpc;
     static Volatile<bool> s_shuttingDown;
-    static HANDLE s_hServerThread;
 };
 
 #endif // FEATURE_PERFTRACING
