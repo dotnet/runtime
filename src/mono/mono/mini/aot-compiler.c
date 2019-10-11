@@ -8018,7 +8018,7 @@ parse_cpu_features (const gchar *attr)
 	// TODO: neon, sha1, sha2, asimd, etc...
 #endif
 
-	if (!enabled)
+	if (enabled)
 		mono_cpu_features_enabled = (MonoCPUFeatures) (mono_cpu_features_enabled | feature);
 	else 
 		mono_cpu_features_disabled = (MonoCPUFeatures) (mono_cpu_features_disabled | feature);

@@ -8737,7 +8737,7 @@ mono_arch_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMetho
 		}
 #endif
 
-		if (!cfg->compile_aot && (mono_arch_cpu_enumerate_simd_versions () & SIMD_VERSION_SSE41) && fsig->param_count == 1 && fsig->params [0]->type == MONO_TYPE_R8) {
+		if ((mini_get_cpu_features (cfg) & MONO_CPU_X86_SSE41) != 0 && fsig->param_count == 1 && fsig->params [0]->type == MONO_TYPE_R8) {
 			int mode = -1;
 			if (!strcmp (cmethod->name, "Round"))
 				mode = 0;

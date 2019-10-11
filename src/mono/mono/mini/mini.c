@@ -4301,3 +4301,25 @@ mono_target_pagesize (void)
 	 */
 	return 4 * 1024;
 }
+
+MonoCPUFeatures
+mini_get_cpu_features (MonoCompile* cfg)
+{
+	MonoCPUFeatures features = (MonoCPUFeatures)0;
+#if !defined(MONO_CROSS_COMPILE)
+	if (!cfg->compile_aot || cfg->use_current_cpu) {
+		// detect current CPU features if we are in JIT mode or AOT with use_current_cpu flag.
+#if defined(ENABLE_LLVM) && !defined(MONO_LLVM_LOADED)
+		features = mono_llvm_get_cpu_features (); // llvm has a nice built-in API to detect features
+#elif defined(TARGET_AMD64)
+		features = mono_arch_get_cpu_features ();
+#endif
+	}
+#endif
+	MonoCPUFeatures features_ = features;
+
+	// apply parameters passed via -mattr
+	features = (MonoCPUFeatures) (features | mono_cpu_features_enabled);
+	features = (MonoCPUFeatures) (features & ~mono_cpu_features_disabled);
+	return features;
+}
