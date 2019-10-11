@@ -23,8 +23,7 @@ Visual Studio Express is not supported.
 
 ## CMake
 
-The Core-Setup repo build has been validated using CMake 3.6.3.
-If using Visual Studio 2019, then at least CMake 3.14 is required.
+The Core-Setup repo build requires at least CMake 3.14.
 
 - Install [CMake](http://www.cmake.org/download) for Windows.
 - Add its location (e.g. C:\Program Files (x86)\CMake\bin) to the PATH environment variable.  
