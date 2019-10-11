@@ -1564,7 +1564,7 @@ void CodeGen::psiBegProlog()
 
                         if (nCnt == 0)
                         {
-                            regNum = lclVarDsc->lvArgReg;
+                            regNum = lclVarDsc->GetArgReg();
                         }
                         else if (nCnt == 1)
                         {
@@ -1613,15 +1613,15 @@ void CodeGen::psiBegProlog()
                 {
                     regType = lclVarDsc->GetHfaType();
                 }
-                assert(genMapRegNumToRegArgNum(lclVarDsc->lvArgReg, regType) != (unsigned)-1);
+                assert(genMapRegNumToRegArgNum(lclVarDsc->GetArgReg(), regType) != (unsigned)-1);
 #endif // DEBUG
 
 #ifdef USING_SCOPE_INFO
                 newScope->scRegister  = true;
-                newScope->u1.scRegNum = (regNumberSmall)lclVarDsc->lvArgReg;
+                newScope->u1.scRegNum = (regNumberSmall)lclVarDsc->GetArgReg();
 #endif // USING_SCOPE_INFO
 #ifdef USING_VARIABLE_LIVE_RANGE
-                varLocation.storeVariableInRegisters(lclVarDsc->lvArgReg, REG_NA);
+                varLocation.storeVariableInRegisters(lclVarDsc->GetArgReg(), REG_NA);
 #endif // USING_VARIABLE_LIVE_RANGE
             }
         }
@@ -1863,7 +1863,7 @@ void CodeGen::psiMoveToStack(unsigned varNum)
         /* The param must be currently sitting in the register in which it
            was passed in */
         assert(scope->scRegister);
-        assert(scope->u1.scRegNum == compiler->lvaTable[varNum].lvArgReg);
+        assert(scope->u1.scRegNum == compiler->lvaTable[varNum].GetArgReg());
 
         psiScope* newScope     = psiNewPrologScope(scope->scLVnum, scope->scSlotNum);
         newScope->scRegister   = false;
