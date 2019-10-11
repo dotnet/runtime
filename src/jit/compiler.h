@@ -517,7 +517,7 @@ public:
     {
         if (slotNum == 0)
         {
-            return lvArgReg;
+            return (regNumber)_lvArgReg;
         }
         else if (slotNum == 1)
         {
@@ -666,8 +666,6 @@ public:
 #endif // !_TARGET_64BIT_
 
     /////////////////////
-
-    __declspec(property(get = GetArgReg, put = SetArgReg)) regNumber lvArgReg;
 
     regNumber GetArgReg() const
     {
