@@ -721,16 +721,6 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
     return ins;
 }
 
-// Generate code for InitBlk by performing a loop unroll
-// Preconditions:
-//   a) Both the size and fill byte value are integer constants.
-//   b) The size of the struct to initialize is smaller than INITBLK_UNROLL_LIMIT bytes.
-void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode)
-{
-    // TODO: Generate memory barrier instructions for GTF_BLK_VOLATILE flag
-    NYI_ARM("genCodeForInitBlkUnroll");
-}
-
 //------------------------------------------------------------------------
 // genCodeForNegNot: Produce code for a GT_NEG/GT_NOT node.
 //
