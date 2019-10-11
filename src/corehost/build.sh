@@ -233,7 +233,7 @@ if [ ! -f $__versionSourceFile ]; then
     echo $__versionSourceLine > $__versionSourceFile
 fi
 
-__cmake_defines="${__cmake_defines} -DVERSION_FILE_PATH:STRING=${__versionSourceFile}"
+__cmake_defines="${__cmake_defines} -DVERSION_FILE_PATH=${__versionSourceFile}"
 
 mkdir -p $__intermediateOutputPath
 pushd $__intermediateOutputPath
@@ -260,9 +260,9 @@ if [ $__CrossBuild == 1 ]; then
     fi
     export TARGET_BUILD_ARCH=$__build_arch_lowcase
     export __DistroRid=$__rid_plat
-    cmake "$DIR" -G "Unix Makefiles" $__cmake_defines -DCLI_CMAKE_HOST_VER:STRING=$__host_ver -DCLI_CMAKE_COMMON_HOST_VER:STRING=$__apphost_ver -DCLI_CMAKE_HOST_FXR_VER:STRING=$__fxr_ver -DCLI_CMAKE_HOST_POLICY_VER:STRING=$__policy_ver -DCLI_CMAKE_PKG_RID:STRING=$__base_rid -DCLI_CMAKE_COMMIT_HASH:STRING=$__commit_hash -DCMAKE_INSTALL_PREFIX=$__cmake_bin_prefix -DCMAKE_TOOLCHAIN_FILE=$DIR/../../cross/toolchain.cmake
+    cmake "$DIR" -G "Unix Makefiles" $__cmake_defines -DCLI_CMAKE_HOST_VER=$__host_ver -DCLI_CMAKE_COMMON_HOST_VER=$__apphost_ver -DCLI_CMAKE_HOST_FXR_VER=$__fxr_ver -DCLI_CMAKE_HOST_POLICY_VER=$__policy_ver -DCLI_CMAKE_PKG_RID=$__base_rid -DCLI_CMAKE_COMMIT_HASH=$__commit_hash -DCMAKE_INSTALL_PREFIX=$__cmake_bin_prefix -DCMAKE_TOOLCHAIN_FILE=$DIR/../../cross/toolchain.cmake
 else
-    cmake "$DIR" -G "Unix Makefiles" $__cmake_defines -DCLI_CMAKE_HOST_VER:STRING=$__host_ver -DCLI_CMAKE_COMMON_HOST_VER:STRING=$__apphost_ver -DCLI_CMAKE_HOST_FXR_VER:STRING=$__fxr_ver -DCLI_CMAKE_HOST_POLICY_VER:STRING=$__policy_ver -DCLI_CMAKE_PKG_RID:STRING=$__base_rid -DCLI_CMAKE_COMMIT_HASH:STRING=$__commit_hash -DCMAKE_INSTALL_PREFIX=$__cmake_bin_prefix
+    cmake "$DIR" -G "Unix Makefiles" $__cmake_defines -DCLI_CMAKE_HOST_VER=$__host_ver -DCLI_CMAKE_COMMON_HOST_VER=$__apphost_ver -DCLI_CMAKE_HOST_FXR_VER=$__fxr_ver -DCLI_CMAKE_HOST_POLICY_VER=$__policy_ver -DCLI_CMAKE_PKG_RID=$__base_rid -DCLI_CMAKE_COMMIT_HASH=$__commit_hash -DCMAKE_INSTALL_PREFIX=$__cmake_bin_prefix
 fi
 popd
 
