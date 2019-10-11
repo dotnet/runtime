@@ -4189,7 +4189,7 @@ mini_emit_array_store (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, gboole
 {
 	if (safety_checks && mini_class_is_reference (klass) &&
 		!(MONO_INS_IS_PCONST_NULL (sp [2]))) {
-		MonoClass *obj_array = mono_array_class_get_cached (mono_defaults.object_class, 1);
+		MonoClass *obj_array = mono_array_class_get_cached (mono_defaults.object_class);
 		MonoMethod *helper = mono_marshal_get_virtual_stelemref (obj_array);
 		MonoInst *iargs [3];
 
