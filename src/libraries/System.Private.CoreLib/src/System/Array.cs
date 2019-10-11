@@ -472,7 +472,7 @@ namespace System
                 ThrowHelper.ThrowRankException(ExceptionResource.Rank_MultiDimNotSupported);
 
             comparer ??= Comparer.Default;
-#if CORECLR
+#if !CORERT
             if (comparer == Comparer.Default)
             {
                 int retval;
@@ -921,7 +921,7 @@ namespace System
             if (count < 0 || count > array.Length - startIndex + lb)
                 ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
 
-#if CORECLR
+#if !CORERT
             // Try calling a quick native method to handle primitive types.
             int retVal;
             bool r = TrySZIndexOf(array, startIndex, count, value, out retVal);
@@ -1047,7 +1047,7 @@ namespace System
                 }
             }
 
-#if CORECLR
+#if !CORERT
             return EqualityComparer<T>.Default.IndexOf(array, value, startIndex, count);
 #else
             return IndexOfImpl(array, value, startIndex, count);
@@ -1104,7 +1104,7 @@ namespace System
             if (array.Rank != 1)
                 ThrowHelper.ThrowRankException(ExceptionResource.Rank_MultiDimNotSupported);
 
-#if CORECLR
+#if !CORERT
             // Try calling a quick native method to handle primitive types.
             int retVal;
             bool r = TrySZLastIndexOf(array, startIndex, count, value, out retVal);
@@ -1255,7 +1255,7 @@ namespace System
                 }
             }
 
-#if CORECLR
+#if !CORERT
             return EqualityComparer<T>.Default.LastIndexOf(array, value, startIndex, count);
 #else
             return LastIndexOfImpl(array, value, startIndex, count);
@@ -1298,7 +1298,7 @@ namespace System
             if (length <= 1)
                 return;
 
-#if CORECLR
+#if !CORERT
             bool r = TrySZReverse(array, index, length);
             if (r)
                 return;
@@ -1521,7 +1521,7 @@ namespace System
 
             if (length > 1)
             {
-#if CORECLR
+#if !CORERT
                 if (comparer == null || comparer == Comparer<T>.Default)
                 {
                     if (TrySZSort(array, null, index, index + length - 1))
@@ -1548,7 +1548,7 @@ namespace System
 
             if (length > 1)
             {
-#if CORECLR
+#if !CORERT
                 if (comparer == null || comparer == Comparer<TKey>.Default)
                 {
                     if (TrySZSort(keys, items, index, index + length - 1))
