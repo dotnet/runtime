@@ -26,21 +26,21 @@
       <Uri>https://github.com/dotnet/core-setup</Uri>
       <Sha>5491acd84b92034d5d53e226682f053a7b376ad9</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.Platforms" Version="5.0.0-alpha1.19509.26">
+    <Dependency Name="Microsoft.NETCore.Platforms" Version="5.0.0-alpha1.19510.15">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>30280e07adc3c1f0776ef9531b47a769e2b45420</Sha>
+      <Sha>901c370c2379ad0885bcc5a1921c4164104586aa</Sha>
     </Dependency>
-    <Dependency Name="runtime.native.System.IO.Ports" Version="5.0.0-alpha1.19509.26">
+    <Dependency Name="runtime.native.System.IO.Ports" Version="5.0.0-alpha1.19510.15">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>30280e07adc3c1f0776ef9531b47a769e2b45420</Sha>
+      <Sha>901c370c2379ad0885bcc5a1921c4164104586aa</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="5.0.0-beta.19510.4">
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>8cd48078f550fbcbd4f684b897b14db207397b52</Sha>
     </Dependency>
-    <Dependency Name="NETStandard.Library" Version="2.2.0-prerelease.19509.1">
+    <Dependency Name="NETStandard.Library" Version="2.2.0-prerelease.19510.2">
       <Uri>https://github.com/dotnet/standard</Uri>
-      <Sha>1e2d0bc743db548ffde0beaf732b4fdd1348bdba</Sha>
+      <Sha>9e457715f9487ece662586f5784051455d3da20c</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.Helix.Sdk" Version="5.0.0-beta.19510.4">
       <Uri>https://github.com/dotnet/arcade</Uri>
