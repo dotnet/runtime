@@ -92,10 +92,45 @@ namespace Internal.IL
                 }
                 sb.AppendLine();
 
-                // TODO: exception regions
+                const string pad = "  ";
+
+                // TODO: pretty exception regions
+                foreach (ILExceptionRegion region in _methodIL.GetExceptionRegions())
+                {
+                    sb.Append(pad);
+                    sb.Append(".try ");
+                    ILDisassembler.AppendOffset(sb, region.TryOffset);
+                    sb.Append(" to ");
+                    ILDisassembler.AppendOffset(sb, region.TryOffset + region.TryLength);
+                                        
+                    switch (region.Kind)
+                    {
+                        case ILExceptionRegionKind.Catch:
+                            sb.Append(" catch ");
+                            disasm.AppendType(sb, (TypeDesc)_methodIL.GetObject(region.ClassToken));
+                            break;
+                        case ILExceptionRegionKind.Fault:
+                            sb.Append(" fault");
+                            break;
+                        case ILExceptionRegionKind.Filter:
+                            sb.Append(" filter ");
+                            ILDisassembler.AppendOffset(sb, region.FilterOffset);
+                            break;
+                        case ILExceptionRegionKind.Finally:
+                            sb.Append(" finally");
+                            break;
+                    }
+
+                    sb.Append(" handler ");
+                    ILDisassembler.AppendOffset(sb, region.HandlerOffset);
+                    sb.Append(" to ");
+                    ILDisassembler.AppendOffset(sb, region.HandlerOffset + region.HandlerLength);
+                    sb.AppendLine();
+                }
+
                 while (disasm.HasNextInstruction)
                 {
-                    sb.Append("  ");
+                    sb.Append(pad);
                     sb.AppendLine(disasm.GetNextInstruction());
                 }
 
