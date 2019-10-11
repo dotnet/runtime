@@ -33,6 +33,17 @@ namespace System
 #nullable restore
         ICloneable
     {
+        //
+        // These fields map directly onto the fields in an EE StringObject.  See object.h for the layout.
+        //
+        [NonSerialized]
+        private int _stringLength;
+
+        // For empty strings, this will be '\0' since
+        // strings are both null-terminated and length prefixed
+        [NonSerialized]
+        private char _firstChar;
+
         /*
          * CONSTRUCTORS
          *

@@ -9,17 +9,6 @@ namespace System
 {
     public partial class String
     {
-        //
-        // These fields map directly onto the fields in an EE StringObject.  See object.h for the layout.
-        //
-        [NonSerialized]
-        private int _stringLength;
-
-        // For empty strings, this will be '\0' since
-        // strings are both null-terminated and length prefixed
-        [NonSerialized]
-        private char _firstChar;
-
         // The Empty constant holds the empty string value. It is initialized by the EE during startup.
         // It is treated as intrinsic by the JIT as so the static constructor would never run.
         // Leaving it uninitialized would confuse debuggers.
