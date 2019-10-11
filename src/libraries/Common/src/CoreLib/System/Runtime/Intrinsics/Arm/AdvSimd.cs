@@ -46,7 +46,7 @@ namespace System.Runtime.Intrinsics.Arm
             /// float64x2_t vaddq_f64 (float64x2_t a, float64x2_t b)
             ///   A64: FADD Vd.2D, Vn.2D, Vm.2D
             /// </summary>
-            public static Vector128<double> Add(Vector128<double> left, Vector128<float> right) => Add(left, right);
+            public static Vector128<double> Add(Vector128<double> left, Vector128<double> right) => Add(left, right);
         }
 
         /// <summary>
@@ -116,7 +116,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A32: VABS.F32 Sd, Sm
         ///   A64: FABS Sd, Sn
         /// </summary>
-        public static Vector64<float> AbsScalar(Vector64<float> value) => Abs(value);
+        public static Vector64<float> AbsScalar(Vector64<float> value) => AbsScalar(value);
 
         /// <summary>
         /// uint8x8_t vadd_u8 (uint8x8_t a, uint8x8_t b)
@@ -255,7 +255,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A32: VADD.F32 Sd, Sn, Sm
         ///   A64:
         /// </summary>
-        public static Vector64<float> AddScalar(Vector64<float> left, Vector64<float> right) => Add(left, right);
+        public static Vector64<float> AddScalar(Vector64<float> left, Vector64<float> right) => AddScalar(left, right);
 
         /// <summary>
         /// uint8x8_t vld1_u8 (uint8_t const * ptr)
