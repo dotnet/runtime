@@ -117,6 +117,12 @@ bool DiagnosticServer::Initialize()
     }
     CONTRACTL_END;
 
+    // COMPlus_EnableDiagnostics==0 disables diagnostics so we don't create the diagnostics pipe/socket or diagnostics server thread
+    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableDiagnostics) == 0)
+    {
+        return true;
+    }
+
     bool fSuccess = false;
 
     EX_TRY
