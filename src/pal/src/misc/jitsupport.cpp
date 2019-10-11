@@ -98,15 +98,15 @@ PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags)
 #endif
 #ifdef HWCAP_ASIMD
     if (hwCap & HWCAP_ASIMD)
-        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_SIMD);
+        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_ADVSIMD);
 #endif
 #ifdef HWCAP_ASIMDRDM
     if (hwCap & HWCAP_ASIMDRDM)
-        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_SIMD_V81);
+        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_ADVSIMD_V81);
 #endif
 #ifdef HWCAP_ASIMDHP
     if (hwCap & HWCAP_ASIMDHP)
-        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_SIMD_FP16);
+        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_ADVSIMD_FP16);
 #endif
 #ifdef HWCAP_SM3
     if (hwCap & HWCAP_SM3)
@@ -125,7 +125,7 @@ PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags)
     // On exceptional basis platforms may leave out support, but CoreCLR does not 
     // yet support such platforms
     // Set baseline flags if OS has not exposed mechanism for us to determine CPU capabilities
-    CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_SIMD);
+    CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_ADVSIMD);
     CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_FP);
 #endif // HAVE_AUXV_HWCAP_H
 #endif // defined(_ARM64_)

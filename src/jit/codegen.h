@@ -1014,21 +1014,7 @@ protected:
                                          HWIntrinsicSwitchCaseBody emitSwCase);
 #endif // defined(_TARGET_XARCH_)
 #if defined(_TARGET_ARM64_)
-    instruction getOpForHWIntrinsic(GenTreeHWIntrinsic* node, var_types instrType);
-    void genHWIntrinsicUnaryOp(GenTreeHWIntrinsic* node);
-    void genHWIntrinsicCrcOp(GenTreeHWIntrinsic* node);
-    void genHWIntrinsicSimdBinaryOp(GenTreeHWIntrinsic* node);
-    void genHWIntrinsicSimdExtractOp(GenTreeHWIntrinsic* node);
-    void genHWIntrinsicSimdInsertOp(GenTreeHWIntrinsic* node);
-    void genHWIntrinsicSimdSelectOp(GenTreeHWIntrinsic* node);
-    void genHWIntrinsicSimdSetAllOp(GenTreeHWIntrinsic* node);
-    void genHWIntrinsicSimdUnaryOp(GenTreeHWIntrinsic* node);
-    void genHWIntrinsicSimdBinaryRMWOp(GenTreeHWIntrinsic* node);
-    void genHWIntrinsicSimdTernaryRMWOp(GenTreeHWIntrinsic* node);
-    void genHWIntrinsicShaHashOp(GenTreeHWIntrinsic* node);
-    void genHWIntrinsicShaRotateOp(GenTreeHWIntrinsic* node);
-    template <typename HWIntrinsicSwitchCaseBody>
-    void genHWIntrinsicSwitchTable(regNumber swReg, regNumber tmpReg, int swMax, HWIntrinsicSwitchCaseBody emitSwCase);
+    void genSpecialIntrinsic(GenTreeHWIntrinsic* node);
 #endif // defined(_TARGET_XARCH_)
 #endif // FEATURE_HW_INTRINSICS
 

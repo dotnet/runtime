@@ -1487,7 +1487,7 @@ void EEJitManager::SetCpuInfo()
     PAL_GetJitCpuCapabilityFlags(&CPUCompileFlags);
 #elif defined(BIT64)
     // FP and SIMD support are enabled by default
-    CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_SIMD);
+    CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_ADVSIMD);
     CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_FP);
     // PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE (30)
     if (IsProcessorFeaturePresent(PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE))

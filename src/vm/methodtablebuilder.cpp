@@ -1505,16 +1505,16 @@ MethodTableBuilder::BuildMethodTableThrowing(
         LPCUTF8 nameSpace;
         HRESULT hr = GetMDImport()->GetNameOfTypeDef(bmtInternal->pType->GetTypeDefToken(), &className, &nameSpace);
 
-#if defined(_TARGET_ARM64_)
-        // All the funtions in System.Runtime.Intrinsics.Arm.Arm64 are hardware intrinsics.
-        if (hr == S_OK && strcmp(nameSpace, "System.Runtime.Intrinsics.Arm.Arm64") == 0)
-#else
-        // All the funtions in System.Runtime.Intrinsics.X86 are hardware intrinsics.
         if (bmtInternal->pType->IsNested())
         {
             IfFailThrow(GetMDImport()->GetNameOfTypeDef(bmtInternal->pType->GetEnclosingTypeToken(), NULL, &nameSpace));
         }
-        
+
+#if defined(_TARGET_ARM64_)
+        // All the funtions in System.Runtime.Intrinsics.Arm are hardware intrinsics.
+        if (hr == S_OK && strcmp(nameSpace, "System.Runtime.Intrinsics.Arm") == 0)
+#else
+        // All the funtions in System.Runtime.Intrinsics.X86 are hardware intrinsics.
         if (hr == S_OK && (strcmp(nameSpace, "System.Runtime.Intrinsics.X86") == 0))
 #endif
         {
