@@ -6,7 +6,7 @@ using System.Reflection;
 
 namespace Microsoft.Extensions.Logging
 {
-    internal class ProviderAliasUtilities
+    internal static class ProviderAliasUtilities
     {
         private const string AliasAttibuteTypeFullName = "Microsoft.Extensions.Logging.ProviderAliasAttribute";
         private const string AliasAttibuteAliasProperty = "Alias";
