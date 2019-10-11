@@ -804,7 +804,7 @@ void fgArgTabEntry::Dump()
     printf("fgArgTabEntry[arg %u", argNum);
     printf(" %d.%s", GetNode()->gtTreeID, GenTree::OpName(GetNode()->OperGet()));
     printf(" %s", varTypeName(argType));
-    if (regNum != REG_STK)
+    if (GetRegNum() != REG_STK)
     {
         printf(", %u reg%s:", numRegs, numRegs == 1 ? "" : "s");
         for (unsigned i = 0; i < numRegs; i++)
@@ -1178,7 +1178,7 @@ void fgArgInfo::UpdateStkArg(fgArgTabEntry* curArgTabEntry, GenTree* node, bool 
            (!isLateArg && ((node->gtFlags & GTF_LATE_ARG) == 0)));
 
     noway_assert(curArgTabEntry->use != callTree->gtCallThisArg);
-    assert((curArgTabEntry->regNum == REG_STK) || curArgTabEntry->IsSplit());
+    assert((curArgTabEntry->GetRegNum() == REG_STK) || curArgTabEntry->IsSplit());
     assert(curArgTabEntry->use->GetNode() == node);
     nextSlotNum = (unsigned)roundUp(nextSlotNum, curArgTabEntry->alignment);
     assert(curArgTabEntry->slotNum == nextSlotNum);
@@ -1252,7 +1252,7 @@ void fgArgInfo::ArgsComplete()
         assert(curArgTabEntry != nullptr);
         GenTree* argx = curArgTabEntry->GetNode();
 
-        if (curArgTabEntry->regNum == REG_STK)
+        if (curArgTabEntry->GetRegNum() == REG_STK)
         {
             hasStackArgs = true;
 #if !FEATURE_FIXED_OUT_ARGS
@@ -1340,7 +1340,7 @@ void fgArgInfo::ArgsComplete()
                     continue;
                 }
 
-                if (argTable[otherInx]->regNum == REG_STK)
+                if (argTable[otherInx]->GetRegNum() == REG_STK)
                 {
                     treatLikeCall = true;
                     break;
@@ -1388,7 +1388,7 @@ void fgArgInfo::ArgsComplete()
                 // Or, if they are stored into the FIXED_OUT_ARG area
                 // we require that they be moved to the gtCallLateArgs
                 // and replaced with a placeholder node
-                else if (prevArgTabEntry->regNum == REG_STK)
+                else if (prevArgTabEntry->GetRegNum() == REG_STK)
                 {
                     prevArgTabEntry->needPlace = true;
                 }
@@ -1534,7 +1534,7 @@ void fgArgInfo::ArgsComplete()
 
             // Examine the register args that are currently not marked needTmp
             //
-            if (!curArgTabEntry->needTmp && (curArgTabEntry->regNum != REG_STK))
+            if (!curArgTabEntry->needTmp && (curArgTabEntry->GetRegNum() != REG_STK))
             {
                 if (hasStackArgsWeCareAbout)
                 {
@@ -1634,7 +1634,7 @@ void fgArgInfo::SortArgs()
 
         fgArgTabEntry* curArgTabEntry = argTable[curInx];
 
-        if (curArgTabEntry->regNum != REG_STK)
+        if (curArgTabEntry->GetRegNum() != REG_STK)
         {
             regCount++;
         }
@@ -1875,11 +1875,11 @@ void fgArgInfo::SortArgs()
     {
         fgArgTabEntry* curArgTabEntry = argTable[curInx];
 
-        if (curArgTabEntry->regNum != REG_STK)
+        if (curArgTabEntry->GetRegNum() != REG_STK)
         {
             // Encode the argument register in the register mask
             //
-            callTree->gtCall.regArgList[regInx] = curArgTabEntry->regNum;
+            callTree->gtCall.regArgList[regInx] = curArgTabEntry->GetRegNum();
             regInx++;
         }
     }
@@ -1945,7 +1945,7 @@ GenTree* Compiler::fgMakeTmpArgNode(fgArgTabEntry* curArgTabEntry)
                 // and otherwise we'd have to either modify getPrimitiveTypeForStruct() to take
                 // a structDesc or call eeGetSystemVAmd64PassStructInRegisterDescriptor yet again.
                 //
-                if (genIsValidFloatReg(curArgTabEntry->regNum))
+                if (genIsValidFloatReg(curArgTabEntry->GetRegNum()))
                 {
                     if (structBaseType == TYP_INT)
                     {
@@ -2053,7 +2053,7 @@ void fgArgInfo::EvalArgsToTemps()
         //   Only the register arguments need to be replaced with placeholder nodes.
         //   Stacked arguments are evaluated and pushed (or stored into the stack) in order.
         //
-        if (curArgTabEntry->regNum == REG_STK)
+        if (curArgTabEntry->GetRegNum() == REG_STK)
             continue;
 #endif
 
@@ -2171,10 +2171,10 @@ void fgArgInfo::EvalArgsToTemps()
                     // might have left holes in the used registers (see
                     // fgAddSkippedRegsInPromotedStructArg).
                     // Too bad we're not that smart for these intermediate temps...
-                    if (isValidIntArgReg(curArgTabEntry->regNum) && (curArgTabEntry->numRegs > 1))
+                    if (isValidIntArgReg(curArgTabEntry->GetRegNum()) && (curArgTabEntry->numRegs > 1))
                     {
-                        regNumber argReg      = curArgTabEntry->regNum;
-                        regMaskTP allUsedRegs = genRegMask(curArgTabEntry->regNum);
+                        regNumber argReg      = curArgTabEntry->GetRegNum();
+                        regMaskTP allUsedRegs = genRegMask(curArgTabEntry->GetRegNum());
                         for (unsigned i = 1; i < curArgTabEntry->numRegs; i++)
                         {
                             argReg = genRegArgNext(argReg);
@@ -2208,7 +2208,7 @@ void fgArgInfo::EvalArgsToTemps()
             //      this argument so we have to replace it in the gtCallArgs list
             //      (the initial argument evaluation list) with a placeholder.
             //
-            if ((curArgTabEntry->regNum == REG_STK) && (curArgTabEntry->needPlace == false))
+            if ((curArgTabEntry->GetRegNum() == REG_STK) && (curArgTabEntry->needPlace == false))
             {
                 continue;
             }
@@ -2248,13 +2248,13 @@ void fgArgInfo::EvalArgsToTemps()
 #ifdef DEBUG
             if (compiler->verbose)
             {
-                if (curArgTabEntry->regNum == REG_STK)
+                if (curArgTabEntry->GetRegNum() == REG_STK)
                 {
                     printf("Deferred stack argument :\n");
                 }
                 else
                 {
-                    printf("Deferred argument ('%s'):\n", getRegName(curArgTabEntry->regNum));
+                    printf("Deferred argument ('%s'):\n", getRegName(curArgTabEntry->GetRegNum()));
                 }
 
                 compiler->gtDispTree(argx);
@@ -2297,9 +2297,9 @@ void fgArgInfo::EvalArgsToTemps()
         {
             fgArgTabEntry* curArgTabEntry = argTable[curInx];
 
-            if (curArgTabEntry->regNum != REG_STK)
+            if (curArgTabEntry->GetRegNum() != REG_STK)
             {
-                printf("%s ", getRegName(curArgTabEntry->regNum));
+                printf("%s ", getRegName(curArgTabEntry->GetRegNum()));
             }
         }
         printf("\n");
@@ -4272,9 +4272,9 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
 
 #ifdef _TARGET_ARM_
     if ((fgEntryPtr->IsSplit() && fgEntryPtr->numSlots + fgEntryPtr->numRegs > 4) ||
-        (!fgEntryPtr->IsSplit() && fgEntryPtr->regNum == REG_STK))
+        (!fgEntryPtr->IsSplit() && fgEntryPtr->GetRegNum() == REG_STK))
 #else
-    if (fgEntryPtr->regNum == REG_STK)
+    if (fgEntryPtr->GetRegNum() == REG_STK)
 #endif
     {
         GenTreeLclVarCommon* lcl       = nullptr;
@@ -4653,7 +4653,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
     //
     if (newArg == nullptr)
     {
-        if (fgEntryPtr->regNum == REG_STK)
+        if (fgEntryPtr->GetRegNum() == REG_STK)
         {
             // We leave this stack passed argument alone
             return arg;
