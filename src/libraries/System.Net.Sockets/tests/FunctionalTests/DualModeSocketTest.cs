@@ -861,7 +861,6 @@ namespace System.Net.Sockets.Tests
                     {
                         Assert.Equal(connectTo.MapToIPv6(), ((IPEndPoint)clientSocket.LocalEndPoint).Address);
                     }
-                    Assert.Equal(connectTo.MapToIPv6(), ((IPEndPoint)clientSocket.LocalEndPoint).Address);
                 }
                 catch (ObjectDisposedException) { }
                 catch (SocketException) { }
