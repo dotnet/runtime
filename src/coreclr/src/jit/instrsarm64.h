@@ -263,6 +263,13 @@ INST4(fcmgt,   "fcmgt", 0, 0, IF_EN4I,   0x7EA0E400,  0x2EA0E400,  0x5EA0C800,  
                                    //  fcmgt   Vd,Vn                DV_2G  010111101X100000 110010nnnnnddddd   5EA0 E800   Vd Vn      (scalar)
                                    //  fcmgt   Vd,Vn                DV_2A  0Q0011101X100000 110010nnnnnddddd   0EA0 C800   Vd Vn      (vector)
 
+//    enum     name     FP LD/ST            LS_2D        LS_3F      LS_2E        LS_3G
+INST4(ld1,     "ld1",   0, LD,IF_EN4J,   0x0C402000,  0x0CC02000,  0x0D400000,  0x0DC00000)
+                                   //  ld1     Vd,Rn                LS_2D  0Q00110001000000 xx1xssnnnnnttttt   0C40 2000   Vd,Rn        (vector - multiple structures)
+                                   //  ld1     Vd,Rn,Rm             LS_3F  0Q001100110mmmmm xx1xssnnnnnttttt   0CC0 2000   Vd,Rn,Rm     (vector - multiple structures)
+                                   //  ld1     Vd[],Rn              LS_2E  0Q00110101000000 xx0Sssnnnnnttttt   0D40 0000   Vd[],Rn      (vector - single structure)
+                                   //  ld1     Vd[],Rn,Rm           LS_3G  0Q001101110mmmmm xx0Sssnnnnnttttt   0DC0 0000   Vd[],Rn,Rm   (vector - single structure)
+
 //    enum     name     FP LD/ST            DR_3A        DR_3B        DI_2C
 INST3(ands,    "ands",   0, 0, IF_EN3A,   0x6A000000,  0x6A000000,  0x72000000)
                                    //  ands    Rd,Rn,Rm             DR_3A  X1101010000mmmmm 000000nnnnnddddd   6A00 0000
