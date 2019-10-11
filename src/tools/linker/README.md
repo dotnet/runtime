@@ -45,7 +45,7 @@ A link xml file can be used to explicitly preserve assemblies, types, and member
     <type fullname="Assembly1.B"/>
     <!--Preserve all fields on a type-->
     <type fullname="Assembly1.C" preserve="fields"/>
-    <!--Preserve all fields on a type-->
+    <!--Preserve all methods on a type-->
     <type fullname="Assembly1.D" preserve="methods"/>
     <!--Preserve the type only-->
     <type fullname="Assembly1.E" preserve="nothing"/>
