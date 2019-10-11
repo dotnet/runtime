@@ -27,25 +27,27 @@ namespace System.Reflection.Metadata.Ecma335
                 _opCode = (byte)opCode;
             }
 
-            internal bool IsShortBranchDistance(ImmutableArray<int>.Builder labels, out int distance)
+            internal int GetBranchDistance(ImmutableArray<int>.Builder labels, ILOpCode branchOpCode, int branchILOffset, bool isShortBranch)
             {
-                const int shortBranchSize = 2;
-                const int longBranchSize = 5;
-
                 int labelTargetOffset = labels[Label.Id - 1];
                 if (labelTargetOffset < 0)
                 {
                     Throw.InvalidOperation_LabelNotMarked(Label.Id);
                 }
 
-                distance = labelTargetOffset - (ILOffset + shortBranchSize);
-                if (unchecked((sbyte)distance) == distance)
+                int branchInstructionSize = 1 + (isShortBranch ? sizeof(sbyte) : sizeof(int));
+                int distance = labelTargetOffset - (ILOffset + branchInstructionSize);
+
+                if (isShortBranch && unchecked((sbyte)distance) != distance)
                 {
-                    return true;
+                    // We could potentially implement algorithm that automatically fixes up branch instructions to accomodate for bigger distances (short vs long),
+                    // however an optimal algorithm would be rather complex (something like: calculate topological ordering of crossing branch instructions
+                    // and then use fixed point to eliminate cycles). If the caller doesn't care about optimal IL size they can use long branches whenever the
+                    // distance is unknown upfront. If they do they probably implement more sophisticated algorithm for IL layout optimization already.
+                    throw new InvalidOperationException(SR.Format(SR.DistanceBetweenInstructionAndLabelTooBig, branchOpCode, branchILOffset, distance));
                 }
 
-                distance = labelTargetOffset - (ILOffset + longBranchSize);
-                return false;
+                return distance;
             }
         }
 
@@ -278,19 +280,9 @@ namespace System.Reflection.Metadata.Ecma335
                     // write branch opcode:
                     dstBuilder.WriteByte(srcBlob.Buffer[srcBlobOffset]);
 
+                    int branchDistance = branch.GetBranchDistance(_labels, branch.OpCode, srcOffset, isShortInstruction);
+
                     // write branch operand:
-                    int branchDistance;
-                    bool isShortDistance = branch.IsShortBranchDistance(_labels, out branchDistance);
-
-                    if (isShortInstruction && !isShortDistance)
-                    {
-                        // We could potentially implement algortihm that automatically fixes up the branch instructions as well to accomodate bigger distances,
-                        // however an optimal algorithm would be rather complex (something like: calculate topological ordering of crossing branch instructions
-                        // and then use fixed point to eliminate cycles). If the caller doesn't care about optimal IL size they can use long branches whenever the
-                        // distance is unknown upfront. If they do they probably already implement more sophisticad algorithm for IL layout optimization already.
-                        throw new InvalidOperationException(SR.Format(SR.DistanceBetweenInstructionAndLabelTooBig, branch.OpCode, srcOffset, branchDistance));
-                    }
-
                     if (isShortInstruction)
                     {
                         dstBuilder.WriteSByte((sbyte)branchDistance);
@@ -306,7 +298,7 @@ namespace System.Reflection.Metadata.Ecma335
                     branchIndex++;
                     if (branchIndex == _branches.Count)
                     {
-                        branch = new BranchInfo(int.MaxValue, default(LabelHandle), 0);
+                        branch = new BranchInfo(int.MaxValue, label: default, opCode: default);
                     }
                     else
                     {
