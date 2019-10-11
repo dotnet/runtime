@@ -6193,7 +6193,6 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
         tree->SetOper(GT_IND);
         tree->gtOp.gtOp1 = addr;
 
-        tree->gtFlags &= (~GTF_EXCEPT | addr->gtFlags);
         tree->SetIndirExceptionFlags(this);
 
         if (addExplicitNullCheck)
@@ -8864,7 +8863,6 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
                 tree->gtFlags |= GTF_GLOB_REF;
             }
 
-            dest->gtFlags &= (~GTF_EXCEPT | dest->AsIndir()->Addr()->gtFlags);
             dest->SetIndirExceptionFlags(this);
             tree->gtFlags |= (dest->gtFlags & GTF_EXCEPT);
         }
@@ -8911,7 +8909,6 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
                     src->gtFlags |= (GTF_GLOB_REF | GTF_IND_TGTANYWHERE);
                 }
 
-                src->gtFlags &= (~GTF_EXCEPT | src->AsIndir()->Addr()->gtFlags);
                 src->SetIndirExceptionFlags(this);
             }
         }
@@ -11761,21 +11758,24 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 
 DONE_MORPHING_CHILDREN:
 
-    if (tree->OperMayThrow(this))
+    if (tree->OperIsIndirOrArrLength())
     {
-        // Mark the tree node as potentially throwing an exception
-        tree->gtFlags |= GTF_EXCEPT;
+        tree->SetIndirExceptionFlags(this);
     }
     else
     {
-        if (tree->OperIsIndirOrArrLength())
+        if (tree->OperMayThrow(this))
         {
-            tree->gtFlags |= GTF_IND_NONFAULTING;
+            // Mark the tree node as potentially throwing an exception
+            tree->gtFlags |= GTF_EXCEPT;
         }
-        if (((op1 == nullptr) || ((op1->gtFlags & GTF_EXCEPT) == 0)) &&
-            ((op2 == nullptr) || ((op2->gtFlags & GTF_EXCEPT) == 0)))
+        else
         {
-            tree->gtFlags &= ~GTF_EXCEPT;
+            if (((op1 == nullptr) || ((op1->gtFlags & GTF_EXCEPT) == 0)) &&
+                ((op2 == nullptr) || ((op2->gtFlags & GTF_EXCEPT) == 0)))
+            {
+                tree->gtFlags &= ~GTF_EXCEPT;
+            }
         }
     }
 
@@ -14662,7 +14662,7 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
             tree->gtDynBlk.Addr()        = fgMorphTree(tree->gtDynBlk.Addr());
             tree->gtDynBlk.gtDynamicSize = fgMorphTree(tree->gtDynBlk.gtDynamicSize);
 
-            tree->gtFlags &= (~GTF_EXCEPT & ~GTF_CALL);
+            tree->gtFlags &= ~GTF_CALL;
             tree->SetIndirExceptionFlags(this);
 
             if (tree->OperGet() == GT_STORE_DYN_BLK)

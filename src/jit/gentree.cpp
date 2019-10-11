@@ -7952,7 +7952,7 @@ void Compiler::gtUpdateNodeOperSideEffects(GenTree* tree)
         tree->gtFlags &= ~GTF_EXCEPT;
         if (tree->OperIsIndirOrArrLength())
         {
-            tree->gtFlags |= GTF_IND_NONFAULTING;
+            tree->SetIndirExceptionFlags(this);
         }
     }
 
@@ -9268,6 +9268,38 @@ bool GenTree::Precedes(GenTree* other)
     }
 
     return false;
+}
+
+//------------------------------------------------------------------------------
+// SetIndirExceptionFlags : Set GTF_EXCEPT and GTF_IND_NONFAULTING flags as appropriate
+//                          on an indirection or an array length node.
+//
+// Arguments:
+//    comp  - compiler instance
+//
+
+void GenTree::SetIndirExceptionFlags(Compiler* comp)
+{
+    GenTree* addr = nullptr;
+    if (OperIsIndir())
+    {
+        addr = AsIndir()->Addr();
+    }
+    else
+    {
+        assert(gtOper == GT_ARR_LENGTH);
+        addr = AsArrLen()->ArrRef();
+    }
+
+    if (OperMayThrow(comp) || ((addr->gtFlags & GTF_EXCEPT) != 0))
+    {
+        gtFlags |= GTF_EXCEPT;
+    }
+    else
+    {
+        gtFlags &= ~GTF_EXCEPT;
+        gtFlags |= GTF_IND_NONFAULTING;
+    }
 }
 
 #ifdef DEBUG
