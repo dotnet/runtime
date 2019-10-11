@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Collections;
 
 namespace System.Net
@@ -42,7 +43,7 @@ namespace System.Net
         // ASCII string case insensitive hash function
         public int GetHashCode(object myObject)
         {
-            string myString = myObject as string;
+            string? myString = myObject as string;
             if (myString == null)
             {
                 return 0;
@@ -57,10 +58,10 @@ namespace System.Net
         }
 
         // ASCII string case insensitive comparer
-        public int Compare(object firstObject, object secondObject)
+        public int Compare(object? firstObject, object? secondObject)
         {
-            string firstString = firstObject as string;
-            string secondString = secondObject as string;
+            string? firstString = firstObject as string;
+            string? secondString = secondObject as string;
             if (firstString == null)
             {
                 return secondString == null ? 0 : -1;
@@ -97,10 +98,10 @@ namespace System.Net
         }
 
         // ASCII string case insensitive comparer
-        public new bool Equals(object firstObject, object secondObject)
+        public new bool Equals(object? firstObject, object? secondObject)
         {
-            string firstString = firstObject as string;
-            string secondString = secondObject as string;
+            string? firstString = firstObject as string;
+            string? secondString = secondObject as string;
             if (firstString == null)
             {
                 return secondString == null;
