@@ -1010,7 +1010,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
     GenTree* putArg = nullptr;
 
     bool isOnStack = true;
-    isOnStack      = info->regNum == REG_STK;
+    isOnStack      = info->GetRegNum() == REG_STK;
 
 #ifdef _TARGET_ARMARCH_
     // Mark contained when we pass struct
@@ -1049,7 +1049,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
         GenTreePutArgSplit* argSplit = putArg->AsPutArgSplit();
         for (unsigned regIndex = 0; regIndex < info->numRegs; regIndex++)
         {
-            argSplit->SetRegNumByIdx(info->getRegNum(regIndex), regIndex);
+            argSplit->SetRegNumByIdx(info->GetRegNum(regIndex), regIndex);
         }
 
         if (arg->OperGet() == GT_OBJ)
@@ -1096,7 +1096,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
                 unsigned int regIndex = 0;
                 for (GenTreeFieldList::Use& use : arg->AsFieldList()->Uses())
                 {
-                    regNumber argReg = info->getRegNum(regIndex);
+                    regNumber argReg = info->GetRegNum(regIndex);
                     GenTree*  curOp  = use.GetNode();
                     var_types curTyp = curOp->TypeGet();
 
@@ -1115,7 +1115,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
             else
 #endif // FEATURE_MULTIREG_ARGS
             {
-                putArg = comp->gtNewPutArgReg(type, arg, info->regNum);
+                putArg = comp->gtNewPutArgReg(type, arg, info->GetRegNum());
             }
         }
         else
@@ -1297,7 +1297,7 @@ void Lowering::LowerArg(GenTreeCall* call, GenTree** ppArg)
     }
 #elif defined(_TARGET_AMD64_)
     // TYP_SIMD8 parameters that are passed as longs
-    if (type == TYP_SIMD8 && genIsValidIntReg(info->regNum))
+    if (type == TYP_SIMD8 && genIsValidIntReg(info->GetRegNum()))
     {
         GenTreeUnOp* bitcast = new (comp, GT_BITCAST) GenTreeOp(GT_BITCAST, TYP_LONG, arg, nullptr);
         BlockRange().InsertAfter(arg, bitcast);
@@ -1321,7 +1321,7 @@ void Lowering::LowerArg(GenTreeCall* call, GenTree** ppArg)
         fieldList->AddFieldLIR(comp, arg->AsOp()->gtGetOp2(), 4, TYP_INT);
         GenTree* newArg = NewPutArg(call, fieldList, info, type);
 
-        if (info->regNum != REG_STK)
+        if (info->GetRegNum() != REG_STK)
         {
             assert(info->numRegs == 2);
             // In the register argument case, NewPutArg replaces the original field list args with new
@@ -1394,12 +1394,12 @@ void Lowering::LowerArg(GenTreeCall* call, GenTree** ppArg)
 GenTree* Lowering::LowerFloatArg(GenTree** pArg, fgArgTabEntry* info)
 {
     GenTree* arg = *pArg;
-    if (info->regNum != REG_STK)
+    if (info->GetRegNum() != REG_STK)
     {
         if (arg->OperIs(GT_FIELD_LIST))
         {
             // Transform fields that are passed as registers in place.
-            regNumber currRegNumber = info->regNum;
+            regNumber currRegNumber = info->GetRegNum();
             unsigned  regIndex      = 0;
             for (GenTreeFieldList::Use& use : arg->AsFieldList()->Uses())
             {
@@ -1432,7 +1432,7 @@ GenTree* Lowering::LowerFloatArg(GenTree** pArg, fgArgTabEntry* info)
         }
         else if (varTypeIsFloating(arg))
         {
-            GenTree* intNode = LowerFloatArgReg(arg, info->regNum);
+            GenTree* intNode = LowerFloatArgReg(arg, info->GetRegNum());
             assert(intNode != nullptr);
             ReplaceArgWithPutArgOrBitcast(pArg, intNode);
             return *pArg;
@@ -4042,7 +4042,7 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
 
     // get a reference to the thisPtr being passed
     fgArgTabEntry* argEntry = comp->gtArgEntryByArgNum(call, thisPtrArgNum);
-    assert(argEntry->regNum == thisPtrArgReg);
+    assert(argEntry->GetRegNum() == thisPtrArgReg);
     assert(argEntry->GetNode()->OperIs(GT_PUTARG_REG));
     GenTree* thisPtr = argEntry->GetNode()->AsUnOp()->gtGetOp1();
 
