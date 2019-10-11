@@ -195,8 +195,8 @@ if (WIN32)
       emitarm64.h
       emitfmtsarm.h
       emitfmtsarm64.h
-      hwintrinsicArm64.h
-      hwintrinsiclistArm64.h
+      hwintrinsic.h
+      hwintrinsiclistarm64.h
       instrsarm.h
       instrsarm64.h
       registerarm.h
@@ -206,7 +206,7 @@ if (WIN32)
       emitfmtsxarch.h
       emitxarch.h
       hwintrinsiclistxarch.h
-      hwintrinsicxarch.h
+      hwintrinsic.h
       instrsxarch.h)
   endif ()
 endif(WIN32)
@@ -263,7 +263,8 @@ set( JIT_ARM64_SOURCES
   targetarm64.cpp
   unwindarm.cpp
   unwindarm64.cpp
-  hwintrinsicArm64.cpp
+  hwintrinsicarm64.cpp
+  hwintrinsiccodegenarm64.cpp
 )
 
 if(CLR_CMAKE_TARGET_ARCH_AMD64)

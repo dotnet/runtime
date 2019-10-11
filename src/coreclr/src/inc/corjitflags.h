@@ -123,9 +123,9 @@ public:
         CORJIT_FLAG_HAS_ARM64_SHA256        = 55, // ID_AA64ISAR0_EL1.SHA2 is 1 or better
         CORJIT_FLAG_HAS_ARM64_SHA512        = 56, // ID_AA64ISAR0_EL1.SHA2 is 2 or better
         CORJIT_FLAG_HAS_ARM64_SHA3          = 57, // ID_AA64ISAR0_EL1.SHA3 is 1 or better
-        CORJIT_FLAG_HAS_ARM64_SIMD          = 58, // ID_AA64PFR0_EL1.AdvSIMD is 0 or better
-        CORJIT_FLAG_HAS_ARM64_SIMD_V81      = 59, // ID_AA64ISAR0_EL1.RDM is 1 or better
-        CORJIT_FLAG_HAS_ARM64_SIMD_FP16     = 60, // ID_AA64PFR0_EL1.AdvSIMD is 1 or better
+        CORJIT_FLAG_HAS_ARM64_ADVSIMD       = 58, // ID_AA64PFR0_EL1.AdvSIMD is 0 or better
+        CORJIT_FLAG_HAS_ARM64_ADVSIMD_V81   = 59, // ID_AA64ISAR0_EL1.RDM is 1 or better
+        CORJIT_FLAG_HAS_ARM64_ADVSIMD_FP16  = 60, // ID_AA64PFR0_EL1.AdvSIMD is 1 or better
         CORJIT_FLAG_HAS_ARM64_SM3           = 61, // ID_AA64ISAR0_EL1.SM3 is 1 or better
         CORJIT_FLAG_HAS_ARM64_SM4           = 62, // ID_AA64ISAR0_EL1.SM4 is 1 or better
         CORJIT_FLAG_HAS_ARM64_SVE           = 63  // ID_AA64PFR0_EL1.SVE is 1 or better

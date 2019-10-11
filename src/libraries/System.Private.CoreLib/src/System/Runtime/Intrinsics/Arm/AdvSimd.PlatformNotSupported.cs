@@ -44,7 +44,7 @@ namespace System.Runtime.Intrinsics.Arm
             /// float64x2_t vaddq_f64 (float64x2_t a, float64x2_t b)
             ///   A64: FADD Vd.2D, Vn.2D, Vm.2D
             /// </summary>
-            public static Vector128<double> Add(Vector128<double> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
+            public static Vector128<double> Add(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
         }
 
         /// <summary>
