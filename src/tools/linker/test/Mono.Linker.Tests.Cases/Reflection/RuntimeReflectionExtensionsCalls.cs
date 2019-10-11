@@ -8,6 +8,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 	{
 		public static void Main ()
 		{
+			// Create a foo so that this test gives the expected result when unreachable bodies is turned on
+			new Foo ();
+
 			TestGetRuntimeEvent ();
 			TestGetRuntimeField ();
 			TestGetRuntimeProperty ();
@@ -39,6 +42,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			typeof (Foo).GetRuntimeMethod ("Method1", Type.EmptyTypes);
 		}
 
+		[KeptMember (".ctor()")]
 		class Foo
 		{
 			[Kept]

@@ -6,7 +6,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Reflection
 {
-	[SetupCompileArgument ("/r:System.Core.dll")]
+	[Reference ("System.Core.dll")]
 	public class ExpressionCallString
 	{
 		public static void Main ()
