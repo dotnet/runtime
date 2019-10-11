@@ -14,6 +14,8 @@ namespace Internal.IL.Stubs
 {
     public class ILCodeStream
     {
+        private const int StartOffsetNotSet = -1;
+
         private struct LabelAndOffset
         {
             public readonly ILCodeLabel Label;
@@ -37,8 +39,14 @@ namespace Internal.IL.Stubs
         internal ILCodeStream(ILEmitter emitter)
         {
             _instructions = Array.Empty<byte>();
-            _startOffsetForLinking = -1;
+            _startOffsetForLinking = StartOffsetNotSet;
             _emitter = emitter;
+        }
+
+        internal int RelativeToAbsoluteOffset(int relativeOffset)
+        {
+            Debug.Assert(_startOffsetForLinking != StartOffsetNotSet);
+            return _startOffsetForLinking + relativeOffset;
         }
 
         private void EmitByte(byte b)
@@ -417,6 +425,34 @@ namespace Internal.IL.Stubs
             label.Place(this, _length);
         }
 
+        public void BeginTry(ILExceptionRegionBuilder builder)
+        {
+            Debug.Assert(builder._beginTryStream == null);
+            builder._beginTryStream = this;
+            builder._beginTryOffset = _length;
+        }
+
+        public void EndTry(ILExceptionRegionBuilder builder)
+        {
+            Debug.Assert(builder._endTryStream == null);
+            builder._endTryStream = this;
+            builder._endTryOffset = _length;
+        }
+
+        public void BeginHandler(ILExceptionRegionBuilder builder)
+        {
+            Debug.Assert(builder._beginHandlerStream == null);
+            builder._beginHandlerStream = this;
+            builder._beginHandlerOffset = _length;
+        }
+
+        public void EndHandler(ILExceptionRegionBuilder builder)
+        {
+            Debug.Assert(builder._endHandlerStream == null);
+            builder._endHandlerStream = this;
+            builder._endHandlerOffset = _length;
+        }
+
         internal void PatchLabels()
         {
             for (int i = 0; i < _offsetsNeedingPatching.Count; i++)
@@ -424,7 +460,7 @@ namespace Internal.IL.Stubs
                 LabelAndOffset patch = _offsetsNeedingPatching[i];
 
                 Debug.Assert(patch.Label.IsPlaced);
-                Debug.Assert(_startOffsetForLinking > -1);
+                Debug.Assert(_startOffsetForLinking != StartOffsetNotSet);
 
                 int offset = patch.Offset;
 
@@ -456,6 +492,34 @@ namespace Internal.IL.Stubs
         }
     }
 
+    public class ILExceptionRegionBuilder
+    {
+        internal ILCodeStream _beginTryStream;
+        internal int _beginTryOffset;
+
+        internal ILCodeStream _endTryStream;
+        internal int _endTryOffset;
+
+        internal ILCodeStream _beginHandlerStream;
+        internal int _beginHandlerOffset;
+
+        internal ILCodeStream _endHandlerStream;
+        internal int _endHandlerOffset;
+
+        internal ILExceptionRegionBuilder()
+        {
+        }
+
+        internal int TryOffset => _beginTryStream.RelativeToAbsoluteOffset(_beginTryOffset);
+        internal int TryLength => _endTryStream.RelativeToAbsoluteOffset(_endTryOffset) - TryOffset;
+        internal int HandlerOffset => _beginHandlerStream.RelativeToAbsoluteOffset(_beginHandlerOffset);
+        internal int HandlerLength => _endHandlerStream.RelativeToAbsoluteOffset(_endHandlerOffset) - HandlerOffset;
+        
+        internal bool IsDefined =>
+            _beginTryStream != null && _endTryStream != null
+            && _beginHandlerStream != null && _endHandlerStream != null;
+    }
+
     /// <summary>
     /// Represent a token. Use one of the overloads of <see cref="ILEmitter.NewToken"/>
     /// to create a new token.
@@ -473,18 +537,23 @@ namespace Internal.IL.Stubs
         private readonly LocalVariableDefinition[] _locals;
         private readonly Object[] _tokens;
         private readonly MethodDesc _method;
+        private readonly ILExceptionRegion[] _exceptionRegions;
         private readonly MethodDebugInformation _debugInformation;
 
         private const int MaxStackNotSet = -1;
         private int _maxStack;
 
-        public ILStubMethodIL(MethodDesc owningMethod, byte[] ilBytes, LocalVariableDefinition[] locals, Object[] tokens, MethodDebugInformation debugInfo = null)
+        public ILStubMethodIL(MethodDesc owningMethod, byte[] ilBytes, LocalVariableDefinition[] locals, Object[] tokens, ILExceptionRegion[] exceptionRegions = null, MethodDebugInformation debugInfo = null)
         {
             _ilBytes = ilBytes;
             _locals = locals;
             _tokens = tokens;
             _method = owningMethod;
             _maxStack = MaxStackNotSet;
+
+            if (exceptionRegions == null)
+                exceptionRegions = Array.Empty<ILExceptionRegion>();
+            _exceptionRegions = exceptionRegions;
 
             if (debugInfo == null)
                 debugInfo = MethodDebugInformation.None;
@@ -531,7 +600,7 @@ namespace Internal.IL.Stubs
 
         public override ILExceptionRegion[] GetExceptionRegions()
         {
-            return Array.Empty<ILExceptionRegion>();
+            return _exceptionRegions;
         }
         public override bool IsInitLocals
         {
@@ -569,8 +638,7 @@ namespace Internal.IL.Stubs
             get
             {
                 Debug.Assert(IsPlaced);
-                Debug.Assert(_codeStream._startOffsetForLinking >= 0);
-                return _codeStream._startOffsetForLinking + _offsetWithinCodeStream;
+                return _codeStream.RelativeToAbsoluteOffset(_offsetWithinCodeStream);
             }
         }
 
@@ -591,6 +659,7 @@ namespace Internal.IL.Stubs
         private ArrayBuilder<ILCodeStream> _codeStreams;
         private ArrayBuilder<LocalVariableDefinition> _locals;
         private ArrayBuilder<Object> _tokens;
+        private ArrayBuilder<ILExceptionRegionBuilder> _finallyRegions;
 
         public ILEmitter()
         {
@@ -648,6 +717,13 @@ namespace Internal.IL.Stubs
             return newLabel;
         }
 
+        public ILExceptionRegionBuilder NewFinallyRegion()
+        {
+            var region = new ILExceptionRegionBuilder();
+            _finallyRegions.Add(region);
+            return region;
+        }
+
         public MethodIL Link(MethodDesc owningMethod)
         {
             int totalLength = 0;
@@ -694,7 +770,26 @@ namespace Internal.IL.Stubs
                 debugInfo = new EmittedMethodDebugInformation(sequencePoints);
             }
 
-            var result = new ILStubMethodIL(owningMethod, ilInstructions, _locals.ToArray(), _tokens.ToArray(), debugInfo);
+            ILExceptionRegion[] exceptionRegions = null;
+
+            int numberOfExceptionRegions = _finallyRegions.Count;
+            if (numberOfExceptionRegions > 0)
+            {
+                exceptionRegions = new ILExceptionRegion[numberOfExceptionRegions];
+
+                for (int i = 0; i < _finallyRegions.Count; i++)
+                {
+                    ILExceptionRegionBuilder region = _finallyRegions[i];
+
+                    Debug.Assert(region.IsDefined);
+
+                    exceptionRegions[i] = new ILExceptionRegion(ILExceptionRegionKind.Finally,
+                        region.TryOffset, region.TryLength, region.HandlerOffset, region.HandlerLength,
+                        classToken: 0, filterOffset: 0);
+                }
+            }
+
+            var result = new ILStubMethodIL(owningMethod, ilInstructions, _locals.ToArray(), _tokens.ToArray(), exceptionRegions, debugInfo);
             result.CheckStackBalance();
             return result;
         }
