@@ -1413,10 +1413,6 @@ void CodeGen::genConsumeRegs(GenTree* tree)
         }
 #endif // FEATURE_HW_INTRINSICS
 #endif // _TARGET_XARCH_
-        else if (tree->OperIsInitVal())
-        {
-            genConsumeReg(tree->gtGetOp1());
-        }
         else
         {
 #ifdef FEATURE_SIMD

@@ -1159,18 +1159,11 @@ protected:
     unsigned genMove4IfNeeded(unsigned size, regNumber tmpReg, GenTree* srcAddr, unsigned offset);
     unsigned genMove2IfNeeded(unsigned size, regNumber tmpReg, GenTree* srcAddr, unsigned offset);
     unsigned genMove1IfNeeded(unsigned size, regNumber tmpReg, GenTree* srcAddr, unsigned offset);
+    void genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst, GenTree* base, unsigned offset);
     void genStructPutArgRepMovs(GenTreePutArgStk* putArgStkNode);
     void genStructPutArgUnroll(GenTreePutArgStk* putArgStkNode);
     void genStoreRegToStackArg(var_types type, regNumber reg, int offset);
 #endif // FEATURE_PUT_STRUCT_ARG_STK
-
-    void genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst, GenTree* base, unsigned offset);
-    void genCodeForStoreOffset(instruction ins, emitAttr size, regNumber src, GenTree* base, unsigned offset);
-
-#ifdef _TARGET_ARM64_
-    void genCodeForLoadPairOffset(regNumber dst, regNumber dst2, GenTree* base, unsigned offset);
-    void genCodeForStorePairOffset(regNumber src, regNumber src2, GenTree* base, unsigned offset);
-#endif // _TARGET_ARM64_
 
     void genCodeForStoreBlk(GenTreeBlk* storeBlkNode);
 #ifndef _TARGET_X86_

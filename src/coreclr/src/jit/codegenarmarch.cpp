@@ -1924,149 +1924,266 @@ void CodeGen::genCodeForCpBlkHelper(GenTreeBlk* cpBlkNode)
 }
 
 //----------------------------------------------------------------------------------
-// genCodeForCpBlkUnroll: Generates CpBlk code by performing a loop unroll
+// genCodeForInitBlkUnroll: Generate unrolled block initialization code.
 //
 // Arguments:
-//    cpBlkNode  -  Copy block node
+//    node - the GT_STORE_BLK or GT_STORE_OBJ node to generate code for
 //
-// Return Value:
-//    None
-//
-// Assumption:
-//  The size argument of the CpBlk node is a constant and <= CPBLK_UNROLL_LIMIT bytes.
-//
-void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
+void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 {
-    // Make sure we got the arguments of the cpblk operation in the right registers
-    unsigned size    = cpBlkNode->Size();
-    GenTree* dstAddr = cpBlkNode->Addr();
-    GenTree* source  = cpBlkNode->Data();
-    GenTree* srcAddr = nullptr;
+    assert(node->OperIs(GT_STORE_BLK, GT_STORE_OBJ));
 
-    assert((size != 0) && (size <= CPBLK_UNROLL_LIMIT));
+#ifndef _TARGET_ARM64_
+    NYI_ARM("genCodeForInitBlkUnroll");
+#else
+    regNumber dstAddrBaseReg = genConsumeReg(node->Addr());
+    unsigned  dstOffset      = 0;
 
-    emitter* emit = GetEmitter();
+    regNumber srcReg;
+    GenTree*  src = node->Data();
 
-    if (dstAddr->isUsedFromReg())
+    if (src->OperIs(GT_INIT_VAL))
     {
-        genConsumeReg(dstAddr);
+        assert(src->isContained());
+        src = src->gtGetOp1();
     }
 
-    if (cpBlkNode->gtFlags & GTF_BLK_VOLATILE)
+    if (!src->isContained())
     {
-        // issue a full memory barrier before a volatile CpBlkUnroll operation
+        srcReg = genConsumeReg(src);
+    }
+    else
+    {
+        assert(src->IsIntegralConst(0));
+        srcReg = REG_ZR;
+    }
+
+    if (node->IsVolatile())
+    {
         instGen_MemoryBarrier();
     }
 
-    if (source->gtOper == GT_IND)
+    emitter* emit = GetEmitter();
+    unsigned size = node->GetLayout()->GetSize();
+
+    for (unsigned regSize = 2 * REGSIZE_BYTES; size >= regSize; size -= regSize, dstOffset += regSize)
     {
-        srcAddr = source->gtGetOp1();
-        if (srcAddr->isUsedFromReg())
+        emit->emitIns_R_R_R_I(INS_stp, EA_8BYTE, srcReg, srcReg, dstAddrBaseReg, dstOffset);
+    }
+
+    for (unsigned regSize = REGSIZE_BYTES; size > 0; size -= regSize, dstOffset += regSize)
+    {
+        while (regSize > size)
         {
-            genConsumeReg(srcAddr);
+            regSize /= 2;
+        }
+
+        instruction storeIns;
+
+        switch (regSize)
+        {
+            case 1:
+                storeIns = INS_strb;
+                break;
+            case 2:
+                storeIns = INS_strh;
+                break;
+            case 4:
+            case 8:
+                storeIns = INS_str;
+                break;
+            default:
+                unreached();
+        }
+
+        emit->emitIns_R_R_I(storeIns, EA_ATTR(regSize), srcReg, dstAddrBaseReg, dstOffset);
+    }
+#endif // _TARGET_ARM64_
+}
+
+//----------------------------------------------------------------------------------
+// genCodeForCpBlkUnroll: Generate unrolled block copy code.
+//
+// Arguments:
+//    node - the GT_STORE_BLK node to generate code for
+//
+void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
+{
+    assert(node->OperIs(GT_STORE_BLK));
+
+    unsigned  dstLclNum      = BAD_VAR_NUM;
+    regNumber dstAddrBaseReg = REG_NA;
+    unsigned  dstOffset      = 0;
+    GenTree*  dstAddr        = node->Addr();
+
+    if (!dstAddr->isContained())
+    {
+        dstAddrBaseReg = genConsumeReg(dstAddr);
+
+        // TODO-Cleanup: This matches the old code behavior in order to get 0 diffs. It's otherwise
+        // messed up - lowering does not mark a local address node contained even if it's possible
+        // and then the old code consumed the register but ignored it and generated code that accesses
+        // the local variable directly.
+        if (dstAddr->OperIsLocalAddr())
+        {
+            dstLclNum = dstAddr->AsLclVarCommon()->GetLclNum();
+            dstOffset = dstAddr->OperIs(GT_LCL_FLD_ADDR) ? dstAddr->AsLclFld()->gtLclOffs : 0;
         }
     }
     else
     {
-        noway_assert(source->IsLocal());
-        // TODO-Cleanup: Consider making the addrForm() method in Rationalize public, e.g. in GenTree.
-        // OR: transform source to GT_IND(GT_LCL_VAR_ADDR)
-        if (source->OperGet() == GT_LCL_VAR)
+        assert(dstAddr->OperIsLocalAddr());
+        dstLclNum = dstAddr->AsLclVarCommon()->GetLclNum();
+        dstOffset = dstAddr->OperIs(GT_LCL_FLD_ADDR) ? dstAddr->AsLclFld()->gtLclOffs : 0;
+    }
+
+    unsigned  srcLclNum      = BAD_VAR_NUM;
+    regNumber srcAddrBaseReg = REG_NA;
+    unsigned  srcOffset      = 0;
+    GenTree*  src            = node->Data();
+
+    assert(src->isContained());
+
+    if (src->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+    {
+        srcLclNum = src->AsLclVarCommon()->GetLclNum();
+        srcOffset = src->OperIs(GT_LCL_FLD) ? src->AsLclFld()->gtLclOffs : 0;
+    }
+    else
+    {
+        assert(src->OperIs(GT_IND));
+        GenTree* srcAddr = src->AsIndir()->Addr();
+
+        if (!srcAddr->isContained())
         {
-            source->SetOper(GT_LCL_VAR_ADDR);
+            srcAddrBaseReg = genConsumeReg(srcAddr);
+
+            // TODO-Cleanup: This matches the old code behavior in order to get 0 diffs. It's otherwise
+            // messed up - lowering does not mark a local address node contained even if it's possible
+            // and then the old code consumed the register but ignored it and generated code that accesses
+            // the local variable directly.
+            if (srcAddr->OperIsLocalAddr())
+            {
+                srcLclNum = srcAddr->AsLclVarCommon()->GetLclNum();
+                srcOffset = srcAddr->OperIs(GT_LCL_FLD_ADDR) ? srcAddr->AsLclFld()->gtLclOffs : 0;
+            }
         }
         else
         {
-            assert(source->OperGet() == GT_LCL_FLD);
-            source->SetOper(GT_LCL_FLD_ADDR);
+            assert(srcAddr->OperIsLocalAddr());
+            srcLclNum = srcAddr->AsLclVarCommon()->GetLclNum();
+            srcOffset = srcAddr->OperIs(GT_LCL_FLD_ADDR) ? srcAddr->AsLclFld()->gtLclOffs : 0;
         }
-        srcAddr = source;
     }
 
-    unsigned offset = 0;
+    if (node->IsVolatile())
+    {
+        instGen_MemoryBarrier();
+    }
 
-    // Grab the integer temp register to emit the loads and stores.
-    regNumber tmpReg = cpBlkNode->ExtractTempReg(RBM_ALLINT);
+    emitter* emit = GetEmitter();
+    unsigned size = node->GetLayout()->GetSize();
+
+    regNumber tempReg = node->ExtractTempReg(RBM_ALLINT);
 
 #ifdef _TARGET_ARM64_
     if (size >= 2 * REGSIZE_BYTES)
     {
-        regNumber tmp2Reg = cpBlkNode->ExtractTempReg(RBM_ALLINT);
+        regNumber tempReg2 = node->ExtractTempReg(RBM_ALLINT);
 
-        size_t slots = size / (2 * REGSIZE_BYTES);
-
-        while (slots-- > 0)
+        for (unsigned regSize = 2 * REGSIZE_BYTES; size >= regSize;
+             size -= regSize, srcOffset += regSize, dstOffset += regSize)
         {
-            // Load
-            genCodeForLoadPairOffset(tmpReg, tmp2Reg, srcAddr, offset);
-            // Store
-            genCodeForStorePairOffset(tmpReg, tmp2Reg, dstAddr, offset);
-            offset += 2 * REGSIZE_BYTES;
+            if (srcLclNum != BAD_VAR_NUM)
+            {
+                emit->emitIns_R_R_S_S(INS_ldp, EA_8BYTE, EA_8BYTE, tempReg, tempReg2, srcLclNum, srcOffset);
+            }
+            else
+            {
+                emit->emitIns_R_R_R_I(INS_ldp, EA_8BYTE, tempReg, tempReg2, srcAddrBaseReg, srcOffset);
+            }
+
+            if (dstLclNum != BAD_VAR_NUM)
+            {
+                emit->emitIns_S_S_R_R(INS_stp, EA_8BYTE, EA_8BYTE, tempReg, tempReg2, dstLclNum, dstOffset);
+            }
+            else
+            {
+                emit->emitIns_R_R_R_I(INS_stp, EA_8BYTE, tempReg, tempReg2, dstAddrBaseReg, dstOffset);
+            }
         }
     }
+#endif
 
-    // Fill the remainder (15 bytes or less) if there's one.
-    if ((size & 0xf) != 0)
+    for (unsigned regSize = REGSIZE_BYTES; size > 0; size -= regSize, srcOffset += regSize, dstOffset += regSize)
     {
-        if ((size & 8) != 0)
+        while (regSize > size)
         {
-            genCodeForLoadOffset(INS_ldr, EA_8BYTE, tmpReg, srcAddr, offset);
-            genCodeForStoreOffset(INS_str, EA_8BYTE, tmpReg, dstAddr, offset);
-            offset += 8;
+            regSize /= 2;
         }
-        if ((size & 4) != 0)
+
+        instruction loadIns;
+        instruction storeIns;
+        emitAttr    attr;
+
+        switch (regSize)
         {
-            genCodeForLoadOffset(INS_ldr, EA_4BYTE, tmpReg, srcAddr, offset);
-            genCodeForStoreOffset(INS_str, EA_4BYTE, tmpReg, dstAddr, offset);
-            offset += 4;
+            case 1:
+                loadIns  = INS_ldrb;
+                storeIns = INS_strb;
+#ifdef _TARGET_ARM64_
+                attr = EA_1BYTE;
+#else
+                attr = EA_4BYTE;
+#endif
+                break;
+            case 2:
+                loadIns  = INS_ldrh;
+                storeIns = INS_strh;
+#ifdef _TARGET_ARM64_
+                attr = EA_2BYTE;
+#else
+                attr = EA_4BYTE;
+#endif
+                break;
+            case 4:
+#ifdef _TARGET_ARM64_
+            case 8:
+#endif
+                loadIns  = INS_ldr;
+                storeIns = INS_str;
+                attr     = EA_ATTR(regSize);
+                break;
+            default:
+                unreached();
         }
-        if ((size & 2) != 0)
+
+        if (srcLclNum != BAD_VAR_NUM)
         {
-            genCodeForLoadOffset(INS_ldrh, EA_2BYTE, tmpReg, srcAddr, offset);
-            genCodeForStoreOffset(INS_strh, EA_2BYTE, tmpReg, dstAddr, offset);
-            offset += 2;
+            emit->emitIns_R_S(loadIns, attr, tempReg, srcLclNum, srcOffset);
         }
-        if ((size & 1) != 0)
+        else
         {
-            genCodeForLoadOffset(INS_ldrb, EA_1BYTE, tmpReg, srcAddr, offset);
-            genCodeForStoreOffset(INS_strb, EA_1BYTE, tmpReg, dstAddr, offset);
+            emit->emitIns_R_R_I(loadIns, attr, tempReg, srcAddrBaseReg, srcOffset);
         }
-    }
-#else  // !_TARGET_ARM64_
-    size_t slots = size / REGSIZE_BYTES;
-    while (slots-- > 0)
-    {
-        genCodeForLoadOffset(INS_ldr, EA_4BYTE, tmpReg, srcAddr, offset);
-        genCodeForStoreOffset(INS_str, EA_4BYTE, tmpReg, dstAddr, offset);
-        offset += REGSIZE_BYTES;
+
+        if (dstLclNum != BAD_VAR_NUM)
+        {
+            emit->emitIns_S_R(storeIns, attr, tempReg, dstLclNum, dstOffset);
+        }
+        else
+        {
+            emit->emitIns_R_R_I(storeIns, attr, tempReg, dstAddrBaseReg, dstOffset);
+        }
     }
 
-    // Fill the remainder (3 bytes or less) if there's one.
-    if ((size & 0x03) != 0)
-    {
-        if ((size & 2) != 0)
-        {
-            genCodeForLoadOffset(INS_ldrh, EA_4BYTE, tmpReg, srcAddr, offset);
-            genCodeForStoreOffset(INS_strh, EA_4BYTE, tmpReg, dstAddr, offset);
-            offset += 2;
-        }
-        if ((size & 1) != 0)
-        {
-            genCodeForLoadOffset(INS_ldrb, EA_4BYTE, tmpReg, srcAddr, offset);
-            genCodeForStoreOffset(INS_strb, EA_4BYTE, tmpReg, dstAddr, offset);
-        }
-    }
-#endif // !_TARGET_ARM64_
-
-    if (cpBlkNode->gtFlags & GTF_BLK_VOLATILE)
+    if (node->IsVolatile())
     {
 #ifdef _TARGET_ARM64_
-        // issue a INS_BARRIER_ISHLD after a volatile CpBlkUnroll operation
         instGen_MemoryBarrier(INS_BARRIER_ISHLD);
 #else
-        // issue a full memory barrier after a volatile CpBlk operation
         instGen_MemoryBarrier();
-#endif // !_TARGET_ARM64_
+#endif
     }
 }
 
@@ -2093,44 +2210,6 @@ void CodeGen::genCodeForInitBlkHelper(GenTreeBlk* initBlkNode)
     }
 
     genEmitHelperCall(CORINFO_HELP_MEMSET, 0, EA_UNKNOWN);
-}
-
-// Generate code for a load from some address + offset
-//   base: tree node which can be either a local address or arbitrary node
-//   offset: distance from the base from which to load
-void CodeGen::genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst, GenTree* base, unsigned offset)
-{
-    emitter* emit = GetEmitter();
-
-    if (base->OperIsLocalAddr())
-    {
-        if (base->gtOper == GT_LCL_FLD_ADDR)
-            offset += base->gtLclFld.gtLclOffs;
-        emit->emitIns_R_S(ins, size, dst, base->gtLclVarCommon.GetLclNum(), offset);
-    }
-    else
-    {
-        emit->emitIns_R_R_I(ins, size, dst, base->GetRegNum(), offset);
-    }
-}
-
-// Generate code for a store to some address + offset
-//   base: tree node which can be either a local address or arbitrary node
-//   offset: distance from the base from which to load
-void CodeGen::genCodeForStoreOffset(instruction ins, emitAttr size, regNumber src, GenTree* base, unsigned offset)
-{
-    emitter* emit = GetEmitter();
-
-    if (base->OperIsLocalAddr())
-    {
-        if (base->gtOper == GT_LCL_FLD_ADDR)
-            offset += base->gtLclFld.gtLclOffs;
-        emit->emitIns_S_R(ins, size, src, base->gtLclVarCommon.GetLclNum(), offset);
-    }
-    else
-    {
-        emit->emitIns_R_R_I(ins, size, src, base->GetRegNum(), offset);
-    }
 }
 
 //------------------------------------------------------------------------
