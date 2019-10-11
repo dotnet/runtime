@@ -142,7 +142,7 @@ namespace System.Net
         {
             get
             {
-                HeaderInfo tempHeaderInfo = (HeaderInfo)s_headerHashTable[name];
+                HeaderInfo? tempHeaderInfo = (HeaderInfo?)s_headerHashTable[name];
                 if (tempHeaderInfo == null)
                 {
                     return s_unknownHeaderInfo;
