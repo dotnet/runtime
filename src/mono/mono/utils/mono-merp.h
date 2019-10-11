@@ -29,7 +29,7 @@ void mono_merp_disable (void);
  * See MERP documentation for information on the bundle ID, signature, and version fields
  */
 void
-mono_merp_enable (const char *appBundleID, const char *appSignature, const char *appVersion, const char *merpGUIPath, const char *eventType, const char *appPath, const char *configDir);
+mono_merp_enable (const char *appBundleID, const char *appSignature, const char *appVersion, const char *merpGUIPath, const char *appPath, const char *configDir);
 
 /**
  * Whether the MERP-based handler is registered

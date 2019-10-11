@@ -144,7 +144,7 @@ HANDLES(RUNTIME_1, "DisableMicrosoftTelemetry", ves_icall_Mono_Runtime_DisableMi
 HANDLES(RUNTIME_15, "DumpStateSingle_internal", ves_icall_Mono_Runtime_DumpStateSingle, MonoString, 2, (guint64_ref, guint64_ref))
 HANDLES(RUNTIME_16, "DumpStateTotal_internal", ves_icall_Mono_Runtime_DumpStateTotal, MonoString, 2, (guint64_ref, guint64_ref))
 HANDLES(RUNTIME_18, "EnableCrashReportLog_internal", ves_icall_Mono_Runtime_EnableCrashReportingLog, void, 1, (const_char_ptr))
-HANDLES(RUNTIME_2, "EnableMicrosoftTelemetry_internal", ves_icall_Mono_Runtime_EnableMicrosoftTelemetry, void, 7, (const_char_ptr, const_char_ptr, const_char_ptr, const_char_ptr, const_char_ptr, const_char_ptr, const_char_ptr))
+HANDLES(RUNTIME_2, "EnableMicrosoftTelemetry_internal", ves_icall_Mono_Runtime_EnableMicrosoftTelemetry, void, 6, (const_char_ptr, const_char_ptr, const_char_ptr, const_char_ptr, const_char_ptr, const_char_ptr))
 HANDLES(RUNTIME_3, "ExceptionToState_internal", ves_icall_Mono_Runtime_ExceptionToState, MonoString, 3, (MonoException, guint64_ref, guint64_ref))
 HANDLES(RUNTIME_4, "GetDisplayName", ves_icall_Mono_Runtime_GetDisplayName, MonoString, 0, ())
 HANDLES(RUNTIME_12, "GetNativeStackTrace", ves_icall_Mono_Runtime_GetNativeStackTrace, MonoString, 1, (MonoException))
