@@ -4304,19 +4304,20 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
     else if (strncmp(namespaceName, "System.Runtime.Intrinsics", 25) == 0)
     {
         namespaceName += 25;
+        const char* platformNamespaceName;
+
 #if defined(_TARGET_XARCH_)
-        if ((namespaceName[0] == '\0') || (strcmp(namespaceName, ".X86") == 0))
+        platformNamespaceName = ".X86";
+#elif defined(_TARGET_ARM64_)
+        platformNamespaceName = ".Arm";
+#else
+#error Unsupported platform
+#endif
+
+        if ((namespaceName[0] == '\0') || (strcmp(namespaceName, platformNamespaceName) == 0))
         {
             result = HWIntrinsicInfo::lookupId(this, className, methodName, enclosingClassName);
         }
-#elif defined(_TARGET_ARM64_)
-        if ((namespaceName[0] == '\0') || (strcmp(namespaceName, ".Arm.Arm64") == 0))
-        {
-            result = lookupHWIntrinsic(className, methodName);
-        }
-#else // !defined(_TARGET_XARCH_) && !defined(_TARGET_ARM64_)
-#error Unsupported platform
-#endif // !defined(_TARGET_XARCH_) && !defined(_TARGET_ARM64_)
         else if (strcmp(methodName, "get_IsSupported") == 0)
         {
             return NI_IsSupported_False;
@@ -9116,18 +9117,6 @@ REDO_RETURN_NODE:
             return op;
         }
     }
-#if defined(FEATURE_HW_INTRINSICS) && defined(_TARGET_ARM64_)
-    else if ((op->gtOper == GT_HWIntrinsic) && varTypeIsSIMD(op->gtType))
-    {
-        // TODO-ARM64-FIXME Implement ARM64 ABI for Short Vectors properly
-        // assert(op->gtType == info.compRetNativeType)
-        if (op->gtType != info.compRetNativeType)
-        {
-            // Insert a register move to keep target type of SIMD intrinsic intact
-            op = gtNewScalarHWIntrinsicNode(info.compRetNativeType, op, NI_ARM64_NONE_MOV);
-        }
-    }
-#endif
     else if (op->gtOper == GT_COMMA)
     {
         op->gtOp.gtOp2 = impFixupStructReturnType(op->gtOp.gtOp2, retClsHnd);
