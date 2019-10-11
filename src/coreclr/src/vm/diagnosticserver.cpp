@@ -21,7 +21,6 @@
 
 IpcStream::DiagnosticsIpc *DiagnosticServer::s_pIpc = nullptr;
 Volatile<bool> DiagnosticServer::s_shuttingDown(false);
-HANDLE DiagnosticServer::s_hServerThread = INVALID_HANDLE_VALUE;
 
 DWORD WINAPI DiagnosticServer::DiagnosticsServerThread(LPVOID)
 {
@@ -147,7 +146,7 @@ bool DiagnosticServer::Initialize()
             auto_trace_launch();
 #endif
             DWORD dwThreadId = 0;
-            s_hServerThread = ::CreateThread( // TODO: Is it correct to have this "lower" level call here?
+            HANDLE hServerThread = ::CreateThread( // TODO: Is it correct to have this "lower" level call here?
                 nullptr,                     // no security attribute
                 0,                           // default stack size
                 DiagnosticsServerThread,     // thread proc
@@ -155,7 +154,7 @@ bool DiagnosticServer::Initialize()
                 0,                           // not suspended
                 &dwThreadId);                // returns thread ID
 
-            if (s_hServerThread == NULL)
+            if (hServerThread == NULL)
             {
                 delete s_pIpc;
                 s_pIpc = nullptr;
@@ -169,6 +168,8 @@ bool DiagnosticServer::Initialize()
             }
             else
             {
+                ::CloseHandle(hServerThread);
+
 #ifdef FEATURE_AUTO_TRACE
                 auto_trace_wait();
 #endif
