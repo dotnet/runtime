@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Cache;
+using System.Net.Http;
 using System.Net.Security;
 using System.Runtime.Serialization;
 using System.Security.Principal;
@@ -556,17 +557,16 @@ namespace System.Net
             throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
         }
 
-        // Default Web Proxy implementation.
         private static IWebProxy s_DefaultWebProxy;
         private static bool s_DefaultWebProxyInitialized;
 
-        public static IWebProxy GetSystemWebProxy() => SystemWebProxy.Get();
+        public static IWebProxy GetSystemWebProxy() => HttpClient.DefaultProxy;
 
         public static IWebProxy DefaultWebProxy
         {
             get
             {
-                return LazyInitializer.EnsureInitialized(ref s_DefaultWebProxy, ref s_DefaultWebProxyInitialized, ref s_internalSyncObject, () => SystemWebProxy.Get());
+                return LazyInitializer.EnsureInitialized(ref s_DefaultWebProxy, ref s_DefaultWebProxyInitialized, ref s_internalSyncObject, () => GetSystemWebProxy());
             }
             set
             {

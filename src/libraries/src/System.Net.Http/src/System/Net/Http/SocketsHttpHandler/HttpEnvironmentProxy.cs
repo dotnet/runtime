@@ -99,7 +99,7 @@ namespace System.Net.Http
         private readonly Uri _httpProxyUri;       // String URI for HTTP requests
         private readonly Uri _httpsProxyUri;      // String URI for HTTPS requests
         private readonly string[] _bypass = null; // list of domains not to proxy
-        private readonly ICredentials _credentials;
+        private ICredentials _credentials;
 
         private HttpEnvironmentProxy(Uri httpProxy, Uri httpsProxy, string bypassList)
         {
@@ -283,7 +283,10 @@ namespace System.Net.Http
             {
                 return _credentials;
             }
-            set { throw new NotSupportedException(); }
+            set
+            {
+                _credentials = value;
+            }
         }
     }
 }
