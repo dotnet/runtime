@@ -9,11 +9,6 @@ namespace System
 {
 	partial class String
 	{
-		[NonSerialized]
-		int _stringLength;
-		[NonSerialized]
-		char _firstChar;
-
 		[Intrinsic]
 		public static readonly String Empty;
 

@@ -424,6 +424,28 @@ namespace System
 			}
 		}
 
+		static bool TrySZBinarySearch (Array sourceArray, int sourceIndex, int count, object? value, out int retVal)
+		{
+			retVal = default;
+			return false;
+		}
+
+		static bool TrySZIndexOf (Array sourceArray, int sourceIndex, int count, object? value, out int retVal)
+		{
+			retVal = default;
+			return false;
+		}
+
+		static bool TrySZLastIndexOf (Array sourceArray, int sourceIndex, int count, object? value, out int retVal)
+		{
+			retVal = default;
+			return false;
+		}
+
+		static bool TrySZReverse (Array array, int index, int count) => false;
+
+		static bool TrySZSort (Array keys, Array? items, int left, int right) => false;
+
 		public int GetUpperBound (int dimension)
 		{
 			return GetLowerBound (dimension) + GetLength (dimension) - 1;
