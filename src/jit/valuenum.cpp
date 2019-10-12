@@ -6496,7 +6496,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
                     else
                     {
                         assert(lhs->OperGet() == GT_IND);
-                        lhsAddr = lhs->gtOp.gtOp1;
+                        lhsAddr = lhs->AsOp()->gtOp1;
                     }
 
                     // For addr-of-local expressions, lib/cons shouldn't matter.
@@ -6835,7 +6835,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                             // Make sure we have either case 1 or case 2
                             //
                             GenTree* nextNode = lcl->gtNext;
-                            assert((nextNode->gtOper == GT_ADDR && nextNode->gtOp.gtOp1 == lcl) ||
+                            assert((nextNode->gtOper == GT_ADDR && nextNode->AsOp()->gtOp1 == lcl) ||
                                    varTypeIsStruct(lcl->TypeGet()));
 
                             // We will assign a unique value number for these
@@ -7038,8 +7038,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
         if ((oper == GT_ASG) && !varTypeIsStruct(tree))
         {
-            GenTree* lhs = tree->gtOp.gtOp1;
-            GenTree* rhs = tree->gtOp.gtOp2;
+            GenTree* lhs = tree->AsOp()->gtOp1;
+            GenTree* rhs = tree->AsOp()->gtOp2;
 
             ValueNumPair rhsVNPair = rhs->gtVNPair;
 
@@ -7099,7 +7099,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             while (lhsCommaIter->OperGet() == GT_COMMA)
             {
                 lhsCommaIter->gtVNPair.SetBoth(vnStore->VNForVoid());
-                lhsCommaIter = lhsCommaIter->gtOp.gtOp2;
+                lhsCommaIter = lhsCommaIter->AsOp()->gtOp2;
             }
             lhs = lhs->gtEffectiveVal();
 
@@ -7257,7 +7257,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lhs->TypeGet()));
                     }
 
-                    GenTree* arg = lhs->gtOp.gtOp1;
+                    GenTree* arg = lhs->AsOp()->gtOp1;
 
                     // Indicates whether the argument of the IND is the address of a local.
                     bool wasLocal = false;
@@ -7612,7 +7612,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
         else if (oper == GT_ADDR)
         {
             // We have special representations for byrefs to lvalues.
-            GenTree* arg = tree->gtOp.gtOp1;
+            GenTree* arg = tree->AsOp()->gtOp1;
             if (arg->OperIsLocal())
             {
                 FieldSeqNode* fieldSeq = nullptr;
@@ -7648,7 +7648,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 if (GetZeroOffsetFieldMap()->Lookup(tree, &zeroOffsetFieldSeq) &&
                     (zeroOffsetFieldSeq != FieldSeqStore::NotAField()))
                 {
-                    ValueNum addrExtended = vnStore->ExtendPtrVN(arg->gtOp.gtOp1, zeroOffsetFieldSeq);
+                    ValueNum addrExtended = vnStore->ExtendPtrVN(arg->AsOp()->gtOp1, zeroOffsetFieldSeq);
                     if (addrExtended != ValueNumStore::NoVN)
                     {
                         tree->gtVNPair.SetBoth(addrExtended); // We don't care about lib/cons differences for addresses.
@@ -7942,23 +7942,24 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             {
                 if (GenTree::OperIsUnary(oper))
                 {
-                    if (tree->gtOp.gtOp1 != nullptr)
+                    if (tree->AsOp()->gtOp1 != nullptr)
                     {
                         if (tree->OperGet() == GT_NOP)
                         {
                             // Pass through arg vn.
-                            tree->gtVNPair = tree->gtOp.gtOp1->gtVNPair;
+                            tree->gtVNPair = tree->AsOp()->gtOp1->gtVNPair;
                         }
                         else
                         {
                             ValueNumPair op1VNP;
                             ValueNumPair op1VNPx;
-                            vnStore->VNPUnpackExc(tree->gtOp.gtOp1->gtVNPair, &op1VNP, &op1VNPx);
+                            vnStore->VNPUnpackExc(tree->AsOp()->gtOp1->gtVNPair, &op1VNP, &op1VNPx);
 
                             // If we are fetching the array length for an array ref that came from global memory
                             // then for CSE safety we must use the conservative value number for both
                             //
-                            if ((tree->OperGet() == GT_ARR_LENGTH) && ((tree->gtOp.gtOp1->gtFlags & GTF_GLOB_REF) != 0))
+                            if ((tree->OperGet() == GT_ARR_LENGTH) &&
+                                ((tree->AsOp()->gtOp1->gtFlags & GTF_GLOB_REF) != 0))
                             {
                                 // use the conservative value number for both when computing the VN for the ARR_LENGTH
                                 op1VNP.SetBoth(op1VNP.GetConservative());
@@ -7985,14 +7986,14 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     assert(GenTree::OperIsBinary(oper));
                     // Standard binary operator.
                     ValueNumPair op2VNPair;
-                    if (tree->gtOp.gtOp2 == nullptr)
+                    if (tree->AsOp()->gtOp2 == nullptr)
                     {
                         // Handle any GT_LIST nodes as they can have a nullptr for op2.
                         op2VNPair.SetBoth(ValueNumStore::VNForNull());
                     }
                     else
                     {
-                        op2VNPair = tree->gtOp.gtOp2->gtVNPair;
+                        op2VNPair = tree->AsOp()->gtOp2->gtVNPair;
                     }
 
                     // Handle a few special cases: if we add a field offset constant to a PtrToXXX, we will get back a
@@ -8001,7 +8002,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                     ValueNumPair op1vnp;
                     ValueNumPair op1Xvnp;
-                    vnStore->VNPUnpackExc(tree->gtOp.gtOp1->gtVNPair, &op1vnp, &op1Xvnp);
+                    vnStore->VNPUnpackExc(tree->AsOp()->gtOp1->gtVNPair, &op1vnp, &op1Xvnp);
 
                     ValueNumPair op2vnp;
                     ValueNumPair op2Xvnp;
@@ -8014,7 +8015,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     //
                     if ((oper == GT_ADD) && (!tree->gtOverflowEx()))
                     {
-                        newVN = vnStore->ExtendPtrVN(tree->gtOp.gtOp1, tree->gtOp.gtOp2);
+                        newVN = vnStore->ExtendPtrVN(tree->AsOp()->gtOp1, tree->AsOp()->gtOp2);
                     }
 
                     if (newVN != ValueNumStore::NoVN)
@@ -8042,7 +8043,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     {
                         ValueNumPair op1vnp;
                         ValueNumPair op1Xvnp;
-                        vnStore->VNPUnpackExc(tree->gtOp.gtOp1->gtVNPair, &op1vnp, &op1Xvnp);
+                        vnStore->VNPUnpackExc(tree->AsOp()->gtOp1->gtVNPair, &op1vnp, &op1Xvnp);
                         ValueNumPair op2vnp;
                         ValueNumPair op2Xvnp = ValueNumStore::VNPForEmptyExcSet();
                         GenTree*     op2     = tree->gtGetOp2();
@@ -8071,7 +8072,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         // But we do persist any execeptions produced by op1
                         //
                         tree->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(),
-                                                             vnStore->VNPExceptionSet(tree->gtOp.gtOp1->gtVNPair));
+                                                             vnStore->VNPExceptionSet(tree->AsOp()->gtOp1->gtVNPair));
                         // The exception set with VNF_NullPtrExc will be added below
                         // by fgValueNumberAddExceptionSet
                     }
@@ -8089,8 +8090,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                         assert(tree->OperIsImplicitIndir()); // special node with an implicit indirections
 
-                        GenTree* addr = tree->gtOp.gtOp1; // op1
-                        GenTree* data = tree->gtOp.gtOp2; // op2
+                        GenTree* addr = tree->AsOp()->gtOp1; // op1
+                        GenTree* data = tree->AsOp()->gtOp2; // op2
 
                         ValueNumPair vnpExcSet = ValueNumStore::VNPForEmptyExcSet();
 
@@ -8244,11 +8245,11 @@ void Compiler::fgValueNumberIntrinsic(GenTree* tree)
     ValueNumPair      arg0VNPx = ValueNumStore::VNPForEmptyExcSet();
     ValueNumPair      arg1VNPx = ValueNumStore::VNPForEmptyExcSet();
 
-    vnStore->VNPUnpackExc(intrinsic->gtOp.gtOp1->gtVNPair, &arg0VNP, &arg0VNPx);
+    vnStore->VNPUnpackExc(intrinsic->AsOp()->gtOp1->gtVNPair, &arg0VNP, &arg0VNPx);
 
-    if (intrinsic->gtOp.gtOp2 != nullptr)
+    if (intrinsic->AsOp()->gtOp2 != nullptr)
     {
-        vnStore->VNPUnpackExc(intrinsic->gtOp.gtOp2->gtVNPair, &arg1VNP, &arg1VNPx);
+        vnStore->VNPUnpackExc(intrinsic->AsOp()->gtOp2->gtVNPair, &arg1VNP, &arg1VNPx);
     }
 
     if (IsMathIntrinsic(intrinsic->gtIntrinsicId))
@@ -8256,7 +8257,7 @@ void Compiler::fgValueNumberIntrinsic(GenTree* tree)
         // GT_INTRINSIC is a currently a subtype of binary operators. But most of
         // the math intrinsics are actually unary operations.
 
-        if (intrinsic->gtOp.gtOp2 == nullptr)
+        if (intrinsic->AsOp()->gtOp2 == nullptr)
         {
             intrinsic->gtVNPair =
                 vnStore->VNPWithExc(vnStore->EvalMathFuncUnary(tree->TypeGet(), intrinsic->gtIntrinsicId, arg0VNP),
@@ -8290,7 +8291,7 @@ void Compiler::fgValueNumberCastTree(GenTree* tree)
 {
     assert(tree->OperGet() == GT_CAST);
 
-    ValueNumPair srcVNPair        = tree->gtOp.gtOp1->gtVNPair;
+    ValueNumPair srcVNPair        = tree->AsOp()->gtOp1->gtVNPair;
     var_types    castToType       = tree->CastToType();
     var_types    castFromType     = tree->CastFromType();
     bool         srcIsUnsigned    = ((tree->gtFlags & GTF_UNSIGNED) != 0);
@@ -9158,7 +9159,7 @@ void Compiler::fgValueNumberAddExceptionSetForDivision(GenTree* tree)
     genTreeOps oper = tree->OperGet();
 
     // A Divide By Zero exception may be possible.
-    // The divisor is held in tree->gtOp.gtOp2
+    // The divisor is held in tree->AsOp()->gtOp2
     //
     bool isUnsignedOper         = (oper == GT_UDIV) || (oper == GT_UMOD);
     bool needDivideByZeroExcLib = true;
@@ -9171,7 +9172,7 @@ void Compiler::fgValueNumberAddExceptionSetForDivision(GenTree* tree)
     assert((typ == TYP_INT) || (typ == TYP_LONG));
 
     // Retrieve the Norm VN for op2 to use it for the DivideByZeroExc
-    ValueNumPair vnpOp2Norm   = vnStore->VNPNormalPair(tree->gtOp.gtOp2->gtVNPair);
+    ValueNumPair vnpOp2Norm   = vnStore->VNPNormalPair(tree->AsOp()->gtOp2->gtVNPair);
     ValueNum     vnOp2NormLib = vnpOp2Norm.GetLiberal();
     ValueNum     vnOp2NormCon = vnpOp2Norm.GetConservative();
 
@@ -9231,7 +9232,7 @@ void Compiler::fgValueNumberAddExceptionSetForDivision(GenTree* tree)
     }
 
     // Retrieve the Norm VN for op1 to use it for the ArithmeticExc
-    ValueNumPair vnpOp1Norm   = vnStore->VNPNormalPair(tree->gtOp.gtOp1->gtVNPair);
+    ValueNumPair vnpOp1Norm   = vnStore->VNPNormalPair(tree->AsOp()->gtOp1->gtVNPair);
     ValueNum     vnOp1NormLib = vnpOp1Norm.GetLiberal();
     ValueNum     vnOp1NormCon = vnpOp1Norm.GetConservative();
 

@@ -28,7 +28,7 @@ Compiler::fgWalkResult Compiler::optAddCopiesCallback(GenTree** pTree, fgWalkDat
 
     if (tree->OperIs(GT_ASG))
     {
-        GenTree*  op1  = tree->gtOp.gtOp1;
+        GenTree*  op1  = tree->AsOp()->gtOp1;
         Compiler* comp = data->compiler;
 
         if ((op1->gtOper == GT_LCL_VAR) && (op1->gtLclVarCommon.GetLclNum() == comp->optAddCopyLclNum))
@@ -447,14 +447,14 @@ void Compiler::optAddCopies()
             noway_assert(optAddCopyAsgnNode);
 
             GenTree* tree = optAddCopyAsgnNode;
-            GenTree* op1  = tree->gtOp.gtOp1;
+            GenTree* op1  = tree->AsOp()->gtOp1;
 
             noway_assert(tree && op1 && tree->OperIs(GT_ASG) && (op1->gtOper == GT_LCL_VAR) &&
                          (op1->gtLclVarCommon.GetLclNum() == lclNum));
 
             /* Assign the old expression into the new temp */
 
-            GenTree* newAsgn = gtNewTempAssign(copyLclNum, tree->gtOp.gtOp2);
+            GenTree* newAsgn = gtNewTempAssign(copyLclNum, tree->AsOp()->gtOp2);
 
             /* Copy the new temp to op1 */
 
@@ -465,8 +465,8 @@ void Compiler::optAddCopies()
             tree->gtBashToNOP();
             tree->ChangeOper(GT_COMMA);
 
-            tree->gtOp.gtOp1 = newAsgn;
-            tree->gtOp.gtOp2 = copyAsgn;
+            tree->AsOp()->gtOp1 = newAsgn;
+            tree->AsOp()->gtOp2 = copyAsgn;
 
             tree->gtFlags |= (newAsgn->gtFlags & GTF_ALL_EFFECT);
             tree->gtFlags |= (copyAsgn->gtFlags & GTF_ALL_EFFECT);
@@ -987,7 +987,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
 
             if (op2->gtOper == GT_IND)
             {
-                op2                = op2->gtOp.gtOp1;
+                op2                = op2->AsOp()->gtOp1;
                 assertion.op2.kind = O2K_IND_CNS_INT;
             }
             else
@@ -1024,7 +1024,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             /* Skip over a GT_COMMA node(s), if necessary */
             while (op2->gtOper == GT_COMMA)
             {
-                op2 = op2->gtOp.gtOp2;
+                op2 = op2->AsOp()->gtOp2;
             }
 
             assertion.op1.kind       = O1K_LCLVAR;
@@ -1272,7 +1272,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
     //
     else if (op1->gtOper == GT_IND)
     {
-        op1 = op1->gtOp.gtOp1;
+        op1 = op1->AsOp()->gtOp1;
         //
         // Is this an indirection of a local variable?
         //
@@ -1310,7 +1310,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             // Ngen case
             if (op2->gtOper == GT_IND)
             {
-                if (!optIsTreeKnownIntValue(!optLocalAssertionProp, op2->gtOp.gtOp1, &cnsValue, &iconFlags))
+                if (!optIsTreeKnownIntValue(!optLocalAssertionProp, op2->AsOp()->gtOp1, &cnsValue, &iconFlags))
                 {
                     goto DONE_ASSERTION; // Don't make an assertion
                 }
@@ -1318,13 +1318,13 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                 assertion.assertionKind  = assertionKind;
                 assertion.op2.kind       = O2K_IND_CNS_INT;
                 assertion.op2.u1.iconVal = cnsValue;
-                assertion.op2.vn         = vnStore->VNConservativeNormalValue(op2->gtOp.gtOp1->gtVNPair);
+                assertion.op2.vn         = vnStore->VNConservativeNormalValue(op2->AsOp()->gtOp1->gtVNPair);
 
                 /* iconFlags should only contain bits in GTF_ICON_HDL_MASK */
                 assert((iconFlags & ~GTF_ICON_HDL_MASK) == 0);
                 assertion.op2.u1.iconFlags = iconFlags;
 #ifdef _TARGET_64BIT_
-                if (op2->gtOp.gtOp1->TypeGet() == TYP_LONG)
+                if (op2->AsOp()->gtOp1->TypeGet() == TYP_LONG)
                 {
                     assertion.op2.u1.iconFlags |= 1; // Signify that this is really TYP_LONG
                 }
@@ -1903,7 +1903,7 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
         return NO_ASSERTION_INDEX;
     }
 
-    GenTree* relop = tree->gtOp.gtOp1;
+    GenTree* relop = tree->AsOp()->gtOp1;
     if ((relop->OperKind() & GTK_RELOP) == 0)
     {
         return NO_ASSERTION_INDEX;
@@ -1911,8 +1911,8 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
 
     Compiler::optAssertionKind assertionKind = OAK_INVALID;
 
-    GenTree* op1 = relop->gtOp.gtOp1;
-    GenTree* op2 = relop->gtOp.gtOp2;
+    GenTree* op1 = relop->AsOp()->gtOp1;
+    GenTree* op2 = relop->AsOp()->gtOp2;
 
     AssertionInfo info = optCreateJTrueBoundsAssertion(tree);
     if (info.HasAssertion())
@@ -1948,13 +1948,13 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     }
 
     // Check op1 and op2 for an indirection of a GT_LCL_VAR and keep it in op1.
-    if (((op1->gtOper != GT_IND) || (op1->gtOp.gtOp1->gtOper != GT_LCL_VAR)) &&
-        ((op2->gtOper == GT_IND) && (op2->gtOp.gtOp1->gtOper == GT_LCL_VAR)))
+    if (((op1->gtOper != GT_IND) || (op1->AsOp()->gtOp1->gtOper != GT_LCL_VAR)) &&
+        ((op2->gtOper == GT_IND) && (op2->AsOp()->gtOp1->gtOper == GT_LCL_VAR)))
     {
         jitstd::swap(op1, op2);
     }
     // If op1 is ind, then extract op1's oper.
-    if ((op1->gtOper == GT_IND) && (op1->gtOp.gtOp1->gtOper == GT_LCL_VAR))
+    if ((op1->gtOper == GT_IND) && (op1->AsOp()->gtOp1->gtOper == GT_LCL_VAR))
     {
         return optCreateJtrueAssertions(op1, op2, assertionKind);
     }
@@ -2033,7 +2033,7 @@ AssertionIndex Compiler::optAssertionGenPhiDefn(GenTree* tree)
     // All phi arguments are non-null implies phi rhs is non-null.
     if (isNonNull)
     {
-        return optCreateAssertion(tree->gtOp.gtOp1, nullptr, OAK_NOT_EQUAL);
+        return optCreateAssertion(tree->AsOp()->gtOp1, nullptr, OAK_NOT_EQUAL);
     }
     return NO_ASSERTION_INDEX;
 }
@@ -2067,7 +2067,7 @@ void Compiler::optAssertionGen(GenTree* tree)
             // VN takes care of non local assertions for assignments and data flow.
             if (optLocalAssertionProp)
             {
-                assertionInfo = optCreateAssertion(tree->gtOp.gtOp1, tree->gtOp.gtOp2, OAK_EQUAL);
+                assertionInfo = optCreateAssertion(tree->AsOp()->gtOp1, tree->AsOp()->gtOp2, OAK_EQUAL);
             }
             else
             {
@@ -2129,7 +2129,7 @@ void Compiler::optAssertionGen(GenTree* tree)
                 // This represets an assertion that we would like to prove to be true. It is not actually a true
                 // assertion.
                 // If we can prove this assertion true then we can eliminate this cast.
-                assertionInfo   = optCreateAssertion(tree->gtOp.gtOp1, tree, OAK_SUBRANGE);
+                assertionInfo   = optCreateAssertion(tree->AsOp()->gtOp1, tree, OAK_SUBRANGE);
                 assertionProven = false;
             }
             break;
@@ -2327,7 +2327,7 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
             {
                 continue;
             }
-            methodTableArg = methodTableArg->gtOp.gtOp1;
+            methodTableArg = methodTableArg->AsOp()->gtOp1;
         }
         else if (curAssertion->op2.kind != O2K_CONST_INT)
         {
@@ -3078,8 +3078,8 @@ GenTree* Compiler::optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* 
 GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt)
 {
     GenTree* newTree = tree;
-    GenTree* op1     = tree->gtOp.gtOp1;
-    GenTree* op2     = tree->gtOp.gtOp2;
+    GenTree* op1     = tree->AsOp()->gtOp1;
+    GenTree* op2     = tree->AsOp()->gtOp2;
 
     // Look for assertions of the form (tree EQ/NE 0)
     AssertionIndex index = optGlobalAssertionIsEqualOrNotEqualZero(assertions, tree);
@@ -3299,8 +3299,8 @@ GenTree* Compiler::optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenT
 {
     assert(tree->OperGet() == GT_EQ || tree->OperGet() == GT_NE);
 
-    GenTree* op1 = tree->gtOp.gtOp1;
-    GenTree* op2 = tree->gtOp.gtOp2;
+    GenTree* op1 = tree->AsOp()->gtOp1;
+    GenTree* op2 = tree->AsOp()->gtOp2;
 
     // For Local AssertionProp we only can fold when op1 is a GT_LCL_VAR
     if (op1->gtOper != GT_LCL_VAR)
@@ -3413,7 +3413,7 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTree* t
     GenTree* lcl = op1;
     while (lcl->gtOper == GT_COMMA)
     {
-        lcl = lcl->gtOp.gtOp2;
+        lcl = lcl->AsOp()->gtOp2;
     }
 
     // If we don't have a cast of a LCL_VAR then bail.
@@ -3470,7 +3470,7 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTree* t
             while (tmp->gtOper == GT_COMMA)
             {
                 tmp->gtType = toType;
-                tmp         = tmp->gtOp.gtOp2;
+                tmp         = tmp->AsOp()->gtOp2;
             }
             noway_assert(tmp == lcl);
             tmp->gtType = toType;
@@ -3527,9 +3527,9 @@ GenTree* Compiler::optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tr
 
     // Check for add of a constant.
     GenTree* op1 = tree->AsIndir()->Addr();
-    if ((op1->gtOper == GT_ADD) && (op1->gtOp.gtOp2->gtOper == GT_CNS_INT))
+    if ((op1->gtOper == GT_ADD) && (op1->AsOp()->gtOp2->gtOper == GT_CNS_INT))
     {
-        op1 = op1->gtOp.gtOp1;
+        op1 = op1->AsOp()->gtOp1;
     }
 
     if (op1->gtOper != GT_LCL_VAR)
@@ -4754,11 +4754,11 @@ GenTree* Compiler::optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test)
     GenTree* sideEffList = optExtractSideEffListFromConst(relop);
 
     // Transform the relop's operands to be both zeroes.
-    ValueNum vnZero             = vnStore->VNZeroForType(TYP_INT);
-    relop->gtOp.gtOp1           = gtNewIconNode(0);
-    relop->gtOp.gtOp1->gtVNPair = ValueNumPair(vnZero, vnZero);
-    relop->gtOp.gtOp2           = gtNewIconNode(0);
-    relop->gtOp.gtOp2->gtVNPair = ValueNumPair(vnZero, vnZero);
+    ValueNum vnZero                = vnStore->VNZeroForType(TYP_INT);
+    relop->AsOp()->gtOp1           = gtNewIconNode(0);
+    relop->AsOp()->gtOp1->gtVNPair = ValueNumPair(vnZero, vnZero);
+    relop->AsOp()->gtOp2           = gtNewIconNode(0);
+    relop->AsOp()->gtOp2->gtVNPair = ValueNumPair(vnZero, vnZero);
 
     // Update the oper and restore the value numbers.
     bool evalsToTrue = (vnStore->CoercedConstantValue<INT64>(vnCns) != 0);

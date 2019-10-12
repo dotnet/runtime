@@ -135,7 +135,7 @@ int LinearScan::BuildShiftLongCarry(GenTree* tree)
     assert(tree->OperGet() == GT_LSH_HI || tree->OperGet() == GT_RSH_LO);
 
     int      srcCount = 2;
-    GenTree* source   = tree->gtOp.gtOp1;
+    GenTree* source   = tree->AsOp()->gtOp1;
     assert((source->OperGet() == GT_LONG) && source->isContained());
 
     GenTree* sourceLo = source->gtGetOp1();
@@ -367,7 +367,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_RSH_LO:
             assert(dstCount == 1);
             srcCount = BuildShiftLongCarry(tree);
-            assert(srcCount == (tree->gtOp.gtOp2->isContained() ? 2 : 3));
+            assert(srcCount == (tree->AsOp()->gtOp2->isContained() ? 2 : 3));
             break;
 
         case GT_RETURNTRAP:
