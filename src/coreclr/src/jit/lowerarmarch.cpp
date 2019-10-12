@@ -398,7 +398,7 @@ void Lowering::LowerCast(GenTree* tree)
     DISPNODE(tree);
     JITDUMP("\n");
 
-    GenTree*  op1     = tree->gtOp.gtOp1;
+    GenTree*  op1     = tree->AsOp()->gtOp1;
     var_types dstType = tree->CastToType();
     var_types srcType = genActualType(op1->TypeGet());
     var_types tmpType = TYP_UNDEF;
@@ -418,7 +418,7 @@ void Lowering::LowerCast(GenTree* tree)
         tmp->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
 
         tree->gtFlags &= ~GTF_UNSIGNED;
-        tree->gtOp.gtOp1 = tmp;
+        tree->AsOp()->gtOp1 = tmp;
         BlockRange().InsertAfter(op1, tmp);
     }
 
@@ -440,9 +440,9 @@ void Lowering::LowerRotate(GenTree* tree)
     if (tree->OperGet() == GT_ROL)
     {
         // There is no ROL instruction on ARM. Convert ROL into ROR.
-        GenTree* rotatedValue        = tree->gtOp.gtOp1;
+        GenTree* rotatedValue        = tree->AsOp()->gtOp1;
         unsigned rotatedValueBitSize = genTypeSize(rotatedValue->gtType) * 8;
-        GenTree* rotateLeftIndexNode = tree->gtOp.gtOp2;
+        GenTree* rotateLeftIndexNode = tree->AsOp()->gtOp2;
 
         if (rotateLeftIndexNode->IsCnsIntOrI())
         {
@@ -454,7 +454,7 @@ void Lowering::LowerRotate(GenTree* tree)
         {
             GenTree* tmp = comp->gtNewOperNode(GT_NEG, genActualType(rotateLeftIndexNode->gtType), rotateLeftIndexNode);
             BlockRange().InsertAfter(rotateLeftIndexNode, tmp);
-            tree->gtOp.gtOp2 = tmp;
+            tree->AsOp()->gtOp2 = tmp;
         }
         tree->ChangeOper(GT_ROR);
     }
@@ -523,7 +523,7 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
 void Lowering::ContainCheckStoreIndir(GenTreeIndir* node)
 {
 #ifdef _TARGET_ARM64_
-    GenTree* src = node->gtOp.gtOp2;
+    GenTree* src = node->AsOp()->gtOp2;
     if (!varTypeIsFloating(src->TypeGet()) && src->IsIntegralConst(0))
     {
         // an integer zero for 'src' can be contained.
@@ -764,7 +764,7 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
         GenTree* op2;
 
         case SIMDIntrinsicInit:
-            op1 = simdNode->gtOp.gtOp1;
+            op1 = simdNode->AsOp()->gtOp1;
             if (op1->IsIntegralConst(0))
             {
                 MakeSrcContained(simdNode, op1);
@@ -787,8 +787,8 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
             //  - the source SIMD struct
             //  - index (which element to get)
             // The result is baseType of SIMD struct.
-            op1 = simdNode->gtOp.gtOp1;
-            op2 = simdNode->gtOp.gtOp2;
+            op1 = simdNode->AsOp()->gtOp1;
+            op2 = simdNode->AsOp()->gtOp2;
 
             // If the index is a constant, mark it as contained.
             if (op2->IsCnsIntOrI())

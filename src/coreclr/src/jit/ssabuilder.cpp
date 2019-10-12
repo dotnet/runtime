@@ -663,11 +663,11 @@ static GenTree* GetPhiNode(BasicBlock* block, unsigned lclNum)
 
         GenTree* tree = stmt->GetRootNode();
 
-        GenTree* phiLhs = tree->gtOp.gtOp1;
+        GenTree* phiLhs = tree->AsOp()->gtOp1;
         assert(phiLhs->OperGet() == GT_LCL_VAR);
         if (phiLhs->gtLclVarCommon.GetLclNum() == lclNum)
         {
-            return tree->gtOp.gtOp2;
+            return tree->AsOp()->gtOp2;
         }
     }
     return nullptr;
@@ -905,7 +905,7 @@ void SsaBuilder::TreeRenameVariables(GenTree* tree, BasicBlock* block, SsaRename
     // can skip these during (at least) value numbering.
     if (tree->OperIs(GT_ASG))
     {
-        GenTree* lhs     = tree->gtOp.gtOp1->gtEffectiveVal(/*commaOnly*/ true);
+        GenTree* lhs     = tree->AsOp()->gtOp1->gtEffectiveVal(/*commaOnly*/ true);
         GenTree* trueLhs = lhs->gtEffectiveVal(/*commaOnly*/ true);
         if (trueLhs->OperIsIndir())
         {
@@ -1079,7 +1079,7 @@ void SsaBuilder::AddDefToHandlerPhis(BasicBlock* block, unsigned lclNum, unsigne
 
                     assert(tree->IsPhiDefn());
 
-                    if (tree->gtOp.gtOp1->gtLclVar.GetLclNum() == lclNum)
+                    if (tree->AsOp()->gtOp1->gtLclVar.GetLclNum() == lclNum)
                     {
                         // It's the definition for the right local.  Add "ssaNum" to the RHS.
                         AddPhiArg(handler, stmt, tree->gtGetOp2()->AsPhi(), lclNum, ssaNum, block);
@@ -1305,7 +1305,7 @@ void SsaBuilder::AssignPhiNodeRhsVariables(BasicBlock* block, SsaRenameState* pR
             GenTree*    tree = stmt->GetRootNode();
             GenTreePhi* phi  = tree->gtGetOp2()->AsPhi();
 
-            unsigned lclNum = tree->gtOp.gtOp1->gtLclVar.GetLclNum();
+            unsigned lclNum = tree->AsOp()->gtOp1->gtLclVar.GetLclNum();
             unsigned ssaNum = pRenameState->Top(lclNum);
             // Search the arglist for an existing definition for ssaNum.
             // (Can we assert that its the head of the list?  This should only happen when we add
@@ -1429,14 +1429,14 @@ void SsaBuilder::AssignPhiNodeRhsVariables(BasicBlock* block, SsaRenameState* pR
                     GenTree* tree = stmt->GetRootNode();
 
                     // Check if the first n of the statements are phi nodes. If not, exit.
-                    if (tree->OperGet() != GT_ASG || tree->gtOp.gtOp2 == nullptr ||
-                        tree->gtOp.gtOp2->OperGet() != GT_PHI)
+                    if (tree->OperGet() != GT_ASG || tree->AsOp()->gtOp2 == nullptr ||
+                        tree->AsOp()->gtOp2->OperGet() != GT_PHI)
                     {
                         break;
                     }
 
                     // Get the phi node from GT_ASG.
-                    GenTree* lclVar = tree->gtOp.gtOp1;
+                    GenTree* lclVar = tree->AsOp()->gtOp1;
                     unsigned lclNum = lclVar->gtLclVar.GetLclNum();
 
                     // If the variable is live-out of "blk", and is therefore live on entry to the try-block-start

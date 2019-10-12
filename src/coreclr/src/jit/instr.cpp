@@ -640,8 +640,8 @@ AGAIN:
 #endif
 
         case GT_COMMA:
-            //     tree->gtOp.gtOp1 - already processed by genCreateAddrMode()
-            tree = tree->gtOp.gtOp2;
+            //     tree->AsOp()->gtOp1 - already processed by genCreateAddrMode()
+            tree = tree->AsOp()->gtOp2;
             goto AGAIN;
 
         default:
@@ -754,8 +754,8 @@ AGAIN:
         break;
 
         case GT_COMMA:
-            //     tree->gtOp.gtOp1 - already processed by genCreateAddrMode()
-            tree = tree->gtOp.gtOp2;
+            //     tree->AsOp()->gtOp1 - already processed by genCreateAddrMode()
+            tree = tree->AsOp()->gtOp2;
             goto AGAIN;
 
         default:
@@ -936,7 +936,7 @@ AGAIN:
             break;
 
         case GT_COMMA:
-            tree = tree->gtOp.gtOp2;
+            tree = tree->AsOp()->gtOp2;
             goto AGAIN;
 
         default:
