@@ -3554,16 +3554,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_FNEG:
 			x86_fchs (code);
 			break;		
-		case OP_SIN:
-			x86_fsin (code);
-			x86_fldz (code);
-			x86_fp_op_reg (code, X86_FADD, 1, TRUE);
-			break;		
-		case OP_COS:
-			x86_fcos (code);
-			x86_fldz (code);
-			x86_fp_op_reg (code, X86_FADD, 1, TRUE);
-			break;		
 		case OP_ABS:
 			x86_fabs (code);
 			break;		
@@ -5589,11 +5579,7 @@ mono_arch_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMetho
 	int opcode = 0;
 
 	if (cmethod->klass == mono_class_try_get_math_class ()) {
-		if (strcmp (cmethod->name, "Sin") == 0) {
-			opcode = OP_SIN;
-		} else if (strcmp (cmethod->name, "Cos") == 0) {
-			opcode = OP_COS;
-		} else if (strcmp (cmethod->name, "Tan") == 0) {
+		if (strcmp (cmethod->name, "Tan") == 0) {
 			opcode = OP_TAN;
 		} else if (strcmp (cmethod->name, "Atan") == 0) {
 			opcode = OP_ATAN;
