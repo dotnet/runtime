@@ -5948,12 +5948,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_sse_xorpd_reg_membase (code, ins->dreg, AMD64_RIP, 0);
 			break;
 		}
-		case OP_SIN:
-			EMIT_SSE2_FPFUNC (code, fsin, ins->dreg, ins->sreg1);
-			break;		
-		case OP_COS:
-			EMIT_SSE2_FPFUNC (code, fcos, ins->dreg, ins->sreg1);
-			break;		
 		case OP_ABS: {
 			static guint64 d = 0x7fffffffffffffffUL;
 
@@ -8678,11 +8672,7 @@ mono_arch_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMetho
 	int opcode = 0;
 
 	if (cmethod->klass == mono_class_try_get_math_class ()) {
-		if (strcmp (cmethod->name, "Sin") == 0) {
-			opcode = OP_SIN;
-		} else if (strcmp (cmethod->name, "Cos") == 0) {
-			opcode = OP_COS;
-		} else if (strcmp (cmethod->name, "Sqrt") == 0) {
+		if (strcmp (cmethod->name, "Sqrt") == 0) {
 			opcode = OP_SQRT;
 		} else if (strcmp (cmethod->name, "Abs") == 0 && fsig->params [0]->type == MONO_TYPE_R8) {
 			opcode = OP_ABS;

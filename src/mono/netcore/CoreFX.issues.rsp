@@ -471,30 +471,6 @@
 -nomethod System.Runtime.InteropServices.Tests.StructureToPtrTests.StructureToPtr_InvalidLengthByValArrayInStruct_ThrowsArgumentException
 
 ####################################################################
-##  System.Runtime.Numerics.Tests
-####################################################################
-
-# Expected vs Actual are pretty different
-# https://github.com/mono/mono/issues/15106
--nomethod System.Numerics.Tests.ComplexTests.Sin_Advanced
-
-# Same as above
-# https://github.com/mono/mono/issues/15107
--nomethod System.Numerics.Tests.ComplexTests.Sinh_Advanced
-
-# Same as above
-# https://github.com/mono/mono/issues/15108
--nomethod System.Numerics.Tests.ComplexTests.Cos_Advanced
-
-# Same as above
-# https://github.com/mono/mono/issues/15109
--nomethod System.Numerics.Tests.ComplexTests.Cosh_Advanced
-
-# Same as above
-# https://github.com/mono/mono/issues/15110
--nomethod System.Numerics.Tests.ComplexTests.Exp
-
-####################################################################
 ##  System.Runtime.Serialization.Formatters.Tests
 ####################################################################
 
