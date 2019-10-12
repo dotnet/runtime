@@ -121,11 +121,17 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         {
             var serviceCollection = new ServiceCollection();
             serviceCollection.AddSingleton<IFakeService, FakeService>();
-            serviceCollection.AddSingleton<ClassWithServiceAndOptionalArgsCtorWithStructs>();
+            serviceCollection.AddTransient<ClassWithServiceAndOptionalArgsCtorWithStructs>();
 
             var provider = CreateServiceProvider(serviceCollection);
-            var service = provider.GetService<ClassWithServiceAndOptionalArgsCtorWithStructs>();
-            Assert.NotNull(service);
+
+            for (int i = 0; i < 100; i++)
+            {
+                var service = provider.GetService<ClassWithServiceAndOptionalArgsCtorWithStructs>();
+
+                Assert.NotNull(service);
+                Assert.Equal(default, service.DateTimeDefault);
+            }
         }
 
         [Fact]
