@@ -652,6 +652,7 @@
     <Compile Include="uap\System\Net\CookieHelper.cs" />
     <Compile Include="uap\System\Net\HttpHandlerToFilter.cs" />
     <Compile Include="System\Net\Http\HttpClientHandler.Core.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpNoProxy.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SystemProxyInfo.uap.cs" />
     <Compile Include="uap\System\Net\HttpClientHandler.cs" />
   </ItemGroup>
