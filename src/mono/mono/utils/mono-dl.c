@@ -23,7 +23,7 @@
 #include <glib.h>
 
 // Contains LIBC_SO definition
-#ifdef HAVE_GNU_LIBNAMES_H
+#ifdef HAVE_GNU_LIB_NAMES_H
 #include <gnu/lib-names.h>
 #endif
 
