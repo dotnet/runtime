@@ -17,11 +17,7 @@ namespace System.Net.Http
 {
     internal sealed class MacProxy : IWebProxy
     {
-        public ICredentials Credentials
-        {
-            get => null;
-            set => throw new NotSupportedException();
-        }
+        public ICredentials Credentials { get; set; }
 
         private static Uri GetProxyUri(string scheme, CFProxy proxy)
         {

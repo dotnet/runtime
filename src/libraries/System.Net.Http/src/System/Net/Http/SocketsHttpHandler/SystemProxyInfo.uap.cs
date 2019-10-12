@@ -6,10 +6,10 @@ namespace System.Net.Http
 {
     internal static partial class SystemProxyInfo
     {
-        // For UAP this is currently not implemented.
         public static IWebProxy ConstructSystemProxy()
         {
-            throw new PlatformNotSupportedException();
+            // For UAP this is currently not implemented.
+            return new HttpNoProxy();
         }
     }
 }
