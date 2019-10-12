@@ -8,6 +8,8 @@ namespace Microsoft.Extensions.DependencyInjection.Tests.Fakes
 {
     public class ClassWithServiceAndOptionalArgsCtorWithStructs
     {
+        public DateTime DateTimeDefault { get; }
+
         public ClassWithServiceAndOptionalArgsCtorWithStructs(IFakeService fake,
             DateTime dateTime = new DateTime(),
             DateTime dateTimeDefault = default(DateTime),
@@ -21,6 +23,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests.Fakes
             CustomStruct customStructDefault = default(CustomStruct)
         )
         {
+            DateTimeDefault = dateTimeDefault;
         }
 
         public struct CustomStruct { }
