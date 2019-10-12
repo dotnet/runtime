@@ -355,7 +355,7 @@ void CodeGen::genLclHeap(GenTree* tree)
     assert(tree->OperGet() == GT_LCLHEAP);
     assert(compiler->compLocallocUsed);
 
-    GenTree* size = tree->gtOp.gtOp1;
+    GenTree* size = tree->AsOp()->gtOp1;
     noway_assert((genActualType(size->gtType) == TYP_INT) || (genActualType(size->gtType) == TYP_I_IMPL));
 
     // Result of localloc will be returned in regCnt.
@@ -604,8 +604,8 @@ BAILOUT:
 void CodeGen::genTableBasedSwitch(GenTree* treeNode)
 {
     genConsumeOperands(treeNode->AsOp());
-    regNumber idxReg  = treeNode->gtOp.gtOp1->GetRegNum();
-    regNumber baseReg = treeNode->gtOp.gtOp2->GetRegNum();
+    regNumber idxReg  = treeNode->AsOp()->gtOp1->GetRegNum();
+    regNumber baseReg = treeNode->AsOp()->gtOp2->GetRegNum();
 
     GetEmitter()->emitIns_R_ARX(INS_ldr, EA_4BYTE, REG_PC, baseReg, idxReg, TARGET_POINTER_SIZE, 0);
 }
@@ -891,7 +891,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
 //
 // Assumptions:
 //    a) All GenTrees are register allocated.
-//    b) The shift-by-amount in tree->gtOp.gtOp2 is a contained constant
+//    b) The shift-by-amount in tree->AsOp()->gtOp2 is a contained constant
 //
 void CodeGen::genCodeForShiftLong(GenTree* tree)
 {
@@ -899,10 +899,10 @@ void CodeGen::genCodeForShiftLong(GenTree* tree)
     genTreeOps oper = tree->OperGet();
     assert(oper == GT_LSH_HI || oper == GT_RSH_LO);
 
-    GenTree* operand = tree->gtOp.gtOp1;
+    GenTree* operand = tree->AsOp()->gtOp1;
     assert(operand->OperGet() == GT_LONG);
-    assert(operand->gtOp.gtOp1->isUsedFromReg());
-    assert(operand->gtOp.gtOp2->isUsedFromReg());
+    assert(operand->AsOp()->gtOp1->isUsedFromReg());
+    assert(operand->AsOp()->gtOp2->isUsedFromReg());
 
     GenTree* operandLo = operand->gtGetOp1();
     GenTree* operandHi = operand->gtGetOp2();
@@ -1149,7 +1149,7 @@ void CodeGen::genCkfinite(GenTree* treeNode)
     emitter*  emit       = GetEmitter();
     var_types targetType = treeNode->TypeGet();
     regNumber intReg     = treeNode->GetSingleTempReg();
-    regNumber fpReg      = genConsumeReg(treeNode->gtOp.gtOp1);
+    regNumber fpReg      = genConsumeReg(treeNode->AsOp()->gtOp1);
     regNumber targetReg  = treeNode->GetRegNum();
 
     // Extract and sign-extend the exponent into an integer register
@@ -1423,7 +1423,7 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     regNumber targetReg = treeNode->GetRegNum();
     assert(genIsValidFloatReg(targetReg));
 
-    GenTree* op1 = treeNode->gtOp.gtOp1;
+    GenTree* op1 = treeNode->AsOp()->gtOp1;
     assert(!op1->isContained());                // Cannot be contained
     assert(genIsValidIntReg(op1->GetRegNum())); // Must be a valid int reg.
 
@@ -1488,7 +1488,7 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
     regNumber targetReg = treeNode->GetRegNum();
     assert(genIsValidIntReg(targetReg)); // Must be a valid int reg.
 
-    GenTree* op1 = treeNode->gtOp.gtOp1;
+    GenTree* op1 = treeNode->AsOp()->gtOp1;
     assert(!op1->isContained());                  // Cannot be contained
     assert(genIsValidFloatReg(op1->GetRegNum())); // Must be a valid float reg.
 

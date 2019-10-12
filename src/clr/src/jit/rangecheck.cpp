@@ -197,7 +197,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
     }
 
     // If we are not looking at array bounds check, bail.
-    GenTree* tree = treeParent->gtOp.gtOp1;
+    GenTree* tree = treeParent->AsOp()->gtOp1;
     if (!tree->OperIsBoundsCheck())
     {
         return;

@@ -243,7 +243,7 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree)
 
     if (tree->OperGet() == GT_ARR_LENGTH)
     {
-        objectRefPtr = tree->gtOp.gtOp1;
+        objectRefPtr = tree->AsOp()->gtOp1;
         propKind     = optPropKind::OPK_ARRAYLEN;
     }
     else if (tree->OperIsIndir())

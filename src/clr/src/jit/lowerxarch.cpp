@@ -530,7 +530,7 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
     bool haveLocalAddr = false;
     if ((src->OperGet() == GT_OBJ) || (src->OperGet() == GT_IND))
     {
-        srcAddr = src->gtOp.gtOp1;
+        srcAddr = src->AsOp()->gtOp1;
         assert(srcAddr != nullptr);
         haveLocalAddr = srcAddr->OperIsLocalAddr();
     }
@@ -688,7 +688,7 @@ void Lowering::LowerCast(GenTree* tree)
         tmp->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
 
         tree->gtFlags &= ~GTF_UNSIGNED;
-        tree->gtOp.gtOp1 = tmp;
+        tree->AsOp()->gtOp1 = tmp;
         BlockRange().InsertAfter(castOp, tmp);
         ContainCheckCast(tmp->AsCast());
     }
@@ -1626,7 +1626,7 @@ void Lowering::ContainCheckStoreIndir(GenTreeIndir* node)
     // If the source is a containable immediate, make it contained, unless it is
     // an int-size or larger store of zero to memory, because we can generate smaller code
     // by zeroing a register and then storing it.
-    GenTree* src = node->gtOp.gtOp2;
+    GenTree* src = node->AsOp()->gtOp2;
     if (IsContainableImmed(node, src) &&
         (!src->IsIntegralConst(0) || varTypeIsSmall(node) || node->gtGetOp1()->OperGet() == GT_CLS_VAR_ADDR))
     {
@@ -1656,8 +1656,8 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
         return;
     }
 
-    GenTree* op1 = node->gtOp.gtOp1;
-    GenTree* op2 = node->gtOp.gtOp2;
+    GenTree* op1 = node->AsOp()->gtOp1;
+    GenTree* op2 = node->AsOp()->gtOp2;
 
     bool isSafeToContainOp1 = true;
     bool isSafeToContainOp2 = true;
@@ -1972,8 +1972,8 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 {
     assert(cmp->OperIsCompare() || cmp->OperIs(GT_CMP));
 
-    GenTree*  op1     = cmp->gtOp.gtOp1;
-    GenTree*  op2     = cmp->gtOp.gtOp2;
+    GenTree*  op1     = cmp->AsOp()->gtOp1;
+    GenTree*  op2     = cmp->AsOp()->gtOp2;
     var_types op1Type = op1->TypeGet();
     var_types op2Type = op2->TypeGet();
 
@@ -2396,7 +2396,7 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
 
         case SIMDIntrinsicInit:
         {
-            op1 = simdNode->gtOp.gtOp1;
+            op1 = simdNode->AsOp()->gtOp1;
 #ifndef _TARGET_64BIT_
             if (op1->OperGet() == GT_LONG)
             {
@@ -2454,8 +2454,8 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
             //  - the source SIMD struct
             //  - index (which element to get)
             // The result is baseType of SIMD struct.
-            op1 = simdNode->gtOp.gtOp1;
-            op2 = simdNode->gtOp.gtOp2;
+            op1 = simdNode->AsOp()->gtOp1;
+            op2 = simdNode->AsOp()->gtOp2;
 
             if (op1->OperGet() == GT_IND)
             {
@@ -2478,8 +2478,8 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
 
         case SIMDIntrinsicShuffleSSE2:
             // Second operand is an integer constant and marked as contained.
-            assert(simdNode->gtOp.gtOp2->IsCnsIntOrI());
-            MakeSrcContained(simdNode, simdNode->gtOp.gtOp2);
+            assert(simdNode->AsOp()->gtOp2->IsCnsIntOrI());
+            MakeSrcContained(simdNode, simdNode->AsOp()->gtOp2);
             break;
 
         default:
@@ -3038,11 +3038,11 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     GenTree** pAddr = nullptr;
                     if ((intrinsicId == NI_AVX_MaskLoad) || (intrinsicId == NI_AVX2_MaskLoad))
                     {
-                        pAddr = &node->gtOp.gtOp1;
+                        pAddr = &node->AsOp()->gtOp1;
                     }
                     else
                     {
-                        pAddr = &node->gtOp.gtOp2;
+                        pAddr = &node->AsOp()->gtOp2;
                     }
                     ContainCheckHWIntrinsicAddr(node, pAddr);
                     break;
@@ -3242,7 +3242,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 case HW_Category_MemoryStore:
                 {
-                    GenTree** pAddr = &node->gtOp.gtOp1->gtOp.gtOp1;
+                    GenTree** pAddr = &node->AsOp()->gtOp1->AsOp()->gtOp1;
                     ContainCheckHWIntrinsicAddr(node, pAddr);
                     break;
                 }

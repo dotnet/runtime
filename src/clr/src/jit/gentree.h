@@ -342,8 +342,7 @@ struct GenTree
     GenTree##fn& As##fn##Ref()                                                                                         \
     {                                                                                                                  \
         return *As##fn();                                                                                              \
-    }                                                                                                                  \
-    __declspec(property(get = As##fn##Ref)) GenTree##fn& gt##fn;
+    }
 
 #define GTSTRUCT_N(fn, ...)                                                                                            \
     GenTree##fn* As##fn()                                                                                              \
@@ -2711,7 +2710,7 @@ public:
 // used as a base class.  For unary operators, we instantiate GenTreeOp, with a NULL second
 // argument.  We check that this is true dynamically.  We could tighten this and get static
 // checking, but that would entail accessing the first child of a unary operator via something
-// like gtUnOp.gtOp1 instead of gtOp.gtOp1.
+// like gtUnOp.gtOp1 instead of AsOp()->gtOp1.
 struct GenTreeUnOp : public GenTree
 {
     GenTree* gtOp1;
@@ -6377,7 +6376,7 @@ struct GenTreeCC final : public GenTree
 
 inline bool GenTree::OperIsBlkOp()
 {
-    return ((gtOper == GT_ASG) && varTypeIsStruct(gtOp.gtOp1)) || (OperIsBlk() && (AsBlk()->Data() != nullptr));
+    return ((gtOper == GT_ASG) && varTypeIsStruct(AsOp()->gtOp1)) || (OperIsBlk() && (AsBlk()->Data() != nullptr));
 }
 
 inline bool GenTree::OperIsDynBlkOp()
@@ -6509,7 +6508,7 @@ inline bool GenTree::IsSIMDEqualityOrInequality() const
 inline GenTree* GenTree::MoveNext()
 {
     assert(OperIsAnyList());
-    return gtOp.gtOp2;
+    return AsOp()->gtOp2;
 }
 
 #ifdef DEBUG
@@ -6563,13 +6562,13 @@ inline bool GenTree::IsValidCallArgument()
 inline GenTree* GenTree::Current()
 {
     assert(OperIsAnyList());
-    return gtOp.gtOp1;
+    return AsOp()->gtOp1;
 }
 
 inline GenTree** GenTree::pCurrent()
 {
     assert(OperIsAnyList());
-    return &(gtOp.gtOp1);
+    return &(AsOp()->gtOp1);
 }
 
 inline GenTree* GenTree::gtGetOp1() const
@@ -6631,11 +6630,11 @@ inline GenTree* GenTree::gtGetOp2() const
 
 inline GenTree* GenTree::gtGetOp2IfPresent() const
 {
-    /* gtOp.gtOp2 is only valid for GTK_BINOP nodes. */
+    /* AsOp()->gtOp2 is only valid for GTK_BINOP nodes. */
 
     GenTree* op2 = OperIsBinary() ? AsOp()->gtOp2 : nullptr;
 
-    // This documents the genTreeOps for which gtOp.gtOp2 cannot be nullptr.
+    // This documents the genTreeOps for which AsOp()->gtOp2 cannot be nullptr.
     // This helps prefix in its analysis of code which calls gtGetOp2()
 
     assert((op2 != nullptr) || !RequiresNonNullOp2(gtOper));
@@ -6650,11 +6649,11 @@ inline GenTree* GenTree::gtEffectiveVal(bool commaOnly)
     {
         if (effectiveVal->gtOper == GT_COMMA)
         {
-            effectiveVal = effectiveVal->gtOp.gtOp2;
+            effectiveVal = effectiveVal->AsOp()->gtOp2;
         }
-        else if (!commaOnly && (effectiveVal->gtOper == GT_NOP) && (effectiveVal->gtOp.gtOp1 != nullptr))
+        else if (!commaOnly && (effectiveVal->gtOper == GT_NOP) && (effectiveVal->AsOp()->gtOp1 != nullptr))
         {
-            effectiveVal = effectiveVal->gtOp.gtOp1;
+            effectiveVal = effectiveVal->AsOp()->gtOp1;
         }
         else
         {
