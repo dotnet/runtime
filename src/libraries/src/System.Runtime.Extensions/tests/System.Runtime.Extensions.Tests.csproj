@@ -105,5 +105,6 @@
     <ProjectReference Include="TestAppOutsideOfTPA\TestAppOutsideOfTPA.csproj" />
     <ProjectReference Include="VoidMainWithExitCodeApp\VoidMainWithExitCodeApp.csproj" />
     <ProjectReference Include="TestApp\TestApp.csproj" />
+    <ProjectReference Include="TargetFrameworkNameTestApp\TargetFrameworkNameTestApp.csproj" Condition="'$(TargetsNetCoreApp)' == 'true'" />
   </ItemGroup>
 </Project>

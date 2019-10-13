@@ -41,17 +41,20 @@ namespace System.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Corefx has limitations to build a UWP executable that can be launched directly using Process.Start")]
         public void TargetFrameworkTest()
         {
-            string targetFrameworkName = ".NETCoreApp,Version=v2.1";
-            if (PlatformDetection.IsInAppContainer)
-            {
-                targetFrameworkName = ".NETCore,Version=v5.0";
-            }
+            const int ExpectedExitCode = 0;
+            const string AppName = "TargetFrameworkNameTestApp.dll";
+            var psi = new ProcessStartInfo();
+            psi.FileName = RemoteExecutor.HostRunner;
+            psi.Arguments = $"{AppName} {ExpectedExitCode}";
 
-            RemoteExecutor.Invoke((_targetFrameworkName) => {
-                Assert.Contains(_targetFrameworkName, AppContext.TargetFrameworkName);
-            }, targetFrameworkName).Dispose();
+            using (Process p = Process.Start(psi))
+            {
+                p.WaitForExit();
+                Assert.Equal(ExpectedExitCode, p.ExitCode);
+            }
         }
 
         [Fact]
