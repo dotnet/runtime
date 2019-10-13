@@ -55,7 +55,7 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
                     RuntimeFlavor.CoreClr,
                     RuntimeArchitecture.x64)
                 {
-                    TargetFramework = Tfm.NetCoreApp30,
+                    TargetFramework = Tfm.NetCoreApp31,
                     ApplicationType = ApplicationType.Portable,
                     PublishApplicationBeforeDeployment = true,
                     StatusMessagesEnabled = false

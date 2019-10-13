@@ -1,12 +1,10 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
-namespace Microsoft.Extensions.Logging.Testing
+namespace Microsoft.AspNetCore.Testing
 {
-    public class RepeatContext
+    public class TestAssemblyFixture
     {
-        internal int Limit { get; set; }
-
-        internal int CurrentIteration { get; set; }
+        public int Count { get; set; }
     }
 }

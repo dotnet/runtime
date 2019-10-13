@@ -4,12 +4,11 @@
 using System;
 using System.ComponentModel;
 
-namespace Microsoft.Extensions.Logging.Testing
+namespace Microsoft.AspNetCore.Testing
 {
     /// <summary>
     /// Runs a test multiple times to stress flaky tests that are believed to be fixed.
-    /// This can be used on an assembly, class, or method name.
-    /// Requires using <see cref="LoggedTest"/> to run.
+    /// This can be used on an assembly, class, or method name. Requires using the AspNetCore test framework.
     /// </summary>
     [EditorBrowsable(EditorBrowsableState.Never)]
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class | AttributeTargets.Assembly, AllowMultiple = false)]
