@@ -242,7 +242,7 @@ namespace Mono.Linker.Steps {
 					// type forwarders to deleted assembly (facade) when
 					// facade assemblies are not kept. For that reason we need to
 					// rewrite the copy to save to update the scopes not to point
-					// forwardning assembly (facade).
+					// forwarding assembly (facade).
 					//
 					//		foo.dll -> facade.dll    -> lib.dll
 					//		copy    |  copy (delete) |  link

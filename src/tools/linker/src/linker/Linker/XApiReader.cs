@@ -329,7 +329,7 @@ namespace Mono.Linker {
 
 		void ProcessInterfaces (XPathNavigator nav)
 		{
-			ProcessChildren (nav, "intefaces//interface", new OnChildren (OnInterface));
+			ProcessChildren (nav, "interfaces//interface", new OnChildren (OnInterface));
 		}
 
 		void ProcessFields (XPathNavigator nav)

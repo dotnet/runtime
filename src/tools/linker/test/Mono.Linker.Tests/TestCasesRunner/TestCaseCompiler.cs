@@ -375,7 +375,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			if (!installPath.Exists ())
 				Assert.Fail ($"No install found at {installPath}");
 
-			// Do a search for the roslyn directory for a little bit of furture proofing since it normally lives under
+			// Do a search for the roslyn directory for a little bit of future proofing since it normally lives under
 			// a versioned msbuild directory
 			foreach (var roslynDirectory in installPath.Directories ("Roslyn", true)) {
 				var possibleCscPath = roslynDirectory.Combine ("csc.exe");

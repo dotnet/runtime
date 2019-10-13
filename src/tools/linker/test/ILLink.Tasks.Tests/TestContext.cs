@@ -61,7 +61,7 @@ namespace ILLink.Tests
 		///   linker integration packages (hard-coded here) is
 		///   searched for the tasks package. This assumes that only
 		///   one version of the package is present, and uses it to
-		///   unambiguously determine which pacakge to use in the tests.
+		///   unambiguously determine which package to use in the tests.
 		/// </summary>
 		public static void SetupDefaultContext()
 		{

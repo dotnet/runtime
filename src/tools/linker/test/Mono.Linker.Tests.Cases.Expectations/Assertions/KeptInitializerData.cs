@@ -8,9 +8,9 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions {
 		{
 		}
 		
-		public KeptInitializerData (int occuranceIndexInBody)
+		public KeptInitializerData (int occurrenceIndexInBody)
 		{
-			if (occuranceIndexInBody < 0)
+			if (occurrenceIndexInBody < 0)
 				throw new ArgumentException ();
 		}
 	}
