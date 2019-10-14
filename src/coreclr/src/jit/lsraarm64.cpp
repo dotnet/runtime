@@ -147,7 +147,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_CNS_DBL:
         {
             GenTreeDblCon* dblConst   = tree->AsDblCon();
-            double         constValue = dblConst->gtDblCon.gtDconVal;
+            double         constValue = dblConst->AsDblCon()->gtDconVal;
 
             if (emitter::emitIns_valid_imm_for_fmov(constValue))
             {

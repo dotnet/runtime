@@ -530,7 +530,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
         {
             emitter* emit       = GetEmitter();
             emitAttr size       = emitTypeSize(targetType);
-            double   constValue = tree->gtDblCon.gtDconVal;
+            double   constValue = tree->AsDblCon()->gtDconVal;
 
             // Make sure we use "xorps reg, reg" only for +ve zero constant (0.0) and not for -ve zero (-0.0)
             if (*(__int64*)&constValue == 0)

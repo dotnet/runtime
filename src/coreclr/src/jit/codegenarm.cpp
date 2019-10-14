@@ -248,7 +248,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
         case GT_CNS_DBL:
         {
             GenTreeDblCon* dblConst   = tree->AsDblCon();
-            double         constValue = dblConst->gtDblCon.gtDconVal;
+            double         constValue = dblConst->AsDblCon()->gtDconVal;
             // TODO-ARM-CQ: Do we have a faster/smaller way to generate 0.0 in thumb2 ISA ?
             if (targetType == TYP_FLOAT)
             {
