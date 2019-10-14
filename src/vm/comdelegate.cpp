@@ -394,7 +394,7 @@ VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
     ArgLocDesc sArgDst;
 
 #if defined(UNIX_AMD64_ABI)
-    int argSlots = NUM_FLOAT_ARGUMENT_REGISTERS + NUM_ARGUMENT_REGISTERS + sArgPlacerSrc.SizeOfArgStack() / sizeof(size_t);
+    uint32_t argSlots = NUM_FLOAT_ARGUMENT_REGISTERS + NUM_ARGUMENT_REGISTERS + sArgPlacerSrc.SizeOfArgStack() / sizeof(size_t);
 #endif // UNIX_AMD64_ABI
 
     // If the target method in non-static (this happens for open instance delegates), we need to account for
