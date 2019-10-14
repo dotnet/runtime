@@ -19,13 +19,6 @@
 -nomethod Microsoft.VisualBasic.Tests.InteractionTests.GetSetting
 
 ####################################################################
-##  System.CodeDom.Tests
-####################################################################
-
-# TODO: Hangs
--noclass System.CodeDom.Compiler.Tests.ExecutorTests
-
-####################################################################
 ##  System.Collections.Specialized.Tests
 ####################################################################
 
@@ -36,9 +29,6 @@
 ####################################################################
 ##  System.Diagnostics.Process.Tests
 ####################################################################
-
-# test process hangs
--nomethod System.Diagnostics.Tests.ProcessTests.Kill_EntireProcessTree_True_CalledOnTreeContainingCallingProcess_ThrowsInvalidOperationException
 
 # times out waiting for remote process. Would it require system wide dotnet?
 # https://github.com/mono/mono/issues/14903
@@ -78,9 +68,6 @@
 ####################################################################
 ##  System.IO.Tests
 ####################################################################
-
-# TODO: Hangs
--nomethod System.IO.Tests.Directory_SetCurrentDirectory+Directory_SetCurrentDirectory_SymLink.SetToPathContainingSymLink
 
 # flaky test (The process cannot access the file ...)
 -nomethod System.IO.Tests.*.CopyFileWithData_MemberData
@@ -183,10 +170,6 @@
 # https://github.com/mono/mono/issues/15005
 -nomethod *PlatformHandler*
 
-# TODO: Hangs
-# https://github.com/mono/mono/issues/15006
--nomethod *ExpectedDiagnosticSourceActivityLogging*
-
 # Works, but may trigger UI!
 # NOTE: KEEPING THIS HERE BUT COMMENTED OUT - in the event the UI is shown (wasn't for me)
 #-nomethod System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test.SetDelegate_ConnectionSucceeds
@@ -197,10 +180,6 @@
 ####################################################################
 ##  System.Net.Sockets.Tests
 ####################################################################
-
-# TODO: Hangs and fails.
-# https://github.com/mono/mono/issues/15010
--nomethod System.Net.Sockets.Tests.CreateSocket.CtorAndAccept_SocketNotKeptAliveViaInheritance
 
 # flaky test
 -nomethod System.Net.Sockets.Tests.SocketOptionNameTest.MulticastInterface_Set_AnyInterface_Succeeds
@@ -658,18 +637,6 @@
 -nomethod System.Data.Common.Tests.DbConnectionTests.ProviderFactoryTest
 
 ####################################################################
-##  System.Data.SqlClient.Tests
-####################################################################
-
-# Hangs and then fails... All async tests display the same failure
-# https://github.com/mono/mono/issues/15181
--nomethod System.Data.SqlClient.Tests.DiagnosticTest.ExecuteNonQueryAsyncTest
--nomethod System.Data.SqlClient.Tests.DiagnosticTest.ExecuteReaderAsyncTest
--nomethod System.Data.SqlClient.Tests.DiagnosticTest.ExecuteNonQueryAsyncErrorTest
--nomethod System.Data.SqlClient.Tests.DiagnosticTest.ExecuteScalarAsyncErrorTest
--nomethod System.Data.SqlClient.Tests.DiagnosticTest.ExecuteScalarAsyncTest
-
-####################################################################
 ##  System.Diagnostics.StackTrace.Tests
 ####################################################################
 
@@ -928,13 +895,6 @@
 # https://github.com/mono/mono/issues/15353
 -nomethod System.Xml.Tests.CXmlResolverTest.TC_AbsolutePath_Transform
 -nomethod System.Xml.Tests.CTransformResolverTest.TC_AbsolutePath_Transform
-
-####################################################################
-##  System.Net.Requests.Tests
-####################################################################
-
-# hangs:
--nomethod System.Net.Tests.HttpWebRequestTest.HttpWebRequest_SetHostHeader_ContainsPortNumber
 
 ####################################################################
 ##  System.Security.Cryptography.X509Certificates.Tests

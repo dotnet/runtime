@@ -3749,6 +3749,7 @@ mono_thread_manage (void)
 	mono_thread_info_yield ();
 }
 
+#ifndef ENABLE_NETCORE
 static void
 collect_threads_for_suspend (gpointer key, gpointer value, gpointer user_data)
 {
@@ -3880,6 +3881,7 @@ void mono_thread_suspend_all_other_threads (void)
 		}
 	}
 }
+#endif
 
 typedef struct {
 	MonoInternalThread *thread;
