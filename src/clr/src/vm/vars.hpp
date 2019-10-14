@@ -402,8 +402,6 @@ GPTR_DECL(MethodTable,      g_pBaseRuntimeClass);
 GPTR_DECL(MethodTable,      g_pICastableInterface);
 #endif // FEATURE_ICASTABLE
 
-GPTR_DECL(MethodDesc,       g_pExecuteBackoutCodeHelperMethod);
-
 GPTR_DECL(MethodDesc,       g_pObjectFinalizerMD);
 
 #ifdef FEATURE_INTEROP_DEBUGGING

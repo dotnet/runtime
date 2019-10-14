@@ -136,14 +136,6 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool TryEnsureSufficientExecutionStack();
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void ExecuteCodeWithGuaranteedCleanup(TryCode code, CleanupCode backoutCode, object? userData);
-
-        internal static void ExecuteBackoutCodeHelper(object backoutCode, object? userData, bool exceptionThrown)
-        {
-            ((CleanupCode)backoutCode)(userData, exceptionThrown);
-        }
-
         /// <returns>true if given type is reference type or value type that contains references</returns>
         [Intrinsic]
         public static bool IsReferenceOrContainsReferences<T>()
@@ -170,7 +162,15 @@ namespace System.Runtime.CompilerServices
 
         [Intrinsic]
         internal static ref byte GetRawSzArrayData(this Array array) =>
-            ref Unsafe.As<RawSzArrayData>(array).Data;
+            ref Unsafe.As<RawArrayData>(array).Data;
+
+        internal static unsafe ushort GetElementSize(this Array array)
+        {
+            Debug.Assert(ObjectHasComponentSize(array));
+
+            // The first UINT16 of the method table is component size.
+            return *(ushort*)GetObjectMethodTablePointer(array);
+        }
 
         // Returns true iff the object has a component size;
         // i.e., is variable length like System.String or Array.

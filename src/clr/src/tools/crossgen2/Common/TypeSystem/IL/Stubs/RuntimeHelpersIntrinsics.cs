@@ -25,7 +25,7 @@ namespace Internal.IL.Stubs
                 ILEmitter emit = new ILEmitter();
                 ILCodeStream codeStream = emit.NewCodeStream();
                 codeStream.EmitLdArg(0);
-                codeStream.Emit(ILOpcode.ldflda, emit.NewToken(method.Context.SystemModule.GetKnownType("System.Runtime.CompilerServices", "RawSzArrayData").GetField("Data")));
+                codeStream.Emit(ILOpcode.ldflda, emit.NewToken(method.Context.SystemModule.GetKnownType("System.Runtime.CompilerServices", "RawArrayData").GetField("Data")));
                 codeStream.Emit(ILOpcode.ret);
                 return emit.Link(method);
             }

@@ -93,7 +93,11 @@ inline BOOL TypeHandle::IsZapped() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
+#ifdef FEATURE_PREJIT
     return (GetZapModule() != NULL);
+#else
+    return FALSE;
+#endif
 }
 
 inline PTR_ArrayTypeDesc TypeHandle::AsArray() const

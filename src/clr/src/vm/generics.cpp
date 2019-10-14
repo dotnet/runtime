@@ -341,11 +341,14 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     pMT->ClearFlag(MethodTable::enum_flag_GenericsMask);
     pMT->SetFlag(MethodTable::enum_flag_GenericsMask_GenericInst);
 
+#ifdef FEATURE_PREJIT
     // Freshly allocated - does not need restore
     pMT->ClearFlag(MethodTable::enum_flag_IsZapped);
     pMT->ClearFlag(MethodTable::enum_flag_IsPreRestored);
 
     pMT->ClearFlag(MethodTable::enum_flag_HasIndirectParent);
+#endif
+
     pMT->m_pParentMethodTable.SetValueMaybeNull(NULL);
 
     // Non non-virtual slots
