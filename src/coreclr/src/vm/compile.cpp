@@ -4719,6 +4719,14 @@ BOOL CEEPreloader::IsUncompiledMethod(CORINFO_METHOD_HANDLE handle)
 #endif
 }
 
+BOOL CEEPreloader::ShouldSuppressGCTransition(CORINFO_METHOD_HANDLE handle)
+{
+    STANDARD_VM_CONTRACT;
+
+    MethodDesc *pMD = GetMethod(handle);
+    return pMD->ShouldSuppressGCTransition();
+}
+
 static bool IsTypeAccessibleOutsideItsAssembly(TypeHandle th)
 {
     STANDARD_VM_CONTRACT;

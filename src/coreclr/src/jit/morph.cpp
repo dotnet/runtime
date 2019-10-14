@@ -8209,13 +8209,25 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 
     // Couldn't inline - remember that this BB contains method calls
 
-    // If this is a 'regular' call, mark the basic block as
-    // having a call (for computing full interruptibility).
+    // Mark the block as a GC safe point for the call if possible.
+    // In the event the call indicates the block isn't a GC safe point
+    // and the call is unmanaged with a GC transition suppression request
+    // then insert a GC poll.
     CLANG_FORMAT_COMMENT_ANCHOR;
 
     if (IsGcSafePoint(call))
     {
         compCurBB->bbFlags |= BBF_GC_SAFE_POINT;
+    }
+
+    // Regardless of the state of the basic block with respect to GC safe point,
+    // we will always insert a GC Poll for scenarios involving a suppressed GC
+    // transition.
+    if (call->IsUnmanaged() && call->IsSuppressGCTransition())
+    {
+        // Insert a GC poll.
+        bool insertedBB = fgCreateGCPoll(GCPOLL_CALL, compCurBB);
+        assert(!insertedBB); // No new block should be inserted
     }
 
     // Morph Type.op_Equality, Type.op_Inequality, and Enum.HasFlag
@@ -15440,7 +15452,7 @@ void Compiler::fgMorphStmts(BasicBlock* block, bool* lnot, bool* loadw)
                          (call->IsFastTailCall() && (compCurBB->bbJumpKind == BBJ_RETURN) &&
                           (compCurBB->bbFlags & BBF_HAS_JMP)));
         }
-        else if (block != compCurBB)
+        else if ((block != compCurBB) && ((oldTree->gtOper == GT_CALL) && oldTree->AsCall()->IsTailCall()))
         {
             /* This must be a tail call that caused a GCPoll to get
                injected.  We haven't actually morphed the call yet
@@ -15873,7 +15885,7 @@ void Compiler::fgSetOptions()
     }
 #endif // UNIX_X86_ABI
 
-    if (info.compCallUnmanaged)
+    if (compMethodRequiresPInvokeFrame())
     {
         codeGen->setFramePointerRequired(true); // Setup of Pinvoke frame currently requires an EBP style frame
     }

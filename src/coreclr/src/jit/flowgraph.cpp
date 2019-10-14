@@ -3860,7 +3860,6 @@ void Compiler::fgCreateGCPolls()
 
 bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 {
-    assert(!(block->bbFlags & BBF_GC_SAFE_POINT));
     bool createdPollBlocks;
 
     void* addrTrap;
@@ -3878,19 +3877,26 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
     }
 #endif // ENABLE_FAST_GCPOLL_HELPER
 
+    // If the trap and address of thread global are null, make the call.
+    if (addrTrap == nullptr && pAddrOfCaptureThreadGlobal == nullptr)
+    {
+        pollType = GCPOLL_CALL;
+    }
+
     if (GCPOLL_CALL == pollType)
     {
         createdPollBlocks = false;
         GenTreeCall* call = gtNewHelperCallNode(CORINFO_HELP_POLL_GC, TYP_VOID);
+        GenTree*     temp = fgMorphCall(call);
 
         // for BBJ_ALWAYS I don't need to insert it before the condition.  Just append it.
         if (block->bbJumpKind == BBJ_ALWAYS)
         {
-            fgNewStmtAtEnd(block, call);
+            fgNewStmtAtEnd(block, temp);
         }
         else
         {
-            Statement* newStmt = fgNewStmtNearEnd(block, call);
+            Statement* newStmt = fgNewStmtNearEnd(block, temp);
             // For DDB156656, we need to associate the GC Poll with the IL offset (and therefore sequence
             // point) of the tree before which we inserted the poll.  One example of when this is a
             // problem:
@@ -4026,6 +4032,10 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         //      jumps, 2 for conditional branches, N for switches).
         switch (oldJumpKind)
         {
+            case BBJ_NONE:
+                // nothing to update. This can happen when inserting a GC Poll
+                // when suppressing a GC transition during an unmanaged call.
+                break;
             case BBJ_RETURN:
                 // no successors
                 break;
@@ -8901,7 +8911,7 @@ void Compiler::fgAddInternal()
 
     // The backend requires a scratch BB into which it can safely insert a P/Invoke method prolog if one is
     // required. Create it here.
-    if (info.compCallUnmanaged != 0)
+    if (compMethodRequiresPInvokeFrame())
     {
         fgEnsureFirstBBisScratch();
         fgFirstBB->bbFlags |= BBF_DONT_REMOVE;
@@ -9000,7 +9010,7 @@ void Compiler::fgAddInternal()
     //   or for synchronized methods.
     //
     BasicBlock* lastBlockBeforeGenReturns = fgLastBB;
-    if (compIsProfilerHookNeeded() || (info.compCallUnmanaged != 0) || opts.IsReversePInvoke() ||
+    if (compIsProfilerHookNeeded() || compMethodRequiresPInvokeFrame() || opts.IsReversePInvoke() ||
         ((info.compFlags & CORINFO_FLG_SYNCH) != 0))
     {
         // We will generate only one return block
@@ -9053,7 +9063,7 @@ void Compiler::fgAddInternal()
 
     merger.PlaceReturns();
 
-    if (info.compCallUnmanaged != 0)
+    if (compMethodRequiresPInvokeFrame())
     {
         // The P/Invoke helpers only require a frame variable, so only allocate the
         // TCB variable if we're not using them.
@@ -23188,8 +23198,8 @@ _Done:
     }
 #endif // FEATURE_SIMD
 
-    // Update unmanaged call count
-    info.compCallUnmanaged += InlineeCompiler->info.compCallUnmanaged;
+    // Update unmanaged call details
+    info.compUnmanagedCallCountWithGCTransition += InlineeCompiler->info.compUnmanagedCallCountWithGCTransition;
 
 // Update optMethodFlags
 

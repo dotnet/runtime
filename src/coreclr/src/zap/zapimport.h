@@ -398,8 +398,9 @@ public:
     ZapImport * GetStaticFieldAddressImport(CORINFO_FIELD_HANDLE handle);
     ZapImport * GetClassDomainIdImport(CORINFO_CLASS_HANDLE handle);
     ZapImport * GetModuleDomainIdImport(CORINFO_MODULE_HANDLE handleToModule, CORINFO_CLASS_HANDLE handleToClass);
-    ZapImport * GetSyncLockImport(CORINFO_CLASS_HANDLE handle); 
+    ZapImport * GetSyncLockImport(CORINFO_CLASS_HANDLE handle);
     ZapImport * GetIndirectPInvokeTargetImport(CORINFO_METHOD_HANDLE handle);
+    ZapImport * GetPInvokeTargetImport(CORINFO_METHOD_HANDLE handle);
     ZapImport * GetProfilingHandleImport(CORINFO_METHOD_HANDLE handle);
     ZapImport * GetVarArgImport(CORINFO_MODULE_HANDLE handle, mdToken sigOrMemberRefOrDef);
     ZapImport * GetActiveDependencyImport(CORINFO_MODULE_HANDLE moduleFrom, CORINFO_MODULE_HANDLE moduleTo);

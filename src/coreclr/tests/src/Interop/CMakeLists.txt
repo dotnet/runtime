@@ -12,6 +12,7 @@ list(APPEND LINK_LIBRARIES_ADDITIONAL platformdefines)
 SET(CLR_INTEROP_TEST_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 
 include_directories(common)
+add_subdirectory(PInvoke/Attributes/SuppressGCTransition)
 add_subdirectory(PInvoke/Decimal)
 add_subdirectory(PInvoke/ArrayWithOffset)
 add_subdirectory(PInvoke/BestFitMapping/Char)

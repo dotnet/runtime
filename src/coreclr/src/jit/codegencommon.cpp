@@ -6862,7 +6862,7 @@ void CodeGen::genFinalizeFrame()
     }
 
     /* If we have any pinvoke calls, we might potentially trash everything */
-    if (compiler->info.compCallUnmanaged)
+    if (compiler->compMethodRequiresPInvokeFrame())
     {
         noway_assert(isFramePointerUsed()); // Setup of Pinvoke frame currently requires an EBP style frame
         regSet.rsSetRegsModified(RBM_INT_CALLEE_SAVED & ~RBM_FPBASE);
@@ -7339,7 +7339,7 @@ void CodeGen::genFnProlog()
 
     // We should not use the special PINVOKE registers as the initReg
     // since they are trashed by the jithelper call to setup the PINVOKE frame
-    if (compiler->info.compCallUnmanaged)
+    if (compiler->compMethodRequiresPInvokeFrame())
     {
         excludeMask |= RBM_PINVOKE_FRAME;
 
@@ -7402,7 +7402,7 @@ void CodeGen::genFnProlog()
         }
     }
 
-    noway_assert(!compiler->info.compCallUnmanaged || (initReg != REG_PINVOKE_FRAME));
+    noway_assert(!compiler->compMethodRequiresPInvokeFrame() || (initReg != REG_PINVOKE_FRAME));
 
 #if defined(_TARGET_AMD64_)
     // If we are a varargs call, in order to set up the arguments correctly this

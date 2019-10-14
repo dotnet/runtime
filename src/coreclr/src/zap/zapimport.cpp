@@ -1401,6 +1401,25 @@ ZapImport * ZapImportTable::GetIndirectPInvokeTargetImport(CORINFO_METHOD_HANDLE
     return GetImport<ZapIndirectPInvokeTargetImport, ZapNodeType_Import_IndirectPInvokeTarget>(handle);
 }
 
+class ZapPInvokeTargetImport : public ZapImport
+{
+public:
+    virtual ZapNodeType GetType()
+    {
+        return ZapNodeType_Import_PInvokeTarget;
+    }
+
+    virtual void EncodeSignature(ZapImportTable* pTable, SigBuilder* pSigBuilder)
+    {
+        pTable->EncodeMethod(ENCODE_PINVOKE_TARGET, (CORINFO_METHOD_HANDLE)GetHandle(), pSigBuilder);
+    }
+};
+
+ZapImport * ZapImportTable::GetPInvokeTargetImport(CORINFO_METHOD_HANDLE handle)
+{
+    return GetImport<ZapPInvokeTargetImport, ZapNodeType_Import_PInvokeTarget>(handle);
+}
+
 class ZapProfilingHandleImport : public ZapImport
 {
 public:
