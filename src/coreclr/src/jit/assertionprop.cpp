@@ -2620,7 +2620,7 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc* curAssertion,
             if (newTree->gtType == TYP_LONG)
             {
                 newTree->ChangeOperConst(GT_CNS_NATIVELONG);
-                newTree->gtIntConCommon.SetLngValue(curAssertion->op2.lconVal);
+                newTree->AsIntConCommon()->SetLngValue(curAssertion->op2.lconVal);
             }
             else
             {
@@ -3195,7 +3195,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
         else if (op1->TypeGet() == TYP_LONG)
         {
             op1->ChangeOperConst(GT_CNS_NATIVELONG);
-            op1->gtIntConCommon.SetLngValue(vnStore->ConstantValue<INT64>(vnCns));
+            op1->AsIntConCommon()->SetLngValue(vnStore->ConstantValue<INT64>(vnCns));
         }
         else if (op1->TypeGet() == TYP_DOUBLE)
         {

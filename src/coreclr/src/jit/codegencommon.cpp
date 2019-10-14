@@ -1373,11 +1373,11 @@ AGAIN:
 
     /* Check for an addition of a constant */
 
-    if (op2->IsIntCnsFitsInI32() && (op2->gtType != TYP_REF) && FitsIn<INT32>(cns + op2->gtIntConCommon.IconValue()))
+    if (op2->IsIntCnsFitsInI32() && (op2->gtType != TYP_REF) && FitsIn<INT32>(cns + op2->AsIntConCommon()->IconValue()))
     {
         /* We're adding a constant */
 
-        cns += op2->gtIntConCommon.IconValue();
+        cns += op2->AsIntConCommon()->IconValue();
 
 #if defined(_TARGET_ARMARCH_)
         if (cns == 0)
