@@ -281,6 +281,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/tailcall_v4/hijacking/*">
             <Issue>arm64 does not support tailcall helper</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_26491/**/*">
+            <Issue>26491</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Windows x64 specific excludes -->
