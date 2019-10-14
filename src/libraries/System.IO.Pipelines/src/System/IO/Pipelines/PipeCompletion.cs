@@ -17,17 +17,17 @@ namespace System.IO.Pipelines
         private const int InitialCallbacksSize = 1;
 
         private bool _isCompleted;
-        private ExceptionDispatchInfo _exceptionInfo;
+        private ExceptionDispatchInfo? _exceptionInfo;
 
         private PipeCompletionCallback _firstCallback;
-        private PipeCompletionCallback[] _callbacks;
+        private PipeCompletionCallback[]? _callbacks;
         private int _callbackCount;
 
         public bool IsCompleted => _isCompleted;
 
         public bool IsFaulted => _exceptionInfo != null;
 
-        public PipeCompletionCallbacks TryComplete(Exception exception = null)
+        public PipeCompletionCallbacks? TryComplete(Exception? exception = null)
         {
             if (!_isCompleted)
             {
@@ -40,7 +40,7 @@ namespace System.IO.Pipelines
             return GetCallbacks();
         }
 
-        public PipeCompletionCallbacks AddCallback(Action<Exception, object> callback, object state)
+        public PipeCompletionCallbacks? AddCallback(Action<Exception?, object?> callback, object? state)
         {
             if (_callbackCount == 0)
             {
@@ -54,6 +54,7 @@ namespace System.IO.Pipelines
                 // -1 to adjust for _firstCallback
                 var callbackIndex = _callbackCount - 1;
                 _callbackCount++;
+                Debug.Assert(_callbacks != null);
                 _callbacks[callbackIndex] = new PipeCompletionCallback(callback, state);
             }
 
@@ -99,7 +100,7 @@ namespace System.IO.Pipelines
             return true;
         }
 
-        private PipeCompletionCallbacks GetCallbacks()
+        private PipeCompletionCallbacks? GetCallbacks()
         {
             Debug.Assert(IsCompleted);
             if (_callbackCount == 0)
@@ -130,6 +131,7 @@ namespace System.IO.Pipelines
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void ThrowLatchedException()
         {
+            Debug.Assert(_exceptionInfo != null);
             _exceptionInfo.Throw();
         }
 

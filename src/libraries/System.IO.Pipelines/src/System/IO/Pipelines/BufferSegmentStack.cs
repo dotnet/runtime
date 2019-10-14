@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.IO.Pipelines
 {
@@ -22,7 +23,7 @@ namespace System.IO.Pipelines
 
         public int Count => _size;
 
-        public bool TryPop(out BufferSegment result)
+        public bool TryPop([NotNullWhen(true)] out BufferSegment? result)
         {
             int size = _size - 1;
             SegmentAsValueType[] array = _array;
