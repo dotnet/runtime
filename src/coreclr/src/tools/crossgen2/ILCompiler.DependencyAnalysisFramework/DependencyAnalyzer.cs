@@ -287,7 +287,8 @@ namespace ILCompiler.DependencyAnalysisFramework
         {
             if (_marker.MarkNode(node, reason1, reason2, reason))
             {
-                PerfEventSource.Log.AddedNodeToMarkStack();
+                if (PerfEventSource.Log.IsEnabled())
+                    PerfEventSource.Log.AddedNodeToMarkStack();
 
                 // Pop the top node of the mark stack
                 if (_stackPopRandomizer == null)
