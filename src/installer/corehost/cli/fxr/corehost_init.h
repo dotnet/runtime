@@ -32,6 +32,7 @@ private:
     std::vector<const pal::char_t*> m_fx_requested_versions_cstr;
     std::vector<pal::string_t> m_fx_found_versions;
     std::vector<const pal::char_t*> m_fx_found_versions_cstr;
+    fx_reference_vector_t m_included_frameworks;
     const pal::string_t m_host_command;
     const pal::string_t m_host_info_host_path;
     const pal::string_t m_host_info_dotnet_root;
@@ -48,7 +49,8 @@ public:
 
     const host_interface_t& get_host_init_data();
 
-    void get_found_fx_versions(std::unordered_map<pal::string_t, const fx_ver_t> &out_fx_versions);
+    void get_found_fx_versions(std::unordered_map<pal::string_t, const fx_ver_t> &out_fx_versions) const;
+    void get_included_frameworks(std::unordered_map<pal::string_t, const fx_ver_t>& out_included_frameworks) const;
 };
 
 #endif // __COREHOST_INIT_H__

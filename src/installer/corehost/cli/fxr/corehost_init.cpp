@@ -58,6 +58,11 @@ corehost_init_t::corehost_init_t(
         m_clr_values.push_back(kv.second);
     }
 
+    for (const auto& included_framework : get_app(fx_definitions).get_runtime_config().get_included_frameworks())
+    {
+        m_included_frameworks.emplace_back(included_framework);
+    }
+
     make_cstr_arr(m_fx_names, &m_fx_names_cstr);
     make_cstr_arr(m_fx_dirs, &m_fx_dirs_cstr);
     make_cstr_arr(m_fx_requested_versions, &m_fx_requested_versions_cstr);
@@ -130,12 +135,22 @@ const host_interface_t& corehost_init_t::get_host_init_data()
     return hi;
 }
 
-void corehost_init_t::get_found_fx_versions(std::unordered_map<pal::string_t, const fx_ver_t> &out_fx_versions)
+void corehost_init_t::get_found_fx_versions(std::unordered_map<pal::string_t, const fx_ver_t> &out_fx_versions) const
 {
     for (size_t i = 0; i < m_fx_names.size(); ++i)
     {
         fx_ver_t version;
         if (fx_ver_t::parse(m_fx_found_versions[i], &version))
+        {
             out_fx_versions.emplace(m_fx_names[i], version);
+        }
+    }
+}
+
+void corehost_init_t::get_included_frameworks(std::unordered_map<pal::string_t, const fx_ver_t>& out_included_frameworks) const
+{
+    for (const auto& included_framework : m_included_frameworks)
+    {
+        out_included_frameworks.emplace(included_framework.get_fx_name(), included_framework.get_fx_version_number());
     }
 }

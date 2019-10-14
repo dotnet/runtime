@@ -130,7 +130,7 @@ static int execute_app(
         std::lock_guard<std::mutex> lock{ g_context_lock };
         assert(g_active_host_context == nullptr);
         g_active_host_context.reset(new host_context_t(host_context_type::empty, hostpolicy_contract, {}));
-        init->get_found_fx_versions(g_active_host_context->fx_versions_by_name);
+        g_active_host_context->initialize_frameworks(*init);
         g_context_initializing.store(false);
     }
 
@@ -601,11 +601,11 @@ namespace
     }
 
     int get_init_info_for_secondary_component(
-        const host_startup_info_t &host_info,
+        const host_startup_info_t& host_info,
         host_mode_t mode,
-        pal::string_t &runtime_config_path,
-        const host_context_t *existing_context,
-        /*out*/ std::unordered_map<pal::string_t, pal::string_t> &config_properties)
+        pal::string_t& runtime_config_path,
+        const host_context_t* existing_context,
+        /*out*/ std::unordered_map<pal::string_t, pal::string_t>& config_properties)
     {
         // Read config
         fx_definition_t app;
@@ -622,16 +622,21 @@ namespace
         }
 
         // Validate the current context is acceptable for this request (frameworks)
-        // Only validate for framework-dependent (i.e. non-empty frameworks)
-        // Self-contained apps don't contain information about frmeworks contained in the app, so there's nothing to validate against.
         if (!existing_context->fx_versions_by_name.empty())
         {
+            // Framework dependent apps always know their frameworks
             if (!fx_resolver_t::is_config_compatible_with_frameworks(app_config, existing_context->fx_versions_by_name))
+                return StatusCode::CoreHostIncompatibleConfig;
+        }
+        else if (!existing_context->included_fx_versions_by_name.empty())
+        {
+            // Self-contained apps can include information about their frameworks in `includedFrameworks` property in runtime config
+            if (!fx_resolver_t::is_config_compatible_with_frameworks(app_config, existing_context->included_fx_versions_by_name))
                 return StatusCode::CoreHostIncompatibleConfig;
         }
         else
         {
-            trace::verbose(_X("Skipped framework validation for loading a component in a self-contained app"));
+            trace::verbose(_X("Skipped framework validation for loading a component in a self-contained app without information about included frameworks"));
         }
 
         app_config.combine_properties(config_properties);
