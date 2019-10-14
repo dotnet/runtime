@@ -688,9 +688,6 @@ DEFINE_CLASS(RTFIELD,               Reflection,             RtFieldInfo)
 DEFINE_METHOD(RTFIELD,              GET_FIELDHANDLE,        GetFieldHandle,            IM_RetIntPtr)
 
 DEFINE_CLASS(RUNTIME_HELPERS,       CompilerServices,       RuntimeHelpers)
-DEFINE_METHOD(RUNTIME_HELPERS,      PREPARE_CONSTRAINED_REGIONS, PrepareConstrainedRegions, SM_RetVoid)
-DEFINE_METHOD(RUNTIME_HELPERS,      PREPARE_CONSTRAINED_REGIONS_NOOP, PrepareConstrainedRegionsNoOP, SM_RetVoid)
-DEFINE_METHOD(RUNTIME_HELPERS,      EXECUTE_BACKOUT_CODE_HELPER, ExecuteBackoutCodeHelper, SM_Obj_Obj_Bool_RetVoid)
 DEFINE_METHOD(RUNTIME_HELPERS,      IS_REFERENCE_OR_CONTAINS_REFERENCES, IsReferenceOrContainsReferences, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      IS_BITWISE_EQUATABLE,    IsBitwiseEquatable, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_RAW_SZ_ARRAY_DATA,   GetRawSzArrayData,  NoSig)
@@ -727,9 +724,12 @@ DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_OBJECT,CompareExchange, SM_
 DEFINE_CLASS(RAW_DATA,              CompilerServices,       RawData)
 DEFINE_FIELD(RAW_DATA,              DATA,                   Data)
 
-DEFINE_CLASS(RAW_SZARRAY_DATA,      CompilerServices,       RawSzArrayData)
-DEFINE_FIELD(RAW_SZARRAY_DATA,      COUNT,                  Count)
-DEFINE_FIELD(RAW_SZARRAY_DATA,      DATA,                   Data)
+DEFINE_CLASS(RAW_ARRAY_DATA,        CompilerServices,       RawArrayData)
+DEFINE_FIELD(RAW_ARRAY_DATA,        LENGTH,                 Length)
+#ifdef _TARGET_64BIT_
+DEFINE_FIELD(RAW_ARRAY_DATA,        PADDING,                Padding)
+#endif
+DEFINE_FIELD(RAW_ARRAY_DATA,        DATA,                   Data)
 
 DEFINE_CLASS(RUNTIME_WRAPPED_EXCEPTION, CompilerServices,   RuntimeWrappedException)
 DEFINE_METHOD(RUNTIME_WRAPPED_EXCEPTION, OBJ_CTOR,          .ctor,                      IM_Obj_RetVoid)

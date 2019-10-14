@@ -101,38 +101,6 @@ FCIMPL2(INT32, ArrayNative::GetLength, ArrayBase* array, unsigned int dimension)
 FCIMPLEND
 
 
-FCIMPL1(INT32, ArrayNative::GetLengthNoRank, ArrayBase* array)
-{
-    FCALL_CONTRACT;
-
-    VALIDATEOBJECT(array);
-
-    if (array==NULL)
-        FCThrow(kNullReferenceException);
-
-    SIZE_T numComponents = array->GetNumComponents();
-    if (numComponents > INT32_MAX)
-        FCThrow(kOverflowException);
-
-    return (INT32)numComponents;
-}
-FCIMPLEND
-
-
-FCIMPL1(INT64, ArrayNative::GetLongLengthNoRank, ArrayBase* array)
-{
-    FCALL_CONTRACT;
-
-    VALIDATEOBJECT(array);
-
-    if (array==NULL)
-        FCThrow(kNullReferenceException);
-
-    return array->GetNumComponents();
-}
-FCIMPLEND
-
-
 FCIMPL1(void*, ArrayNative::GetRawArrayData, ArrayBase* array)
 {
     FCALL_CONTRACT;
@@ -144,19 +112,6 @@ FCIMPL1(void*, ArrayNative::GetRawArrayData, ArrayBase* array)
     return array->GetDataPtr();
 }
 FCIMPLEND
-
-FCIMPL1(INT32, ArrayNative::GetElementSize, ArrayBase* array)
-{
-    FCALL_CONTRACT;
-
-    VALIDATEOBJECT(array);
-
-    _ASSERTE(array != NULL);
-
-    return (INT32)array->GetComponentSize();
-}
-FCIMPLEND
-
 
 
 // array is GC protected by caller

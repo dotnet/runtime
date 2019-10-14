@@ -338,17 +338,9 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe void InternalSetValue(void* target, object? value);
 
-        public extern int Length
-        {
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            get;
-        }
+        public int Length => checked((int)Unsafe.As<RawArrayData>(this).Length);
 
-        public extern long LongLength
-        {
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            get;
-        }
+        public long LongLength => Unsafe.As<RawArrayData>(this).Length;
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern int GetLength(int dimension);
@@ -367,9 +359,6 @@ namespace System
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal extern ref byte GetRawArrayData();
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern int GetElementSize();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool TrySZBinarySearch(Array sourceArray, int sourceIndex, int count, object? value, out int retVal);

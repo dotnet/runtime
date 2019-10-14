@@ -3037,7 +3037,11 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
+#ifdef FEATURE_PREJIT
         return GetFlag(enum_flag_IsPreRestored);
+#else
+        return FALSE;
+#endif
     }
 
     //-------------------------------------------------------------------
