@@ -567,6 +567,7 @@ namespace Internal.IL.Stubs
             _tokens = methodIL._tokens;
             _method = methodIL._method;
             _debugInformation = methodIL._debugInformation;
+            _exceptionRegions = methodIL._exceptionRegions;
             _maxStack = methodIL._maxStack;
         }
 
