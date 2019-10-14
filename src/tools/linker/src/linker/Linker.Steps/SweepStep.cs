@@ -421,6 +421,10 @@ namespace Mono.Linker.Steps {
 
 		static void UpdateTypeScope (TypeReference type, AssemblyDefinition assembly)
 		{
+			// Can't update the scope of windows runtime projections
+			if (type.IsWindowsRuntimeProjection)
+				return;
+
 			if (type is GenericInstanceType git && git.HasGenericArguments) {
 				UpdateTypeScope (git.ElementType, assembly);
 				foreach (var ga in git.GenericArguments)
