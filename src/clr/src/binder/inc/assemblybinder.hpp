@@ -58,10 +58,6 @@ namespace BINDER_SPACE
                                              /* in */ SString   &cultureName,
                                              /* out */ Assembly **ppSystemAssembly);
 
-        static HRESULT GetAssemblyFromImage(/* in */ PEImage    *pPEImage,
-                                            /* in */ PEImage    *pNativePEImage,
-                                            /* out */ Assembly **ppAssembly);
-
         static HRESULT GetAssembly(/* in */  SString     &assemblyPath,
                                    /* in */  BOOL         fIsInGAC,
                                    /* in */  BOOL         fExplicitBindToNativeImage,
