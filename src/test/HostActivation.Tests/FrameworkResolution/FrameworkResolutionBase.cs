@@ -57,14 +57,42 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             }
         }
 
+        protected CommandResult RunSelfContainedTest(
+            TestApp app,
+            TestSettings settings)
+        {
+            if (settings.RuntimeConfigCustomizer != null)
+            {
+                settings.RuntimeConfigCustomizer(RuntimeConfig.Path(app.RuntimeConfigJson)).Save();
+            }
+
+            settings.WithCommandLine(app.AppDll);
+
+            Command command = Command.Create(app.AppExe, settings.CommandLine);
+
+            if (settings.WorkingDirectory != null)
+            {
+                command = command.WorkingDirectory(settings.WorkingDirectory);
+            }
+
+            CommandResult result = command
+                .EnableTracingAndCaptureOutputs()
+                .Environment(settings.Environment)
+                .Execute();
+
+            return result;
+        }
+
         public class SharedTestStateBase : IDisposable
         {
             private readonly string _builtDotnet;
+            private readonly RepoDirectoriesProvider _repoDirectories;
             private readonly string _baseDir;
 
             public SharedTestStateBase()
             {
                 _builtDotnet = Path.Combine(TestArtifact.TestArtifactsPath, "sharedFrameworkPublish");
+                _repoDirectories = new RepoDirectoriesProvider();
 
                 string baseDir = Path.Combine(TestArtifact.TestArtifactsPath, "frameworkResolution");
                 _baseDir = SharedFramework.CalculateUniqueTestDirectory(baseDir);
@@ -88,6 +116,43 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                 File.WriteAllText(Path.Combine(testAppDir, "FrameworkReferenceApp.runtimeconfig.json"), "{}");
 
                 return new TestApp(testAppDir);
+            }
+
+            public TestApp CreateSelfContainedAppWithMockHostPolicy()
+            {
+                string testAppDir = Path.Combine(_baseDir, "SelfContainedApp");
+                Directory.CreateDirectory(testAppDir);
+                TestApp testApp = new TestApp(testAppDir);
+
+                string hostFxrFileName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr");
+                string hostPolicyFileName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostpolicy");
+                string mockHostPolicyFileName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("mockhostpolicy");
+                string appHostFileName = RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("apphost");
+
+                DotNetCli builtDotNetCli = new DotNetCli(_builtDotnet);
+
+                // ./hostfxr - the product version
+                File.Copy(builtDotNetCli.GreatestVersionHostFxrFilePath, Path.Combine(testAppDir, hostFxrFileName));
+
+                // ./hostpolicy - the mock
+                File.Copy(
+                    Path.Combine(_repoDirectories.Artifacts, "corehost_test", mockHostPolicyFileName),
+                    Path.Combine(testAppDir, hostPolicyFileName));
+
+                // ./SelfContainedApp.dll
+                File.WriteAllText(Path.Combine(testAppDir, "SelfContainedApp.dll"), string.Empty);
+
+                // ./SelfContainedApp.runtimeconfig.json
+                File.WriteAllText(Path.Combine(testAppDir, "SelfContainedApp.runtimeconfig.json"), "{}");
+
+                // ./SelfContainedApp.exe
+                string selfContainedAppExePath = Path.Combine(testAppDir, RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("SelfContainedApp"));
+                File.Copy(
+                    Path.Combine(_repoDirectories.HostArtifacts, appHostFileName),
+                    selfContainedAppExePath);
+                AppHostExtensions.BindAppHost(selfContainedAppExePath);
+
+                return testApp;
             }
 
             public void Dispose()

@@ -180,32 +180,47 @@ bool runtime_config_t::parse_opts(const json_parser_t::value_t& opts)
     }
 
     // Step #3: read the "framework" and "frameworks" section
-    bool rc = true;
     const auto& framework = opts_obj.FindMember(_X("framework"));
     if (framework != opts_obj.MemberEnd())
     {
         m_is_framework_dependent = true;
 
         fx_reference_t fx_out;
-        rc = parse_framework(framework->value, fx_out);
-        if (rc)
+        if (!parse_framework(framework->value, fx_out))
         {
-            m_frameworks.push_back(fx_out);
+            return false;
         }
+
+        m_frameworks.push_back(fx_out);
     }
 
-    if (rc)
+    const auto& iter = opts_obj.FindMember(_X("frameworks"));
+    if (iter != opts_obj.MemberEnd())
     {
-        const auto& iter = opts_obj.FindMember(_X("frameworks"));
-        if (iter != opts_obj.MemberEnd())
-        {
-            m_is_framework_dependent = true;
+        m_is_framework_dependent = true;
 
-            rc = read_framework_array(iter->value);
+        if (!read_framework_array(iter->value, m_frameworks))
+        {
+            return false;
         }
     }
 
-    return rc;
+    const auto& includedFrameworks = opts_obj.FindMember(_X("includedFrameworks"));
+    if (includedFrameworks != opts_obj.MemberEnd())
+    {
+        if (m_is_framework_dependent)
+        {
+            trace::error(_X("It's invalid to specify both `framework`/`frameworks` and `includedFrameworks` properties."));
+            return false;
+        }
+
+        if (!read_framework_array(includedFrameworks->value, m_included_frameworks, /*name_and_version_only*/ true))
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 namespace
@@ -224,9 +239,12 @@ namespace
     }
 }
 
-bool runtime_config_t::parse_framework(const json_parser_t::value_t& fx_obj, fx_reference_t& fx_out)
+bool runtime_config_t::parse_framework(const json_parser_t::value_t& fx_obj, fx_reference_t& fx_out, bool name_and_version_only)
 {
-    apply_settings_to_fx_reference(m_default_settings, fx_out);
+    if (!name_and_version_only)
+    {
+        apply_settings_to_fx_reference(m_default_settings, fx_out);
+    }
 
     const auto& fx_name = fx_obj.FindMember(_X("name"));
     if (fx_name != fx_obj.MemberEnd())
@@ -241,10 +259,15 @@ bool runtime_config_t::parse_framework(const json_parser_t::value_t& fx_obj, fx_
 
         // Release version should prefer release versions, unless the rollForwardToPrerelease is set
         // in which case no preference should be applied.
-        if (!fx_out.get_fx_version_number().is_prerelease() && !m_roll_forward_to_prerelease)
+        if (!name_and_version_only && !fx_out.get_fx_version_number().is_prerelease() && !m_roll_forward_to_prerelease)
         {
             fx_out.set_prefer_release(true);
         }
+    }
+
+    if (name_and_version_only)
+    {
+        return true;
     }
 
     const auto& roll_forward = fx_obj.FindMember(_X("rollForward"));
@@ -330,14 +353,14 @@ bool runtime_config_t::ensure_dev_config_parsed()
     return true;
 }
 
-bool runtime_config_t::read_framework_array(const json_parser_t::value_t& frameworks_json)
+bool runtime_config_t::read_framework_array(const json_parser_t::value_t& frameworks_json, fx_reference_vector_t& frameworks_out, bool name_and_version_only)
 {
     bool rc = true;
 
     for (const auto& fx_json : frameworks_json.GetArray())
     {
         fx_reference_t fx_out;
-        rc = parse_framework(fx_json, fx_out);
+        rc = parse_framework(fx_json, fx_out, name_and_version_only);
         if (!rc)
         {
             break;
@@ -351,17 +374,17 @@ bool runtime_config_t::read_framework_array(const json_parser_t::value_t& framew
         }
 
         if (std::find_if(
-                m_frameworks.begin(),
-                m_frameworks.end(),
+                frameworks_out.begin(),
+                frameworks_out.end(),
                 [&](const fx_reference_t& item) { return fx_out.get_fx_name() == item.get_fx_name(); })
-            != m_frameworks.end())
+            != frameworks_out.end())
         {
             trace::verbose(_X("Framework %s already specified."), fx_out.get_fx_name().c_str());
             rc = false;
             break;
         }
 
-        m_frameworks.push_back(fx_out);
+        frameworks_out.push_back(fx_out);
     }
 
     return rc;
