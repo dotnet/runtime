@@ -4394,12 +4394,13 @@ void NDirect::AddMethodDescChunkWithLockTaken(NDirectStubParameters* pParams, Me
 // IL.  This allows us to cache a stub based on the inputs to CreateNDirectStubWorker
 // instead of having to generate the IL first before doing the caching.
 //
-void CreateNDirectStubAccessMetadata(StubSigDesc*       pSigDesc,       // IN
-                                     CorPinvokeMap      unmgdCallConv,  // IN
-                                     DWORD*             pdwStubFlags,   // IN/OUT
-                                     int*               piLCIDArg,      // OUT
-                                     int*               pNumArgs        // OUT
-                                     )
+static void CreateNDirectStubAccessMetadata(
+                StubSigDesc*    pSigDesc,       // IN
+                CorPinvokeMap   unmgdCallConv,  // IN
+                DWORD*          pdwStubFlags,   // IN/OUT
+                int*            piLCIDArg,      // OUT
+                int*            pNumArgs        // OUT
+                )
 {
     STANDARD_VM_CONTRACT;
 
@@ -4485,20 +4486,19 @@ void CreateNDirectStubAccessMetadata(StubSigDesc*       pSigDesc,       // IN
         }
     }
 
+    int lcidArg = -1;
     if (pSigDesc->m_pMD != NULL)
     {
-        (*piLCIDArg) = GetLCIDParameterIndex(pSigDesc->m_pMD);
-    }
-    else
-    {
-        (*piLCIDArg) = -1;
+        lcidArg = GetLCIDParameterIndex(pSigDesc->m_pMD);
+
+        // Check to see if we need to do LCID conversion.
+        if (lcidArg != -1 && lcidArg > (*pNumArgs))
+        {
+            COMPlusThrow(kIndexOutOfRangeException, IDS_EE_INVALIDLCIDPARAM);
+        }
     }
 
-    // Check to see if we need to do LCID conversion.
-    if ((*piLCIDArg) != -1 && (*piLCIDArg) > (*pNumArgs))
-    {
-        COMPlusThrow(kIndexOutOfRangeException, IDS_EE_INVALIDLCIDPARAM);
-    }
+    (*piLCIDArg) = lcidArg;
 
     if (SF_IsCOMStub(*pdwStubFlags) && !SF_IsWinRTStaticStub(*pdwStubFlags))
     {
@@ -6734,8 +6734,6 @@ VOID NDirect::NDirectLink(NDirectMethodDesc *pMD)
 // it can reenter managed mode and throw a COM+ exception if the DLL linking
 // fails.
 //==========================================================================
-
-
 EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
 {
     LPVOID ret = NULL;
@@ -6775,7 +6773,7 @@ EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
         //
         INDEBUG(Thread *pThread = GetThread());
         {
-            _ASSERTE(pThread->GetFrame()->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr());
+            _ASSERTE(pMD->ShouldSuppressGCTransition() || pThread->GetFrame()->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr());
 
             CONSISTENCY_CHECK(pMD->IsNDirect());
             //

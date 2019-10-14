@@ -3527,7 +3527,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
     const BasicBlock::weight_t weight = block->getBBWeight(this);
 
     /* Is this a call to unmanaged code ? */
-    if (tree->gtOper == GT_CALL && tree->gtFlags & GTF_CALL_UNMANAGED)
+    if (tree->IsCall() && compMethodRequiresPInvokeFrame())
     {
         assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
         if (!opts.ShouldUsePInvokeHelpers())
@@ -3819,7 +3819,7 @@ void Compiler::lvaMarkLocalVars()
     JITDUMP("\n*************** In lvaMarkLocalVars()");
 
     // If we have direct pinvokes, verify the frame list root local was set up properly
-    if (info.compCallUnmanaged != 0)
+    if (compMethodRequiresPInvokeFrame())
     {
         assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
         if (!opts.ShouldUsePInvokeHelpers())

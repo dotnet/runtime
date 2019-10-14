@@ -688,7 +688,8 @@ enum CORCOMPILE_FIXUP_BLOB_KIND
 
     ENCODE_DECLARINGTYPE_HANDLE,
 
-    ENCODE_INDIRECT_PINVOKE_TARGET,                 /* For calling a pinvoke method ptr  */
+    ENCODE_INDIRECT_PINVOKE_TARGET,                 /* For calling a pinvoke method ptr indirectly */
+    ENCODE_PINVOKE_TARGET,                          /* For calling a pinvoke method ptr */
 
     ENCODE_MODULE_HANDLE                = 0x50,     /* Module token */
     ENCODE_STATIC_FIELD_ADDRESS,                    /* For accessing a static field */
@@ -1179,6 +1180,8 @@ class ICorCompilePreloader
     virtual void MethodReferencedByCompiledCode(CORINFO_METHOD_HANDLE handle) = 0;
 
     virtual BOOL IsUncompiledMethod(CORINFO_METHOD_HANDLE handle) = 0;
+
+    virtual BOOL ShouldSuppressGCTransition(CORINFO_METHOD_HANDLE handle) = 0;
 
     // Return a method handle that was previously registered and
     // hasn't been compiled already, and remove it from the set

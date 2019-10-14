@@ -6395,7 +6395,7 @@ bool Compiler::impCanPInvokeInlineCallSite(BasicBlock* block)
 //   Also sets GTF_CALL_UNMANAGED on call for inline pinvokes if the
 //   call passes a combination of legality and profitabilty checks.
 //
-//   If GTF_CALL_UNMANAGED is set, increments info.compCallUnmanaged
+//   If GTF_CALL_UNMANAGED is set, increments info.compUnmanagedCallCountWithGCTransition
 
 void Compiler::impCheckForPInvokeCall(
     GenTreeCall* call, CORINFO_METHOD_HANDLE methHnd, CORINFO_SIG_INFO* sig, unsigned mflags, BasicBlock* block)
@@ -6406,6 +6406,11 @@ void Compiler::impCheckForPInvokeCall(
     if ((mflags & CORINFO_FLG_PINVOKE) != 0)
     {
         call->gtCallMoreFlags |= GTF_CALL_M_PINVOKE;
+    }
+
+    if ((sig->flags & CORINFO_SIGFLAG_SUPPRESS_GC_TRANSITION) != 0)
+    {
+        call->gtCallMoreFlags |= GTF_CALL_M_SUPPRESS_GC_TRANSITION;
     }
 
     if (methHnd)
@@ -6483,7 +6488,10 @@ void Compiler::impCheckForPInvokeCall(
     JITLOG((LL_INFO1000000, "\nInline a CALLI PINVOKE call from method %s", info.compFullName));
 
     call->gtFlags |= GTF_CALL_UNMANAGED;
-    info.compCallUnmanaged++;
+    if (!call->IsSuppressGCTransition())
+    {
+        info.compUnmanagedCallCountWithGCTransition++;
+    }
 
     // AMD64 convention is same for native and managed
     if (unmanagedCallConv == CORINFO_UNMANAGED_CALLCONV_C)

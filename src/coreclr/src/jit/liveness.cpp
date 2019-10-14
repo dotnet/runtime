@@ -351,7 +351,7 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
             // This ensures that the block->bbVarUse will contain
             // the FrameRoot local var if is it a tracked variable.
 
-            if ((tree->gtCall.IsUnmanaged() || (tree->gtCall.IsTailCall() && info.compCallUnmanaged)))
+            if ((tree->gtCall.IsUnmanaged() || tree->gtCall.IsTailCall()) && compMethodRequiresPInvokeFrame())
             {
                 assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
                 if (!opts.ShouldUsePInvokeHelpers())
@@ -506,7 +506,7 @@ void Compiler::fgPerBlockLocalVarLiveness()
 
         /* Get the TCB local and mark it as used */
 
-        if (block->bbJumpKind == BBJ_RETURN && info.compCallUnmanaged)
+        if (block->bbJumpKind == BBJ_RETURN && compMethodRequiresPInvokeFrame())
         {
             assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
             if (!opts.ShouldUsePInvokeHelpers())
@@ -1495,7 +1495,7 @@ void Compiler::fgComputeLifeCall(VARSET_TP& life, GenTreeCall* call)
     // the method then we're going to run the p/invoke epilog
     // So we mark the FrameRoot as used by this instruction.
     // This ensure that this variable is kept alive at the tail-call
-    if (call->IsTailCall() && info.compCallUnmanaged)
+    if (call->IsTailCall() && compMethodRequiresPInvokeFrame())
     {
         assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
         if (!opts.ShouldUsePInvokeHelpers())
@@ -1517,7 +1517,7 @@ void Compiler::fgComputeLifeCall(VARSET_TP& life, GenTreeCall* call)
     //       from the inlined N/Direct frame instead.
 
     /* Is this call to unmanaged code? */
-    if (call->IsUnmanaged())
+    if (call->IsUnmanaged() && compMethodRequiresPInvokeFrame())
     {
         /* Get the TCB local and make it live */
         assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
@@ -1884,7 +1884,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                     // Removing a call does not affect liveness unless it is a tail call in a nethod with P/Invokes or
                     // is itself a P/Invoke, in which case it may affect the liveness of the frame root variable.
                     if (!opts.MinOpts() && !opts.ShouldUsePInvokeHelpers() &&
-                        ((call->IsTailCall() && info.compCallUnmanaged) || call->IsUnmanaged()) &&
+                        ((call->IsTailCall() && compMethodRequiresPInvokeFrame()) || call->IsUnmanaged()) &&
                         lvaTable[info.compLvFrameListRoot].lvTracked)
                     {
                         fgStmtRemoved = true;

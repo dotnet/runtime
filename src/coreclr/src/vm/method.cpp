@@ -5164,6 +5164,67 @@ BOOL MethodDesc::SetStableEntryPointInterlocked(PCODE addr)
     return fResult;
 }
 
+BOOL NDirectMethodDesc::ComputeMarshalingRequired()
+{
+    WRAPPER_NO_CONTRACT;
+
+    return NDirect::MarshalingRequired(this);
+}
+
+/**********************************************************************************/
+// Forward declare the NDirectImportWorker function - See dllimport.cpp
+EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc*);
+void *NDirectMethodDesc::ResolveAndSetNDirectTarget(_In_ NDirectMethodDesc* pMD)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        INJECT_FAULT(COMPlusThrowOM(););
+        PRECONDITION(CheckPointer(pMD));
+    }
+    CONTRACTL_END
+
+// This build conditional is here due to dllimport.cpp
+// not being relevant during the crossgen build.
+#ifdef CROSSGEN_COMPILE
+    UNREACHABLE();
+
+#else
+    LPVOID targetMaybe = NDirectImportWorker(pMD);
+    _ASSERTE(targetMaybe != nullptr);
+    pMD->SetNDirectTarget(targetMaybe);
+    return targetMaybe;
+
+#endif // CROSSGEN_COMPILE
+}
+
+BOOL NDirectMethodDesc::TryResolveNDirectTargetForNoGCTransition(_In_ MethodDesc* pMD, _Out_ void** ndirectTarget)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        INJECT_FAULT(COMPlusThrowOM(););
+        PRECONDITION(CheckPointer(pMD));
+        PRECONDITION(CheckPointer(ndirectTarget));
+    }
+    CONTRACTL_END
+
+#ifdef CROSSGEN_COMPILE
+    UNREACHABLE();
+
+#else
+    if (!pMD->ShouldSuppressGCTransition())
+        return FALSE;
+
+    _ASSERTE(pMD->IsNDirect());
+    *ndirectTarget = ResolveAndSetNDirectTarget((NDirectMethodDesc*)pMD);
+    return TRUE;
+
+#endif // CROSSGEN_COMPILE
+}
+
 //*******************************************************************************
 void NDirectMethodDesc::InterlockedSetNDirectFlags(WORD wFlags)
 {
@@ -5351,7 +5412,6 @@ void NDirectMethodDesc::InitEarlyBoundNDirectTarget()
 //*******************************************************************************
 BOOL MethodDesc::HasNativeCallableAttribute()
 {
-
     CONTRACTL
     {
         THROWS;
@@ -5360,16 +5420,53 @@ BOOL MethodDesc::HasNativeCallableAttribute()
     }
     CONTRACTL_END;
 
-    HRESULT hr = GetModule()->GetCustomAttribute(GetMemberDef(),
+    HRESULT hr = GetCustomAttribute(
         WellKnownAttribute::NativeCallable,
-        NULL,
-        NULL);
-    if (hr == S_OK)
+        nullptr,
+        nullptr);
+    return (hr == S_OK) ? TRUE : FALSE;
+}
+
+//*******************************************************************************
+BOOL MethodDesc::ShouldSuppressGCTransition()
+{
+    CONTRACTL
     {
-        return TRUE;
+        NOTHROW;
+        GC_NOTRIGGER;
+        FORBID_FAULT;
+    }
+    CONTRACTL_END;
+
+    MethodDesc* tgt = nullptr;
+    if (IsNDirect())
+    {
+        tgt = this;
+    }
+    else if (IsILStub())
+    {
+        // From the IL stub, determine if the actual target has been
+        // marked to suppress the GC transition.
+        PTR_DynamicMethodDesc ilStubMD = AsDynamicMethodDesc();
+        PTR_ILStubResolver ilStubResolver = ilStubMD->GetILStubResolver();
+        tgt = ilStubResolver->GetStubTargetMethodDesc();
+
+        // In the event we can't get or don't have a target, there is no way
+        // to determine if we should suppress the GC transition.
+        if (tgt == nullptr)
+            return FALSE;
+    }
+    else
+    {
+        return FALSE;
     }
 
-    return FALSE;
+    _ASSERTE(tgt != nullptr);
+    HRESULT hr = tgt->GetCustomAttribute(
+        WellKnownAttribute::SuppressGCTransition,
+        nullptr,
+        nullptr);
+    return (hr == S_OK) ? TRUE : FALSE;
 }
 
 #ifdef FEATURE_COMINTEROP

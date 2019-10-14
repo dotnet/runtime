@@ -569,6 +569,7 @@ class CEEPreloader : public ICorCompilePreloader
     void MethodReferencedByCompiledCode(CORINFO_METHOD_HANDLE handle);
 
     BOOL IsUncompiledMethod(CORINFO_METHOD_HANDLE handle);
+    BOOL ShouldSuppressGCTransition(CORINFO_METHOD_HANDLE handle);
 
 private:
     void AddToUncompiledMethods(MethodDesc *pMethod, BOOL fForStubs);

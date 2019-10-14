@@ -5376,6 +5376,8 @@ HCIMPLEND
 /*************************************************************/
 HCIMPL0(VOID, JIT_PollGC)
 {
+    BEGIN_PRESERVE_LAST_ERROR;
+
     FCALL_CONTRACT;
 
     FC_GC_POLL_NOT_NEEDED();
@@ -5398,6 +5400,8 @@ HCIMPL0(VOID, JIT_PollGC)
 #endif // _DEBUG
         HELPER_METHOD_FRAME_END();
     }
+
+    END_PRESERVE_LAST_ERROR;
 }
 HCIMPLEND
 
