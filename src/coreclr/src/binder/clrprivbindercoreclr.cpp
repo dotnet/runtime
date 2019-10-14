@@ -5,7 +5,6 @@
 #include "common.h"
 #include "assemblybinder.hpp"
 #include "clrprivbindercoreclr.h"
-#include "clrprivbinderutil.h"
 
 using namespace BINDER_SPACE;
 
