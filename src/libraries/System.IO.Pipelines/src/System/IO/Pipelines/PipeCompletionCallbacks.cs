@@ -11,11 +11,11 @@ namespace System.IO.Pipelines
     {
         private readonly ArrayPool<PipeCompletionCallback> _pool;
         private readonly int _count;
-        private readonly Exception _exception;
+        private readonly Exception? _exception;
         private readonly PipeCompletionCallback _firstCallback;
-        private readonly PipeCompletionCallback[] _callbacks;
+        private readonly PipeCompletionCallback[]? _callbacks;
 
-        public PipeCompletionCallbacks(ArrayPool<PipeCompletionCallback> pool, int count, Exception exception, PipeCompletionCallback firstCallback, PipeCompletionCallback[] callbacks)
+        public PipeCompletionCallbacks(ArrayPool<PipeCompletionCallback> pool, int count, Exception? exception, PipeCompletionCallback firstCallback, PipeCompletionCallback[]? callbacks)
         {
             _pool = pool;
             _count = count;
@@ -31,7 +31,7 @@ namespace System.IO.Pipelines
                 return;
             }
 
-            List<Exception> exceptions = null;
+            List<Exception>? exceptions = null;
 
             Execute(_firstCallback, ref exceptions);
 
@@ -57,7 +57,7 @@ namespace System.IO.Pipelines
             }
         }
 
-        private void Execute(PipeCompletionCallback callback, ref List<Exception> exceptions)
+        private void Execute(PipeCompletionCallback callback, ref List<Exception>? exceptions)
         {
             try
             {

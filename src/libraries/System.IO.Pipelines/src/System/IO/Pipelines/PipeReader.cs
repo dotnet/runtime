@@ -13,7 +13,7 @@ namespace System.IO.Pipelines
     /// </summary>
     public abstract partial class PipeReader
     {
-        private PipeReaderStream _stream;
+        private PipeReaderStream? _stream;
 
         /// <summary>
         /// Attempt to synchronously read data the <see cref="PipeReader"/>.
@@ -78,13 +78,13 @@ namespace System.IO.Pipelines
         /// Marks the <see cref="PipeReader"/> as being complete, meaning no more data will be read from it.
         /// </summary>
         /// <param name="exception">Optional <see cref="Exception"/> indicating a failure that's causing the reader to complete.</param>
-        public abstract void Complete(Exception exception = null);
+        public abstract void Complete(Exception? exception = null);
 
         /// <summary>
         /// Marks the <see cref="PipeReader"/> as being complete, meaning no more data will be read from it.
         /// </summary>
         /// <param name="exception">Optional <see cref="Exception"/> indicating a failure that's causing the reader to complete.</param>
-        public virtual ValueTask CompleteAsync(Exception exception = null)
+        public virtual ValueTask CompleteAsync(Exception? exception = null)
         {
             try
             {
@@ -101,7 +101,7 @@ namespace System.IO.Pipelines
         /// Registers a callback that gets executed when the <see cref="PipeWriter"/> side of the pipe is completed
         /// </summary>
         [Obsolete("OnWriterCompleted may not be invoked on all implementations of PipeReader. This will be removed in a future release.")]
-        public virtual void OnWriterCompleted(Action<Exception, object> callback, object state)
+        public virtual void OnWriterCompleted(Action<Exception?, object?> callback, object? state)
         {
 
         }
@@ -113,7 +113,7 @@ namespace System.IO.Pipelines
         /// <param name="stream">The stream.</param>
         /// <param name="readerOptions">The options.</param>
         /// <returns>A <see cref="PipeReader"/> that wraps the <see cref="Stream"/>.</returns>
-        public static PipeReader Create(Stream stream, StreamPipeReaderOptions readerOptions = null)
+        public static PipeReader Create(Stream stream, StreamPipeReaderOptions? readerOptions = null)
         {
             return new StreamPipeReader(stream, readerOptions ?? StreamPipeReaderOptions.s_default);
         }

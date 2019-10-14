@@ -13,19 +13,19 @@ namespace System.IO.Pipelines
     /// </summary>
     public abstract partial class PipeWriter : IBufferWriter<byte>
     {
-        private PipeWriterStream _stream;
+        private PipeWriterStream? _stream;
 
         /// <summary>
         /// Marks the <see cref="PipeWriter"/> as being complete, meaning no more data will be written to it.
         /// </summary>
         /// <param name="exception">Optional <see cref="Exception"/> indicating a failure that's causing the pipeline to complete.</param>
-        public abstract void Complete(Exception exception = null);
+        public abstract void Complete(Exception? exception = null);
 
         /// <summary>
         /// Marks the <see cref="PipeWriter"/> as being complete, meaning no more data will be written to it.
         /// </summary>
         /// <param name="exception">Optional <see cref="Exception"/> indicating a failure that's causing the pipeline to complete.</param>
-        public virtual ValueTask CompleteAsync(Exception exception = null)
+        public virtual ValueTask CompleteAsync(Exception? exception = null)
         {
             try
             {
@@ -47,7 +47,7 @@ namespace System.IO.Pipelines
         /// Registers a callback that gets executed when the <see cref="PipeReader"/> side of the pipe is completed
         /// </summary>
         [Obsolete("OnReaderCompleted may not be invoked on all implementations of PipeWriter. This will be removed in a future release.")]
-        public virtual void OnReaderCompleted(Action<Exception, object> callback, object state)
+        public virtual void OnReaderCompleted(Action<Exception?, object?> callback, object? state)
         {
 
         }
@@ -91,7 +91,7 @@ namespace System.IO.Pipelines
         /// <param name="stream">The stream.</param>
         /// <param name="writerOptions">The options.</param>
         /// <returns>A <see cref="PipeWriter"/> that wraps the <see cref="Stream"/>.</returns>
-        public static PipeWriter Create(Stream stream, StreamPipeWriterOptions writerOptions = null)
+        public static PipeWriter Create(Stream stream, StreamPipeWriterOptions? writerOptions = null)
         {
             return new StreamPipeWriter(stream, writerOptions ?? StreamPipeWriterOptions.s_default);
         }

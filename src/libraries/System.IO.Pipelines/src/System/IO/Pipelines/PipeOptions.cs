@@ -27,9 +27,9 @@ namespace System.IO.Pipelines
         /// Creates a new instance of <see cref="PipeOptions"/>
         /// </summary>
         public PipeOptions(
-            MemoryPool<byte> pool = null,
-            PipeScheduler readerScheduler = null,
-            PipeScheduler writerScheduler = null,
+            MemoryPool<byte>? pool = null,
+            PipeScheduler? readerScheduler = null,
+            PipeScheduler? writerScheduler = null,
             long pauseWriterThreshold = -1,
             long resumeWriterThreshold = -1,
             int minimumSegmentSize = -1,

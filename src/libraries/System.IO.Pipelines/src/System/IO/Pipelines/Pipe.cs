@@ -20,20 +20,20 @@ namespace System.IO.Pipelines
         internal const int InitialSegmentPoolSize = 16; // 65K
         internal const int MaxSegmentPoolSize = 256; // 1MB
 
-        private static readonly Action<object> s_signalReaderAwaitable = state => ((Pipe)state).ReaderCancellationRequested();
-        private static readonly Action<object> s_signalWriterAwaitable = state => ((Pipe)state).WriterCancellationRequested();
-        private static readonly Action<object> s_invokeCompletionCallbacks = state => ((PipeCompletionCallbacks)state).Execute();
+        private static readonly Action<object?> s_signalReaderAwaitable = state => ((Pipe)state!).ReaderCancellationRequested();
+        private static readonly Action<object?> s_signalWriterAwaitable = state => ((Pipe)state!).WriterCancellationRequested();
+        private static readonly Action<object?> s_invokeCompletionCallbacks = state => ((PipeCompletionCallbacks)state!).Execute();
 
         // These callbacks all point to the same methods but are different delegate types
-        private static readonly ContextCallback s_executionContextRawCallback = ExecuteWithoutExecutionContext;
-        private static readonly SendOrPostCallback s_syncContextExecutionContextCallback = ExecuteWithExecutionContext;
-        private static readonly SendOrPostCallback s_syncContextExecuteWithoutExecutionContextCallback = ExecuteWithoutExecutionContext;
-        private static readonly Action<object> s_scheduleWithExecutionContextCallback = ExecuteWithExecutionContext;
+        private static readonly ContextCallback s_executionContextRawCallback = ExecuteWithoutExecutionContext!;
+        private static readonly SendOrPostCallback s_syncContextExecutionContextCallback = ExecuteWithExecutionContext!;
+        private static readonly SendOrPostCallback s_syncContextExecuteWithoutExecutionContextCallback = ExecuteWithoutExecutionContext!;
+        private static readonly Action<object?> s_scheduleWithExecutionContextCallback = ExecuteWithExecutionContext!;
 
         // This sync objects protects the shared state between the writer and reader (most of this class)
         private readonly object _sync = new object();
 
-        private readonly MemoryPool<byte> _pool;
+        private readonly MemoryPool<byte>? _pool;
         private readonly int _minimumSegmentSize;
         private readonly long _pauseWriterThreshold;
         private readonly long _resumeWriterThreshold;
@@ -66,15 +66,15 @@ namespace System.IO.Pipelines
         private long _lastExaminedIndex = -1;
 
         // The read head which is the start of the PipeReader's consumed bytes
-        private BufferSegment _readHead;
+        private BufferSegment? _readHead;
         private int _readHeadIndex;
 
         // The extent of the bytes available to the PipeReader to consume
-        private BufferSegment _readTail;
+        private BufferSegment? _readTail;
         private int _readTailIndex;
 
         // The write head which is the extent of the PipeWriter's written bytes
-        private BufferSegment _writingHead;
+        private BufferSegment? _writingHead;
         private Memory<byte> _writingHeadMemory;
         private int _writingHeadBytesBuffered;
 
@@ -251,7 +251,7 @@ namespace System.IO.Pipelines
 
         private BufferSegment CreateSegmentUnsynchronized()
         {
-            if (_bufferSegmentPool.TryPop(out BufferSegment segment))
+            if (_bufferSegmentPool.TryPop(out BufferSegment? segment))
             {
                 return segment;
             }
@@ -282,6 +282,7 @@ namespace System.IO.Pipelines
             }
 
             // Update the writing head
+            Debug.Assert(_writingHead != null);
             _writingHead.End += _writingHeadBytesBuffered;
 
             // Always move the read tail to the write head
@@ -378,10 +379,10 @@ namespace System.IO.Pipelines
             Debug.Assert(_writerAwaitable.IsCompleted || _readerAwaitable.IsCompleted);
         }
 
-        internal void CompleteWriter(Exception exception)
+        internal void CompleteWriter(Exception? exception)
         {
             CompletionData completionData;
-            PipeCompletionCallbacks completionCallbacks;
+            PipeCompletionCallbacks? completionCallbacks;
             bool readerCompleted;
 
             lock (_sync)
@@ -422,10 +423,10 @@ namespace System.IO.Pipelines
 
             // TODO: Use new SequenceMarshal.TryGetReadOnlySequenceSegment to get the correct data
             // directly casting only works because the type value in ReadOnlySequenceSegment is 0
-            AdvanceReader((BufferSegment)consumed.GetObject(), consumed.GetInteger(), (BufferSegment)examined.GetObject(), examined.GetInteger());
+            AdvanceReader((BufferSegment?)consumed.GetObject(), consumed.GetInteger(), (BufferSegment?)examined.GetObject(), examined.GetInteger());
         }
 
-        private void AdvanceReader(BufferSegment consumedSegment, int consumedIndex, BufferSegment examinedSegment, int examinedIndex)
+        private void AdvanceReader(BufferSegment? consumedSegment, int consumedIndex, BufferSegment? examinedSegment, int examinedIndex)
         {
             // Throw if examined < consumed
             if (consumedSegment != null && examinedSegment != null && BufferSegment.GetLength(consumedSegment, consumedIndex, examinedSegment, examinedIndex) < 0)
@@ -433,8 +434,8 @@ namespace System.IO.Pipelines
                 ThrowHelper.ThrowInvalidOperationException_InvalidExaminedOrConsumedPosition();
             }
 
-            BufferSegment returnStart = null;
-            BufferSegment returnEnd = null;
+            BufferSegment? returnStart = null;
+            BufferSegment? returnEnd = null;
 
             CompletionData completionData = default;
 
@@ -483,7 +484,7 @@ namespace System.IO.Pipelines
 
                     void MoveReturnEndToNextBlock()
                     {
-                        BufferSegment nextBlock = returnEnd.NextSegment;
+                        BufferSegment? nextBlock = returnEnd!.NextSegment;
                         if (_readTail == returnEnd)
                         {
                             _readTail = nextBlock;
@@ -538,7 +539,7 @@ namespace System.IO.Pipelines
 
                 while (returnStart != null && returnStart != returnEnd)
                 {
-                    BufferSegment next = returnStart.NextSegment;
+                    BufferSegment? next = returnStart.NextSegment;
                     returnStart.ResetMemory();
                     ReturnSegmentUnsynchronized(returnStart);
                     returnStart = next;
@@ -550,9 +551,9 @@ namespace System.IO.Pipelines
             TrySchedule(_writerScheduler, completionData);
         }
 
-        internal void CompleteReader(Exception exception)
+        internal void CompleteReader(Exception? exception)
         {
-            PipeCompletionCallbacks completionCallbacks;
+            PipeCompletionCallbacks? completionCallbacks;
             CompletionData completionData;
             bool writerCompleted;
 
@@ -585,14 +586,14 @@ namespace System.IO.Pipelines
             TrySchedule(_writerScheduler, completionData);
         }
 
-        internal void OnWriterCompleted(Action<Exception, object> callback, object state)
+        internal void OnWriterCompleted(Action<Exception?, object?> callback, object? state)
         {
             if (callback is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.callback);
             }
 
-            PipeCompletionCallbacks completionCallbacks;
+            PipeCompletionCallbacks? completionCallbacks;
             lock (_sync)
             {
                 completionCallbacks = _writerCompletion.AddCallback(callback, state);
@@ -624,14 +625,14 @@ namespace System.IO.Pipelines
             TrySchedule(_writerScheduler, completionData);
         }
 
-        internal void OnReaderCompleted(Action<Exception, object> callback, object state)
+        internal void OnReaderCompleted(Action<Exception?, object?> callback, object? state)
         {
             if (callback is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.callback);
             }
 
-            PipeCompletionCallbacks completionCallbacks;
+            PipeCompletionCallbacks? completionCallbacks;
             lock (_sync)
             {
                 completionCallbacks = _readerCompletion.AddCallback(callback, state);
@@ -707,7 +708,7 @@ namespace System.IO.Pipelines
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void TrySchedule(PipeScheduler scheduler, in CompletionData completionData)
         {
-            Action<object> completion = completionData.Completion;
+            Action<object?> completion = completionData.Completion;
             // Nothing to do
             if (completion is null)
             {
@@ -782,7 +783,7 @@ namespace System.IO.Pipelines
                 // Return all segments
                 // if _readHead is null we need to try return _commitHead
                 // because there might be a block allocated for writing
-                BufferSegment segment = _readHead ?? _readTail;
+                BufferSegment? segment = _readHead ?? _readTail;
                 while (segment != null)
                 {
                     BufferSegment returnSegment = segment;
@@ -812,7 +813,7 @@ namespace System.IO.Pipelines
             return ValueTaskSourceStatus.Pending;
         }
 
-        internal void OnReadAsyncCompleted(Action<object> continuation, object state, ValueTaskSourceOnCompletedFlags flags)
+        internal void OnReadAsyncCompleted(Action<object?> continuation, object? state, ValueTaskSourceOnCompletedFlags flags)
         {
             CompletionData completionData;
             bool doubleCompletion;
@@ -860,9 +861,10 @@ namespace System.IO.Pipelines
             bool isCanceled = _readerAwaitable.ObserveCancellation();
 
             // No need to read end if there is no head
-            BufferSegment head = _readHead;
+            BufferSegment? head = _readHead;
             if (head != null)
             {
+                Debug.Assert(_readTail != null);
                 // Reading commit head shared with writer
                 var readOnlySequence = new ReadOnlySequence<byte>(head, _readHeadIndex, _readTail, _readTailIndex);
                 result = new ReadResult(readOnlySequence, isCanceled, isCompleted);
@@ -975,6 +977,7 @@ namespace System.IO.Pipelines
 
         private void WriteMultiSegment(ReadOnlySpan<byte> source)
         {
+            Debug.Assert(_writingHead != null);
             Span<byte> destination = _writingHeadMemory.Span;
 
             while (true)
@@ -1004,7 +1007,7 @@ namespace System.IO.Pipelines
             }
         }
 
-        internal void OnFlushAsyncCompleted(Action<object> continuation, object state, ValueTaskSourceOnCompletedFlags flags)
+        internal void OnFlushAsyncCompleted(Action<object?> continuation, object? state, ValueTaskSourceOnCompletedFlags flags)
         {
             CompletionData completionData;
             bool doubleCompletion;

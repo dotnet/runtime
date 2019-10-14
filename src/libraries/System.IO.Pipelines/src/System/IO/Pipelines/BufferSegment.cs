@@ -10,8 +10,8 @@ namespace System.IO.Pipelines
 {
     internal sealed class BufferSegment : ReadOnlySequenceSegment<byte>
     {
-        private object _memoryOwner;
-        private BufferSegment _next;
+        private object? _memoryOwner;
+        private BufferSegment? _next;
         private int _end;
 
         /// <summary>
@@ -37,7 +37,7 @@ namespace System.IO.Pipelines
         /// working memory. The "active" memory is grown when bytes are copied in, End is increased, and Next is assigned. The "active"
         /// memory is shrunk when bytes are consumed, Start is increased, and blocks are returned to the pool.
         /// </summary>
-        public BufferSegment NextSegment
+        public BufferSegment? NextSegment
         {
             get => _next;
             set
@@ -67,6 +67,7 @@ namespace System.IO.Pipelines
             }
             else
             {
+                Debug.Assert(_memoryOwner is byte[]);
                 byte[] poolArray = (byte[])_memoryOwner;
                 ArrayPool<byte>.Shared.Return(poolArray);
             }
@@ -83,7 +84,7 @@ namespace System.IO.Pipelines
         }
 
         // Exposed for testing
-        internal object MemoryOwner => _memoryOwner;
+        internal object? MemoryOwner => _memoryOwner;
 
         public Memory<byte> AvailableMemory { get; private set; }
 
@@ -106,6 +107,7 @@ namespace System.IO.Pipelines
 
             while (segment.Next != null)
             {
+                Debug.Assert(segment.NextSegment != null);
                 segment.NextSegment.RunningIndex = segment.RunningIndex + segment.Length;
                 segment = segment.NextSegment;
             }

@@ -9,12 +9,12 @@ namespace System.IO.Pipelines
 {
     internal sealed class ThreadPoolScheduler : PipeScheduler
     {
-        public override void Schedule(Action<object> action, object state)
+        public override void Schedule(Action<object?> action, object? state)
         {
             System.Threading.ThreadPool.QueueUserWorkItem(action, state, preferLocal: false);
         }
 
-        internal override void UnsafeSchedule(Action<object> action, object state)
+        internal override void UnsafeSchedule(Action<object?> action, object? state)
         {
             System.Threading.ThreadPool.UnsafeQueueUserWorkItem(action, state, preferLocal: false);
         }

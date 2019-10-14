@@ -18,7 +18,7 @@ namespace System.IO.Pipelines
         /// <summary>
         /// Creates a new instance of <see cref="StreamPipeWriterOptions"/>.
         /// </summary>
-        public StreamPipeWriterOptions(MemoryPool<byte> pool = null, int minimumBufferSize = -1, bool leaveOpen = false)
+        public StreamPipeWriterOptions(MemoryPool<byte>? pool = null, int minimumBufferSize = -1, bool leaveOpen = false)
         {
             Pool = pool ?? MemoryPool<byte>.Shared;
 
