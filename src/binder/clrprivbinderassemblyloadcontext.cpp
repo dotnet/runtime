@@ -6,7 +6,6 @@
 #include "assemblybinder.hpp"
 #include "clrprivbindercoreclr.h"
 #include "clrprivbinderassemblyloadcontext.h"
-#include "clrprivbinderutil.h"
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 

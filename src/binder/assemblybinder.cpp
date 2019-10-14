@@ -651,51 +651,6 @@ namespace BINDER_SPACE
     }
 
     /* static */
-    HRESULT AssemblyBinder::GetAssemblyFromImage(PEImage   *pPEImage,
-                                                 PEImage   *pNativePEImage,
-                                                 Assembly **ppAssembly)
-    {
-        _ASSERTE(BINDER_SPACE::fAssemblyBinderInitialized == TRUE);
-
-        HRESULT hr = S_OK;
-        BINDER_LOG_ENTER(W("AssemblyBinder::GetAssemblyFromImage"));
-        
-        _ASSERTE(pPEImage != NULL);
-        _ASSERTE(ppAssembly != NULL);
-
-        ReleaseHolder<Assembly> pAssembly;
-        ReleaseHolder<IMDInternalImport> pIMetaDataAssemblyImport;
-        DWORD dwPAFlags[2];
-        PEKIND PeKind = peNone;
-
-        SAFE_NEW(pAssembly, Assembly);
-        if(pNativePEImage)
-        {
-            IF_FAIL_GO(BinderAcquireImport(pNativePEImage, &pIMetaDataAssemblyImport, dwPAFlags, TRUE));
-        }
-        else
-        {
-            IF_FAIL_GO(BinderAcquireImport(pPEImage, &pIMetaDataAssemblyImport, dwPAFlags, FALSE));
-        }
-        IF_FAIL_GO(TranslatePEToArchitectureType(dwPAFlags, &PeKind));
-        IF_FAIL_GO(pAssembly->Init(pIMetaDataAssemblyImport,
-                                   PeKind,
-                                   pPEImage,
-                                   pNativePEImage,
-                                   g_BinderVariables->emptyString,
-                                   FALSE /* fIsInGAC */));
-
-        // TODO: Is this correct?
-        pAssembly->SetIsByteArray(TRUE);
-
-        *ppAssembly = pAssembly.Extract();
-
-    Exit:
-        BINDER_LOG_LEAVE_HR(W("AssemblyBinder::GetAssemblyFromImage"), hr);
-        return hr;
-    }
-
-    /* static */
     HRESULT AssemblyBinder::BindByName(ApplicationContext *pApplicationContext,
                                        AssemblyName       *pAssemblyName,
                                        DWORD               dwBindFlags,
