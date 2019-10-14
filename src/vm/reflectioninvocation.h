@@ -57,7 +57,6 @@ public:
     static FCDECL0(void, ProbeForSufficientStack);    
     static FCDECL0(void, EnsureSufficientExecutionStack);
     static FCDECL0(FC_BOOL_RET, TryEnsureSufficientExecutionStack);
-    static FCDECL3(void, ExecuteCodeWithGuaranteedCleanup, Object* pCodeDelegateUNSAFE, Object* pBackoutDelegateUNSAFE, Object* pUserDataUNSAFE);
 
     // TypedReference functions, should go somewhere else
     static FCDECL4(void, MakeTypedReference, TypedByRef * value, Object* targetUNSAFE, ArrayBase* fldsUNSAFE, ReflectClassBaseObject *pFieldType);
@@ -74,12 +73,6 @@ public:
     // helper fcalls for invocation
     static FCDECL2(FC_BOOL_RET, CanValueSpecialCast, ReflectClassBaseObject *valueType, ReflectClassBaseObject *targetType);
     static FCDECL3(Object*, AllocateValueType, ReflectClassBaseObject *targetType, Object *valueUNSAFE, CLR_BOOL fForceTypeChange);
-
-    static FCDECL4(void, PerformSecurityCheck, Object *target, MethodDesc *pMeth, ReflectClassBaseObject *pParent, DWORD dwFlags);
-    static FCDECL2(void, CheckArgs, PTRArray *objs, SignatureNative sig);
-
-    static void PrepareDelegateHelper(OBJECTREF* pDelegate, BOOL onlyContractedMethod);
-    static void CanCacheTargetAndCrackedSig(MethodDesc* pMD);
 };
 
 class ReflectionSerialization {

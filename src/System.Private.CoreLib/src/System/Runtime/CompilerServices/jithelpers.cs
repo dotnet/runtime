@@ -94,9 +94,12 @@ namespace System.Runtime.CompilerServices
         public byte Data;
     }
 
-    internal class RawSzArrayData
+    internal class RawArrayData
     {
-        public IntPtr Count; // Array._numComponents padded to IntPtr
+        public uint Length; // Array._numComponents padded to IntPtr
+#if BIT64
+        public uint Padding;
+#endif
         public byte Data;
     }
 
