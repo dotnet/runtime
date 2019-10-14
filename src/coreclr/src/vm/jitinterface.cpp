@@ -7552,7 +7552,7 @@ bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
 
     if (tk == MscorlibBinder::GetMethod(METHOD__RUNTIME_HELPERS__GET_RAW_SZ_ARRAY_DATA)->GetMemberDef())
     {
-        mdToken tokRawSzArrayData = MscorlibBinder::GetField(FIELD__RAW_SZARRAY_DATA__DATA)->GetMemberDef();
+        mdToken tokRawSzArrayData = MscorlibBinder::GetField(FIELD__RAW_ARRAY_DATA__DATA)->GetMemberDef();
 
         static BYTE ilcode[] = { CEE_LDARG_0,
                                  CEE_LDFLDA,0,0,0,0,

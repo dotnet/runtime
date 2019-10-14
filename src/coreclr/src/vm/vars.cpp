@@ -94,9 +94,6 @@ GPTR_IMPL(MethodTable,      g_pBaseRuntimeClass);
 GPTR_IMPL(MethodTable,      g_pICastableInterface);
 #endif // FEATURE_ICASTABLE
 
-
-GPTR_IMPL(MethodDesc,       g_pExecuteBackoutCodeHelperMethod);
-
 GPTR_IMPL(MethodDesc,       g_pObjectFinalizerMD);
 
 GPTR_IMPL(Thread,g_pFinalizerThread);

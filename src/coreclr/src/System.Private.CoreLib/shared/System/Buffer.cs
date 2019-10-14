@@ -36,21 +36,23 @@ namespace System
             if (!IsPrimitiveTypeArray(array))
                 throw new ArgumentException(SR.Arg_MustBePrimArray, nameof(array));
 
-            return _ByteLength(array);
+            nuint byteLength = (nuint)array.LongLength * (nuint)array.GetElementSize();
+
+            // This API is explosed both as Buffer.ByteLength and also used indirectly in argument
+            // checks for Buffer.GetByte/SetByte.
+            //
+            // If somebody called Get/SetByte on 2GB+ arrays, there is a decent chance that
+            // the computation of the index has overflowed. Thus we intentionally always
+            // throw on 2GB+ arrays in Get/SetByte argument checks (even for indicies <2GB)
+            // to prevent people from running into a trap silently.
+
+            return checked((int)byteLength);
         }
 
         public static byte GetByte(Array array, int index)
         {
-            // Is the array present?
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
-
-            // Is it of primitive types?
-            if (!IsPrimitiveTypeArray(array))
-                throw new ArgumentException(SR.Arg_MustBePrimArray, nameof(array));
-
-            // Is the index in valid range of the array?
-            if ((uint)index >= (uint)_ByteLength(array))
+            // array argument validation done via ByteLength
+            if ((uint)index >= (uint)ByteLength(array))
                 throw new ArgumentOutOfRangeException(nameof(index));
 
             return Unsafe.Add<byte>(ref array.GetRawArrayData(), index);
@@ -58,16 +60,8 @@ namespace System
 
         public static void SetByte(Array array, int index, byte value)
         {
-            // Is the array present?
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
-
-            // Is it of primitive types?
-            if (!IsPrimitiveTypeArray(array))
-                throw new ArgumentException(SR.Arg_MustBePrimArray, nameof(array));
-
-            // Is the index in valid range of the array?
-            if ((uint)index >= (uint)_ByteLength(array))
+            // array argument validation done via ByteLength
+            if ((uint)index >= (uint)ByteLength(array))
                 throw new ArgumentOutOfRangeException(nameof(index));
 
             Unsafe.Add<byte>(ref array.GetRawArrayData(), index) = value;

@@ -65,6 +65,26 @@ namespace System.Runtime.CompilerServices
             return GetUninitializedObjectInternal(type);
         }
 
+        public static void ExecuteCodeWithGuaranteedCleanup(TryCode code, CleanupCode backoutCode, object? userData)
+        {
+            if (code == null)
+                throw new ArgumentNullException(nameof(code));
+            if (backoutCode == null)
+                throw new ArgumentNullException(nameof(backoutCode));
+
+            bool exceptionThrown = true;
+
+            try
+            {
+                code(userData);
+                exceptionThrown = false;
+            }
+            finally
+            {
+                backoutCode(userData, exceptionThrown);
+            }
+        }
+
         public static void PrepareContractedDelegate(Delegate d)
         {
         }

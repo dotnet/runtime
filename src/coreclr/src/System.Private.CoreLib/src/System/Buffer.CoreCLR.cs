@@ -30,15 +30,6 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool IsPrimitiveTypeArray(Array array);
 
-        // Gets the length of the array in bytes.  The array must be an
-        // array of primitives.
-        //
-        // This essentially does the following:
-        // return array.length * sizeof(array.UnderlyingElementType).
-        //
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int _ByteLength(Array array);
-
         // This method has a slightly different behavior on arm and other platforms.
         // On arm this method behaves like memcpy and does not handle overlapping buffers.
         // While on other platforms it behaves like memmove and handles overlapping buffers.
