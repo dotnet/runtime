@@ -10,11 +10,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="Microsoft.Extensions.Logging.Configuration" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Compile Include="../../shared/*.cs" />
+    <Compile Include="$(SharedSourceRoot)ProviderAliasUtilities\*.cs" />
 
     <Reference Include="Microsoft.Extensions.Configuration.Binder" />
     <Reference Include="Microsoft.Extensions.DependencyInjection" />
