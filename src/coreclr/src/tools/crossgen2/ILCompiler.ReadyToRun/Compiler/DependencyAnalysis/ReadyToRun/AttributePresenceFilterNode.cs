@@ -112,16 +112,36 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
              *
              * Therefore, we have this alternate path to obtain the type namespace and name.
              */
-            // TODO: Handle MethodRef (https://github.com/dotnet/coreclr/issues/27118)
-            Debug.Assert(customAttributeConstructorHandle.Kind == HandleKind.MethodDefinition);
-            MethodDefinitionHandle customAttributeConstructorDefinitionHandle = (MethodDefinitionHandle)customAttributeConstructorHandle;
-            MethodDefinition customAttributeConstructorDefinition = _module.MetadataReader.GetMethodDefinition(customAttributeConstructorDefinitionHandle);
-            TypeDefinitionHandle customAttributeConstructorTypeDefinitionHandle = customAttributeConstructorDefinition.GetDeclaringType();
-            TypeDefinition customAttributeConstructorTypeDefinition = _module.MetadataReader.GetTypeDefinition(customAttributeConstructorTypeDefinitionHandle);
-            StringHandle customAttributeConstructorTypeNamespaceHandle = customAttributeConstructorTypeDefinition.Namespace;
-            StringHandle customAttributeConstructorTypeNameHandle = customAttributeConstructorTypeDefinition.Name;
-            customAttributeTypeNamespace = _module.MetadataReader.GetString(customAttributeConstructorTypeNamespaceHandle);
-            customAttributeTypeName = _module.MetadataReader.GetString(customAttributeConstructorTypeNameHandle);
+            if (customAttributeConstructorHandle.Kind == HandleKind.MethodDefinition)
+            {
+                MethodDefinitionHandle customAttributeConstructorDefinitionHandle = (MethodDefinitionHandle)customAttributeConstructorHandle;
+                MethodDefinition customAttributeConstructorDefinition =  _module.MetadataReader.GetMethodDefinition(customAttributeConstructorDefinitionHandle);
+                TypeDefinitionHandle customAttributeConstructorTypeDefinitionHandle = customAttributeConstructorDefinition.GetDeclaringType();
+                TypeDefinition customAttributeConstructorTypeDefinition =  _module.MetadataReader.GetTypeDefinition(customAttributeConstructorTypeDefinitionHandle);
+                StringHandle customAttributeConstructorTypeNamespaceHandle = customAttributeConstructorTypeDefinition.Namespace;
+                StringHandle customAttributeConstructorTypeNameHandle = customAttributeConstructorTypeDefinition.Name;
+                customAttributeTypeNamespace =  _module.MetadataReader.GetString(customAttributeConstructorTypeNamespaceHandle);
+                customAttributeTypeName =  _module.MetadataReader.GetString(customAttributeConstructorTypeNameHandle);
+            }
+            else if (customAttributeConstructorHandle.Kind == HandleKind.MemberReference)
+            {
+                MemberReferenceHandle customAttributeConstructorReferenceHandle = (MemberReferenceHandle)customAttributeConstructorHandle;
+                MemberReference customAttributeConstructorReference =  _module.MetadataReader.GetMemberReference(customAttributeConstructorReferenceHandle);
+                EntityHandle customAttributeConstructorReferenceParentHandle = customAttributeConstructorReference.Parent;
+                Debug.Assert(customAttributeConstructorReferenceParentHandle.Kind == HandleKind.TypeReference);
+                TypeReferenceHandle customAttributeConstructorTypeReferenceHandle = (TypeReferenceHandle)customAttributeConstructorReferenceParentHandle;
+                TypeReference customAttributeConstructorTypeReference =  _module.MetadataReader.GetTypeReference(customAttributeConstructorTypeReferenceHandle);
+                StringHandle customAttributeConstructorTypeNamespaceHandle = customAttributeConstructorTypeReference.Namespace;
+                StringHandle customAttributeConstructorTypeNameHandle = customAttributeConstructorTypeReference.Name;
+                customAttributeTypeNamespace =  _module.MetadataReader.GetString(customAttributeConstructorTypeNamespaceHandle);
+                customAttributeTypeName =  _module.MetadataReader.GetString(customAttributeConstructorTypeNameHandle);
+            }
+            else
+            {
+                Debug.Assert(false);
+                customAttributeTypeNamespace = null;
+                customAttributeTypeName = null;
+            }
         }
 
         // Algorithm "xor128" from p. 5 of Marsaglia, "Xorshift RNGs"
