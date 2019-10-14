@@ -578,7 +578,7 @@ void Compiler::optFoldNullCheck(GenTree* tree)
                                         GenTree* offset = additionNode->gtGetOp2();
                                         if (offset->IsCnsIntOrI())
                                         {
-                                            if (!fgIsBigOffset(offset->gtIntConCommon.IconValue()))
+                                            if (!fgIsBigOffset(offset->AsIntConCommon()->IconValue()))
                                             {
                                                 // Walk from the use to the def in reverse execution order to see
                                                 // if any nodes have unsafe side effects.

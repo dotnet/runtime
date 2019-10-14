@@ -3807,7 +3807,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
                 if (op2->IsCnsIntOrI())
                 {
-                    size_t ival = op2->gtIntConCommon.IconValue();
+                    size_t ival = op2->AsIntConCommon()->IconValue();
 
                     if (ival > 0 && ival == genFindLowestBit(ival))
                     {
@@ -4599,9 +4599,9 @@ DONE:
 
 unsigned GenTree::GetScaleIndexMul()
 {
-    if (IsCnsIntOrI() && jitIsScaleIndexMul(gtIntConCommon.IconValue()) && gtIntConCommon.IconValue() != 1)
+    if (IsCnsIntOrI() && jitIsScaleIndexMul(AsIntConCommon()->IconValue()) && AsIntConCommon()->IconValue() != 1)
     {
-        return (unsigned)gtIntConCommon.IconValue();
+        return (unsigned)AsIntConCommon()->IconValue();
     }
 
     return 0;
@@ -4617,9 +4617,9 @@ unsigned GenTree::GetScaleIndexMul()
 
 unsigned GenTree::GetScaleIndexShf()
 {
-    if (IsCnsIntOrI() && jitIsScaleIndexShift(gtIntConCommon.IconValue()))
+    if (IsCnsIntOrI() && jitIsScaleIndexShift(AsIntConCommon()->IconValue()))
     {
-        return (unsigned)(1 << gtIntConCommon.IconValue());
+        return (unsigned)(1 << AsIntConCommon()->IconValue());
     }
 
     return 0;
@@ -12564,7 +12564,7 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
 
     /* Get the constant value */
 
-    val = cons->gtIntConCommon.IconValue();
+    val = cons->AsIntConCommon()->IconValue();
 
     // Transforms that would drop op cannot be performed if op has side effects
     bool opHasSideEffects = (op->gtFlags & GTF_SIDE_EFFECT) != 0;
@@ -13527,12 +13527,12 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
                 /* Fold constant LONG unary operator */
 
-                if (!op1->gtIntConCommon.ImmedValCanBeFolded(this, tree->OperGet()))
+                if (!op1->AsIntConCommon()->ImmedValCanBeFolded(this, tree->OperGet()))
                 {
                     return tree;
                 }
 
-                lval1 = op1->gtIntConCommon.LngValue();
+                lval1 = op1->AsIntConCommon()->LngValue();
 
                 switch (tree->gtOper)
                 {
@@ -13805,8 +13805,8 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
         case TYP_BYREF:
 
-            i1 = op1->gtIntConCommon.IconValue();
-            i2 = op2->gtIntConCommon.IconValue();
+            i1 = op1->AsIntConCommon()->IconValue();
+            i2 = op2->AsIntConCommon()->IconValue();
 
             switch (tree->gtOper)
             {
@@ -13872,18 +13872,18 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
             //
             assert(!varTypeIsGC(op1->gtType) && !varTypeIsGC(op2->gtType));
 
-            if (!op1->gtIntConCommon.ImmedValCanBeFolded(this, tree->OperGet()))
+            if (!op1->AsIntConCommon()->ImmedValCanBeFolded(this, tree->OperGet()))
             {
                 return tree;
             }
 
-            if (!op2->gtIntConCommon.ImmedValCanBeFolded(this, tree->OperGet()))
+            if (!op2->AsIntConCommon()->ImmedValCanBeFolded(this, tree->OperGet()))
             {
                 return tree;
             }
 
-            i1 = op1->gtIntConCommon.IconValue();
-            i2 = op2->gtIntConCommon.IconValue();
+            i1 = op1->AsIntConCommon()->IconValue();
+            i2 = op2->AsIntConCommon()->IconValue();
 
             switch (tree->gtOper)
             {
@@ -14241,26 +14241,26 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
             //
             assert((op2->gtType == TYP_LONG) || (op2->gtType == TYP_INT));
 
-            if (!op1->gtIntConCommon.ImmedValCanBeFolded(this, tree->OperGet()))
+            if (!op1->AsIntConCommon()->ImmedValCanBeFolded(this, tree->OperGet()))
             {
                 return tree;
             }
 
-            if (!op2->gtIntConCommon.ImmedValCanBeFolded(this, tree->OperGet()))
+            if (!op2->AsIntConCommon()->ImmedValCanBeFolded(this, tree->OperGet()))
             {
                 return tree;
             }
 
-            lval1 = op1->gtIntConCommon.LngValue();
+            lval1 = op1->AsIntConCommon()->LngValue();
 
             // For the shift operators we can have a op2 that is a TYP_INT and thus will be GT_CNS_INT
             if (op2->OperGet() == GT_CNS_INT)
             {
-                lval2 = op2->gtIntConCommon.IconValue();
+                lval2 = op2->AsIntConCommon()->IconValue();
             }
             else
             {
-                lval2 = op2->gtIntConCommon.LngValue();
+                lval2 = op2->AsIntConCommon()->LngValue();
             }
 
             switch (tree->gtOper)
@@ -14523,7 +14523,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                    (tree->gtDebugFlags & GTF_DEBUG_NODE_LARGE));
 
             tree->ChangeOperConst(GT_CNS_NATIVELONG);
-            tree->gtIntConCommon.SetLngValue(lval1);
+            tree->AsIntConCommon()->SetLngValue(lval1);
             if (vnStore != nullptr)
             {
                 fgValueNumberTreeConst(tree);
@@ -15775,7 +15775,7 @@ bool GenTree::DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bo
                     // type, by construction, and be "entire".
                     assert(blockWidth->IsIconHandle(GTF_ICON_CLASS_HDL));
                     width = comp->info.compCompHnd->getClassSize(
-                        CORINFO_CLASS_HANDLE(blockWidth->gtIntConCommon.IconValue()));
+                        CORINFO_CLASS_HANDLE(blockWidth->AsIntConCommon()->IconValue()));
                 }
                 else
                 {
@@ -17628,7 +17628,7 @@ void GenTree::ParseArrayAddressWork(Compiler*       comp,
                         assert(!AsOp()->gtOp2->gtIntCon.ImmedValNeedsReloc(comp));
                         // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntConCommon::gtIconVal had
                         // target_ssize_t type.
-                        subMul   = (target_ssize_t)AsOp()->gtOp2->gtIntConCommon.IconValue();
+                        subMul   = (target_ssize_t)AsOp()->gtOp2->AsIntConCommon()->IconValue();
                         nonConst = AsOp()->gtOp1;
                     }
                     else
@@ -17636,7 +17636,7 @@ void GenTree::ParseArrayAddressWork(Compiler*       comp,
                         assert(!AsOp()->gtOp1->gtIntCon.ImmedValNeedsReloc(comp));
                         // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntConCommon::gtIconVal had
                         // target_ssize_t type.
-                        subMul   = (target_ssize_t)AsOp()->gtOp1->gtIntConCommon.IconValue();
+                        subMul   = (target_ssize_t)AsOp()->gtOp1->AsIntConCommon()->IconValue();
                         nonConst = AsOp()->gtOp2;
                     }
                 }
@@ -17645,7 +17645,7 @@ void GenTree::ParseArrayAddressWork(Compiler*       comp,
                     assert(!AsOp()->gtOp2->gtIntCon.ImmedValNeedsReloc(comp));
                     // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntConCommon::gtIconVal had
                     // target_ssize_t type.
-                    subMul   = (target_ssize_t)AsOp()->gtOp2->gtIntConCommon.IconValue();
+                    subMul   = (target_ssize_t)AsOp()->gtOp2->AsIntConCommon()->IconValue();
                     nonConst = AsOp()->gtOp1;
                 }
                 if (nonConst != nullptr)
@@ -17665,7 +17665,7 @@ void GenTree::ParseArrayAddressWork(Compiler*       comp,
                     // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::gtIconVal had target_ssize_t
                     // type.
                     target_ssize_t subMul = target_ssize_t{1}
-                                            << (target_ssize_t)AsOp()->gtOp2->gtIntConCommon.IconValue();
+                                            << (target_ssize_t)AsOp()->gtOp2->AsIntConCommon()->IconValue();
                     AsOp()->gtOp1->ParseArrayAddressWork(comp, inputMul * subMul, pArr, pInxVN, pOffset, pFldSeq);
                     return;
                 }
