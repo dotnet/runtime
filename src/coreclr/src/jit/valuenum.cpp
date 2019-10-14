@@ -6318,15 +6318,15 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
             if (tree->IsCnsIntOrI() && tree->IsIconHandle())
             {
                 tree->gtVNPair.SetBoth(
-                    vnStore->VNForHandle(ssize_t(tree->gtIntConCommon.IconValue()), tree->GetIconHandleFlag()));
+                    vnStore->VNForHandle(ssize_t(tree->AsIntConCommon()->IconValue()), tree->GetIconHandleFlag()));
             }
             else if ((typ == TYP_LONG) || (typ == TYP_ULONG))
             {
-                tree->gtVNPair.SetBoth(vnStore->VNForLongCon(INT64(tree->gtIntConCommon.LngValue())));
+                tree->gtVNPair.SetBoth(vnStore->VNForLongCon(INT64(tree->AsIntConCommon()->LngValue())));
             }
             else
             {
-                tree->gtVNPair.SetBoth(vnStore->VNForIntCon(int(tree->gtIntConCommon.IconValue())));
+                tree->gtVNPair.SetBoth(vnStore->VNForIntCon(int(tree->AsIntConCommon()->IconValue())));
             }
             break;
 
@@ -6337,7 +6337,7 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
             tree->gtVNPair.SetBoth(vnStore->VNForDoubleCon(tree->AsDblCon()->gtDconVal));
             break;
         case TYP_REF:
-            if (tree->gtIntConCommon.IconValue() == 0)
+            if (tree->AsIntConCommon()->IconValue() == 0)
             {
                 tree->gtVNPair.SetBoth(ValueNumStore::VNForNull());
             }
@@ -6345,12 +6345,12 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
             {
                 assert(tree->gtFlags == GTF_ICON_STR_HDL); // Constant object can be only frozen string.
                 tree->gtVNPair.SetBoth(
-                    vnStore->VNForHandle(ssize_t(tree->gtIntConCommon.IconValue()), tree->GetIconHandleFlag()));
+                    vnStore->VNForHandle(ssize_t(tree->AsIntConCommon()->IconValue()), tree->GetIconHandleFlag()));
             }
             break;
 
         case TYP_BYREF:
-            if (tree->gtIntConCommon.IconValue() == 0)
+            if (tree->AsIntConCommon()->IconValue() == 0)
             {
                 tree->gtVNPair.SetBoth(ValueNumStore::VNForNull());
             }
@@ -6361,11 +6361,11 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
                 if (tree->IsIconHandle())
                 {
                     tree->gtVNPair.SetBoth(
-                        vnStore->VNForHandle(ssize_t(tree->gtIntConCommon.IconValue()), tree->GetIconHandleFlag()));
+                        vnStore->VNForHandle(ssize_t(tree->AsIntConCommon()->IconValue()), tree->GetIconHandleFlag()));
                 }
                 else
                 {
-                    tree->gtVNPair.SetBoth(vnStore->VNForByrefCon(tree->gtIntConCommon.IconValue()));
+                    tree->gtVNPair.SetBoth(vnStore->VNForByrefCon(tree->AsIntConCommon()->IconValue()));
                 }
             }
             break;
