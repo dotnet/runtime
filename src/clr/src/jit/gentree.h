@@ -5303,14 +5303,14 @@ public:
     Statement(GenTree* expr, IL_OFFSETX offset DEBUGARG(unsigned stmtID))
         : m_rootNode(expr)
         , m_treeList(nullptr)
+        , m_next(nullptr)
+        , m_prev(nullptr)
         , m_inlineContext(nullptr)
         , m_ILOffsetX(offset)
 #ifdef DEBUG
         , m_lastILOffset(BAD_IL_OFFSET)
         , m_stmtID(stmtID)
 #endif
-        , m_next(nullptr)
-        , m_prev(nullptr)
         , m_compilerAdded(false)
     {
     }
@@ -5432,6 +5432,12 @@ private:
     // The value is `nullptr` until we have set the sequencing of the nodes.
     GenTree* m_treeList;
 
+    // The statement nodes are doubly-linked. The first statement node in a block points
+    // to the last node in the block via its `m_prev` link. Note that the last statement node
+    // does not point to the first: it's `m_next == nullptr`; that is, the list is not fully circular.
+    Statement* m_next;
+    Statement* m_prev;
+
     InlineContext* m_inlineContext; // The inline context for this statement.
 
     IL_OFFSETX m_ILOffsetX; // The instr offset (if available).
@@ -5440,12 +5446,6 @@ private:
     IL_OFFSET m_lastILOffset; // The instr offset at the end of this statement.
     unsigned  m_stmtID;
 #endif
-
-    // The statement nodes are doubly-linked. The first statement node in a block points
-    // to the last node in the block via its `m_prev` link. Note that the last statement node
-    // does not point to the first: it's `m_next == nullptr`; that is, the list is not fully circular.
-    Statement* m_next;
-    Statement* m_prev;
 
     bool m_compilerAdded; // Was the statement created by optimizer?
 };
