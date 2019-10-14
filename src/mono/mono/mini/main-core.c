@@ -1,4 +1,5 @@
 #include <config.h>
+#include <mono/utils/mono-compiler.h>
 
 #if ENABLE_NETCORE
 
@@ -337,5 +338,7 @@ int STDAPICALLTYPE coreclr_create_delegate (void* hostHandle, unsigned int domai
 	g_error ("Not implemented");
 	return 0;
 }
+#else
 
+MONO_EMPTY_SOURCE_FILE (main_core);
 #endif // ENABLE_NETCORE
