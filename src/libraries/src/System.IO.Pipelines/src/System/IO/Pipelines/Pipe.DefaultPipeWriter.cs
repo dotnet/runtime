@@ -22,12 +22,12 @@ namespace System.IO.Pipelines
                 _pipe = pipe;
             }
 
-            public override void Complete(Exception exception = null) => _pipe.CompleteWriter(exception);
+            public override void Complete(Exception? exception = null) => _pipe.CompleteWriter(exception);
 
             public override void CancelPendingFlush() => _pipe.CancelPendingFlush();
 
 #pragma warning disable CS0672 // Member overrides obsolete member
-            public override void OnReaderCompleted(Action<Exception, object> callback, object state) => _pipe.OnReaderCompleted(callback, state);
+            public override void OnReaderCompleted(Action<Exception?, object?> callback, object? state) => _pipe.OnReaderCompleted(callback, state);
 #pragma warning restore CS0672 // Member overrides obsolete member
 
             public override ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken = default) => _pipe.FlushAsync(cancellationToken);
@@ -42,7 +42,7 @@ namespace System.IO.Pipelines
 
             public FlushResult GetResult(short token) => _pipe.GetFlushAsyncResult();
 
-            public void OnCompleted(Action<object> continuation, object state, short token, ValueTaskSourceOnCompletedFlags flags) => _pipe.OnFlushAsyncCompleted(continuation, state, flags);
+            public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags) => _pipe.OnFlushAsyncCompleted(continuation, state, flags);
 
             public override ValueTask<FlushResult> WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
             {
