@@ -669,6 +669,7 @@ public:
     }
 
     BOOL HasNativeCallableAttribute();
+    BOOL ShouldSuppressGCTransition();
 
 #ifdef FEATURE_COMINTEROP 
     inline DWORD IsComPlusCall()
@@ -2933,6 +2934,12 @@ public:
         kStdCallWithRetBuf              = 0x8000,   // Call returns large structure, only valid if kStdCall is also set
 
     };
+
+    // Resolve the import to the NDirect target and set it on the NDirectMethodDesc.
+    static void *ResolveAndSetNDirectTarget(_In_ NDirectMethodDesc *pMD);
+
+    // Attempt to import the NDirect target if a GC transition is suppressed.
+    static BOOL TryResolveNDirectTargetForNoGCTransition(_In_ MethodDesc* pMD, _Out_ void** ndirectTarget);
 
     // Retrieves the cached result of marshaling required computation, or performs the computation
     // if the result is not cached yet.

@@ -836,6 +836,7 @@ enum CorInfoFlag
     CORINFO_FLG_AGGRESSIVE_OPT        = 0x01000000, // The method may contain hot code and should be aggressively optimized if possible
     CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS = 0x02000000, // Indicates that tier 0 JIT should not be used for a method that contains a loop
     CORINFO_FLG_NOSECURITYWRAP        = 0x04000000, // The method requires no security checks
+//  CORINFO_FLG_UNUSED                = 0x08000000,
     CORINFO_FLG_DONT_INLINE           = 0x10000000, // The method should not be inlined
     CORINFO_FLG_DONT_INLINE_CALLER    = 0x20000000, // The method should not be inlined, nor should its callers. It cannot be tail called.
     CORINFO_FLG_JIT_INTRINSIC         = 0x40000000, // Method is a potential jit intrinsic; verify identity by name check
@@ -1188,8 +1189,9 @@ enum CorInfoContextFlags
 
 enum CorInfoSigInfoFlags
 {
-    CORINFO_SIGFLAG_IS_LOCAL_SIG = 0x01,
-    CORINFO_SIGFLAG_IL_STUB      = 0x02,
+    CORINFO_SIGFLAG_IS_LOCAL_SIG           = 0x01,
+    CORINFO_SIGFLAG_IL_STUB                = 0x02,
+    CORINFO_SIGFLAG_SUPPRESS_GC_TRANSITION = 0x04,
 };
 
 struct CORINFO_SIG_INST

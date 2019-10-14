@@ -3681,7 +3681,15 @@ inline bool Compiler::IsGcSafePoint(GenTree* tree)
         GenTreeCall* call = tree->AsCall();
         if (!call->IsFastTailCall())
         {
-            if (call->gtCallType == CT_INDIRECT)
+            if (call->IsUnmanaged() && call->IsSuppressGCTransition())
+            {
+                // Both an indirect and user calls can be unmanaged
+                // and have a request to suppress the GC transition so
+                // the check is done prior to the separate handling of
+                // indirect and user calls.
+                return false;
+            }
+            else if (call->gtCallType == CT_INDIRECT)
             {
                 return true;
             }

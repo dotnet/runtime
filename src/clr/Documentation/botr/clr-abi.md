@@ -85,7 +85,9 @@ ARM64-only: When a method returns a structure that is larger than 16 bytes the c
 
 # PInvokes
 
-The convention is that any method with an InlinedCallFrame (either an IL stub or a normal method with an inlined pinvoke) saves/restores all non-volatile integer registers in its prolog/epilog respectively. This is done so that the InlinedCallFrame can just contain a return address, a stack pointer and a frame pointer. Then using just those three it can start a full stack walk using the normal RtlVirtualUnwind.
+The convention is that any method with an InlinedCallFrame (either an IL stub or a normal method with an inlined PInvoke) saves/restores all non-volatile integer registers in its prolog/epilog respectively. This is done so that the InlinedCallFrame can just contain a return address, a stack pointer and a frame pointer. Then using just those three it can start a full stack walk using the normal RtlVirtualUnwind.
+
+When encountering a PInvoke, the JIT will query the VM if the GC transition should be suppressed. Suppression of the GC transition is indicated by the addition of an attribute on the PInvoke definition. If the VM indicates the GC transition is to be suppressed, the PInvoke frame will be omitted in either the IL stub or inlined scenario and a GC Poll will be inserted near the unmanaged call site. If an enclosing function contains more than one inlined PInvoke but not all have requested a suppression of the GC transition a PInvoke frame will still be constructed for the other inlined PInvokes. 
 
 For AMD64, a method with an InlinedCallFrame must use RBP as the frame register.
 
@@ -112,6 +114,8 @@ On AMD64, the JIT generates code to save RSP and RBP into the InlinedCallFrame.
 For IL stubs only, the per-frame initialization includes setting `Thread->m_pFrame` to the InlinedCallFrame (effectively 'pushing' the Frame).
 
 ## Per-call-site PInvoke work
+
+The below is performed when the GC transition is not suppressed.
 
 1. For direct calls, the JITed code sets `InlinedCallFrame->m_pDatum` to the MethodDesc of the call target.
     * For JIT64, indirect calls within IL stubs sets it to the secret parameter (this seems redundant, but it might have changed since the per-frame initialization?).

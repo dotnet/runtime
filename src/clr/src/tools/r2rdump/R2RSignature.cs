@@ -851,6 +851,11 @@ namespace R2RDump
                     builder.Append(" (INDIRECT_PINVOKE_TARGET)");
                     break;
 
+                case ReadyToRunFixupKind.READYTORUN_FIXUP_PInvokeTarget:
+                    ParseMethod(builder);
+                    builder.Append(" (PINVOKE_TARGET)");
+                    break;
+
                 default:
                     builder.Append(string.Format("Unknown fixup type: {0:X2}", fixupType));
                     break;
@@ -1361,6 +1366,10 @@ namespace R2RDump
 
                 case ReadyToRunHelper.READYTORUN_HELPER_PInvokeEnd:
                     builder.Append("PINVOKE_END");
+                    break;
+
+                case ReadyToRunHelper.READYTORUN_HELPER_GCPoll:
+                    builder.Append("GCPOLL");
                     break;
 
                 // Get string handle lazily

@@ -89,6 +89,7 @@ enum ZapNodeType {
     ZapNodeType_Import_MethodHandle,
     ZapNodeType_Import_FieldHandle,
     ZapNodeType_Import_IndirectPInvokeTarget,
+    ZapNodeType_Import_PInvokeTarget,
     ZapNodeType_Import_StringHandle,
     ZapNodeType_Import_StaticFieldAddress,
     ZapNodeType_Import_ClassDomainId,
