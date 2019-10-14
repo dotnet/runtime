@@ -1297,7 +1297,7 @@ AGAIN:
             break;
 
         case GT_CNS_DBL:
-            if  (op1->gtDblCon.gtDconVal == op2->gtDblCon.gtDconVal)
+            if  (op1->AsDblCon()->gtDconVal == op2->AsDblCon()->gtDconVal)
                 return true;
             break;
 #endif
@@ -1986,7 +1986,7 @@ AGAIN:
 #endif
                 break;
             case GT_CNS_DBL:
-                bits = *(UINT64*)(&tree->gtDblCon.gtDconVal);
+                bits = *(UINT64*)(&tree->AsDblCon()->gtDconVal);
 #ifdef _HOST_64BIT_
                 add = bits;
 #else // 32-bit host
@@ -3364,8 +3364,8 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 level = 0;
                 /* We use fldz and fld1 to load 0.0 and 1.0, but all other  */
                 /* floating point constants are loaded using an indirection */
-                if ((*((__int64*)&(tree->gtDblCon.gtDconVal)) == 0) ||
-                    (*((__int64*)&(tree->gtDblCon.gtDconVal)) == I64(0x3ff0000000000000)))
+                if ((*((__int64*)&(tree->AsDblCon()->gtDconVal)) == 0) ||
+                    (*((__int64*)&(tree->AsDblCon()->gtDconVal)) == I64(0x3ff0000000000000)))
                 {
                     costEx = 1;
                     costSz = 1;
@@ -7110,7 +7110,7 @@ GenTree* Compiler::gtCloneExpr(
                 goto DONE;
 
             case GT_CNS_DBL:
-                copy         = gtNewDconNode(tree->gtDblCon.gtDconVal);
+                copy         = gtNewDconNode(tree->AsDblCon()->gtDconVal);
                 copy->gtType = tree->gtType; // keep the same type
                 goto DONE;
 
@@ -10471,13 +10471,13 @@ void Compiler::gtDispConst(GenTree* tree)
             break;
 
         case GT_CNS_DBL:
-            if (*((__int64*)&tree->gtDblCon.gtDconVal) == (__int64)I64(0x8000000000000000))
+            if (*((__int64*)&tree->AsDblCon()->gtDconVal) == (__int64)I64(0x8000000000000000))
             {
                 printf(" -0.00000");
             }
             else
             {
-                printf(" %#.17g", tree->gtDblCon.gtDconVal);
+                printf(" %#.17g", tree->AsDblCon()->gtDconVal);
             }
             break;
         case GT_CNS_STR:
@@ -13647,7 +13647,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
                 /* Fold constant DOUBLE unary operator */
 
-                d1 = op1->gtDblCon.gtDconVal;
+                d1 = op1->AsDblCon()->gtDconVal;
 
                 switch (tree->gtOper)
                 {
@@ -14551,11 +14551,11 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
             }
 
             assert(op1->gtOper == GT_CNS_DBL);
-            d1 = op1->gtDblCon.gtDconVal;
+            d1 = op1->AsDblCon()->gtDconVal;
 
             assert(varTypeIsFloating(op2->gtType));
             assert(op2->gtOper == GT_CNS_DBL);
-            d2 = op2->gtDblCon.gtDconVal;
+            d2 = op2->AsDblCon()->gtDconVal;
 
             /* Special case - check if we have NaN operands.
              * For comparisons if not an unordered operation always return 0.
@@ -14695,7 +14695,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                    (tree->gtDebugFlags & GTF_DEBUG_NODE_LARGE));
 
             tree->ChangeOperConst(GT_CNS_DBL);
-            tree->gtDblCon.gtDconVal = d1;
+            tree->AsDblCon()->gtDconVal = d1;
             if (vnStore != nullptr)
             {
                 fgValueNumberTreeConst(tree);
