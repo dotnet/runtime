@@ -20,6 +20,7 @@ enum class WellKnownAttribute : DWORD
     ComEventInterface,
     ComSourceInterfaces,
     ComVisible,
+    SuppressGCTransition,
     DefaultDllImportSearchPaths,
     Guid,
     LCIDConversion,
@@ -68,6 +69,8 @@ inline const char *GetWellKnownAttributeName(WellKnownAttribute attribute)
             return "System.Runtime.InteropServices.ComSourceInterfacesAttribute";
         case WellKnownAttribute::ComVisible:
             return "System.Runtime.InteropServices.ComVisibleAttribute";
+        case WellKnownAttribute::SuppressGCTransition:
+            return "System.Runtime.InteropServices.SuppressGCTransitionAttribute";
         case WellKnownAttribute::DefaultDllImportSearchPaths:
             return "System.Runtime.InteropServices.DefaultDllImportSearchPathsAttribute";
         case WellKnownAttribute::Guid:

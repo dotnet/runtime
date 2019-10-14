@@ -155,7 +155,7 @@ enum NDirectStubFlags
     NDIRECTSTUB_FL_WINRTCTOR                = 0x00080000,
     NDIRECTSTUB_FL_WINRTCOMPOSITION         = 0x00100000, // set along with WINRTCTOR
     NDIRECTSTUB_FL_WINRTSTATIC              = 0x00200000,
-
+    // unused                               = 0x00400000,
     NDIRECTSTUB_FL_WINRTHASREDIRECTION      = 0x00800000, // the stub may tail-call to a static stub in mscorlib, not shareable
 #endif // FEATURE_COMINTEROP
 

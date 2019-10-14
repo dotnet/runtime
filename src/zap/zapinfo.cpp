@@ -336,6 +336,7 @@ void ZapInfo::ProcessReferences()
         case ZapNodeType_Import_MethodHandle:
         case ZapNodeType_Import_FunctionEntry:
         case ZapNodeType_Import_IndirectPInvokeTarget:
+        case ZapNodeType_Import_PInvokeTarget:
             hMethod = (CORINFO_METHOD_HANDLE)(((ZapImport *)pTarget)->GetHandle());
             fMaybeConditionalImport = true;
             break;
@@ -1438,8 +1439,13 @@ LONG * ZapInfo::getAddrOfCaptureThreadGlobal(void **ppIndirection)
 {
     _ASSERTE(ppIndirection != NULL);
 
-    *ppIndirection = (LONG *) m_pImage->GetInnerPtr(m_pImage->m_pEEInfoTable,
-        offsetof(CORCOMPILE_EE_INFO_TABLE, addrOfCaptureThreadGlobal));
+    *ppIndirection = NULL;
+    if (!IsReadyToRunCompilation())
+    {
+        *ppIndirection = (LONG*)m_pImage->GetInnerPtr(m_pImage->m_pEEInfoTable,
+            offsetof(CORCOMPILE_EE_INFO_TABLE, addrOfCaptureThreadGlobal));
+    }
+
     return NULL;
 }
 
@@ -2012,6 +2018,7 @@ void * ZapInfo::getPInvokeUnmanagedTarget(CORINFO_METHOD_HANDLE method, void **p
 void * ZapInfo::getAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE method,void **ppIndirection)
 {
     _ASSERTE(ppIndirection != NULL);
+    *ppIndirection = NULL;
 
     m_pImage->m_pPreloader->AddMethodToTransitiveClosureOfInstantiations(method);
 
@@ -2021,23 +2028,35 @@ void * ZapInfo::getAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE method,void **ppI
         if (moduleHandle == m_pImage->m_hModule
             && m_pImage->m_pPreloader->CanEmbedMethodHandle(method, m_currentMethodHandle))
         {
-            *ppIndirection = NULL;
             return PVOID(m_pImage->GetWrappers()->GetAddrOfPInvokeFixup(method));
         }
     }
 
     //
-    // Note we could a fixup to a direct call site, rather than to
-    // the indirection.  This would saves us an extra indirection, but changes the
-    // semantics slightly (so that the pinvoke will be bound when the calling
-    // method is first run, not at the exact moment of the first pinvoke.)
+    // The indirect P/Invoke target enables the traditional semantics of
+    // resolving the P/Invoke target at the callsite. Providing a non-indirect
+    // fixup indicates the P/Invoke target will be resolved when the enclosing
+    // function is compiled. This subtle semantic difference is chosen for
+    // scenarios when resolution of the target must occur under a specific GC mode.
     //
 
-    ZapImport * pImport = m_pImage->GetImportTable()->GetIndirectPInvokeTargetImport(method);
+    void *fixup = NULL;
+    ZapImport *pImport = NULL;
+    if (m_pImage->m_pPreloader->ShouldSuppressGCTransition(method))
+    {
+        pImport = m_pImage->GetImportTable()->GetPInvokeTargetImport(method);
+        fixup = pImport;
+    }
+    else
+    {
+        pImport = m_pImage->GetImportTable()->GetIndirectPInvokeTargetImport(method);
+        *ppIndirection = pImport;
+    }
+
+    _ASSERTE(pImport != NULL);
     AppendConditionalImport(pImport);
 
-    *ppIndirection = pImport;
-    return NULL;
+    return fixup;
 }
 
 void ZapInfo::getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP *pLookup)
@@ -2053,6 +2072,7 @@ void ZapInfo::getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CO
         return;
     }
 
+    _ASSERTE(pIndirection != NULL);
     pLookup->accessType = IAT_PPVALUE;
     pLookup->addr = pIndirection;
 }

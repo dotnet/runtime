@@ -122,7 +122,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         READYTORUN_FIXUP_DelegateCtor = 0x2C, /* optimized delegate ctor */
         READYTORUN_FIXUP_DeclaringTypeHandle = 0x2D,
 
-        READYTORUN_FIXUP_IndirectPInvokeTarget = 0x2E, /* Target of an inlined pinvoke */
+        READYTORUN_FIXUP_IndirectPInvokeTarget = 0x2E, /* Target (indirect) of an inlined pinvoke */
+        READYTORUN_FIXUP_PInvokeTarget = 0x2F, /* Target of an inlined pinvoke */
 
         READYTORUN_FIXUP_ModuleOverride = 0x80,
         // followed by sig-encoded UInt with assemblyref index into either the assemblyref

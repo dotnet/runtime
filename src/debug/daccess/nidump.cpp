@@ -2194,6 +2194,10 @@ DataToTokenCore:
         buf.Append( W("Indirect P/Invoke target for ") );
         break;
 
+    case ENCODE_PINVOKE_TARGET:
+        buf.Append( W("P/Invoke target for ") );
+        break;
+
     case ENCODE_PROFILING_HANDLE:
         buf.Append( W("Profiling handle for ") );
         goto EncodeMethod;
