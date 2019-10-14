@@ -55,7 +55,7 @@ int host_context_t::create(
     if (rc == StatusCode::Success)
     {
         std::unique_ptr<host_context_t> context_local(new host_context_t(host_context_type::initialized, hostpolicy_contract, hostpolicy_context_contract));
-        init.get_found_fx_versions(context_local->fx_versions_by_name);
+        context_local->initialize_frameworks(init);
         context = std::move(context_local);
     }
 
@@ -131,6 +131,12 @@ host_context_t::host_context_t(
     , hostpolicy_contract { hostpolicy_contract }
     , hostpolicy_context_contract { hostpolicy_context_contract }
 { }
+
+void host_context_t::initialize_frameworks(const corehost_init_t& init)
+{
+    init.get_found_fx_versions(fx_versions_by_name);
+    init.get_included_frameworks(included_fx_versions_by_name);
+}
 
 void host_context_t::close()
 {

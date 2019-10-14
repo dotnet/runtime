@@ -50,6 +50,10 @@ public:
     // Frameworks used for active context
     std::unordered_map<pal::string_t, const fx_ver_t> fx_versions_by_name;
 
+    // Included frameworks used for active context - in case this is a self-contained app
+    // this contains a list of frameworks which are part of the app - they are not framework dependencies/refernces.
+    std::unordered_map<pal::string_t, const fx_ver_t> included_fx_versions_by_name;
+
     // Config properties for secondary contexts
     std::unordered_map<pal::string_t, pal::string_t> config_properties;
 
@@ -57,6 +61,8 @@ public:
         host_context_type type,
         const hostpolicy_contract_t &hostpolicy_contract,
         const corehost_context_contract &hostpolicy_context_contract);
+
+    void initialize_frameworks(const corehost_init_t& init);
 
     void close();
 };
