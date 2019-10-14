@@ -718,7 +718,7 @@ OPTIMIZECAST:
                         else if (varTypeIsFloating(tree->gtType))
                         {
                             commaOp2->ChangeOperConst(GT_CNS_DBL);
-                            commaOp2->gtDblCon.gtDconVal = 0.0;
+                            commaOp2->AsDblCon()->gtDconVal = 0.0;
                             // Change the types of oper and commaOp2
                             oper->gtType = commaOp2->gtType = tree->gtType;
                         }
@@ -13483,7 +13483,7 @@ DONE_MORPHING_CHILDREN:
                         else if (varTypeIsFloating(typ))
                         {
                             commaOp2->ChangeOperConst(GT_CNS_DBL);
-                            commaOp2->gtDblCon.gtDconVal = 0.0;
+                            commaOp2->AsDblCon()->gtDconVal = 0.0;
                             /* Change the types of oper and commaOp2 to TYP_DOUBLE */
                             op1->gtType = commaOp2->gtType = TYP_DOUBLE;
                         }
