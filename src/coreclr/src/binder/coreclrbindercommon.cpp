@@ -7,7 +7,6 @@
 #include "assemblybinder.hpp"
 #include "coreclrbindercommon.h"
 #include "clrprivbindercoreclr.h"
-#include "clrprivbinderutil.h"
 
 using namespace BINDER_SPACE;
 
@@ -141,41 +140,4 @@ HRESULT CCoreCLRBinderHelper::BindToSystemSatellite(SString            &systemPa
     EX_CATCH_HRESULT(hr);
 
     return hr;
-}
-
-HRESULT CCoreCLRBinderHelper::GetAssemblyFromImage(PEImage           *pPEImage,
-                                                   PEImage           *pNativePEImage,
-                                                   ICLRPrivAssembly **ppAssembly)
-{
-    HRESULT hr = S_OK;
-    VALIDATE_ARG_RET(pPEImage != NULL && ppAssembly != NULL);
-
-    EX_TRY
-    {
-        ReleaseHolder<BINDER_SPACE::Assembly> pAsm;
-        hr = AssemblyBinder::GetAssemblyFromImage(pPEImage, pNativePEImage, &pAsm);
-        if(SUCCEEDED(hr))
-        {
-            _ASSERTE(pAsm != nullptr);
-            *ppAssembly = pAsm.Extract();
-        }
-    }
-    EX_CATCH_HRESULT(hr);
-
-    return hr;
-}
-
-//=============================================================================
-// Explicitly bind to an assembly by filepath
-//=============================================================================
-/* static */
-HRESULT CCoreCLRBinderHelper::GetAssembly(/* in */  SString     &assemblyPath,
-                                          /* in */  BOOL         fIsInGAC,
-                                          /* in */  BOOL         fExplicitBindToNativeImage,
-                                          /* out */ BINDER_SPACE::Assembly   **ppAssembly)
-{
-    return AssemblyBinder::GetAssembly(assemblyPath,
-                                       fIsInGAC,
-                                       fExplicitBindToNativeImage,
-                                       ppAssembly);
 }

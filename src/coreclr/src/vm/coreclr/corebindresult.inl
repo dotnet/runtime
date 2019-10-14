@@ -13,8 +13,6 @@
 #ifndef __CORE_BIND_RESULT_INL__
 #define __CORE_BIND_RESULT_INL__
 
-#include "clrprivbinderutil.h"
-
 inline BOOL CoreBindResult::Found()
 {
     LIMITED_METHOD_CONTRACT;
