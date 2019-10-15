@@ -1965,8 +1965,8 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
         jitstd::swap(op1, op2);
     }
     // Validate op1 and op2
-    if ((op1->gtOper != GT_CALL) || (op1->gtCall.gtCallType != CT_HELPER) || (op1->TypeGet() != TYP_REF) || // op1
-        (op2->gtOper != GT_CNS_INT) || (op2->gtIntCon.gtIconVal != 0))                                      // op2
+    if ((op1->gtOper != GT_CALL) || (op1->AsCall()->gtCallType != CT_HELPER) || (op1->TypeGet() != TYP_REF) || // op1
+        (op2->gtOper != GT_CNS_INT) || (op2->gtIntCon.gtIconVal != 0))                                         // op2
     {
         return NO_ASSERTION_INDEX;
     }
@@ -2113,7 +2113,7 @@ void Compiler::optAssertionGen(GenTree* tree)
                 {
                     // For tail calls we lose the this pointer in the argument list but that's OK because a null check
                     // was made explicit, so we get the assertion when we walk the GT_IND in the argument list.
-                    noway_assert(tree->gtCall.IsTailCall());
+                    noway_assert(tree->AsCall()->IsTailCall());
                     break;
                 }
 #endif // _TARGET_X86_ || _TARGET_AMD64_ || _TARGET_ARM_

@@ -157,7 +157,7 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
 #endif // DEBUG
 
 #ifdef FEATURE_READYTORUN_COMPILER
-    call->gtCall.setEntryPoint(entryPoint);
+    call->AsCall()->setEntryPoint(entryPoint);
 #endif
 
     call = comp->fgMorphArgs(call);
