@@ -11,6 +11,11 @@
     </Compile>
     <Compile Include="System\Security\AccessControl\FileSecurity.cs" />
     <Compile Include="System\Security\AccessControl\DirectoryObjectSecurity.cs" />
+    <Compile Include="System\Security\AccessControl\DirectorySecurity.cs" />
+    <Compile Include="System\Security\AccessControl\FileSystemAccessRule.cs" />
+    <Compile Include="System\Security\AccessControl\FileSystemAuditRule.cs" />
+    <Compile Include="System\Security\AccessControl\FileSystemRights.cs" />
+    <Compile Include="System\Security\AccessControl\FileSystemSecurity.cs" />
     <Compile Include="System\IO\FileSystemAclExtensions.cs" />
     <Compile Include="$(CommonPath)\System\NotImplemented.cs">
       <Link>Common\Interop\Windows\mincore\NotImplemented.cs</Link>
