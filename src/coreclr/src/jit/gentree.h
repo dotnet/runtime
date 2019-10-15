@@ -6989,11 +6989,11 @@ inline bool GenTree::IsHelperCall()
 
 inline var_types GenTree::CastFromType()
 {
-    return this->gtCast.CastOp()->TypeGet();
+    return this->AsCast()->CastOp()->TypeGet();
 }
 inline var_types& GenTree::CastToType()
 {
-    return this->gtCast.gtCastType;
+    return this->AsCast()->gtCastType;
 }
 
 inline bool GenTree::isUsedFromSpillTemp() const
