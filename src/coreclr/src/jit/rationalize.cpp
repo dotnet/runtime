@@ -781,7 +781,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
                 simdNode->gtType = TYP_SIMD8;
             }
             // Certain SIMD trees require rationalizing.
-            if (simdNode->gtSIMD.gtSIMDIntrinsicID == SIMDIntrinsicInitArray)
+            if (simdNode->AsSIMD()->gtSIMDIntrinsicID == SIMDIntrinsicInitArray)
             {
                 // Rewrite this as an explicit load.
                 JITDUMP("Rewriting GT_SIMD array init as an explicit load:\n");
