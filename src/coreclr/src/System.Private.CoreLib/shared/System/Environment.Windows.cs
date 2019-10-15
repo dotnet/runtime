@@ -14,8 +14,7 @@ namespace System
         {
             get
             {
-                Span<char> initialBuffer = stackalloc char[Interop.Kernel32.MAX_PATH];
-                var builder = new ValueStringBuilder(initialBuffer);
+                var builder = new ValueStringBuilder(stackalloc char[Interop.Kernel32.MAX_PATH]);
 
                 uint length;
                 while ((length = Interop.Kernel32.GetCurrentDirectory((uint)builder.Capacity, ref builder.GetPinnableReference())) > builder.Capacity)
@@ -65,8 +64,7 @@ namespace System
 
         private static string ExpandEnvironmentVariablesCore(string name)
         {
-            Span<char> initialBuffer = stackalloc char[128];
-            var builder = new ValueStringBuilder(initialBuffer);
+            var builder = new ValueStringBuilder(stackalloc char[128]);
 
             uint length;
             while ((length = Interop.Kernel32.ExpandEnvironmentStrings(name, ref builder.GetPinnableReference(), (uint)builder.Capacity)) > builder.Capacity)
@@ -108,8 +106,7 @@ namespace System
             get
             {
                 // Normally this will be C:\Windows\System32
-                Span<char> initialBuffer = stackalloc char[32];
-                var builder = new ValueStringBuilder(initialBuffer);
+                var builder = new ValueStringBuilder(stackalloc char[32]);
 
                 uint length;
                 while ((length = Interop.Kernel32.GetSystemDirectoryW(ref builder.GetPinnableReference(), (uint)builder.Capacity)) > builder.Capacity)

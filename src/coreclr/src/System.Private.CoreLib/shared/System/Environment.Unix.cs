@@ -25,8 +25,7 @@ namespace System
 
         private static string ExpandEnvironmentVariablesCore(string name)
         {
-            Span<char> initialBuffer = stackalloc char[128];
-            var result = new ValueStringBuilder(initialBuffer);
+            var result = new ValueStringBuilder(stackalloc char[128]);
 
             int lastPos = 0, pos;
             while (lastPos < name.Length && (pos = name.IndexOf('%', lastPos + 1)) >= 0)
