@@ -271,22 +271,18 @@ namespace System.Net.Sockets
             }
         }
 
-        public IntPtr Handle
-        {
-            get
-            {
-                _handle.SetExposed();
-                return _handle.DangerousGetHandle();
-            }
-        }
+        public IntPtr Handle => SafeHandle.DangerousGetHandle();
 
         public SafeSocketHandle SafeHandle
         {
             get
             {
+                _handle.SetExposed();
                 return _handle;
             }
         }
+
+        internal SafeSocketHandle InternalSafeHandle => _handle; // returns _handle without calling SetExposed.
 
         // Gets and sets the blocking mode of a socket.
         public bool Blocking

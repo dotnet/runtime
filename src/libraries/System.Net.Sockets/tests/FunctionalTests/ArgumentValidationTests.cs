@@ -697,13 +697,22 @@ namespace System.Net.Sockets.Tests
             Assert.Throws<ArgumentNullException>(() => GetSocket().SendToAsync(s_eventArgs));
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // API throws PNSE on Unix
-        public void Socket_Connect_DnsEndPoint_ExposedHandle_NotSupported()
+        public void Socket_Connect_DnsEndPoint_ExposedHandle_NotSupported(bool useSafeHandle)
         {
             using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
-                IntPtr ignored = s.Handle;
+                if (useSafeHandle)
+                {
+                    _ = s.SafeHandle;
+                }
+                else
+                {
+                    _ = s.Handle;
+                }
                 Assert.Throws<PlatformNotSupportedException>(() => s.Connect(new DnsEndPoint("localhost", 12345)));
             }
         }
@@ -726,13 +735,22 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // API throws PNSE on Unix
-        public void Socket_Connect_StringHost_ExposedHandle_NotSupported()
+        public void Socket_Connect_StringHost_ExposedHandle_NotSupported(bool useSafeHandle)
         {
             using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
-                IntPtr ignored = s.Handle;
+                if (useSafeHandle)
+                {
+                    _ = s.SafeHandle;
+                }
+                else
+                {
+                    _ = s.Handle;
+                }
                 Assert.Throws<PlatformNotSupportedException>(() => s.Connect("localhost", 12345));
             }
         }
@@ -773,24 +791,42 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // API throws PNSE on Unix
-        public void Socket_Connect_MultipleAddresses_ExposedHandle_NotSupported()
+        public void Socket_Connect_MultipleAddresses_ExposedHandle_NotSupported(bool useSafeHandle)
         {
             using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
-                IntPtr ignored = s.Handle;
+                if (useSafeHandle)
+                {
+                    _ = s.SafeHandle;
+                }
+                else
+                {
+                    _ = s.Handle;
+                }
                 Assert.Throws<PlatformNotSupportedException>(() => s.Connect(new[] { IPAddress.Loopback }, 12345));
             }
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // API throws PNSE on Unix
-        public void Socket_ConnectAsync_DnsEndPoint_ExposedHandle_NotSupported()
+        public void Socket_ConnectAsync_DnsEndPoint_ExposedHandle_NotSupported(bool useSafeHandle)
         {
             using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
-                IntPtr ignored = s.Handle;
+                if (useSafeHandle)
+                {
+                    _ = s.SafeHandle;
+                }
+                else
+                {
+                    _ = s.Handle;
+                }
                 Assert.Throws<PlatformNotSupportedException>(() => { s.ConnectAsync(new DnsEndPoint("localhost", 12345)); });
             }
         }
@@ -812,13 +848,22 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // API throws PNSE on Unix
-        public void Socket_ConnectAsync_StringHost_ExposedHandle_NotSupported()
+        public void Socket_ConnectAsync_StringHost_ExposedHandle_NotSupported(bool useSafeHandle)
         {
             using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
-                IntPtr ignored = s.Handle;
+                if (useSafeHandle)
+                {
+                    _ = s.SafeHandle;
+                }
+                else
+                {
+                    _ = s.Handle;
+                }
                 Assert.Throws<PlatformNotSupportedException>(() => { s.ConnectAsync("localhost", 12345); });
             }
         }
