@@ -16,6 +16,7 @@
 typedef struct _MonoLoadedImages MonoLoadedImages;
 typedef struct _MonoAssemblyLoadContext MonoAssemblyLoadContext;
 
+#ifndef DISABLE_DLLMAP
 typedef struct _MonoDllMap MonoDllMap;
 struct _MonoDllMap {
 	char *dll;
@@ -24,6 +25,7 @@ struct _MonoDllMap {
 	char *target_func;
 	MonoDllMap *next;
 };
+#endif
 
 #ifdef ENABLE_NETCORE
 /* FIXME: this probably belongs somewhere else */
@@ -48,11 +50,13 @@ mono_global_loader_data_unlock (void);
 gpointer
 mono_lookup_pinvoke_call_internal (MonoMethod *method, MonoError *error);
 
+#ifndef DISABLE_DLLMAP
 void
 mono_dllmap_insert_internal (MonoImage *assembly, const char *dll, const char *func, const char *tdll, const char *tfunc);
 
 void
 mono_global_dllmap_cleanup (void);
+#endif
 
 void
 mono_cached_module_cleanup (void);

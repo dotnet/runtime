@@ -289,6 +289,7 @@ arch_matches (const char* arch, const char *value)
 	return found;
 }
 
+#ifndef DISABLE_DLLMAP
 typedef struct {
 	char *dll;
 	char *target;
@@ -387,6 +388,7 @@ dllmap_handler = {
 	NULL, /* end */
 	dllmap_finish
 };
+#endif
 
 static void
 legacyUEP_start (gpointer user_data, 
@@ -469,7 +471,9 @@ mono_config_init (void)
 {
 	inited = 1;
 	config_handlers = g_hash_table_new (g_str_hash, g_str_equal);
+#ifndef DISABLE_DLLMAP
 	g_hash_table_insert (config_handlers, (gpointer) dllmap_handler.element_name, (gpointer) &dllmap_handler);
+#endif
 	g_hash_table_insert (config_handlers, (gpointer) legacyUEP_handler.element_name, (gpointer) &legacyUEP_handler);
 	g_hash_table_insert (config_handlers, (gpointer) aot_cache_handler.element_name, (gpointer) &aot_cache_handler);
 }

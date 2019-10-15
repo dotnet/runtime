@@ -12,7 +12,9 @@ static int pinvoke_search_directories_count;
 static char **pinvoke_search_directories;
 #endif
 
+#ifndef DISABLE_DLLMAP
 static MonoDllMap *global_dll_map;
+#endif
 static GHashTable *global_module_map;
 
 static MonoDl *internal_module;
@@ -40,7 +42,7 @@ typedef struct MonoLookupPInvokeStatus {
 GENERATE_GET_CLASS_WITH_CACHE (appdomain_unloaded_exception, "System", "AppDomainUnloadedException")
 GENERATE_TRY_GET_CLASS_WITH_CACHE (appdomain_unloaded_exception, "System", "AppDomainUnloadedException")
 
-#ifndef ENABLE_NETCORE
+#ifndef DISABLE_DLLMAP
 /*
  * LOCKING: Assumes the relevant lock is held.
  * For the global DllMap, this is `global_loader_data_mutex`, and for images it's their internal lock.
@@ -116,7 +118,6 @@ mono_dllmap_lookup (MonoImage *assembly, const char *dll, const char* func, cons
 
 	return res;
 }
-#endif
 
 static void
 dllmap_insert_global (const char *dll, const char *func, const char *tdll, const char *tfunc)
@@ -191,6 +192,19 @@ mono_dllmap_insert_internal (MonoImage *assembly, const char *dll, const char *f
 		dllmap_insert_image (assembly, dll, func, tdll, tfunc);
 }
 
+void
+mono_global_dllmap_cleanup (void)
+{
+	// No need for a transition here since the thread is already detached from the runtime
+	mono_global_loader_data_lock ();
+
+	free_dllmap (global_dll_map);
+	global_dll_map = NULL;
+
+	mono_global_loader_data_unlock ();
+}
+#endif
+
 /**
  * mono_dllmap_insert:
  * \param assembly if NULL, this is a global mapping, otherwise the remapping of the dynamic library will only apply to the specified assembly
@@ -224,19 +238,9 @@ mono_dllmap_insert_internal (MonoImage *assembly, const char *dll, const char *f
 void
 mono_dllmap_insert (MonoImage *assembly, const char *dll, const char *func, const char *tdll, const char *tfunc)
 {
+#ifndef DISABLE_DLLMAP
 	mono_dllmap_insert_internal (assembly, dll, func, tdll, tfunc);
-}
-
-void
-mono_global_dllmap_cleanup (void)
-{
-	// No need for a transition here since the thread is already detached from the runtime
-	mono_global_loader_data_lock ();
-
-	free_dllmap (global_dll_map);
-	global_dll_map = NULL;
-
-	mono_global_loader_data_unlock ();
+#endif
 }
 
 static MonoDl*
@@ -456,7 +460,7 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 		orig_scope = mono_metadata_string_heap (image, scope_token);
 	}
 
-#ifndef ENABLE_NETCORE
+#ifndef DISABLE_DLLMAP
 	// FIXME: The dllmap remaps System.Native to mono-native
 	mono_dllmap_lookup (image, orig_scope, orig_import, &new_scope, &new_import);
 #else

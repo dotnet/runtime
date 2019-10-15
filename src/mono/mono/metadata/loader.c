@@ -107,7 +107,9 @@ mono_loader_init ()
 void
 mono_loader_cleanup (void)
 {
+#ifndef DISABLE_DLLMAP
 	mono_global_dllmap_cleanup ();
+#endif
 	mono_cached_module_cleanup ();
 
 	mono_native_tls_free (loader_lock_nest_id);
