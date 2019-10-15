@@ -109,8 +109,7 @@ namespace System.IO
         /// <param name="rootLength">The length of the root of the given path</param>
         internal static string RemoveRelativeSegments(string path, int rootLength)
         {
-            Span<char> initialBuffer = stackalloc char[260 /* PathInternal.MaxShortPath */];
-            ValueStringBuilder sb = new ValueStringBuilder(initialBuffer);
+            var sb = new ValueStringBuilder(stackalloc char[260 /* PathInternal.MaxShortPath */]);
 
             if (RemoveRelativeSegments(path.AsSpan(), rootLength, ref sb))
             {

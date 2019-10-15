@@ -361,8 +361,7 @@ namespace System.IO
             if (normalized)
                 return path;
 
-            Span<char> initialBuffer = stackalloc char[MaxShortPath];
-            ValueStringBuilder builder = new ValueStringBuilder(initialBuffer);
+            var builder = new ValueStringBuilder(stackalloc char[MaxShortPath]);
 
             int start = 0;
             if (IsDirectorySeparator(path[start]))

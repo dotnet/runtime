@@ -384,8 +384,7 @@ namespace System.IO
                     maxSize++;
             }
 
-            Span<char> initialBuffer = stackalloc char[260];    // MaxShortPath on Windows
-            var builder = new ValueStringBuilder(initialBuffer);
+            var builder = new ValueStringBuilder(stackalloc char[260]); // MaxShortPath on Windows
             builder.EnsureCapacity(maxSize);
 
             for (int i = firstComponent; i < paths.Length; i++)
@@ -492,8 +491,7 @@ namespace System.IO
             }
             maxSize += paths.Length - 1;
 
-            Span<char> initialBuffer = stackalloc char[260];    // MaxShortPath on Windows
-            var builder = new ValueStringBuilder(initialBuffer);
+            var builder = new ValueStringBuilder(stackalloc char[260]); // MaxShortPath on Windows
             builder.EnsureCapacity(maxSize);
 
             for (int i = 0; i < paths.Length; i++)
