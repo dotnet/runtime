@@ -6494,7 +6494,7 @@ inline bool GenTree::IsIntegralConstVector(ssize_t constVal)
 
 inline bool GenTree::IsBoxedValue()
 {
-    assert(gtOper != GT_BOX || gtBox.BoxOp() != nullptr);
+    assert(gtOper != GT_BOX || AsBox()->BoxOp() != nullptr);
     return (gtOper == GT_BOX) && (gtFlags & GTF_BOX_VALUE);
 }
 
