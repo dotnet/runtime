@@ -1643,7 +1643,7 @@ AGAIN:
         }
         else if (oper == GT_RET_EXPR)
         {
-            return gtHasRef(tree->gtRetExpr.gtInlineCandidate, lclNum, defOnly);
+            return gtHasRef(tree->AsRetExpr()->gtInlineCandidate, lclNum, defOnly);
         }
 
         return false;
@@ -4834,9 +4834,9 @@ GenTree** GenTree::gtGetChildPointer(GenTree* parent) const
             break;
 
         case GT_RET_EXPR:
-            if (this == parent->gtRetExpr.gtInlineCandidate)
+            if (this == parent->AsRetExpr()->gtInlineCandidate)
             {
-                return &(parent->gtRetExpr.gtInlineCandidate);
+                return &(parent->AsRetExpr()->gtInlineCandidate);
             }
             break;
 
@@ -6171,11 +6171,11 @@ GenTree* Compiler::gtNewInlineCandidateReturnExpr(GenTree* inlineCandidate, var_
 
     GenTree* node = new (this, GT_RET_EXPR) GenTreeRetExpr(type);
 
-    node->gtRetExpr.gtInlineCandidate = inlineCandidate;
+    node->AsRetExpr()->gtInlineCandidate = inlineCandidate;
 
     if (varTypeIsStruct(inlineCandidate) && !inlineCandidate->OperIsBlkOp())
     {
-        node->gtRetExpr.gtRetClsHnd = gtGetStructHandle(inlineCandidate);
+        node->AsRetExpr()->gtRetClsHnd = gtGetStructHandle(inlineCandidate);
     }
 
     // GT_RET_EXPR node eventually might be bashed back to GT_CALL (when inlining is aborted for example).
@@ -10706,7 +10706,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
 
         case GT_RET_EXPR:
             printf("(inl return from call ");
-            printTreeID(tree->gtRetExpr.gtInlineCandidate);
+            printTreeID(tree->AsRetExpr()->gtInlineCandidate);
             printf(")");
             break;
 
@@ -16794,7 +16794,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
                 structHnd = tree->gtCall.gtRetClsHnd;
                 break;
             case GT_RET_EXPR:
-                structHnd = tree->gtRetExpr.gtRetClsHnd;
+                structHnd = tree->AsRetExpr()->gtRetClsHnd;
                 break;
             case GT_ARGPLACE:
                 structHnd = tree->gtArgPlace.gtArgPlaceClsHnd;
@@ -16969,7 +16969,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
         {
             // If we see a RET_EXPR, recurse through to examine the
             // return value expression.
-            GenTree* retExpr = tree->gtRetExpr.gtInlineCandidate;
+            GenTree* retExpr = tree->AsRetExpr()->gtInlineCandidate;
             objClass         = gtGetClassHandle(retExpr, pIsExact, pIsNonNull);
             break;
         }
