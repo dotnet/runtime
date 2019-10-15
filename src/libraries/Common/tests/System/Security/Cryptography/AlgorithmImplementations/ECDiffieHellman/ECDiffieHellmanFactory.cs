@@ -8,7 +8,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
     {
         ECDiffieHellman Create();
         ECDiffieHellman Create(int keySize);
-#if netcoreapp
+#if NETCOREAPP
         ECDiffieHellman Create(ECCurve curve);
 #endif
         bool IsCurveValid(Oid oid);
@@ -27,7 +27,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             return s_provider.Create(keySize);
         }
 
-#if netcoreapp
+#if NETCOREAPP
         public static ECDiffieHellman Create(ECCurve curve)
         {
             return s_provider.Create(curve);

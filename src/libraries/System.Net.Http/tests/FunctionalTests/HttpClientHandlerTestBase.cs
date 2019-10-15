@@ -105,7 +105,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         protected LoopbackServerFactory LoopbackServerFactory =>
-#if netcoreapp
+#if NETCOREAPP
             UseHttp2 ?
                 (LoopbackServerFactory)Http2LoopbackServerFactory.Singleton :
 #endif

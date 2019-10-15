@@ -374,7 +374,7 @@ namespace System.Net
             if (NetEventSource.IsEnabled) NetEventSource.Enter(null, contextAttribute);
 
             Span<T> span =
-#if netstandard
+#if NETSTANDARD2_0
                 stackalloc T[1] { attribute };
 #else
                 MemoryMarshal.CreateSpan(ref attribute, 1);
@@ -384,7 +384,7 @@ namespace System.Net
                 MemoryMarshal.AsBytes(span),
                 null,
                 out SafeHandle sspiHandle);
-#if netstandard
+#if NETSTANDARD2_0
             attribute = span[0];
 #endif
 
@@ -406,7 +406,7 @@ namespace System.Net
             if (NetEventSource.IsEnabled) NetEventSource.Enter(null, contextAttribute);
 
             Span<T> span =
-#if netstandard
+#if NETSTANDARD2_0
                 stackalloc T[1] { attribute };
 #else
                 MemoryMarshal.CreateSpan(ref attribute, 1);
@@ -416,7 +416,7 @@ namespace System.Net
                 MemoryMarshal.AsBytes(span),
                 safeHandleType,
                 out sspiHandle);
-#if netstandard
+#if NETSTANDARD2_0
             attribute = span[0];
 #endif
 
@@ -488,7 +488,7 @@ namespace System.Net
             if (NetEventSource.IsEnabled) NetEventSource.Enter(null);
 
             Span<Interop.SspiCli.SecPkgContext_IssuerListInfoEx> buffer =
-#if netstandard
+#if NETSTANDARD2_0
                 stackalloc Interop.SspiCli.SecPkgContext_IssuerListInfoEx[1] { ctx };
 #else
                 MemoryMarshal.CreateSpan(ref ctx, 1);
@@ -499,7 +499,7 @@ namespace System.Net
                 MemoryMarshal.AsBytes(buffer),
                 typeof(SafeFreeContextBuffer),
                 out sspiHandle);
-#if netstandard
+#if NETSTANDARD2_0
             ctx = buffer[0];
 #endif
 

@@ -148,7 +148,7 @@ namespace System.Runtime.InteropServices.Tests
 
         }
 
-#if netcoreapp
+#if NETCOREAPP
         [Fact]
         public void TestUTF8String()
         {

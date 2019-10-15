@@ -158,7 +158,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
                 });
         }
 
-#if netcoreapp
+#if NETCOREAPP
         private static ECDiffieHellman OpenKnownKey()
         {
             ECParameters ecParams = new ECParameters

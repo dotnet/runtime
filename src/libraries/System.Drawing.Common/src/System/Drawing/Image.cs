@@ -18,7 +18,7 @@ namespace System.Drawing
     [ImmutableObject(true)]
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
-#if netcoreapp || netcoreapp30
+#if NETCOREAPP
     [TypeConverter("System.Drawing.ImageConverter, System.Windows.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51")]
 #endif
     public abstract partial class Image : MarshalByRefObject, IDisposable, ICloneable, ISerializable
@@ -43,10 +43,6 @@ namespace System.Drawing
 
         [Localizable(false)]
         [DefaultValue(null)]
-#if !NETCORE
-        [BindableAttribute(true)]
-        [TypeConverter(typeof(StringConverter))]
-#endif
         public object Tag
         {
             get => _userData;

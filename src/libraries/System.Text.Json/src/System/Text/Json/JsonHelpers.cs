@@ -72,7 +72,7 @@ namespace System.Text.Json
         internal static string Utf8GetString(ReadOnlySpan<byte> bytes)
         {
             return Encoding.UTF8.GetString(bytes
-#if netstandard
+#if NETSTANDARD2_0 || NETFRAMEWORK
                         .ToArray()
 #endif
                 );
@@ -83,7 +83,7 @@ namespace System.Text.Json
         /// </summary>
         internal static bool TryAdd<TKey, TValue>(Dictionary<TKey, TValue> dictionary, TKey key, TValue value)
         {
-#if netstandard
+#if NETSTANDARD2_0 || NETFRAMEWORK
             if (!dictionary.ContainsKey(key))
             {
                 dictionary[key] = value;

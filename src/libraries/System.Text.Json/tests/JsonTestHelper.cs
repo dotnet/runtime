@@ -713,7 +713,7 @@ namespace System.Text.Json
         {
             string value = Encoding.UTF8.GetString(
                     buffer.WrittenSpan
-#if netfx
+#if NETFRAMEWORK
                         .ToArray()
 #endif
                     );
@@ -735,7 +735,7 @@ namespace System.Text.Json
         {
             string value = Encoding.UTF8.GetString(
                     buffer.WrittenSpan
-#if netfx
+#if NETFRAMEWORK
                         .ToArray()
 #endif
                     );

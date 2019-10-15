@@ -380,7 +380,7 @@ namespace System.Net.Test.Common
             public int ListenBacklog { get; set; } = 1;
             public bool UseSsl { get; set; } = false;
             public SslProtocols SslProtocols { get; set; } =
-#if !netstandard
+#if !NETSTANDARD2_0
                 SslProtocols.Tls13 |
 #endif
                 SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;
@@ -432,7 +432,7 @@ namespace System.Net.Test.Common
                     _readStart += copyLength;
                     return copyLength;
                 }
-#if NETSTANDARD
+#if NETSTANDARD2_0
                 // stream does not have Memory<t> overload
                 byte[] tempBuffer = new byte[size];
                 int readLength = await _stream.ReadAsync(tempBuffer, 0, size).ConfigureAwait(false);

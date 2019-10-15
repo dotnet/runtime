@@ -13,7 +13,7 @@ namespace System.Security.Cryptography.Dsa.Tests
 
         public DSA Create(int keySize)
         {
-#if netcoreapp
+#if NETCOREAPP
             return DSA.Create(keySize);
 #else
             DSA dsa = Create();

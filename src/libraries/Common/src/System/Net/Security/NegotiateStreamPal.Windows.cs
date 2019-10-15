@@ -80,7 +80,7 @@ namespace System.Net.Security
             ref byte[] resultBlob,
             ref ContextFlagsPal contextFlags)
         {
-#if netstandard
+#if NETSTANDARD2_0
             Span<SecurityBuffer> inSecurityBufferSpan = new SecurityBuffer[2];
 #else
             TwoSecurityBuffers twoSecurityBuffers = default;
@@ -151,7 +151,7 @@ namespace System.Net.Security
             ref byte[] resultBlob,
             ref ContextFlagsPal contextFlags)
         {
-#if netstandard
+#if NETSTANDARD2_0
             Span<SecurityBuffer> inSecurityBufferSpan = new SecurityBuffer[2];
 #else
             TwoSecurityBuffers twoSecurityBuffers = default;
@@ -223,7 +223,7 @@ namespace System.Net.Security
             // setup security buffers for ssp call
             // one points at signed data
             // two will receive payload if signature is valid
-#if netstandard
+#if NETSTANDARD2_0
             Span<SecurityBuffer> securityBuffer = new SecurityBuffer[2];
 #else
             TwoSecurityBuffers stackBuffer = default;
@@ -270,7 +270,7 @@ namespace System.Net.Security
             Buffer.BlockCopy(buffer, offset, output, sizes.cbMaxSignature, count);
 
             // setup security buffers for ssp call
-#if netstandard
+#if NETSTANDARD2_0
             Span<SecurityBuffer> securityBuffer = new SecurityBuffer[2];
 #else
             TwoSecurityBuffers stackBuffer = default;

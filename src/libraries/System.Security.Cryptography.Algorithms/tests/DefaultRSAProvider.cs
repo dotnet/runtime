@@ -14,7 +14,7 @@ namespace System.Security.Cryptography.Rsa.Tests
 
         public RSA Create(int keySize)
         {
-#if netcoreapp
+#if NETCOREAPP
             return RSA.Create(keySize);
 #else
             RSA rsa = Create();

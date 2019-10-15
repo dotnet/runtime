@@ -107,7 +107,7 @@ namespace System.Resources.Tests
 
         static int ResourcesAfAZEvents = 0;
 
-#if netcoreapp
+#if NETCOREAPP
         static System.Reflection.Assembly AssemblyResolvingEventHandler(System.Runtime.Loader.AssemblyLoadContext alc, System.Reflection.AssemblyName name)
         {
             if (name.FullName.StartsWith("System.Resources.ResourceManager.Tests.resources"))
@@ -133,7 +133,7 @@ namespace System.Resources.Tests
             {
                 if (name.Contains("Culture=af-ZA"))
                 {
-#if netcoreapp
+#if NETCOREAPP
                     Assert.Equal(1, ResourcesAfAZEvents);
 #else
                     Assert.Equal(0, ResourcesAfAZEvents);
@@ -158,7 +158,7 @@ namespace System.Resources.Tests
 
         private static void Remote_ExpectEvents()
         {
-#if netcoreapp
+#if NETCOREAPP
             System.Runtime.Loader.AssemblyLoadContext.Default.Resolving += AssemblyResolvingEventHandler;
 #endif
             AppDomain.CurrentDomain.AssemblyResolve += new ResolveEventHandler(AssemblyResolveEventHandler);
@@ -172,7 +172,7 @@ namespace System.Resources.Tests
             string actual = resourceManager.GetString("One", culture);
             Assert.Equal("Value-One", actual);
 
-#if netcoreapp
+#if NETCOREAPP
             Assert.Equal(2, ResourcesAfAZEvents);
 #else
             Assert.Equal(1, ResourcesAfAZEvents);

@@ -138,7 +138,7 @@ namespace System.Collections.Immutable
             return _forwards.Peek();
         }
 
-#if !NETSTANDARD10
+#if !NETSTANDARD1_0
         /// <summary>
         /// Gets a read-only reference to the element at the front of the queue.
         /// </summary>

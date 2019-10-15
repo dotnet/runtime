@@ -603,7 +603,7 @@ namespace System.Data.SqlClient
         internal void SetGuid(Guid value)
         {
             Debug.Assert(SmiXetterAccessMap.IsSetterAccessValid(_metaData, SmiXetterTypeCode.XetGuid));
-#if netcoreapp
+#if NETCOREAPP
             Span<byte> bytes = stackalloc byte[16];
             value.TryWriteBytes(bytes);
 #else
@@ -621,7 +621,7 @@ namespace System.Data.SqlClient
 
                 _stateObj.WriteByte((byte)_metaData.MaxLength);
             }
-#if netcoreapp
+#if NETCOREAPP
             _stateObj.WriteByteSpan(bytes);
 #else
             _stateObj.WriteByteArray(bytes, bytes.Length, 0);

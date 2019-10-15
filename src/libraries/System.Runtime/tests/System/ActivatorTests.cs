@@ -119,7 +119,7 @@ namespace System.Tests
             Assert.Throws<AmbiguousMatchException>(() => Activator.CreateInstance(typeof(Choice1), new object[] { null }));
         }
 
-#if netcoreapp
+#if NETCOREAPP
         [Fact]
         public void CreateInstance_NotRuntimeType_ThrowsArgumentException()
         {
@@ -130,7 +130,7 @@ namespace System.Tests
                 AssertExtensions.Throws<ArgumentException>("type", () => Activator.CreateInstance(nonRuntimeType, new object[0]));
             }
         }
-#endif // netcoreapp
+#endif
 
         public static IEnumerable<object[]> CreateInstance_ContainsGenericParameters_TestData()
         {

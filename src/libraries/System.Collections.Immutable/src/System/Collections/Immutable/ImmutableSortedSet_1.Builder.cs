@@ -105,14 +105,14 @@ namespace System.Collections.Immutable
             /// </remarks>
             public T this[int index]
             {
-#if !NETSTANDARD10
+#if !NETSTANDARD1_0
                 get { return _root.ItemRef(index); }
 #else
                 get { return _root[index]; }
 #endif
             }
 
-#if !NETSTANDARD10
+#if !NETSTANDARD1_0
             /// <summary>
             /// Gets a read-only reference to the element of the set at the given index.
             /// </summary>

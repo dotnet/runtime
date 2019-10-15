@@ -10,7 +10,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
 {
     public class ECDsaImportExportTests : ECDsaTestsBase
     {
-#if netcoreapp
+#if NETCOREAPP
         [Fact]
         public static void DiminishedCoordsRoundtrip()
         {

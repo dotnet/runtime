@@ -65,7 +65,7 @@ namespace System.Runtime.InteropServices
                     return new FunctionLoadResult<T>(FunctionLoadResultKind.LibraryNotFound, null);
                 }
 
-#if netcoreapp20
+#if NETCOREAPP2_0
                 IntPtr funcPtr = LoadFunctionPointer(nativeLibraryHandle, funcName);
                 if (funcPtr == IntPtr.Zero)
                 {

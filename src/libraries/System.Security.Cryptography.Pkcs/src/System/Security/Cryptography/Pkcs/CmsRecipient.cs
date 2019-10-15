@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.Pkcs
         {
         }
 
-#if netstandard
+#if NETSTANDARD2_0
         internal
 #else
         public
@@ -27,7 +27,7 @@ namespace System.Security.Cryptography.Pkcs
             RSAEncryptionPadding = rsaEncryptionPadding ?? throw new ArgumentNullException(nameof(rsaEncryptionPadding));
         }
 
-#if netstandard
+#if NETSTANDARD2_0
         internal
 #else
         public
@@ -61,7 +61,7 @@ namespace System.Security.Cryptography.Pkcs
             Certificate = certificate;
         }
 
-#if netstandard
+#if NETSTANDARD2_0
         internal
 #else
         public

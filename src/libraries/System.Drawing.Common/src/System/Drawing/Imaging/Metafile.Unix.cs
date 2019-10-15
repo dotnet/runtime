@@ -40,9 +40,6 @@ using System.Runtime.Serialization;
 
 namespace System.Drawing.Imaging
 {
-#if !NETCORE
-    [Editor ("System.Drawing.Design.MetafileEditor, " + Consts.AssemblySystem_Drawing_Design, typeof (System.Drawing.Design.UITypeEditor))]
-#endif
     public sealed partial class Metafile : Image
     {
         // Usually called when cloning images that need to have

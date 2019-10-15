@@ -45,10 +45,6 @@ using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing
 {
-#if !NETCORE
-[Editor ("System.Drawing.Design.ImageEditor, " + Consts.AssemblySystem_Drawing_Design, typeof (System.Drawing.Design.UITypeEditor))]
-[TypeConverter (typeof(ImageConverter))]
-#endif
     public abstract partial class Image
     {
         // public methods

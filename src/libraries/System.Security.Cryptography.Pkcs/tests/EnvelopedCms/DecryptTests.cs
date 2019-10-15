@@ -836,7 +836,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
                 if (cert == null)
                     return; // Sorry - CertLoader is not configured to load certs with private keys - we've tested as much as we can.
 
-#if netcoreapp // API not present on netfx
+#if NETCOREAPP // API not present on netfx
                 if (_useExplicitPrivateKey)
                 {
                     using (X509Certificate2 pubCert = certLoader.GetCertificate())

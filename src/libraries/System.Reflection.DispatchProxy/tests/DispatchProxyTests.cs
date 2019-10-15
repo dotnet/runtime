@@ -397,7 +397,7 @@ namespace DispatchProxyTests
             Assert.NotNull(propertyInfo);
         }
 
-#if netcoreapp
+#if NETCOREAPP
         [Fact]
         public static void Invoke_Event_Add_And_Remove_And_Raise_Invokes_Correct_Methods()
         {
@@ -445,7 +445,7 @@ namespace DispatchProxyTests
             Assert.True(invokedMethods[2] != null && expectedMethod == invokedMethods[2], String.Format("Third invoke should have been {0} but actual was {1}",
                             expectedMethod.Name, invokedMethods[1]));
         }
-#endif // netcoreapp
+#endif
 
         [Fact]
         public static void Proxy_Declares_Interface_Events()

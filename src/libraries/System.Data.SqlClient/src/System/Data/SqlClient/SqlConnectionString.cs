@@ -56,7 +56,7 @@ namespace System.Data.SqlClient
             internal const string Application_Name = "application name";
             internal const string AsynchronousProcessing = "asynchronous processing";
             internal const string AttachDBFilename = "attachdbfilename";
-#if netcoreapp
+#if NETCOREAPP
             internal const string PoolBlockingPeriod = "poolblockingperiod";
 #endif
             internal const string Connect_Timeout = "connect timeout";
@@ -220,7 +220,7 @@ namespace System.Data.SqlClient
             }
 
             _integratedSecurity = ConvertValueToIntegratedSecurity();
-#if netcoreapp
+#if NETCOREAPP
             _poolBlockingPeriod = ConvertValueToPoolBlockingPeriod();
 #endif
             _encrypt = ConvertValueToBoolean(KEY.Encrypt, DEFAULT.Encrypt);
@@ -420,7 +420,7 @@ namespace System.Data.SqlClient
             _userInstance = userInstance;
             _connectTimeout = connectionOptions._connectTimeout;
             _loadBalanceTimeout = connectionOptions._loadBalanceTimeout;
-#if netcoreapp
+#if NETCOREAPP
             _poolBlockingPeriod = connectionOptions._poolBlockingPeriod;
 #endif
             _maxPoolSize = connectionOptions._maxPoolSize;
@@ -504,7 +504,7 @@ namespace System.Data.SqlClient
                     { KEY.Application_Name, KEY.Application_Name },
                     { KEY.AsynchronousProcessing, KEY.AsynchronousProcessing },
                     { KEY.AttachDBFilename, KEY.AttachDBFilename },
-#if netcoreapp
+#if NETCOREAPP
                     { KEY.PoolBlockingPeriod, KEY.PoolBlockingPeriod},
 #endif
                     { KEY.Connect_Timeout, KEY.Connect_Timeout },

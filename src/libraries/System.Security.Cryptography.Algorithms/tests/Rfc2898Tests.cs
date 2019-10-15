@@ -82,7 +82,7 @@ namespace System.Security.Cryptography.DeriveBytesTests
             Assert.Throws<ArgumentOutOfRangeException>(() => new Rfc2898DeriveBytes(TestPassword, s_testSalt, int.MinValue / 2));
         }
 
-#if netcoreapp
+#if NETCOREAPP
         [Fact]
         public static void Ctor_EmptyAlgorithm()
         {
@@ -345,7 +345,7 @@ namespace System.Security.Cryptography.DeriveBytesTests
                 });
         }
 
-#if netcoreapp
+#if NETCOREAPP
         [Theory]
         [MemberData(nameof(KnownValuesTestCases))]
         public static void GetBytes_KnownValues_WithAlgorithm(KnownValuesTestCase testCase)

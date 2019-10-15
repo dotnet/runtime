@@ -110,7 +110,7 @@ Sample \ref .builds file defining a constant used to filter API that were added 
 Conditional compilation using the above-mentioned constant (from `ref\System.Net.Security.cs`):
 
 ```
-#if netcoreapp11
+#if NETCOREAPP
         public virtual void AuthenticateAsClient(string targetHost, System.Security.Cryptography.X509Certificates.X509CertificateCollection clientCertificates, bool checkCertificateRevocation) { }
 #endif
 ```

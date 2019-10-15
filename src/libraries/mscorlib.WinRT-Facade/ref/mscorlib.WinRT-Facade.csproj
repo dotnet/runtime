@@ -7,7 +7,6 @@
          against Windows.winmd.  The real mscorlib comes from src/shims/shims.proj -->
     <BinPlaceRef>false</BinPlaceRef>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;netstandard1.0-Debug;netstandard1.0-Release;uap-Debug;uap-Release</Configurations>
-    <DefineConstants Condition="'$(TargetGroup)' == 'netstandard1.2'">$(DefineConstants);NETSTANDARD12</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="TypeForwards.cs" />

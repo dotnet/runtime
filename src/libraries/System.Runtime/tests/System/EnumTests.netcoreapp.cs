@@ -74,14 +74,14 @@ namespace System.Tests
 
         public static IEnumerable<object[]> UnsupportedEnumType_TestData()
         {
-#if netcoreapp
+#if NETCOREAPP
             yield return new object[] { s_floatEnumType, 1.0f };
             yield return new object[] { s_doubleEnumType, 1.0 };
             yield return new object[] { s_intPtrEnumType, (IntPtr)1 };
             yield return new object[] { s_uintPtrEnumType, (UIntPtr)1 };
 #else
             return Array.Empty<object[]>();
-#endif //netcoreapp
+#endif
         }
 
         [Theory]
@@ -102,14 +102,14 @@ namespace System.Tests
 
         public static IEnumerable<object[]> UnsupportedEnum_TestData()
         {
-#if netcoreapp
+#if NETCOREAPP
             yield return new object[] { Enum.ToObject(s_floatEnumType, 1) };
             yield return new object[] { Enum.ToObject(s_doubleEnumType, 2) };
             yield return new object[] { Enum.ToObject(s_intPtrEnumType, 1) };
             yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 2) };
 #else
             return Array.Empty<object[]>();
-#endif //netcoreapp
+#endif
         }
 
         [Theory]

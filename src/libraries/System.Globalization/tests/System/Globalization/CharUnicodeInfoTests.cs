@@ -20,9 +20,9 @@ namespace System.Globalization.Tests
                 }
                 // Test the string overload for a surrogate pair or a single char
                 GetUnicodeCategory(testCase.Utf32CodeValue, new UnicodeCategory[] { testCase.GeneralCategory });
-#if netcoreapp
+#if NETCOREAPP
                 Assert.Equal(testCase.GeneralCategory, CharUnicodeInfo.GetUnicodeCategory(testCase.CodePoint));
-#endif // netcoreapp
+#endif
             }
         }
 

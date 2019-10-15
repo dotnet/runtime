@@ -275,7 +275,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         [Theory]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
         [InlineData(false)]
-#if netcoreapp // API not supported on netfx
+#if NETCOREAPP // API not supported on netfx
         [InlineData(true)]
 #endif
         public static void PostDecrypt_Encode(bool useExplicitPrivateKey)
@@ -301,7 +301,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 
                 if (useExplicitPrivateKey)
                 {
-#if netcoreapp
+#if NETCOREAPP
                     ecms.Decrypt(r[0], cer.GetRSAPrivateKey());
 #else
                     Assert.True(false, "Should not run on this platform");
@@ -363,7 +363,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         [Theory]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
         [InlineData(false)]
-#if netcoreapp // API not supported on netfx
+#if NETCOREAPP // API not supported on netfx
         [InlineData(true)]
 #endif
         public static void PostDecrypt_Decrypt(bool useExplicitPrivateKey)
@@ -405,7 +405,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
                 {
                     if (useExplicitPrivateKey)
                     {
-#if netcoreapp
+#if NETCOREAPP
                         ecms.Decrypt(r[0], cert1.GetRSAPrivateKey());
 #else
                         Assert.True(false, "Should not run on this platform");

@@ -45,12 +45,12 @@ namespace System
         {
             get
             {
-#if netcoreapp
+#if NETCOREAPP
                 if (IsWindows)
                 {
 #endif
                     return IsNotWindowsNanoServer && IsNotWindowsServerCore && !IsUap;
-#if netcoreapp
+#if NETCOREAPP
                 }
                 else if (IsOSX)
                 {

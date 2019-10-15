@@ -51,7 +51,7 @@ namespace System.Security.Cryptography.Pkcs
         {
         }
 
-        // This can be implemented with netcoreapp20 with the cert creation API.
+        // This can be implemented with NETCOREAPP2_0 with the cert creation API.
         // * Open the parameters as RSACSP (RSA PKCS#1 signature was hard-coded in netfx)
         //   * Which will fail on non-Windows
         // * Create a certificate with subject CN=CMS Signer Dummy Certificate
