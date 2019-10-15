@@ -117,7 +117,7 @@ namespace System.Collections.Immutable
             return _head;
         }
 
-#if !NETSTANDARD10
+#if !NETSTANDARD1_0
         /// <summary>
         /// Gets a read-only reference to the element on the top of the stack.
         /// </summary>

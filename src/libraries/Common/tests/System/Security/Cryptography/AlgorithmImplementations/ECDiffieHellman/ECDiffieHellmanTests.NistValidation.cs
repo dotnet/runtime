@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.EcDiffieHellman.Tests
 {
-#if netcoreapp
+#if NETCOREAPP
     // These test cases are from http://csrc.nist.gov/groups/STM/cavp/component-testing.html#test-vectors
     // SP 800-56A ECCCDH Primitive test vectors
     // ecccdhtestvectors.zip

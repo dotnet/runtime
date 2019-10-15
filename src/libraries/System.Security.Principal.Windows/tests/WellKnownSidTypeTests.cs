@@ -86,7 +86,7 @@ public class WellKnownSidTypeTests
         }
     }
 
-#if netcoreapp
+#if NETCOREAPP
     [ConditionalTheory(nameof(AccountIsDomainJoined))]
     [InlineData(WellKnownSidType.WinBuiltinDCOMUsersSid)]
     [InlineData(WellKnownSidType.WinBuiltinIUsersSid)]

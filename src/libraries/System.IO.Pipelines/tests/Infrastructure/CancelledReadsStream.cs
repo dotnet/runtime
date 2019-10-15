@@ -25,7 +25,7 @@ namespace System.IO.Pipelines.Tests
             return 0;
         }
 
-#if netcoreapp
+#if NETCOREAPP
         public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             await WaitForReadTask.Task;

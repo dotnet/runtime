@@ -12,7 +12,7 @@ namespace System.Net.Test.Common
     public class SslProtocolSupport
     {
         public const SslProtocols DefaultSslProtocols =
-#if !netstandard
+#if !NETSTANDARD2_0
             SslProtocols.Tls13 |
 #endif
             SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls;
@@ -28,7 +28,7 @@ namespace System.Net.Test.Common
                     supported |= SslProtocols.Ssl3;
                 }
 #pragma warning restore 0618
-#if !netstandard
+#if !NETSTANDARD2_0
                 // TLS 1.3 is new
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && PlatformDetection.OpenSslVersion >= new Version(1, 1, 1))
                 {

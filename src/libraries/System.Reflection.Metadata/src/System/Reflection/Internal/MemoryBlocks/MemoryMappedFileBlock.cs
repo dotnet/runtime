@@ -19,7 +19,7 @@ namespace System.Reflection.Internal
             public DisposableData(IDisposable accessor, SafeBuffer safeBuffer, long offset)
             {
                 // Make sure the current thread isn't aborted in between acquiring the pointer and assigning the fields.
-#if !NETSTANDARD11
+#if !NETSTANDARD1_1
                 RuntimeHelpers.PrepareConstrainedRegions();
 #endif
                 try
@@ -40,7 +40,7 @@ namespace System.Reflection.Internal
             {
                 // Make sure the current thread isn't aborted in between zeroing the references and releasing/disposing.
                 // Safe buffer only frees the underlying resource if its ref count drops to zero, so we have to make sure it does.
-#if !NETSTANDARD11
+#if !NETSTANDARD1_1
                 RuntimeHelpers.PrepareConstrainedRegions();
 #endif
                 try

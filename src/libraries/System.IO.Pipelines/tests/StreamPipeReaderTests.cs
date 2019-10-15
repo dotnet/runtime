@@ -612,7 +612,7 @@ namespace System.IO.Pipelines.Tests
             {
                 throw new OperationCanceledException();
             }
-#if netcoreapp
+#if NETCOREAPP
             public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
             {
                 throw new OperationCanceledException();
@@ -647,7 +647,7 @@ namespace System.IO.Pipelines.Tests
                 return bytes;
             }
 
-#if netcoreapp
+#if NETCOREAPP
             public override async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
             {
                 if (_throwOnNextCallToRead)

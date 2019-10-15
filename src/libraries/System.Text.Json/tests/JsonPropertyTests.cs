@@ -86,7 +86,7 @@ namespace System.Text.Json.Tests
                 expectedValue,
                 Encoding.UTF8.GetString(
                     buffer.WrittenSpan
-#if netfx
+#if NETFRAMEWORK
                         .ToArray()
 #endif
                     ));

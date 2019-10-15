@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-#if !netcoreapp
+#if NETCOREAPP2_1 || !NETCOREAPP
 using System.Linq;
 #endif
 using System.Net;
@@ -562,7 +562,7 @@ namespace System.Data.SqlClient.SNI
                 ? _workingDataSource.Substring(firstIndexOfColon + 1).Trim() : _workingDataSource;
 
             // Pipe paths only allow back slashes
-#if netcoreapp
+#if NETCOREAPP
             if (_dataSourceAfterTrimmingProtocol.Contains('/')) // string.Contains(char) is .NetCore2.1+ specific
 #else
             if (_dataSourceAfterTrimmingProtocol.Contains("/"))

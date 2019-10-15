@@ -9,7 +9,7 @@ namespace System.Net
     internal static class SecurityProtocol
     {
         public const SslProtocols DefaultSecurityProtocols =
-#if !netstandard && !netfx
+#if !NETSTANDARD2_0 && !NETFRAMEWORK
             SslProtocols.Tls13 |
 #endif
             SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;

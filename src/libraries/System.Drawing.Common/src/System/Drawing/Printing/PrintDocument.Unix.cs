@@ -40,10 +40,6 @@ using System.ComponentModel;
 
 namespace System.Drawing.Printing
 {
-#if !NETCORE
-    [DefaultEvent ("PrintPage"), DefaultProperty ("DocumentName")]
-    [ToolboxItemFilter ("System.Drawing.Printing", ToolboxItemFilterType.Allow)]
-#endif
     public class PrintDocument : System.ComponentModel.Component
     {
         private PageSettings defaultpagesettings;

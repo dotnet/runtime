@@ -782,7 +782,7 @@ nameof(binaryForm));
                 // otherwise you would see this: "S-1-NTAuthority-32-544"
                 //
 
-#if netcoreapp20
+#if NETCOREAPP2_0
                 StringBuilder result = new StringBuilder();
                 result.Append("S-1-").Append((ulong)_identifierAuthority);
                 for (int i = 0; i < SubAuthorityCount; i++)

@@ -41,10 +41,6 @@ using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing
 {
-#if !NETCORE
-    [Editor ("System.Drawing.Design.FontEditor, " + Consts.AssemblySystem_Drawing_Design, typeof (System.Drawing.Design.UITypeEditor))]
-    [TypeConverter (typeof (FontConverter))]
-#endif
     public sealed partial class Font
     {
         private const byte DefaultCharSet = 1;

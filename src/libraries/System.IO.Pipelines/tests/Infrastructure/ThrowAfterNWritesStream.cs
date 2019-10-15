@@ -33,7 +33,7 @@ namespace System.IO.Pipelines.Tests
             return Task.CompletedTask;
         }
 
-#if netcoreapp
+#if NETCOREAPP
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             if (_writes >= _maxWrites)

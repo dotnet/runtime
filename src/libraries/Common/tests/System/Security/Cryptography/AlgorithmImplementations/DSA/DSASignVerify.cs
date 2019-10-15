@@ -74,7 +74,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
     }
 
-#if netcoreapp
+#if NETCOREAPP
     public sealed class DSASignVerify_Span : DSASignVerify
     {
         public override byte[] SignData(DSA dsa, byte[] data, HashAlgorithmName hashAlgorithm) =>

@@ -14,7 +14,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             return new ECDiffieHellmanCng();
         }
 
-#if netcoreapp
+#if NETCOREAPP
         [Fact]
         public static void ECCurve_ctor()
         {

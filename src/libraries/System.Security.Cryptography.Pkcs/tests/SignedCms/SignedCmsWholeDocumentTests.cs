@@ -45,7 +45,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Assert.Equal(SubjectIdentifierType.SubjectKeyIdentifier, signer.SignerIdentifier.Type);
             Assert.Equal("1063CAB14FB14C47DC211C0E0285F3EE5946BF2D", signer.SignerIdentifier.Value);
             Assert.Equal("2.16.840.1.101.3.4.2.1", signer.DigestAlgorithm.Value);
-#if netcoreapp
+#if NETCOREAPP
             Assert.Equal("1.2.840.113549.1.1.10", signer.SignatureAlgorithm.Value);
 #endif
 
@@ -84,7 +84,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                     "082A864886F70D0302020128",
                 signedAttrs[3].Values[0].RawData.ByteArrayToHex());
 
-#if netcoreapp
+#if NETCOREAPP
             Assert.Equal(
                 "B93E81D141B3C9F159AB0021910635DC72E8E860BE43C28E5D53243D6DC247B7" +
                     "D4F18C20195E80DEDCC75B29C43CE5047AD775B65BFC93589BD748B950C68BAD" +
@@ -153,7 +153,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Assert.Equal(SubjectIdentifierType.IssuerAndSerialNumber, signer.SignerIdentifier.Type);
             Assert.Equal(Oids.Sha1, signer.DigestAlgorithm.Value);
 
-#if netcoreapp
+#if NETCOREAPP
             Assert.Equal(Oids.Rsa, signer.SignatureAlgorithm.Value);
 
             Assert.Equal(
@@ -220,7 +220,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Assert.Equal(SubjectIdentifierType.IssuerAndSerialNumber, signer.SignerIdentifier.Type);
             Assert.Equal(Oids.Sha1, signer.DigestAlgorithm.Value);
 
-#if netcoreapp
+#if NETCOREAPP
             Assert.Equal(Oids.Rsa, signer.SignatureAlgorithm.Value);
 
             Assert.Equal(
@@ -294,7 +294,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Assert.Null(signer.Certificate);
             Assert.Equal(Oids.Sha1, signer.DigestAlgorithm.Value);
 
-#if netcoreapp
+#if NETCOREAPP
             Assert.Equal("1.3.6.1.5.5.7.6.2", signer.SignatureAlgorithm.Value);
 
             Assert.Equal(
@@ -353,7 +353,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 "833378066BDCCBA7047EF6919843D181A57D6479",
                 csMessageDigest.MessageDigest.ByteArrayToHex());
 
-#if netcoreapp
+#if NETCOREAPP
             Assert.Equal(Oids.Rsa, counterSigner.SignatureAlgorithm.Value);
 
             Assert.Equal(
@@ -430,7 +430,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Assert.Empty(signer.CounterSignerInfos);
             Assert.Null(signer.Certificate);
 
-#if netcoreapp
+#if NETCOREAPP
             Assert.Equal(Oids.Rsa, signer.SignatureAlgorithm.Value);
 
             Assert.Equal(
@@ -534,7 +534,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Assert.Equal(SubjectIdentifierType.IssuerAndSerialNumber, signer.SignerIdentifier.Type);
             Assert.Equal(Oids.Sha1, signer.DigestAlgorithm.Value);
 
-#if netcoreapp
+#if NETCOREAPP
             Assert.Equal(Oids.Rsa, signer.SignatureAlgorithm.Value);
 
             Assert.Equal(
@@ -580,7 +580,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             // Assert.NotThrows
             cms.CheckSignature(true);
 
-#if netcoreapp
+#if NETCOREAPP
             Assert.Equal(
                 "1AA282DBED4D862D7CEA30F803E790BDB0C97EE852778CEEDDCD94BB9304A155" +
                     "2E60A8D36052AC8C2D28755F3B2F473824100AB3A6ABD4C15ABD77E0FFE13D0D" +

@@ -34,10 +34,6 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#if netcoreapp20
-using System.Buffers;
-#endif
-
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -97,16 +93,8 @@ namespace System.Drawing
 
             try
             {
-                // Stream Span API isn't available in 2.0
-#if netcoreapp20
-                byte[] buffer = ArrayPool<byte>.Shared.Rent(bufsz);
-                read = _stream.Read(buffer, 0, bufsz);
-                Marshal.Copy(buffer, 0, (IntPtr)buf, read);
-                ArrayPool<byte>.Shared.Return(buffer);
-#else
                 Span<byte> buffer = new Span<byte>(buf, bufsz);
                 read = _stream.Read(buffer);
-#endif
             }
             catch (IOException)
             {
@@ -136,16 +124,9 @@ namespace System.Drawing
             if (!_stream.CanWrite)
                 return -1;
 
-            // Stream Span API isn't available in 2.0
-#if netcoreapp20
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(bufsz);
-            Marshal.Copy((IntPtr)buf, buffer, 0, bufsz);
-            _stream.Write(buffer, 0, bufsz);
-            ArrayPool<byte>.Shared.Return(buffer);
-#else
             var buffer = new ReadOnlySpan<byte>(buf, bufsz);
             _stream.Write(buffer);
-#endif
+
             return bufsz;
         }
 

@@ -4,7 +4,6 @@
   <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
-    <DisableImplicitFrameworkDefines>true</DisableImplicitFrameworkDefines>
     <DisableImplicitConfigurationDefines>true</DisableImplicitConfigurationDefines>
 
     <!-- Workaround for https://github.com/microsoft/msbuild/issues/4474 -->

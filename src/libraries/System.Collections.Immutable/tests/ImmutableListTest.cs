@@ -793,7 +793,7 @@ namespace System.Collections.Immutable.Tests
             Assert.IsType<ArgumentNullException>(tie.InnerException);
         }
 
-#if netcoreapp
+#if NETCOREAPP
         [Fact]
         public void UsableWithCollectibleAssemblies()
         {
@@ -812,7 +812,7 @@ namespace System.Collections.Immutable.Tests
 
             list.GetEnumerator(); // ensure this doesn't throw
         }
-#endif // netcoreapp
+#endif
 
         [Fact]
         public void ItemRef()

@@ -11,72 +11,6 @@ using System.Runtime.InteropServices;
 
 namespace System.Runtime.Caching
 {
-    // CoreClr 2.0 supports GC sized refs but does not expose System.SizedReference
-#if NETCOREAPP21
-    internal class SRef {
-        private static Type s_type = Type.GetType("System.SizedReference", true, false);
-        private Object _sizedRef;
-
-        internal SRef(Object target) {
-            _sizedRef = Activator.CreateInstance(s_type,
-                    BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.CreateInstance,
-                    null,
-                    new object[] { target },
-                    null);
-        }
-
-        internal long ApproximateSize {
-            get {
-                object o = s_type.InvokeMember("ApproximateSize",
-                                               BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty,
-                                               null, // binder
-                                               _sizedRef, // target
-                                               null, // args
-                                               CultureInfo.InvariantCulture);
-                return (long)o;
-            }
-        }
-
-        internal void Dispose() {
-            s_type.InvokeMember("Dispose",
-                                BindingFlags.Public | BindingFlags.Instance | BindingFlags.InvokeMethod,
-                                null, // binder
-                                _sizedRef, // target
-                                null, // args
-                                CultureInfo.InvariantCulture);
-        }
-    }
-
-    internal class SRefMultiple {
-        private SRef[] _srefs;
-        private long[] _sizes;  // Getting SRef size in the debugger is extremely tedious so we keep the last read value here
-
-        internal SRefMultiple(object[] targets) {
-            _srefs = new SRef[targets.Length];
-            _sizes = new long[targets.Length];
-            for (int i = 0; i < targets.Length; i++) {
-                _srefs[i] = new SRef(targets[i]);
-            }
-        }
-
-        internal long ApproximateSize {
-            get {
-                long size = 0;
-                for (int i = 0; i < _srefs.Length; i++) {
-                    size += (_sizes[i] = _srefs[i].ApproximateSize);
-                }
-                return size;
-            }
-        }
-
-        internal void Dispose() {
-            foreach (SRef s in _srefs) {
-                s.Dispose();
-            }
-        }
-    }
-
-#else
     // until then we provide a stub
     internal class SRefMultiple
     {
@@ -88,7 +22,6 @@ namespace System.Runtime.Caching
         {
         }
     }
-#endif
 
     internal class GCHandleRef<T> : IDisposable
     where T : class, IDisposable

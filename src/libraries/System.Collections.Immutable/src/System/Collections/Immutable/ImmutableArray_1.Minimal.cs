@@ -131,7 +131,7 @@ namespace System.Collections.Immutable
             }
         }
 
-#if !NETSTANDARD10
+#if !NETSTANDARD1_0
         /// <summary>
         /// Gets a read-only reference to the element at the specified index in the read-only list.
         /// </summary>

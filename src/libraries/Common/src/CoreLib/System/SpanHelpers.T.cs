@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-#if !netstandard
+#if !NETSTANDARD2_0
 using Internal.Runtime.CompilerServices;
 #endif
 

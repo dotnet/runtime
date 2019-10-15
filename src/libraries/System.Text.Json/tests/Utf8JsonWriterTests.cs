@@ -4332,7 +4332,7 @@ namespace System.Text.Json.Tests
 
                 string result = Encoding.UTF8.GetString(
                         output.WrittenSpan
-#if netfx
+#if NETFRAMEWORK
                         .ToArray()
 #endif
                     );

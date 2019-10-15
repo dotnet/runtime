@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             return new ECDsaCng(keySize);
         }
 
-#if netcoreapp
+#if NETCOREAPP
         public ECDsa Create(ECCurve curve)
         {
             return new ECDsaCng(curve);

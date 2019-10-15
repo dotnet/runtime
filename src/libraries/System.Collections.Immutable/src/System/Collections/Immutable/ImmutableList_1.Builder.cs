@@ -135,7 +135,7 @@ namespace System.Collections.Immutable
             {
                 get
                 {
-#if !NETSTANDARD10
+#if !NETSTANDARD1_0
                     return this.Root.ItemRef(index);
 #else
                     return this.Root[index];
@@ -159,7 +159,7 @@ namespace System.Collections.Immutable
                 }
             }
 
-#if !NETSTANDARD10
+#if !NETSTANDARD1_0
             /// <summary>
             /// Gets a read-only reference to the value for a given index into the list.
             /// </summary>

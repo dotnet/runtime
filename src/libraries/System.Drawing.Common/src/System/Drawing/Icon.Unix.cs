@@ -44,15 +44,8 @@ using System.Runtime.InteropServices;
 
 namespace System.Drawing
 {
-#if netcoreapp || netcoreapp30
+#if NETCOREAPP
     [System.ComponentModel.TypeConverter("System.Drawing.IconConverter, System.Windows.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51")]
-#else
-#if !NETCORE
-#if !MONOTOUCH
-    [Editor("System.Drawing.Design.IconEditor, " + Consts.AssemblySystem_Drawing_Design, typeof(System.Drawing.Design.UITypeEditor))]
-#endif
-    [TypeConverter(typeof(IconConverter))]
-#endif
 #endif
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
@@ -134,7 +127,6 @@ namespace System.Drawing
         {
         }
 
-#if !MONOTOUCH
         private Icon(IntPtr handle)
         {
             this.handle = handle;
@@ -145,7 +137,6 @@ namespace System.Drawing
             // FIXME: we need to convert the bitmap into an icon
             undisposable = true;
         }
-#endif
 
         public Icon(Icon original, int width, int height)
             : this(original, new Size(width, height))
@@ -352,7 +343,6 @@ namespace System.Drawing
             return new Icon(this, Size);
         }
 
-#if !MONOTOUCH
         public static Icon FromHandle(IntPtr handle)
         {
             if (handle == IntPtr.Zero)
@@ -360,7 +350,7 @@ namespace System.Drawing
 
             return new Icon(handle);
         }
-#endif
+
         private void SaveIconImage(BinaryWriter writer, IconImage ii)
         {
             BitmapInfoHeader bih = ii.iconHeader;
@@ -542,7 +532,7 @@ namespace System.Drawing
             // save every icons available
             Save(outputStream, -1, -1);
         }
-#if !MONOTOUCH
+
         internal Bitmap BuildBitmapOnWin32()
         {
             Bitmap bmp;
@@ -653,14 +643,13 @@ namespace System.Drawing
             //     Image16 for the differences
             return new Bitmap(GetInternalBitmap());
         }
-#endif
+
         public override string ToString()
         {
             //is this correct, this is what returned by .Net
             return "<Icon>";
         }
 
-#if !MONOTOUCH
         [Browsable(false)]
         public IntPtr Handle
         {
@@ -679,7 +668,7 @@ namespace System.Drawing
                 return handle;
             }
         }
-#endif
+
         [Browsable(false)]
         public int Height
         {

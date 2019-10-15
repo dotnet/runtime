@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             return new ECDiffieHellmanCng(keySize);
         }
 
-#if netcoreapp
+#if NETCOREAPP
         public ECDiffieHellman Create(ECCurve curve)
         {
             return new ECDiffieHellmanCng(curve);

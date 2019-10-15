@@ -23,7 +23,7 @@ namespace System.Reflection.Internal
             public DisposableData(int size)
             {
                 // make sure the current thread isn't aborted in between allocating and storing the pointer
-#if !NETSTANDARD11
+#if !NETSTANDARD1_1
                 RuntimeHelpers.PrepareConstrainedRegions();
 #endif
                 try
@@ -38,7 +38,7 @@ namespace System.Reflection.Internal
             protected override void Release()
             {
                 // make sure the current thread isn't aborted in between zeroing the pointer and freeing the memory
-#if !NETSTANDARD11
+#if !NETSTANDARD1_1
                 RuntimeHelpers.PrepareConstrainedRegions();
 #endif
                 try

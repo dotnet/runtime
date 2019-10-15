@@ -19,7 +19,7 @@ namespace System.IO.Pipelines
         private SynchronizationContext? _synchronizationContext;
         private ExecutionContext? _executionContext;
 
-#if !netstandard
+#if !NETSTANDARD2_0
         private CancellationToken CancellationToken => _cancellationTokenRegistration.Token;
 #else
         private CancellationToken _cancellationToken;
@@ -35,7 +35,7 @@ namespace System.IO.Pipelines
             _cancellationTokenRegistration = default;
             _synchronizationContext = null;
             _executionContext = null;
-#if netstandard
+#if NETSTANDARD2_0
             _cancellationToken = CancellationToken.None;
 #endif
         }
@@ -54,7 +54,7 @@ namespace System.IO.Pipelines
             // Don't register if already completed, we would immediately unregistered in ObserveCancellation
             if (cancellationToken.CanBeCanceled && !IsCompleted)
             {
-#if netstandard
+#if NETSTANDARD2_0
                 _cancellationToken = cancellationToken;
 #endif
                 _cancellationTokenRegistration = cancellationToken.UnsafeRegister(callback, state);
@@ -166,7 +166,7 @@ namespace System.IO.Pipelines
             cancellationToken = CancellationToken;
             CancellationTokenRegistration cancellationTokenRegistration = _cancellationTokenRegistration;
 
-#if netstandard
+#if NETSTANDARD2_0
             _cancellationToken = default;
 #endif
             _cancellationTokenRegistration = default;

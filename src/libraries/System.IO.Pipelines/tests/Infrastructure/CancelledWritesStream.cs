@@ -24,7 +24,7 @@ namespace System.IO.Pipelines.Tests
             cancellationToken.ThrowIfCancellationRequested();
         }
 
-#if netcoreapp
+#if NETCOREAPP
         public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             await WaitForWriteTask.Task;

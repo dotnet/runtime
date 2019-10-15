@@ -182,7 +182,7 @@ namespace System.Collections.Immutable
                     int index = _additionalElements.IndexOf(value, valueComparer);
                     if (index >= 0)
                     {
-#if !NETSTANDARD10
+#if !NETSTANDARD1_0
                         existingValue = _additionalElements.ItemRef(index);
 #else
                         existingValue = _additionalElements[index];

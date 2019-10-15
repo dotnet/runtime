@@ -46,7 +46,6 @@ namespace System.Drawing
         // we use an internal .ctor to ensure the SystemIcons can't de disposed
         private static readonly Icon[] icons = new Icon[6]
         {
-#if NETCORE
             // TODO: Decide which icons to use for this.
             new Icon("placeholder.ico", undisposable:true), // Application_Winlogo
             new Icon("placeholder.ico", undisposable:true), // Asterisk_Information
@@ -54,14 +53,6 @@ namespace System.Drawing
             new Icon("placeholder.ico", undisposable:true), // Exclamation_Warning
             new Icon("placeholder.ico", undisposable:true), // Question_
             new Icon("placeholder.ico", undisposable:true), // Shield_
-#else
-            new Icon("Mono.ico", undisposable:true),        // Application_Winlogo
-            new Icon("Information.ico", undisposable:true), // Asterisk_Information
-            new Icon("Error.ico", undisposable:true),       // Error_Hand
-            new Icon("Warning.ico", undisposable:true),     // Exclamation_Warning
-            new Icon("Question.ico", undisposable:true),    // Question_
-            new Icon("Shield.ico", undisposable:true),      // Shield_
-#endif
         };
 
         // note: same as WinLogo (for Mono)

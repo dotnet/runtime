@@ -22,7 +22,7 @@ namespace Internal.Cryptography
     {
         private static readonly byte[] s_pSpecifiedDefaultParameters = { 0x04, 0x00 };
 
-#if !netcoreapp && !netcoreapp30 && !netstandard21
+#if !NETCOREAPP && !NETSTANDARD2_1
         // Compatibility API.
         internal static void AppendData(this IncrementalHash hasher, ReadOnlySpan<byte> data)
         {
@@ -324,7 +324,7 @@ namespace Internal.Cryptography
             return ToUpperHexString(serialBytes);
         }
 
-#if netcoreapp || netcoreapp30 || netstandard21
+#if NETCOREAPP || NETSTANDARD2_1
         private static unsafe string ToUpperHexString(ReadOnlySpan<byte> ba)
         {
             fixed (byte* baPtr = ba)
@@ -416,7 +416,7 @@ namespace Internal.Cryptography
                     attributeObject = Upgrade<Pkcs9MessageDigest>(attributeObject);
                     break;
 
-#if netcoreapp || netcoreapp30 || netstandard21
+#if NETCOREAPP || NETSTANDARD2_1
                 case Oids.LocalKeyId:
                     attributeObject = Upgrade<Pkcs9LocalKeyId>(attributeObject);
                     break;

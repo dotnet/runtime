@@ -297,7 +297,7 @@ namespace System.Reflection.Tests
             var loadedAssembly1 = Assembly.LoadFile(fullRuntimeTestsPath);
             Assert.NotEqual(currentAssembly, loadedAssembly1);
 
-#if netcoreapp
+#if NETCOREAPP
             System.Runtime.Loader.AssemblyLoadContext alc = System.Runtime.Loader.AssemblyLoadContext.GetLoadContext(loadedAssembly1);
             string expectedName = string.Format("Assembly.LoadFile({0})", fullRuntimeTestsPath);
             Assert.Equal(expectedName, alc.Name);
