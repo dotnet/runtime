@@ -3502,16 +3502,16 @@ inline bool Compiler::LoopDsc::lpArrLenLimit(Compiler* comp, ArrIndex* index)
     assert(limit->OperGet() == GT_ARR_LENGTH);
 
     // Check if we have a.length or a[i][j].length
-    if (limit->gtArrLen.ArrRef()->gtOper == GT_LCL_VAR)
+    if (limit->AsArrLen()->ArrRef()->gtOper == GT_LCL_VAR)
     {
-        index->arrLcl = limit->gtArrLen.ArrRef()->gtLclVarCommon.GetLclNum();
+        index->arrLcl = limit->AsArrLen()->ArrRef()->gtLclVarCommon.GetLclNum();
         index->rank   = 0;
         return true;
     }
     // We have a[i].length, extract a[i] pattern.
-    else if (limit->gtArrLen.ArrRef()->gtOper == GT_COMMA)
+    else if (limit->AsArrLen()->ArrRef()->gtOper == GT_COMMA)
     {
-        return comp->optReconstructArrIndex(limit->gtArrLen.ArrRef(), index, BAD_VAR_NUM);
+        return comp->optReconstructArrIndex(limit->AsArrLen()->ArrRef(), index, BAD_VAR_NUM);
     }
     return false;
 }
