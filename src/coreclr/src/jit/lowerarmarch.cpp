@@ -222,56 +222,29 @@ void Lowering::LowerStoreIndir(GenTreeIndir* node)
 }
 
 //------------------------------------------------------------------------
-// LowerBlockStore: Set block store type
+// LowerBlockStore: Lower a block store node
 //
 // Arguments:
-//    blkNode       - The block store node of interest
-//
-// Return Value:
-//    None.
+//    blkNode - The block store node to lower
 //
 void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 {
-    GenTree*  dstAddr  = blkNode->Addr();
-    unsigned  size     = blkNode->Size();
-    GenTree*  source   = blkNode->Data();
-    Compiler* compiler = comp;
+    GenTree* dstAddr = blkNode->Addr();
+    GenTree* src     = blkNode->Data();
+    unsigned size    = blkNode->Size();
 
-    // Sources are dest address and initVal or source.
-    GenTree* srcAddrOrFill = nullptr;
-    bool     isInitBlk     = blkNode->OperIsInitBlkOp();
-
-    if (!isInitBlk)
+    if (blkNode->OperIsInitBlkOp())
     {
-        // CopyObj or CopyBlk
-        if (blkNode->OperIs(GT_STORE_OBJ) && (!blkNode->AsObj()->GetLayout()->HasGCPtr() || blkNode->gtBlkOpGcUnsafe))
+        if (src->OperIs(GT_INIT_VAL))
         {
-            blkNode->SetOper(GT_STORE_BLK);
+            src->SetContained();
+            src = src->AsUnOp()->gtGetOp1();
         }
-        if (source->gtOper == GT_IND)
-        {
-            srcAddrOrFill = blkNode->Data()->gtGetOp1();
-        }
-    }
-
-    if (isInitBlk)
-    {
-        GenTree* initVal = source;
-        if (initVal->OperIsInitVal())
-        {
-            initVal->SetContained();
-            initVal = initVal->gtGetOp1();
-        }
-        srcAddrOrFill = initVal;
 
 #ifdef _TARGET_ARM64_
-        if ((size != 0) && (size <= INITBLK_UNROLL_LIMIT) && initVal->IsCnsIntOrI())
+        if ((size != 0) && (size <= INITBLK_UNROLL_LIMIT) && src->IsCnsIntOrI())
         {
-            // TODO-ARM-CQ: Currently we generate a helper call for every
-            // initblk we encounter.  Later on we should implement loop unrolling
-            // code sequences to improve CQ.
-            // For reference see the code in LowerXArch.cpp.
-            NYI_ARM("initblk loop unrolling is currently not implemented.");
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
 
             // The fill value of an initblk is interpreted to hold a
             // value of (unsigned int8) however a constant of any size
@@ -280,65 +253,59 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             // it to a larger constant whose size is sufficient to support
             // the largest width store of the desired inline expansion.
 
-            ssize_t fill = initVal->gtIntCon.gtIconVal & 0xFF;
+            ssize_t fill = src->AsIntCon()->IconValue() & 0xFF;
+
             if (fill == 0)
             {
-                MakeSrcContained(blkNode, source);
+                src->SetContained();
             }
-            else if (size < REGSIZE_BYTES)
+            else if (size >= REGSIZE_BYTES)
             {
-                initVal->gtIntCon.gtIconVal = 0x01010101 * fill;
+                fill *= 0x0101010101010101LL;
+                src->gtType = TYP_LONG;
             }
             else
             {
-                initVal->gtIntCon.gtIconVal = 0x0101010101010101LL * fill;
-                initVal->gtType             = TYP_LONG;
+                fill *= 0x01010101;
             }
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
+
+            src->AsIntCon()->SetIconValue(fill);
         }
         else
 #endif // _TARGET_ARM64_
         {
+            // TODO-ARM-CQ: Currently we generate a helper call for every initblk we encounter.
+            // Later on we should implement loop unrolling code sequences to improve CQ.
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindHelper;
         }
     }
     else
     {
-        // CopyObj or CopyBlk
-        // Sources are src and dest and size if not constant.
+        assert(src->OperIs(GT_IND, GT_LCL_VAR, GT_LCL_FLD));
+        src->SetContained();
 
-        if (blkNode->OperGet() == GT_STORE_OBJ)
+        if (src->OperIs(GT_IND))
         {
-            // CopyObj
-            GenTreeObj* objNode = blkNode->AsObj();
+            // TODO-Cleanup: Make sure that GT_IND lowering didn't mark the source address as contained.
+            // Sometimes the GT_IND type is a non-struct type and then GT_IND lowering may contain the
+            // address, not knowing that GT_IND is part of a block op that has containment restrictions.
+            src->AsIndir()->Addr()->ClearContained();
+        }
 
-            unsigned slots = objNode->GetLayout()->GetSlotCount();
+        if (blkNode->OperIs(GT_STORE_OBJ) && (!blkNode->AsObj()->GetLayout()->HasGCPtr() || blkNode->gtBlkOpGcUnsafe))
+        {
+            blkNode->SetOper(GT_STORE_BLK);
+        }
 
-#ifdef DEBUG
-            // CpObj must always have at least one GC-Pointer as a member.
-            assert(objNode->GetLayout()->HasGCPtr());
-
-            assert(dstAddr->gtType == TYP_BYREF || dstAddr->gtType == TYP_I_IMPL);
-
-            size_t classSize = objNode->GetLayout()->GetSize();
-            size_t blkSize   = roundUp(classSize, TARGET_POINTER_SIZE);
-
-            // Currently, the EE always round up a class data structure so
-            // we are not handling the case where we have a non multiple of pointer sized
-            // struct. This behavior may change in the future so in order to keeps things correct
-            // let's assert it just to be safe. Going forward we should simply
-            // handle this case.
-            assert(classSize == blkSize);
-            assert((blkSize / TARGET_POINTER_SIZE) == slots);
-#endif
+        if (blkNode->OperIs(GT_STORE_OBJ))
+        {
+            assert((dstAddr->TypeGet() == TYP_BYREF) || (dstAddr->TypeGet() == TYP_I_IMPL));
 
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
         }
-        else // CopyBlk
+        else
         {
-            // In case of a CpBlk with a constant size and less than CPBLK_UNROLL_LIMIT size
-            // we should unroll the loop to improve CQ.
-            // For reference see the code in lowerxarch.cpp.
+            assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK));
 
             if ((size != 0) && (size <= CPBLK_UNROLL_LIMIT))
             {
@@ -346,26 +313,8 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             }
             else
             {
-                // In case we have a constant integer this means we went beyond
-                // CPBLK_UNROLL_LIMIT bytes of size, still we should never have the case of
-                // any GC-Pointers in the src struct.
                 blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindHelper;
             }
-        }
-        // CopyObj or CopyBlk
-        if (source->gtOper == GT_IND)
-        {
-            MakeSrcContained(blkNode, source);
-            GenTree* addr = source->AsIndir()->Addr();
-            if (!addr->OperIsLocalAddr())
-            {
-                addr->ClearContained();
-            }
-        }
-        else if (!source->IsMultiRegCall() && !source->OperIsSimdOrHWintrinsic())
-        {
-            assert(source->IsLocal());
-            MakeSrcContained(blkNode, source);
         }
     }
 }
