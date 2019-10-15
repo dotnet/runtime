@@ -40,6 +40,13 @@ namespace System.Data.SqlClient.SNI
         /// </summary>
         public bool IsInvalid => _data is null;
 
+        public bool HasCompletionCallback => !(_completionCallback is null);
+
+        /// <summary>
+        /// Packet data
+        /// </summary>
+        public void Dispose() => Release();
+
         public int ReservedHeaderSize => _headerLength;
 
         /// <summary>

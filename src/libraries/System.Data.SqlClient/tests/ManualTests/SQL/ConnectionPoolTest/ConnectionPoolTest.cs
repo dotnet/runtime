@@ -15,13 +15,13 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         private static readonly string _tcpMarsConnStr = (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { MultipleActiveResultSets = true, Pooling = true }).ConnectionString;
 
 
-        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup), /* [ActiveIssue(33930)]: */ nameof(DataTestUtility.IsUsingNativeSNI))]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void ConnectionPool_NonMars()
         {
             RunDataTestForSingleConnString(_tcpConnStr);
         }
 
-        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup), /* [ActiveIssue(33930)] */ nameof(DataTestUtility.IsUsingNativeSNI))]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void ConnectionPool_Mars()
         {
             RunDataTestForSingleConnString(_tcpMarsConnStr);
