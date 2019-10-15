@@ -37,7 +37,7 @@ set logFile=%__ProjectDir%bin\Logs\build-packages.binlog
 powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__ProjectDir%eng\common\build.ps1"^
   -r -b -projects %__ProjectDir%src\.nuget\packages.builds^
   -verbosity minimal /bl:%logFile% /nodeReuse:false^
-  /p:__BuildOS=Windows_NT /p:ArcadeBuild=true^
+  /p:__BuildOS=Windows_NT^
   /p:PortableBuild=true /p:FilterToOSGroup=Windows_NT^
   %__MSBuildArgs% %unprocessedArgs%
 

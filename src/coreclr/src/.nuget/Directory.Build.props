@@ -2,8 +2,7 @@
 <Project>
 
   <!-- Packaging projects (.pkgproj) are non-SDK-style, so they need to directly import Directory.Build.props -->
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))"
-          Condition="'$(MSBuildProjectExtension)' == '.pkgproj'" />
+  <Import Project="../Directory.Build.props" />
   <Import Project="packaging.props" />
 
   <PropertyGroup>

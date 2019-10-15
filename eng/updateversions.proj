@@ -1,9 +1,5 @@
 <Project>
 
-  <PropertyGroup>
-    <ArcadeBuild>true</ArcadeBuild>
-  </PropertyGroup>
-
   <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
 
   <Import Project="$(NuGetPackageRoot)\microsoft.dotnet.versiontools.tasks\$(MicrosoftDotNetVersionToolsTasksVersion)\build\Microsoft.DotNet.VersionTools.Tasks.props" />

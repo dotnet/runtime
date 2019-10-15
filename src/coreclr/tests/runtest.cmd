@@ -308,7 +308,7 @@ echo %__MsgPrefix%CORE_ROOT that will be used is: %CORE_ROOT%
 echo %__MsgPrefix%Starting test run at %TIME%
 
 set __BuildLogRootName=TestRunResults
-call :msbuild "%__ProjectFilesDir%\runtest.proj" /p:Runtests=true /clp:showcommandline
+call :msbuild "%__ProjectFilesDir%\src\runtest.proj" /p:Runtests=true /clp:showcommandline
 set __errorlevel=%errorlevel%
 
 if "%__CollectDumps%"=="true" (
@@ -502,7 +502,7 @@ REM ============================================================================
 :ResolveDependencies
 
 set __BuildLogRootName=Tests_GenerateRuntimeLayout
-call :msbuild "%__ProjectFilesDir%\runtest.proj" /p:GenerateRuntimeLayout=true 
+call :msbuild "%__ProjectFilesDir%\src\runtest.proj" /p:GenerateRuntimeLayout=true 
 if errorlevel 1 (
     echo %__MsgPrefix%Test Dependency Resolution Failed
     exit /b 1

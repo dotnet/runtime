@@ -1,6 +1,4 @@
 <Project Sdk="Microsoft.Build.Traversal">
-  <Import Project="packaging.props" />
-
   <ItemGroup Condition="'$(__SkipCoreLibBuild)'==''">
     <ProjectReference Include="Microsoft.NETCore.Runtime.CoreCLR\Microsoft.NETCore.Runtime.CoreCLR.builds" />
   </ItemGroup>

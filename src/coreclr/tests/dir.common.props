@@ -1,5 +1,5 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="../dir.common.props" />
+  <Import Project="../Directory.Build.props" />
 
   <!-- This file contains common build properties for projects under
        the test tree, and also generated test projects in

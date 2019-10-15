@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="dir.sdkbuild.props" Condition="'$(UsingMicrosoftNETSdk)' == 'true'"  />
+  <Import Project="dir.common.props" Condition="'$(UsingMicrosoftNETSdk)' != 'true'"  />
 
   <PropertyGroup>
     <LangVersion>8.0</LangVersion>
@@ -43,21 +44,6 @@
     <!-- Targeting Package paths -->
   <PropertyGroup>
     <TargetingPackPath Condition="'$(BaseTargetingPackPath)' == ''">$(RootBinDir)TargetingPack\</TargetingPackPath>
-  </PropertyGroup>
-
-  <!-- Provides properties for dependency versions and configures dependency verification/auto-upgrade. -->
-  <Import Project="$(ProjectDir)..\dependencies.props" />
-
-  <!-- Add test-specific package restore sources. -->
-  <PropertyGroup>
-    <RestoreSources Condition="'$(DotNetBuildOffline)' != 'true'">
-      https://dotnet.myget.org/F/dotnet-corefxlab/api/v3/index.json;
-      $(RestoreSources)
-    </RestoreSources>
-    <RestoreSources Condition="'$(IntermediateAzureFeed)' != ''">
-      $(IntermediateAzureFeed);
-      $(RestoreSources)
-    </RestoreSources>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildAllProjects)'=='true'">
