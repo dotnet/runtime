@@ -11809,15 +11809,20 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 // Check for assignment to same array, ie. arrLcl[i] = arrLcl[j]
                 // This does not need CORINFO_HELP_ARRADDR_ST
-                if (arrayNodeFrom->OperGet() == GT_INDEX && arrayNodeFrom->AsOp()->gtOp1->gtOper == GT_LCL_VAR &&
-                    arrayNodeTo->gtOper == GT_LCL_VAR &&
-                    arrayNodeTo->gtLclVarCommon.GetLclNum() ==
-                        arrayNodeFrom->AsOp()->gtOp1->gtLclVarCommon.GetLclNum() &&
-                    !lvaTable[arrayNodeTo->gtLclVarCommon.GetLclNum()].lvAddrExposed)
+                if (arrayNodeFrom->OperGet() == GT_INDEX && arrayNodeTo->gtOper == GT_LCL_VAR)
                 {
-                    JITDUMP("\nstelem of ref from same array: skipping covariant store check\n");
-                    lclTyp = TYP_REF;
-                    goto ARR_ST_POST_VERIFY;
+                    GenTree* indexFromOp1 = arrayNodeFrom->AsIndex()->Arr();
+                    if (indexFromOp1->OperGet() == GT_LCL_VAR)
+                    {
+                        unsigned indexFrom = indexFromOp1->AsLclVar()->GetLclNum();
+                        unsigned indexTo   = arrayNodeTo->AsLclVar()->GetLclNum();
+                        if (indexFrom == indexTo && !lvaGetDesc(indexTo)->lvAddrExposed)
+                        {
+                            JITDUMP("\nstelem of ref from same array: skipping covariant store check\n");
+                            lclTyp = TYP_REF;
+                            goto ARR_ST_POST_VERIFY;
+                        }
+                    }
                 }
 
                 // Check for assignment of NULL. This does not need CORINFO_HELP_ARRADDR_ST
