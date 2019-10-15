@@ -303,6 +303,8 @@
     <Compile Include="$(BclSourcesRoot)\System\Utf8String.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Utf8String.Comparison.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Utf8String.Construction.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Utf8String.Conversion.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Utf8String.Enumeration.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Utf8String.Manipulation.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Utf8String.Searching.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Utf8StringSplitOptions.cs" />
@@ -312,6 +314,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Text\Utf8Span.Enumeration.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\Utf8Span.Manipulation.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\Utf8Span.Searching.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Text\Utf8StringComparer.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\XplatEventLogger.cs" Condition="'$(FeatureXplatEventSource)' == 'true'" />

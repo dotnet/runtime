@@ -2956,7 +2956,7 @@
   <data name="NotSupported_GlobalMethodSerialization" xml:space="preserve">
     <value>Serialization of global methods (including implicit serialization via the use of asynchronous delegates) is not supported.</value>
   </data>
-    <data name="InvalidOperation_SpanOverlappedOperation" xml:space="preserve">
+  <data name="InvalidOperation_SpanOverlappedOperation" xml:space="preserve">
     <value>This operation is invalid on overlapping buffers.</value>
   </data>
   <data name="NotSupported_IDispInvokeDefaultMemberWithNamedArgs" xml:space="preserve">
@@ -3766,6 +3766,15 @@
   <data name="InvalidOperation_MultipleComUnRegFunctions" xml:space="preserve">
     <value>Type '{0}' has more than one COM unregistration function.</value>
   </data>
+  <data name="Utf8String_CallbackProvidedMalformedData" xml:space="preserve">
+    <value>The callback populated its buffer with ill-formed UTF-8 data. Callbacks are required to populate the buffer only with well-formed UTF-8 data.</value>
+  </data>
+  <data name="Utf8String_InputContainedMalformedUtf16" xml:space="preserve">
+    <value>The input buffer contained ill-formed UTF-16 data.</value>
+  </data>
+  <data name="Utf8String_InputContainedMalformedUtf8" xml:space="preserve">
+    <value>The input buffer contained ill-formed UTF-8 data.</value>
+  </data>
   <data name="Utf8String_CannotSplitMultibyteSubsequence" xml:space="preserve">
     <value>Cannot create the desired substring because it would split a multi-byte UTF-8 subsequence.</value>
   </data>
@@ -3777,5 +3786,8 @@
   </data>
   <data name="Argument_CannotBeEmptySpan" xml:space="preserve">
     <value>Argument cannot be an empty span.</value>
+  </data>
+  <data name="Argument_CannotBeNullOrEmpty" xml:space="preserve">
+    <value>Argument cannot be null or empty.</value>
   </data>
 </root>
