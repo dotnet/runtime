@@ -240,6 +240,26 @@ namespace System.Xml.Tests
             CompareWildcardNamespaces(expectedNs, attributeWildcard.Namespace);
         }
 
+        [Fact]
+        public void NewInstanceReturnsNullNamespace()
+        {
+            var any = new XmlSchemaAnyAttribute();
+            Assert.Null(any.Namespace);
+        }
+
+        [Fact]
+        public void ReadFromFileWithoutNamespaceReturnsNull()
+        {
+            var xsd = @"<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema' targetNamespace='ns'>
+                        <xs:complexType name = 't'>
+                            <xs:anyAttribute/>
+                        </xs:complexType>
+                        </xs:schema>";
+            XmlSchema xs = XmlSchema.Read(new StringReader(xsd), null);
+            XmlSchemaAnyAttribute any = ((XmlSchemaComplexType)xs.Items[0]).AnyAttribute;
+            Assert.Null(any.Namespace);
+        }
+
         private static void CompareWildcardNamespaces(string expected, string actual)
         {
             var orderedExpected = string.Join(" ", expected.Split(' ').OrderBy(ns => ns));
