@@ -8,7 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Sources;
 
-#if !netstandard
+#if !NETSTANDARD2_0
 using Internal.Runtime.CompilerServices;
 #endif
 
