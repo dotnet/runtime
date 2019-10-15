@@ -56,7 +56,7 @@ namespace System.IO
             {
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
             }
-            return new FileSecurity(handle, fileStream.Name, AccessControlSections.Access | AccessControlSections.Owner | AccessControlSections.Group);
+            return new FileSecurity(handle, AccessControlSections.Access | AccessControlSections.Owner | AccessControlSections.Group);
         }
 
         public static void SetAccessControl(this FileStream fileStream, FileSecurity fileSecurity)
