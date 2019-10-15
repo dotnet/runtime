@@ -105,7 +105,7 @@ namespace System.Text.Unicode
             bool success = memStream.TryGetBuffer(out ArraySegment<byte> memStreamBuffer);
             Debug.Assert(success, "Couldn't get underlying MemoryStream buffer.");
 
-            return Utf8String.DangerousCreateWithoutValidation(memStreamBuffer, assumeWellFormed: true);
+            return Utf8String.UnsafeCreateWithoutValidation(memStreamBuffer);
         }
 #endif // FEATURE_UTF8STRING
     }

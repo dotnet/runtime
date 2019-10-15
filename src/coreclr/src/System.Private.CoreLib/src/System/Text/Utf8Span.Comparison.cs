@@ -16,18 +16,14 @@ namespace System.Text
             // TODO_UTF8STRING: This is ordinal, but String.CompareTo uses CurrentCulture.
             // Is this acceptable?
 
-            // TODO_UTF8STRING: To avoid allocations, use Utf8StringComparer instead of StringComparer once it's submitted.
-
-            return StringComparer.Ordinal.Compare(this.ToString(), other.ToString());
+            return Utf8StringComparer.Ordinal.Compare(this, other);
         }
 
         public int CompareTo(Utf8Span other, StringComparison comparison)
         {
             // TODO_UTF8STRING: We can avoid the virtual dispatch by moving the switch into this method.
 
-            // TODO_UTF8STRING: To avoid allocations, use Utf8StringComparer instead of StringComparer once it's submitted.
-
-            return StringComparer.FromComparison(comparison).Compare(this.ToString(), other.ToString());
+            return Utf8StringComparer.FromComparison(comparison).Compare(this, other);
         }
 
         /// <summary>

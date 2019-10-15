@@ -12,24 +12,6 @@ namespace System.Text
 {
     public readonly ref partial struct Utf8Span
     {
-        [StackTraceHidden]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void CheckSplitOptions(Utf8StringSplitOptions options)
-        {
-            if ((uint)options > (uint)(Utf8StringSplitOptions.RemoveEmptyEntries | Utf8StringSplitOptions.TrimEntries))
-            {
-                CheckSplitOptions_Throw(options);
-            }
-        }
-
-        [StackTraceHidden]
-        private static void CheckSplitOptions_Throw(Utf8StringSplitOptions options)
-        {
-            throw new ArgumentOutOfRangeException(
-                paramName: nameof(options),
-                message: SR.Format(SR.Arg_EnumIllegalVal, (int)options));
-        }
-
         public SplitResult Split(char separator, Utf8StringSplitOptions options = Utf8StringSplitOptions.None)
         {
             if (!Rune.TryCreate(separator, out Rune rune))
@@ -39,14 +21,14 @@ namespace System.Text
                     message: SR.ArgumentOutOfRange_Utf16SurrogatesDisallowed);
             }
 
-            CheckSplitOptions(options);
+            Utf8String.CheckSplitOptions(options);
 
             return new SplitResult(this, rune, options);
         }
 
         public SplitResult Split(Rune separator, Utf8StringSplitOptions options = Utf8StringSplitOptions.None)
         {
-            CheckSplitOptions(options);
+            Utf8String.CheckSplitOptions(options);
 
             return new SplitResult(this, separator, options);
         }
@@ -60,7 +42,7 @@ namespace System.Text
                     message: SR.Argument_CannotBeEmptySpan);
             }
 
-            CheckSplitOptions(options);
+            Utf8String.CheckSplitOptions(options);
 
             return new SplitResult(this, separator, options);
         }
@@ -133,7 +115,7 @@ namespace System.Text
         /// <summary>
         /// Locates the last occurrence of <paramref name="separator"/> within this <see cref="Utf8Span"/> instance, creating <see cref="Utf8Span"/>
         /// instances which represent the data on either side of the separator. If <paramref name="separator"/> is not found
-        /// within this <see cref="Utf8Span"/> instance, returns the tuple "(this, Utf8Span)".
+        /// within this <see cref="Utf8Span"/> instance, returns the tuple "(this, Empty)".
         /// </summary>
         /// <remarks>
         /// The search is performed using the specified <paramref name="comparisonType"/>.
@@ -265,6 +247,7 @@ namespace System.Text
         /// returning a new <see cref="Utf8Span"/> containing the resulting slice.
         /// </summary>
         public Utf8Span TrimStart() => TrimHelper(TrimType.Head);
+
         [StructLayout(LayoutKind.Auto)]
         public readonly ref struct SplitResult
         {
